@@ -1,0 +1,19 @@
+
+:root {
+    --color-design-rationale-bg: rgb(243, 231, 250);
+    --color-design-rationale-title-bg: rgb(152, 106, 222);
+    --color-design-rationale-title-text: white;
+}
+
+.design-rationale.admonition {
+    background-color: var(--color-design-rationale-bg);
+
+    .admonition-title {
+        background-color: var(--color-design-rationale-title-bg);
+        color: var(--color-design-rationale-title-text);
+    }
+
+    .admonition-title::before {
+        content: "\f040";
+    }
+}

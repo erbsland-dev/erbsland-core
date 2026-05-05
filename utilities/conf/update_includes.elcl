@@ -1,0 +1,39 @@
+# Configuration file for the "update_includes.py" script.
+@include: "header.elcl"
+
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Directory basenames to skip while scanning "src/erbsland".
+# A header is ignored if one of its parent directories has a matching name.
+Excluded Directories    : "impl"
+
+# When enabled, every scanned source header also gets a wrapper directly below
+# "include/erbsland" using only its file name, in addition to the wrapper that
+# mirrors its source subdirectory.
+Create Global Includes  : No
+
+# Directory basenames whose headers shall also be exposed in their parent
+# directory. The folded headers are added to the parent's generated "all.hpp",
+# and matching public wrappers are created in the parent include directory.
+# Folding is skipped when the parent already has a header with the same name,
+# or when multiple folded child directories would expose the same file name.
+Fold into Parent        :
+    * "core"
+    * "err"
+    * "bgeo"
+    * "math"
+    * "mem"
+    * "options"
+    * "random"
+    * "stream"
+    * "text"
+    * "time"
+    * "unit"
+    * "util"
+
+# Limits where generated source "all.hpp" files and flattened public
+# "all_<path>.hpp" wrappers are created. If empty, all scanned directories and
+# folded parent directories are considered. If set, only directories below this
+# relative source path are considered, and the flattened wrappers are written
+# below the same include path. The include root itself is exposed as "all.hpp"
+# and does not get a flattened "all_..." alias.
+Create All Base Dir     : ""

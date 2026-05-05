@@ -1,0 +1,155 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include <erbsland/text/CharSet.hpp>
+#include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u8/U8StringCharView.hpp>
+#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/unittest/TextHelper.hpp>
+#include <erbsland/unittest/UnitTest.hpp>
+
+#include <string>
+#include <string_view>
+
+using el::unit::ByteIndex;
+using el::unit::ByteLength;
+using el::unit::ByteRange;
+using namespace el::text;
+
+namespace th = erbsland::unittest::th;
+
+TESTED_TARGETS(U8String U8StringView U8StringCharView U8StringTrimTools)
+class U8StringTrimTest final : public el::UnitTest {
+public:
+    void testStringInPlaceTrim() {
+        using namespace el::text::literals;
+
+        auto text = U8String{std::string_view{" \tvalue\r\n"}};
+        REQUIRE_EQUAL(text.trim(), "value"_el);
+
+        text = U8String{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}), "value"_el);
+
+        text = U8String{std::string_view{" \tvalue\r\n"}};
+        REQUIRE_EQUAL(text.trim({}, StringSide::Front), "value\r\n"_el);
+
+        text = U8String{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}, StringSide::Front), "value**"_el);
+
+        text = U8String{std::string_view{" \tvalue\r\n"}};
+        REQUIRE_EQUAL(text.trim({}, StringSide::Back), " \tvalue"_el);
+
+        text = U8String{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}, StringSide::Back), "***value"_el);
+    }
+
+    void testStringCopyTrim() {
+        using namespace el::text::literals;
+
+        const auto text = U8String{std::string_view{"xxValueXX"}};
+
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}), "Value"_el);
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}, StringSide::Front), "ValueXX"_el);
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}, StringSide::Back), "xxValue"_el);
+        REQUIRE_EQUAL(text, "xxValueXX"_el);
+    }
+
+    void testViewTrim() {
+        using namespace el::text::literals;
+
+        const auto text = U8String{std::string_view{" \tvalue\r\n"}};
+        const auto view = U8StringView{text};
+
+        REQUIRE_EQUAL(view.trimmed(), "value"_el);
+        REQUIRE_EQUAL(view.trimmed({}, StringSide::Front), "value\r\n"_el);
+        REQUIRE_EQUAL(view.trimmed({}, StringSide::Back), " \tvalue"_el);
+        REQUIRE_EQUAL(view.trimmed(CharSet{" \n\r\t"_elv}), "value"_el);
+        REQUIRE_EQUAL(view.trimmed(), "value"_el);
+    }
+
+    void testCharViewTrim() {
+        using namespace el::text::literals;
+
+        const auto text = U8String{std::string_view{"***value**"}};
+        const auto view = text.toCharView();
+
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv})}.toStdString(), "value");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv}, StringSide::Front)}.toStdString(), "value**");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv}, StringSide::Back)}.toStdString(), "***value");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv})}.toStdString(), "value");
+    }
+
+    void testEmptyNoOpAndAllTrimmed() {
+        using namespace el::text::literals;
+
+        const auto empty = U8String{};
+        REQUIRE(empty.trimmed().isEmpty());
+        REQUIRE(empty.trimmed(CharSet{"*"_elv}).isEmpty());
+
+        const auto noOp = U8String{std::string_view{"value"}};
+        REQUIRE_EQUAL(noOp.trimmed(), "value"_el);
+        REQUIRE_EQUAL(noOp.trimmed(CharSet{"*"_elv}), "value"_el);
+
+        auto allWhitespace = U8String{std::string_view{" \t\r\n"}};
+        REQUIRE(allWhitespace.trim().isEmpty());
+
+        const auto allCustom = U8String{std::string_view{"****"}};
+        REQUIRE(allCustom.trimmed(CharSet{"*"_elv}).isEmpty());
+        REQUIRE(allCustom.toCharView().trimmed(CharSet{"*"_elv}).isEmpty());
+    }
+
+    void testNestedViewTrimKeepsCorrectOrigin() {
+        using namespace el::text::literals;
+
+        const auto text = U8String{std::string_view{"xx--value--yy"}};
+        const auto first = U8StringView{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{11U}});
+        const auto second = first.slice(ByteRange{ByteIndex{1U}, ByteLength{9U}});
+
+        REQUIRE_EQUAL(first, "x--value--y"_el);
+        REQUIRE_EQUAL(second, "--value--"_el);
+        REQUIRE_EQUAL(second.trimmed(CharSet{"-"_elv}), "value"_el);
+        REQUIRE_EQUAL(StringConverter{second.toCharView().trimmed(CharSet{"-"_elv})}.toStdString(), "value");
+    }
+
+    void testMultibyteBoundaryCharacters() {
+        using namespace el::text::literals;
+
+        const auto text = U8String{std::u8string_view{u8"¢€data€¢"}};
+        const auto characters = CharSet{u8"¢€"_elv};
+
+        REQUIRE_EQUAL(text.trimmed(characters), "data"_el);
+        REQUIRE_EQUAL(U8StringView{text}.trimmed(characters), "data"_el);
+        REQUIRE_EQUAL(StringConverter{text.toCharView().trimmed(characters)}.toStdString(), "data");
+    }
+
+    void testMalformedUtf8ReplacementTrim() {
+        const auto bytes = th::stdStringFromHex("C0 41 C0");
+        const auto text = U8String{std::string_view{bytes}};
+        const auto characters = CharSet{Char::replacement()};
+
+        using namespace el::text::literals;
+
+        REQUIRE_EQUAL(text.trimmed(characters), "A"_el);
+        REQUIRE_EQUAL(U8StringView{text}.trimmed(characters), "A"_el);
+        REQUIRE_EQUAL(StringConverter{text.toCharView().trimmed(characters)}.toStdString(), "A");
+    }
+
+    void testCaseInsensitiveTrim() {
+        using namespace el::text::literals;
+
+        auto text = U8String{std::string_view{"XXvalueX"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"xX"_elv}), "value"_el);
+
+        const auto unicodeText = U8String{std::u8string_view{u8"\u00C4value\u00E4"}};
+        const auto unicodeCharacters = CharSet{u8"\u00C4\u00E4"_elv};
+        REQUIRE_EQUAL(unicodeText.trimmed(unicodeCharacters), "value"_el);
+        REQUIRE_EQUAL(U8StringView{unicodeText}.trimmed(unicodeCharacters), "value"_el);
+        REQUIRE_EQUAL(StringConverter{unicodeText.toCharView().trimmed(unicodeCharacters)}.toStdString(), "value");
+    }
+};

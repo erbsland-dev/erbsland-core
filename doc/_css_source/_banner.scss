@@ -1,0 +1,25 @@
+
+:root {
+    --ela-banner-background-color: #cd5a13;
+    --ela-banner-border-color: #e4d3aa;
+    --ela-banner-foreground-color: #ffffff;
+}
+
+.banner {
+    width: 100%;
+    background-color: var(--ela-banner-background-color);
+    color: var(--ela-banner-foreground-color);
+    padding: 0.5em 3em;
+    margin: 0 0 0 10em;
+    font-size: 16px;
+    font-weight: 400;
+    text-align: center;
+    border-bottom: 5px solid var(--ela-banner-border-color);
+}
+
+@media screen and (max-width: 768px) {
+    .banner {
+        margin: 0;
+    }
+}
+

@@ -1,0 +1,61 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.28)
+
+target_sources(erbsland-core-unittest PRIVATE
+        AnyStringTest.cpp
+        ByteFormatTest.cpp
+        CharRangeTest.cpp
+        CharSetTest.cpp
+        CharTest.cpp
+        EncodingErrorModeTest.cpp
+        FloatConversionTest.cpp
+        FormatAsTest.cpp
+        IntegerConversionTest.cpp
+        StringBuilderTest.cpp
+        StringCharReaderTest.cpp
+        StringConverterTest.cpp
+        StringDecoderTest.cpp
+        StringEncoderTest.cpp
+        StringEscapingTest.cpp
+        StringListTest.cpp
+        StringMapTest.cpp
+        StringSetTest.cpp
+        StringTransformTest.cpp
+        StringTreeTest.cpp
+        ToStringTest.cpp
+        U16EncodingTest.cpp
+        U16FormatTest.cpp
+        U16StringDataTest.cpp
+        U16StringLiteralTest.cpp
+        U16StringTest.cpp
+        U16WriterTest.cpp
+        U32EncodingTest.cpp
+        U32FormatTest.cpp
+        U32StringDataTest.cpp
+        U32StringLiteralTest.cpp
+        U32StringTest.cpp
+        U32WriterTest.cpp
+        U8EncodingTest.cpp
+        U8FormatTest.cpp
+        U8StringCharReadToolTest.cpp
+        U8StringCharViewTest.cpp
+        U8StringConstIteratorTest.cpp
+        U8StringDataTest.cpp
+        U8StringDataViewTest.cpp
+        U8StringEncodingTest.cpp
+        U8StringLiteralStorageTest.cpp
+        U8StringLiteralTest.cpp
+        U8StringModifierTest.cpp
+        U8StringReadToolsTest.cpp
+        U8StringSharedStorageTest.cpp
+        U8StringTest.cpp
+        U8StringTrimTest.cpp
+        U8StringViewStorageTest.cpp
+        U8StringViewTest.cpp
+        U8WriterTest.cpp
+        UnicodeTest.cpp
+        UnsafeU16StringAccessTest.cpp
+        UnsafeU8StringAccessTest.cpp
+)

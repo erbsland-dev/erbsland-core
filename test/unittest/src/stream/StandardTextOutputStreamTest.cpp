@@ -1,0 +1,257 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include <erbsland/err/StreamError.hpp>
+#include <erbsland/math/SaturatingInteger.hpp>
+#include <erbsland/stream/impl/NativeOutputStream.hpp>
+#include <erbsland/stream/impl/StandardTextOutputStream.hpp>
+#include <erbsland/text/BooleanFormat.hpp>
+#include <erbsland/text/IntegerFormatFlag.hpp>
+#include <erbsland/text/Literals.hpp>
+#include <erbsland/unittest/UnitTest.hpp>
+
+#include <cstdint>
+#include <memory>
+#include <span>
+#include <string>
+
+using el::err::StreamError;
+using el::stream::TextOutputStream;
+using el::unit::ElementCount;
+using namespace el::text;
+
+namespace {
+
+class PrintStringType final {
+public:
+    [[nodiscard]] auto toString() const -> String { return String{std::string_view{"string"}}; }
+};
+
+class PrintStringViewType final {
+public:
+    [[nodiscard]] auto toString() const -> StringView {
+        using namespace el::text::literals;
+
+        return "view"_el;
+    }
+};
+
+class PrintRawValueType final {
+public:
+    [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 255U; }
+};
+
+class PrintBothType final {
+public:
+    [[nodiscard]] auto toString() const -> String { return String{std::string_view{"string-wins"}}; }
+    [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 17U; }
+};
+
+class MutableRawValueType final {
+public:
+    [[nodiscard]] constexpr auto toRawValue() noexcept -> std::uint16_t { return 1U; }
+};
+
+class NonIntegerRawValueType final {
+public:
+    [[nodiscard]] constexpr auto toRawValue() const noexcept -> float { return 1.0F; }
+};
+
+class CharacterRawValueType final {
+public:
+    [[nodiscard]] constexpr auto toRawValue() const noexcept -> char { return 'x'; }
+};
+
+static_assert(el::stream::impl::PrintObjectWithToString<PrintStringType>);
+static_assert(el::stream::impl::PrintObjectWithToString<PrintStringViewType>);
+static_assert(el::stream::impl::PrintObjectWithToString<PrintBothType>);
+static_assert(el::stream::impl::PrintObjectWithRawInteger<PrintRawValueType>);
+static_assert(!el::stream::impl::PrintObjectWithRawInteger<PrintBothType>);
+static_assert(!el::stream::impl::PrintObjectWithRawInteger<MutableRawValueType>);
+static_assert(!el::stream::impl::PrintObjectWithRawInteger<NonIntegerRawValueType>);
+static_assert(!el::stream::impl::PrintObjectWithRawInteger<CharacterRawValueType>);
+
+}
+
+TESTED_TARGETS(StandardTextOutputStream NativeOutputStream)
+class StandardTextOutputStreamTest final : public el::UnitTest {
+    class FakeNativeOutputStream final : public el::stream::impl::NativeOutputStream {
+    public:
+        void writeBytes(const std::span<const char> bytes) override {
+            if (failOnWrite) {
+                throw StreamError{"Expected write failure."};
+            }
+            text.append(bytes.data(), bytes.size());
+        }
+
+        void flush() override {
+            if (failOnFlush) {
+                throw StreamError{"Expected flush failure."};
+            }
+            flushCount += 1U;
+        }
+
+    public:
+        std::string text;
+        std::size_t flushCount{0};
+        bool failOnWrite{false};
+        bool failOnFlush{false};
+    };
+
+public:
+    void testWriteMethods() {
+        using namespace el::text::literals;
+
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+        auto &textStream = static_cast<TextOutputStream &>(stream);
+
+        REQUIRE_EQUAL(textStream.encoding(), StringEncoding::Utf8);
+        REQUIRE_EQUAL(textStream.effectiveEncoding(), StringEncoding::Utf8);
+        textStream.write("Hello"_el);
+        textStream.write(Char{U' '});
+        textStream.writeLine("World"_el);
+        textStream.writeLine();
+
+        REQUIRE_EQUAL(fake->text, std::string{"Hello World\n\n"});
+    }
+
+    void testPrintConvenienceBuildsOneLine() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        auto integerFormat = IntegerFormat::hexadecimal();
+        integerFormat.setFlags(IntegerFormatFlag::BasePrefix);
+        auto floatFormat = FloatFormat::fixed();
+        floatFormat.setPrecision(ElementCount{2U});
+        auto booleanFormat = BooleanFormat::yesNo().setCapitalization(Capitalization::Titlecase);
+
+        stream.printLine("value=", integerFormat, 255U, ", ok=", true, ", ratio=", floatFormat, 1.25);
+        stream.printLine("styled=", booleanFormat, true, "|", false);
+        stream.print("next");
+        stream.printLine();
+
+        REQUIRE_EQUAL(fake->text, std::string{"value=0xff, ok=true, ratio=1.25\nstyled=Yes|No\nnext\n"});
+    }
+
+    void testPrintConvenienceSupportsCustomObjects() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        auto integerFormat = IntegerFormat::hexadecimal();
+        integerFormat.setFlags(IntegerFormatFlag::BasePrefix);
+
+        stream.printLine(
+            PrintStringType{},
+            "|",
+            PrintStringViewType{},
+            "|",
+            integerFormat,
+            PrintRawValueType{},
+            "|",
+            PrintBothType{});
+
+        REQUIRE_EQUAL(fake->text, std::string{"string|view|0xff|string-wins\n"});
+    }
+
+    void testPrintConvenienceSupportsSaturatingIntegers() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        stream.printLine("value=", el::math::SatInt32{42}, ", size=", std::size_t{7U});
+
+        REQUIRE_EQUAL(fake->text, std::string{"value=42, size=7\n"});
+    }
+
+    void testPrintConvenienceNormalizesNativeIntegerWidths() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        stream.printLine(
+            std::int8_t{-8},
+            "|",
+            std::uint8_t{8U},
+            "|",
+            std::int16_t{-16},
+            "|",
+            std::uint16_t{16U},
+            "|",
+            std::int32_t{-32},
+            "|",
+            std::uint32_t{32U},
+            "|",
+            std::int64_t{-64},
+            "|",
+            std::uint64_t{64U});
+
+        REQUIRE_EQUAL(fake->text, std::string{"-8|8|-16|16|-32|32|-64|64\n"});
+    }
+
+    void testPrintConvenienceSupportsCharacterPointers() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        const auto *plainText = "plain";
+        const auto *utf8Text = u8"utf8";
+        const auto *utf16Text = u"utf16";
+        const auto *utf32Text = U"utf32";
+
+        stream.printLine('A', u8'B', u'C', U'D');
+        stream.printLine(plainText, "|", utf8Text, "|", utf16Text, "|", utf32Text, "|", false);
+        stream.printLine("null:", nullptr);
+
+        REQUIRE_EQUAL(fake->text, std::string{"ABCD\nplain|utf8|utf16|utf32|false\nnull:\n"});
+    }
+
+    void testPrintConvenienceSupportsStandardStrings() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        const auto plainText = std::string{"plain"};
+        const auto utf8Text = std::u8string{u8"utf8"};
+        const auto utf16Text = std::u16string{u"utf16"};
+        const auto utf32Text = std::u32string{U"utf32"};
+
+        stream.printLine(plainText, "|", utf8Text, "|", utf16Text, "|", utf32Text);
+
+        REQUIRE_EQUAL(fake->text, std::string{"plain|utf8|utf16|utf32\n"});
+    }
+
+    void testFlushDelegates() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        stream.flush();
+        stream.flush();
+
+        REQUIRE_EQUAL(fake->flushCount, std::size_t{2U});
+    }
+
+    void testCloseIsIgnored() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+
+        stream.close();
+
+        REQUIRE(stream.isOpen());
+        stream.printLine("Still open");
+        REQUIRE_EQUAL(fake->text, std::string{"Still open\n"});
+    }
+
+    void testNativeErrorsPropagate() {
+        const auto fake = std::make_shared<FakeNativeOutputStream>();
+        auto stream = el::stream::impl::StandardTextOutputStream{fake};
+        fake->failOnWrite = true;
+
+        REQUIRE_THROWS_AS(StreamError, stream.write(String{std::string_view{"test"}}));
+
+        fake->failOnWrite = false;
+        fake->failOnFlush = true;
+        REQUIRE_THROWS_AS(StreamError, stream.flush());
+    }
+
+    void testMissingNativeStreamThrows() {
+        REQUIRE_THROWS_AS(
+            StreamError, el::stream::impl::StandardTextOutputStream{el::stream::impl::NativeOutputStreamPtr{}});
+    }
+};

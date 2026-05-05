@@ -1,0 +1,23 @@
+..
+    Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
+    SPDX-License-Identifier: Apache-2.0
+
+*******
+Strings
+*******
+
+.. toctree::
+    :maxdepth: 2
+
+    overview
+    building_strings
+    character_access_and_parsing
+    comparing_strings
+    conversion
+    editing_strings
+    finding_text_positions
+    memory_management
+    slicing_splitting_and_joining
+    string_attributes
+    using_string_format
+    working_with_character_sets

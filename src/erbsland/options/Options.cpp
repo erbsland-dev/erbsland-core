@@ -1,0 +1,46 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "Options.hpp"
+
+#include "OptionModule.hpp"
+#include "OptionSet.hpp"
+
+#include <memory>
+#include <utility>
+
+namespace erbsland::options {
+
+auto Options::create() -> OptionsPtr {
+    return std::make_shared<Options>();
+}
+
+void Options::addSet(OptionSetPtr optionSet) {
+    _optionSets.emplace_back(std::move(optionSet));
+}
+
+void Options::addModule(OptionModulePtr optionModule) {
+    _optionModules.emplace_back(std::move(optionModule));
+}
+
+auto Options::addOption(std::initializer_list<text::StringView> names) -> OptionEditor {
+    return defaultOptionSet()->addOption(names);
+}
+
+auto Options::editOption(const text::StringView &name) -> OptionEditor {
+    for (const auto &optionSet : _optionSets) {
+        auto editor = optionSet->editOption(name);
+        if (editor.isValid()) {
+            return editor;
+        }
+    }
+    return {};
+}
+
+auto Options::defaultOptionSet() -> OptionSetPtr {
+    if (_optionSets.empty()) {
+        _optionSets.emplace_back(OptionSet::create());
+    }
+    return _optionSets.front();
+}
+
+}

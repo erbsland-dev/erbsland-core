@@ -1,0 +1,8 @@
+# Configuration file for the "cleanup_rst.py" script.
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Maximum line width for simple top-level paragraph reflow.
+Line Width      : 120
+
+# Doxygen XML index used for resolving C++ symbols.
+# The path is relative to the project root.
+Doxygen Index   : "_build/breathe/doxygen/erbsland-core/xml/index.xml"

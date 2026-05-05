@@ -1,0 +1,3 @@
+[submodule "test/erbsland-unittest"]
+	path = test/erbsland-unittest
+	url = https://github.com/erbsland-dev/erbsland-unittest.git

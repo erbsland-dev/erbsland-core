@@ -1,0 +1,45 @@
+# Configuration file for the "cleanup.py" script.
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Directory with the library C++ sources. Used for include cleanup.
+# All paths are relative to the project root.
+Library Source Directory    : "src/erbsland"
+
+# Directory with unit test C++ sources. Used as one of the CMake cleanup roots.
+# All paths are relative to the project root.
+Unit Test Source Directory  : "test/unittest/src"
+
+# Directories scanned for simple CMakeLists.txt cleanup.
+# All paths are relative to the project root.
+CMake Source Directories    :
+    * "src"
+    * "test/unittest/src"
+
+# File names excluded from include cleanup.
+Excluded Names              :
+    * "fwd.hpp"
+    * "all.hpp"
+
+# Source file suffixes scanned by cleanup.
+Scanned File Suffixes       :
+    * ".hpp"
+    * ".tpp"
+    * ".cpp"
+
+# Suffixes treated as header files for cleanup rules.
+Header File Suffixes        :
+    * ".hpp"
+    * ".h"
+    * ".hxx"
+    * ".tpp"
+
+--[ CMake ]-----------------------------------------------------------------------------------------------------------
+# Minimum CMake version enforced for simple CMakeLists.txt files.
+Minimum Version             : "3.28"
+
+# Header written at the top of simple CMakeLists.txt files.
+# The placeholder "{year}" is replaced with the current year.
+Header:
+    """
+    # Copyright (c) {year} Tobias Erbsland - https://erbsland.dev
+    # SPDX-License-Identifier: Apache-2.0
+    """

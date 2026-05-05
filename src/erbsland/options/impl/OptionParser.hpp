@@ -1,0 +1,114 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include "OptionParserStorage.hpp"
+
+#include "../Option_fwd.hpp"
+#include "../OptionErrorContext.hpp"
+#include "../OptionErrorReason.hpp"
+#include "../OptionModule_fwd.hpp"
+#include "../OptionResult_fwd.hpp"
+#include "../OptionResultStatus.hpp"
+#include "../Options_fwd.hpp"
+#include "../OptionSet_fwd.hpp"
+#include "../OptionValue_fwd.hpp"
+#include "../OptionValues_fwd.hpp"
+
+#include "../../core/CommandLineArguments.hpp"
+#include "../../unit/ArgumentUnit.hpp"
+
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <vector>
+
+namespace erbsland::options::impl {
+
+/// Internal option parser.
+/// @tested{OptionsParserTest}
+class OptionParser final {
+public:
+    /// Create a parser for the given options and command line arguments.
+    OptionParser(OptionsPtr options, const core::CommandLineArguments &args);
+
+    // defaults
+    ~OptionParser() = default;
+    OptionParser(const OptionParser &) = delete;
+    auto operator=(const OptionParser &) -> OptionParser & = delete;
+    OptionParser(OptionParser &&) = delete;
+    auto operator=(OptionParser &&) -> OptionParser & = delete;
+
+public:
+    /// Parse the root options.
+    [[nodiscard]] auto parse() -> OptionResult;
+
+    struct NameMatch {
+        OptionPtr option;
+        bool disabled{false};
+    };
+
+    struct PositionalArgument {
+        text::StringView value;
+        unit::ArgumentIndex index;
+    };
+
+private:
+    [[nodiscard]] auto prepareModuleParsing() -> bool;
+    [[nodiscard]] auto parseActiveOptions() -> bool;
+    [[nodiscard]] auto parseLongOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto parseShortOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto consumeFollowingValue(text::StringView &value, unit::ArgumentIndex optionIndex) -> bool;
+    [[nodiscard]] auto collectPositionalArgument(const text::StringView &value, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto assignPositionals() -> bool;
+    [[nodiscard]] auto positionalOptions() const -> std::vector<OptionPtr>;
+    [[nodiscard]] auto requiredPositionalsAfter(const std::vector<OptionPtr> &options, std::size_t optionIndex) const
+        -> unit::ArgumentCount;
+    [[nodiscard]] auto positionalValueLimit(
+        const OptionPtr &option,
+        const std::vector<OptionPtr> &options,
+        std::size_t optionIndex,
+        unit::ArgumentCount remainingValues) const -> unit::ArgumentCount;
+    [[nodiscard]] auto finishSuccess() -> OptionResult;
+    [[nodiscard]] auto finishStatus(OptionResultStatus status) -> OptionResult;
+    [[nodiscard]] auto finishError() -> OptionResult;
+    [[nodiscard]] auto acceptStorageResult(bool success) -> bool;
+
+    [[nodiscard]] auto runSelectedModulePreCallback() -> bool;
+    [[nodiscard]] auto runActiveOptionSetPreCallbacks() -> bool;
+    [[nodiscard]] auto runValidators() -> bool;
+    [[nodiscard]] auto runPostCallbacks() -> bool;
+    [[nodiscard]] auto valueForOption(const OptionPtr &option) const -> OptionValuePtr;
+    auto makeCallbackError(
+        OptionErrorContext context, OptionErrorReason defaultReason, const OptionSetPtr &optionSet = {}) -> bool;
+    auto makeValidatorError(OptionErrorContext context, const OptionSetPtr &optionSet, const OptionPtr &option) -> bool;
+
+    [[nodiscard]] auto collectActiveOptionSets() -> std::vector<OptionSetPtr>;
+    [[nodiscard]] auto findModule(const text::StringView &name) const -> OptionModulePtr;
+    [[nodiscard]] auto findLongOption(const text::StringView &name) const -> NameMatch;
+    [[nodiscard]] auto findShortOption(text::Char shortName) const -> NameMatch;
+    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status) const -> bool;
+    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) const -> bool;
+    [[nodiscard]] auto validateOptionNames() -> bool;
+
+    auto makeError(OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index) -> bool;
+    auto makeError(
+        OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)
+        -> bool;
+    auto makeError(OptionErrorContext context) -> bool;
+
+private:
+    OptionsPtr _options;                          ///< The options root.
+    const core::CommandLineArguments &_args;      ///< The arguments to parse.
+    OptionModulePtr _selectedModule;              ///< The selected module, if any.
+    text::StringView _moduleName;                 ///< The canonical selected module name.
+    std::vector<OptionSetPtr> _activeOptionSets;  ///< The option sets active for parsing.
+    OptionParserStorage _storage;                 ///< The parsed option values.
+    OptionValuesPtr _values;                      ///< The final parsed values.
+    std::vector<PositionalArgument> _positionals; ///< Positional values found while parsing.
+    unit::ArgumentIndex _argumentIndex;           ///< Current parser position.
+    unit::ArgumentIndex _moduleArgumentIndex;     ///< The selected module argument index.
+    std::optional<OptionErrorContext> _error;     ///< The first parse error.
+};
+
+}

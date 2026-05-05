@@ -1,0 +1,13 @@
+
+/* Fix margin on line-blocks inside tables. */
+
+.rst-content td div.line-block,
+.rst-content td ul,
+.rst-content th div.line-block,
+.rst-content th ul {
+    margin-bottom: 0;
+}
+
+.wy-table-responsive table.wrap-lines td, .wy-table-responsive table td {
+    white-space: normal !important;
+}

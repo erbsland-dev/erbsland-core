@@ -1,0 +1,2 @@
+# Configuration file for the "generate_saturating_math_data.py" script.
+@include: "header.elcl"

@@ -1,0 +1,39 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include "PrintContextCommonBuilder.hpp"
+
+#include "../../text/StringBuilder.hpp"
+
+namespace erbsland::stream::impl {
+
+/// A print context that writes directly to a string builder.
+/// @tested{StringBuilderStreamTest}
+class PrintContextToBuilder : public PrintContextCommonBuilder {
+public:
+    /// Create a new print context that writes directly to the given string builder.
+    /// This print context only exists for the time of a `print` call; therefore, it is safe to use a
+    /// reference to the string builder that is part of the calling instance.
+    explicit PrintContextToBuilder(text::StringBuilder &builder) : _builder{builder} {}
+
+    // defaults / prevent copy and move
+    ~PrintContextToBuilder() override = default;
+    PrintContextToBuilder(const PrintContextToBuilder &) = delete;
+    PrintContextToBuilder(PrintContextToBuilder &&) = delete;
+    auto operator=(const PrintContextToBuilder &) -> PrintContextToBuilder & = delete;
+    auto operator=(PrintContextToBuilder &&) -> PrintContextToBuilder & = delete;
+
+public:
+    void commit() override {
+        // nothing to do, everything is already written to the string builder.
+    }
+
+protected:
+    [[nodiscard]] auto builder() -> text::StringBuilder & override { return _builder; }
+
+private:
+    text::StringBuilder &_builder;
+};
+
+}

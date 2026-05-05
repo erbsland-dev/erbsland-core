@@ -1,0 +1,94 @@
+# Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+# SPDX-License-Identifier: Apache-2.0
+
+cmake_minimum_required(VERSION 3.28)
+
+add_subdirectory(impl)
+add_subdirectory(theme)
+
+target_sources(erbsland-core PRIVATE
+        Backend.hpp
+        Bitmap.cpp
+        Bitmap.hpp
+        BitmapDrawOptions.cpp
+        BitmapDrawOptions.hpp
+        Block.cpp
+        Block.hpp
+        Block16Style.cpp
+        Block16Style.hpp
+        BlockAttributes.hpp
+        BlockCombinationStyle.cpp
+        BlockCombinationStyle.hpp
+        BlockCount.hpp
+        BlockIndex.hpp
+        BlockPrintContext.hpp
+        BlockRange.hpp
+        BlockString.cpp
+        BlockString.hpp
+        BlockStringView.cpp
+        BlockStringView.hpp
+        BlockStyle.hpp
+        BlockText.hpp
+        BlockTextAnimation.hpp
+        BlockTextOptions.cpp
+        BlockTextOptions.hpp
+        BlockUnit.hpp
+        Buffer.cpp
+        Buffer.hpp
+        BufferDrawOptions.hpp
+        BufferResizeMode.hpp
+        BufferView.cpp
+        BufferView.hpp
+        Color.cpp
+        Color.hpp
+        ColorPart.cpp
+        ColorPart.hpp
+        ColorRole.hpp
+        ColorSequence.cpp
+        ColorSequence.hpp
+        CropEdges.hpp
+        CursorBuffer.cpp
+        CursorBuffer.hpp
+        CursorWriter.cpp
+        CursorWriter.hpp
+        Font.cpp
+        Font.hpp
+        FontGlyph.hpp
+        FrameBorder.cpp
+        FrameBorder.hpp
+        FrameBorderElement.hpp
+        FrameDrawOptions.cpp
+        FrameDrawOptions.hpp
+        FrameStyle.hpp
+        GridLayout.cpp
+        GridLayout.hpp
+        Input.hpp
+        Key.cpp
+        Key.hpp
+        KeyModifiers.hpp
+        Keys.cpp
+        Keys.hpp
+        MoveMode.hpp
+        ParagraphBackgroundMode.hpp
+        ParagraphIndents.hpp
+        ParagraphOnError.hpp
+        ParagraphOptions.cpp
+        ParagraphOptions.hpp
+        ParagraphSpacing.hpp
+        ReadableBuffer.cpp
+        ReadableBuffer.hpp
+        RemappedBuffer.cpp
+        RemappedBuffer.hpp
+        TabOverflowBehavior.hpp
+        Terminal.cpp
+        Terminal.hpp
+        TerminalFlags.hpp
+        TerminalSession.hpp
+        Tile9Style.cpp
+        Tile9Style.hpp
+        UpdateSettings.cpp
+        UpdateSettings.hpp
+        WritableBuffer.cpp
+        WritableBuffer.hpp
+        WriteClippedBuffer.hpp
+)

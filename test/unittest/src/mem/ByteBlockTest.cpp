@@ -1,0 +1,160 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/mem/ByteBlockView.hpp>
+#include <erbsland/mem/impl/BestGrowth.hpp>
+#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/unit/ByteRange.hpp>
+#include <erbsland/unittest/UnitTest.hpp>
+
+#include <cstdint>
+#include <vector>
+
+using el::mem::Byte;
+using el::mem::ByteBlock;
+using el::mem::ByteBlockView;
+using el::unit::ByteIndex;
+using el::unit::ByteLength;
+using el::unit::ByteRange;
+
+TESTED_TARGETS(Byte ByteBlock ByteBlockView)
+class ByteBlockTest final : public el::UnitTest {
+public:
+    void testByteHelpers() {
+        const auto byte = Byte{0b10101100U};
+
+        REQUIRE_EQUAL(byte.toRawValue(), uint8_t{0b10101100U});
+        REQUIRE_EQUAL(byte.toUInt8(), uint8_t{0b10101100U});
+        REQUIRE_EQUAL(byte.masked(0b11110000U), uint8_t{0b10100000U});
+        REQUIRE(byte.matches(0b11100000U, 0b10100000U));
+        REQUIRE_FALSE(byte.matches(0b11110000U, 0b11110000U));
+    }
+
+    void testConstructionAndConversion() {
+        const auto empty = ByteBlock{};
+        REQUIRE(empty.isEmpty());
+        REQUIRE(empty.length().isZero());
+        REQUIRE(empty.capacity().isZero());
+
+        const auto filled = ByteBlock{ByteLength{3U}, Byte{0xabu}};
+        REQUIRE_EQUAL(filled.toUInt8Vector(), std::vector<uint8_t>({0xabU, 0xabU, 0xabU}));
+
+        const auto fromBytes = ByteBlock{std::vector<Byte>{Byte{1U}, Byte{2U}}};
+        REQUIRE_EQUAL(fromBytes.toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
+
+        const auto fromUInt8 = ByteBlock{std::vector<uint8_t>{3U, 4U}};
+        REQUIRE_EQUAL(fromUInt8.toByteVector(), std::vector<Byte>({Byte{3U}, Byte{4U}}));
+
+        const auto fromChar = ByteBlock{std::vector<char>{'\x05', '\x06'}};
+        REQUIRE_EQUAL(fromChar.toCharVector(), std::vector<char>({'\x05', '\x06'}));
+    }
+
+    void testMemoryManagementAndCow() {
+        auto block = makeBlock({1U, 2U, 3U});
+        block.reserve(ByteLength{10U});
+        const auto reservedCapacity = el::mem::impl::bestGrowthCapacity<el::mem::impl::ByteBlockData>(3U, 10U);
+        REQUIRE_EQUAL(block.capacity(), ByteLength::fromSizeT(reservedCapacity));
+
+        auto copy = block;
+        block.set(ByteIndex{0U}, Byte{9U});
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({9U, 2U, 3U}));
+        REQUIRE_EQUAL(copy.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U}));
+
+        block.clear();
+        REQUIRE(block.isEmpty());
+        REQUIRE_EQUAL(block.capacity(), ByteLength::fromSizeT(reservedCapacity));
+
+        block.reset();
+        REQUIRE(block.isEmpty());
+        REQUIRE(block.capacity().isZero());
+
+        copy.shrinkToFit();
+        REQUIRE_EQUAL(copy.capacity(), copy.length());
+    }
+
+    void testGetSetAndThrowingAccess() {
+        auto block = makeBlock({1U, 2U, 3U});
+
+        REQUIRE_EQUAL(block.get(ByteIndex{1U}), Byte{2U});
+        REQUIRE_EQUAL(block.get(ByteIndex{9U}, Byte{7U}), Byte{7U});
+        REQUIRE_EQUAL(block.get(ByteIndex::noIndex(), Byte{8U}), Byte{8U});
+        REQUIRE_THROWS(block.getOrThrow(ByteIndex{9U}));
+
+        block.set(ByteIndex{1U}, Byte{5U});
+        block.set(ByteIndex{9U}, Byte{6U});
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 3U}));
+        REQUIRE_THROWS(block.setOrThrow(ByteIndex::noIndex(), Byte{1U}));
+    }
+
+    void testSliceAndFind() {
+        const auto block = makeBlock({1U, 2U, 3U, 2U, 3U, 4U});
+        const auto needle = makeBlock({2U, 3U});
+        const auto empty = ByteBlock{};
+
+        REQUIRE_EQUAL(
+            block.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}}).toUInt8Vector(), std::vector<uint8_t>({2U, 3U, 2U}));
+        REQUIRE(block.slice(ByteRange::noRange()).isEmpty());
+        REQUIRE(block.startsWith(makeBlock({1U, 2U})));
+        REQUIRE(block.endsWith(makeBlock({3U, 4U})));
+        REQUIRE(block.contains(needle));
+        REQUIRE(block.contains(empty));
+        REQUIRE_EQUAL(block.find(needle), ByteIndex{1U});
+        REQUIRE_EQUAL(block.find(needle, ByteIndex{2U}), ByteIndex{3U});
+        REQUIRE_EQUAL(block.findLast(needle), ByteIndex{3U});
+        REQUIRE_EQUAL(block.find(empty), ByteIndex::zero());
+        REQUIRE_EQUAL(block.findLast(empty), block.endIndex());
+        REQUIRE(block.find(makeBlock({9U})).isNoIndex());
+    }
+
+    void testModification() {
+        auto block = makeBlock({1U, 2U, 3U, 4U});
+
+        block.remove(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 4U}));
+
+        block.insert(ByteIndex{1U}, makeBlock({7U, 8U}));
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 7U, 8U, 4U}));
+
+        block.replace(ByteRange{ByteIndex{1U}, ByteLength{2U}}, makeBlock({5U}));
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 4U}));
+
+        block.replace(ByteRange::noRange(), makeBlock({6U}));
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 4U}));
+
+        block.append(Byte{9U}).append(makeBlock({10U, 11U}));
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 5U, 4U, 9U, 10U, 11U}));
+
+        block.keep(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({5U, 4U, 9U}));
+
+        block.keep(ByteRange::noRange());
+        REQUIRE(block.isEmpty());
+    }
+
+    void testCopyVariantsJoinAndComparison() {
+        const auto block = makeBlock({1U, 2U, 3U, 4U});
+        const auto removed = block.removed(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        const auto replaced = block.replaced(ByteRange{ByteIndex{1U}, ByteLength{2U}}, makeBlock({9U}));
+
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U}));
+        REQUIRE_EQUAL(removed.toUInt8Vector(), std::vector<uint8_t>({1U, 4U}));
+        REQUIRE_EQUAL(replaced.toUInt8Vector(), std::vector<uint8_t>({1U, 9U, 4U}));
+
+        const auto separator = makeBlock({0U});
+        const auto joined = separator.join({makeBlock({1U}), makeBlock({2U}), makeBlock({3U})});
+        REQUIRE_EQUAL(joined.toUInt8Vector(), std::vector<uint8_t>({1U, 0U, 2U, 0U, 3U}));
+
+        const auto concatenated = ByteBlock::fromJoined({makeBlock({1U}), makeBlock({2U, 3U})});
+        REQUIRE_EQUAL(concatenated.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U}));
+
+        REQUIRE(makeBlock({1U, 2U}) < makeBlock({1U, 3U}));
+        REQUIRE(makeBlock({1U, 2U}) == ByteBlockView{makeBlock({1U, 2U})});
+    }
+
+private:
+    [[nodiscard]] static auto makeBlock(std::initializer_list<uint8_t> bytes) -> ByteBlock {
+        return ByteBlock{std::vector<uint8_t>{bytes}};
+    }
+};

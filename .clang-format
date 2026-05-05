@@ -1,0 +1,73 @@
+---
+Language: Cpp
+BasedOnStyle: LLVM
+AccessModifierOffset: -4
+AlignAfterOpenBracket: false
+AlignConsecutiveAssignments:
+  Enabled: false
+AlignConsecutiveDeclarations: false
+AlignOperands: DontAlign
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+BinPackArguments: false
+BinPackParameters: OnePerLine
+BraceWrapping:
+  AfterCaseLabel: false
+  AfterClass: false
+  AfterControlStatement: Never
+  AfterEnum: false
+  AfterFunction: false
+  AfterNamespace: false
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeCatch: false
+  BeforeElse: false
+  BeforeLambdaBody: false
+  BeforeWhile: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+BreakAfterOpenBracketBracedList: true
+BreakAfterOpenBracketFunction: true
+BreakAfterOpenBracketIf: true
+BreakAfterOpenBracketLoop: true
+BreakBeforeBraces: Custom
+BreakConstructorInitializers: AfterColon
+BreakTemplateDeclarations: Yes
+ColumnLimit: 120
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"[^.][^/]+"'
+    Priority: 1
+  - Regex: '^"[^./]+/.+"'
+    Priority: 2
+  - Regex: '^"\.\./[^.].+"'
+    Priority: 3
+  - Regex: '^"\.\./\.\./.+"'
+    Priority: 4
+  - Regex: '^<.*\.h(pp)?>'
+    Priority: 5
+  - Regex: '^<[^.]+>'
+    Priority: 6
+  - Regex: '.*'
+    Priority: 7
+IncludeIsMainRegex: '(_[A-Za-z0-9_]+)?$'
+IndentGotoLabels: false
+IndentWidth: 4
+InsertNewlineAtEOF: true
+MaxEmptyLinesToKeep: 1
+PackConstructorInitializers: NextLine
+SeparateDefinitionBlocks: Leave
+SortIncludes:
+  Enabled: true
+  IgnoreCase: true
+SpaceInEmptyParentheses: false
+SpacesInAngles: Never
+SpacesInParens: Never
+FixNamespaceComments: false
+TabWidth: 4
+AllowShortBlocksOnASingleLine: Empty
+AllowShortFunctionsOnASingleLine: InlineOnly
+...

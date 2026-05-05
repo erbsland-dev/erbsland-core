@@ -1,0 +1,184 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "Buffer.hpp"
+
+#include "Block16Style.hpp"
+#include "Tile9Style.hpp"
+
+#include "../text/EncodingErrorMode.hpp"
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <utility>
+
+namespace erbsland::cterm {
+
+Buffer::Buffer() : _size{1, 1}, _data(1U, Block{U' '}) {
+}
+
+Buffer::Buffer(const bgeo::BlockSize size, const Block fillChar) :
+    _size{validatedBufferSize(size)}, _data(_size.area().toSizeT(), fillChar) {
+}
+
+auto Buffer::size() const noexcept -> bgeo::BlockSize {
+    return _size;
+}
+
+auto Buffer::rect() const noexcept -> bgeo::BlockRectangle {
+    return bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, _size};
+}
+
+auto Buffer::get(const bgeo::BlockPosition pos) const noexcept -> const Block & {
+    assert(_size.contains(pos));
+    if (!_size.contains(pos)) {
+        return Block::space();
+    }
+    return _data[_size.index(pos)];
+}
+
+void Buffer::resize(const bgeo::BlockSize newSize) {
+    resize(newSize, BufferResizeMode::Fast, Block{}); // fastest possible resize
+}
+
+void Buffer::resize(const bgeo::BlockSize size, const BufferResizeMode mode, const Block fillChar) {
+    if (_size == size) {
+        return;
+    }
+    const auto validatedSize = validatedBufferSize(size);
+    if (mode != BufferResizeMode::Fast) {
+        if (validatedSize.area() > _size.area()) {
+            // if the data expands, do resize before reordering.
+            _data.resize(validatedSize.area().toSizeT());
+        }
+        if (validatedSize.width() < _size.width()) {
+            // shrinking horizontally: forward copy should be safe.
+            validatedSize.forEach([&](const bgeo::BlockPosition pos) -> void {
+                if (_size.contains(pos)) {
+                    _data[validatedSize.index(pos)] = _data[_size.index(pos)];
+                } else {
+                    _data[validatedSize.index(pos)] = fillChar;
+                }
+            });
+        } else {
+            // expanding: reverse copy should be safe.
+            for (auto y = validatedSize.height(); y > 0; --y) {
+                for (auto x = validatedSize.width(); x > 0; --x) {
+                    const auto pos = bgeo::BlockPosition{x - 1, y - 1};
+                    if (_size.contains(pos)) {
+                        _data[validatedSize.index(pos)] = _data[_size.index(pos)];
+                    } else {
+                        _data[validatedSize.index(pos)] = fillChar;
+                    }
+                }
+            }
+        }
+        if (validatedSize.area() < _size.area()) {
+            // if the data shrinks, do resize after reordering.
+            _data.resize(validatedSize.area().toSizeT());
+        }
+    } else {
+        _data.resize(validatedSize.area().toSizeT());
+        if (!fillChar.isEmpty() && validatedSize.area() > _size.area()) {
+            for (auto i = _size.area().toSizeT(); i < _data.size(); ++i) {
+                _data[i] = fillChar;
+            }
+        }
+    }
+    _size = validatedSize;
+}
+
+void Buffer::set(const bgeo::BlockPosition pos, const Block &block) noexcept {
+    // faster
+    if (!_size.contains(pos) || block.displayWidth() == 0 || block.displayWidth() > 2) {
+        return;
+    }
+    if (block.displayWidth() == 1) {
+        _data[_size.index(pos)] = block;
+    } else {
+        const auto secondPosition = pos + bgeo::BlockPosition{1, 0};
+        if (!_size.contains(secondPosition)) {
+            return;
+        }
+        // The continuation cell for a wide character must stay logically empty while preserving the style.
+        _data[_size.index(secondPosition)] = Block::emptyBlock(block.style());
+        _data[_size.index(pos)] = block;
+    }
+}
+
+void Buffer::fill(const Block &fillBlock) noexcept {
+    // faster
+    for (auto &dataBlock : _data) {
+        dataBlock = fillBlock;
+    }
+}
+
+auto Buffer::clone() const -> WritableBufferPtr {
+    return std::make_shared<Buffer>(*this);
+}
+
+void Buffer::setAndResizeFrom(const ReadableBuffer &other) {
+    // if we do a copy `Buffer -> Buffer`, use a fast path.
+    if (const auto bufferImpl = dynamic_cast<Buffer const *>(&other); bufferImpl != nullptr) {
+        _size = validatedBufferSize(bufferImpl->_size);
+        _data.resize(bufferImpl->_data.size());
+        std::ranges::copy(bufferImpl->_data, _data.begin());
+        return;
+    }
+    // fallback to the original safe implementation.
+    WritableBuffer::setAndResizeFrom(other);
+}
+
+auto Buffer::fromLinesInString(const BlockStringView &text) -> Buffer {
+    if (text.isEmpty()) {
+        throw std::invalid_argument{"text is empty"};
+    }
+    auto lines = BlockStringLines{};
+    for (const auto &line : text.splitLines()) {
+        lines.emplace_back(line);
+    }
+    return fromLines(lines);
+}
+
+auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
+    if (lines.empty()) {
+        throw std::invalid_argument{"lines is empty"};
+    }
+    bgeo::BlockSize size{bgeo::BlockCoordinate{1}, bgeo::BlockCoordinate{lines.size()}};
+    for (const auto &line : lines) {
+        if (size.width() < line.displayWidth()) {
+            size.setWidth(line.displayWidth());
+        }
+    }
+    auto buffer = Buffer{size};
+    bgeo::BlockPosition pos{0, 0};
+    for (const auto &line : lines) {
+        buffer.set(pos, line);
+        pos += bgeo::BlockPosition{0, 1};
+    }
+    return buffer;
+}
+
+auto Buffer::validatedBufferSize(const bgeo::BlockSize size) -> bgeo::BlockSize {
+    if (size.width() < 1 || size.height() < 1) {
+        throw std::invalid_argument("Buffer size must be at least 1x1");
+    }
+    if (!size.fitsInto(cMaximumSize)) {
+        throw std::invalid_argument("Buffer size must not exceed 10'000x10'000");
+    }
+    return size;
+}
+
+void Buffer::drawBlockText(
+    const text::StringView &text,
+    const bgeo::Alignment alignment,
+    const bgeo::BlockRectangle rect,
+    const Color color,
+    const std::size_t animationCycle) {
+
+    auto renderedText = BlockText{BlockString{text, text::EncodingErrorMode::Replace}, rect, alignment};
+    renderedText.setColor(color);
+    drawBlockText(renderedText, animationCycle);
+}
+
+}

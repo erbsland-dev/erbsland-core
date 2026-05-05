@@ -1,0 +1,2 @@
+# Configuration file for the "generate_time_zone_data.py" script.
+@include: "header.elcl"

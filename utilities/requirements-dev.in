@@ -1,0 +1,4 @@
+# The following packages are only required if you work on the library.
+# Using the library does not require any additional Python packages.
+black
+erbsland-conf

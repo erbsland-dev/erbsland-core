@@ -1,0 +1,612 @@
+# Configuration file for the "reference_doc.py" script.
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Directory with public library C++ sources. All paths are relative to the project root.
+Source Directory            : "src/erbsland"
+
+# Directory with Sphinx reference pages. All paths are relative to the project root.
+Reference Directory         : "doc/reference"
+
+# Directory names skipped while scanning headers.
+Excluded Directory Names    :
+    * "impl"
+
+# Header names skipped while scanning.
+Excluded Header Names       :
+    * "all.hpp"
+    * "fwd.hpp"
+    * "IntegerTraits.hpp"
+    * "IntegerTypes.hpp"
+    * "AnyIntegerTypes.hpp"
+
+# Source-relative headers with manually maintained reference pages.
+Manual Header Paths         :
+    * "core/Definitions.hpp"
+    * "core/MakeOneNamespace.hpp"
+    * "core/Namespaces.hpp"
+
+# Exclude .hpp files whose file name contains "_".
+Exclude Underscore Headers  : Yes
+
+# Reference groups to organize the reference pages.
+------------*[ Reference Groups ]
+Page        : "bgeo/alignment_and_orientation.rst"
+Title       : "Alignment and Orientation"
+Description : "Core alignment and orientation types and flags"
+Headers     :
+    * "bgeo/Alignment.hpp"
+    * "bgeo/AlignmentFlags.hpp"
+    * "bgeo/Orientation.hpp"
+    * "bgeo/Symmetry.hpp"
+
+------------*[ Reference Groups ]
+Page        : "bgeo/block_geometry.rst"
+Title       : "Block Geometry"
+Description : "Block geometry and layout utilities."
+Headers     :
+    * "bgeo/BlockCoordinate.hpp"
+    * "bgeo/BlockPosition.hpp"
+    * "bgeo/BlockMargins.hpp"
+    * "bgeo/BlockRectangle.hpp"
+    * "bgeo/BlockSize.hpp"
+    * "bgeo/BlockDirection.hpp"
+    * "bgeo/BlockAnchor.hpp"
+    * "bgeo/BlockAxisMapper.hpp"
+    * "bgeo/BlockAlignedSource.hpp"
+    * "bgeo/BlockRectangleList.hpp"
+    * "bgeo/BlockPositionList.hpp"
+    * "bgeo/StdFormatForBlock.hpp"
+
+------------*[ Reference Groups ]
+Page        : "core/application.rst"
+Title       : "Application"
+Description : "Core application lifecycle, configuration, and entry point utilities."
+Headers     :
+    * "core/Application.hpp"
+    * "core/ApplicationInfo.hpp"
+    * "core/CommandLineArguments.hpp"
+    * "core/MainFn.hpp"
+    * "unit/ExitCode.hpp"
+
+------------*[ Reference Groups ]
+Page        : "debug/debug.rst"
+Title       : "Debugging Utilities"
+Description : "Debugging views, details, and string helpers for development."
+Headers     :
+    * "debug/DebugViewDetails.hpp"
+    * "debug/StringDebug.hpp"
+
+------------*[ Reference Groups ]
+Page        : "err/error_types.rst"
+Title       : "Error Types and Error Handling"
+Description : "Core error classes and exception types for the error handling API."
+Headers     :
+    * "err/ApplicationError.hpp"
+    * "err/EncodingError.hpp"
+    * "err/Exception.hpp"
+    * "err/FormatError.hpp"
+    * "err/OptionError.hpp"
+    * "err/OutOfRangeError.hpp"
+    * "err/OverflowError.hpp"
+    * "err/ParseError.hpp"
+    * "err/ParseNumberError.hpp"
+    * "err/RandomError.hpp"
+    * "err/StreamError.hpp"
+    * "err/ThrowHelper.hpp"
+    * "err/U16EncodingError.hpp"
+    * "err/U32EncodingError.hpp"
+    * "err/U8EncodingError.hpp"
+
+------------*[ Reference Groups ]
+Page        : "math/integer_math.rst"
+Title       : "Integer Types and Math Operations"
+Description : "Core integer types, bounds, and range utilities for math operations."
+Headers     :
+    * "math/BoundedInteger.hpp"
+    * "math/IntegerConversion.hpp"
+    * "math/IntegerMath.hpp"
+    * "math/IntegerRange.hpp"
+    * "math/SignedMagnitude.hpp"
+
+------------*[ Reference Groups ]
+Page        : "math/saturating_math.rst"
+Title       : "Saturating Types and Math Operations"
+Description : "Constexpr and runtime saturating arithmetic operations for bounded integers."
+Headers     :
+    * "math/SaturatingInteger.hpp"
+    * "math/SaturatingMath.hpp"
+    * "math/SaturatingIntegerTypes.hpp"
+    * "math/ConstexprSaturatingMath.hpp"
+
+------------*[ Reference Groups ]
+Page        : "mem/byte_utilities.rst"
+Title       : "Byte Reader, Writer, Types and Utilities"
+Description : "Byte reading and writing utilities and related types for working with bytes."
+Headers     :
+    * "mem/Byte.hpp"
+    * "mem/ByteBlock.hpp"
+    * "mem/ByteBlockView.hpp"
+    * "mem/ByteReader.hpp"
+    * "mem/ByteWriter.hpp"
+    * "mem/Endianness.hpp"
+
+------------*[ Reference Groups ]
+Page        : "mem/cow_storage.rst"
+Title       : "Copy on Write Storage"
+Description : "Copy-on-write storage types and utilities for memory management."
+Headers     :
+    * "mem/CowManualStorage.hpp"
+    * "mem/CowStorage.hpp"
+    * "mem/ReferenceCounter.hpp"
+    * "mem/StorageIdentifier.hpp"
+    * "mem/SharedArrayData.hpp"
+    * "mem/SharedData.hpp"
+    * "mem/SharedDataPointer.hpp"
+    * "mem/SharedVirtualData.hpp"
+
+------------*[ Reference Groups ]
+Page        : "mem/unsafe_pointers.rst"
+Title       : "Unsafe Pointers"
+Description : "Unsafe pointer types to clearly mark low-level memory access."
+Headers     :
+    * "mem/UnsafeCharPtr.hpp"
+    * "mem/UnsafeMemoryPtr.hpp"
+
+------------*[ Reference Groups ]
+Page        : "options/command_line_tools.rst"
+Title       : "Command Line Tools"
+Description : "Tools for parsing command-line arguments, displaying help and configuration orchestration."
+Headers     :
+    * "options/OptionManager.hpp"
+    * "options/Option.hpp"
+    * "options/OptionCallback.hpp"
+    * "options/OptionChoice.hpp"
+    * "options/OptionChoices.hpp"
+    * "options/OptionDisplayInfo.hpp"
+    * "options/OptionEditor.hpp"
+    * "options/OptionErrorContext.hpp"
+    * "options/OptionErrorReason.hpp"
+    * "options/OptionFlag.hpp"
+    * "options/OptionHelp.hpp"
+    * "options/OptionHelpVisibility.hpp"
+    * "options/OptionInteger.hpp"
+    * "options/OptionModule.hpp"
+    * "options/OptionRenderer.hpp"
+    * "options/OptionResult.hpp"
+    * "options/OptionResultStatus.hpp"
+    * "options/OptionSet.hpp"
+    * "options/OptionSetManager.hpp"
+    * "options/OptionType.hpp"
+    * "options/OptionValue.hpp"
+    * "options/OptionValueNameHash.hpp"
+    * "options/OptionValueStorage.hpp"
+    * "options/OptionValueType.hpp"
+    * "options/OptionValues.hpp"
+    * "options/Options.hpp"
+    * "options/StandardOptionRenderer.hpp"
+
+------------*[ Reference Groups ]
+Page        : "random/random.rst"
+Title       : "Random Number Convenience Interfaces"
+Description : "Convenience interfaces for random number generation types and utilities."
+Headers     :
+    * "random/FastRandom.hpp"
+    * "random/Random.hpp"
+    * "random/SecureRandom.hpp"
+    * "random/ThreadSafeFastRandom.hpp"
+
+------------*[ Reference Groups ]
+Page        : "stream/streams.rst"
+Title       : "Streams"
+Description : "Input and output stream types for byte and text data."
+Headers     :
+    * "stream/ByteInputStream.hpp"
+    * "stream/ByteOutputStream.hpp"
+    * "stream/InputStream.hpp"
+    * "stream/OutputStream.hpp"
+    * "stream/StandardStreams.hpp"
+    * "stream/TextInputStream.hpp"
+    * "stream/TextOutputStream.hpp"
+    * "stream/StringBuilderStream.hpp"
+    * "stream/TextPrintContext.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/char_range.rst"
+Title       : "Character Types, Utilities and Unicode Handling"
+Description : "Character types and utilities for classification, tests and Unicode handling."
+Headers     :
+    * "text/Char.hpp"
+    * "text/CharCompareFn.hpp"
+    * "text/CharSignal.hpp"
+    * "text/CharRange.hpp"
+    * "text/CharSet.hpp"
+    * "text/AsciiCategory.hpp"
+    * "text/UnicodeCategory.hpp"
+    * "text/UnicodeCategoryGroup.hpp"
+    * "text/UnicodeVersion.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_formatter.rst"
+Title       : "String Formatter and Related Types"
+Description : "String formatter types and related utilities for formatting strings."
+Headers     :
+    * "text/StringFormat.hpp"
+    * "text/FormatAs.hpp"
+    * "text/FormatArgument.hpp"
+    * "text/FormatArgumentKind.hpp"
+    * "text/u8/U8Format.hpp"
+    * "text/u16/U16Format.hpp"
+    * "text/u32/U32Format.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/std_compatibility.rst"
+Title       : "Standard Library Compatibility"
+Description : "Types and interfaces for working with the C++ standard library."
+Headers     :
+    * "text/StdFormatForText.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/format_definitions.rst"
+Title       : "String Format Definitions"
+Description : "Types to define string formatting options and flags."
+Headers     :
+    * "text/BooleanFormat.hpp"
+    * "text/ByteFormat.hpp"
+    * "text/ByteFormatFlag.hpp"
+    * "text/Capitalization.hpp"
+    * "text/EscapeAmount.hpp"
+    * "text/EscapeFormat.hpp"
+    * "text/FloatFormat.hpp"
+    * "text/FloatParseFlag.hpp"
+    * "text/FloatParseOptions.hpp"
+    * "text/IntegerBase.hpp"
+    * "text/IntegerFormat.hpp"
+    * "text/IntegerFormatFlag.hpp"
+    * "text/IntegerSignMode.hpp"
+    * "text/IntegerParseFlag.hpp"
+    * "text/IntegerParseOptions.hpp"
+    * "text/SafeStringFlag.hpp"
+    * "text/StringBomMode.hpp"
+    * "text/StringSide.hpp"
+    * "text/TruncateMode.hpp"
+    * "text/LetterCase.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_builder.rst"
+Title       : "String Builder"
+Description : "String builder for efficient text construction and manipulation."
+Headers     :
+    * "text/StringBuilder.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_collections.rst"
+Title       : "String Collections"
+Description : "String map, set, and container types for storing and managing string data."
+Headers     :
+    * "text/StringCIHashMap.hpp"
+    * "text/StringCIHashSet.hpp"
+    * "text/StringCIMap.hpp"
+    * "text/StringCISet.hpp"
+    * "text/StringHashMap.hpp"
+    * "text/StringHashSet.hpp"
+    * "text/StringList.hpp"
+    * "text/StringMap.hpp"
+    * "text/StringSet.hpp"
+    * "text/StringViewList.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_converter.rst"
+Title       : "String Converter"
+Description : "String conversion, encoding, and decoding utilities."
+Headers     :
+    * "text/StringConverter.hpp"
+    * "text/StringDecoder.hpp"
+    * "text/StringEncoder.hpp"
+    * "text/AnyString.hpp"
+    * "text/AnyStringView.hpp"
+    * "text/StringEncoding.hpp"
+    * "text/ToString.hpp"
+    * "text/EncodingErrorMode.hpp"
+    * "text/StringKind.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_iterators.rst"
+Title       : "String Iterators"
+Description : "Iterator types for traversing string and character sequences."
+Headers     :
+    * "text/u8/U8StringConstIterator.hpp"
+    * "text/u16/U16StringConstIterator.hpp"
+    * "text/u32/U32StringConstIterator.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_literals.rst"
+Title       : "String Literals"
+Description : "Literals for constructing string types and views."
+Headers     :
+    * "text/Literals.hpp"
+    * "text/StringLiteral.hpp"
+    * "text/u8/U8StringLiteral.hpp"
+    * "text/u16/U16StringLiteral.hpp"
+    * "text/u32/U32StringLiteral.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_reader.rst"
+Title       : "String Parser and Reader"
+Description : "String character reading and parsing utilities."
+Headers     :
+    * "text/StringCharReader.hpp"
+    * "text/ReadIntegerResult.hpp"
+    * "text/ReadNumberStatus.hpp"
+    * "text/StringCharReaderState.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_tree.rst"
+Title       : "String Tree"
+Description : "Structured text tree for diagnostics and debug views."
+Headers     :
+    * "text/StringTree.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_types.rst"
+Title       : "String Types"
+Description : "Core string types, views, and character handling utilities."
+Headers     :
+    * "text/String.hpp"
+    * "text/StringView.hpp"
+    * "text/StringCharView.hpp"
+    * "text/ProcessCharacterFn.hpp"
+    * "text/TransformCharacterFn.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_width_collections.rst"
+Title       : "String Width Collections"
+Description : "String collections (maps, sets, lists) for U8, U16, and U32 string types."
+Headers     :
+    * "text/u8/U8StringCIHashMap.hpp"
+    * "text/u8/U8StringCIHashSet.hpp"
+    * "text/u8/U8StringCIMap.hpp"
+    * "text/u8/U8StringCISet.hpp"
+    * "text/u8/U8StringHashMap.hpp"
+    * "text/u8/U8StringHashSet.hpp"
+    * "text/u8/U8StringList.hpp"
+    * "text/u8/U8StringMap.hpp"
+    * "text/u8/U8StringSet.hpp"
+    * "text/u8/U8StringViewList.hpp"
+    * "text/u16/U16StringCIHashMap.hpp"
+    * "text/u16/U16StringCIHashSet.hpp"
+    * "text/u16/U16StringCIMap.hpp"
+    * "text/u16/U16StringCISet.hpp"
+    * "text/u16/U16StringHashMap.hpp"
+    * "text/u16/U16StringHashSet.hpp"
+    * "text/u16/U16StringList.hpp"
+    * "text/u16/U16StringMap.hpp"
+    * "text/u16/U16StringSet.hpp"
+    * "text/u16/U16StringViewList.hpp"
+    * "text/u32/U32StringCIHashMap.hpp"
+    * "text/u32/U32StringCIHashSet.hpp"
+    * "text/u32/U32StringCIMap.hpp"
+    * "text/u32/U32StringCISet.hpp"
+    * "text/u32/U32StringHashMap.hpp"
+    * "text/u32/U32StringHashSet.hpp"
+    * "text/u32/U32StringList.hpp"
+    * "text/u32/U32StringMap.hpp"
+    * "text/u32/U32StringSet.hpp"
+    * "text/u32/U32StringViewList.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/string_width_variants.rst"
+Title       : "String Width Variants"
+Description : "String types for different character widths (U16, U32, etc.)."
+Headers     :
+    * "text/u8/U8String.hpp"
+    * "text/u8/U8StringCharView.hpp"
+    * "text/u8/U8StringView.hpp"
+    * "text/u16/U16String.hpp"
+    * "text/u16/U16StringCharView.hpp"
+    * "text/u16/U16StringView.hpp"
+    * "text/u32/U32String.hpp"
+    * "text/u32/U32StringView.hpp"
+
+------------*[ Reference Groups ]
+Page        : "time/date_and_time.rst"
+Title       : "Date and Time Types"
+Description : "Date, time and calendar component types for parsing and representing calendar dates and times."
+Headers     :
+    * "time/Date.hpp"
+    * "time/DateTime.hpp"
+    * "time/Time.hpp"
+    * "time/CalendarParts.hpp"
+    * "time/Second.hpp"
+    * "time/Minute.hpp"
+    * "time/Hour.hpp"
+    * "time/Day.hpp"
+    * "time/DayOfWeek.hpp"
+    * "time/DayOfWeekFormat.hpp"
+    * "time/DayOfYear.hpp"
+    * "time/Month.hpp"
+    * "time/Year.hpp"
+    * "time/DateTimePrecision.hpp"
+    * "time/IsoTimeFormat.hpp"
+    * "time/TimeOccurrenceInFold.hpp"
+    * "time/TimeZone.hpp"
+    * "time/TimeZoneId.hpp"
+    * "time/tz/TimeOffset.hpp"
+
+------------*[ Reference Groups ]
+Page        : "time/duration_and_time_amounts.rst"
+Title       : "Duration and Time Amounts"
+Description : "Duration types and utilities for representing time intervals."
+Headers     :
+    * "time/Duration.hpp"
+    * "time/DurationPart.hpp"
+    * "time/ElapsedTimer.hpp"
+    * "time/TimeAmounts.hpp"
+    * "time/TimeDelta.hpp"
+    * "time/TimeUnitTags.hpp"
+    * "time/TimePoint.hpp"
+
+------------*[ Reference Groups ]
+Page        : "unit/integer_unit_types.rst"
+Title       : "Integer Indexes, Amounts, Offsets and Ranges"
+Description : "Integer-based indexes, amount, offset and range types and their associated units."
+Headers     :
+    * "unit/ArgumentUnit.hpp"
+    * "unit/ByteIndex.hpp"
+    * "unit/ByteLength.hpp"
+    * "unit/ByteOffset.hpp"
+    * "unit/ByteRange.hpp"
+    * "unit/ByteUnit.hpp"
+    * "unit/CpIndex.hpp"
+    * "unit/CpLength.hpp"
+    * "unit/CpOffset.hpp"
+    * "unit/CpRange.hpp"
+    * "unit/CpUnit.hpp"
+    * "unit/ElementCount.hpp"
+    * "unit/ElementIndex.hpp"
+    * "unit/ElementOffset.hpp"
+    * "unit/ElementRange.hpp"
+    * "unit/ElementUnit.hpp"
+    * "unit/IntegerAmount.hpp"
+    * "unit/IntegerUnit.hpp"
+    * "unit/IntegerUnitAmount.hpp"
+    * "unit/IntegerUnitIndex.hpp"
+    * "unit/IntegerUnitOffset.hpp"
+    * "unit/IntegerUnitRange.hpp"
+    * "unit/StdFormatForUnit.hpp"
+    * "unit/U16DataIndex.hpp"
+    * "unit/U16DataLength.hpp"
+    * "unit/U16DataOffset.hpp"
+    * "unit/U16DataRange.hpp"
+    * "unit/U16DataUnit.hpp"
+
+------------*[ Reference Groups ]
+Page        : "unit/version.rst"
+Title       : "Version"
+Description : "Version types and utilities for semantic versioning and version ranges."
+Headers     :
+    * "unit/Version.hpp"
+    * "unit/VersionPart.hpp"
+    * "unit/VersionRange.hpp"
+    * "unit/VersionUnit.hpp"
+
+------------*[ Reference Groups ]
+Page        : "util/supporting_utilities.rst"
+Title       : "Supporting Utilities"
+Description : "Collection of small utilities for types and functions through the library."
+Headers     :
+    * "util/EnumFlags.hpp"
+    * "util/HashHelper.hpp"
+    * "util/LoopResult.hpp"
+    * "util/LoopStatus.hpp"
+
+------------*[ Reference Groups ]
+Page        : "util/collections.rst"
+Title       : "Convenience Collections"
+Description : "Various collection types with copy-on-write storage."
+Headers     :
+    * "util/List.hpp"
+    * "util/Map.hpp"
+    * "util/Set.hpp"
+    * "util/HashMap.hpp"
+    * "util/HashSet.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cterm/terminal.rst"
+Title       : "Terminal Interface"
+Description : "Types and interfaces for interacting with a terminal."
+Headers     :
+    * "cterm/Backend.hpp"
+    * "cterm/Bitmap.hpp"
+    * "cterm/BitmapDrawOptions.hpp"
+    * "cterm/Buffer.hpp"
+    * "cterm/BufferDrawOptions.hpp"
+    * "cterm/BufferResizeMode.hpp"
+    * "cterm/BufferView.hpp"
+    * "cterm/Block16Style.hpp"
+    * "cterm/BlockAttributes.hpp"
+    * "cterm/BlockCombinationStyle.hpp"
+    * "cterm/BlockCount.hpp"
+    * "cterm/BlockIndex.hpp"
+    * "cterm/BlockPrintContext.hpp"
+    * "cterm/BlockRange.hpp"
+    * "cterm/BlockStyle.hpp"
+    * "cterm/BlockUnit.hpp"
+    * "cterm/Color.hpp"
+    * "cterm/ColorPart.hpp"
+    * "cterm/ColorRole.hpp"
+    * "cterm/ColorSequence.hpp"
+    * "cterm/CropEdges.hpp"
+    * "cterm/CursorBuffer.hpp"
+    * "cterm/CursorWriter.hpp"
+    * "cterm/Font.hpp"
+    * "cterm/FontGlyph.hpp"
+    * "cterm/FrameBorder.hpp"
+    * "cterm/FrameBorderElement.hpp"
+    * "cterm/FrameDrawOptions.hpp"
+    * "cterm/FrameStyle.hpp"
+    * "cterm/GridLayout.hpp"
+    * "cterm/Input.hpp"
+    * "cterm/Key.hpp"
+    * "cterm/KeyModifiers.hpp"
+    * "cterm/Keys.hpp"
+    * "cterm/MoveMode.hpp"
+    * "cterm/ParagraphBackgroundMode.hpp"
+    * "cterm/ParagraphIndents.hpp"
+    * "cterm/ParagraphOnError.hpp"
+    * "cterm/ParagraphOptions.hpp"
+    * "cterm/ParagraphSpacing.hpp"
+    * "cterm/ReadableBuffer.hpp"
+    * "cterm/RemappedBuffer.hpp"
+    * "cterm/TabOverflowBehavior.hpp"
+    * "cterm/Block.hpp"
+    * "cterm/Terminal.hpp"
+    * "cterm/TerminalFlags.hpp"
+    * "cterm/TerminalSession.hpp"
+    * "cterm/BlockText.hpp"
+    * "cterm/BlockTextAnimation.hpp"
+    * "cterm/BlockTextOptions.hpp"
+    * "cterm/Tile9Style.hpp"
+    * "cterm/BlockString.hpp"
+    * "cterm/BlockStringView.hpp"
+    * "cterm/UpdateSettings.hpp"
+    * "cterm/WritableBuffer.hpp"
+    * "cterm/WriteClippedBuffer.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cterm/theme.rst"
+Title       : "Terminal Theme Interface"
+Description : "The API for defining and applying themes to terminal output."
+Headers     :
+    * "cterm/theme/BlockRole.hpp"
+    * "cterm/theme/Element.hpp"
+    * "cterm/theme/Identifier.hpp"
+    * "cterm/theme/LayoutHelper.hpp"
+    * "cterm/theme/LayoutRectangle.hpp"
+    * "cterm/theme/Part.hpp"
+    * "cterm/theme/Properties.hpp"
+    * "cterm/theme/PropertyEditor.hpp"
+    * "cterm/theme/PropertySheet.hpp"
+    * "cterm/theme/Selector.hpp"
+    * "cterm/theme/State.hpp"
+    * "cterm/theme/States.hpp"
+    * "cterm/theme/BlockStringWithMargins.hpp"
+    * "cterm/theme/Tag.hpp"
+    * "cterm/theme/Tags.hpp"
+    * "cterm/theme/Theme.hpp"
+    * "cterm/theme/ThemeAccessor.hpp"
+    * "cterm/theme/ThemeBuilder.hpp"
+    * "cterm/theme/ThemePainter.hpp"
+
+------------*[ Reference Groups ]
+Page        : "event/event_system.rst"
+Title       : "Event System"
+Description : "The low-level event system."
+Headers     :
+    * "event/Event.hpp"
+    * "event/EventData.hpp"
+    * "event/EventDriver.hpp"
+    * "event/EventIdentifier.hpp"
+    * "event/EventScheduler.hpp"
+    * "event/EventThread.hpp"
+    * "event/QuitEvent.hpp"
+    * "event/ScheduledActionRef.hpp"
+    * "event/StopToken.hpp"

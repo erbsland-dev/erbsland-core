@@ -1,0 +1,139 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include "OptionErrorContext_fwd.hpp"
+#include "OptionRenderer_fwd.hpp"
+#include "OptionResult.hpp"
+#include "Options_fwd.hpp"
+
+#include "../core/CommandLineArguments.hpp"
+
+namespace erbsland::options {
+
+class OptionManager;
+using OptionManagerPtr = std::shared_ptr<OptionManager>;
+
+/// The option manager orchestrates parsing and validation of command line options.
+///
+/// Command line parsing follows the most common standards that are safe and user-friendly:
+/// <code>
+/// cmd -a -b -c           # short options, case-sensitive
+/// cmd -abc               # grouped short options
+/// cmd --long             # long options, case-insensitive. Must start with a letter [a-zA-Z].
+/// cmd module -a --long   # module names are case-insensitive. Same rules as long options.
+/// # Option names: ASCII letters [a-zA-Z] and numbers [0-9]
+/// # Long options: Can also contain [-_].
+/// # Limits: Maximum name length is 100 characters. A maximum 5'000 arguments are supported.
+/// cmd -a -b -- other     # -- terminates command line option parsing early.
+/// # Flags
+/// cmd -a --long          # If an option is not followed by `=` or a value, its considered a flag.
+/// # Values
+/// cmd -a <value> --long <value>  # Any text that follows an option without `-` or `--` is considered a value.
+/// cmd -a=<value> --long=<value>  # The alternative syntax is using a `=`, that also allows values starting with `-`.
+/// # Positional arguments
+/// cmd <arg1> <arg2> ...  # Any text that does not start with `-` or `--` is considered a positional argument.
+/// # Positional arguments, flags, and values can be mixed in any order.
+/// # The argument index(es) is stored for every value, allowing advanced apps to reconstruct the order if required.
+/// # Modules ("actions"):
+/// # - If the option definition contains one or more modules, the command line must start with the module name.
+/// # - **no flags and values are allowed before the module name**, except `--help` and `--version`.
+/// #   (that's the main difference to common standards, but makes implementation much simpler and safer).
+/// cmd module-name -a --long <value> arg1 arg2
+/// # Help and Version:
+/// # The special flags `-h`, `--help` and `--version` are always allowed and cannot be overwritten by the
+/// # application.
+/// # If one of these flags is encountered, the parsing is stopped and the corresponding action is performed.
+/// # Any other, even invalid or unknown options are silently ignored.
+/// # No callbacks are made for these flags.
+/// </code>
+/// @tested{OptionsParserTest}
+class OptionManager {
+public:
+    /// Create an option manager with an empty options root.
+    OptionManager();
+    /// Create an option manager for an options root.
+    explicit OptionManager(OptionsPtr options);
+
+    // defaults
+    ~OptionManager() = default;
+    OptionManager(const OptionManager &) = default;
+    auto operator=(const OptionManager &) -> OptionManager & = default;
+    OptionManager(OptionManager &&) = default;
+    auto operator=(OptionManager &&) -> OptionManager & = default;
+
+public: // accessors
+    /// Get the options root.
+    [[nodiscard]] auto options() const noexcept -> const OptionsPtr & { return _options; }
+    /// Get the renderer.
+    [[nodiscard]] auto renderer() const noexcept -> const OptionRendererPtr & { return _renderer; }
+
+public:
+    /// Change the renderer used to display help, version text, and errors.
+    void setRenderer(OptionRendererPtr renderer) noexcept;
+    /// Parse already converted command line arguments.
+    /// Calls all registered pre-hooks before parsing.
+    /// Calls the affected post-hooks after parsing.
+    /// Returns after successful and erroneous parsing and if `--help` or `--version` is encountered.
+    /// You are responsible to handle displaying help, version, and errors, based on the returned `OptionResult`.
+    /// @param args The command line arguments to parse.
+    /// @return The result of the parsing operation.
+    [[nodiscard]] auto parse(const core::CommandLineArguments &args) -> OptionResult;
+    /// Parse already converted command line arguments or throw on error.
+    /// Calls all registered pre-hooks before parsing.
+    /// Calls the affected post-hooks after parsing.
+    /// Automatically calls `displayVersion` or `displayHelp` if the respective option is encountered and returns
+    /// a null pointer to indicate successful parsing without values.
+    /// Automatically displays an error
+    /// @param args The command line arguments to parse.
+    /// @return The parsed option values or a null pointer if help or version was displayed.
+    /// @throws err::OptionError if parsing fails.
+    [[nodiscard]] auto parseOrThrow(const core::CommandLineArguments &args) -> OptionValuesPtr;
+    /// Display help using the configured renderer.
+    /// Help is displayed using the configured renderer.
+    /// The default renderer writes the output to the terminal or standard output.
+    /// @param moduleName The name of the module to display help for. Empty for main help.
+    void displayHelp(text::StringView moduleName) const;
+    /// Display version information using the configured renderer.
+    /// Version is displayed using the configured renderer.
+    /// The default renderer writes the output to the terminal or standard output.
+    /// @param moduleName The name of the module to display help for. Empty for main help.
+    void displayVersion(text::StringView moduleName) const;
+    /// Display an error message.
+    /// The error message is displayed using the configured renderer.
+    void displayError(const OptionErrorContext &errorContext) const;
+
+public: // convenience overloads
+    /// Parse UTF-8 encoded command line arguments.
+    /// @see parse(const CommandLineArguments&)
+    /// @see convertCommandLineArguments(int, char**)
+    [[nodiscard]] auto parse(int argc, char *argv[]) -> OptionResult;
+    /// Parse wide command line arguments.
+    /// @see parse(const CommandLineArguments&)
+    /// @see convertCommandLineArguments(int, wchar_t**)
+    [[nodiscard]] auto parse(int argc, wchar_t *argv[]) -> OptionResult;
+    /// Parse UTF-8 encoded command line arguments or throw on error.
+    /// @see parseOtThrow(const CommandLineArguments&)
+    /// @see convertCommandLineArguments(int, char**)
+    [[nodiscard]] auto parseOrThrow(int argc, char *argv[]) -> OptionValuesPtr;
+    /// Parse wide command line arguments or throw on error.
+    /// @see parseOrThrow(const CommandLineArguments&)
+    /// @see convertCommandLineArguments(int, wchar_t**)
+    [[nodiscard]] auto parseOrThrow(int argc, wchar_t *argv[]) -> OptionValuesPtr;
+
+public: // conversion
+    /// Convert UTF-8 command line arguments to library strings.
+    /// Assumes UTF-8 encoding. Uses tolerant decoding using the replacement character for invalid sequences.
+    [[nodiscard]] static auto convertCommandLineArguments(int argc, char *argv[]) -> core::CommandLineArguments;
+    /// Convert wide command line arguments to library strings.
+    /// Assumes UTF-16/32 encoding. Uses tolerant decoding using the replacement character for invalid sequences.
+    /// @note This method is designed for Windows processes, that supply `wchar_t` arguments via main, which
+    ///     is a safer alternative to the more unpredictable `char` encoding.
+    [[nodiscard]] static auto convertCommandLineArguments(int argc, wchar_t *argv[]) -> core::CommandLineArguments;
+
+private:
+    OptionsPtr _options;         ///< The options root.
+    OptionRendererPtr _renderer; ///< The renderer used for display requests.
+};
+
+}

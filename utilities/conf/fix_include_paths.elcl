@@ -1,0 +1,29 @@
+# Configuration file for the "fix_include_paths.py" script.
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Directory with the main library C++ sources.
+# All paths are relative to the project root.
+Sources                     : "src"
+
+# Directory with the unit test C++ sources.
+# All paths are relative to the project root.
+Unittests                   : "test/unittest"
+
+# File names excluded from include path fixing.
+Excluded Names              :
+    * "fwd.hpp"
+    * "all.hpp"
+
+# Source file suffixes scanned by the include path fixer.
+Scanned File Suffixes       :
+    * ".hpp"
+    * ".h"
+    * ".hxx"
+    * ".tpp"
+    * ".cpp"
+
+# Suffixes treated as header files for include block parsing.
+Header File Suffixes        :
+    * ".hpp"
+    * ".h"
+    * ".hxx"
+    * ".tpp"

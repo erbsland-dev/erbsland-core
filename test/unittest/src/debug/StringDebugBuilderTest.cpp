@@ -1,0 +1,54 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include <erbsland/debug/impl/StringDebugBuilder.hpp>
+#include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/unittest/UnitTest.hpp>
+
+#include <string>
+
+using el::debug::DebugViewDetail;
+using el::text::String;
+using el::text::StringConverter;
+
+namespace {
+
+[[nodiscard]] auto containsText(const std::string &text, const std::string &needle) noexcept -> bool {
+    return text.find(needle) != std::string::npos;
+}
+
+}
+
+TESTED_TARGETS(StringDebugBuilder)
+class StringDebugBuilderTest final : public el::UnitTest {
+public:
+    void testStorageKindText() {
+        using namespace el::text::literals;
+
+        REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Empty), "empty"_el);
+        REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Shared), "shared"_el);
+        REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Literal), "literal"_el);
+    }
+
+    void testStorageIdentifierText() {
+        using namespace el::text::literals;
+
+        REQUIRE_EQUAL(el::debug::impl::storageIdentifierText({}), "empty"_el);
+    }
+
+    void testMakeStringDebugTree() {
+        using namespace el::text::literals;
+
+        const auto text = String{"A\nB"_el};
+        const auto details = DebugViewDetail::ContentInTitle | DebugViewDetail::CoreDetails;
+        const auto output =
+            StringConverter{el::debug::impl::makeStringDebugTree("U8String"_el, text, details).toString()}
+                .toStdString();
+
+        REQUIRE(containsText(output, "U8String(\"A\\nB\")"));
+        REQUIRE(containsText(output, "isEncodingValid: true"));
+        REQUIRE(containsText(output, "characterLength: 3"));
+    }
+};

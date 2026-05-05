@@ -1,0 +1,319 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "Key.hpp"
+
+#include "impl/CombinedBlock.hpp"
+#include "impl/KeyDecoder.hpp"
+
+#include "../text/CharSet.hpp"
+#include "../text/Literals.hpp"
+#include "../text/StringBuilder.hpp"
+#include "../text/StringConverter.hpp"
+
+#include <array>
+#include <optional>
+
+namespace erbsland::cterm {
+
+using namespace erbsland::text::literals;
+
+auto Key::keyTextDefinitions() noexcept -> const std::array<KeyTextDefinition, 28> & {
+    static constexpr auto cKeyTextDefinitions = std::array<KeyTextDefinition, 28>{{
+        {Enter, "enter"_el, "↵"_el},
+        {Tab, "tab"_el, "tab"_el},
+        {BackTab, "backtab"_el, "⇤"_el},
+        {Space, "space"_el, "space"_el},
+        {Escape, "escape"_el, "esc"_el},
+        {Backspace, "backspace"_el, "⌫"_el},
+        {Insert, "insert"_el, "ins"_el},
+        {Delete, "delete"_el, "del"_el},
+        {Home, "home"_el, "home"_el},
+        {End, "end"_el, "end"_el},
+        {PageUp, "pageup"_el, "pgup"_el},
+        {PageDown, "pagedown"_el, "pgdn"_el},
+        {Left, "left"_el, "←"_el},
+        {Right, "right"_el, "→"_el},
+        {Up, "up"_el, "↑"_el},
+        {Down, "down"_el, "↓"_el},
+        {F1, "f1"_el, "F1"_el},
+        {F2, "f2"_el, "F2"_el},
+        {F3, "f3"_el, "F3"_el},
+        {F4, "f4"_el, "F4"_el},
+        {F5, "f5"_el, "F5"_el},
+        {F6, "f6"_el, "F6"_el},
+        {F7, "f7"_el, "F7"_el},
+        {F8, "f8"_el, "F8"_el},
+        {F9, "f9"_el, "F9"_el},
+        {F10, "f10"_el, "F10"_el},
+        {F11, "f11"_el, "F11"_el},
+        {F12, "f12"_el, "F12"_el},
+    }};
+    return cKeyTextDefinitions;
+}
+
+auto Key::keyAliasDefinitions() noexcept -> const std::array<KeyAliasDefinition, 39> & {
+    static constexpr auto cKeyAliasDefinitions = std::array<KeyAliasDefinition, 39>{{
+        {"enter"_el, Enter},
+        {"return"_el, Enter},
+        {"tab"_el, Tab},
+        {"backtab"_el, BackTab},
+        {"back_tab"_el, BackTab},
+        {"shift_tab"_el, BackTab},
+        {"space"_el, Space},
+        {"escape"_el, Escape},
+        {"esc"_el, Escape},
+        {"backspace"_el, Backspace},
+        {"insert"_el, Insert},
+        {"ins"_el, Insert},
+        {"delete"_el, Delete},
+        {"del"_el, Delete},
+        {"home"_el, Home},
+        {"end"_el, End},
+        {"pageup"_el, PageUp},
+        {"page_up"_el, PageUp},
+        {"pgup"_el, PageUp},
+        {"pagedown"_el, PageDown},
+        {"page_down"_el, PageDown},
+        {"pgdown"_el, PageDown},
+        {"pgdn"_el, PageDown},
+        {"left"_el, Left},
+        {"right"_el, Right},
+        {"up"_el, Up},
+        {"down"_el, Down},
+        {"f1"_el, F1},
+        {"f2"_el, F2},
+        {"f3"_el, F3},
+        {"f4"_el, F4},
+        {"f5"_el, F5},
+        {"f6"_el, F6},
+        {"f7"_el, F7},
+        {"f8"_el, F8},
+        {"f9"_el, F9},
+        {"f10"_el, F10},
+        {"f11"_el, F11},
+        {"f12"_el, F12},
+    }};
+    return cKeyAliasDefinitions;
+}
+
+auto Key::findKeyTextDefinition(const Type type) noexcept -> std::optional<KeyTextDefinition> {
+    for (const auto &definition : keyTextDefinitions()) {
+        if (definition.type == type) {
+            return definition;
+        }
+    }
+    return std::nullopt;
+}
+
+auto Key::normalizeKeyText(const text::StringView &text) -> text::String {
+    return text.transformed(text::Char::toLowercase);
+}
+
+auto Key::parseModifierText(const text::StringView &text) noexcept -> std::optional<KeyModifier> {
+    if (text == "shift"_el) {
+        return KeyModifier::Shift;
+    }
+    if (text == "ctrl"_el || text == "control"_el) {
+        return KeyModifier::Control;
+    }
+    if (text == "alt"_el) {
+        return KeyModifier::Alt;
+    }
+    return std::nullopt;
+}
+
+auto Key::parseModifiers(text::String &text) noexcept -> KeyModifiers {
+    auto modifiers = KeyModifiers{};
+    while (true) {
+        const auto separator = text.findFirstOf(text::CharSet{text::Char{U'+'}});
+        if (separator.isNoIndex()) {
+            return modifiers;
+        }
+        const auto modifierText = normalizeKeyText(text.slice(unit::ByteRange{unit::ByteIndex::zero(), separator}));
+        const auto modifier = parseModifierText(modifierText);
+        if (!modifier.has_value()) {
+            return modifiers;
+        }
+        modifiers.set(*modifier);
+        text = text.slice(unit::ByteRange{separator + unit::ByteLength::one(), unit::ByteLength::infinite()});
+    }
+}
+
+void Key::appendModifierString(text::StringBuilder &builder, const KeyModifiers modifiers) {
+    if (modifiers.has(KeyModifier::Shift)) {
+        builder.append("shift+"_el);
+    }
+    if (modifiers.has(KeyModifier::Control)) {
+        builder.append("ctrl+"_el);
+    }
+    if (modifiers.has(KeyModifier::Alt)) {
+        builder.append("alt+"_el);
+    }
+}
+
+void Key::appendModifierDisplayText(text::StringBuilder &builder, const KeyModifiers modifiers) {
+    if (modifiers.has(KeyModifier::Shift)) {
+        builder.append("Shift+"_el);
+    }
+    if (modifiers.has(KeyModifier::Control)) {
+        builder.append("Ctrl+"_el);
+    }
+    if (modifiers.has(KeyModifier::Alt)) {
+        builder.append("Alt+"_el);
+    }
+}
+
+auto Key::wrapDisplayText(const text::StringView &text, const bool useBrackets) -> text::String {
+    if (!useBrackets) {
+        return text::String{text};
+    }
+    auto builder = text::StringBuilder{};
+    builder.append(U'[');
+    builder.append(text);
+    builder.append(U']');
+    return builder.toString();
+}
+
+auto Key::createCharacterKey(const impl::CombinedBlock &character) noexcept -> Key {
+    if (character.codePointCount() <= 1) {
+        return Key{Character, character.mainCodePoint()};
+    }
+    return Key{Combined, character.utf32()};
+}
+
+auto Key::parseCharacterKeyText(const text::StringView &text) -> std::optional<Key> {
+    if (text.isEmpty()) {
+        return std::nullopt;
+    }
+    if (const auto character = impl::CombinedBlock::fromTextUtf8(text); character.has_value()) {
+        return createCharacterKey(*character);
+    }
+    return std::nullopt;
+}
+
+Key::Key(const Type type, const text::Char codePoint, const KeyModifiers modifiers) noexcept :
+    _type{type}, _modifiers{modifiers} {
+    if (type == Character || type == Combined) {
+        _character = impl::CombinedBlock{codePoint};
+    }
+}
+
+Key::Key(const Type type, const KeyModifiers modifiers) noexcept : Key{type, text::Char{}, modifiers} {
+}
+
+Key::Key(const text::Char codePoint, const KeyModifiers modifiers) noexcept : Key{Character, codePoint, modifiers} {
+}
+
+Key::Key(const Type type, const text::U32StringView &character, const KeyModifiers modifiers) :
+    _type{type}, _modifiers{modifiers} {
+    if (type == Character || type == Combined) {
+        _character = impl::CombinedBlock{character};
+    }
+}
+
+auto Key::operator==(const text::Char other) const noexcept -> bool {
+    return _type == Character && _modifiers.empty() && _character.mainCodePoint() == other;
+}
+
+auto Key::operator!=(const text::Char other) const noexcept -> bool {
+    return !operator==(other);
+}
+
+auto Key::operator==(const text::U32StringView &other) const noexcept -> bool {
+    return _type == Combined && _modifiers.empty() && combined() == other;
+}
+
+auto Key::operator!=(const text::U32StringView &other) const noexcept -> bool {
+    return !operator==(other);
+}
+
+auto Key::operator==(const Type type) const noexcept -> bool {
+    if (type == Character || type == Combined) {
+        return false;
+    }
+    return _type == type && _modifiers.empty();
+}
+
+auto Key::operator!=(const Type type) const noexcept -> bool {
+    return !operator==(type);
+}
+
+auto Key::character() const noexcept -> char {
+    const auto codePoint = unicode();
+    if (codePoint > U'\x7f') {
+        return 0;
+    }
+    return static_cast<char>(codePoint.toRawValue());
+}
+
+auto Key::unicode() const noexcept -> text::Char {
+    if (_type != Character || _character.codePointCount() != 1) {
+        return {};
+    }
+    return _character.mainCodePoint();
+}
+
+auto Key::combined() const -> text::U32String {
+    if (_type != Character && _type != Combined) {
+        return {};
+    }
+    return _character.utf32();
+}
+
+auto Key::withoutModifiers() const noexcept -> Key {
+    auto result = *this;
+    result._modifiers = {};
+    return result;
+}
+
+auto Key::fromString(const text::StringView &text) noexcept -> Key {
+    auto parsedText = text::String{text};
+    const auto modifiers = parseModifiers(parsedText);
+    const auto keyText = normalizeKeyText(parsedText);
+    for (const auto &definition : keyAliasDefinitions()) {
+        if (text::StringView{definition.text} == keyText) {
+            return Key{definition.type, modifiers};
+        }
+    }
+    if (!modifiers.empty()) {
+        return Key{None};
+    }
+    if (const auto key = parseCharacterKeyText(parsedText); key.has_value()) {
+        return *key;
+    }
+    return Key{None};
+}
+
+auto Key::fromConsoleInput(const text::StringView &text) noexcept -> Key {
+    return impl::KeyDecoder{text::StringConverter{text}.toStdString()}.decodeConsoleInput();
+}
+
+auto Key::toString() const -> text::String {
+    auto builder = text::StringBuilder{};
+    appendModifierString(builder, _modifiers);
+    if (_type == Character || _type == Combined) {
+        builder.append(_character.utf8());
+        return builder.toString();
+    }
+    if (const auto definition = findKeyTextDefinition(_type)) {
+        builder.append(definition->text);
+        return builder.toString();
+    }
+    return {};
+}
+
+auto Key::toDisplayText(const bool useBrackets) const -> text::String {
+    auto builder = text::StringBuilder{};
+    appendModifierDisplayText(builder, _modifiers);
+    if (_type == Character || _type == Combined) {
+        builder.append(_character.utf8());
+        return wrapDisplayText(builder.toString(), useBrackets);
+    }
+    if (const auto definition = findKeyTextDefinition(_type)) {
+        builder.append(definition->displayText);
+        return wrapDisplayText(builder.toString(), useBrackets);
+    }
+    return {};
+}
+
+}

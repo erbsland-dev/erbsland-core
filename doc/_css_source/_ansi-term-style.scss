@@ -1,0 +1,189 @@
+/*
+ * Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+:root {
+  --ela-term-background-color: #000000;
+  --ela-term-foreground-color: #f4f4f4;
+  --ela-term-color-black: #111111;
+  --ela-term-color-red: #b45648;
+  --ela-term-color-green: #6caa71;
+  --ela-term-color-yellow: #c4ac62;
+  --ela-term-color-blue: #6d96b4;
+  --ela-term-color-magenta: #bd7bcd;
+  --ela-term-color-cyan: #7ccbcd;
+  --ela-term-color-white: #dee5eb;
+  --ela-term-color-bright-black: #465c6d;
+  --ela-term-color-bright-red: #df6c5a;
+  --ela-term-color-bright-green: #79be7e;
+  --ela-term-color-bright-yellow: #e5c872;
+  --ela-term-color-bright-blue: #67b5ed;
+  --ela-term-color-bright-magenta: #d389e5;
+  --ela-term-color-bright-cyan: #84dde0;
+  --ela-term-color-bright-white: #e5eff5;
+}
+
+.ela-term-block {
+  background-color: var(--ela-term-background-color);
+  color: var(--ela-term-foreground-color);
+}
+
+.ela-term-bold {
+  font-weight: bold;
+}
+
+.ela-term-dim {
+  opacity: 0.5;
+}
+
+.ela-term-italic {
+  font-style: italic;
+}
+
+.ela-term-underline {
+  text-decoration: underline;
+}
+
+.ela-term-blink {
+  text-decoration: blink;
+}
+
+.ela-term-reverse {
+}
+
+.ela-term-hidden {
+  opacity: 0;
+}
+
+.ela-term-strike {
+  text-decoration: line-through;
+}
+
+.ela-term-black {
+  color: var(--ela-term-color-black);
+}
+
+.ela-term-red {
+  color: var(--ela-term-color-red);
+}
+
+.ela-term-green {
+  color: var(--ela-term-color-green);
+}
+
+.ela-term-yellow {
+  color: var(--ela-term-color-yellow);
+}
+
+.ela-term-blue {
+  color: var(--ela-term-color-blue);
+}
+
+.ela-term-magenta {
+  color: var(--ela-term-color-magenta);
+}
+
+.ela-term-cyan {
+  color: var(--ela-term-color-cyan);
+}
+
+.ela-term-white {
+  color: var(--ela-term-color-white);
+}
+
+.ela-term-black.ela-term-bold, .ela-term-bright-black {
+  color: var(--ela-term-color-bright-black);
+}
+
+.ela-term-red.ela-term-bold, .ela-term-bright-red {
+  color: var(--ela-term-color-bright-red);
+}
+
+.ela-term-green.ela-term-bold, .ela-term-bright-green {
+  color: var(--ela-term-color-bright-green);
+}
+
+.ela-term-yellow.ela-term-bold, .ela-term-bright-yellow {
+  color: var(--ela-term-color-bright-yellow);
+}
+
+.ela-term-blue.ela-term-bold, .ela-term-bright-blue {
+  color: var(--ela-term-color-bright-blue);
+}
+
+.ela-term-magenta.ela-term-bold, .ela-term-bright-magenta {
+  color: var(--ela-term-color-bright-magenta);
+}
+
+.ela-term-cyan.ela-term-bold, .ela-term-bright-cyan {
+  color: var(--ela-term-color-bright-cyan);
+}
+
+.ela-term-white.ela-term-bold, .ela-term-bright-white {
+  color: var(--ela-term-color-bright-white);
+}
+
+.ela-term-background-black {
+  background-color: var(--ela-term-color-black);
+}
+
+.ela-term-background-red {
+  background-color: var(--ela-term-color-red);
+}
+
+.ela-term-background-green {
+  background-color: var(--ela-term-color-green);
+}
+
+.ela-term-background-yellow {
+  background-color: var(--ela-term-color-yellow);
+}
+
+.ela-term-background-blue {
+  background-color: var(--ela-term-color-blue);
+}
+
+.ela-term-background-magenta {
+  background-color: var(--ela-term-color-magenta);
+}
+
+.ela-term-background-cyan {
+  background-color: var(--ela-term-color-cyan);
+}
+
+.ela-term-background-white {
+  background-color: var(--ela-term-color-white);
+}
+
+.ela-term-background-bright-black {
+  background-color: var(--ela-term-color-bright-black);
+}
+
+.ela-term-background-bright-red {
+  background-color: var(--ela-term-color-bright-red);
+}
+
+.ela-term-background-bright-green {
+  background-color: var(--ela-term-color-bright-green);
+}
+
+.ela-term-background-bright-yellow {
+  background-color: var(--ela-term-color-bright-yellow);
+}
+
+.ela-term-background-bright-blue {
+  background-color: var(--ela-term-color-bright-blue);
+}
+
+.ela-term-background-bright-magenta {
+  background-color: var(--ela-term-color-bright-magenta);
+}
+
+.ela-term-background-bright-cyan {
+  background-color: var(--ela-term-color-bright-cyan);
+}
+
+.ela-term-background-bright-white {
+  background-color: var(--ela-term-color-bright-white);
+}

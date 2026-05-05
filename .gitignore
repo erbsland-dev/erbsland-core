@@ -1,0 +1,45 @@
+*.d
+*.slo
+*.lo
+*.o
+*.obj
+*.gch
+*.pch
+*.so
+*.dylib
+*.dll
+*.lai
+*.la
+*.a
+*.lib
+*.exe
+*.out
+*.app
+
+# IDE/OS/Environments
+.idea
+.cache
+.venv
+venv
+__pycache__
+.DS_Store
+
+# security/privacy
+.env
+.output*
+utilities/_conf
+utilities/_logs
+utilities/conf/reference_doc.draft.elcl
+
+# Hosting and building
+.clang-format-last-run
+/cmake-*
+build
+_build
+_profile
+_doxygen_input
+temporary_data
+
+# Common temporary development files
+TODO.md
+/tmp

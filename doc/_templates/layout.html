@@ -1,0 +1,19 @@
+{%- extends "sphinx_rtd_theme/layout.html" %}
+{%- block menu %}
+{{ super() }}
+{% if hasdoc('genindex') %}
+<ul class="el-sidebar-index">
+    <li class="toctree-l1{% if pagename == 'genindex' %} current{% endif %}">
+        <a class="reference internal{% if pagename == 'genindex' %} current{% endif %}" href="{{ pathto('genindex') }}">
+            {{ _('Index') }}
+        </a>
+    </li>
+</ul>
+{% endif %}
+{%- endblock %}
+{%- block extrabody %}
+{% if banner %}
+<div class="banner">{{ banner }}</div>
+{% endif %}
+{{ super() }}
+{% endblock %}

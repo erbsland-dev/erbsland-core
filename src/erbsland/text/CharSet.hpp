@@ -1,0 +1,203 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include "AsciiCategory.hpp"
+#include "CharRange.hpp"
+#include "String_fwd.hpp"
+#include "UnicodeCategory.hpp"
+
+#include "u16/U16String_fwd.hpp"
+#include "u16/U16StringView_fwd.hpp"
+#include "u32/U32String_fwd.hpp"
+#include "u32/U32StringView_fwd.hpp"
+#include "u8/U8String_fwd.hpp"
+#include "u8/U8StringView_fwd.hpp"
+
+#include "../mem/CowManualStorage.hpp"
+#include "../util/List.hpp"
+#include "../util/LoopResult.hpp"
+#include "../util/LoopStatus.hpp"
+#include "../util/Set.hpp"
+
+#include <concepts>
+#include <functional>
+#include <initializer_list>
+#include <optional>
+#include <set>
+#include <type_traits>
+#include <utility>
+
+namespace erbsland::text {
+
+/// A normalized set of Unicode scalar values.
+/// The set stores non-overlapping character ranges in copy-on-write storage. Invalid characters are ignored.
+/// @seedoc{/reference/text/char_range}
+/// @tested{CharSetTest}
+class CharSet final {
+public:
+    /// The normalized range storage type.
+    using Ranges = std::set<CharRange>;
+
+public:
+    /// Create an empty character set.
+    CharSet() = default;
+    /// Create a character set containing one character.
+    explicit CharSet(Char character);
+    /// Decode a UTF-8 view tolerantly into a character set.
+    explicit CharSet(const U8StringView &characters);
+    /// Create a character set from an ordered Erbsland set of characters.
+    explicit CharSet(const util::Set<Char> &characters);
+    /// Create a character set from an Erbsland list of characters.
+    explicit CharSet(const util::List<Char> &characters);
+    /// Create a character set from a list of characters.
+    CharSet(std::initializer_list<Char> characters);
+
+    // defaults
+    ~CharSet() = default;
+    CharSet(const CharSet &) noexcept = default;
+    CharSet(CharSet &&) noexcept = default;
+    auto operator=(const CharSet &) noexcept -> CharSet & = default;
+    auto operator=(CharSet &&) noexcept -> CharSet & = default;
+
+public: // operators
+    auto operator==(const CharSet &other) const noexcept -> bool;
+    auto operator!=(const CharSet &other) const noexcept -> bool { return !operator==(other); }
+    auto operator<=(const CharSet &other) const -> bool { return isSubsetOf(other); }
+    auto operator>=(const CharSet &other) const -> bool { return isSupersetOf(other); }
+    auto operator|(const CharSet &other) const -> CharSet { return unitedWith(other); }
+    auto operator&(const CharSet &other) const -> CharSet { return intersectedWith(other); }
+    auto operator-(const CharSet &other) const -> CharSet { return subtractedBy(other); }
+    auto operator^(const CharSet &other) const -> CharSet { return symmetricDifferenceWith(other); }
+    auto operator|=(const CharSet &other) -> CharSet &;
+    auto operator&=(const CharSet &other) -> CharSet &;
+    auto operator-=(const CharSet &other) -> CharSet &;
+    auto operator^=(const CharSet &other) -> CharSet &;
+
+public: // tests
+    /// Test if this set is empty.
+    [[nodiscard]] auto isEmpty() const noexcept -> bool { return ranges().empty(); }
+    /// Test if the character is contained in this set.
+    [[nodiscard]] auto contains(Char character) const noexcept -> bool;
+    /// Test if this set is a subset of another set.
+    [[nodiscard]] auto isSubsetOf(const CharSet &other) const -> bool;
+    /// Test if this set is a superset of another set.
+    [[nodiscard]] auto isSupersetOf(const CharSet &other) const -> bool { return other.isSubsetOf(*this); }
+    /// Test if this set equals another set after Unicode simple case folding.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto isEqualToCI(const CharSet &other) const -> bool;
+    /// Test if this set is a subset of another set after Unicode simple case folding.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto isSubsetOfCI(const CharSet &other) const -> bool;
+    /// Test if this set contains characters affected by Unicode simple case folding.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto containsCaseFoldableCharacters() const -> bool;
+    /// Test if this set contains characters affected by Unicode simple lowercase mapping.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto containsLowercaseMappableCharacters() const -> bool;
+    /// Test if this set contains characters affected by Unicode simple uppercase mapping.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto containsUppercaseMappableCharacters() const -> bool;
+
+public: // accessors
+    /// Access the normalized ranges in this set.
+    [[nodiscard]] auto ranges() const noexcept -> const Ranges & { return _ranges.data(); }
+    /// Create the union of this set and another set.
+    [[nodiscard]] auto unitedWith(const CharSet &other) const -> CharSet;
+    /// Create the intersection of this set and another set.
+    [[nodiscard]] auto intersectedWith(const CharSet &other) const -> CharSet;
+    /// Create this set without another set.
+    [[nodiscard]] auto subtractedBy(const CharSet &other) const -> CharSet;
+    /// Create the symmetric difference of this set and another set.
+    [[nodiscard]] auto symmetricDifferenceWith(const CharSet &other) const -> CharSet;
+
+public: // modification
+    /// Add another set to this set.
+    void add(const CharSet &other);
+    /// Add one range to this set.
+    void add(CharRange range);
+    /// Add one character to this set.
+    void add(Char character);
+    /// Remove another set from this set.
+    void remove(const CharSet &other);
+    /// Remove one range from this set.
+    void remove(CharRange range);
+    /// Remove one character from this set.
+    void remove(Char character);
+
+public: // conversion
+    /// Iterate over all ranges or characters in this set.
+    /// If the function accepts a `CharRange`, ranges are iterated. Otherwise, if it accepts a `Char`, all Unicode
+    /// scalar values are iterated in ascending order. If the function returns `LoopStatus`, `Stop` or `Error` stops
+    /// iteration.
+    template <typename Function>
+    auto forEach(Function function) const -> util::LoopResult;
+    /// Transform all characters in this set and return a normalized transformed set.
+    template <typename Function>
+    [[nodiscard]] auto transform(Function function) const -> CharSet;
+    /// Return the simple case-folded form of this set.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto caseFolded() const -> CharSet;
+    /// Convert this set to lowercase.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto toLowercase() const -> CharSet;
+    /// Convert this set to uppercase.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto toUppercase() const -> CharSet;
+    /// Export all characters as a UTF-8 string.
+    [[nodiscard]] auto toString() const -> String;
+    /// Export all characters as a UTF-8 string.
+    [[nodiscard]] auto toU8String() const -> U8String;
+    /// Export all characters as a UTF-16 string.
+    [[nodiscard]] auto toU16String() const -> U16String;
+    /// Export all characters as a UTF-32 string.
+    [[nodiscard]] auto toU32String() const -> U32String;
+    /// Export all characters as an ordered Erbsland set.
+    [[nodiscard]] auto toSet() const -> util::Set<Char>;
+    /// Export all characters as an Erbsland list in ascending code-point order.
+    [[nodiscard]] auto toList() const -> util::List<Char>;
+
+public: // factory methods
+    /// Create a character set containing one character range.
+    [[nodiscard]] static auto fromRange(Char from, Char to) -> CharSet;
+    /// Create a character set from an ASCII-only category.
+    [[nodiscard]] static auto from(AsciiCategory category) -> CharSet;
+    /// Create a character set from a Unicode general category.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] static auto from(UnicodeCategory category) -> CharSet;
+    /// @overload
+    [[nodiscard]] static auto from(UnicodeCategoryGroup categoryGroup) -> CharSet;
+    /// Create a character set from a regexp like pattern.
+    /// The hypen character in the pattern defines ranges in the form `<first>-<last>`.
+    /// The code point of `<first>` must be before `<last>`.
+    /// The hypen character at the beginning or end of the pattern is treated as a literal character.
+    /// Duplicated characters and ranges are ignored.
+    /// Example: `fromPattern("-a-f_0-9=/")` characters `-_=/` and ranges `a-f` and `0-9`.
+    /// @param pattern The pattern string to parse.
+    /// @throws err::ParseError For an invalid pattern syntax.
+    [[nodiscard]] static auto fromPattern(const U8StringView &pattern) -> CharSet;
+    /// @overload
+    [[nodiscard]] static auto fromPattern(const U16StringView &pattern) -> CharSet;
+    /// @overload
+    [[nodiscard]] static auto fromPattern(const U32StringView &pattern) -> CharSet;
+
+private:
+    template <typename>
+    static constexpr auto cIsSupportedForEachFunction = false;
+
+    template <typename Function, typename Value>
+    [[nodiscard]] static auto processForEach(Function &function, Value &&value) -> util::LoopStatus;
+
+    void assign(Ranges ranges);
+    static void addTo(Ranges &ranges, CharRange range);
+    static void removeFrom(Ranges &ranges, CharRange range);
+    [[nodiscard]] static auto nextScalar(Char character) noexcept -> std::optional<Char>;
+    [[nodiscard]] static auto previousScalar(Char character) noexcept -> std::optional<Char>;
+
+private:
+    mem::CowManualStorage<Ranges> _ranges; ///< The normalized range storage.
+};
+
+}
+
+#include "CharSet.tpp"

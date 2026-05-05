@@ -1,0 +1,35 @@
+# Configuration file for the "security_hashes.py" script.
+--[ Main ]------------------------------------------------------------------------------------------------------------
+# Generated manifest file. The path is relative to the project root.
+Output File             : "security_hashes.txt"
+
+# Directories scanned recursively. Each directory gets its own local hash.
+# All paths are relative to the project root.
+Directories             :
+    * ".github/workflows"
+    * "cmake"
+    * "doc/_ext"
+    * "doc/_tools"
+    * "utilities"
+
+# Individual files added to the manifest.
+# All paths are relative to the project root.
+Files                   :
+    * "doc/requirements-doc.in"
+    * "doc/requirements-doc.txt"
+    * "doc/conf.py"
+
+# Directory names skipped while scanning.
+Excluded Directory Names:
+    * "__pycache__"
+    * "_conf"
+    * "_logs"
+
+# File names skipped while scanning.
+Excluded File Names     :
+    * ".DS_Store"
+
+# File suffixes skipped while scanning.
+Excluded File Suffixes  :
+    * ".pyc"
+    * ".pyo"

@@ -1,0 +1,49 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include "Bitmap.hpp"
+
+#include <algorithm>
+#include <bit>
+#include <cstdint>
+#include <vector>
+
+namespace erbsland::cterm {
+
+/// A bitmap glyph that can be used by a terminal text font.
+class FontGlyph final : public Bitmap {
+public:
+    /// Maximum supported glyph width when importing numeric row masks.
+    constexpr static auto cMaxGlyphWidth = 64;
+
+public:
+    /// Create an empty glyph.
+    FontGlyph() = default;
+    /// Create an empty glyph with the given size.
+    /// @param size The glyph dimensions.
+    explicit FontGlyph(const bgeo::BlockSize size) noexcept : Bitmap{size} {}
+    /// Create a glyph from numeric row masks.
+    /// @param data One 64-bit mask per bitmap row.
+    template <typename T>
+        requires std::is_integral_v<T> && std::is_unsigned_v<T>
+    explicit FontGlyph(const std::vector<T> &data) :
+        Bitmap{bgeo::BlockSize{calculateGlyphWidth(data), bgeo::BlockCoordinate{data.size()}}} {
+        draw(bgeo::BlockPosition{0, 0}, data);
+        flipHorizontal();
+    }
+
+private:
+    template <typename T>
+        requires std::is_integral_v<T> && std::is_unsigned_v<T>
+    [[nodiscard]] constexpr static auto calculateGlyphWidth(const std::vector<T> &data) noexcept
+        -> bgeo::BlockCoordinate {
+        auto width = bgeo::BlockCoordinate{0};
+        for (const auto &mask : data) {
+            width = std::max(width, bgeo::BlockCoordinate{std::bit_width(mask)});
+        }
+        return width;
+    }
+};
+
+}

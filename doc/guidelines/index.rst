@@ -1,0 +1,50 @@
+
+.. index::
+    !single: Guidelines
+
+**********
+Guidelines
+**********
+
+This chapter collects the internal guidelines for maintaining and extending this library.
+
+The documents in this section describe how source code, APIs, documentation, and supporting files should be written and
+structured.
+Their purpose is to ensure that the entire project remains consistent, readable, maintainable, and easy to understand
+for both contributors and long-term maintainers.
+
+These guidelines are primarily intended for:
+
+* maintainers,
+* contributors,
+* and developers working on the library itself.
+
+If you are only using the library in your own applications, most of these documents are not required reading.
+However, they may still provide useful insights into the design philosophy and architectural decisions behind the
+project.
+
+.. toctree::
+    :maxdepth: 3
+
+    cmake_files
+    cpp_files
+    rst_style
+    topic_page
+    reference_page
+    writing_style
+    demo
+    examples
+    api_guidelines
+    api/common.rst
+    api/bgeo.rst
+    api/cterm.rst
+    api/err.rst
+    api/math.rst
+    api/mem.rst
+    api/options.rst
+    api/random.rst
+    api/stream.rst
+    api/text.rst
+    api/time.rst
+    api/unit.rst
+    api/util.rst

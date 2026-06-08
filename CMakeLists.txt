@@ -11,6 +11,8 @@ option(ERBSLAND_CORE_ENABLE_TESTS "Enable unit tests" ${PROJECT_IS_TOP_LEVEL})
 option(ERBSLAND_CORE_ENABLE_DEMOS "Enable demos" ${PROJECT_IS_TOP_LEVEL})
 # Option if namespaces shall be not flattened. This is mainly relevant for development.
 option(ERBSLAND_CORE_DO_NOT_FLATTEN_NS "Do not flatten namespaces" ${PROJECT_IS_TOP_LEVEL})
+# Option to create a developer build.
+option(ERBSLAND_CORE_DEVELOPER_BUILD "Enables developer build." ${PROJECT_IS_TOP_LEVEL})
 
 include(cmake/debug-warnings.cmake)
 include(cmake/compiler-options.cmake)

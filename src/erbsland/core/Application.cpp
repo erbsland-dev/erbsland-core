@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Application.hpp"
 
+#include "impl/LibraryVersion.hpp"
+
 #include "../err/ApplicationError.hpp"
 #include "../err/Exception.hpp"
 #include "../options/OptionDisplayInfo.hpp"
@@ -140,6 +142,14 @@ auto Application::secureRandom() -> random::Random & {
 auto Application::instance() noexcept -> Application * {
     const auto lock = std::scoped_lock{_instanceMutex};
     return _instance;
+}
+
+auto Application::libraryVersion() noexcept -> unit::Version {
+    return impl::libraryVersion();
+}
+
+auto Application::libraryVersionText() noexcept -> text::StringView {
+    return impl::libraryVersionText();
 }
 
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD

@@ -92,6 +92,14 @@ public: // singleton
     /// Get the currently registered application instance.
     [[nodiscard]] static auto instance() noexcept -> Application *;
 
+public: // library
+    /// Get the build-time library version.
+    /// @tested{ApplicationVersionTest}
+    [[nodiscard]] static auto libraryVersion() noexcept -> unit::Version;
+    /// Get the build-time library version text.
+    /// @tested{ApplicationVersionTest}
+    [[nodiscard]] static auto libraryVersionText() noexcept -> text::StringView;
+
 protected: // debugging methods
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
     virtual void initializeRandom(random::RandomPtr &randomPtr) noexcept;

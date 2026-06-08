@@ -149,7 +149,7 @@ Higher-level extension libraries will provide additional functionality beyond th
 
 ## Event System
 
-- Event loop and event handling framework ❌
+- Event loop and event handling framework ✅
 - Event-driven asynchronous operations ❌
 
 ## Regular Expressions

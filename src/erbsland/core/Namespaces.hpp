@@ -3,15 +3,23 @@
 #pragma once
 
 namespace erbsland {
+
 // Fwd declare all API namespaces
+namespace bgeo {}
+namespace conf {}
 namespace core {}
+namespace cterm::theme {}
 namespace debug {}
 namespace err {}
+namespace event {}
 namespace log {}
-namespace options {}
 namespace math {}
 namespace mem {}
+namespace network {}
+namespace options {}
+namespace path {}
 namespace random {}
+namespace re {}
 namespace stream::io {}
 namespace text {}
 namespace time {}

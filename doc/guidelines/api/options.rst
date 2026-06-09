@@ -24,6 +24,8 @@ Command-Line Vocabulary
     option set // group of option definitions with its own parsing callbacks
     values // parsed lookup map from accepted names to shared parsed values
     renderer // backend for help, version and error display
+    executable path // unprocessed argv[0] text captured for rendered usage
+    executable name // file name extracted from executable path, without a .exe suffix
 
 Name Forms
 ----------
@@ -60,8 +62,10 @@ Definition Types
 
     OptionChoice // single accepted choice for a choice option
     OptionChoices // collection of accepted choices
+    OptionDisplayText // configurable wording for help, version and error output
     OptionHelp // visibility, title, description and epilog text
     OptionRenderer // help, version and error display backend
+    OptionRendererBase // shared base for renderers with display text
     OptionErrorContext // structured error reason and source location
     OptionSetManager // common interface for objects that own option definitions
 
@@ -126,6 +130,8 @@ Definition Ownership Patterns
     o.addSet(optionSet) -> void // add a set to root options or module
     o.addModule(optionModule) -> void // add a module to root options
     o.optionSets()/optionModules() -> const vector<Ptr>& // inspect owned groups
+    o.executablePath()/setExecutablePath(path) // get or set captured argv[0] text
+    o.executableName() // inspect the extracted executable name used in usage text
     o.options() -> const vector<OptionPtr>& // inspect options in a set
     o.defaultOptionSet() -> OptionSetPtr // internal lazy default group for direct additions
 

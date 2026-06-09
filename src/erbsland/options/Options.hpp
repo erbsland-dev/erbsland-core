@@ -2,22 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "OptionDisplayInfo.hpp"
 #include "OptionHelp.hpp"
 #include "OptionModule_fwd.hpp"
 #include "Options_fwd.hpp"
 #include "OptionSet_fwd.hpp"
 #include "OptionSetManager.hpp"
 
+#include "../core/ApplicationInfo.hpp"
+
 #include <vector>
 
 namespace erbsland::options {
 
 /// Root configuration object for command line options and modules.
-/// @tested{OptionsFrameworkTest}
+/// @tested{OptionsFrameworkTest, OptionsParserTest}
 class Options : public OptionSetManager {
 public:
-    Options() = default;
+    Options();
 
     // defaults
     ~Options() override = default;
@@ -45,22 +46,34 @@ public: // accessors
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
     /// Set the help text for the options root.
     void setHelp(OptionHelp help) { _help = std::move(help); }
-    /// Get the display metadata.
-    [[nodiscard]] auto displayInfo() const noexcept -> const OptionDisplayInfo & { return _displayInfo; }
-    /// Set the display metadata.
-    void setDisplayInfo(OptionDisplayInfo displayInfo) { _displayInfo = std::move(displayInfo); }
+    /// Get the unprocessed executable path from the command line.
+    [[nodiscard]] auto executablePath() const noexcept -> const text::StringView & { return _executablePath; }
+    /// Set the unprocessed executable path from the command line.
+    void setExecutablePath(text::StringView executablePath);
+    /// Get the extracted executable name.
+    [[nodiscard]] auto executableName() const noexcept -> const text::StringView & { return _executableName; }
+    /// Get the application metadata.
+    [[nodiscard]] auto applicationInfo() const noexcept -> const core::ApplicationInfo & { return _applicationInfo; }
+    /// Set the application metadata.
+    void setApplicationInfo(core::ApplicationInfo applicationInfo) { _applicationInfo = std::move(applicationInfo); }
     /// Get all option modules.
     [[nodiscard]] auto optionModules() const noexcept -> const std::vector<OptionModulePtr> & { return _optionModules; }
+    /// Get the built-in option set.
+    [[nodiscard]] auto builtInOptionSet() const noexcept -> const OptionSetPtr & { return _builtInOptionSet; }
     /// Get all main option sets.
     [[nodiscard]] auto optionSets() const noexcept -> const std::vector<OptionSetPtr> & { return _optionSets; }
 
 private:
     [[nodiscard]] auto defaultOptionSet() -> OptionSetPtr;
+    [[nodiscard]] static auto createBuiltInOptionSet() -> OptionSetPtr;
 
 private:
     OptionHelp _help;                            ///< The help text for the options root.
-    OptionDisplayInfo _displayInfo;              ///< The display metadata.
+    text::StringView _executablePath;            ///< The unprocessed executable path from the command line.
+    text::StringView _executableName;            ///< The extracted executable name.
+    core::ApplicationInfo _applicationInfo;      ///< The application metadata.
     std::vector<OptionModulePtr> _optionModules; ///< The available option modules.
+    OptionSetPtr _builtInOptionSet;              ///< The built-in option set.
     std::vector<OptionSetPtr> _optionSets;       ///< The main option sets.
 };
 

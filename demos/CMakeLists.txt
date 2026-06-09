@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(_common)
+add_subdirectory(cterm)
 add_subdirectory(math)
 add_subdirectory(random)
 add_subdirectory(stream)

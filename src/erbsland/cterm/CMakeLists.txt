@@ -82,8 +82,18 @@ target_sources(erbsland-core PRIVATE
         TabOverflowBehavior.hpp
         Terminal.cpp
         Terminal.hpp
+        Terminal_fwd.hpp
         TerminalFlags.hpp
+        TerminalOptionsRenderer.cpp
+        TerminalOptionsRenderer.hpp
+        TerminalOptionsRenderer_fwd.hpp
+        TerminalOptionsTheme.cpp
+        TerminalOptionsTheme.hpp
         TerminalSession.hpp
+        TerminalStream.cpp
+        TerminalStream.hpp
+        TerminalStream_fwd.hpp
+        TerminalStreamSynchronization.hpp
         Tile9Style.cpp
         Tile9Style.hpp
         UpdateSettings.cpp

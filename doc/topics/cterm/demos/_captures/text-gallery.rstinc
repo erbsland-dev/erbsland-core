@@ -1,0 +1,28 @@
+.. erbsland-ansi::
+    :escape-char: ␛
+
+    ␛[40m╭──────────────────────────────────────────────────────────────────────────────╮
+    │    ␛[97mText Gallery | alignment, wrapping, wide characters, and bitmap fonts␛[39m     │
+    │                                                                              │
+    │ ┌─────────────␛[37;100mTop Left␛[39;40m──────────────┐ ┏━━━━━━━━━━━━━━␛[94;44mCenter␛[39;40m━━━━━━━━━━━━━━━┓  │
+    │ │␛[37;100mSmall panels are an easy way to    ␛[39;40m│ ┃␛[94;44m                                   ␛[39;40m┃  │
+    │ │␛[37;100mcompare alignment and wrapping side␛[39;40m│ ┃␛[94;44m                                   ␛[39;40m┃  │
+    │ │␛[37;100mby side.                           ␛[39;40m│ ┃␛[94;44mThe same paragraph can be centered ␛[39;40m┃  │
+    │ │␛[37;100m                                   ␛[39;40m│ ┃␛[94;44m  without a custom layout engine.  ␛[39;40m┃  │
+    │ │␛[37;100m                                   ␛[39;40m│ ┃␛[94;44m                                   ␛[39;40m┃  │
+    │ │␛[37;100m                                   ␛[39;40m│ ┃␛[94;44m                                   ␛[39;40m┃  │
+    │ └───────────────────────────────────┘ ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  │
+    │                                                                              │
+    │ ╔═══════════␛[95;45mBottom Right␛[39;40m════════════╗ ╭────────────␛[96;46mTop Center␛[39;40m─────────────╮  │
+    │ ║␛[95;45m                                   ␛[39;40m║ │␛[96;46m Wrapping respects the box width,  ␛[39;40m│  │
+    │ ║␛[95;45m                                   ␛[39;40m║ │␛[96;46mwhile alignment still decides where␛[39;40m│  │
+    │ ║␛[95;45m                                   ␛[39;40m║ │␛[96;46m         each line starts.         ␛[39;40m│  │
+    │ ║␛[95;45m                                   ␛[39;40m║ │␛[96;46m                                   ␛[39;40m│  │
+    │ ║␛[95;45m    Right and bottom alignment stay␛[39;40m║ │␛[96;46m                                   ␛[39;40m│  │
+    │ ║␛[95;45mreadable even inside narrow frames.␛[39;40m║ │␛[96;46m                                   ␛[39;40m│  │
+    │ ╚═══════════════════════════════════╝ ╰───────────────────────────────────╯  │
+    │                                                                              │
+    │                                                                              │
+    │ ␛[96;100m[←][→]␛[97m switch pages ␛[93m[Q]␛[97m quit ␛[92mpage 1/3␛[39m                                       ␛[40m │
+    │                                                                              │
+    ╰──────────────────────────────────────────────────────────────────────────────╯␛[0m

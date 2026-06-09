@@ -16,9 +16,17 @@ Interface
     :members:
 .. doxygenclass:: erbsland::stream::OutputStream
     :members:
+.. doxygenclass:: erbsland::stream::StandardStreamRedirect
+    :members:
 .. doxygenfunction:: erbsland::stream::stdOut() -> TextOutputStreamPtr
 
 .. doxygenfunction:: erbsland::stream::stdErr() -> TextOutputStreamPtr
+
+.. doxygenfunction:: erbsland::stream::redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect
+
+.. doxygenfunction:: erbsland::stream::redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect
+
+.. doxygenfunction:: erbsland::stream::redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error) -> StandardStreamRedirect
 
 .. doxygenfunction:: erbsland::stream::io::write(text::Char character)
 

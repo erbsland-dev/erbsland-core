@@ -1,0 +1,25 @@
+.. erbsland-ansi::
+    :escape-char: ␛
+
+
+    ␛[97;44m Terminal Chronicle ␛[39;49m ␛[90mLow-level output with readable print calls.
+
+    Timeline: ␛[96mteletype␛[90m -> ␛[92mglass terminal␛[90m -> ␛[93mVT100␛[90m -> ␛[95mmodern ANSI consoles
+
+    ␛[96m1968␛[90m  Video terminals began to replace noisy paper with phosphor screens.
+          A cursor could move, lines could be rewritten, and suddenly the console
+          felt alive.
+
+    ␛[92m1978␛[90m  DEC introduced the ␛[97mVT100␛[90m, a terminal that had a language of escape
+          sequences: ␛[33mMove the cursor␛[90m, ␛[35mchange colors␛[90m, ␛[36mredraw only what changed␛[90m.
+
+    ␛[93m1980s␛[90m Bulletin boards, editors, and debuggers discovered that text mode did
+          not have to look dull. Progress bars, highlighted menus, and boxed
+          dialogs were all just carefully printed characters.
+
+    ␛[95mToday␛[90m The idea is unchanged: emit text, switch styles, keep the code compact,
+          and let the terminal shine.
+          This demo uses ␛[97mprintLine(␛[93m"text"␛[90m, ␛[96mfg::...␛[90m, ␛[92mbg::...␛[97m)␛[90m to tell a story
+          without building a custom renderer first.
+
+    ␛[97;100m Try the other demos next: ␛[39;49m ␛[96mretro-plasma␛[90m, ␛[92mframe-weaver␛[90m, ␛[95mtext-gallery␛[90m.␛[0m

@@ -34,6 +34,7 @@ configure_package_config_file(
         INSTALL_DESTINATION lib/cmake/erbsland-core
 )
 install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/git-version.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfigVersion.cmake"
         DESTINATION lib/cmake/erbsland-core

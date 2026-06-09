@@ -83,6 +83,8 @@ public:
                           .setMaximum(ArgumentCount{3U});
 
         REQUIRE(editor.isValid());
+        REQUIRE(options->builtInOptionSet() != nullptr);
+        REQUIRE_EQUAL(options->builtInOptionSet()->options().size(), 2U);
         REQUIRE_EQUAL(options->optionSets().size(), 1U);
 
         const auto option = editor.option();
@@ -203,6 +205,7 @@ public:
         options->addModule(module);
         optionSet->setFlags(OptionFlag::Required);
 
+        REQUIRE(options->builtInOptionSet() != nullptr);
         REQUIRE_EQUAL(options->optionSets().size(), 1U);
         REQUIRE_EQUAL(options->optionModules().size(), 1U);
         REQUIRE_EQUAL(module->optionSets().size(), 1U);

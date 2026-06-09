@@ -16,6 +16,7 @@ option(ERBSLAND_CORE_DEVELOPER_BUILD "Enables developer build." ${PROJECT_IS_TOP
 
 include(cmake/debug-warnings.cmake)
 include(cmake/compiler-options.cmake)
+include(cmake/git-version.cmake)
 
 add_library(erbsland-core STATIC)
 add_library(erbsland::core ALIAS erbsland-core)

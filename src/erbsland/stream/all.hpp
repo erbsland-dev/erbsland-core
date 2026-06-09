@@ -9,6 +9,7 @@
 #include "ByteOutputStream.hpp"
 #include "InputStream.hpp"
 #include "OutputStream.hpp"
+#include "StandardStreamRedirect.hpp"
 #include "StandardStreams.hpp"
 #include "StringBuilderStream.hpp"
 #include "TextInputStream.hpp"

@@ -23,6 +23,10 @@ Primary Types
     BlockStyle // color and attributes for a block
     BlockAttributes // terminal attributes for a block
     BlockPrintContext // shared implementation interface for print-style block output
+    TerminalStream // text stream adapter for terminal output
+    TerminalStreamSynchronization // shared synchronization state for terminal streams
+    TerminalOptionsRenderer // terminal renderer for command line option output
+    TerminalOptionsTheme // style set for terminal option output
 
 Naming Patterns
 ===============
@@ -38,3 +42,5 @@ Output Patterns
 Use ``print(args...)`` and ``printLine(args...)`` for mixed styled terminal output.
 If multiple writers need the same print argument surface, route the variadic public API through ``BlockPrintContext``
 instead of duplicating per-argument dispatch overloads.
+Use ``TerminalStream`` when terminal output has to pass through the stream API.
+Use a separate theme value type for terminal renderers when colors or attributes may become user-customizable.

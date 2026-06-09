@@ -6,4 +6,6 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core-demo-common PRIVATE
         DemoCommon.cpp
         DemoCommon.hpp
+        TerminalApplication.cpp
+        TerminalApplication.hpp
 )

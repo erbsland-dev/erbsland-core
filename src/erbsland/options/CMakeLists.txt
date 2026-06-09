@@ -16,7 +16,8 @@ target_sources(erbsland-core PRIVATE
         OptionChoices.cpp
         OptionChoices.hpp
         OptionChoices_fwd.hpp
-        OptionDisplayInfo.hpp
+        OptionDisplayText.cpp
+        OptionDisplayText.hpp
         OptionEditor.cpp
         OptionEditor.hpp
         OptionErrorContext.hpp
@@ -35,6 +36,8 @@ target_sources(erbsland-core PRIVATE
         OptionRenderer.cpp
         OptionRenderer.hpp
         OptionRenderer_fwd.hpp
+        OptionRendererBase.cpp
+        OptionRendererBase.hpp
         OptionResult.hpp
         OptionResult_fwd.hpp
         OptionResultStatus.hpp

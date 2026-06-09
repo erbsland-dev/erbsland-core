@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StandardStreamRedirect.hpp"
 #include "TextOutputStream.hpp"
 
 namespace erbsland::stream {
@@ -18,6 +19,29 @@ namespace erbsland::stream {
 /// @throws err::StreamError If the process standard error stream is not available.
 /// @tested{StandardStreamsTest}
 [[nodiscard]] auto stdErr() -> TextOutputStreamPtr;
+/// Replace the process standard output stream for the lifetime of the returned guard.
+/// Existing pointers returned by `stdOut()` keep using the active replacement.
+/// @param output The replacement output stream.
+/// @return The guard that restores the previous output stream target.
+/// @throws err::StreamError If `output` is empty.
+/// @tested{StandardStreamsTest}
+[[nodiscard]] auto redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect;
+/// Replace the process standard error stream for the lifetime of the returned guard.
+/// Existing pointers returned by `stdErr()` keep using the active replacement.
+/// @param error The replacement error stream.
+/// @return The guard that restores the previous error stream target.
+/// @throws err::StreamError If `error` is empty.
+/// @tested{StandardStreamsTest}
+[[nodiscard]] auto redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect;
+/// Replace both process standard text streams for the lifetime of the returned guard.
+/// Existing pointers returned by `stdOut()` and `stdErr()` keep using the active replacements.
+/// @param output The replacement output stream.
+/// @param error The replacement error stream.
+/// @return The guard that restores both previous stream targets.
+/// @throws err::StreamError If a replacement stream is empty.
+/// @tested{StandardStreamsTest}
+[[nodiscard]] auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error)
+    -> StandardStreamRedirect;
 
 namespace io {
 

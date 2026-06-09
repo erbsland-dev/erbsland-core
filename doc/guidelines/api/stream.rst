@@ -44,6 +44,7 @@ Primary Types
     ByteOutputStream // writes raw bytes and endian integer values
     TextInputStream // reads decoded Unicode text
     TextOutputStream // writes decoded Unicode text
+    StandardStreamRedirect // scoped replacement for stdOut/stdErr targets
 
 Option and Enumeration Types
 ============================
@@ -94,3 +95,15 @@ Text Stream Patterns
     o.writeLine(text) // write text followed by a line-feed character
     o.print(args...) // convenience output; builds a temporary string first
     o.printLine(args...) // convenience output plus one line-feed character
+
+Standard Stream Patterns
+========================
+
+.. code-block:: text
+
+    stdOut()/stdErr() -> TextOutputStreamPtr // process-wide proxy streams
+    redirectStdOut(stream) -> StandardStreamRedirect // scoped replacement for stdOut()
+    redirectStdErr(stream) -> StandardStreamRedirect // scoped replacement for stdErr()
+    redirectStandardStreams(output, error) -> StandardStreamRedirect // scoped replacement for both streams
+    redirect.isActive() -> bool // test if a redirect guard still owns a replacement
+    redirect.reset() // restore the previous stream targets early

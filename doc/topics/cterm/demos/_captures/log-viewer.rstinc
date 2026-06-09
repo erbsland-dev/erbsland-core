@@ -1,0 +1,28 @@
+.. erbsland-ansi::
+    :escape-char: ␛
+
+    ␛[40m╭──────────────────────────────────────────────────────────────────────────────╮
+    │ ␛[97mLog Viewer | CursorBuffer 250x10 / 250x500 | follow mode | delay␛[96mentries 0002␛[39m │
+    │                                                                              │
+    │ ␛[97m2026-03-26 09:00:00␛[37m TRC DELETE /assets/site.css header normalization complet␛[39m │
+    │ ␛[97m2026-03-26 09:00:26␛[37m ␛[91mERR PUT /api/v1/payments aborted after TLS negotiation f␛[39m │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │                                                                              │
+    │ ␛[96;100m[←] [→] [↑] [↓]␛[97m pan ␛[93m[+][-]␛[97m timing ␛[93m[F]␛[97m follow newest ␛[93m[Q] [esc]␛[97m quit ␛[92mview (0,␛[39m ␛[40m │
+    ╰──────────────────────────────────────────────────────────────────────────────╯␛[0m

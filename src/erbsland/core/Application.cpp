@@ -4,9 +4,11 @@
 
 #include "impl/LibraryVersion.hpp"
 
+#include "../cterm/Terminal.hpp"
+#include "../cterm/TerminalOptionsRenderer.hpp"
+#include "../cterm/TerminalStream.hpp"
 #include "../err/ApplicationError.hpp"
 #include "../err/Exception.hpp"
-#include "../options/OptionDisplayInfo.hpp"
 #include "../options/OptionManager.hpp"
 #include "../options/OptionModule.hpp"
 #include "../options/Options.hpp"
@@ -18,6 +20,8 @@
 #include <utility>
 
 namespace erbsland::core {
+
+using namespace text::literals;
 
 Application *Application::_instance = nullptr;
 std::unique_ptr<Application> Application::_ownedInstance;
@@ -40,6 +44,7 @@ Application::Application(const int argc, wchar_t *argv[]) :
 }
 
 Application::~Application() {
+    restoreTerminalIntegration();
     unregisterInstance();
 }
 
@@ -66,7 +71,24 @@ auto Application::run() -> int {
         stream::stdErr()->writeLine(error.toString());
         stream::stdErr()->flush();
     }
+    restoreTerminalIntegration();
     return exitCode.toRawValue();
+}
+
+void Application::enableTerminal() {
+    if (_isTerminalEnabled) {
+        return;
+    }
+    _terminal = createAndInitializeTerminal();
+    if (_terminal == nullptr) {
+        return;
+    }
+    _isTerminalEnabled = true;
+    if (_terminal->isInteractive()) {
+        const auto [output, error] = cterm::TerminalStream::createStandardStreams(_terminal);
+        _standardStreamRedirect = stream::redirectStandardStreams(output, error);
+        _optionRenderer = cterm::TerminalOptionsRenderer::create(_terminal);
+    }
 }
 
 void Application::initialize() {
@@ -81,15 +103,12 @@ void Application::parseCommandLine() {
     if (_options == nullptr) {
         return;
     }
-    auto displayInfo = options::OptionDisplayInfo{};
-    displayInfo.setApplicationName(_info.applicationName());
-    displayInfo.setApplicationVersion(_info.applicationVersion());
-    displayInfo.setAuthorName(_info.authorName());
-    displayInfo.setCopyrightLine(_info.copyrightLine());
-    displayInfo.setLicenseText(_info.licenseText());
-    _options->setDisplayInfo(std::move(displayInfo));
+    _options->setApplicationInfo(_info);
 
     auto manager = options::OptionManager{_options};
+    if (_optionRenderer != nullptr) {
+        manager.setRenderer(_optionRenderer);
+    }
     _optionValues = manager.parseOrThrow(_commandLineArguments);
 }
 
@@ -111,6 +130,12 @@ auto Application::main() -> unit::ExitCode {
 
 void Application::cleanup() noexcept {
     // empty by default.
+}
+
+auto Application::createAndInitializeTerminal() -> cterm::TerminalPtr {
+    auto result = std::make_shared<cterm::Terminal>();
+    result->initializeScreen();
+    return result;
 }
 
 auto Application::random() -> random::Random & {
@@ -137,6 +162,14 @@ auto Application::secureRandom() -> random::Random & {
         }
     }
     return *_secureRandom;
+}
+
+auto Application::terminal() const -> const cterm::TerminalPtr & {
+    if (!_isTerminalEnabled || _terminal == nullptr) {
+        // FIXME! That's the wrong exception for this.
+        throw err::ApplicationError{"Terminal must be enabled before use."_el};
+    }
+    return _terminal;
 }
 
 auto Application::instance() noexcept -> Application * {
@@ -174,6 +207,23 @@ void Application::unregisterInstance() noexcept {
     if (_instance == this) {
         _instance = nullptr;
     }
+}
+
+void Application::restoreTerminalIntegration() noexcept {
+    if (_standardStreamRedirect.isActive()) {
+        try {
+            stream::stdOut()->flush();
+            stream::stdErr()->flush();
+        } catch (...) {
+            // ignore during cleanup
+        }
+    }
+    if (_isTerminalEnabled && _terminal != nullptr) {
+        _terminal->restoreScreen();
+        _isTerminalEnabled = false;
+    }
+    _standardStreamRedirect.reset();
+    _optionRenderer.reset();
 }
 
 auto application() -> Application & {

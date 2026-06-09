@@ -1,10 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/core/ApplicationInfo.hpp>
 #include <erbsland/options/Option.hpp>
 #include <erbsland/options/OptionChoice.hpp>
 #include <erbsland/options/OptionChoices.hpp>
-#include <erbsland/options/OptionDisplayInfo.hpp>
+#include <erbsland/options/OptionDisplayText.hpp>
 #include <erbsland/options/OptionErrorContext.hpp>
 #include <erbsland/options/OptionHelp.hpp>
 #include <erbsland/options/OptionHelpVisibility.hpp>
@@ -24,7 +25,7 @@
 using namespace el::options;
 using namespace el::text::literals;
 
-TESTED_TARGETS(OptionDisplayInfo StandardOptionRenderer)
+TESTED_TARGETS(ApplicationInfo OptionDisplayText OptionRendererBase StandardOptionRenderer)
 class StandardOptionRendererTest final : public el::UnitTest {
 public:
     void testRootHelp() {
@@ -36,9 +37,9 @@ public:
         renderer.displayHelp(options, {});
         const auto text = toStdString(output);
 
-        requireContains(text, "Demo Tool\n");
+        REQUIRE(text.starts_with("► Demo Tool 1.2.3 Help\n"));
         requireContains(text, "Operate demo files.\n");
-        requireContains(text, "Usage: Demo Tool <module> [options]\n");
+        requireContains(text, "Usage: demo-tool <module> [options]\n");
         requireContains(text, "Modules\n");
         requireContains(text, "run");
         requireContains(text, "Run module.");
@@ -68,7 +69,7 @@ public:
 
         requireContains(text, "Run Commands\n");
         requireContains(text, "Run module.\n");
-        requireContains(text, "Usage: Demo Tool run [options]\n");
+        requireContains(text, "Usage: demo-tool run [options]\n");
         requireContains(text, "-v, --verbose");
         requireContains(text, "--force");
         requireMissing(text, "Modules\n");
@@ -86,6 +87,33 @@ public:
         REQUIRE_EQUAL(
             toStdString(output),
             std::string{"Demo Tool 1.2.3\nAuthor: Tobias Erbsland\nCopyright 2026\nLicense: Apache-2.0\n"});
+        REQUIRE(error->isEmpty());
+    }
+
+    void testCustomDisplayText() {
+        const auto options = makeOptions();
+        const auto output = el::stream::StringBuilderStream::create();
+        const auto error = el::stream::StringBuilderStream::create();
+        auto displayText = OptionDisplayText::defaultText();
+        displayText.setUsageLabel("Use: "_el);
+        displayText.setModulePlaceholder("<action>"_el);
+        displayText.setOptionsPlaceholder("[flags]"_el);
+        displayText.setOptionsHeading("Flags"_el);
+        displayText.setHelpOptionDescription("Show assistance."_el);
+        displayText.setVersionOptionDescription("Show release information."_el);
+        displayText.setChoicePlaceholder("<variant>"_el);
+        auto renderer = StandardOptionRenderer{output, error, displayText};
+
+        renderer.displayHelp(options, {});
+        const auto text = toStdString(output);
+
+        requireContains(text, "Use: demo-tool <action> [flags]\n");
+        requireContains(text, "Flags\n");
+        requireContains(text, "-h, --help");
+        requireContains(text, "Show assistance.");
+        requireContains(text, "--version");
+        requireContains(text, "Show release information.");
+        requireContains(text, "--mode <variant>");
         REQUIRE(error->isEmpty());
     }
 
@@ -112,13 +140,14 @@ public:
 private:
     [[nodiscard]] static auto makeOptions() -> OptionsPtr {
         auto options = Options::create();
-        auto displayInfo = OptionDisplayInfo{};
-        displayInfo.setApplicationName("Demo Tool"_el);
-        displayInfo.setApplicationVersion(el::unit::Version{1, 2, 3, 4});
-        displayInfo.setAuthorName("Tobias Erbsland"_el);
-        displayInfo.setCopyrightLine("Copyright 2026"_el);
-        displayInfo.setLicenseText("Apache-2.0"_el);
-        options->setDisplayInfo(displayInfo);
+        auto applicationInfo = el::core::ApplicationInfo{};
+        applicationInfo.setApplicationName("Demo Tool"_el);
+        applicationInfo.setApplicationVersion(el::unit::Version{1, 2, 3, 4});
+        applicationInfo.setAuthorName("Tobias Erbsland"_el);
+        applicationInfo.setCopyrightLine("Copyright 2026"_el);
+        applicationInfo.setLicenseText("Apache-2.0"_el);
+        options->setApplicationInfo(applicationInfo);
+        options->setExecutablePath("/usr/bin/demo-tool.exe"_el);
 
         auto rootHelp = OptionHelp{"Operate demo files."_el};
         rootHelp.setTitle("Demo Tool"_el);

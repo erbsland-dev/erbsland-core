@@ -16,6 +16,14 @@ target_sources(erbsland-core PRIVATE
         PrintContextToBuilder.hpp
         PrintContextToWrite.cpp
         PrintContextToWrite.hpp
+        StandardStreamProxy.cpp
+        StandardStreamProxy.hpp
+        StandardStreamRedirectData.cpp
+        StandardStreamRedirectData.hpp
+        StandardStreamRedirectData_fwd.hpp
+        StandardStreamRegistry.cpp
+        StandardStreamRegistry.hpp
+        StandardStreamSlot.hpp
         StandardTextOutputStream.cpp
         StandardTextOutputStream.hpp
         TextOutputStreamTraits.hpp

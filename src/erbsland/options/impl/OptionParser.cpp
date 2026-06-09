@@ -20,6 +20,9 @@ OptionParser::OptionParser(OptionsPtr options, const core::CommandLineArguments 
     _args{args},
     _argumentIndex{unit::ArgumentIndex::one()},
     _moduleArgumentIndex{unit::ArgumentIndex::noIndex()} {
+    if (_options != nullptr) {
+        _options->setExecutablePath(_args.empty() ? text::StringView{} : text::StringView{_args.front()});
+    }
 }
 
 auto OptionParser::parse() -> OptionResult {

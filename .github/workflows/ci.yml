@@ -16,7 +16,7 @@ jobs:
   build:
     name: Build and test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: ${{ matrix.os == 'windows-latest' && 30 || 20 }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 40 }}
     strategy:
       fail-fast: false
       matrix:
@@ -30,15 +30,6 @@ jobs:
         with:
           persist-credentials: false
           submodules: recursive
-
-      - name: Cache CMake build
-        # actions/cache@v5.0.5
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
-        with:
-          path: ${{ env.BUILD_DIR }}
-          key: ${{ runner.os }}-cmake-${{ hashFiles('**/CMakeLists.txt', '**/*.cmake', '**/ci.yml') }}
-          restore-keys: |
-            ${{ runner.os }}-cmake-
 
       - name: Install dependencies (Ubuntu)
         if: runner.os == 'Linux'

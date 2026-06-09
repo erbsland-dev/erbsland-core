@@ -3,12 +3,12 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-include("${PROJECT_SOURCE_DIR}/cmake/git-version.cmake")
-
-erbsland_core_add_git_version_source(
-        erbsland-core
-        "${CMAKE_CURRENT_SOURCE_DIR}/LibraryVersion.in.cpp"
-        "${CMAKE_CURRENT_BINARY_DIR}/LibraryVersion.cpp"
+erbsland_core_add_git_version(
+        TARGET erbsland-core
+        PROJECT_ROOT "${PROJECT_SOURCE_DIR}"
+        TEMPLATE "${CMAKE_CURRENT_SOURCE_DIR}/LibraryVersion.in.cpp"
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/LibraryVersion.cpp"
+        VARIABLE_PREFIX ERBSLAND_CORE_VERSION
 )
 
 target_include_directories(erbsland-core PRIVATE

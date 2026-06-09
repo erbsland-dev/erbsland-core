@@ -2,23 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StandardStreams.hpp"
 
-#include "impl/NativeOutputStream.hpp"
-#include "impl/StandardTextOutputStream.hpp"
+#include "impl/StandardStreamRegistry.hpp"
+#include "impl/StandardStreamSlot.hpp"
 
-#include <memory>
+#include <utility>
 
 namespace erbsland::stream {
 
 auto stdOut() -> TextOutputStreamPtr {
-    static const auto outputStream = std::make_shared<impl::StandardTextOutputStream>(
-        impl::createNativeStandardOutputStream(impl::NativeStandardStream::Out));
-    return outputStream;
+    return impl::standardStreamRegistry().outputProxy();
 }
 
 auto stdErr() -> TextOutputStreamPtr {
-    static const auto errorStream = std::make_shared<impl::StandardTextOutputStream>(
-        impl::createNativeStandardOutputStream(impl::NativeStandardStream::Err));
-    return errorStream;
+    return impl::standardStreamRegistry().errorProxy();
+}
+
+auto redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect {
+    return StandardStreamRedirect{
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Out, std::move(output), {})};
+}
+
+auto redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect {
+    return StandardStreamRedirect{
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Err, {}, std::move(error))};
+}
+
+auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error) -> StandardStreamRedirect {
+    return StandardStreamRedirect{
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Both, std::move(output), std::move(error))};
 }
 
 }

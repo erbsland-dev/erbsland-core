@@ -108,7 +108,7 @@ Interface
     :members:
 .. doxygenclass:: erbsland::options::OptionChoices
     :members:
-.. doxygenclass:: erbsland::options::OptionDisplayInfo
+.. doxygenclass:: erbsland::options::OptionDisplayText
     :members:
 .. doxygenclass:: erbsland::options::OptionEditor
     :members:
@@ -127,6 +127,8 @@ Interface
 .. doxygenclass:: erbsland::options::OptionModule
     :members:
 .. doxygenclass:: erbsland::options::OptionRenderer
+    :members:
+.. doxygenclass:: erbsland::options::OptionRendererBase
     :members:
 .. doxygenclass:: erbsland::options::OptionResult
     :members:

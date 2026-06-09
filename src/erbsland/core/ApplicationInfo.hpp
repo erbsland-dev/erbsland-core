@@ -3,13 +3,14 @@
 #pragma once
 
 #include "../text/String.hpp"
-#include "../text/StringConverter.hpp"
 #include "../unit/Version.hpp"
+
+#include <utility>
 
 namespace erbsland::core {
 
 /// Optional application metadata used by command line rendering.
-/// @tested{OptionsFrameworkTest}
+/// @tested{OptionsFrameworkTest, StandardOptionRendererTest}
 class ApplicationInfo {
 public:
     ApplicationInfo() = default;
@@ -23,7 +24,7 @@ public: // accessors
     /// Get the application name.
     [[nodiscard]] auto applicationName() const noexcept -> const text::StringView & { return _applicationName; }
     /// Set the application name.
-    void setApplicationName(const text::StringView &applicationName) { _applicationName = applicationName; }
+    void setApplicationName(text::StringView applicationName) { _applicationName = std::move(applicationName); }
     /// Get the application version.
     [[nodiscard]] auto applicationVersion() const noexcept -> const unit::Version & { return _applicationVersion; }
     /// Set the application version.
@@ -31,15 +32,15 @@ public: // accessors
     /// Get the author or organization name.
     [[nodiscard]] auto authorName() const noexcept -> const text::StringView & { return _authorName; }
     /// Set the author or organization name.
-    void setAuthorName(const text::StringView &authorName) { _authorName = authorName; }
+    void setAuthorName(text::StringView authorName) { _authorName = std::move(authorName); }
     /// Get the copyright line.
     [[nodiscard]] auto copyrightLine() const noexcept -> const text::StringView & { return _copyrightLine; }
     /// Set the copyright line.
-    void setCopyrightLine(const text::StringView &copyrightLine) { _copyrightLine = copyrightLine; }
+    void setCopyrightLine(text::StringView copyrightLine) { _copyrightLine = std::move(copyrightLine); }
     /// Get the license text.
     [[nodiscard]] auto licenseText() const noexcept -> const text::StringView & { return _licenseText; }
     /// Set the license text.
-    void setLicenseText(const text::StringView &licenseText) { _licenseText = licenseText; }
+    void setLicenseText(text::StringView licenseText) { _licenseText = std::move(licenseText); }
 
 private:
     text::StringView _applicationName; ///< The name of the application.

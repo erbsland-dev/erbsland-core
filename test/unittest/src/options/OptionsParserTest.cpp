@@ -3,6 +3,7 @@
 
 #include <erbsland/core/CommandLineArguments.hpp>
 #include <erbsland/err/OptionError.hpp>
+#include <erbsland/options/impl/ExecutableName.hpp>
 #include <erbsland/options/OptionChoices.hpp>
 #include <erbsland/options/OptionErrorContext.hpp>
 #include <erbsland/options/OptionManager.hpp>
@@ -188,6 +189,32 @@ public:
         REQUIRE(parse(options, {"tool"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
         REQUIRE(parse(options, {"tool"_el, "--version"_el}).status() == OptionResultStatus::DisplayVersion);
         REQUIRE(parse(options, {"tool"_el, "--unknown"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
+    }
+
+    void testExecutableInformationIsStoredOnOptions() {
+        REQUIRE(el::options::impl::extractExecutableName("/opt/demo/bitmap-showcase.EXE"_el) == "bitmap-showcase"_el);
+        REQUIRE(
+            el::options::impl::extractExecutableName("C:\\Tools\\bitmap-showcase.com"_el) == "bitmap-showcase.com"_el);
+
+        auto options = Options::create();
+        auto manager = OptionManager{options};
+
+        auto result = manager.parse(makeArgs({"/opt/demo/bitmap-showcase.EXE"_el}));
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE(options->executablePath() == "/opt/demo/bitmap-showcase.EXE"_el);
+        REQUIRE(options->executableName() == "bitmap-showcase"_el);
+
+        result = manager.parse(makeArgs({"C:\\Tools\\bitmap-showcase.com"_el}));
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE(options->executablePath() == "C:\\Tools\\bitmap-showcase.com"_el);
+        REQUIRE(options->executableName() == "bitmap-showcase.com"_el);
+    }
+
+    void testBuiltInOptionCollision() {
+        auto options = Options::create();
+        options->addOption("--help"_el).setType(OptionType::Flag);
+
+        assertError(options, {"tool"_el}, OptionErrorReason::SyntaxError);
     }
 
     void testParseOrThrow() {

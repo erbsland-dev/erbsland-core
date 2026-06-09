@@ -12,6 +12,8 @@ target_sources(erbsland-core PRIVATE
         ByteOutputStream.hpp
         InputStream.hpp
         OutputStream.hpp
+        StandardStreamRedirect.cpp
+        StandardStreamRedirect.hpp
         StandardStreams.cpp
         StandardStreams.hpp
         StringBuilderStream.cpp

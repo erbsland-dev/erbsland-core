@@ -15,6 +15,8 @@ target_sources(erbsland-core-unittest PRIVATE
         ReadableBufferDispatchProbe.hpp
         TerminalConvenienceTest.cpp
         TerminalFlagsTest.cpp
+        TerminalOptionsRendererTest.cpp
+        TerminalStreamTest.cpp
         TerminalTest.cpp
         WritableBufferDispatchProbe.hpp
 )

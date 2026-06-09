@@ -6,9 +6,12 @@
 #include "CommandLineArguments.hpp"
 #include "MainFn.hpp"
 
+#include "../cterm/Terminal_fwd.hpp"
+#include "../options/OptionRenderer_fwd.hpp"
 #include "../options/OptionResult.hpp"
 #include "../options/Options_fwd.hpp"
 #include "../random/Random.hpp"
+#include "../stream/StandardStreams.hpp"
 #include "../unit/ExitCode.hpp"
 
 #include <memory>
@@ -37,7 +40,21 @@ public:
     Application(Application &&) = delete;
     auto operator=(Application &&) -> Application & = delete;
 
-public: // customizable methods
+public: // methods to enable features
+    /// Enable advanced terminal output.
+    /// Call this immediately after constructing the Application object.
+    /// Either from `main` or as one of the first lines in your custom `initialize()` method.
+    /// In this call, a terminal instance is created for the lifetime of this application.
+    /// The terminal is automatically shutdown when the program exits, do not call `initialize()` or
+    /// `shutdown()` from your user code.
+    /// If a tty is detected, `el::stdOut()` and `el::stdErr()` are redirected to the terminal.
+    /// Output from `el::stdOut()` always resets the color to the default color while output from
+    /// `el::stdErr()` is output in bright red. This is just for convenience to keep inferring output
+    /// from these channels readable.
+    /// The idea is that you use the terminal instance via `terminal()` for all your application output.
+    void enableTerminal();
+
+protected: // customizable methods
     /// First initialization of the application.
     /// This method is called from `run()`, before any other methods are called.
     /// @throws err::ApplicationError to exit the application with a message and exit code.
@@ -53,6 +70,10 @@ public: // customizable methods
     /// Cleanup after the application has finished.
     /// Must noch block or throw an exception.
     virtual void cleanup() noexcept;
+    /// Create and initialize the terminal instance.
+    /// This method is called from `enableTerminal()`.
+    /// Only override this method if you need to customize the terminal instance.
+    [[nodiscard]] virtual auto createAndInitializeTerminal() -> cterm::TerminalPtr;
 
 public:
     /// Run the default application lifecycle.
@@ -83,16 +104,21 @@ public:
     }
     /// Get the option values.
     [[nodiscard]] auto optionValues() const noexcept -> const options::OptionValuesPtr & { return _optionValues; }
+
+public: // built-in components
     /// Get the shared random generator for non-security use.
     [[nodiscard]] auto random() -> random::Random &;
     /// Get the shared secure random generator.
     [[nodiscard]] auto secureRandom() -> random::Random &;
+    /// Access the application-shared terminal instance.
+    /// Must be enabled via `enableTerminal()`.
+    [[nodiscard]] auto terminal() const -> const cterm::TerminalPtr &;
 
 public: // singleton
     /// Get the currently registered application instance.
     [[nodiscard]] static auto instance() noexcept -> Application *;
 
-public: // library
+public: // library version
     /// Get the build-time library version.
     /// @tested{ApplicationVersionTest}
     [[nodiscard]] static auto libraryVersion() noexcept -> unit::Version;
@@ -109,16 +135,21 @@ protected: // debugging methods
 private:
     void registerInstance() noexcept;
     void unregisterInstance() noexcept;
+    void restoreTerminalIntegration() noexcept;
 
 private:
-    options::OptionsPtr _options;               ///< The global options configuration.
-    options::OptionValuesPtr _optionValues;     ///< The option values after parsing.
-    ApplicationInfo _info;                      ///< Application metadata.
-    CommandLineArguments _commandLineArguments; ///< Converted command line arguments.
-    MainFn _mainFn;                             ///< Lambda-based override of main().
-    random::RandomPtr _random;                  ///< Shared fast random generator.
-    random::RandomPtr _secureRandom;            ///< Shared secure random generator.
-    std::mutex _randomMutex;                    ///< Mutex for lazy random generator creation.
+    options::OptionsPtr _options;                           ///< The global options configuration.
+    options::OptionValuesPtr _optionValues;                 ///< The option values after parsing.
+    options::OptionRendererPtr _optionRenderer;             ///< Renderer used by the application option manager.
+    ApplicationInfo _info;                                  ///< Application metadata.
+    CommandLineArguments _commandLineArguments;             ///< Converted command line arguments.
+    MainFn _mainFn;                                         ///< Lambda-based override of main().
+    random::RandomPtr _random;                              ///< Shared fast random generator.
+    random::RandomPtr _secureRandom;                        ///< Shared secure random generator.
+    std::mutex _randomMutex;                                ///< Mutex for lazy random generator creation.
+    bool _isTerminalEnabled{false};                         ///< Flag if the terminal was enabled.
+    cterm::TerminalPtr _terminal;                           ///< The terminal instance.
+    stream::StandardStreamRedirect _standardStreamRedirect; ///< Redirects standard streams to the terminal.
 
 private:
     // A raw non-owning pointer is used here because the singleton can refer either to a user-owned stack instance

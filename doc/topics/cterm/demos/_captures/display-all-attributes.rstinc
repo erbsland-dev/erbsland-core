@@ -1,0 +1,36 @@
+.. erbsland-ansi::
+    :escape-char: ␛
+
+    ␛[1;97mDisplay All Attributes
+    ␛[90mVisual differences depend on your terminal emulator and theme. If a sample looks
+     unchanged, that attribute is likely ignored.
+    The backend support column shows what the library backend can emit, not what you
+    r terminal actually renders.
+
+    ␛[97mAttribute       Backend   ANSI      Sample
+             Note
+    ␛[90m--------------------------------------------------------------------------------
+    -------------------
+    ␛[96mBold           ␛[39myes       ␛[90m1 / 22    ␛[97;100m The quick brown fox 0123␛[22;49m ␛[90m stronger emphasis
+    ␛[96mDim            ␛[39myes       ␛[90m2 / 22    ␛[97;100m ␛[2mThe quick brown fox 0123␛[22;49m ␛[90m reduced intensity
+    ␛[96mItalic         ␛[39myes       ␛[90m3 / 23    ␛[97;100m ␛[3mThe quick brown fox 0123␛[23;49m ␛[90m often unsupported
+    in basic terminals
+    ␛[96mUnderline      ␛[39myes       ␛[90m4 / 24    ␛[97;100m ␛[4mThe quick brown fox 0123␛[24;49m ␛[90m classic link-style
+     emphasis
+    ␛[96mBlink          ␛[39myes       ␛[90m5 / 25    ␛[97;100m ␛[5mThe quick brown fox 0123␛[25;49m ␛[90m often disabled by
+    terminal emulators
+    ␛[96mReverse        ␛[39myes       ␛[90m7 / 27    ␛[97;100m ␛[7mThe quick brown fox 0123␛[27;49m ␛[90m swaps foreground a
+    nd background
+    ␛[96mHidden         ␛[39myes       ␛[90m8 / 28    ␛[39m |␛[8mhidden sample␛[28m|␛[90m text should disappear betwee
+    n the markers
+    ␛[96mStrikethrough  ␛[39myes       ␛[90m9 / 29    ␛[97;100m ␛[0mThe quick brown fox 0123␛[49m ␛[90m ANSI crossed-out t
+    ext
+
+    ␛[1;97mCommon Combinations
+    ␛[90mThese examples help spot interactions between attributes, especially reset handl
+    ing for bold and dim.
+    ␛[96mBold + Underline            ␛[4;97mHighlighted heading sample
+    ␛[22;24;96mItalic + Strikethrough      ␛[3;97mEdited-out annotation sample
+    ␛[23;96mBold + Blink + Reverse      ␛[1;5;7;97;41mHigh-attention sample
+
+    ␛[22;25;27;49;90mPress Enter to close the demo.␛[0m

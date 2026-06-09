@@ -25,7 +25,6 @@
 namespace erbsland::cterm {
 
 class Terminal;
-/// Shared pointer to a terminal instance.
 using TerminalPtr = std::shared_ptr<Terminal>;
 
 /// High-level terminal interface for screen control, color output, and key input.

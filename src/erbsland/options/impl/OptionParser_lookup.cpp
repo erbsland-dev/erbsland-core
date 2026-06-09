@@ -24,7 +24,10 @@ auto OptionParser::collectActiveOptionSets() -> std::vector<OptionSetPtr> {
     if (_selectedModule != nullptr) {
         moduleSetCount = _selectedModule->optionSets().size();
     }
-    result.reserve(_options->optionSets().size() + moduleSetCount);
+    result.reserve(_options->optionSets().size() + moduleSetCount + 1U);
+    if (_options->builtInOptionSet() != nullptr) {
+        result.emplace_back(_options->builtInOptionSet());
+    }
     for (const auto &optionSet : _options->optionSets()) {
         result.emplace_back(optionSet);
     }

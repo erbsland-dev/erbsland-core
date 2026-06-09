@@ -9,5 +9,7 @@ Topics
 .. toctree::
     :maxdepth: 3
 
+    cterm/index
+    core/index
     random/index
     strings/index

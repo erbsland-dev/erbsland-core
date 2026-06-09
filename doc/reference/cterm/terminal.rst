@@ -134,8 +134,6 @@ Interface
 .. doxygenclass:: erbsland::cterm::RemappedBuffer
     :members:
 .. doxygenenum:: erbsland::cterm::TabOverflowBehavior
-.. doxygentypedef:: erbsland::cterm::TerminalPtr
-
 .. doxygenclass:: erbsland::cterm::Terminal
     :members:
 .. doxygenenum:: erbsland::cterm::TerminalFlag
@@ -143,6 +141,10 @@ Interface
 .. doxygenclass:: erbsland::cterm::TerminalFlags
     :members:
 .. doxygenclass:: erbsland::cterm::TerminalSession
+    :members:
+.. doxygenclass:: erbsland::cterm::TerminalStream
+    :members:
+.. doxygenclass:: erbsland::cterm::TerminalStreamSynchronization
     :members:
 .. doxygentypedef:: erbsland::cterm::Tile9StylePtr
 

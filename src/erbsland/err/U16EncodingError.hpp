@@ -17,6 +17,9 @@ public:
     explicit U16EncodingError(const std::string_view reason, const unit::U16DataIndex index) noexcept :
         EncodingError{reason}, _index(index) {}
 
+    // defaults
+    ~U16EncodingError() override = default;
+
 private:
     unit::U16DataIndex _index;
 };

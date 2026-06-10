@@ -30,6 +30,8 @@ using el::text::StringConverter;
 using el::text::StringView;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
+using el::unit::ElementCount;
+using el::unit::ElementIndex;
 using namespace el::options;
 using namespace el::text::literals;
 
@@ -341,9 +343,9 @@ public:
 private:
     [[nodiscard]] static auto makeArgs(std::initializer_list<StringView> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
-        result.reserve(args.size());
+        result.reserve(ElementCount{args.size()});
         for (const auto &arg : args) {
-            result.push_back(StringConverter{arg}.toU8String());
+            result.append(arg.copy());
         }
         return result;
     }

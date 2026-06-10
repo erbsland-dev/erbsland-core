@@ -21,12 +21,12 @@ OptionParser::OptionParser(OptionsPtr options, const core::CommandLineArguments 
     _argumentIndex{unit::ArgumentIndex::one()},
     _moduleArgumentIndex{unit::ArgumentIndex::noIndex()} {
     if (_options != nullptr) {
-        _options->setExecutablePath(_args.empty() ? text::StringView{} : text::StringView{_args.front()});
+        _options->setExecutablePath(_args.isEmpty() ? text::StringView{} : _args.first());
     }
 }
 
 auto OptionParser::parse() -> OptionResult {
-    if (_args.size() > 5'000U) {
+    if (_args.count() > unit::ElementCount{5'000U}) {
         makeError(OptionErrorReason::SyntaxError, "Too many command line arguments"_el, {});
         return finishError();
     }

@@ -10,7 +10,7 @@
 namespace erbsland::core {
 
 /// Optional application metadata used by command line rendering.
-/// @tested{OptionsFrameworkTest, StandardOptionRendererTest}
+/// @tested{ApplicationOptionsTest, StandardOptionRendererTest}
 class ApplicationInfo {
 public:
     ApplicationInfo() = default;

@@ -2,17 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Exception.hpp"
+#include "RuntimeError.hpp"
 
 namespace erbsland::err {
 
 /// An encoding error exception.
 /// These exceptions are thrown when a text contains encoding errors, and error handing via exception is requested.
-class EncodingError : public Exception {
+class EncodingError : public RuntimeError {
 public:
     /// Create an encoding error exception with a reason.
     /// @param reason The reason for the encoding error.
-    explicit EncodingError(const std::string_view reason) noexcept : Exception{reason} {}
+    explicit EncodingError(const std::string_view reason) noexcept : RuntimeError{reason} {}
+
+    // defaults
+    ~EncodingError() override = default;
 };
 
 }

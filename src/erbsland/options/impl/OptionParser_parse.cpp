@@ -15,11 +15,11 @@ using namespace text::literals;
 
 auto OptionParser::prepareModuleParsing() -> bool {
     _argumentIndex = unit::ArgumentIndex::one();
-    if (_argumentIndex.toSizeT() >= _args.size()) {
+    if (!isIndexInArgs(_argumentIndex)) {
         return makeError(OptionErrorReason::SyntaxError, "Missing module name"_el, _argumentIndex);
     }
 
-    const auto &argument = _args.at(_argumentIndex.toSizeT());
+    const auto &argument = getArgAt(_argumentIndex);
     if (argument == "-h"_el || argument == "--help"_el || argument == "--version"_el) {
         return true;
     }
@@ -41,12 +41,12 @@ auto OptionParser::prepareModuleParsing() -> bool {
 }
 
 auto OptionParser::parseActiveOptions() -> bool {
-    while (_argumentIndex.toSizeT() < _args.size()) {
-        const auto &argument = _args.at(_argumentIndex.toSizeT());
+    while (isIndexInArgs(_argumentIndex)) {
+        const auto &argument = getArgAt(_argumentIndex);
         if (argument == "--"_el) {
             ++_argumentIndex;
-            while (_argumentIndex.toSizeT() < _args.size()) {
-                if (!collectPositionalArgument(_args.at(_argumentIndex.toSizeT()), _argumentIndex)) {
+            while (isIndexInArgs(_argumentIndex)) {
+                if (!collectPositionalArgument(getArgAt(_argumentIndex), _argumentIndex)) {
                     return false;
                 }
                 ++_argumentIndex;
@@ -183,10 +183,10 @@ auto OptionParser::parseShortOption(const text::StringView &argument, const unit
 
 auto OptionParser::consumeFollowingValue(text::StringView &value, const unit::ArgumentIndex optionIndex) -> bool {
     const auto valueIndex = _argumentIndex.incremented();
-    if (valueIndex.toSizeT() >= _args.size()) {
+    if (!isIndexInArgs(valueIndex)) {
         return makeError(OptionErrorReason::UnexpectedValueType, "Missing option value"_el, optionIndex);
     }
-    const auto &candidate = _args.at(valueIndex.toSizeT());
+    const auto &candidate = getArgAt(valueIndex);
     if (candidate.startsWith("-"_el)) {
         return makeError(OptionErrorReason::UnexpectedValueType, "Missing option value"_el, optionIndex);
     }

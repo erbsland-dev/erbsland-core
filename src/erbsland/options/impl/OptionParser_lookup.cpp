@@ -92,8 +92,8 @@ auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) const -> b
 auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit::ArgumentIndex startIndex) const
     -> bool {
     auto index = startIndex;
-    while (index.toSizeT() < _args.size()) {
-        const auto &argument = _args.at(index.toSizeT());
+    while (isIndexInArgs(index)) {
+        const auto &argument = getArgAt(index);
         if (argument == "--"_el) {
             return false;
         }
@@ -162,6 +162,17 @@ auto OptionParser::validateOptionNames() -> bool {
         }
     }
     return true;
+}
+
+auto OptionParser::isIndexInArgs(const unit::ArgumentIndex index) const -> bool {
+    return index.toSizeT() < _args.count().toSizeT();
+}
+
+auto OptionParser::getArgAt(const unit::ArgumentIndex index) const -> text::StringView {
+    if (!isIndexInArgs(index)) {
+        return {};
+    }
+    return _args.get(unit::ElementIndex::fromSizeT(index.toSizeT()));
 }
 
 }

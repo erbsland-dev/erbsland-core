@@ -6,31 +6,46 @@
 #include "CommandLineArguments.hpp"
 #include "MainFn.hpp"
 
+#include "impl/ApplicationData_fwd.hpp"
+#include "impl/ApplicationInstanceManager_fwd.hpp"
+
 #include "../cterm/Terminal_fwd.hpp"
-#include "../options/OptionRenderer_fwd.hpp"
-#include "../options/OptionResult.hpp"
+#include "../event/EventIdRegistry_fwd.hpp"
+#include "../event/EventLoop_fwd.hpp"
+#include "../event/EventTarget_fwd.hpp"
 #include "../options/Options_fwd.hpp"
-#include "../random/Random.hpp"
-#include "../stream/StandardStreams.hpp"
+#include "../options/OptionValues_fwd.hpp"
+#include "../random/Random_fwd.hpp"
 #include "../unit/ExitCode.hpp"
 
 #include <memory>
-#include <mutex>
-#include <utility>
 
 namespace erbsland::core {
 
 /// The core application framework.
-/// @tested{OptionsFrameworkTest, RandomApplicationTest}
+/// You must create a single instance of this class or a derived class in your `main()` method.
+/// @note Important Information when using Erbsland Core under Windows in DLLs
+/// Be careful when creating a Windows application that static links Erbsland Core into DLLs that are used by
+/// the application.
+/// These DLLs do not automatically share the same `Application` instance.
+/// Create an exported **not inlined** method `initializeMyDll(Application &app)` in each DLL that used Erbsland Core,
+/// and call `Application::linkWith(app)` in this method. From `main()` call all these `initialize...()` methods
+/// of all DLLs that use Erbsland Core, just after creating the `Application` instance.
+/// Do not use `application()` or `Application::instance()` in static initialization in DLLs that link Erbsland Core.
+/// @tested{ApplicationOptionsTest, ApplicationTerminalTest, ApplicationTestScopeTest, RandomApplicationTest}
 class Application {
+    friend class impl::ApplicationInstanceManager;
     friend auto application() -> Application &;
 
 public:
     /// Create an application without command line arguments.
+    /// Only create one instance, as the first action in your `main()` function.
     Application();
     /// Create an application from UTF-8 encoded command line arguments.
+    /// Only create one instance, as the first action in your `main()` function.
     Application(int argc, char *argv[]);
     /// Create an application from wide command line arguments.
+    /// Only create one instance, as the first action in your `main()` function.
     Application(int argc, wchar_t *argv[]);
 
     // defaults
@@ -89,34 +104,48 @@ public:
     /// If any non `err::Exception` is thrown, the application will crash.
     [[nodiscard]] auto run() -> int;
     /// Override the main function.
-    void setMainFn(MainFn mainFn) { _mainFn = std::move(mainFn); }
-    /// Get the global options configuration.
-    [[nodiscard]] auto options() const noexcept -> const options::OptionsPtr & { return _options; }
-    /// Release the option configuration to free memory after startup.
-    void releaseOptions() noexcept { _options.reset(); }
-    /// Get mutable application information.
-    [[nodiscard]] auto info() noexcept -> ApplicationInfo & { return _info; }
-    /// Get application information.
-    [[nodiscard]] auto info() const noexcept -> const ApplicationInfo & { return _info; }
-    /// Get the converted command line arguments.
-    [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments & {
-        return _commandLineArguments;
-    }
-    /// Get the option values.
-    [[nodiscard]] auto optionValues() const noexcept -> const options::OptionValuesPtr & { return _optionValues; }
+    void setMainFn(MainFn mainFn);
 
-public: // built-in components
+public: // command line options
+    /// Get the global options configuration.
+    [[nodiscard]] auto options() const noexcept -> const options::OptionsPtr &;
+    /// Release the option configuration to free memory after startup.
+    void releaseOptions() noexcept;
+    /// Get mutable application information.
+    [[nodiscard]] auto info() noexcept -> ApplicationInfo &;
+    /// Get application information.
+    [[nodiscard]] auto info() const noexcept -> const ApplicationInfo &;
+    /// Get the converted command line arguments.
+    [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments &;
+    /// Get the option values.
+    [[nodiscard]] auto optionValues() const noexcept -> const options::OptionValuesPtr &;
+
+public: // random numbers
     /// Get the shared random generator for non-security use.
     [[nodiscard]] auto random() -> random::Random &;
     /// Get the shared secure random generator.
     [[nodiscard]] auto secureRandom() -> random::Random &;
+
+public: // terminal access
     /// Access the application-shared terminal instance.
     /// Must be enabled via `enableTerminal()`.
     [[nodiscard]] auto terminal() const -> const cterm::TerminalPtr &;
 
-public: // singleton
-    /// Get the currently registered application instance.
-    [[nodiscard]] static auto instance() noexcept -> Application *;
+public: // event system
+    /// Access the main event loop.
+    [[nodiscard]] auto eventLoop() -> event::EventLoop &;
+    /// Access the target interface of the main event loop.
+    [[nodiscard]] auto eventTarget() -> event::EventTargetPtr;
+    /// Access the event registry.
+    [[nodiscard]] auto eventRegistry() -> event::EventIdRegistry &;
+
+public: // singleton handling.
+    /// Get the application instance.
+    [[nodiscard]] static auto instance() -> Application &;
+    /// Link this application instance with another one.
+    /// Only call this method from `initializeMyDll(Application &app)` methods in DLLs that static link
+    /// Erbsland Core to synchronize the singleton across DLL borders.
+    static auto linkWith(Application &app) -> void;
 
 public: // library version
     /// Get the build-time library version.
@@ -133,34 +162,16 @@ protected: // debugging methods
 #endif
 
 private:
-    void registerInstance() noexcept;
-    void unregisterInstance() noexcept;
-    void restoreTerminalIntegration() noexcept;
+    /// Internal constructor.
+    /// Only used by the instance manager when creating a temporary application instance.
+    explicit Application(impl::ApplicationDataPtr data);
 
 private:
-    options::OptionsPtr _options;                           ///< The global options configuration.
-    options::OptionValuesPtr _optionValues;                 ///< The option values after parsing.
-    options::OptionRendererPtr _optionRenderer;             ///< Renderer used by the application option manager.
-    ApplicationInfo _info;                                  ///< Application metadata.
-    CommandLineArguments _commandLineArguments;             ///< Converted command line arguments.
-    MainFn _mainFn;                                         ///< Lambda-based override of main().
-    random::RandomPtr _random;                              ///< Shared fast random generator.
-    random::RandomPtr _secureRandom;                        ///< Shared secure random generator.
-    std::mutex _randomMutex;                                ///< Mutex for lazy random generator creation.
-    bool _isTerminalEnabled{false};                         ///< Flag if the terminal was enabled.
-    cterm::TerminalPtr _terminal;                           ///< The terminal instance.
-    stream::StandardStreamRedirect _standardStreamRedirect; ///< Redirects standard streams to the terminal.
-
-private:
-    // A raw non-owning pointer is used here because the singleton can refer either to a user-owned stack instance
-    // or to the lazily allocated fallback instance owned by _ownedInstance.
-    static Application *_instance;
-    static std::unique_ptr<Application> _ownedInstance;
-    static std::recursive_mutex _instanceMutex;
+    impl::ApplicationDataPtr _data;
 };
 
 /// Access the global application instance, creating a default one on first use.
-/// @tested{OptionsFrameworkTest, RandomApplicationTest}
+/// @tested{ApplicationTestScopeTest, RandomApplicationTest}
 [[nodiscard]] auto application() -> Application &;
 
 }

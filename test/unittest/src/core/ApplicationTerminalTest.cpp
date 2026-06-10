@@ -1,12 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "ApplicationTestScope.hpp"
+
 #include "../cterm/support/TerminalTestBackend.hpp"
 
 #include <erbsland/core/Application.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/options/OptionHelp.hpp>
 #include <erbsland/options/Options.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/stream/StringBuilderStream.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -22,7 +25,10 @@ TESTED_TARGETS(Application TerminalOptionsRenderer TerminalStream)
 class ApplicationTerminalTest final : public el::UnitTest {
     class TestApplication final : public el::core::Application {
     public:
-        explicit TestApplication(bool interactive) : Application{} {
+        TestApplication() = default;
+
+    public:
+        void setInteractive(bool interactive) {
             backend->_isInteractive = interactive;
             backend->_supportsColorCodes = false;
         }
@@ -44,7 +50,9 @@ public:
         std::string terminalOutput;
 
         {
-            auto application = TestApplication{true};
+            auto scope = ApplicationTestScope<TestApplication>{};
+            auto &application = scope.app();
+            application.setInteractive(true);
             application.enableTerminal();
 
             capturedOutput->writeLine("through terminal"_el);
@@ -60,7 +68,9 @@ public:
         const auto replacement = el::stream::StringBuilderStream::create();
         auto redirect = el::stream::redirectStdOut(replacement);
 
-        auto application = TestApplication{false};
+        auto scope = ApplicationTestScope<TestApplication>{};
+        auto &application = scope.app();
+        application.setInteractive(false);
         application.enableTerminal();
 
         el::stream::stdOut()->writeLine("plain output"_el);
@@ -78,7 +88,9 @@ public:
         help.setTitle("Tool"_el);
         auto backend = std::make_shared<TerminalTestBackend>();
 
-        auto argumentApplication = ArgumentApplication{2, argv, backend};
+        auto scope = ApplicationTestScope<ArgumentApplication>{2, argv};
+        auto &argumentApplication = scope.app();
+        argumentApplication.setBackend(backend);
         argumentApplication.info().setApplicationName("Tool"_el);
         argumentApplication.options()->setHelp(help);
         argumentApplication.enableTerminal();
@@ -102,14 +114,17 @@ public:
 private:
     class ArgumentApplication final : public el::core::Application {
     public:
-        ArgumentApplication(int argc, char *argv[], std::shared_ptr<TerminalTestBackend> backend) :
-            Application{argc, argv}, backend{std::move(backend)} {
-            this->backend->_isInteractive = true;
-            this->backend->_supportsColorCodes = false;
+        ArgumentApplication(int argc, char *argv[]) : Application{argc, argv} {}
+
+    public:
+        void setBackend(std::shared_ptr<TerminalTestBackend> newBackend) {
+            backend = std::move(newBackend);
+            backend->_isInteractive = true;
+            backend->_supportsColorCodes = false;
         }
 
     public:
-        std::shared_ptr<TerminalTestBackend> backend;
+        std::shared_ptr<TerminalTestBackend> backend = std::make_shared<TerminalTestBackend>();
 
     protected:
         [[nodiscard]] auto createAndInitializeTerminal() -> el::cterm::TerminalPtr override {

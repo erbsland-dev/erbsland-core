@@ -3,6 +3,21 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+target_sources(erbsland-core PRIVATE
+        ApplicationData.hpp
+        ApplicationData_fwd.hpp
+        ApplicationDataImpl.hpp
+        ApplicationInstanceManager.cpp
+        ApplicationInstanceManager.hpp
+        LibraryVersion.hpp
+)
+
+if (WIN32)
+target_sources(erbsland-core PRIVATE
+        WindowsApi.hpp
+)
+endif ()
+
 erbsland_core_add_git_version(
         TARGET erbsland-core
         PROJECT_ROOT "${PROJECT_SOURCE_DIR}"
@@ -14,13 +29,3 @@ erbsland_core_add_git_version(
 target_include_directories(erbsland-core PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}"
 )
-
-target_sources(erbsland-core PRIVATE
-        LibraryVersion.hpp
-)
-
-if (WIN32)
-target_sources(erbsland-core PRIVATE
-        WindowsApi.hpp
-)
-endif ()

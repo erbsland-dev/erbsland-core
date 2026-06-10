@@ -17,6 +17,9 @@ public:
     explicit U8EncodingError(const std::string_view reason, const unit::ByteIndex index) noexcept :
         EncodingError{reason}, _index(index) {}
 
+    // defaults
+    ~U8EncodingError() override = default;
+
 private:
     unit::ByteIndex _index;
 };

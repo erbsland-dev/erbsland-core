@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Exception.hpp"
+#include "RuntimeError.hpp"
 
 #include "../text/StringView.hpp"
 #include "../unit/ExitCode.hpp"
@@ -10,14 +10,17 @@
 namespace erbsland::err {
 
 /// A generic application error that is meant to terminate a running application with the given message and exit code.
-class ApplicationError : public Exception {
+class ApplicationError : public RuntimeError {
 public:
     /// Create an application error with the given reason and exit-code.
     /// @param reason The reason for the error.
     /// @param exitCode The exit code to use when terminating the application.
     explicit ApplicationError(
         text::StringView reason, const unit::ExitCode exitCode = unit::ExitCode::failure()) noexcept :
-        Exception{std::move(reason)}, _exitCode{exitCode} {}
+        RuntimeError{std::move(reason)}, _exitCode{exitCode} {}
+
+    // defaults
+    ~ApplicationError() override = default;
 
 public: // overrides
     [[nodiscard]] auto toString() const noexcept -> text::StringView override;

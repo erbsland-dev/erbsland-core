@@ -7,12 +7,14 @@ namespace erbsland::util {
 template <typename tKey, typename tValue, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
     std::copyable<tValue>
-auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::set(const Key &key, const Value &value) -> Self & {
+template <typename tValueFwd>
+    requires std::is_constructible_v<tValue, tValueFwd>
+auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::set(const Key &key, tValueFwd &&value) -> Self & {
     auto &data = mutableRaw();
     if (auto iterator = data.find(key); iterator != data.end()) {
         data.erase(iterator);
     }
-    data.emplace(key, value);
+    data.emplace(key, std::forward<tValueFwd>(value));
     return self();
 }
 

@@ -2,19 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Exception.hpp"
+#include "RuntimeError.hpp"
 
 namespace erbsland::err {
 
 /// An overflow error exception.
 /// These exceptions are thrown when an operation results in an overflow.
-class OverflowError : public Exception {
+class OverflowError : public RuntimeError {
 public:
     /// Create an overflow error exception with a reason.
     /// @param reason The reason for the overflow error.
-    explicit OverflowError(text::StringView reason) noexcept : Exception{std::move(reason)} {}
+    explicit OverflowError(text::StringView reason) noexcept : RuntimeError{std::move(reason)} {}
     /// @overload
-    explicit OverflowError(const std::string_view reason) noexcept : Exception{reason} {}
+    explicit OverflowError(const std::string_view reason) noexcept : RuntimeError{reason} {}
+
+    // defaults
+    ~OverflowError() override = default;
 };
 
 }

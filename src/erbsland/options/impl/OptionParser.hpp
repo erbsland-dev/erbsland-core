@@ -91,6 +91,9 @@ private:
     [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) const -> bool;
     [[nodiscard]] auto validateOptionNames() -> bool;
 
+    [[nodiscard]] auto isIndexInArgs(unit::ArgumentIndex index) const -> bool;
+    [[nodiscard]] auto getArgAt(unit::ArgumentIndex index) const -> text::StringView;
+
     auto makeError(OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index) -> bool;
     auto makeError(
         OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)

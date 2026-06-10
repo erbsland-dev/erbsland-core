@@ -96,12 +96,12 @@ auto OptionManager::convertCommandLineArguments(const int argc, char *argv[]) ->
     if (argc <= 0 || argv == nullptr) {
         return result;
     }
-    result.reserve(static_cast<std::size_t>(argc));
+    result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
-            result.emplace_back();
+            result.append(text::StringView{});
         } else {
-            result.emplace_back(text::String{std::string_view{argv[index]}});
+            result.append(text::String{std::string_view{argv[index]}});
         }
     }
     return result;
@@ -112,12 +112,12 @@ auto OptionManager::convertCommandLineArguments(const int argc, wchar_t *argv[])
     if (argc <= 0 || argv == nullptr) {
         return result;
     }
-    result.reserve(static_cast<std::size_t>(argc));
+    result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
-            result.emplace_back();
+            result.append(text::StringView{});
         } else {
-            result.emplace_back(text::StringConverter{std::wstring_view{argv[index]}}.toString());
+            result.append(text::StringConverter{std::wstring_view{argv[index]}}.toString());
         }
     }
     return result;

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/core/Application.hpp>
+#include <erbsland/core/CommandLineArguments.hpp>
 #include <erbsland/err/OptionError.hpp>
 #include <erbsland/options/Option.hpp>
 #include <erbsland/options/OptionChoice.hpp>
@@ -19,13 +19,13 @@
 #include <memory>
 #include <vector>
 
-using el::core::Application;
 using el::core::CommandLineArguments;
 using el::err::OptionError;
 using el::text::String;
 using el::text::StringView;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
+using el::unit::ElementIndex;
 using el::unit::ExitCode;
 using namespace el::options;
 
@@ -336,130 +336,5 @@ public:
         REQUIRE(renderer->errorDisplayed);
         REQUIRE(renderer->errorHadOptions);
         REQUIRE(renderer->errorReason == OptionErrorReason::UnknownName);
-    }
-
-    void testApplicationStub() {
-        char arg0[] = "tool";
-        char arg1[] = "--verbose";
-        char *argv[] = {arg0, arg1};
-
-        auto application = Application{2, argv};
-        REQUIRE(application.options() != nullptr);
-        REQUIRE_EQUAL(application.commandLineArguments().size(), 2U);
-        REQUIRE(application.commandLineArguments().at(0) == "tool"_el);
-        REQUIRE(application.commandLineArguments().at(1) == "--verbose"_el);
-
-        application.info().setApplicationName("Tool"_el);
-        REQUIRE(application.info().applicationName() == "Tool"_el);
-
-        application.setMainFn([]() -> ExitCode { return ExitCode{17}; });
-        REQUIRE(application.run() != 0);
-        REQUIRE(application.optionValues() == nullptr);
-    }
-
-    void testApplicationModuleMain() {
-        char arg0[] = "tool";
-        char arg1[] = "run";
-        char arg2[] = "--name";
-        char arg3[] = "Ada";
-        char arg4[] = "-vv";
-        char *argv[] = {arg0, arg1, arg2, arg3, arg4};
-
-        auto application = Application{5, argv};
-        auto moduleMainCalled = false;
-        auto applicationMainCalled = false;
-        auto moduleValues = OptionValuesPtr{};
-        auto moduleMainGotFlagCount = false;
-        auto module = OptionModule::create("run"_el);
-        module->addOption("--name"_el).setType(OptionType::Text);
-        module->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
-        module->setMainFn(
-            [&moduleMainCalled, &moduleValues, &moduleMainGotFlagCount](OptionValuesPtr values) -> ExitCode {
-                moduleMainCalled = true;
-                moduleValues = values;
-                moduleMainGotFlagCount = values->getFlagCount("--verbose"_el) == ArgumentCount{2U};
-                return ExitCode{23};
-            });
-        application.options()->addModule(module);
-        application.setMainFn([&applicationMainCalled]() -> ExitCode {
-            applicationMainCalled = true;
-            return ExitCode{17};
-        });
-
-        REQUIRE_EQUAL(application.run(), 23);
-        REQUIRE(application.optionValues() == moduleValues);
-        REQUIRE(application.optionValues()->module() == module);
-        REQUIRE(moduleValues->getText("--name"_el) == "Ada"_el);
-        REQUIRE(moduleValues->value("--name"_el)->argumentIndex() == ArgumentIndex{3U});
-        REQUIRE(moduleMainGotFlagCount);
-        REQUIRE(moduleMainCalled);
-        REQUIRE_FALSE(applicationMainCalled);
-    }
-
-    void testApplicationMainFallback() {
-        char arg0[] = "tool";
-        char *argv[] = {arg0};
-
-        auto application = Application{1, argv};
-        auto applicationMainCalled = false;
-        application.setMainFn([&applicationMainCalled]() -> ExitCode {
-            applicationMainCalled = true;
-            return ExitCode{17};
-        });
-
-        REQUIRE_EQUAL(application.run(), 17);
-        REQUIRE(application.optionValues() != nullptr);
-        REQUIRE(applicationMainCalled);
-    }
-
-    void testApplicationSkipsModuleMainForNonSuccess() {
-        char helpArg0[] = "tool";
-        char helpArg1[] = "run";
-        char helpArg2[] = "--help";
-        char *helpArgv[] = {helpArg0, helpArg1, helpArg2};
-
-        auto helpApplication = Application{3, helpArgv};
-        auto moduleMainCalled = false;
-        auto applicationMainCalled = false;
-        auto module = OptionModule::create("run"_el);
-        module->setMainFn([&moduleMainCalled](OptionValuesPtr) -> ExitCode {
-            moduleMainCalled = true;
-            return ExitCode{23};
-        });
-        helpApplication.options()->addModule(module);
-        helpApplication.setMainFn([&applicationMainCalled]() -> ExitCode {
-            applicationMainCalled = true;
-            return ExitCode{17};
-        });
-
-        REQUIRE_EQUAL(helpApplication.run(), 0);
-        REQUIRE(helpApplication.optionValues() == nullptr);
-        REQUIRE_FALSE(moduleMainCalled);
-        REQUIRE_FALSE(applicationMainCalled);
-
-        char errorArg0[] = "tool";
-        char errorArg1[] = "run";
-        char errorArg2[] = "--name";
-        char *errorArgv[] = {errorArg0, errorArg1, errorArg2};
-
-        auto errorApplication = Application{3, errorArgv};
-        moduleMainCalled = false;
-        applicationMainCalled = false;
-        auto errorModule = OptionModule::create("run"_el);
-        errorModule->addOption("--name"_el).setType(OptionType::Text);
-        errorModule->setMainFn([&moduleMainCalled](OptionValuesPtr) -> ExitCode {
-            moduleMainCalled = true;
-            return ExitCode{23};
-        });
-        errorApplication.options()->addModule(errorModule);
-        errorApplication.setMainFn([&applicationMainCalled]() -> ExitCode {
-            applicationMainCalled = true;
-            return ExitCode{17};
-        });
-
-        REQUIRE(errorApplication.run() != 0);
-        REQUIRE(errorApplication.optionValues() == nullptr);
-        REQUIRE_FALSE(moduleMainCalled);
-        REQUIRE_FALSE(applicationMainCalled);
     }
 };

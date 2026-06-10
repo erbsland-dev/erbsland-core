@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Random_fwd.hpp"
+
 #include "../math/IntegerMath.hpp"
 #include "../math/IntegerRange.hpp"
 #include "../math/IntegerTypes.hpp"
@@ -25,9 +27,6 @@
 #include <vector>
 
 namespace erbsland::random {
-
-class Random;
-using RandomPtr = std::unique_ptr<Random>;
 
 /// The common interface for random number generators.
 /// @seedoc{/topics/random/overview}

@@ -17,6 +17,9 @@ public:
     explicit U32EncodingError(const std::string_view reason, const unit::CpIndex index) noexcept :
         EncodingError{reason}, _index(index) {}
 
+    // defaults
+    ~U32EncodingError() override = default;
+
 private:
     unit::CpIndex _index;
 };

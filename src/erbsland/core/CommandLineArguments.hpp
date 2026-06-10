@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/String.hpp"
-
-#include <vector>
+#include "../text/StringViewList.hpp"
 
 namespace erbsland::core {
 
 /// A list of command line arguments.
-/// @tested{OptionsFrameworkTest OptionsUsageTest}
-using CommandLineArguments = std::vector<text::String>;
+/// @tested{ApplicationOptionsTest OptionsUsageTest}
+using CommandLineArguments = text::StringViewList;
 
 }

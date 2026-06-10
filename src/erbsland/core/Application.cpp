@@ -2,17 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Application.hpp"
 
+#include "impl/ApplicationData.hpp"
+#include "impl/ApplicationInstanceManager.hpp"
 #include "impl/LibraryVersion.hpp"
 
 #include "../cterm/Terminal.hpp"
 #include "../cterm/TerminalOptionsRenderer.hpp"
 #include "../cterm/TerminalStream.hpp"
 #include "../err/ApplicationError.hpp"
-#include "../err/Exception.hpp"
+#include "../event/EventLoop.hpp"
 #include "../options/OptionManager.hpp"
 #include "../options/OptionModule.hpp"
-#include "../options/Options.hpp"
-#include "../options/OptionValues.hpp"
 #include "../random/SecureRandom.hpp"
 #include "../random/ThreadSafeFastRandom.hpp"
 #include "../stream/StandardStreams.hpp"
@@ -23,38 +23,36 @@ namespace erbsland::core {
 
 using namespace text::literals;
 
-Application *Application::_instance = nullptr;
-std::unique_ptr<Application> Application::_ownedInstance;
-std::recursive_mutex Application::_instanceMutex;
-
-Application::Application() : _options{options::Options::create()} {
-    registerInstance();
+Application::Application() {
+    _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
 }
 
-Application::Application(const int argc, char *argv[]) :
-    _options{options::Options::create()},
-    _commandLineArguments{options::OptionManager::convertCommandLineArguments(argc, argv)} {
-    registerInstance();
+Application::Application(const int argc, char *argv[]) {
+    _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
+    _data->setCommandLineArguments(argc, argv);
 }
 
-Application::Application(const int argc, wchar_t *argv[]) :
-    _options{options::Options::create()},
-    _commandLineArguments{options::OptionManager::convertCommandLineArguments(argc, argv)} {
-    registerInstance();
+Application::Application(const int argc, wchar_t *argv[]) {
+    _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
+    _data->setCommandLineArguments(argc, argv);
+}
+
+Application::Application(impl::ApplicationDataPtr data) : _data{std::move(data)} {
 }
 
 Application::~Application() {
-    restoreTerminalIntegration();
-    unregisterInstance();
+    if (impl::ApplicationInstanceManager::instance()->unregisterInstance(this)) {
+        _data->cleanupBeforeAppExit();
+    }
 }
 
 auto Application::run() -> int {
     unit::ExitCode exitCode;
     try {
         initialize();
-        registerCommandLineOptions(_options);
+        registerCommandLineOptions(_data->options());
         parseCommandLine();
-        if (_optionValues == nullptr) {
+        if (_data->optionValues() == nullptr) {
             exitCode = unit::ExitCode::success();
         } else {
             exitCode = main();
@@ -71,23 +69,50 @@ auto Application::run() -> int {
         stream::stdErr()->writeLine(error.toString());
         stream::stdErr()->flush();
     }
-    restoreTerminalIntegration();
     return exitCode.toRawValue();
 }
 
+void Application::setMainFn(MainFn mainFn) {
+    _data->mainFn() = std::move(mainFn);
+}
+
+auto Application::options() const noexcept -> const options::OptionsPtr & {
+    return _data->options();
+}
+
+void Application::releaseOptions() noexcept {
+    _data->options().reset();
+}
+
+auto Application::info() noexcept -> ApplicationInfo & {
+    return _data->info();
+}
+
+auto Application::info() const noexcept -> const ApplicationInfo & {
+    return _data->info();
+}
+
+auto Application::commandLineArguments() const noexcept -> const CommandLineArguments & {
+    return _data->commandLineArguments();
+}
+
+auto Application::optionValues() const noexcept -> const options::OptionValuesPtr & {
+    return _data->optionValues();
+}
+
 void Application::enableTerminal() {
-    if (_isTerminalEnabled) {
+    if (_data->isTerminalEnabled()) {
         return;
     }
-    _terminal = createAndInitializeTerminal();
-    if (_terminal == nullptr) {
+    _data->terminal() = createAndInitializeTerminal();
+    if (_data->terminal() == nullptr) {
         return;
     }
-    _isTerminalEnabled = true;
-    if (_terminal->isInteractive()) {
-        const auto [output, error] = cterm::TerminalStream::createStandardStreams(_terminal);
-        _standardStreamRedirect = stream::redirectStandardStreams(output, error);
-        _optionRenderer = cterm::TerminalOptionsRenderer::create(_terminal);
+    _data->setTerminalEnabled(true);
+    if (_data->terminal()->isInteractive()) {
+        const auto [output, error] = cterm::TerminalStream::createStandardStreams(_data->terminal());
+        _data->standardStreamRedirect() = stream::redirectStandardStreams(output, error);
+        _data->optionRenderer() = cterm::TerminalOptionsRenderer::create(_data->terminal());
     }
 }
 
@@ -100,30 +125,30 @@ void Application::registerCommandLineOptions([[maybe_unused]] const options::Opt
 }
 
 void Application::parseCommandLine() {
-    if (_options == nullptr) {
+    if (_data->options() == nullptr) {
         return;
     }
-    _options->setApplicationInfo(_info);
+    _data->options()->setApplicationInfo(_data->info());
 
-    auto manager = options::OptionManager{_options};
-    if (_optionRenderer != nullptr) {
-        manager.setRenderer(_optionRenderer);
+    auto manager = options::OptionManager{_data->options()};
+    if (_data->optionRenderer() != nullptr) {
+        manager.setRenderer(_data->optionRenderer());
     }
-    _optionValues = manager.parseOrThrow(_commandLineArguments);
+    _data->optionValues() = manager.parseOrThrow(_data->commandLineArguments());
 }
 
 auto Application::main() -> unit::ExitCode {
-    if (_optionValues == nullptr) {
+    if (_data->optionValues() == nullptr) {
         return unit::ExitCode::success();
     }
     // Check for a main function from a selected command line module.
-    const auto &module = _optionValues->module();
+    const auto &module = _data->optionValues()->module();
     if (module != nullptr && module->mainFn()) {
-        return module->mainFn()(_optionValues);
+        return module->mainFn()(_data->optionValues());
     }
     // Check if a main function was defined.
-    if (_mainFn) {
-        return _mainFn();
+    if (_data->mainFn()) {
+        return _data->mainFn()();
     }
     return unit::ExitCode::success();
 }
@@ -139,42 +164,57 @@ auto Application::createAndInitializeTerminal() -> cterm::TerminalPtr {
 }
 
 auto Application::random() -> random::Random & {
-    auto lock = std::scoped_lock{_randomMutex};
-    if (_random == nullptr) {
+    auto lock = std::scoped_lock{_data->randomMutex()};
+    if (_data->random() == nullptr) {
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-        initializeRandom(_random);
+        initializeRandom(_data->random());
 #endif
-        if (_random == nullptr) {
-            _random = std::make_unique<random::ThreadSafeFastRandom>();
+        if (_data->random() == nullptr) {
+            _data->random() = std::make_unique<random::ThreadSafeFastRandom>();
         }
     }
-    return *_random;
+    return *_data->random();
 }
 
 auto Application::secureRandom() -> random::Random & {
-    auto lock = std::scoped_lock{_randomMutex};
-    if (_secureRandom == nullptr) {
+    auto lock = std::scoped_lock{_data->randomMutex()};
+    if (_data->secureRandom() == nullptr) {
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-        initializeSecureRandom(_secureRandom);
+        initializeSecureRandom(_data->secureRandom());
 #endif
-        if (_secureRandom == nullptr) {
-            _secureRandom = std::make_unique<random::SecureRandom>();
+        if (_data->secureRandom() == nullptr) {
+            _data->secureRandom() = std::make_unique<random::SecureRandom>();
         }
     }
-    return *_secureRandom;
+    return *_data->secureRandom();
 }
 
 auto Application::terminal() const -> const cterm::TerminalPtr & {
-    if (!_isTerminalEnabled || _terminal == nullptr) {
+    if (!_data->isTerminalEnabled() || _data->terminal() == nullptr) {
         // FIXME! That's the wrong exception for this.
         throw err::ApplicationError{"Terminal must be enabled before use."_el};
     }
-    return _terminal;
+    return _data->terminal();
 }
 
-auto Application::instance() noexcept -> Application * {
-    const auto lock = std::scoped_lock{_instanceMutex};
-    return _instance;
+auto Application::eventLoop() -> event::EventLoop & {
+    return *_data->event().eventLoop;
+}
+
+auto Application::eventTarget() -> event::EventTargetPtr {
+    return _data->event().eventLoop;
+}
+
+auto Application::eventRegistry() -> event::EventIdRegistry & {
+    return _data->event().eventIdRegistry;
+}
+
+auto Application::instance() -> Application & {
+    return impl::ApplicationInstanceManager::instance()->application();
+}
+
+auto Application::linkWith(Application &app) -> void {
+    impl::ApplicationInstanceManager::instance()->linkWith(app);
 }
 
 auto Application::libraryVersion() noexcept -> unit::Version {
@@ -195,43 +235,8 @@ void Application::initializeSecureRandom([[maybe_unused]] random::RandomPtr &ran
 }
 #endif
 
-void Application::registerInstance() noexcept {
-    const auto lock = std::scoped_lock{_instanceMutex};
-    if (_instance == nullptr) {
-        _instance = this;
-    }
-}
-
-void Application::unregisterInstance() noexcept {
-    const auto lock = std::scoped_lock{_instanceMutex};
-    if (_instance == this) {
-        _instance = nullptr;
-    }
-}
-
-void Application::restoreTerminalIntegration() noexcept {
-    if (_standardStreamRedirect.isActive()) {
-        try {
-            stream::stdOut()->flush();
-            stream::stdErr()->flush();
-        } catch (...) {
-            // ignore during cleanup
-        }
-    }
-    if (_isTerminalEnabled && _terminal != nullptr) {
-        _terminal->restoreScreen();
-        _isTerminalEnabled = false;
-    }
-    _standardStreamRedirect.reset();
-    _optionRenderer.reset();
-}
-
 auto application() -> Application & {
-    auto lock = std::scoped_lock{Application::_instanceMutex};
-    if (Application::_instance == nullptr) {
-        Application::_ownedInstance = std::make_unique<Application>();
-    }
-    return *Application::_instance;
+    return impl::ApplicationInstanceManager::instance()->application();
 }
 
 }

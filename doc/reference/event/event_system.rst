@@ -8,27 +8,18 @@ Event System
 Interface
 =========
 
-.. doxygenclass:: erbsland::event::Event
+.. doxygenfile:: erbsland/event/EventBackend.hpp
+.. doxygenclass:: erbsland::event::EventId
     :members:
-.. doxygenclass:: erbsland::event::EventData
+.. doxygenclass:: erbsland::event::EventIdInfo
     :members:
-.. doxygenclass:: erbsland::event::EventDriver
+.. doxygenclass:: erbsland::event::EventIdRegistry
     :members:
-.. doxygenclass:: erbsland::event::EventIdentifier
+.. doxygenclass:: erbsland::event::EventLoop
     :members:
-.. doxygenclass:: erbsland::event::EventScheduler
-    :members:
-.. doxygenclass:: erbsland::event::EventThread
-    :members:
-.. doxygenclass:: erbsland::event::QuitEvent
-    :members:
-.. doxygenclass:: erbsland::event::ScheduledActionRef
-    :members:
-.. doxygenclass:: erbsland::event::impl::StopState
-    :members:
-
-.. doxygenclass:: erbsland::event::StopToken
-    :members:
-
-.. doxygenclass:: erbsland::event::StopSource
-    :members:
+.. doxygenfile:: erbsland/event/EventPipe.hpp
+.. doxygenfile:: erbsland/event/EventPipeReceiver.hpp
+.. doxygenfile:: erbsland/event/EventPipeSender.hpp
+.. doxygenfile:: erbsland/event/EventSource.hpp
+.. doxygenfile:: erbsland/event/EventTarget.hpp
+.. doxygenfile:: erbsland/event/EventThread.hpp

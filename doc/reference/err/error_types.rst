@@ -34,17 +34,23 @@ Interface
     :members:
 .. doxygenclass:: erbsland::err::FormatError
     :members:
+.. doxygenclass:: erbsland::err::LogicError
+    :members:
 .. doxygenclass:: erbsland::err::OptionError
     :members:
 .. doxygenclass:: erbsland::err::OutOfRangeError
     :members:
 .. doxygenclass:: erbsland::err::OverflowError
     :members:
+.. doxygenclass:: erbsland::err::ParameterError
+    :members:
 .. doxygenclass:: erbsland::err::ParseError
     :members:
 .. doxygenclass:: erbsland::err::ParseNumberError
     :members:
 .. doxygenclass:: erbsland::err::RandomError
+    :members:
+.. doxygenclass:: erbsland::err::RuntimeError
     :members:
 .. doxygenclass:: erbsland::err::StreamError
     :members:

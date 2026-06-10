@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../core/ApplicationTestScope.hpp"
+
 #include <erbsland/core/Application.hpp>
 #include <erbsland/random/SecureRandom.hpp>
 #include <erbsland/random/ThreadSafeFastRandom.hpp>
@@ -16,7 +18,8 @@ TESTED_TARGETS(Application FastRandom SecureRandom)
 class RandomApplicationTest final : public el::UnitTest {
 public:
     void testStableAccessors() {
-        auto application = Application{};
+        auto scope = ApplicationTestScope<Application>{};
+        auto &application = scope.app();
 
         REQUIRE(&application.random() == &application.random());
         REQUIRE(&application.secureRandom() == &application.secureRandom());
@@ -24,7 +27,8 @@ public:
     }
 
     void testConcurrentApplicationRandom() {
-        auto application = Application{};
+        auto scope = ApplicationTestScope<Application>{};
+        auto &application = scope.app();
         auto failures = std::atomic<int>{0};
         auto threads = std::vector<std::thread>{};
 

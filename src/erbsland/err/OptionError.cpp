@@ -5,7 +5,7 @@
 namespace erbsland::err {
 
 OptionError::OptionError(options::OptionErrorContext context) :
-    Exception{context.description()}, _context{std::move(context)} {
+    RuntimeError{context.description()}, _context{std::move(context)} {
 }
 
 }

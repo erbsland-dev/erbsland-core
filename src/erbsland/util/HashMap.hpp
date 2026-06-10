@@ -260,7 +260,9 @@ public: // change
     /// @param key The key.
     /// @param value The value.
     /// @return A reference to this map.
-    auto set(const Key &key, const Value &value) -> Self &;
+    template <typename tValueFwd>
+        requires std::is_constructible_v<Value, tValueFwd>
+    auto set(const Key &key, tValueFwd &&value) -> Self &;
     /// Try to replace an existing value.
     /// @param key The key to replace.
     /// @param value The new value.

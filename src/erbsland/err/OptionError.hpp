@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Exception.hpp"
+#include "RuntimeError.hpp"
 
 #include "../options/OptionErrorContext.hpp"
 
@@ -10,7 +10,7 @@ namespace erbsland::err {
 
 /// An error raised while processing command line options.
 /// @tested{OptionsFrameworkTest OptionsUsageTest}
-class OptionError : public Exception {
+class OptionError : public RuntimeError {
 public:
     /// Create an option error.
     OptionError() noexcept = default;

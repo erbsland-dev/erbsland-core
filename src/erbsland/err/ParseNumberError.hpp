@@ -32,6 +32,9 @@ public:
         unit::CpIndex position = unit::CpIndex::noIndex()) noexcept :
         ParseNumberError{text::String{reason}, status, position} {}
 
+    // defaults
+    ~ParseNumberError() override = default;
+
 public: // accessors
     /// Get the reader status that caused the error.
     [[nodiscard]] auto status() const noexcept -> text::ReadNumberStatus { return _status; }

@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "MoveAwareTestValue.hpp"
+
 #include <erbsland/unit/ElementCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashMap.hpp>
@@ -19,6 +21,11 @@ TESTED_TARGETS(HashMap)
 class HashMapTest final : public el::UnitTest {
 public:
     using IntHashMap = el::util::HashMap<int, int>;
+    using MoveHashMap = el::util::HashMap<
+        erbsland::test::MoveAwareTestValue,
+        erbsland::test::MoveAwareTestValue,
+        erbsland::test::MoveAwareTestValueHash>;
+    using MoveValue = erbsland::test::MoveAwareTestValue;
 
     void testConstructionAndElements() {
         const auto map = IntHashMap{{{1, 10}, {2, 20}, {3, 30}}};
@@ -64,6 +71,43 @@ public:
         REQUIRE(!second.tryInsert(4, 41));
         second.shrinkToFit();
         REQUIRE(second.capacity().toSizeT() >= second.count().toSizeT());
+    }
+
+    void testMoveAwareChange() {
+        auto map = MoveHashMap{};
+
+        auto key = MoveValue{1};
+        const auto keyCounts = key.counts();
+        auto value = MoveValue{10};
+        const auto valueCounts = value.counts();
+        map.set(std::move(key), std::move(value));
+        REQUIRE_EQUAL(keyCounts->copies, 0);
+        REQUIRE_EQUAL(valueCounts->copies, 0);
+        REQUIRE(map.contains(MoveValue{1}));
+
+        const auto lvalueKey = MoveValue{2};
+        auto rvalueValue = MoveValue{20};
+        const auto rvalueValueCounts = rvalueValue.counts();
+        map.set(lvalueKey, std::move(rvalueValue));
+        REQUIRE_EQUAL(rvalueValueCounts->copies, 0);
+        REQUIRE(map.contains(MoveValue{2}));
+
+        auto replacementKey = MoveValue{1};
+        const auto replacementKeyCounts = replacementKey.counts();
+        auto replacementValue = MoveValue{11};
+        const auto replacementValueCounts = replacementValue.counts();
+        REQUIRE(map.tryReplace(std::move(replacementKey), std::move(replacementValue)));
+        REQUIRE_EQUAL(replacementKeyCounts->copies, 0);
+        REQUIRE_EQUAL(replacementValueCounts->copies, 0);
+
+        auto insertedKey = MoveValue{3};
+        const auto insertedKeyCounts = insertedKey.counts();
+        auto insertedValue = MoveValue{30};
+        const auto insertedValueCounts = insertedValue.counts();
+        REQUIRE(map.tryInsert(std::move(insertedKey), std::move(insertedValue)));
+        REQUIRE_EQUAL(insertedKeyCounts->copies, 0);
+        REQUIRE_EQUAL(insertedValueCounts->copies, 0);
+        REQUIRE(map.contains(MoveValue{3}));
     }
 
     void testRemoveTakeAndAlgorithms() {

@@ -7,6 +7,8 @@
 #include <array>
 #include <vector>
 
+namespace demo {
+
 /// Demonstrate `FrameBorder` and `GridLayout` with independently configurable border elements.
 class GridLayoutApp final : public TerminalApplication {
 public:
@@ -46,3 +48,5 @@ private:
     std::size_t _columnCount{3};
     std::size_t _rowCount{2};
 };
+
+}

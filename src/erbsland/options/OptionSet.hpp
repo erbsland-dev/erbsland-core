@@ -13,8 +13,8 @@
 
 namespace erbsland::options {
 
-/// A set of options with its own parsing callbacks.
-/// The parser can combine multiple sets for parsing while still invoking each set's callbacks separately.
+/// A set of options with its own help grouping, flags, and parsing callbacks.
+/// The parser can combine multiple enabled sets for parsing while still invoking each set's callbacks separately.
 /// @tested{OptionsFrameworkTest}
 class OptionSet : public OptionSetManager {
 public:
@@ -31,8 +31,10 @@ public:
     using OptionSetManager::addOption;
 
     /// Create an empty shared option set.
+    /// @return A shared option set with no options, default help visibility, and no callbacks.
     [[nodiscard]] static auto create() -> OptionSetPtr;
     /// Add an existing option to this set.
+    /// @param option The option to append. Null pointers are stored as-is and ignored by parser/display code.
     void addOption(OptionPtr option);
 
 public: // implement OptionsManager
@@ -40,15 +42,29 @@ public: // implement OptionsManager
     auto editOption(const text::StringView &name) -> OptionEditor override;
 
 public: // accessors
-    /// Get the help text for this set.
+    /// Get the help metadata for this set.
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
-    /// Set the help text for this set.
+    /// Set the complete help metadata for this set.
+    /// @param help The replacement help metadata. A non-empty title becomes the help group title.
     void setHelp(OptionHelp help) { _help = std::move(help); }
+    /// Set the help title for this set.
+    /// @param title Group title used in generated help output.
+    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    /// Set the help description for this set.
+    /// @param description Description for renderers that expose set-level help text.
+    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    /// Set the help epilog for this set.
+    /// @param epilog Optional trailing text for renderers that expose set-level epilogs.
+    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    /// Set the help visibility for this set.
+    /// @param visibility Controls whether options in this set are visible in generated help output.
+    void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get all options in this set.
     [[nodiscard]] auto options() const noexcept -> const std::vector<OptionPtr> & { return _options; }
     /// Get the set flags.
     [[nodiscard]] auto flags() const noexcept -> OptionFlags { return _flags; }
     /// Set the set flags.
+    /// @param flags The replacement flags. `OptionFlag::Disabled` removes the whole set from parsing and help.
     void setFlags(OptionFlags flags) noexcept { _flags = flags; }
     /// Get the pre-parsing callback.
     [[nodiscard]] auto preParsingFn() const noexcept -> const PreOptionSetParsingFn & { return _preParsingFn; }

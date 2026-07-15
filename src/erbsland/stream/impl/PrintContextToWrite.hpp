@@ -27,7 +27,7 @@ public:
     auto operator=(PrintContextToWrite &&) -> PrintContextToWrite & = delete;
 
 public:
-    void commit() override;
+    auto commit() -> StreamWriteStatus override;
 
 protected:
     [[nodiscard]] auto builder() -> text::StringBuilder & override { return _builder; }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AnyString_fwd.hpp"
 #include "StringConverter.hpp"
 #include "StringKind.hpp"
 
@@ -40,20 +41,22 @@ public:
     /// Create a string view from a UTF-8 string.
     AnyStringView(const U8String &str) noexcept : // NOLINT(*-explicit-constructor)
         AnyStringView{U8StringView{str}} {}
-    AnyStringView(U8String &&str) = delete;
     /// Create a string view from a UTF-16 string.
     AnyStringView(const U16String &str) noexcept : // NOLINT(*-explicit-constructor)
         AnyStringView{U16StringView{str}} {}
-    AnyStringView(U16String &&str) = delete;
     /// Create a string view from a UTF-32 string.
     AnyStringView(const U32String &str) noexcept : // NOLINT(*-explicit-constructor)
         AnyStringView{U32StringView{str}} {}
-    AnyStringView(U32String &&str) = delete;
+    /// Create an view from an AnyString
+    AnyStringView(const AnyString &str) noexcept; // NOLINT(*-explicit-constructor)
 
     // defaults
     ~AnyStringView() = default;
     AnyStringView(const AnyStringView &) = default;
     AnyStringView(AnyStringView &&) = default;
+    AnyStringView(U8String &&str) = delete;
+    AnyStringView(U16String &&str) = delete;
+    AnyStringView(U32String &&str) = delete;
     auto operator=(const AnyStringView &) -> AnyStringView & = default;
     auto operator=(AnyStringView &&) -> AnyStringView & = default;
 

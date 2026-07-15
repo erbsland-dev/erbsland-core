@@ -7,7 +7,6 @@
 namespace erbsland::text {
 
 /// Sign handling for integer text formatting.
-/// @tested{IntegerConversionTest}
 enum class IntegerSignMode : uint8_t {
     NegativeOnly = 0, ///< Emit a sign only for negative values.
     Always = 1,       ///< Emit `+` for positive values and `-` for negative values.

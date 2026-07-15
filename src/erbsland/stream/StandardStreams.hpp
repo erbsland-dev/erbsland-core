@@ -3,83 +3,90 @@
 #pragma once
 
 #include "StandardStreamRedirect.hpp"
+#include "TextInputStream.hpp"
 #include "TextOutputStream.hpp"
 
 namespace erbsland::stream {
 
+/// Get the process standard input stream.
+/// The returned stream is cached and shared by the whole process. Calling `close()` on this stream has no effect.
+/// @return The standard input stream.
+/// @throws stream::StreamError If the process standard input stream is not available.
+[[nodiscard]] auto stdIn() -> TextInputStreamPtr;
 /// Get the process standard output stream.
 /// The returned stream is cached and shared by the whole process. Calling `close()` on this stream has no effect.
 /// @return The standard output stream.
-/// @throws err::StreamError If the process standard output stream is not available.
-/// @tested{StandardStreamsTest}
+/// @throws stream::StreamError If the process standard output stream is not available.
 [[nodiscard]] auto stdOut() -> TextOutputStreamPtr;
 /// Get the process standard error stream.
 /// The returned stream is cached and shared by the whole process. Calling `close()` on this stream has no effect.
 /// @return The standard error stream.
-/// @throws err::StreamError If the process standard error stream is not available.
-/// @tested{StandardStreamsTest}
+/// @throws stream::StreamError If the process standard error stream is not available.
 [[nodiscard]] auto stdErr() -> TextOutputStreamPtr;
+/// Replace the process standard input stream for the lifetime of the returned guard.
+/// Existing pointers returned by `stdIn()` keep using the active replacement.
+/// @param input The replacement input stream.
+/// @return The guard that restores the previous input stream target.
+/// @throws stream::StreamError If `input` is empty.
+[[nodiscard]] auto redirectStdIn(TextInputStreamPtr input) -> StandardStreamRedirect;
 /// Replace the process standard output stream for the lifetime of the returned guard.
 /// Existing pointers returned by `stdOut()` keep using the active replacement.
 /// @param output The replacement output stream.
 /// @return The guard that restores the previous output stream target.
-/// @throws err::StreamError If `output` is empty.
-/// @tested{StandardStreamsTest}
+/// @throws stream::StreamError If `output` is empty.
 [[nodiscard]] auto redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect;
 /// Replace the process standard error stream for the lifetime of the returned guard.
 /// Existing pointers returned by `stdErr()` keep using the active replacement.
 /// @param error The replacement error stream.
 /// @return The guard that restores the previous error stream target.
-/// @throws err::StreamError If `error` is empty.
-/// @tested{StandardStreamsTest}
+/// @throws stream::StreamError If `error` is empty.
 [[nodiscard]] auto redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect;
 /// Replace both process standard text streams for the lifetime of the returned guard.
 /// Existing pointers returned by `stdOut()` and `stdErr()` keep using the active replacements.
 /// @param output The replacement output stream.
 /// @param error The replacement error stream.
 /// @return The guard that restores both previous stream targets.
-/// @throws err::StreamError If a replacement stream is empty.
-/// @tested{StandardStreamsTest}
+/// @throws stream::StreamError If a replacement stream is empty.
 [[nodiscard]] auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error)
     -> StandardStreamRedirect;
 
 namespace io {
 
 /// @copydoc TextOutputStream::write(text::Char)
-inline void write(text::Char character) {
-    stdOut()->write(character);
+inline auto write(text::Char character) -> StreamWriteStatus {
+    return stdOut()->write(character);
 }
 /// @copydoc TextOutputStream::write(const text::StringView&)
-inline void write(const text::StringView &text) {
-    stdOut()->write(text);
+inline auto write(const text::StringView &text) -> StreamWriteStatus {
+    return stdOut()->write(text);
 }
 /// @copydoc TextOutputStream::writeLine()
-inline void writeLine() {
-    stdOut()->writeLine();
+inline auto writeLine() -> StreamWriteStatus {
+    return stdOut()->writeLine();
 }
 /// @copydoc TextOutputStream::writeLine(const text::StringView&)
-inline void writeLine(const text::StringView &text) {
-    stdOut()->writeLine(text);
+inline auto writeLine(const text::StringView &text) -> StreamWriteStatus {
+    return stdOut()->writeLine(text);
 }
 /// @copydoc TextOutputStream::print()
 template <typename... tArgs>
-void print(const tArgs &...args) {
-    stdOut()->print(args...);
+auto print(const tArgs &...args) -> StreamWriteStatus {
+    return stdOut()->print(args...);
 }
 /// @copydoc TextOutputStream::printLine()
 template <typename... tArgs>
-void printLine(const tArgs &...args) {
-    stdOut()->printLine(args...);
+auto printLine(const tArgs &...args) -> StreamWriteStatus {
+    return stdOut()->printLine(args...);
 }
 /// @copydoc TextOutputStream::print()
 template <typename... tArgs>
-void printError(const tArgs &...args) {
-    stdErr()->print(args...);
+auto printError(const tArgs &...args) -> StreamWriteStatus {
+    return stdErr()->print(args...);
 }
 /// @copydoc TextOutputStream::printLine()
 template <typename... tArgs>
-void printErrorLine(const tArgs &...args) {
-    stdErr()->printLine(args...);
+auto printErrorLine(const tArgs &...args) -> StreamWriteStatus {
+    return stdErr()->printLine(args...);
 }
 
 }

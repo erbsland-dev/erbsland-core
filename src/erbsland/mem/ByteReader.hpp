@@ -7,7 +7,8 @@
 #include "ByteBlockView.hpp"
 #include "Endianness.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "impl/Throw.hpp"
+
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
 
@@ -81,7 +82,7 @@ public: // integer read
     template <std::integral T>
     [[nodiscard]] auto readIntegerOrThrow() -> T {
         if (!canRead(sizeof(T))) {
-            err::throwOutOfRange("Read position out of range");
+            impl::throwOutOfRange("Read position out of range");
         }
         auto result = readIntegerUnchecked<T>();
         advance(sizeof(T));

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView::transformed()` maps decoded characters into a new string.
 /// You can use Unicode-aware operations, ASCII-only operations, or a custom mapping function.
 /// The original storage can be reused when the transformation does not change the text.
@@ -25,4 +27,6 @@ void caseTransformation() {
     const auto highlighted = quietLabel.transformed(
         [](const el::Char character) noexcept -> el::Char { return character == U':' ? U'→' : character; });
     el::io::printLine("\nCustom map ..:   "_el, highlighted);
+}
+
 }

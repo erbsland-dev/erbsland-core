@@ -8,6 +8,8 @@
 #include <random>
 #include <vector>
 
+namespace demo {
+
 /// Continuously add random frames to demonstrate automatic line combinations.
 class FrameWeaverApp final : public TerminalApplication {
 public:
@@ -68,3 +70,5 @@ private:
     std::chrono::steady_clock::time_point _lastTick{std::chrono::steady_clock::now()};
     StyleMode _styleMode{StyleMode::Heavy};
 };
+
+}

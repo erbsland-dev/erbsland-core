@@ -115,6 +115,21 @@ public:
         REQUIRE(terminal->isInteractive());
     }
 
+    void testNonInteractiveLifecycleEmitsNoTerminalControlSequences() {
+        const auto backend = std::make_shared<TerminalTestBackend>();
+        backend->_isInteractive = false;
+        auto terminal = createTerminal(backend);
+
+        terminal->initializeScreen();
+        terminal->restoreScreen();
+
+        REQUIRE_EQUAL(backend->output(), std::string{});
+        REQUIRE(backend->_cursorVisibilityChanges.empty());
+        REQUIRE(backend->_alternateScreenBufferChanges.empty());
+        REQUIRE_EQUAL(backend->_initializePlatformCallCount, 1);
+        REQUIRE_EQUAL(backend->_restorePlatformCallCount, 1);
+    }
+
     void testTextOutputModeFallsBackToPlainTextAndLocksAnsiFeatures() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         auto terminal = createTerminal(backend, bgeo::BlockSize{2, 1});

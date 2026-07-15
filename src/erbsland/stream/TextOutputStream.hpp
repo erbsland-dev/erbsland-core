@@ -3,6 +3,7 @@
 #pragma once
 
 #include "OutputStream.hpp"
+#include "TextOutputStream_fwd.hpp"
 #include "TextPrintContext.hpp"
 
 #include "../math/AnyIntegerTypes.hpp"
@@ -11,6 +12,7 @@
 #include "../text/String.hpp"
 #include "../text/StringBuilder.hpp"
 #include "../text/StringEncoding.hpp"
+#include "../util/CoTask.hpp"
 
 #include <concepts>
 #include <cstddef>
@@ -20,13 +22,11 @@
 
 namespace erbsland::stream {
 
-class TextOutputStream;
-using TextOutputStreamPtr = std::shared_ptr<TextOutputStream>;
-
 /// A stream that writes decoded Unicode text.
 /// Text output streams write characters and string views. `writeLine` appends a single line-feed character after the
-/// optional text. Encoding invalid text uses replacement behavior.
-/// @tested{EncodedTextStreamTest StandardTextOutputStreamTest}
+/// optional text. Every call is atomic: `Timeout` means none of its encoded output was accepted and the complete call
+/// can be retried. Encoding invalid text uses replacement behavior.
+/// @tested{EncodedTextStreamTest StandardTextOutputStreamTest StringBuilderStreamTest AsyncStreamTest}
 class TextOutputStream : public OutputStream {
 public:
     ~TextOutputStream() override = default;
@@ -40,19 +40,42 @@ public: // accessors
 public: // core interface
     /// Write one character.
     /// @param character The character to write.
-    /// @throws err::StreamError If the stream is closed or the backing target fails.
-    virtual void write(text::Char character) = 0;
+    /// @return `Success` if the character was accepted, or `Timeout` if nothing was accepted.
+    /// @throws stream::StreamError If the stream is closed or the backing target fails.
+    virtual auto write(text::Char character) -> StreamWriteStatus = 0;
     /// Write text.
     /// @param text The text to write.
-    /// @throws err::StreamError If the stream is closed or the backing target fails.
-    virtual void write(const text::StringView &text) = 0;
+    /// @return `Success` if all text was accepted, or `Timeout` if nothing was accepted.
+    /// @throws stream::StreamError If the stream is closed or the backing target fails.
+    virtual auto write(const text::StringView &text) -> StreamWriteStatus = 0;
     /// Write a line-feed character.
-    /// @throws err::StreamError If the stream is closed or the backing target fails.
-    virtual void writeLine() = 0;
+    /// @return `Success` if the line feed was accepted, or `Timeout` if nothing was accepted.
+    /// @throws stream::StreamError If the stream is closed or the backing target fails.
+    virtual auto writeLine() -> StreamWriteStatus = 0;
     /// Write text followed by a line-feed character.
     /// @param text The text to write before the line-feed.
-    /// @throws err::StreamError If the stream is closed or the backing target fails.
-    virtual void writeLine(const text::StringView &text) = 0;
+    /// @return `Success` if the complete line was accepted, or `Timeout` if nothing was accepted.
+    /// @throws stream::StreamError If the stream is closed or the backing target fails.
+    virtual auto writeLine(const text::StringView &text) -> StreamWriteStatus = 0;
+
+public: // coroutine interface
+    /// Asynchronously write owned text.
+    /// @param text The text retained by the operation until it completes.
+    /// @return A task with the same result as `write(StringView)`.
+    /// @throws err::LogicError If this stream is not shared-owned.
+    /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
+    [[nodiscard]] auto coWrite(text::String text) -> util::CoTask<StreamWriteStatus>;
+    /// Asynchronously write one line-feed character.
+    /// @return A task with the same result as `writeLine()`.
+    /// @throws err::LogicError If this stream is not shared-owned.
+    /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
+    [[nodiscard]] auto coWriteLine() -> util::CoTask<StreamWriteStatus>;
+    /// Asynchronously write owned text followed by a line-feed character.
+    /// @param text The text retained by the operation until it completes.
+    /// @return A task with the same result as `writeLine(StringView)`.
+    /// @throws err::LogicError If this stream is not shared-owned.
+    /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
+    [[nodiscard]] auto coWriteLine(text::String text) -> util::CoTask<StreamWriteStatus>;
 
 public: // convenience print interface
     /// Print one or more arguments to the stream.
@@ -63,21 +86,23 @@ public: // convenience print interface
     /// returning a supported non-character integer. If both conversion methods exist, `toString()` is used.
     /// Change the integer or floating-point format by adding a format specifier before the affected value.
     /// @param args The arguments to print.
+    /// @return `Success` if the complete formatted output was accepted, or `Timeout` if nothing was accepted.
     template <typename... tArgs>
-    void print(const tArgs &...args) {
+    auto print(const tArgs &...args) -> StreamWriteStatus {
         const auto context = createPrintContext();
         (context->print(args), ...);
-        context->commit();
+        return context->commit();
     }
     /// Print one or more arguments to the stream and add a line-break.
     /// @see print() for all details.
     /// @param args The arguments to print.
+    /// @return `Success` if the complete formatted line was accepted, or `Timeout` if nothing was accepted.
     template <typename... tArgs>
-    void printLine(const tArgs &...args) {
+    auto printLine(const tArgs &...args) -> StreamWriteStatus {
         const auto context = createPrintContext();
         (context->print(args), ...);
         context->print(U'\n');
-        context->commit();
+        return context->commit();
     }
 
 protected: // print internals

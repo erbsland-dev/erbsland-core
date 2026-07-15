@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include <DemoCommon.hpp>
+
+namespace demo {
 
 /// `StringCharView` is a specialized interface for code-point indexed access.
 /// It is useful when text is organized by character positions, for example in
@@ -40,4 +43,6 @@ void characterGrid() {
 
     el::io::printLine("Rotated clockwise:"_el);
     el::io::printLine(rotatedGrid);
+}
+
 }

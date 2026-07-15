@@ -36,6 +36,16 @@ Interface
 .. doxygentypedef:: erbsland::unit::ByteRange
 .. doxygenstruct:: erbsland::unit::ByteUnit
     :members:
+.. doxygenstruct:: erbsland::unit::CodeContinuousRange
+    :members:
+.. doxygenstruct:: erbsland::unit::CodeLocation
+    :members:
+.. doxygentypedef:: erbsland::unit::ColumnCount
+.. doxygentypedef:: erbsland::unit::ColumnIndex
+.. doxygentypedef:: erbsland::unit::ColumnOffset
+.. doxygentypedef:: erbsland::unit::ColumnRange
+.. doxygenstruct:: erbsland::unit::ColumnUnit
+    :members:
 .. doxygentypedef:: erbsland::unit::CpIndex
 .. doxygentypedef:: erbsland::unit::CpLength
 .. doxygentypedef:: erbsland::unit::CpOffset
@@ -60,7 +70,12 @@ Interface
     :members:
 .. doxygenclass:: erbsland::unit::IntegerUnitRange
     :members:
-.. doxygenfile:: erbsland/unit/StdFormatForUnit.hpp
+.. doxygentypedef:: erbsland::unit::LineCount
+.. doxygentypedef:: erbsland::unit::LineIndex
+.. doxygentypedef:: erbsland::unit::LineOffset
+.. doxygentypedef:: erbsland::unit::LineRange
+.. doxygenstruct:: erbsland::unit::LineUnit
+    :members:
 .. doxygentypedef:: erbsland::unit::U16DataIndex
 .. doxygentypedef:: erbsland::unit::U16DataLength
 .. doxygentypedef:: erbsland::unit::U16DataOffset

@@ -6,9 +6,9 @@
 Display All Colors
 ******************
 
-``display-all-colors`` is the quickest overview of the built-in 16 terminal colors and the combinations they can
-form. It prints a named foreground/background table, a full 16x16 matrix, and a rainbow block pattern that makes
-contrast differences easy to compare.
+``display-all-colors`` is the quickest overview of the built-in 16 terminal colors and the combinations they can form.
+It prints a named foreground/background table, a full 16x16 matrix, and a rainbow block pattern that makes contrast
+differences easy to compare.
 
 Use This Demo When You Need...
 ==============================
@@ -24,7 +24,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/display-all-colors
+    $ ./cmake-build-debug/demo-apps/cterm/display-all-colors
 
 The program writes the full palette reference into terminal history and exits on its own.
 
@@ -51,6 +51,7 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/display-all-colors/src/DisplayAllColorsApp.cpp`.
+If you want to explore the implementation, start with
+:file:`demos/cterm/display-all-colors/src/DisplayAllColorsApp.cpp`.
 
 This file contains the palette table, matrix, and rainbow pattern rendering logic.

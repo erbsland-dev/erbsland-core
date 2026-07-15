@@ -27,6 +27,7 @@ public:
 
     // defaults
     ~ByteFormat();
+    /// Copy this byte format.
     ByteFormat(const ByteFormat &);
     ByteFormat(ByteFormat &&) = default;
     auto operator=(const ByteFormat &) -> ByteFormat &;

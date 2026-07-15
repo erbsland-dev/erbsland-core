@@ -81,6 +81,15 @@ private:
     Value _value{Decimal}; ///< The integer base value.
 };
 
+/// Convenient constant for decimal integer conversion.
+inline constexpr auto cDecimalBase = IntegerBase{IntegerBase::Decimal};
+/// Convenient constant for hexadecimal integer conversion.
+inline constexpr auto cHexadecimalBase = IntegerBase{IntegerBase::Hexadecimal};
+/// Convenient constant for binary integer conversion.
+inline constexpr auto cBinaryBase = IntegerBase{IntegerBase::Binary};
+/// Convenient constant for octal integer conversion.
+inline constexpr auto cOctalBase = IntegerBase{IntegerBase::Octal};
+
 template <std::integral T>
 constexpr auto IntegerBase::digitCount(const T value) const noexcept -> std::size_t {
     using Unsigned = std::make_unsigned_t<T>;

@@ -12,7 +12,7 @@ namespace erbsland::text::impl {
 class UnsafeU8StringAccess {
 public:
     /// Create an accessor
-    explicit UnsafeU8StringAccess(const U8String &string) : _string{string} {}
+    explicit UnsafeU8StringAccess(const U8String &string) noexcept : _string{&string} {}
 
     // defaults
     ~UnsafeU8StringAccess() = default;
@@ -22,11 +22,13 @@ public:
     auto operator=(UnsafeU8StringAccess &&) = delete;
 
 public:
-    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr { return _string._storage.data(); }
-    [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string.dataView(); }
+    /// Access the null-terminated string data.
+    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr { return _string->_storage.data(); }
+    /// Access the internal data view.
+    [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string->dataView(); }
 
-private:
-    const U8String &_string;
+private: // using raw-pointers is approved for this class (te)
+    const U8String *_string;
 };
 
 }

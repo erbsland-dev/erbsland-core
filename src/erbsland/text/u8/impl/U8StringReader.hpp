@@ -50,16 +50,33 @@ public:
         -> util::LoopResult override;
     void startCapture() noexcept override;
     [[nodiscard]] auto takeCapture() noexcept -> AnyStringView override;
+    void clearBuffer() noexcept override;
+    [[nodiscard]] auto takeBuffer() -> AnyString override;
+    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView override;
+    [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength override;
+    [[nodiscard]] auto isBufferEmpty() const noexcept -> bool override;
+    void setBuffer(const AnyStringView &text) override;
+    void appendToBuffer(Char character) override;
+    void appendToBuffer(const AnyStringView &text) override;
+    void appendCaptureToBuffer() override;
+    [[nodiscard]] auto readToBuffer() -> Char override;
+    [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
+    [[nodiscard]] auto readToBufferIf(const CharSet &expected) -> std::optional<Char> override;
+    [[nodiscard]] auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum) -> util::LoopResult override;
+    [[nodiscard]] auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum) -> util::LoopResult override;
 
 private:
     auto readLoop(const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
         -> util::LoopResult;
+    auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:
     U8StringView _text;                                        ///< The string view to read.
     unit::ByteIndex _position{unit::ByteIndex::zero()};        ///< The current byte position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()};          ///< The current decoded code-point position.
     unit::ByteIndex _captureStart{unit::ByteIndex::noIndex()}; ///< The start position of the capture.
+    U8String _buffer;                                          ///< The reader buffer.
+    unit::CpLength _bufferLength{unit::CpLength::zero()};      ///< The decoded code-point length of the buffer.
 };
 
 }

@@ -5,9 +5,9 @@
 #include "IntegerUnit.hpp"
 #include "IntegerUnitAmount_fwd.hpp"
 
+#include "impl/Throw.hpp"
 #include "impl/TypeTraits.hpp"
 
-#include "../err/ThrowHelper.hpp"
 #include "../math/ConstexprSaturatingMath.hpp"
 #include "../math/impl/IntegerComparisonHelper.hpp"
 #include "../math/IntegerConversion.hpp"
@@ -166,7 +166,7 @@ public: // math
     /// @throws OverflowError if either operand is infinite or the finite result exceeds maximum().
     [[nodiscard]] constexpr auto addedOrThrow(const IntegerUnitAmount other) const -> IntegerUnitAmount {
         if (wouldAddSaturate(other)) {
-            err::throwOverflow("Length addition would exceed finite length bounds");
+            impl::throwOverflow("Length addition would exceed finite length bounds");
         }
         return IntegerUnitAmount{static_cast<Value>(_value + other._value)};
     }
@@ -202,7 +202,7 @@ public: // math
     /// @throws OverflowError if either operand is infinite or the finite result would be below zero.
     [[nodiscard]] constexpr auto subtractedOrThrow(const IntegerUnitAmount other) const -> IntegerUnitAmount {
         if (wouldSubtractSaturate(other)) {
-            err::throwOverflow("Length subtraction would exceed finite length bounds");
+            impl::throwOverflow("Length subtraction would exceed finite length bounds");
         }
         return IntegerUnitAmount{static_cast<Value>(_value - other._value)};
     }
@@ -275,7 +275,7 @@ public: // conversion methods
     /// @throws OverflowError if the raw value does not fit into `std::size_t`.
     [[nodiscard]] constexpr auto toSizeTOrThrow() const -> std::size_t {
         if (math::willCastOverflow<std::size_t>(_value)) {
-            err::throwOverflow("Length value exceeds maximum std::size_t");
+            impl::throwOverflow("Length value exceeds maximum std::size_t");
         }
         return static_cast<std::size_t>(_value);
     }
@@ -310,11 +310,11 @@ public: // factory methods
     [[nodiscard]] constexpr static auto fromSizeTOrThrow(const std::size_t value) -> IntegerUnitAmount {
         if constexpr (sizeof(Value) < sizeof(std::size_t)) {
             if (math::willCastOverflow<Value>(value)) {
-                err::throwOverflow("The size_t value exceeds maximum length.");
+                impl::throwOverflow("The size_t value exceeds maximum length.");
             }
         }
         if (static_cast<Value>(value) > cRawMaximum) {
-            err::throwOverflow("The size_t value exceeds maximum length.");
+            impl::throwOverflow("The size_t value exceeds maximum length.");
         }
         return IntegerUnitAmount{static_cast<Value>(value)};
     }

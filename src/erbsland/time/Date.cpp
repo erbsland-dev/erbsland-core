@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Date.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/OutOfRangeError.hpp"
+#include "../err/OverflowError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringBuilder.hpp"
@@ -110,7 +111,7 @@ auto Date::added(const Days amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Days amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        err::throwOverflow("Date day addition would exceed supported date range");
+        throw err::OverflowError{"Date day addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -136,7 +137,7 @@ auto Date::added(Months amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Months amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        err::throwOverflow("Date month addition would exceed supported date range");
+        throw err::OverflowError{"Date month addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -147,7 +148,7 @@ auto Date::added(Years amount) const noexcept -> Date {
 
 auto Date::addedOrThrow(const Years amount) const -> Date {
     if (wouldAddSaturate(amount)) {
-        err::throwOverflow("Date year addition would exceed supported date range");
+        throw err::OverflowError{"Date year addition would exceed supported date range"};
     }
     return added(amount);
 }
@@ -247,7 +248,7 @@ auto Date::fromYearMonthDay(const int year, const int month, const int day) noex
 auto Date::fromYearMonthDayOrThrow(const int year, const int month, const int day) -> Date {
     auto result = fromYearMonthDay(year, month, day);
     if (!result.isValid()) {
-        err::throwOutOfRange("Date parts are outside the supported date range");
+        throw err::OutOfRangeError{"Date parts are outside the supported date range"};
     }
     return result;
 }
@@ -259,7 +260,7 @@ auto Date::fromParts(const Year year, const Month month, const Day day) noexcept
 auto Date::fromPartsOrThrow(const Year year, const Month month, const Day day) -> Date {
     auto result = fromParts(year, month, day);
     if (!result.isValid()) {
-        err::throwOutOfRange("Date parts are outside the supported date range");
+        throw err::OutOfRangeError{"Date parts are outside the supported date range"};
     }
     return result;
 }

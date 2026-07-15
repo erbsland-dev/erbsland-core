@@ -5,8 +5,21 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
         CharSetFromPattern.hpp
+        CodeBlockData.hpp
+        CodeLineMarkerData.cpp
+        CodeLineMarkerData.hpp
+        CodeSnippetData.hpp
+        CodeSnippetLayout.cpp
+        CodeSnippetLayout.hpp
+        CodeSnippetLayoutCell.hpp
+        CodeSnippetLayoutMarker.hpp
+        CodeSnippetLayoutRow.hpp
         CppEscapeFormatter.cpp
         CppEscapeFormatter.hpp
+        DisplayEscapeFormatter.cpp
+        DisplayEscapeFormatter.hpp
+        DynamicStringPatternData.cpp
+        DynamicStringPatternData.hpp
         EscapeFormatter.cpp
         EscapeFormatter.hpp
         FloatConversion.cpp
@@ -34,12 +47,19 @@ target_sources(erbsland-core PRIVATE
         IntegerConversion.hpp
         JsonEscapeFormatter.cpp
         JsonEscapeFormatter.hpp
+        LinkData.hpp
         NoneEscapeFormatter.cpp
         NoneEscapeFormatter.hpp
         PcreEscapeFormatter.cpp
         PcreEscapeFormatter.hpp
+        PlainTextRenderer.cpp
+        PlainTextRenderer.hpp
+        PlainTextRenderer_fwd.hpp
+        RepeatCount.hpp
         SafeStringEscapeTools.cpp
         SafeStringEscapeTools.hpp
+        StaticStringPatternData.hpp
+        StaticStringPatternData.tpp
         StringBuilderBase.hpp
         StringBuilderFactory.cpp
         StringBuilderFactory.hpp
@@ -56,6 +76,11 @@ target_sources(erbsland-core PRIVATE
         StringList_fwd.hpp
         StringMap.hpp
         StringMap_fwd.hpp
+        StringPatternData.cpp
+        StringPatternData.hpp
+        StringPatternData.tpp
+        StringPatternFactory.cpp
+        StringPatternFactory.hpp
         StringReaderBackendKind.hpp
         StringReaderBase.cpp
         StringReaderBase.hpp
@@ -63,13 +88,23 @@ target_sources(erbsland-core PRIVATE
         StringSet.hpp
         StringSet_fwd.hpp
         StringTreeData.hpp
+        ThrowHelper.cpp
+        ThrowHelper.hpp
         UnicodeData.cpp
         UnicodeData.hpp
         UnicodeVersion.cpp
+        UnsafeDecodeBufferAccess.hpp
         UnsafeU16StringAccess.hpp
         UnsafeU16StringAccess_fwd.hpp
+        UnsafeU16StringBuffer.cpp
+        UnsafeU16StringBuffer.hpp
+        UnsafeU16StringBuffer_fwd.hpp
+        UnsafeU16StringViewAccess.hpp
+        UnsafeU16StringViewAccess_fwd.hpp
         UnsafeU8StringAccess.hpp
         UnsafeU8StringAccess_fwd.hpp
+        UnsafeU8StringBuffer.hpp
+        UnsafeU8StringBuffer_fwd.hpp
         UnsafeU8StringViewAccess.hpp
         UnsafeU8StringViewAccess_fwd.hpp
         XmlEscapeFormatter.cpp

@@ -8,6 +8,11 @@ Library Source Directory    : "src/erbsland"
 # All paths are relative to the project root.
 Unit Test Source Directory  : "test/unittest/src"
 
+# Directories with demo C++ sources. Used for include cleanup.
+# All paths are relative to the project root.
+Demo Source Directories     :
+    * "demos"
+
 # Directories scanned for simple CMakeLists.txt cleanup.
 # All paths are relative to the project root.
 CMake Source Directories    :

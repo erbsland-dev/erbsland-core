@@ -4,6 +4,7 @@
 
 #include "U8StringReadTools.hpp"
 
+#include "../../AnyString.hpp"
 #include "../../AnyStringView.hpp"
 
 #include <utility>
@@ -186,6 +187,93 @@ auto U8StringReader::takeCapture() noexcept -> AnyStringView {
     return result;
 }
 
+void U8StringReader::clearBuffer() noexcept {
+    _buffer.clear();
+    _bufferLength = unit::CpLength::zero();
+}
+
+auto U8StringReader::takeBuffer() -> AnyString {
+    auto result = AnyString{std::move(_buffer)};
+    _buffer = U8String{};
+    _bufferLength = unit::CpLength::zero();
+    return result;
+}
+
+auto U8StringReader::bufferView() const noexcept -> AnyStringView {
+    return AnyStringView{_buffer};
+}
+
+auto U8StringReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+    return _bufferLength;
+}
+
+auto U8StringReader::isBufferEmpty() const noexcept -> bool {
+    return _bufferLength.isZero();
+}
+
+void U8StringReader::setBuffer(const AnyStringView &text) {
+    _buffer = text.toU8String();
+    _bufferLength = text.characterLength();
+}
+
+void U8StringReader::appendToBuffer(const Char character) {
+    if (!character.isValidUnicode()) {
+        return;
+    }
+    _buffer.append(character);
+    ++_bufferLength;
+}
+
+void U8StringReader::appendToBuffer(const AnyStringView &text) {
+    if (text.isEmpty()) {
+        return;
+    }
+    _buffer.append(text.toU8StringView());
+    _bufferLength += text.characterLength();
+}
+
+void U8StringReader::appendCaptureToBuffer() {
+    appendToBuffer(takeCapture());
+}
+
+auto U8StringReader::readToBuffer() -> Char {
+    const auto character = peek();
+    if (character.isSignal()) {
+        return character;
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return character;
+}
+
+auto U8StringReader::readToBufferIf(const Char expected) -> bool {
+    const auto character = peek();
+    if (character.isSignal() || character != expected) {
+        return false;
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return true;
+}
+
+auto U8StringReader::readToBufferIf(const CharSet &expected) -> std::optional<Char> {
+    const auto character = peek();
+    if (character.isSignal() || !expected.contains(character)) {
+        return {};
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return character;
+}
+
+auto U8StringReader::readToBufferWhile(const CharSet &expected, const unit::CpLength maximum) -> util::LoopResult {
+    return readToBufferLoop(expected, maximum, false);
+}
+
+auto U8StringReader::readToBufferUntil(const CharSet &stopSet, const unit::CpLength maximum) -> util::LoopResult {
+    return readToBufferLoop(stopSet, maximum, true);
+}
+
 auto U8StringReader::readLoop(
     const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
     -> util::LoopResult {
@@ -213,6 +301,26 @@ auto U8StringReader::readLoop(
             _cpPosition = lastCpPosition;
             return result == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
         }
+        ++count;
+    }
+}
+
+auto U8StringReader::readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch)
+    -> util::LoopResult {
+    auto count = unit::CpLength::zero();
+    while (true) {
+        const auto character = peek();
+        if (character.isEndOfData()) {
+            return util::LoopResult::EndOfData;
+        }
+        if (charSet.contains(character) == stopOnMatch) {
+            return util::LoopResult::Success;
+        }
+        if (!maximum.isInfinite() && count >= maximum) {
+            return util::LoopResult::LimitReached;
+        }
+        appendToBuffer(character);
+        static_cast<void>(advance(unit::CpLength::one()));
         ++count;
     }
 }

@@ -3,6 +3,8 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(impl)
+
 target_sources(erbsland-core PRIVATE
         ArgumentUnit.hpp
         ByteIndex.hpp
@@ -10,6 +12,13 @@ target_sources(erbsland-core PRIVATE
         ByteOffset.hpp
         ByteRange.hpp
         ByteUnit.hpp
+        CodeContinuousRange.hpp
+        CodeLocation.hpp
+        ColumnCount.hpp
+        ColumnIndex.hpp
+        ColumnOffset.hpp
+        ColumnRange.hpp
+        ColumnUnit.hpp
         CpIndex.hpp
         CpLength.hpp
         CpOffset.hpp
@@ -33,6 +42,11 @@ target_sources(erbsland-core PRIVATE
         IntegerUnitOffset_fwd.hpp
         IntegerUnitRange.hpp
         IntegerUnitRange_fwd.hpp
+        LineCount.hpp
+        LineIndex.hpp
+        LineOffset.hpp
+        LineRange.hpp
+        LineUnit.hpp
         StdFormatForUnit.cpp
         StdFormatForUnit.hpp
         U16DataIndex.hpp

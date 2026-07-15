@@ -16,7 +16,7 @@ namespace erbsland::cterm {
 /// The sequence can be accessed by cyclic index or by a normalized value in the range `0.0..1.0`.
 /// Consumers may perform multiple lookups, for example to combine the foreground of one entry with the background of
 /// a neighboring entry.
-/// @tested `ColorSequenceTest`
+/// @tested{ColorSequenceTest}
 class ColorSequence final {
 public:
     /// One run-length encoded `Color` entry in the sequence.

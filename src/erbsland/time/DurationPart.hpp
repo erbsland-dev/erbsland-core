@@ -10,7 +10,6 @@ namespace erbsland::time {
 ///
 /// For example, `DurationPart::Days` causes `Duration::parts()` to return days as the
 /// largest unit, with weeks zeroed out.
-/// @tested{DurationTest}
 enum class DurationPart : uint8_t {
     Seconds, ///< The seconds part.
     Minutes, ///< The minutes part.

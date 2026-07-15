@@ -5,10 +5,18 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.registerDemo("BomHandling"_el, bomHandling);
     app.registerDemo("ByteOrder"_el, byteOrder);
     app.registerDemo("EncodeStrings"_el, encodeStrings);
     return app.run();
+}
+
+}
+
+auto main(const int argc, char *argv[]) -> int {
+    return demo::main(argc, argv);
 }

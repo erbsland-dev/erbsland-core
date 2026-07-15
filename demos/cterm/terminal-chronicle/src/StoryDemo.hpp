@@ -4,6 +4,8 @@
 
 #include <TerminalApplication.hpp>
 
+namespace demo {
+
 /// Tell a short, colorful story using only `Terminal::print()` and `Terminal::printLine()`.
 class StoryDemo final : public TerminalApplication {
 public:
@@ -19,3 +21,5 @@ private:
     static void printStory(Terminal &terminal) noexcept;
     static void printOutro(Terminal &terminal) noexcept;
 };
+
+}

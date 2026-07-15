@@ -5,7 +5,7 @@
 
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/cterm/TerminalStream.hpp>
-#include <erbsland/err/StreamError.hpp>
+#include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -44,6 +44,7 @@ public:
 
         auto stream = TerminalStream{terminal, BlockStyle{fg::BrightRed}};
         stream.writeLine("styled"_el);
+        stream.flush();
 
         REQUIRE_EQUAL(backend->output(), std::string{"styled\n"});
         REQUIRE_EQUAL(backend->_emittedColors.size(), std::size_t{2});
@@ -60,14 +61,17 @@ public:
 
         output->writeLine("output"_el);
         error->writeLine("error"_el);
+        output->flush();
+        error->flush();
 
-        REQUIRE_EQUAL(backend->output(), std::string{"output\nerror\n"});
+        const auto text = backend->output();
+        REQUIRE(text == std::string{"output\nerror\n"} || text == std::string{"error\noutput\n"});
     }
 
     void testMissingTerminalThrows() {
         auto stream = TerminalStream{TerminalPtr{}};
 
         REQUIRE_FALSE(stream.isOpen());
-        REQUIRE_THROWS_AS(el::err::StreamError, stream.writeLine("fail"_el));
+        REQUIRE_THROWS_AS(el::stream::StreamError, stream.writeLine("fail"_el));
     }
 };

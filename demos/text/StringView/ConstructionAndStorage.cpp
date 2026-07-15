@@ -5,6 +5,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Get the first word in the given text with letters.
 auto getFirstWordRange(const el::StringView &text) -> el::ByteRange {
     static const auto separator = el::CharSet::from(el::UnicodeCategoryGroup::Letter);
@@ -52,4 +54,6 @@ void constructionAndStorage() {
     word = viewFromLiteral.slice(getFirstWordRange(viewFromLiteral));
     el::io::printLine("First word #2 : "_el, word);
     printMemoryAndRangeInfo(word);
+}
+
 }

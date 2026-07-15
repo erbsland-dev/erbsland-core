@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        ApplicationErrorTest.cpp
+        ApplicationEventTest.cpp
         ApplicationOptionsTest.cpp
         ApplicationTerminalTest.cpp
         ApplicationTestScope.cpp

@@ -66,7 +66,7 @@ namespace erbsland::text {
 /// Copy, move, slicing, trimming are fast and copy-free operations.
 /// Use `StringView` for most use cases and `U32StringView` only if you need random access to code points or require
 /// UTF-32 encoding.
-/// @tested{U32StringTest}
+/// @tested{U32StringTest StringEscapingTest}
 class U32StringView final {
     friend class debug::impl::StringDebugAccess;
     friend class U32String;
@@ -147,6 +147,14 @@ public: // read
     [[nodiscard]] auto copy() const -> U32String;
     /// Get the UTF-32 code-unit length of this string.
     [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    /// Get the UTF-32 code-unit length of this string.
+    /// This is an alias for `length()` to allow using `characterLength()` in templates.
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// Get the approximate display width of this string.
+    /// This is a simple sum of decoded character display widths. Control characters, including line breaks, count as
+    /// zero. Complex shaping, grapheme clusters, bidi layout, and terminal-specific behavior are not modeled.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Get the native data index for one side of the string.
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::CpIndex;
     /// Get the first or last character in this string.
@@ -156,6 +164,16 @@ public: // read
     /// @param startIndex The UTF-32 data index to access the character at.
     /// @return The character at the given code-unit position, or a null character if no character can be read there.
     [[nodiscard]] auto charAt(unit::CpIndex startIndex) const noexcept -> Char;
+    /// Read the character at the given UTF-32 data index and advance the index.
+    /// @seeref{u32-string-view-indexed-sequential-read}
+    /// @param index The UTF-32 data index to read from. Updated to the position after the read character on success.
+    /// @return The character at the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char;
+    /// Read the character before the given UTF-32 data index and retreat the index.
+    /// @seeref{u32-string-view-indexed-sequential-read}
+    /// @param index The index after the character to read. Updated to the start of the read character on success.
+    /// @return The character before the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char;
     /// Advance the given UTF-32 data index to the start of the next character.
     /// @seeref{u32-string-view-advance-retreat}
     /// @param index The index to advance.
@@ -188,12 +206,32 @@ public: // slice
     /// No UTF-32 validation is performed, if you slice in the middle of a character, the result contains
     /// encoding errors at the start or end of the resulting string.
     /// @param range The UTF-32 data range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U32StringView;
     /// Get the initial or trailing UTF-32 data portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of UTF-32 data units to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U32StringView;
+    /// Get the code-point-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view for front and an empty view for back.
+    /// @param side The side of the split point to keep.
+    /// @param index The code-point index where the back portion starts.
+    /// @return The sliced string.
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U32StringView;
     /// Slice one decoded character from the given side and return it with the remaining string.
+    /// @param side The side of the string to slice from.
+    /// @return The sliced character and the remaining string.
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U32StringView>;
+    /// Split this string view at a UTF-32 data/code-point index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view followed by an empty view.
+    /// @param index The index where the second returned view starts.
+    /// @return The two views before and after the split point.
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U32StringView, U32StringView>;
 
 public: // trim
     /// Return a view without leading and trailing ASCII whitespace or selected characters.
@@ -210,6 +248,7 @@ public: // find
     /// Malformed UTF-32 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param start The UTF-32 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The UTF-32 data index of the first match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::CpIndex start) const noexcept -> unit::CpIndex;
     /// Find the first decoded character not contained in the given set.
@@ -222,6 +261,7 @@ public: // find
     /// Malformed UTF-32 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param start The UTF-32 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The UTF-32 data index of the first non-matching character, or `CpIndex::noIndex()` if there is
     /// none.
     [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::CpIndex start) const noexcept -> unit::CpIndex;
@@ -234,6 +274,7 @@ public: // find
     /// Malformed UTF-32 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param end The exclusive UTF-32 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The UTF-32 data index of the last match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findLastOf(const CharSet &characters, unit::CpIndex end) const noexcept -> unit::CpIndex;
     /// Find the last decoded character not contained in the given set.
@@ -245,6 +286,7 @@ public: // find
     /// Malformed UTF-32 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param end The exclusive UTF-32 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The UTF-32 data index of the last non-matching character, or `CpIndex::noIndex()` if there is none.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::CpIndex end) const noexcept -> unit::CpIndex;
     /// Find text in this string view.
@@ -255,6 +297,7 @@ public: // find
     /// Find text in this string view starting at a code point index.
     /// @param text The text to find.
     /// @param start The code point index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The code point index of the first match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(const U32StringView &text, unit::CpIndex start, CharCompareFn compareFn = {}) const noexcept
@@ -316,13 +359,11 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::CpLength;
     /// Escape this view according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U32String;
 
 public: // low-level management

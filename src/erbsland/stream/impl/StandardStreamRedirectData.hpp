@@ -4,6 +4,7 @@
 
 #include "StandardStreamSlot.hpp"
 
+#include "../TextInputStream.hpp"
 #include "../TextOutputStream.hpp"
 
 #include <mutex>
@@ -16,7 +17,10 @@ class StandardStreamRedirectData final {
 public:
     /// Create redirect data from previous stream targets.
     StandardStreamRedirectData(
-        StandardStreamSlot slot, TextOutputStreamPtr previousOutput, TextOutputStreamPtr previousError);
+        StandardStreamSlot slot,
+        TextInputStreamPtr previousInput,
+        TextOutputStreamPtr previousOutput,
+        TextOutputStreamPtr previousError);
 
     // defaults
     ~StandardStreamRedirectData() = default;
@@ -33,6 +37,7 @@ public:
 
 private:
     StandardStreamSlot _slot;            ///< The replaced stream slot.
+    TextInputStreamPtr _previousInput;   ///< The previous input target.
     TextOutputStreamPtr _previousOutput; ///< The previous output target.
     TextOutputStreamPtr _previousError;  ///< The previous error target.
     bool _active{true};                  ///< Whether this redirect is active.

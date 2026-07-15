@@ -67,7 +67,7 @@ public:
     [[nodiscard]] auto toPlainText(const BlockString &text) -> std::string {
         auto result = std::string{};
         for (const auto &character : text) {
-            result += erbsland::text::StringConverter{character.charStr()}.toStdString();
+            result += erbsland::text::StringConverter{character.toString()}.toStdString();
         }
         return result;
     }

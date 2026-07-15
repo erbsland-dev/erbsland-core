@@ -3,6 +3,8 @@
 
 #include "DisplayAllColorsApp.hpp"
 
+namespace demo {
+
 auto DisplayAllColorsApp::beforeMain() -> int {
     _buffer = Buffer{BlockSize{BlockCoordinate{80}, BlockCoordinate{9 + 18 + 18}}};
     _buffer.fill(Block{U' ', bg::Default});
@@ -125,4 +127,6 @@ void DisplayAllColorsApp::renderRainbow() {
             }
         }
     }
+}
+
 }

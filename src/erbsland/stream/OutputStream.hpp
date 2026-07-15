@@ -2,7 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../err/StreamError.hpp"
+#include "OutputStreamSettings.hpp"
+#include "StreamCloseStatus.hpp"
+#include "StreamError.hpp"
+#include "StreamPositioning.hpp"
+#include "StreamState.hpp"
+#include "StreamWaitStatus.hpp"
+#include "StreamWriteStatus.hpp"
+
+#include "../err/LogicError.hpp"
 
 #include <memory>
 
@@ -12,24 +20,48 @@ class OutputStream;
 using OutputStreamPtr = std::shared_ptr<OutputStream>;
 
 /// The common base class for writable streams.
-/// Output streams accept complete write operations. A write method either accepts all provided data or throws
-/// `err::StreamError`; it does not silently expose partial writes to user code. Closing a stream flushes pending data
-/// according to the concrete stream's semantics.
-/// @notest{Abstract interface only; concrete stream implementations require behavior tests.}
-class OutputStream {
+/// Output streams atomically accept complete write requests. Public operations wait at most for the timeout fixed in
+/// the settings. Destruction never waits for pending native work; every concrete implementation must abort from its
+/// destructor. A successful write is queued for delivery; only a successful `flush()` confirms native flushing.
+/// @tested{AsyncStreamTest}
+class OutputStream : public StreamPositioning, public std::enable_shared_from_this<OutputStream> {
 public:
     virtual ~OutputStream() = default;
 
-public:
+public: // state
+    /// Get the immutable settings selected when this stream was created.
+    [[nodiscard]] virtual auto outputSettings() const noexcept -> const OutputStreamSettings & = 0;
+    /// Get the lifecycle state.
+    [[nodiscard]] virtual auto state() const noexcept -> StreamState = 0;
     /// Test if the stream is open for writing.
-    [[nodiscard]] virtual auto isOpen() const noexcept -> bool = 0;
+    [[nodiscard]] auto isOpen() const noexcept -> bool { return state() == StreamState::Open; }
+    /// Test if the stream has no queued back-buffer data.
+    /// For a single producer, a following write within `backBufferLimit()` can be accepted without waiting unless the
+    /// stream state changes. Concurrent producers must inspect each write result.
+    [[nodiscard]] virtual auto isReady() const noexcept -> bool = 0;
+    /// Wait up to the configured timeout for the stream to become ready.
+    [[nodiscard]] virtual auto waitForReady() -> StreamWaitStatus = 0;
+
+public: // lifecycle
     /// Flush buffered output.
-    /// @throws err::StreamError If the backing target reports a flush error.
-    virtual void flush() = 0;
-    /// Close the stream.
-    /// Closing an already closed stream has no effect.
-    /// @throws err::StreamError If pending data cannot be flushed or the backing target reports a close error.
-    virtual void close() = 0;
+    /// @throws stream::StreamError If the backing target reports a flush error.
+    virtual auto flush() -> StreamWriteStatus = 0;
+    /// Start or continue graceful close and wait up to the configured timeout.
+    virtual auto close() -> StreamCloseStatus = 0;
+    /// Immediately abandon queued output and pending native work without waiting.
+    virtual void abort() noexcept = 0;
+
+protected:
+    /// Obtain shared ownership for a suspended coroutine operation.
+    /// @return Shared ownership of this stream.
+    /// @throws err::LogicError If this stream is not owned by a shared pointer.
+    [[nodiscard]] auto sharedOutputStream() -> OutputStreamPtr {
+        auto result = weak_from_this().lock();
+        if (!result) {
+            throw err::LogicError{"Coroutine output operations require a shared-owned stream."};
+        }
+        return result;
+    }
 };
 
 }

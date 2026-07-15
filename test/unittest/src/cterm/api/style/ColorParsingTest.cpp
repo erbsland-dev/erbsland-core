@@ -25,8 +25,8 @@ public:
         REQUIRE_EQUAL(baseColors[0], fg(fg::Black));
         REQUIRE_EQUAL(baseColors[7], fg(fg::White));
 
-        REQUIRE_THROWS_AS(std::invalid_argument, fg::fromString("unknown"_el));
-        REQUIRE_THROWS_AS(std::invalid_argument, Background::fromString("bright-blue"_el));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, fg::fromString("unknown"_el));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Background::fromString("bright-blue"_el));
     }
 
     void testColorsParseFromSingleAndPairedStrings() {
@@ -36,6 +36,6 @@ public:
         REQUIRE_EQUAL(Color::fromIndex16(-1, 99), Color(fg::Inherited, bg::Default));
         REQUIRE_EQUAL(Color::reset(), Color(fg::Default, bg::Default));
 
-        REQUIRE_THROWS_AS(std::invalid_argument, Color::fromString("green:unknown"_el));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Color::fromString("green:unknown"_el));
     }
 };

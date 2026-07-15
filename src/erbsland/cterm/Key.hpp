@@ -4,10 +4,10 @@
 
 #include "KeyModifiers.hpp"
 
-#include "impl/CombinedBlock.hpp"
 #include "impl/HashHelper.hpp"
 
 #include "../text/Char.hpp"
+#include "../text/CombinedChar.hpp"
 #include "../text/String.hpp"
 #include "../text/StringBuilder_fwd.hpp"
 #include "../text/StringLiteral.hpp"
@@ -81,7 +81,6 @@ public:
     /// @param type The key type.
     /// @param character The combined Unicode text for `Type::Character` or `Type::Combined`.
     /// @param modifiers The modifiers pressed together with this key.
-    /// @throws std::invalid_argument If `character` is not a supported Unicode character sequence.
     Key(Type type, const text::U32StringView &character, KeyModifiers modifiers = {});
 
     // defaults
@@ -182,13 +181,13 @@ private:
     /// Wrap display text in square brackets when requested.
     [[nodiscard]] static auto wrapDisplayText(const text::StringView &text, bool useBrackets) -> text::String;
     /// Create a character or combined key from normalized Unicode input.
-    [[nodiscard]] static auto createCharacterKey(const impl::CombinedBlock &character) noexcept -> Key;
+    [[nodiscard]] static auto createCharacterKey(const text::CombinedChar &character) noexcept -> Key;
     /// Parse Unicode text into a character key when possible.
     [[nodiscard]] static auto parseCharacterKeyText(const text::StringView &text) -> std::optional<Key>;
 
 private:
     Type _type{None};
-    impl::CombinedBlock _character;
+    text::CombinedChar _character;
     KeyModifiers _modifiers;
 };
 

@@ -2,18 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CombinedBlock.hpp"
-
 #include "../Key.hpp"
 
 #include "../../text/Char.hpp"
+#include "../../text/CombinedChar.hpp"
+#include "../../text/StringView.hpp"
 #include "../../unit/ByteIndex.hpp"
 
 #include <array>
-#include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -92,7 +90,7 @@ public:
 public:
     /// Create a decoder for the given input bytes.
     /// @param text The input bytes to decode.
-    explicit KeyDecoder(const std::string_view text) noexcept : _text{text} {}
+    explicit KeyDecoder(text::StringView text) noexcept : _text{std::move(text)} {}
 
     KeyDecoder(const KeyDecoder &) = delete;
     KeyDecoder(KeyDecoder &&) = delete;
@@ -109,24 +107,26 @@ public:
 
 private:
     struct SimpleSequenceDefinition final {
-        std::string_view sequence;
+        text::StringView sequence;
         Key::Type type;
     };
 
 private:
-    [[nodiscard]] static auto createCharacterKey(const CombinedBlock &character) noexcept -> Key;
+    [[nodiscard]] static auto createCharacterKey(const text::CombinedChar &character) noexcept -> Key;
     [[nodiscard]] static auto simpleSequenceDefinitions() noexcept -> const std::array<SimpleSequenceDefinition, 6> &;
     [[nodiscard]] static auto parseModifierParameter(int value) noexcept -> std::optional<KeyModifiers>;
-    [[nodiscard]] static auto parseCsiParameters(std::string_view text) noexcept -> std::optional<std::vector<int>>;
-    [[nodiscard]] static auto findCsiFinalByte(std::string_view text) noexcept -> std::optional<std::size_t>;
-    [[nodiscard]] static auto keyFromCsiFinal(char finalByte) noexcept -> Key::Type;
+    [[nodiscard]] static auto parseCsiParameters(const text::StringView &text) noexcept
+        -> std::optional<std::vector<int>>;
+    [[nodiscard]] static auto findCsiFinalByte(const text::StringView &text) noexcept -> std::optional<unit::ByteIndex>;
+    [[nodiscard]] static auto keyFromCsiFinal(text::Char finalByte) noexcept -> Key::Type;
     [[nodiscard]] static auto keyFromCsiTildeParameter(int parameter) noexcept -> Key::Type;
-    [[nodiscard]] static auto decodeCsi(std::string_view text) noexcept -> ParseResult;
-    [[nodiscard]] static auto decodeSs3(std::string_view text) noexcept -> ParseResult;
-    [[nodiscard]] auto parseUtf8CodePointPrefix(unit::ByteIndex offset) const noexcept -> CharParseResult;
+    [[nodiscard]] static auto decodeCsi(const text::StringView &text) noexcept -> ParseResult;
+    [[nodiscard]] static auto decodeSs3(const text::StringView &text) noexcept -> ParseResult;
+    [[nodiscard]] static auto decodeCodePointPrefix(const text::StringView &text, unit::ByteIndex offset) noexcept
+        -> CharParseResult;
 
 private:
-    std::string_view _text;
+    text::StringView _text;
 };
 
 }

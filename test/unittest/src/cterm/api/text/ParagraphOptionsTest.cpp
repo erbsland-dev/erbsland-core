@@ -34,15 +34,16 @@ public:
     void testLineBreakEndMarkRejectsTooLongOrControlText() {
         auto options = ParagraphOptions{};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setLineBreakEndMark(BlockString{U"abc"_el}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setLineBreakEndMark(BlockString{U"\n"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockString{U"abc"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockString{U"\n"_el}));
     }
 
-    void testLineBreakStartMarkRejectsTooLongOrControlText() {
+    void testLineBreakStartMarkAllowsLongTextButRejectsControlText() {
         auto options = ParagraphOptions{};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setLineBreakStartMark(BlockString{U"abc"_el}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setLineBreakStartMark(BlockString{U"\t"_el}));
+        options.setLineBreakStartMark(BlockString{U"│ │        "_el});
+        REQUIRE_EQUAL(options.lineBreakStartMark().length(), BlockCount{11U});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakStartMark(BlockString{U"\t"_el}));
     }
 
     void testIndentsAndMarginsCanBeConfiguredAsOneValueObject() {

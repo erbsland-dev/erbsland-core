@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Random value helpers cover integers, floating-point values, booleans, bytes,
 /// and strings.
 ///
@@ -19,17 +21,17 @@ void randomValues() {
     const auto charge = random.selectInteger(chargeRange);
     const auto pulseLevels = random.buildIntegerList(el::ElementCount{5U}, 1, 4);
 
-    el::io::printLine("Câmara do artefato : "_el, chamber);
-    el::io::printLine("Carga rúnica       : "_el, charge);
+    el::io::printLine("Artifact chamber   : "_el, chamber);
+    el::io::printLine("Runic charge       : "_el, charge);
     el::io::printLine(
         "Pulses             : "_el, pulseLevels.count().toSizeT(), " draws, first="_el, pulseLevels.first());
 
     // Draw non-integer values from the same random source.
     const auto resonance = random.getDouble(0.25, 0.95);
     const auto isAwake = random.getBool();
-    const auto resonanceText = el::StringFormat{"Ressonância        : {:.2f}"_el}.build(resonance);
+    const auto resonanceText = el::StringFormat{"Resonance          : {:.2f}"_el}.build(resonance);
     el::io::printLine(resonanceText);
-    el::io::printLine("Guardião desperto  : "_el, el::BooleanFormat::yesNo(), isAwake);
+    el::io::printLine("Guardian awake     : "_el, el::BooleanFormat::yesNo(), isAwake);
 
     // Build byte and string values when the caller needs generated data.
     const auto bytes = random.buildByteBlock(el::ByteLength{4U});
@@ -37,4 +39,6 @@ void randomValues() {
     const auto label = random.buildString(el::CpLength{10U}, alphabet);
     el::io::printLine("First byte         : "_el, static_cast<unsigned>(bytes.get(el::ByteIndex{0U}).toUInt8()));
     el::io::printLine("Generated label    : "_el, label);
+}
+
 }

@@ -4,7 +4,7 @@
 
 #include "TimeDelta.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/OverflowError.hpp"
 
 namespace erbsland::time {
 
@@ -111,7 +111,7 @@ auto Duration::toTimeDelta() const noexcept -> TimeDelta {
 
 auto Duration::toTimeDeltaOrThrow() const -> TimeDelta {
     if (wouldConvertToTimeDeltaSaturate()) {
-        err::throwOverflow("Duration conversion to TimeDelta would exceed nanosecond bounds");
+        throw err::OverflowError{"Duration conversion to TimeDelta would exceed nanosecond bounds"};
     }
     return TimeDelta{_seconds.convertedOrThrow<Nanoseconds>()};
 }

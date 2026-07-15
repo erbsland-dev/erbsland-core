@@ -8,6 +8,7 @@ target_sources(erbsland-core-unittest PRIVATE
         DateTimeValuesTest.cpp
         DateValuesTest.cpp
         TimeCalendarPartsTest.cpp
+        TimeConverterTest.cpp
         TimeCoreTest.cpp
         TimeDataTestBase.hpp
         TimeModuleTest.cpp

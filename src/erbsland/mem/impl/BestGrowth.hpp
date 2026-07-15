@@ -18,7 +18,6 @@ constexpr auto cMaximumGrowthBlock = unit::ByteLength{0x10000U};
 /// @param currentAllocationSize The current total allocation size in bytes.
 /// @param requestedAllocationSize The requested total allocation size in bytes.
 /// @return The total allocation size that should be allocated.
-/// @tested{SharedArrayCapacityTest}
 [[nodiscard]] auto bestGrowth(unit::ByteLength currentAllocationSize, unit::ByteLength requestedAllocationSize) noexcept
     -> unit::ByteLength;
 

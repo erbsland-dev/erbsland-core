@@ -6,8 +6,8 @@
 Text Gallery
 ************
 
-``text-gallery`` demonstrates the text rendering side of the library in one interactive full-screen page set. It
-combines framed panels, wrapped paragraphs, mixed-width Unicode text, animated bitmap-font titles, and compact footer
+``text-gallery`` demonstrates the text rendering side of the library in one interactive full-screen page set.
+It combines framed panels, wrapped paragraphs, mixed-width Unicode text, animated bitmap-font titles, and compact footer
 prompts.
 
 Use This Demo When You Need...
@@ -24,16 +24,18 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/text-gallery
+    $ ./cmake-build-debug/demo-apps/cterm/text-gallery
 
-Use the left and right arrow keys to switch pages. Press ``Q`` to quit.
+Use the left and right arrow keys to switch pages.
+Press ``Q`` to quit.
 
 Captured Output (80x25)
 =======================
 
 .. include:: _captures/text-gallery.rstinc
 
-The capture may not show the terminal output correctly. Here a screenshot:
+The capture may not show the terminal output correctly.
+Here a screenshot:
 
 .. figure:: images/text-gallery3.jpg
     :width: 100%

@@ -11,7 +11,7 @@ They cover block-based terminal cells, buffers, geometry, drawing helpers, termi
 imported cterm demos.
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 1
 
     demos/index
     terminal

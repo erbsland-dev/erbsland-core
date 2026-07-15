@@ -6,6 +6,7 @@
 #include "../cterm/support/TerminalTestBackend.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/core/impl/ApplicationDataImpl.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/options/OptionHelp.hpp>
 #include <erbsland/options/Options.hpp>
@@ -13,6 +14,7 @@
 #include <erbsland/stream/StringBuilderStream.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/TextDocument.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -21,7 +23,7 @@
 
 using namespace el::text::literals;
 
-TESTED_TARGETS(Application TerminalOptionsRenderer TerminalStream)
+TESTED_TARGETS(Application ApplicationDataImpl TerminalDocumentRenderer TerminalStream)
 class ApplicationTerminalTest final : public el::UnitTest {
     class TestApplication final : public el::core::Application {
     public:
@@ -77,6 +79,43 @@ public:
 
         REQUIRE_EQUAL(toStdString(replacement), std::string{"plain output\n"});
         requireMissing(application.backend->output(), "plain output");
+    }
+
+    void testNonInteractiveApplicationLifecycleEmitsNoAnsi() {
+        auto backend = std::shared_ptr<TerminalTestBackend>{};
+        {
+            auto scope = ApplicationTestScope<TestApplication>{};
+            auto &application = scope.app();
+            application.setInteractive(false);
+            backend = application.backend;
+
+            application.enableTerminal();
+            REQUIRE_EQUAL(backend->output(), std::string{});
+        }
+
+        REQUIRE_EQUAL(backend->output(), std::string{});
+    }
+
+    void testPlainSystemOutputUsesRootErrorStyleOnly() {
+        const auto output = el::stream::StringBuilderStream::create();
+        const auto error = el::stream::StringBuilderStream::create();
+        auto outputRedirect = el::stream::redirectStdOut(output);
+        auto errorRedirect = el::stream::redirectStdErr(error);
+        auto data = el::core::impl::ApplicationDataImpl{};
+
+        auto regularDocument = el::text::TextDocument{};
+        regularDocument.addError("embedded parser error"_el);
+        data.renderSystemOutput(regularDocument);
+
+        REQUIRE_EQUAL(toStdString(output), std::string{"embedded parser error\n"});
+        REQUIRE_EQUAL(toStdString(error), std::string{});
+
+        auto errorDocument = el::text::TextDocument{};
+        errorDocument.root()->setStyle("error"_el);
+        errorDocument.addParagraph()->addText("real error"_el);
+        data.renderSystemOutput(errorDocument);
+
+        REQUIRE_EQUAL(toStdString(error), std::string{"real error\n"});
     }
 
     void testInteractiveHelpUsesTerminalRenderer() {

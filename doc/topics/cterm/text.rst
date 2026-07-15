@@ -65,11 +65,11 @@ To compare only the character value and ignore color, compare against a Unicode 
         // ...
     }
 
-Use ``isOneOf()`` for small sets of accepted characters:
+Use regular comparisons for small sets of accepted characters:
 
 .. code-block:: cpp
 
-    if (character.isOneOf(U'Y', U'y', U'J', U'j')) {
+    if (character == U'Y' || character == U'y' || character == U'J' || character == U'j') {
         // ...
     }
 
@@ -91,12 +91,12 @@ To adjust the colors of an existing ``Block``, choose the method that matches yo
 
     const auto base = Block{U'X', fg::Green, bg::Blue};
 
-    const auto overlay = base.withColorOverlay(Color{fg::BrightWhite, bg::Inherited});
+    const auto overlay = base.withOverlay(BlockStyle{Color{fg::BrightWhite, bg::Inherited}});
     const auto replaced = base.withColorReplaced(Color{fg::White, bg::Black});
-    const auto basedOnTheme = base.withBaseColor(Color{fg::Inherited, bg::BrightBlack});
+    const auto basedOnTheme = base.withBase(BlockStyle{Color{fg::Inherited, bg::BrightBlack}});
 
-With ``withColorOverlay()``, any ``Inherited`` component keeps the existing color, while ``Default`` resets that
-component to the terminal default.
+With ``withOverlay()``, any ``Inherited`` component keeps the existing color, while ``Default`` resets that component to
+the terminal default.
 
 Working with Character Attributes ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -280,4 +280,3 @@ You can also rebuild a string from line data:
     const auto text = BlockString::fromLines({"one", "two"}, Color{fg::BrightWhite, bg::Blue});
 
 If you want to render these lines directly into a buffer, see ``Buffer::fromLines()`` and :doc:`drawing-text`.
-

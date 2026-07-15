@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// This demo shows the various ways `StringView` instances can be compared.
 void comparison() {
     // Here we create a set of different string views.
@@ -36,8 +38,8 @@ void comparison() {
     el::io::printLine("titlecase.compare(lowercase, el::Char::compareAsciiFolded) → "_el, el::toString(ordering));
     // Working with normalized configuration identifiers, like in the Erbsland Configuration Language
     ordering = camelCaseIdentifier.compare(normalizedIdentifier, el::Char::compareIdentifier);
-    el::io::printLine("camelCaseIdentifier.compare(normalizedIdentifier, el::Char::compareIdentifier) → "_el,
-        el::toString(ordering));
+    el::io::printLine(
+        "camelCaseIdentifier.compare(normalizedIdentifier, el::Char::compareIdentifier) → "_el, el::toString(ordering));
 
     // Ordering uses decoded code points and works with the normal comparison operators.
     el::io::printLine("\nAlphabetic order by code point:"_el);
@@ -56,9 +58,9 @@ void comparison() {
     // Ordering also works with Unicode case-folded strings.
     el::io::printLine("\nUnicode case-folded order:"_el);
     ordering = titlecase.compare("birke"_el, el::Char::compareCaseFolded);
-    el::io::printLine(
-        "  titlecase.compare(\"birke\"_el, el::Char::compareCaseFolded) → "_el, el::toString(ordering));
+    el::io::printLine("  titlecase.compare(\"birke\"_el, el::Char::compareCaseFolded) → "_el, el::toString(ordering));
     ordering = titlecase.compare("BIRKE"_el, el::Char::compareCaseFolded);
-    el::io::printLine(
-        "  titlecase.compare(\"BIRKE\"_el, el::Char::compareCaseFolded) → "_el, el::toString(ordering));
+    el::io::printLine("  titlecase.compare(\"BIRKE\"_el, el::Char::compareCaseFolded) → "_el, el::toString(ordering));
+}
+
 }

@@ -3,7 +3,7 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/err/U8EncodingError.hpp>
+#include <erbsland/text/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <atomic>
@@ -80,7 +80,7 @@ public:
         REQUIRE_EQUAL(cropped[BlockIndex{0}], U'2');
         REQUIRE_EQUAL(cropped[BlockIndex{2}], U'4');
         REQUIRE(cropped[BlockIndex{3}].isEmpty());
-        REQUIRE_THROWS_AS(std::out_of_range, cropped.at(BlockIndex{3}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, cropped.at(BlockIndex{3}));
     }
 
     void testMutableIndexedAccessIgnoresOutOfBounds() {
@@ -409,7 +409,7 @@ public:
         const auto text = BlockString{erbsland::text::String{bytes({0x65, 0xCC, 0x81})}};
         REQUIRE_EQUAL(text.length(), BlockCount{1});
         REQUIRE_EQUAL(text.displayWidth(), 1);
-        REQUIRE_EQUAL(text[BlockIndex{0}].charStr(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
+        REQUIRE_EQUAL(text[BlockIndex{0}].toString(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
     }
 
     void testControlCodesAreFilteredExceptTabAndNewline() {
@@ -417,14 +417,14 @@ public:
 
         REQUIRE_EQUAL(text.length(), BlockCount{4});
         REQUIRE_EQUAL(text[BlockIndex{0}], U'A');
-        REQUIRE_EQUAL(text[BlockIndex{1}].charStr(), "\t"_el);
-        REQUIRE_EQUAL(text[BlockIndex{2}].charStr(), "\n"_el);
+        REQUIRE_EQUAL(text[BlockIndex{1}].toString(), "\t"_el);
+        REQUIRE_EQUAL(text[BlockIndex{2}].toString(), "\n"_el);
         REQUIRE_EQUAL(text[BlockIndex{3}], U'B');
     }
 
     void testInvalidUtf8Fails() {
         REQUIRE_THROWS_AS(
-            erbsland::err::U8EncodingError,
+            erbsland::text::U8EncodingError,
             (BlockString{erbsland::text::String{bytes({0xC3})}, erbsland::text::EncodingErrorMode::Throw}));
     }
 
@@ -620,6 +620,23 @@ public:
         auto source = BlockString{"\nXXX\n\tABC\n\tXXX\t"_el};
         source.normalize();
         REQUIRE_EQUAL(source, BlockString{"XXX ABC XXX"_el});
+    }
+
+    void testMovedFromStringKeepsEmptyInvariant() {
+        auto source = BlockString{"alpha"_el};
+        const auto target = std::move(source);
+
+        REQUIRE_EQUAL(render(target), std::string{"alpha"});
+        REQUIRE(source.isEmpty());
+        REQUIRE_EQUAL(source.displayWidth(), 0);
+        REQUIRE_EQUAL(source.length(), BlockCount{0});
+
+        auto assigned = BlockString{"beta"_el};
+        assigned = std::move(source);
+
+        REQUIRE(assigned.isEmpty());
+        REQUIRE(source.isEmpty());
+        REQUIRE_EQUAL(source.displayWidth(), 0);
     }
 
 private:

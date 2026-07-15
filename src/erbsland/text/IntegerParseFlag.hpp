@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 /// Flags for integer parsing.
-/// @tested{IntegerConversionTest}
 enum class IntegerParseFlag : uint8_t {
     AllowSeparator = 1U << 0U,      ///< Accept digit group separators.
     IgnoreTrailingChars = 1U << 1U, ///< Stop parsing at the first trailing non-digit character.

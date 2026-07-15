@@ -175,13 +175,13 @@ public: // tools
     /// frame.
     [[nodiscard]] auto frameDirection(BlockPosition testedPosition) const noexcept -> BlockDirection;
     /// Divide this rectangle into equally spaced grid cells.
-    /// Each cell must be at least 1x1 in size, if this isn't possible, `std::invalid_argument` is thrown.
+    /// Each cell must be at least 1x1 in size, if this isn't possible, `err::ParameterError` is thrown.
     /// @param rows The number of rows. Minimum 1.
     /// @param columns The number of columns. Minimum 1
     /// @param horizontalSpacing The spacing between cells horizontally.
     /// @param verticalSpacing The spacing between cells vertically.
     /// @return A vector of rectangles representing the grid cells from left to right, top to bottom.
-    /// @throws std::invalid_argument if rows or columns are less than 1 or the chosen division is impossible.
+    /// @throws err::ParameterError if rows or columns are less than 1 or the chosen division is impossible.
     [[nodiscard]] auto gridCells(
         int rows,
         int columns,

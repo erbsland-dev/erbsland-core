@@ -6,6 +6,8 @@
 
 #include "../text/StringBuilder.hpp"
 
+#include <mutex>
+
 namespace erbsland::stream {
 
 class StringBuilderStream;
@@ -14,23 +16,32 @@ using StringBuilderStreamPtr = std::shared_ptr<StringBuilderStream>;
 /// A stream to build strings.
 /// @tested{StringBuilderStreamTest}
 class StringBuilderStream : public TextOutputStream {
+private:
+    class ConstructionToken final {
+        friend class StringBuilderStream;
+
+        ConstructionToken() = default;
+    };
+
 public:
-    /// Create a new string builder stream that uses the given string kind for the output.
+    /// Internal constructor used by `create()`.
     /// @param stringKind The kind of string to use for the output.
-    explicit StringBuilderStream(text::StringKind stringKind = text::StringKind::U8);
+    /// @param token The private factory token.
+    explicit StringBuilderStream(text::StringKind stringKind, ConstructionToken token);
 
     // defaults
-    ~StringBuilderStream() override = default;
-    StringBuilderStream(const StringBuilderStream &) = default;
-    StringBuilderStream(StringBuilderStream &&) = default;
-    auto operator=(const StringBuilderStream &) -> StringBuilderStream & = default;
-    auto operator=(StringBuilderStream &&) -> StringBuilderStream & = default;
+    ~StringBuilderStream() override { abort(); }
+    StringBuilderStream(const StringBuilderStream &) = delete;
+    StringBuilderStream(StringBuilderStream &&) = delete;
+    auto operator=(const StringBuilderStream &) -> StringBuilderStream & = delete;
+    auto operator=(StringBuilderStream &&) -> StringBuilderStream & = delete;
 
 public: // factory
     /// Create a new string builder stream with the given string kind as shared pointer.
     /// @param stringKind The kind of string to use for the output.
+    /// @return A shared-owned string builder stream.
     [[nodiscard]] static auto create(text::StringKind stringKind = text::StringKind::U8) -> StringBuilderStreamPtr {
-        return std::make_shared<StringBuilderStream>(stringKind);
+        return std::make_shared<StringBuilderStream>(stringKind, ConstructionToken{});
     }
 
 public: // StringBuilder methods
@@ -64,21 +75,25 @@ public: // StringBuilder methods
     [[nodiscard]] auto takeAnyString() -> text::AnyString;
 
 public: // implement TextOutputStream
-    [[nodiscard]] auto isOpen() const noexcept -> bool override;
-    void flush() override;
-    void close() override;
+    [[nodiscard]] auto outputSettings() const noexcept -> const OutputStreamSettings & override { return _settings; }
+    [[nodiscard]] auto state() const noexcept -> StreamState override;
+    [[nodiscard]] auto isReady() const noexcept -> bool override;
+    [[nodiscard]] auto waitForReady() -> StreamWaitStatus override;
+    auto flush() -> StreamWriteStatus override;
+    auto close() -> StreamCloseStatus override;
+    void abort() noexcept override;
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
-    void write(text::Char character) override;
-    void write(const text::StringView &text) override;
-    void writeLine() override;
-    void writeLine(const text::StringView &text) override;
-
-protected: // override TextOutputStream
-    auto createPrintContext() -> TextPrintContextPtr override;
+    auto write(text::Char character) -> StreamWriteStatus override;
+    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine() -> StreamWriteStatus override;
+    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
 
 private:
+    mutable std::mutex _mutex;
     text::StringBuilder _builder;
+    OutputStreamSettings _settings;
+    StreamState _state{StreamState::Open};
 };
 
 }

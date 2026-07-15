@@ -89,6 +89,7 @@ Primary Types
     StringBuilder // u8/16/32 agnostic interface to build strings
     StringCharReader // u8/16/32 agnostic interface to read strings `Char` wise (for parsers)
     StringConverter // explicit string/std-string conversion entry point
+    StringDecodeBuffer // bounded byte buffer for incremental string decoding
     StringDecoder // explicit byte-block to string decoding entry point
     StringEncoder // explicit string to byte-block encoding entry point
     StringFormat // A pattern based formatter, similar to ``std::format``
@@ -100,8 +101,15 @@ Primary Types
     StringLiteral // thin wrapper around `""_el` literals
     StringMap // common string map (alias for U8StringMap)
     StringCIMap // common case-insensitive string map (alias for U8StringCIMap)
+    StringPattern // lightweight decoded-character pattern matcher
     StringSet // common string set (alias for U8StringSet)
     StringCISet // common case-insensitive string set (alias for U8StringCISet)
+    CodeSnippetMarker // marker range for a line-oriented code snippet
+    TextDocument // mutable structured text document with a document root node
+    text::html::HtmlParser // tolerant HTML to TextDocument parser
+    TextNode // mutable shared node in a text document tree
+    TextNodeData // extensible metadata attached to a text document node
+    TextNodeType // semantic type of a text document node
     StringView // a read-only owning view of a string (not to be compared with std::string_view)
     StringViewList // common string view list (alias for U8StringViewList)
 
@@ -161,6 +169,16 @@ Enumerations
     UnicodeCategory // a Unicode category
     UnicodeCategoryGroup // a UnicodeCategoryGroup
 
+Diagnostic Escaping
+===================
+
+Use ``EscapeFormat::Display`` for untrusted text shown to a user.
+It preserves printable punctuation and non-ASCII text while representing control and format characters with readable
+C-style escape sequences.
+Use ``TextNode::addEscapedText(text, format[, amount])`` when building a semantic document: ordinary runs become
+``Text`` nodes and every replacement becomes one indivisible ``EscapeSequence`` node.
+The operation decodes malformed UTF input tolerantly.
+
 Header Files
 ============
 
@@ -168,53 +186,10 @@ Header Files
 
     Literals.hpp // use with ``using namespace el::text::literals`` to enable ``""_el``.
     StringConverter.hpp // convert between Erbsland and standard string types.
+    StringDecodeBuffer.hpp // incrementally decode byte chunks into strings.
     StringDecoder.hpp // decode binary text data into Erbsland strings.
     StringEncoder.hpp // encode Erbsland strings into binary text data.
     UnicodeVersion.hpp // to access the Unicode database version the library uses.
-
-String Converter Patterns
-=========================
-
-.. code-block:: text
-
-    T{text}.toString() -> String // convert to the default UTF-8 string.
-    T{text}.toStringView() -> StringView // safe view; owns storage if conversion was needed.
-    T{text}.toU❮width❯String(errorMode) -> U❮width❯String // convert between Erbsland strings.
-    T{text}.toStdString(errorMode) -> std::string // convert to UTF-8 byte string.
-    T{text}.toStdU❮width❯String(errorMode) -> std::u❮width❯string // convert to a standard string.
-    T{text}.toStdWString(errorMode) -> std::wstring // convert to native wide string.
-
-String Encoder Patterns
-=======================
-
-.. code-block:: text
-
-    T{text}.encode(encoding, bomMode) -> mem::ByteBlock // encode an Erbsland string/view/char-view.
-
-String Decoder Patterns
-=======================
-
-.. code-block:: text
-
-    T{data}.decode(encoding, bomMode, errorMode) -> String // decode binary text to the default string.
-    T{data}.toU❮width❯String(encoding, bomMode, errorMode) -> U❮width❯String // decode to a target width.
-
-String Builder Patterns
-=======================
-
-.. code-block:: text
-
-    StringBuilder::u❮width❯() -> StringBuilder // create a builder for a fixed target width.
-    StringBuilder::u8(ByteLength) -> StringBuilder // create a UTF-8 builder with native byte capacity.
-    StringBuilder::u16(U16DataLength) -> StringBuilder // create a UTF-16 builder with native code-unit capacity.
-    StringBuilder::u32(CpLength) -> StringBuilder // create a UTF-32 builder with native code-point capacity.
-    StringBuilder::withCapacity(kind, CpLength) -> StringBuilder // create a builder with decoded code-point capacity.
-    StringBuilder::basedOn(text, additionalCapacity) -> StringBuilder // create a builder from existing text.
-    o.append(character/text[, count]) -> StringBuilder& // append code point(s) or text.
-    o.appendByteBlock(bytes, format) -> StringBuilder& // append a byte block as hexadecimal text.
-    o.takeU❮width❯String() -> U❮width❯String // move out a string and reset the builder.
-    o.to<T>() -> T // create a supported editable string type.
-    o.toU❮width❯String() -> U❮width❯String // create a string copy.
 
 String API Patterns
 ===================
@@ -225,6 +200,7 @@ String API Patterns
     T::fromInteger(v, format) -> T // create from an integer.
     T::fromByteBlock(bytes, format) -> T // create hexadecimal text from a byte block.
     T::fromCharacter(character, count) -> T // create text by repeating one code point.
+    T::fromJoined({views...}) -> T // create text by joining matching string views without a separator.
     T::swap(first, second) // swap two strings.
     o.advance(index, count) -> bool // advance an index forward by the given count.
     o.append(character/text[, count]) -> T& // append code point(s) or text.
@@ -254,6 +230,8 @@ String API Patterns
     o.indexAt(side) -> ❮index❯ // get the front or back data index.
     o.isEmpty() -> bool // test if the string is empty.
     o.isValidUtf❮width❯() -> bool // test if the string is valid UTF-8/16/32.
+    o.readCharAndAdvance(index) -> Char // read at an index and move it after the character.
+    o.readCharAndRetreat(index) -> Char // read before an index and move it to the character start.
     o.insert(index, text) -> T& // insert text at a native or character-based index.
     o.inserted(index, text) -> T // return a copy with text inserted at a native or character-based index.
     o.keep(range) -> T& // keep only a native or character-based range in-place.
@@ -280,7 +258,9 @@ String API Patterns
     o.shrinkToFit() -> void // free unused memory.
     o.slice(range) -> TView // get a slice of the string.
     o.slice(side, length) -> TView // get the front or back portion of the string.
+    o.slice(side, index) -> TView/T // get the text before or after an index.
     o.slice(side) -> std::tuple<Char, TView/T> // remove one character from a side and return it plus the remainder.
+    o.splitAt(index) -> std::pair<TView/T, TView/T> // split into the text before and after an index.
     o.startsWith(prefix[, compareFn]) -> bool // check if the string starts with the given prefix.
     o.storageId() -> mem::StorageIdentifier // get a unique identifier for the storage range.
     o.toCharIndex(dataIndex) -> unit::CpIndex // get the char index at the given data index.
@@ -296,6 +276,96 @@ String API Patterns
     o.truncated(maximumWidth, mode, ellipsis) -> T // return a truncated copy by decoded code-point width.
     o.trim([characters][, side]) -> T& // remove ASCII whitespace or characters from both sides or one side.
     o.trimmed([characters][, side]) -> T // return a trimmed copy or view.
+
+String Converter Patterns
+=========================
+
+.. code-block:: text
+
+    T{text}.toString() -> String // convert to the default UTF-8 string.
+    T{text}.toStringView() -> StringView // safe view; owns storage if conversion was needed.
+    T{text}.toU❮width❯String(errorMode) -> U❮width❯String // convert between Erbsland strings.
+    T{text}.toStdString(errorMode) -> std::string // convert to UTF-8 byte string.
+    T{text}.toStdU❮width❯String(errorMode) -> std::u❮width❯string // convert to a standard string.
+    T{text}.toStdWString(errorMode) -> std::wstring // convert to native wide string.
+
+String Encoder Patterns
+=======================
+
+.. code-block:: text
+
+    T{text}.encode(encoding, bomMode) -> mem::ByteBlock // encode an Erbsland string/view/char-view.
+
+String Decoder Patterns
+=======================
+
+.. code-block:: text
+
+    T{data}.decode(encoding, bomMode, errorMode) -> String // decode binary text to the default string.
+    T{data}.toU❮width❯String(encoding, bomMode, errorMode) -> U❮width❯String // decode to a target width.
+
+String Decode Buffer Patterns
+=============================
+
+.. code-block:: text
+
+    StringDecodeBuffer(capacity, encoding, bomMode, errorMode) // create a bounded incremental decoder
+    o.availableSpace() -> ByteLength // writable byte capacity
+    o.byteLength() -> ByteLength // buffered byte count
+    o.decodableCharacters(maximum) -> CpLength // complete characters ready for decoding
+    o.codePointStatus() -> CodePointStatus // status of the next code point prefix
+    o.write(bytes) -> void // append byte data
+    o.finish() -> void // mark input as complete; trailing incomplete data follows errorMode
+    o.peek❮Target❯String(maximum) -> ❮Target❯String // decode without consuming bytes
+    o.take❮Target❯String(maximum) -> ❮Target❯String // decode and consume the produced bytes
+
+String Builder Patterns
+=======================
+
+.. code-block:: text
+
+    T::u❮width❯() -> StringBuilder // create a builder for a fixed target width.
+    T::u8(ByteLength) -> StringBuilder // create a UTF-8 builder with native byte capacity.
+    T::u16(U16DataLength) -> StringBuilder // create a UTF-16 builder with native code-unit capacity.
+    T::u32(CpLength) -> StringBuilder // create a UTF-32 builder with native code-point capacity.
+    T::withCapacity(kind, CpLength) -> StringBuilder // create a builder with decoded code-point capacity.
+    T::basedOn(text, additionalCapacity) -> StringBuilder // create a builder from existing text.
+    o.append(character/text[, count]) -> StringBuilder& // append code point(s) or text.
+    o.appendByteBlock(bytes, format) -> StringBuilder& // append a byte block as hexadecimal text.
+    o.takeU❮width❯String() -> U❮width❯String // move out a string and reset the builder.
+    o.to<T>() -> T // create a supported editable string type.
+    o.toU❮width❯String() -> U❮width❯String // create a string copy.
+
+Text Document Patterns
+======================
+
+.. code-block:: text
+
+    TextDocument() // create an empty document with a valid root node
+    o.root() -> TextNodePtr // access the document root
+    o.add❮Element❯(...) -> TextNodePtr // add a child element to the root
+    o.toString() -> String // render the document as plain text
+    o.addCodeSnippet(lines, startLine, markers, language) -> TextNodePtr // add a numbered code excerpt
+    CodeSnippetMarker(line, column, length, label, style) // mark a range in a code excerpt
+
+    PlainTextRenderer{document}.build() -> String // build a plain-text string from a document
+    o.appendTo(builder) -> StringBuilder& // append rendered plain text to a builder
+
+    TextNode() // empty/invalid node
+    T::create❮Element❯(...) -> TextNodePtr // create a detached instance
+    o.add❮Element❯(...) -> TextNodePtr // add a child to this node
+    o.children() -> const TextNodeList& // access child nodes
+    o.toDiagnosticTree() -> StringTree // inspect the document tree
+
+HTML Parser Patterns
+====================
+
+.. code-block:: text
+
+    text::html // namespace for HTML parsing APIs
+    HtmlParser{text} // create a parser from AnyStringView
+    o.parse() -> TextDocument // tolerant parsing, no parse exceptions
+    o.parseOrThrow() -> TextDocument // tolerant parsing, throws ParseError only for unrecoverable future failures
 
 String List API Patterns
 ========================

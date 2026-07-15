@@ -6,11 +6,9 @@
 
 namespace erbsland::stream::impl {
 
-namespace {
-
 /// Prevent an extra copy when converting a string to be appended to a builder by choosing the correct string kind.
 template <typename T>
-void convertAndAppendToBuilder(text::StringBuilder &builder, T text) {
+void PrintContextCommonBuilder::convertAndAppendToBuilder(text::StringBuilder &builder, T text) {
     if (builder.kind() == text::StringKind::U32) {
         builder.append(text::StringConverter{text}.toU32String());
     } else if (builder.kind() == text::StringKind::U16) {
@@ -18,8 +16,6 @@ void convertAndAppendToBuilder(text::StringBuilder &builder, T text) {
     } else {
         builder.append(text::StringConverter{text}.toU8String());
     }
-}
-
 }
 
 void PrintContextCommonBuilder::print(const text::Char character) {

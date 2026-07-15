@@ -2,32 +2,43 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionManager.hpp"
 
-#include "OptionRenderer.hpp"
+#include "OptionError.hpp"
 #include "Options.hpp"
 #include "OptionValues.hpp"
-#include "StandardOptionRenderer.hpp"
 
+#include "impl/OptionDocumentBuilder.hpp"
 #include "impl/OptionParser.hpp"
 
-#include "../err/OptionError.hpp"
+#include "../i18n/DisplayTextMap.hpp"
+#include "../stream/StandardStreams.hpp"
+#include "../stream/TextOutputStream.hpp"
+#include "../text/PlainTextRenderer.hpp"
 #include "../text/StringConverter.hpp"
+#include "../text/TextDocument.hpp"
 
 #include <utility>
 
 namespace erbsland::options {
 
+void OptionManager::renderPlainDocument(const text::TextDocument &document, const stream::TextOutputStreamPtr &output) {
+    auto renderer = text::PlainTextRenderer{document};
+    output->writeLine(renderer.build());
+    output->flush();
+}
+
 OptionManager::OptionManager() : OptionManager{Options::create()} {
 }
 
-OptionManager::OptionManager(OptionsPtr options) : _options{std::move(options)} {
+OptionManager::OptionManager(OptionsPtr options, const i18n::DisplayTextMapConstPtr &displayText) :
+    _options{std::move(options)},
+    _displayText{displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap()} {
     if (_options == nullptr) {
         _options = Options::create();
     }
-    _renderer = StandardOptionRenderer::create();
 }
 
-void OptionManager::setRenderer(OptionRendererPtr renderer) noexcept {
-    _renderer = std::move(renderer);
+void OptionManager::setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText) noexcept {
+    _displayText = displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap();
 }
 
 auto OptionManager::parse(const int argc, char *argv[]) -> OptionResult {
@@ -39,7 +50,7 @@ auto OptionManager::parse(const int argc, wchar_t *argv[]) -> OptionResult {
 }
 
 auto OptionManager::parse(const core::CommandLineArguments &args) -> OptionResult {
-    return impl::OptionParser{_options, args}.parse();
+    return impl::OptionParser{_options, args, _displayText}.parse();
 }
 
 auto OptionManager::parseOrThrow(const int argc, char *argv[]) -> OptionValuesPtr {
@@ -64,31 +75,37 @@ auto OptionManager::parseOrThrow(const core::CommandLineArguments &args) -> Opti
         displayVersion(values->moduleName());
         return {};
     }
-    if (_renderer != nullptr && result.errorContext().has_value()) {
-        _renderer->displayError(_options, result.errorContext().value());
+    if (result.errorContext().has_value()) {
+        displayError(result.errorContext().value());
     }
     if (!result.errorContext().has_value()) {
-        throw err::OptionError{}; // fallback
+        throw options::OptionError{}; // fallback
     }
-    throw err::OptionError{result.errorContext().value()};
+    throw options::OptionError{result.errorContext().value()};
 }
 
 void OptionManager::displayHelp(text::StringView moduleName) const {
-    if (_renderer != nullptr) {
-        _renderer->displayHelp(_options, std::move(moduleName));
-    }
+    renderPlainDocument(helpDocument(std::move(moduleName)), stream::stdOut());
 }
 
 void OptionManager::displayVersion(text::StringView moduleName) const {
-    if (_renderer != nullptr) {
-        _renderer->displayVersion(_options, std::move(moduleName));
-    }
+    renderPlainDocument(versionDocument(std::move(moduleName)), stream::stdOut());
 }
 
 void OptionManager::displayError(const OptionErrorContext &errorContext) const {
-    if (_renderer != nullptr) {
-        _renderer->displayError(_options, errorContext);
-    }
+    renderPlainDocument(errorDocument(errorContext), stream::stdErr());
+}
+
+auto OptionManager::helpDocument(text::StringView moduleName) const -> text::TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.helpDocument(std::move(moduleName));
+}
+
+auto OptionManager::versionDocument(text::StringView moduleName) const -> text::TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.versionDocument(std::move(moduleName));
+}
+
+auto OptionManager::errorDocument(const OptionErrorContext &errorContext) const -> text::TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.errorDocument(errorContext);
 }
 
 auto OptionManager::convertCommandLineArguments(const int argc, char *argv[]) -> core::CommandLineArguments {

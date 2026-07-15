@@ -16,4 +16,6 @@ target_sources(erbsland-core-unittest PRIVATE
         ParagraphIndentsTest.cpp
         ParagraphOptionsTest.cpp
         ParagraphRenderTest.cpp
+        TerminalDocumentRendererTest.cpp
+        TerminalDocumentStyleTest.cpp
 )

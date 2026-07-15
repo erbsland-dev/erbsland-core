@@ -4,12 +4,10 @@
 
 #include "ApplicationData.hpp"
 
-#include "../../cterm/Terminal.hpp"
-#include "../../options/OptionManager.hpp"
-#include "../../random/Random.hpp"
-#include "../../stream/StandardStreams.hpp"
+#include "../../stream/TextOutputStream_fwd.hpp"
 
 #include <atomic>
+#include <mutex>
 
 namespace erbsland::core::impl {
 
@@ -17,73 +15,48 @@ namespace erbsland::core::impl {
 /// @tested{ApplicationTestScopeTest}
 class ApplicationDataImpl : public ApplicationData {
 public:
-    ApplicationDataImpl() : _options{options::Options::create()} {}
-    ~ApplicationDataImpl() override = default;
+    ApplicationDataImpl();
+    ~ApplicationDataImpl() override;
 
 public: // implement ApplicationData
-    void setCommandLineArguments(const int argc, char *argv[]) override {
-        if (_commandLineArgumentsInitialized) {
-            std::terminate(); // Command line arguments are already initialized.
-        }
-        _commandLineArguments = options::OptionManager::convertCommandLineArguments(argc, argv);
-        _commandLineArgumentsInitialized = true;
-    }
-    void setCommandLineArguments(const int argc, wchar_t *argv[]) override {
-        if (_commandLineArgumentsInitialized) {
-            std::terminate(); // Command line arguments are already initialized.
-        }
-        _commandLineArguments = options::OptionManager::convertCommandLineArguments(argc, argv);
-        _commandLineArgumentsInitialized = true;
-    }
-    void cleanupBeforeAppExit() noexcept override {
-        try {
-            if (_standardStreamRedirect.isActive()) {
-                stream::stdOut()->flush();
-                stream::stdErr()->flush();
-            }
-            if (_isTerminalEnabled && _terminal != nullptr) {
-                _terminal->restoreScreen();
-                _isTerminalEnabled = false;
-                _terminal = nullptr; // provoke errors if the terminal is used after application shutdown.
-            }
-            _standardStreamRedirect.reset();
-            _optionRenderer.reset();
-        } catch (...) { // NOLINT(*-empty-catch)
-            // ignore all exceptions during cleanup as this may be called from the destructor
-        }
-    }
-    [[nodiscard]] auto event() -> EventData & override {
-        auto lock = std::scoped_lock{_eventMutex};
-        if (_eventData == nullptr) {
-            _eventData = std::make_unique<EventData>();
-        }
-        return *_eventData;
-    }
+    void setCommandLineArguments(int argc, char *argv[]) override;
+    void setCommandLineArguments(int argc, wchar_t *argv[]) override;
+    void cleanupBeforeAppExit() noexcept override;
+    [[nodiscard]] auto event() -> EventData & override;
+    void renderSystemOutput(const text::TextDocument &document) override;
 
 public: // accessors
-    [[nodiscard]] auto info() noexcept -> ApplicationInfo & override { return _info; }
-    [[nodiscard]] auto info() const noexcept -> const ApplicationInfo & override { return _info; }
-    [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments & override {
-        return _commandLineArguments;
-    }
-    [[nodiscard]] auto options() noexcept -> options::OptionsPtr & override { return _options; }
-    [[nodiscard]] auto options() const noexcept -> const options::OptionsPtr & override { return _options; }
-    [[nodiscard]] auto optionValues() noexcept -> options::OptionValuesPtr & override { return _optionValues; }
-    [[nodiscard]] auto optionValues() const noexcept -> const options::OptionValuesPtr & override {
-        return _optionValues;
-    }
-    [[nodiscard]] auto optionRenderer() noexcept -> options::OptionRendererPtr & override { return _optionRenderer; }
-    [[nodiscard]] auto mainFn() noexcept -> MainFn & override { return _mainFn; }
-    [[nodiscard]] auto randomMutex() noexcept -> std::mutex & override { return _randomMutex; }
-    [[nodiscard]] auto random() noexcept -> random::RandomPtr & override { return _random; }
-    [[nodiscard]] auto secureRandom() noexcept -> random::RandomPtr & override { return _secureRandom; }
-    [[nodiscard]] auto isTerminalEnabled() const noexcept -> bool override { return _isTerminalEnabled; }
-    void setTerminalEnabled(const bool enabled) noexcept override { _isTerminalEnabled = enabled; }
-    [[nodiscard]] auto terminal() noexcept -> cterm::TerminalPtr & override { return _terminal; }
-    [[nodiscard]] auto terminal() const noexcept -> const cterm::TerminalPtr & override { return _terminal; }
-    [[nodiscard]] auto standardStreamRedirect() noexcept -> stream::StandardStreamRedirect & override {
-        return _standardStreamRedirect;
-    }
+    [[nodiscard]] auto info() noexcept -> ApplicationInfo & override;
+    [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments & override;
+    [[nodiscard]] auto options() noexcept -> const options::OptionsPtr & override;
+    void setOptions(options::OptionsPtr options) noexcept override;
+    [[nodiscard]] auto optionValues() noexcept -> const options::OptionValuesPtr & override;
+    void setOptionValues(options::OptionValuesPtr optionValues) noexcept override;
+    [[nodiscard]] auto systemOutputStyle() const noexcept -> const cterm::TerminalDocumentStyle & override;
+    void setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexcept override;
+    [[nodiscard]] auto initializeFn() noexcept -> const InitializeFn & override;
+    void setInitializeFn(InitializeFn initializeFn) noexcept override;
+    [[nodiscard]] auto mainFn() noexcept -> const MainFn & override;
+    void setMainFn(MainFn mainFn) noexcept override;
+    [[nodiscard]] auto randomMutex() noexcept -> std::mutex & override;
+    [[nodiscard]] auto random() noexcept -> const random::RandomPtr & override;
+    void setRandom(random::RandomPtr random) noexcept override;
+    [[nodiscard]] auto secureRandom() noexcept -> const random::RandomPtr & override;
+    void setSecureRandom(random::RandomPtr random) noexcept override;
+    [[nodiscard]] auto systemMutex() noexcept -> std::mutex & override;
+    [[nodiscard]] auto displayText() noexcept -> const i18n::DisplayTextMapConstPtr & override;
+    void setDisplayText(i18n::DisplayTextMapConstPtr displayText) noexcept override;
+    [[nodiscard]] auto userLookup() noexcept -> const system::UserLookupPtr & override;
+    void setUserLookup(system::UserLookupPtr userLookup) noexcept override;
+    [[nodiscard]] auto isTerminalEnabled() const noexcept -> bool override;
+    void setTerminalEnabled(bool enabled) noexcept override;
+    [[nodiscard]] auto terminal() noexcept -> const cterm::TerminalPtr & override;
+    void setTerminal(cterm::TerminalPtr terminal) noexcept override;
+    void setStandardStreamRedirect(stream::StandardStreamRedirect redirect) noexcept override;
+
+private:
+    [[nodiscard]] static auto plainSystemOutputStream(const text::TextDocument &document)
+        -> stream::TextOutputStreamPtr;
 
 private:
     ApplicationInfo _info;                                     ///< Application metadata.
@@ -93,13 +66,19 @@ private:
 
     options::OptionsPtr _options;                              ///< The global options configuration.
     options::OptionValuesPtr _optionValues;                    ///< The option values after parsing.
-    options::OptionRendererPtr _optionRenderer;                ///< Renderer used by the application option manager.
+    cterm::TerminalDocumentStyle _systemOutputStyle{
+        cterm::TerminalDocumentStyle::defaultSystemOutput()};  ///< Style for system output documents.
 
+    InitializeFn _initializeFn;                                ///< Lamda-based override of initialize().
     MainFn _mainFn;                                            ///< Lambda-based override of main().
 
     std::mutex _randomMutex;                                   ///< Mutex for lazy random generator creation.
     random::RandomPtr _random;                                 ///< Shared fast random generator.
     random::RandomPtr _secureRandom;                           ///< Shared secure random generator.
+
+    std::mutex _systemMutex;                                   ///< Mutex for lazy system service creation.
+    i18n::DisplayTextMapConstPtr _displayText;                 ///< Shared application display texts.
+    system::UserLookupPtr _userLookup;                         ///< Shared user and group lookup service.
 
     bool _isTerminalEnabled{false};                            ///< Flag if the terminal was enabled.
     cterm::TerminalPtr _terminal;                              ///< The terminal instance.

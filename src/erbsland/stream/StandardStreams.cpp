@@ -9,6 +9,10 @@
 
 namespace erbsland::stream {
 
+auto stdIn() -> TextInputStreamPtr {
+    return impl::standardStreamRegistry().inputProxy();
+}
+
 auto stdOut() -> TextOutputStreamPtr {
     return impl::standardStreamRegistry().outputProxy();
 }
@@ -19,17 +23,22 @@ auto stdErr() -> TextOutputStreamPtr {
 
 auto redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect {
     return StandardStreamRedirect{
-        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Out, std::move(output), {})};
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Out, {}, std::move(output), {})};
 }
 
 auto redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect {
     return StandardStreamRedirect{
-        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Err, {}, std::move(error))};
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Err, {}, {}, std::move(error))};
+}
+
+auto redirectStdIn(TextInputStreamPtr input) -> StandardStreamRedirect {
+    return StandardStreamRedirect{
+        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::In, std::move(input), {}, {})};
 }
 
 auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error) -> StandardStreamRedirect {
-    return StandardStreamRedirect{
-        impl::standardStreamRegistry().replace(impl::StandardStreamSlot::Both, std::move(output), std::move(error))};
+    return StandardStreamRedirect{impl::standardStreamRegistry().replace(
+        impl::StandardStreamSlot::Both, {}, std::move(output), std::move(error))};
 }
 
 }

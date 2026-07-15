@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include <windows.h>
+#include "../../core/impl/WindowsApi.hpp"
 
 #include <atomic>
 #include <condition_variable>

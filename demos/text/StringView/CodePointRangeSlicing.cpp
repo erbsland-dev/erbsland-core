@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Code-point range slicing is useful for short, fixed-shape text where the
 /// positions are naturally counted in decoded characters.
 ///
@@ -21,4 +23,6 @@ void codePointRangeSlicing() {
     el::io::printLine("Map name: "_el, mapName);
     el::io::printLine("Map number: "_el, number);
     el::io::printLine("Map name byte length: "_el, mapName.length());
+}
+
 }

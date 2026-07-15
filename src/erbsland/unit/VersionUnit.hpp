@@ -44,16 +44,12 @@ struct BuildNumberUnit final : VersionUnit {
 };
 
 /// A major version number.
-/// @tested{VersionTest}
 using Major = IntegerUnitIndex<MajorUnit>;
 /// A minor version number.
-/// @tested{VersionTest}
 using Minor = IntegerUnitIndex<MinorUnit>;
 /// A revision version number.
-/// @tested{VersionTest}
 using Revision = IntegerUnitIndex<RevisionUnit>;
 /// A build version number.
-/// @tested{VersionTest}
 using BuildNumber = IntegerUnitIndex<BuildNumberUnit>;
 
 }

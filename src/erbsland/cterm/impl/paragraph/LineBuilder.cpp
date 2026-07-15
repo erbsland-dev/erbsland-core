@@ -73,7 +73,8 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
         auto spacingRun = SpacingRun{0, state.tokenIndex, state.tabStopIndex, SpacingRun::Action::Continue};
         const auto spacingTabStopIndex = state.tabStopIndex;
         auto wordTokenIndex = state.tokenIndex;
-        if (_preparedSourceLine.tokens[state.tokenIndex].type() != LayoutLineToken::Type::Word) {
+        if (_preparedSourceLine.tokens[state.tokenIndex].type() != LayoutLineToken::Type::Word &&
+            _preparedSourceLine.tokens[state.tokenIndex].type() != LayoutLineToken::Type::IndivisibleWord) {
             spacingRun = evaluateSpacingRun(state.tokenIndex, state.tabStopIndex, usedWidth, usedWidth == prefixWidth);
             if (spacingRun.action == SpacingRun::Action::LineBreak) {
                 state.tokenIndex = spacingRun.nextTokenIndex;
@@ -111,6 +112,21 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
             continue;
         }
         if (usedWidth > prefixWidth) {
+            break;
+        }
+        if (wordToken.isIndivisible()) {
+            appendSpacingRun(
+                line.fragments,
+                state.tokenIndex,
+                wordTokenIndex,
+                spacingTabStopIndex,
+                usedWidth,
+                usedWidth == prefixWidth);
+            line.fragments.appendSourceRange(wordToken.startIndex(), wordToken.length(), remainingWidth);
+            state.tokenIndex = wordTokenIndex + 1;
+            state.wordOffset = BlockCount{};
+            state.tabStopIndex = spacingRun.nextTabStopIndex;
+            consumedAnySourceCell = true;
             break;
         }
         auto splitMarkerWidth = 0;
@@ -163,7 +179,7 @@ auto LineBuilder::evaluateSpacingRun(
     auto ignoreSeparatorSpaces = isLineStart;
     for (auto index = tokenIndex; index < _preparedSourceLine.tokens.size(); ++index) {
         const auto &token = _preparedSourceLine.tokens[index];
-        if (token.type() == LayoutLineToken::Type::Word) {
+        if (token.type() == LayoutLineToken::Type::Word || token.type() == LayoutLineToken::Type::IndivisibleWord) {
             result.nextTokenIndex = index;
             return result;
         }

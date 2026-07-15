@@ -58,8 +58,8 @@ This makes it efficient and easy to use in generic code.
 
 .. erbsland-demo::
     :source: text/StringBuilder/FieldGuideCards.cpp
-    :exec: string_builder --demo FieldGuideCards
-    :source-sha256: 2dd7a5a2e4f69410b9408f64c51563c06de7260bd103e2f0d011f09ef51ea790
+    :exec: text/string_builder --demo FieldGuideCards
+    :source-sha256: 5ce260369447773c86d0fd125f166d4829e8fcf88b35863ec35d0ca032e30ca5
 
 .. code-block:: cpp
 
@@ -214,63 +214,60 @@ methods.
 
 .. erbsland-demo::
     :source: stream/StringBuilderStream/CaptureOutput.cpp
-    :exec: string_builder_stream --demo CaptureOutput
-    :source-sha256: d7fb6f07143457ea45c06a6edc3a98ccce0a0b20809119ad441a4b787cb4ea53
+    :exec: stream/string_builder_stream --demo CaptureOutput
+    :source-sha256: a5cbb65482a3a9b067da5284dc39393358f6e3e07855ea7c9dcb6ff13bc5224b
 
 .. code-block:: cpp
 
-    /// `StringBuilderStream` is the combination of a `TextOutputStream` and a `StringBuilder`.
-    /// It allows you to write text output directly into an in-memory string, using the same interface
-    /// as other text output streams.
-    /// This is useful for generic stream writing functions: a caller can pass a string builder stream
-    /// instead of a file or terminal stream to capture the output in memory.
+    /// `StringBuilderStream` combines a `TextOutputStream` and a `StringBuilder`.
+    /// It lets a generic stream-writing function capture output in an in-memory string.
     void captureOutput() {
         const auto stringBuilderStream = el::StringBuilderStream::create();
-        for (auto i = 0; i < 3; ++i) {
+        for (auto index = 0; index < 3; ++index) {
             printMagicSquare(stringBuilderStream);
         }
         el::io::print(stringBuilderStream->takeString());
     }
 
     void printMagicSquare(const el::TextOutputStreamPtr &outputStream) {
-        MagicSquare square{};
+        auto square = MagicSquare{};
         buildMagicSquare(square);
-        const auto intFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{3});
+        const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{3});
         outputStream->printLine("┌─────┬─────┬─────┐ Sum: "_el, square.magicSum);
         outputStream->printLine(
-            intFormat, "│ "_el, square.values[0], " │ "_el, square.values[1], " │ "_el, square.values[2], " │"_el);
+            integerFormat, "│ "_el, square.values[0], " │ "_el, square.values[1], " │ "_el, square.values[2], " │"_el);
         outputStream->printLine("├─────┼─────┼─────┤"_el);
         outputStream->printLine(
-            intFormat, "│ "_el, square.values[3], " │ "_el, square.values[4], " │ "_el, square.values[5], " │"_el);
+            integerFormat, "│ "_el, square.values[3], " │ "_el, square.values[4], " │ "_el, square.values[5], " │"_el);
         outputStream->printLine("├─────┼─────┼─────┤"_el);
         outputStream->printLine(
-            intFormat, "│ "_el, square.values[6], " │ "_el, square.values[7], " │ "_el, square.values[8], " │"_el);
+            integerFormat, "│ "_el, square.values[6], " │ "_el, square.values[7], " │ "_el, square.values[8], " │"_el);
         outputStream->printLine("└─────┴─────┴─────┘"_el);
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    ┌─────┬─────┬─────┐ Sum: 90
-    │  51 │   2 │  37 │
+    ┌─────┬─────┬─────┐ Sum: 18
+    │   7 │   8 │   3 │
     ├─────┼─────┼─────┤
-    │  16 │  30 │  44 │
+    │   2 │   6 │  10 │
     ├─────┼─────┼─────┤
-    │  23 │  58 │   9 │
+    │   9 │   4 │   5 │
     └─────┴─────┴─────┘
-    ┌─────┬─────┬─────┐ Sum: 126
-    │  63 │  14 │  49 │
+    ┌─────┬─────┬─────┐ Sum: 141
+    │  39 │  31 │  71 │
     ├─────┼─────┼─────┤
-    │  28 │  42 │  56 │
+    │  79 │  47 │  15 │
     ├─────┼─────┼─────┤
-    │  35 │  70 │  21 │
+    │  23 │  63 │  55 │
     └─────┴─────┴─────┘
-    ┌─────┬─────┬─────┐ Sum: 60
-    │  11 │  32 │  17 │
+    ┌─────┬─────┬─────┐ Sum: 39
+    │  10 │  17 │  12 │
     ├─────┼─────┼─────┤
-    │  26 │  20 │  14 │
+    │  15 │  13 │  11 │
     ├─────┼─────┼─────┤
-    │  23 │   8 │  29 │
+    │  14 │   9 │  16 │
     └─────┴─────┴─────┘
 
 .. erbsland-demo-end::
@@ -287,12 +284,12 @@ This avoids repeatedly parsing the same format string and keeps formatting logic
 You can either create a new string from formatted values or append the result directly to a
 :cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
 
-See :doc:`formatting_strings` for a complete description of the format language and all supported formatting options.
+See :doc:`using_string_format` for a complete description of the format language and all supported formatting options.
 
 .. erbsland-demo::
     :source: text/StringFormat/FormattingPatterns.cpp
-    :exec: string_format --demo FormattingPatterns
-    :source-sha256: cf7ed864226075dee1b9dbb92cecc7bf0759eeb5d61e9f65cc2249e9d3952dfb
+    :exec: text/string_format --demo FormattingPatterns
+    :source-sha256: 41fd0bcda8d16ff5d7efde31ea105164d94110d74ae9f8159313e96809bf9715
 
 .. code-block:: cpp
 
@@ -304,13 +301,13 @@ See :doc:`formatting_strings` for a complete description of the format language 
     /// creating temporary strings.
     void formattingPatterns() {
         // Create a reusable pattern for ISO 8601 date-time values.
-        const auto isoDateTime = el::StringFormat{"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}"};
+        const auto isoDateTime = el::StringFormat{"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}"_el};
 
         auto timestamp = isoDateTime.build(2026, 5, 30, 21, 41, 56);
         el::io::printLine("ISO date-time: "_el, timestamp);
 
         // Create a pattern to for simple HTML tags.
-        const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"};
+        const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"_el};
 
         el::StringBuilder htmlOutput;
         htmlTag.appendTo(htmlOutput, "h1"_el, "Hello World"_el);
@@ -350,8 +347,8 @@ more efficient because it is specifically designed for incremental construction.
 
 .. erbsland-demo::
     :source: text/String/EditingText.cpp
-    :exec: string --demo EditingText
-    :source-sha256: c22d511e71c1bdb50b5d13618e77bd50d83e588671ec2bcf7bf814a6a009d5d4
+    :exec: text/string --demo EditingText
+    :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 
@@ -360,21 +357,21 @@ more efficient because it is specifically designed for incremental construction.
     /// Use `StringView` for parameters and stored read-only text.
     void editingText() {
         // Create an editable string from a string literal.
-        auto story = el::String{"The forest wakes up at sunrise. A small fox follows the river. "
+        auto story = el::String{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                 "Der Wind trägt Blätter durch die Luft."_el};
 
         // Alternatively, create an editable string directly with the `""_els` literal.
-        auto intro = "A short forest story:"_els;
+        auto intro = "A short alpine field note:"_els;
 
         // Find the insertion position after the first sentence.
         auto firstFullStopIndex = story.findFirstOf({U'.'});
         story.advance(firstFullStopIndex, el::CpLength{2});
 
         // Insert a new sentence after the first sentence.
-        story.insert(firstFullStopIndex, "Birds start singing in the old oak tree. "_el);
+        story.insert(firstFullStopIndex, "Sunlight reaches the wet limestone. "_el);
 
-        // Replace the main character.
-        story.replaceAll("small fox"_el, "curious hedgehog"_el);
+        // Replace the main subject.
+        story.replaceAll("pale crocus"_el, "violet gentian"_el);
 
         // Remove one sentence from the story.
         constexpr auto sentenceBeginText = "Der Wind"_el;
@@ -396,10 +393,10 @@ more efficient because it is specifically designed for incremental construction.
 .. erbsland-ansi::
     :escape-char: ␛
 
-    A short forest story:
-    The forest wakes up at sunrise.
-    Birds start singing in the old oak tree.
-    A curious hedgehog follows the river.
+    A short alpine field note:
+    The frost lifts from the valley.
+    Sunlight reaches the wet limestone.
+    A violet gentian opens beside the stone.
      🌿 The day begins quietly.
 
 .. erbsland-demo-end::

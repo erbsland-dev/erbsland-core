@@ -4,9 +4,13 @@
 
 #include "Option_fwd.hpp"
 #include "OptionErrorReason.hpp"
+#include "OptionModule_fwd.hpp"
+#include "Options_fwd.hpp"
 #include "OptionSet_fwd.hpp"
 
+#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../text/StringView.hpp"
+#include "../text/StringViewList.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <utility>
@@ -26,9 +30,18 @@ public:
     auto operator=(OptionErrorContext &&) noexcept -> OptionErrorContext & = default;
 
 public:
-    /// Get the user-facing error description.
+    /// Get the short user-facing error title.
+    [[nodiscard]] auto title() const -> text::StringView { return _title; }
+    /// Set the short user-facing error title.
+    /// @param title The title text.
+    /// @return A reference to this context.
+    auto setTitle(text::StringView title) -> OptionErrorContext & {
+        _title = std::move(title);
+        return *this;
+    }
+    /// Get the detailed user-facing error description.
     [[nodiscard]] auto description() const -> text::StringView { return _description; }
-    /// Set the user-facing error description.
+    /// Set the detailed user-facing error description.
     /// @param description The description text.
     /// @return A reference to this context.
     auto setDescription(text::StringView description) -> OptionErrorContext & {
@@ -53,8 +66,26 @@ public:
         _argumentIndex = index;
         return *this;
     }
-    /// Get the option related to the error if it still exists.
-    [[nodiscard]] auto option() const -> OptionPtr { return _option.lock(); }
+    /// Get the options root related to the error.
+    [[nodiscard]] auto options() const noexcept -> const OptionsPtr & { return _options; }
+    /// Set the options root related to the error.
+    /// @param options The options root.
+    /// @return A reference to this context.
+    auto setOptions(OptionsPtr options) -> OptionErrorContext & {
+        _options = std::move(options);
+        return *this;
+    }
+    /// Get the selected module related to the error.
+    [[nodiscard]] auto module() const noexcept -> const OptionModulePtr & { return _module; }
+    /// Set the selected module related to the error.
+    /// @param module The selected module.
+    /// @return A reference to this context.
+    auto setModule(OptionModulePtr module) -> OptionErrorContext & {
+        _module = std::move(module);
+        return *this;
+    }
+    /// Get the option related to the error.
+    [[nodiscard]] auto option() const noexcept -> const OptionPtr & { return _option; }
     /// Set the option related to the error.
     /// @param option The option pointer.
     /// @return A reference to this context.
@@ -62,8 +93,8 @@ public:
         _option = option;
         return *this;
     }
-    /// Get the option set related to the error if it still exists.
-    [[nodiscard]] auto optionSet() const -> OptionSetPtr { return _optionSet.lock(); }
+    /// Get the option set related to the error.
+    [[nodiscard]] auto optionSet() const noexcept -> const OptionSetPtr & { return _optionSet; }
     /// Set the option set related to the error.
     /// @param optionSet The option-set pointer.
     /// @return A reference to this context.
@@ -71,24 +102,37 @@ public:
         _optionSet = optionSet;
         return *this;
     }
-    /// Get the module name related to the error.
-    [[nodiscard]] auto moduleName() const -> text::StringView { return _moduleName; }
-    /// Set the module name related to the error.
-    /// @param moduleName The module name.
+    /// Get all command-line arguments related to the error.
+    [[nodiscard]] auto arguments() const noexcept -> const text::StringViewList & { return _arguments; }
+    /// Set all command-line arguments related to the error.
+    /// @param arguments The command-line arguments.
     /// @return A reference to this context.
-    auto setModuleName(text::StringView moduleName) -> OptionErrorContext & {
-        _moduleName = std::move(moduleName);
+    auto setArguments(text::StringViewList arguments) -> OptionErrorContext & {
+        _arguments = std::move(arguments);
+        return *this;
+    }
+    /// Get the display wording captured for this error.
+    [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
+    /// Set the display wording captured for this error.
+    /// @param displayText The wording configuration.
+    /// @return A reference to this context.
+    auto setDisplayText(i18n::DisplayTextMapConstPtr displayText) -> OptionErrorContext & {
+        _displayText = std::move(displayText);
         return *this;
     }
 
 private:
-    text::StringView _description;                      ///< A textual description of the error.
+    text::StringView _title;                            ///< The short error title.
+    text::StringView _description;                      ///< The detailed error description.
     OptionErrorReason _reason{OptionErrorReason::None}; ///< Machine readable reason for the error.
     unit::ArgumentIndex _argumentIndex{
         unit::ArgumentIndex::noIndex()};                ///< The argument index where the error occurred.
-    OptionWeakPtr _option;                              ///< The option where the error occurred.
-    OptionSetWeakPtr _optionSet;                        ///< The option set where the error occurred.
-    text::StringView _moduleName;                       ///< The module name or empty.
+    OptionsPtr _options;                                ///< The options root active for the error.
+    OptionModulePtr _module;                            ///< The selected module, if any.
+    OptionPtr _option;                                  ///< The option where the error occurred.
+    OptionSetPtr _optionSet;                            ///< The option set where the error occurred.
+    text::StringViewList _arguments;                    ///< The command-line arguments, if available.
+    i18n::DisplayTextMapConstPtr _displayText;          ///< The wording captured for diagnostic rendering.
 };
 
 }

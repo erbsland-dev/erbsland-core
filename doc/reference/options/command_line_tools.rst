@@ -90,6 +90,55 @@ to the affected option.
 For example, choices require :cpp:enumerator:`OptionType::Choice <erbsland::options::OptionType::Choice>`, and a choice
 option must have at least one configured choice.
 
+Custom Value Names
+~~~~~~~~~~~~~~~~~~
+
+Help output normally derives value placeholders from the option type.
+Text options display ``<value>``, integer options display ``<integer>``, and choice options display ``<choice>``.
+Use :cpp:func:`setValueName() <erbsland::options::OptionEditor::setValueName>` when a domain-specific name is clearer.
+Pass the bare name; generated help adds the angle brackets.
+
+.. code-block:: cpp
+
+    options->addOption({"--config"_el, "config"_el})
+        .setType(el::OptionType::Text)
+        .setValueName("path"_el);
+
+    options->addOption("input"_el)
+        .setValueName("source"_el)
+        .setRequired();
+
+These definitions are displayed as ``--config <path>`` and ``<source>`` in usage and option-list help.
+An empty value name clears the override and restores the type-derived or positional default.
+
+Help, Version and Error Documents
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:cpp:class:`OptionManager <erbsland::options::OptionManager>` builds neutral
+:cpp:class:`TextDocument <erbsland::text::TextDocument>` trees for help, version and option-error output.
+Applications can render these documents through
+:cpp:class:`PlainTextRenderer <erbsland::text::PlainTextRenderer>` or
+:cpp:class:`TerminalDocumentRenderer <erbsland::cterm::TerminalDocumentRenderer>`.
+``DisplayTextMap`` configures wording only; terminal colors and layout belong to
+:cpp:class:`TerminalDocumentStyle <erbsland::cterm::TerminalDocumentStyle>`.
+
+:cpp:class:`OptionErrorContext <erbsland::options::OptionErrorContext>` keeps the structured objects needed to build a
+complete diagnostic.
+The options root, selected module, option set and option are retained with shared pointers, while the command-line
+arguments and argument index preserve the source snapshot.
+Usage, contextual help and the full-help command are derived when the diagnostic is rendered instead of being copied
+into the context as plain text.
+The built-in parser escapes command-line values before inserting them into explanatory messages.
+Command-line snippets escape every displayed argument and calculate marker ranges from that escaped representation, so a
+visible sequence such as ``\\033`` is covered by the marker in full.
+The executable name derived from ``argv[0]`` is escaped in usage and full-help commands as well.
+
+Use :cpp:func:`OptionErrorContext::setTitle() <erbsland::options::OptionErrorContext::setTitle>` for the short error
+heading and :cpp:func:`OptionErrorContext::setDescription() <erbsland::options::OptionErrorContext::setDescription>` for
+the explanatory paragraph.
+If a callback omits the title, the parser supplies a title based on
+:cpp:enum:`OptionErrorReason <erbsland::options::OptionErrorReason>`.
+
 Interface
 =========
 
@@ -108,9 +157,9 @@ Interface
     :members:
 .. doxygenclass:: erbsland::options::OptionChoices
     :members:
-.. doxygenclass:: erbsland::options::OptionDisplayText
-    :members:
 .. doxygenclass:: erbsland::options::OptionEditor
+    :members:
+.. doxygenclass:: erbsland::options::OptionError
     :members:
 .. doxygenclass:: erbsland::options::OptionErrorContext
     :members:
@@ -125,10 +174,6 @@ Interface
 .. doxygenclass:: erbsland::options::OptionManager
     :members:
 .. doxygenclass:: erbsland::options::OptionModule
-    :members:
-.. doxygenclass:: erbsland::options::OptionRenderer
-    :members:
-.. doxygenclass:: erbsland::options::OptionRendererBase
     :members:
 .. doxygenclass:: erbsland::options::OptionResult
     :members:
@@ -149,5 +194,3 @@ Interface
     :members:
 .. doxygentypedef:: erbsland::options::OptionValueStorage
 .. doxygenenum:: erbsland::options::OptionValueType
-.. doxygenclass:: erbsland::options::StandardOptionRenderer
-    :members:

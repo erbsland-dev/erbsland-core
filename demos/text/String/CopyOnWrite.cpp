@@ -4,6 +4,8 @@
 #include <DemoCommon.hpp>
 #include <erbsland/debug/StringDebug.hpp>
 
+namespace demo {
+
 constexpr auto cDebugFlags = el::DebugViewDetail::BackingStore;
 
 /// Copy-on-write allows strings to be copied at almost no cost.
@@ -52,4 +54,6 @@ void copyOnWrite() {
 
     el::io::printLine("After modifying a"_el);
     printAll();
+}
+
 }

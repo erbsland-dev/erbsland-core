@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 /// Flags for byte block text formatting.
-/// @tested{ByteFormatTest}
 enum class ByteFormatFlag : uint8_t {
     Separator = 1U << 0U,  ///< Insert separators between bytes or byte groups.
     ByteGroups = 1U << 1U, ///< Group multiple bytes between separators.

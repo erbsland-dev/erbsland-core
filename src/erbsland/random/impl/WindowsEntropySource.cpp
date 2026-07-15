@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsEntropySource.hpp"
 
+#include "../RandomError.hpp"
+
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../err/RandomError.hpp"
 
 #include <bcrypt.h>
 
@@ -16,7 +17,7 @@ void WindowsEntropySource::fillBytes(const std::span<std::byte> destination) {
         return;
     }
     if (destination.size() > std::numeric_limits<ULONG>::max()) {
-        throw err::RandomError{"Requested entropy block is too large"};
+        throw random::RandomError{"Requested entropy block is too large"};
     }
     const auto status = ::BCryptGenRandom(
         nullptr,
@@ -24,7 +25,7 @@ void WindowsEntropySource::fillBytes(const std::span<std::byte> destination) {
         static_cast<ULONG>(destination.size()),
         BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (status < 0) {
-        throw err::RandomError{"System entropy source failed"};
+        throw random::RandomError{"System entropy source failed"};
     }
 }
 

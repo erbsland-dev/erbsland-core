@@ -43,6 +43,7 @@ public:
     [[nodiscard]] auto errorContext() const noexcept -> const std::optional<OptionErrorContext> & { return _error; }
 
 private:
+    [[nodiscard]] static auto optionTitleForError(const OptionPtr &option) -> text::String;
     [[nodiscard]] auto findParsedValue(const OptionPtr &option) -> OptionParsedValuePtr;
     [[nodiscard]] auto storeIntegerValue(const OptionPtr &option, OptionInteger value, unit::ArgumentIndex index)
         -> bool;
@@ -55,6 +56,12 @@ private:
     auto makeError(
         OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)
         -> bool;
+    auto makeError(
+        OptionErrorReason reason,
+        text::StringView title,
+        text::StringView description,
+        unit::ArgumentIndex index,
+        const OptionPtr &option) -> bool;
 
 private:
     std::vector<OptionParsedValuePtr> _parsedValues; ///< Parsed values before final mapping.

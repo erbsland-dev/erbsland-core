@@ -9,6 +9,8 @@
 namespace erbsland::options {
 
 /// The result of processing command line arguments.
+///
+/// `parse()` returns this object for every outcome, including successful parsing, help/version requests, and errors.
 /// @tested{OptionsFrameworkTest}
 class OptionResult {
 public:
@@ -25,16 +27,20 @@ public: // accessors
     /// Get the parsed values.
     [[nodiscard]] auto values() const noexcept -> const OptionValuesPtr & { return _values; }
     /// Set the parsed values.
+    /// @param values Parsed values associated with this result.
     void setValues(OptionValuesPtr values) noexcept { _values = std::move(values); }
     /// Get the result status.
     [[nodiscard]] auto status() const noexcept -> OptionResultStatus { return _status; }
     /// Set the result status.
+    /// @param status New parser status.
     void setStatus(const OptionResultStatus status) noexcept { _status = status; }
-    /// Access the error context
+    /// Access the error context.
+    /// @return Structured error context when `status()` is `OptionResultStatus::Error`.
     [[nodiscard]] auto errorContext() const noexcept -> const std::optional<OptionErrorContext> & {
         return _errorContext;
     }
     /// Set the error context.
+    /// @param errorContext Error context for a failed parse, or empty for non-error results.
     void setErrorContext(std::optional<OptionErrorContext> errorContext) noexcept {
         _errorContext = std::move(errorContext);
     }

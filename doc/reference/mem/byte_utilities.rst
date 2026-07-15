@@ -56,6 +56,21 @@ Byte Writer
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`.
 Writing overwrites at the current position or appends when the position is at the end.
 
+Ring Buffers
+------------
+
+:cpp:class:`RingBuffer <erbsland::mem::RingBuffer>` stores bytes in fixed or bounded-growing contiguous storage.
+Safe methods copy data into and out of the ring.
+Atomic reserve and exact-write operations return :cpp:class:`Result <erbsland::util::Result>`; failure means the hard
+limit was exceeded and the ring was not modified.
+Low-level platform adapters use an internal exclusive access lease to pass the ring's one or two contiguous sections
+directly to native APIs.
+
+:cpp:class:`ByteRingBuffer <erbsland::mem::ByteRingBuffer>` adds atomic endian-aware integer reads and writes.
+
+For structured stream output, assemble a complete record with :cpp:class:`ByteWriter <erbsland::mem::ByteWriter>` and
+submit its byte block with one atomic byte-stream write. This avoids checking each individual field write.
+
 Interface
 =========
 
@@ -67,6 +82,10 @@ Interface
     :members:
 .. doxygenclass:: erbsland::mem::ByteReader
     :members:
+.. doxygenclass:: erbsland::mem::ByteRingBuffer
+    :members:
 .. doxygenclass:: erbsland::mem::ByteWriter
     :members:
 .. doxygenenum:: erbsland::mem::Endianness
+.. doxygenclass:: erbsland::mem::RingBuffer
+    :members:

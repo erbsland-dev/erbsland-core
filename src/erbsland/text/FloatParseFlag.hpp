@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 /// Flags for floating point parsing.
-/// @tested{FloatConversionTest}
 enum class FloatParseFlag : uint8_t {
     IgnoreTrailingChars = 1U << 0U, ///< Stop parsing successfully after the floating point value.
     All = 1U << 0U,

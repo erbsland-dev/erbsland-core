@@ -7,7 +7,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Identifier for an entry in the generated text table.
-/// @notest{Internal generated-data helper.}
 using TextId = uint16_t;
 
 inline constexpr auto cEmptyTextId = TextId{0};

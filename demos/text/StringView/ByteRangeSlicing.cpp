@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Byte-range slicing is the fast path for cutting `StringView` data into
 /// smaller views.
 ///
@@ -31,4 +33,6 @@ void byteRangeSlicing() {
     el::io::printLine("Day: "_el, day);
     el::io::printLine("Place: "_el, place);
     el::io::printLine("Weather: "_el, weather);
+}
+
 }

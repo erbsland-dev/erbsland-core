@@ -2,9 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "KeyDecoder.hpp"
 
-#include "../../text/impl/UnicodeData.hpp"
-#include "../../text/u8/impl/U8Encoding.hpp"
+#include "../../text/EncodingErrorMode.hpp"
+#include "../../text/IntegerParseOptions.hpp"
+#include "../../text/Literals.hpp"
+#include "../../text/ReadNumberStatus.hpp"
+#include "../../text/StringCharReader.hpp"
+#include "../../text/StringDecodeBuffer.hpp"
+#include "../../unit/CpLength.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <optional>
 #include <span>
@@ -12,65 +18,64 @@
 
 namespace erbsland::cterm::impl {
 
-namespace {
+using namespace text;
+using namespace text::literals;
+using namespace unit;
 
-[[nodiscard]] auto byteIndex(const std::size_t value) noexcept -> unit::ByteIndex {
-    return unit::ByteIndex::fromSizeT(value);
-}
-
-}
+constexpr auto cCsiPrefixLength = "\x1b["_el.length();
+constexpr auto cCsiPrefixIndex = ByteIndex::end(cCsiPrefixLength);
 
 auto KeyDecoder::simpleSequenceDefinitions() noexcept -> const std::array<SimpleSequenceDefinition, 6> & {
-    static constexpr auto cSimpleSequenceDefinitions = std::array<SimpleSequenceDefinition, 6>{{
-        {"\n", Key::Enter},
-        {"\r", Key::Enter},
-        {"\t", Key::Tab},
-        {" ", Key::Space},
-        {"\x08", Key::Backspace},
-        {"\x7f", Key::Backspace},
+    static const auto cSimpleSequenceDefinitions = std::array<SimpleSequenceDefinition, 6>{{
+        {"\n"_el, Key::Enter},
+        {"\r"_el, Key::Enter},
+        {"\t"_el, Key::Tab},
+        {" "_el, Key::Space},
+        {"\x08"_el, Key::Backspace},
+        {"\x7f"_el, Key::Backspace},
     }};
     return cSimpleSequenceDefinitions;
 }
 
-auto KeyDecoder::createCharacterKey(const CombinedBlock &character) noexcept -> Key {
-    if (character.codePointCount() <= 1) {
-        return Key{Key::Character, character.mainCodePoint()};
+auto KeyDecoder::createCharacterKey(const CombinedChar &character) noexcept -> Key {
+    if (character.characterCount() <= CpLength::one()) {
+        return Key{Key::Character, character.first()};
     }
-    return Key{Key::Combined, character.utf32()};
+    return Key{Key::Combined, character.toU32String()};
 }
 
-auto KeyDecoder::parseUtf8CodePointPrefix(const unit::ByteIndex offset) const noexcept -> CharParseResult {
-    const auto startOffset = offset.toSizeT();
-    if (startOffset >= _text.size()) {
+auto KeyDecoder::decodeCodePointPrefix(const StringView &text, const ByteIndex offset) noexcept -> CharParseResult {
+    if (offset >= ByteIndex::end(text.length())) {
         return CharParseResult{KeyParseStatus::Invalid, offset};
     }
-    const auto firstByte = static_cast<uint8_t>(_text[startOffset]);
-    if ((firstByte & 0b11000000U) == 0b10000000U) {
-        return CharParseResult{KeyParseStatus::Invalid, byteIndex(startOffset + 1U)};
+
+    const auto remainingLength = ByteLength::fromSizeT(text.length().toSizeT() - offset.toSizeT());
+    const auto prefixLength = std::min(remainingLength, ByteLength{4U});
+    auto buffer =
+        StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Throw};
+
+    for (auto byteOffset = std::size_t{0U}; byteOffset < prefixLength.toSizeT(); ++byteOffset) {
+        const auto currentOffset = offset + ByteLength::fromSizeT(byteOffset);
+        buffer.writeStringBytes(text.slice(ByteRange{currentOffset, ByteLength::one()}));
+
+        const auto status = buffer.codePointStatus();
+        if (status == StringDecodeBuffer::CodePointStatus::Invalid) {
+            return CharParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+        }
+        if (buffer.decodableCharacters(CpLength::one()) == CpLength::one()) {
+            const auto beforeLength = buffer.byteLength();
+            try {
+                const auto decodedText = buffer.takeString(CpLength::one());
+                auto reader = StringCharReader{decodedText};
+                const auto character = reader.read();
+                const auto consumedLength = beforeLength - buffer.byteLength();
+                return CharParseResult{KeyParseStatus::Parsed, character, offset + consumedLength};
+            } catch (...) {
+                return CharParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+            }
+        }
     }
-    auto requiredByteCount = std::size_t{1U};
-    if (firstByte < 0x80U) {
-        requiredByteCount = 1U;
-    } else if ((firstByte & 0b11100000U) == 0b11000000U && firstByte >= 0b11000010U) {
-        requiredByteCount = 2U;
-    } else if ((firstByte & 0b11110000U) == 0b11100000U) {
-        requiredByteCount = 3U;
-    } else if ((firstByte & 0b11111000U) == 0b11110000U && firstByte < 0b11110101U) {
-        requiredByteCount = 4U;
-    } else {
-        return CharParseResult{KeyParseStatus::Invalid, byteIndex(startOffset + 1U)};
-    }
-    if (_text.size() - startOffset < requiredByteCount) {
-        return CharParseResult{KeyParseStatus::NeedMoreData, offset};
-    }
-    auto position = offset;
-    try {
-        const auto character =
-            text::impl::utf8::decodeCharOrThrow(std::span<const char>{_text.data(), _text.size()}, position);
-        return CharParseResult{KeyParseStatus::Parsed, character, position};
-    } catch (...) {
-        return CharParseResult{KeyParseStatus::Invalid, byteIndex(startOffset + 1U)};
-    }
+    return CharParseResult{KeyParseStatus::NeedMoreData, offset};
 }
 
 auto KeyDecoder::parseModifierParameter(const int value) noexcept -> std::optional<KeyModifiers> {
@@ -109,77 +114,87 @@ auto KeyDecoder::parseModifierParameter(const int value) noexcept -> std::option
     }
 }
 
-auto KeyDecoder::parseCsiParameters(const std::string_view text) noexcept -> std::optional<std::vector<int>> {
+auto KeyDecoder::parseCsiParameters(const StringView &text) noexcept -> std::optional<std::vector<int>> {
     auto result = std::vector<int>{};
-    if (text.empty()) {
+    if (text.isEmpty()) {
         return result;
     }
-    auto value = 0;
-    auto digitCount = 0;
-    auto hasDigit = false;
-    constexpr static auto cMaximumDigitCount = 8;
-    constexpr static auto cMaximumParameterCount = 16;
-    for (const auto character : text) {
-        if (character >= '0' && character <= '9') {
-            if (digitCount >= cMaximumDigitCount) {
+    constexpr static auto cMaximumDigitCount = CpLength{8U};
+    constexpr static auto cMaximumParameterCount = 16U;
+    auto parseOptions = IntegerParseOptions::parserDefault();
+    parseOptions.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumDigitCount);
+    auto reader = StringCharReader{text};
+    const auto appendParameter = [&result](const int value) noexcept -> bool {
+        if (result.size() >= cMaximumParameterCount) {
+            return false;
+        }
+        result.emplace_back(value);
+        return true;
+    };
+    while (true) {
+        if (reader.isAtEnd()) {
+            if (!appendParameter(1)) {
                 return std::nullopt;
             }
-            hasDigit = true;
-            value = value * 10 + (character - '0');
-            digitCount++;
-            continue;
+            return result;
         }
-        if (character == ';') {
-            if (result.size() >= cMaximumParameterCount) {
+        if (reader.peek() == U';') {
+            if (!appendParameter(1)) {
                 return std::nullopt;
             }
-            if (!hasDigit) {
-                result.emplace_back(1);
-            } else {
-                result.emplace_back(value);
-            }
-            value = 0;
-            hasDigit = false;
-            digitCount = 0;
+            reader.advance();
             continue;
         }
-        return std::nullopt;
+        const auto parameter = reader.parseInteger(parseOptions);
+        if (parameter.status != ReadNumberStatus::Success) {
+            return std::nullopt;
+        }
+        if (!appendParameter(static_cast<int>(parameter.value))) {
+            return std::nullopt;
+        }
+        if (reader.isAtEnd()) {
+            return result;
+        }
+        if (!reader.advanceIf(U';')) {
+            return std::nullopt;
+        }
     }
-    result.emplace_back(hasDigit ? value : 1);
-    return result;
 }
 
-auto KeyDecoder::findCsiFinalByte(const std::string_view text) noexcept -> std::optional<std::size_t> {
-    for (auto index = std::size_t{2}; index < text.size(); ++index) {
-        const auto byte = static_cast<unsigned char>(text[index]);
-        if (byte >= 0x40U && byte <= 0x7eU) {
-            return index;
+auto KeyDecoder::findCsiFinalByte(const StringView &text) noexcept -> std::optional<ByteIndex> {
+    auto index = cCsiPrefixIndex;
+    const auto end = ByteIndex::end(text.length());
+    while (index < end) {
+        const auto currentIndex = index;
+        const auto character = text.readCharAndAdvance(index);
+        if (character.isAscii() && character.toRawValue() >= 0x40U && character.toRawValue() <= 0x7eU) {
+            return currentIndex;
         }
     }
     return std::nullopt;
 }
 
-auto KeyDecoder::keyFromCsiFinal(const char finalByte) noexcept -> Key::Type {
-    switch (finalByte) {
-    case 'A':
+auto KeyDecoder::keyFromCsiFinal(const Char finalByte) noexcept -> Key::Type {
+    switch (finalByte.toRawValue()) {
+    case U'A':
         return Key::Up;
-    case 'B':
+    case U'B':
         return Key::Down;
-    case 'C':
+    case U'C':
         return Key::Right;
-    case 'D':
+    case U'D':
         return Key::Left;
-    case 'H':
+    case U'H':
         return Key::Home;
-    case 'F':
+    case U'F':
         return Key::End;
-    case 'P':
+    case U'P':
         return Key::F1;
-    case 'Q':
+    case U'Q':
         return Key::F2;
-    case 'R':
+    case U'R':
         return Key::F3;
-    case 'S':
+    case U'S':
         return Key::F4;
     default:
         return Key::None;
@@ -223,36 +238,36 @@ auto KeyDecoder::keyFromCsiTildeParameter(const int parameter) noexcept -> Key::
     }
 }
 
-auto KeyDecoder::decodeCsi(const std::string_view text) noexcept -> ParseResult {
+auto KeyDecoder::decodeCsi(const StringView &text) noexcept -> ParseResult {
     const auto finalIndex = findCsiFinalByte(text);
     if (!finalIndex.has_value()) {
-        return ParseResult{KeyParseStatus::NeedMoreData, byteIndex(0)};
+        return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
-    const auto sequenceSize = *finalIndex + 1;
-    const auto finalByte = text[*finalIndex];
-    if (finalByte == 'Z') {
-        if (*finalIndex == 2) {
-            return ParseResult{KeyParseStatus::Parsed, Key{Key::BackTab}, byteIndex(sequenceSize)};
+    const auto sequenceSize = *finalIndex + ByteLength::one();
+    const auto finalByte = text.charAt(*finalIndex);
+    if (finalByte == U'Z') {
+        if (*finalIndex == cCsiPrefixIndex) {
+            return ParseResult{KeyParseStatus::Parsed, Key{Key::BackTab}, sequenceSize};
         }
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
 
-    const auto parameters = parseCsiParameters(text.substr(2, *finalIndex - 2));
+    const auto parameters = parseCsiParameters(text.slice(ByteRange{cCsiPrefixIndex, *finalIndex}));
     if (!parameters.has_value()) {
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
 
     auto type = Key::None;
     auto modifiers = KeyModifiers{};
-    if (finalByte == '~') {
+    if (finalByte == U'~') {
         if (parameters->empty()) {
-            return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+            return ParseResult{KeyParseStatus::Invalid, sequenceSize};
         }
         type = keyFromCsiTildeParameter((*parameters)[0]);
         if (parameters->size() >= 2) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[1]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         }
@@ -261,97 +276,99 @@ auto KeyDecoder::decodeCsi(const std::string_view text) noexcept -> ParseResult 
         if (parameters->size() >= 2) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[1]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         } else if (parameters->size() == 1 && (*parameters)[0] != 1) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[0]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         }
     }
 
     if (type == Key::None || parameters->size() > 2) {
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(sequenceSize)};
+        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
-    return ParseResult{KeyParseStatus::Parsed, Key{type, modifiers}, byteIndex(sequenceSize)};
+    return ParseResult{KeyParseStatus::Parsed, Key{type, modifiers}, sequenceSize};
 }
 
-auto KeyDecoder::decodeSs3(const std::string_view text) noexcept -> ParseResult {
-    if (text.size() < 3) {
-        return ParseResult{KeyParseStatus::NeedMoreData, byteIndex(0)};
+auto KeyDecoder::decodeSs3(const StringView &text) noexcept -> ParseResult {
+    if (text.length() < ByteLength{3U}) {
+        return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
-    switch (text[2]) {
-    case 'H':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::Home}, byteIndex(3)};
-    case 'F':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::End}, byteIndex(3)};
-    case 'P':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F1}, byteIndex(3)};
-    case 'Q':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F2}, byteIndex(3)};
-    case 'R':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F3}, byteIndex(3)};
-    case 'S':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F4}, byteIndex(3)};
+    switch (text.charAt(ByteIndex{2U}).toRawValue()) {
+    case U'H':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::Home}, ByteIndex{3}};
+    case U'F':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::End}, ByteIndex{3}};
+    case U'P':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::F1}, ByteIndex{3}};
+    case U'Q':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::F2}, ByteIndex{3}};
+    case U'R':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::F3}, ByteIndex{3}};
+    case U'S':
+        return ParseResult{KeyParseStatus::Parsed, Key{Key::F4}, ByteIndex{3}};
     default:
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(3)};
+        return ParseResult{KeyParseStatus::Invalid, ByteIndex{3}};
     }
 }
 
 auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> ParseResult {
-    if (_text.empty()) {
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(0)};
+    if (_text.isEmpty()) {
+        return ParseResult{KeyParseStatus::Invalid, ByteIndex::zero()};
     }
 
     for (const auto &definition : simpleSequenceDefinitions()) {
-        if (_text.starts_with(definition.sequence)) {
-            return ParseResult{KeyParseStatus::Parsed, Key{definition.type}, byteIndex(definition.sequence.size())};
+        if (_text.startsWith(definition.sequence)) {
+            return ParseResult{
+                KeyParseStatus::Parsed, Key{definition.type}, ByteIndex::end(definition.sequence.length())};
         }
     }
 
-    if (_text[0] == '\x1b') {
-        if (_text.size() == 1) {
-            return ParseResult{KeyParseStatus::NeedMoreData, byteIndex(0)};
+    if (_text.startsWith("\x1b"_el)) {
+        if (_text.length() == ByteLength::one()) {
+            return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
         }
-        if (_text[1] == '[') {
+        if (_text.charAt(ByteIndex::one()) == U'[') {
             return decodeCsi(_text);
         }
-        if (_text[1] == 'O') {
+        if (_text.charAt(ByteIndex::one()) == U'O') {
             return decodeSs3(_text);
         }
-        return ParseResult{KeyParseStatus::Invalid, byteIndex(2)};
+        return ParseResult{KeyParseStatus::Invalid, ByteIndex{2}};
     }
 
-    const auto firstCodePoint = parseUtf8CodePointPrefix(byteIndex(0));
+    const auto firstCodePoint = decodeCodePointPrefix(_text, ByteIndex::zero());
     if (firstCodePoint.status() != KeyParseStatus::Parsed) {
         return ParseResult{firstCodePoint.status(), firstCodePoint.consumedByteCount()};
     }
     const auto baseCodePoint = firstCodePoint.character();
-    if (CombinedBlock::isControlCode(baseCodePoint)) {
+    if (baseCodePoint.isControl()) {
         return ParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
     }
-    if (text::impl::unicodeDisplayWidthFor(baseCodePoint.toRawValue()) == 0) {
+    if (baseCodePoint.displayWidth() == 0) {
         return ParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
     }
 
-    auto character = CombinedBlock{baseCodePoint};
+    auto character = CombinedChar{baseCodePoint};
     auto offset = firstCodePoint.consumedByteCount();
-    while (offset.toSizeT() < _text.size()) {
-        const auto nextCodePoint = parseUtf8CodePointPrefix(offset);
+    const auto textEnd = ByteIndex::end(_text.length());
+    while (offset < textEnd) {
+        const auto nextCodePoint = decodeCodePointPrefix(_text, offset);
         if (nextCodePoint.status() == KeyParseStatus::NeedMoreData) {
-            return ParseResult{KeyParseStatus::NeedMoreData, byteIndex(0)};
+            return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
         }
         if (nextCodePoint.status() != KeyParseStatus::Parsed) {
             return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
         const auto codePoint = nextCodePoint.character();
-        if (CombinedBlock::isControlCode(codePoint)) {
+        if (codePoint.isControl()) {
             return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
-        if (text::impl::unicodeDisplayWidthFor(codePoint.toRawValue()) != 0) {
+        if (codePoint.displayWidth() != 0) {
             return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
         character = character.withCombining(codePoint);
@@ -361,11 +378,11 @@ auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> ParseResult {
 }
 
 auto KeyDecoder::decodeConsoleInput() const noexcept -> Key {
-    if (_text == "\x1b") {
+    if (_text == "\x1b"_el) {
         return Key{Key::Escape};
     }
     const auto result = parseConsoleInputPrefix();
-    if (result.status() == KeyParseStatus::Parsed && result.consumedByteCount().toSizeT() == _text.size()) {
+    if (result.status() == KeyParseStatus::Parsed && result.consumedByteCount() == ByteIndex::end(_text.length())) {
         return result.key();
     }
     return {};

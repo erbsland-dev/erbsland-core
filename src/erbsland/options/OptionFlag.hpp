@@ -9,7 +9,9 @@
 namespace erbsland::options {
 
 /// Flags for an option or option set.
-/// @tested{OptionsFrameworkTest}
+///
+/// Flags modify parser behavior. Use help visibility to hide enabled options from generated help without disabling
+/// parsing.
 enum class OptionFlag : uint8_t {
     None = 0U,           ///< No flag.
     Disabled = 1U << 0U, ///< Do not accept or show the option.

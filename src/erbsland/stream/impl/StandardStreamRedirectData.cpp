@@ -9,8 +9,14 @@
 namespace erbsland::stream::impl {
 
 StandardStreamRedirectData::StandardStreamRedirectData(
-    const StandardStreamSlot slot, TextOutputStreamPtr previousOutput, TextOutputStreamPtr previousError) :
-    _slot{slot}, _previousOutput{std::move(previousOutput)}, _previousError{std::move(previousError)} {
+    const StandardStreamSlot slot,
+    TextInputStreamPtr previousInput,
+    TextOutputStreamPtr previousOutput,
+    TextOutputStreamPtr previousError) :
+    _slot{slot},
+    _previousInput{std::move(previousInput)},
+    _previousOutput{std::move(previousOutput)},
+    _previousError{std::move(previousError)} {
 }
 
 auto StandardStreamRedirectData::isActive() const noexcept -> bool {
@@ -23,7 +29,8 @@ void StandardStreamRedirectData::reset() noexcept {
     if (!_active) {
         return;
     }
-    standardStreamRegistry().restore(_slot, std::move(_previousOutput), std::move(_previousError));
+    standardStreamRegistry().restore(
+        _slot, std::move(_previousInput), std::move(_previousOutput), std::move(_previousError));
     _active = false;
 }
 

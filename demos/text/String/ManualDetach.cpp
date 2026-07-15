@@ -4,6 +4,8 @@
 #include <DemoCommon.hpp>
 #include <erbsland/debug/StringDebug.hpp>
 
+namespace demo {
+
 /// Manual detaching makes an automatic copy-on-write step explicit.
 ///
 /// A write operation detaches shared string storage automatically. Calling
@@ -37,4 +39,6 @@ void manualDetach() {
     el::io::printLine("Debug view after editing:"_el);
     el::io::printLine(el::toDebugString(fieldNote, debugDetails));
     el::io::printLine(el::toDebugString(archiveCopy, debugDetails));
+}
+
 }

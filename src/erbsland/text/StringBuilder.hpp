@@ -168,10 +168,13 @@ private:
 };
 
 template <>
+/// Convert this builder to a UTF-8 string.
 [[nodiscard]] auto StringBuilder::to<U8String>() const -> U8String;
 template <>
+/// Convert this builder to a UTF-16 string.
 [[nodiscard]] auto StringBuilder::to<U16String>() const -> U16String;
 template <>
+/// Convert this builder to a UTF-32 string.
 [[nodiscard]] auto StringBuilder::to<U32String>() const -> U32String;
 
 }

@@ -42,9 +42,9 @@ public:
     // defaults
     ~BlockStringView() = default;
     BlockStringView(const BlockStringView &) = default;
-    BlockStringView(BlockStringView &&) = default;
+    BlockStringView(BlockStringView &&other) noexcept;
     auto operator=(const BlockStringView &) -> BlockStringView & = default;
-    auto operator=(BlockStringView &&) -> BlockStringView & = default;
+    auto operator=(BlockStringView &&other) noexcept -> BlockStringView &;
 
 public: // operators
     /// Access one character without bounds checking.

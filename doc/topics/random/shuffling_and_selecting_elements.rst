@@ -42,7 +42,8 @@ replacement, and in-place shuffling.
 
 .. erbsland-demo::
     :source: random/RandomTopics/ElementSampling.cpp
-    :exec: random_topics --demo ElementSampling
+    :exec: random/random_topics --demo ElementSampling
+    :source-sha256: 880fabe7eabc41c3748bb38d4081318bbd3998d0d140c956bdbb66f49a2d4196
 
 .. code-block:: cpp
 

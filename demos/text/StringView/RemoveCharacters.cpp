@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView::removedAll()` removes every decoded character from a selected `CharSet`.
 ///
 /// This is useful for simple cleanup passes where unwanted characters may occur anywhere in the text.
@@ -14,4 +16,6 @@ void removeCharacters() {
 
     el::io::printLine("Original : "_el, input.toEscaped(el::EscapeFormat::Cpp));
     el::io::printLine("Cleaned  : "_el, logLine.toEscaped(el::EscapeFormat::Cpp));
+}
+
 }

@@ -58,6 +58,10 @@ public:
     /// @return The duration from this point to now.
     [[nodiscard]] auto timeDeltaToNow() const noexcept -> TimeDelta { return now() - *this; }
 
+public: // conversion
+    /// Convert to a standard-library steady-clock time point.
+    [[nodiscard]] auto toStdTimePoint() const noexcept -> std::chrono::steady_clock::time_point { return _value; }
+
 public:
     /// Return the current steady clock time.
     /// @return The current time point.

@@ -66,6 +66,7 @@ Storage and Pointer Types
     UnsafeConstMemoryPtr, UnsafeMemoryPtr // raw memory pointer aliases
     UnsafeConstCharPtr, UnsafeCharPtr // raw char pointer aliases
     UnsafeConstChar8Ptr, UnsafeChar8Ptr // raw char8_t pointer aliases
+    impl::UnsafeByteBlockBuffer // uncommitted ByteBlock storage for native byte reads
 
 Byte Value Patterns
 ===================
@@ -161,6 +162,16 @@ Reader and Writer Patterns
     o.read❮SignWidth❯([default]) -> T // typed tolerant integer reader, e.g. readUInt32()
     o.read❮SignWidth❯OrThrow() -> T // typed strict integer reader
     o.write❮SignWidth❯(value) -> ByteWriter& // typed integer writer
+
+Unsafe Byte Buffer Patterns
+===========================
+
+.. code-block:: text
+
+    UnsafeByteBlockBuffer(capacity) // allocate uncommitted byte block storage
+    o.data() -> span<Byte> // writable byte span for low-level APIs
+    o.capacity() -> ByteLength // usable byte capacity
+    o.take(length) -> ByteBlock // commit length bytes and move out the byte block
 
 Copy-On-Write Storage Patterns
 ==============================

@@ -3,8 +3,11 @@
 #include "DateTime.hpp"
 
 #include "impl/IsoDateTimeParser.hpp"
+#include "impl/PosixTimeConverter.hpp"
+#include "impl/WindowsTimeConverter.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/OverflowError.hpp"
+#include "../err/ParseError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringBuilder.hpp"
@@ -91,14 +94,14 @@ auto DateTime::added(const Duration duration) const noexcept -> DateTime {
 
 auto DateTime::addedOrThrow(const Duration duration) const -> DateTime {
     if (wouldAddSaturate(duration)) {
-        err::throwOverflow("DateTime addition would exceed supported date/time range");
+        throw err::OverflowError{"DateTime addition would exceed supported date/time range"};
     }
     return added(duration);
 }
 
 auto DateTime::subtractedOrThrow(const Duration duration) const -> DateTime {
     if (wouldSubtractSaturate(duration)) {
-        err::throwOverflow("DateTime subtraction would exceed supported date/time range");
+        throw err::OverflowError{"DateTime subtraction would exceed supported date/time range"};
     }
     return subtracted(duration);
 }
@@ -130,9 +133,11 @@ auto DateTime::toSecondsSinceEpoch() const noexcept -> Seconds {
 }
 
 auto DateTime::toTimeT() const noexcept -> std::time_t {
-    const auto secondTimeT = (toSecondsSinceEpoch() - posixEpochSecondsDelta()).toValue();
-    // safe cast that saturate at the std::time_t value range.
-    return static_cast<std::time_t>(secondTimeT.cast<std::time_t>().toRawValue());
+    return impl::PosixTimeConverter::toTimeT(*this);
+}
+
+auto DateTime::toWindowsFileTimeTicks() const noexcept -> std::optional<std::uint64_t> {
+    return impl::WindowsTimeConverter::toFileTimeTicks(*this);
 }
 
 auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision) const -> text::String {
@@ -172,7 +177,15 @@ auto DateTime::fromSecondsSinceEpoch(Seconds seconds, Nanoseconds fractions) noe
 }
 
 auto DateTime::fromTimeT(std::time_t posixTime) noexcept -> DateTime {
-    return fromSecondsSinceEpoch(posixEpochSecondsDelta() + Seconds{static_cast<int64_t>(posixTime)});
+    return impl::PosixTimeConverter::fromTimeT(posixTime);
+}
+
+auto DateTime::fromPosixTime(const Seconds seconds, const Nanoseconds fractions) noexcept -> DateTime {
+    return impl::PosixTimeConverter::fromPosixTime(seconds, fractions);
+}
+
+auto DateTime::fromWindowsFileTimeTicks(const std::uint64_t ticks) noexcept -> DateTime {
+    return impl::WindowsTimeConverter::fromFileTimeTicks(ticks);
 }
 
 auto DateTime::fromIsoString(text::StringView text, DateTimePrecision requiredPrecision) noexcept -> DateTime {
@@ -192,7 +205,7 @@ auto DateTime::fromIsoString(text::StringView text, DateTimePrecision requiredPr
 auto DateTime::fromIsoStringOrThrow(text::StringView text, DateTimePrecision requiredPrecision) -> DateTime {
     auto result = fromIsoString(text, requiredPrecision);
     if (!result.isValid()) {
-        err::throwParseError("Invalid ISO date/time string");
+        throw err::ParseError{"Invalid ISO date/time string"};
     }
     return result;
 }
@@ -213,7 +226,7 @@ auto DateTime::fromIsoStringOrThrow(text::StringView text, TimeZone timeZone, Da
     -> DateTime {
     auto result = fromIsoString(text, timeZone, requiredPrecision);
     if (!result.isValid()) {
-        err::throwParseError("Invalid ISO local date/time string");
+        throw err::ParseError{"Invalid ISO local date/time string"};
     }
     return result;
 }

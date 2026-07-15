@@ -103,10 +103,10 @@ public:
     void testBlockValidationRejectsInvalidWidthsAndCounts() {
         auto options = BitmapDrawOptions{};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setFullBlock(Block{U'界'}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setDoubleBlocks(BlockString{"X"_el}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setDoubleBlocks(BlockString{U"界X"_el}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setHalfBlocks(BlockString{"short"_el}));
-        REQUIRE_THROWS_AS(std::invalid_argument, options.setHalfBlocks(BlockString{U"abcdefghijklmno界"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setFullBlock(Block{U'界'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockString{"X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockString{U"界X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockString{"short"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockString{U"abcdefghijklmno界"_el}));
     }
 };

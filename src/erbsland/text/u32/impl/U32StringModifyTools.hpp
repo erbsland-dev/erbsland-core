@@ -93,6 +93,11 @@ public:
         -> U32StringSharedStorage;
 
 private:
+    template <typename T>
+    [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
+    [[nodiscard]] static auto characterBytes(Char character) noexcept -> std::array<char32_t, 2>;
+    [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char32_t, 2> &bytes) noexcept
+        -> std::span<const char32_t>;
     template <typename Predicate>
     [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char32_t> replacement) const
         -> U32StringSharedStorage;

@@ -7,7 +7,8 @@ Display All Attributes
 **********************
 
 ``display-all-attributes`` gives you a compact visual overview of the ANSI character attributes supported by the
-library. It prints one row per attribute together with backend support information, sample text, and a few practical
+library.
+It prints one row per attribute together with backend support information, sample text, and a few practical
 combinations.
 
 Use This Demo When You Need...
@@ -24,7 +25,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/display-all-attributes
+    $ ./cmake-build-debug/demo-apps/cterm/display-all-attributes
 
 The demo prints the table and waits for Enter in an interactive terminal.
 
@@ -51,6 +52,7 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/display-all-attributes/src/DisplayAllAttributesApp.cpp`.
+If you want to explore the implementation, start with
+:file:`demos/cterm/display-all-attributes/src/DisplayAllAttributesApp.cpp`.
 
 This file contains the attribute table generation and the direct use of ``BlockAttributes`` with terminal print calls.

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `CharSet::from()` creates reusable sets from ASCII and Unicode character categories.
 ///
 /// ASCII categories are compact and do not require Unicode metadata.
@@ -17,4 +19,6 @@ void characterSetCategories() {
     el::io::printLine("ASCII hex accepts 'G' ....: "_el, yesNo, asciiHexDigits.contains(U'G'));
     el::io::printLine("Unicode digit accepts '7' : "_el, yesNo, unicodeDigits.contains(U'7'));
     el::io::printLine("Unicode letter accepts 'é': "_el, yesNo, unicodeLetters.contains(U'é'));
+}
+
 }

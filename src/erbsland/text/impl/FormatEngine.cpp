@@ -4,10 +4,9 @@
 
 #include "FormatParser.hpp"
 #include "FormatWriter.hpp"
+#include "ThrowHelper.hpp"
 
 #include "../Literals.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 namespace erbsland::text::impl {
 
@@ -28,7 +27,7 @@ auto compileFormat(const U32StringView &pattern) -> FormatDataPtr {
 auto appendFormat(const FormatData &format, StringBuilder &builder, const std::span<const FormatArgument> arguments)
     -> StringBuilder & {
     if (arguments.size() != format.argumentCount.toSizeT()) {
-        err::throwFormatError("Format argument count does not match the pattern"_el);
+        text::impl::throwFormatError("Format argument count does not match the pattern"_el);
     }
 
     auto writer = FormatWriter{builder};

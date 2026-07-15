@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// This demo shows how to easily test if a string view starts, ends, or contains a specific substring.
 void testStartsEndsAndContains() {
     // Creating the view is only for this demo, use the literals directly in your productive code.
@@ -47,4 +49,6 @@ void testStartsEndsAndContains() {
     el::io::printLine("  flowers.contains(\"ı\"_el, el::Char::compareCaseFolded) → "_el, result);
     result = flowers.endsWith("ç"_el, el::Char::compareCaseFolded);
     el::io::printLine("  flowers.endsWith(\"ç\"_el, el::Char::compareCaseFolded) → "_el, result);
+}
+
 }

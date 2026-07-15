@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Options.hpp"
 
-#include "OptionDisplayText.hpp"
 #include "OptionModule.hpp"
 #include "OptionSet.hpp"
 
@@ -59,10 +58,13 @@ auto Options::defaultOptionSet() -> OptionSetPtr {
 }
 
 auto Options::createBuiltInOptionSet() -> OptionSetPtr {
-    const auto &displayText = OptionDisplayText::defaultText();
     auto optionSet = OptionSet::create();
-    optionSet->addOption({"-h"_el, "--help"_el}).setHelp(displayText.helpOptionDescription());
-    optionSet->addOption("--version"_el).setHelp(displayText.versionOptionDescription());
+    optionSet->addOption({"-h"_el, "--help"_el})
+        .setHelp("Display this help."_el)
+        .setHelpVisibility(OptionHelpVisibility::Overview);
+    optionSet->addOption("--version"_el)
+        .setHelp("Display version information."_el)
+        .setHelpVisibility(OptionHelpVisibility::Overview);
     return optionSet;
 }
 

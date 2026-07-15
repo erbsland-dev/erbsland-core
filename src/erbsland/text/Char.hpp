@@ -178,11 +178,18 @@ public: // tests
     [[nodiscard]] auto isCategory(const UnicodeCategory expectedCategory) const noexcept -> bool {
         return category() == expectedCategory;
     }
+    /// Test if the character is a Unicode control character.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto isControl() const noexcept -> bool;
     /// Test if the character is a Unicode control or format character.
     /// @usesunidb{Uses generated Unicode Character Database character metadata.}
     [[nodiscard]] auto isControlOrFormat() const noexcept -> bool;
 
 public: // encoding information.
+    /// Get the approximate display width for this Unicode code point.
+    /// Invalid characters and Unicode control characters have width zero.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Get the size of the character in UTF-8 bytes.
     [[nodiscard]] auto utf8Size() const noexcept -> unit::ByteLength;
     /// Get the size of the character in UTF-16 units.
@@ -291,6 +298,9 @@ public: // factory methods
         const auto firstLetter = letterCase == LetterCase::Uppercase ? U'A' : U'a';
         return Char{static_cast<char32_t>(firstLetter + (digit - 10U))};
     }
+
+private:
+    [[nodiscard]] static auto applyDelta(char32_t codePoint, int32_t delta) noexcept -> Char;
 
 protected:
     char32_t _codePoint{0}; ///< The Unicode code-point.

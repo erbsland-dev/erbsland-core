@@ -13,7 +13,10 @@ List<tElement, tSelf>::List(std::initializer_list<Element> values) : _storage{St
 }
 
 template <typename tElement, typename tSelf>
-List<tElement, tSelf>::List(Element value) : _storage{Storage::from(Raw{std::move(value)})} {
+List<tElement, tSelf>::List(Element value) {
+    auto raw = Raw{};
+    raw.push_back(std::move(value));
+    _storage.setData(std::move(raw));
 }
 
 template <typename tElement, typename tSelf>
@@ -44,6 +47,13 @@ auto List<tElement, tSelf>::operator+(const Element &value) const -> Self {
 }
 
 template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::operator+(Element &&value) const -> Self {
+    auto result = self();
+    result.append(std::move(value));
+    return result;
+}
+
+template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::operator+=(const Self &other) -> Self & {
     return append(other);
 }
@@ -51,6 +61,11 @@ auto List<tElement, tSelf>::operator+=(const Self &other) -> Self & {
 template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::operator+=(const Element &value) -> Self & {
     return append(value);
+}
+
+template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::operator+=(Element &&value) -> Self & {
+    return append(std::move(value));
 }
 
 template <typename tElement, typename tSelf>

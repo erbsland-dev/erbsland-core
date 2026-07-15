@@ -6,9 +6,9 @@
 Color Terminal Demos
 ********************
 
-The cterm demos show complete terminal programs built with Erbsland Core. Use them as practical companions to the
-topic pages when you want to see buffers, drawing helpers, text rendering, input, and direct terminal output working
-together.
+The cterm demos show complete terminal programs built with Erbsland Core.
+Use them as practical companions to the topic pages when you want to see buffers, drawing helpers, text rendering,
+input, and direct terminal output working together.
 
 .. toctree::
     :maxdepth: 2
@@ -22,5 +22,6 @@ together.
     display-all-attributes
     key-input-demo
     grid-layout
+    html-viewer
     terminal-chronicle
     text-gallery

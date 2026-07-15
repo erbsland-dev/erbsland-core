@@ -7,11 +7,13 @@
 #include "impl/paragraph/Layout.hpp"
 #include "impl/paragraph/Printer.hpp"
 
+#include "../err/ParameterError.hpp"
+
 namespace erbsland::cterm {
 
 void CursorBuffer::validateFillChar(const Block &fillChar) {
     if (fillChar.displayWidth() != 1) {
-        throw std::invalid_argument{"fillChar must be a single-width character."};
+        throw err::ParameterError{"fillChar must be a single-width character.", "fillChar"};
     }
 }
 

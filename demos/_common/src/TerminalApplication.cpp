@@ -1,6 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "TerminalApplication.hpp"
+
+namespace demo {
 
 void TerminalApplication::initialize() {
     enableTerminal();
@@ -67,4 +70,6 @@ void TerminalApplication::onKey(const Key &key) {
 
 auto TerminalApplication::loopInterval() const noexcept -> std::chrono::milliseconds {
     return std::chrono::milliseconds{90};
+}
+
 }

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `removeFirst()` changes only the first matching text occurrence.
 /// `removeAll()` removes every matching text occurrence or every character from
 /// a character set.
@@ -30,4 +32,6 @@ void removeFirstAndAll() {
     el::io::printLine("All text removed: "_el, allMist);
     el::io::printLine("Characters removed: "_el, withoutSeparators);
     el::io::printLine("Case-folded removal: "_el, folded);
+}
+
 }

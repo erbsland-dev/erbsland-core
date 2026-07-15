@@ -4,7 +4,7 @@
 
 #include "U8Encoding.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
+#include "../../impl/ThrowHelper.hpp"
 
 #include <algorithm>
 
@@ -40,7 +40,7 @@ auto U8StringCharReadTool::charAt(const unit::CpIndex index) const noexcept -> C
 
 auto U8StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Char {
     if (index.isNoIndex()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     const auto data = _data.dataSpan();
     auto position = unit::ByteIndex::zero();
@@ -52,7 +52,7 @@ auto U8StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Cha
         utf8::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    err::throwOutOfRange("Read position out of range");
+    text::impl::throwOutOfRange("Read position out of range");
 }
 
 auto U8StringCharReadTool::byteIndexAt(const unit::CpIndex index) const noexcept -> unit::ByteIndex {

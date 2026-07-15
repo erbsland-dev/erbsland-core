@@ -6,9 +6,9 @@
 Retro Plasma
 ************
 
-``retro-plasma`` is a full-screen animation demo that renders a classic plasma effect directly in the terminal. It is
-both a visual showcase and a practical example of continuous buffer updates, palette switching, keyboard controls, and
-resize-aware rendering.
+``retro-plasma`` is a full-screen animation demo that renders a classic plasma effect directly in the terminal.
+It is both a visual showcase and a practical example of continuous buffer updates, palette switching, keyboard controls,
+and resize-aware rendering.
 
 Use This Demo When You Need...
 ==============================
@@ -24,7 +24,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/retro-plasma
+    $ ./cmake-build-debug/demo-apps/cterm/retro-plasma
 
 Use ``F`` to speed up, ``S`` to slow down, ``P`` or Space to pause, ``C`` to switch palettes, and ``Q`` to quit.
 
@@ -33,7 +33,8 @@ Captured Output (80x25)
 
 .. include:: _captures/retro-plasma.rstinc
 
-The capture may not show the terminal output correctly. Here a screenshot:
+The capture may not show the terminal output correctly.
+Here a screenshot:
 
 .. figure:: images/retro-plasma.jpg
     :width: 100%

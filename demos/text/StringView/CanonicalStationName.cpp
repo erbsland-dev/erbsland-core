@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView::transformed()` can create a canonical text form with a single character-mapping function.
 ///
 /// ASCII-only mappings are useful for machine-readable identifiers because they leave non-ASCII characters untouched
@@ -13,4 +15,6 @@ void canonicalStationName() {
 
     el::io::printLine("Display name ..: "_el, displayName);
     el::io::printLine("Canonical .....: "_el, canonicalName);
+}
+
 }

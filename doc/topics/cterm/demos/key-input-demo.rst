@@ -6,9 +6,9 @@
 Key Input Demo
 **************
 
-``key-input-demo`` combines immediate key handling with a horizontally scrolling retained buffer. Each pressed key is
-stamped into the field as a colored block, so the demo makes keyboard input, buffer updates, and continuous motion
-visible at the same time.
+``key-input-demo`` combines immediate key handling with a horizontally scrolling retained buffer.
+Each pressed key is stamped into the field as a colored block, so the demo makes keyboard input, buffer updates, and
+continuous motion visible at the same time.
 
 Use This Demo When You Need...
 ==============================
@@ -24,9 +24,10 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/key-input-demo
+    $ ./cmake-build-debug/demo-apps/cterm/key-input-demo
 
-Press any key to stamp a block into the field. Press ``Esc`` to quit.
+Press any key to stamp a block into the field.
+Press ``Esc`` to quit.
 
 Captured Output (80x25)
 =======================

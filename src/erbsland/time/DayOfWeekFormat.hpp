@@ -9,7 +9,6 @@ namespace erbsland::time {
 /// Formatting style for day-of-week names.
 ///
 /// Used by `DayOfWeek::toString()` to control the output format.
-/// @tested{DayOfWeekTest}
 enum class DayOfWeekFormat : uint8_t {
     Short,
     Long,

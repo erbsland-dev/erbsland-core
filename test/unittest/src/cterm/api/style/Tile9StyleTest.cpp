@@ -84,10 +84,10 @@ public:
     }
 
     void testStringConstructorRejectsInvalidTileCounts() {
-        REQUIRE_THROWS_AS(std::invalid_argument, Tile9Style{"12345678"_el});
-        REQUIRE_THROWS_AS(std::invalid_argument, Tile9Style{"1234567890"_el});
-        REQUIRE_THROWS_AS(std::invalid_argument, Tile9Style{"123456789012345"_el});
-        REQUIRE_THROWS_AS(std::invalid_argument, Tile9Style{"12345678901234567"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"12345678"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"1234567890"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"123456789012345"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Tile9Style{"12345678901234567"_el});
     }
 
     void testCreateFactoryBuildsSharedStyles() {
@@ -135,30 +135,30 @@ public:
 
         REQUIRE_EQUAL(style9.block(bgeo::BlockRectangle{0, 0, 3, 3}, bgeo::BlockPosition{2, 2}), U'8');
         REQUIRE_EQUAL(
-            style16.block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}).charStr(),
-            tiles16[15].charStr());
+            style16.block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}).toString(),
+            tiles16[15].toString());
     }
 
     void testPredefinedStylesExposeExpectedTiles() {
         REQUIRE_EQUAL(
             Tile9Style::outerHalfBlockFrame()
                 ->block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{0, 0})
-                .charStr(),
+                .toString(),
             "▛"_el);
         REQUIRE_EQUAL(
             Tile9Style::outerHalfBlockFrame()
                 ->block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0})
-                .charStr(),
+                .toString(),
             "█"_el);
         REQUIRE_EQUAL(
             Tile9Style::innerHalfBlockFrame()
                 ->block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{1, 0})
-                .charStr(),
+                .toString(),
             "▄"_el);
         REQUIRE_EQUAL(
             Tile9Style::innerHalfBlockFrame()
                 ->block(bgeo::BlockRectangle{0, 0, 1, 2}, bgeo::BlockPosition{0, 1})
-                .charStr(),
+                .toString(),
             "█"_el);
     }
 

@@ -94,8 +94,8 @@ For validators, parsers, and repeated transformations, prefer static reusable se
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetReusable.cpp
-    :exec: string_view --demo CharacterSetReusable
-    :source-sha256: 14ed88a61a9ae18c80f6025fe89719af8d9ec1bd8f4dead523340f2676f2c883
+    :exec: text/string_view --demo CharacterSetReusable
+    :source-sha256: cc7e7133571a6489f2b4f8d55a89d6a539cd5f2165213595de54717e27b7be37
 
 .. code-block:: cpp
 
@@ -125,7 +125,6 @@ For validators, parsers, and repeated transformations, prefer static reusable se
     orbite-07 -> yes
     antenne_nord -> yes
     équipe-science -> no
-    module solaire -> no
 
 .. erbsland-demo-end::
 
@@ -139,8 +138,8 @@ The default constructor creates an empty set:
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetEmpty.cpp
-    :exec: string_view --demo CharacterSetEmpty
-    :source-sha256: ccf7a10a3e46e25be2d3f795ec2ef141f8ce4c45be4e77f4357c7fb9b33258d1
+    :exec: text/string_view --demo CharacterSetEmpty
+    :source-sha256: c26a9fbd0cc511ad59e9a65f75ba9b257b3cc85ec38b0d09c8c69a160c43593f
 
 .. code-block:: cpp
 
@@ -189,8 +188,8 @@ range and not two separate allowed characters.
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetCharacters.cpp
-    :exec: string_view --demo CharacterSetCharacters
-    :source-sha256: fa3b9090e95d2adf6172240a17dd38a12d90a752eb112fe304525cd4c79e10bc
+    :exec: text/string_view --demo CharacterSetCharacters
+    :source-sha256: 011e7fa61c3e1ddd4ade85fd876448f46ecb1e18f5b1d21f014efa5c153c4b4a
 
 .. code-block:: cpp
 
@@ -226,8 +225,8 @@ When you already know the exact characters, construct the set from text or from 
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetText.cpp
-    :exec: string_view --demo CharacterSetText
-    :source-sha256: 086eceee05881f6ccaa8442e7b0c1ccd0cdee56bf96b737ead0f9c2838215f7f
+    :exec: text/string_view --demo CharacterSetText
+    :source-sha256: 3fb6de7215ca05e5386ae0801c888655d43cc10cb9cbed458686442a2c85383e
 
 .. code-block:: cpp
 
@@ -269,8 +268,8 @@ inclusive ranges.
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetPatterns.cpp
-    :exec: string_view --demo CharacterSetPatterns
-    :source-sha256: e847e7b520dc415d379a3edd598114f5bce528edb5518cc1b19b8cf9ecdd09f7
+    :exec: text/string_view --demo CharacterSetPatterns
+    :source-sha256: 668b817607e2941221cf165b82d7f79dfae896272557df4c772d51405ccca0b3
 
 .. code-block:: cpp
 
@@ -323,8 +322,8 @@ when the allowed characters should follow Unicode metadata:
 
 .. erbsland-demo::
     :source: text/StringView/CharacterSetCategories.cpp
-    :exec: string_view --demo CharacterSetCategories
-    :source-sha256: 27a6079d59847c8b05b2e52c27372dcbf4012cd6f8f651fc16bbc87a01990c4c
+    :exec: text/string_view --demo CharacterSetCategories
+    :source-sha256: 2a261f561c483c7259128c8d90f42c00b37075e3d6a65381c6ec20157e59bc23
 
 .. code-block:: cpp
 
@@ -377,8 +376,8 @@ Use the operators ``|``, ``&``, ``-``, and ``^`` when the resulting expression r
 
 .. erbsland-demo::
     :source: text/StringView/CombineCharacterSets.cpp
-    :exec: string_view --demo CombineCharacterSets
-    :source-sha256: d3f7af901e28cd6b51bc0d7a85e9d65a62b6cabefca890d4573469860784db55
+    :exec: text/string_view --demo CombineCharacterSets
+    :source-sha256: dd9bfa0836ff97b99e0c53b06eb6d99bc3af8fd232b86c2bb011a3c8803b659d
 
 .. code-block:: cpp
 
@@ -427,8 +426,8 @@ when you only need to know whether a string contains at least one character from
 
 .. erbsland-demo::
     :source: text/StringView/ValidateCharacterPolicy.cpp
-    :exec: string_view --demo ValidateCharacterPolicy
-    :source-sha256: 268d05d31351f886077b243bce740ca259d7fbb82fbf5a14f5ea39a4f0543606
+    :exec: text/string_view --demo ValidateCharacterPolicy
+    :source-sha256: 2105cb477b9276c46413dc3a553a28cabef866434b22c350f1f4fd0c2631506f
 
 .. code-block:: cpp
 
@@ -469,8 +468,8 @@ The method names intentionally express the validation strategy.
 
 .. erbsland-demo::
     :source: text/StringView/TestForCharacters.cpp
-    :exec: string_view --demo TestForCharacters
-    :source-sha256: 24a9a6591f8fe4f3031e2ba7d03191e403b5c918e304bbd56a5b68a0eb43b15e
+    :exec: text/string_view --demo TestForCharacters
+    :source-sha256: 3eebadfe406efe5db498d91fbade18c0b097e565f54f5e8bd9da9c1a49ecf842
 
 .. code-block:: cpp
 
@@ -595,8 +594,8 @@ With a custom :cpp:class:`CharSet <erbsland::text::CharSet>`, it trims exactly t
 
 .. erbsland-demo::
     :source: text/StringView/TrimCharacterSet.cpp
-    :exec: string_view --demo TrimCharacterSet
-    :source-sha256: be578aecc235e58ec8bf8d92a977fee361a184a1b7ee53c35233f0bacedadf1a
+    :exec: text/string_view --demo TrimCharacterSet
+    :source-sha256: 8ff03b69afdbae4e5e98bb0c737f462fd7704b78aa1ef054a0fa2080aaa6375e
 
 .. code-block:: cpp
 
@@ -638,8 +637,8 @@ the text:
 
 .. erbsland-demo::
     :source: text/StringView/RemoveCharacters.cpp
-    :exec: string_view --demo RemoveCharacters
-    :source-sha256: a32a11a47f61bbb6e6f5e26813223550581090bb7e2927b8babd8133b6ca48d8
+    :exec: text/string_view --demo RemoveCharacters
+    :source-sha256: 69d933884b4e86bc70b1d80d1cd63d1435825c601bb45013794c545367261be6
 
 .. code-block:: cpp
 
@@ -689,8 +688,8 @@ pointers:
 
 .. erbsland-demo::
     :source: text/StringView/CanonicalStationName.cpp
-    :exec: string_view --demo CanonicalStationName
-    :source-sha256: 6470cf54ec5edc2a8f91f57d3bd371366e4ee4a820d2989b2a5120618cbdea3a
+    :exec: text/string_view --demo CanonicalStationName
+    :source-sha256: 594e9c70e11a9e0fa43671c2f48fd71062f50ce3a18d711d54cef971b8d9c0cb
 
 .. code-block:: cpp
 
@@ -725,8 +724,8 @@ Return the original character to keep it, another character to replace it, or
 
 .. erbsland-demo::
     :source: text/StringView/CaseTransformation.cpp
-    :exec: string_view --demo CaseTransformation
-    :source-sha256: 03f923a0a1a706b16d37a30dfd1294497d7860e71ba46f9f303798616676d972
+    :exec: text/string_view --demo CaseTransformation
+    :source-sha256: af995cf7365a4efb9a3d57676812926fbc1d45c629be62ac3f056cbcc4c2fb9d
 
 .. code-block:: cpp
 

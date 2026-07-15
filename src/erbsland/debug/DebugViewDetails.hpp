@@ -9,7 +9,6 @@
 namespace erbsland::debug {
 
 /// Flags for controlling debug view details.
-/// @tested{StringDebugTest}
 enum class DebugViewDetail : uint16_t {
     None = 0U, ///< No optional details.
     // categories:

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StreamWriteStatus.hpp"
+
 #include "impl/TextOutputStreamTraits.hpp"
 
 #include "../mem/ByteBlockView.hpp"
@@ -36,7 +38,7 @@ public:
 
 public:
     /// Commit the printed content
-    virtual void commit() = 0;
+    virtual auto commit() -> StreamWriteStatus = 0;
 
 public:                                                      // main overloads
     virtual void print(text::Char character) = 0;            ///< print a value.

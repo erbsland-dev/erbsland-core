@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `length()` returns the native storage length, while `characterLength()`
 /// returns the decoded Unicode code-point length.
 ///
@@ -27,4 +29,6 @@ void lengthAttributes() {
     el::io::printLine("ASCII label: "_el, asciiLabel);
     el::io::printLine("ASCII bytes ............: "_el, asciiLabel.length());
     el::io::printLine("ASCII code points ......: "_el, asciiLabel.characterLength());
+}
+
 }

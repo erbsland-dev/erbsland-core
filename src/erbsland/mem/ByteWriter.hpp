@@ -16,6 +16,7 @@
 namespace erbsland::mem {
 
 /// A sequential byte writer that produces a `ByteBlock`.
+/// Use it to assemble a multi-field binary record for one atomic byte-stream write.
 /// @tested{ByteReaderWriterTest}
 class ByteWriter final {
 public:

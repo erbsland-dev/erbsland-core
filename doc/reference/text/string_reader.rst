@@ -46,11 +46,31 @@ The ``OrThrow`` variants reject end-of-data and malformed encoding before matchi
 It restores the original reader position on failure and returns the parsed magnitude, sign state, resolved base, digit
 count, and status.
 Use ``readIntegerOrThrow<T>()`` when a reader should consume an integer token, convert it into a native or saturating
-integer type, and report failures as :cpp:class:`ParseNumberError <erbsland::err::ParseNumberError>`.
+integer type, and report failures as ``ParseNumberError``.
+
+Capture and Buffer
+~~~~~~~~~~~~~~~~~~
+
+The capture API marks a source range and returns it as an inexpensive string view.
+Use
+:cpp:func:`startCapture() <erbsland::text::StringCharReader::startCapture>` and
+:cpp:func:`takeCapture() <erbsland::text::StringCharReader::takeCapture>` when the parsed token can be represented as
+an unchanged slice of the input.
+
+The reader buffer is owned parser text in the same encoding as the reader backend.
+Use it for tokens that are assembled, normalized, escaped, or mixed from source text and manually appended characters.
+``readToBuffer()`` and the ``readToBufferIf()`` variants consume and append one character.
+``readToBufferWhile()`` and ``readToBufferUntil()`` append only accepted characters; stop, mismatch, end-of-data, and
+limit characters are left unread and are not appended.
+
+Saved reader states restore only the cursor position.
+Capture and buffer state intentionally remain unchanged.
 
 Interface
 =========
 
+.. doxygenclass:: erbsland::text::ParseNumberError
+    :members:
 .. doxygenstruct:: erbsland::text::ReadIntegerResult
     :members:
 .. doxygenenum:: erbsland::text::ReadNumberStatus

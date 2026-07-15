@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Import the `_el` suffix for convenient string literals.
 using namespace el::text::literals;
 
@@ -19,7 +21,8 @@ void zeroCost() {
     // Inspect a literal created with the `_el` suffix.
     el::io::printLine("Forest story .: "_el, cForestStory);
     el::io::printLine("Valid UTF-8 ..: "_el, cForestStory.isValidUtf8());
-    el::io::printLine("Length .......: "_el,
+    el::io::printLine(
+        "Length .......: "_el,
         cForestStory.length(),
         " bytes / "_el,
         cForestStory.characterLength(),
@@ -35,4 +38,6 @@ void zeroCost() {
     auto storyCopy = cForestStory;
     el::io::printLine("\nCopy .........: "_el, storyCopy);
     el::io::printLine("Length .......: "_el, storyCopy.length(), " bytes"_el);
+}
+
 }

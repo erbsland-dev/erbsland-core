@@ -12,7 +12,6 @@ namespace erbsland::bgeo {
 
 /// Low-level flags for block anchors.
 /// @seedoc{/reference/bgeo/block_geometry}
-/// @tested{BlockAnchorTest}
 enum class BlockAnchorFlag : uint8_t {
     None = 0,
     Top = 1U << 0,     ///< Anchored at the top edge.

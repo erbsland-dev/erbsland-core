@@ -6,7 +6,9 @@
 #include "../OptionFlag.hpp"
 #include "../OptionSet.hpp"
 
+#include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/StringFormat.hpp"
 
 namespace erbsland::options::impl {
 
@@ -25,7 +27,11 @@ auto OptionParser::assignPositionals() -> bool {
     const auto options = positionalOptions();
     if (options.empty()) {
         return makeError(
-            OptionErrorReason::SyntaxError, "Unexpected positional argument"_el, _positionals.front().index);
+            OptionErrorReason::SyntaxError,
+            "Unexpected argument"_el,
+            text::StringFormat{"\"{}\" does not match any positional argument accepted by this command."}.build(
+                _positionals.front().value.toEscaped(text::EscapeFormat::Display)),
+            _positionals.front().index);
     }
 
     auto positionalIndex = std::size_t{0};
@@ -54,7 +60,9 @@ auto OptionParser::assignPositionals() -> bool {
     if (positionalIndex < _positionals.size()) {
         return makeError(
             OptionErrorReason::SyntaxError,
-            "Unexpected positional argument"_el,
+            "Unexpected argument"_el,
+            text::StringFormat{"\"{}\" does not match any remaining positional argument."}.build(
+                _positionals.at(positionalIndex).value.toEscaped(text::EscapeFormat::Display)),
             _positionals.at(positionalIndex).index);
     }
     return true;

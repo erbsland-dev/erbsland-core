@@ -4,6 +4,7 @@
 
 #include "U16StringReadTools.hpp"
 
+#include "../../AnyString.hpp"
 #include "../../AnyStringView.hpp"
 
 #include <utility>
@@ -191,6 +192,93 @@ auto U16StringReader::takeCapture() noexcept -> AnyStringView {
     return result;
 }
 
+void U16StringReader::clearBuffer() noexcept {
+    _buffer.clear();
+    _bufferLength = unit::CpLength::zero();
+}
+
+auto U16StringReader::takeBuffer() -> AnyString {
+    auto result = AnyString{std::move(_buffer)};
+    _buffer = U16String{};
+    _bufferLength = unit::CpLength::zero();
+    return result;
+}
+
+auto U16StringReader::bufferView() const noexcept -> AnyStringView {
+    return AnyStringView{_buffer};
+}
+
+auto U16StringReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+    return _bufferLength;
+}
+
+auto U16StringReader::isBufferEmpty() const noexcept -> bool {
+    return _bufferLength.isZero();
+}
+
+void U16StringReader::setBuffer(const AnyStringView &text) {
+    _buffer = text.toU16String();
+    _bufferLength = text.characterLength();
+}
+
+void U16StringReader::appendToBuffer(const Char character) {
+    if (!character.isValidUnicode()) {
+        return;
+    }
+    _buffer.append(character);
+    ++_bufferLength;
+}
+
+void U16StringReader::appendToBuffer(const AnyStringView &text) {
+    if (text.isEmpty()) {
+        return;
+    }
+    _buffer.append(text.toU16StringView());
+    _bufferLength += text.characterLength();
+}
+
+void U16StringReader::appendCaptureToBuffer() {
+    appendToBuffer(takeCapture());
+}
+
+auto U16StringReader::readToBuffer() -> Char {
+    const auto character = peek();
+    if (character.isSignal()) {
+        return character;
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return character;
+}
+
+auto U16StringReader::readToBufferIf(const Char expected) -> bool {
+    const auto character = peek();
+    if (character.isSignal() || character != expected) {
+        return false;
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return true;
+}
+
+auto U16StringReader::readToBufferIf(const CharSet &expected) -> std::optional<Char> {
+    const auto character = peek();
+    if (character.isSignal() || !expected.contains(character)) {
+        return {};
+    }
+    appendToBuffer(character);
+    static_cast<void>(advance(unit::CpLength::one()));
+    return character;
+}
+
+auto U16StringReader::readToBufferWhile(const CharSet &expected, const unit::CpLength maximum) -> util::LoopResult {
+    return readToBufferLoop(expected, maximum, false);
+}
+
+auto U16StringReader::readToBufferUntil(const CharSet &stopSet, const unit::CpLength maximum) -> util::LoopResult {
+    return readToBufferLoop(stopSet, maximum, true);
+}
+
 auto U16StringReader::readLoop(
     const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
     -> util::LoopResult {
@@ -218,6 +306,26 @@ auto U16StringReader::readLoop(
             _cpPosition = lastCpPosition;
             return result == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
         }
+        ++count;
+    }
+}
+
+auto U16StringReader::readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch)
+    -> util::LoopResult {
+    auto count = unit::CpLength::zero();
+    while (true) {
+        const auto character = peek();
+        if (character.isEndOfData()) {
+            return util::LoopResult::EndOfData;
+        }
+        if (charSet.contains(character) == stopOnMatch) {
+            return util::LoopResult::Success;
+        }
+        if (!maximum.isInfinite() && count >= maximum) {
+            return util::LoopResult::LimitReached;
+        }
+        appendToBuffer(character);
+        static_cast<void>(advance(unit::CpLength::one()));
         ++count;
     }
 }

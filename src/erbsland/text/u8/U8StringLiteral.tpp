@@ -9,8 +9,8 @@
 namespace erbsland::text {
 
 template <typename tChar>
-auto U8StringLiteral<tChar>::isEmpty() const noexcept -> bool {
-    return impl::U8StringReadTools{dataView()}.isEmpty();
+constexpr auto U8StringLiteral<tChar>::isEmpty() const noexcept -> bool {
+    return _charPtr == nullptr || _size == 0U;
 }
 
 template <typename tChar>
@@ -19,13 +19,18 @@ auto U8StringLiteral<tChar>::isValidUtf8() const noexcept -> bool {
 }
 
 template <typename tChar>
-auto U8StringLiteral<tChar>::length() const noexcept -> unit::ByteLength {
-    return impl::U8StringReadTools{dataView()}.byteLength();
+constexpr auto U8StringLiteral<tChar>::length() const noexcept -> unit::ByteLength {
+    return _charPtr == nullptr ? unit::ByteLength::zero() : unit::ByteLength::fromSizeT(_size);
 }
 
 template <typename tChar>
 auto U8StringLiteral<tChar>::characterLength() const noexcept -> unit::CpLength {
     return impl::U8StringCharReadTool{dataView()}.charLength();
+}
+
+template <typename tChar>
+constexpr auto U8StringLiteral<tChar>::indexAt(const StringSide side) const noexcept -> unit::ByteIndex {
+    return side == StringSide::Front ? unit::ByteIndex::zero() : unit::ByteIndex::end(length());
 }
 
 template <typename tChar>

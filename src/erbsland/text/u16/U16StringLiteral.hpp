@@ -11,6 +11,7 @@
 #include "impl/U16StringReadTools.hpp"
 
 #include "../FormatAs_fwd.hpp"
+#include "../StringSide.hpp"
 
 #include "../../mem/UnsafeCharPtr.hpp"
 #include "../../unit/U16DataLength.hpp"
@@ -55,6 +56,10 @@ public: // accessors
     /// Get the code-point length of this string.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength {
         return impl::U16StringCharReadTool{dataView()}.charLength();
+    }
+    /// Get the index for one side of the string.
+    [[nodiscard]] auto indexAt(const StringSide side) const noexcept -> unit::U16DataIndex {
+        return side == StringSide::Front ? unit::U16DataIndex::zero() : unit::U16DataIndex::end(length());
     }
 
 private:

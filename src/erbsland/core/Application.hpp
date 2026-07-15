@@ -4,18 +4,23 @@
 
 #include "ApplicationInfo.hpp"
 #include "CommandLineArguments.hpp"
+#include "InitializeFn.hpp"
 #include "MainFn.hpp"
 
 #include "impl/ApplicationData_fwd.hpp"
 #include "impl/ApplicationInstanceManager_fwd.hpp"
 
 #include "../cterm/Terminal_fwd.hpp"
-#include "../event/EventIdRegistry_fwd.hpp"
+#include "../cterm/TerminalDocumentStyle.hpp"
 #include "../event/EventLoop_fwd.hpp"
-#include "../event/EventTarget_fwd.hpp"
+#include "../event/EventRegistry_fwd.hpp"
+#include "../event/Events_fwd.hpp"
+#include "../event/EventThread_fwd.hpp"
+#include "../i18n/DisplayTextMap_fwd.hpp"
 #include "../options/Options_fwd.hpp"
 #include "../options/OptionValues_fwd.hpp"
 #include "../random/Random_fwd.hpp"
+#include "../system/UserLookup_fwd.hpp"
 #include "../unit/ExitCode.hpp"
 
 #include <memory>
@@ -32,7 +37,7 @@ namespace erbsland::core {
 /// and call `Application::linkWith(app)` in this method. From `main()` call all these `initialize...()` methods
 /// of all DLLs that use Erbsland Core, just after creating the `Application` instance.
 /// Do not use `application()` or `Application::instance()` in static initialization in DLLs that link Erbsland Core.
-/// @tested{ApplicationOptionsTest, ApplicationTerminalTest, ApplicationTestScopeTest, RandomApplicationTest}
+/// @tested{ApplicationEventTest ApplicationOptionsTest ApplicationTestScopeTest}
 class Application {
     friend class impl::ApplicationInstanceManager;
     friend auto application() -> Application &;
@@ -72,11 +77,11 @@ public: // methods to enable features
 protected: // customizable methods
     /// First initialization of the application.
     /// This method is called from `run()`, before any other methods are called.
-    /// @throws err::ApplicationError to exit the application with a message and exit code.
+    /// @throws core::ApplicationError to exit the application with a message and exit code.
     virtual void initialize();
     /// Register command line options.
     /// This method is called from `run()`, before `parseCommandLine()` is called.
-    /// @throws err::ApplicationError to exit the application with a message and exit code.
+    /// @throws core::ApplicationError to exit the application with a message and exit code.
     virtual void registerCommandLineOptions(const options::OptionsPtr &options);
     /// Parse all command line options.
     virtual void parseCommandLine();
@@ -100,10 +105,14 @@ public:
     /// - `cleanup()`
     /// If any `err::Exception` is thrown from one of these methods, it will be handled by calling
     /// `cleanUp()` first, then printing the error to `stdErr()` and exiting the application with an exit code of 1.
-    /// In case of an `err::ApplicationError`, the exit code from the exception will be used.
+    /// In case of an `core::ApplicationError`, the exit code from the exception will be used.
     /// If any non `err::Exception` is thrown, the application will crash.
     [[nodiscard]] auto run() -> int;
+    /// Override the initialize function.
+    /// Use this to set a custom initialization function without deriving from `Application`.
+    void setInitializeFn(InitializeFn initializeFn);
     /// Override the main function.
+    /// Use this to set a custom main function without deriving from `Application`.
     void setMainFn(MainFn mainFn);
 
 public: // command line options
@@ -126,18 +135,42 @@ public: // random numbers
     /// Get the shared secure random generator.
     [[nodiscard]] auto secureRandom() -> random::Random &;
 
+public: // system services
+    /// Access the application display texts. The returned pointer is always non-null.
+    [[nodiscard]] auto displayText() const -> const i18n::DisplayTextMapConstPtr &;
+    /// Replace the application display texts. A null pointer restores the English defaults.
+    void setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText);
+    /// Get the shared user and group lookup service.
+    [[nodiscard]] auto userLookup() -> system::UserLookup &;
+
 public: // terminal access
     /// Access the application-shared terminal instance.
     /// Must be enabled via `enableTerminal()`.
     [[nodiscard]] auto terminal() const -> const cterm::TerminalPtr &;
+    /// Get the style used for application-rendered system output.
+    [[nodiscard]] auto systemOutputStyle() const noexcept -> const cterm::TerminalDocumentStyle &;
+    /// Set the style used for application-rendered system output.
+    void setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexcept;
 
 public: // event system
-    /// Access the main event loop.
-    [[nodiscard]] auto eventLoop() -> event::EventLoop &;
     /// Access the target interface of the main event loop.
-    [[nodiscard]] auto eventTarget() -> event::EventTargetPtr;
+    /// Use these events to post/schedule events and calls that shall run in the main thread.
+    [[nodiscard]] auto events() -> event::EventsPtr;
     /// Access the event registry.
-    [[nodiscard]] auto eventRegistry() -> event::EventIdRegistry &;
+    [[nodiscard]] auto eventRegistry() -> event::EventRegistry &;
+    /// Create a managed event thread.
+    [[nodiscard]] auto createEventThread() -> event::ManagedEventThreadPtr;
+    /// Quit the main event loop, and the event loops of all registered threads.
+    void quit(unit::ExitCode exitCode = unit::ExitCode::success()) noexcept;
+
+protected: // event system
+    /// Access the main event loop.
+    /// @note Only access the event loop if you need to manually control it from a derived application class.
+    ///     The default implementation of `main()` will enter the loop and wait for events.
+    [[nodiscard]] auto eventLoop() -> event::EventLoop &;
+    /// Run the main event loop.
+    /// Call this from your derived `main()` method to enter the main loop.
+    [[nodiscard]] auto runEventLoop() -> unit::ExitCode;
 
 public: // singleton handling.
     /// Get the application instance.
@@ -149,10 +182,8 @@ public: // singleton handling.
 
 public: // library version
     /// Get the build-time library version.
-    /// @tested{ApplicationVersionTest}
     [[nodiscard]] static auto libraryVersion() noexcept -> unit::Version;
     /// Get the build-time library version text.
-    /// @tested{ApplicationVersionTest}
     [[nodiscard]] static auto libraryVersionText() noexcept -> text::StringView;
 
 protected: // debugging methods
@@ -171,7 +202,6 @@ private:
 };
 
 /// Access the global application instance, creating a default one on first use.
-/// @tested{ApplicationTestScopeTest, RandomApplicationTest}
 [[nodiscard]] auto application() -> Application &;
 
 }

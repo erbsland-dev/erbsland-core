@@ -73,6 +73,12 @@ REGISTERED_UTILITIES = {
         "ReferenceDocApp",
         help="Update reference documentation pages from public API headers.",
     ),
+    "test_status": RegisteredUtility(
+        "Test Status",
+        "dev.test_status",
+        "TestStatusApp",
+        help="Validate or normalize API test-status documentation markers.",
+    ),
     "rebuild_doc": RegisteredUtility(
         "Rebuild Documentation",
         "dev.rebuild_doc",

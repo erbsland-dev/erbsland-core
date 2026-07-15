@@ -17,31 +17,47 @@ auto StandardStreamProxy::effectiveEncoding() const noexcept -> text::StringEnco
     return text::StringEncoding::Utf8;
 }
 
-auto StandardStreamProxy::isOpen() const noexcept -> bool {
-    return true;
+auto StandardStreamProxy::outputSettings() const noexcept -> const OutputStreamSettings & {
+    return target()->outputSettings();
 }
 
-void StandardStreamProxy::flush() {
-    target()->flush();
+auto StandardStreamProxy::state() const noexcept -> StreamState {
+    return target()->state();
 }
 
-void StandardStreamProxy::close() {
+auto StandardStreamProxy::isReady() const noexcept -> bool {
+    return target()->isReady();
 }
 
-void StandardStreamProxy::write(const text::Char character) {
-    target()->write(character);
+auto StandardStreamProxy::waitForReady() -> StreamWaitStatus {
+    return target()->waitForReady();
 }
 
-void StandardStreamProxy::write(const text::StringView &text) {
-    target()->write(text);
+auto StandardStreamProxy::flush() -> StreamWriteStatus {
+    return target()->flush();
 }
 
-void StandardStreamProxy::writeLine() {
-    target()->writeLine();
+auto StandardStreamProxy::close() -> StreamCloseStatus {
+    return StreamCloseStatus::Closed;
 }
 
-void StandardStreamProxy::writeLine(const text::StringView &text) {
-    target()->writeLine(text);
+void StandardStreamProxy::abort() noexcept {
+}
+
+auto StandardStreamProxy::write(const text::Char character) -> StreamWriteStatus {
+    return target()->write(character);
+}
+
+auto StandardStreamProxy::write(const text::StringView &text) -> StreamWriteStatus {
+    return target()->write(text);
+}
+
+auto StandardStreamProxy::writeLine() -> StreamWriteStatus {
+    return target()->writeLine();
+}
+
+auto StandardStreamProxy::writeLine(const text::StringView &text) -> StreamWriteStatus {
+    return target()->writeLine(text);
 }
 
 auto StandardStreamProxy::target() const -> TextOutputStreamPtr {

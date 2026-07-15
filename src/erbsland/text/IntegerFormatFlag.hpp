@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 /// Flags for integer text formatting.
-/// @tested{IntegerConversionTest}
 enum class IntegerFormatFlag : uint8_t {
     ZeroFill = 1U << 0U,   ///< Pad the digit field with zeroes.
     Separator = 1U << 1U,  ///< Insert digit group separators.

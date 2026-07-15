@@ -5,9 +5,9 @@
 #include "KeyDecoder.hpp"
 #include "PosixSignalDispatcher.hpp"
 
+#include "../../text/String.hpp"
 #include "../../text/StringConverter.hpp"
 
-#include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/select.h>
 #include <unistd.h>
@@ -49,14 +49,12 @@ PosixBackend::~PosixBackend() {
 
 void PosixBackend::initializePlatform() {
     _firstScreenSizeDetection = true;
-    _hasNoTerminalAttached = false;
+    _hasNoTerminalAttached = !isInteractiveOutput(STDOUT_FILENO);
     _lastScreenSize = std::nullopt;
-    _noSizeFailureCount = 0;
     _isInitialized = true;
 }
 
 void PosixBackend::restorePlatform() {
-    closeTty();
     if (_keyInputSessionActive) {
         tcsetattr(STDIN_FILENO, TCSANOW, &_originalState);
         _keyInputSessionActive = false;
@@ -89,11 +87,15 @@ auto PosixBackend::isInteractive() const noexcept -> bool {
     return _isInitialized && !_hasNoTerminalAttached;
 }
 
+auto PosixBackend::isInteractiveOutput(const int outputFd) noexcept -> bool {
+    return outputFd >= 0 && ::isatty(outputFd) != 0;
+}
+
 auto PosixBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
+    if (_hasNoTerminalAttached) {
+        return std::nullopt;
+    }
     if (!_firstScreenSizeDetection) {
-        if (_hasNoTerminalAttached) {
-            return std::nullopt;
-        }
         const auto now = clock::now();
         if ((now - _lastScreenSizeDetection) < cMinimumDelayBetweenScreenSizeDetection) {
             return _lastScreenSize;
@@ -101,13 +103,8 @@ auto PosixBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
         auto [result, size] = getScreenSize();
         _lastScreenSizeDetection = now;
         if (result == SizeDetectionResult::Success) {
-            _noSizeFailureCount = 0;
             _lastScreenSize = size;
             return size;
-        }
-        _noSizeFailureCount += 1;
-        if (_noSizeFailureCount > 100) {
-            _hasNoTerminalAttached = true;
         }
         return std::nullopt;
     }
@@ -120,13 +117,11 @@ auto PosixBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
             return std::nullopt;
         }
         if (result == SizeDetectionResult::Success) {
-            _noSizeFailureCount = 0;
             _lastScreenSize = size;
             return size;
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
-    _noSizeFailureCount += 1;
     return std::nullopt;
 }
 
@@ -189,7 +184,7 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
             markPendingEscapeSequence();
             appendInputChunks(escapeSequenceWaitTimeout(timeout));
         }
-        const auto parseResult = KeyDecoder{_pendingKeyInput}.parseConsoleInputPrefix();
+        const auto parseResult = KeyDecoder{text::String{_pendingKeyInput}}.parseConsoleInputPrefix();
         if (parseResult.status() == KeyParseStatus::Parsed) {
             erasePendingKeyInput(parseResult.consumedByteCount().toSizeT());
             return parseResult.key();
@@ -205,7 +200,7 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
                 return {};
             }
             appendInputChunks(escapeSequenceWaitTimeout(timeout));
-            const auto retriedResult = KeyDecoder{_pendingKeyInput}.parseConsoleInputPrefix();
+            const auto retriedResult = KeyDecoder{text::String{_pendingKeyInput}}.parseConsoleInputPrefix();
             if (retriedResult.status() == KeyParseStatus::Parsed) {
                 erasePendingKeyInput(retriedResult.consumedByteCount().toSizeT());
                 return retriedResult.key();
@@ -297,47 +292,7 @@ void PosixBackend::restoreGlobalPlatform() noexcept {
 }
 
 auto PosixBackend::getScreenSize() -> std::pair<SizeDetectionResult, bgeo::BlockSize> {
-    // first try the tty we had success with last time.
-    if (_ttyFdForDetection >= 0) {
-        const auto [result, size] = getScreenSizeForFd(_ttyFdForDetection);
-        if (result == SizeDetectionResult::Success) {
-            return {SizeDetectionResult::Success, size};
-        }
-        // if we fail, close it and do the complete detection.
-        closeTty();
-    }
-
-    int noTerminalCount = 0;
-    for (int fd : {STDOUT_FILENO, STDERR_FILENO, STDIN_FILENO}) {
-        const auto [result, size] = getScreenSizeForFd(fd);
-        if (result == SizeDetectionResult::Success) {
-            _ttyFdForDetection = fd;
-            return {SizeDetectionResult::Success, size};
-        }
-        if (result == SizeDetectionResult::NoTerminalAttached) {
-            noTerminalCount += 1;
-        }
-    }
-
-    if (const int tty = ::open("/dev/tty", O_RDONLY); tty >= 0) {
-        const auto [result, size] = getScreenSizeForFd(tty);
-        if (result == SizeDetectionResult::Success) {
-            _ttyFdForDetection = tty;
-            return {SizeDetectionResult::Success, size};
-        }
-        if (result == SizeDetectionResult::NoTerminalAttached) {
-            noTerminalCount += 1;
-        }
-        ::close(tty);
-    } else {
-        noTerminalCount += 1;
-    }
-
-    if (noTerminalCount >= 4) {
-        return {SizeDetectionResult::NoTerminalAttached, bgeo::BlockSize{0, 0}};
-    }
-
-    return {SizeDetectionResult::NoTerminalSize, bgeo::BlockSize{0, 0}};
+    return getScreenSizeForFd(STDOUT_FILENO);
 }
 
 auto PosixBackend::getScreenSizeForFd(const int fd) -> std::pair<SizeDetectionResult, bgeo::BlockSize> {
@@ -355,14 +310,6 @@ auto PosixBackend::getScreenSizeForFd(const int fd) -> std::pair<SizeDetectionRe
     }
 
     return {SizeDetectionResult::Success, bgeo::BlockSize{ws.ws_col, ws.ws_row}};
-}
-
-void PosixBackend::closeTty() {
-    if (_ttyFdForDetection >= 0 && _ttyFdForDetection != STDOUT_FILENO && _ttyFdForDetection != STDERR_FILENO &&
-        _ttyFdForDetection != STDIN_FILENO) {
-        ::close(_ttyFdForDetection);
-    }
-    _ttyFdForDetection = -1;
 }
 
 void PosixBackend::initializeKeyInputSession() {

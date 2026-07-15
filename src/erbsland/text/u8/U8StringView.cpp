@@ -117,6 +117,10 @@ auto U8StringView::characterLength() const noexcept -> unit::CpLength {
     return impl::U8StringCharReadTool{dataView()}.charLength();
 }
 
+auto U8StringView::displayWidth() const noexcept -> int {
+    return impl::U8StringReadTools{dataView()}.displayWidth();
+}
+
 auto U8StringView::indexAt(const StringSide side) const noexcept -> unit::ByteIndex {
     return side == StringSide::Front ? unit::ByteIndex::zero() : unit::ByteIndex::end(length());
 }
@@ -137,6 +141,14 @@ auto U8StringView::charAt(const StringSide side) const noexcept -> Char {
 
 auto U8StringView::charAt(const unit::ByteIndex startIndex) const noexcept -> Char {
     return impl::U8StringReadTools{dataView()}.charAt(startIndex);
+}
+
+auto U8StringView::readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char {
+    return impl::U8StringReadTools{dataView()}.read(index);
+}
+
+auto U8StringView::readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char {
+    return impl::U8StringReadTools{dataView()}.readAndRetreat(index);
 }
 
 auto U8StringView::charAt(const unit::CpIndex index) const noexcept -> Char {
@@ -183,8 +195,19 @@ auto U8StringView::slice(const StringSide side, const unit::ByteLength length) c
     if (length.isInfinite() || length >= fullLength) {
         return slice(unit::ByteRange::fromLength(fullLength));
     }
-    const auto start = unit::ByteIndex::fromSizeT(fullLength.toSizeT() - length.toSizeT());
+    const auto start = unit::ByteIndex::end(fullLength - length);
     return slice(unit::ByteRange{start, length});
+}
+
+auto U8StringView::slice(const StringSide side, const unit::ByteIndex index) const noexcept -> U8StringView {
+    const auto end = indexAt(StringSide::Back);
+    if (index.isNoIndex() || index >= end) {
+        return side == StringSide::Front ? slice(unit::ByteRange{unit::ByteIndex::zero(), end}) : U8StringView{};
+    }
+    if (side == StringSide::Front) {
+        return slice(unit::ByteRange{unit::ByteIndex::zero(), index});
+    }
+    return slice(unit::ByteRange{index, end});
 }
 
 auto U8StringView::slice(const StringSide side, const unit::CpLength length) const noexcept -> U8StringView {
@@ -194,6 +217,10 @@ auto U8StringView::slice(const StringSide side, const unit::CpLength length) con
     auto start = indexAt(StringSide::Back);
     retreat(start, length);
     return slice(unit::ByteRange{start, indexAt(StringSide::Back)});
+}
+
+auto U8StringView::slice(const StringSide side, const unit::CpIndex index) const noexcept -> U8StringView {
+    return slice(side, indexAt(index));
 }
 
 auto U8StringView::slice(const StringSide side) const noexcept -> std::tuple<Char, U8StringView> {
@@ -209,6 +236,14 @@ auto U8StringView::slice(const StringSide side) const noexcept -> std::tuple<Cha
     auto start = indexAt(StringSide::Back);
     retreat(start);
     return {charAt(start), slice(unit::ByteRange{indexAt(StringSide::Front), start})};
+}
+
+auto U8StringView::splitAt(const unit::ByteIndex index) const noexcept -> std::pair<U8StringView, U8StringView> {
+    return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
+}
+
+auto U8StringView::splitAt(const unit::CpIndex index) const noexcept -> std::pair<U8StringView, U8StringView> {
+    return splitAt(indexAt(index));
 }
 
 auto U8StringView::removed(const unit::ByteRange range) const -> U8String {

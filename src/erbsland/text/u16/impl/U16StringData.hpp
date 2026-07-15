@@ -5,6 +5,7 @@
 #include "U16StringTraits.hpp"
 
 #include "../../impl/UnsafeU16StringAccess_fwd.hpp"
+#include "../../impl/UnsafeU16StringBuffer_fwd.hpp"
 
 #include <string_view>
 
@@ -20,17 +21,14 @@ using U16StringDataPtr = U16StringTraits::StoragePtr;
 /// Create UTF-16 string data from a standard string view.
 /// The UTF-16 encoding is not validated, but the null terminator is always set.
 /// @param stdString The standard string view to convert.
-/// @tested{U16StringDataTest}
 [[nodiscard]] auto createU16StringData(std::u16string_view stdString) -> U16StringDataPtr;
 /// Create uninitialized UTF-16 string data for a string of the given size and reserved capacity.
 /// @param actualStringDataSize The actual string data size, without a terminating null byte.
 /// @param reservedCapacity The reserved capacity, without a terminating null byte.
-/// @tested{U16StringDataTest}
 [[nodiscard]] auto createU16StringData(std::size_t actualStringDataSize, std::size_t reservedCapacity)
     -> U16StringDataPtr;
 /// Create uninitialized UTF-16 string data for a string of the given size.
 /// @param actualStringDataSize The actual string data size, without a terminating null byte.
-/// @tested{U16StringDataTest}
 [[nodiscard]] auto createU16StringData(std::size_t actualStringDataSize) -> U16StringDataPtr;
 
 }

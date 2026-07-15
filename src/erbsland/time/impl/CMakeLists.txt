@@ -7,7 +7,11 @@ target_sources(erbsland-core PRIVATE
         IsoDateTimeParser.cpp
         IsoDateTimeParser.hpp
         ParsedIsoDateTime.hpp
+        PosixTimeConverter.cpp
+        PosixTimeConverter.hpp
         TimePart.hpp
         TimePartBases.hpp
         TimePartWithAmount.hpp
+        WindowsTimeConverter.cpp
+        WindowsTimeConverter.hpp
 )

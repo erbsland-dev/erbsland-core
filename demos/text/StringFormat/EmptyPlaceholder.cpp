@@ -3,8 +3,12 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// An empty placeholder accepts any supported type and formats it using the default format.
 void emptyPlaceholder() {
     const auto pattern = el::StringFormat("a: {} b: {} c: {} d: {}");
     el::io::printLine(pattern.build(123, false, 76.92, "text"_el));
+}
+
 }

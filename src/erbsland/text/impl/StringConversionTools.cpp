@@ -366,44 +366,62 @@ auto StringConversionTools::toStdWString(const U32StringView &str, const Encodin
     return toStdWString(toU32String(str, errorMode), EncodingErrorMode::Replace);
 }
 
-auto StringConversionTools::encode(const U8String &str, const StringEncoding encoding, const StringBomMode bomMode)
+auto StringConversionTools::encode(
+    const U8String &str, const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode)
     -> mem::ByteBlock {
-    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
-}
-
-auto StringConversionTools::encode(const U8StringView &str, const StringEncoding encoding, const StringBomMode bomMode)
-    -> mem::ByteBlock {
-    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
+    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
 }
 
 auto StringConversionTools::encode(
-    const U8StringCharView &str, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
-    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
-}
-
-auto StringConversionTools::encode(const U16String &str, const StringEncoding encoding, const StringBomMode bomMode)
-    -> mem::ByteBlock {
-    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
-}
-
-auto StringConversionTools::encode(const U16StringView &str, const StringEncoding encoding, const StringBomMode bomMode)
-    -> mem::ByteBlock {
-    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
+    const U8StringView &str,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
+    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
 }
 
 auto StringConversionTools::encode(
-    const U16StringCharView &str, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
-    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
+    const U8StringCharView &str,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
+    return U8StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
 }
 
-auto StringConversionTools::encode(const U32String &str, const StringEncoding encoding, const StringBomMode bomMode)
+auto StringConversionTools::encode(
+    const U16String &str, const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode)
     -> mem::ByteBlock {
-    return U32StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
+    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
 }
 
-auto StringConversionTools::encode(const U32StringView &str, const StringEncoding encoding, const StringBomMode bomMode)
+auto StringConversionTools::encode(
+    const U16StringView &str,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
+    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
+}
+
+auto StringConversionTools::encode(
+    const U16StringCharView &str,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
+    return U16StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
+}
+
+auto StringConversionTools::encode(
+    const U32String &str, const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode)
     -> mem::ByteBlock {
-    return U32StringEncodingTools{str.dataView()}.encode(encoding, bomMode);
+    return U32StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
+}
+
+auto StringConversionTools::encode(
+    const U32StringView &str,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
+    return U32StringEncodingTools{str.dataView()}.encode(encoding, bomMode, errorMode);
 }
 
 auto StringConversionTools::decodeU8String(

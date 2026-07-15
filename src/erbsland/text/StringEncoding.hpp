@@ -10,7 +10,6 @@ namespace erbsland::text {
 /// Multi-byte encodings use either the explicit byte order named by the enum value,
 /// or require a byte order mark to indicate the byte order when decoding
 /// @seedoc{/reference/text/string_converter}
-/// @tested{U8StringEncodingTest}
 enum class StringEncoding : uint8_t {
     Utf8,              ///< UTF-8 bytes without a byte order mark.
     Utf16,             ///< UTF-16 bytes, detect byte order from byte order mark, encode as LE.

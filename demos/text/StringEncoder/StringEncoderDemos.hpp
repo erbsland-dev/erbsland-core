@@ -4,6 +4,10 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void bomHandling();
 void byteOrder();
 void encodeStrings();
+
+}

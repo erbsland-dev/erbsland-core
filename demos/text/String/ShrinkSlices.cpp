@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `shrinkToFit()` is a deliberate compaction step, not routine cleanup.
 ///
 /// A sliced string can keep the original backing store alive. Calling
@@ -10,8 +12,7 @@
 /// This is useful before keeping a small slice for a long time, but it should
 /// not be used after every edit.
 void shrinkSlices() {
-    auto archiveLine =
-        el::String{"Observatory log | Luzula sylvatica | vallée alpine | cielo sereno | 2026-06-07"_el};
+    auto archiveLine = el::String{"Observatory log | Luzula sylvatica | vallée alpine | cielo sereno | 2026-06-07"_el};
     archiveLine.reserve(el::ByteLength{180U});
 
     const auto marker = "Luzula sylvatica"_el;
@@ -35,4 +36,6 @@ void shrinkSlices() {
     el::io::printLine("  length ......: "_el, specimen.length());
     el::io::printLine("  capacity ....: "_el, specimen.capacity());
     el::io::printLine("  memory usage : "_el, specimen.memoryUsage());
+}
+
 }

@@ -3,9 +3,12 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(document_renderer)
 add_subdirectory(paragraph)
 
 target_sources(erbsland-core PRIVATE
+        AnsiSequence.cpp
+        AnsiSequence.hpp
         BitmapPainter.cpp
         BitmapPainter.hpp
         BlockPrintContextToString.cpp
@@ -22,8 +25,6 @@ target_sources(erbsland-core PRIVATE
         BlockTextPainter.cpp
         BlockTextPainter.hpp
         BlockTextUtil.hpp
-        CombinedBlock.cpp
-        CombinedBlock.hpp
         CommonBoxFrameBlockCombinationStyle.cpp
         CommonBoxFrameBlockCombinationStyle.hpp
         CommonBoxFrameBlockCombinationStyle_data.cpp
@@ -36,8 +37,10 @@ target_sources(erbsland-core PRIVATE
         InputBackend.hpp
         KeyDecoder.cpp
         KeyDecoder.hpp
+        LineBuffer.cpp
         LineBuffer.hpp
-        SaturatingMath.hpp
+        TerminalDocumentStyleData.cpp
+        TerminalDocumentStyleData.hpp
         TypeTraits.hpp
 )
 
@@ -45,6 +48,9 @@ if (WIN32)
     target_sources(erbsland-core PRIVATE
             WindowsBackend.cpp
             WindowsBackend.hpp
+            WindowsBackend_input.cpp
+            WindowsBackendPrivate.hpp
+            WindowsBackendPrivate_fwd.hpp
             WindowsSignalDispatcher.cpp
             WindowsSignalDispatcher.hpp
     )

@@ -28,6 +28,7 @@ project.
 
     cmake_files
     cpp_files
+    platform_integration
     rst_style
     topic_page
     reference_page
@@ -35,16 +36,20 @@ project.
     demo
     examples
     api_guidelines
-    api/common.rst
-    api/bgeo.rst
-    api/cterm.rst
-    api/err.rst
-    api/math.rst
-    api/mem.rst
-    api/options.rst
-    api/random.rst
-    api/stream.rst
-    api/text.rst
-    api/time.rst
-    api/unit.rst
-    api/util.rst
+    api/common
+    api/bgeo
+    api/cterm
+    api/err
+    api/event
+    api/i18n
+    api/math
+    api/mem
+    api/options
+    api/path
+    api/random
+    api/stream
+    api/system
+    api/text
+    api/time
+    api/unit
+    api/util

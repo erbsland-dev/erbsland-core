@@ -39,7 +39,6 @@ public: // accessors
     }
     /// Set the integer base and letter case from an ASCII base prefix character.
     /// @return `true` if the prefix character was supported.
-    /// @tested{IntegerConversionTest}
     auto setFromBasePrefix(Char character) noexcept -> bool;
     /// Get the format flags.
     [[nodiscard]] constexpr auto flags() const noexcept -> IntegerFormatFlags { return _flags; }

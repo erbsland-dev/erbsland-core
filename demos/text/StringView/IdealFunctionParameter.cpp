@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void countEmojis(const el::StringView &text);
 
 /// `StringView` is the preferred parameter type for functions that read text.
@@ -42,4 +44,6 @@ void countEmojis(const el::StringView &text) {
     el::io::printLine("Text ..........: \"", text, "\"");
     el::io::printLine("Emoji symbols .: ", emojiCount);
     el::io::printLine();
+}
+
 }

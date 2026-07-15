@@ -3,6 +3,18 @@
 
 #include <erbsland/math/SaturatingInteger.hpp>
 #include <erbsland/unit/all.hpp>
+#include <erbsland/unit/CodeContinuousRange.hpp>
+#include <erbsland/unit/CodeLocation.hpp>
+#include <erbsland/unit/ColumnCount.hpp>
+#include <erbsland/unit/ColumnIndex.hpp>
+#include <erbsland/unit/ColumnOffset.hpp>
+#include <erbsland/unit/ColumnRange.hpp>
+#include <erbsland/unit/ColumnUnit.hpp>
+#include <erbsland/unit/LineCount.hpp>
+#include <erbsland/unit/LineIndex.hpp>
+#include <erbsland/unit/LineOffset.hpp>
+#include <erbsland/unit/LineRange.hpp>
+#include <erbsland/unit/LineUnit.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -13,7 +25,8 @@
 #include <type_traits>
 
 TESTED_TARGETS(
-    IntegerUnit ByteUnit U16DataUnit CharUnit IntegerUnitIndex IntegerUnitAmount IntegerUnitOffset IntegerUnitRange)
+    IntegerUnit ByteUnit U16DataUnit CharUnit LineUnit ColumnUnit CodeLocation CodeContinuousRange IntegerUnitIndex
+        IntegerUnitAmount IntegerUnitOffset IntegerUnitRange)
 class IntegerUnitTest final : public el::UnitTest {
 public:
     void testCompileTimeContracts() {
@@ -27,6 +40,14 @@ public:
         static_assert(std::same_as<CpLength, IntegerUnitAmount<CpUnit>>);
         static_assert(std::same_as<CpOffset, IntegerUnitOffset<CpUnit>>);
         static_assert(std::same_as<CpRange, IntegerUnitRange<CpUnit>>);
+        static_assert(std::same_as<LineIndex, IntegerUnitIndex<LineUnit>>);
+        static_assert(std::same_as<LineCount, IntegerUnitAmount<LineUnit>>);
+        static_assert(std::same_as<LineOffset, IntegerUnitOffset<LineUnit>>);
+        static_assert(std::same_as<LineRange, IntegerUnitRange<LineUnit>>);
+        static_assert(std::same_as<ColumnIndex, IntegerUnitIndex<ColumnUnit>>);
+        static_assert(std::same_as<ColumnCount, IntegerUnitAmount<ColumnUnit>>);
+        static_assert(std::same_as<ColumnOffset, IntegerUnitOffset<ColumnUnit>>);
+        static_assert(std::same_as<ColumnRange, IntegerUnitRange<ColumnUnit>>);
         static_assert(std::same_as<typename ByteIndex::Value, uint64_t>);
         static_assert(std::same_as<typename ByteLength::Value, uint64_t>);
         static_assert(std::same_as<typename ByteOffset::Value, int64_t>);
@@ -41,6 +62,16 @@ public:
         static_assert(!std::equality_comparable_with<ByteLength, CpLength>);
         static_assert(!std::equality_comparable_with<ByteOffset, CpOffset>);
         static_assert(!std::equality_comparable_with<ByteRange, CpRange>);
+        static_assert(LineIndex::noIndex().isNoIndex());
+        static_assert(ColumnIndex::noIndex().isNoIndex());
+        static_assert(LineRange{LineIndex{3U}, LineCount{2U}}.endIndex() == LineIndex{5U});
+        static_assert(ColumnRange{ColumnIndex{4U}, ColumnCount{3U}}.endIndex() == ColumnIndex{7U});
+        static_assert(CodeLocation{}.line.isNoIndex());
+        static_assert(CodeLocation{}.column.isNoIndex());
+        static_assert(CodeLocation{}.position.isNoIndex());
+        static_assert(
+            CodeContinuousRange{.begin = {.line = LineIndex{1U}}, .end = {.line = LineIndex{2U}}}.end.line ==
+            LineIndex{2U});
 
         static_assert(ByteLength::zero().isZero());
         static_assert(ByteLength::one().isOne());

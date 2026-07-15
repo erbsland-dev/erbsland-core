@@ -7,6 +7,8 @@
 #include <array>
 #include <cmath>
 
+namespace demo {
+
 void FrameWeaverApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{32}, BlockCoordinate{10}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -288,4 +290,6 @@ auto FrameWeaverApp::buildPrompt() const -> BlockString {
         fg::BrightWhite,
         " all"_el);
     return result;
+}
+
 }

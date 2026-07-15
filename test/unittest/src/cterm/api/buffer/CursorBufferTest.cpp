@@ -161,8 +161,8 @@ public:
     void testFillCharSetterRejectsCharactersThatDoNotOccupyExactlyOneCell() {
         auto buffer = CursorBuffer{bgeo::BlockSize{3, 2}};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.setFillChar(Block{U'\n'}));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.setFillChar(Block{U'界'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.setFillChar(Block{U'\n'}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.setFillChar(Block{U'界'}));
     }
 
     void testMoveCursorClampsToTheBufferArea() {

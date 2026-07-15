@@ -12,10 +12,12 @@ Layout::Layout(
     const BlockStringView &text,
     const int width,
     const ParagraphOptions &options,
-    const LayoutNewlineMode newlineMode) noexcept :
+    const LayoutNewlineMode newlineMode,
+    const LayoutSemantics *semantics) noexcept :
     _context{text, width, options, options.alignment().isLeft()},
     _newlineMode{newlineMode},
-    _wordSeparators{_context.options().wordSeparatorSet()} {
+    _wordSeparators{_context.options().wordSeparatorSet()},
+    _semantics{semantics} {
 }
 
 auto Layout::build() -> LayoutResult {
@@ -99,8 +101,24 @@ auto Layout::prepareSourceLine(const BlockRange sourceLine) const -> LayoutPrepa
         currentWordWidth = 0;
     };
     for (auto index = sourceLine.index(); index < sourceLine.endIndex(); index += BlockCount::one()) {
+        if (_semantics != nullptr && _semantics->hasSoftBreak(index)) {
+            finishCurrentWord();
+        }
+        if (_semantics != nullptr) {
+            if (const auto range = _semantics->indivisibleRangeAt(index); range.has_value()) {
+                finishCurrentWord();
+                auto displayWidth = 0;
+                for (
+                    auto rangeIndex = range->index(); rangeIndex < range->endIndex(); rangeIndex += BlockCount::one()) {
+                    displayWidth += text[rangeIndex].displayWidth();
+                }
+                result.appendIndivisibleWord(range->index(), range->length(), displayWidth);
+                index = range->endIndex() - BlockCount::one();
+                continue;
+            }
+        }
         const auto &character = text[index];
-        const auto codePoint = text::Char{character.singleCodePoint()};
+        const auto codePoint = text::Char{character.singleOrNull()};
         if (leftAligned && codePoint == text::Char{U'\t'}) {
             finishCurrentWord();
             result.appendPendingTab(index);

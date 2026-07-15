@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BlockStringRangeView.hpp"
 
+#include "../../err/OutOfRangeError.hpp"
+
 #include <algorithm>
 #include <ranges>
-#include <stdexcept>
 #include <string>
 
 namespace erbsland::cterm::impl {
@@ -73,7 +74,7 @@ auto BlockStringRangeView::operator[](const BlockIndex index) const noexcept -> 
 
 auto BlockStringRangeView::at(const BlockIndex index, const std::string_view typeName) const -> Block {
     if (!index.isWithin(length())) {
-        throw std::out_of_range{std::string{typeName} + " index out of range."};
+        throw err::OutOfRangeError{std::string{typeName} + " index out of range."};
     }
     return characterAt(index);
 }
@@ -86,7 +87,7 @@ auto BlockStringRangeView::count(const Block &character) const noexcept -> Block
 
 auto BlockStringRangeView::count(const text::Char character) const noexcept -> BlockCount {
     return BlockCount::fromSizeT(static_cast<std::size_t>(std::ranges::count_if(*this, [&](const Block &candidate) {
-        return candidate.singleCodePoint() == character.toRawValue();
+        return candidate.singleOrNull() == character.toRawValue();
     })));
 }
 
@@ -108,7 +109,7 @@ auto BlockStringRangeView::indexOf(const text::Char character, const BlockIndex 
         return BlockIndex::noIndex();
     }
     for (auto index = startIndex.toSizeT(); index < rawSize(); ++index) {
-        if (characterAt(BlockIndex::fromSizeT(index)).singleCodePoint() == character.toRawValue()) {
+        if (characterAt(BlockIndex::fromSizeT(index)).singleOrNull() == character.toRawValue()) {
             return BlockIndex::fromSizeT(index);
         }
     }
@@ -121,7 +122,7 @@ auto BlockStringRangeView::indexOf(const text::CharSet &characterSet, const Bloc
         return BlockIndex::noIndex();
     }
     for (auto index = startIndex.toSizeT(); index < rawSize(); ++index) {
-        if (characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleCodePoint()})) {
+        if (characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
             return BlockIndex::fromSizeT(index);
         }
     }
@@ -134,7 +135,7 @@ auto BlockStringRangeView::indexNotOf(const text::CharSet &characterSet, const B
         return BlockIndex::noIndex();
     }
     for (auto index = startIndex.toSizeT(); index < rawSize(); ++index) {
-        if (!characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleCodePoint()})) {
+        if (!characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
             return BlockIndex::fromSizeT(index);
         }
     }
@@ -197,12 +198,12 @@ auto BlockStringRangeView::trimmedRange(const text::CharSet &characters) const n
     auto endIndex = rawSize();
     while (
         startIndex < endIndex &&
-        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(startIndex)).singleCodePoint()})) {
+        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(startIndex)).singleOrNull()})) {
         startIndex += 1;
     }
     while (
         endIndex > startIndex &&
-        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(endIndex - 1U)).singleCodePoint()})) {
+        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(endIndex - 1U)).singleOrNull()})) {
         endIndex -= 1;
     }
     if (startIndex == endIndex) {

@@ -4,6 +4,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void basicTests();
 void byteRangeSlicing();
 void canonicalStationName();
@@ -47,3 +49,5 @@ void tokenRuns();
 void trimCharacterSet();
 void validateCharacterPolicy();
 void wholeStringComparison();
+
+}

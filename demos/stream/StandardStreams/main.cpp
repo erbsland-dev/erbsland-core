@@ -3,12 +3,20 @@
 
 #include "StandardStreamsDemos.hpp"
 
+namespace demo {
+
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
-    app.registerDemo("EasyOutput"_el, easyOutput);
-    app.registerDemo("StandardOutputAndError"_el, standardOutputAndError);
-    app.registerDemo("IntegerFormatting"_el, integerFormatting);
-    app.registerDemo("FloatFormatting"_el, floatFormatting);
-    app.registerDemo("LowLevelWrite"_el, lowLevelWrite);
+    app.registerDemo("WriteStandardOutput"_el, writeStandardOutput);
+    app.registerDemo("WriteStandardError"_el, writeStandardError);
+    app.registerDemo("ReadRedirectedInput"_el, readRedirectedInput);
+    app.registerDemo("CaptureOutput"_el, captureOutput);
+    app.registerDemo("UseNestedRedirects"_el, useNestedRedirects);
     return app.run();
+}
+
+}
+
+auto main(const int argc, char *argv[]) -> int {
+    return demo::main(argc, argv);
 }

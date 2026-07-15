@@ -400,7 +400,8 @@ public:
         REQUIRE_EQUAL(offset.abbreviationId(), 31);
     }
     void testTimePointArithmetic() {
-        const auto start = TimePoint{};
+        const auto stdStart = std::chrono::steady_clock::time_point{};
+        const auto start = TimePoint{stdStart};
         const auto delta = TimeDelta{Milliseconds{25}};
         const auto end = start + delta;
         REQUIRE_EQUAL(start.timeDeltaTo(end), delta);
@@ -412,6 +413,7 @@ public:
         REQUIRE_EQUAL(mutablePoint, end);
         mutablePoint -= delta;
         REQUIRE_EQUAL(mutablePoint, start);
+        REQUIRE_EQUAL(start.toStdTimePoint(), stdStart);
     }
 
     void testElapsedTimer() {

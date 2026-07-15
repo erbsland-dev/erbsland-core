@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// The default `CharSet` constructor creates an empty set.
 ///
 /// Empty sets are useful for disabled filters and for policies where no character is allowed.
@@ -15,4 +17,6 @@ void characterSetEmpty() {
     el::io::printLine("Sample contains one of set ..: "_el, yesNo, sample.containsOneOf(disabledFilter));
     el::io::printLine("Sample contains only set ....: "_el, yesNo, sample.containsOnly(disabledFilter));
     el::io::printLine("Empty text contains only set : "_el, yesNo, el::StringView{}.containsOnly(disabledFilter));
+}
+
 }

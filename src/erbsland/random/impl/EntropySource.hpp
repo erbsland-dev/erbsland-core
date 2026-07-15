@@ -21,7 +21,7 @@ public:
 public:
     /// Fill the destination with entropy bytes.
     /// @param destination The bytes to fill.
-    /// @throws err::RandomError If the entropy source cannot provide the requested bytes.
+    /// @throws random::RandomError If the entropy source cannot provide the requested bytes.
     virtual void fillBytes(std::span<std::byte> destination) = 0;
 
 protected:

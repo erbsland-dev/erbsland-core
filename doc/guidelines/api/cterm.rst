@@ -3,12 +3,30 @@ Color Terminal Domain API Guidelines
 
 These guidelines extend the Common and Block Geometry API Guidelines for public APIs in the ``cterm`` domain.
 
-Terminology
-===========
+Core Semantics
+==============
 
-The terminal screen is modeled as a grid of blocks.
-A ``Block`` is one terminal cell worth of visible content plus its style.
-This avoids using ``Char`` for terminal cells, because the text domain reserves ``Char`` for one Unicode code point.
+- The terminal screen is modeled as a grid of blocks.
+- A ``Block`` is one terminal cell worth of visible content plus its style.
+- Compared to ``Char``, a block can represent multiple Unicode code-points.
+
+Naming
+------
+
+.. code-block:: text
+
+    Block... // APIs that operate on terminal cells
+        BlockString[View] // styled terminal-cell strings
+        BlockText // renderable text descriptions
+    Terminal... // APIs that make use of terminal input/output
+
+Print
+-----
+
+.. code-block:: text
+
+    print[Line](args...) // mixed styled terminal output
+
 
 Primary Types
 =============
@@ -25,22 +43,31 @@ Primary Types
     BlockPrintContext // shared implementation interface for print-style block output
     TerminalStream // text stream adapter for terminal output
     TerminalStreamSynchronization // shared synchronization state for terminal streams
-    TerminalOptionsRenderer // terminal renderer for command line option output
-    TerminalOptionsTheme // style set for terminal option output
+    TerminalDocumentRenderer // renderer for text::TextDocument trees
+    TerminalDocumentStyle // selector-driven style sheet for terminal documents
+    TerminalDocumentStyleSelector // selector for document style rules
+    TerminalDocumentStyleRule // text/layout/decorations for one document style rule
+    TerminalDocumentStyleMarker // list marker definition for terminal documents
 
-Naming Patterns
-===============
+TerminalDocument... Patterns
+============================
 
-Use ``Block`` for APIs that operate on terminal cells.
-Use ``BlockString`` for styled terminal-cell strings and ``BlockText`` for renderable text descriptions.
-Avoid unqualified ``Char``, ``String``, and ``Text`` names in the ``cterm`` public API unless they refer to the text
-domain or the C++ standard library.
+TerminalDocumentRenderer
+------------------------
 
-Output Patterns
-===============
+.. code-block:: text
 
-Use ``print(args...)`` and ``printLine(args...)`` for mixed styled terminal output.
-If multiple writers need the same print argument surface, route the variadic public API through ``BlockPrintContext``
-instead of duplicating per-argument dispatch overloads.
-Use ``TerminalStream`` when terminal output has to pass through the stream API.
-Use a separate theme value type for terminal renderers when colors or attributes may become user-customizable.
+    T([style]) // render a text document using the plain style
+    T::defaultPlain() // compact uncolored document style
+    T::defaultSystemOutput() // semantic style for application help, option errors and diagnostics
+    renderer.renderTo(writer, document) // write completed styled physical lines to a cursor writer
+    width >= 60 // layout at the reported writer width
+    width < 60 or unknown // layout at 80 columns; the destination may wrap naturally
+
+TerminalDocumentStyle
+---------------------
+
+.. code-block:: text
+
+    T::defaultStyle(style) -> T // get default style enum based
+    T::default...() -> T // get an individual default style.

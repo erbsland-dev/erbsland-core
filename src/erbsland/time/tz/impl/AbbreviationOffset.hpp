@@ -7,7 +7,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Offset into a zone-local abbreviation text table.
-/// @notest{Internal generated-data helper.}
 using AbbreviationOffset = uint8_t;
 
 }

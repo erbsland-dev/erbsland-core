@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "GridLayout.hpp"
 
+#include "../err/OutOfRangeError.hpp"
+#include "../err/ParameterError.hpp"
+
 #include <numeric>
-#include <stdexcept>
-#include <string>
 #include <utility>
 
 namespace erbsland::cterm {
@@ -31,11 +32,17 @@ auto GridLayout::columnCount() const noexcept -> std::size_t {
 }
 
 auto GridLayout::rowHeight(const std::size_t row) const -> bgeo::BlockCoordinate {
-    return _rowHeights.at(row);
+    if (row >= rowCount()) {
+        throw err::OutOfRangeError{"GridLayout row index is out of range."};
+    }
+    return _rowHeights[row];
 }
 
 auto GridLayout::columnWidth(const std::size_t column) const -> bgeo::BlockCoordinate {
-    return _columnWidths.at(column);
+    if (column >= columnCount()) {
+        throw err::OutOfRangeError{"GridLayout column index is out of range."};
+    }
+    return _columnWidths[column];
 }
 
 auto GridLayout::rowHeights() const noexcept -> const std::vector<bgeo::BlockCoordinate> & {
@@ -65,7 +72,7 @@ auto GridLayout::cellRect(
     -> bgeo::BlockRectangle {
 
     if (row >= rowCount() || column >= columnCount()) {
-        throw std::out_of_range{"GridLayout cell index is out of range."};
+        throw err::OutOfRangeError{"GridLayout cell index is out of range."};
     }
     const auto leftSize = borderSize(border, FrameBorder::Element::Left);
     const auto topSize = borderSize(border, FrameBorder::Element::Top);
@@ -90,11 +97,11 @@ auto GridLayout::borderSize(const FrameBorder &border, const FrameBorder::Elemen
 
 void GridLayout::validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, const std::string_view name) {
     if (sizes.empty()) {
-        throw std::invalid_argument{std::string{name} + " must not be empty."};
+        throw err::ParameterError{"The size list must not be empty.", name};
     }
     for (const auto size : sizes) {
         if (size <= 0) {
-            throw std::invalid_argument{std::string{name} + " must contain only positive sizes."};
+            throw err::ParameterError{"The size list must contain only positive sizes.", name};
         }
     }
 }

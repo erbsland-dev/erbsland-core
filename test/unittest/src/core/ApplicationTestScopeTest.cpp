@@ -31,7 +31,7 @@ public:
     inline static std::atomic<int> optionsAccessCount{};
 
 public:
-    auto options() noexcept -> el::options::OptionsPtr & override {
+    auto options() noexcept -> const el::options::OptionsPtr & override {
         ++optionsAccessCount;
         return ApplicationDataImpl::options();
     }

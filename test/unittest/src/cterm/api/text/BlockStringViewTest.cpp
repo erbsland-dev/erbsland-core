@@ -51,7 +51,7 @@ public:
         REQUIRE_EQUAL(view[BlockIndex{0U}], U'2');
         REQUIRE_EQUAL(view[BlockIndex{2U}], U'4');
         REQUIRE(view[BlockIndex{3U}].isEmpty());
-        REQUIRE_THROWS_AS(std::out_of_range, view.at(BlockIndex{3U}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, view.at(BlockIndex{3U}));
     }
 
     void testTrimmedUsesDefaultWhitespaceCharacters() {
@@ -147,6 +147,24 @@ public:
         REQUIRE(view.croppedToDisplayWidth(blockCoordinate(3), bgeo::Alignment::Left).isEmpty());
         REQUIRE(view.splitWords().empty());
         REQUIRE(view.splitLines().empty());
+    }
+
+    void testMovedFromViewKeepsEmptyInvariant() {
+        const auto source = BlockString{"alpha"_el};
+        auto view = BlockStringView{source};
+        const auto moved = std::move(view);
+
+        REQUIRE_EQUAL(render(moved), std::string{"alpha"});
+        REQUIRE(view.isEmpty());
+        REQUIRE_EQUAL(view.displayWidth(), 0);
+        REQUIRE_EQUAL(view.length(), BlockCount{0});
+
+        auto assigned = BlockStringView{source};
+        assigned = std::move(view);
+
+        REQUIRE(assigned.isEmpty());
+        REQUIRE(view.isEmpty());
+        REQUIRE_EQUAL(view.displayWidth(), 0);
     }
 
 private:

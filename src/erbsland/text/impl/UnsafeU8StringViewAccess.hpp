@@ -22,6 +22,9 @@ public:
     auto operator=(UnsafeU8StringViewAccess &&) = delete;
 
 public:
+    /// Access the null-terminated string data.
+    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr { return _string.dataView().data().data(); }
+    /// Access the internal data view.
     [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string.dataView(); }
 
 private:

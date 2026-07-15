@@ -6,6 +6,8 @@
 #include <string>
 #include <string_view>
 
+namespace demo {
+
 /// Demonstrates how to convert between library strings and standard string views using `StringConverter`.
 void crossConvertStrings() {
     // Convert between all library string types.
@@ -45,4 +47,6 @@ void crossConvertStrings() {
     stdString = std::string{"Hello, wind"};
     u8String = el::StringConverter{stdString}.toU8String();
     el::io::printLine("Converted 'stdString': ", u8String);
+}
+
 }

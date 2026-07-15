@@ -37,6 +37,7 @@ public:
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Cpp), 3U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Xml), 4U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::PCRE), 5U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Display), 6U);
 
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::None}.toString(), "none"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Html}.toString(), "html"_el);
@@ -44,10 +45,12 @@ public:
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Cpp}.toString(), "cpp"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Xml}.toString(), "xml"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::PCRE}.toString(), "pcre"_el);
+        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Display}.toString(), "display"_el);
 
         REQUIRE_EQUAL(EscapeFormat::fromString("html"_el).value(), EscapeFormat::Html);
         REQUIRE_EQUAL(EscapeFormat::fromString("json"_el).value(), EscapeFormat::Json);
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("pcre"_el), EscapeFormat::PCRE);
+        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("display"_el), EscapeFormat::Display);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
         REQUIRE_THROWS(EscapeFormat::fromStringOrThrow("unknown"_el));
     }
@@ -78,6 +81,14 @@ public:
         REQUIRE_EQUAL(EscapeAmount::fromSuffix(U'+').value(), EscapeAmount::NonAscii);
         REQUIRE_EQUAL(EscapeAmount::fromSuffix(U'*').value(), EscapeAmount::Everything);
         REQUIRE_FALSE(EscapeAmount::fromSuffix(U'!').has_value());
+    }
+
+    void testDisplayEscapingPreservesPunctuationAndEscapesControls() {
+        using namespace el::text::literals;
+
+        auto text = el::text::String{"\"quoted\" \\ path"_el};
+        text.append(U'\x1b').append(U'\n');
+        REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Display), "\"quoted\" \\ path\\033\\n"_el);
     }
 
     void testHtmlAndXmlTargets() {

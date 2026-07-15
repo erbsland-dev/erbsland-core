@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Side-based slicing takes a prefix or suffix without spelling out a full
 /// range.
 ///
@@ -26,4 +28,6 @@ void frontBackSlicing() {
     el::io::printLine("Origin: "_el, origin);
     el::io::printLine("Destination: "_el, destination);
     el::io::printLine("Without destination: ["_el, withoutDestination, "]"_el);
+}
+
 }

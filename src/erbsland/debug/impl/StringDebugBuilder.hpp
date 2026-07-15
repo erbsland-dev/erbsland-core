@@ -20,11 +20,9 @@ namespace erbsland::debug::impl {
 constexpr auto cContentsPreviewWidth = unit::CpLength{60U};
 
 /// Convert a string storage kind to debug text.
-/// @tested{StringDebugBuilderTest}
 [[nodiscard]] auto storageKindText(StringStorageKind kind) noexcept -> text::StringView;
 
 /// Convert a storage identifier to debug text.
-/// @tested{StringDebugBuilderTest}
 [[nodiscard]] auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> text::String;
 
 /// Append a byte/code-unit/code-point range to the debug tree.

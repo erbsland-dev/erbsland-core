@@ -16,6 +16,8 @@ target_sources(erbsland-core PRIVATE
         LayoutPreparedSourceLine.hpp
         LayoutResult.cpp
         LayoutResult.hpp
+        LayoutSemantics.cpp
+        LayoutSemantics.hpp
         LineBuilder.cpp
         LineBuilder.hpp
         Painter.cpp

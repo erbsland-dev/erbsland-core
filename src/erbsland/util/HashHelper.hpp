@@ -33,7 +33,7 @@ void advanceHash(std::size_t &hash, const T &arg) noexcept {
 /// Creates a new hash value from one or more arguments.
 ///
 /// Combines hashes of all arguments into a single value.
-/// @seedoc{/reference/util/utilities_for_enum_hash_flags}
+/// @seedoc{/reference/util/supporting_utilities}
 /// @tparam T1 The type of the first argument.
 /// @tparam Rest The types of the remaining arguments.
 /// @param arg1 The first argument.

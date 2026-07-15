@@ -5,6 +5,8 @@
 
 #include <compare>
 
+namespace demo {
+
 auto hashToString(std::size_t hash) -> el::StringView {
     static auto format = el::StringFormat{"0x{:016x}"};
     return format.build(hash);
@@ -45,4 +47,6 @@ void hashing() {
     el::io::printLine("  greek.toHashCI()       → "_el, hashToString(hash));
     hash = greekLower.toHashCI();
     el::io::printLine("  greekLower.toHashCI()  → "_el, hashToString(hash));
+}
+
 }

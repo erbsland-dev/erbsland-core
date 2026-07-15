@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "FormatParser.hpp"
 
+#include "ThrowHelper.hpp"
+
 #include "../Literals.hpp"
 #include "../String.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -30,7 +30,7 @@ auto FormatParser::parse() -> FormatDataPtr {
     while (!_reader.isAtEnd()) {
         const auto next = consumeChar();
         if (next.isSignal()) {
-            err::throwFormatError("Format pattern contains an invalid character"_el);
+            text::impl::throwFormatError("Format pattern contains an invalid character"_el);
         }
         const auto character = next;
         if (character == U'{') {
@@ -44,7 +44,7 @@ auto FormatParser::parse() -> FormatDataPtr {
             if (_reader.advanceIf(U'}')) {
                 _staticText.append(U'}');
             } else {
-                err::throwFormatError("Format pattern contains an unmatched closing brace"_el);
+                text::impl::throwFormatError("Format pattern contains an unmatched closing brace"_el);
             }
         } else {
             _staticText.append(character);
@@ -61,7 +61,7 @@ void FormatParser::flushStaticText() {
 
 void FormatParser::requireFieldLimit() const {
     if (_data->fieldCount >= cMaximumFields) {
-        err::throwFormatError("Format pattern contains too many fields"_el);
+        text::impl::throwFormatError("Format pattern contains too many fields"_el);
     }
 }
 
@@ -73,7 +73,7 @@ auto FormatParser::readIndex() -> std::optional<unit::ArgumentIndex> {
         return {};
     }
     if (result.status != ReadNumberStatus::Success || result.value >= cMaximumFields.toSizeT()) {
-        err::throwFormatError("Format argument index is too large"_el);
+        text::impl::throwFormatError("Format argument index is too large"_el);
     }
     return unit::ArgumentIndex::fromSizeT(static_cast<std::size_t>(result.value));
 }
@@ -89,17 +89,17 @@ auto FormatParser::consumeChar() noexcept -> Char {
 auto FormatParser::consumeSpecificationChar() -> Char {
     const auto next = consumeChar();
     if (next.isEndOfData()) {
-        err::throwFormatError("Format field is missing a closing brace"_el);
+        text::impl::throwFormatError("Format field is missing a closing brace"_el);
     }
     if (next.isSignal()) {
-        err::throwFormatError("Format field contains an invalid character"_el);
+        text::impl::throwFormatError("Format field contains an invalid character"_el);
     }
     const auto character = next;
     if (character == U'{') {
-        err::throwFormatError("Format field contains an unexpected opening brace"_el);
+        text::impl::throwFormatError("Format field contains an unexpected opening brace"_el);
     }
     if (!character.isAscii()) {
-        err::throwFormatError("Format field specification must use ASCII characters"_el);
+        text::impl::throwFormatError("Format field specification must use ASCII characters"_el);
     }
     return character;
 }
@@ -112,7 +112,7 @@ auto FormatParser::readLimitedDecimal(const StringLiteral &tooLargeMessage) -> u
         return unit::CpLength::zero();
     }
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
-        err::throwFormatError(tooLargeMessage);
+        text::impl::throwFormatError(tooLargeMessage);
     }
     return unit::CpLength::fromSizeT(static_cast<std::size_t>(result.value));
 }
@@ -191,10 +191,10 @@ void FormatParser::parsePrecision(FormatSpec &spec) {
     options.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumDecimalDigits);
     const auto result = _reader.parseInteger(options);
     if (result.status == ReadNumberStatus::NoDigits) {
-        err::throwFormatError("Format field precision is missing digits"_el);
+        text::impl::throwFormatError("Format field precision is missing digits"_el);
     }
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
-        err::throwFormatError("Format field precision is too large"_el);
+        text::impl::throwFormatError("Format field precision is too large"_el);
     }
     spec.precision = unit::CpLength::fromSizeT(static_cast<std::size_t>(result.value));
 }
@@ -251,10 +251,10 @@ void FormatParser::parsePresentation(FormatSpec &spec) {
         spec.presentation = FormatPresentation::FloatHex;
         spec.letterCase = LetterCase::Uppercase;
     } else {
-        err::throwFormatError("Format field type is not supported"_el);
+        text::impl::throwFormatError("Format field type is not supported"_el);
     }
     if (currentChar() != U'}') {
-        err::throwFormatError("Format field specification contains trailing characters"_el);
+        text::impl::throwFormatError("Format field specification contains trailing characters"_el);
     }
     consumeSpecificationChar();
 }
@@ -279,7 +279,7 @@ void FormatParser::parseEscapedPresentation(FormatSpec &spec) {
     }
     const auto format = EscapeFormat::fromString(formatName);
     if (!format.has_value()) {
-        err::throwFormatError("Format escape modifier is not supported"_el);
+        text::impl::throwFormatError("Format escape modifier is not supported"_el);
     }
     spec.presentation = FormatPresentation::EscapedText;
     spec.escapeFormat = format.value();
@@ -289,13 +289,13 @@ void FormatParser::parseEscapedPresentation(FormatSpec &spec) {
 auto FormatParser::resolveArgumentIndex(const std::optional<unit::ArgumentIndex> explicitIndex) -> unit::ArgumentIndex {
     if (explicitIndex.has_value()) {
         if (_indexMode == IndexMode::Automatic) {
-            err::throwFormatError("Format pattern mixes automatic and manual argument indexes"_el);
+            text::impl::throwFormatError("Format pattern mixes automatic and manual argument indexes"_el);
         }
         _indexMode = IndexMode::Manual;
         return explicitIndex.value();
     }
     if (_indexMode == IndexMode::Manual) {
-        err::throwFormatError("Format pattern mixes automatic and manual argument indexes"_el);
+        text::impl::throwFormatError("Format pattern mixes automatic and manual argument indexes"_el);
     }
     _indexMode = IndexMode::Automatic;
     const auto result = _nextAutomaticIndex;
@@ -305,7 +305,7 @@ auto FormatParser::resolveArgumentIndex(const std::optional<unit::ArgumentIndex>
 
 void FormatParser::markArgumentIndex(const unit::ArgumentIndex argumentIndex) {
     if (!argumentIndex.isWithin(cMaximumFields)) {
-        err::throwFormatError("Format argument index is too large"_el);
+        text::impl::throwFormatError("Format argument index is too large"_el);
     }
     const auto argumentIndexValue = argumentIndex.toSizeT();
     if (argumentIndexValue >= _data->usedArguments.size()) {
@@ -322,16 +322,16 @@ void FormatParser::parseField() {
 
     const auto separator = consumeChar();
     if (separator.isEndOfData()) {
-        err::throwFormatError("Format field is missing a closing brace"_el);
+        text::impl::throwFormatError("Format field is missing a closing brace"_el);
     }
     if (separator.isSignal()) {
-        err::throwFormatError("Format field contains an invalid character"_el);
+        text::impl::throwFormatError("Format field contains an invalid character"_el);
     }
     auto spec = FormatSpec{};
     if (separator == U':') {
         spec = parseSpecification();
     } else if (separator != U'}') {
-        err::throwFormatError("Format field contains unexpected characters after argument index"_el);
+        text::impl::throwFormatError("Format field contains unexpected characters after argument index"_el);
     }
 
     _data->parts.emplace_back(FormatPart::fromField(spec, argumentIndex));
@@ -345,7 +345,7 @@ auto FormatParser::finish() -> FormatDataPtr {
         auto argumentIndex = unit::ArgumentIndex::zero(); argumentIndex.toSizeT() < _data->usedArguments.size();
         ++argumentIndex) {
         if (!_data->usedArguments[argumentIndex.toSizeT()]) {
-            err::throwFormatError("Manual format argument indexes must be contiguous from zero"_el);
+            text::impl::throwFormatError("Manual format argument indexes must be contiguous from zero"_el);
         }
     }
     return std::move(_data);

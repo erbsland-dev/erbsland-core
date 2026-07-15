@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ThrowHelper.hpp"
+
 #include "../IntegerParseOptions.hpp"
 #include "../StringCharReader.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 namespace erbsland::text::impl {
 
@@ -14,7 +14,7 @@ template <math::AnyIntegerType T>
 [[nodiscard]] auto parseInteger(StringCharReader reader, const IntegerParseOptions &options) -> T {
     const T value = reader.readIntegerOrThrow<T>(options);
     if (!options.hasFlag(IntegerParseFlag::IgnoreTrailingChars) && !reader.isAtEnd()) {
-        err::throwParseError("Integer text has trailing characters");
+        text::impl::throwParseError("Integer text has trailing characters");
     }
     return value;
 }

@@ -9,7 +9,6 @@ namespace erbsland::time {
 /// Precision levels for ISO date/time parsing and formatting.
 ///
 /// Controls how much detail is required when parsing or how much is emitted when formatting.
-/// @tested{DateTimeTest}
 enum class DateTimePrecision : uint8_t {
     /// Year only (e.g. `2025`).
     Year,

@@ -83,8 +83,8 @@ Convert explicitly when you intentionally compare text stored in different encod
 
 .. erbsland-demo::
     :source: text/StringView/WholeStringComparison.cpp
-    :exec: string_view --demo WholeStringComparison
-    :source-sha256: bf2452a0652b9888fdb2e063c77a7c13e9feb84755dec1d2e2323893d33a0ad7
+    :exec: text/string_view --demo WholeStringComparison
+    :source-sha256: 587a702fdd1412a4f8ad36e34d2ad57dca559130db3c51b0008a97a185ea62e5
 
 .. code-block:: cpp
 
@@ -173,8 +173,8 @@ ASCII-only behavior is explicitly desired.
 
 .. erbsland-demo::
     :source: text/StringView/ComparisonFunctions.cpp
-    :exec: string_view --demo ComparisonFunctions
-    :source-sha256: 4ce926128d6440b398ba823c2e578a650cd35a6edefc8f84f0347894d7bb3196
+    :exec: text/string_view --demo ComparisonFunctions
+    :source-sha256: 04a7e20599b2c3768572a68078cf8276a0d63ed2bc674d5ecb9eb66eb54838dd
 
 .. code-block:: cpp
 
@@ -248,8 +248,8 @@ These operations only inspect the relevant edge of the string and avoid a full c
 
 .. erbsland-demo::
     :source: text/StringView/PartialStringComparison.cpp
-    :exec: string_view --demo PartialStringComparison
-    :source-sha256: 1f6e4d22f719e27020a1814a3fc4b2320eb45067d8ba3047a2e0c67df1418926
+    :exec: text/string_view --demo PartialStringComparison
+    :source-sha256: 6e75349fb59042cebcc0095231da2f23f8d29abc3110315a1ed043e4ee4878e5
 
 .. code-block:: cpp
 

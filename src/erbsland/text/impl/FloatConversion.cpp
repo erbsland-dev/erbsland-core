@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "FloatConversion.hpp"
 
+#include "ThrowHelper.hpp"
+
 #include "../StringBuilder.hpp"
 #include "../StringConverter.hpp"
 #include "../u8/U8String.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 #include <cerrno>
 #include <charconv>
@@ -245,11 +245,11 @@ auto parseDoubleOrThrow(StringCharReader reader, const FloatParseOptions &option
     case FloatParseStatus::Success:
         return result.value;
     case FloatParseStatus::ParseError:
-        err::throwParseError(result.message);
+        text::impl::throwParseError(result.message);
     case FloatParseStatus::Overflow:
-        err::throwOverflow(result.message);
+        text::impl::throwOverflow(result.message);
     }
-    err::throwParseError("Floating point text could not be parsed");
+    text::impl::throwParseError("Floating point text could not be parsed");
 }
 
 [[nodiscard]] auto isFloatRepresentable(const double value) noexcept -> bool {
@@ -277,7 +277,7 @@ auto parseFloatOrDefault(StringCharReader reader, const float defaultValue, cons
 auto parseFloatOrThrow(StringCharReader reader, const FloatParseOptions &options) -> float {
     const auto value = parseDoubleOrThrow(std::move(reader), options);
     if (!isFloatRepresentable(value)) {
-        err::throwOverflow("Floating point text exceeds the requested type");
+        text::impl::throwOverflow("Floating point text exceeds the requested type");
     }
     return static_cast<float>(value);
 }

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 auto describeCharacter(const el::Char character) -> el::String {
     if (character.isEndOfData()) {
         return el::String{"end-of-data"_el};
@@ -37,7 +39,8 @@ void characterAccess() {
     el::io::printLine("Byte index 0: "_el, describeCharacter(text.charAt(byteIndex)));
     el::io::printLine("Byte index 1: "_el, describeCharacter(text.charAt(el::ByteIndex{1U})));
     el::io::printLine("End byte index: "_el, describeCharacter(text.charAt(text.indexAt(el::StringSide::Back))));
-    el::io::printLine("Outside byte range: "_el,
+    el::io::printLine(
+        "Outside byte range: "_el,
         describeCharacter(text.charAt(text.indexAt(el::StringSide::Back) + el::ByteLength{8U})));
 
     // Move byte indexes by decoded code points instead of incrementing raw bytes.
@@ -63,4 +66,6 @@ void characterAccess() {
     // `StringCharView` exposes character-indexed helpers for specialized small-text work.
     auto charView = text.toCharView();
     el::io::printLine("Char view prefix: "_el, charView.slice(el::StringSide::Front, el::CpLength{4U}));
+}
+
 }

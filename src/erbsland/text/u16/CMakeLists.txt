@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         U16String_float.cpp
         U16String_fwd.hpp
         U16String_integer.tpp
+        U16String_modify.cpp
         U16String_trim.cpp
         U16StringCharView.cpp
         U16StringCharView.hpp

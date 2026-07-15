@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 namespace {
 
 // Print a comparison result with a compact label.
@@ -29,16 +31,22 @@ void comparisonFunctions() {
     printComparison("snowyOwl.compare(snowyOwlLower) .........................: "_el, snowyOwl.compare(snowyOwlLower));
 
     // Unicode case folding handles non-ASCII letters such as `Ě` and `ě`.
-    printComparison("snowyOwl.compare(..., Char::compareCaseFolded) ..........: "_el,
+    printComparison(
+        "snowyOwl.compare(..., Char::compareCaseFolded) ..........: "_el,
         snowyOwl.compare(snowyOwlLower, el::Char::compareCaseFolded));
 
     // ASCII folding is small and fast, but only changes A-Z to a-z.
-    printComparison("asciiLabel.compare(..., Char::compareAsciiFolded) .......: "_el,
+    printComparison(
+        "asciiLabel.compare(..., Char::compareAsciiFolded) .......: "_el,
         asciiLabel.compare(asciiLabelLower, el::Char::compareAsciiFolded));
-    printComparison("snowyOwl.compare(..., Char::compareAsciiFolded) .........: "_el,
+    printComparison(
+        "snowyOwl.compare(..., Char::compareAsciiFolded) .........: "_el,
         snowyOwl.compare(snowyOwlLower, el::Char::compareAsciiFolded));
 
     // Identifier comparison is useful for normalized keys or configuration-style names.
-    printComparison("identifier.compare(..., Char::compareIdentifier) ........: "_el,
+    printComparison(
+        "identifier.compare(..., Char::compareIdentifier) ........: "_el,
         identifier.compare(normalizedIdentifier, el::Char::compareIdentifier));
+}
+
 }

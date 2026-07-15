@@ -2,12 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NativeByteStream.hpp"
 #include "NativeOutputStream.hpp"
 
-#include "../ByteInputStream.hpp"
-#include "../ByteOutputStream.hpp"
+#include "../StreamErrorContext.hpp"
 
-#include <string_view>
+#include "../../system/WindowsErrorContext.hpp"
+
+#include <atomic>
+#include <mutex>
+#include <vector>
 
 namespace erbsland::stream::impl {
 
@@ -16,12 +20,37 @@ using WindowsNativeHandle = void *;
 
 /// Native byte stream wrapper for Windows handles.
 /// @tested{WindowsNativeStreamTest}
-class WindowsNativeStream final : public NativeOutputStream, public ByteInputStream, public ByteOutputStream {
+class WindowsNativeStream final : public NativeOutputStream, public NativeByteStream {
+    class Operation final {
+    public:
+        explicit Operation(const WindowsNativeStream &stream);
+        ~Operation();
+
+        // deletions
+        Operation(const Operation &) = delete;
+        Operation(Operation &&) = delete;
+        auto operator=(const Operation &) -> Operation & = delete;
+        auto operator=(Operation &&) -> Operation & = delete;
+
+    public: // accessors
+        [[nodiscard]] auto handle() const noexcept -> WindowsNativeHandle { return _handle; }
+
+    private:
+        const WindowsNativeStream &_stream;
+        WindowsNativeHandle _handle{};
+        WindowsNativeHandle _threadHandle{};
+    };
+
 public:
     /// Create a Windows native stream wrapper.
     /// @param handle The handle to wrap.
     /// @param ownership If the wrapper owns the handle.
-    explicit WindowsNativeStream(WindowsNativeHandle handle, NativeStreamOwnership ownership);
+    /// @param path The path represented by the handle, if available.
+    explicit WindowsNativeStream(
+        WindowsNativeHandle handle,
+        NativeStreamOwnership ownership,
+        text::StringView path = {},
+        bool positioningAllowed = true);
 
     // defaults
     ~WindowsNativeStream() override;
@@ -31,29 +60,48 @@ public:
     auto operator=(WindowsNativeStream &&) -> WindowsNativeStream & = delete;
 
 public: // implement NativeOutputStream
+    using StreamErrorSource::throwError;
+
     void writeBytes(std::span<const char> bytes) override;
     void writeText(const text::StringView &text) override;
     void flush() override;
+    [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
-public: // implement ByteInputStream / ByteOutputStream
-    [[nodiscard]] auto endianness() const noexcept -> mem::Endianness override;
-    void setEndianness(mem::Endianness endianness) noexcept override;
-    [[nodiscard]] auto isOpen() const noexcept -> bool override;
+public: // implement NativeByteStream
+    [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
+    [[nodiscard]] auto position() const -> unit::ByteIndex override;
+    auto setPosition(unit::ByteIndex position) -> unit::ByteIndex override;
+    auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> unit::ByteIndex override;
     void close() override;
+    void abort() noexcept override;
     [[nodiscard]] auto read(std::span<mem::Byte> destination) -> unit::ByteLength override;
     void write(std::span<const mem::Byte> bytes) override;
 
 public:
-    using ByteInputStream::read;
-    using ByteOutputStream::write;
+    [[nodiscard]] auto isOpen() const noexcept -> bool;
+
+public:
+    /// Get the current file size if this stream references a file.
+    /// @return The file size in bytes, or zero for zero-length streams.
+    /// @throws stream::StreamError If the stream is closed or size lookup fails.
+    [[nodiscard]] auto fileSize() const -> unit::ByteLength;
 
 private:
+    [[noreturn]] void throwError(
+        text::StringView title, text::StringView description, system::WindowsErrorContext::ErrorCode errorCode) const;
+    [[noreturn]] void throwErrorFromLastError(text::StringView title, text::StringView description) const;
     void writeWideText(std::wstring_view text);
+    void finishOperation(WindowsNativeHandle threadHandle) const noexcept;
 
 private:
-    WindowsNativeHandle _handle{};
-    NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed};
-    bool _isConsole{false};
+    std::atomic<WindowsNativeHandle> _handle{};                        ///< Wrapped native handle.
+    NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Handle ownership mode.
+    text::StringView _path;                                            ///< Stream path, when available.
+    bool _isConsole{false};                                            ///< Whether the handle is a Windows console.
+    bool _supportsPositioning{false};                                  ///< Whether this handle can be positioned.
+    mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.
+    mutable std::vector<WindowsNativeHandle> _operationThreads;        ///< Active operation threads.
+    mutable WindowsNativeHandle _deferredCloseHandle{};                ///< Deferred owned handle.
 };
 
 }

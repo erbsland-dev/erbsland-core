@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// The `StringEncoder` class handles byte order marks (BOM) during encoding, giving you full control
 /// over how multi-byte Unicode encodings represent their byte order. A BOM is a special marker placed
 /// at the start of a byte stream that identifies both the encoding and the byte order.
@@ -32,4 +34,6 @@ void bomHandling() {
     // Explicitly suppress the BOM, even when the encoding normally includes one.
     bytes = el::StringEncoder{observation}.encode(el::StringEncoding::Utf32, el::StringBomMode::Reject);
     el::io::printLine("UTF-32 without BOM:\n"_el, el::ByteFormat::memoryDump(), bytes);
+}
+
 }

@@ -261,18 +261,43 @@ public: // change
     /// @param value The value.
     /// @return A reference to this map.
     template <typename tValueFwd>
-        requires std::is_constructible_v<Value, tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
     auto set(const Key &key, tValueFwd &&value) -> Self &;
+    /// Set a key-value pair, taking ownership of the key.
+    /// @param key The key.
+    /// @param value The value.
+    /// @return A reference to this map.
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    auto set(Key &&key, tValueFwd &&value) -> Self &;
     /// Try to replace an existing value.
     /// @param key The key to replace.
     /// @param value The new value.
     /// @return `true` if the key existed and was replaced.
-    [[nodiscard]] auto tryReplace(const Key &key, const Value &value) -> bool;
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryReplace(const Key &key, tValueFwd &&value) -> bool;
+    /// Try to replace an existing value, taking ownership of the key when replaced.
+    /// @param key The key to replace.
+    /// @param value The new value.
+    /// @return `true` if the key existed and was replaced.
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryReplace(Key &&key, tValueFwd &&value) -> bool;
     /// Try to insert a new entry.
     /// @param key The key.
     /// @param value The value.
     /// @return `true` if the key was not already present.
-    [[nodiscard]] auto tryInsert(const Key &key, const Value &value) -> bool;
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryInsert(const Key &key, tValueFwd &&value) -> bool;
+    /// Try to insert a new entry, taking ownership of the key when inserted.
+    /// @param key The key.
+    /// @param value The value.
+    /// @return `true` if the key was not already present.
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryInsert(Key &&key, tValueFwd &&value) -> bool;
 
 public: // tests
     /// Test if two maps contain the same entries.

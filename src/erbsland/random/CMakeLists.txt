@@ -10,6 +10,7 @@ target_sources(erbsland-core PRIVATE
         FastRandom.hpp
         Random.cpp
         Random.hpp
+        RandomError.hpp
         SecureRandom.cpp
         SecureRandom.hpp
         ThreadSafeFastRandom.cpp

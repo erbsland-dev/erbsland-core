@@ -21,6 +21,7 @@ class CleanupConfig:
     project_dir: Path
     library_source_dir: Path
     unit_test_source_dir: Path
+    demo_source_dirs: tuple[Path, ...]
     cmake_source_dirs: tuple[Path, ...]
     excluded_names: frozenset[str]
     scanned_file_suffixes: frozenset[str]
@@ -43,6 +44,10 @@ class CleanupConfig:
             unit_test_source_dir=resolve_project_path(
                 project_dir, main_config.get_text("unit_test_source_directory"), "Unit Test Source Directory"
             ),
+            demo_source_dirs=tuple(
+                resolve_project_path(project_dir, directory, "Demo Source Directories")
+                for directory in main_config.get_list("demo_source_directories", str, default=[])
+            ),
             cmake_source_dirs=tuple(
                 resolve_project_path(project_dir, directory, "CMake Source Directories")
                 for directory in main_config.get_list("cmake_source_directories", str)
@@ -60,6 +65,8 @@ class CleanupConfig:
         """Validate the cleanup configuration."""
         require_directory(self.library_source_dir, "Library Source Directory")
         require_directory(self.unit_test_source_dir, "Unit Test Source Directory")
+        for directory in self.demo_source_dirs:
+            require_directory(directory, "Demo Source Directories")
         if not self.cmake_source_dirs:
             raise UtilityError("No CMake source directories configured.")
         for directory in self.cmake_source_dirs:

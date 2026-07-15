@@ -5,6 +5,8 @@
 #include "ColorTermIncludes.hpp"
 
 #include <erbsland/cterm/all.hpp>
+#include <erbsland/err/OutOfRangeError.hpp>
+#include <erbsland/err/ParameterError.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -18,7 +20,7 @@
 using namespace erbsland::text::literals;
 
 [[nodiscard]] inline auto blockToStdString(const Block &block) -> std::string {
-    return erbsland::text::StringConverter{block.charStr()}.toStdString();
+    return erbsland::text::StringConverter{block.toString()}.toStdString();
 }
 
 [[nodiscard]] constexpr auto blockCoordinate(const int value) noexcept -> bgeo::BlockCoordinate {

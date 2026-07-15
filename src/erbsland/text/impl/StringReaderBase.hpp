@@ -4,6 +4,7 @@
 
 #include "StringReaderBackendKind.hpp"
 
+#include "../AnyString_fwd.hpp"
 #include "../AnyStringView_fwd.hpp"
 #include "../Char.hpp"
 #include "../CharSet.hpp"
@@ -89,6 +90,38 @@ public: // capture
     virtual void startCapture() noexcept = 0;
     /// Take the current capture and set the new capture start point.
     [[nodiscard]] virtual auto takeCapture() noexcept -> AnyStringView = 0;
+
+public: // buffer
+    /// Clear the buffer.
+    virtual void clearBuffer() noexcept = 0;
+    /// Move out the buffer and reset it.
+    [[nodiscard]] virtual auto takeBuffer() -> AnyString = 0;
+    /// Create a view to the current buffer content.
+    [[nodiscard]] virtual auto bufferView() const noexcept -> AnyStringView = 0;
+    /// Get the current decoded code-point length of the buffer.
+    [[nodiscard]] virtual auto bufferCharacterLength() const noexcept -> unit::CpLength = 0;
+    /// Test if the buffer is empty.
+    [[nodiscard]] virtual auto isBufferEmpty() const noexcept -> bool = 0;
+    /// Replace the buffer with text.
+    virtual void setBuffer(const AnyStringView &text) = 0;
+    /// Append one Unicode code point to the buffer.
+    virtual void appendToBuffer(Char character) = 0;
+    /// Append text to the buffer.
+    virtual void appendToBuffer(const AnyStringView &text) = 0;
+    /// Take the current capture and append it to the buffer.
+    virtual void appendCaptureToBuffer() = 0;
+    /// Read one tolerant character and append it to the buffer.
+    [[nodiscard]] virtual auto readToBuffer() -> Char = 0;
+    /// Read one tolerant character if it matches and append it to the buffer.
+    [[nodiscard]] virtual auto readToBufferIf(Char expected) -> bool = 0;
+    /// Read one tolerant character if it matches and append it to the buffer.
+    [[nodiscard]] virtual auto readToBufferIf(const CharSet &expected) -> std::optional<Char> = 0;
+    /// Read while expected characters are found and append them to the buffer.
+    [[nodiscard]] virtual auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum)
+        -> util::LoopResult = 0;
+    /// Read until stop characters are found and append read characters to the buffer.
+    [[nodiscard]] virtual auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum)
+        -> util::LoopResult = 0;
 
 protected:
     /// Create a reader state.

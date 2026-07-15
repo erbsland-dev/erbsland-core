@@ -5,20 +5,13 @@
 #include "U32Encoding.hpp"
 #include "U32Writer.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
+#include "../../impl/RepeatCount.hpp"
+#include "../../impl/ThrowHelper.hpp"
 
 #include <cstring>
 #include <span>
 
 namespace erbsland::text::impl {
-
-template <typename T>
-[[nodiscard]] auto repeatCountToSize(const T count) -> std::size_t {
-    if (count.isInfinite()) {
-        err::throwOverflow("Repeated string count must be finite");
-    }
-    return count.toSizeTOrThrow();
-}
 
 auto U32StringAppendTools::append(const U32StringDataView &text) -> U32StringSharedStorage & {
     const auto source = text.dataSpan();

@@ -6,5 +6,4 @@ Cterm Reference
     :maxdepth: 1
 
     terminal
-    terminal_options_renderer
-    theme
+    terminal_document_renderer

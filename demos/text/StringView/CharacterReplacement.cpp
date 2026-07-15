@@ -5,6 +5,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// A `StringView` allows building a new string with text or characters replaced.
 /// The replacement happens in one pass, without creating intermediate copies.
 /// Also, if no text is replaced, the original string is returned.
@@ -36,4 +38,6 @@ void characterReplacement() {
     el::io::printLine("Original ....: \""_el, note, "\""_el);
 
     el::io::printLine("Sunny .......: \""_el, sunnySpots, "\""_el);
+}
+
 }

@@ -8,18 +8,45 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         ByteInputStream.cpp
         ByteInputStream.hpp
+        ByteInputStream_fwd.hpp
         ByteOutputStream.cpp
         ByteOutputStream.hpp
+        ByteOutputStream_fwd.hpp
         InputStream.hpp
+        InputStreamSettings.hpp
         OutputStream.hpp
+        OutputStreamSettings.hpp
         StandardStreamRedirect.cpp
         StandardStreamRedirect.hpp
         StandardStreams.cpp
         StandardStreams.hpp
+        StreamCloseStatus.hpp
+        StreamError.cpp
+        StreamError.hpp
+        StreamErrorContext.cpp
+        StreamErrorContext.hpp
+        StreamErrorSource.cpp
+        StreamErrorSource.hpp
+        StreamPositioning.cpp
+        StreamPositioning.hpp
+        StreamPositionOrigin.hpp
+        StreamPositionStatus.hpp
+        StreamReadResult.hpp
+        StreamReadStatus.hpp
+        StreamState.hpp
+        StreamWaitStatus.hpp
+        StreamWriteStatus.hpp
         StringBuilderStream.cpp
         StringBuilderStream.hpp
+        TempByteOutputStream.cpp
+        TempByteOutputStream.hpp
+        TempByteOutputStream_fwd.hpp
+        TempTextOutputStream.cpp
+        TempTextOutputStream.hpp
+        TempTextOutputStream_fwd.hpp
         TextInputStream.cpp
         TextInputStream.hpp
+        TextInputStream_fwd.hpp
         TextOutputStream.cpp
         TextOutputStream.hpp
         TextOutputStream_fwd.hpp

@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         ByteBlockView_fwd.hpp
         ByteReader.cpp
         ByteReader.hpp
+        ByteRingBuffer.hpp
         ByteWriter.cpp
         ByteWriter.hpp
         ByteWriter_fwd.hpp
@@ -22,6 +23,8 @@ target_sources(erbsland-core PRIVATE
         CowStorage.hpp
         Endianness.hpp
         ReferenceCounter.hpp
+        RingBuffer.cpp
+        RingBuffer.hpp
         SharedArrayData.hpp
         SharedData.hpp
         SharedDataPointer.hpp

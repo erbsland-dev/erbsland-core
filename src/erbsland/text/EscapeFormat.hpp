@@ -17,12 +17,13 @@ class EscapeFormat final {
 public:
     /// The escape format value.
     enum Value : uint8_t {
-        None = 0, ///< Do not escape any characters.
-        Html = 1, ///< Escape for HTML text.
-        Json = 2, ///< Escape for JSON text.
-        Cpp = 3,  ///< Escape for C++ literals.
-        Xml = 4,  ///< Escape for XML text.
-        PCRE = 5, ///< Escape for PCRE compatible formats.
+        None = 0,    ///< Do not escape any characters.
+        Html = 1,    ///< Escape for HTML text.
+        Json = 2,    ///< Escape for JSON text.
+        Cpp = 3,     ///< Escape for C++ literals.
+        Xml = 4,     ///< Escape for XML text.
+        PCRE = 5,    ///< Escape for PCRE compatible formats.
+        Display = 6, ///< Escape unsafe characters for human-readable display text.
     };
 
 public:
@@ -48,14 +49,11 @@ public: // accessors
 
 public: // conversion
     /// Convert this escape format to its canonical string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toString() const -> StringView;
     /// Create an escape format from a canonical string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] static auto fromString(const StringView &text) noexcept -> std::optional<EscapeFormat>;
     /// Create an escape format from a canonical string.
     /// @throws err::ParseError if the string is not a supported escape format.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] static auto fromStringOrThrow(const StringView &text) -> EscapeFormat;
 
 private:

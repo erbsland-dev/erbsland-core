@@ -264,9 +264,23 @@ public:
             StringConverter{view.slice(ByteRange{ByteIndex{3}, ByteLength::infinite()})}.toStdString(), "def");
         REQUIRE(view.slice(ByteRange::noRange()).isEmpty());
         REQUIRE(view.slice(ByteRange{ByteIndex::noIndex(), ByteLength{1}}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, ByteLength{99})}.toStdString(), "abcdef");
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, ByteLength::infinite())}.toStdString(), "abcdef");
+        REQUIRE(view.slice(StringSide::Front, ByteLength{0}).isEmpty());
         REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, ByteLength{99})}.toStdString(), "abcdef");
         REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, ByteLength::infinite())}.toStdString(), "abcdef");
         REQUIRE(view.slice(StringSide::Back, ByteLength{0}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, ByteIndex{2})}.toStdString(), "ab");
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, ByteIndex{2})}.toStdString(), "cdef");
+        REQUIRE(view.slice(StringSide::Front, ByteIndex::zero()).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, ByteIndex::zero())}.toStdString(), "abcdef");
+        REQUIRE_EQUAL(
+            StringConverter{view.slice(StringSide::Front, view.indexAt(StringSide::Back))}.toStdString(), "abcdef");
+        REQUIRE(view.slice(StringSide::Back, view.indexAt(StringSide::Back)).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, ByteIndex::noIndex())}.toStdString(), "abcdef");
+        REQUIRE(view.slice(StringSide::Back, ByteIndex::noIndex()).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, ByteIndex{99})}.toStdString(), "abcdef");
+        REQUIRE(view.slice(StringSide::Back, ByteIndex{99}).isEmpty());
 
         const auto unicodeText = U8String{std::u8string_view{u8"xxA¢€😀BCyy"}};
         const auto unicode = U8StringView{unicodeText}.slice(ByteRange{ByteIndex{2}, ByteLength{12}});
@@ -284,19 +298,72 @@ public:
             StringConverter{unicode.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, ByteIndex{3})}.toStdU32String(),
+            std::u32string{U"A\u00A2"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, ByteIndex{3})}.toStdU32String(),
+            std::u32string{U"\u20AC\U0001F600BC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpIndex{3})}.toStdU32String(),
+            std::u32string{U"A\u00A2\u20AC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, CpIndex{3})}.toStdU32String(),
+            std::u32string{U"\U0001F600BC"});
+        REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength{99})}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicode.slice(StringSide::Front, CpLength::zero()).isEmpty());
         REQUIRE(unicode.slice(StringSide::Back, CpLength::zero()).isEmpty());
         REQUIRE(unicode.slice(CpRange::noRange()).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
         REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpLength{1}}).isEmpty());
 
         const auto nested = unicode.slice(CpRange{CpIndex{1}, CpLength{4}});
         REQUIRE_EQUAL(
             StringConverter{nested.slice(StringSide::Back, CpLength{2})}.toStdU32String(),
             std::u32string{U"\U0001F600B"});
+
+        {
+            const auto [left, right] = view.splitAt(ByteIndex{2});
+            REQUIRE_EQUAL(StringConverter{left}.toStdString(), "ab");
+            REQUIRE_EQUAL(StringConverter{right}.toStdString(), "cdef");
+        }
+        {
+            const auto [left, right] = view.splitAt(ByteIndex::zero());
+            REQUIRE(left.isEmpty());
+            REQUIRE_EQUAL(StringConverter{right}.toStdString(), "abcdef");
+        }
+        {
+            const auto [left, right] = view.splitAt(view.indexAt(StringSide::Back));
+            REQUIRE_EQUAL(StringConverter{left}.toStdString(), "abcdef");
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = view.splitAt(ByteIndex::noIndex());
+            REQUIRE_EQUAL(StringConverter{left}.toStdString(), "abcdef");
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = view.splitAt(ByteIndex{99});
+            REQUIRE_EQUAL(StringConverter{left}.toStdString(), "abcdef");
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = unicode.splitAt(ByteIndex{3});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A¢"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"€\U0001F600BC"});
+        }
+        {
+            const auto [left, right] = unicode.splitAt(CpIndex{3});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A¢€"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"\U0001F600BC"});
+        }
     }
 
     void testNestedSlice() {
@@ -383,6 +450,7 @@ public:
 
         REQUIRE_EQUAL(view.find(u8"¢€"_elv), ByteIndex{1U});
         REQUIRE_EQUAL(view.find(U8StringView{}, ByteIndex{3U}), ByteIndex{3U});
+        REQUIRE(view.find(u8"A"_elv, ByteIndex::noIndex()).isNoIndex());
         REQUIRE(view.find(u8"€¢"_elv).isNoIndex());
         REQUIRE_EQUAL(view.findFirstOf(CharSet{Char{0x20ACU}}), ByteIndex{3U});
         REQUIRE_EQUAL(view.findFirstOf(CharSet{Char{0x20ACU}}, ByteIndex{2U}), ByteIndex{3U});
@@ -392,6 +460,7 @@ public:
         REQUIRE_EQUAL(view.findFirstNotOf(CharSet{u8"A¢"_elv}), ByteIndex{3U});
         REQUIRE_EQUAL(view.findFirstNotOf(CharSet{}), ByteIndex{0U});
         REQUIRE(view.findFirstOf(CharSet{Char{0x41U}}, ByteIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findFirstNotOf(CharSet{Char{0x41U}}, ByteIndex::noIndex()).isNoIndex());
     }
 
     void testReverseFind() {
@@ -409,6 +478,7 @@ public:
         REQUIRE_EQUAL(view.findLastNotOf(CharSet{}), ByteIndex{6U});
         REQUIRE(view.findLastOf(CharSet{Char{0x41U}}, ByteIndex::zero()).isNoIndex());
         REQUIRE(view.findLastOf(CharSet{Char{0x41U}}, ByteIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findLastNotOf(CharSet{Char{0x41U}}, ByteIndex::noIndex()).isNoIndex());
     }
 
     void testInvalidUtf8ForwardFind() {

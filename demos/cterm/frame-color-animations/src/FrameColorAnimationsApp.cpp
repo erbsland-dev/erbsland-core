@@ -5,6 +5,8 @@
 
 #include <array>
 
+namespace demo {
+
 void FrameColorAnimationsApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{78}, BlockCoordinate{22}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -177,4 +179,6 @@ auto FrameColorAnimationsApp::fillColors() -> const ColorSequence & {
         {Color{fg::Inherited, bg::BrightBlack}, 1},
     };
     return cFillColors;
+}
+
 }

@@ -5,7 +5,8 @@
 #include "U8Encoding.hpp"
 #include "U8Writer.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
+#include "../../impl/RepeatCount.hpp"
+#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16StringDataView.hpp"
 #include "../../u32/impl/U32Encoding.hpp"
@@ -16,23 +17,11 @@
 
 namespace erbsland::text::impl {
 
-namespace {
-
-template <typename T>
-[[nodiscard]] auto repeatCountToSize(const T count) -> std::size_t {
-    if (count.isInfinite()) {
-        err::throwOverflow("Repeated string count must be finite");
-    }
-    return count.toSizeTOrThrow();
-}
-
-[[nodiscard]] auto repeatedCharacterCount(const unit::CpLength characterCount, const std::size_t countSize)
+auto U8StringAppendTools::repeatedCharacterCount(const unit::CpLength characterCount, const std::size_t countSize)
     -> unit::CpLength {
     const auto totalCharacterCount = U8StringSharedStorage::checkedMultiplySize(
         characterCount.toSizeTOrThrow(), countSize, "Repeated string exceeds character length bounds");
     return unit::CpLength::fromSizeTOrThrow(totalCharacterCount);
-}
-
 }
 
 auto U8StringAppendTools::countDecodedCharacters(const std::span<const char> source) noexcept -> unit::CpLength {

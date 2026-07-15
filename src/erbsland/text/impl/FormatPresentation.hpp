@@ -7,7 +7,6 @@
 namespace erbsland::text::impl {
 
 /// Presentation type for formatted fields.
-/// @tested{U8FormatTest}
 enum class FormatPresentation : uint8_t {
     Default,
     String,

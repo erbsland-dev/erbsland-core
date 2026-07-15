@@ -19,6 +19,5 @@ Interface
 
 .. doxygentypedef:: erbsland::text::ProcessCharacterFn
 .. doxygentypedef:: erbsland::text::String
-.. doxygenfile:: erbsland/text/StringCharView.hpp
 .. doxygentypedef:: erbsland::text::StringView
 .. doxygentypedef:: erbsland::text::TransformCharacterFn

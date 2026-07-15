@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Combine encoding checks with `containsOnly()` and `containsOneOf()` for character-level validation.
 ///
 /// Validate externally supplied text before applying tolerant decoded-character operations.
@@ -22,4 +24,6 @@ void validateCharacterPolicy() {
             userName.isValidUtf8() && userName.containsOnly(userNameChars) && !userName.containsOneOf(forbiddenChars);
         el::io::printLine(userName, " -> "_el, yesNo, isAccepted);
     });
+}
+
 }

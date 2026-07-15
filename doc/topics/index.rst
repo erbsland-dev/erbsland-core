@@ -9,7 +9,12 @@ Topics
 .. toctree::
     :maxdepth: 3
 
-    cterm/index
     core/index
-    random/index
     strings/index
+    options/index
+    err/index
+    path/index
+    random/index
+    event/index
+    stream/index
+    cterm/index

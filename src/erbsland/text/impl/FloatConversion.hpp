@@ -18,7 +18,6 @@
 namespace erbsland::text::impl {
 
 /// Format a floating point value into a temporary UTF-8 compatible standard string.
-/// @tested{FloatConversionTest}
 [[nodiscard]] auto formatFloat(double value, const FloatFormat &format) -> String;
 
 /// The result status for floating point parsing.

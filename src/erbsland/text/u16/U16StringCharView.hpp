@@ -91,11 +91,19 @@ public: // slice
     /// Slow: Return a slice of this string.
     /// Sequentially iterates over characters until the selected slice is found.
     /// @param range The character range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U16StringView;
     /// Slow: Get the initial or trailing char-based portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of code points to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U16StringView;
     /// Slow: Slice one decoded character from the given side and return it with the remaining string.
+    /// @param side The side of the string to slice from.
+    /// @return The sliced character and the remaining string.
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U16StringView>;
 
 public: // trim

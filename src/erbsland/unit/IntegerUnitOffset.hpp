@@ -6,9 +6,9 @@
 #include "IntegerUnitAmount.hpp"
 #include "IntegerUnitOffset_fwd.hpp"
 
+#include "impl/Throw.hpp"
 #include "impl/TypeTraits.hpp"
 
-#include "../err/ThrowHelper.hpp"
 #include "../math/ConstexprSaturatingMath.hpp"
 #include "../math/IntegerConversion.hpp"
 #include "../math/IntegerMath.hpp"
@@ -171,7 +171,7 @@ public: // math
     /// @throws OverflowError if the result would exceed minimum() or maximum().
     [[nodiscard]] constexpr auto addedOrThrow(const IntegerUnitOffset other) const -> IntegerUnitOffset {
         if (wouldAddSaturate(other)) {
-            err::throwOverflow("Offset addition would exceed offset bounds");
+            impl::throwOverflow("Offset addition would exceed offset bounds");
         }
         return IntegerUnitOffset{static_cast<Value>(_value + other._value)};
     }
@@ -198,7 +198,7 @@ public: // math
     /// @throws OverflowError if the result would exceed minimum() or maximum().
     [[nodiscard]] constexpr auto subtractedOrThrow(const IntegerUnitOffset other) const -> IntegerUnitOffset {
         if (wouldSubtractSaturate(other)) {
-            err::throwOverflow("Offset subtraction would exceed offset bounds");
+            impl::throwOverflow("Offset subtraction would exceed offset bounds");
         }
         return IntegerUnitOffset{static_cast<Value>(_value - other._value)};
     }

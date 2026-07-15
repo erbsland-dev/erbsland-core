@@ -9,7 +9,6 @@
 namespace erbsland::cterm {
 
 /// A block-string index.
-/// @tested{BlockUnitTest}
 using BlockIndex = unit::IntegerUnitIndex<BlockUnit>;
 
 }

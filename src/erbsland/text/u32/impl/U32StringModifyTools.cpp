@@ -13,16 +13,14 @@
 
 namespace erbsland::text::impl {
 
-namespace {
-
-[[nodiscard]] auto characterBytes(const Char character) noexcept -> std::array<char32_t, 2> {
+auto U32StringModifyTools::characterBytes(const Char character) noexcept -> std::array<char32_t, 2> {
     auto result = std::array<char32_t, 2>{};
     U32Writer writer{std::span<char32_t>{result}};
     writer.write(character);
     return result;
 }
 
-[[nodiscard]] auto characterByteSpan(const Char character, const std::array<char32_t, 2> &bytes) noexcept
+auto U32StringModifyTools::characterByteSpan(const Char character, const std::array<char32_t, 2> &bytes) noexcept
     -> std::span<const char32_t> {
     if (!character.isValidUnicode()) {
         return {};
@@ -31,7 +29,8 @@ namespace {
 }
 
 template <typename T>
-[[nodiscard]] auto spansOverlap(const std::span<const T> first, const std::span<const T> second) noexcept -> bool {
+auto U32StringModifyTools::spansOverlap(const std::span<const T> first, const std::span<const T> second) noexcept
+    -> bool {
     if (first.empty() || second.empty()) {
         return false;
     }
@@ -40,8 +39,6 @@ template <typename T>
     const auto secondBegin = reinterpret_cast<std::uintptr_t>(second.data());
     const auto secondEnd = secondBegin + second.size() * sizeof(T);
     return firstBegin < secondEnd && secondBegin < firstEnd;
-}
-
 }
 
 auto U32StringModifyTools::remove(U32StringSharedStorage &storage, const unit::CpRange range)

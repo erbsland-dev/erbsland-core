@@ -3,6 +3,7 @@
 #include "EscapeFormatter.hpp"
 
 #include "CppEscapeFormatter.hpp"
+#include "DisplayEscapeFormatter.hpp"
 #include "HtmlEscapeFormatter.hpp"
 #include "JsonEscapeFormatter.hpp"
 #include "NoneEscapeFormatter.hpp"
@@ -43,6 +44,7 @@ auto EscapeFormatter::forFormat(const EscapeFormat format) noexcept -> const Esc
         FormatterEntry{EscapeFormat::Cpp, &CppEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Xml, &XmlEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::PCRE, &PcreEscapeFormatter::instance},
+        FormatterEntry{EscapeFormat::Display, &DisplayEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::None, &NoneEscapeFormatter::instance},
     };
 

@@ -14,6 +14,8 @@ Core Semantics
 Coordinate Model
 ----------------
 
+``Block`` is the prefix for values whose numeric data is tied to block coordinates.
+
 .. code-block:: text
 
     BlockCoordinate // signed saturating coordinate value, alias for math::SatInt32
@@ -21,9 +23,6 @@ Coordinate Model
     BlockSize // non-negative width/height extent
     BlockRect // top-left position plus size, with x2/y2 as exclusive end coordinates
     BlockMargins // top/right/bottom/left offsets around a rectangle
-
-``Block`` is the prefix for values whose numeric data is tied to block coordinates.
-Generic layout concepts in the ``bgeo`` namespace stay unprefixed when they are not coordinate storage types.
 
 Ranges and Bounds
 -----------------

@@ -8,9 +8,11 @@
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteRange.hpp"
 #include "../../CharSet.hpp"
+#include "../../StringSide.hpp"
 
 #include <algorithm>
 #include <cstdint>
+#include <optional>
 #include <span>
 
 namespace erbsland::text::impl {
@@ -27,6 +29,14 @@ public:
     };
 
 public:
+    /// Convert the public side selector into the trimming direction.
+    [[nodiscard]] static auto sideFrom(const std::optional<StringSide> side) noexcept -> Side {
+        if (!side.has_value()) {
+            return Side::Both;
+        }
+        return *side == StringSide::Front ? Side::Begin : Side::End;
+    }
+
     explicit constexpr U8StringTrimTools(const U8StringDataView &data) noexcept : _data{data} {}
 
 public: // trim

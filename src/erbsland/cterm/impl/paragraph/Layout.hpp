@@ -8,6 +8,7 @@
 #include "LayoutNewlineMode.hpp"
 #include "LayoutPreparedSourceLine.hpp"
 #include "LayoutResult.hpp"
+#include "LayoutSemantics.hpp"
 
 #include "../../BlockRange.hpp"
 #include "../../BlockStringView.hpp"
@@ -24,7 +25,8 @@ public:
         const BlockStringView &text,
         int width,
         const ParagraphOptions &options,
-        LayoutNewlineMode newlineMode) noexcept;
+        LayoutNewlineMode newlineMode,
+        const LayoutSemantics *semantics = nullptr) noexcept;
     ~Layout() = default;
     Layout(const Layout &) = delete;
     Layout(Layout &&) = delete;
@@ -46,6 +48,7 @@ private:
     LayoutContext _context;
     LayoutNewlineMode _newlineMode;
     text::CharSet _wordSeparators;
+    const LayoutSemantics *_semantics;
 };
 
 }

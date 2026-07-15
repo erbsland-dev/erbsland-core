@@ -59,6 +59,7 @@
 #include "../../util/LoopResult.hpp"
 
 #include <cstddef>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -75,7 +76,7 @@ namespace erbsland::text {
 /// Use `String` for most use cases and `U16String` only if you need random access to code points or require
 /// UTF-16 encoding.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U16StringTest}
+/// @tested{U16StringTest StringEscapingTest}
 class U16String {
     friend class debug::impl::StringDebugAccess;
     friend class U16StringView;
@@ -84,6 +85,7 @@ class U16String {
     friend class impl::U16StringEncodingTools;
     friend class impl::StringConversionTools;
     friend class impl::UnsafeU16StringAccess;
+    friend class impl::UnsafeU16StringBuffer;
 
 public:
     using View = U16StringView; ///< The matching view type for this string.
@@ -150,12 +152,18 @@ public: // read
     [[nodiscard]] auto length() const noexcept -> unit::U16DataLength;
     /// @copydoc erbsland::text::U16StringView::characterLength() const
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// @copydoc erbsland::text::U16StringView::displayWidth() const
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U16StringView::indexAt(StringSide) const
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::U16DataIndex;
     /// @copydoc erbsland::text::U16StringView::charAt(StringSide) const
     [[nodiscard]] auto charAt(StringSide side) const noexcept -> Char;
     /// @copydoc erbsland::text::U16StringView::charAt(unit::U16DataIndex) const
     [[nodiscard]] auto charAt(unit::U16DataIndex startIndex) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16StringView::readCharAndAdvance(unit::U16DataIndex &) const
+    [[nodiscard]] auto readCharAndAdvance(unit::U16DataIndex &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U16StringView::readCharAndRetreat(unit::U16DataIndex &) const
+    [[nodiscard]] auto readCharAndRetreat(unit::U16DataIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U16StringView::charAt(unit::CpIndex) const
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
     /// @copydoc erbsland::text::U16StringView::advance(unit::U16DataIndex &, unit::CpLength) const
@@ -176,10 +184,18 @@ public: // slice
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U16String;
     /// @copydoc erbsland::text::U16StringView::slice(StringSide, unit::U16DataLength) const
     [[nodiscard]] auto slice(StringSide side, unit::U16DataLength length) const noexcept -> U16String;
+    /// @copydoc erbsland::text::U16StringView::slice(StringSide, unit::U16DataIndex) const
+    [[nodiscard]] auto slice(StringSide side, unit::U16DataIndex index) const noexcept -> U16String;
     /// @copydoc erbsland::text::U16StringView::slice(StringSide, unit::CpLength) const
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U16String;
+    /// @copydoc erbsland::text::U16StringView::slice(StringSide, unit::CpIndex) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U16String;
     /// @copydoc erbsland::text::U16StringView::slice(StringSide) const
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U16String>;
+    /// @copydoc erbsland::text::U16StringView::splitAt(unit::U16DataIndex) const
+    [[nodiscard]] auto splitAt(unit::U16DataIndex index) const noexcept -> std::pair<U16String, U16String>;
+    /// @copydoc erbsland::text::U16StringView::splitAt(unit::CpIndex) const
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U16String, U16String>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
@@ -218,6 +234,7 @@ public: // find
     /// Find text in this string starting at a UTF-16 data index.
     /// @param text The text to find.
     /// @param start The UTF-16 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The UTF-16 data index of the first match, or `U16DataIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(
@@ -339,16 +356,18 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::U16DataLength;
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U16String;
     /// Create a string from one Unicode code point repeated one or more times.
     [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one()) -> U16String;
+    /// Create a string by joining all parts without a separator.
+    /// @param parts The UTF-16 string views to join.
+    /// @return The joined string.
+    [[nodiscard]] static auto fromJoined(std::initializer_list<U16StringView> parts) -> U16String;
     /// Create a string from an integer using the given format.
     template <math::AnyIntegerType T>
     [[nodiscard]] static auto fromInteger(T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> U16String;

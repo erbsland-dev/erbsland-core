@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RemappedBuffer.hpp"
 
+#include "../err/ParameterError.hpp"
+
 #include <algorithm>
 #include <cassert>
-#include <format>
 #include <ranges>
 
 namespace erbsland::cterm {
@@ -186,10 +187,10 @@ void RemappedBuffer::fill(const Block &fillBlock) noexcept {
 
 auto RemappedBuffer::validatedBufferSize(const bgeo::BlockSize size) -> bgeo::BlockSize {
     if (size.width() < 1 || size.height() < 1) {
-        throw std::invalid_argument("Buffer size must be at least 1x1");
+        throw err::ParameterError{"Buffer size must be at least 1x1.", "size"};
     }
     if (!size.fitsInto(cMaximumSize)) {
-        throw std::invalid_argument("Buffer size must not exceed 10'000x10'000");
+        throw err::ParameterError{"Buffer size must not exceed 10'000x10'000.", "size"};
     }
     return size;
 }
@@ -205,10 +206,10 @@ auto RemappedBuffer::linearIndex(std::size_t size) -> CoordinateMap {
 
 void RemappedBuffer::validateCount(const int count, const int maximum, const std::string_view parameterName) {
     if (count < 0) {
-        throw std::invalid_argument(std::format("{} must not be negative", parameterName));
+        throw err::ParameterError{"The count must not be negative.", parameterName};
     }
     if (count > maximum) {
-        throw std::invalid_argument(std::format("{} must not exceed the buffer dimension", parameterName));
+        throw err::ParameterError{"The count must not exceed the buffer dimension.", parameterName};
     }
 }
 
@@ -221,15 +222,15 @@ void RemappedBuffer::validateExistingSpan(
     validateCount(count, limit, countName);
     if (count == 0) {
         if (start < 0 || start > limit) {
-            throw std::invalid_argument(std::format("{} is out of bounds", startName));
+            throw err::ParameterError{"The start coordinate is out of bounds.", startName};
         }
         return;
     }
     if (start < 0 || start >= limit) {
-        throw std::invalid_argument(std::format("{} is out of bounds", startName));
+        throw err::ParameterError{"The start coordinate is out of bounds.", startName};
     }
     if (start + count > limit) {
-        throw std::invalid_argument(std::format("{} exceeds the remaining buffer dimension", countName));
+        throw err::ParameterError{"The count exceeds the remaining buffer dimension.", countName};
     }
 }
 
@@ -242,21 +243,21 @@ void RemappedBuffer::validateInsertArguments(
     validateCount(count, limit, countName);
     if (count == 0) {
         if (start < 0 || start > limit) {
-            throw std::invalid_argument(std::format("{} is out of bounds", startName));
+            throw err::ParameterError{"The start coordinate is out of bounds.", startName};
         }
         return;
     }
     if (start < 0 || start >= limit) {
-        throw std::invalid_argument(std::format("{} is out of bounds", startName));
+        throw err::ParameterError{"The start coordinate is out of bounds.", startName};
     }
     if (start + count > limit) {
-        throw std::invalid_argument(std::format("{} exceeds the remaining buffer dimension", countName));
+        throw err::ParameterError{"The count exceeds the remaining buffer dimension.", countName};
     }
 }
 
 void RemappedBuffer::validateDirectionalCount(const bgeo::BlockDirection direction, const int count) const {
     if (count < 0) {
-        throw std::invalid_argument("count must not be negative");
+        throw err::ParameterError{"The count must not be negative.", "count"};
     }
     if (direction.contains(bgeo::BlockDirection::North) || direction.contains(bgeo::BlockDirection::South)) {
         validateCount(count, _size.height().toRawValue(), "count");

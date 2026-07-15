@@ -80,7 +80,7 @@ public:
     void testDrawBufferRejectsDrawingOntoTheSameBuffer() {
         auto buffer = createBuffer({"ABC "});
 
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.drawBuffer(buffer, bgeo::BlockPosition{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.drawBuffer(buffer, bgeo::BlockPosition{1, 0}));
     }
 
     void testDrawTextStringViewReplacesInvalidUtf8() {

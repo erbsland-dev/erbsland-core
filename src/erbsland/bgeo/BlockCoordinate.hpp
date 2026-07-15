@@ -7,7 +7,6 @@
 namespace erbsland::bgeo {
 
 /// Represents a coordinate value with saturation arithmetic.
-/// @tested{BlockCoordinateTest}
 using BlockCoordinate = math::SatInt32;
 
 }

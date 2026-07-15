@@ -30,8 +30,8 @@ public:
     }
 
     void testStringConstructorRejectsInvalidTileCounts() {
-        REQUIRE_THROWS_AS(std::invalid_argument, Block16Style{"123"_el});
-        REQUIRE_THROWS_AS(std::invalid_argument, Block16Style{"0123456789ABCDEFG"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Block16Style{"123"_el});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Block16Style{"0123456789ABCDEFG"_el});
     }
 
     void testCreateFactoryBuildsSharedStyles() {

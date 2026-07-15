@@ -7,7 +7,6 @@
 namespace erbsland::text::impl {
 
 /// The argument index mode used while parsing a UTF-8 format pattern.
-/// @tested{U8FormatTest}
 enum class IndexMode : uint8_t {
     None,
     Automatic,

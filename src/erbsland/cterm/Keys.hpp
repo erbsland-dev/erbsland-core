@@ -18,8 +18,11 @@ namespace erbsland::cterm {
 /// An ordered set of unique key presses for key bindings.
 class Keys {
 public:
+    /// Storage type for the ordered key list.
     using Container = std::vector<Key>;
+    /// Const iterator over keys.
     using const_iterator = Container::const_iterator;
+    /// Number of leading keys shown in compact help.
     using MainCount = std::size_t;
 
 public:
@@ -107,7 +110,7 @@ private:
     }
     /// Validate a key as a displayable key binding.
     /// @param key The key to validate.
-    /// @throws std::invalid_argument if the key is not displayable.
+    /// @throws err::ParameterError if the key is not displayable.
     static void validateKey(const Key &key);
     /// Validate and convert one special key type into a key.
     /// @param keyType The special key type.

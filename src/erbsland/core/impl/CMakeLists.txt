@@ -6,7 +6,12 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         ApplicationData.hpp
         ApplicationData_fwd.hpp
+        ApplicationDataImpl.cpp
         ApplicationDataImpl.hpp
+        ApplicationErrorDiagnostic.cpp
+        ApplicationErrorDiagnostic.hpp
+        ApplicationErrorDocumentBuilder.cpp
+        ApplicationErrorDocumentBuilder.hpp
         ApplicationInstanceManager.cpp
         ApplicationInstanceManager.hpp
         LibraryVersion.hpp

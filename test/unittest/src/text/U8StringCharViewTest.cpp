@@ -136,6 +136,9 @@ public:
         REQUIRE_EQUAL(StringConverter{view.slice(CpRange{CpIndex{3}, CpLength::infinite()})}.toStdString(), "def");
         REQUIRE(view.slice(CpRange::noRange()).isEmpty());
         REQUIRE(view.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, CpLength{99})}.toStdString(), "abcdef");
+        REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Front, CpLength::infinite())}.toStdString(), "abcdef");
+        REQUIRE(view.slice(StringSide::Front, CpLength{0}).isEmpty());
         REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, CpLength{99})}.toStdString(), "abcdef");
         REQUIRE_EQUAL(StringConverter{view.slice(StringSide::Back, CpLength::infinite())}.toStdString(), "abcdef");
         REQUIRE(view.slice(StringSide::Back, CpLength{0}).isEmpty());

@@ -7,7 +7,6 @@
 namespace erbsland::core {
 
 /// A list of command line arguments.
-/// @tested{ApplicationOptionsTest OptionsUsageTest}
 using CommandLineArguments = text::StringViewList;
 
 }

@@ -223,6 +223,15 @@ Use ``"_el"`` when you want a constexpr-capable :cpp:class:`U8StringLiteral <erb
 Use ``"_elv"`` for APIs that inspect text through :cpp:class:`U8StringView <erbsland::text::U8StringView>`.
 Use ``"_els"`` for APIs that need an owning :cpp:class:`U8String <erbsland::text::U8String>`.
 
+Display Escaping
+================
+
+``EscapeFormat::Display`` is intended for untrusted text in diagnostics and other user-facing output.
+It preserves printable punctuation and Unicode text while converting control and format characters into readable C-style
+sequences.
+Together with ``EscapeAmount::Balanced``, it provides safe output without obscuring ordinary quotes, backslashes, or
+path punctuation.
+
 Interface
 =========
 

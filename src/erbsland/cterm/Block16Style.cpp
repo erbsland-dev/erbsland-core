@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Block16Style.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../text/EncodingErrorMode.hpp"
 #include "../text/Literals.hpp"
-
-#include <stdexcept>
 
 namespace erbsland::cterm {
 
@@ -136,7 +135,7 @@ auto Block16Style::forStyle(const FrameStyle frameStyle) -> Block16StylePtr {
 
 auto Block16Style::toTiles(const BlockStringView &tiles) -> std::array<Block, 16> {
     if (tiles.length() != BlockCount{16U}) {
-        throw std::invalid_argument{"Block16Style requires exactly 16 terminal characters."};
+        throw err::ParameterError{"Block16Style requires exactly 16 terminal characters.", "tiles"};
     }
     auto result = std::array<Block, 16>{};
     for (std::size_t index = 0; index < result.size(); ++index) {

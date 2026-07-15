@@ -32,7 +32,7 @@ public:
     };
 
     /// Split duration into whole days and a signed sub-day nanosecond remainder.
-    /// @tested{TimeCoreTest::testDurationPartsAndArithmetic}
+    /// @tested{TimeCoreTest}
     struct DaysAndNanoseconds {
         Days days;               ///< Whole days, truncated toward zero.
         Nanoseconds nanoseconds; ///< Signed sub-day nanosecond remainder.

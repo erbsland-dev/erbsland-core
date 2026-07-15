@@ -4,9 +4,9 @@
 
 #include "U8StringReadTools.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../math/SaturatingMath.hpp"
 #include "../../../mem/impl/SharedArrayCapacity.hpp"
+#include "../../impl/ThrowHelper.hpp"
 
 #include <cstring>
 #include <exception>
@@ -62,7 +62,7 @@ void U8StringSharedStorage::validateSize(const std::size_t size) {
 auto U8StringSharedStorage::checkedAddSize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willAddOverflow(first, second)) {
-        err::throwOverflow(reason);
+        text::impl::throwOverflow(reason);
     }
     const auto result = math::saturatingAdd(first, second);
     validateSize(result);
@@ -72,7 +72,7 @@ auto U8StringSharedStorage::checkedAddSize(
 auto U8StringSharedStorage::checkedMultiplySize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willMultiplyOverflow(first, second)) {
-        err::throwOverflow(reason);
+        text::impl::throwOverflow(reason);
     }
     const auto result = math::saturatingMultiply(first, second);
     validateSize(result);

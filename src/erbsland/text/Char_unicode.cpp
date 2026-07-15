@@ -8,12 +8,8 @@
 
 namespace erbsland::text {
 
-namespace {
-
-[[nodiscard]] auto applyDelta(const char32_t codePoint, const int32_t delta) noexcept -> Char {
+auto Char::applyDelta(const char32_t codePoint, const int32_t delta) noexcept -> Char {
     return Char{static_cast<char32_t>(static_cast<int32_t>(codePoint) + delta)};
-}
-
 }
 
 auto Char::category() const noexcept -> UnicodeCategory {
@@ -23,12 +19,26 @@ auto Char::category() const noexcept -> UnicodeCategory {
     return impl::unicodeDataFor(_codePoint).category();
 }
 
+auto Char::isControl() const noexcept -> bool {
+    if (!isValidUnicode()) {
+        return false;
+    }
+    return category() == UnicodeCategory::Control;
+}
+
 auto Char::isControlOrFormat() const noexcept -> bool {
     if (!isValidUnicode()) {
         return false;
     }
     const auto unicodeCategory = category();
     return unicodeCategory == UnicodeCategory::Control || unicodeCategory == UnicodeCategory::Format;
+}
+
+auto Char::displayWidth() const noexcept -> int {
+    if (!isValidUnicode()) {
+        return 0;
+    }
+    return static_cast<int>(impl::unicodeDisplayWidthFor(_codePoint));
 }
 
 auto Char::caseFolded() const noexcept -> Char {

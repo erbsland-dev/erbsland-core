@@ -31,7 +31,7 @@ public:
     /// @return The minimum supported terminal size.
     [[nodiscard]] auto minimumSize() const noexcept -> bgeo::BlockSize;
     /// Set the minimum terminal size required for rendering the buffer.
-    /// @param minimum The minimum supported terminal size.
+    /// @param minimumSize The minimum supported terminal size.
     void setMinimumSize(bgeo::BlockSize minimumSize) noexcept;
     /// Get the background character used if the terminal is too small.
     [[nodiscard]] auto minimumSizeBackground() const noexcept -> const Block &;
@@ -88,7 +88,7 @@ public: // compatibility
         -> const Block &;
     /// Construct update settings using the deprecated aggregate-style compatibility constructor.
     /// @deprecated Construct `UpdateSettings{}` and configure it with setters instead.
-    /// @param minimum The minimum terminal size required for normal rendering.
+    /// @param minimumSize The minimum terminal size required for normal rendering.
     /// @param minimumSizeBackground The fill character for the size-too-small background.
     /// @param showCropMarks `true` to show crop marks for truncated content.
     /// @param cropMarkRight The crop mark to draw at the right edge.

@@ -79,8 +79,8 @@ Only the final replay check uses an explicit seed, because that line intentional
 
 .. erbsland-demo::
     :source: random/RandomTopics/ApiOverview.cpp
-    :exec: random_topics --demo ApiOverview
-    :source-sha256: 8366f9d3b23a95b890353fdcd3e397245a5f6fbbab38e89b4a61fefd15f5cca7
+    :exec: random/random_topics --demo ApiOverview
+    :source-sha256: 9b7298912dfdff6e8ff5297239575ff3e171776418c23208084f50756c513dcf
 
 .. code-block:: cpp
 
@@ -194,4 +194,3 @@ Another thread may draw values between the individual primitive calls.
 
 :cpp:class:`SecureRandom <erbsland::random::SecureRandom>` delegates to the operating system entropy source.
 Use it through :cpp:class:`el::application().secureRandom() <erbsland::core::Application>`.
-

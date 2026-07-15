@@ -77,7 +77,7 @@ public: // conversion and tools
     /// Foreground and background names accept spaces, underscores, and hyphens between words.
     /// @param str The textual color specification.
     /// @return The parsed color.
-    /// @throws std::invalid_argument if one of the colors does not exist.
+    /// @throws err::ParameterError if one of the colors does not exist.
     [[nodiscard]] static auto fromString(const text::StringView &str) -> Color;
     /// Converts two indexes into a color-pair.
     /// @see ColorPart::fromIndex16 for details.

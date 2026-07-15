@@ -53,6 +53,10 @@ public: // accessors
     }
     /// Get the UTF-32 code-unit length of this string.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength { return length(); }
+    /// Get the index for one side of the string.
+    [[nodiscard]] auto indexAt(const StringSide side) const noexcept -> unit::CpIndex {
+        return side == StringSide::Front ? unit::CpIndex::zero() : unit::CpIndex::end(length());
+    }
 
 private:
     /// Private constructor, used by the literal operators.

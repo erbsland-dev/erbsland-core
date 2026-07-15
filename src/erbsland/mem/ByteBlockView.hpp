@@ -65,6 +65,8 @@ public: // tests
     [[nodiscard]] auto contains(const std::vector<Byte> &byteSequence) const noexcept -> bool;
 
 public: // read
+    /// Access the visible bytes as a contiguous read-only span.
+    [[nodiscard]] auto bytes() const noexcept -> std::span<const Byte> { return dataSpan(); }
     /// Get the length of this view.
     [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
     /// Get the index after the last byte.

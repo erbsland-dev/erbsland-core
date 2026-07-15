@@ -6,8 +6,8 @@
 Grid Layout
 ***********
 
-``grid-layout`` demonstrates how :cpp:any:`FrameBorder <erbsland::cterm::FrameBorder>` and
-:cpp:any:`GridLayout <erbsland::cterm::GridLayout>` work together. You can change each border element independently
+``grid-layout`` demonstrates how :cpp:class:`FrameBorder <erbsland::cterm::FrameBorder>` and
+:cpp:class:`GridLayout <erbsland::cterm::GridLayout>` work together. You can change each border element independently
 and resize the logical grid while the layout keeps every content cell aligned.
 
 Use This Demo When You Need...
@@ -24,11 +24,11 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/grid-layout
+    $ ./cmake-build-debug/demo-apps/cterm/grid-layout
 
 Use keys ``1`` through ``6`` to cycle the top, bottom, left, right, horizontal separator, and vertical separator
-elements through the supported grid line styles. Use ``C`` to cycle between one and five columns, ``R`` to cycle
-between one and three rows, and ``Q`` to quit.
+elements through the supported grid line styles.
+Use ``C`` to cycle between one and five columns, ``R`` to cycle between one and three rows, and ``Q`` to quit.
 
 Captured Output (80x25)
 =======================

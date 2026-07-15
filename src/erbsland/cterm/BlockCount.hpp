@@ -9,7 +9,6 @@
 namespace erbsland::cterm {
 
 /// A block-string count or length.
-/// @tested{BlockUnitTest}
 using BlockCount = unit::IntegerUnitAmount<BlockUnit>;
 
 }

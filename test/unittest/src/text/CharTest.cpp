@@ -182,6 +182,11 @@ public:
 
         REQUIRE_EQUAL(Char{U'\n'}.category(), UnicodeCategory::Control);
         REQUIRE_EQUAL(Char{U'\n'}.categoryGroup(), UnicodeCategoryGroup::Other);
+        REQUIRE(Char{U'\n'}.isControl());
+        REQUIRE(Char{0x0085U}.isControl());
+        REQUIRE_FALSE(Char{U'A'}.isControl());
+        REQUIRE_FALSE(Char{0x200DU}.isControl());
+        REQUIRE_FALSE(Char{0x110000U}.isControl());
         REQUIRE(Char{U'\n'}.isControlOrFormat());
         REQUIRE(Char{0x200DU}.isControlOrFormat());
         REQUIRE_FALSE(Char{U'A'}.isControlOrFormat());
@@ -219,6 +224,18 @@ public:
         REQUIRE_EQUAL(Char{0x110000U}.caseFolded(), Char{0x110000U});
         REQUIRE_EQUAL(Char{0xD800U}.toLowercase(), Char{0xD800U});
         REQUIRE_EQUAL(Char{0xD800U}.toUppercase(), Char{0xD800U});
+    }
+
+    void testDisplayWidth() {
+        REQUIRE_EQUAL(Char{U'A'}.displayWidth(), 1);
+        REQUIRE_EQUAL(Char{U'界'}.displayWidth(), 2);
+        REQUIRE_EQUAL(Char{0x1F600U}.displayWidth(), 2);
+        REQUIRE_EQUAL(Char{0x0301U}.displayWidth(), 0);
+        REQUIRE_EQUAL(Char{U'\n'}.displayWidth(), 0);
+        REQUIRE_EQUAL(Char{0x0085U}.displayWidth(), 0);
+        REQUIRE_EQUAL(Char{0x110000U}.displayWidth(), 0);
+        REQUIRE_EQUAL(Char::endOfData().displayWidth(), 0);
+        REQUIRE_EQUAL(Char::noCodePoint().displayWidth(), 0);
     }
 
     void testAsciiCaseMapping() {

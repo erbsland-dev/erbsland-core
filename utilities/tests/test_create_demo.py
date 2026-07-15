@@ -152,7 +152,7 @@ class CreateDemoTest(unittest.TestCase):
 
         self.assertIn("Library domain does not exist: src/erbsland/alpha/", output.getvalue())
         self.assertIn(":source: alpha/NewDemo/BasicUsage.cpp", output.getvalue())
-        self.assertIn(":exec: new_demo --demo BasicUsage", output.getvalue())
+        self.assertIn(":exec: alpha/new_demo --demo BasicUsage", output.getvalue())
         self.assertEqual(
             f"{CMAKE_HEADER}\n" "add_subdirectory(alpha)\n" "add_subdirectory(stream)\n" "add_subdirectory(text)\n",
             self.read_file("demos/CMakeLists.txt"),

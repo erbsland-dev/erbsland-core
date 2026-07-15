@@ -12,7 +12,7 @@
 namespace erbsland::util {
 
 /// A safe value wrapper for scoped enum flags.
-/// @seedoc{/reference/util/utilities_for_enum_hash_flags}
+/// @seedoc{/reference/util/supporting_utilities}
 /// @tparam tEnum The scoped enum type with unsigned underlying type.
 /// @tested{EnumFlagsTest}
 template <impl::EnumFlagsEnum tEnum>

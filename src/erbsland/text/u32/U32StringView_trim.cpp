@@ -6,22 +6,9 @@
 
 namespace erbsland::text {
 
-namespace {
-
-using TrimSide = impl::U32StringTrimTools::Side;
-
-auto trimSideFrom(const std::optional<StringSide> side) noexcept -> TrimSide {
-    if (!side.has_value()) {
-        return TrimSide::Both;
-    }
-    return *side == StringSide::Front ? TrimSide::Begin : TrimSide::End;
-}
-
-}
-
 auto U32StringView::trimmed(const std::optional<CharSet> &characters, const std::optional<StringSide> side) const
     -> U32StringView {
-    const auto trimSide = trimSideFrom(side);
+    const auto trimSide = impl::U32StringTrimTools::sideFrom(side);
     if (characters.has_value()) {
         return withRange(impl::U32StringTrimTools{dataView()}.trimmedRange(*characters, trimSide));
     }

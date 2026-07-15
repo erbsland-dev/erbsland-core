@@ -110,8 +110,8 @@ If you want to use literals with Erbsland Core string APIs, use the ``"_el"`` li
 
 .. erbsland-demo::
     :source: text/StringConverter/CrossConvertStrings.cpp
-    :exec: string_converter --demo CrossConvertStrings
-    :source-sha256: 267f2e5b93b20167dd9e0478b6f962c9d09e6d363f259ef3b0c902ed8123a8f4
+    :exec: text/string_converter --demo CrossConvertStrings
+    :source-sha256: becf05bb84f19212a5b05bed435aea843ee309ae3af8f626b25efc2912ab8d13
 
 .. code-block:: cpp
 
@@ -182,8 +182,8 @@ Also, you can put a BOM in front of the encoded byte sequence.
 
 .. erbsland-demo::
     :source: text/StringEncoder/EncodeStrings.cpp
-    :exec: string_encoder --demo EncodeStrings
-    :source-sha256: a990ae22641c9a089bbdd08b76c9cc366fcf772d782ec80315443c8beb3c7bc2
+    :exec: text/string_encoder --demo EncodeStrings
+    :source-sha256: 0d180eaac595ebca78599340927cab8b31cb1e6ca4619570130c7571e6d8629e
 
 .. code-block:: cpp
 
@@ -219,8 +219,8 @@ When encoding strings, ``Utf16`` and ``Utf32`` select the most common little-end
 
 .. erbsland-demo::
     :source: text/StringEncoder/ByteOrder.cpp
-    :exec: string_encoder --demo ByteOrder
-    :source-sha256: 95d6c6beb7f22971ba47184008f72684a7f3a962abf292f231a2d401a1896081
+    :exec: text/string_encoder --demo ByteOrder
+    :source-sha256: ab4ed7ccfc26fac1f7db514a4b7e4e23e2bc3884e62bc299055af72d7a830893
 
 .. code-block:: cpp
 
@@ -268,8 +268,8 @@ when encoding strings.
 
 .. erbsland-demo::
     :source: text/StringEncoder/BomHandling.cpp
-    :exec: string_encoder --demo BomHandling
-    :source-sha256: 8869abb94dfedd6e396b27f90626ee16d28d5a44846bcfe76f0697faedcb46ad
+    :exec: text/string_encoder --demo BomHandling
+    :source-sha256: e7a0c7ddd2d3547ba5846adad62c5db9272e562426712faaf69ef85f425ee680
 
 .. code-block:: cpp
 
@@ -354,8 +354,8 @@ and stores text in any supported encoding while converting lazily when a specifi
 
 .. erbsland-demo::
     :source: text/AnyString/AcceptAny.cpp
-    :exec: any_string --demo AcceptAny
-    :source-sha256: 7aca60919bfc8972276b0f3052ce3d49061539573648653fa759c06793efef18
+    :exec: text/any_string --demo AcceptAny
+    :source-sha256: 781f8376eed4f04e82da4c276e2b283801ff69562697723276c1e9966b198613
 
 .. code-block:: cpp
 
@@ -377,49 +377,49 @@ and stores text in any supported encoding while converting lazily when a specifi
     }
 
     void processAnyString(const el::AnyStringView &str) {
-        el::io::printLine("Analýza signálu:"_el);
+        el::io::printLine("Signal analysis:"_el);
 
         if (str.kind().has_value()) {
-            el::io::printLine("  Typ: "_el, el::toString(str.kind().value()));
+            el::io::printLine("  Type: "_el, el::toString(str.kind().value()));
         } else {
-            el::io::printLine("  Typ: (prázdný)"_el);
+            el::io::printLine("  Type: (empty)"_el);
         }
 
-        el::io::printLine("  Délka znaků: "_el, str.characterLength());
-        el::io::printLine("  Je prázdný: "_el, str.isEmpty() ? "ano" : "ne");
+        el::io::printLine("  Character length: "_el, str.characterLength());
+        el::io::printLine("  Is empty: "_el, str.isEmpty() ? "yes" : "no");
 
         auto u8Str = str.toU8String();
         u8Str.replaceAll("vlnění"_el, "vlny"_el);
-        el::io::printLine("  Výsledek: "_el, u8Str);
+        el::io::printLine("  Result: "_el, u8Str);
         el::io::printLine();
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    Analýza signálu:
-      Typ: (prázdný)
-      Délka znaků: 0
-      Je prázdný: ano
-      Výsledek: 
+    Signal analysis:
+      Type: (empty)
+      Character length: 0
+      Is empty: yes
+      Result:
 
-    Analýza signálu:
-      Typ: U8
-      Délka znaků: 18
-      Je prázdný: ne
-      Výsledek: Vlnová frekvence 🌊
+    Signal analysis:
+      Type: U8
+      Character length: 18
+      Is empty: no
+      Result: Vlnová frekvence 🌊
 
-    Analýza signálu:
-      Typ: U16
-      Délka znaků: 21
-      Je prázdný: ne
-      Výsledek: Hmotnostní spektrum 🎵
+    Signal analysis:
+      Type: U16
+      Character length: 21
+      Is empty: no
+      Result: Hmotnostní spektrum 🎵
 
-    Analýza signálu:
-      Typ: U32
-      Délka znaků: 18
-      Je prázdný: ne
-      Výsledek: Amplituda vlny 🎶
+    Signal analysis:
+      Type: U32
+      Character length: 18
+      Is empty: no
+      Result: Amplituda vlny 🎶
 
 .. erbsland-demo-end::
 

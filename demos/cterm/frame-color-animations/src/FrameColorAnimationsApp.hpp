@@ -6,6 +6,8 @@
 
 #include <array>
 
+namespace demo {
+
 /// Interactive demo showing the animated frame color modes.
 class FrameColorAnimationsApp final : public TerminalApplication {
 public:
@@ -36,3 +38,5 @@ private:
     [[nodiscard]] static auto outerFrameColors() -> const ColorSequence &;
     [[nodiscard]] static auto fillColors() -> const ColorSequence &;
 };
+
+}

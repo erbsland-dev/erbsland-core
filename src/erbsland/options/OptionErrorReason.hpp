@@ -7,7 +7,6 @@
 namespace erbsland::options {
 
 /// The structured reason for an option error.
-/// @tested{OptionsFrameworkTest}
 enum class OptionErrorReason : uint8_t {
     None,                ///< No reason given.
     SyntaxError,         ///< The command line syntax is invalid.

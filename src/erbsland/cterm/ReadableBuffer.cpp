@@ -34,7 +34,7 @@ auto ReadableBuffer::toMaskImpl(const text::CharSet &characters, const bool inve
         return bitmap;
     }
     sourceRect.forEach([&](const bgeo::BlockPosition pos) -> void {
-        auto isSet = characters.contains(get(pos).singleCodePoint());
+        auto isSet = characters.contains(get(pos).singleOrNull());
         if (invert) {
             isSet = !isSet;
         }

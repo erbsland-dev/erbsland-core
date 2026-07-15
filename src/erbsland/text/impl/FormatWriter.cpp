@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "FormatWriter.hpp"
 
+#include "ThrowHelper.hpp"
+
 #include "../Literals.hpp"
 #include "../StringConverter.hpp"
 #include "../u16/U16String.hpp"
 #include "../u32/U32String.hpp"
 #include "../u8/U8StringLiteral.hpp"
 #include "../u8/U8StringView.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 namespace erbsland::text::impl {
 
@@ -46,7 +46,7 @@ auto FormatWriter::defaultFieldText(const FormatArgument &argument, const Format
     if (isTextPresentation(spec.presentation) || spec.presentation == FormatPresentation::Default) {
         return textFieldText(argument, spec);
     }
-    err::throwFormatError("Unsupported format argument"_el);
+    text::impl::throwFormatError("Unsupported format argument"_el);
 }
 
 auto FormatWriter::textFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
@@ -70,7 +70,7 @@ auto FormatWriter::textFieldText(const FormatArgument &argument, const FormatSpe
         text = characterText(argument.character());
         break;
     default:
-        err::throwFormatError("Format field requires a text argument"_el);
+        text::impl::throwFormatError("Format field requires a text argument"_el);
     }
 
     return applyLayout(applyPrecision(text, spec), spec, bgeo::AlignmentFlag::Left);
@@ -83,16 +83,16 @@ auto FormatWriter::integerFieldText(const FormatArgument &argument, const Format
     case FormatArgumentKind::UnsignedInteger:
         return applyLayout(integerFieldText(argument.unsignedInteger(), spec), spec, bgeo::AlignmentFlag::Right);
     default:
-        err::throwFormatError("Format field requires an integer argument"_el);
+        text::impl::throwFormatError("Format field requires an integer argument"_el);
     }
 }
 
 auto FormatWriter::floatFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
     if (spec.alternateForm) {
-        err::throwFormatError("Alternate floating point format is not supported"_el);
+        text::impl::throwFormatError("Alternate floating point format is not supported"_el);
     }
     if (argument.kind() != FormatArgumentKind::FloatingPoint) {
-        err::throwFormatError("Format field requires a floating point argument"_el);
+        text::impl::throwFormatError("Format field requires a floating point argument"_el);
     }
 
     auto builder = StringBuilder{};
@@ -112,7 +112,7 @@ auto FormatWriter::floatFieldText(const FormatArgument &argument, const FormatSp
 
 auto FormatWriter::escapedFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
     if (spec.signMode != IntegerSignMode::NegativeOnly || spec.alternateForm || spec.zeroFill) {
-        err::throwFormatError("Escaped text format does not support numeric modifiers"_el);
+        text::impl::throwFormatError("Escaped text format does not support numeric modifiers"_el);
     }
 
     switch (argument.kind()) {
@@ -153,7 +153,7 @@ auto FormatWriter::escapedFieldText(const FormatArgument &argument, const Format
         return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, bgeo::AlignmentFlag::Left);
     }
     default:
-        err::throwFormatError("Escaped format field requires a text argument"_el);
+        text::impl::throwFormatError("Escaped format field requires a text argument"_el);
     }
 }
 
@@ -206,7 +206,7 @@ auto FormatWriter::integerFormat(const FormatSpec &spec) -> IntegerFormat {
         result.setBase(IntegerBase::Octal);
         break;
     default:
-        err::throwFormatError("Format field requires an integer presentation"_el);
+        text::impl::throwFormatError("Format field requires an integer presentation"_el);
     }
     result.setLetterCase(spec.letterCase);
     result.setSignMode(spec.signMode);
@@ -237,7 +237,7 @@ auto FormatWriter::floatFormat(const FormatSpec &spec) -> FloatFormat {
         result.setStyle(FloatFormat::Style::Hexadecimal);
         break;
     default:
-        err::throwFormatError("Format field requires a floating point presentation"_el);
+        text::impl::throwFormatError("Format field requires a floating point presentation"_el);
     }
     result.setLetterCase(spec.letterCase);
     if (spec.precision.has_value()) {
@@ -305,7 +305,7 @@ auto FormatWriter::applyLayout(U8String text, const FormatSpec &spec, const bgeo
 
 void FormatWriter::requireTextCompatibleSpec(const FormatSpec &spec) {
     if (spec.signMode != IntegerSignMode::NegativeOnly || spec.alternateForm || spec.zeroFill) {
-        err::throwFormatError("Text format does not support numeric modifiers"_el);
+        text::impl::throwFormatError("Text format does not support numeric modifiers"_el);
     }
 }
 

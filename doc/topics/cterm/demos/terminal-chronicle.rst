@@ -6,9 +6,9 @@
 Terminal Chronicle
 ******************
 
-``terminal-chronicle`` tells a short story using only ``Terminal::print()`` and ``Terminal::printLine()``. It is the
-most direct example in the repository of colorful, structured terminal output without a back buffer or full-screen
-render loop.
+``terminal-chronicle`` tells a short story using only ``Terminal::print()`` and ``Terminal::printLine()``.
+It is the most direct example in the repository of colorful, structured terminal output without a back buffer or
+full-screen render loop.
 
 Use This Demo When You Need...
 ==============================
@@ -24,7 +24,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/terminal-chronicle
+    $ ./cmake-build-debug/demo-apps/cterm/terminal-chronicle
 
 The program prints the full story directly into the terminal history and exits on its own.
 

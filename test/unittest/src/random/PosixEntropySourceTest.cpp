@@ -1,14 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/RandomError.hpp>
 #include <erbsland/random/impl/PosixEntropySource.hpp>
+#include <erbsland/random/RandomError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
 #include <cstddef>
 
-using el::err::RandomError;
+using el::random::RandomError;
 
 TESTED_TARGETS(PosixEntropySource PosixFileDescriptor RandomError)
 class PosixEntropySourceTest final : public el::UnitTest {

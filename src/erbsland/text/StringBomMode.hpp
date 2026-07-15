@@ -7,7 +7,6 @@
 namespace erbsland::text {
 
 /// The mode for handling byte order marks (BOM) in string encoding and decoding.
-/// @tested{U8StringEncodingTest}
 enum class StringBomMode : uint8_t {
     /// Accepts a BOM at the start of decoded byte data.
     /// For `StringEncoding::Utf16` and `StringEncoding::Utf32` change the byte order if a BOM is found,

@@ -25,8 +25,9 @@ public:
     auto operator=(PrintContextToBuilder &&) -> PrintContextToBuilder & = delete;
 
 public:
-    void commit() override {
+    auto commit() -> StreamWriteStatus override {
         // nothing to do, everything is already written to the string builder.
+        return StreamWriteStatus::Success;
     }
 
 protected:

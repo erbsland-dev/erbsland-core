@@ -23,7 +23,7 @@ Command-Line Vocabulary
     module // first command-line token that selects an action-specific option set
     option set // group of option definitions with its own parsing callbacks
     values // parsed lookup map from accepted names to shared parsed values
-    renderer // backend for help, version and error display
+    document // neutral text::TextDocument for help, version and error display
     executable path // unprocessed argv[0] text captured for rendered usage
     executable name // file name extracted from executable path, without a .exe suffix
 
@@ -62,10 +62,7 @@ Definition Types
 
     OptionChoice // single accepted choice for a choice option
     OptionChoices // collection of accepted choices
-    OptionDisplayText // configurable wording for help, version and error output
     OptionHelp // visibility, title, description and epilog text
-    OptionRenderer // help, version and error display backend
-    OptionRendererBase // shared base for renderers with display text
     OptionErrorContext // structured error reason and source location
     OptionSetManager // common interface for objects that own option definitions
 
@@ -90,7 +87,7 @@ Enumerations and Flags
 
     OptionType // declared option value type: Flag, Integer, Text, Choice
     OptionFlag, OptionFlags // Disabled, Required and Greedy definition flags
-    OptionHelpVisibility // Inherit, Hidden, Detail, Main and Important help levels
+    OptionHelpVisibility // Inherit, Hidden, Normal, Overview and Usage help levels
     OptionValueType // concrete parsed storage type
     OptionResultStatus // Success, DisplayVersion, DisplayHelp or Error
     OptionErrorReason // structured reason for option errors
@@ -100,7 +97,7 @@ Shared Pointer Types
 
 .. code-block:: text
 
-    OptionsPtr, OptionManagerPtr, OptionRendererPtr
+    OptionsPtr, OptionManagerPtr
     OptionSetPtr, OptionSetWeakPtr
     OptionModulePtr
     OptionPtr, OptionWeakPtr
@@ -162,7 +159,12 @@ Option Definition Patterns
 
 .. code-block:: text
 
-    o.help()/setHelp(help) // get or set help data
+    o.help()/setHelp(help) // get or set complete help data
+    o.setHelpTitle(text) // set title for root, set, module or option help
+    o.setHelpDescription(text) // set description for root, set, module or option help
+    o.setHelpEpilog(text) // set trailing help text for roots, modules and custom renderers
+    o.setHelpVisibility(visibility) // set help visibility for roots, sets, modules or options
+    o.valueName()/setValueName(name) // get or set the bare value placeholder name shown in help
     o.type()/setType(type) // get or set expected value type
     o.flags()/setFlags(flags) // get or set definition flags
     o.isDisabled() -> bool // test disabled flag
@@ -183,7 +185,12 @@ Editor Patterns
 
     o.isValid() -> bool // test if editor references an option
     o.option() -> const OptionPtr& // access edited option
-    o.setHelp(description-or-help) -> OptionEditor& // set option help
+    o.setHelp(description-or-help) -> OptionEditor& // set complete option help
+    o.setHelpTitle(text) -> OptionEditor& // set option help title
+    o.setHelpDescription(text) -> OptionEditor& // set option help description
+    o.setHelpEpilog(text) -> OptionEditor& // set option-level epilog for custom renderers
+    o.setHelpVisibility(visibility) -> OptionEditor& // set option help visibility
+    o.setValueName(name) -> OptionEditor& // set the bare value placeholder name shown in help
     o.setType(type) -> OptionEditor& // set expected option type
     o.setFlags(flags) -> OptionEditor& // replace option flags
     o.setFlag(flag) -> OptionEditor& // add one option flag
@@ -203,15 +210,16 @@ Parsing and Display Patterns
     OptionManager() // create manager with empty options root
     OptionManager(options) // create manager for existing root options
     o.options() -> const OptionsPtr& // access root options
-    o.renderer() -> const OptionRendererPtr& // access display backend
-    o.setRenderer(renderer) -> void // replace display backend
+    o.displayText()/setDisplayTextMap(map) // get or set help, version and error wording
     o.parse(args-or-argc-argv) -> OptionResult // parse and return status
-    o.parseOrThrow(args-or-argc-argv) -> OptionValuesPtr // parse or throw err::OptionError
+    o.parseOrThrow(args-or-argc-argv) -> OptionValuesPtr // parse or throw options::OptionError
+    o.helpDocument(moduleName) -> text::TextDocument // build help output document
+    o.versionDocument(moduleName) -> text::TextDocument // build version output document
+    o.errorDocument(errorContext) -> text::TextDocument // build option-error output document
     o.displayHelp(moduleName) -> void // render help
     o.displayVersion(moduleName) -> void // render version
     o.displayError(errorContext) -> void // render option error
     T::convertCommandLineArguments(argc, argv) -> core::CommandLineArguments // convert process arguments
-    renderer.displayHelp/displayVersion/displayError(...) -> void // backend display hooks
 
 Result and Value Patterns
 =========================
@@ -258,8 +266,13 @@ Help and Error Context Patterns
     o.text()/setText(text) // get or set choice text
     o.addChoice(choice-or-text) -> OptionChoices& // add accepted choice
     o.choiceCount() -> unit::ArgumentCount // number of accepted choices
+    o.title()/setTitle(text) -> OptionErrorContext& // short diagnostic title
+    o.description()/setDescription(text) -> OptionErrorContext& // detailed diagnostic explanation
     o.reason()/setReason(reason) -> OptionErrorContext& // structured error reason
     o.argumentIndex()/setArgumentIndex(index) -> OptionErrorContext& // source argument index
+    o.arguments()/setArguments(arguments) -> OptionErrorContext& // captured command-line source
+    o.options()/setOptions(options) -> OptionErrorContext& // options root retained for diagnostic rendering
+    o.module()/setModule(module) -> OptionErrorContext& // selected module
     o.option()/setOption(option) -> OptionErrorContext& // source option
     o.optionSet()/setOptionSet(optionSet) -> OptionErrorContext& // source option set
-    o.moduleName()/setModuleName(name) -> OptionErrorContext& // source module name
+    o.displayText()/setDisplayText(text) -> OptionErrorContext& // captured immutable display-text map

@@ -4,8 +4,12 @@
 
 #include <DemoCommon.hpp>
 
-void easyOutput();
-void standardOutputAndError();
-void integerFormatting();
-void floatFormatting();
-void lowLevelWrite();
+namespace demo {
+
+void writeStandardOutput();
+void writeStandardError();
+void readRedirectedInput();
+void captureOutput();
+void useNestedRedirects();
+
+}

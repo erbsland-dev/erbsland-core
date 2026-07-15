@@ -7,12 +7,12 @@
 
 #include "../U8String.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockView.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../mem/ByteWriter.hpp"
 #include "../../Char.hpp"
+#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u32/impl/U32Encoding.hpp"
@@ -43,41 +43,45 @@ auto U8StringEncodingTools::shouldWriteBom(const StringEncoding encoding, const 
     return false;
 }
 
-auto U8StringEncodingTools::encodeUtf8(const std::span<const char> data, const StringBomMode bomMode)
+auto U8StringEncodingTools::encodeUtf8(
+    const std::span<const char> data, const StringBomMode bomMode, const EncodingErrorMode errorMode)
     -> mem::ByteBlock {
     auto writer = mem::ByteWriter{};
     auto u8Writer = U8Writer{writer};
     if (shouldWriteBom(StringEncoding::Utf8, bomMode)) {
         u8Writer.writeBom();
     }
-    utf8::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { u8Writer.write(character); });
+    utf8::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u8Writer.write(character); });
     return writer.toByteBlock();
 }
 
 auto U8StringEncodingTools::encodeUtf16(
-    const std::span<const char> data, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
+    const std::span<const char> data,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
     auto writer = mem::ByteWriter{};
     writer.setEndianness(defaultEndianness(encoding));
     auto u16Writer = U16Writer{writer};
     if (shouldWriteBom(encoding, bomMode)) {
         u16Writer.writeBom();
     }
-    utf8::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { u16Writer.write(character); });
+    utf8::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u16Writer.write(character); });
     return writer.toByteBlock();
 }
 
 auto U8StringEncodingTools::encodeUtf32(
-    const std::span<const char> data, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
+    const std::span<const char> data,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode) -> mem::ByteBlock {
     auto writer = mem::ByteWriter{};
     writer.setEndianness(defaultEndianness(encoding));
     auto u32Writer = U32Writer{writer};
     if (shouldWriteBom(encoding, bomMode)) {
         u32Writer.writeBom();
     }
-    utf8::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { u32Writer.write(character); });
+    utf8::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u32Writer.write(character); });
     return writer.toByteBlock();
 }
 
@@ -91,41 +95,41 @@ auto U8StringEncodingTools::resolveBomLayout(
     const auto hasBom = hasUtf32LeBom || hasUtf32BeBom || hasUtf8Bom || hasUtf16LeBom || hasUtf16BeBom;
     if (!hasBom) {
         if (bomMode == StringBomMode::Require) {
-            err::throwEncodingError("Missing byte order mark");
+            text::impl::throwEncodingError("Missing byte order mark");
         }
         return DecodeLayout{.endianness = defaultEndianness(encoding), .start = 0U};
     }
     if (bomMode == StringBomMode::Reject) {
-        err::throwEncodingError("Unexpected byte order mark");
+        text::impl::throwEncodingError("Unexpected byte order mark");
     }
 
     if (hasUtf8Bom) {
         if (encoding != StringEncoding::Utf8) {
-            err::throwEncodingError("Unexpected UTF-8 byte order mark");
+            text::impl::throwEncodingError("Unexpected UTF-8 byte order mark");
         }
         return DecodeLayout{.endianness = mem::Endianness::Little, .start = utf8::bomLength()};
     }
     if (hasUtf16LeBom) {
         if (!utf16::isEncoding(encoding) || encoding == StringEncoding::Utf16BigEndian) {
-            err::throwEncodingError("Unexpected UTF-16 little endian byte order mark");
+            text::impl::throwEncodingError("Unexpected UTF-16 little endian byte order mark");
         }
         return DecodeLayout{.endianness = mem::Endianness::Little, .start = utf16::bomLength()};
     }
     if (hasUtf16BeBom) {
         if (!utf16::isEncoding(encoding) || encoding == StringEncoding::Utf16LittleEndian) {
-            err::throwEncodingError("Unexpected UTF-16 big endian byte order mark");
+            text::impl::throwEncodingError("Unexpected UTF-16 big endian byte order mark");
         }
         return DecodeLayout{.endianness = mem::Endianness::Big, .start = utf16::bomLength()};
     }
     if (hasUtf32LeBom) {
         if (!utf32::isEncoding(encoding) || encoding == StringEncoding::Utf32BigEndian) {
-            err::throwEncodingError("Unexpected UTF-32 little endian byte order mark");
+            text::impl::throwEncodingError("Unexpected UTF-32 little endian byte order mark");
         }
         return DecodeLayout{.endianness = mem::Endianness::Little, .start = utf32::bomLength()};
     }
     if (hasUtf32BeBom) {
         if (!utf32::isEncoding(encoding) || encoding == StringEncoding::Utf32LittleEndian) {
-            err::throwEncodingError("Unexpected UTF-32 big endian byte order mark");
+            text::impl::throwEncodingError("Unexpected UTF-32 big endian byte order mark");
         }
         return DecodeLayout{.endianness = mem::Endianness::Big, .start = utf32::bomLength()};
     }
@@ -213,18 +217,20 @@ auto U8StringEncodingTools::decodeUtf32(
     return {};
 }
 
-auto U8StringEncodingTools::encode(const StringEncoding encoding, const StringBomMode bomMode) const -> mem::ByteBlock {
+auto U8StringEncodingTools::encode(
+    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const
+    -> mem::ByteBlock {
     switch (encoding) {
     case StringEncoding::Utf8:
-        return encodeUtf8(_data.dataSpan(), bomMode);
+        return encodeUtf8(_data.dataSpan(), bomMode, errorMode);
     case StringEncoding::Utf16:
     case StringEncoding::Utf16LittleEndian:
     case StringEncoding::Utf16BigEndian:
-        return encodeUtf16(_data.dataSpan(), encoding, bomMode);
+        return encodeUtf16(_data.dataSpan(), encoding, bomMode, errorMode);
     case StringEncoding::Utf32:
     case StringEncoding::Utf32LittleEndian:
     case StringEncoding::Utf32BigEndian:
-        return encodeUtf32(_data.dataSpan(), encoding, bomMode);
+        return encodeUtf32(_data.dataSpan(), encoding, bomMode, errorMode);
     }
     return {};
 }

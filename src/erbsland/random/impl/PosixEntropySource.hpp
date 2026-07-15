@@ -24,7 +24,7 @@ public:
 public: // implement EntropySource
     /// Fill the destination with entropy bytes from the configured device.
     /// @param destination The bytes to fill.
-    /// @throws err::RandomError If the device cannot provide the requested bytes.
+    /// @throws random::RandomError If the device cannot provide the requested bytes.
     void fillBytes(std::span<std::byte> destination) override;
 
 private:

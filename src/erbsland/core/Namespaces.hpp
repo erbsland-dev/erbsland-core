@@ -12,6 +12,7 @@ namespace cterm::theme {}
 namespace debug {}
 namespace err {}
 namespace event {}
+namespace i18n {}
 namespace log {}
 namespace math {}
 namespace mem {}
@@ -21,7 +22,11 @@ namespace path {}
 namespace random {}
 namespace re {}
 namespace stream::io {}
-namespace text {}
+namespace system {}
+namespace text {
+namespace html {}
+namespace pattern {}
+}
 namespace time {}
 namespace unit {}
 namespace util {}

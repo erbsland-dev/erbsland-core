@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `CharSet` can be created from text or from a list of decoded characters.
 ///
 /// Duplicate characters are ignored, and the resulting set is normalized for efficient membership tests.
@@ -15,4 +17,6 @@ void characterSetText() {
     el::io::printLine("Message contains punctuation : "_el, yesNo, message.containsOneOf(punctuation));
     el::io::printLine("Message contains separators .: "_el, yesNo, message.containsOneOf(separators));
     el::io::printLine("Separator accepts '/' .......: "_el, yesNo, separators.contains(U'/'));
+}
+
 }

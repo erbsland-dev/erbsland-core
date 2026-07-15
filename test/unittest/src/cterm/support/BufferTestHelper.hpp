@@ -80,7 +80,7 @@ public:
             auto row = std::string{};
             for (auto x = bgeo::BlockCoordinate{0}; x < buffer.size().width(); ++x) {
                 const auto &block = buffer.get(bgeo::BlockPosition{x, y});
-                const auto text = block.charStr();
+                const auto text = block.toString();
                 row += text.isEmpty() ? " " : erbsland::text::StringConverter{text}.toStdString();
             }
             rows.push_back(std::move(row));

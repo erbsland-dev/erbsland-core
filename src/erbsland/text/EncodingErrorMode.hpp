@@ -9,9 +9,8 @@
 namespace erbsland::text {
 
 /// How to handle encoding or Unicode normalization errors.
-/// @tested{EncodingErrorModeTest}
 enum class EncodingErrorMode : uint8_t {
-    Throw = 0, ///< Throw an `std::invalid_argument` when invalid input is encountered.
+    Throw = 0, ///< Throw a text encoding exception when invalid input is encountered.
     Ignore,    ///< Skip unsupported input when the calling API allows lossy recovery.
     Replace,   ///< Replace unsupported input with the Unicode replacement character when supported.
 };

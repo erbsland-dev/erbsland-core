@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `SecureRandom` is the generator for secrets and security boundaries.
 ///
 /// It draws bytes from the operating system entropy source and throws
@@ -25,4 +27,6 @@ void secureTokens() {
     } catch (const el::RandomError &error) {
         el::io::printLine("Secure randomness is unavailable: "_el, error.reason());
     }
+}
+
 }

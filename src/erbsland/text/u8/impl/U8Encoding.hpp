@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../mem/ByteBlockView.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
 #include "../../Char.hpp"
 #include "../../EncodingErrorMode.hpp"
+#include "../../impl/ThrowHelper.hpp"
 
 #include <algorithm>
 #include <concepts>
@@ -23,13 +23,11 @@
 namespace erbsland::text::impl::utf8 {
 
 /// Get the UTF-8 byte order mark length.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] constexpr auto bomLength() noexcept -> std::size_t {
     return 3U;
 }
 
 /// Test if the byte data starts with a UTF-8 byte order mark.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto hasBom(const mem::ByteBlockView &data) noexcept -> bool {
     return data.startsWith({0xEFU, 0xBBU, 0xBFU});
 }
@@ -54,16 +52,16 @@ namespace erbsland::text::impl::utf8 {
 }
 
 /// Decode the continuation byte of a multi-byte UTF-8 character.
-/// @throws err::U8EncodingError On any UTF-8 encoding error.
+/// @throws text::U8EncodingError On any UTF-8 encoding error.
 /// @tested{U8EncodingTest}
 inline void decodeCharOrThrow_decodeCont(
     const std::span<const char> buffer, const std::size_t index, char32_t &unicodeValue) {
     if (index >= buffer.size()) {
-        err::throwU8EncodingError("Unexpected end of the data", buffer.size());
+        text::impl::throwU8EncodingError("Unexpected end of the data", buffer.size());
     }
     const auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
     if ((decodedByte & 0b11000000U) != 0b10000000U) {
-        err::throwU8EncodingError("Unexpected continuation byte", index);
+        text::impl::throwU8EncodingError("Unexpected continuation byte", index);
     }
     unicodeValue <<= 6;
     unicodeValue |= static_cast<char32_t>(decodedByte & 0b00111111U);
@@ -73,12 +71,12 @@ inline void decodeCharOrThrow_decodeCont(
 /// On decoding error, throws an exception, position is unchanged.
 /// @param buffer The byte buffer to decode.
 /// @param position The read position that is advanced after a successful read.
-/// @throws err::U8EncodingError On any UTF-8 encoding error.
+/// @throws text::U8EncodingError On any UTF-8 encoding error.
 /// @tested{U8EncodingTest}
 inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteIndex &position) -> Char {
     auto index = position.toSizeT();
     if (index >= buffer.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     const auto decodedByte = static_cast<std::uint8_t>(buffer[index]);
     if (decodedByte < 0x80U) { // 7-bit ASCII?
@@ -95,7 +93,7 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         decodeCharOrThrow_decodeCont(buffer, index + 1U, unicodeValue);
         decodeCharOrThrow_decodeCont(buffer, index + 2U, unicodeValue);
         if (unicodeValue < 0x800U) {
-            err::throwU8EncodingError("Overlong encoding", position.toSizeT());
+            text::impl::throwU8EncodingError("Overlong encoding", position.toSizeT());
         }
         index += 3U;
     } else if ((decodedByte & 0b11111000U) == 0b11110000U && decodedByte < 0b11110101U) { // 4-byte sequence
@@ -104,15 +102,15 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
         decodeCharOrThrow_decodeCont(buffer, index + 2U, unicodeValue);
         decodeCharOrThrow_decodeCont(buffer, index + 3U, unicodeValue);
         if (unicodeValue < 0x10000U) { // 5+-byte sequence
-            err::throwU8EncodingError("Overlong encoding", position.toSizeT());
+            text::impl::throwU8EncodingError("Overlong encoding", position.toSizeT());
         }
         index += 4U;
     } else {
-        err::throwU8EncodingError("Invalid or out-of-range start byte sequence", position.toSizeT());
+        text::impl::throwU8EncodingError("Invalid or out-of-range start byte sequence", position.toSizeT());
     }
     const auto result = Char{unicodeValue};
     if (!result.isValidUnicode()) {
-        err::throwU8EncodingError("Invalid Unicode character", position.toSizeT());
+        text::impl::throwU8EncodingError("Invalid Unicode character", position.toSizeT());
     }
     position = unit::ByteIndex{index};
     return result;
@@ -125,7 +123,6 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
 /// @param buffer The byte buffer to decode.
 /// @param position The read position that is advanced after a successful read.
 /// @return The decoded character or replacement character.
-/// @tested{U8EncodingTest}
 [[nodiscard]] inline auto decodeCharOrReplace(const std::span<const char> buffer, unit::ByteIndex &position) noexcept
     -> Char {
     auto index = position.toSizeT();
@@ -184,7 +181,6 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
 /// @param buffer The byte buffer to decode.
 /// @param position The read position that is advanced after a successful read.
 /// @return A valid decoded character or no character in case of an error.
-/// @tested{U8EncodingTest}
 [[nodiscard]] inline auto decodeCharOrIgnore(const std::span<const char> buffer, unit::ByteIndex &position) noexcept
     -> std::optional<Char> {
     auto index = position.toSizeT();
@@ -384,28 +380,28 @@ auto forEachDecodedCharacter(const std::span<const char> data, const EncodingErr
 }
 
 /// Decode the continuation byte of a multi-byte UTF-8 character from a byte reader.
-/// @throws err::U8EncodingError On any UTF-8 encoding error.
+/// @throws text::U8EncodingError On any UTF-8 encoding error.
 /// @tested{U8StringEncodingTest}
 inline void decodeCharOrThrow_decodeCont(
     const mem::ByteReader &reader, const std::size_t offset, char32_t &unicodeValue) {
     if (!reader.canRead(offset + 1U)) {
-        err::throwU8EncodingError("Unexpected end of the data", reader.length().toSizeT());
+        text::impl::throwU8EncodingError("Unexpected end of the data", reader.length().toSizeT());
     }
     const auto decodedByte = reader.peekByte(offset);
     if (!decodedByte.matches(0b11000000U, 0b10000000U)) {
-        err::throwU8EncodingError("Unexpected continuation byte", reader.position().toSizeT() + offset);
+        text::impl::throwU8EncodingError("Unexpected continuation byte", reader.position().toSizeT() + offset);
     }
     unicodeValue <<= 6;
     unicodeValue |= static_cast<char32_t>(decodedByte.masked(0b00111111U));
 }
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
-/// @throws err::U8EncodingError On any UTF-8 encoding error.
+/// @throws text::U8EncodingError On any UTF-8 encoding error.
 /// @tested{U8StringEncodingTest}
 inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     const auto startPosition = reader.position();
     if (!reader.canRead(1U)) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     const auto decodedByte = reader.peekByte();
     if (decodedByte.toUInt8() < 0x80U) {
@@ -423,7 +419,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
         decodeCharOrThrow_decodeCont(reader, 1U, unicodeValue);
         decodeCharOrThrow_decodeCont(reader, 2U, unicodeValue);
         if (unicodeValue < 0x800U) {
-            err::throwU8EncodingError("Overlong encoding", startPosition.toSizeT());
+            text::impl::throwU8EncodingError("Overlong encoding", startPosition.toSizeT());
         }
         sequenceSize = 3U;
     } else if (decodedByte.matches(0b11111000U, 0b11110000U) && decodedByte.toUInt8() < 0b11110101U) {
@@ -432,22 +428,21 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
         decodeCharOrThrow_decodeCont(reader, 2U, unicodeValue);
         decodeCharOrThrow_decodeCont(reader, 3U, unicodeValue);
         if (unicodeValue < 0x10000U) {
-            err::throwU8EncodingError("Overlong encoding", startPosition.toSizeT());
+            text::impl::throwU8EncodingError("Overlong encoding", startPosition.toSizeT());
         }
         sequenceSize = 4U;
     } else {
-        err::throwU8EncodingError("Invalid or out-of-range start byte sequence", startPosition.toSizeT());
+        text::impl::throwU8EncodingError("Invalid or out-of-range start byte sequence", startPosition.toSizeT());
     }
     const auto result = Char{unicodeValue};
     if (!result.isValidUnicode()) {
-        err::throwU8EncodingError("Invalid Unicode character", startPosition.toSizeT());
+        text::impl::throwU8EncodingError("Invalid Unicode character", startPosition.toSizeT());
     }
     reader.setPosition(startPosition + unit::ByteLength::fromSizeT(sequenceSize));
     return result;
 }
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto decodeCharOrReplace(mem::ByteReader &reader) noexcept -> Char {
     if (!reader.canRead(1U)) {
         return Char{0U};
@@ -499,7 +494,6 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
 }
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto decodeCharOrIgnore(mem::ByteReader &reader) noexcept -> std::optional<Char> {
     if (!reader.canRead(1U)) {
         return std::nullopt;
@@ -594,7 +588,6 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingErrorMode er
 }
 
 /// Test if the UTF-8 byte sequence is fully valid.
-/// @tested{U8EncodingTest}
 [[nodiscard]] inline auto isValid(const std::span<const char> data) noexcept -> bool {
     auto position = unit::ByteIndex::zero();
     while (position.toSizeT() < data.size()) {

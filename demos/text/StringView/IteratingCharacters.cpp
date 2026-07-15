@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView::forEach()` and range-based `for` loops decode text as Unicode
 /// code points without exposing UTF-8 byte boundaries.
 ///
@@ -41,4 +43,6 @@ void iteratingCharacters() {
     }
 
     el::io::printLine("Uppercase walk: "_el, uppercased);
+}
+
 }

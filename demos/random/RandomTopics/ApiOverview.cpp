@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// The random module offers generators with different intent.
 ///
 /// Use the shared application generator for ordinary non-security choices,
@@ -54,4 +56,6 @@ void apiOverview() {
     auto secondReplay = el::FastRandom{20260607U};
     const auto sameReplaySequence = firstReplay.getUInt32(1U, 100U) == secondReplay.getUInt32(1U, 100U);
     el::io::printLine("Seeded replay check: "_el, yesNo, sameReplaySequence);
+}
+
 }

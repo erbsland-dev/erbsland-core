@@ -7,8 +7,8 @@ Frame Weaver
 ************
 
 ``frame-weaver`` demonstrates how the frame drawing system resolves intersections while multiple frames with varying
-sizes, colors, and styles are added over time. It is the best showcase for mixed line styles, custom frame tiles, and
-automatic frame combination behavior.
+sizes, colors, and styles are added over time.
+It is the best showcase for mixed line styles, custom frame tiles, and automatic frame combination behavior.
 
 Use This Demo When You Need...
 ==============================
@@ -24,17 +24,18 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/frame-weaver
+    $ ./cmake-build-debug/demo-apps/cterm/frame-weaver
 
-Use ``F`` and ``S`` to change the pacing, ``C`` to clear the scene, the number keys to switch style groups, and ``Q``
-to quit.
+Use ``F`` and ``S`` to change the pacing, ``C`` to clear the scene, the number keys to switch style groups, and ``Q`` to
+quit.
 
 Captured Output (80x25)
 =======================
 
 .. include:: _captures/frame-weaver.rstinc
 
-The capture may not show the terminal output correctly. Here a screenshot:
+The capture may not show the terminal output correctly.
+Here a screenshot:
 
 .. figure:: images/frame-weaver3.jpg
     :width: 100%

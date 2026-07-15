@@ -6,6 +6,12 @@
 # A header is ignored if one of its parent directories has a matching name.
 Excluded Directories    : "impl"
 
+# Source-relative public headers to skip while scanning "src/erbsland".
+# Use this for platform-specific public headers that are added through
+# conditional CMake target_sources blocks.
+Excluded Headers        :
+    * "system/WindowsErrorContext.hpp"
+
 # When enabled, every scanned source header also gets a wrapper directly below
 # "include/erbsland" using only its file name, in addition to the wrapper that
 # mirrors its source subdirectory.
@@ -17,12 +23,14 @@ Create Global Includes  : No
 # Folding is skipped when the parent already has a header with the same name,
 # or when multiple folded child directories would expose the same file name.
 Fold into Parent        :
+    * "bgeo"
     * "core"
     * "err"
-    * "bgeo"
+    * "event"
     * "math"
     * "mem"
     * "options"
+    * "path"
     * "random"
     * "stream"
     * "text"

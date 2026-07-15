@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Exception.hpp"
 
+#include "impl/ExceptionDiagnostic.hpp"
+
 #include "../text/impl/UnsafeU8StringViewAccess.hpp"
 
 #include <utility>
@@ -19,6 +21,10 @@ auto Exception::what() const noexcept -> mem::UnsafeConstCharPtr {
 auto Exception::toString() const noexcept -> text::StringView {
     // For the default implementation, we only have the reason text to return.
     return reason();
+}
+
+auto Exception::diagnostic() const -> DiagnosticConstPtr {
+    return std::make_shared<impl::ExceptionDiagnostic>(toString());
 }
 
 }

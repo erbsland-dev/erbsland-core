@@ -2,13 +2,13 @@
     Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
     SPDX-License-Identifier: Apache-2.0
 
-****************
+***************
 Bitmap Showcase
-****************
+***************
 
 ``bitmap-showcase`` demonstrates how bitmap rendering behaves when a ``Bitmap`` is passed to ``Buffer::drawBitmap()``.
-It uses a selector panel on the left and a large preview area on the right so different scale modes, color modes,
-layout options, and style replacements stay easy to compare.
+It uses a selector panel on the left and a large preview area on the right so different scale modes, color modes, layout
+options, and style replacements stay easy to compare.
 
 Use This Demo When You Need...
 ==============================
@@ -24,10 +24,11 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/bitmap-showcase
+    $ ./cmake-build-debug/demo-apps/cterm/bitmap-showcase
 
-Use the left and right arrow keys to switch pages. Use the up and down arrow keys to move through the variants on the
-current page. Press ``Q`` to quit.
+Use the left and right arrow keys to switch pages.
+Use the up and down arrow keys to move through the variants on the current page.
+Press ``Q`` to quit.
 
 Captured Output (80x25)
 =======================

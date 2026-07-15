@@ -5,6 +5,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.registerDemo("BasicTests"_el, basicTests);
@@ -51,4 +53,10 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("ValidateCharacterPolicy"_el, validateCharacterPolicy);
     app.registerDemo("WholeStringComparison"_el, wholeStringComparison);
     return app.run();
+}
+
+}
+
+auto main(const int argc, char *argv[]) -> int {
+    return demo::main(argc, argv);
 }

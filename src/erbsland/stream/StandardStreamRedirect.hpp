@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "TextInputStream.hpp"
 #include "TextOutputStream.hpp"
 
 #include "impl/StandardStreamRedirectData_fwd.hpp"
@@ -32,6 +33,7 @@ public:
     void reset() noexcept;
 
 private:
+    friend auto redirectStdIn(TextInputStreamPtr input) -> StandardStreamRedirect;
     friend auto redirectStdOut(TextOutputStreamPtr output) -> StandardStreamRedirect;
     friend auto redirectStdErr(TextOutputStreamPtr error) -> StandardStreamRedirect;
     friend auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error)

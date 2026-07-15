@@ -1,0 +1,57 @@
+.. erbsland-ansi::
+    :escape-char: ␛
+
+
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[93;40m␛[1mHTML␛[22m ␛[1mParser␛[22m ␛[1mand␛[22m ␛[1mTextDocument␛[22m ␛[1mDemo␛[37m␛[22m                                               ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40mThis demo reads an HTML file through ␛[1mPath␛[22m and ␛[1mPathContent␛[22m, parses it with       ␛[39;49m
+    ␛[37;40m␛[1mHtmlParser␛[22m, stores the result in a ␛[1mTextDocument␛[22m, and renders that document into ␛[39;49m
+    ␛[37;40ma scrollable terminal buffer. Use the cursor keys to move line by line, page up ␛[39;49m
+    ␛[37;40mand page down to jump, press ␛[1ms␛[22m to cycle between document styles, and press ␛[1mq␛[22m    ␛[39;49m
+    ␛[37;40mwhen you want to quit.                                                          ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[96;40m␛[1mWhat␛[22m ␛[1mThis␛[22m ␛[1mDemonstrates␛[37m␛[22m                                                          ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m    •   Reading UTF-8 text with Path::content().readTextOrThrow().              ␛[39;49m
+    ␛[37;40m    •   Converting an HTML fragment or document into a semantic TextDocument.   ␛[39;49m
+    ␛[37;40m    •   Rendering headings, paragraphs, emphasis, strong text, links, lists, and␛[39;49m
+    ␛[37;40m        code blocks.                                                            ␛[39;49m
+    ␛[37;40m    •   Keeping the rendered document in a CursorBuffer for scrolling.          ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[96;40m␛[1mPipeline␛[37m␛[22m                                                                        ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m    1.  Convert the command-line file argument into a Core Path.                ␛[39;49m
+    ␛[37;40m    2.  Read the file content as an el::String.                                 ␛[39;49m
+    ␛[37;40m    3.  Parse the HTML into a TextDocument.                                     ␛[39;49m
+    ␛[37;40m        ‣   Document boilerplate such as head is ignored.                       ␛[39;49m
+    ␛[37;40m        ‣   Malformed tags are recovered as text where possible.                ␛[39;49m
+    ␛[37;40m    4.  Render the semantic document to terminal cells.                         ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[96;40m␛[1mDefinition␛[22m ␛[1mList␛[37m␛[22m                                                                 ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[93;40m␛[1mHtmlParser␛[37m␛[22m                                                                      ␛[39;49m
+    ␛[37;40m    The tolerant parser that converts HTML input into a TextDocument.           ␛[39;49m
+    ␛[93;40m␛[1mTextDocument␛[37m␛[22m                                                                    ␛[39;49m
+    ␛[37;40m    The mutable tree of document nodes used by the text and terminal renderers. ␛[39;49m
+    ␛[93;40m␛[1mTerminalDocumentRenderer␛[37m␛[22m                                                        ␛[39;49m
+    ␛[37;40m    The renderer that writes TextDocument nodes to a CursorWriter.              ␛[39;49m
+    ␛[93;40m␛[1mCursorBuffer␛[37m␛[22m                                                                    ␛[39;49m
+    ␛[37;40m    The terminal buffer that stores rendered output and can grow vertically.    ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[96;40m␛[1mCode␛[22m ␛[1mBlock␛[37m␛[22m                                                                      ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m auto html = path.content().readTextOrThrow();                                  ␛[39;49m
+    ␛[37;40m auto document = el::html::HtmlParser{el::AnyStringView{html}}.parse();         ␛[39;49m
+    ␛[37;40m el::TerminalDocumentRenderer{}.renderTo(buffer, document);                     ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m--------------------------------------------------------------------------------␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40mLinks render as link text only, for example ␛[4merbsland.dev␛[24m. The source file for   ␛[39;49m
+    ␛[37;40mthis document lives in the demo directory, and you can pass your own HTML file  ␛[39;49m
+    ␛[37;40mas the optional command-line argument.                                          ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m
+    ␛[37;40m                                                                                ␛[39;49m

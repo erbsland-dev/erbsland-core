@@ -2,3 +2,4 @@
 # Using the library does not require any additional Python packages.
 black
 erbsland-conf
+erbsland-ansi-convert

@@ -1,0 +1,22 @@
+# Add only narrow, source-specific Doxygen warning exceptions here. Each
+# exception requires a reason and remains visible with rebuild_doc --show-suppressed.
+#
+# Doxygen's general "is not documented" diagnostics are disabled in doc/conf.py:
+# reference pages explicitly select their documented API, so absence of a comment on
+# an arbitrary parsed declaration is not actionable. All diagnostics Doxygen emits
+# continue to be shown unless an exception is configured below.
+
+*[Ignored Doxygen Warnings]
+Source Glob: "erbsland/cterm/impl/paragraph/LayoutPreparedSourceLine.hpp"
+Message Contains: "The following parameter"
+Reason: "The layout-only pending-separator helper is intentionally not part of the reference API."
+
+*[Ignored Doxygen Warnings]
+Source Glob: "erbsland/stream/impl/EncodedTextOutputStream.hpp"
+Message Contains: "The following parameter"
+Reason: "This implementation adapter is documented through its public stream interface."
+
+*[Ignored Doxygen Warnings]
+Source Glob: "erbsland/stream/impl/WindowsNativeStream.hpp"
+Message Contains: "The following parameter"
+Reason: "The Windows implementation constructor is documented through the portable stream API."

@@ -4,7 +4,11 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void apiOverview();
 void elementSampling();
 void randomValues();
 void secureTokens();
+
+}

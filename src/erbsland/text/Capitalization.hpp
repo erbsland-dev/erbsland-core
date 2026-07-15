@@ -7,7 +7,6 @@
 namespace erbsland::text {
 
 /// The capitalization to use for generated words.
-/// @tested{ToStringTest}
 enum class Capitalization : uint8_t {
     Lowercase = 0, ///< Use all lowercase letters.
     Uppercase = 1, ///< Use all uppercase letters.

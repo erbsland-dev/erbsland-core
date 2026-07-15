@@ -9,18 +9,39 @@
 // Roughly detect the platform and compiler for API access.
 #if _WIN32 || _WIN64
 #define ERBSLAND_OS_WINDOWS
-#ifndef EERBSLAND_NO_SHORT_NAMESPACE
+#undef ERBSLAND_OS_MACOS
+#undef ERBSLAND_OS_LINUX
+#ifndef ERBSLAND_NO_SHORT_NAMESPACE
 #define EL_OS_WINDOWS
+#undef EL_OS_MACOS
+#undef EL_OS_LINUX
 #endif
 #elif __APPLE__
 #define ERBSLAND_OS_MACOS
-#ifndef EERBSLAND_NO_SHORT_NAMESPACE
+#undef ERBSLAND_OS_WINDOWS
+#undef ERBSLAND_OS_LINUX
+#ifndef ERBSLAND_NO_SHORT_NAMESPACE
 #define EL_OS_MACOS
+#undef EL_OS_WINDOWS
+#undef EL_OS_LINUX
+#endif
+#elif defined(__linux__)
+#define ERBSLAND_OS_LINUX
+#undef ERBSLAND_OS_WINDOWS
+#undef ERBSLAND_OS_MACOS
+#ifndef ERBSLAND_NO_SHORT_NAMESPACE
+#define EL_OS_LINUX
+#undef EL_OS_WINDOWS
+#undef EL_OS_MACOS
 #endif
 #else
-#define ERBSLAND_OS_UNIX
-#ifndef EERBSLAND_NO_SHORT_NAMESPACE
-#define EL_OS_UNIX
+#undef ERBSLAND_OS_LINUX
+#undef ERBSLAND_OS_WINDOWS
+#undef ERBSLAND_OS_MACOS
+#ifndef ERBSLAND_NO_SHORT_NAMESPACE
+#undef EL_OS_LINUX
+#undef EL_OS_WINDOWS
+#undef EL_OS_MACOS
 #endif
 #endif
 

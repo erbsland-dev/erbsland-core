@@ -13,8 +13,21 @@ auto HashSet<tKey, tHash, tEqual, tSelf>::insert(const Key &key) -> Self & {
 
 template <typename tKey, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
+auto HashSet<tKey, tHash, tEqual, tSelf>::insert(Key &&key) -> Self & {
+    mutableRaw().insert(std::move(key));
+    return self();
+}
+
+template <typename tKey, typename tHash, typename tEqual, typename tSelf>
+    requires std::default_initializable<tKey> && std::copyable<tKey>
 auto HashSet<tKey, tHash, tEqual, tSelf>::tryInsert(const Key &key) -> bool {
     return mutableRaw().insert(key).second;
+}
+
+template <typename tKey, typename tHash, typename tEqual, typename tSelf>
+    requires std::default_initializable<tKey> && std::copyable<tKey>
+auto HashSet<tKey, tHash, tEqual, tSelf>::tryInsert(Key &&key) -> bool {
+    return mutableRaw().insert(std::move(key)).second;
 }
 
 }

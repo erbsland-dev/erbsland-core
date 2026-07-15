@@ -4,11 +4,11 @@
 
 #include "impl/CommonBoxFrameBlockCombinationStyle.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../unit/CpIndex.hpp"
 
 #include <algorithm>
 #include <limits>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::cterm {
@@ -43,12 +43,12 @@ SimpleBlockCombinationStyle::SimpleBlockCombinationStyle(Map map) noexcept : _ma
 
 auto SimpleBlockCombinationStyle::combine(const Block &current, const Block &overlay) const noexcept -> Block {
     auto result = Block{};
-    auto key = current.charStr();
-    key.append(overlay.charStr());
+    auto key = current.toString();
+    key.append(overlay.toString());
     if (const auto combined = map().get(key)) {
         result = Block{*combined};
     } else {
-        result = Block{overlay.charStr()};
+        result = Block{overlay.toString()};
     }
     result.setStyle(result.style().withBase(current.style()).withOverlay(overlay.style()));
     return result;
@@ -73,13 +73,13 @@ MatrixBlockCombinationStyle::MatrixBlockCombinationStyle(
     const text::U32StringView &characters, const std::span<const uint8_t> resultMatrix) :
     _characters{characters.copy()}, _resultMatrix{resultMatrix.begin(), resultMatrix.end()} {
     if (_characters.length().toSizeT() > std::numeric_limits<uint8_t>::max()) {
-        throw std::invalid_argument{"MatrixBlockCombinationStyle supports at most 255 characters."};
+        throw err::ParameterError{"MatrixBlockCombinationStyle supports at most 255 characters.", "characters"};
     }
     const auto characterCount = _characters.length().toSizeT();
     const auto expectedMatrixSize = characterCount * characterCount;
     if (_resultMatrix.size() != expectedMatrixSize) {
-        throw std::invalid_argument{
-            "MatrixBlockCombinationStyle result matrix size does not match the character count."};
+        throw err::ParameterError{
+            "MatrixBlockCombinationStyle result matrix size does not match the character count.", "resultMatrix"};
     }
     if (_characters.isEmpty()) {
         return;
@@ -104,8 +104,8 @@ MatrixBlockCombinationStyle::MatrixBlockCombinationStyle(
 
 auto MatrixBlockCombinationStyle::combine(const Block &current, const Block &overlay) const noexcept -> Block {
     auto result = overlay;
-    const auto currentIndex = lookupIndex(current.mainCodePoint());
-    const auto overlayIndex = lookupIndex(overlay.mainCodePoint());
+    const auto currentIndex = lookupIndex(current.first());
+    const auto overlayIndex = lookupIndex(overlay.first());
     if (currentIndex != cUnsupportedIndex && overlayIndex != cUnsupportedIndex) {
         const auto matrixSize = _characters.length().toSizeT();
         const auto matrixIndex =

@@ -7,6 +7,7 @@
 
 #include "FastRandom.hpp"
 #include "Random.hpp"
+#include "RandomError.hpp"
 #include "SecureRandom.hpp"
 #include "ThreadSafeFastRandom.hpp"
 

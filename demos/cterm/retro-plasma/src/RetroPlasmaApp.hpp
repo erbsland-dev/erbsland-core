@@ -8,6 +8,8 @@
 
 #include <chrono>
 
+namespace demo {
+
 /// Run the animated plasma buffer demo.
 class RetroPlasmaApp final : public TerminalApplication {
 public:
@@ -39,3 +41,5 @@ private:
     bool _paused{false};
     std::chrono::steady_clock::time_point _lastFrameTime{std::chrono::steady_clock::now()};
 };
+
+}

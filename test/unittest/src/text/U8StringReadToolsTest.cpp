@@ -125,6 +125,67 @@ public:
         REQUIRE_THROWS(tools.charAtOrThrow(ByteIndex{1}));
     }
 
+    void testReadAndAdvance() {
+        const auto tools = makeUtf8Tools(ByteRange::fromSizeT(cUtf8Text.size()));
+        auto index = ByteIndex::zero();
+
+        REQUIRE_EQUAL(tools.read(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index.toSizeT(), 1U);
+        REQUIRE_EQUAL(tools.read(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), 3U);
+        REQUIRE_EQUAL(tools.read(index).toRawValue(), U'\u20AC');
+        REQUIRE_EQUAL(index.toSizeT(), 6U);
+        REQUIRE_EQUAL(tools.read(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), 10U);
+
+        REQUIRE(tools.read(index).isEndOfData());
+        REQUIRE_EQUAL(index.toSizeT(), 10U);
+
+        index = ByteIndex{11U};
+        REQUIRE(tools.read(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), 11U);
+
+        index = ByteIndex::noIndex();
+        REQUIRE(tools.read(index).isNoCodePoint());
+        REQUIRE(index.isNoIndex());
+    }
+
+    void testReadAndRetreat() {
+        const auto tools = makeUtf8Tools(ByteRange::fromSizeT(cUtf8Text.size()));
+        auto index = ByteIndex::end(tools.byteLength());
+
+        REQUIRE_EQUAL(tools.readAndRetreat(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), 6U);
+        REQUIRE_EQUAL(tools.readAndRetreat(index).toRawValue(), U'\u20AC');
+        REQUIRE_EQUAL(index.toSizeT(), 3U);
+        REQUIRE_EQUAL(tools.readAndRetreat(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), 1U);
+        REQUIRE_EQUAL(tools.readAndRetreat(index).toRawValue(), U'A');
+        REQUIRE(index.isZero());
+
+        REQUIRE(tools.readAndRetreat(index).isEndOfData());
+        REQUIRE(index.isZero());
+
+        index = ByteIndex{11U};
+        REQUIRE(tools.readAndRetreat(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), 11U);
+
+        index = ByteIndex::noIndex();
+        REQUIRE(tools.readAndRetreat(index).isNoCodePoint());
+        REQUIRE(index.isNoIndex());
+    }
+
+    void testIndexedReadWithInvalidUtf8() {
+        const auto tools = makeInvalidUtf8Tools(ByteRange::fromSizeT(cInvalidUtf8Text.size()));
+        auto index = ByteIndex{1U};
+
+        REQUIRE(tools.read(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), 2U);
+
+        REQUIRE(tools.readAndRetreat(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), 1U);
+    }
+
     void testAdvanceEdgeCases() {
         const auto tools = makeUtf8Tools(ByteRange::fromSizeT(cUtf8Text.size()));
         auto index = ByteIndex{1};

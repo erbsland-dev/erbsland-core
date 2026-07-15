@@ -93,8 +93,8 @@ This makes it easy to ask for the last delimiter before a known marker.
 
 .. erbsland-demo::
     :source: text/StringView/FindingCharacterSets.cpp
-    :exec: string_view --demo FindingCharacterSets
-    :source-sha256: 798deeb8c3352a59e72ad30667d98ad7bc357c5b5709cdbf247817119b93d2eb
+    :exec: text/string_view --demo FindingCharacterSets
+    :source-sha256: f2fc26c14791713aff9b48332a07da7742d2bfbd5b5a3d66b35487a74fc2ca39
 
 .. code-block:: cpp
 
@@ -155,8 +155,8 @@ In that case, use :cpp:func:`indexAt(StringSide::Back) <erbsland::text::U8String
 
 .. erbsland-demo::
     :source: text/StringView/TokenRuns.cpp
-    :exec: string_view --demo TokenRuns
-    :source-sha256: 9f91683c290ebd9563db5c3ce39fa80663458eb0741fe76a6cb0b18045ac8c17
+    :exec: text/string_view --demo TokenRuns
+    :source-sha256: 5c45fcac1e95f26bd98d4a32a09cee326179ecb40051c7ade4582c078d06c582
 
 .. code-block:: cpp
 
@@ -231,8 +231,8 @@ case folding while the original text stays unchanged.
 
 .. erbsland-demo::
     :source: text/StringView/FindingAllOccurrences.cpp
-    :exec: string_view --demo FindingAllOccurrences
-    :source-sha256: 18c6a28d27637880b102f15bc70793a66cf247fcd0349028685ffda0639c674a
+    :exec: text/string_view --demo FindingAllOccurrences
+    :source-sha256: 3740f243bdf602bea71a5e11104a13b01d11c44b462c2cb2563bece8935ac68c
 
 .. code-block:: cpp
 

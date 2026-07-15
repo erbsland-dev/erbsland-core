@@ -56,15 +56,16 @@ public:
     static auto instance() noexcept -> PosixBackend *;
     /// Restore the platform using the global instance.
     static void restoreGlobalPlatform() noexcept;
+    /// Test whether the given POSIX output descriptor is attached to an interactive terminal.
+    /// @param outputFd The descriptor used for terminal output.
+    /// @return `true` if the descriptor refers to a terminal.
+    [[nodiscard]] static auto isInteractiveOutput(int outputFd) noexcept -> bool;
 
 private:
     /// Detect the screen size.
     [[nodiscard]] auto getScreenSize() -> std::pair<SizeDetectionResult, bgeo::BlockSize>;
     /// Try to detect the size for a file descriptor.
     [[nodiscard]] static auto getScreenSizeForFd(int fd) -> std::pair<SizeDetectionResult, bgeo::BlockSize>;
-    /// Close the tty
-    void closeTty();
-
     /// Initialize a key interactive session.
     void initializeKeyInputSession();
     /// Restore a key interactive session.
@@ -91,18 +92,16 @@ private:
     void handleProcessSignal(int signalNumber) noexcept;
 
 private:
-    static std::mutex _instanceMutex;                ///< The mutex to protect the instance.
-    static PosixBackend *_instance;                  ///< The global instance of the PosixBackend.
+    static std::mutex _instanceMutex;                       ///< The mutex to protect the instance.
+    static PosixBackend *_instance;                         ///< The global instance of the PosixBackend.
 
-    TerminalFlags _terminalFlags;                    ///< The terminal flags.
-    bool _isInitialized = false;                     ///< If the platform was initialized.
-    bool _keyInputSessionActive = false;             ///< If we have an input session that needs to be restored.
-    clock::time_point _lastScreenSizeDetection = {}; ///< Time of last screen size detection.
-    std::optional<bgeo::BlockSize> _lastScreenSize;  ///< The last cached screen size.
-    bool _firstScreenSizeDetection = true;           ///< A flag to mark the first detection, for extra effort.
-    bool _hasNoTerminalAttached = false;             ///< If we definitely know that screen detection will never work.
-    int _ttyFdForDetection = -1;                     ///< The open /dev/tty we use for screen size detection
-    std::size_t _noSizeFailureCount = 0; ///< A failure count to escalate if we repeatedly cannot detect screen size.
+    TerminalFlags _terminalFlags;                           ///< The terminal flags.
+    bool _isInitialized = false;                            ///< If the platform was initialized.
+    bool _keyInputSessionActive = false;                    ///< If we have an input session that needs to be restored.
+    clock::time_point _lastScreenSizeDetection = {};        ///< Time of last screen size detection.
+    std::optional<bgeo::BlockSize> _lastScreenSize;         ///< The last cached screen size.
+    bool _firstScreenSizeDetection = true;                  ///< A flag to mark the first detection, for extra effort.
+    bool _hasNoTerminalAttached = false;                    ///< If standard output is not an interactive terminal.
     Input::Mode _inputMode{Input::Mode::ReadLine};          ///< The current input mode.
     bool _isAlternateScreenActive = false;                  ///< remember if we are in alternate screen mode.
     termios _originalState{};                               ///< state backup.

@@ -3,6 +3,7 @@
 
 #include "../../support/TestHelper.hpp"
 
+#include <erbsland/cterm/impl/KeyDecoder.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -10,6 +11,8 @@
 #include <format>
 #include <functional>
 #include <string_view>
+
+namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(Key)
 class KeyTest final : public UNITTEST_SUBCLASS(TestHelper) {
@@ -149,6 +152,21 @@ public:
         key = Key::fromConsoleInput("\x1b[999~"_el);
         REQUIRE_EQUAL(key, Key{Key::None});
         REQUIRE(!key.valid());
+    }
+
+    void testConsoleInputPrefixNeedsMoreUtf8Data() {
+        using erbsland::cterm::impl::KeyDecoder;
+        using erbsland::cterm::impl::KeyParseStatus;
+
+        auto result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("F0 9F")}}.parseConsoleInputPrefix();
+        REQUIRE_EQUAL(result.status(), KeyParseStatus::NeedMoreData);
+
+        result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("65 CC")}}.parseConsoleInputPrefix();
+        REQUIRE_EQUAL(result.status(), KeyParseStatus::NeedMoreData);
+
+        result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("65 CC 81")}}.parseConsoleInputPrefix();
+        REQUIRE_EQUAL(result.status(), KeyParseStatus::Parsed);
+        REQUIRE_EQUAL(result.key(), (Key{Key::Combined, U"e\u0301"_el}));
     }
 
     void testFromStringAndToString() {

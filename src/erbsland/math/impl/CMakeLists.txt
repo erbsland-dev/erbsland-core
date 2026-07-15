@@ -7,4 +7,6 @@ target_sources(erbsland-core PRIVATE
         ConstexprSaturatingMathHelper.hpp
         IntegerComparisonHelper.hpp
         SaturatingMathHelper.hpp
+        Throw.cpp
+        Throw.hpp
 )

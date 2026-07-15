@@ -4,11 +4,15 @@
 from __future__ import annotations
 
 import argparse
+import errno
 import hashlib
+import os
 import re
 import shlex
 import stat
+import struct
 import subprocess
+import tempfile
 import threading
 from dataclasses import dataclass
 from pathlib import Path
@@ -20,12 +24,29 @@ from lib.path_safety import read_safe_text, require_directory, require_safe_exis
 from lib.safe_tool import safe_subprocess_environment
 from lib.utility import UtilityApp
 
+if os.name == "posix":
+    import fcntl
+    import pty
+    import termios
+
 MAX_DEMO_SOURCE_SIZE = 1024 * 1024
 MAX_DEMO_OUTPUT_SIZE = 1024 * 1024
 MAX_DEMO_OUTPUT_LINES = 100
 DEMO_TIMEOUT_SECONDS = 10
-EXECUTABLE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+DEMO_TERMINAL_WIDTH = 90
+DEMO_TERMINAL_HEIGHT = 40
+EXECUTABLE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
 ARGUMENT_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+PLACEHOLDER_RE = re.compile(r"^\{(?P<kind>file|directory):(?P<value>[^{}]+)\}$")
+DIRECTORY_PLACEHOLDER_NAME_RE = re.compile(r"^[-_a-zA-Z0-9]{1,64}$")
+FILE_PLACEHOLDER_TYPES = frozenset(("empty", "text", "none"))
+TEXT_PLACEHOLDER_CONTENT = (
+    "This is the first line of demo text.\n"
+    "This is the second line of demo text.\n"
+    "This is the third line of demo text.\n"
+    "This is the fourth line of demo text.\n"
+    "This is the fifth line of demo text.\n"
+)
 
 
 class DemoDocError(Exception):
@@ -48,6 +69,34 @@ class GeneratedBlock:
 
     text: str
     issues: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class DemoPlaceholder:
+    """One safe temporary path placeholder in a demo command."""
+
+    kind: str
+    value: str
+    index: int
+
+
+@dataclass(frozen=True)
+class DemoRun:
+    """One command execution configured for a demo block."""
+
+    index: int
+    command_text: str
+    expected_exit_code: int = 0
+
+    @property
+    def exec_option_name(self) -> str:
+        """Get the directive option name for this run command."""
+        return "exec" if self.index == 1 else f"exec-{self.index}"
+
+    @property
+    def exit_code_option_name(self) -> str:
+        """Get the directive option name for this run's expected exit code."""
+        return "exec-exit-code" if self.index == 1 else f"exec-{self.index}-exit-code"
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -74,9 +123,63 @@ class DemoExecutor:
         if EXECUTABLE_NAME_RE.fullmatch(executable_name) is None:
             raise DemoDocError(f"Demo executable name is not allowed: {executable_name!r}")
         for argument in parts[1:]:
-            if ARGUMENT_RE.fullmatch(argument) is None:
+            if ARGUMENT_RE.fullmatch(argument) is not None:
+                continue
+            if self.parse_placeholder(argument, 0) is None:
                 raise DemoDocError(f"Demo argument is not allowed: {argument!r}")
         return parts
+
+    @staticmethod
+    def parse_placeholder(argument: str, index: int) -> DemoPlaceholder | None:
+        """Parse and validate one whole-argument placeholder."""
+        match = PLACEHOLDER_RE.fullmatch(argument)
+        if match is None:
+            return None
+        kind = match.group("kind")
+        value = match.group("value")
+        if kind == "file":
+            if value not in FILE_PLACEHOLDER_TYPES:
+                raise DemoDocError(f"Demo file placeholder type is not allowed: {value!r}")
+        elif kind == "directory":
+            if DIRECTORY_PLACEHOLDER_NAME_RE.fullmatch(value) is None:
+                raise DemoDocError(f"Demo directory placeholder name is not allowed: {value!r}")
+        return DemoPlaceholder(kind, value, index)
+
+    def expand_placeholders(self, arguments: list[str], temporary_dir: Path) -> list[str]:
+        """Replace placeholder arguments with safe temporary paths."""
+        expanded_arguments: list[str] = []
+        directory_paths: dict[str, Path] = {}
+        file_index = 0
+        for argument in arguments:
+            placeholder = self.parse_placeholder(argument, file_index)
+            if placeholder is None:
+                expanded_arguments.append(argument)
+                continue
+            if placeholder.kind == "file":
+                file_index += 1
+                expanded_arguments.append(str(self.create_placeholder_file(temporary_dir, placeholder)))
+            elif placeholder.kind == "directory":
+                directory_path = directory_paths.get(placeholder.value)
+                if directory_path is None:
+                    directory_path = temporary_dir / placeholder.value
+                    directory_path.mkdir()
+                    directory_paths[placeholder.value] = directory_path
+                expanded_arguments.append(str(directory_path))
+        return expanded_arguments
+
+    @staticmethod
+    def create_placeholder_file(temporary_dir: Path, placeholder: DemoPlaceholder) -> Path:
+        """Create the temporary file for a file placeholder."""
+        file_path = temporary_dir / f"file-{placeholder.index}-{placeholder.value}"
+        if placeholder.value == "empty":
+            file_path.touch()
+        elif placeholder.value == "text":
+            file_path.write_text(TEXT_PLACEHOLDER_CONTENT, encoding="utf-8")
+        elif placeholder.value == "none":
+            pass
+        else:
+            raise DemoDocError(f"Demo file placeholder type is not allowed: {placeholder.value!r}")
+        return file_path
 
     def executable_path(self, executable_name: str) -> Path:
         """Resolve and validate the executable path for a demo command."""
@@ -96,57 +199,89 @@ class DemoExecutor:
             raise DemoDocError(f"Demo executable is not executable: {executable_path}")
         return executable_path
 
-    def run(self, command_text: str) -> str:
+    def run(self, command_text: str, *, expected_exit_code: int = 0) -> str:
         """Run a validated demo command and return normalized ANSI text."""
+        if os.name != "posix":
+            raise DemoDocError("ANSI demo capture requires a POSIX pseudo-terminal.")
         parts = self.validate_command(command_text)
         executable_path = self.executable_path(parts[0])
-        command = [str(executable_path), *parts[1:]]
-        process = subprocess.Popen(
-            command,
-            cwd=self.project_dir,
-            env=safe_subprocess_environment(),
-            stdin=subprocess.DEVNULL,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-        )
-        if process.stdout is None:
-            raise DemoDocError("Could not capture demo output.")
-        output = bytearray()
-        output_limit_error: list[str] = []
-
-        def read_output() -> None:
-            while True:
-                chunk = process.stdout.read(4096)
-                if not chunk:
-                    return
-                if len(output) + len(chunk) > MAX_DEMO_OUTPUT_SIZE:
-                    output_limit_error.append("Demo output exceeds 1 MiB.")
-                    process.kill()
-                    return
-                output.extend(chunk)
-
-        output_thread = threading.Thread(target=read_output, daemon=True)
-        output_thread.start()
+        executable_argument = str(executable_path.relative_to(self.project_dir))
+        command = [executable_argument, *parts[1:]]
+        temporary_dir_context = None
+        if any(self.parse_placeholder(argument, 0) is not None for argument in parts[1:]):
+            temporary_dir_context = tempfile.TemporaryDirectory(prefix="erbsland-demo-doc-")
+            temporary_dir = Path(temporary_dir_context.name)
+            command = [executable_argument, *self.expand_placeholders(parts[1:], temporary_dir)]
+        process = None
+        terminal_master_fd = None
+        terminal_slave_fd = None
         try:
-            process.wait(timeout=DEMO_TIMEOUT_SECONDS)
-        except subprocess.TimeoutExpired:
-            process.kill()
+            terminal_master_fd, terminal_slave_fd = pty.openpty()
+            fcntl.ioctl(
+                terminal_slave_fd,
+                termios.TIOCSWINSZ,
+                struct.pack("HHHH", DEMO_TERMINAL_HEIGHT, DEMO_TERMINAL_WIDTH, 0, 0),
+            )
+            process = subprocess.Popen(
+                command,
+                cwd=self.project_dir,
+                env=safe_subprocess_environment(),
+                stdin=subprocess.DEVNULL,
+                stdout=terminal_slave_fd,
+                stderr=terminal_slave_fd,
+            )
+            os.close(terminal_slave_fd)
+            terminal_slave_fd = None
+            output = bytearray()
+            output_limit_error: list[str] = []
+
+            def read_output() -> None:
+                while True:
+                    try:
+                        chunk = os.read(terminal_master_fd, 4096)
+                    except OSError as error:
+                        if error.errno == errno.EIO:
+                            return
+                        raise
+                    if not chunk:
+                        return
+                    if len(output) + len(chunk) > MAX_DEMO_OUTPUT_SIZE:
+                        output_limit_error.append("Demo output exceeds 1 MiB.")
+                        process.kill()
+                        return
+                    output.extend(chunk)
+
+            output_thread = threading.Thread(target=read_output, daemon=True)
+            output_thread.start()
+            try:
+                process.wait(timeout=DEMO_TIMEOUT_SECONDS)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                output_thread.join(timeout=1)
+                raise DemoDocError(f"Demo execution timed out after {DEMO_TIMEOUT_SECONDS} seconds.") from None
             output_thread.join(timeout=1)
-            process.stdout.close()
-            raise DemoDocError(f"Demo execution timed out after {DEMO_TIMEOUT_SECONDS} seconds.") from None
-        output_thread.join(timeout=1)
-        process.stdout.close()
-        if output_limit_error:
-            raise DemoDocError(output_limit_error[0])
-        raw_output = bytes(output)
-        text = raw_output.decode("utf-8", errors="replace")
-        if len(text.splitlines()) > MAX_DEMO_OUTPUT_LINES:
-            raise DemoDocError(f"Demo output exceeds {MAX_DEMO_OUTPUT_LINES} lines.")
-        if process.returncode != 0:
-            excerpt = text.strip().splitlines()
-            detail = f" Last output line: {excerpt[-1]}" if excerpt else ""
-            raise DemoDocError(f"Demo command failed with exit code {process.returncode}.{detail}")
-        return self.convert_output(raw_output)
+            if output_limit_error:
+                raise DemoDocError(output_limit_error[0])
+            raw_output = bytes(output)
+            text = raw_output.decode("utf-8", errors="replace")
+            if len(text.splitlines()) > MAX_DEMO_OUTPUT_LINES:
+                raise DemoDocError(f"Demo output exceeds {MAX_DEMO_OUTPUT_LINES} lines.")
+            if process.returncode != expected_exit_code:
+                excerpt = text.strip().splitlines()
+                detail = f" Last output line: {excerpt[-1]}" if excerpt else ""
+                if expected_exit_code == 0:
+                    raise DemoDocError(f"Demo command failed with exit code {process.returncode}.{detail}")
+                raise DemoDocError(
+                    f"Demo command exited with {process.returncode}, expected {expected_exit_code}.{detail}"
+                )
+            return self.convert_output(raw_output)
+        finally:
+            if terminal_slave_fd is not None:
+                os.close(terminal_slave_fd)
+            if terminal_master_fd is not None:
+                os.close(terminal_master_fd)
+            if temporary_dir_context is not None:
+                temporary_dir_context.cleanup()
 
     @staticmethod
     def convert_output(raw_output: bytes) -> str:
@@ -160,9 +295,9 @@ class DemoExecutor:
                     "erbsland-ansi-convert is required for ANSI or cursor-control demo output."
                 ) from None
             return text.replace("\r\n", "\n").replace("\r", "\n")
-        terminal = Terminal(width=120, height=40, back_buffer_height=2000)
-        terminal.write(text, collapse_capture_updates=True)
-        return terminal.to_ansi()
+        terminal = Terminal(width=DEMO_TERMINAL_WIDTH, height=DEMO_TERMINAL_HEIGHT, back_buffer_height=2000)
+        terminal.write(text)
+        return f"{terminal.to_ansi()}\n" if raw_output else ""
 
 
 class DemoDocSynchronizer:
@@ -170,7 +305,10 @@ class DemoDocSynchronizer:
 
     RE_START = re.compile(r"^(?P<indent>\s*)\.\.\s+erbsland-demo::\s*$")
     RE_END = re.compile(r"^\s*\.\.\s+erbsland-demo-end::\s*$")
-    RE_OPTION = re.compile(r"^\s+:(?P<name>source|exec|source-sha256):\s*(?P<value>.*)$")
+    RE_OPTION = re.compile(
+        r"^\s+:(?P<name>source|source-sha256|show-cmd-line|exec(?:-\d+)?(?:-exit-code)?):\s*(?P<value>.*)$"
+    )
+    RE_EXEC_OPTION = re.compile(r"^exec(?:-(?P<index>\d+))?$")
 
     def __init__(self, project_dir: Path, *, force: bool = False) -> None:
         self.project_dir = project_dir
@@ -275,19 +413,26 @@ class DemoDocSynchronizer:
             f"{block.indent}.. erbsland-demo::",
             f"{block.indent}    :source: {source_option}",
         ]
-        exec_option = block.options.get("exec", "")
-        if exec_option:
-            lines.append(f"{block.indent}    :exec: {exec_option}")
+        runs = self.parse_runs(block.options, issues)
+        show_cmd_line = "show-cmd-line" in block.options
+        for run in runs:
+            lines.append(f"{block.indent}    :{run.exec_option_name}: {run.command_text}")
+            if run.expected_exit_code != 0:
+                lines.append(f"{block.indent}    :{run.exit_code_option_name}: {run.expected_exit_code}")
+        if show_cmd_line:
+            lines.append(f"{block.indent}    :show-cmd-line:")
         if source_hash:
             lines.append(f"{block.indent}    :source-sha256: {source_hash}")
         lines.append("")
 
         if display_source_lines:
             self.append_code_block(lines, block.indent, display_source_lines)
-        if exec_option:
+        for run in runs:
             try:
-                output = self.executor.run(exec_option)
+                output = self.executor.run(run.command_text, expected_exit_code=run.expected_exit_code)
                 if output:
+                    if show_cmd_line or len(runs) > 1:
+                        self.append_command_rubric(lines, block.indent, run.command_text)
                     self.append_ansi_block(lines, block.indent, output)
             except DemoDocError as error:
                 issues.append(str(error))
@@ -295,6 +440,47 @@ class DemoDocSynchronizer:
             self.append_note(lines, block.indent, issues)
         lines.append(f"{block.indent}.. erbsland-demo-end::")
         return GeneratedBlock("\n".join(lines), tuple(issues))
+
+    def parse_runs(self, options: dict[str, str], issues: list[str]) -> list[DemoRun]:
+        """Parse all configured demo command executions."""
+        commands: dict[int, str] = {}
+        expected_exit_codes: dict[int, int] = {}
+        for name, value in options.items():
+            match = self.RE_EXEC_OPTION.fullmatch(name)
+            if match is not None:
+                index = int(match.group("index") or "1")
+                commands[index] = value
+                continue
+            if name == "exec-exit-code":
+                self.parse_expected_exit_code(name, value, 1, expected_exit_codes, issues)
+                continue
+            if name.startswith("exec-") and name.endswith("-exit-code"):
+                index_text = name[len("exec-") : -len("-exit-code")]
+                if index_text.isdigit():
+                    self.parse_expected_exit_code(name, value, int(index_text), expected_exit_codes, issues)
+        return [
+            DemoRun(index=index, command_text=command_text, expected_exit_code=expected_exit_codes.get(index, 0))
+            for index, command_text in sorted(commands.items())
+        ]
+
+    @staticmethod
+    def parse_expected_exit_code(
+        option_name: str,
+        value: str,
+        index: int,
+        expected_exit_codes: dict[int, int],
+        issues: list[str],
+    ) -> None:
+        """Parse one expected exit code option."""
+        try:
+            exit_code = int(value)
+        except ValueError:
+            issues.append(f"Invalid :{option_name}: value: expected an integer.")
+            return
+        if exit_code < 0:
+            issues.append(f"Invalid :{option_name}: value: expected a non-negative integer.")
+            return
+        expected_exit_codes[index] = exit_code
 
     def load_display_source(self, source_option: str) -> tuple[str, list[str]]:
         """Read and trim the display source for one block."""
@@ -311,7 +497,67 @@ class DemoDocSynchronizer:
         display_lines = source_lines[start_index:]
         while display_lines and not display_lines[-1].strip():
             display_lines.pop()
+        display_lines = self.remove_display_namespace_tail(source_lines, start_index, display_lines)
         return source_hash, display_lines
+
+    @staticmethod
+    def remove_display_namespace_tail(source_lines: list[str], start_index: int, display_lines: list[str]) -> list[str]:
+        """Remove the demo namespace close and any following wrapper code."""
+        namespace_index = next(
+            (
+                index
+                for index, line in reversed(tuple(enumerate(source_lines[:start_index])))
+                if line.strip() == "namespace demo {"
+            ),
+            None,
+        )
+        if namespace_index is None or not display_lines:
+            return display_lines
+        namespace_end = DemoDocSynchronizer.find_namespace_end(source_lines, namespace_index)
+        if namespace_end is None or namespace_end <= start_index:
+            return display_lines
+        result = source_lines[start_index:namespace_end]
+        while result and not result[-1].strip():
+            result.pop()
+        return result
+
+    @staticmethod
+    def find_namespace_end(source_lines: list[str], namespace_index: int) -> int | None:
+        """Find the matching closing brace for a namespace line."""
+        depth = 0
+        for index, line in enumerate(source_lines[namespace_index:], start=namespace_index):
+            depth += DemoDocSynchronizer.brace_delta(line)
+            if index > namespace_index and depth == 0:
+                return index
+        return None
+
+    @staticmethod
+    def brace_delta(line: str) -> int:
+        """Count curly braces outside simple strings and line comments."""
+        result = 0
+        quote = ""
+        escaped = False
+        index = 0
+        while index < len(line):
+            character = line[index]
+            if quote:
+                if escaped:
+                    escaped = False
+                elif character == "\\":
+                    escaped = True
+                elif character == quote:
+                    quote = ""
+            else:
+                if character == "/" and index + 1 < len(line) and line[index + 1] == "/":
+                    break
+                if character in {"'", '"'}:
+                    quote = character
+                elif character == "{":
+                    result += 1
+                elif character == "}":
+                    result -= 1
+            index += 1
+        return result
 
     def source_hash(self, source_option: str) -> str:
         """Read and hash one demo source file."""
@@ -337,6 +583,11 @@ class DemoDocSynchronizer:
         lines.extend([f"{indent}.. code-block:: cpp", ""])
         lines.extend(f"{indent}    {line}" if line else "" for line in source_lines)
         lines.append("")
+
+    @staticmethod
+    def append_command_rubric(lines: list[str], indent: str, command_text: str) -> None:
+        """Append a command line label before generated output."""
+        lines.extend([f"{indent}.. rubric:: ``$ {command_text}``", ""])
 
     @staticmethod
     def append_ansi_block(lines: list[str], indent: str, output: str) -> None:
@@ -436,9 +687,9 @@ class DemoDocRunner:
 
 
 class DemoDocApp(UtilityApp):
-    """Validate or synchronize managed documentation demo blocks."""
+    """Validate, synchronize, or refresh managed documentation demo blocks."""
 
-    description = "Validate or synchronize erbsland-demo documentation blocks."
+    description = "Validate, synchronize, or refresh erbsland-demo documentation blocks."
 
     def __init__(self) -> None:
         super().__init__()
@@ -449,16 +700,20 @@ class DemoDocApp(UtilityApp):
         self.target = Path()
 
     def add_command_line_args(self, parser: argparse.ArgumentParser) -> None:
-        parser.add_argument("mode", choices=("validate", "sync"), help="Validate or synchronize demo blocks.")
+        parser.add_argument(
+            "mode",
+            choices=("validate", "sync", "refresh"),
+            help="Validate, synchronize, or recursively refresh demo blocks.",
+        )
         parser.add_argument("-r", "--recursive", action="store_true", help="Process directories recursively.")
         parser.add_argument("--force", action="store_true", help="Regenerate blocks even when the source hash matches.")
         parser.add_argument("target", type=Path, help="An .rst file or directory to process.")
 
     def handle_command_line_args(self, args: argparse.Namespace) -> None:
         self.project_dir = self.project_directory
-        self.mode = args.mode
-        self.force = args.force
-        self.recursive = args.recursive
+        self.mode = "sync" if args.mode == "refresh" else args.mode
+        self.force = args.force or args.mode == "refresh"
+        self.recursive = args.recursive or args.mode == "refresh"
         self.target = args.target
 
     def run(self, argv=None) -> None:

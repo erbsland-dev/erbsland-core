@@ -7,7 +7,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Identifier for a generated global rule set.
-/// @notest{Internal generated-data helper.}
 using RuleSetId = uint16_t;
 
 }

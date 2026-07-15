@@ -44,7 +44,7 @@ public:
     /// Construct a buffer with the given size and fill it with an initial block.
     /// @param size The dimensions of the buffer. bgeo::BlockSize must be at least 1x1.
     /// @param fillChar The optional fill character for the buffer.
-    /// @throws std::invalid_argument if size is invalid
+    /// @throws err::ParameterError if size is invalid.
     explicit Buffer(bgeo::BlockSize size, Block fillChar = Block::space());
 
     // defaults

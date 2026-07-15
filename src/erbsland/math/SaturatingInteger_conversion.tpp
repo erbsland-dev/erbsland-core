@@ -19,7 +19,7 @@ template <AnyIntegerType T>
 constexpr auto SaturatingInteger<tValue>::castOrThrow() const -> SaturatingInteger<NativeIntegerOfT<T>> {
     using Target = NativeIntegerOfT<T>;
     if (willCastOverflow<Target>(_value)) {
-        err::throwOverflow("Saturating integer value cannot be represented by the target type");
+        impl::throwOverflow("Saturating integer value cannot be represented by the target type");
     }
     return SaturatingInteger<Target>{_value};
 }

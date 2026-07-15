@@ -65,8 +65,8 @@ Do not log real secrets in application code unless the surrounding security mode
 
 .. erbsland-demo::
     :source: random/RandomTopics/SecureTokens.cpp
-    :exec: random_topics --demo SecureTokens
-    :source-sha256: 44df9fba9a6a0308e0cba5f595f4c07f75f0d06779c8aaa010a6e5dcaef5a889
+    :exec: random/random_topics --demo SecureTokens
+    :source-sha256: cb6da977b10fff0006d2aa9b9a6b3060305b8625e9326b2ae9d7081d89344530
 
 .. code-block:: cpp
 
@@ -138,7 +138,7 @@ Failure Behavior
 ================
 
 If the operating system entropy source cannot provide random bytes, the API throws
-:cpp:class:`RandomError <erbsland::err::RandomError>`.
+:cpp:class:`RandomError <erbsland::random::RandomError>`.
 This is intentional.
 A secure generator must not silently continue with predictable data.
 
@@ -155,8 +155,8 @@ Logging and Display
 Treat generated secrets as sensitive data from the moment they are created.
 Avoid logging complete tokens, keys, salts, nonces, session identifiers, and reset links.
 
-For diagnostics, prefer stable properties such as length, character-set validation, byte count, or a boolean
-success result.
+For diagnostics, prefer stable properties such as length, character-set validation, byte count, or a boolean success
+result.
 If production diagnostics require correlation, use a design that does not reveal the secret itself, such as a separate
 identifier or a carefully reviewed redaction policy.
 

@@ -6,12 +6,12 @@
 
 namespace erbsland::stream::impl {
 
-/// Identifies one or both process standard streams.
-/// @tested{StandardStreamsTest}
+/// Identifies one or more process standard streams.
 enum class StandardStreamSlot : uint8_t {
+    In,  ///< The standard input stream.
     Out, ///< The standard output stream.
     Err, ///< The standard error stream.
-    Both ///< Both standard streams.
+    Both ///< Both standard output streams.
 };
 
 }

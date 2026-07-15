@@ -9,7 +9,6 @@
 namespace erbsland::time {
 
 /// Flags for ISO date/time formatting.
-/// @tested{DateTimeTest}
 enum class IsoTimeFormat : uint8_t {
     Extended = 1U << 0U,                ///< Use separators such as `-`, `:`, and extended offsets.
     TimePrefix = 1U << 1U,              ///< Prefix standalone time output with `T`.

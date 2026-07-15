@@ -8,8 +8,7 @@
 #include "SaturatingMath.hpp"
 
 #include "impl/SaturatingMathHelper.hpp"
-
-#include "../err/ThrowHelper.hpp"
+#include "impl/Throw.hpp"
 
 #include <compare>
 #include <concepts>

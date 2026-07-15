@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParagraphOptions.hpp"
 
+#include "../err/ParameterError.hpp"
+
 namespace erbsland::cterm {
 
 auto ParagraphOptions::alignment() const noexcept -> bgeo::Alignment {
@@ -66,10 +68,10 @@ auto ParagraphOptions::lineBreakEndMark() const noexcept -> const BlockString & 
 
 void ParagraphOptions::setLineBreakEndMark(BlockString mark) {
     if (mark.length() > BlockCount{2U}) {
-        throw std::invalid_argument{"Line break end mark must not exceed two characters."};
+        throw err::ParameterError{"Line break end mark must not exceed two characters.", "mark"};
     }
     if (mark.containsControlCharacters()) {
-        throw std::invalid_argument{"Line break end mark must not contain control characters."};
+        throw err::ParameterError{"Line break end mark must not contain control characters.", "mark"};
     }
     _lineBreakEndMark = std::move(mark);
 }
@@ -79,11 +81,8 @@ auto ParagraphOptions::lineBreakStartMark() const noexcept -> const BlockString 
 }
 
 void ParagraphOptions::setLineBreakStartMark(BlockString mark) {
-    if (mark.length() > BlockCount{2U}) {
-        throw std::invalid_argument{"Line break start mark must not exceed two characters."};
-    }
     if (mark.containsControlCharacters()) {
-        throw std::invalid_argument{"Line break start mark must not contain control characters."};
+        throw err::ParameterError{"Line break start mark must not contain control characters.", "mark"};
     }
     _lineBreakStartMark = std::move(mark);
 }

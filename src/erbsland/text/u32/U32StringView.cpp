@@ -106,6 +106,14 @@ auto U32StringView::length() const noexcept -> unit::CpLength {
     return impl::U32StringReadTools{dataView()}.length();
 }
 
+auto U32StringView::characterLength() const noexcept -> unit::CpLength {
+    return impl::U32StringReadTools{dataView()}.length();
+}
+
+auto U32StringView::displayWidth() const noexcept -> int {
+    return impl::U32StringReadTools{dataView()}.displayWidth();
+}
+
 auto U32StringView::indexAt(const StringSide side) const noexcept -> unit::CpIndex {
     return side == StringSide::Front ? unit::CpIndex::zero() : unit::CpIndex::end(length());
 }
@@ -126,6 +134,14 @@ auto U32StringView::charAt(const StringSide side) const noexcept -> Char {
 
 auto U32StringView::charAt(const unit::CpIndex startIndex) const noexcept -> Char {
     return impl::U32StringReadTools{dataView()}.charAt(startIndex);
+}
+
+auto U32StringView::readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char {
+    return impl::U32StringReadTools{dataView()}.read(index);
+}
+
+auto U32StringView::readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char {
+    return impl::U32StringReadTools{dataView()}.readAndRetreat(index);
 }
 
 auto U32StringView::operator[](const unit::CpIndex index) const noexcept -> Char {
@@ -161,6 +177,17 @@ auto U32StringView::slice(const StringSide side, const unit::CpLength length) co
     return slice(unit::CpRange{start, indexAt(StringSide::Back)});
 }
 
+auto U32StringView::slice(const StringSide side, const unit::CpIndex index) const noexcept -> U32StringView {
+    const auto end = indexAt(StringSide::Back);
+    if (index.isNoIndex() || index >= end) {
+        return side == StringSide::Front ? slice(unit::CpRange{unit::CpIndex::zero(), end}) : U32StringView{};
+    }
+    if (side == StringSide::Front) {
+        return slice(unit::CpRange{unit::CpIndex::zero(), index});
+    }
+    return slice(unit::CpRange{index, end});
+}
+
 auto U32StringView::slice(const StringSide side) const noexcept -> std::tuple<Char, U32StringView> {
     if (isEmpty()) {
         return {Char::endOfData(), {}};
@@ -174,6 +201,10 @@ auto U32StringView::slice(const StringSide side) const noexcept -> std::tuple<Ch
     auto start = indexAt(StringSide::Back);
     retreat(start);
     return {charAt(start), slice(unit::CpRange{indexAt(StringSide::Front), start})};
+}
+
+auto U32StringView::splitAt(const unit::CpIndex index) const noexcept -> std::pair<U32StringView, U32StringView> {
+    return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
 }
 
 auto U32StringView::removed(const unit::CpRange range) const -> U32String {

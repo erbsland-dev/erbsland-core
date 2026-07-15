@@ -6,6 +6,7 @@
 #include "../bgeo/BlockPosition.hpp"
 #include "../bgeo/BlockRectangle.hpp"
 #include "../bgeo/BlockSize.hpp"
+#include "../err/OutOfRangeError.hpp"
 #include "../text/String.hpp"
 #include "../text/StringView.hpp"
 
@@ -15,7 +16,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <initializer_list>
-#include <stdexcept>
 #include <vector>
 
 namespace erbsland::cterm {
@@ -23,6 +23,7 @@ namespace erbsland::cterm {
 /// A mutable bitmap storing boolean pixels in row-major order.
 class Bitmap {
 protected:
+    /// Raw bitmap pixel storage.
     using Data = std::vector<bool>;
 
 public:
@@ -159,15 +160,20 @@ public: // conversion
     [[nodiscard]] auto toPattern() const -> text::String;
 
 protected:
+    /// Access one in-bounds pixel for modification.
+    /// @param pos The pixel position.
+    /// @throws err::OutOfRangeError if ``pos`` is outside the bitmap.
     [[nodiscard]] auto pixelRef(const bgeo::BlockPosition pos) -> Data::reference {
         if (!_size.contains(pos)) {
-            throw std::out_of_range{"bgeo::BlockPosition out of bounds."};
+            throw err::OutOfRangeError{"bgeo::BlockPosition out of bounds."};
         }
         return _data[_size.index(pos)];
     }
 
 protected:
+    /// Bitmap dimensions.
     bgeo::BlockSize _size;
+    /// Raw pixel states in row-major order.
     Data _data;
 };
 

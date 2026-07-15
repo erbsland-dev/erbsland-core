@@ -59,6 +59,7 @@
 
 #include <cstddef>
 #include <functional>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -74,7 +75,7 @@ namespace erbsland::text {
 /// Use `StringView`/`U8StringView` for storage and read-only access.
 /// Always creates a copy of the data when constructed from a view.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U8StringTest}
+/// @tested{U8StringTest StringEscapingTest}
 class U8String {
     friend class debug::impl::StringDebugAccess;
     friend class U8StringView;
@@ -82,6 +83,7 @@ class U8String {
     friend class impl::U8StringEncodingTools;
     friend class impl::StringConversionTools;
     friend class impl::UnsafeU8StringAccess;
+    friend class impl::UnsafeU8StringBuffer;
     friend class impl::U8StringBuilder;
 
 public:
@@ -155,12 +157,18 @@ public: // read
     [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
     /// @copydoc erbsland::text::U8StringView::characterLength() const
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// @copydoc erbsland::text::U8StringView::displayWidth() const
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U8StringView::indexAt(StringSide) const
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::ByteIndex;
     /// @copydoc erbsland::text::U8StringView::charAt(StringSide) const
     [[nodiscard]] auto charAt(StringSide side) const noexcept -> Char;
     /// @copydoc erbsland::text::U8StringView::charAt(unit::ByteIndex) const
     [[nodiscard]] auto charAt(unit::ByteIndex startIndex) const noexcept -> Char;
+    /// @copydoc erbsland::text::U8StringView::readCharAndAdvance(unit::ByteIndex &) const
+    [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U8StringView::readCharAndRetreat(unit::ByteIndex &) const
+    [[nodiscard]] auto readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U8StringView::charAt(unit::CpIndex) const
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
     /// @copydoc erbsland::text::U8StringView::advance(unit::ByteIndex &, unit::CpLength) const
@@ -181,10 +189,18 @@ public: // slice
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U8String;
     /// @copydoc erbsland::text::U8StringView::slice(StringSide, unit::ByteLength) const
     [[nodiscard]] auto slice(StringSide side, unit::ByteLength length) const noexcept -> U8String;
+    /// @copydoc erbsland::text::U8StringView::slice(StringSide, unit::ByteIndex) const
+    [[nodiscard]] auto slice(StringSide side, unit::ByteIndex index) const noexcept -> U8String;
     /// @copydoc erbsland::text::U8StringView::slice(StringSide, unit::CpLength) const
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U8String;
+    /// @copydoc erbsland::text::U8StringView::slice(StringSide, unit::CpIndex) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U8String;
     /// @copydoc erbsland::text::U8StringView::slice(StringSide) const
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U8String>;
+    /// @copydoc erbsland::text::U8StringView::splitAt(unit::ByteIndex) const
+    [[nodiscard]] auto splitAt(unit::ByteIndex index) const noexcept -> std::pair<U8String, U8String>;
+    /// @copydoc erbsland::text::U8StringView::splitAt(unit::CpIndex) const
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U8String, U8String>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
@@ -219,6 +235,7 @@ public: // find
     /// Find text in this string starting at a byte index.
     /// @param text The text to find.
     /// @param start The byte index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The byte index of the first match, or `ByteIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(
@@ -340,16 +357,18 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::ByteLength;
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U8String;
     /// Create a string from one Unicode code point repeated one or more times.
     [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one()) -> U8String;
+    /// Create a string by joining all parts without a separator.
+    /// @param parts The UTF-8 string views to join.
+    /// @return The joined string.
+    [[nodiscard]] static auto fromJoined(std::initializer_list<U8StringView> parts) -> U8String;
     /// Create a string from an integer using the given format.
     template <math::AnyIntegerType T>
     [[nodiscard]] static auto fromInteger(T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> U8String;

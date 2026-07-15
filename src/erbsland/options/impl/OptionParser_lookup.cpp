@@ -2,14 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionParser.hpp"
 
+#include "OptionDisplayModel.hpp"
+
 #include "../Option.hpp"
 #include "../OptionChoices.hpp"
+#include "../OptionFlag.hpp"
 #include "../OptionModule.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
 
 #include "../../text/Literals.hpp"
+#include "../../text/StringFormat.hpp"
 
 namespace erbsland::options::impl {
 
@@ -25,15 +29,18 @@ auto OptionParser::collectActiveOptionSets() -> std::vector<OptionSetPtr> {
         moduleSetCount = _selectedModule->optionSets().size();
     }
     result.reserve(_options->optionSets().size() + moduleSetCount + 1U);
-    if (_options->builtInOptionSet() != nullptr) {
-        result.emplace_back(_options->builtInOptionSet());
-    }
+    const auto addEnabledSet = [&result](const OptionSetPtr &optionSet) -> void {
+        if (optionSet != nullptr && !optionSet->flags().isSet(OptionFlag::Disabled)) {
+            result.emplace_back(optionSet);
+        }
+    };
+    addEnabledSet(_options->builtInOptionSet());
     for (const auto &optionSet : _options->optionSets()) {
-        result.emplace_back(optionSet);
+        addEnabledSet(optionSet);
     }
     if (_selectedModule != nullptr) {
         for (const auto &optionSet : _selectedModule->optionSets()) {
-            result.emplace_back(optionSet);
+            addEnabledSet(optionSet);
         }
     }
     return result;
@@ -119,21 +126,27 @@ auto OptionParser::validateOptionNames() -> bool {
             if (!option->hasValidOptionNames()) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Malformed option definition"_el,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} contains one or more malformed option names."}.build(
+                        OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);
             }
             if (option->isPositionalArgument() && option->type() == OptionType::Flag) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Positional flags are not supported"_el,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} is positional, but positional arguments cannot be flags."}.build(
+                        OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);
             }
             if (option->choices() != nullptr && option->type() != OptionType::Choice) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition: choices require OptionType::Choice"_el,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} defines choices, but its type is not OptionType::Choice."}.build(
+                        OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);
             }
@@ -141,7 +154,9 @@ auto OptionParser::validateOptionNames() -> bool {
                 (option->choices() == nullptr || option->choices()->choiceCount().isZero())) {
                 return makeError(
                     OptionErrorReason::SyntaxError,
-                    "Invalid option definition: choice options require at least one choice"_el,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} is a choice option, but it has no accepted choices."}.build(
+                        OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);
             }
@@ -154,6 +169,8 @@ auto OptionParser::validateOptionNames() -> bool {
                         return makeError(
                             OptionErrorReason::SyntaxError,
                             "Duplicate option name"_el,
+                            text::StringFormat{"{} conflicts with another active option definition."}.build(
+                                OptionDisplayModel::optionTitle(option)),
                             unit::ArgumentIndex::noIndex(),
                             option);
                     }

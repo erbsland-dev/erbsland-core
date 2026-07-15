@@ -66,11 +66,16 @@ public: // find
 public: // read
     /// Get the UTF-16 code-unit length of the view.
     [[nodiscard]] auto byteLength() const noexcept -> unit::U16DataLength;
+    /// Get the approximate display width of the decoded text.
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Access the character at the given start UTF-16 code-unit position.
     [[nodiscard]] auto charAt(unit::U16DataIndex startIndex) const noexcept -> Char;
     /// Read the character at the given index and advance the index.
     /// If the index is out of bounds, returns a signal character and does not advance the index.
     [[nodiscard]] auto read(unit::U16DataIndex &index) const noexcept -> Char;
+    /// Read the character before the given index and retreat the index.
+    /// If the index is out of bounds, returns a signal character and does not retreat the index.
+    [[nodiscard]] auto readAndRetreat(unit::U16DataIndex &index) const noexcept -> Char;
     /// Access the character at the given start UTF-16 code-unit position or throw if no valid character is found.
     [[nodiscard]] auto charAtOrThrow(unit::U16DataIndex startIndex) const -> Char;
     /// Read the character at the given index and advance the index.

@@ -159,7 +159,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
     auto bitmapWidth = 0;
     auto renderedGlyphs = 0;
     for (const auto &character : paragraph) {
-        if (const auto *glyph = font.glyph(character.charStr()); glyph != nullptr) {
+        if (const auto *glyph = font.glyph(character.toString()); glyph != nullptr) {
             bitmapWidth += glyph->size().width().toRawValue();
             ++renderedGlyphs;
         }
@@ -173,7 +173,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
     auto insertX = 0;
     auto isFirstGlyph = true;
     for (const auto &character : paragraph) {
-        const auto *glyph = font.glyph(character.charStr());
+        const auto *glyph = font.glyph(character.toString());
         if (glyph == nullptr) {
             continue;
         }

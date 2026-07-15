@@ -167,8 +167,8 @@ Operations on views are fast because the underlying memory is never modified or 
 
 .. erbsland-demo::
     :source: text/StringView/IdealFunctionParameter.cpp
-    :exec: string_view --demo IdealFunctionParameter
-    :source-sha256: 7f30c1aef390a47d3009f7504901ad413d7afc925511d65df99067b03de495e1
+    :exec: text/string_view --demo IdealFunctionParameter
+    :source-sha256: 1174794885cf3e3869b50c12bebb9246f83997dd0f2fa21ee42a3be804f58d28
 
 .. code-block:: cpp
 
@@ -237,8 +237,8 @@ They are zero-cost references to read-only memory and can be converted to views 
 
 .. erbsland-demo::
     :source: text/StringLiteral/ZeroCost.cpp
-    :exec: string_literal --demo ZeroCost
-    :source-sha256: 383f73b1aa39f7278cd933e4feb2bc223fb7721a68dfed9db837eed6573f37f6
+    :exec: text/string_literal --demo ZeroCost
+    :source-sha256: 4a98e5b2c72e216725444dac86c354166cb6a0c9e44bd6774222addb7c8e90d7
 
 .. code-block:: cpp
 
@@ -279,15 +279,16 @@ They are zero-cost references to read-only memory and can be converted to views 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    A story: Story here
+    Forest story .: 🌲 Im Wald rauscht der Wind.
     Valid UTF-8 ..: true
-    Length .......: 10 bytes / 10 code-points
-    Another story:
-    Another story here
+    Length .......: 30 bytes / 27 code-points
+
+    River story ..: 川の水は静かに流れます。
     Valid UTF-8 ..: true
-    Length .......: 18 bytes / 18 code-points
-    Copy: Story here
-    Length: 10 bytes
+    Length .......: 36 bytes / 12 code-points
+
+    Copy .........: 🌲 Im Wald rauscht der Wind.
+    Length .......: 30 bytes
 
 .. erbsland-demo-end::
 
@@ -303,8 +304,8 @@ Use them when you need to modify, append, or store strings that outlive their so
 
 .. erbsland-demo::
     :source: text/String/EditingText.cpp
-    :exec: string --demo EditingText
-    :source-sha256: c22d511e71c1bdb50b5d13618e77bd50d83e588671ec2bcf7bf814a6a009d5d4
+    :exec: text/string --demo EditingText
+    :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 
@@ -313,21 +314,21 @@ Use them when you need to modify, append, or store strings that outlive their so
     /// Use `StringView` for parameters and stored read-only text.
     void editingText() {
         // Create an editable string from a string literal.
-        auto story = el::String{"The forest wakes up at sunrise. A small fox follows the river. "
+        auto story = el::String{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                 "Der Wind trägt Blätter durch die Luft."_el};
 
         // Alternatively, create an editable string directly with the `""_els` literal.
-        auto intro = "A short forest story:"_els;
+        auto intro = "A short alpine field note:"_els;
 
         // Find the insertion position after the first sentence.
         auto firstFullStopIndex = story.findFirstOf({U'.'});
         story.advance(firstFullStopIndex, el::CpLength{2});
 
         // Insert a new sentence after the first sentence.
-        story.insert(firstFullStopIndex, "Birds start singing in the old oak tree. "_el);
+        story.insert(firstFullStopIndex, "Sunlight reaches the wet limestone. "_el);
 
-        // Replace the main character.
-        story.replaceAll("small fox"_el, "curious hedgehog"_el);
+        // Replace the main subject.
+        story.replaceAll("pale crocus"_el, "violet gentian"_el);
 
         // Remove one sentence from the story.
         constexpr auto sentenceBeginText = "Der Wind"_el;
@@ -349,10 +350,10 @@ Use them when you need to modify, append, or store strings that outlive their so
 .. erbsland-ansi::
     :escape-char: ␛
 
-    A short forest story:
-    The forest wakes up at sunrise.
-    Birds start singing in the old oak tree.
-    A curious hedgehog follows the river.
+    A short alpine field note:
+    The frost lifts from the valley.
+    Sunlight reaches the wet limestone.
+    A violet gentian opens beside the stone.
      🌿 The day begins quietly.
 
 .. erbsland-demo-end::
@@ -381,8 +382,8 @@ than the cost for scanning code-point positions.
 
 .. erbsland-demo::
     :source: text/StringCharView/CharacterGrid.cpp
-    :exec: string_char_view --demo CharacterGrid
-    :source-sha256: f8056e0eef1155e3a35de422edb056c8c57fac29dec9fa729326e0b361a50d13
+    :exec: text/string_char_view --demo CharacterGrid
+    :source-sha256: 005674346673a841ca9e58bda504a51cddb0eef5e14385cc78ec9d0be77bc014
 
 .. code-block:: cpp
 
@@ -468,8 +469,8 @@ You can pass strings around freely without worrying about performance.
 
 .. erbsland-demo::
     :source: text/String/CopyOnWrite.cpp
-    :exec: string --demo CopyOnWrite
-    :source-sha256: 934ce4bb47a1b8100dc044e7695172c7ced378a8acd3ee79010666edbba1e5c8
+    :exec: text/string --demo CopyOnWrite
+    :source-sha256: be0c1ab709b406e5188d847f1ee31c8c782d4136f893fe0a0e00cc031cd79abf
 
 .. code-block:: cpp
 
@@ -527,35 +528,35 @@ You can pass strings around freely without worrying about performance.
     After copying a -> b and b -> c
     a: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     b: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     c: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
     After modifying b
     a: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     b: The secret is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd902:0x1a0ad47e8412b656
+        backingStorageId: 0x2623570ea73c9bc2:0x1a0ad47c5bd2f496
     c: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
     After modifying a
     a: The treasure is hidden under the old oak tree. Nobody has found it yet.
     U8String:
-        backingStorageId: 0x2623570c78fc1942:0x1a0ad47e8412767b
+        backingStorageId: 0x2623570ea6bdd942:0x1a0ad47c5a53b67b
     b: The secret is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd902:0x1a0ad47e8412b656
+        backingStorageId: 0x2623570ea73c9bc2:0x1a0ad47c5bd2f496
     c: The treasure is hidden under the old oak tree.
     U8String:
-        backingStorageId: 0x2623570c78fcd942:0x1a0ad47e8412b614
+        backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
 .. erbsland-demo-end::
 
@@ -584,8 +585,8 @@ The reasons for this design choice are:
 
 .. erbsland-demo::
     :source: text/StringView/StdVsCoreSplitAndJoin.cpp
-    :exec: string_view --demo stdVsCoreSplitAndJoin
-    :source-sha256: d4252c2565f4d5a6471d048b74dd6829f48553a0e56ce634b14df878a9f19561
+    :exec: text/string_view --demo stdVsCoreSplitAndJoin
+    :source-sha256: 4aa65130bd09146bdd3332b670fc23bf80093c8f944551c424abb85f273ec3e6
 
 .. code-block:: cpp
 

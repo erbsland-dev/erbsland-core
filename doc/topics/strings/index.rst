@@ -20,4 +20,5 @@ Strings
     slicing_splitting_and_joining
     string_attributes
     using_string_format
+    using_string_patterns
     working_with_character_sets

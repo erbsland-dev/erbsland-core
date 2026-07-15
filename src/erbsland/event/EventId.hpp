@@ -2,18 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "EventIdRegistry_fwd.hpp"
+#include "EventRegistry_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <functional>
 
 namespace erbsland::event {
 
 /// Represents a type of event.
 class EventId final {
-    friend class EventIdRegistry;
+    friend class EventRegistry;
 
 public:
     /// The underlying value type.

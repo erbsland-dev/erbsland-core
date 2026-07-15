@@ -3,7 +3,15 @@
 
 #include "LogViewerApp.hpp"
 
+namespace demo {
+
 auto main(const int argc, char **argv) -> int {
     LogViewerApp app{argc, argv};
     return app.run();
+}
+
+}
+
+auto main(const int argc, char **argv) -> int {
+    return demo::main(argc, argv);
 }

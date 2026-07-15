@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringFormat` stores a reusable formatting pattern.
 /// The pattern uses the same placeholder syntax as `std::format`.
 ///
@@ -26,4 +28,6 @@ void formattingPatterns() {
 
     el::io::printLine("HTML output:"_el);
     el::io::print(htmlOutput);
+}
+
 }

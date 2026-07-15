@@ -14,11 +14,17 @@ class ErbslandDemoDirective(Directive):
     has_content = True
     optional_arguments = 0
     final_argument_whitespace = False
-    option_spec = {
-        "source": directives.unchanged_required,
-        "exec": directives.unchanged,
-        "source-sha256": directives.unchanged,
-    }
+    option_spec = dict(
+        {
+            "source": directives.unchanged_required,
+            "exec": directives.unchanged,
+            "exec-exit-code": directives.nonnegative_int,
+            "show-cmd-line": directives.flag,
+            "source-sha256": directives.unchanged,
+        },
+        **{f"exec-{index}": directives.unchanged for index in range(2, 100)},
+        **{f"exec-{index}-exit-code": directives.nonnegative_int for index in range(2, 100)},
+    )
 
     def run(self) -> list[nodes.Node]:
         """Produce no visible output."""

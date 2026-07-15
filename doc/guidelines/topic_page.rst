@@ -49,8 +49,11 @@ and improves the overall readability of the documentation.
    Organize the content in a logical order:
 
    * Start with the most important concepts first.
-   * Continue with practical usage patterns.
+   * Continue with practical usage patterns, but avoid a list like "Use x ..., use y ...".
    * Explain details and edge cases later.
+   * Write and explain naturally, address the reader personally und try your best to show what problems an API
+     (class, enum, or method) solves, and how to use it best. It shall inspire the reader, so they would like
+     to use that API in their own application they write.
 
    In most cases, no final summary section is required because the introduction already provides an overview.
 

@@ -2,14 +2,28 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StandardStreamRegistry.hpp"
 
+#include "EncodedTextInputStream.hpp"
 #include "NativeOutputStream.hpp"
+#include "StandardInputStreamProxy.hpp"
 #include "StandardStreamProxy.hpp"
 #include "StandardStreamRedirectData.hpp"
 #include "StandardTextOutputStream.hpp"
 
-#include "../../err/StreamError.hpp"
+#include "../StreamError.hpp"
+
+#include "../../text/Literals.hpp"
 
 namespace erbsland::stream::impl {
+
+using namespace text::literals;
+
+auto StandardStreamRegistry::inputProxy() -> TextInputStreamPtr {
+    auto lock = std::scoped_lock{_mutex};
+    if (_inputProxy == nullptr) {
+        _inputProxy = std::make_shared<StandardInputStreamProxy>();
+    }
+    return _inputProxy;
+}
 
 auto StandardStreamRegistry::outputProxy() -> TextOutputStreamPtr {
     auto lock = std::scoped_lock{_mutex};
@@ -25,6 +39,15 @@ auto StandardStreamRegistry::errorProxy() -> TextOutputStreamPtr {
         _errorProxy = std::make_shared<StandardStreamProxy>(StandardStreamSlot::Err);
     }
     return _errorProxy;
+}
+
+auto StandardStreamRegistry::inputTarget() -> TextInputStreamPtr {
+    auto lock = std::scoped_lock{_mutex};
+    if (_inputTarget == nullptr) {
+        _inputTarget =
+            std::make_shared<EncodedTextInputStream>(createNativeStandardInputStream(), text::StringEncoding::Utf8);
+    }
+    return _inputTarget;
 }
 
 auto StandardStreamRegistry::outputTarget() -> TextOutputStreamPtr {
@@ -46,24 +69,44 @@ auto StandardStreamRegistry::errorTarget() -> TextOutputStreamPtr {
 }
 
 auto StandardStreamRegistry::replace(
-    const StandardStreamSlot slot, TextOutputStreamPtr output, TextOutputStreamPtr error)
+    const StandardStreamSlot slot, TextInputStreamPtr input, TextOutputStreamPtr output, TextOutputStreamPtr error)
     -> std::shared_ptr<StandardStreamRedirectData> {
     auto lock = std::scoped_lock{_mutex};
+    if (slot == StandardStreamSlot::In && input == nullptr) {
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard input stream."_el, "The replacement standard input stream is empty."_el}};
+    }
     if ((slot == StandardStreamSlot::Out || slot == StandardStreamSlot::Both) && output == nullptr) {
-        throw err::StreamError{"The replacement standard output stream must not be empty."};
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard output stream."_el, "The replacement standard output stream is empty."_el}};
     }
     if ((slot == StandardStreamSlot::Err || slot == StandardStreamSlot::Both) && error == nullptr) {
-        throw err::StreamError{"The replacement standard error stream must not be empty."};
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard error stream."_el, "The replacement standard error stream is empty."_el}};
+    }
+    if (input != nullptr && input == _inputProxy) {
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard input stream."_el, "The standard input proxy cannot replace itself."_el}};
     }
     if (output != nullptr && output == _outputProxy) {
-        throw err::StreamError{"The standard output proxy cannot replace itself."};
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard output stream."_el, "The standard output proxy cannot replace itself."_el}};
     }
     if (error != nullptr && error == _errorProxy) {
-        throw err::StreamError{"The standard error proxy cannot replace itself."};
+        throw StreamError{StreamErrorContext{
+            "Failed to replace the standard error stream."_el, "The standard error proxy cannot replace itself."_el}};
     }
 
+    auto previousInput = _inputTarget;
     auto previousOutput = _outputTarget;
     auto previousError = _errorTarget;
+    if (slot == StandardStreamSlot::In) {
+        if (previousInput == nullptr) {
+            previousInput =
+                std::make_shared<EncodedTextInputStream>(createNativeStandardInputStream(), text::StringEncoding::Utf8);
+        }
+        _inputTarget = std::move(input);
+    }
     if (slot == StandardStreamSlot::Out || slot == StandardStreamSlot::Both) {
         if (previousOutput == nullptr) {
             previousOutput =
@@ -78,12 +121,19 @@ auto StandardStreamRegistry::replace(
         }
         _errorTarget = std::move(error);
     }
-    return std::make_shared<StandardStreamRedirectData>(slot, std::move(previousOutput), std::move(previousError));
+    return std::make_shared<StandardStreamRedirectData>(
+        slot, std::move(previousInput), std::move(previousOutput), std::move(previousError));
 }
 
 void StandardStreamRegistry::restore(
-    const StandardStreamSlot slot, TextOutputStreamPtr output, TextOutputStreamPtr error) noexcept {
+    const StandardStreamSlot slot,
+    TextInputStreamPtr input,
+    TextOutputStreamPtr output,
+    TextOutputStreamPtr error) noexcept {
     auto lock = std::scoped_lock{_mutex};
+    if (slot == StandardStreamSlot::In) {
+        _inputTarget = std::move(input);
+    }
     if (slot == StandardStreamSlot::Out || slot == StandardStreamSlot::Both) {
         _outputTarget = std::move(output);
     }

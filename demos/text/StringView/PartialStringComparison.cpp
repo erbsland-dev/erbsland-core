@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Use `startsWith()`, `endsWith()`, `contains()`, and `count()` to test parts of a string.
 /// These methods use the same comparison rules as whole-string comparison and accept the
 /// same optional character comparison function. Prefix and suffix tests are efficient
@@ -26,15 +28,21 @@ void partialStringComparison() {
 
     // Pass a comparison function when matching should ignore case.
     el::io::printLine();
-    el::io::printLine("startsWith(\"lachtan\"_el, case-folded) ...: "_el,
+    el::io::printLine(
+        "startsWith(\"lachtan\"_el, case-folded) ...: "_el,
         booleanFormat,
         observationLog.startsWith("lachtan"_el, el::Char::compareCaseFolded));
-    el::io::printLine("contains(\"LEDOVÁ KRA\"_el, case-folded) ..: "_el,
+    el::io::printLine(
+        "contains(\"LEDOVÁ KRA\"_el, case-folded) ..: "_el,
         booleanFormat,
         observationLog.contains("LEDOVÁ KRA"_el, el::Char::compareCaseFolded));
-    el::io::printLine("count(\"lachtan\"_el, case-folded) ........: "_el,
+    el::io::printLine(
+        "count(\"lachtan\"_el, case-folded) ........: "_el,
         observationLog.count("lachtan"_el, el::Char::compareCaseFolded));
-    el::io::printLine("count(\"ledová kra\"_el, case-folded) .....: "_el,
+    el::io::printLine(
+        "count(\"ledová kra\"_el, case-folded) .....: "_el,
         observationLog.count("ledová kra"_el, el::Char::compareCaseFolded));
     el::io::printLine("count(\"\"_el) ............................: "_el, observationLog.count(""_el));
+}
+
 }

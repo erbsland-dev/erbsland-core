@@ -14,8 +14,6 @@
 #include "../text/u32/U32String.hpp"
 #include "../text/u32/U32StringView.hpp"
 
-#include <stdexcept>
-
 namespace erbsland::cterm {
 
 /// Options that control paragraph wrapping, indentation, tab handling, and fallback behavior.
@@ -126,7 +124,9 @@ public:
     /// @return The current line break start mark. Empty for no line break start mark.
     [[nodiscard]] auto lineBreakStartMark() const noexcept -> const BlockString &;
     /// Set the line break start mark.
-    /// @param mark The new line break start mark. Must not exceed two characters.
+    /// Unlike the end mark, this decoration may contain an arbitrary number of characters so nested line prefixes and
+    /// continuation indentation can be represented.
+    /// @param mark The new line break start mark.
     void setLineBreakStartMark(BlockString mark);
     /// The spacing between paragraphs.
     /// The behavior of the paragraph spacing depends on the used interface.
@@ -217,7 +217,7 @@ private:
     ParagraphIndents _indents;                            ///< Indent and margin settings for the paragraph.
     ParagraphBackgroundMode _backgroundMode{ParagraphBackgroundMode::Default}; ///< The background mode.
     BlockString _lineBreakEndMark{};   ///< BlockString to mark wrapped lines on the right side. Max 2 characters.
-    BlockString _lineBreakStartMark{}; ///< BlockString to mark wrapped lines on the left side. Max 2 characters.
+    BlockString _lineBreakStartMark{}; ///< BlockString to mark wrapped lines on the left side.
     ParagraphSpacing _paragraphSpacing{ParagraphSpacing::SingleLine};     ///< Spacing between paragraphs.
     text::CharSet _wordSeparators{{text::Char{U'\t'}, text::Char{U' '}}}; ///< Shared word separators.
     Block _wordBreakMark{text::Char{U'-'}};                    ///< The mark added if a long word needs to be broken.

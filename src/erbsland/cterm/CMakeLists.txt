@@ -4,7 +4,6 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(impl)
-add_subdirectory(theme)
 
 target_sources(erbsland-core PRIVATE
         Backend.hpp
@@ -25,6 +24,7 @@ target_sources(erbsland-core PRIVATE
         BlockRange.hpp
         BlockString.cpp
         BlockString.hpp
+        BlockString_layout.cpp
         BlockStringView.cpp
         BlockStringView.hpp
         BlockStyle.hpp
@@ -83,12 +83,20 @@ target_sources(erbsland-core PRIVATE
         Terminal.cpp
         Terminal.hpp
         Terminal_fwd.hpp
+        Terminal_screen.cpp
+        Terminal_style.cpp
+        Terminal_write.cpp
+        TerminalDocumentRenderer.cpp
+        TerminalDocumentRenderer.hpp
+        TerminalDocumentStyle.cpp
+        TerminalDocumentStyle.hpp
+        TerminalDocumentStyleMarker.cpp
+        TerminalDocumentStyleMarker.hpp
+        TerminalDocumentStyleRule.cpp
+        TerminalDocumentStyleRule.hpp
+        TerminalDocumentStyleSelector.cpp
+        TerminalDocumentStyleSelector.hpp
         TerminalFlags.hpp
-        TerminalOptionsRenderer.cpp
-        TerminalOptionsRenderer.hpp
-        TerminalOptionsRenderer_fwd.hpp
-        TerminalOptionsTheme.cpp
-        TerminalOptionsTheme.hpp
         TerminalSession.hpp
         TerminalStream.cpp
         TerminalStream.hpp

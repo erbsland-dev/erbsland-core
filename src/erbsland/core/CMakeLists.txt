@@ -9,9 +9,13 @@ target_sources(erbsland-core PRIVATE
         Application.cpp
         Application.hpp
         Application_fwd.hpp
+        ApplicationError.cpp
+        ApplicationError.hpp
+        ApplicationErrorContext.hpp
         ApplicationInfo.hpp
         CommandLineArguments.hpp
         Definitions.hpp
+        InitializeFn.hpp
         MainFn.hpp
         MakeOneNamespace.hpp
         Namespaces.hpp

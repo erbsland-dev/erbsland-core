@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AnyString_fwd.hpp"
 #include "AnyStringView_fwd.hpp"
 #include "Char.hpp"
 #include "CharSet.hpp"
@@ -57,6 +58,10 @@ public:
     explicit StringCharReader(const U32String &text);
     /// Create a reader for a UTF-32 string view.
     explicit StringCharReader(const U32StringView &text);
+    /// Create a reader for AnyString.
+    explicit StringCharReader(const AnyString &text);
+    /// Create a reader for AnyStringView.
+    explicit StringCharReader(const AnyStringView &text);
 
     // defaults
     ~StringCharReader() = default;
@@ -130,14 +135,14 @@ public:
     /// @param expected The character to match.
     /// @return `true` if the character was read and matched, `false` otherwise.
     /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws err::EncodingError if the current position does not contain valid encoding.
+    /// @throws text::EncodingError if the current position does not contain valid encoding.
     [[nodiscard]] auto readIfOrThrow(Char expected) -> bool;
     /// Read a character strictly only if it matches a given character set.
     /// If the strict read succeeds but the character does not match, the current position is unchanged.
     /// @param expected The character set to match.
     /// @return The character if it matches, `std::nullopt` otherwise.
     /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws err::EncodingError if the current position does not contain valid encoding.
+    /// @throws text::EncodingError if the current position does not contain valid encoding.
     [[nodiscard]] auto readIfOrThrow(const CharSet &expected) -> std::optional<Char>;
     /// Peek a character strictly.
     /// Throws for end of data, out-of-range positions, and malformed encoding. This method never advances.
@@ -151,14 +156,14 @@ public:
     /// @param expected The character to match.
     /// @return `true` if the character matched and the position was advanced, `false` otherwise.
     /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws err::EncodingError if the current position does not contain valid encoding.
+    /// @throws text::EncodingError if the current position does not contain valid encoding.
     auto advanceIfOrThrow(Char expected) -> bool;
     /// Advance one character strictly only if it matches a given character set.
     /// If the strict read succeeds but the character does not match, the current position is unchanged.
     /// @param expected The character set to match.
     /// @return `true` if the character matched and the position was advanced, `false` otherwise.
     /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws err::EncodingError if the current position does not contain valid encoding.
+    /// @throws text::EncodingError if the current position does not contain valid encoding.
     auto advanceIfOrThrow(const CharSet &expected) -> bool;
     /// Test if the reader is at the end of data.
     [[nodiscard]] auto isAtEnd() const noexcept -> bool;
@@ -192,6 +197,16 @@ public: // read loops
     auto readUntil(
         const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> util::LoopResult;
+    /// Advance the read position while the character matches `expected`.
+    /// Same as `readWhile` with an empty read function.
+    /// @see `readWhile`
+    auto advanceWhile(const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> util::LoopResult;
+    /// Advance characters until, but without a character from the given set.
+    /// Same as `readUtil` with an empty read function.
+    /// @see `readUntil`.
+    auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> util::LoopResult;
 
 public: // read integers
     /// Parse an integer using configurable low-level parse options.
@@ -204,8 +219,8 @@ public: // read integers
     /// @tparam T The native or saturating integer type to read.
     /// @param options The integer parsing options.
     /// @return The parsed integer converted into the requested type.
-    /// @throws err::EncodingError when malformed encoding is encountered.
-    /// @throws err::ParseNumberError when the integer cannot be read.
+    /// @throws text::EncodingError when malformed encoding is encountered.
+    /// @throws text::ParseNumberError when the integer cannot be read.
     /// @throws err::OverflowError when the integer cannot be converted into the requested type.
     template <math::AnyIntegerType T>
     [[nodiscard]] auto readIntegerOrThrow(const IntegerParseOptions &options = IntegerParseOptions::parserDefault())
@@ -221,10 +236,62 @@ public: // capture strings
     /// @return The captured string or an empty string if the capture point is invalid.
     [[nodiscard]] auto takeCapture() noexcept -> AnyStringView;
 
+public: // buffer
+    /// Clear all text from the buffer while keeping any retained capacity.
+    void clearBuffer() noexcept;
+    /// Move out the buffer and reset it.
+    /// @return The buffered text as an owning string.
+    [[nodiscard]] auto takeBuffer() -> AnyString;
+    /// Create a view to the current buffer content.
+    /// @return A view to the buffer text.
+    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView;
+    /// Get the current decoded code-point length of the buffer.
+    /// @return The buffer length in decoded code points.
+    [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength;
+    /// Test if the buffer is empty.
+    [[nodiscard]] auto isBufferEmpty() const noexcept -> bool;
+    /// Replace the buffer with text converted to the reader encoding.
+    /// @param text The new buffer content.
+    void setBuffer(const AnyStringView &text);
+    /// Append one Unicode code point to the buffer.
+    /// Signal characters are ignored.
+    /// @param character The character to append.
+    void appendToBuffer(Char character);
+    /// Append text to the buffer, converting it to the reader encoding if needed.
+    /// @param text The text to append.
+    void appendToBuffer(const AnyStringView &text);
+    /// Take the current capture and append it to the buffer.
+    void appendCaptureToBuffer();
+    /// Read a character and append it to the buffer.
+    /// At the end of data, this returns `Char::endOfData()` and does not change the buffer.
+    /// @return The read character, or `Char::endOfData()` if at the end of data.
+    [[nodiscard]] auto readToBuffer() -> Char;
+    /// Read a character only if it matches and append it to the buffer.
+    /// @param expected The character to match.
+    /// @return `true` if the character was read, matched, and appended.
+    [[nodiscard]] auto readToBufferIf(Char expected) -> bool;
+    /// Read a character only if it matches and append it to the buffer.
+    /// @param expected The character set to match.
+    /// @return The character if it matched and was appended, `std::nullopt` otherwise.
+    [[nodiscard]] auto readToBufferIf(const CharSet &expected) -> std::optional<Char>;
+    /// Read matching characters and append them to the buffer.
+    /// @param expected The expected character set.
+    /// @param maximum The maximum number of characters to read.
+    /// @return The loop result, with the same meaning as `readWhile()`.
+    [[nodiscard]] auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite())
+        -> util::LoopResult;
+    /// Read characters until, but without, a stop character and append them to the buffer.
+    /// @param stopSet The set with stop characters.
+    /// @param maximum The maximum number of characters to read.
+    /// @return The loop result, with the same meaning as `readUntil()`.
+    [[nodiscard]] auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite())
+        -> util::LoopResult;
+
 private:
     using ReaderPtr = mem::SharedDataPointer<impl::StringReaderBase>;
 
 private:
+    [[nodiscard]] static auto createBackendForAnyStringView(const AnyStringView &text) -> impl::StringReaderBase *;
     [[nodiscard]] auto scanInteger(const IntegerParseOptions &options, bool strict) -> ReadIntegerResult;
     [[nodiscard]] auto readIntegerResultOrThrow(const IntegerParseOptions &options) -> ReadIntegerResult;
     [[noreturn]] static void throwError(ReadNumberStatus status, unit::CpIndex position);

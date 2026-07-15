@@ -9,7 +9,6 @@
 namespace erbsland::cterm {
 
 /// A block-string range.
-/// @tested{BlockUnitTest}
 using BlockRange = unit::IntegerUnitRange<BlockUnit>;
 
 }

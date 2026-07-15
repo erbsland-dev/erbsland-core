@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Create a string that deliberately contains invalid UTF-8 bytes.
 ///
 /// This is only for demonstrating error handling. Do not construct strings this
@@ -44,4 +46,6 @@ void basicTests() {
     el::io::printLine("  station.isValidUtf8()     : "_el, station.isValidUtf8());
     el::io::printLine("  empty.isValidUtf8()       : "_el, empty.isValidUtf8());
     el::io::printLine("  invalidUtf8.isValidUtf8() : "_el, invalidUtf8.isValidUtf8());
+}
+
 }

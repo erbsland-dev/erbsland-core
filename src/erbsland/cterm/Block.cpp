@@ -59,20 +59,6 @@ auto Block::isControl() const noexcept -> bool {
     return _character.isControl();
 }
 
-auto Block::isOneOf(const text::U32StringView &characters) const noexcept -> bool {
-    auto reader = text::StringCharReader{characters};
-    while (!reader.isAtEnd()) {
-        if (*this == reader.read()) {
-            return true;
-        }
-    }
-    return false;
-}
-
-auto Block::isOneOf(std::initializer_list<text::Char> characters) const noexcept -> bool {
-    return std::ranges::any_of(characters, [this](const text::Char character) -> bool { return *this == character; });
-}
-
 auto Block::renderedEquals(const Block &other, const bool colorEnabled, const bool attributeEnabled) const noexcept
     -> bool {
     if (_character != other._character) {
@@ -100,12 +86,12 @@ auto Block::space() noexcept -> const Block & {
 }
 
 auto Block::empty() noexcept -> const Block & {
-    static const Block empty{impl::CombinedBlock{}, {}};
+    static const Block empty{text::CombinedChar{}, {}};
     return empty;
 }
 
 auto Block::emptyBlock(const BlockStyle style) noexcept -> Block {
-    return Block{impl::CombinedBlock{}, style};
+    return Block{text::CombinedChar{}, style};
 }
 
 }

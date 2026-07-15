@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 
 from lib.config import read_elcl_file, validate_local_names, validate_source_relative_path
@@ -12,6 +13,14 @@ from lib.error import UtilityError
 from lib.file_update import FileUpdate
 from lib.path_safety import require_directory, require_safe_existing_file
 from lib.utility import UtilityApp
+
+
+@dataclass(frozen=True)
+class IncludeWrapper:
+    """A generated public include wrapper."""
+
+    source_path: Path
+    target_path: Path
 
 
 class UpdateIncludesApp(UtilityApp):
@@ -30,17 +39,19 @@ class UpdateIncludesApp(UtilityApp):
         self.generated_header = ""  # The generated header text.
         self.generated_include_header = ""  # The compact generated include wrapper header text.
         self.exclude_dirs: list[str] = []  # Parent directories to include.
+        self.exclude_headers: set[Path] = set()  # Source-relative headers to skip.
         self.create_global_includes: bool = False  # If includes of submodules shall also copy into global space.
         self.fold_into_parent: set[str] = set()  # Directory basenames to fold.
         self.create_all_base_dir = ""  # The base dir from where `all.hpp` header shall be created.
         self.src_dir = Path()  # The directory with the sources.
         self.include_dir = Path()  # The directory with the includes.
         self.dir_map: dict[str, list[str]] = defaultdict(list)  # A map with all project subdirectories.
-        self.file_map: dict[str, Path] = {}  # A map with all header file names and their paths
+        self.header_paths: list[Path] = []  # All public source headers found by the scan.
         self.folded_include_map: dict[str, list[tuple[str, Path]]] = defaultdict(
             list
         )  # Parent dir to folded include entries `(relative_include, source_path)`.
         self.generated_include_paths: set[Path] = set()  # All public include wrappers generated in this run.
+        self._pending_include_wrappers: list[IncludeWrapper] = []
         self.file_update = FileUpdate(self.print_verbose)
 
     def write_all_header(self, header_dir, header_files):
@@ -89,9 +100,9 @@ class UpdateIncludesApp(UtilityApp):
         up_count = len(source_path.relative_to(self.project_dir).parts) - 1
         return Path(("../" * up_count) + "src/erbsland") / target_path.relative_to(self.src_dir)
 
-    def write_include_header(self, target_path: Path, source_path: Path | None = None):
+    def add_include_header(self, target_path: Path, source_path: Path | None = None) -> None:
         """
-        Write an include header that points to a header in the `src` directory.
+        Add an include header that points to a header in the `src` directory.
 
         :param target_path: The path to the header file in the `src` directory.
         :param source_path: The optional relative path in the `include` directory.
@@ -100,12 +111,44 @@ class UpdateIncludesApp(UtilityApp):
             raise UtilityError(f"Header file {target_path} not found.")
         if not source_path:
             source_path = Path(target_path.name)
-        source_path = self.include_dir / source_path
+        self._pending_include_wrappers.append(IncludeWrapper(source_path=source_path, target_path=target_path))
+
+    def write_include_header(self, wrapper: IncludeWrapper) -> None:
+        """
+        Write one previously validated include wrapper.
+
+        :param wrapper: The generated include wrapper to write.
+        """
+        source_path = self.include_dir / wrapper.source_path
+        target_path = wrapper.target_path
         rel_target_path = self.source_relative_target_path(source_path, target_path)
         self.print_verbose(f'  writing "{source_path.relative_to(self.project_dir)}" -> "{rel_target_path}"')
         text = f'{self.generated_include_header}\n#include "{rel_target_path}"\n'
         self.generated_include_paths.add(source_path)
         self.file_update.write_if_changed(source_path, text)
+
+    def validate_include_wrappers(self) -> None:
+        """Validate that every generated wrapper path has exactly one source target."""
+        targets_by_source: dict[Path, Path] = {}
+        for wrapper in self._pending_include_wrappers:
+            previous_target = targets_by_source.get(wrapper.source_path)
+            if previous_target is None:
+                targets_by_source[wrapper.source_path] = wrapper.target_path
+                continue
+            if previous_target != wrapper.target_path:
+                raise self.include_wrapper_conflict_error(wrapper.source_path, previous_target, wrapper.target_path)
+
+    def include_wrapper_conflict_error(self, source_path: Path, first_target: Path, second_target: Path) -> UtilityError:
+        """Create an error for a generated public include path conflict."""
+        display_path = (self.include_dir / source_path).relative_to(self.project_dir)
+        first_rel = first_target.relative_to(self.src_dir)
+        second_rel = second_target.relative_to(self.src_dir)
+        return UtilityError(
+            f"Generated include path conflict: {display_path}\n"
+            "The include path would be generated for more than one source header:\n"
+            f"  - {first_rel}\n"
+            f"  - {second_rel}"
+        )
 
     def should_skip_header_file(self, path: Path) -> bool:
         """
@@ -118,6 +161,9 @@ class UpdateIncludesApp(UtilityApp):
             self.print_verbose(f'  Skipping "{path.name}": {path.relative_to(self.src_dir)}')
             return True
         rel_path = path.relative_to(self.src_dir)
+        if rel_path in self.exclude_headers:
+            self.print_verbose(f"  Skipping excluded header: {path.relative_to(self.src_dir)}")
+            return True
         if not self.is_public_header_file_name(path.name):
             self.print_verbose(f"  Skipping private header: {rel_path}")
             return True
@@ -137,9 +183,7 @@ class UpdateIncludesApp(UtilityApp):
         header_file_name = rel_path.name
         self.dir_map[str(header_dir)].append(header_file_name)
         self.print_verbose(f'Adding header "{header_file_name}" from dir "{header_dir}"')
-        if header_file_name in self.file_map:
-            raise UtilityError(f"Header file name conflict with `{header_file_name}`!")
-        self.file_map[header_file_name] = path
+        self.header_paths.append(path)
 
     def collect_header_files(self):
         """
@@ -159,7 +203,7 @@ class UpdateIncludesApp(UtilityApp):
         :return: A map of `(parent_dir, header_name)` to candidate source-relative paths.
         """
         parent_candidates: dict[tuple[str, str], list[Path]] = defaultdict(list)
-        for path in self.file_map.values():
+        for path in self.header_paths:
             rel_path = path.relative_to(self.src_dir)
             if rel_path.parent.name not in self.fold_into_parent:
                 continue
@@ -178,11 +222,19 @@ class UpdateIncludesApp(UtilityApp):
         :param candidate_paths: All candidates found for this parent/header pair.
         """
         if header_name in self.dir_map.get(parent_dir, []):
-            self.print_verbose(f'  skipping folded "{header_name}" in "{parent_dir}" due to local conflict')
-            return
+            parent_path = Path(parent_dir) / header_name
+            raise UtilityError(
+                f'Folded include path conflict: {parent_path.as_posix()}\n'
+                f'The parent directory already contains "{header_name}" and a folded child would expose the same name.'
+            )
         if len(candidate_paths) > 1:
-            self.print_verbose(f'  skipping folded "{header_name}" in "{parent_dir}" due to multiple folded candidates')
-            return
+            parent_path = Path(parent_dir) / header_name
+            lines = [
+                f"Folded include path conflict: {parent_path.as_posix()}",
+                "The folded include path would refer to more than one source header:",
+            ]
+            lines.extend(f"  - {candidate.as_posix()}" for candidate in candidate_paths)
+            raise UtilityError("\n".join(lines))
         source_rel_path = candidate_paths[0]
         relative_include = source_rel_path.relative_to(Path(parent_dir)).as_posix()
         self.folded_include_map[parent_dir].append((relative_include, self.src_dir / source_rel_path))
@@ -239,9 +291,13 @@ class UpdateIncludesApp(UtilityApp):
         """
         self.print_verbose("Writing the individual header files in the `include` directory.")
         self.generated_include_paths.clear()
+        self._pending_include_wrappers.clear()
         self.generate_all_include_wrappers()
         self.generate_header_include_wrappers()
         self.generate_folded_include_wrappers()
+        self.validate_include_wrappers()
+        for wrapper in self._pending_include_wrappers:
+            self.write_include_header(wrapper)
 
     def generate_all_include_wrappers(self):
         """
@@ -254,18 +310,18 @@ class UpdateIncludesApp(UtilityApp):
             target_path = self.src_dir / header_dir / "all.hpp"
             flat_all_path = self._create_all_path_for_base_dir(header_dir)
             nested_all_path = Path("all.hpp") if self._is_root_header_dir(header_dir) else Path(f"{header_dir}/all.hpp")
-            self.write_include_header(target_path, flat_all_path)
+            self.add_include_header(target_path, flat_all_path)
             if flat_all_path != nested_all_path:
-                self.write_include_header(target_path, nested_all_path)
+                self.add_include_header(target_path, nested_all_path)
 
     def generate_header_include_wrappers(self):
         """
         Write public wrappers for each scanned source header.
         """
-        for header_file, path in self.file_map.items():
-            self.write_include_header(path, path.relative_to(self.src_dir))
+        for path in self.header_paths:
+            self.add_include_header(path, path.relative_to(self.src_dir))
             if self.create_global_includes:
-                self.write_include_header(path, Path(header_file))
+                self.add_include_header(path, Path(path.name))
 
     def generate_folded_include_wrappers(self):
         """
@@ -273,7 +329,7 @@ class UpdateIncludesApp(UtilityApp):
         """
         for parent_dir, folded_entries in self.folded_include_map.items():
             for _, source_path in folded_entries:
-                self.write_include_header(source_path, Path(parent_dir) / source_path.name)
+                self.add_include_header(source_path, Path(parent_dir) / source_path.name)
 
     def remove_obsolete_includes(self) -> None:
         """
@@ -307,6 +363,7 @@ class UpdateIncludesApp(UtilityApp):
         self.generated_header = header_config.source_header("hpp", tool="update_includes.py", pragma_once=True)
         self.generated_include_header = header_config.source_header("include", tool="update_includes.py")
         self.exclude_dirs = main_config.get_list("excluded_directories", str, default=[])
+        self.exclude_headers = {Path(path_text) for path_text in main_config.get_list("excluded_headers", str, default=[])}
         self.create_global_includes = main_config.get_bool("create_global_includes", default=False)
         self.fold_into_parent = set(main_config.get_list("fold_into_parent", str, default=[]))
         self.create_all_base_dir = main_config.get_text("create_all_base_dir", default="")
@@ -315,6 +372,8 @@ class UpdateIncludesApp(UtilityApp):
     def validate_config(self) -> None:
         """Validate the update-includes configuration."""
         validate_local_names(self.exclude_dirs, "Excluded Directories")
+        for header in self.exclude_headers:
+            validate_source_relative_path(header.as_posix(), "Excluded Headers")
         validate_local_names(self.fold_into_parent, "Fold into Parent")
         validate_source_relative_path(self.create_all_base_dir, "Create All Base Dir")
 

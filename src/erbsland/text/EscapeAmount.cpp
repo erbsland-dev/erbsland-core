@@ -6,7 +6,7 @@
 #include "Literals.hpp"
 #include "String.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "impl/ThrowHelper.hpp"
 
 namespace erbsland::text {
 
@@ -51,7 +51,7 @@ auto EscapeAmount::fromStringOrThrow(const StringView &text) -> EscapeAmount {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }
-    err::throwParseError("Unsupported escape amount");
+    text::impl::throwParseError("Unsupported escape amount");
 }
 
 auto EscapeAmount::fromSuffix(const Char character) noexcept -> std::optional<EscapeAmount> {

@@ -4,10 +4,16 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        AsyncStreamTest.cpp
+        BufferedStreamTest.cpp
         ByteStreamTest.cpp
         EncodedTextStreamTest.cpp
         StandardStreamsTest.cpp
         StandardTextOutputStreamTest.cpp
+        StreamErrorSourceTest.cpp
+        StreamPositionTest.cpp
+        StreamResultTest.cpp
+        StreamSettingsTest.cpp
         StringBuilderStreamTest.cpp
 )
 

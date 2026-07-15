@@ -12,6 +12,8 @@
 namespace erbsland::options {
 
 /// A collection of accepted option choices.
+///
+/// Assign a collection to an option with `setChoices()` or use `OptionEditor::addChoice()` for simple definitions.
 /// @tested{OptionsFrameworkTest}
 class OptionChoices {
 public:
@@ -26,18 +28,26 @@ public:
 
 public:
     /// Create an empty shared choice collection.
+    /// @return A shared choice collection without choices.
     [[nodiscard]] static auto create() -> OptionChoicesPtr;
-    /// Create an empty shared choice collection.
+    /// Create a shared choice collection from text values.
+    /// @param choices Choice texts to add in declaration order.
+    /// @return A shared choice collection containing one choice for each text.
     [[nodiscard]] static auto create(std::initializer_list<text::StringView> choices) -> OptionChoicesPtr;
     /// Add a choice.
+    /// @param choice Choice object to append.
+    /// @return This collection for chaining.
     auto addChoice(OptionChoicePtr choice) -> OptionChoices &;
     /// Add a choice by text.
+    /// @param text Choice text to append.
+    /// @return This collection for chaining.
     auto addChoice(text::StringView text) -> OptionChoices &;
 
 public: // accessors
     /// Get all choices.
     [[nodiscard]] auto choices() const noexcept -> const std::vector<OptionChoicePtr> & { return _choices; }
     /// Get the number of choices.
+    /// @return The number of configured choices.
     [[nodiscard]] auto choiceCount() const noexcept -> unit::ArgumentCount {
         return unit::ArgumentCount::fromSizeT(_choices.size());
     }

@@ -11,4 +11,3 @@ Interface
 .. doxygenenum:: erbsland::debug::DebugViewDetail
 
 .. doxygentypedef:: erbsland::debug::DebugViewDetails
-.. doxygenfile:: erbsland/debug/StringDebug.hpp

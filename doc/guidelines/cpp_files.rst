@@ -54,4 +54,3 @@ Separating Implementation Details from the Public API
     this makes sense for hiding implementation details.
 5.  If naming clashes must be avoided, adding the suffix ``Impl`` to functions is ok – but discouraged.  
 
-

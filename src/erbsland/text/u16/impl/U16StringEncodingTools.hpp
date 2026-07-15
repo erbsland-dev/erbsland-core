@@ -39,7 +39,9 @@ public:
 
 public:
     /// Encode the visible UTF-16 data into the requested byte encoding.
-    [[nodiscard]] auto encode(StringEncoding encoding, StringBomMode bomMode) const -> mem::ByteBlock;
+    [[nodiscard]] auto encode(
+        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
+        -> mem::ByteBlock;
     /// Decode byte data into a UTF-16 string.
     [[nodiscard]] static auto decode(
         const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
@@ -51,13 +53,16 @@ public: // helpers
     /// Test if the given BOM mode should write a BOM for this encoding.
     [[nodiscard]] static auto shouldWriteBom(StringEncoding encoding, StringBomMode bomMode) noexcept -> bool;
     /// Encode visible UTF-16 data as UTF-8 bytes.
-    [[nodiscard]] static auto encodeUtf8(std::span<const char16_t> data, StringBomMode bomMode) -> mem::ByteBlock;
+    [[nodiscard]] static auto encodeUtf8(
+        std::span<const char16_t> data, StringBomMode bomMode, EncodingErrorMode errorMode) -> mem::ByteBlock;
     /// Encode visible UTF-16 data as UTF-16 bytes.
     [[nodiscard]] static auto encodeUtf16(
-        std::span<const char16_t> data, StringEncoding encoding, StringBomMode bomMode) -> mem::ByteBlock;
+        std::span<const char16_t> data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        -> mem::ByteBlock;
     /// Encode visible UTF-16 data as UTF-32 bytes.
     [[nodiscard]] static auto encodeUtf32(
-        std::span<const char16_t> data, StringEncoding encoding, StringBomMode bomMode) -> mem::ByteBlock;
+        std::span<const char16_t> data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        -> mem::ByteBlock;
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
         const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;

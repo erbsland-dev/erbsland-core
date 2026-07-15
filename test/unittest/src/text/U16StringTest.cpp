@@ -94,6 +94,11 @@ public:
         REQUIRE(U16String{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
         REQUIRE(U16String::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
         REQUIRE(U16String::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
+        REQUIRE(U16String::fromJoined({}).isEmpty());
+        REQUIRE_EQUAL(U16String::fromJoined({u"solo"_elv}), u"solo"_el);
+        REQUIRE_EQUAL(
+            StringConverter{U16String::fromJoined({u"prefix-"_elv, u""_elv, view, u"-suffix"_elv})}.toStdU32String(),
+            std::u32string{U"prefix-A\U0001F600-suffix"});
         REQUIRE_THROWS(U16String{}.append(view, ElementCount::infinite()));
         REQUIRE_THROWS(U16String::fromCharacter(Char{U'A'}, CpLength::infinite()));
     }
@@ -213,6 +218,54 @@ public:
         REQUIRE_EQUAL(text.toCharIndex(text.indexAt(StringSide::Back)), CpIndex{3});
     }
 
+    void testIndexedSequentialRead() {
+        const auto text = U16String{std::u16string_view{u"A\u00A2\U0001F600"}};
+        auto index = U16DataIndex::zero();
+
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{4});
+        REQUIRE(text.readCharAndAdvance(index).isEndOfData());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{4});
+
+        index = U16DataIndex{5U};
+        REQUIRE(text.readCharAndAdvance(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{5});
+
+        index = text.indexAt(StringSide::Back);
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'A');
+        REQUIRE(index.isZero());
+        REQUIRE(text.readCharAndRetreat(index).isEndOfData());
+        REQUIRE(index.isZero());
+
+        index = U16DataIndex{5U};
+        REQUIRE(text.readCharAndRetreat(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{5});
+
+        const auto view = U16StringView{text};
+        index = U16DataIndex::zero();
+        REQUIRE_EQUAL(view.readCharAndAdvance(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        index = view.indexAt(StringSide::Back);
+        REQUIRE_EQUAL(view.readCharAndRetreat(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+
+        const auto invalidData = std::u16string{u'A', static_cast<char16_t>(0xD800U), u'B'};
+        const auto invalid = U16String{std::u16string_view{invalidData}};
+        index = U16DataIndex{1U};
+        REQUIRE(invalid.readCharAndAdvance(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE(invalid.readCharAndRetreat(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+    }
+
     void testMalformedSurrogatesAreTolerated() {
         using namespace el::text::literals;
 
@@ -237,6 +290,26 @@ public:
         REQUIRE(U16StringView{text}.charAt(CpIndex{1}).isReplacement());
         REQUIRE(U16StringView{text}[CpIndex{1}].isReplacement());
         REQUIRE_EQUAL(U16StringView{text}.charAt(CpIndex{2}).toRawValue(), U'B');
+    }
+
+    void testNoIndexFindPositions() {
+        using namespace el::text::literals;
+
+        const auto text = U16String{std::u16string_view{u"A\u00A2\u20AC\U0001F600"}};
+        const auto view = U16StringView{text};
+        const auto characters = CharSet{Char{U'A'}, Char{0x00A2U}};
+
+        REQUIRE(text.find(u"A"_elv, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findFirstOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findFirstNotOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findLastOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findLastNotOf(characters, U16DataIndex::noIndex()).isNoIndex());
+
+        REQUIRE(view.find(u"A"_elv, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findFirstOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findFirstNotOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findLastOf(characters, U16DataIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findLastNotOf(characters, U16DataIndex::noIndex()).isNoIndex());
     }
 
     void testCaseMapping() {
@@ -328,6 +401,55 @@ public:
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(range)}.toStdU32String(),
             StringConverter{unicodeChars.slice(range)}.toStdU32String());
+        REQUIRE(unicode.slice(U16DataRange{U16DataIndex{2}, U16DataLength::zero()}).isEmpty());
+        REQUIRE(unicode.slice(U16DataRange{U16DataIndex::noIndex(), U16DataLength{1}}).isEmpty());
+        REQUIRE(unicode.slice(U16DataRange::noRange()).isEmpty());
+        REQUIRE(unicode.slice(U16DataRange{U16DataIndex{99}, U16DataLength{1}}).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(U16DataRange{U16DataIndex{2}, U16DataLength::infinite()})}.toStdU32String(),
+            std::u32string{U"\u20AC\U0001F600BC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(U16DataRange{U16DataIndex{1}, U16DataLength{2}})}.toStdU32String(),
+            std::u32string{U"\u00A2\u20AC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, U16DataLength{99})}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, U16DataLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicode.slice(StringSide::Front, U16DataLength::zero()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, U16DataLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicode.slice(StringSide::Back, U16DataLength::zero()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, U16DataIndex{3})}.toStdU32String(),
+            std::u32string{U"A\u00A2\u20AC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, U16DataIndex{3})}.toStdU32String(),
+            std::u32string{U"\U0001F600BC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, U16DataIndex{5})}.toStdU32String(),
+            std::u32string{U"A\u00A2\u20AC\U0001F600"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, U16DataIndex{5})}.toStdU32String(), std::u32string{U"BC"});
+        REQUIRE(unicodeView.slice(StringSide::Front, U16DataIndex::zero()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Back, U16DataIndex::zero())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, unicodeView.indexAt(StringSide::Back))}
+                .toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, unicodeView.indexAt(StringSide::Back)).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, U16DataIndex::noIndex())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, U16DataIndex::noIndex()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, U16DataIndex{99})}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, U16DataIndex{99}).isEmpty());
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Front, CpLength{4})}.toStdU32String(),
             std::u32string{U"A\u00A2\u20AC\U0001F600"});
@@ -335,13 +457,27 @@ public:
             StringConverter{unicode.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpIndex{4})}.toStdU32String(),
+            std::u32string{U"A\u00A2\u20AC\U0001F600"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, CpIndex{4})}.toStdU32String(), std::u32string{U"BC"});
+        REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength{99})}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeChars.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicode.slice(StringSide::Front, CpLength::zero()).isEmpty());
+        REQUIRE(unicodeChars.slice(StringSide::Front, CpLength::zero()).isEmpty());
         REQUIRE(unicode.slice(StringSide::Back, CpLength::zero()).isEmpty());
         REQUIRE(unicode.slice(CpRange::noRange()).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
         REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpLength{1}}).isEmpty());
         REQUIRE_EQUAL(
             StringConverter{unicodeView.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
@@ -353,6 +489,42 @@ public:
             StringConverter{nestedView.slice(CpRange{CpIndex{1}, CpLength{4}}).slice(StringSide::Back, CpLength{2})}
                 .toStdU32String(),
             std::u32string{U"\U0001F600B"});
+
+        {
+            const auto [left, right] = unicode.splitAt(U16DataIndex{3});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A\u00A2\u20AC"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"\U0001F600BC"});
+        }
+        {
+            const auto [left, right] = unicode.splitAt(U16DataIndex{5});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A\u00A2\u20AC\U0001F600"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"BC"});
+        }
+        {
+            const auto [left, right] = unicode.splitAt(CpIndex{4});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A\u00A2\u20AC\U0001F600"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"BC"});
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(U16DataIndex::zero());
+            REQUIRE(left.isEmpty());
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(unicodeView.indexAt(StringSide::Back));
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(U16DataIndex::noIndex());
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(U16DataIndex{99});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
     }
 
     void testPredicateChecks() {

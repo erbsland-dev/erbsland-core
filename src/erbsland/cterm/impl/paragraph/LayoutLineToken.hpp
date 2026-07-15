@@ -22,9 +22,10 @@ class LayoutLineToken final {
 public:
     /// The kind of token.
     enum class Type : uint8_t {
-        Word,           ///< A contiguous source word.
-        SeparatorSpace, ///< A collapsed separator run rendered as one space.
-        Tab,            ///< A left-aligned tab resolved later from the current column.
+        Word,            ///< A contiguous source word.
+        IndivisibleWord, ///< A source range that must be emitted as one unit.
+        SeparatorSpace,  ///< A collapsed separator run rendered as one space.
+        Tab,             ///< A left-aligned tab resolved later from the current column.
     };
 
     /// The result of splitting a source word for one physical line.
@@ -59,6 +60,9 @@ public:
     [[nodiscard]] auto length() const noexcept -> BlockCount { return _length; }
     /// Get the cached display width of the token.
     [[nodiscard]] auto displayWidth() const noexcept -> int { return _displayWidth; }
+    /// Test whether this word token is indivisible.
+    /// @return `true` if the token must never be split.
+    [[nodiscard]] auto isIndivisible() const noexcept -> bool { return _type == Type::IndivisibleWord; }
     /// Get the source character index for the given offset inside the word.
     [[nodiscard]] auto sourceIndex(BlockCount offset) const noexcept -> BlockIndex {
         assert(isWord());
@@ -77,7 +81,7 @@ public:
         -> std::optional<SplitResult>;
 
 private:
-    [[nodiscard]] auto isWord() const noexcept -> bool { return _type == Type::Word; }
+    [[nodiscard]] auto isWord() const noexcept -> bool { return _type == Type::Word || _type == Type::IndivisibleWord; }
 
 private:
     Type _type = Type::Word;

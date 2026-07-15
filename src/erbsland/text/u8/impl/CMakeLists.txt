@@ -26,6 +26,7 @@ target_sources(erbsland-core PRIVATE
         U8StringLiteralStorage.hpp
         U8StringModifyTools.cpp
         U8StringModifyTools.hpp
+        U8StringModifyTools_replace.cpp
         U8StringReader.cpp
         U8StringReader.hpp
         U8StringReader_fwd.hpp

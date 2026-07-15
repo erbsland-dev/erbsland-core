@@ -105,8 +105,14 @@ The following example shows a minimal render loop for an interactive terminal ap
 Call ``Terminal::initializeScreen()`` once when your application starts, and ``Terminal::restoreScreen()`` once just
 before it exits.
 
-After initialization, use ``Terminal::isInteractive()`` to detect whether a real terminal is attached.
-This allows you to switch to a plain-text fallback when output is redirected.
+After initialization, use ``Terminal::isInteractive()`` to detect whether the terminal's output endpoint is attached to
+a real terminal.
+The platform backends base this decision on standard output, because that is where ``Terminal`` emits its data.
+Redirecting standard output therefore makes the terminal non-interactive even if standard error, standard input, or a
+controlling terminal is still attached.
+
+Initialization and restoration do not emit terminal control sequences for a non-interactive output endpoint.
+Switch to a plain-text output mode before writing through the terminal itself when output is redirected.
 
 If your application is interrupted (for example via ``Ctrl+C`` ), the library restores the terminal state automatically
 before returning control to the shell.
@@ -206,4 +212,3 @@ This is especially useful in short tools, tests, or setup-heavy code paths where
 otherwise make screen restoration easy to forget.
 
 If you need to inject a custom backend or understand capability fallback behavior, continue with :doc:`backend`.
-

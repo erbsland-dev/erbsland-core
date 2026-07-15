@@ -59,7 +59,7 @@ public:
     /// Control codes are ignored except for tab and newline.
     /// Use `text::EncodingErrorMode::Throw` to make malformed UTF-8 explicit at the string-construction boundary.
     /// `text::EncodingErrorMode::Replace` replaces each malformed UTF-8 byte with one Unicode replacement character.
-    /// @throws err::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
+    /// @throws text::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
     /// UTF-8, or if the text contains an unsupported character sequence.
     explicit BlockString(
         const text::StringView &str, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
@@ -70,7 +70,7 @@ public:
     /// Control codes are ignored except for tab and newline.
     /// Use `text::EncodingErrorMode::Throw` to make malformed UTF-8 explicit at the string-construction boundary.
     /// `text::EncodingErrorMode::Replace` replaces each malformed UTF-8 byte with one Unicode replacement character.
-    /// @throws err::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
+    /// @throws text::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
     /// UTF-8, or if the text contains an unsupported character sequence.
     explicit BlockString(
         const text::StringView &str,
@@ -79,13 +79,11 @@ public:
     /// Create a terminal string from UTF-32 text.
     /// @param str The UTF-32 text to split into terminal characters.
     /// Control codes are ignored except for tab and newline.
-    /// @throws std::invalid_argument If the text contains an unsupported character sequence.
     explicit BlockString(const text::U32StringView &str);
     /// Create a terminal string from UTF-32 text with a uniform style.
     /// @param str The UTF-32 text to split into terminal characters.
     /// @param style The style to use for the characters.
     /// Control codes are ignored except for tab and newline.
-    /// @throws std::invalid_argument If the text contains an unsupported character sequence.
     explicit BlockString(const text::U32StringView &str, BlockStyle style);
     /// Create a terminal string repeating the same `Block`.
     /// @param count The repetition count. Limited to 10'000'000.
@@ -98,9 +96,9 @@ public:
     // defaults
     ~BlockString() = default;
     BlockString(const BlockString &) = default;
-    BlockString(BlockString &&) = default;
+    BlockString(BlockString &&other) noexcept;
     auto operator=(const BlockString &) -> BlockString & = default;
-    auto operator=(BlockString &&) -> BlockString & = default;
+    auto operator=(BlockString &&other) noexcept -> BlockString &;
 
 public: // operators
     /// Compare two strings.
@@ -153,6 +151,8 @@ public: // accessors
     /// Get the width of the string in terminal cells.
     /// @return The sum of all character display widths.
     [[nodiscard]] auto displayWidth() const noexcept -> int;
+    /// Return a copy with tab characters expanded to styled spaces up to the given column.
+    [[nodiscard]] auto withTabsExpanded(int targetColumn) const -> BlockString;
     /// Test if this string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _range.isEmpty(); }
     /// Access one character with bounds checking.
@@ -308,6 +308,7 @@ public: // modifiers
     /// Append text using one uniform style.
     /// @param text The text to append.
     /// @param style The style applied to the appended characters.
+    /// @param encodingErrorMode The handling mode for encoding errors.
     void appendStyled(
         const text::StringView &text,
         BlockStyle style,

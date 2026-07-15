@@ -10,7 +10,6 @@ namespace erbsland::bgeo {
 
 /// Low-level flags for alignments.
 /// @seedoc{/reference/bgeo/alignment_and_orientation}
-/// @tested{AlignmentTest}
 enum class AlignmentFlag : uint8_t {
     None = 0,
     Left = 1U << 0,    ///< Aligned to the left edge.

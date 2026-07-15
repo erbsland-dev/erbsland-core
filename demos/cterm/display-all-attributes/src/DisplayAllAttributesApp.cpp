@@ -3,6 +3,8 @@
 
 #include "DisplayAllAttributesApp.hpp"
 
+namespace demo {
+
 auto DisplayAllAttributesApp::attributeSpecs() -> const std::array<AttributeSpec, 8> & {
     static const auto cAttributeSpecs = std::array<AttributeSpec, 8>{{
         {"Bold"_el, BlockAttributes::Bold, "1 / 22"_el, "stronger emphasis"_el, "The quick brown fox 0123"_el},
@@ -196,4 +198,6 @@ auto DisplayAllAttributesApp::sampleAttributes(const BlockAttributes::Flag flag)
         attributes.setStrikethrough(true);
     }
     return attributes;
+}
+
 }

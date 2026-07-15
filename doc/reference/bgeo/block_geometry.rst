@@ -87,10 +87,7 @@ Interface
     :members:
 .. doxygenclass:: erbsland::bgeo::BlockPosition
     :members:
-.. doxygenfile:: erbsland/bgeo/BlockPositionList.hpp
 .. doxygenclass:: erbsland::bgeo::BlockRectangle
     :members:
-.. doxygenfile:: erbsland/bgeo/BlockRectangleList.hpp
 .. doxygenclass:: erbsland::bgeo::BlockSize
     :members:
-.. doxygenfile:: erbsland/bgeo/StdFormatForBlock.hpp

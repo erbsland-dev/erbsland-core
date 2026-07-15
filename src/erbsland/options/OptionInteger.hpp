@@ -7,7 +7,6 @@
 namespace erbsland::options {
 
 /// The integer type used by the options system.
-/// @tested{OptionsFrameworkTest}
 using OptionInteger = int64_t;
 
 }

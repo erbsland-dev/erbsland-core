@@ -12,7 +12,7 @@ class PosixFileDescriptor final {
 public:
     /// Open a file descriptor for reading.
     /// @param path The path to open.
-    /// @throws err::RandomError If the path cannot be opened.
+    /// @throws random::RandomError If the path cannot be opened.
     explicit PosixFileDescriptor(const std::string &path);
 
     /// Close the descriptor.

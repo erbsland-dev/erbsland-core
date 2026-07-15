@@ -5,7 +5,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Reference used for a transition lookup.
-/// @notest{Internal generated-data helper.}
 enum class TimeReference {
     Utc,
     Local,

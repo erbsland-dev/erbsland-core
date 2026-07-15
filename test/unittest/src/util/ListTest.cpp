@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "MoveAwareTestValue.hpp"
+
 #include <erbsland/unit/ElementCount.hpp>
 #include <erbsland/unit/ElementIndex.hpp>
 #include <erbsland/unit/ElementRange.hpp>
@@ -11,6 +13,7 @@
 #include <compare>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 using el::unit::ElementCount;
@@ -22,6 +25,8 @@ TESTED_TARGETS(List ElementUnit ElementIndex ElementCount ElementRange ElementOf
 class ListTest final : public el::UnitTest {
 public:
     using IntList = el::util::List<int>;
+    using MoveList = el::util::List<erbsland::test::MoveAwareTestValue>;
+    using MoveValue = erbsland::test::MoveAwareTestValue;
 
     void testConstructionAndRawInterop() {
         const auto empty = IntList{};
@@ -68,14 +73,66 @@ public:
         REQUIRE_EQUAL(selfAppend.toStdVector(), (std::vector<int>{1, 2, 1, 2}));
     }
 
+    void testMoveAwareChanges() {
+        auto list = MoveList{};
+
+        auto appended = MoveValue{1};
+        const auto appendedCounts = appended.counts();
+        list.append(std::move(appended));
+        REQUIRE_EQUAL(appendedCounts->copies, 0);
+        REQUIRE_EQUAL(list.toRawValue()[0].value(), 1);
+
+        auto prepended = MoveValue{2};
+        const auto prependedCounts = prepended.counts();
+        list.prepend(std::move(prepended));
+        REQUIRE_EQUAL(prependedCounts->copies, 0);
+        REQUIRE_EQUAL(list.toRawValue()[0].value(), 2);
+
+        auto inserted = MoveValue{3};
+        const auto insertedCounts = inserted.counts();
+        list.insert(ElementIndex{1}, std::move(inserted));
+        REQUIRE_EQUAL(insertedCounts->copies, 0);
+        REQUIRE_EQUAL(list.toRawValue()[1].value(), 3);
+
+        auto replacement = MoveValue{4};
+        const auto replacementCounts = replacement.counts();
+        list.set(ElementIndex{2}, std::move(replacement));
+        REQUIRE_EQUAL(replacementCounts->copies, 0);
+        REQUIRE_EQUAL(list.toRawValue()[2].value(), 4);
+
+        auto plusValue = MoveValue{5};
+        const auto plusCounts = plusValue.counts();
+        const auto plusList = list + std::move(plusValue);
+        REQUIRE_EQUAL(plusCounts->copies, 0);
+        REQUIRE_EQUAL(plusList.toRawValue().back().value(), 5);
+
+        auto frontValue = MoveValue{6};
+        const auto frontCounts = frontValue.counts();
+        const auto frontList = std::move(frontValue) + list;
+        REQUIRE_EQUAL(frontCounts->copies, 0);
+        REQUIRE_EQUAL(frontList.toRawValue().front().value(), 6);
+
+        auto plusAssignValue = MoveValue{7};
+        const auto plusAssignCounts = plusAssignValue.counts();
+        list += std::move(plusAssignValue);
+        REQUIRE_EQUAL(plusAssignCounts->copies, 0);
+        REQUIRE_EQUAL(list.toRawValue().back().value(), 7);
+    }
+
     void testSliceRemoveAndTake() {
         auto list = IntList{{1, 2, 3, 4, 5}};
 
         REQUIRE_EQUAL(
             list.slice(ElementRange{ElementIndex{1}, ElementCount{3}}).toStdVector(), (std::vector<int>{2, 3, 4}));
-        REQUIRE(list.slice(ElementRange{ElementIndex{4}, ElementCount{3}}).count().isZero());
+        REQUIRE_EQUAL(list.slice(ElementRange{ElementIndex{4}, ElementCount{3}}).toStdVector(), (std::vector<int>{5}));
+        REQUIRE_EQUAL(
+            list.slice(ElementRange{ElementIndex{2}, ElementCount::infinite()}).toStdVector(),
+            (std::vector<int>{3, 4, 5}));
+        REQUIRE(list.slice(ElementRange{ElementIndex{5}, ElementCount{1}}).count().isZero());
         REQUIRE_EQUAL(list.prefix(ElementCount{2}).toStdVector(), (std::vector<int>{1, 2}));
+        REQUIRE_EQUAL(list.prefix(ElementCount{20}).toStdVector(), (std::vector<int>{1, 2, 3, 4, 5}));
         REQUIRE_EQUAL(list.suffix(ElementCount{2}).toStdVector(), (std::vector<int>{4, 5}));
+        REQUIRE_EQUAL(list.suffix(ElementCount{20}).toStdVector(), (std::vector<int>{1, 2, 3, 4, 5}));
 
         const auto [first, rest] = list.sliceFirst();
         REQUIRE_EQUAL(first, 1);

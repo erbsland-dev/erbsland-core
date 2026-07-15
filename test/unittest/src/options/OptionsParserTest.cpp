@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/core/CommandLineArguments.hpp>
-#include <erbsland/err/OptionError.hpp>
 #include <erbsland/options/impl/ExecutableName.hpp>
 #include <erbsland/options/OptionChoices.hpp>
+#include <erbsland/options/OptionError.hpp>
 #include <erbsland/options/OptionErrorContext.hpp>
 #include <erbsland/options/OptionManager.hpp>
 #include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/OptionRenderer.hpp>
 #include <erbsland/options/Options.hpp>
 #include <erbsland/options/OptionSet.hpp>
 #include <erbsland/options/OptionValue.hpp>
@@ -18,11 +17,10 @@
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <initializer_list>
-#include <memory>
 #include <vector>
 
 using el::core::CommandLineArguments;
-using el::err::OptionError;
+using el::options::OptionError;
 using el::text::String;
 using el::text::StringConverter;
 using el::text::StringView;
@@ -32,19 +30,6 @@ using el::unit::ElementCount;
 using el::unit::ExitCode;
 using namespace el::options;
 using namespace el::text::literals;
-
-class ParserTestRenderer final : public OptionRenderer {
-public:
-    void displayHelp(const OptionsPtr &, StringView) override {}
-    void displayVersion(const OptionsPtr &, StringView) override {}
-    void displayError(const OptionsPtr &, const OptionErrorContext &errorContext) override {
-        errorDisplayed = true;
-        errorReason = errorContext.reason();
-    }
-
-    bool errorDisplayed{false};
-    OptionErrorReason errorReason{OptionErrorReason::None};
-};
 
 TESTED_TARGETS(OptionManager OptionParser)
 class OptionsParserTest final : public el::UnitTest {
@@ -405,6 +390,35 @@ public:
         assertError(makeOptionsWithDuplicateNames(), {"tool"_el}, OptionErrorReason::SyntaxError);
     }
 
+    void testDisabledOptionSetsAreAbsentAndHiddenOptionsParse() {
+        auto disabledPreCalled = false;
+        auto options = Options::create();
+        options->addOption("--visible"_el).setType(OptionType::Flag);
+
+        auto hiddenSet = OptionSet::create();
+        hiddenSet->addOption("--secret"_el).setType(OptionType::Flag).setHelpVisibility(OptionHelpVisibility::Hidden);
+        options->addSet(hiddenSet);
+
+        auto disabledSet = OptionSet::create();
+        disabledSet->setFlags(OptionFlag::Disabled);
+        disabledSet->setPreParsingFn([&disabledPreCalled](OptionSetPtr) -> void { disabledPreCalled = true; });
+        disabledSet->addOption("--off"_el).setType(OptionType::Flag);
+        disabledSet->addOption("--visible"_el).setType(OptionType::Flag);
+        options->addSet(disabledSet);
+
+        auto result = parse(options, {"tool"_el, "--visible"_el, "--secret"_el});
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE(result.values()->getFlag("--visible"_el));
+        REQUIRE(result.values()->getFlag("--secret"_el));
+        REQUIRE_FALSE(disabledPreCalled);
+
+        result = parse(options, {"tool"_el, "--off"_el});
+        REQUIRE(result.status() == OptionResultStatus::Error);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE(result.errorContext()->reason() == OptionErrorReason::UnknownName);
+        REQUIRE_FALSE(disabledPreCalled);
+    }
+
     void testRequiredAndNegativeValues() {
         auto options = Options::create();
         options->addOption("--required"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
@@ -522,7 +536,8 @@ public:
         REQUIRE(result.values()->moduleName() == "remove"_el);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::SyntaxError);
-        REQUIRE(result.errorContext()->moduleName() == "remove"_el);
+        REQUIRE(result.errorContext()->module() == options->optionModules().front());
+        REQUIRE(result.errorContext()->description() == "Rejected module"_el);
         REQUIRE(result.errorContext()->argumentIndex().isNoIndex());
     }
 
@@ -656,10 +671,10 @@ public:
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::ValidationError);
-        REQUIRE(result.errorContext()->moduleName() == "run"_el);
+        REQUIRE(result.errorContext()->module() == module);
         REQUIRE(result.errorContext()->option() == option);
         REQUIRE(result.errorContext()->optionSet() == optionSet);
-        REQUIRE(result.errorContext()->argumentIndex().isNoIndex());
+        REQUIRE(result.errorContext()->argumentIndex() == ArgumentIndex{3U});
         REQUIRE_FALSE(postCalled);
     }
 
@@ -712,7 +727,7 @@ public:
         REQUIRE_FALSE(validatorCalled);
     }
 
-    void testParseOrThrowDisplaysValidationErrors() {
+    void testParseOrThrowReportsValidationErrors() {
         auto options = Options::create();
         options->addOption("--name"_el)
             .setType(OptionType::Text)
@@ -722,13 +737,15 @@ public:
                 throw OptionError{context};
             });
 
-        auto renderer = std::make_shared<ParserTestRenderer>();
         auto manager = OptionManager{options};
-        manager.setRenderer(renderer);
 
         REQUIRE_THROWS_AS(OptionError, manager.parseOrThrow(makeArgs({"tool"_el, "--name"_el, "Ada"_el})));
-        REQUIRE(renderer->errorDisplayed);
-        REQUIRE(renderer->errorReason == OptionErrorReason::ValidationError);
+
+        const auto result = manager.parse(makeArgs({"tool"_el, "--name"_el, "Ada"_el}));
+        REQUIRE(result.status() == OptionResultStatus::Error);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE(result.errorContext()->reason() == OptionErrorReason::ValidationError);
+        REQUIRE_FALSE(manager.errorDocument(result.errorContext().value()).isEmpty());
     }
 
 private:

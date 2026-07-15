@@ -103,8 +103,8 @@ path component, protocol token, or command.
 
 .. erbsland-demo::
     :source: text/StringView/BasicTests.cpp
-    :exec: string_view --demo BasicTests
-    :source-sha256: ff5b160ccb1add038e1853c139bb560c154b67342936e7df86e83cc48197f3bb
+    :exec: text/string_view --demo BasicTests
+    :source-sha256: 33c9b69703ba4ffb03816392bb7b7c3bc26652068c697783fd667a87bcab0b84
 
 .. code-block:: cpp
 
@@ -161,13 +161,6 @@ path component, protocol token, or command.
 
     Empty checks:
       station.isEmpty()     : false
-      empty.isEmpty()       : true
-      invalidUtf8.isEmpty() : false
-
-    UTF-8 validity checks:
-      station.isValidUtf8()     : true
-      empty.isValidUtf8()       : true
-      invalidUtf8.isValidUtf8() : false
 
 .. erbsland-demo-end::
 
@@ -192,8 +185,8 @@ If an algorithm needs to inspect each character anyway, count while iterating or
 
 .. erbsland-demo::
     :source: text/StringView/LengthAttributes.cpp
-    :exec: string_view --demo LengthAttributes
-    :source-sha256: f8f3b75f564be9823d866ecc53b69b6baa34b8c41ecd2346d6f1df48abbe6fb5
+    :exec: text/string_view --demo LengthAttributes
+    :source-sha256: 32ade239042c1883832a8732d3d3481c24b2f5944019ce1f838b18b4b7210c60
 
 .. code-block:: cpp
 
@@ -259,8 +252,8 @@ Those specializations call ``toHash()`` and therefore use exact decoded text.
 
 .. erbsland-demo::
     :source: text/StringView/Hashing.cpp
-    :exec: string_view --demo Hashing
-    :source-sha256: e8be1efa70eb36790ded0bb7e819ac8d22843ae084ee4d59b963ef31212ff74b
+    :exec: text/string_view --demo Hashing
+    :source-sha256: 95f8df37f8e3c8ea03135cbdd3de4bde0796df80232efec7efcb879bbeea6c3b
 
 .. code-block:: cpp
 
@@ -342,8 +335,8 @@ Store the storage identifier together with the native index when an index outliv
 
 .. erbsland-demo::
     :source: text/StringView/StorageIdentifier.cpp
-    :exec: string_view --demo StorageIdentifier
-    :source-sha256: 8eaaded16b61da2d19284dcafc78ef418abd012b8ddf2577281d4ae65416972f
+    :exec: text/string_view --demo StorageIdentifier
+    :source-sha256: db7ad310659cca32732d59a35d5df1dc884681ae0c0a21e9cad1c8b149e56dc1
 
 .. code-block:: cpp
 

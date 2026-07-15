@@ -12,6 +12,7 @@
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
 
+#include <array>
 #include <cstring>
 #include <span>
 
@@ -112,6 +113,12 @@ public:
         -> U8StringSharedStorage;
 
 private:
+    template <typename T>
+    [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
+    [[nodiscard]] static auto characterBytes(Char character) noexcept -> std::array<char, 4>;
+    [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char, 4> &bytes) noexcept
+        -> std::span<const char>;
+
     template <typename Predicate>
     [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char> replacement) const
         -> U8StringSharedStorage;

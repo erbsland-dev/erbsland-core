@@ -30,6 +30,41 @@ auto OptionEditor::setHelp(OptionHelp help) -> OptionEditor & {
     return *this;
 }
 
+auto OptionEditor::setHelpTitle(text::StringView title) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpTitle(std::move(title));
+    }
+    return *this;
+}
+
+auto OptionEditor::setHelpDescription(text::StringView description) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpDescription(std::move(description));
+    }
+    return *this;
+}
+
+auto OptionEditor::setHelpEpilog(text::StringView epilog) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpEpilog(std::move(epilog));
+    }
+    return *this;
+}
+
+auto OptionEditor::setHelpVisibility(const OptionHelpVisibility visibility) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpVisibility(visibility);
+    }
+    return *this;
+}
+
+auto OptionEditor::setValueName(text::StringView valueName) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setValueName(std::move(valueName));
+    }
+    return *this;
+}
+
 auto OptionEditor::setType(const OptionType type) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setType(type);
@@ -114,6 +149,13 @@ auto OptionEditor::clearDefaultValue() -> OptionEditor & {
 auto OptionEditor::setValidateFn(OptionValidateFn fn) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setValidateFn(std::move(fn));
+    }
+    return *this;
+}
+
+auto OptionEditor::setRequired() -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setFlags(_option->flags() | OptionFlag::Required);
     }
     return *this;
 }

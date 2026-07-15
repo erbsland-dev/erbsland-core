@@ -9,6 +9,7 @@
 #include "impl/U8StringDataView.hpp"
 
 #include "../FormatAs_fwd.hpp"
+#include "../StringSide.hpp"
 
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
@@ -42,15 +43,17 @@ public:
 
 public: // tests
     /// Test if this string is empty.
-    [[nodiscard]] auto isEmpty() const noexcept -> bool;
+    [[nodiscard]] constexpr auto isEmpty() const noexcept -> bool;
     /// Test if this string is valid UTF-8.
     [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
 
 public: // accessors
     /// Get the byte length of this string.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength;
+    [[nodiscard]] constexpr auto length() const noexcept -> unit::ByteLength;
     /// Get the code-point length of this string.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// Get the native data index for one side of the string.
+    [[nodiscard]] constexpr auto indexAt(StringSide side) const noexcept -> unit::ByteIndex;
 
 private:
     /// Private constructor, used by the literal operators.

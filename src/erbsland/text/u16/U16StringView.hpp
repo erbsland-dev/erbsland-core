@@ -24,6 +24,7 @@
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
 #include "../impl/StringReaderBase_fwd.hpp"
+#include "../impl/UnsafeU16StringViewAccess_fwd.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
 #include "../ProcessCharacterFn.hpp"
@@ -72,7 +73,7 @@ namespace erbsland::text {
 /// UTF-16 encoding.
 /// @tested{U16StringTest}
 class U16StringView final {
-    friend class erbsland::debug::impl::StringDebugAccess;
+    friend class debug::impl::StringDebugAccess;
     friend class U16String;
     friend class U16StringCharView;
     friend class U16StringConstIterator;
@@ -81,6 +82,7 @@ class U16StringView final {
     friend class impl::U16StringBuilder;
     friend class impl::U16StringReader;
     friend class impl::U8StringBuilder;
+    friend class impl::UnsafeU16StringViewAccess;
     template <typename>
     friend class impl::StringList;
 
@@ -162,6 +164,11 @@ public: // read
     /// This method provides the number of code points in the string.
     /// Counting follows the tolerant UTF-16 index movement rule documented by `U16String`.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// Get the approximate display width of this string.
+    /// This is a simple sum of decoded character display widths. Control characters, including line breaks, count as
+    /// zero. Complex shaping, grapheme clusters, bidi layout, and terminal-specific behavior are not modeled.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Get the native data index for one side of the string.
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::U16DataIndex;
     /// Get the first or last character in this string.
@@ -171,6 +178,16 @@ public: // read
     /// @param startIndex The UTF-16 data index to access the character at.
     /// @return The character at the given code-unit position, or a null character if no character can be read there.
     [[nodiscard]] auto charAt(unit::U16DataIndex startIndex) const noexcept -> Char;
+    /// Read the character at the given UTF-16 data index and advance the index.
+    /// @seeref{u16-string-view-indexed-sequential-read}
+    /// @param index The UTF-16 data index to read from. Updated to the position after the read character on success.
+    /// @return The character at the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndAdvance(unit::U16DataIndex &index) const noexcept -> Char;
+    /// Read the character before the given UTF-16 data index and retreat the index.
+    /// @seeref{u16-string-view-indexed-sequential-read}
+    /// @param index The index after the character to read. Updated to the start of the read character on success.
+    /// @return The character before the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndRetreat(unit::U16DataIndex &index) const noexcept -> Char;
     /// Slow: Access the character at the given code-point position.
     /// This operation may be slow for large strings, as the position must be found by iterating over the string.
     /// @seeref{u16-string-view-character-indexed-reading}
@@ -209,20 +226,59 @@ public: // slice
     /// No UTF-16 validation is performed, if you slice in the middle of a character, the result contains
     /// encoding errors at the start or end of the resulting string.
     /// @param range The UTF-16 data range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::U16DataRange range) const noexcept -> U16StringView;
     /// Return a character-indexed slice of this string.
     /// Returns a string with a code-point-based slice of this string.
     /// Malformed UTF-16 is decoded according to the tolerant UTF-16 index movement rule documented by `U16String`.
     /// @param range The code-point range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U16StringView;
     /// Get the initial or trailing UTF-16 data portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of UTF-16 data units to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::U16DataLength length) const noexcept -> U16StringView;
+    /// Get the UTF-16 data-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `U16DataIndex::noIndex()` and indexes at or beyond the end return the full view for front and an empty view
+    /// for back.
+    /// @param side The side of the split point to keep.
+    /// @param index The UTF-16 data index where the back portion starts.
+    /// @return The sliced string.
+    [[nodiscard]] auto slice(StringSide side, unit::U16DataIndex index) const noexcept -> U16StringView;
     /// Get the initial or trailing code-point-based portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of code points to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U16StringView;
+    /// Get the code-point-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view for front and an empty view for back.
+    /// @param side The side of the split point to keep.
+    /// @param index The code-point index where the back portion starts.
+    /// @return The sliced string.
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U16StringView;
     /// Slice one decoded character from the given side and return it with the remaining string.
+    /// @param side The side of the string to slice from.
+    /// @return The sliced character and the remaining string.
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U16StringView>;
+    /// Split this string view at a UTF-16 data index.
+    /// `U16DataIndex::noIndex()` and indexes at or beyond the end return the full view followed by an empty view.
+    /// @param index The UTF-16 data index where the second returned view starts.
+    /// @return The two views before and after the split point.
+    [[nodiscard]] auto splitAt(unit::U16DataIndex index) const noexcept -> std::pair<U16StringView, U16StringView>;
+    /// Split this string view at a code-point index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view followed by an empty view.
+    /// @param index The code-point index where the second returned view starts.
+    /// @return The two views before and after the split point.
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U16StringView, U16StringView>;
 
 public: // trim
     /// Return a view without leading and trailing ASCII whitespace or selected characters.
@@ -239,6 +295,7 @@ public: // find
     /// Malformed UTF-16 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param start The UTF-16 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The UTF-16 data index of the first match, or `U16DataIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::U16DataIndex start) const noexcept
         -> unit::U16DataIndex;
@@ -252,6 +309,7 @@ public: // find
     /// Malformed UTF-16 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param start The UTF-16 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The UTF-16 data index of the first non-matching character, or `U16DataIndex::noIndex()` if there is
     /// none.
     [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::U16DataIndex start) const noexcept
@@ -265,6 +323,7 @@ public: // find
     /// Malformed UTF-16 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param end The exclusive UTF-16 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The UTF-16 data index of the last match, or `U16DataIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findLastOf(const CharSet &characters, unit::U16DataIndex end) const noexcept
         -> unit::U16DataIndex;
@@ -277,6 +336,7 @@ public: // find
     /// Malformed UTF-16 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param end The exclusive UTF-16 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The UTF-16 data index of the last non-matching character, or `U16DataIndex::noIndex()` if there is none.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::U16DataIndex end) const noexcept
         -> unit::U16DataIndex;
@@ -289,6 +349,7 @@ public: // find
     /// Find text in this string view starting at a UTF-16 data index.
     /// @param text The text to find.
     /// @param start The UTF-16 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The UTF-16 data index of the first match, or `U16DataIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(
@@ -363,13 +424,11 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::U16DataLength;
     /// Escape this view according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U16String;
 
 public: // low-level management

@@ -24,7 +24,9 @@ public:
     auto operator=(EventIdInfo &&) -> EventIdInfo & = default;
 
 public:
+    /// Get the reverse-DNS-style event name.
     [[nodiscard]] auto name() const noexcept -> const text::StringView & { return _name; }
+    /// Get the event description.
     [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _description; }
 
 private:

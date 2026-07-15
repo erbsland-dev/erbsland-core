@@ -74,6 +74,11 @@ public:
         REQUIRE_EQUAL(repeatedCharacter.length(), CpLength{3U});
         REQUIRE_EQUAL(U32String::fromCharacter(Char{U'\U0001F600'}, CpLength{3U}), repeatedCharacter);
         REQUIRE_EQUAL(U32String::fromCharacter(Char{U'A'}), U"A"_el);
+        REQUIRE(U32String::fromJoined({}).isEmpty());
+        REQUIRE_EQUAL(U32String::fromJoined({U"solo"_elv}), U"solo"_el);
+        REQUIRE_EQUAL(
+            StringConverter{U32String::fromJoined({U"prefix-"_elv, U""_elv, view, U"-suffix"_elv})}.toStdU32String(),
+            std::u32string{U"prefix-A\U0001F600-suffix"});
 
         auto appended = U32String{std::u32string_view{U">"}};
         appended.append(view, ElementCount{2U}).append(Char{U'!'}, CpLength{2U});
@@ -185,6 +190,54 @@ public:
         REQUIRE_EQUAL(text.toCharIndex(text.indexAt(StringSide::Back)), text.indexAt(StringSide::Back));
     }
 
+    void testIndexedSequentialRead() {
+        const auto text = U32String{std::u32string_view{U"A\u00A2\U0001F600"}};
+        auto index = CpIndex::zero();
+
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{3});
+        REQUIRE(text.readCharAndAdvance(index).isEndOfData());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{3});
+
+        index = CpIndex{4U};
+        REQUIRE(text.readCharAndAdvance(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{4});
+
+        index = text.indexAt(StringSide::Back);
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        REQUIRE_EQUAL(text.readCharAndRetreat(index).toRawValue(), U'A');
+        REQUIRE(index.isZero());
+        REQUIRE(text.readCharAndRetreat(index).isEndOfData());
+        REQUIRE(index.isZero());
+
+        index = CpIndex{4U};
+        REQUIRE(text.readCharAndRetreat(index).isNoCodePoint());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{4});
+
+        const auto view = U32StringView{text};
+        index = CpIndex::zero();
+        REQUIRE_EQUAL(view.readCharAndAdvance(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+        index = view.indexAt(StringSide::Back);
+        REQUIRE_EQUAL(view.readCharAndRetreat(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+
+        const auto invalidData = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
+        const auto invalid = U32String{std::u32string_view{invalidData}};
+        index = CpIndex{1U};
+        REQUIRE(invalid.readCharAndAdvance(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
+        REQUIRE(invalid.readCharAndRetreat(index).isReplacement());
+        REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
+    }
+
     void testInvalidCodePointIsTolerated() {
         const auto invalid = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
         const auto text = U32String{std::u32string_view{invalid}};
@@ -197,6 +250,26 @@ public:
         REQUIRE(text.charAt(CpIndex{1}).isReplacement());
         REQUIRE(text[CpIndex{1}].isReplacement());
         REQUIRE(U32StringView{text}[CpIndex{1}].isReplacement());
+    }
+
+    void testNoIndexFindPositions() {
+        using namespace el::text::literals;
+
+        const auto text = U32String{std::u32string_view{U"A\u00A2\u20AC\U0001F600"}};
+        const auto view = U32StringView{text};
+        const auto characters = CharSet{Char{U'A'}, Char{0x00A2U}};
+
+        REQUIRE(text.find(U"A"_elv, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findFirstOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findFirstNotOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findLastOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(text.findLastNotOf(characters, CpIndex::noIndex()).isNoIndex());
+
+        REQUIRE(view.find(U"A"_elv, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findFirstOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findFirstNotOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findLastOf(characters, CpIndex::noIndex()).isNoIndex());
+        REQUIRE(view.findLastNotOf(characters, CpIndex::noIndex()).isNoIndex());
     }
 
     void testCaseMapping() {
@@ -283,14 +356,72 @@ public:
             StringConverter{unicodeView.slice(StringSide::Back, CpLength{3})}.toStdU32String(),
             std::u32string{U"\U0001F600BC"});
         REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpIndex{3})}.toStdU32String(),
+            std::u32string{U"A\u00A2\u20AC"});
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Back, CpIndex{3})}.toStdU32String(),
+            std::u32string{U"\U0001F600BC"});
+        REQUIRE(unicodeView.slice(StringSide::Front, CpIndex::zero()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Back, CpIndex::zero())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, unicodeView.indexAt(StringSide::Back))}
+                .toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, unicodeView.indexAt(StringSide::Back)).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, CpIndex::noIndex())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, CpIndex::noIndex()).isEmpty());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, CpIndex{99})}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicodeView.slice(StringSide::Back, CpIndex{99}).isEmpty());
+        REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength{99})}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
         REQUIRE_EQUAL(
             StringConverter{unicode.slice(StringSide::Back, CpLength::infinite())}.toStdU32String(),
             StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicode.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE_EQUAL(
+            StringConverter{unicodeView.slice(StringSide::Front, CpLength::infinite())}.toStdU32String(),
+            StringConverter{unicode}.toStdU32String());
+        REQUIRE(unicode.slice(StringSide::Front, CpLength::zero()).isEmpty());
         REQUIRE(unicode.slice(StringSide::Back, CpLength::zero()).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex{2}, CpLength::zero()}).isEmpty());
         REQUIRE(unicode.slice(CpRange::noRange()).isEmpty());
+        REQUIRE(unicode.slice(CpRange{CpIndex::noIndex(), CpLength{1}}).isEmpty());
         REQUIRE(unicode.slice(CpRange{CpIndex{99}, CpLength{1}}).isEmpty());
+
+        {
+            const auto [left, right] = unicode.splitAt(CpIndex{3});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), std::u32string{U"A\u00A2\u20AC"});
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), std::u32string{U"\U0001F600BC"});
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(CpIndex::zero());
+            REQUIRE(left.isEmpty());
+            REQUIRE_EQUAL(StringConverter{right}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(unicodeView.indexAt(StringSide::Back));
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(CpIndex::noIndex());
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
+        {
+            const auto [left, right] = unicodeView.splitAt(CpIndex{99});
+            REQUIRE_EQUAL(StringConverter{left}.toStdU32String(), StringConverter{unicode}.toStdU32String());
+            REQUIRE(right.isEmpty());
+        }
     }
 
     void testModificationComparisonAndTransform() {

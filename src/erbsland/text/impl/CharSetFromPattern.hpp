@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ThrowHelper.hpp"
+
 #include "../CharSet.hpp"
 #include "../StringCharReader.hpp"
-
-#include "../../err/ThrowHelper.hpp"
 
 namespace erbsland::text::impl {
 
 /// Create a character set from a simple range pattern read character-by-character.
-/// @tested{CharSetTest}
 [[nodiscard]] inline auto charSetFromPatternCharacters(StringCharReader &reader) -> CharSet {
     auto result = CharSet{};
     auto isFirstCharacter = true;
@@ -24,7 +23,7 @@ namespace erbsland::text::impl {
                 isFirstCharacter = false;
                 continue;
             }
-            err::throwParseError("Unexpected hyphen in character set pattern");
+            text::impl::throwParseError("Unexpected hyphen in character set pattern");
         }
 
         if (reader.advanceIf(Char{U'-'})) {
@@ -37,7 +36,7 @@ namespace erbsland::text::impl {
 
             const auto last = reader.read();
             if (character >= last) {
-                err::throwParseError("Invalid character range in character set pattern");
+                text::impl::throwParseError("Invalid character range in character set pattern");
             }
             result.add(CharRange{character, last});
             isFirstCharacter = false;

@@ -5,6 +5,8 @@
 
 #include <tuple>
 
+namespace demo {
+
 /// StringView has side-based methods for accessing the first and last characters.
 /// You can also slice the front and back efficiently.
 ///
@@ -40,4 +42,6 @@ void firstAndLastCharacter() {
         std::tie(slicedChar, remaining) = remaining.slice(el::StringSide::Back);
         el::io::printLine("  sliced: '"_el, slicedChar, "' from \""_el, remaining, "\""_el);
     }
+}
+
 }

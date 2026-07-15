@@ -4,7 +4,7 @@
 
 #include "ByteBlock.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/OutOfRangeError.hpp"
 #include "../util/HashHelper.hpp"
 
 #include <algorithm>
@@ -103,7 +103,7 @@ auto ByteBlockView::get(const unit::ByteIndex index, const Byte defaultValue) co
 auto ByteBlockView::getOrThrow(const unit::ByteIndex index) const -> Byte {
     const auto data = dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        err::throwOutOfRange("Read position out of range");
+        throw err::OutOfRangeError{"Read position out of range"};
     }
     return data[index.toSizeT()];
 }

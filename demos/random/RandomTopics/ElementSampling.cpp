@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Element helpers select, sample, and shuffle values without manual index math.
 ///
 /// Use `selectElement()` for a single choice, `buildElementList()` for sampling
@@ -36,4 +38,6 @@ void elementSampling() {
     // Shuffle rearranges all elements while preserving the original values.
     random.shuffle(palette);
     el::io::printLine("Shuffled     : "_el, palette.join(", "_el));
+}
+
 }

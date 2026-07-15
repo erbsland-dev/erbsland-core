@@ -5,7 +5,9 @@
 #include <erbsland/all.hpp>
 #include <erbsland/core/MakeOneNamespace.hpp>
 #include <erbsland/cterm/all.hpp>
-#include <erbsland/StandardStreams.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
+
+namespace demo {
 
 using namespace el::text::literals;
 using namespace el::bgeo;
@@ -54,3 +56,5 @@ protected:
     std::size_t _animationCycle{0};
     bool _screenInitialized{false};
 };
+
+}

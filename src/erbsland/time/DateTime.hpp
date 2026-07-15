@@ -15,13 +15,15 @@
 #include "../text/StringView.hpp"
 
 #include <compare>
+#include <cstdint>
 #include <ctime>
+#include <optional>
 #include <utility>
 
 namespace erbsland::time {
 
 /// A local date/time split into named parts.
-/// @tested{TimeCoreTest::testConstructionAndEpoch}
+/// @tested{TimeCoreTest}
 struct DateTimeParts {
     Year year;                      ///< The local year component.
     Month month;                    ///< The local month component.
@@ -207,6 +209,9 @@ public: // conversion
     /// Convert to `std::time_t` using the POSIX epoch.
     /// Invalid date/times convert from the internal `-1` seconds sentinel.
     [[nodiscard]] auto toTimeT() const noexcept -> std::time_t;
+    /// Convert to Windows FILETIME 100-nanosecond ticks since 1601-01-01 UTC.
+    /// Returns no value if this date/time is invalid or before the Windows FILETIME epoch.
+    [[nodiscard]] auto toWindowsFileTimeTicks() const noexcept -> std::optional<std::uint64_t>;
     /// Convert this date/time to an ISO 8601 string.
     /// Invalid date/times return an empty string.
     /// @param flags Formatting flags for date, time, and offset output.
@@ -231,6 +236,14 @@ public:
     /// Create a UTC date/time from a POSIX time value.
     /// Returns an invalid date/time if the value is outside the supported date/time range.
     [[nodiscard]] static auto fromTimeT(std::time_t posixTime) noexcept -> DateTime;
+    /// Create a UTC date/time from POSIX seconds and an optional nanosecond fraction.
+    /// Returns an invalid date/time if the value is outside the supported date/time range or if the fraction is
+    /// invalid.
+    [[nodiscard]] static auto fromPosixTime(Seconds seconds, Nanoseconds fractions = Nanoseconds{}) noexcept
+        -> DateTime;
+    /// Create a UTC date/time from Windows FILETIME 100-nanosecond ticks since 1601-01-01 UTC.
+    /// Returns an invalid date/time if the value is outside the supported date/time range.
+    [[nodiscard]] static auto fromWindowsFileTimeTicks(std::uint64_t ticks) noexcept -> DateTime;
     /// Parse an ISO date/time string.
     /// @param text The text to parse.
     /// @param requiredPrecision The minimum precision required.

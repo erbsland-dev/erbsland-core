@@ -2,11 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionParser.hpp"
 
+#include "../Option.hpp"
 #include "../OptionErrorContext.hpp"
 #include "../OptionResult.hpp"
 #include "../Options.hpp"
 #include "../OptionValues.hpp"
 
+#include "../../i18n/DisplayTextMap.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -15,9 +17,11 @@ namespace erbsland::options::impl {
 
 using namespace text::literals;
 
-OptionParser::OptionParser(OptionsPtr options, const core::CommandLineArguments &args) :
+OptionParser::OptionParser(
+    OptionsPtr options, const core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText) :
     _options{std::move(options)},
     _args{args},
+    _displayText{displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap()},
     _argumentIndex{unit::ArgumentIndex::one()},
     _moduleArgumentIndex{unit::ArgumentIndex::noIndex()} {
     if (_options != nullptr) {
@@ -27,7 +31,11 @@ OptionParser::OptionParser(OptionsPtr options, const core::CommandLineArguments 
 
 auto OptionParser::parse() -> OptionResult {
     if (_args.count() > unit::ElementCount{5'000U}) {
-        makeError(OptionErrorReason::SyntaxError, "Too many command line arguments"_el, {});
+        makeError(
+            OptionErrorReason::SyntaxError,
+            "Too many command-line arguments"_el,
+            "This command accepts at most 5,000 command-line arguments."_el,
+            {});
         return finishError();
     }
 
@@ -117,8 +125,20 @@ auto OptionParser::acceptStorageResult(const bool success) -> bool {
 
 auto OptionParser::makeError(
     const OptionErrorReason reason, text::StringView description, const unit::ArgumentIndex index) -> bool {
+    return makeError(OptionErrorContext{}.setReason(reason).setTitle(std::move(description)).setArgumentIndex(index));
+}
+
+auto OptionParser::makeError(
+    const OptionErrorReason reason,
+    text::StringView title,
+    text::StringView description,
+    const unit::ArgumentIndex index) -> bool {
     return makeError(
-        OptionErrorContext{}.setReason(reason).setDescription(std::move(description)).setArgumentIndex(index));
+        OptionErrorContext{}
+            .setReason(reason)
+            .setTitle(std::move(title))
+            .setDescription(std::move(description))
+            .setArgumentIndex(index));
 }
 
 auto OptionParser::makeError(
@@ -129,14 +149,65 @@ auto OptionParser::makeError(
     return makeError(
         OptionErrorContext{}
             .setReason(reason)
+            .setTitle(std::move(description))
+            .setArgumentIndex(index)
+            .setOption(option));
+}
+
+auto OptionParser::makeError(
+    const OptionErrorReason reason,
+    text::StringView title,
+    text::StringView description,
+    const unit::ArgumentIndex index,
+    const OptionPtr &option) -> bool {
+    return makeError(
+        OptionErrorContext{}
+            .setReason(reason)
+            .setTitle(std::move(title))
             .setDescription(std::move(description))
             .setArgumentIndex(index)
             .setOption(option));
 }
 
 auto OptionParser::makeError(OptionErrorContext context) -> bool {
-    if (context.moduleName().isEmpty()) {
-        context.setModuleName(_moduleName);
+    if (context.options() == nullptr) {
+        context.setOptions(_options);
+    }
+    if (context.module() == nullptr) {
+        context.setModule(_selectedModule);
+    }
+    if (context.arguments().isEmpty()) {
+        context.setArguments(_args);
+    }
+    context.setDisplayText(_displayText);
+    if (context.description().isEmpty()) {
+        switch (context.reason()) {
+        case OptionErrorReason::SyntaxError:
+            context.setDescription("Review the marked argument and the usage information below."_el);
+            break;
+        case OptionErrorReason::UnknownName:
+            context.setDescription("The marked name is not available for this command."_el);
+            break;
+        case OptionErrorReason::UnexpectedValueType:
+            context.setDescription("The marked value does not meet the requirements of this option."_el);
+            break;
+        case OptionErrorReason::ValidationError:
+            context.setDescription("The supplied options did not pass validation."_el);
+            break;
+        case OptionErrorReason::NotImplemented:
+            context.setDescription("This option operation has not been implemented."_el);
+            break;
+        case OptionErrorReason::None:
+            context.setDescription("Option processing stopped without additional details."_el);
+            break;
+        }
+    }
+    if (context.argumentIndex().isNoIndex()) {
+        if (const auto option = context.option(); option != nullptr) {
+            if (option->isPositionalArgument()) {
+                context.setTitle("Required argument is missing"_el);
+            }
+        }
     }
     _error = std::move(context);
     return false;

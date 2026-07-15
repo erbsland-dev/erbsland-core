@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `aligned()` returns a padded copy of the string using decoded code-point
 /// length for the requested field width. This is useful for compact textual
 /// tables and labels.
@@ -24,4 +26,6 @@ void alignAndTruncate() {
     auto mutableObservation = observation;
     mutableObservation.truncate(el::CpLength{22U}, el::TruncateMode::End, "..."_el);
     el::io::printLine("In-place: "_el, mutableObservation);
+}
+
 }

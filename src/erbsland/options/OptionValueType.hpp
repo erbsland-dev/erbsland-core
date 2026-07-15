@@ -5,7 +5,6 @@
 namespace erbsland::options {
 
 /// The concrete storage type of an option value.
-/// @tested{OptionsFrameworkTest}
 enum class OptionValueType {
     Flag,        ///< A boolean flag value.
     Integer,     ///< A single integer value.

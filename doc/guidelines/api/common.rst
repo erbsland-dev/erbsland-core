@@ -80,10 +80,31 @@ Object APIs shall be of two types:
     unless a method is marked with ``noexcept``.
 
 We prefer the first variant where it makes sense, as this leads to more readable user code.
-The second variant makes sense for APIs like parsers, where e.g. embedded IO objects may throw on read errors
-at any time and, therefore, the caller must expect exceptions with every call.
+The second variant makes sense for APIs like parsers, where e.g. embedded IO objects may throw on read errors at any
+time and, therefore, the caller must expect exceptions with every call.
 
 All thrown exceptions shall be listed in the API documentation.
+
+Test Status Markers
+===================
+
+Every documented class or struct and every namespace-scope free function shall end its API documentation block with one
+test-status marker.
+The marker points to the test suite where a maintainer can find the relevant coverage; it does not describe individual
+test methods.
+
+.. code-block:: text
+
+    @tested{PathContentTest StreamSettingsTest}
+    @notest{Abstract interface; concrete implementations own the behavior tests.}
+    @needtest{Add coverage for the platform-specific failure path.}
+
+``@tested`` lists one or more suite class names, separated by one space.
+Each name must end in ``Test``.
+Do not use commas, paths, backticks, or ``Suite::testMethod`` selectors.
+``@notest`` and ``@needtest`` require a compact single-line explanation.
+Do not place any test-status marker on constructors, methods, operators, or other members; the containing class or
+struct marker covers its complete public API.
 
 Domain-Specific Page Guidelines
 ===============================

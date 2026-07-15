@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView` compares whole strings by decoded Unicode code point.
 /// Use the comparison operators for ordinary equality and ordering. Use `compare()`
 /// when you need the `std::strong_ordering` result explicitly or want to pass a
@@ -38,4 +40,6 @@ void wholeStringComparison() {
     el::io::printLine("u8Habitat == u8 literal .......: "_el, booleanFormat, u8Habitat == u8"ledová kra"_el);
     el::io::printLine("u16Habitat == u16 literal .....: "_el, booleanFormat, u16Habitat == u"ledová kra"_el);
     el::io::printLine("u32Habitat == u32 literal .....: "_el, booleanFormat, u32Habitat == U"ledová kra"_el);
+}
+
 }

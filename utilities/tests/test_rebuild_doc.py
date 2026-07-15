@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from dev.rebuild_doc import DocumentationOutputFilter, RebuildDocApp
+from dev.rebuild_doc import DocumentationOutputFilter, DoxygenWarningSuppression, RebuildDocApp
 
 
 class DocumentationOutputFilterTest(unittest.TestCase):
@@ -31,72 +31,37 @@ class DocumentationOutputFilterTest(unittest.TestCase):
             self.output_filter.filter_line(line),
         )
 
-    def test_filters_doxygen_undocumented_impl_entries(self) -> None:
+    def test_shows_unmatched_impl_and_operator_warnings(self) -> None:
+        for line in (
+            "/workspace/erbsland-core/_doxygen_input/erbsland/text/impl/StringData.hpp:9: "
+            "warning: Compound erbsland::text::impl::StringData is not documented.",
+            "/workspace/erbsland-core/_doxygen_input/erbsland/options/Option.hpp:50: "
+            "warning: Member operator==(const Option &) const (function) of class erbsland::options::Option "
+            "is not documented.",
+        ):
+            self.assertIsNotNone(self.output_filter.filter_line(line))
+
+    def test_suppresses_only_matching_configured_warning(self) -> None:
+        rule = DoxygenWarningSuppression(
+            source_glob="erbsland/**/impl/**",
+            message_contains="is not documented.",
+            message_regex="",
+            reason="Internal implementation declarations.",
+        )
+        self.output_filter.suppression_rules = (rule,)
         self.assertIsNone(
             self.output_filter.filter_line(
                 "/workspace/erbsland-core/_doxygen_input/erbsland/text/impl/StringData.hpp:9: "
                 "warning: Compound erbsland::text::impl::StringData is not documented."
             )
         )
-        self.assertIsNone(
+        self.assertIsNotNone(
             self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/text/impl/StringData.hpp:9: "
-                "warning: Compound erbsland::text::StringData is not documented."
+                "/workspace/erbsland-core/_doxygen_input/erbsland/text/impl/StringData.hpp:10: "
+                "warning: Found unknown command '@broken'"
             )
         )
-
-    def test_filters_doxygen_undocumented_std_specializations(self) -> None:
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/text/String.hpp:100: "
-                "warning: Compound std::hash<erbsland::text::String> is not documented."
-            )
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/text/String.hpp:101: "
-                "warning: Compound std::format<erbsland::text::String> is not documented."
-            )
-        )
-
-    def test_filters_doxygen_undocumented_operators_and_copy_move_constructors(
-        self,
-    ) -> None:
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/options/Option.hpp:50: "
-                "warning: Member operator==(const Option &) const (function) of class erbsland::options::Option "
-                "is not documented."
-            )
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/err/OptionError.hpp:25: "
-                "warning: Member OptionError(const OptionError &)=default (function) of class "
-                "erbsland::err::OptionError is not documented."
-            )
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/err/OptionError.hpp:26: "
-                "warning: Member OptionError(OptionError &&)=default (function) of class "
-                "erbsland::err::OptionError is not documented."
-            )
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/time/Date.hpp:54: "
-                "warning: Member Date(const Date &) noexcept=default (function) of class erbsland::time::Date "
-                "is not documented."
-            )
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/util/List.hpp:60: "
-                "warning: Member List(const List &) noexcept=default (function) of class "
-                "erbsland::util::List< tString, StringList< tString > > is not documented."
-            )
-        )
+        self.assertEqual(["Suppressed 1 Doxygen warning(s): Internal implementation declarations."], self.output_filter.suppressed_warning_summary())
 
     def test_shows_doxygen_unexpanded_alias_warning_and_error(self) -> None:
         self.assertEqual(
@@ -114,7 +79,7 @@ class DocumentationOutputFilterTest(unittest.TestCase):
             ),
         )
 
-    def test_shows_sphinx_diagnostic_path_lines_only_with_short_path(self) -> None:
+    def test_shows_sphinx_diagnostics_with_short_paths(self) -> None:
         self.assertEqual(
             "reference/text/string.rst:12: WARNING: duplicate object description",
             self.output_filter.filter_line(
@@ -125,18 +90,20 @@ class DocumentationOutputFilterTest(unittest.TestCase):
         self.assertIsNone(
             self.output_filter.filter_line("   more detail about the duplicate")
         )
-        self.assertIsNone(
-            self.output_filter.filter_line("WARNING: summary without source path")
-        )
-        self.assertIsNone(
-            self.output_filter.filter_line("ERROR: summary without source path")
-        )
+        self.assertEqual("WARNING: summary without source path", self.output_filter.filter_line("WARNING: summary without source path"))
+        self.assertEqual("ERROR: summary without source path", self.output_filter.filter_line("ERROR: summary without source path"))
 
     def test_rebuild_doc_no_filter_flag_disables_filter(self) -> None:
         app = RebuildDocApp()
         app.parse_command_line(["--no-filter"])
 
         self.assertFalse(app.filter_output)
+
+    def test_rebuild_doc_show_suppressed_flag(self) -> None:
+        app = RebuildDocApp()
+        app.parse_command_line(["--show-suppressed"])
+
+        self.assertTrue(app.show_suppressed)
 
 
 if __name__ == "__main__":

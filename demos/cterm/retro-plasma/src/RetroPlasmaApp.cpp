@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+namespace demo {
+
 void RetroPlasmaApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{28}, BlockCoordinate{8}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -87,4 +89,6 @@ auto RetroPlasmaApp::buildPrompt() const -> BlockString {
         fg::BrightWhite,
         el::StringFormat{" palette  speed {}%"_el}.build(_speed * 100.0));
     return result;
+}
+
 }

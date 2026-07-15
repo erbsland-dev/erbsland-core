@@ -5,8 +5,8 @@
 #include "IntegerAmount_fwd.hpp"
 
 #include "impl/IntegerAmountTraits.hpp"
+#include "impl/Throw.hpp"
 
-#include "../err/ThrowHelper.hpp"
 #include "../math/SaturatingInteger.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -239,7 +239,7 @@ public: // conversion
         impl::SimpleIntegerAmountRatio<std::ratio_divide<Ratio, typename tTarget::Ratio>>
     [[nodiscard]] auto convertedOrThrow() const -> tTarget {
         if (wouldConvertSaturate<tTarget>()) {
-            err::throwOverflow("Integer amount conversion would exceed target bounds");
+            impl::throwOverflow("Integer amount conversion would exceed target bounds");
         }
         return converted<tTarget>();
     }

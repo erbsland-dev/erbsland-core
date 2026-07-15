@@ -5,6 +5,8 @@
 
 #include <numbers>
 
+namespace demo {
+
 /// A validation error that can be thrown by the validation functions.
 class ValidationError : public el::Exception {
 public:
@@ -23,9 +25,7 @@ void validateEmailAddress(const el::StringView &emailAddress) {
         throw ValidationError{"Email address can only contain one '@' character."_el};
     }
     const auto indexOfAt = emailAddress.find(requiredAt);
-    const auto domain = emailAddress.slice(el::ByteRange{
-        indexOfAt + requiredAt.length(),
-        el::ByteLength::infinite()});
+    const auto domain = emailAddress.slice(el::ByteRange{indexOfAt + requiredAt.length(), el::ByteLength::infinite()});
     if (!domain.containsOnly(allowedDomainChars)) {
         throw ValidationError{"Email domain contains invalid characters."_el};
     }
@@ -81,4 +81,6 @@ void testForCharacters() {
             el::io::printLine("❌ "_el, error);
         }
     });
+}
+
 }

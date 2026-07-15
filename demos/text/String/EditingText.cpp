@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `String` is an owning, editable copy-on-write string type.
 /// Use it when you build text from scratch or modify existing text.
 /// Use `StringView` for parameters and stored read-only text.
@@ -39,4 +41,6 @@ void editingText() {
 
     el::io::printLine(intro);
     el::io::printLine(story);
+}
+
 }

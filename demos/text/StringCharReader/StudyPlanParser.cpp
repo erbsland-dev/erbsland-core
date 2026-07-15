@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 constexpr auto decMax3Digits =
     el::IntegerParseOptions::parserDefault().setFixedBase(el::IntegerBase::Decimal).setMaximumDigits(el::CpLength{3U});
 
@@ -78,4 +80,6 @@ auto readOptionalMinutes(el::StringCharReader &reader, int &minutes) -> bool {
     } catch (const el::Exception &) {
         return false;
     }
+}
+
 }

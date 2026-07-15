@@ -6,6 +6,8 @@
 
 #include <vector>
 
+namespace demo {
+
 /// Render an animated plasma effect into a terminal buffer.
 class PlasmaRenderer final {
 public:
@@ -21,3 +23,5 @@ private:
     [[nodiscard]] static auto valueAt(BlockPosition position, BlockRectangle rect, double phase) noexcept -> double;
     [[nodiscard]] static auto cellForValue(double normalizedValue, std::size_t paletteIndex) -> Block;
 };
+
+}

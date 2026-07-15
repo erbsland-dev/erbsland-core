@@ -7,8 +7,9 @@ Log Viewer
 **********
 
 ``log-viewer`` demonstrates how ``CursorBuffer`` and ``BufferView`` work together in a live scrollback-style
-application. It generates fictive web-server log messages, appends them to a growing history, and lets the user pan
-through that history or jump back into follow mode.
+application.
+It generates fictive web-server log messages, appends them to a growing history, and lets the user pan through that
+history or jump back into follow mode.
 
 Use This Demo When You Need...
 ==============================
@@ -24,7 +25,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/log-viewer
+    $ ./cmake-build-debug/demo-apps/cterm/log-viewer
 
 Use the arrow keys to pan, ``F`` to jump back to the newest entries, ``+`` or ``-`` to change the message pace, and
 ``Q`` or ``Esc`` to quit.

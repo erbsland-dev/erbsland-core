@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "MoveAwareTestValue.hpp"
+
 #include <erbsland/unit/ElementCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashSet.hpp>
@@ -10,6 +12,7 @@
 #include <algorithm>
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using el::unit::ElementCount;
@@ -20,6 +23,8 @@ class HashSetTest final : public el::UnitTest {
 public:
     using IntHashSet = el::util::HashSet<int>;
     using IntList = el::util::List<int>;
+    using MoveHashSet = el::util::HashSet<erbsland::test::MoveAwareTestValue, erbsland::test::MoveAwareTestValueHash>;
+    using MoveValue = erbsland::test::MoveAwareTestValue;
 
     void testConstructionAndElements() {
         const auto empty = IntHashSet{};
@@ -59,6 +64,22 @@ public:
         REQUIRE(!second.tryRemove(4));
         second.shrinkToFit();
         REQUIRE(second.capacity().toSizeT() >= second.count().toSizeT());
+    }
+
+    void testMoveAwareInsert() {
+        auto set = MoveHashSet{};
+
+        auto inserted = MoveValue{1};
+        const auto insertedCounts = inserted.counts();
+        set.insert(std::move(inserted));
+        REQUIRE_EQUAL(insertedCounts->copies, 0);
+        REQUIRE(set.contains(MoveValue{1}));
+
+        auto tryInserted = MoveValue{2};
+        const auto tryInsertedCounts = tryInserted.counts();
+        REQUIRE(set.tryInsert(std::move(tryInserted)));
+        REQUIRE_EQUAL(tryInsertedCounts->copies, 0);
+        REQUIRE(set.contains(MoveValue{2}));
     }
 
     void testRemoveAndAlgorithms() {

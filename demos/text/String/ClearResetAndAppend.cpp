@@ -3,6 +3,7 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
 
 void printDraftState(const el::StringView &label, const el::String &text) {
     el::io::printLine(label, ": "_el, text);
@@ -34,4 +35,6 @@ void clearResetAndAppend() {
     draft.reset();
     draft.append("fresh after reset"_el);
     printDraftState("After reset"_el, draft);
+}
+
 }

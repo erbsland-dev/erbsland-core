@@ -142,7 +142,7 @@ class CreateDemoPlan:
         print("Documentation block:", file=output)
         print(".. erbsland-demo::", file=output)
         print(f"    :source: {self.demo_path.source_option()}", file=output)
-        print(f"    :exec: {self.target_name} --demo {self.demo_path.demo_part}", file=output)
+        print(f"    :exec: {self.demo_path.domain}/{self.target_name} --demo {self.demo_path.demo_part}", file=output)
         print("", file=output)
         print(".. erbsland-demo-end::", file=output)
 
@@ -346,8 +346,9 @@ class CreateDemoPlanner:
 
     def render_demo_header(self, function_names: list[str]) -> str:
         """Render the demo declarations header."""
-        lines = [CXX_HEADER.rstrip(), "#pragma once", "", "#include <DemoCommon.hpp>", ""]
+        lines = [CXX_HEADER.rstrip(), "#pragma once", "", "#include <DemoCommon.hpp>", "", "namespace demo {", ""]
         lines.extend(f"void {function_name}();" for function_name in sorted(set(function_names), key=str.casefold))
+        lines.extend(["", "}"])
         return "\n".join(lines) + "\n"
 
     def render_main_cpp(self, registrations: list[tuple[str, str]]) -> str:
@@ -360,12 +361,25 @@ class CreateDemoPlanner:
             "",
             "#include <DemoCommon.hpp>",
             "",
+            "namespace demo {",
+            "",
             "auto main(const int argc, char *argv[]) -> int {",
             "    auto app = DemoApplication{argc, argv};",
         ]
         for demo_name, function_name in unique_registrations:
             lines.append(f'    app.registerDemo("{demo_name}"_el, {function_name});')
-        lines.extend(["    return app.run();", "}"])
+        lines.extend(
+            [
+                "    return app.run();",
+                "}",
+                "",
+                "}",
+                "",
+                "auto main(const int argc, char *argv[]) -> int {",
+                "    return demo::main(argc, argv);",
+                "}",
+            ]
+        )
         return "\n".join(lines) + "\n"
 
     def render_demo_source(self) -> str:
@@ -374,9 +388,13 @@ class CreateDemoPlanner:
             f"{CXX_HEADER}\n"
             "#include <DemoCommon.hpp>\n"
             "\n"
+            "namespace demo {\n"
+            "\n"
             "/// <Generic Title>\n"
             f"void {self.demo_path.function_name}() {{\n"
             "    // FIXME! Implement this demo.\n"
+            "}\n"
+            "\n"
             "}\n"
         )
 

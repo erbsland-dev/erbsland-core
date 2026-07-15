@@ -24,6 +24,7 @@ target_sources(erbsland-core PRIVATE
         DayOfYear_fwd.hpp
         Duration.cpp
         Duration.hpp
+        Duration_fwd.hpp
         DurationPart.hpp
         ElapsedTimer.hpp
         Hour.hpp

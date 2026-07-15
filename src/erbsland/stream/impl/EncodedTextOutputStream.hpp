@@ -5,7 +5,10 @@
 #include "../ByteOutputStream.hpp"
 #include "../TextOutputStream.hpp"
 
+#include "../../text/EncodingErrorMode.hpp"
 #include "../../text/StringBomMode.hpp"
+
+#include <mutex>
 
 namespace erbsland::stream::impl {
 
@@ -17,14 +20,17 @@ public:
     /// @param byteOutputStream The byte stream to write to.
     /// @param encoding The configured text encoding.
     /// @param bomMode How byte order marks are written.
-    /// @throws err::StreamError If `byteOutputStream` is empty.
+    /// @param errorMode How invalid source text is handled.
+    /// @throws stream::StreamError If `byteOutputStream` is empty.
     explicit EncodedTextOutputStream(
         ByteOutputStreamPtr byteOutputStream,
         text::StringEncoding encoding,
-        text::StringBomMode bomMode = text::StringBomMode::Automatic);
+        text::StringBomMode bomMode = text::StringBomMode::Automatic,
+        text::EncodingErrorMode errorMode = text::EncodingErrorMode::Replace,
+        bool initialBomAlreadyHandled = false);
 
     // defaults
-    ~EncodedTextOutputStream() override = default;
+    ~EncodedTextOutputStream() override { abort(); }
     EncodedTextOutputStream(const EncodedTextOutputStream &) = delete;
     EncodedTextOutputStream(EncodedTextOutputStream &&) = delete;
     auto operator=(const EncodedTextOutputStream &) -> EncodedTextOutputStream & = delete;
@@ -33,27 +39,41 @@ public:
 public: // implement TextOutputStream
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
-    [[nodiscard]] auto isOpen() const noexcept -> bool override;
-    void flush() override;
-    void close() override;
-    void write(text::Char character) override;
-    void write(const text::StringView &text) override;
-    void writeLine() override;
-    void writeLine(const text::StringView &text) override;
+    [[nodiscard]] auto outputSettings() const noexcept -> const OutputStreamSettings & override;
+    [[nodiscard]] auto state() const noexcept -> StreamState override;
+    [[nodiscard]] auto isReady() const noexcept -> bool override;
+    [[nodiscard]] auto waitForReady() -> StreamWaitStatus override;
+    auto flush() -> StreamWriteStatus override;
+    auto close() -> StreamCloseStatus override;
+    void abort() noexcept override;
+    [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
+    auto write(text::Char character) -> StreamWriteStatus override;
+    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine() -> StreamWriteStatus override;
+    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
+
+public: // implement StreamPositioning
+    [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
+    [[nodiscard]] auto position() const -> unit::ByteIndex override;
+    auto setPosition(unit::ByteIndex position) -> StreamPositionStatus override;
+    auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> StreamPositionStatus override;
 
 public:
     using TextOutputStream::write;
     using TextOutputStream::writeLine;
 
 private:
-    [[nodiscard]] auto bomModeForNextWrite() noexcept -> text::StringBomMode;
+    [[nodiscard]] auto bomModeForNextWrite() const noexcept -> text::StringBomMode;
+    auto writeLocked(const text::StringView &text) -> StreamWriteStatus;
     [[nodiscard]] static auto effectiveEncodingFor(text::StringEncoding encoding) noexcept -> text::StringEncoding;
 
 private:
+    mutable std::mutex _mutex;
     ByteOutputStreamPtr _byteOutputStream;
     text::StringEncoding _encoding{text::StringEncoding::Utf8};
     text::StringEncoding _effectiveEncoding{text::StringEncoding::Utf8};
     text::StringBomMode _bomMode{text::StringBomMode::Automatic};
+    text::EncodingErrorMode _errorMode{text::EncodingErrorMode::Replace};
     bool _bomWritten{false};
 };
 

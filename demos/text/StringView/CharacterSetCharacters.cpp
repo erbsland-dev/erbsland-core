@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `CharSet` can be created directly from a single character or explicitly from an inclusive range.
 ///
 /// Use `fromRange()` when two `Char` values describe bounds instead of two individual allowed characters.
@@ -14,4 +16,6 @@ void characterSetCharacters() {
     el::io::printLine("Question marker accepts '?' : "_el, yesNo, questionMark.contains(U'?'));
     el::io::printLine("Lowercase accepts 'm' ......: "_el, yesNo, asciiLowercase.contains(U'm'));
     el::io::printLine("Lowercase accepts 'M' ......: "_el, yesNo, asciiLowercase.contains(U'M'));
+}
+
 }

@@ -7,7 +7,6 @@
 namespace erbsland::text {
 
 /// The supported runtime format argument kind.
-/// @tested{U8FormatTest}
 enum class FormatArgumentKind : uint8_t {
     None = 0,
     U8Text = 1,

@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Key.hpp"
 
-#include "impl/CombinedBlock.hpp"
 #include "impl/KeyDecoder.hpp"
 
 #include "../text/CharSet.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringBuilder.hpp"
-#include "../text/StringConverter.hpp"
+#include "../unit/CpLength.hpp"
 
 #include <array>
 #include <optional>
@@ -174,27 +173,24 @@ auto Key::wrapDisplayText(const text::StringView &text, const bool useBrackets) 
     return builder.toString();
 }
 
-auto Key::createCharacterKey(const impl::CombinedBlock &character) noexcept -> Key {
-    if (character.codePointCount() <= 1) {
-        return Key{Character, character.mainCodePoint()};
+auto Key::createCharacterKey(const text::CombinedChar &character) noexcept -> Key {
+    if (character.characterCount() <= unit::CpLength::one()) {
+        return Key{Character, character.first()};
     }
-    return Key{Combined, character.utf32()};
+    return Key{Combined, character.toU32String()};
 }
 
 auto Key::parseCharacterKeyText(const text::StringView &text) -> std::optional<Key> {
     if (text.isEmpty()) {
         return std::nullopt;
     }
-    if (const auto character = impl::CombinedBlock::fromTextUtf8(text); character.has_value()) {
-        return createCharacterKey(*character);
-    }
-    return std::nullopt;
+    return createCharacterKey(text::CombinedChar::fromString(text));
 }
 
 Key::Key(const Type type, const text::Char codePoint, const KeyModifiers modifiers) noexcept :
     _type{type}, _modifiers{modifiers} {
     if (type == Character || type == Combined) {
-        _character = impl::CombinedBlock{codePoint};
+        _character = text::CombinedChar{codePoint};
     }
 }
 
@@ -207,12 +203,12 @@ Key::Key(const text::Char codePoint, const KeyModifiers modifiers) noexcept : Ke
 Key::Key(const Type type, const text::U32StringView &character, const KeyModifiers modifiers) :
     _type{type}, _modifiers{modifiers} {
     if (type == Character || type == Combined) {
-        _character = impl::CombinedBlock{character};
+        _character = text::CombinedChar{character};
     }
 }
 
 auto Key::operator==(const text::Char other) const noexcept -> bool {
-    return _type == Character && _modifiers.empty() && _character.mainCodePoint() == other;
+    return _type == Character && _modifiers.empty() && _character.first() == other;
 }
 
 auto Key::operator!=(const text::Char other) const noexcept -> bool {
@@ -247,17 +243,17 @@ auto Key::character() const noexcept -> char {
 }
 
 auto Key::unicode() const noexcept -> text::Char {
-    if (_type != Character || _character.codePointCount() != 1) {
+    if (_type != Character || _character.characterCount() != unit::CpLength::one()) {
         return {};
     }
-    return _character.mainCodePoint();
+    return _character.first();
 }
 
 auto Key::combined() const -> text::U32String {
     if (_type != Character && _type != Combined) {
         return {};
     }
-    return _character.utf32();
+    return _character.toU32String();
 }
 
 auto Key::withoutModifiers() const noexcept -> Key {
@@ -285,14 +281,14 @@ auto Key::fromString(const text::StringView &text) noexcept -> Key {
 }
 
 auto Key::fromConsoleInput(const text::StringView &text) noexcept -> Key {
-    return impl::KeyDecoder{text::StringConverter{text}.toStdString()}.decodeConsoleInput();
+    return impl::KeyDecoder{text}.decodeConsoleInput();
 }
 
 auto Key::toString() const -> text::String {
     auto builder = text::StringBuilder{};
     appendModifierString(builder, _modifiers);
     if (_type == Character || _type == Combined) {
-        builder.append(_character.utf8());
+        builder.append(_character.toString());
         return builder.toString();
     }
     if (const auto definition = findKeyTextDefinition(_type)) {
@@ -306,7 +302,7 @@ auto Key::toDisplayText(const bool useBrackets) const -> text::String {
     auto builder = text::StringBuilder{};
     appendModifierDisplayText(builder, _modifiers);
     if (_type == Character || _type == Combined) {
-        builder.append(_character.utf8());
+        builder.append(_character.toString());
         return wrapDisplayText(builder.toString(), useBrackets);
     }
     if (const auto definition = findKeyTextDefinition(_type)) {

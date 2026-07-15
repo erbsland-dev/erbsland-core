@@ -63,12 +63,12 @@ public: // operators
 
 public: // conversion
     /// Convert the color name to a string.
-    [[nodiscard]] auto toString() const -> text::String;
+    [[nodiscard]] auto toString() const -> text::StringView;
 
 protected:
     /// Create a color enum from the given string.
     /// @return The color enum.
-    /// @throws std::invalid_argument if the color does not exist.
+    /// @throws err::ParameterError if the color does not exist.
     [[nodiscard]] static auto enumFromString(const text::StringView &str) -> Value;
     /// Create brighter enum
     [[nodiscard]] static auto brighterEnum(Value value) -> Value;
@@ -76,9 +76,9 @@ protected:
 protected:
     /// One color table entry with conversion metadata.
     struct TableEntry {
-        Value value;           ///< The encoded color value.
-        int ansiCode;          ///< The role-relative ANSI color code.
-        std::string_view name; ///< The lowercase textual name.
+        Value value;              ///< The encoded color value.
+        int ansiCode;             ///< The role-relative ANSI color code.
+        text::StringLiteral name; ///< The lowercase textual name.
     };
     /// The lookup table for all supported color values.
     using ColorTable = std::array<TableEntry, static_cast<std::size_t>(Value::_Count)>;
@@ -149,7 +149,7 @@ public:
     ColorPart() = default;
     /// Create a color from one of the predefined hue constants.
     /// @param color The named hue.
-    constexpr ColorPart(const Hue color) : ColorBase{color.value} {}
+    constexpr ColorPart(const Hue color) : ColorBase{color.value} {} // NOLINT(*-explicit-constructor)
 
     // defaults
     ColorPart(const ColorPart &) = default;
@@ -181,7 +181,7 @@ public: // tools
     /// Accepts lowercase names as well as identifier-normalized space/underscore variants.
     /// @param str The color name.
     /// @return The parsed color.
-    /// @throws std::invalid_argument if the color does not exist.
+    /// @throws err::ParameterError if the color does not exist.
     [[nodiscard]] static auto fromString(const text::StringView &str) -> ColorPart {
         return ColorPart{Hue{enumFromString(str)}};
     }

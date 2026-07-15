@@ -48,14 +48,14 @@ public:
     }
 
     void testRejectsInvalidAndUndisplayableKeys() {
-        REQUIRE_THROWS_AS(std::invalid_argument, Keys{Key::None});
-        REQUIRE_THROWS_AS(std::invalid_argument, Keys{Key::Character});
-        REQUIRE_THROWS_AS(std::invalid_argument, Keys{Key::Combined});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::None});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::Character});
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Keys{Key::Combined});
 
         auto keys = Keys{};
-        REQUIRE_THROWS_AS(std::invalid_argument, keys.add(Key::None));
-        REQUIRE_THROWS_AS(std::invalid_argument, keys.add(Key::Character));
-        REQUIRE_THROWS_AS(std::invalid_argument, keys.setKeys({Key::None}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.add(Key::None));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.add(Key::Character));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, keys.setKeys({Key::None}));
     }
 
     void testMainAndAlternativeKeys() {

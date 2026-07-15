@@ -5,7 +5,7 @@
 #include "Literals.hpp"
 #include "String.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "impl/ThrowHelper.hpp"
 
 namespace erbsland::text {
 
@@ -23,6 +23,8 @@ auto EscapeFormat::toString() const -> StringView {
         return "xml"_el;
     case PCRE:
         return "pcre"_el;
+    case Display:
+        return "display"_el;
     case None:
     default:
         return "none"_el;
@@ -48,6 +50,9 @@ auto EscapeFormat::fromString(const StringView &text) noexcept -> std::optional<
     if (text == "pcre"_el) {
         return EscapeFormat{PCRE};
     }
+    if (text == "display"_el) {
+        return EscapeFormat{Display};
+    }
     return {};
 }
 
@@ -55,7 +60,7 @@ auto EscapeFormat::fromStringOrThrow(const StringView &text) -> EscapeFormat {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }
-    err::throwParseError("Unsupported escape format");
+    text::impl::throwParseError("Unsupported escape format");
 }
 
 }

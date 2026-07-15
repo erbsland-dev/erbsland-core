@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Range-based editing works best with byte indexes returned by string search
 /// functions. Those indexes already point into the native UTF-8 storage and can
 /// be passed directly to `ByteRange`.
@@ -33,4 +35,6 @@ void removeAndKeepRanges() {
     el::io::printLine("After remove: "_el, compactRecord);
     el::io::printLine("Kept site: "_el, siteName);
     el::io::printLine("Kept label text: "_el, label);
+}
+
 }

@@ -27,12 +27,12 @@ public:
     /// Create a new tile 16 style from 16 terminal characters.
     /// Connection points/bits: E:0, S:1, W:2, N:3
     /// @param tiles A sequence of exactly 16 terminal characters.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 16 terminal characters.
     explicit Block16Style(const text::StringView &tiles);
     /// Create a new tile 16 style from 16 terminal characters.
     /// Connection points/bits: E:0, S:1, W:2, N:3
     /// @param tiles A sequence of exactly 16 terminal characters.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 16 terminal characters.
     explicit Block16Style(const text::U32StringView &tiles);
 
 public: // accessors
@@ -45,12 +45,12 @@ public:
     /// Create a new shared style from 16 terminal characters.
     /// @param tiles A sequence of exactly 16 terminal characters.
     /// @return A shared style instance.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 16 terminal characters.
     [[nodiscard]] static auto create(const text::StringView &tiles) -> Block16StylePtr;
     /// Create a new shared style from 16 terminal characters.
     /// @param tiles A sequence of exactly 16 terminal characters.
     /// @return A shared style instance.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 16 terminal characters.
     [[nodiscard]] static auto create(const text::U32StringView &tiles) -> Block16StylePtr;
     /// For drawing light frames.
     [[nodiscard]] static auto lightFrame() -> Block16StylePtr;

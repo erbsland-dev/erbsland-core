@@ -26,6 +26,8 @@
 #include "../../mem/ByteBlockView.hpp"
 #include "../../util/HashHelper.hpp"
 
+#include <cstring>
+
 namespace erbsland::text {
 
 U32String::U32String(const std::u32string_view stdString) : _storage{stdString} {
@@ -108,6 +110,14 @@ auto U32String::length() const noexcept -> unit::CpLength {
     return impl::U32StringReadTools{dataView()}.length();
 }
 
+auto U32String::characterLength() const noexcept -> unit::CpLength {
+    return impl::U32StringReadTools{dataView()}.length();
+}
+
+auto U32String::displayWidth() const noexcept -> int {
+    return impl::U32StringReadTools{dataView()}.displayWidth();
+}
+
 auto U32String::indexAt(const StringSide side) const noexcept -> unit::CpIndex {
     return side == StringSide::Front ? unit::CpIndex::zero() : unit::CpIndex::end(length());
 }
@@ -128,6 +138,14 @@ auto U32String::charAt(const StringSide side) const noexcept -> Char {
 
 auto U32String::charAt(const unit::CpIndex startIndex) const noexcept -> Char {
     return impl::U32StringReadTools{dataView()}.charAt(startIndex);
+}
+
+auto U32String::readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char {
+    return impl::U32StringReadTools{dataView()}.read(index);
+}
+
+auto U32String::readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char {
+    return impl::U32StringReadTools{dataView()}.readAndRetreat(index);
 }
 
 auto U32String::operator[](const unit::CpIndex index) const noexcept -> Char {
@@ -163,6 +181,17 @@ auto U32String::slice(const StringSide side, const unit::CpLength length) const 
     return slice(unit::CpRange{start, indexAt(StringSide::Back)});
 }
 
+auto U32String::slice(const StringSide side, const unit::CpIndex index) const noexcept -> U32String {
+    const auto end = indexAt(StringSide::Back);
+    if (index.isNoIndex() || index >= end) {
+        return side == StringSide::Front ? slice(unit::CpRange{unit::CpIndex::zero(), end}) : U32String{};
+    }
+    if (side == StringSide::Front) {
+        return slice(unit::CpRange{unit::CpIndex::zero(), index});
+    }
+    return slice(unit::CpRange{index, end});
+}
+
 auto U32String::slice(const StringSide side) const noexcept -> std::tuple<Char, U32String> {
     if (isEmpty()) {
         return {Char::endOfData(), {}};
@@ -176,6 +205,10 @@ auto U32String::slice(const StringSide side) const noexcept -> std::tuple<Char, 
     auto start = indexAt(StringSide::Back);
     retreat(start);
     return {charAt(start), slice(unit::CpRange{indexAt(StringSide::Front), start})};
+}
+
+auto U32String::splitAt(const unit::CpIndex index) const noexcept -> std::pair<U32String, U32String> {
+    return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
 }
 
 auto U32String::clear() noexcept -> U32String & {
@@ -342,6 +375,30 @@ auto U32String::toEscaped(const EscapeFormat format, const EscapeAmount amount) 
 auto U32String::fromCharacter(const Char character, const unit::CpLength count) -> U32String {
     auto storage = impl::U32StringSharedStorage{};
     impl::U32StringAppendTools{storage}.append(character, count);
+    return U32String{std::move(storage)};
+}
+
+auto U32String::fromJoined(const std::initializer_list<U32StringView> parts) -> U32String {
+    auto finalSize = std::size_t{0};
+    for (const auto &part : parts) {
+        finalSize = impl::U32StringSharedStorage::checkedAddSize(
+            finalSize, part.length().toSizeT(), "Joined string exceeds size bounds");
+    }
+    if (finalSize == 0U) {
+        return {};
+    }
+
+    auto storage = impl::U32StringSharedStorage::forSize(finalSize);
+    auto writePosition = std::size_t{0};
+    for (const auto &part : parts) {
+        const auto data = part.dataView().dataSpan();
+        if (data.empty()) {
+            continue;
+        }
+        std::memcpy(storage.dataForWrite() + writePosition, data.data(), data.size() * sizeof(char32_t));
+        writePosition = impl::U32StringSharedStorage::checkedAddSize(
+            writePosition, data.size(), "Joined string write exceeds size bounds");
+    }
     return U32String{std::move(storage)};
 }
 

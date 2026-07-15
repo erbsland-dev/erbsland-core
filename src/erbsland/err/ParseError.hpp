@@ -28,6 +28,7 @@ public:
 
 public: // implement Exception
     [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto diagnostic() const -> DiagnosticConstPtr override;
 
 public: // accessors
     /// Test if this error has an associated code-point position.

@@ -7,9 +7,15 @@ target_sources(erbsland-core PRIVATE
         AsciiOptionText.hpp
         ExecutableName.cpp
         ExecutableName.hpp
+        OptionDisplayGroup.hpp
         OptionDisplayModel.cpp
         OptionDisplayModel.hpp
         OptionDisplayRow.hpp
+        OptionDocumentBuilder.cpp
+        OptionDocumentBuilder.hpp
+        OptionDocumentBuilder_error.cpp
+        OptionErrorDiagnostic.cpp
+        OptionErrorDiagnostic.hpp
         OptionParsedValue.hpp
         OptionParser.cpp
         OptionParser.hpp

@@ -6,9 +6,9 @@
 Frame Color Animations
 **********************
 
-``frame-color-animations`` demonstrates the animated color modes of ``FrameDrawOptions``. Several frame styles are
-rendered side by side so you can compare one-color, striped, diagonal, and chasing-border animation modes in one
-screen.
+``frame-color-animations`` demonstrates the animated color modes of ``FrameDrawOptions``.
+Several frame styles are rendered side by side so you can compare one-color, striped, diagonal, and chasing-border
+animation modes in one screen.
 
 Use This Demo When You Need...
 ==============================
@@ -24,7 +24,7 @@ Start the demo from the build directory:
 
 .. code-block:: console
 
-    $ ./cmake-build-debug/demo-apps/frame-color-animations
+    $ ./cmake-build-debug/demo-apps/cterm/frame-color-animations
 
 Press ``Q`` to quit.
 
@@ -51,6 +51,7 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/frame-color-animations/src/FrameColorAnimationsApp.cpp`.
+If you want to explore the implementation, start with
+:file:`demos/cterm/frame-color-animations/src/FrameColorAnimationsApp.cpp`.
 
 This file contains the animation loop, panel layout, and color sequences for each frame mode.

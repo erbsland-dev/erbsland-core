@@ -48,11 +48,18 @@ public:
 
 public:
     using Base::compare;
+    using Base::operator<=>;
+    using Base::operator==;
+    auto operator<=>(const StringList &other) const noexcept -> std::strong_ordering { return compare(other); }
+    ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const StringList &other, other);
+
+public:
     using Base::contains;
     using Base::findFirst;
     using Base::findLast;
     using Base::sort;
     using Base::sorted;
+
     /// Sort the list by decoded code point.
     /// @return A reference to this list.
     auto sort() -> StringList &;

@@ -6,6 +6,8 @@
 
 namespace erbsland::event {
 
+/// Base interface for event sources that can be registered with an event loop.
+/// @notest{Marker interface; concrete event sources provide the observable behavior.}
 class EventSource {
 public:
     virtual ~EventSource() = default;

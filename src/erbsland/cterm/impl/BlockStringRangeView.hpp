@@ -69,7 +69,7 @@ public:
     /// @param index The local character index.
     /// @param typeName The public type name to use in the exception message.
     /// @return A copy of the character at `index`.
-    /// @throws std::out_of_range If `index` is outside the visible range.
+    /// @throws err::OutOfRangeError If `index` is outside the visible range.
     [[nodiscard]] auto at(BlockIndex index, std::string_view typeName) const -> Block;
     /// Count fully styled character matches.
     [[nodiscard]] auto count(const Block &character) const noexcept -> BlockCount;

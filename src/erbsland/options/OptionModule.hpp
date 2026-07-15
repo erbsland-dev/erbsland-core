@@ -13,7 +13,8 @@
 
 namespace erbsland::options {
 
-/// A command line module with its own option sets and optional main function.
+/// A command line module with its own option sets, callbacks, help metadata, and optional main function.
+/// Modules are selected by the first ordinary command-line argument when an `Options` root has modules.
 /// @tested{OptionsFrameworkTest}
 class OptionModule : public OptionSetManager {
 public:
@@ -32,12 +33,18 @@ public:
     using OptionSetManager::addOption;
 
     /// Create an empty shared module.
+    /// @return A shared module without a command-line name.
     [[nodiscard]] static auto create() -> OptionModulePtr;
     /// Create a shared module with a command line name.
+    /// @param name The module selector accepted on the command line.
+    /// @return A shared module with the given selector.
     [[nodiscard]] static auto create(text::StringView name) -> OptionModulePtr;
     /// Test if a module name is valid.
+    /// @param name The module selector to validate.
+    /// @return `true` if the name can be used as a module selector.
     [[nodiscard]] static auto isValidName(const text::StringView &name) noexcept -> bool;
     /// Add an option set to this module.
+    /// @param optionSet The set that becomes active when this module is selected.
     void addSet(OptionSetPtr optionSet);
 
 public: // implement OptionsManager
@@ -48,13 +55,27 @@ public: // accessors
     /// Get the command line module name.
     [[nodiscard]] auto name() const noexcept -> const text::StringView & { return _name; }
     /// Set the command line module name.
+    /// @param name The selector accepted as the first ordinary argument.
     void setName(text::StringView name);
     /// Test if the given name matches this module.
     [[nodiscard]] auto hasName(const text::StringView &name) const -> bool;
-    /// Get the help text.
+    /// Get the help metadata for this module.
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
-    /// Set the help text.
+    /// Set the complete help metadata for this module.
+    /// @param help The replacement help metadata. The description is shown in the root module list.
     void setHelp(OptionHelp help) { _help = std::move(help); }
+    /// Set the help title for this module.
+    /// @param title Short module title used when no description is available.
+    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    /// Set the help description for this module.
+    /// @param description Description shown for this module and as module-help summary.
+    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    /// Set the help epilog for this module.
+    /// @param epilog Text rendered after module-specific help output.
+    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    /// Set the help visibility for this module.
+    /// @param visibility Controls whether this module appears in root help.
+    void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get all option sets.
     [[nodiscard]] auto optionSets() const noexcept -> const std::vector<OptionSetPtr> & { return _optionSets; }
     /// Get the pre-parsing callback.
@@ -68,6 +89,7 @@ public: // accessors
     /// Get the module main function.
     [[nodiscard]] auto mainFn() const noexcept -> const ModuleMainFn & { return _mainFn; }
     /// Set the module main function.
+    /// @param fn The function called by `Application` after this module is parsed successfully.
     void setMainFn(ModuleMainFn fn) { _mainFn = std::move(fn); }
 
 private:

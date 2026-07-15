@@ -2,13 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/core/CommandLineArguments.hpp>
-#include <erbsland/err/OptionError.hpp>
 #include <erbsland/options/Option.hpp>
 #include <erbsland/options/OptionChoice.hpp>
 #include <erbsland/options/OptionChoices.hpp>
+#include <erbsland/options/OptionError.hpp>
 #include <erbsland/options/OptionManager.hpp>
 #include <erbsland/options/OptionModule.hpp>
-#include <erbsland/options/OptionRenderer.hpp>
 #include <erbsland/options/Options.hpp>
 #include <erbsland/options/OptionSet.hpp>
 #include <erbsland/options/OptionValue.hpp>
@@ -16,11 +15,10 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
-#include <memory>
 #include <vector>
 
 using el::core::CommandLineArguments;
-using el::err::OptionError;
+using el::options::OptionError;
 using el::text::String;
 using el::text::StringView;
 using el::unit::ArgumentCount;
@@ -29,44 +27,7 @@ using el::unit::ElementIndex;
 using el::unit::ExitCode;
 using namespace el::options;
 
-namespace erbsland::test::optionsframeworktest {
-
 using namespace el::text::literals;
-
-class TestRenderer final : public OptionRenderer {
-public:
-    void displayHelp(const OptionsPtr &options, StringView moduleName) override {
-        helpHadOptions = options != nullptr;
-        helpModuleName = moduleName;
-        helpDisplayed = true;
-    }
-
-    void displayVersion(const OptionsPtr &options, StringView moduleName) override {
-        versionHadOptions = options != nullptr;
-        versionModuleName = moduleName;
-        versionDisplayed = true;
-    }
-
-    void displayError(const OptionsPtr &options, const OptionErrorContext &errorContext) override {
-        errorHadOptions = options != nullptr;
-        errorReason = errorContext.reason();
-        errorDisplayed = true;
-    }
-
-    bool helpDisplayed{false};
-    bool helpHadOptions{false};
-    StringView helpModuleName;
-    bool versionDisplayed{false};
-    bool versionHadOptions{false};
-    StringView versionModuleName;
-    bool errorDisplayed{false};
-    bool errorHadOptions{false};
-    OptionErrorReason errorReason{OptionErrorReason::None};
-};
-
-}
-
-using namespace erbsland::test::optionsframeworktest;
 
 TESTED_TARGETS(
     Application Option OptionChoice OptionChoices OptionEditor OptionManager OptionModule OptionResult OptionSet
@@ -78,6 +39,10 @@ public:
 
         auto editor = options->addOption({"-v"_el, "--Verbose"_el, "Verbose"_el})
                           .setHelp("Enable verbose output"_el)
+                          .setHelpTitle("Verbosity"_el)
+                          .setHelpEpilog("Use twice for trace output."_el)
+                          .setHelpVisibility(OptionHelpVisibility::Usage)
+                          .setValueName("level"_el)
                           .setType(OptionType::Flag)
                           .setFlag(OptionFlag::Required)
                           .setMaximum(ArgumentCount{3U});
@@ -94,6 +59,14 @@ public:
         REQUIRE(option->names().at(1) == "--verbose"_el);
         REQUIRE(option->names().at(2) == "verbose"_el);
         REQUIRE(option->help().description() == "Enable verbose output"_el);
+        REQUIRE(option->help().title() == "Verbosity"_el);
+        REQUIRE(option->help().epilog() == "Use twice for trace output."_el);
+        REQUIRE(option->help().visibility() == OptionHelpVisibility::Usage);
+        REQUIRE(option->valueName() == "level"_el);
+        option->setValueName("trace-level"_el);
+        REQUIRE(option->valueName() == "trace-level"_el);
+        options->editOption("--verbose"_el).setValueName({});
+        REQUIRE(option->valueName().isEmpty());
         REQUIRE(option->type() == OptionType::Flag);
         REQUIRE(option->type().toString() == "flag"_el);
         REQUIRE(option->flags().isSet(OptionFlag::Required));
@@ -146,7 +119,7 @@ public:
     void testChoices() {
         auto choices = OptionChoices::create();
         auto choiceHelp = OptionHelp{"Safer mode"_el};
-        choiceHelp.setVisibility(OptionHelpVisibility::Detail);
+        choiceHelp.setVisibility(OptionHelpVisibility::Normal);
         choiceHelp.setTitle("Safety"_el);
         choiceHelp.setEpilog("Use for protected runs"_el);
         choices->addChoice("fast"_el).addChoice(OptionChoice::create("SafeMode"_el, choiceHelp)).addChoice(u8"Ä"_el);
@@ -155,7 +128,7 @@ public:
         REQUIRE(choices->choices().at(0)->text() == "fast"_el);
         REQUIRE(choices->choices().at(1)->text() == "SafeMode"_el);
         REQUIRE(choices->choices().at(1)->help().description() == "Safer mode"_el);
-        REQUIRE(choices->choices().at(1)->help().visibility() == OptionHelpVisibility::Detail);
+        REQUIRE(choices->choices().at(1)->help().visibility() == OptionHelpVisibility::Normal);
         REQUIRE(choices->choices().at(1)->help().title() == "Safety"_el);
         REQUIRE(choices->choices().at(1)->help().epilog() == "Use for protected runs"_el);
 
@@ -180,12 +153,20 @@ public:
         auto moduleMainCalled = false;
 
         auto optionSet = OptionSet::create();
+        optionSet->setHelpTitle("Input"_el);
+        optionSet->setHelpDescription("Input options."_el);
+        optionSet->setHelpEpilog("Input epilog."_el);
+        optionSet->setHelpVisibility(OptionHelpVisibility::Overview);
         optionSet->setPreParsingFn([&preSetCalled](OptionSetPtr set) -> void { preSetCalled = set != nullptr; });
         optionSet->setPostParsingFn(
             [&postSetCalled](OptionValuesPtr values) -> void { postSetCalled = values != nullptr; });
         optionSet->addOption("path"_el).setType(OptionType::Text);
 
         auto module = OptionModule::create("Run"_el);
+        module->setHelpTitle("Run module"_el);
+        module->setHelpDescription("Run one action."_el);
+        module->setHelpEpilog("Run epilog."_el);
+        module->setHelpVisibility(OptionHelpVisibility::Overview);
         REQUIRE(module->name() == "run"_el);
         REQUIRE(OptionModule::isValidName("run"_el));
         REQUIRE_FALSE(OptionModule::isValidName("1remove"_el));
@@ -201,6 +182,10 @@ public:
         module->addOption("--force"_el).setType(OptionType::Flag);
 
         auto options = Options::create();
+        options->setHelpTitle("Root"_el);
+        options->setHelpDescription("Root help."_el);
+        options->setHelpEpilog("Root epilog."_el);
+        options->setHelpVisibility(OptionHelpVisibility::Normal);
         options->addSet(optionSet);
         options->addModule(module);
         optionSet->setFlags(OptionFlag::Required);
@@ -210,6 +195,18 @@ public:
         REQUIRE_EQUAL(options->optionModules().size(), 1U);
         REQUIRE_EQUAL(module->optionSets().size(), 1U);
         REQUIRE(optionSet->flags().isSet(OptionFlag::Required));
+        REQUIRE(optionSet->help().title() == "Input"_el);
+        REQUIRE(optionSet->help().description() == "Input options."_el);
+        REQUIRE(optionSet->help().epilog() == "Input epilog."_el);
+        REQUIRE(optionSet->help().visibility() == OptionHelpVisibility::Overview);
+        REQUIRE(module->help().title() == "Run module"_el);
+        REQUIRE(module->help().description() == "Run one action."_el);
+        REQUIRE(module->help().epilog() == "Run epilog."_el);
+        REQUIRE(module->help().visibility() == OptionHelpVisibility::Overview);
+        REQUIRE(options->help().title() == "Root"_el);
+        REQUIRE(options->help().description() == "Root help."_el);
+        REQUIRE(options->help().epilog() == "Root epilog."_el);
+        REQUIRE(options->help().visibility() == OptionHelpVisibility::Normal);
         REQUIRE(module->editOption("--force"_el).isValid());
         REQUIRE(options->editOption("path"_el).isValid());
 
@@ -304,11 +301,9 @@ public:
         REQUIRE(values->value("indexed"_el)->argumentIndexes().at(0) == ArgumentIndex{3U});
     }
 
-    void testManagerPlaceholderAndRenderer() {
+    void testManagerPlaceholderAndDocuments() {
         auto options = Options::create();
-        auto renderer = std::make_shared<TestRenderer>();
         auto manager = OptionManager{options};
-        manager.setRenderer(renderer);
 
         auto args = CommandLineArguments{String{"tool"_el}};
         const auto result = manager.parse(args);
@@ -322,19 +317,14 @@ public:
         REQUIRE(result.values()->moduleName() == "remove"_el);
         REQUIRE(result.values()->module() == module);
 
-        manager.displayHelp({});
-        manager.displayVersion({});
-        REQUIRE(renderer->helpDisplayed);
-        REQUIRE(renderer->helpHadOptions);
-        REQUIRE(renderer->helpModuleName.isEmpty());
-        REQUIRE(renderer->versionDisplayed);
-        REQUIRE(renderer->versionHadOptions);
-        REQUIRE(renderer->versionModuleName.isEmpty());
+        REQUIRE_FALSE(manager.helpDocument({}).isEmpty());
+        REQUIRE_FALSE(manager.versionDocument({}).isEmpty());
 
         auto errorArgs = CommandLineArguments{String{"tool"_el}, String{"--unknown"_el}};
-        REQUIRE_THROWS_AS(OptionError, manager.parseOrThrow(errorArgs));
-        REQUIRE(renderer->errorDisplayed);
-        REQUIRE(renderer->errorHadOptions);
-        REQUIRE(renderer->errorReason == OptionErrorReason::UnknownName);
+        const auto errorResult = manager.parse(errorArgs);
+        REQUIRE(errorResult.status() == OptionResultStatus::Error);
+        REQUIRE(errorResult.errorContext().has_value());
+        REQUIRE(errorResult.errorContext()->reason() == OptionErrorReason::UnknownName);
+        REQUIRE_FALSE(manager.errorDocument(errorResult.errorContext().value()).isEmpty());
     }
 };

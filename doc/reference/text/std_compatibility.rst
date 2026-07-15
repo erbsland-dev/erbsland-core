@@ -7,5 +7,3 @@ Standard Library Compatibility
 
 Interface
 =========
-
-.. doxygenfile:: erbsland/text/StdFormatForText.hpp

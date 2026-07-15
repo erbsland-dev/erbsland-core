@@ -5,8 +5,16 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.registerDemo("AcceptAny"_el, acceptAny);
     return app.run();
+}
+
+}
+
+auto main(const int argc, char *argv[]) -> int {
+    return demo::main(argc, argv);
 }

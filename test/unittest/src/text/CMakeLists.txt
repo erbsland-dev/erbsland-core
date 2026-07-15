@@ -9,21 +9,29 @@ target_sources(erbsland-core-unittest PRIVATE
         CharRangeTest.cpp
         CharSetTest.cpp
         CharTest.cpp
+        CombinedCharTest.cpp
         EncodingErrorModeTest.cpp
         FloatConversionTest.cpp
         FormatAsTest.cpp
+        HtmlParserTest.cpp
+        HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
         StringBuilderTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp
+        StringDecodeBufferTest.cpp
         StringDecoderTest.cpp
+        StringDisplayWidthTest.cpp
         StringEncoderTest.cpp
         StringEscapingTest.cpp
         StringListTest.cpp
         StringMapTest.cpp
+        StringPatternTest.cpp
         StringSetTest.cpp
         StringTransformTest.cpp
         StringTreeTest.cpp
+        TextDocumentTest.cpp
+        TextRingBufferTest.cpp
         ToStringTest.cpp
         U16EncodingTest.cpp
         U16FormatTest.cpp

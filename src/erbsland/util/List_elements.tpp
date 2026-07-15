@@ -58,4 +58,13 @@ auto List<tElement, tSelf>::set(const Index index, const Element &value) -> Self
     return self();
 }
 
+template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::set(const Index index, Element &&value) -> Self & {
+    auto &data = mutableRaw();
+    if (validIndex(index, data.size())) {
+        data[index.toSizeT()] = std::move(value);
+    }
+    return self();
+}
+
 }

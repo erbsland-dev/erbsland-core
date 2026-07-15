@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// StringView::find can be called repeatedly to collect every text position.
 ///
 /// Pass a start position to continue the search after a previous match. Move
@@ -11,8 +13,7 @@
 /// useful. A character comparison function can adapt the matching rule without
 /// first transforming the source text.
 void findingAllOccurrences() {
-    const auto missionLog = el::StringView{
-        "ROV Freja såg ljus; rov freja markerade ljus; ROV Freja sparade karta"_el};
+    const auto missionLog = el::StringView{"ROV Freja såg ljus; rov freja markerade ljus; ROV Freja sparade karta"_el};
     const auto needle = el::StringView{"rov freja"_el};
 
     el::io::printLine("Mission log: "_el, missionLog);
@@ -31,4 +32,6 @@ void findingAllOccurrences() {
         }
         matchIndex = missionLog.find(needle, searchStart, el::Char::compareCaseFolded);
     }
+}
+
 }

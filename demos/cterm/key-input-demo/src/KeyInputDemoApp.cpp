@@ -1,8 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "KeyInputDemoApp.hpp"
 
 #include <algorithm>
+
+namespace demo {
 
 void KeyInputDemoApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{56}, BlockCoordinate{10}});
@@ -166,4 +169,6 @@ auto KeyInputDemoApp::stampColors() noexcept -> const std::array<Color, 10> & {
         Color{fg::BrightWhite, bg::Yellow},
     };
     return cStampColors;
+}
+
 }

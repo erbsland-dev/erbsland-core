@@ -5,14 +5,16 @@
 #include "BlockStyle.hpp"
 
 #include "impl/BlockTextUtil.hpp"
-#include "impl/CombinedBlock.hpp"
 #include "impl/TypeTraits.hpp"
 
 #include "../text/Char.hpp"
+#include "../text/CombinedChar.hpp"
 #include "../text/EncodingErrorMode.hpp"
 #include "../text/String.hpp"
 #include "../text/u32/U32String.hpp"
 #include "../text/u32/U32StringView.hpp"
+#include "../unit/ByteLength.hpp"
+#include "../unit/CpLength.hpp"
 
 #include <cstddef>
 #include <functional>
@@ -137,26 +139,28 @@ public: // operators
     [[nodiscard]] auto operator!=(const text::Char other) const noexcept -> bool { return !operator==(other); }
 
 public: // accessors
-    /// Get the character string as UTF-8 text.
+    /// Convert the stored character sequence to UTF-8 text.
     /// @return A UTF-8 encoded copy of the stored character sequence.
-    [[nodiscard]] auto charStr() const -> text::String { return _character.utf8(); }
-    /// Get the character string as UTF-32 text.
+    [[nodiscard]] auto toString() const -> text::String { return _character.toString(); }
+    /// Convert the stored character sequence to UTF-32 text.
     /// @return A UTF-32 encoded copy of the stored character sequence.
-    [[nodiscard]] auto u32CharStr() const -> text::U32String { return _character.utf32(); }
+    [[nodiscard]] auto toU32String() const -> text::U32String { return _character.toU32String(); }
     /// Get the leading Unicode code point.
     /// @return The base code point, or `0` if this character is empty.
-    [[nodiscard]] constexpr auto mainCodePoint() const noexcept -> text::Char { return _character.mainCodePoint(); }
+    [[nodiscard]] constexpr auto first() const noexcept -> text::Char { return _character.first(); }
     /// Get a single Unicode code point or zero for combined or empty characters.
     /// This is a fast-path method for comparing a single-code point character, without the color.
     /// @return The single code point, or `0` if this character is combined or empty.
-    [[nodiscard]] constexpr auto singleCodePoint() const noexcept -> text::Char { return _character.singleCodePoint(); }
+    [[nodiscard]] constexpr auto singleOrNull() const noexcept -> text::Char { return _character.singleOrNull(); }
     /// Get the stored Unicode code points.
     /// Unused entries are set to `0`.
-    [[nodiscard]] constexpr auto codePoints() const noexcept -> const impl::CombinedBlock::Storage & {
-        return _character.codePoints();
+    [[nodiscard]] constexpr auto characters() const noexcept -> const text::CombinedChar::Storage & {
+        return _character.characters();
     }
     /// Get the number of stored Unicode code points.
-    [[nodiscard]] constexpr auto codePointCount() const noexcept -> std::size_t { return _character.codePointCount(); }
+    [[nodiscard]] constexpr auto characterCount() const noexcept -> unit::CpLength {
+        return _character.characterCount();
+    }
     /// Get the character color.
     [[nodiscard]] auto color() const noexcept -> Color { return _style.color(); }
     /// Get the character attributes.
@@ -166,7 +170,7 @@ public: // accessors
     /// Get the display width on a terminal in cells.
     [[nodiscard]] auto displayWidth() const noexcept -> int { return _character.displayWidth(); }
     /// Get the number of UTF-8 bytes needed to encode this character.
-    [[nodiscard]] auto byteCount() const noexcept -> std::size_t { return _character.byteCount(); }
+    [[nodiscard]] auto byteCount() const noexcept -> unit::ByteLength { return _character.byteCount(); }
 
 public: // modifiers
     /// Replace the full style of this character.
@@ -178,7 +182,7 @@ public: // modifiers
     /// @return A copy of this character with the combining code point appended.
     /// `EncodingErrorMode::Replace` and `EncodingErrorMode::Ignore` keep the original character unchanged for invalid
     /// combining code points or when the storage is already full.
-    /// @throws std::invalid_argument If `encodingErrors` is `EncodingErrorMode::Throw` and the code point is
+    /// @throws text::EncodingError If `encodingErrors` is `EncodingErrorMode::Throw` and the code point is
     /// unsupported.
     [[nodiscard]] auto withCombining(
         text::Char codePoint, text::EncodingErrorMode encodingErrors = text::EncodingErrorMode::Replace) const -> Block;
@@ -219,17 +223,6 @@ public: // tests
     [[nodiscard]] auto isSpacing() const noexcept -> bool;
     /// Test if this character is a control character.
     [[nodiscard]] auto isControl() const noexcept -> bool;
-    /// Test if this character is one of the given characters.
-    /// Tests only the character, not the color. Only tests one code-point characters.
-    [[nodiscard]] auto isOneOf(const text::U32StringView &characters) const noexcept -> bool;
-    /// @overload
-    [[nodiscard]] auto isOneOf(std::initializer_list<text::Char> characters) const noexcept -> bool;
-    /// @overload
-    template <typename... tCharacters>
-        requires(sizeof...(tCharacters) >= 1 && (std::convertible_to<tCharacters, text::Char> && ...))
-    [[nodiscard]] auto isOneOf(tCharacters... characters) const noexcept -> bool {
-        return ((*this == text::Char{characters}) || ...);
-    }
     /// Compare how two characters would appear on screen.
     /// Code points must match exactly. When `colorEnabled` is `true`, inherited color components are treated as the
     /// terminal default color before comparing. When `attributeEnabled` is `true`, inherited attributes are treated as
@@ -257,31 +250,12 @@ public: // predefined characters.
     /// @return An empty block with `style`.
     [[nodiscard]] static auto emptyBlock(BlockStyle style) noexcept -> Block;
 
-public: // deprecated methods.
-    [[deprecated("Please use withOverlay(color)"), nodiscard]]
-    auto withColorOverlay(const Color color) const -> Block {
-        return withOverlay(color);
-    }
-    [[deprecated("Please use withOverlay(BlockStyle{color, attributes})"), nodiscard]]
-    auto withOverlay(const Color color, const BlockAttributes attributes) const noexcept -> Block {
-        return withOverlay(BlockStyle{color, attributes});
-    }
-    [[deprecated("Please use withBase(color)"), nodiscard]]
-    auto withBaseColor(const Color color) const noexcept -> Block {
-        return withBase(color);
-    }
-    [[deprecated("Please use withBase(BlockStyle{color, attributes})"), nodiscard]]
-    auto withBase(const Color color, const BlockAttributes attributes) const noexcept -> Block {
-        return withBase(BlockStyle{color, attributes});
-    }
+private:
+    Block(const text::CombinedChar character, const BlockStyle style) noexcept : _character{character}, _style{style} {}
 
 private:
-    Block(const impl::CombinedBlock character, const BlockStyle style) noexcept :
-        _character{character}, _style{style} {}
-
-private:
-    impl::CombinedBlock _character; ///< The Unicode character and combining code points.
-    BlockStyle _style;              ///< The style for this character.
+    text::CombinedChar _character; ///< The Unicode character and combining code points.
+    BlockStyle _style;             ///< The style for this character.
 };
 
 }

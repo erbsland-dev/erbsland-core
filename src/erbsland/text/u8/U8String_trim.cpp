@@ -6,25 +6,8 @@
 
 namespace erbsland::text {
 
-namespace {
-
-using TrimSide = impl::U8StringTrimTools::Side;
-
-}
-
-namespace {
-
-auto trimSideFrom(const std::optional<StringSide> side) noexcept -> TrimSide {
-    if (!side.has_value()) {
-        return TrimSide::Both;
-    }
-    return *side == StringSide::Front ? TrimSide::Begin : TrimSide::End;
-}
-
-}
-
 auto U8String::trim(const std::optional<CharSet> &characters, const std::optional<StringSide> side) -> U8String & {
-    const auto trimSide = trimSideFrom(side);
+    const auto trimSide = impl::U8StringTrimTools::sideFrom(side);
     auto trimTools = impl::U8StringTrimTools{dataView()};
     *this = withRange(
         characters.has_value() ? trimTools.trimmedRange(*characters, trimSide) : trimTools.trimmedRange(trimSide));
@@ -33,7 +16,7 @@ auto U8String::trim(const std::optional<CharSet> &characters, const std::optiona
 
 auto U8String::trimmed(const std::optional<CharSet> &characters, const std::optional<StringSide> side) const
     -> U8String {
-    const auto trimSide = trimSideFrom(side);
+    const auto trimSide = impl::U8StringTrimTools::sideFrom(side);
     auto trimTools = impl::U8StringTrimTools{dataView()};
     return withRange(
         characters.has_value() ? trimTools.trimmedRange(*characters, trimSide) : trimTools.trimmedRange(trimSide));

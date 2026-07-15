@@ -7,9 +7,9 @@
 #include "IntegerUnitIndex_fwd.hpp"
 #include "IntegerUnitOffset.hpp"
 
+#include "impl/Throw.hpp"
 #include "impl/TypeTraits.hpp"
 
-#include "../err/ThrowHelper.hpp"
 #include "../math/ConstexprSaturatingMath.hpp"
 #include "../math/IntegerMath.hpp"
 #include "../math/SaturatingMath.hpp"
@@ -185,10 +185,10 @@ public: // math
     /// @throws OverflowError if this index is noIndex() or the result would exceed maximum().
     [[nodiscard]] constexpr auto advancedOrThrow(const Length length) const -> IntegerUnitIndex {
         if (isNoIndex()) {
-            err::throwOverflow("Cannot advance the no-index value");
+            impl::throwOverflow("Cannot advance the no-index value");
         }
         if (length.isInfinite() || length.toRawValue() > (cRawMaximum - _value)) {
-            err::throwOverflow("Advance would exceed index bounds");
+            impl::throwOverflow("Advance would exceed index bounds");
         }
         return IntegerUnitIndex{math::saturatingAddBounded(_value, length.toRawValue(), Value{0U}, cRawMaximum)};
     }
@@ -220,10 +220,10 @@ public: // math
     /// @throws OverflowError if this index is noIndex() or the result would be before zero.
     [[nodiscard]] constexpr auto retreatedOrThrow(const Length length) const -> IntegerUnitIndex {
         if (isNoIndex()) {
-            err::throwOverflow("Cannot retreat the no-index value");
+            impl::throwOverflow("Cannot retreat the no-index value");
         }
         if (length.isInfinite() || length.toRawValue() > _value) {
-            err::throwOverflow("Retreat would exceed index bounds");
+            impl::throwOverflow("Retreat would exceed index bounds");
         }
         return IntegerUnitIndex{math::saturatingSubtractBounded(_value, length.toRawValue(), Value{0U}, cRawMaximum)};
     }
@@ -251,10 +251,10 @@ public: // math
     /// @throws OverflowError if this index is noIndex() or the result would be outside zero to maximum().
     [[nodiscard]] constexpr auto movedOrThrow(const Offset offset) const -> IntegerUnitIndex {
         if (isNoIndex()) {
-            err::throwOverflow("Cannot move the no-index value");
+            impl::throwOverflow("Cannot move the no-index value");
         }
         if (math::willAddBoundedSaturate(_value, offset.toRawValue(), Value{0U}, cRawMaximum)) {
-            err::throwOverflow("Move would exceed index bounds");
+            impl::throwOverflow("Move would exceed index bounds");
         }
         return IntegerUnitIndex{math::saturatingAddBounded(_value, offset.toRawValue(), Value{0U}, cRawMaximum)};
     }
@@ -323,7 +323,7 @@ public: // conversion
     /// @throws OverflowError if this index is noIndex() or the result does not fit into Offset.
     [[nodiscard]] constexpr auto offsetFromZeroOrThrow() const -> Offset {
         if (wouldOffsetFromZeroSaturate()) {
-            err::throwOverflow("Offset from zero would exceed offset bounds");
+            impl::throwOverflow("Offset from zero would exceed offset bounds");
         }
         return Offset{static_cast<Offset::Value>(_value)};
     }
@@ -340,7 +340,7 @@ public: // conversion
     /// @throws OverflowError if either index is noIndex() or the result does not fit into Offset.
     [[nodiscard]] constexpr auto offsetToOrThrow(const IntegerUnitIndex &other) const -> Offset {
         if (wouldOffsetToSaturate(other)) {
-            err::throwOverflow("Offset between indexes would exceed offset bounds");
+            impl::throwOverflow("Offset between indexes would exceed offset bounds");
         }
         return offsetTo(other);
     }
@@ -361,7 +361,7 @@ public: // conversion
         // This mainly speeds up debug builds by avoiding unnecessary checks.
         if constexpr (sizeof(Value) > sizeof(std::size_t)) {
             if (math::willCastOverflow<std::size_t>(_value)) {
-                err::throwOverflow("Index value exceeds maximum std::size_t");
+                impl::throwOverflow("Index value exceeds maximum std::size_t");
             }
         }
         return static_cast<std::size_t>(_value);
@@ -402,11 +402,11 @@ public: // factory methods
     [[nodiscard]] constexpr static auto fromSizeTOrThrow(const std::size_t value) -> IntegerUnitIndex {
         if constexpr (sizeof(Value) < sizeof(std::size_t)) {
             if (math::willCastOverflow<Value>(value)) {
-                err::throwOverflow("The size_t value exceeds maximum index.");
+                impl::throwOverflow("The size_t value exceeds maximum index.");
             }
         }
         if (static_cast<Value>(value) > cRawMaximum) {
-            err::throwOverflow("The size_t value exceeds maximum index.");
+            impl::throwOverflow("The size_t value exceeds maximum index.");
         }
         return IntegerUnitIndex{static_cast<Value>(value)};
     }

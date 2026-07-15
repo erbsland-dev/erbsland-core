@@ -41,9 +41,9 @@ public:
             REQUIRE_EQUAL(clone->get(bgeo::BlockPosition{2, 0}).color(), Color(fg::Red, bg::Black));
         });
 
-        REQUIRE_THROWS_AS(std::invalid_argument, RemappedBuffer(bgeo::BlockSize{0, 1}));
-        REQUIRE_THROWS_AS(std::invalid_argument, RemappedBuffer(bgeo::BlockSize{1, 0}));
-        REQUIRE_THROWS_AS(std::invalid_argument, RemappedBuffer(bgeo::BlockSize{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{0, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{10'001, 1}));
     }
 
     void testResizeWithPreserveContentKeepsVisibleContent() {
@@ -201,17 +201,18 @@ public:
     void testInvalidArgumentsAreRejected() {
         auto buffer = RemappedBuffer{bgeo::BlockSize{4, 3}, bgeo::Orientation::Vertical};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.resize(bgeo::BlockSize{0, 3}));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.shift(bgeo::BlockDirection::North, Block::space(), -1));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.rotate(bgeo::BlockDirection::East, 5));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.eraseRows(blockCoordinate(2), Block::space(), 2));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.insertRows(blockCoordinate(2), Block::space(), 2));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.insertColumns(blockCoordinate(3), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(bgeo::BlockSize{0, 3}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.shift(bgeo::BlockDirection::North, Block::space(), -1));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.rotate(bgeo::BlockDirection::East, 5));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseRows(blockCoordinate(2), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.insertRows(blockCoordinate(2), Block::space(), 2));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.insertColumns(blockCoordinate(3), Block::space(), 2));
         REQUIRE_THROWS_AS(
-            std::invalid_argument, buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(1), Block::space()));
+            erbsland::err::ParameterError, buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(1), Block::space()));
         REQUIRE_THROWS_AS(
-            std::invalid_argument, buffer.moveColumns(blockCoordinate(3), 2, blockCoordinate(-1), Block::space()));
+            erbsland::err::ParameterError,
+            buffer.moveColumns(blockCoordinate(3), 2, blockCoordinate(-1), Block::space()));
     }
 
     void testStressOperationsAgainstReferenceModel() {

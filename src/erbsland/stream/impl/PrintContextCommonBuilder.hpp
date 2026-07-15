@@ -56,6 +56,10 @@ public:
     void print(text::IntegerFormat newFormat) override;
     void print(text::FloatFormat newFormat) override;
 
+private:
+    template <typename T>
+    static void convertAndAppendToBuilder(text::StringBuilder &builder, T text);
+
 protected:
     /// Access the builder for text output.
     [[nodiscard]] virtual auto builder() -> text::StringBuilder & = 0;

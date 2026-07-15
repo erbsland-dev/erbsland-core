@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BitmapDrawOptions.hpp"
 
-#include <stdexcept>
+#include "../err/ParameterError.hpp"
 
 namespace erbsland::cterm {
 
@@ -65,7 +65,7 @@ auto BitmapDrawOptions::fullBlock() const noexcept -> const Block & {
 
 void BitmapDrawOptions::setFullBlock(Block fullBlock) {
     if (fullBlock.displayWidth() != 1) {
-        throw std::invalid_argument("Full block character must have display width of 1");
+        throw err::ParameterError{"Full block character must have display width of 1.", "fullBlock"};
     }
     _fullBlock = fullBlock;
 }
@@ -76,11 +76,12 @@ auto BitmapDrawOptions::doubleBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setDoubleBlocks(BlockString doubleBlocks) {
     if (doubleBlocks.length() != BlockCount{2U}) {
-        throw std::invalid_argument("Double blocks string must contain exactly 2 characters");
+        throw err::ParameterError{"Double blocks string must contain exactly 2 characters.", "doubleBlocks"};
     }
     for (const auto &character : doubleBlocks) {
         if (character.displayWidth() != 1) {
-            throw std::invalid_argument("Double blocks string must contain characters with display width of 1");
+            throw err::ParameterError{
+                "Double blocks string must contain characters with display width of 1.", "doubleBlocks"};
         }
     }
     _doubleBlocks = std::move(doubleBlocks);
@@ -92,11 +93,12 @@ auto BitmapDrawOptions::halfBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setHalfBlocks(BlockString halfBlocks) {
     if (halfBlocks.length() != BlockCount{16U}) {
-        throw std::invalid_argument("Half blocks string must contain exactly 16 characters");
+        throw err::ParameterError{"Half blocks string must contain exactly 16 characters.", "halfBlocks"};
     }
     for (const auto &character : halfBlocks) {
         if (character.displayWidth() != 1) {
-            throw std::invalid_argument("Half blocks string must contain characters with display width of 1");
+            throw err::ParameterError{
+                "Half blocks string must contain characters with display width of 1.", "halfBlocks"};
         }
     }
     _halfBlocks = std::move(halfBlocks);

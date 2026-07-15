@@ -53,7 +53,7 @@ public:
     /// @param size The dimensions of the buffer. bgeo::BlockSize must be at least 1x1.
     /// @param orientation The orientation of the buffer. Cannot be changed after creation.
     /// @param fillChar The optional fill character for the buffer.
-    /// @throws std::invalid_argument if size is invalid
+    /// @throws err::ParameterError if size is invalid.
     explicit RemappedBuffer(
         bgeo::BlockSize size,
         bgeo::Orientation orientation = bgeo::Orientation::Vertical,
@@ -88,7 +88,7 @@ public: // implement WritableBuffer
     /// the operation. Use `resize(size, BufferResizeMode::PreserveContent, fillChar)` if you need to preserve the
     /// visible order.
     /// @param newSize The new size of the buffer.
-    /// @throws std::invalid_argument if `newSize` is invalid.
+    /// @throws err::ParameterError if `newSize` is invalid.
     void resize(bgeo::BlockSize newSize) override;
     /// Resize this buffer and optionally keep the visible content order.
     /// A preserve-content resize is fast when only the primary orientation axis changes.
@@ -98,7 +98,7 @@ public: // implement WritableBuffer
     ///   `BufferResizeMode::Fast` resizes using the fastest path and leaves the visible order undefined.
     /// @param fillChar The fill character for newly created cells in preserve-content mode. In fast mode it is only
     ///   used to initialize newly appended storage cells.
-    /// @throws std::invalid_argument if `size` is invalid.
+    /// @throws err::ParameterError if `size` is invalid.
     void resize(bgeo::BlockSize size, BufferResizeMode mode, Block fillChar) override;
     /// Write a block at the given logical position.
     /// This mirrors the wide-character handling from `Buffer`: zero-width blocks are ignored, width-2 blocks occupy
@@ -117,7 +117,7 @@ public: // manipulate the buffer
     /// @param direction The direction of the shift.
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of cells to shift.
-    /// @throws std::invalid_argument if `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
     void shift(bgeo::BlockDirection direction, Block fillChar, int count = 1);
     /// @overload
     void shift(const bgeo::BlockDirection direction, const int count = 1) { shift(direction, Block::space(), count); }
@@ -125,7 +125,7 @@ public: // manipulate the buffer
     /// Cells are shifted in a circular manner, wrapping around to the other end of the buffer.
     /// @param direction The direction in which to rotate.
     /// @param count The number of cells to rotate.
-    /// @throws std::invalid_argument if `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
     void rotate(bgeo::BlockDirection direction, int count = 1);
     /// Erase rows in the buffer.
     /// This will erase `count` rows, starting from `startRow`, and insert empty ones at the end.
@@ -133,7 +133,7 @@ public: // manipulate the buffer
     /// @param startRow The first row to delete.
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of rows to delete.
-    /// @throws std::invalid_argument if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
     void eraseRows(bgeo::BlockCoordinate startRow, Block fillChar, int count = 1);
     /// @overload
     void eraseRows(const bgeo::BlockCoordinate startRow, const int count = 1) {
@@ -145,7 +145,7 @@ public: // manipulate the buffer
     /// @param startColumn The first column to delete.
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of columns to delete.
-    /// @throws std::invalid_argument if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
     void eraseColumns(bgeo::BlockCoordinate startColumn, Block fillChar, int count = 1);
     /// @overload
     void eraseColumns(const bgeo::BlockCoordinate startColumn, const int count = 1) {
@@ -157,7 +157,7 @@ public: // manipulate the buffer
     /// @param startRow The first row to insert.
     /// @param fillChar The character to fill the new rows with.
     /// @param count The number of rows to insert.
-    /// @throws std::invalid_argument if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
     void insertRows(bgeo::BlockCoordinate startRow, Block fillChar, int count = 1);
     /// @overload
     void insertRows(const bgeo::BlockCoordinate startRow, const int count = 1) {
@@ -169,7 +169,7 @@ public: // manipulate the buffer
     /// @param startColumn The first column to insert.
     /// @param fillChar The character to fill the new columns with.
     /// @param count The number of columns to insert.
-    /// @throws std::invalid_argument if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
     void insertColumns(bgeo::BlockCoordinate startColumn, Block fillChar, int count = 1);
     /// @overload
     void insertColumns(const bgeo::BlockCoordinate startColumn, const int count = 1) {
@@ -183,7 +183,7 @@ public: // manipulate the buffer
     /// @param count The number of rows to move.
     /// @param delta The number of positions to move (positive = down, negative = up).
     /// @param fillChar The character to fill vacated cells with.
-    /// @throws std::invalid_argument if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
     void moveRows(bgeo::BlockCoordinate startRow, int count, bgeo::BlockCoordinate delta, Block fillChar);
     /// @overload
     void moveRows(const bgeo::BlockCoordinate startRow, const int count, const bgeo::BlockCoordinate delta) {
@@ -197,7 +197,7 @@ public: // manipulate the buffer
     /// @param count The number of columns to move.
     /// @param delta The number of positions to move (positive = right, negative = left).
     /// @param fillChar The character to fill vacated cells with.
-    /// @throws std::invalid_argument if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
+    /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
     void moveColumns(bgeo::BlockCoordinate startColumn, int count, bgeo::BlockCoordinate delta, Block fillChar);
     /// @overload
     void moveColumns(const bgeo::BlockCoordinate startColumn, const int count, const bgeo::BlockCoordinate delta) {
@@ -212,7 +212,7 @@ public:
 
 private:
     /// Validate the buffer size.
-    /// @throws std::invalid_argument if size is invalid
+    /// @throws err::ParameterError if size is invalid.
     [[nodiscard]] static auto validatedBufferSize(bgeo::BlockSize size) -> bgeo::BlockSize;
     /// Create a linear index map for the given size.
     /// @param size The size of the buffer.
@@ -222,7 +222,7 @@ private:
     /// @param count The count to validate.
     /// @param maximum The maximum accepted count.
     /// @param parameterName The parameter name for error reporting.
-    /// @throws std::invalid_argument if the count is invalid.
+    /// @throws err::ParameterError if the count is invalid.
     static void validateCount(int count, int maximum, std::string_view parameterName);
     /// Validate a span inside the currently visible range.
     /// @param start The first coordinate in the span.
@@ -230,7 +230,7 @@ private:
     /// @param limit The size of the addressable axis.
     /// @param startName The parameter name for the start coordinate.
     /// @param countName The parameter name for the count.
-    /// @throws std::invalid_argument if the span is invalid.
+    /// @throws err::ParameterError if the span is invalid.
     static void validateExistingSpan(
         bgeo::BlockCoordinate start, int count, int limit, std::string_view startName, std::string_view countName);
     /// Validate an insert-style operation on an axis.
@@ -239,13 +239,13 @@ private:
     /// @param limit The size of the addressable axis.
     /// @param startName The parameter name for the start coordinate.
     /// @param countName The parameter name for the count.
-    /// @throws std::invalid_argument if the arguments are invalid.
+    /// @throws err::ParameterError if the arguments are invalid.
     static void validateInsertArguments(
         bgeo::BlockCoordinate start, int count, int limit, std::string_view startName, std::string_view countName);
     /// Validate a directional count for shift and rotate.
     /// @param direction The direction to validate.
     /// @param count The number of cells to move.
-    /// @throws std::invalid_argument if the count does not fit the addressed axis.
+    /// @throws err::ParameterError if the count does not fit the addressed axis.
     void validateDirectionalCount(bgeo::BlockDirection direction, int count) const;
     /// Remap the position.
     /// @param pos The position to remap.

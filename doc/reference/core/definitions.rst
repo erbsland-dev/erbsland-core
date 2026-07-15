@@ -19,10 +19,10 @@ The following macros are defined automatically:
 ``ERBSLAND_OS_MACOS``
     Defined on Apple platforms.
 
-``ERBSLAND_OS_UNIX``
-    Defined on all other Unix-like platforms.
+``ERBSLAND_OS_LINUX``
+    Defined on Linux platforms.
 
-Short namespace aliases ``EL_OS_WINDOWS``, ``EL_OS_MACOS``, and ``EL_OS_UNIX`` are also provided when the short
+Short namespace aliases ``EL_OS_WINDOWS``, ``EL_OS_MACOS``, and ``EL_OS_LINUX`` are also provided when the short
 namespace is enabled.
 
 Architecture Detection

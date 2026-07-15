@@ -43,9 +43,9 @@ public:
             REQUIRE_EQUAL(filled.get(pos).color(), Color(fg::Yellow, bg::Blue));
         });
 
-        REQUIRE_THROWS_AS(std::invalid_argument, Buffer(bgeo::BlockSize{0, 1}));
-        REQUIRE_THROWS_AS(std::invalid_argument, Buffer(bgeo::BlockSize{1, 0}));
-        REQUIRE_THROWS_AS(std::invalid_argument, Buffer(bgeo::BlockSize{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(bgeo::BlockSize{0, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(bgeo::BlockSize{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer(bgeo::BlockSize{10'001, 1}));
     }
 
     void testResizeWithPreserveContentKeepsContentAndFillsExpandedCells() {
@@ -105,9 +105,9 @@ public:
     void testResizeRejectsInvalidSizes() {
         auto buffer = Buffer{bgeo::BlockSize{2, 2}};
 
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.resize(bgeo::BlockSize{0, 2}));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.resize(bgeo::BlockSize{2, 0}));
-        REQUIRE_THROWS_AS(std::invalid_argument, buffer.resize(bgeo::BlockSize{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(bgeo::BlockSize{0, 2}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(bgeo::BlockSize{2, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(bgeo::BlockSize{10'001, 1}));
     }
 
     void testSetAndGet() {
@@ -203,8 +203,8 @@ public:
     }
 
     void testFromLinesFactoriesRejectEmptyInput() {
-        REQUIRE_THROWS_AS(std::invalid_argument, Buffer::fromLines(BlockStringLines{}));
-        REQUIRE_THROWS_AS(std::invalid_argument, Buffer::fromLinesInString(BlockStringView{}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLines(BlockStringLines{}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLinesInString(BlockStringView{}));
     }
 
     void testCloneCreatesAnIndependentWritableCopy() {

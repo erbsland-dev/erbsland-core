@@ -166,6 +166,11 @@ public: // read
     /// This method provides the number of code points in the string.
     /// Counting follows the tolerant UTF-8 index movement rule documented by `U8String`.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// Get the approximate display width of this string.
+    /// This is a simple sum of decoded character display widths. Control characters, including line breaks, count as
+    /// zero. Complex shaping, grapheme clusters, bidi layout, and terminal-specific behavior are not modeled.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Get the native data index for one side of the string.
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::ByteIndex;
     /// Get the first or last character in this string.
@@ -175,6 +180,16 @@ public: // read
     /// @param startIndex The byte index to access the character at.
     /// @return The character at the given index, or a null character if no character can be read there.
     [[nodiscard]] auto charAt(unit::ByteIndex startIndex) const noexcept -> Char;
+    /// Read the character at the given byte index and advance the index.
+    /// @seeref{u8-string-view-indexed-sequential-read}
+    /// @param index The byte index to read from. Updated to the position after the read character on success.
+    /// @return The character at the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
+    /// Read the character before the given byte index and retreat the index.
+    /// @seeref{u8-string-view-indexed-sequential-read}
+    /// @param index The byte index after the character to read. Updated to the start of the read character on success.
+    /// @return The character before the given index, or a signal character if no character can be read there.
+    [[nodiscard]] auto readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// Slow: Access the character at the given code-point position.
     /// This operation may be slow for large strings, as the position must be found by iterating over the string.
     /// @seeref{u8-string-view-character-indexed-reading}
@@ -213,20 +228,59 @@ public: // slice
     /// No UTF-8 validation is performed, if you slice in the middle of a character, the result contains
     /// encoding errors at the start or end of the resulting string.
     /// @param range The byte range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::ByteRange range) const noexcept -> U8StringView;
     /// Return a character-indexed slice of this string.
     /// Returns a string with a code-point-based slice of this string.
     /// Malformed UTF-8 is decoded according to the tolerant UTF-8 index movement rule documented by `U8String`.
     /// @param range The code-point range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
     /// @return The sliced string.
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U8StringView;
     /// Get the initial or trailing byte-based portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of bytes to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::ByteLength length) const noexcept -> U8StringView;
+    /// Get the byte-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `ByteIndex::noIndex()` and indexes at or beyond the end return the full view for front and an empty view for
+    /// back.
+    /// @param side The side of the split point to keep.
+    /// @param index The byte index where the back portion starts.
+    /// @return The sliced string.
+    [[nodiscard]] auto slice(StringSide side, unit::ByteIndex index) const noexcept -> U8StringView;
     /// Get the initial or trailing code-point-based portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of bytes to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U8StringView;
+    /// Get the code-point-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view for front and an empty view for back.
+    /// @param side The side of the split point to keep.
+    /// @param index The code-point index where the back portion starts.
+    /// @return The sliced string.
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U8StringView;
     /// Slice one decoded character from the given side and return it with the remaining string.
+    /// @param side The side of the string to slice from.
+    /// @return The sliced character and the remaining string.
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U8StringView>;
+    /// Split this string view at a byte index.
+    /// `ByteIndex::noIndex()` and indexes at or beyond the end return the full view followed by an empty view.
+    /// @param index The byte index where the second returned view starts.
+    /// @return The two views before and after the split point.
+    [[nodiscard]] auto splitAt(unit::ByteIndex index) const noexcept -> std::pair<U8StringView, U8StringView>;
+    /// Split this string view at a code-point index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full view followed by an empty view.
+    /// @param index The code-point index where the second returned view starts.
+    /// @return The two views before and after the split point.
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U8StringView, U8StringView>;
 
 public: // trim
     /// Return a view without leading and trailing ASCII whitespace or selected characters.
@@ -243,6 +297,7 @@ public: // find
     /// Malformed UTF-8 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param start The byte index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The byte index of the first match, or `ByteIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::ByteIndex start) const noexcept -> unit::ByteIndex;
     /// Find the first decoded character not contained in the given set.
@@ -254,6 +309,7 @@ public: // find
     /// Malformed UTF-8 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param start The byte index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @return The byte index of the first non-matching character, or `ByteIndex::noIndex()` if there is none.
     [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::ByteIndex start) const noexcept
         -> unit::ByteIndex;
@@ -266,6 +322,7 @@ public: // find
     /// Malformed UTF-8 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
     /// @param end The exclusive byte index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The byte index of the last match, or `ByteIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findLastOf(const CharSet &characters, unit::ByteIndex end) const noexcept -> unit::ByteIndex;
     /// Find the last decoded character not contained in the given set.
@@ -277,6 +334,7 @@ public: // find
     /// Malformed UTF-8 is decoded as `Char::replacement()`.
     /// @param characters The character set to exclude.
     /// @param end The exclusive byte index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
     /// @return The byte index of the last non-matching character, or `ByteIndex::noIndex()` if there is none.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::ByteIndex end) const noexcept -> unit::ByteIndex;
     /// Find text in this string view.
@@ -287,6 +345,7 @@ public: // find
     /// Find text in this string view starting at a byte index.
     /// @param text The text to find.
     /// @param start The byte index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The byte index of the first match, or `ByteIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(
@@ -361,13 +420,11 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::ByteLength;
     /// Escape this view according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U8String;
 
 public: // low-level management

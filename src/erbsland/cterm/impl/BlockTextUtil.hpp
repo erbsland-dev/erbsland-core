@@ -3,16 +3,8 @@
 #pragma once
 
 #include "../../text/Char.hpp"
-#include "../../text/impl/UnicodeData.hpp"
 
 namespace erbsland::cterm::impl {
-
-/// Test if one code point is an ISO control code.
-/// @param codePoint The code point to test.
-/// @return `true` if the code point is a control code.
-[[nodiscard]] constexpr auto isControlCode(const text::Char codePoint) noexcept -> bool {
-    return codePoint < U' ' || (codePoint >= text::Char{0x7FU} && codePoint <= text::Char{0x9FU});
-}
 
 /// Test if one code point is safe for `Block` construction.
 /// This accepts any valid Unicode code point except control characters.
@@ -43,8 +35,7 @@ namespace erbsland::cterm::impl {
 /// @return `true` if the code point is preserved in a terminal string.
 [[nodiscard]] inline auto isStringCharacter(const text::Char codePoint) noexcept -> bool {
     return codePoint == U'\t' || codePoint == U'\n' ||
-        (!isControlCode(codePoint) && codePoint >= U' ' &&
-            text::impl::unicodeDisplayWidthFor(codePoint.toRawValue()) > 0);
+        (!codePoint.isControl() && codePoint >= U' ' && codePoint.displayWidth() > 0);
 }
 
 }

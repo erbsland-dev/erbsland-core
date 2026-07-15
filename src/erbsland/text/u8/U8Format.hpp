@@ -19,10 +19,10 @@ namespace erbsland::text {
 class U8Format final {
 public:
     /// Parse and validate a UTF-8 format pattern.
-    /// @throws err::FormatError If the pattern is invalid or exceeds format limits.
+    /// @throws text::FormatError If the pattern is invalid or exceeds format limits.
     explicit U8Format(std::string_view pattern);
     /// Parse and validate a UTF-8 format pattern.
-    /// @throws err::FormatError If the pattern is invalid or exceeds format limits.
+    /// @throws text::FormatError If the pattern is invalid or exceeds format limits.
     explicit U8Format(const U8StringView &pattern);
 
     // defaults
@@ -38,11 +38,11 @@ public: // accessors
 
 public: // formatting
     /// Build a UTF-8 string from the arguments.
-    /// @throws err::FormatError If arguments do not match the pattern or output exceeds limits.
+    /// @throws text::FormatError If arguments do not match the pattern or output exceeds limits.
     template <typename... Args>
     [[nodiscard]] auto build(Args &&...args) const -> U8String;
     /// Append formatted arguments to a string builder.
-    /// @throws err::FormatError If arguments do not match the pattern or output exceeds limits.
+    /// @throws text::FormatError If arguments do not match the pattern or output exceeds limits.
     template <typename... Args>
     auto appendTo(StringBuilder &builder, Args &&...args) const -> StringBuilder &;
 

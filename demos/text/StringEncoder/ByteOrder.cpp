@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Byte order determines how multi-byte character encodings store data in memory.
 /// UTF-16 and UTF-32 store characters as sequences of bytes, and the byte order
 /// (little-endian or big-endian) affects how those sequences are laid out.
@@ -21,4 +23,6 @@ void byteOrder() {
     // Encode as UTF-16 big-endian (most significant byte first).
     bytes = el::StringEncoder{oceanText}.encode(el::StringEncoding::Utf16BigEndian, el::StringBomMode::Reject);
     el::io::printLine("Encoded as UTF-16 big-endian:\n", el::ByteFormat::memoryDump(), bytes);
+}
+
 }

@@ -5,9 +5,9 @@
 #include "U32Encoding.hpp"
 #include "U32Writer.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/U16DataLength.hpp"
+#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u8/impl/U8Writer.hpp"
@@ -62,6 +62,16 @@ auto U32StringReadTools::length() const noexcept -> unit::CpLength {
     return unit::CpLength::fromSizeT(_data.dataSpan().size());
 }
 
+auto U32StringReadTools::displayWidth() const noexcept -> int {
+    auto result = 0;
+    const auto data = _data.dataSpan();
+    auto position = unit::CpIndex::zero();
+    while (position.toSizeT() < data.size()) {
+        result += utf32::decodeCharOrReplace(data, position).displayWidth();
+    }
+    return result;
+}
+
 auto U32StringReadTools::charAt(const unit::CpIndex startIndex) const noexcept -> Char {
     if (startIndex.isNoIndex()) {
         return Char::noCodePoint();
@@ -91,10 +101,29 @@ auto U32StringReadTools::read(unit::CpIndex &index) const noexcept -> Char {
     return Char{utf32::decodeCharOrReplace(data, index)};
 }
 
+auto U32StringReadTools::readAndRetreat(unit::CpIndex &index) const noexcept -> Char {
+    if (index.isNoIndex()) {
+        return Char::noCodePoint();
+    }
+    const auto data = _data.dataSpan();
+    if (index.isZero()) {
+        return Char::endOfData();
+    }
+    if (index.toSizeT() > data.size()) {
+        return Char::noCodePoint();
+    }
+    auto startIndex = index;
+    utf32::fastRetreatChar(data, startIndex);
+    auto readIndex = startIndex;
+    const auto result = Char{utf32::decodeCharOrReplace(data, readIndex)};
+    index = startIndex;
+    return result;
+}
+
 auto U32StringReadTools::charAtOrThrow(const unit::CpIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     auto position = startIndex;
     return utf32::decodeCharOrThrow(data, position);
@@ -103,7 +132,7 @@ auto U32StringReadTools::charAtOrThrow(const unit::CpIndex startIndex) const -> 
 auto U32StringReadTools::readOrThrow(unit::CpIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     return Char{utf32::decodeCharOrThrow(data, index)};
 }

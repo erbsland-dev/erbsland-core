@@ -291,14 +291,14 @@ public: // drawing methods
     /// Resulting positions outside the target rectangle are clipped.
     /// @param buffer The buffer to draw.
     /// @param targetPos The target position where to draw the top-left corner of the buffer.
-    /// @throws std::invalid_argument if `buffer` is this buffer.
+    /// @throws err::ParameterError if `buffer` is this buffer.
     void drawBuffer(const ReadableBuffer &buffer, bgeo::BlockPosition targetPos = bgeo::BlockPosition{});
     /// Draw the contents of another buffer into this one.
     /// Resulting positions outside the target rectangle are clipped.
     /// @param buffer The buffer to draw.
     /// @param targetRect The target rectangle where to draw the buffer. Clips `buffer` if larger.
     /// @param alignment The alignment of the buffer within the target rectangle.
-    /// @throws std::invalid_argument if `buffer` is this buffer.
+    /// @throws err::ParameterError if `buffer` is this buffer.
     void drawBuffer(
         const ReadableBuffer &buffer,
         bgeo::BlockRectangle targetRect,
@@ -306,7 +306,7 @@ public: // drawing methods
     /// Draw the contents of another buffer into this one.
     /// @param buffer The buffer to draw.
     /// @param options The options for drawing the buffer.
-    /// @throws std::invalid_argument if `buffer` is this buffer.
+    /// @throws err::ParameterError if `buffer` is this buffer.
     virtual void drawBuffer(const ReadableBuffer &buffer, const BufferDrawOptions &options);
 
 protected: // implementation

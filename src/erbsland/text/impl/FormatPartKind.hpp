@@ -7,7 +7,6 @@
 namespace erbsland::text::impl {
 
 /// The formatting mode for an argument field.
-/// @tested{U8FormatTest}
 enum class FormatPartKind : uint8_t {
     Field,
     StaticText,

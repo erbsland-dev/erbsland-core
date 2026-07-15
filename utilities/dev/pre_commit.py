@@ -15,6 +15,7 @@ from pathlib import Path
 from dev.cleanup import CleanupApp
 from dev.fix_include_paths import FixIncludePathsApp
 from dev.reference_doc import ReferenceDocApp
+from dev.test_status import TestStatusApp
 from dev.security_hashes import SecurityHashesApp
 from dev.update_includes import UpdateIncludesApp
 from lib.config import read_elcl_file, validate_file_suffixes
@@ -291,6 +292,7 @@ class PreCommitApp(UtilityApp):
             self.run_app(UpdateIncludesApp(), "update_includes")
             self.run_app(FixIncludePathsApp(), "fix_include_paths")
             self.run_app(CleanupApp(), "cleanup")
+            self.run_app(TestStatusApp(), "test_status")
             self.run_app(ReferenceDocApp(), "reference_doc")
             self.run_app(SecurityHashesApp(), "security_hashes")
         finally:

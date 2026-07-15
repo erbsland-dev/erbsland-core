@@ -23,6 +23,8 @@ class FixIncludePathsConfig:
     project_dir: Path
     source_dir: Path
     unittest_dir: Path
+    demo_dirs: tuple[Path, ...]
+    demo_include_roots: tuple[Path, ...]
     excluded_names: frozenset[str]
     scanned_file_suffixes: frozenset[str]
     header_file_suffixes: frozenset[str]
@@ -37,6 +39,14 @@ class FixIncludePathsConfig:
             project_dir=project_dir,
             source_dir=resolve_project_path(project_dir, main_config.get_text("sources"), "Sources"),
             unittest_dir=resolve_project_path(project_dir, main_config.get_text("unittests"), "Unittests"),
+            demo_dirs=tuple(
+                resolve_project_path(project_dir, path, "Demo Directories")
+                for path in main_config.get_list("demo_directories", str, default=[])
+            ),
+            demo_include_roots=tuple(
+                resolve_project_path(project_dir, path, "Demo Include Roots")
+                for path in main_config.get_list("demo_include_roots", str, default=[])
+            ),
             excluded_names=frozenset(main_config.get_list("excluded_names", str, default=[])),
             scanned_file_suffixes=frozenset(main_config.get_list("scanned_file_suffixes", str, default=[])),
             header_file_suffixes=frozenset(main_config.get_list("header_file_suffixes", str, default=[])),
@@ -48,6 +58,10 @@ class FixIncludePathsConfig:
         """Validate the configuration."""
         require_directory(self.source_dir, "Sources")
         require_directory(self.unittest_dir, "Unittests")
+        for demo_dir in self.demo_dirs:
+            require_directory(demo_dir, "Demo Directories")
+        for demo_include_root in self.demo_include_roots:
+            require_directory(demo_include_root, "Demo Include Roots")
         validate_local_names(self.excluded_names, "Excluded Names")
         if not self.scanned_file_suffixes:
             raise UtilityError("No scanned file suffixes configured.")
@@ -79,6 +93,15 @@ class PendingIncludePathUpdate:
 
     path: Path
     text: str
+
+
+@dataclass(frozen=True)
+class IncludeScanContext:
+    """Include path policy for one scanned source tree."""
+
+    root: Path
+    include_roots: tuple[Path, ...]
+    library_includes_are_global: bool
 
 
 class LibrarySourceMap:
@@ -113,7 +136,7 @@ class LibrarySourceMap:
         path = self.clean_posix_path(include_path)
         return path is not None and path in self._paths
 
-    def path_for_include(self, include_path: str, context: str) -> PurePosixPath:
+    def path_for_include(self, include_path: str, context: str, context_path: PurePosixPath | None = None) -> PurePosixPath:
         """Resolve an include path to exactly one library source file."""
         path = self.clean_posix_path(include_path)
         if path is not None:
@@ -133,8 +156,28 @@ class LibrarySourceMap:
                 f'No library source file named "{filename}" exists below {self.source_dir}.'
             )
         if len(candidates) > 1:
+            context_candidate = self.best_context_candidate(candidates, context_path)
+            if context_candidate is not None:
+                return context_candidate
             raise self.ambiguous_include_error(include_path, context, candidates)
         return candidates[0]
+
+    def source_relative_from_src_segment(self, include_path: str, context: str) -> PurePosixPath | None:
+        """Resolve an include path containing a `src/erbsland` segment."""
+        parts = PurePosixPath(include_path).parts
+        if "src" not in parts:
+            return None
+        for index, part in enumerate(parts[:-1]):
+            if part != "src" or parts[index + 1] != "erbsland":
+                continue
+            target = PurePosixPath(*parts[index + 1 :])
+            if target in self._paths:
+                return target
+            return self.path_for_include(target.as_posix(), context)
+        raise UtilityError(
+            f"Invalid include path in {context}: {include_path}\n"
+            'Include paths must not contain "src" unless they point into "src/erbsland".'
+        )
 
     @staticmethod
     def clean_posix_path(include_path: str) -> PurePosixPath | None:
@@ -152,6 +195,29 @@ class LibrarySourceMap:
         if len(suffix_parts) > len(candidate_parts):
             return False
         return candidate_parts[-len(suffix_parts) :] == suffix_parts
+
+    @staticmethod
+    def best_context_candidate(
+        candidates: list[PurePosixPath], context_path: PurePosixPath | None
+    ) -> PurePosixPath | None:
+        """Pick a unique candidate that shares the closest source directory context."""
+        if context_path is None:
+            return None
+        context_parts = context_path.parent.parts
+        scored_candidates: list[tuple[int, PurePosixPath]] = []
+        for candidate in candidates:
+            score = 0
+            for left, right in zip(context_parts, candidate.parent.parts):
+                if left != right:
+                    break
+                score += 1
+            scored_candidates.append((score, candidate))
+        scored_candidates.sort(key=lambda item: item[0], reverse=True)
+        if not scored_candidates or scored_candidates[0][0] == 0:
+            return None
+        if len(scored_candidates) > 1 and scored_candidates[0][0] == scored_candidates[1][0]:
+            return None
+        return scored_candidates[0][1]
 
     def ambiguous_include_error(
         self, include_path: str, context: str, candidates: Iterable[PurePosixPath]
@@ -180,18 +246,40 @@ class FixIncludePaths:
         updates: list[PendingIncludePathUpdate] = []
         self.print_verbose("Fixing include paths in library sources.")
         for path in self.config.source_files(self.config.source_dir):
-            update = self.process_file(path, is_unittest=False)
+            update = self.process_file(path, self.source_context())
             if update is not None:
                 updates.append(update)
         self.print_verbose("Fixing include paths in unit tests.")
         for path in self.config.source_files(self.config.unittest_dir):
-            update = self.process_file(path, is_unittest=True)
+            update = self.process_file(path, self.unittest_context())
             if update is not None:
                 updates.append(update)
+        for demo_dir in self.config.demo_dirs:
+            self.print_verbose(f"Fixing include paths in demos: {self.display_path(demo_dir)}.")
+            for path in self.config.source_files(demo_dir):
+                update = self.process_file(path, self.demo_context(demo_dir))
+                if update is not None:
+                    updates.append(update)
         for update in updates:
             self.file_update.write_if_changed(update.path, update.text)
 
-    def process_file(self, path: Path, *, is_unittest: bool) -> PendingIncludePathUpdate | None:
+    def source_context(self) -> IncludeScanContext:
+        """Create the include scan context for library sources."""
+        return IncludeScanContext(self.config.source_dir, (self.config.source_dir,), False)
+
+    def unittest_context(self) -> IncludeScanContext:
+        """Create the include scan context for unit tests."""
+        roots = [self.config.unittest_dir]
+        src_root = self.config.unittest_dir / "src"
+        if src_root.is_dir():
+            roots.append(src_root)
+        return IncludeScanContext(self.config.unittest_dir, tuple(roots), True)
+
+    def demo_context(self, demo_dir: Path) -> IncludeScanContext:
+        """Create the include scan context for demos."""
+        return IncludeScanContext(demo_dir, (demo_dir, *self.config.demo_include_roots), True)
+
+    def process_file(self, path: Path, scan_context: IncludeScanContext) -> PendingIncludePathUpdate | None:
         """Fix include paths in one file."""
         display_path = self.display_path(path)
         self.print_verbose(f"Processing file: {display_path}")
@@ -206,13 +294,13 @@ class FixIncludePaths:
             self.print_verbose("  no include block found.")
             return None
 
-        replacement = self.fix_include_block(path, include_block.text, is_unittest=is_unittest)
+        replacement = self.fix_include_block(path, include_block.text, scan_context)
         new_text = text[: include_block.start] + replacement + text[include_block.end :]
         if new_text == text:
             return None
         return PendingIncludePathUpdate(path, new_text)
 
-    def fix_include_block(self, path: Path, include_block: str, *, is_unittest: bool) -> str:
+    def fix_include_block(self, path: Path, include_block: str, scan_context: IncludeScanContext) -> str:
         """Fix all relevant include lines in one include block."""
         result = []
         for line in include_block.splitlines(keepends=True):
@@ -220,25 +308,32 @@ class FixIncludePaths:
             if include_line is None:
                 result.append(line)
                 continue
-            if is_unittest:
-                result.append(self.fix_unittest_include(path, include_line))
+            if scan_context.library_includes_are_global:
+                result.append(self.fix_external_include(path, include_line, scan_context))
             else:
                 result.append(self.fix_source_include(path, include_line))
         return "".join(result)
 
     def fix_source_include(self, path: Path, include_line: IncludeLine) -> str:
         """Fix one include from a library source file."""
-        if include_line.is_global:
+        if include_line.is_global and "src" not in PurePosixPath(include_line.path).parts:
             return include_line.render()
-        if self.existing_relative_library_include(path, include_line.path):
+        target = self.relative_existing_library_target(path, include_line.path)
+        if target is not None:
             return include_line.render()
         target = self.resolve_library_target(path, include_line.path, self.context(path, include_line))
         fixed_path = self.relative_path_from_file(path, target)
         return include_line.render(path=fixed_path, is_global=False)
 
-    def fix_unittest_include(self, path: Path, include_line: IncludeLine) -> str:
-        """Fix one include from a unit test source file."""
-        if self.existing_relative_unittest_include(path, include_line.path):
+    def fix_external_include(self, path: Path, include_line: IncludeLine, scan_context: IncludeScanContext) -> str:
+        """Fix one include from a unit test or demo source file."""
+        target = self.relative_existing_library_target(path, include_line.path)
+        if target is not None:
+            return include_line.render(path=target.as_posix(), is_global=True)
+        target = self.source_map.source_relative_from_src_segment(include_line.path, self.context(path, include_line))
+        if target is not None:
+            return include_line.render(path=target.as_posix(), is_global=True)
+        if self.existing_local_include(path, include_line.path, scan_context):
             return include_line.render()
         target = self.resolve_optional_library_target(path, include_line.path, self.context(path, include_line))
         if target is not None:
@@ -251,14 +346,11 @@ class FixIncludePaths:
 
     def resolve_optional_library_target(self, path: Path, include_path: str, context: str) -> PurePosixPath | None:
         """Resolve an include path to a library source file, if it is one."""
-        relative_target = self.relative_existing_library_target(path, include_path)
-        if relative_target is not None:
-            return relative_target
         if self.source_map.has_relative_path(include_path):
             return PurePosixPath(include_path)
         filename = PurePosixPath(include_path).name
         if self.source_map.has_filename(filename):
-            return self.source_map.path_for_include(include_path, context)
+            return self.source_map.path_for_include(include_path, context, self.library_context_path(path))
         return None
 
     def resolve_library_target(self, path: Path, include_path: str, context: str) -> PurePosixPath:
@@ -266,7 +358,10 @@ class FixIncludePaths:
         relative_target = self.relative_existing_library_target(path, include_path)
         if relative_target is not None:
             return relative_target
-        return self.source_map.path_for_include(include_path, context)
+        src_target = self.source_map.source_relative_from_src_segment(include_path, context)
+        if src_target is not None:
+            return src_target
+        return self.source_map.path_for_include(include_path, context, self.library_context_path(path))
 
     def relative_existing_library_target(self, path: Path, include_path: str) -> PurePosixPath | None:
         """Resolve an include path relative to the current file if it points into the library sources."""
@@ -277,31 +372,19 @@ class FixIncludePaths:
             return None
         return PurePosixPath(target.relative_to(self.config.source_dir).as_posix())
 
-    def existing_relative_library_include(self, path: Path, include_path: str) -> bool:
-        """Test if an include already points to an existing library file relative to the current file."""
-        return self.relative_existing_library_target(path, include_path) is not None
-
-    def existing_relative_unittest_include(self, path: Path, include_path: str) -> bool:
-        """Test if an include points to a local unit test source file."""
+    def existing_local_include(self, path: Path, include_path: str, scan_context: IncludeScanContext) -> bool:
+        """Test if an include points to a local source file for this scan context."""
         relative_target = self.resolve_relative_file(path, include_path)
-        if relative_target is not None and relative_target.is_relative_to(self.config.unittest_dir):
+        if relative_target is not None and relative_target.is_relative_to(scan_context.root):
             return True
         clean_path = LibrarySourceMap.clean_posix_path(include_path)
         if clean_path is None:
             return False
-        for root in self.unittest_include_roots():
+        for root in scan_context.include_roots:
             candidate = (root / clean_path).resolve(strict=False)
-            if self.is_regular_file(candidate) and candidate.is_relative_to(self.config.unittest_dir):
+            if self.is_regular_file(candidate) and candidate.is_relative_to(root):
                 return True
         return False
-
-    def unittest_include_roots(self) -> tuple[Path, ...]:
-        """Return local include roots used by the unit test target."""
-        roots = [self.config.unittest_dir]
-        src_root = self.config.unittest_dir / "src"
-        if src_root.is_dir():
-            roots.append(src_root)
-        return tuple(roots)
 
     def resolve_relative_file(self, path: Path, include_path: str) -> Path | None:
         """Resolve an include path relative to the current file without accepting directories or symlinks."""
@@ -325,6 +408,13 @@ class FixIncludePaths:
         """Create the shortest relative include path from a source file to a target."""
         absolute_target = self.config.source_dir / target
         return os.path.relpath(absolute_target, path.parent).replace(os.sep, "/")
+
+    def library_context_path(self, path: Path) -> PurePosixPath | None:
+        """Create a source-relative context path when the current file is in library sources."""
+        try:
+            return PurePosixPath(path.relative_to(self.config.source_dir).as_posix())
+        except ValueError:
+            return None
 
     def context(self, path: Path, include_line: IncludeLine) -> str:
         """Create a detailed context for error messages."""

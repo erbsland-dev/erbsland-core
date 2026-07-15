@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// The `StringEncoder` class converts text into a selected Unicode byte encoding.
 /// It supports UTF-8, UTF-16, and UTF-32 output, optional byte order marks, and
 /// explicit little-endian or big-endian byte order for encodings where this matters.
@@ -15,4 +17,6 @@ void encodeStrings() {
     el::io::printLine("Observation: \"", observation, "\"");
     el::io::printLine("Encoded as UTF-32 little-endian with BOM:");
     el::io::printLine(el::ByteFormat::memoryDump(), encodedObservation);
+}
+
 }

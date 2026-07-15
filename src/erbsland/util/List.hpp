@@ -73,6 +73,10 @@ public: // operators
     /// @param value The element to append.
     /// @return A new list with the element added.
     [[nodiscard]] auto operator+(const Element &value) const -> Self;
+    /// Append an element to a list, taking ownership of the value.
+    /// @param value The element to append.
+    /// @return A new list with the element added.
+    [[nodiscard]] auto operator+(Element &&value) const -> Self;
     /// Append another list to this list.
     /// @param other The list to append.
     /// @return A reference to this list.
@@ -81,6 +85,10 @@ public: // operators
     /// @param value The element to append.
     /// @return A reference to this list.
     auto operator+=(const Element &value) -> Self &;
+    /// Append an element to this list, taking ownership of the value.
+    /// @param value The element to append.
+    /// @return A reference to this list.
+    auto operator+=(Element &&value) -> Self &;
     /// Access an element by index.
     /// @param index The element index.
     /// @return A copy of the element at the given index.
@@ -99,6 +107,16 @@ public: // operators
     /// @return A new list with the element added at the front.
     friend auto operator+(const Element &value, const Self &list) -> Self {
         auto result = Self{value};
+        result.append(list);
+        return result;
+    }
+    /// Prepend an element to a list, taking ownership of the value.
+    /// @param value The element to prepend.
+    /// @param list The list to prepend to.
+    /// @return A new list with the element added at the front.
+    friend auto operator+(Element &&value, const Self &list) -> Self {
+        auto result = Self{};
+        result.append(std::move(value));
         result.append(list);
         return result;
     }
@@ -143,6 +161,11 @@ public: // elements
     /// @param value The new element value.
     /// @return A reference to this list.
     auto set(Index index, const Element &value) -> Self &;
+    /// Set an element at a given index, taking ownership of the value.
+    /// @param index The element index.
+    /// @param value The new element value.
+    /// @return A reference to this list.
+    auto set(Index index, Element &&value) -> Self &;
 
 public: // memory
     /// Resize the list.
@@ -347,6 +370,11 @@ public: // change
     /// @param value The element to insert.
     /// @return A reference to this list.
     auto insert(Index index, const Element &value) -> Self &;
+    /// Insert an element at a given index, taking ownership of the value.
+    /// @param index The index to insert at.
+    /// @param value The element to insert.
+    /// @return A reference to this list.
+    auto insert(Index index, Element &&value) -> Self &;
     /// Insert another list at a given index.
     /// @param index The index to insert at.
     /// @param other The list to insert.
@@ -356,6 +384,10 @@ public: // change
     /// @param value The element to append.
     /// @return A reference to this list.
     auto append(const Element &value) -> Self &;
+    /// Append an element, taking ownership of the value.
+    /// @param value The element to append.
+    /// @return A reference to this list.
+    auto append(Element &&value) -> Self &;
     /// Append another list.
     /// @param other The list to append.
     /// @return A reference to this list.
@@ -364,6 +396,10 @@ public: // change
     /// @param value The element to prepend.
     /// @return A reference to this list.
     auto prepend(const Element &value) -> Self &;
+    /// Prepend an element, taking ownership of the value.
+    /// @param value The element to prepend.
+    /// @return A reference to this list.
+    auto prepend(Element &&value) -> Self &;
     /// Prepend another list.
     /// @param other The list to prepend.
     /// @return A reference to this list.

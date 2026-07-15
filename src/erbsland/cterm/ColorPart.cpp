@@ -4,13 +4,15 @@
 
 #include "impl/BlockTextUtil.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../text/StringConverter.hpp"
 
 #include <algorithm>
 #include <ranges>
-#include <stdexcept>
 
 namespace erbsland::cterm {
+
+using namespace text::literals;
 
 auto ColorBase::tableEntry() const noexcept -> const TableEntry & {
     return colorTable()[static_cast<std::size_t>(_value)];
@@ -18,40 +20,39 @@ auto ColorBase::tableEntry() const noexcept -> const TableEntry & {
 
 auto ColorBase::colorTable() noexcept -> const ColorTable & {
     static const auto table = ColorTable{{
-        {Value::Black, 0, "black"},
-        {Value::Red, 1, "red"},
-        {Value::Green, 2, "green"},
-        {Value::Yellow, 3, "yellow"},
-        {Value::Blue, 4, "blue"},
-        {Value::Magenta, 5, "magenta"},
-        {Value::Cyan, 6, "cyan"},
-        {Value::White, 7, "white"},
-        {Value::BrightBlack, 60, "bright_black"},
-        {Value::BrightRed, 61, "bright_red"},
-        {Value::BrightGreen, 62, "bright_green"},
-        {Value::BrightYellow, 63, "bright_yellow"},
-        {Value::BrightBlue, 64, "bright_blue"},
-        {Value::BrightMagenta, 65, "bright_magenta"},
-        {Value::BrightCyan, 66, "bright_cyan"},
-        {Value::BrightWhite, 67, "bright_white"},
-        {Value::Default, 9, "default"},
-        {Value::Inherited, 9, "inherited"},
+        {Value::Black, 0, "black"_el},
+        {Value::Red, 1, "red"_el},
+        {Value::Green, 2, "green"_el},
+        {Value::Yellow, 3, "yellow"_el},
+        {Value::Blue, 4, "blue"_el},
+        {Value::Magenta, 5, "magenta"_el},
+        {Value::Cyan, 6, "cyan"_el},
+        {Value::White, 7, "white"_el},
+        {Value::BrightBlack, 60, "bright_black"_el},
+        {Value::BrightRed, 61, "bright_red"_el},
+        {Value::BrightGreen, 62, "bright_green"_el},
+        {Value::BrightYellow, 63, "bright_yellow"_el},
+        {Value::BrightBlue, 64, "bright_blue"_el},
+        {Value::BrightMagenta, 65, "bright_magenta"_el},
+        {Value::BrightCyan, 66, "bright_cyan"_el},
+        {Value::BrightWhite, 67, "bright_white"_el},
+        {Value::Default, 9, "default"_el},
+        {Value::Inherited, 9, "inherited"_el},
     }};
     return table;
 }
 
-auto ColorBase::toString() const -> text::String {
-    return text::String{tableEntry().name};
+auto ColorBase::toString() const -> text::StringView {
+    return tableEntry().name;
 }
 
 auto ColorBase::enumFromString(const text::StringView &str) -> Value {
     const auto normalizedIdentifier = str.trimmed().transformed(text::Char::toIdentifierNormalized);
     const auto &table = colorTable();
-    auto it = std::ranges::find_if(
-        table, [&](const auto &entry) -> bool { return normalizedIdentifier == text::String{entry.name}; });
+    auto it =
+        std::ranges::find_if(table, [&](const auto &entry) -> bool { return normalizedIdentifier == entry.name; });
     if (it == table.end()) {
-        const auto stdString = text::StringConverter{str}.toStdString();
-        throw std::invalid_argument("Unknown color '" + stdString + "'.");
+        throw err::ParameterError{"Unknown color."_el, "str"_el};
     }
     return it->value;
 }

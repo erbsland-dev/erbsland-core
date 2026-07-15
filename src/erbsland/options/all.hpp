@@ -9,8 +9,8 @@
 #include "OptionCallback.hpp"
 #include "OptionChoice.hpp"
 #include "OptionChoices.hpp"
-#include "OptionDisplayText.hpp"
 #include "OptionEditor.hpp"
+#include "OptionError.hpp"
 #include "OptionErrorContext.hpp"
 #include "OptionErrorReason.hpp"
 #include "OptionFlag.hpp"
@@ -19,8 +19,6 @@
 #include "OptionInteger.hpp"
 #include "OptionManager.hpp"
 #include "OptionModule.hpp"
-#include "OptionRenderer.hpp"
-#include "OptionRendererBase.hpp"
 #include "OptionResult.hpp"
 #include "OptionResultStatus.hpp"
 #include "OptionSet.hpp"
@@ -32,6 +30,5 @@
 #include "OptionValueType.hpp"
 #include "OptionValues.hpp"
 #include "Options.hpp"
-#include "StandardOptionRenderer.hpp"
 
 

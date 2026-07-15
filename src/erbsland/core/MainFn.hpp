@@ -9,7 +9,6 @@
 namespace erbsland::core {
 
 /// A main function override for an application.
-/// @tested{OptionsFrameworkTest}
 using MainFn = std::function<unit::ExitCode()>;
 
 }

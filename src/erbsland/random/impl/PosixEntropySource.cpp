@@ -4,14 +4,22 @@
 
 #include "PosixFileDescriptor.hpp"
 
-#include "../../err/RandomError.hpp"
+#include "../RandomError.hpp"
+
+#include "../../system/PlatformError.hpp"
+#include "../../system/PosixErrorContext.hpp"
+#include "../../text/Literals.hpp"
+#include "../../text/String.hpp"
 
 #include <unistd.h>
 
 #include <cerrno>
+#include <cstring>
 #include <utility>
 
 namespace erbsland::random::impl {
+
+using namespace text::literals;
 
 PosixEntropySource::PosixEntropySource(std::string path) : _path{std::move(path)} {
 }
@@ -30,10 +38,14 @@ void PosixEntropySource::fillBytes(const std::span<std::byte> destination) {
             if (errno == EINTR) {
                 continue;
             }
-            throw err::RandomError{"System entropy source failed"};
+            const auto errorCode = errno;
+            auto cause = std::make_exception_ptr(
+                system::PlatformError{
+                    "System entropy source failed"_el, system::PosixErrorContext::fromErrorCode(errorCode)});
+            throw random::RandomError{"System entropy source failed"_el, std::move(cause)};
         }
         if (readCount == 0) {
-            throw err::RandomError{"System entropy source ended unexpectedly"};
+            throw random::RandomError{"System entropy source ended unexpectedly"};
         }
         data += readCount;
         remaining -= static_cast<std::size_t>(readCount);

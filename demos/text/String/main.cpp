@@ -5,6 +5,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.registerDemo("AlignAndTruncate"_el, alignAndTruncate);
@@ -18,4 +20,10 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("ReserveForAppend"_el, reserveForAppend);
     app.registerDemo("ShrinkSlices"_el, shrinkSlices);
     return app.run();
+}
+
+}
+
+auto main(const int argc, char *argv[]) -> int {
+    return demo::main(argc, argv);
 }

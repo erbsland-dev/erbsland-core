@@ -6,6 +6,8 @@
 
 #include <array>
 
+namespace demo {
+
 /// Display the ANSI character attributes supported by the current terminal setup.
 class DisplayAllAttributesApp final : public TerminalApplication {
 public:
@@ -36,3 +38,5 @@ private:
     [[nodiscard]] static auto supportLabel(bool supported) -> el::StringView;
     [[nodiscard]] static auto sampleAttributes(BlockAttributes::Flag flag) -> BlockAttributes;
 };
+
+}

@@ -151,8 +151,8 @@ Backends are also responsible for the low-level parts of interactivity:
   reports the visible terminal size or ``std::nullopt`` if the host
   cannot provide one.
 * ``Backend::isInteractive()``
-  tells ``Terminal`` whether a real,
-  interactive console is attached.
+  tells ``Terminal`` whether its actual output endpoint is attached to an interactive console. A backend must not
+  infer output interactivity from an unrelated input, error, or controlling-terminal handle.
 * ``Backend::inputMode()``,
   ``Backend::setInputMode()``,
   ``Backend::readKey()``,

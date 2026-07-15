@@ -1,15 +1,33 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
+
 #include "StandardStreamsDemos.hpp"
 
+namespace demo {
 
-void floatFormatting() {
-    auto fixed = el::FloatFormat::fixed();
-    fixed.setPrecision(el::ElementCount{2U});
+[[nodiscard]] auto captureRehearsalNotes() -> el::String;
 
-    auto scientific = el::FloatFormat::scientific();
-    scientific.setPrecision(el::ElementCount{3U}).setLetterCase(el::LetterCase::Uppercase);
+void captureOutput() {
+    el::io::printLine("Captured output:"_el);
+    el::io::print(captureRehearsalNotes());
+    if (el::stdOut()->flush().isTimeout()) {
+        throw el::RuntimeError{"Sending the captured output timed out."_el};
+    }
+}
 
-    el::io::printLine("Average canopy height: "_el, fixed, 18.756, " m"_el);
-    el::io::printLine("Pollen sample density: "_el, scientific, 0.000421);
+/// Capture output from code that writes to the standard-output proxy.
+/// Keep the redirect guard in a narrow scope so automatic restoration also covers early returns and exceptions.
+/// A `StringBuilderStream` performs no external I/O, therefore timeout would violate an in-memory stream invariant.
+auto captureRehearsalNotes() -> el::String {
+    const auto capture = el::StringBuilderStream::create();
+    {
+        auto redirect = el::redirectStdOut(capture);
+        if (el::io::printLine("Moderato, 96 bpm"_el).isTimeout() ||
+            el::io::printLine("Rallentando nelle ultime quattro battute"_el).isTimeout()) {
+            throw el::LogicError{"An in-memory standard-output capture unexpectedly timed out."};
+        }
+    }
+    return capture->takeString();
+}
+
 }

@@ -67,11 +67,11 @@ public:
     explicit Tile9Style(std::array<text::Char, 16> tiles, BlockStyle style) noexcept;
     /// Create a new 9-tile style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 9 or 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
     explicit Tile9Style(const text::StringView &tiles);
     /// Create a new 9-tile style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 9 or 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
     explicit Tile9Style(const text::U32StringView &tiles);
 
 public: // accessors
@@ -90,12 +90,12 @@ public:
     /// Create a new shared style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @return A shared style instance.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 9 or 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
     [[nodiscard]] static auto create(const text::StringView &tiles) -> Tile9StylePtr;
     /// Create a new shared style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @return A shared style instance.
-    /// @throws std::invalid_argument If `tiles` does not contain exactly 9 or 16 terminal characters.
+    /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
     [[nodiscard]] static auto create(const text::U32StringView &tiles) -> Tile9StylePtr;
     /// For drawing half-block frames on the outer cell edges.
     [[nodiscard]] static auto outerHalfBlockFrame() -> Tile9StylePtr;

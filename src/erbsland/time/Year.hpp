@@ -33,7 +33,6 @@ public: // algorithms
     /// @return The number of days since the epoch.
     [[nodiscard]] auto daysSinceEpoch() const noexcept -> Days;
     /// Return the number of days before a given month in this year.
-    /// @param year The year.
     /// @param month The month (1-12).
     /// @return The cumulative day count before the month starts.
     [[nodiscard]] auto daysBeforeMonth(Month month) const noexcept -> Days;

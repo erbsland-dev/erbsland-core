@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Keys.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../text/CharSet.hpp"
 
 #include <algorithm>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::cterm {
@@ -103,11 +103,11 @@ auto Keys::contains(const Key &key) const noexcept -> bool {
 
 void Keys::validateKey(const Key &key) {
     if (!key.valid()) {
-        throw std::invalid_argument{"Key binding must be a displayable key."};
+        throw err::ParameterError{"Key binding must be a displayable key.", "key"};
     }
     const auto displayText = key.toDisplayText(false);
     if (displayText.isEmpty() || displayText.containsOneOf(text::CharSet{text::Char{}})) {
-        throw std::invalid_argument{"Key binding must be a displayable key."};
+        throw err::ParameterError{"Key binding must be a displayable key.", "key"};
     }
 }
 
@@ -116,7 +116,7 @@ auto Keys::keyFromType(const Key::Type keyType) -> Key {
     case Key::None:
     case Key::Character:
     case Key::Combined:
-        throw std::invalid_argument{"Key binding type must be one special key type."};
+        throw err::ParameterError{"Key binding type must be one special key type.", "keyType"};
     default:
         return Key{keyType};
     }

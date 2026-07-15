@@ -116,6 +116,10 @@ auto U16StringView::characterLength() const noexcept -> unit::CpLength {
     return impl::U16StringCharReadTool{dataView()}.charLength();
 }
 
+auto U16StringView::displayWidth() const noexcept -> int {
+    return impl::U16StringReadTools{dataView()}.displayWidth();
+}
+
 auto U16StringView::indexAt(const StringSide side) const noexcept -> unit::U16DataIndex {
     return side == StringSide::Front ? unit::U16DataIndex::zero() : unit::U16DataIndex::end(length());
 }
@@ -136,6 +140,14 @@ auto U16StringView::charAt(const StringSide side) const noexcept -> Char {
 
 auto U16StringView::charAt(const unit::U16DataIndex startIndex) const noexcept -> Char {
     return impl::U16StringReadTools{dataView()}.charAt(startIndex);
+}
+
+auto U16StringView::readCharAndAdvance(unit::U16DataIndex &index) const noexcept -> Char {
+    return impl::U16StringReadTools{dataView()}.read(index);
+}
+
+auto U16StringView::readCharAndRetreat(unit::U16DataIndex &index) const noexcept -> Char {
+    return impl::U16StringReadTools{dataView()}.readAndRetreat(index);
 }
 
 auto U16StringView::charAt(const unit::CpIndex index) const noexcept -> Char {
@@ -182,8 +194,19 @@ auto U16StringView::slice(const StringSide side, const unit::U16DataLength lengt
     if (length.isInfinite() || length >= fullLength) {
         return slice(unit::U16DataRange::fromLength(fullLength));
     }
-    const auto start = unit::U16DataIndex::fromSizeT(fullLength.toSizeT() - length.toSizeT());
+    const auto start = unit::U16DataIndex::end(fullLength - length);
     return slice(unit::U16DataRange{start, length});
+}
+
+auto U16StringView::slice(const StringSide side, const unit::U16DataIndex index) const noexcept -> U16StringView {
+    const auto end = indexAt(StringSide::Back);
+    if (index.isNoIndex() || index >= end) {
+        return side == StringSide::Front ? slice(unit::U16DataRange{unit::U16DataIndex::zero(), end}) : U16StringView{};
+    }
+    if (side == StringSide::Front) {
+        return slice(unit::U16DataRange{unit::U16DataIndex::zero(), index});
+    }
+    return slice(unit::U16DataRange{index, end});
 }
 
 auto U16StringView::slice(const StringSide side, const unit::CpLength length) const noexcept -> U16StringView {
@@ -193,6 +216,10 @@ auto U16StringView::slice(const StringSide side, const unit::CpLength length) co
     auto start = indexAt(StringSide::Back);
     retreat(start, length);
     return slice(unit::U16DataRange{start, indexAt(StringSide::Back)});
+}
+
+auto U16StringView::slice(const StringSide side, const unit::CpIndex index) const noexcept -> U16StringView {
+    return slice(side, indexAt(index));
 }
 
 auto U16StringView::slice(const StringSide side) const noexcept -> std::tuple<Char, U16StringView> {
@@ -208,6 +235,14 @@ auto U16StringView::slice(const StringSide side) const noexcept -> std::tuple<Ch
     auto start = indexAt(StringSide::Back);
     retreat(start);
     return {charAt(start), slice(unit::U16DataRange{indexAt(StringSide::Front), start})};
+}
+
+auto U16StringView::splitAt(const unit::U16DataIndex index) const noexcept -> std::pair<U16StringView, U16StringView> {
+    return {slice(StringSide::Front, index), slice(StringSide::Back, index)};
+}
+
+auto U16StringView::splitAt(const unit::CpIndex index) const noexcept -> std::pair<U16StringView, U16StringView> {
+    return splitAt(indexAt(index));
 }
 
 auto U16StringView::removed(const unit::U16DataRange range) const -> U16String {

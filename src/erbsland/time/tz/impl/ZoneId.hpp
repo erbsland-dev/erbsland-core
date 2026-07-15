@@ -7,7 +7,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Public-facing generated zone identifier; zero is reserved for UTC.
-/// @notest{Internal generated-data helper.}
 using ZoneId = uint16_t;
 
 inline constexpr auto cUtcZoneId = ZoneId{0};

@@ -18,17 +18,14 @@ using U32StringDataPtr = U32StringTraits::StoragePtr;
 /// Create UTF-32 string data from a standard string view.
 /// The UTF-32 encoding is not validated, but the null terminator is always set.
 /// @param stdString The standard string view to convert.
-/// @tested{U32StringDataTest}
 [[nodiscard]] auto createU32StringData(std::u32string_view stdString) -> U32StringDataPtr;
 /// Create uninitialized UTF-32 string data for a string of the given size and reserved capacity.
 /// @param actualStringDataSize The actual string data size, without a terminating null byte.
 /// @param reservedCapacity The reserved capacity, without a terminating null byte.
-/// @tested{U32StringDataTest}
 [[nodiscard]] auto createU32StringData(std::size_t actualStringDataSize, std::size_t reservedCapacity)
     -> U32StringDataPtr;
 /// Create uninitialized UTF-32 string data for a string of the given size.
 /// @param actualStringDataSize The actual string data size, without a terminating null byte.
-/// @tested{U32StringDataTest}
 [[nodiscard]] auto createU32StringData(std::size_t actualStringDataSize) -> U32StringDataPtr;
 
 }

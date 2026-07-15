@@ -3,7 +3,7 @@ Utilities API Guidelines
 ************************
 
 These guidelines extend the Common API Guidelines for public APIs in the ``util`` namespace.
-This namespace provides small safe building blocks for container, flag, and hash APIs.
+This namespace provides small safe building blocks for containers, flags, hashes, and domain-independent coroutine APIs.
 If you introduce new vocabulary or types, update this page.
 
 Core Semantics
@@ -35,6 +35,41 @@ Primary Types
     Map<Key, Value, CompareFn> // COW wrapper around std::map with key/value operations.
     HashMap<Key, Value, HashFn, EqualFn> // COW wrapper around std::unordered_map with key/value operations.
     EnumFlags<Enum> // safe value wrapper for enum-class flag sets.
+    CoGenerator<Value> // simple lazy synchronous pull generator.
+    CoTask<Value> // eagerly started, move-only coroutine task.
+    CoAsyncGenerator<Value> // lazy asynchronous single-pass generator.
+
+Coroutine Semantics
+===================
+
+*   Keep :cpp:class:`CoGenerator <erbsland::util::CoGenerator>` as the simple synchronous pull generator. Do not add
+    asynchronous state or scheduling to it.
+*   Use :cpp:class:`CoTask <erbsland::util::CoTask>` for one eagerly started asynchronous result. Tasks are move-only,
+    single-consumer values; await them as rvalues.
+*   Use :cpp:class:`CoAsyncGenerator <erbsland::util::CoAsyncGenerator>` only when producing each next value may itself
+    suspend. Generators are lazy, move-only, single-pass values and allow one outstanding ``next()`` operation.
+*   Exceptions escape through ``result()``, ``takeResult()``, or ``co_await`` for tasks and through ``co_await
+    generator.next()`` for asynchronous generators.
+*   Destroying an incomplete task requests cancellation. Work already running is not forcibly interrupted, but
+    Erbsland coroutine awaiters observe cancellation before continuing the coroutine.
+*   Coroutine worker threads have no caller-thread affinity. Code that needs a specific event or UI thread explicitly
+    dispatches back to it.
+*   Bounded blocking work submitted through ``CoTask::run()`` uses the process-wide coroutine worker service. This
+    service is separate from domain-specific native-I/O workers to avoid starving the work that completes an awaited
+    operation.
+
+Coroutine Patterns
+==================
+
+.. code-block:: text
+
+    CoTask<T>::run(function) -> CoTask<T> // eagerly run bounded work on the coroutine worker service.
+    task.isComplete() -> bool // poll completion without waiting.
+    task.result() -> const T& // inspect a completed result without consuming it.
+    task.takeResult() -> T // move a completed result out of the task.
+    co_await std::move(task) -> T // suspend and consume the task result.
+    task.cancel() // request cancellation and release this task handle.
+    generator.next() // awaitable producing optional<T>; empty means completion.
 
 Helper Methods
 ==============

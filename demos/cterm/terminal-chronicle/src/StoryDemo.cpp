@@ -3,6 +3,8 @@
 
 #include "StoryDemo.hpp"
 
+namespace demo {
+
 auto StoryDemo::beforeMain() -> int {
     auto &output = *terminal();
     printHeader(output);
@@ -139,4 +141,6 @@ void StoryDemo::printOutro(Terminal &terminal) noexcept {
         fg::BrightBlack,
         "."_el);
     terminal.writeLineBreak();
+}
+
 }

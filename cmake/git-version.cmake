@@ -85,16 +85,9 @@ function(erbsland_core_collect_git_dependencies out_variable source_directory)
     erbsland_core_resolve_common_git_directory(common_git_directory "${git_directory}")
 
     erbsland_core_add_existing_dependency(dependencies "${git_directory}/HEAD")
+    erbsland_core_add_existing_dependency(dependencies "${git_directory}/logs/HEAD")
     erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/packed-refs")
-
-    if (EXISTS "${git_directory}/HEAD")
-        file(READ "${git_directory}/HEAD" git_head_content)
-        string(REGEX MATCH "^ref: ([^\r\n]+)" git_ref_match "${git_head_content}")
-        if (git_ref_match)
-            erbsland_core_add_existing_dependency(dependencies "${git_directory}/${CMAKE_MATCH_1}")
-            erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/${CMAKE_MATCH_1}")
-        endif ()
-    endif ()
+    erbsland_core_add_existing_dependency(dependencies "${common_git_directory}/logs/HEAD")
 
     if (dependencies)
         list(REMOVE_DUPLICATES dependencies)

@@ -101,6 +101,6 @@ Error Patterns
 
 .. code-block:: text
 
-    SecureRandom::❮draw❯(...) // may throw err::RandomError when entropy cannot be provided
+    SecureRandom::❮draw❯(...) // may throw random::RandomError when entropy cannot be provided
     FastRandom::❮draw❯(...) // pseudo-random draw without entropy-source errors
     ThreadSafeFastRandom::❮draw❯(...) // synchronized pseudo-random draw without entropy-source errors

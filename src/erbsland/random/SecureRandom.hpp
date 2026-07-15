@@ -11,7 +11,7 @@
 namespace erbsland::random {
 
 /// A cryptographic random generator backed by the operating system entropy source.
-/// Every method that draws random data throws `err::RandomError` if the system entropy source cannot provide data.
+/// Every method that draws random data throws `random::RandomError` if the system entropy source cannot provide data.
 /// @seedoc{/topics/random/secure_randomness}
 /// @tested{SecureRandomTest}
 class SecureRandom final : public Random {

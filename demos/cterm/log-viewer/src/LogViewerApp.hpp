@@ -10,6 +10,8 @@
 #include <span>
 #include <string>
 
+namespace demo {
+
 /// Demonstrate a live log viewport backed by a growing cursor buffer.
 class LogViewerApp final : public TerminalApplication {
 public:
@@ -106,3 +108,5 @@ private:
     std::size_t _delayPresetIndex{2};
     bool _followMode{true};
 };
+
+}

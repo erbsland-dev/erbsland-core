@@ -4,6 +4,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void emptyPlaceholder();
 void escapeAmount();
 void escapeFormat();
@@ -13,3 +15,5 @@ void integerFormats();
 void positionalPlaceholders();
 void supportedTypes();
 void textFormats();
+
+}

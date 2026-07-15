@@ -9,6 +9,7 @@
 
 #include "../../util/Map.hpp"
 
+#include <concepts>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -92,28 +93,34 @@ public: // view key access
         return result;
     }
     /// Set a key-value pair from a string view key.
-    auto set(const View &key, const tValue &value) -> StringMap & {
-        set(tString{key}, value);
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    auto set(const View &key, tValueFwd &&value) -> StringMap & {
+        Base::set(tString{key}, std::forward<tValueFwd>(value));
         return *this;
     }
     /// Try to replace an existing value by a string view key.
-    [[nodiscard]] auto tryReplace(const View &key, const tValue &value) -> bool {
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryReplace(const View &key, tValueFwd &&value) -> bool {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator == data.end()) {
             return false;
         }
         data.erase(iterator);
-        data.emplace(tString{key}, value);
+        data.emplace(tString{key}, std::forward<tValueFwd>(value));
         return true;
     }
     /// Try to insert a new entry from a string view key.
-    [[nodiscard]] auto tryInsert(const View &key, const tValue &value) -> bool {
+    template <typename tValueFwd>
+        requires std::constructible_from<tValue, tValueFwd &&>
+    [[nodiscard]] auto tryInsert(const View &key, tValueFwd &&value) -> bool {
         auto &data = this->mutableRaw();
         if (data.find(key) != data.end()) {
             return false;
         }
-        data.emplace(tString{key}, value);
+        data.emplace(tString{key}, std::forward<tValueFwd>(value));
         return true;
     }
 

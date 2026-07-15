@@ -18,18 +18,18 @@ namespace erbsland::cterm {
 /// Geometry for a grid of content cells.
 ///
 /// This class stores only content sizes.
-/// @tested `GridLayoutTest`
+/// @tested{GridLayoutTest}
 class GridLayout final {
 public:
     /// Create a grid layout.
     /// @param columnWidths The content width of each column. Each value must be positive.
     /// @param rowHeights The content height of each row. Each value must be positive.
-    /// @throws std::invalid_argument if either list is empty or contains a non-positive size.
+    /// @throws err::ParameterError if either list is empty or contains a non-positive size.
     GridLayout(std::vector<bgeo::BlockCoordinate> columnWidths, std::vector<bgeo::BlockCoordinate> rowHeights);
     /// Create a grid layout from initializer lists.
     /// @param columnWidths The content width of each column. Each value must be positive.
     /// @param rowHeights The content height of each row. Each value must be positive.
-    /// @throws std::invalid_argument if either list is empty or contains a non-positive size.
+    /// @throws err::ParameterError if either list is empty or contains a non-positive size.
     GridLayout(
         std::initializer_list<bgeo::BlockCoordinate> columnWidths,
         std::initializer_list<bgeo::BlockCoordinate> rowHeights);
@@ -52,12 +52,12 @@ public: // accessors
     /// Access one row height.
     /// @param row The row index.
     /// @return The row content height.
-    /// @throws std::out_of_range if `row` is outside the layout.
+    /// @throws err::OutOfRangeError if `row` is outside the layout.
     [[nodiscard]] auto rowHeight(std::size_t row) const -> bgeo::BlockCoordinate;
     /// Access one column width.
     /// @param column The column index.
     /// @return The column content width.
-    /// @throws std::out_of_range if `column` is outside the layout.
+    /// @throws err::OutOfRangeError if `column` is outside the layout.
     [[nodiscard]] auto columnWidth(std::size_t column) const -> bgeo::BlockCoordinate;
     /// Access all row heights.
     [[nodiscard]] auto rowHeights() const noexcept -> const std::vector<bgeo::BlockCoordinate> &;
@@ -75,7 +75,7 @@ public:
     /// @param origin The top-left position of the full grid.
     /// @param border Border styles that decide which frame lines occupy cells.
     /// @return The cell content rectangle.
-    /// @throws std::out_of_range if `row` or `column` is outside the layout.
+    /// @throws err::OutOfRangeError if `row` or `column` is outside the layout.
     [[nodiscard]] auto cellRect(
         std::size_t row, std::size_t column, bgeo::BlockPosition origin, const FrameBorder &border) const
         -> bgeo::BlockRectangle;

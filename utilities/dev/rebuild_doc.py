@@ -10,26 +10,38 @@ import shutil
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
+from fnmatch import fnmatchcase
 from pathlib import Path
 
+from lib.config import read_elcl_file
 from lib.error import UtilityError
 from lib.path_safety import require_safe_existing_file
 from lib.safe_tool import safe_subprocess_environment
 from lib.utility import UtilityApp
 
 
+@dataclass(frozen=True)
+class DoxygenWarningSuppression:
+    """One explicitly accepted Doxygen warning category."""
+
+    source_glob: str
+    message_contains: str
+    message_regex: str
+    reason: str
+
+
 class DocumentationOutputFilter:
     """Filter Sphinx and Doxygen output to project-relevant diagnostics."""
 
     _sphinx_diagnostic = re.compile(r"^[^:\s][^:]*:\d+(?::\d+)?:\s+(?:WARNING|ERROR):\s+")
-    _unknown_command = re.compile(r"\b(?:unexpanded alias|unknown command)\b", re.IGNORECASE)
-    _constructor_warning = re.compile(
-        r"Member\s+(?P<name>[A-Za-z_][A-Za-z_0-9]*)\s*\((?P<arguments>[^)]*)\)"
-        r"\s*(?:noexcept(?:\([^)]*\))?\s*)?(?:=\s*(?:default|delete))?\s*\(function\)"
-    )
+    _doxygen_warning = re.compile(r"^(?P<path>.+?):\d+:\s+warning:\s+(?P<message>.*)$", re.IGNORECASE)
 
-    def __init__(self, project_root: Path) -> None:
+    def __init__(self, project_root: Path, *, show_suppressed: bool = False) -> None:
         self.project_root = project_root.resolve()
+        self.show_suppressed = show_suppressed
+        self.suppression_rules = self.read_suppression_rules()
+        self.suppressed_warning_counts: dict[DoxygenWarningSuppression, int] = {}
 
     def filter_line(self, line: str) -> str | None:
         """Return a normalized output line, or None if it should be hidden."""
@@ -41,49 +53,50 @@ class DocumentationOutputFilter:
         """Decide if a Sphinx or Doxygen output line is relevant."""
         if self._sphinx_diagnostic.search(self.shorten_sphinx_paths(line)):
             return True
-        if self.is_doxygen_error(line):
+        if "ERROR:" in line or "error:" in line:
             return True
-        if self.is_doxygen_unexpanded_alias_warning(line):
+        if "WARNING:" in line:
             return True
-        return self.is_relevant_doxygen_undocumented_warning(line)
-
-    def is_doxygen_error(self, line: str) -> bool:
-        """Detect Doxygen error lines."""
-        return "error:" in line
-
-    def is_doxygen_unexpanded_alias_warning(self, line: str) -> bool:
-        """Detect warnings caused by aliases that Doxygen did not expand."""
-        return "warning:" in line and bool(self._unknown_command.search(line))
-
-    def is_relevant_doxygen_undocumented_warning(self, line: str) -> bool:
-        """Detect relevant Doxygen warnings about undocumented API entries."""
-        if "warning:" not in line:
-            return False
-        lower_line = line.lower()
-        if "is not documented" not in lower_line and "no documented entries" not in lower_line:
-            return False
-        if "::impl::" in line or "/impl/" in line:
-            return False
-        if "std::hash" in line or "std::format" in line:
-            return False
-        if self.is_operator_warning(line):
-            return False
-        if self.is_copy_or_move_constructor_warning(line):
-            return False
-        return True
-
-    def is_operator_warning(self, line: str) -> bool:
-        """Detect undocumented operator overload warnings."""
-        return "operator" in line
-
-    def is_copy_or_move_constructor_warning(self, line: str) -> bool:
-        """Detect undocumented copy/move constructor warnings."""
-        match = self._constructor_warning.search(line)
+        match = self._doxygen_warning.match(line)
         if match is None:
             return False
-        class_name = match.group("name")
-        arguments = " ".join(match.group("arguments").split())
-        return arguments in {f"const {class_name} &", f"{class_name} &&"}
+        source_path = self.shorten_doxygen_paths(match.group("path"))
+        message = match.group("message")
+        for rule in self.suppression_rules:
+            matches_message = rule.message_contains in message
+            if rule.message_regex:
+                matches_message = matches_message and bool(re.search(rule.message_regex, message))
+            if fnmatchcase(source_path, rule.source_glob) and matches_message:
+                if self.show_suppressed:
+                    return True
+                self.suppressed_warning_counts[rule] = self.suppressed_warning_counts.get(rule, 0) + 1
+                return False
+        return True
+
+    def read_suppression_rules(self) -> tuple[DoxygenWarningSuppression, ...]:
+        """Read the explicit Doxygen warning suppressions for this project."""
+        config_path = self.project_root / "utilities" / "conf" / "rebuild_doc.elcl"
+        if not config_path.exists():
+            return ()
+        config = read_elcl_file(config_path)
+        result = []
+        for entry in config.get("ignored_doxygen_warnings", []):
+            result.append(
+                DoxygenWarningSuppression(
+                    source_glob=entry.get_text("source_glob"),
+                    message_contains=entry.get_text("message_contains", default=""),
+                    message_regex=entry.get_text("message_regex", default=""),
+                    reason=entry.get_text("reason"),
+                )
+            )
+        return tuple(result)
+
+    def suppressed_warning_summary(self) -> list[str]:
+        """Create a compact report for intentionally suppressed diagnostics."""
+        return [
+            f"Suppressed {count} Doxygen warning(s): {rule.reason}"
+            for rule, count in self.suppressed_warning_counts.items()
+        ]
 
     def shorten_paths(self, line: str) -> str:
         """Shorten generated Doxygen and Sphinx documentation paths."""
@@ -113,15 +126,19 @@ class RebuildDocApp(UtilityApp):
         self.project_root = Path()
         self.force = False
         self.filter_output = True
+        self.show_suppressed = False
 
     def add_command_line_args(self, parser: argparse.ArgumentParser) -> None:
         parser.add_argument("--force", action="store_true", help="Remove all generated documentation input/output.")
         parser.add_argument("--no-filter", action="store_true", help="Show the complete Sphinx and Doxygen output.")
+        parser.add_argument(
+            "--show-suppressed", action="store_true", help="Show configured Doxygen warnings while retaining concise output.")
 
     def handle_command_line_args(self, args) -> None:
         self.project_root = self.project_directory
         self.force = args.force
         self.filter_output = not args.no_filter
+        self.show_suppressed = args.show_suppressed
 
     def generated_directory(self, name: str) -> Path:
         """Get a generated documentation directory below the project root."""
@@ -194,7 +211,7 @@ class RebuildDocApp(UtilityApp):
 
     def run_sphinx_build_filtered(self, command: list[str]) -> int:
         """Run sphinx-build and display only relevant diagnostics."""
-        output_filter = DocumentationOutputFilter(self.project_root)
+        output_filter = DocumentationOutputFilter(self.project_root, show_suppressed=self.show_suppressed)
         process = subprocess.Popen(
             command,
             cwd=self.project_root,
@@ -211,7 +228,10 @@ class RebuildDocApp(UtilityApp):
                 filtered_line = output_filter.filter_line(line.rstrip("\n\r"))
                 if filtered_line is not None:
                     print(filtered_line, flush=True)
-        return process.wait()
+        return_code = process.wait()
+        for line in output_filter.suppressed_warning_summary():
+            print(line, flush=True)
+        return return_code
 
     def sphinx_status_line(self, return_code: int) -> str:
         """Create the final Sphinx status line."""

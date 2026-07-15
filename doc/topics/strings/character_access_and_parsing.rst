@@ -133,8 +133,8 @@ It returns a decoded code-point index, which is the unit users expect when they 
 
 .. erbsland-demo::
     :source: text/StringCharReader/StudyPlanParser.cpp
-    :exec: string_char_reader --demo StudyPlanParser
-    :source-sha256: 4d7423924cda5872ac68deb9d1e4be4d9edf983a655491cd4f92772148959cd5
+    :exec: text/string_char_reader --demo StudyPlanParser
+    :source-sha256: d6144db7031b549d50a2dcf2cd454f99081227a6be107adeea30913074b95ee8
 
 .. code-block:: cpp
 
@@ -203,7 +203,7 @@ It returns a decoded code-point index, which is the unit users expect when they 
         try {
             minutes = reader.readIntegerOrThrow<int>(decMax3Digits);
             return true;
-        } catch (const el::Exception &error) {
+        } catch (const el::Exception &) {
             return false;
         }
     }
@@ -220,11 +220,6 @@ It returns a decoded code-point index, which is the unit users expect when they 
       - şiir: 15 min
     UTF-32 plan:
       - astronomi: 40 min
-      - çizim: 20 min
-    plan with diagnostic:
-      - tarih: 25 min
-      - kimya: no duration
-      error at code point 15: unexpected 'x'
 
 .. erbsland-demo-end::
 
@@ -249,8 +244,8 @@ Validate input first when malformed encoding should be rejected rather than tole
 
 .. erbsland-demo::
     :source: text/StringView/IteratingCharacters.cpp
-    :exec: string_view --demo IteratingCharacters
-    :source-sha256: 188ac7545d834eea9785ac81e3cf6b00b74c85dd5ba84fd6d87cec0cf6af8ecc
+    :exec: text/string_view --demo IteratingCharacters
+    :source-sha256: d8bfa0a20835d7c2de1d48e3b262e17db979c735d2e876be2db93f74c9b37d16
 
 .. code-block:: cpp
 
@@ -365,8 +360,8 @@ consistently.
 
 .. erbsland-demo::
     :source: text/StringView/CharacterAccess.cpp
-    :exec: string_view --demo CharacterAccess
-    :source-sha256: 0551eb4ea9fc5555b0b2a33379a8ff96d3b400ee33c2ca152a287f70d11b6218
+    :exec: text/string_view --demo CharacterAccess
+    :source-sha256: 0bd10d5e3e2893fc5b4956f21bafd1d20194462e042283ca04e0b4005c7b5837
 
 .. code-block:: cpp
 

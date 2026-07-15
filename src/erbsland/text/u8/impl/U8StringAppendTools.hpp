@@ -47,6 +47,8 @@ private:
     };
 
     [[nodiscard]] static auto countDecodedCharacters(std::span<const char> source) noexcept -> unit::CpLength;
+    [[nodiscard]] static auto repeatedCharacterCount(unit::CpLength characterCount, std::size_t countSize)
+        -> unit::CpLength;
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char16_t> source) -> AppendSummary;
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char32_t> source) -> AppendSummary;
 

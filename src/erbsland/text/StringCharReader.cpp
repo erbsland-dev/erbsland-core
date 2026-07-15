@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringCharReader.hpp"
 
+#include "AnyString.hpp"
 #include "AnyStringView.hpp"
+#include "ParseNumberError.hpp"
 
 #include "u16/impl/U16StringReader.hpp"
 #include "u16/U16String.hpp"
@@ -16,7 +18,6 @@
 
 #include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
-#include "../err/ParseNumberError.hpp"
 #include "../math/IntegerMath.hpp"
 
 #include <optional>
@@ -24,6 +25,21 @@
 namespace erbsland::text {
 
 using namespace literals;
+
+auto StringCharReader::createBackendForAnyStringView(const AnyStringView &text) -> impl::StringReaderBase * {
+    if (text.isEmpty()) {
+        return new impl::U8StringReader{U8StringView{}};
+    }
+    switch (text.kind().value()) {
+    case StringKind::U8:
+        return new impl::U8StringReader{text.toU8StringView()};
+    case StringKind::U16:
+        return new impl::U16StringReader{text.toU16StringView()};
+    case StringKind::U32:
+        return new impl::U32StringReader{text.toU32StringView()};
+    }
+    return new impl::U8StringReader{text.toU8StringView()}; // unused, prevent warnings
+}
 
 StringCharReader::StringCharReader() : _reader{new impl::U8StringReader{U8StringView{}}} {
 }
@@ -44,6 +60,12 @@ StringCharReader::StringCharReader(const U32String &text) : StringCharReader{U32
 }
 
 StringCharReader::StringCharReader(const U32StringView &text) : _reader{new impl::U32StringReader{text}} {
+}
+
+StringCharReader::StringCharReader(const AnyString &text) : StringCharReader(AnyStringView{text}) {
+}
+
+StringCharReader::StringCharReader(const AnyStringView &text) : _reader{createBackendForAnyStringView(text)} {
 }
 
 auto StringCharReader::position() const noexcept -> unit::CpIndex {
@@ -82,6 +104,14 @@ auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, 
 auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
     -> util::LoopResult {
     return _reader->readUntil(readFn, stopSet, maximum);
+}
+
+auto StringCharReader::advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> util::LoopResult {
+    return _reader->readWhile([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, expected, maximum);
+}
+
+auto StringCharReader::advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> util::LoopResult {
+    return _reader->readUntil([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, stopSet, maximum);
 }
 
 auto StringCharReader::peek() const noexcept -> Char {
@@ -156,6 +186,62 @@ void StringCharReader::startCapture() noexcept {
 
 auto StringCharReader::takeCapture() noexcept -> AnyStringView {
     return _reader->takeCapture();
+}
+
+void StringCharReader::clearBuffer() noexcept {
+    _reader->clearBuffer();
+}
+
+auto StringCharReader::takeBuffer() -> AnyString {
+    return _reader->takeBuffer();
+}
+
+auto StringCharReader::bufferView() const noexcept -> AnyStringView {
+    return _reader->bufferView();
+}
+
+auto StringCharReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+    return _reader->bufferCharacterLength();
+}
+
+auto StringCharReader::isBufferEmpty() const noexcept -> bool {
+    return _reader->isBufferEmpty();
+}
+
+void StringCharReader::setBuffer(const AnyStringView &text) {
+    _reader->setBuffer(text);
+}
+
+void StringCharReader::appendToBuffer(const Char character) {
+    _reader->appendToBuffer(character);
+}
+
+void StringCharReader::appendToBuffer(const AnyStringView &text) {
+    _reader->appendToBuffer(text);
+}
+
+void StringCharReader::appendCaptureToBuffer() {
+    _reader->appendCaptureToBuffer();
+}
+
+auto StringCharReader::readToBuffer() -> Char {
+    return _reader->readToBuffer();
+}
+
+auto StringCharReader::readToBufferIf(const Char expected) -> bool {
+    return _reader->readToBufferIf(expected);
+}
+
+auto StringCharReader::readToBufferIf(const CharSet &expected) -> std::optional<Char> {
+    return _reader->readToBufferIf(expected);
+}
+
+auto StringCharReader::readToBufferWhile(const CharSet &expected, unit::CpLength maximum) -> util::LoopResult {
+    return _reader->readToBufferWhile(expected, maximum);
+}
+
+auto StringCharReader::readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum) -> util::LoopResult {
+    return _reader->readToBufferUntil(stopSet, maximum);
 }
 
 auto StringCharReader::scanInteger(const IntegerParseOptions &options, const bool strict) -> ReadIntegerResult {
@@ -311,19 +397,19 @@ auto StringCharReader::readIntegerResultOrThrow(const IntegerParseOptions &optio
 void StringCharReader::throwError(const ReadNumberStatus status, const unit::CpIndex position) {
     switch (status) {
     case ReadNumberStatus::Success:
-        throw err::ParseNumberError("Integer number was read successfully"_el, status, position);
+        throw text::ParseNumberError("Integer number was read successfully"_el, status, position);
     case ReadNumberStatus::NoDigits:
-        throw err::ParseNumberError("Expected an integer number, got no digits"_el, status, position);
+        throw text::ParseNumberError("Expected an integer number, got no digits"_el, status, position);
     case ReadNumberStatus::TooFewDigits:
-        throw err::ParseNumberError("Expected an integer number with more digits"_el, status, position);
+        throw text::ParseNumberError("Expected an integer number with more digits"_el, status, position);
     case ReadNumberStatus::TooManyDigits:
-        throw err::ParseNumberError("Integer number has too many digits"_el, status, position);
+        throw text::ParseNumberError("Integer number has too many digits"_el, status, position);
     case ReadNumberStatus::Overflow:
         throw err::OverflowError("Integer number exceeds the supported range"_el);
     case ReadNumberStatus::ParseError:
-        throw err::ParseNumberError("Integer number has invalid syntax"_el, status, position);
+        throw text::ParseNumberError("Integer number has invalid syntax"_el, status, position);
     }
-    throw err::ParseNumberError("Integer number could not be read"_el, status, position);
+    throw text::ParseNumberError("Integer number could not be read"_el, status, position);
 }
 
 }

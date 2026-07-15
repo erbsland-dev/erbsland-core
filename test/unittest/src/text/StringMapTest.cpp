@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../util/MoveAwareTestValue.hpp"
+
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringCIHashMap.hpp>
 #include <erbsland/text/StringCIMap.hpp>
@@ -23,6 +25,7 @@
 
 #include <functional>
 #include <string>
+#include <utility>
 
 using namespace el::text;
 
@@ -31,6 +34,9 @@ TESTED_TARGETS(
         U16StringMap U16StringCIMap U16StringHashMap U16StringCIHashMap U32StringMap U32StringCIMap U32StringHashMap
             U32StringCIHashMap)
 class StringMapTest final : public el::UnitTest {
+public:
+    using MoveValue = erbsland::test::MoveAwareTestValue;
+
 public:
     void testAliasesAndKeyStringLists() {
         using namespace el::text::literals;
@@ -178,6 +184,44 @@ public:
         REQUIRE(u32.contains(U"alpha"_elv));
         REQUIRE_EQUAL(u16.get(u"alpha"_elv, 0), 1);
         REQUIRE_EQUAL(u32.get(U"alpha"_el, 0), 1);
+    }
+
+    void testViewKeyOperationsMoveValues() {
+        using namespace el::text::literals;
+
+        auto ordered = StringMap<MoveValue>{};
+        auto orderedSetValue = MoveValue{1};
+        const auto orderedSetCounts = orderedSetValue.counts();
+        ordered.set("alpha"_el, std::move(orderedSetValue));
+        REQUIRE_EQUAL(orderedSetCounts->copies, 0);
+        REQUIRE(ordered.contains("alpha"_elv));
+
+        auto orderedReplaceValue = MoveValue{2};
+        const auto orderedReplaceCounts = orderedReplaceValue.counts();
+        REQUIRE(ordered.tryReplace("alpha"_elv, std::move(orderedReplaceValue)));
+        REQUIRE_EQUAL(orderedReplaceCounts->copies, 0);
+
+        auto orderedInsertValue = MoveValue{3};
+        const auto orderedInsertCounts = orderedInsertValue.counts();
+        REQUIRE(ordered.tryInsert("beta"_el, std::move(orderedInsertValue)));
+        REQUIRE_EQUAL(orderedInsertCounts->copies, 0);
+
+        auto hash = StringHashMap<MoveValue>{};
+        auto hashSetValue = MoveValue{1};
+        const auto hashSetCounts = hashSetValue.counts();
+        hash.set("alpha"_el, std::move(hashSetValue));
+        REQUIRE_EQUAL(hashSetCounts->copies, 0);
+        REQUIRE(hash.contains("alpha"_elv));
+
+        auto hashReplaceValue = MoveValue{2};
+        const auto hashReplaceCounts = hashReplaceValue.counts();
+        REQUIRE(hash.tryReplace("alpha"_elv, std::move(hashReplaceValue)));
+        REQUIRE_EQUAL(hashReplaceCounts->copies, 0);
+
+        auto hashInsertValue = MoveValue{3};
+        const auto hashInsertCounts = hashInsertValue.counts();
+        REQUIRE(hash.tryInsert("beta"_el, std::move(hashInsertValue)));
+        REQUIRE_EQUAL(hashInsertCounts->copies, 0);
     }
 
     void testCaseInsensitiveMapViewKeyOperations() {

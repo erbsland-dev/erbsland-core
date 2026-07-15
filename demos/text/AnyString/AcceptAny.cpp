@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void processAnyString(const el::AnyStringView &str);
 
 /// `AnyStringView` accepts any string type — UTF-8, UTF-16, or UTF-32 — through a
@@ -23,19 +25,21 @@ void acceptAny() {
 }
 
 void processAnyString(const el::AnyStringView &str) {
-    el::io::printLine("Analýza signálu:"_el);
+    el::io::printLine("Signal analysis:"_el);
 
     if (str.kind().has_value()) {
-        el::io::printLine("  Typ: "_el, el::toString(str.kind().value()));
+        el::io::printLine("  Type: "_el, el::toString(str.kind().value()));
     } else {
-        el::io::printLine("  Typ: (prázdný)"_el);
+        el::io::printLine("  Type: (empty)"_el);
     }
 
-    el::io::printLine("  Délka znaků: "_el, str.characterLength());
-    el::io::printLine("  Je prázdný: "_el, str.isEmpty() ? "ano" : "ne");
+    el::io::printLine("  Character length: "_el, str.characterLength());
+    el::io::printLine("  Is empty: "_el, str.isEmpty() ? "yes" : "no");
 
     auto u8Str = str.toU8String();
     u8Str.replaceAll("vlnění"_el, "vlny"_el);
-    el::io::printLine("  Výsledek: "_el, u8Str);
+    el::io::printLine("  Result: "_el, u8Str);
     el::io::printLine();
+}
+
 }

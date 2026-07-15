@@ -8,7 +8,6 @@
 namespace erbsland::options::impl {
 
 /// Extract the executable name from an unprocessed command line path.
-/// @tested{OptionsParserTest}
 [[nodiscard]] auto extractExecutableName(const text::StringView &executablePath) -> text::String;
 
 }

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `CharSet::fromPattern()` creates compact character sets from literal and range patterns.
 ///
 /// A hyphen between two characters defines a range.
@@ -19,4 +21,6 @@ void characterSetPatterns() {
     el::io::printLine("Identifier \"", stationId, "\" ....: "_el, yesNo, stationId.containsOnly(identifierChars));
     el::io::printLine("Option \"", optionName, "\" ........: "_el, yesNo, optionName.containsOnly(optionNameChars));
     el::io::printLine("Option \"", spacedName, "\" ........: "_el, yesNo, spacedName.containsOnly(optionNameChars));
+}
+
 }

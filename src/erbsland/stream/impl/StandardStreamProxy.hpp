@@ -16,7 +16,7 @@ public:
     explicit StandardStreamProxy(StandardStreamSlot slot);
 
     // defaults
-    ~StandardStreamProxy() override = default;
+    ~StandardStreamProxy() override { abort(); }
     StandardStreamProxy(const StandardStreamProxy &) = delete;
     auto operator=(const StandardStreamProxy &) -> StandardStreamProxy & = delete;
     StandardStreamProxy(StandardStreamProxy &&) = delete;
@@ -25,13 +25,17 @@ public:
 public: // implement TextOutputStream
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
-    [[nodiscard]] auto isOpen() const noexcept -> bool override;
-    void flush() override;
-    void close() override;
-    void write(text::Char character) override;
-    void write(const text::StringView &text) override;
-    void writeLine() override;
-    void writeLine(const text::StringView &text) override;
+    [[nodiscard]] auto outputSettings() const noexcept -> const OutputStreamSettings & override;
+    [[nodiscard]] auto state() const noexcept -> StreamState override;
+    [[nodiscard]] auto isReady() const noexcept -> bool override;
+    [[nodiscard]] auto waitForReady() -> StreamWaitStatus override;
+    auto flush() -> StreamWriteStatus override;
+    auto close() -> StreamCloseStatus override;
+    void abort() noexcept override;
+    auto write(text::Char character) -> StreamWriteStatus override;
+    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine() -> StreamWriteStatus override;
+    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
 
 private:
     [[nodiscard]] auto target() const -> TextOutputStreamPtr;

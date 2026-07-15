@@ -190,10 +190,18 @@ public: // change
     /// @param key The key to insert.
     /// @return A reference to this set.
     auto insert(const Key &key) -> Self &;
+    /// Insert a key, taking ownership of the value.
+    /// @param key The key to insert.
+    /// @return A reference to this set.
+    auto insert(Key &&key) -> Self &;
     /// Try to insert a key.
     /// @param key The key to insert.
     /// @return `true` if the key was not already present.
     [[nodiscard]] auto tryInsert(const Key &key) -> bool;
+    /// Try to insert a key, taking ownership of the value.
+    /// @param key The key to insert.
+    /// @return `true` if the key was not already present.
+    [[nodiscard]] auto tryInsert(Key &&key) -> bool;
 
 public: // tests
     /// Test if two sets contain the same elements.

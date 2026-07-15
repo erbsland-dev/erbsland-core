@@ -9,6 +9,7 @@
 
 #include "../stream/TextOutputStream.hpp"
 
+#include <memory>
 #include <utility>
 
 namespace erbsland::cterm {
@@ -21,13 +22,15 @@ public:
     /// @param terminal The terminal to write to.
     /// @param style The style applied to every write.
     /// @param synchronization Shared synchronization state for streams using the same terminal.
+    /// @param settings The fixed timeout and buffer settings.
     explicit TerminalStream(
         TerminalPtr terminal,
         BlockStyle style = BlockStyle::reset(),
-        TerminalStreamSynchronizationPtr synchronization = {});
+        TerminalStreamSynchronizationPtr synchronization = {},
+        stream::OutputStreamSettings settings = {});
 
     // defaults
-    ~TerminalStream() override = default;
+    ~TerminalStream() override { abort(); }
     TerminalStream(const TerminalStream &) = delete;
     TerminalStream(TerminalStream &&) = delete;
     auto operator=(const TerminalStream &) -> TerminalStream & = delete;
@@ -40,7 +43,8 @@ public:
     [[nodiscard]] static auto create(
         TerminalPtr terminal,
         BlockStyle style = BlockStyle::reset(),
-        TerminalStreamSynchronizationPtr synchronization = {}) -> TerminalStreamPtr;
+        TerminalStreamSynchronizationPtr synchronization = {},
+        stream::OutputStreamSettings settings = {}) -> TerminalStreamPtr;
     /// Create synchronized output and error streams for a terminal.
     [[nodiscard]] static auto createStandardStreams(TerminalPtr terminal)
         -> std::pair<TerminalStreamPtr, TerminalStreamPtr>;
@@ -48,30 +52,32 @@ public:
 public: // implement TextOutputStream
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
-    [[nodiscard]] auto isOpen() const noexcept -> bool override;
-    void flush() override;
-    void close() override;
-    void write(text::Char character) override;
-    void write(const text::StringView &text) override;
-    void writeLine() override;
-    void writeLine(const text::StringView &text) override;
+    [[nodiscard]] auto outputSettings() const noexcept -> const stream::OutputStreamSettings & override;
+    [[nodiscard]] auto state() const noexcept -> stream::StreamState override;
+    [[nodiscard]] auto isReady() const noexcept -> bool override;
+    [[nodiscard]] auto waitForReady() -> stream::StreamWaitStatus override;
+    auto flush() -> stream::StreamWriteStatus override;
+    auto close() -> stream::StreamCloseStatus override;
+    void abort() noexcept override;
+    auto write(text::Char character) -> stream::StreamWriteStatus override;
+    auto write(const text::StringView &text) -> stream::StreamWriteStatus override;
+    auto writeLine() -> stream::StreamWriteStatus override;
+    auto writeLine(const text::StringView &text) -> stream::StreamWriteStatus override;
 
 public: // accessors
     /// Get the terminal used by this stream.
     [[nodiscard]] auto terminal() const noexcept -> const TerminalPtr & { return _terminal; }
     /// Get the style applied to every write.
-    [[nodiscard]] auto style() const noexcept -> BlockStyle { return _style; }
+    [[nodiscard]] auto style() const -> BlockStyle;
     /// Set the style applied to every write.
-    void setStyle(const BlockStyle style) noexcept { _style = style; }
+    void setStyle(BlockStyle style);
 
 private:
-    [[nodiscard]] auto requireTerminal() const -> TerminalPtr;
-    void resetTerminalStyle(Terminal &terminal);
+    class Data;
 
 private:
-    TerminalPtr _terminal;                             ///< The terminal to write to.
-    BlockStyle _style;                                 ///< The style applied to every write.
-    TerminalStreamSynchronizationPtr _synchronization; ///< Shared synchronization state.
+    TerminalPtr _terminal;       ///< The terminal to write to.
+    std::shared_ptr<Data> _data; ///< Shared state retained by pending work.
 };
 
 }

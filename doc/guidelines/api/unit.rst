@@ -132,6 +132,20 @@ Primary Types
     ArgumentCount  // an argument count
     ArgumentUnit  // the unit definition for the argument types
 
+    // for source code and diagnostic locations:
+    LineIndex  // zero-based source line index
+    LineCount  // source line count, used instead of LineLength for diagnostic source windows
+    LineOffset  // source line offset
+    LineRange  // source line range
+    LineUnit  // the unit definition for source line types
+    ColumnIndex  // zero-based source column index
+    ColumnCount  // source column count, used instead of ColumnLength for diagnostic pointer spans
+    ColumnOffset  // source column offset
+    ColumnRange  // source column range
+    ColumnUnit  // the unit definition for source column types
+    CodeLocation  // source location with line, column and code-point position
+    CodeContinuousRange  // continuous source range with exclusive end location
+
     // specialized types:
     ExitCode  // an exit code returned by processes
     Version  // a version consisting of a major, minor, revision and build part

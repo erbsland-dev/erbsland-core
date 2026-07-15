@@ -5,6 +5,7 @@
 #include "Block16Style.hpp"
 #include "Tile9Style.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../text/EncodingErrorMode.hpp"
 
 #include <algorithm>
@@ -131,7 +132,7 @@ void Buffer::setAndResizeFrom(const ReadableBuffer &other) {
 
 auto Buffer::fromLinesInString(const BlockStringView &text) -> Buffer {
     if (text.isEmpty()) {
-        throw std::invalid_argument{"text is empty"};
+        throw err::ParameterError{"Text must not be empty.", "text"};
     }
     auto lines = BlockStringLines{};
     for (const auto &line : text.splitLines()) {
@@ -142,7 +143,7 @@ auto Buffer::fromLinesInString(const BlockStringView &text) -> Buffer {
 
 auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
     if (lines.empty()) {
-        throw std::invalid_argument{"lines is empty"};
+        throw err::ParameterError{"Lines must not be empty.", "lines"};
     }
     bgeo::BlockSize size{bgeo::BlockCoordinate{1}, bgeo::BlockCoordinate{lines.size()}};
     for (const auto &line : lines) {
@@ -161,10 +162,10 @@ auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
 
 auto Buffer::validatedBufferSize(const bgeo::BlockSize size) -> bgeo::BlockSize {
     if (size.width() < 1 || size.height() < 1) {
-        throw std::invalid_argument("Buffer size must be at least 1x1");
+        throw err::ParameterError{"Buffer size must be at least 1x1.", "size"};
     }
     if (!size.fitsInto(cMaximumSize)) {
-        throw std::invalid_argument("Buffer size must not exceed 10'000x10'000");
+        throw err::ParameterError{"Buffer size must not exceed 10'000x10'000.", "size"};
     }
     return size;
 }

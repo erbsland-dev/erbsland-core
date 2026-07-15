@@ -9,16 +9,19 @@ String Width Variants
 .. _u8-string-view-byte-based-reading:
 .. _u8-string-view-advance-retreat:
 .. _u8-string-view-character-indexed-reading:
+.. _u8-string-view-indexed-sequential-read:
 .. _u8-string-char-view-character-based-reading:
 .. _u16-string-storage-management:
 .. _u16-string-view-code-unit-based-reading:
 .. _u16-string-view-advance-retreat:
 .. _u16-string-view-character-indexed-reading:
+.. _u16-string-view-indexed-sequential-read:
 .. _u16-string-char-view-character-based-reading:
 .. _u32-string-storage-management:
 .. _u32-string-view-code-unit-based-reading:
 .. _u32-string-view-advance-retreat:
 .. _u32-string-view-character-indexed-reading:
+.. _u32-string-view-indexed-sequential-read:
 
 Indexed Character Access
 ========================
@@ -33,6 +36,21 @@ All indexed character access follows the ``charAt`` signal behavior: the exact e
 ``Char::endOfData()``, invalid or past-end positions return ``Char::noCodePoint()``, and malformed encoded data is
 decoded as ``Char::replacement()``.
 
+Indexed Sequential Reads
+========================
+
+``readCharAndAdvance(index)`` reads the character at a native data index and advances the index to the position after
+the decoded character.
+At the exact end position, it returns ``Char::endOfData()`` and leaves the index unchanged.
+For ``noIndex`` or a past-end index, it returns ``Char::noCodePoint()`` and leaves the index unchanged.
+
+``readCharAndRetreat(index)`` treats the index as the position after the character to read.
+It reads the previous character and retreats the index to that character's start.
+This works with an index initialized from ``indexAt(StringSide::Back)`` to read backwards from the end of a string.
+At zero, it returns ``Char::endOfData()`` and leaves the index unchanged.
+For ``noIndex`` or a past-end index, it returns ``Char::noCodePoint()`` and leaves the index unchanged.
+Unlike ``retreat(index)``, this method does not clamp a past-end index to the end before reading.
+
 Character-Indexed Slices
 ========================
 
@@ -42,6 +60,26 @@ For UTF-8 and UTF-16, character-indexed slices return ranges aligned to decoded 
 ``ByteRange`` and ``U16DataRange`` overloads remain available for raw data-unit slices.
 Trailing character slices are found from the back of the native data, so requesting the last few code points does not
 require counting the entire string first.
+Zero-length, invalid, or out-of-bounds ranges return empty strings.
+Side-based slices with zero length return an empty string, while infinite length returns the entire string.
+
+Display Width
+=============
+
+``displayWidth()`` returns the approximate display width of a string or string view by summing the decoded
+:cpp:class:`Char <erbsland::text::Char>` display widths.
+Unicode control characters, including line breaks, contribute ``0``.
+
+This is intentionally a simple per-code-point measurement.
+It does not perform line layout, grapheme-cluster shaping, bidirectional reordering, emoji ZWJ sequence handling, or
+terminal/font-specific corrections.
+For text containing line breaks, the result is usually not the width of any rendered line.
+
+Searching
+=========
+
+All string and string-view ``find...`` overloads that accept a start or end position treat a no-index position as
+invalid input and return the matching ``noIndex()`` value immediately.
 
 Interface
 =========

@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 /// Flags for creating safe string representations for logs and diagnostics.
-/// @tested{StringTransformTest}
 enum class SafeStringFlag : uint8_t {
     None = 0,        ///< No optional safe-string behavior.
     OnlyAscii = 1U,  ///< Escape all non-ASCII characters.

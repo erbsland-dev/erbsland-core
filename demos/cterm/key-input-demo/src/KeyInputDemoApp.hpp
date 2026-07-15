@@ -8,6 +8,8 @@
 #include <chrono>
 #include <random>
 
+namespace demo {
+
 /// Interactive demo that visualizes detected key presses in a horizontally scrolling field.
 class KeyInputDemoApp final : public TerminalApplication {
 public:
@@ -52,3 +54,5 @@ private:
     std::size_t _insertedColumnCount{0};
     bool _firstFrame{true};
 };
+
+}

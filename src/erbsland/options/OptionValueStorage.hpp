@@ -12,7 +12,6 @@
 namespace erbsland::options {
 
 /// Storage for a parsed option value or default value.
-/// @tested{OptionsFrameworkTest}
 using OptionValueStorage =
     std::variant<bool, OptionInteger, std::vector<OptionInteger>, text::String, std::vector<text::String>>;
 

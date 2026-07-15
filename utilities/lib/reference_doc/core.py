@@ -7,6 +7,7 @@ import re
 import sys
 from dataclasses import dataclass
 from enum import Enum
+from fnmatch import fnmatchcase
 from pathlib import Path
 
 from lib.config import project_relative_posix, read_elcl_file, validate_local_names, validate_source_relative_path
@@ -56,7 +57,9 @@ class ReferenceGroup:
     page_path: Path
     relative_page_path: Path
     title: str
-    header_paths: tuple[Path, ...]
+    header_paths: tuple[Path, ...] = ()
+    header_globs: tuple[str, ...] = ()
+    excluded_header_globs: tuple[str, ...] = ()
 
     @property
     def page_entry(self) -> str:
@@ -70,7 +73,7 @@ class HeaderApi:
 
     path: Path
     relative_path: Path
-    page_path: Path
+    page_path: Path | None
     entries: tuple[ApiEntry, ...]
     group: ReferenceGroup | None = None
 
@@ -92,7 +95,8 @@ class ReferenceDocConfig:
     reference_dir: Path
     excluded_directory_names: frozenset[str]
     excluded_header_names: frozenset[str]
-    manual_header_paths: frozenset[Path]
+    excluded_header_globs: tuple[str, ...]
+    manual_page_relative_paths: frozenset[Path]
     exclude_underscore_headers: bool
     reference_groups: tuple[ReferenceGroup, ...] = ()
 
@@ -113,14 +117,15 @@ class ReferenceDocConfig:
             reference_dir=reference_dir,
             excluded_directory_names=frozenset(main_config.get_list("excluded_directory_names", str, default=[])),
             excluded_header_names=frozenset(main_config.get_list("excluded_header_names", str, default=[])),
-            manual_header_paths=frozenset(
-                Path(path) for path in main_config.get_list("manual_header_paths", str, default=[])
+            excluded_header_globs=tuple(main_config.get_list("excluded_header_globs", str, default=[])),
+            manual_page_relative_paths=frozenset(
+                Path(path) for path in main_config.get_list("manual_reference_pages", str, default=[])
             ),
             exclude_underscore_headers=main_config.get_bool("exclude_underscore_headers", default=True),
             reference_groups=groups,
         )
         result.validate()
-        return result
+        return result.with_expanded_group_headers()
 
     @classmethod
     def read_reference_groups(cls, config, reference_dir: Path) -> tuple[ReferenceGroup, ...]:
@@ -144,14 +149,18 @@ class ReferenceDocConfig:
                 if header_path.suffix != ".hpp":
                     raise UtilityError(f"{label} Headers entries must be .hpp files: {header_text}")
                 header_paths.append(header_path)
-            if not header_paths:
-                raise UtilityError(f"{label} must list at least one header.")
+            header_globs = tuple(group_config.get_list("header_globs", str, default=[]))
+            excluded_header_globs = tuple(group_config.get_list("excluded_header_globs", str, default=[]))
+            if not header_paths and not header_globs:
+                raise UtilityError(f"{label} must list at least one header or header glob.")
             result.append(
                 ReferenceGroup(
                     page_path=page_path,
                     relative_page_path=relative_page_path,
                     title=title,
                     header_paths=tuple(header_paths),
+                    header_globs=header_globs,
+                    excluded_header_globs=excluded_header_globs,
                 )
             )
         return tuple(result)
@@ -168,12 +177,21 @@ class ReferenceDocConfig:
         for name in self.excluded_header_names:
             if Path(name).suffix != ".hpp":
                 raise UtilityError(f"Excluded Header Names entries must be .hpp files: {name}")
-        for path in self.manual_header_paths:
+        for pattern in self.excluded_header_globs:
+            self.validate_header_glob(pattern, "Excluded Header Globs")
+        for path in self.manual_page_relative_paths:
             path_text = path.as_posix()
-            validate_source_relative_path(path_text, "Manual Header Paths")
-            if path.suffix != ".hpp":
-                raise UtilityError(f"Manual Header Paths entries must be .hpp files: {path_text}")
+            validate_source_relative_path(path_text, "Manual Reference Pages")
+            if path.suffix != ".rst" or path.name == "index.rst":
+                raise UtilityError(f"Manual Reference Pages entries must be non-index .rst files: {path_text}")
         self.validate_reference_groups()
+
+    @staticmethod
+    def validate_header_glob(pattern: str, label: str) -> None:
+        """Validate one source-relative header glob."""
+        validate_source_relative_path(pattern, label)
+        if not pattern.endswith(".hpp"):
+            raise UtilityError(f"{label} entries must match .hpp files: {pattern}")
 
     def validate_reference_groups(self) -> None:
         """Validate configured reference groups."""
@@ -184,11 +202,11 @@ class ReferenceDocConfig:
                 raise UtilityError(f"Duplicate reference group page: {group.relative_page_path.as_posix()}")
             pages[group.relative_page_path] = group
             require_safe_parent_directory(group.page_path, "Reference Group Page")
+            for pattern in (*group.header_globs, *group.excluded_header_globs):
+                self.validate_header_glob(pattern, "Reference Group Header Globs")
             for header_path in group.header_paths:
                 if header_path in headers:
                     raise UtilityError(f"Duplicate reference group header: {header_path.as_posix()}")
-                if header_path in self.manual_header_paths:
-                    raise UtilityError(f"Manual header cannot be listed in a reference group: {header_path.as_posix()}")
                 if not (self.source_dir / header_path).exists():
                     raise UtilityError(f"Reference group header does not exist: {header_path.as_posix()}")
                 if self.should_skip_header(self.source_dir / header_path):
@@ -196,6 +214,49 @@ class ReferenceDocConfig:
                         f"Reference group header is excluded from public API scanning: {header_path.as_posix()}"
                     )
                 headers[header_path] = group
+
+    def with_expanded_group_headers(self) -> "ReferenceDocConfig":
+        """Expand configured header globs into their exact matched header paths."""
+        groups = []
+        for group in self.reference_groups:
+            paths = set(group.header_paths)
+            for pattern in group.header_globs:
+                paths.update(
+                    path.relative_to(self.source_dir)
+                    for path in self.source_dir.glob(pattern)
+                    if path.is_file() and path.suffix == ".hpp"
+                )
+            paths = {
+                path
+                for path in paths
+                if not any(fnmatchcase(path.as_posix(), pattern) for pattern in group.excluded_header_globs)
+                and not self.should_skip_header(self.source_dir / path)
+            }
+            if not paths:
+                raise UtilityError(f"Reference group has no matching headers: {group.relative_page_path.as_posix()}")
+            groups.append(
+                ReferenceGroup(
+                    page_path=group.page_path,
+                    relative_page_path=group.relative_page_path,
+                    title=group.title,
+                    header_paths=tuple(sorted(paths, key=lambda path: path.as_posix().casefold())),
+                    header_globs=group.header_globs,
+                    excluded_header_globs=group.excluded_header_globs,
+                )
+            )
+        result = ReferenceDocConfig(
+            project_dir=self.project_dir,
+            source_dir=self.source_dir,
+            reference_dir=self.reference_dir,
+            excluded_directory_names=self.excluded_directory_names,
+            excluded_header_names=self.excluded_header_names,
+            excluded_header_globs=self.excluded_header_globs,
+            manual_page_relative_paths=self.manual_page_relative_paths,
+            exclude_underscore_headers=self.exclude_underscore_headers,
+            reference_groups=tuple(groups),
+        )
+        result.validate_reference_groups()
+        return result
 
     def display_path(self, path: Path) -> str:
         """Create a stable project-relative display path."""
@@ -206,9 +267,9 @@ class ReferenceDocConfig:
         relative_path = path.relative_to(self.source_dir)
         if any(part in self.excluded_directory_names for part in relative_path.parts[:-1]):
             return True
-        if relative_path in self.manual_header_paths:
-            return True
         if path.name in self.excluded_header_names:
+            return True
+        if any(fnmatchcase(relative_path.as_posix(), pattern) for pattern in self.excluded_header_globs):
             return True
         return self.exclude_underscore_headers and "_" in path.name
 
@@ -219,31 +280,9 @@ class ReferenceDocConfig:
                 return group
         return None
 
-    def reference_page_path(self, header_path: Path) -> Path:
-        """Map a source header to its default legacy reference page path."""
-        relative_path = header_path.relative_to(self.source_dir)
-        page_stem = camel_to_snake(relative_path.stem)
-        if page_stem == "index":
-            page_stem = "index_api"
-        page_name = f"{page_stem}.rst"
-        return self.reference_dir / relative_path.parent / page_name
-
-    def effective_reference_page_path(self, header_path: Path) -> Path:
-        """Map a source header to its configured group page or legacy page."""
-        relative_path = header_path.relative_to(self.source_dir)
-        group = self.reference_group_for_header(relative_path)
-        if group is not None:
-            return group.page_path
-        return self.reference_page_path(header_path)
-
     def manual_reference_page_paths(self) -> set[Path]:
-        """Map all manually managed headers to their reference page paths."""
-        return {self.reference_page_path(self.source_dir / path) for path in self.manual_header_paths}
-
-    def doxygen_file_path(self, header_path: Path) -> str:
-        """Create the path used in a Breathe doxygenfile directive."""
-        relative_path = header_path.relative_to(self.source_dir)
-        return Path("erbsland", relative_path).as_posix()
+        """Get all manually maintained reference page paths."""
+        return {self.reference_dir / path for path in self.manual_page_relative_paths}
 
 
 class HeaderScanner:
@@ -276,7 +315,7 @@ class HeaderScanner:
         return HeaderApi(
             path=path,
             relative_path=relative_path,
-            page_path=self.config.effective_reference_page_path(path),
+            page_path=group.page_path if group is not None else None,
             entries=tuple(entries),
             group=group,
         )
@@ -479,21 +518,7 @@ class ReferenceDocGenerator:
                 continue
             self.print_progress(f"Scanning header: {self.config.display_path(path)}")
             headers.append(self.scanner.scan(path))
-        self.validate_unique_legacy_pages(headers)
         return headers
-
-    def validate_unique_legacy_pages(self, headers: list[HeaderApi]) -> None:
-        """Fail when two ungrouped headers would update the same page."""
-        seen: dict[Path, Path] = {}
-        for header in headers:
-            if header.group is not None:
-                continue
-            if header.page_path in seen:
-                first = self.config.display_path(seen[header.page_path])
-                second = self.config.display_path(header.path)
-                page = self.config.display_path(header.page_path)
-                raise UtilityError(f"Duplicate reference page mapping for {page}: {first}, {second}")
-            seen[header.page_path] = header.path
 
     def update_reference_pages(self, headers: list[HeaderApi]) -> None:
         """Create or update reference pages for all headers."""
@@ -511,24 +536,27 @@ class ReferenceDocGenerator:
         """Group headers by their effective reference page."""
         result: dict[Path, list[HeaderApi]] = {}
         for header in headers:
-            result.setdefault(header.page_path, []).append(header)
+            if header.page_path is not None:
+                result.setdefault(header.page_path, []).append(header)
         return {
             page: sorted(page_headers, key=lambda item: item.relative_path.as_posix().casefold())
             for page, page_headers in sorted(result.items(), key=lambda item: item[0].as_posix().casefold())
         }
 
     def update_orphan_pages(self, headers: list[HeaderApi]) -> None:
-        """Replace orphan page Interface sections with a warning."""
-        expected_pages = {header.page_path for header in headers} | self.config.manual_reference_page_paths()
+        """Delete unmanaged reference pages after their content was migrated."""
+        expected_pages = {header.page_path for header in headers if header.page_path is not None}
+        expected_pages.update(self.config.manual_reference_page_paths())
         if not self.config.reference_dir.exists():
             return
         for path in sorted(self.config.reference_dir.rglob("*.rst"), key=lambda item: item.as_posix().casefold()):
             if path.name == "index.rst" or path in expected_pages:
                 continue
-            text = read_safe_text(path, "Reference page", FileUpdate.MAX_COMPARE_FILE_SIZE)
-            updated_text = self.replace_interface_body(path, text, self.orphan_warning_text(path))
-            self.print_progress(f"Marking orphan page: {self.config.display_path(path)}")
-            self.file_update.write_if_changed(path, updated_text)
+            require_safe_existing_file(path, "Reference page", FileUpdate.MAX_COMPARE_FILE_SIZE)
+            if path.is_symlink():
+                raise UtilityError(f"Refusing to remove symbolic link: {self.config.display_path(path)}")
+            self.print_progress(f"Removing orphan page: {self.config.display_path(path)}")
+            path.unlink()
 
     def update_indexes(self, headers: list[HeaderApi]) -> None:
         """Create or update all reference index files."""
@@ -546,13 +574,7 @@ class ReferenceDocGenerator:
     def index_entries(self, headers: list[HeaderApi]) -> dict[Path, list[str]]:
         """Build sorted toctree entries for root and namespace index pages."""
         result: dict[Path, set[str]] = {self.config.reference_dir: set()}
-        page_paths = {header.page_path for header in headers}
-        if self.config.reference_dir.exists():
-            page_paths.update(
-                path
-                for path in self.config.reference_dir.rglob("*.rst")
-                if path.name != "index.rst" and path.is_relative_to(self.config.reference_dir)
-            )
+        page_paths = {header.page_path for header in headers if header.page_path is not None}
         page_paths.update(self.config.manual_reference_page_paths())
         for page_path in page_paths:
             parent = page_path.parent
@@ -570,12 +592,13 @@ class ReferenceDocGenerator:
 
     def interface_for_headers(self, headers: list[HeaderApi]) -> str:
         """Create the managed Interface section body for one or more headers."""
-        return "\n".join(self.interface_for_header(header).rstrip() for header in headers).rstrip() + "\n"
+        entries = [self.interface_for_header(header).rstrip() for header in headers]
+        return "\n".join(entry for entry in entries if entry).rstrip() + "\n"
 
     def interface_for_header(self, header: HeaderApi) -> str:
         """Create the managed Interface section body for one header."""
         if not header.entries:
-            return f".. doxygenfile:: {self.config.doxygen_file_path(header.path)}\n"
+            return ""
         result = []
         for entry in header.entries:
             result.append(self.interface_for_entry(entry))
@@ -602,7 +625,7 @@ class ReferenceDocGenerator:
             headers = [headers]
         title = self.reference_page_title(headers)
         underline = "*" * len(title)
-        return (
+        page = (
             ".. index::\n"
             f"    single: {title}\n"
             "\n"
@@ -612,9 +635,9 @@ class ReferenceDocGenerator:
             "\n"
             "Interface\n"
             "=========\n"
-            "\n"
-            f"{interface_text}"
         )
+        interface_text = interface_text.rstrip()
+        return f"{page}\n{interface_text}\n" if interface_text else page
 
     def reference_page_title(self, headers: list[HeaderApi]) -> str:
         """Create the title for a generated reference page."""
@@ -651,16 +674,10 @@ class ReferenceDocGenerator:
             raise UtilityError(f"Reference page has multiple Interface sections: {self.config.display_path(path)}")
         index = interface_indices[0]
         prefix = lines[: index + 2]
-        return "\n".join(prefix).rstrip() + "\n\n" + interface_text.rstrip() + "\n"
-
-    def orphan_warning_text(self, path: Path) -> str:
-        """Create the Interface section warning for an orphan page."""
-        return (
-            ".. warning::\n"
-            "\n"
-            "    No matching public API header was found for this reference page.\n"
-            "    The Interface section is managed by ``reference_doc``.\n"
-        )
+        interface_text = interface_text.rstrip()
+        if not interface_text:
+            return "\n".join(prefix).rstrip() + "\n"
+        return "\n".join(prefix).rstrip() + "\n\n" + interface_text + "\n"
 
     def replace_toctree_entries(self, path: Path, text: str, entries: list[str]) -> str:
         """Replace entries in the single toctree of an index page."""

@@ -10,7 +10,6 @@
 namespace erbsland::text::impl {
 
 /// A view to shared or literal string data.
-/// @tested{U8StringViewStorageTest}
 using U8StringViewStorage = std::variant<std::monostate, U8StringSharedStorage, U8StringLiteralStorage>;
 
 }

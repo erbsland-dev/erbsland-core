@@ -4,7 +4,7 @@
 
 #include "tz/impl/Database.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/ParseError.hpp"
 #include "../text/Char.hpp"
 #include "../text/IntegerBase.hpp"
 #include "../text/IntegerParseFlag.hpp"
@@ -188,7 +188,7 @@ auto TimeZone::fromNameOrThrow(const text::StringView &name) -> TimeZone {
     if (auto result = fromName(name); result.has_value()) {
         return result.value();
     }
-    err::throwParseError("Unknown time zone name");
+    throw err::ParseError{"Unknown time zone name"};
 }
 
 auto TimeZone::names() -> text::StringList {

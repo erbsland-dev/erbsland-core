@@ -11,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dev.update_includes import UpdateIncludesApp
+from lib.error import UtilityError
 
 
 class TestUpdateIncludesApp(UpdateIncludesApp):
@@ -52,6 +53,19 @@ class UpdateIncludesTest(unittest.TestCase):
         """Run the update-includes utility in the temporary project."""
         app = TestUpdateIncludesApp(self.project_dir)
         app.run([])
+
+    def create_manual_app(self) -> TestUpdateIncludesApp:
+        """Create an update-includes app with manually configured test settings."""
+        app = TestUpdateIncludesApp(self.project_dir)
+        app.project_dir = self.project_dir
+        app.src_dir = self.project_dir / "src" / "erbsland"
+        app.include_dir = self.project_dir / "include" / "erbsland"
+        app.generated_header = "#pragma once\n// generated"
+        app.generated_include_header = "#pragma once\n// generated"
+        app.exclude_dirs = []
+        app.exclude_headers = set()
+        app.create_all_base_dir = ""
+        return app
 
     def test_legacy_fwd_entry_marker_is_ignored(self) -> None:
         self.write_header(
@@ -202,6 +216,40 @@ class WidgetPart {};
         self.assertTrue((self.project_dir / "include" / "erbsland" / "math" / "Widget.hpp").is_file())
         self.assertFalse(stale_wrapper.exists())
 
+    def test_configured_header_is_excluded_from_generated_outputs(self) -> None:
+        self.write_header(
+            "system/PlatformError.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+
+namespace erbsland::system {
+
+class PlatformError {};
+
+}
+""",
+        )
+        self.write_header(
+            "system/WindowsErrorContext.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+
+namespace erbsland::system {
+
+class WindowsErrorContext {};
+
+}
+""",
+        )
+
+        self.run_update_includes()
+
+        system_all_text = (self.project_dir / "src" / "erbsland" / "system" / "all.hpp").read_text(encoding="utf-8")
+        self.assertIn('#include "PlatformError.hpp"', system_all_text)
+        self.assertNotIn("WindowsErrorContext.hpp", system_all_text)
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "system" / "PlatformError.hpp").is_file())
+        self.assertFalse((self.project_dir / "include" / "erbsland" / "system" / "WindowsErrorContext.hpp").exists())
+
     def test_tpp_headers_are_not_published(self) -> None:
         self.write_header(
             "text/CharSet.hpp",
@@ -240,6 +288,66 @@ inline constexpr auto charSetPart = 1;
         self.assertNotIn("CharSet.tpp", text_all_text)
         self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "CharSet.hpp").is_file())
         self.assertFalse(stale_wrapper.exists())
+
+    def test_equal_header_names_in_separate_directories_are_published(self) -> None:
+        self.write_header(
+            "alpha/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "beta/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+
+        self.run_update_includes()
+
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "alpha" / "Foo.hpp").is_file())
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "beta" / "Foo.hpp").is_file())
+        self.assertFalse((self.project_dir / "include" / "erbsland" / "Foo.hpp").exists())
+
+    def test_folded_parent_conflict_is_reported(self) -> None:
+        self.write_header(
+            "alpha/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "alpha/core/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+
+        with self.assertRaisesRegex(UtilityError, "Folded include path conflict"):
+            self.run_update_includes()
+
+    def test_global_include_conflict_is_reported_before_writing_wrappers(self) -> None:
+        self.write_header(
+            "alpha/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "beta/Foo.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        app = self.create_manual_app()
+        app.create_global_includes = True
+
+        app.collect_header_files()
+        app.generate_all_headers()
+        with self.assertRaisesRegex(UtilityError, "Generated include path conflict"):
+            app.generate_includes()
+
+        self.assertFalse(any((self.project_dir / "include" / "erbsland").rglob("*.hpp")))
 
 
 if __name__ == "__main__":

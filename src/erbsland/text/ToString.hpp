@@ -13,23 +13,18 @@
 namespace erbsland::text {
 
 /// Convert a string to the common string type.
-/// @tested{ToStringTest}
 [[nodiscard]] auto toString(const String &value) -> String;
 
 /// Convert a string view to the common string type.
-/// @tested{ToStringTest}
 [[nodiscard]] auto toString(const StringView &value) -> String;
 
 /// Convert a boolean value to a string.
-/// @tested{ToStringTest}
 [[nodiscard]] auto toString(bool value, BooleanFormat format = BooleanFormat::defaultFormat()) -> String;
 
 /// Convert a strong ordering value to a string.
-/// @tested{ToStringTest}
 [[nodiscard]] auto toString(std::strong_ordering value) -> String;
 
 /// Convert an integer/float value to a string.
-/// @tested{ToStringTest}
 [[nodiscard]] auto toString(int8_t value, IntegerFormat format = IntegerFormat::defaultFormat()) -> String;
 /// @overload
 [[nodiscard]] auto toString(int16_t value, IntegerFormat format = IntegerFormat::defaultFormat()) -> String;

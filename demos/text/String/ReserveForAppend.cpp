@@ -5,6 +5,8 @@
 
 #include <array>
 
+namespace demo {
+
 /// Reserve string storage once when the final native size is already known.
 ///
 /// Reserving before every append step can repeatedly materialize new storage.
@@ -51,4 +53,6 @@ void reserveForAppend() {
     el::io::printLine();
     el::io::printLine("Final report:"_el);
     el::io::print(planned);
+}
+
 }

@@ -6,7 +6,7 @@
 
 #include "impl/SharedArrayCapacity.hpp"
 
-#include "../err/ThrowHelper.hpp"
+#include "../err/OutOfRangeError.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -94,7 +94,7 @@ void ByteBlock::set(const unit::ByteIndex index, const Byte value) {
 
 void ByteBlock::setOrThrow(const unit::ByteIndex index, const Byte value) {
     if (index.isNoIndex() || index.toSizeT() >= length().toSizeT()) {
-        err::throwOutOfRange("Write position out of range");
+        throw err::OutOfRangeError{"Write position out of range"};
     }
     set(index, value);
 }

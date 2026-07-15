@@ -4,7 +4,7 @@
 
 #include "U16Encoding.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
+#include "../../impl/ThrowHelper.hpp"
 
 #include <algorithm>
 
@@ -40,7 +40,7 @@ auto U16StringCharReadTool::charAt(const unit::CpIndex index) const noexcept -> 
 
 auto U16StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Char {
     if (index.isNoIndex()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     const auto data = _data.dataSpan();
     auto position = unit::U16DataIndex::zero();
@@ -52,7 +52,7 @@ auto U16StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Ch
         utf16::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    err::throwOutOfRange("Read position out of range");
+    text::impl::throwOutOfRange("Read position out of range");
 }
 
 auto U16StringCharReadTool::byteIndexAt(const unit::CpIndex index) const noexcept -> unit::U16DataIndex {

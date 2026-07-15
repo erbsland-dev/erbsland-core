@@ -2,18 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CombinedBlock.hpp"
+#include "WindowsBackendPrivate_fwd.hpp"
 
 #include "../Backend.hpp"
 
-#include <signal.h>
-
-#include <csignal>
-#include <cstdint>
-#include <deque>
-#include <memory>
 #include <mutex>
-#include <optional>
 
 namespace erbsland::cterm::impl {
 
@@ -80,22 +73,9 @@ private:
     void handleProcessSignal(int exitCode) noexcept;
 
 private:
-    static std::mutex _instanceMutex;                        ///< The mutex to protect the instance.
-    static WindowsBackend *_instance;                        ///< The global instance of the PosixBackend.
-
-    TerminalFlags _terminalFlags;                            ///< The terminal flags.
-    bool _initialized{false};                                ///< If the platform was initialized.
-    bool _isInteractive{true};                               ///< If the backend is interactive.
-    bool _cursorStateSaved{false};                           ///< If the backend saved the cursor state.
-    bool _cursorVisible{true};                               ///< The current cursor visibility state.
-    Input::Mode _inputMode{Input::Mode::ReadLine};           ///< The current input mode.
-    bool _isAlternateScreenActive{false};                    ///< Flag if the alternate screen is active.
-    std::deque<Key> _pendingKeys;                            ///< Queued decoded key events.
-    std::optional<CombinedBlock> _pendingTextInput;          ///< Buffered translated Unicode text input.
-    std::optional<char16_t> _pendingHighSurrogate;           ///< Stored first UTF-16 surrogate for the next event.
-    std::unique_ptr<WindowsSignalDispatcher> _signalHandler; ///< Helper that forwards termination events safely.
-    struct WindowsPrivate;
-    std::unique_ptr<WindowsPrivate> _windows;                ///< Windows specific variables.
+    static std::mutex _instanceMutex;          ///< The mutex to protect the instance.
+    static WindowsBackend *_instance;          ///< The global instance of the PosixBackend.
+    std::unique_ptr<WindowsBackendPrivate> _p; ///< The private impl of WindowsBackend.
 };
 
 }

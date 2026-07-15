@@ -8,8 +8,11 @@ namespace erbsland::text {
 
 #define ERBSLAND_DEFINE_STRING_ENCODER_TRAITS(TYPE)                                                                    \
     auto StringEncoderTraits<TYPE>::encode(                                                                            \
-        const TYPE &source, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {            \
-        return impl::StringConversionTools::encode(source, encoding, bomMode);                                         \
+        const TYPE &source,                                                                                            \
+        const StringEncoding encoding,                                                                                 \
+        const StringBomMode bomMode,                                                                                   \
+        const EncodingErrorMode errorMode) -> mem::ByteBlock {                                                         \
+        return impl::StringConversionTools::encode(source, encoding, bomMode, errorMode);                              \
     }
 
 ERBSLAND_DEFINE_STRING_ENCODER_TRAITS(U8String);

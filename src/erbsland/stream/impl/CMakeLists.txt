@@ -4,10 +4,23 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        BufferedByteInputStream.cpp
+        BufferedByteInputStream.hpp
+        BufferedByteInputStreamData.cpp
+        BufferedByteInputStreamData.hpp
+        BufferedByteInputStreamData_fwd.hpp
+        BufferedByteOutputStream.cpp
+        BufferedByteOutputStream.hpp
+        BufferedByteOutputStreamData.cpp
+        BufferedByteOutputStreamData.hpp
+        BufferedByteOutputStreamData_fwd.hpp
         EncodedTextInputStream.cpp
         EncodedTextInputStream.hpp
         EncodedTextOutputStream.cpp
         EncodedTextOutputStream.hpp
+        IoService.cpp
+        IoService.hpp
+        NativeByteStream.hpp
         NativeOutputStream.cpp
         NativeOutputStream.hpp
         PosixNativeStream.hpp
@@ -16,6 +29,8 @@ target_sources(erbsland-core PRIVATE
         PrintContextToBuilder.hpp
         PrintContextToWrite.cpp
         PrintContextToWrite.hpp
+        StandardInputStreamProxy.cpp
+        StandardInputStreamProxy.hpp
         StandardStreamProxy.cpp
         StandardStreamProxy.hpp
         StandardStreamRedirectData.cpp
@@ -26,6 +41,8 @@ target_sources(erbsland-core PRIVATE
         StandardStreamSlot.hpp
         StandardTextOutputStream.cpp
         StandardTextOutputStream.hpp
+        StreamErrorDiagnostic.cpp
+        StreamErrorDiagnostic.hpp
         TextOutputStreamTraits.hpp
         WindowsNativeStream.hpp
 )

@@ -9,8 +9,8 @@ namespace erbsland::cterm {
 
 auto CommonBoxFrameBlockCombinationStyle::combine(const Block &current, const Block &overlay) const noexcept -> Block {
     auto result = overlay;
-    const auto currentIndex = lookupCharacterIndex(current.mainCodePoint());
-    const auto overlayIndex = lookupCharacterIndex(overlay.mainCodePoint());
+    const auto currentIndex = lookupCharacterIndex(current.first());
+    const auto overlayIndex = lookupCharacterIndex(overlay.first());
     if (currentIndex != cUnsupportedIndex && overlayIndex != cUnsupportedIndex) {
         result = Block{combineCodePoint(currentIndex, overlayIndex)};
     }

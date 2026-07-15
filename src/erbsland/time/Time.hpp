@@ -21,7 +21,7 @@ namespace erbsland::time {
 struct TimeWrapResult;
 
 /// A wall-clock time split into named parts.
-/// @tested{TimeCoreTest::testTimeCommonHandling}
+/// @tested{TimeCoreTest}
 struct TimeParts {
     Hour hour;                      ///< The hour component, range `0..23`.
     Minute minute;                  ///< The minute component, range `0..59`.
@@ -153,7 +153,7 @@ private:
 };
 
 /// The result of adding to a wall-clock time with wrapping.
-/// @tested{TimeCoreTest::testAddWithWrap}
+/// @tested{TimeCoreTest}
 struct TimeWrapResult {
     Time time; ///< The wrapped time of day.
     Days days; ///< The number of day boundaries crossed.

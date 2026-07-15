@@ -5,8 +5,8 @@
 #include "U8Encoding.hpp"
 #include "U8Writer.hpp"
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../unit/U16DataLength.hpp"
+#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u32/impl/U32Writer.hpp"
@@ -61,6 +61,16 @@ auto U8StringReadTools::byteLength() const noexcept -> unit::ByteLength {
     return unit::ByteLength::fromSizeT(_data.dataSpan().size());
 }
 
+auto U8StringReadTools::displayWidth() const noexcept -> int {
+    auto result = 0;
+    const auto data = _data.dataSpan();
+    auto position = unit::ByteIndex::zero();
+    while (position.toSizeT() < data.size()) {
+        result += utf8::decodeCharOrReplace(data, position).displayWidth();
+    }
+    return result;
+}
+
 auto U8StringReadTools::charAt(const unit::ByteIndex startIndex) const noexcept -> Char {
     if (startIndex.isNoIndex()) {
         return Char::noCodePoint();
@@ -90,10 +100,29 @@ auto U8StringReadTools::read(unit::ByteIndex &index) const noexcept -> Char {
     return Char{utf8::decodeCharOrReplace(data, index)};
 }
 
+auto U8StringReadTools::readAndRetreat(unit::ByteIndex &index) const noexcept -> Char {
+    if (index.isNoIndex()) {
+        return Char::noCodePoint();
+    }
+    const auto data = _data.dataSpan();
+    if (index.isZero()) {
+        return Char::endOfData();
+    }
+    if (index.toSizeT() > data.size()) {
+        return Char::noCodePoint();
+    }
+    auto startIndex = index;
+    utf8::fastRetreatChar(data, startIndex);
+    auto readIndex = startIndex;
+    const auto result = Char{utf8::decodeCharOrReplace(data, readIndex)};
+    index = startIndex;
+    return result;
+}
+
 auto U8StringReadTools::charAtOrThrow(const unit::ByteIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     auto position = startIndex;
     return utf8::decodeCharOrThrow(data, position);
@@ -102,7 +131,7 @@ auto U8StringReadTools::charAtOrThrow(const unit::ByteIndex startIndex) const ->
 auto U8StringReadTools::readOrThrow(unit::ByteIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     return Char{utf8::decodeCharOrThrow(data, index)};
 }

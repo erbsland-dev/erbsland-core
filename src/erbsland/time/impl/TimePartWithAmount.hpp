@@ -4,7 +4,7 @@
 
 #include "TimePart.hpp"
 
-#include "../../err/ThrowHelper.hpp"
+#include "../../err/OutOfRangeError.hpp"
 
 #include <compare>
 
@@ -113,7 +113,7 @@ public: // conversion
     /// @throws err::OutOfRangeError if the amount is outside the supported range.
     [[nodiscard]] static auto fromAmountOrThrow(Amount amount) -> tDerived {
         if (amount < Amount{} || amount > maximumAmount()) {
-            err::throwOutOfRange("Time part amount is outside the supported range");
+            throw err::OutOfRangeError{"Time part amount is outside the supported range"};
         }
         return fromAmount(amount);
     }

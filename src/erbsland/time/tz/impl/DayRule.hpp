@@ -7,7 +7,6 @@
 namespace erbsland::time::tz::impl {
 
 /// Rule used to resolve the day of a transition.
-/// @notest{Internal generated-data helper.}
 enum class DayRule : uint8_t {
     Exact,
     AtOrLater,

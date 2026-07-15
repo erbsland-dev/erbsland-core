@@ -61,17 +61,17 @@ public:
     }
 
     void testConstructorRejectsInvalidDimensions() {
-        REQUIRE_THROWS_AS(std::invalid_argument, gridLayout({}, {1}));
-        REQUIRE_THROWS_AS(std::invalid_argument, gridLayout({1}, {}));
-        REQUIRE_THROWS_AS(std::invalid_argument, gridLayout({1, 0}, {1}));
-        REQUIRE_THROWS_AS(std::invalid_argument, gridLayout({1}, {1, -1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({}, {1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1}, {}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1, 0}, {1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1}, {1, -1}));
     }
 
     void testCellRectRejectsInvalidIndexes() {
         const auto layout = gridLayout({2}, {1});
         const auto border = FrameBorder{};
 
-        REQUIRE_THROWS_AS(std::out_of_range, layout.cellRect(1, 0, bgeo::BlockPosition{}, border));
-        REQUIRE_THROWS_AS(std::out_of_range, layout.cellRect(0, 1, bgeo::BlockPosition{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(1, 0, bgeo::BlockPosition{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(0, 1, bgeo::BlockPosition{}, border));
     }
 };

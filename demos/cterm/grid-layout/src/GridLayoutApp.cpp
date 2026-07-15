@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+namespace demo {
+
 void GridLayoutApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{60}, BlockCoordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -234,4 +236,6 @@ auto GridLayoutApp::distribute(const BlockCoordinate total, const std::size_t co
         ++result[index.toSizeT()];
     }
     return result;
+}
+
 }

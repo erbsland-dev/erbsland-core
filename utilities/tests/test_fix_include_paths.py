@@ -39,6 +39,7 @@ class FixIncludePathsTest(unittest.TestCase):
         self.project_dir = Path(self.temp_dir.name)
         (self.project_dir / "src" / "erbsland").mkdir(parents=True)
         (self.project_dir / "test" / "unittest" / "src").mkdir(parents=True)
+        (self.project_dir / "demos" / "_common" / "src").mkdir(parents=True)
 
     def tearDown(self) -> None:
         self.temp_dir.cleanup()
@@ -108,6 +109,70 @@ class FixIncludePathsTest(unittest.TestCase):
         )
 
         with self.assertRaisesRegex(UtilityError, "Ambiguous include path"):
+            self.run_fix_include_paths()
+
+    def test_main_sources_use_unique_suffix_when_filename_is_ambiguous(self) -> None:
+        self.write_file(
+            "src/erbsland/one/Shared.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "src/erbsland/two/Shared.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "src/erbsland/sample/Widget.cpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+
+#include "two/Shared.hpp"
+""",
+        )
+
+        self.run_fix_include_paths()
+
+        text = self.read_file("src/erbsland/sample/Widget.cpp")
+        self.assertIn('#include "../two/Shared.hpp"', text)
+
+    def test_main_sources_normalize_ide_src_include(self) -> None:
+        self.write_file(
+            "src/erbsland/other/Thing.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "src/erbsland/sample/Widget.cpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+
+#include "src/erbsland/other/Thing.hpp"
+""",
+        )
+
+        self.run_fix_include_paths()
+
+        text = self.read_file("src/erbsland/sample/Widget.cpp")
+        self.assertIn('#include "../other/Thing.hpp"', text)
+
+    def test_src_include_without_erbsland_is_reported(self) -> None:
+        self.write_file(
+            "src/erbsland/sample/Widget.cpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+
+#include "generated/src/Thing.hpp"
+""",
+        )
+
+        with self.assertRaisesRegex(UtilityError, "must not contain \"src\""):
             self.run_fix_include_paths()
 
     def test_error_does_not_write_partial_changes(self) -> None:
@@ -196,6 +261,46 @@ class FixIncludePathsTest(unittest.TestCase):
         self.assertIn('#include "LocalHelper.hpp"', text)
         self.assertIn("#include <erbsland/unittest/UnitTest.hpp>", text)
         self.assertIn("#include <vector>", text)
+
+    def test_demos_use_erbsland_global_include_and_keep_local_helpers(self) -> None:
+        self.write_file(
+            "src/erbsland/text/String.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "demos/_common/src/DemoCommon.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "demos/text/Sample/SampleDemos.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "demos/text/Sample/main.cpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+
+#include "SampleDemos.hpp"
+#include "../../../../src/erbsland/text/String.hpp"
+#include <DemoCommon.hpp>
+""",
+        )
+
+        self.run_fix_include_paths()
+
+        text = self.read_file("demos/text/Sample/main.cpp")
+        self.assertIn('#include "SampleDemos.hpp"', text)
+        self.assertIn("#include <erbsland/text/String.hpp>", text)
+        self.assertIn("#include <DemoCommon.hpp>", text)
 
     def test_unit_tests_report_unknown_quoted_project_include(self) -> None:
         self.write_file(

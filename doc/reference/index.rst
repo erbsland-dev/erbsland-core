@@ -11,11 +11,14 @@ Reference
     debug/index
     err/index
     event/index
+    i18n/index
     math/index
     mem/index
     options/index
+    path/index
     random/index
     stream/index
+    system/index
     text/index
     time/index
     unit/index

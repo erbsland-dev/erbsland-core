@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParseError.hpp"
 
+#include "impl/ExceptionDiagnostic.hpp"
+
 #include "../text/StringFormat.hpp"
 
 namespace erbsland::err {
@@ -20,6 +22,16 @@ auto ParseError::toString() const noexcept -> text::StringView {
     }
     static auto messageFormat = text::StringFormat{"{} at code point {}"};
     return messageFormat.build(reason(), _position.toSizeT());
+}
+
+auto ParseError::diagnostic() const -> DiagnosticConstPtr {
+    auto result = std::make_shared<impl::ExceptionDiagnostic>(toString());
+    if (hasPosition()) {
+        auto location = unit::CodeLocation{};
+        location.position = _position;
+        result->setLocation(location);
+    }
+    return result;
 }
 
 auto ParseError::hasPosition() const noexcept -> bool {

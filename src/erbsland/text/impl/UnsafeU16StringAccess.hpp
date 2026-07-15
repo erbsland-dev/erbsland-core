@@ -12,7 +12,7 @@ namespace erbsland::text::impl {
 class UnsafeU16StringAccess {
 public:
     /// Create an accessor
-    explicit UnsafeU16StringAccess(const U16String &string) : _string{string} {}
+    explicit UnsafeU16StringAccess(const U16String &string) noexcept : _string{&string} {}
 
     // defaults
     ~UnsafeU16StringAccess() = default;
@@ -22,10 +22,17 @@ public:
     auto operator=(UnsafeU16StringAccess &&) = delete;
 
 public:
-    [[nodiscard]] auto data() const noexcept -> const char16_t * { return _string._storage.data(); }
+    /// Access the null-terminated string data.
+    [[nodiscard]] auto data() const noexcept -> const char16_t * { return _string->_storage.data(); }
+#ifdef ERBSLAND_WCHAR_16BIT
+    /// Access the null-terminated string data as wchar_t.
+    [[nodiscard]] auto dataWide() const noexcept -> const wchar_t * {
+        return reinterpret_cast<const wchar_t *>(_string->_storage.data());
+    }
+#endif
 
-private:
-    const U16String &_string;
+private: // using raw-pointers is approved for this class (te)
+    const U16String *_string;
 };
 
 }

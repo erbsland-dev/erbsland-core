@@ -61,7 +61,7 @@ The complete ``git describe`` output is also available as a version text string.
 
 By default, templates use the variable prefix ``ERBSLAND_GIT_VERSION``:
 
-.. code-block:: cpp
+.. code-block:: text
 
     @ERBSLAND_GIT_VERSION_MAJOR@
     @ERBSLAND_GIT_VERSION_MINOR@
@@ -118,7 +118,7 @@ This file acts as a template.
 During configuration, CMake generates the final source file in the build directory and automatically adds it to the
 target.
 
-.. code-block:: cpp
+.. code-block:: text
 
     #include "MyApplication.hpp"
 
@@ -176,7 +176,7 @@ Create a small ``AppVersion.hpp`` header that declares free functions for access
 
 Create the matching ``AppVersion.in.cpp`` template:
 
-.. code-block:: cpp
+.. code-block:: text
 
     #include "AppVersion.hpp"
 

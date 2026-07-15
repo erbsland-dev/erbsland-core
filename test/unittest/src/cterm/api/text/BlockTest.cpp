@@ -3,6 +3,9 @@
 
 #include "../../support/TestHelper.hpp"
 
+#include <erbsland/text/EncodingError.hpp>
+#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
@@ -26,15 +29,15 @@ public:
         const auto fromUtf32Text = Block{U"e\u0301"_el};
         constexpr auto fromCodePoint = Block{U'★'};
 
-        REQUIRE_EQUAL(fromUtf8.codePointCount(), std::size_t{2});
-        REQUIRE_EQUAL(fromUtf32Text.codePointCount(), std::size_t{2});
-        REQUIRE_EQUAL(fromCodePoint.codePointCount(), std::size_t{1});
+        REQUIRE_EQUAL(fromUtf8.characterCount(), erbsland::unit::CpLength{2});
+        REQUIRE_EQUAL(fromUtf32Text.characterCount(), erbsland::unit::CpLength{2});
+        REQUIRE_EQUAL(fromCodePoint.characterCount(), erbsland::unit::CpLength{1});
 
-        REQUIRE_EQUAL(fromUtf8.codePoints(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
-        REQUIRE_EQUAL(fromUtf32Text.codePoints(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
-        REQUIRE_EQUAL(fromCodePoint.codePoints(), (std::array<erbsland::text::Char, 3>{U'★', 0, 0}));
-        REQUIRE_EQUAL(fromUtf8.mainCodePoint(), U'e');
-        REQUIRE_EQUAL(fromCodePoint.mainCodePoint(), U'★');
+        REQUIRE_EQUAL(fromUtf8.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
+        REQUIRE_EQUAL(fromUtf32Text.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
+        REQUIRE_EQUAL(fromCodePoint.characters(), (std::array<erbsland::text::Char, 3>{U'★', 0, 0}));
+        REQUIRE_EQUAL(fromUtf8.first(), U'e');
+        REQUIRE_EQUAL(fromCodePoint.first(), U'★');
     }
 
     void testBraceInitializedDefaultStyleIsUnambiguous() {
@@ -51,34 +54,34 @@ public:
         REQUIRE_EQUAL(fromUtf32.style(), BlockStyle{});
     }
 
-    void testAppendToAndByteCountEncodeUtf8() {
+    void testToStringAndByteCountEncodeUtf8() {
         const auto character = Block{U"e\u0301"_el, fg::BrightWhite, bg::Blue};
         auto buffer = std::string{"prefix:"};
 
         buffer += blockToStdString(character);
 
-        REQUIRE_EQUAL(character.byteCount(), std::size_t{3});
-        REQUIRE_EQUAL(character.charStr(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
+        REQUIRE_EQUAL(character.byteCount(), erbsland::unit::ByteLength{3});
+        REQUIRE_EQUAL(character.toString(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
         REQUIRE_EQUAL(buffer, std::string{"prefix:"} + bytes({0x65, 0xCC, 0x81}));
     }
 
     void testWithCombiningAppendsZeroWidthCodePoints() {
         const auto combined = Block{U'e'}.withCombining(U'\u0301');
 
-        REQUIRE_EQUAL(combined.codePointCount(), std::size_t{2});
-        REQUIRE_EQUAL(combined.codePoints(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
-        REQUIRE_EQUAL(combined.charStr(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
+        REQUIRE_EQUAL(combined.characterCount(), erbsland::unit::CpLength{2});
+        REQUIRE_EQUAL(combined.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
+        REQUIRE_EQUAL(combined.toString(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
     }
 
     void testWithCombiningThrowRejectsInvalidCodePoints() {
         REQUIRE_THROWS_AS(
-            std::invalid_argument, Block{}.withCombining(U'\u0301', erbsland::text::EncodingErrorMode::Throw));
+            erbsland::text::EncodingError, Block{}.withCombining(U'\u0301', erbsland::text::EncodingErrorMode::Throw));
         REQUIRE_THROWS_AS(
-            std::invalid_argument, Block{U'e'}.withCombining(U'x', erbsland::text::EncodingErrorMode::Throw));
+            erbsland::text::EncodingError, Block{U'e'}.withCombining(U'x', erbsland::text::EncodingErrorMode::Throw));
         REQUIRE_THROWS_AS(
-            std::invalid_argument, Block{U'e'}.withCombining(U'\n', erbsland::text::EncodingErrorMode::Throw));
+            erbsland::text::EncodingError, Block{U'e'}.withCombining(U'\n', erbsland::text::EncodingErrorMode::Throw));
         REQUIRE_THROWS_AS(
-            std::invalid_argument,
+            erbsland::text::EncodingError,
             Block{U"e\u0301\u0302"_el}.withCombining(U'\u0303', erbsland::text::EncodingErrorMode::Throw));
     }
 
@@ -136,33 +139,35 @@ public:
         REQUIRE(combined != U'e');
     }
 
-    void testWithColorOverlayPreservesInheritedComponents() {
+    void testWithOverlayPreservesInheritedComponents() {
         const auto base = Block{U'X', fg::Green, bg::Blue};
 
-        const auto changedForeground = base.withOverlay(Color{fg::BrightWhite, bg::Inherited});
+        const auto changedForeground = base.withOverlay(BlockStyle{Color{fg::BrightWhite, bg::Inherited}});
         REQUIRE_EQUAL(changedForeground.color(), Color(fg::BrightWhite, bg::Blue));
 
-        const auto changedBackground = base.withOverlay(Color{fg::Inherited, bg::Black});
+        const auto changedBackground = base.withOverlay(BlockStyle{Color{fg::Inherited, bg::Black}});
         REQUIRE_EQUAL(changedBackground.color(), Color(fg::Green, bg::Black));
     }
 
-    void testWithColorOverlayAppliesDefaultAsExplicitReset() {
+    void testWithOverlayAppliesDefaultAsExplicitReset() {
         const auto base = Block{U'X', fg::Green, bg::Blue};
 
-        const auto resetForeground = base.withOverlay(Color{fg::Default, bg::Inherited});
+        const auto resetForeground = base.withOverlay(BlockStyle{Color{fg::Default, bg::Inherited}});
         REQUIRE_EQUAL(resetForeground.color(), Color(fg::Default, bg::Blue));
 
-        const auto resetBackground = base.withOverlay(Color{fg::Inherited, bg::Default});
+        const auto resetBackground = base.withOverlay(BlockStyle{Color{fg::Inherited, bg::Default}});
         REQUIRE_EQUAL(resetBackground.color(), Color(fg::Green, bg::Default));
     }
 
-    void testWithColorReplacedAndWithBaseColorUseExpectedRules() {
+    void testWithColorReplacedAndWithBaseUseExpectedRules() {
         const auto base = Block{U'X', fg::Green, bg::Blue};
-        const auto overlaid = Block{U'X', fg::Inherited, bg::Yellow}.withBase(Color{fg::BrightWhite, bg::Blue});
+        const auto overlaid =
+            Block{U'X', fg::Inherited, bg::Yellow}.withBase(BlockStyle{Color{fg::BrightWhite, bg::Blue}});
 
         REQUIRE_EQUAL(
             base.withColorReplaced(Color{fg::BrightWhite, bg::Black}).color(), Color(fg::BrightWhite, bg::Black));
-        REQUIRE_EQUAL(base.withBase(Color{fg::Inherited, bg::BrightBlack}).color(), Color(fg::Green, bg::Blue));
+        REQUIRE_EQUAL(
+            base.withBase(BlockStyle{Color{fg::Inherited, bg::BrightBlack}}).color(), Color(fg::Green, bg::Blue));
         REQUIRE_EQUAL(overlaid.color(), Color(fg::BrightWhite, bg::Yellow));
     }
 
@@ -234,7 +239,7 @@ public:
         REQUIRE_FALSE(Block{}.isSpacing());
     }
 
-    void testIsEmptySpaceAndIsOneOfHelpersUseSingleCodePoints() {
+    void testIsEmptySpaceAndSingleCodePointComparisons() {
         const auto empty = Block{};
         const auto space = Block::space();
         const auto symbol = Block{U'X', fg::Red, bg::Black};
@@ -244,11 +249,9 @@ public:
         REQUIRE_FALSE(space.isEmpty());
         REQUIRE(space == U' ');
         REQUIRE_EQUAL(space.color(), Color{});
-        REQUIRE(symbol.isOneOf(U"ABCX"_el));
-        REQUIRE(symbol.isOneOf({U'A', U'X', U'Z'}));
-        REQUIRE(symbol.isOneOf(U'A', U'X', U'Z'));
-        REQUIRE_FALSE(symbol.isOneOf(U"ABC"_el));
-        REQUIRE_FALSE(combined.isOneOf(U"e"_el));
+        REQUIRE(symbol == U'X');
+        REQUIRE_FALSE(symbol == U'A');
+        REQUIRE_FALSE(combined == U'e');
     }
 
     void testEmptyBlockCreatesAnEmptyCharacterWithTheRequestedStyle() {
@@ -305,21 +308,21 @@ public:
             Block{erbsland::text::String{bytes({0x61, 0xCC, 0x81, 0xCC, 0x82, 0xCC, 0x83})}};
         const auto controlCode = Block{"\n"_el};
 
-        REQUIRE_EQUAL(emptyUtf8.mainCodePoint(), U'\uFFFD');
-        REQUIRE_EQUAL(emptyUtf32.mainCodePoint(), U'\uFFFD');
-        REQUIRE_EQUAL(leadingCombining.mainCodePoint(), U'\uFFFD');
-        REQUIRE_EQUAL(laterVisibleCharacter.mainCodePoint(), U'\uFFFD');
-        REQUIRE_EQUAL(controlCode.mainCodePoint(), U'\uFFFD');
+        REQUIRE_EQUAL(emptyUtf8.first(), U'\uFFFD');
+        REQUIRE_EQUAL(emptyUtf32.first(), U'\uFFFD');
+        REQUIRE_EQUAL(leadingCombining.first(), U'\uFFFD');
+        REQUIRE_EQUAL(laterVisibleCharacter.first(), U'\uFFFD');
+        REQUIRE_EQUAL(controlCode.first(), U'\uFFFD');
         REQUIRE_EQUAL(
-            thirdCombiningMark.codePoints(), (std::array<erbsland::text::Char, 3>{U'a', U'\u0301', U'\u0302'}));
+            thirdCombiningMark.characters(), (std::array<erbsland::text::Char, 3>{U'a', U'\u0301', U'\u0302'}));
     }
 
     void testUtf8ConstructorsReplaceEncodingErrorMode() {
         const auto character = Block{erbsland::text::String{bytes({0xC3})}};
 
-        REQUIRE_EQUAL(character.codePointCount(), std::size_t{1});
-        REQUIRE_EQUAL(character.mainCodePoint(), U'\uFFFD');
-        REQUIRE_EQUAL(character.charStr(), erbsland::text::String{bytes({0xEF, 0xBF, 0xBD})});
+        REQUIRE_EQUAL(character.characterCount(), erbsland::unit::CpLength{1});
+        REQUIRE_EQUAL(character.first(), U'\uFFFD');
+        REQUIRE_EQUAL(character.toString(), erbsland::text::String{bytes({0xEF, 0xBF, 0xBD})});
     }
 
     void testTextConstructorsPreserveStyleAfterNormalization() {
@@ -331,9 +334,9 @@ public:
         const auto utf32Character =
             Block{erbsland::text::U32String{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}}, style};
 
-        REQUIRE_EQUAL(character.mainCodePoint(), U'\uFFFD');
+        REQUIRE_EQUAL(character.first(), U'\uFFFD');
         REQUIRE_EQUAL(character.style(), style);
-        REQUIRE_EQUAL(utf32Character.mainCodePoint(), U'\uFFFD');
+        REQUIRE_EQUAL(utf32Character.first(), U'\uFFFD');
         REQUIRE_EQUAL(utf32Character.style(), style);
     }
 

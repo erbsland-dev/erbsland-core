@@ -3,29 +3,24 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(impl)
+
 target_sources(erbsland-core PRIVATE
-        ApplicationError.cpp
-        ApplicationError.hpp
-        EncodingError.hpp
+        Diagnostic.cpp
+        Diagnostic.hpp
+        DiagnosticHelper.cpp
+        DiagnosticHelper.hpp
+        ErrorDocumentBuilder.cpp
+        ErrorDocumentBuilder.hpp
         Exception.cpp
         Exception.hpp
-        FormatError.hpp
+        Exception_fwd.hpp
         LogicError.hpp
-        OptionError.cpp
-        OptionError.hpp
         OutOfRangeError.hpp
         OverflowError.hpp
         ParameterError.cpp
         ParameterError.hpp
         ParseError.cpp
         ParseError.hpp
-        ParseNumberError.hpp
-        RandomError.hpp
         RuntimeError.hpp
-        StreamError.hpp
-        ThrowHelper.cpp
-        ThrowHelper.hpp
-        U16EncodingError.hpp
-        U32EncodingError.hpp
-        U8EncodingError.hpp
 )

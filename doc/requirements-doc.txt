@@ -10,9 +10,9 @@ babel==2.18.0
     # via sphinx
 breathe==4.36.0
     # via -r requirements-doc.in
-certifi==2026.5.20
+certifi==2026.6.17
     # via requests
-charset-normalizer==3.4.7
+charset-normalizer==3.4.9
     # via requests
 docutils==0.22.4
     # via
@@ -23,9 +23,9 @@ erbsland-conf==1.0.8
     # via erbsland-conf-pygments
 erbsland-conf-pygments==1.0.0
     # via -r requirements-doc.in
-erbsland-sphinx-ansi==1.2.2
+erbsland-sphinx-ansi==1.2.4
     # via -r requirements-doc.in
-idna==3.16
+idna==3.18
     # via requests
 imagesize==2.0.0
     # via sphinx
@@ -43,7 +43,7 @@ requests==2.34.2
     # via sphinx
 roman-numerals==4.1.0
     # via sphinx
-snowballstemmer==3.1.0
+snowballstemmer==3.1.1
     # via sphinx
 sphinx==9.1.0
     # via

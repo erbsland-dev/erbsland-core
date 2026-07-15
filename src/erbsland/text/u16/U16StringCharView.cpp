@@ -31,7 +31,7 @@ auto U16StringCharView::charAt(const StringSide side) const noexcept -> Char {
     if (side == StringSide::Front) {
         return charAt(unit::CpIndex::zero());
     }
-    return charAt(unit::CpIndex::fromSizeT(fullLength.toSizeT() - 1U));
+    return charAt(unit::CpIndex::end(fullLength - unit::CpLength::one()));
 }
 
 auto U16StringCharView::charAt(const unit::CpIndex index) const noexcept -> Char {
@@ -50,7 +50,7 @@ auto U16StringCharView::slice(const StringSide side, const unit::CpLength length
     if (length.isInfinite() || length >= fullLength) {
         return slice(unit::CpRange::fromLength(fullLength));
     }
-    const auto start = unit::CpIndex::fromSizeT(fullLength.toSizeT() - length.toSizeT());
+    const auto start = unit::CpIndex::end(fullLength - length);
     return slice(unit::CpRange{start, length});
 }
 
@@ -61,9 +61,10 @@ auto U16StringCharView::slice(const StringSide side) const noexcept -> std::tupl
     }
     if (side == StringSide::Front) {
         return {
-            charAt(unit::CpIndex::zero()), slice(unit::CpRange{unit::CpIndex{1U}, fullLength - unit::CpLength::one()})};
+            charAt(unit::CpIndex::zero()),
+            slice(unit::CpRange{unit::CpIndex::one(), fullLength - unit::CpLength::one()})};
     }
-    const auto lastIndex = unit::CpIndex::fromSizeT(fullLength.toSizeT() - 1U);
+    const auto lastIndex = unit::CpIndex::end(fullLength - unit::CpLength::one());
     return {charAt(lastIndex), slice(unit::CpRange{unit::CpIndex::zero(), lastIndex})};
 }
 

@@ -22,6 +22,22 @@ BlockStringView::BlockStringView() noexcept : _data{impl::sharedEmptyBlockString
 BlockStringView::BlockStringView(const BlockString &string) noexcept : _data{string._data}, _range{string._range} {
 }
 
+BlockStringView::BlockStringView(BlockStringView &&other) noexcept :
+    _data{std::move(other._data)}, _range{other._range} {
+    other._data = impl::sharedEmptyBlockStringData();
+    other._range = {};
+}
+
+auto BlockStringView::operator=(BlockStringView &&other) noexcept -> BlockStringView & {
+    if (this != &other) {
+        _data = std::move(other._data);
+        _range = other._range;
+        other._data = impl::sharedEmptyBlockStringData();
+        other._range = {};
+    }
+    return *this;
+}
+
 BlockStringView::BlockStringView(impl::BlockStringDataPtr data, const BlockRange range) noexcept :
     _data{std::move(data)}, _range{range.clampedTo(BlockCount::fromSizeT(_data->size()))} {
 }
@@ -166,7 +182,7 @@ auto BlockStringView::wrappedBlockTextHeight(
             std::max(bgeo::BlockCoordinate{1}, bgeo::BlockCoordinate{(options.font()->height() + 1) / 2});
         for (const auto &line : splitLines()) {
             if (std::ranges::any_of(line, [&](const Block &character) -> bool {
-                    return options.font()->glyph(character.charStr()) != nullptr;
+                    return options.font()->glyph(character.toString()) != nullptr;
                 })) {
                 lineCount += lineHeight;
             }

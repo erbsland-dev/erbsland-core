@@ -18,7 +18,7 @@ namespace erbsland::cterm {
 /// Styling for all line groups of a grid frame.
 ///
 /// The default border draws no lines. Use the all-style constructor or `set()` to enable individual line groups.
-/// @tested `FrameBorderTest`
+/// @tested{FrameBorderTest}
 class FrameBorder final {
 private:
     enum class JointStyle : std::uint8_t {

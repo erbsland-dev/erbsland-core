@@ -1,6 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "MoveAwareTestValue.hpp"
+
 #include <erbsland/unit/ElementCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/List.hpp>
@@ -9,6 +11,7 @@
 
 #include <set>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 using el::unit::ElementCount;
@@ -19,6 +22,8 @@ class SetTest final : public el::UnitTest {
 public:
     using IntList = el::util::List<int>;
     using IntSet = el::util::Set<int>;
+    using MoveSet = el::util::Set<erbsland::test::MoveAwareTestValue>;
+    using MoveValue = erbsland::test::MoveAwareTestValue;
 
     void testConstructionAndElements() {
         const auto empty = IntSet{};
@@ -51,6 +56,22 @@ public:
         REQUIRE(!second.tryInsert(4));
         REQUIRE(second.tryRemove(4));
         REQUIRE(!second.tryRemove(4));
+    }
+
+    void testMoveAwareInsert() {
+        auto set = MoveSet{};
+
+        auto inserted = MoveValue{1};
+        const auto insertedCounts = inserted.counts();
+        set.insert(std::move(inserted));
+        REQUIRE_EQUAL(insertedCounts->copies, 0);
+        REQUIRE(set.contains(MoveValue{1}));
+
+        auto tryInserted = MoveValue{2};
+        const auto tryInsertedCounts = tryInserted.counts();
+        REQUIRE(set.tryInsert(std::move(tryInserted)));
+        REQUIRE_EQUAL(tryInsertedCounts->copies, 0);
+        REQUIRE(set.contains(MoveValue{2}));
     }
 
     void testRemoveAndAlgorithms() {

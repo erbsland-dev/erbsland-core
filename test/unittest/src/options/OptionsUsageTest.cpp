@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/core/CommandLineArguments.hpp>
-#include <erbsland/err/OptionError.hpp>
 #include <erbsland/options/Option.hpp>
 #include <erbsland/options/OptionChoices.hpp>
+#include <erbsland/options/OptionError.hpp>
 #include <erbsland/options/OptionErrorContext.hpp>
 #include <erbsland/options/OptionFlag.hpp>
 #include <erbsland/options/OptionManager.hpp>
@@ -17,14 +17,17 @@
 #include <erbsland/options/OptionValues.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
 #include <initializer_list>
+#include <string>
+#include <string_view>
 #include <vector>
 
 using el::core::CommandLineArguments;
-using el::err::OptionError;
+using el::options::OptionError;
 using el::text::String;
 using el::text::StringConverter;
 using el::text::StringView;
@@ -34,6 +37,7 @@ using el::unit::ElementCount;
 using el::unit::ElementIndex;
 using namespace el::options;
 using namespace el::text::literals;
+namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(OptionEditor OptionManager OptionParser)
 class OptionsUsageTest final : public el::UnitTest {
@@ -61,17 +65,11 @@ public:
         REQUIRE(result.values()->getText("demo"_el) == "basic"_el);
 
         result = parse(options, {"tool"_el, "FULL"_el});
-        requireError(
-            result, OptionErrorReason::SyntaxError, "Unexpected positional argument"_el, {}, {}, ArgumentIndex{1U});
+        requireError(result, OptionErrorReason::SyntaxError, "Unexpected argument"_el, {}, {}, ArgumentIndex{1U});
 
         result = parse(options, {"tool"_el, "-d"_el, "missing"_el});
         requireError(
-            result,
-            OptionErrorReason::UnexpectedValueType,
-            "Invalid choice option value"_el,
-            option,
-            {},
-            ArgumentIndex{2U});
+            result, OptionErrorReason::UnexpectedValueType, "Invalid choice"_el, option, {}, ArgumentIndex{2U});
     }
 
     void testAddChoicePromotesOptionTypeAndAcceptsDefaults() {
@@ -119,12 +117,10 @@ public:
         REQUIRE(result.values()->value("-n"_el) == result.values()->value("name"_el));
 
         result = parse(options, {"tool"_el, "demo"_el});
-        requireError(
-            result, OptionErrorReason::SyntaxError, "Unexpected positional argument"_el, {}, {}, ArgumentIndex{1U});
+        requireError(result, OptionErrorReason::SyntaxError, "Unexpected argument"_el, {}, {}, ArgumentIndex{1U});
 
         result = parse(options, {"tool"_el, "Ada"_el});
-        requireError(
-            result, OptionErrorReason::SyntaxError, "Unexpected positional argument"_el, {}, {}, ArgumentIndex{1U});
+        requireError(result, OptionErrorReason::SyntaxError, "Unexpected argument"_el, {}, {}, ArgumentIndex{1U});
     }
 
     void testDashlessDefinitionsArePositionalTextByDefault() {
@@ -146,7 +142,7 @@ public:
         REQUIRE(result.values()->getText("mode"_el) == "safe"_el);
 
         result = parse(options, {"tool"_el, "--path"_el, "input.txt"_el});
-        requireError(result, OptionErrorReason::UnknownName, "Unknown option name"_el, {}, {}, ArgumentIndex{1U});
+        requireError(result, OptionErrorReason::UnknownName, "Unknown option"_el, {}, {}, ArgumentIndex{1U});
     }
 
     void testChoiceDefinitionErrorsPointToTheOptionDefinition() {
@@ -157,31 +153,19 @@ public:
                           .option();
 
         auto result = parse(options, {"tool"_el, "--mode"_el, "fast"_el});
-        requireError(
-            result,
-            OptionErrorReason::SyntaxError,
-            "Invalid option definition: choices require OptionType::Choice"_el,
-            option);
+        requireError(result, OptionErrorReason::SyntaxError, "Invalid option definition"_el, option);
 
         options = Options::create();
         option = options->addOption("--mode"_el).setType(OptionType::Choice).option();
 
         result = parse(options, {"tool"_el, "--mode"_el, "fast"_el});
-        requireError(
-            result,
-            OptionErrorReason::SyntaxError,
-            "Invalid option definition: choice options require at least one choice"_el,
-            option);
+        requireError(result, OptionErrorReason::SyntaxError, "Invalid option definition"_el, option);
 
         options = Options::create();
         option = options->addOption("--mode"_el).setChoices(OptionChoices::create()).option();
 
         result = parse(options, {"tool"_el, "--mode"_el, "fast"_el});
-        requireError(
-            result,
-            OptionErrorReason::SyntaxError,
-            "Invalid option definition: choice options require at least one choice"_el,
-            option);
+        requireError(result, OptionErrorReason::SyntaxError, "Invalid option definition"_el, option);
     }
 
     void testOptionTypesDefaultsAndValidatorsWorkTogether() {
@@ -258,7 +242,7 @@ public:
         requireError(
             parse(options, {"tool"_el, "--flag=value"_el}),
             OptionErrorReason::UnexpectedValueType,
-            "Flags do not accept values"_el,
+            "Flag does not accept a value"_el,
             option,
             {},
             ArgumentIndex{1U});
@@ -268,10 +252,18 @@ public:
         requireError(
             parse(options, {"tool"_el, "--count"_el, "abc"_el}),
             OptionErrorReason::UnexpectedValueType,
-            "Invalid integer option value"_el,
+            "Invalid integer value"_el,
             option,
             {},
             ArgumentIndex{2U});
+        auto result = parse(options, {"tool"_el, "--count"_el, "abc"_el});
+        REQUIRE(result.errorContext()->options() == options);
+        auto manager = OptionManager{options};
+        const auto text =
+            StringConverter{manager.errorDocument(result.errorContext().value()).toString()}.toStdString();
+        REQUIRE(text.find("Usage:\n  tool [options]\n") != std::string::npos);
+        REQUIRE(text.find("2 │ abc\n") != std::string::npos);
+        REQUIRE(text.find("View Full Help:\n  tool --help") != std::string::npos);
 
         options = Options::create();
         option = options->addOption("--name"_el).setType(OptionType::Text).option();
@@ -288,7 +280,7 @@ public:
         requireError(
             parse(options, {"tool"_el, "--mode"_el, "slow"_el}),
             OptionErrorReason::UnexpectedValueType,
-            "Invalid choice option value"_el,
+            "Invalid choice"_el,
             option,
             {},
             ArgumentIndex{2U});
@@ -300,6 +292,60 @@ public:
             OptionErrorReason::UnexpectedValueType,
             "Required option is missing"_el,
             option);
+    }
+
+    void testBuiltInMessagesEscapeAllExternalOptionText() {
+        const auto esc = th::stdStringFromHex("1B");
+        const auto unsafe = [&esc](const std::string_view prefix) -> String {
+            auto bytes = std::string{prefix};
+            bytes.append(esc);
+            return String{std::string_view{bytes}};
+        };
+        const auto requireSafeDescription = [this, &esc](const OptionResult &result) -> void {
+            REQUIRE(result.errorContext().has_value());
+            const auto description = StringConverter{result.errorContext()->description()}.toStdString();
+            REQUIRE(description.find(esc) == std::string::npos);
+        };
+
+        auto options = Options::create();
+        requireSafeDescription(parse(options, {"tool"_el, unsafe("--bad")}));
+        requireSafeDescription(parse(options, {"tool"_el, unsafe("-x")}));
+        requireSafeDescription(parse(options, {"tool"_el, unsafe("value")}));
+
+        options = Options::create();
+        options->addOption("--count"_el).setType(OptionType::Integer);
+        requireSafeDescription(parse(options, {"tool"_el, "--count"_el, unsafe("12")}));
+
+        options = Options::create();
+        options->addOption("--mode"_el).setChoices(OptionChoices::create({"fast"_el, "safe"_el}));
+        requireSafeDescription(parse(options, {"tool"_el, "--mode"_el, unsafe("slow")}));
+
+        options = Options::create();
+        options->addModule(OptionModule::create("run"_el));
+        requireSafeDescription(parse(options, {"tool"_el, unsafe("missing")}));
+    }
+
+    void testOptionErrorContextCarriesDiagnosticDetails() {
+        auto options = Options::create();
+        options->addOption("-t"_el).setType(OptionType::Integer);
+        auto result = parse(options, {"file_size_monitor"_el, "-t"_el, "5"_el, "-x"_el, "-y"_el});
+        requireError(result, OptionErrorReason::UnknownName, "Unknown option"_el, {}, {}, ArgumentIndex{3U});
+        REQUIRE_EQUAL(result.errorContext()->arguments().count().toSizeT(), std::size_t{5U});
+        REQUIRE(result.errorContext()->arguments().get(ElementIndex{0U}) == "file_size_monitor"_el);
+        REQUIRE(result.errorContext()->arguments().get(ElementIndex{3U}) == "-x"_el);
+        REQUIRE(result.errorContext()->arguments().get(ElementIndex{3U}) == "-x"_el);
+        REQUIRE(result.errorContext()->options() == options);
+
+        options = Options::create();
+        const auto fileOption = options->addOption("file"_el)
+                                    .setType(OptionType::Text)
+                                    .setFlag(OptionFlag::Required)
+                                    .setHelp("The path to the file to monitor."_el)
+                                    .option();
+        result = parse(options, {"file_size_monitor"_el});
+        requireError(result, OptionErrorReason::UnexpectedValueType, "Required argument is missing"_el, fileOption);
+        REQUIRE(result.errorContext()->options() == options);
+        REQUIRE(result.errorContext()->option() == fileOption);
     }
 
     void testCallbackErrorsCompleteMissingContext() {
@@ -314,7 +360,7 @@ public:
         optionSet->setPostParsingFn([&postCalled](OptionValuesPtr) -> void { postCalled = true; });
 
         auto result = parse(options, {"tool"_el, "--name"_el, "Ada"_el});
-        requireError(result, OptionErrorReason::ValidationError, {}, option, optionSet);
+        requireError(result, OptionErrorReason::ValidationError, {}, option, optionSet, ArgumentIndex{2U});
         REQUIRE_FALSE(postCalled);
 
         options = Options::create();
@@ -336,8 +382,9 @@ public:
         options->addModule(module);
 
         result = parse(options, {"tool"_el, "run"_el, "--force"_el});
-        requireError(result, OptionErrorReason::ValidationError, "Module rejected options"_el);
-        REQUIRE(result.errorContext()->moduleName() == "run"_el);
+        requireError(result, OptionErrorReason::ValidationError);
+        REQUIRE(result.errorContext()->description() == "Module rejected options"_el);
+        REQUIRE(result.errorContext()->module() == module);
     }
 
 private:
@@ -358,7 +405,7 @@ private:
     void requireError(
         const OptionResult &result,
         const OptionErrorReason reason,
-        const StringView description = {},
+        const StringView title = {},
         const OptionPtr &option = {},
         const OptionSetPtr &optionSet = {},
         const ArgumentIndex argumentIndex = ArgumentIndex::noIndex()) {
@@ -366,7 +413,7 @@ private:
         REQUIRE(result.errorContext().has_value());
         const auto &context = result.errorContext().value();
         REQUIRE(context.reason() == reason);
-        REQUIRE(context.description() == description);
+        REQUIRE(context.title() == title);
         REQUIRE(context.option() == option);
         REQUIRE(context.optionSet() == optionSet);
         REQUIRE(context.argumentIndex() == argumentIndex);

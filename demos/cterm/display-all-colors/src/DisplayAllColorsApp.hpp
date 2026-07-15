@@ -4,6 +4,8 @@
 
 #include <TerminalApplication.hpp>
 
+namespace demo {
+
 /// Display and label all available colors.
 class DisplayAllColorsApp final : public TerminalApplication {
 public:
@@ -18,3 +20,5 @@ private:
     void renderMatrix();
     void renderRainbow();
 };
+
+}

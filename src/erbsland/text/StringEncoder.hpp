@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EncodingErrorMode.hpp"
 #include "StringBomMode.hpp"
 #include "StringEncoder_fwd.hpp"
 #include "StringEncoding.hpp"
@@ -35,9 +36,11 @@ public:
 
 public:
     /// Encode the source string into the requested byte encoding.
-    [[nodiscard]] auto encode(StringEncoding encoding, StringBomMode bomMode = StringBomMode::Automatic) const
-        -> mem::ByteBlock {
-        return StringEncoderTraits<Source>::encode(*_source, encoding, bomMode);
+    [[nodiscard]] auto encode(
+        StringEncoding encoding,
+        StringBomMode bomMode = StringBomMode::Automatic,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> mem::ByteBlock {
+        return StringEncoderTraits<Source>::encode(*_source, encoding, bomMode, errorMode);
     }
 
 private:
@@ -50,7 +53,8 @@ StringEncoder(const T &) -> StringEncoder<std::remove_cvref_t<T>>;
 #define ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(TYPE)                                                                   \
     template <>                                                                                                        \
     struct StringEncoderTraits<TYPE> final {                                                                           \
-        [[nodiscard]] static auto encode(const TYPE &source, StringEncoding encoding, StringBomMode bomMode)           \
+        [[nodiscard]] static auto encode(                                                                              \
+            const TYPE &source, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)           \
             -> mem::ByteBlock;                                                                                         \
     }
 

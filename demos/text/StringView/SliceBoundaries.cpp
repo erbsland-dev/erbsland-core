@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Byte slicing is bounds-safe, but it does not validate UTF-8 boundaries for
 /// you.
 ///
@@ -29,4 +31,6 @@ void sliceBoundaries() {
     el::io::printLine("Clamped slice: "_el, clamped);
     el::io::printLine("Broken slice: "_el, broken);
     el::io::printLine("Broken slice is valid UTF-8: "_el, broken.isValidUtf8());
+}
+
 }

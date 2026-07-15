@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `insert()` adds text at a byte or code-point index. `replace()` changes a
 /// range, `replaceFirst()` changes the first matching text occurrence, and
 /// `replaceAll()` changes every matching text occurrence or character from a
@@ -33,4 +35,6 @@ void insertAndReplace() {
 
     el::io::printLine("Edited report: "_el, report);
     el::io::printLine("Edited token: "_el, token);
+}
+
 }

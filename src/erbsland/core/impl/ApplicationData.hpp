@@ -6,18 +6,25 @@
 
 #include "../ApplicationInfo.hpp"
 #include "../CommandLineArguments.hpp"
+#include "../InitializeFn.hpp"
 #include "../MainFn.hpp"
 
 #include "../../cterm/Terminal_fwd.hpp"
-#include "../../event/EventIdRegistry.hpp"
+#include "../../cterm/TerminalDocumentStyle.hpp"
+#include "../../event/EventRegistry.hpp"
+#include "../../event/EventThread_fwd.hpp"
 #include "../../event/impl/EventLoop.hpp"
-#include "../../options/OptionRenderer.hpp"
+#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../options/Options.hpp"
 #include "../../options/OptionValues.hpp"
 #include "../../random/Random_fwd.hpp"
 #include "../../stream/StandardStreamRedirect.hpp"
+#include "../../system/UserLookup_fwd.hpp"
+#include "../../text/TextDocument_fwd.hpp"
+#include "../../unit/ExitCode.hpp"
 
 #include <mutex>
+#include <vector>
 
 namespace erbsland::core::impl {
 
@@ -30,9 +37,13 @@ public:
     struct EventData {
         EventData() :
             eventLoop{std::make_shared<event::impl::EventLoop>()},
-            eventIdRegistry{event::EventIdRegistry::PrivateTag{}} {}
+            eventIdRegistry{event::EventRegistry::PrivateTag{}} {}
         event::EventLoopPtr eventLoop;
-        event::EventIdRegistry eventIdRegistry; ///< The event id registry.
+        event::EventRegistry eventIdRegistry; ///< The event registry.
+        std::mutex mutex;                     ///< Protects managed event system state.
+        bool quitExitCodeSet{false};          ///< True if the application exit code was set by `quit()`.
+        unit::ExitCode quitExitCode;          ///< The first exit code passed to `quit()`.
+        std::vector<event::ManagedEventThreadWeakPtr> eventThreads; ///< The managed event threads.
     };
     using EventDataPtr = std::unique_ptr<EventData>;
 
@@ -50,25 +61,37 @@ public:
     virtual void cleanupBeforeAppExit() noexcept = 0;
     /// Access and lazy creation of the event system data.
     [[nodiscard]] virtual auto event() -> EventData & = 0;
+    /// Render a system-output document to the best available output target.
+    virtual void renderSystemOutput(const text::TextDocument &document) = 0;
 
 public: // accessors
     [[nodiscard]] virtual auto info() noexcept -> ApplicationInfo & = 0;
-    [[nodiscard]] virtual auto info() const noexcept -> const ApplicationInfo & = 0;
     [[nodiscard]] virtual auto commandLineArguments() const noexcept -> const CommandLineArguments & = 0;
-    [[nodiscard]] virtual auto options() noexcept -> options::OptionsPtr & = 0;
-    [[nodiscard]] virtual auto options() const noexcept -> const options::OptionsPtr & = 0;
-    [[nodiscard]] virtual auto optionValues() noexcept -> options::OptionValuesPtr & = 0;
-    [[nodiscard]] virtual auto optionValues() const noexcept -> const options::OptionValuesPtr & = 0;
-    [[nodiscard]] virtual auto optionRenderer() noexcept -> options::OptionRendererPtr & = 0;
-    [[nodiscard]] virtual auto mainFn() noexcept -> MainFn & = 0;
+    [[nodiscard]] virtual auto options() noexcept -> const options::OptionsPtr & = 0;
+    virtual void setOptions(options::OptionsPtr options) noexcept = 0;
+    [[nodiscard]] virtual auto optionValues() noexcept -> const options::OptionValuesPtr & = 0;
+    virtual void setOptionValues(options::OptionValuesPtr optionValues) noexcept = 0;
+    [[nodiscard]] virtual auto systemOutputStyle() const noexcept -> const cterm::TerminalDocumentStyle & = 0;
+    virtual void setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexcept = 0;
+    [[nodiscard]] virtual auto initializeFn() noexcept -> const InitializeFn & = 0;
+    virtual void setInitializeFn(InitializeFn initializeFn) noexcept = 0;
+    [[nodiscard]] virtual auto mainFn() noexcept -> const MainFn & = 0;
+    virtual void setMainFn(MainFn mainFn) noexcept = 0;
     [[nodiscard]] virtual auto randomMutex() noexcept -> std::mutex & = 0;
-    [[nodiscard]] virtual auto random() noexcept -> random::RandomPtr & = 0;
-    [[nodiscard]] virtual auto secureRandom() noexcept -> random::RandomPtr & = 0;
+    [[nodiscard]] virtual auto random() noexcept -> const random::RandomPtr & = 0;
+    virtual void setRandom(random::RandomPtr random) noexcept = 0;
+    [[nodiscard]] virtual auto secureRandom() noexcept -> const random::RandomPtr & = 0;
+    virtual void setSecureRandom(random::RandomPtr random) noexcept = 0;
+    [[nodiscard]] virtual auto systemMutex() noexcept -> std::mutex & = 0;
+    [[nodiscard]] virtual auto displayText() noexcept -> const i18n::DisplayTextMapConstPtr & = 0;
+    virtual void setDisplayText(i18n::DisplayTextMapConstPtr displayText) noexcept = 0;
+    [[nodiscard]] virtual auto userLookup() noexcept -> const system::UserLookupPtr & = 0;
+    virtual void setUserLookup(system::UserLookupPtr userLookup) noexcept = 0;
     [[nodiscard]] virtual auto isTerminalEnabled() const noexcept -> bool = 0;
     virtual void setTerminalEnabled(bool enabled) noexcept = 0;
-    [[nodiscard]] virtual auto terminal() noexcept -> cterm::TerminalPtr & = 0;
-    [[nodiscard]] virtual auto terminal() const noexcept -> const cterm::TerminalPtr & = 0;
-    [[nodiscard]] virtual auto standardStreamRedirect() noexcept -> stream::StandardStreamRedirect & = 0;
+    [[nodiscard]] virtual auto terminal() noexcept -> const cterm::TerminalPtr & = 0;
+    virtual void setTerminal(cterm::TerminalPtr terminal) noexcept = 0;
+    virtual void setStandardStreamRedirect(stream::StandardStreamRedirect redirect) noexcept = 0;
 };
 
 }

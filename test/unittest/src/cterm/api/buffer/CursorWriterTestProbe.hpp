@@ -5,6 +5,7 @@
 #include "../../support/TestHelper.hpp"
 
 #include <optional>
+#include <vector>
 
 class CursorWriterProbe final : public CursorWriter {
 public:
@@ -22,7 +23,7 @@ public:
         _lastMoveMode = mode;
     }
     void setAutoWrap(const bool enabled) noexcept override { _autoWrap = enabled; }
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return bgeo::BlockSize{80, 25}; }
+    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _size; }
     void clearScreen() noexcept override { _clearScreenCallCount += 1; }
     void write(const Block &character) noexcept override { _writtenChars.push_back(character); }
     void write(const BlockStringView &str) noexcept override { _writtenStrings.push_back(BlockString{str}); }
@@ -38,10 +39,13 @@ protected:
         -> int override {
         _lastParagraph = BlockString{paragraph};
         _lastParagraphAlignment = options.alignment();
+        _lastParagraphTabStops = options.tabStops();
+        _lastParagraphTabOverflowBehavior = options.tabOverflowBehavior();
         return 7;
     }
 
 public:
+    bgeo::BlockSize _size{80, 25};
     Color _color{};
     BlockAttributes _attributes{};
     bgeo::BlockPosition _lastMove{};
@@ -56,4 +60,6 @@ public:
     int _lineBreakCount{0};
     BlockString _lastParagraph{};
     bgeo::Alignment _lastParagraphAlignment{bgeo::Alignment::TopLeft};
+    std::vector<int> _lastParagraphTabStops;
+    TabOverflowBehavior _lastParagraphTabOverflowBehavior{TabOverflowBehavior::AddSpace};
 };

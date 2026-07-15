@@ -6,6 +6,8 @@
 
 #include <array>
 
+namespace demo {
+
 /// Interactive demo showing the bitmap rendering modes and options.
 class BitmapShowcaseApp final : public TerminalApplication {
 public:
@@ -46,3 +48,5 @@ private:
     std::size_t _pageIndex{0};
     std::array<std::size_t, 4> _selectedVariantByPage{};
 };
+
+}

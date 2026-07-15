@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `storageId()` lets low-level code verify that a cached native index still
 /// belongs to the same visible storage range.
 ///
@@ -47,4 +49,6 @@ void storageIdentifier() {
     tryUseCachedRange("Original view"_el, reportView);
     tryUseCachedRange("Copied text"_el, copiedView);
     tryUseCachedRange("Tail slice"_el, tailView);
+}
+
 }

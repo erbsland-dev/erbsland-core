@@ -232,6 +232,8 @@ Natural Language in Examples
 ============================
 
 When using natural language in example code, use a balanced mix of different languages.
+Natural language must only be used in data, values or input a demo processes.
+Error messages, diagnostic output, and any output that explains the behavior of the demo must be English.
 
 Preferred languages include:
 

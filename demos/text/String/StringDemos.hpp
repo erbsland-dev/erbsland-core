@@ -4,6 +4,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void alignAndTruncate();
 void clearResetAndAppend();
 void copyOnWrite();
@@ -14,3 +16,5 @@ void removeFirstAndAll();
 void manualDetach();
 void reserveForAppend();
 void shrinkSlices();
+
+}

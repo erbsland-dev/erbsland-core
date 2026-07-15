@@ -7,6 +7,8 @@
 #include <array>
 #include <utility>
 
+namespace demo {
+
 void LogViewerApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{58}, BlockCoordinate{12}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -536,4 +538,6 @@ auto LogViewerApp::traceChoices() noexcept -> std::span<const el::StringView> {
         "session cookie decoded"_el,
     };
     return cValues;
+}
+
 }

@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include <memory>
+
 namespace erbsland::stream {
 
 class TextOutputStream;
+using TextOutputStreamPtr = std::shared_ptr<TextOutputStream>;
 
 }

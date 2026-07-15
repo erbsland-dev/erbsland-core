@@ -5,6 +5,8 @@
 
 #include <algorithm>
 
+namespace demo {
+
 void TextGalleryApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{38}, BlockCoordinate{14}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -160,7 +162,7 @@ void TextGalleryApp::drawMixedWidthPage(const BlockRectangle contentRect) {
             BlockCoordinate{leftWidth},
             BlockCoordinate{lowerHeight}},
         "Right"_el,
-        "右寄せ with ASCII, kana, and kanji.\nZürich, 東京, Kyoto, and 大阪 all line up cleanly."_el,
+        "Right-aligned ASCII, kana, and kanji.\nZürich, 東京, Kyoto, and 大阪 all line up cleanly."_el,
         Alignment::BottomRight,
         FrameStyle::Double,
         bg::Magenta,
@@ -273,4 +275,6 @@ auto TextGalleryApp::titleForWidth(const BlockCoordinate width) -> el::StringVie
         return "COLOR"_el;
     }
     return "TERM"_el;
+}
+
 }

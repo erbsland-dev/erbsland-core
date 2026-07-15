@@ -7,6 +7,7 @@ target_sources(erbsland-core-unittest PRIVATE
         ByteBlockTest.cpp
         ByteReaderWriterTest.cpp
         CowStorageTest.cpp
+        RingBufferTest.cpp
         SharedArrayCapacityTest.cpp
         SharedDataTest.cpp
 )

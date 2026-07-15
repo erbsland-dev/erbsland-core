@@ -37,7 +37,7 @@ public:
     /// @param overflowMode The overflow mode of the buffer.
     /// @param maximumSize The maximum size of the buffer. Only `height` is used.
     /// @param fillChar The character used to initialize and refill empty cells.
-    /// @throws std::invalid_argument if startSize exceeds the maximum or fillChar is not a single-width character.
+    /// @throws err::ParameterError if startSize exceeds the maximum or fillChar is not a single-width character.
     explicit CursorBuffer(
         const bgeo::BlockSize startSize,
         const OverflowMode overflowMode = OverflowMode::Shift,
@@ -77,7 +77,7 @@ public: // setup
     /// Set the character used for newly exposed or empty cells.
     /// The character should have a display width of one cell.
     /// @param fillChar The new fill character.
-    /// @throws std::invalid_argument if fillChar is not a single-width character.
+    /// @throws err::ParameterError if fillChar is not a single-width character.
     void setFillChar(Block fillChar);
 
 public: // implement CursorWriter

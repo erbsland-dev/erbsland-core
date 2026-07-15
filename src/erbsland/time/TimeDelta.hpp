@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Duration_fwd.hpp"
 #include "TimeAmounts.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
@@ -10,8 +11,6 @@
 #include <compare>
 
 namespace erbsland::time {
-
-class Duration;
 
 /// A signed time delta with nanosecond resolution.
 ///
@@ -24,13 +23,15 @@ public:
     TimeDelta() noexcept = default;
     /// Create a delta from nanoseconds.
     /// @param nanoseconds The nanosecond value.
-    explicit TimeDelta(Nanoseconds nanoseconds) noexcept : _nanoseconds{nanoseconds} {}
+    explicit TimeDelta(const Nanoseconds nanoseconds) noexcept : _nanoseconds{nanoseconds} {}
     /// Create a delta from any seconds-based amount.
+    /// Saturates if the value exceeds the maximum representable value.
     /// @tparam tAmount The amount type with a `SecondsUnitTag`.
     /// @param amount The amount to convert.
     template <typename tAmount>
         requires std::is_same_v<SecondsUnitTag, typename tAmount::Unit>
-    explicit TimeDelta(tAmount amount) noexcept : _nanoseconds{amount.template converted<Nanoseconds>()} {}
+    TimeDelta(tAmount amount) noexcept : // NOLINT(*-explicit-constructor)
+        _nanoseconds{amount.template converted<Nanoseconds>()} {}
     /// Create a delta from a `std::chrono::duration`.
     /// @tparam tRep The representation type.
     /// @tparam tPeriod The period type.
@@ -76,11 +77,52 @@ public: // conversion
     /// Convert to a duration, truncating sub-second nanoseconds toward zero.
     [[nodiscard]] auto toDuration() const noexcept -> Duration;
 
-public:
+public: // factory methods
     /// Return a zero delta.
     [[nodiscard]] static auto zero() noexcept -> TimeDelta { return {}; }
+    /// Return a time delta in nanoseconds.
+    [[nodiscard]] static auto nanoseconds(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in microseconds.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto microseconds(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in milliseconds.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto milliseconds(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in seconds.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto seconds(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in minutes.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto minutes(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in hours.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto hours(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in days.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto days(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in microseconds.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto microsecondsOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in milliseconds.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto millisecondsOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in seconds.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto secondsOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in minutes.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto minutesOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in hours.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto hoursOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in days.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto daysOrThrow(int64_t ticks) -> TimeDelta;
 
 private:
+    template <typename tTimeUnit>
+    [[nodiscard]] static auto createOrThrow(tTimeUnit value) -> TimeDelta;
+
     Nanoseconds _nanoseconds; ///< Total nanoseconds.
 };
 

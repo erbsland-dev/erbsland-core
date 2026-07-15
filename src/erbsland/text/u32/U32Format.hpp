@@ -19,10 +19,10 @@ namespace erbsland::text {
 class U32Format final {
 public:
     /// Parse and validate a UTF-32 format pattern.
-    /// @throws err::FormatError If the pattern is invalid or exceeds format limits.
+    /// @throws text::FormatError If the pattern is invalid or exceeds format limits.
     explicit U32Format(std::u32string_view pattern);
     /// Parse and validate a UTF-32 format pattern.
-    /// @throws err::FormatError If the pattern is invalid or exceeds format limits.
+    /// @throws text::FormatError If the pattern is invalid or exceeds format limits.
     explicit U32Format(const U32StringView &pattern);
 
     // defaults
@@ -38,11 +38,11 @@ public: // accessors
 
 public: // formatting
     /// Build a UTF-32 string from the arguments.
-    /// @throws err::FormatError If arguments do not match the pattern or output exceeds limits.
+    /// @throws text::FormatError If arguments do not match the pattern or output exceeds limits.
     template <typename... Args>
     [[nodiscard]] auto build(Args &&...args) const -> U32String;
     /// Append formatted arguments to a string builder.
-    /// @throws err::FormatError If arguments do not match the pattern or output exceeds limits.
+    /// @throws text::FormatError If arguments do not match the pattern or output exceeds limits.
     template <typename... Args>
     auto appendTo(StringBuilder &builder, Args &&...args) const -> StringBuilder &;
 

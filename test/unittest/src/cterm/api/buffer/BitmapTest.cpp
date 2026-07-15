@@ -63,7 +63,7 @@ public:
 
         REQUIRE(bitmap.pixel(bgeo::BlockPosition{1, 0}));
         REQUIRE(bitmap.readPixelRef(bgeo::BlockPosition{1, 0}));
-        REQUIRE_THROWS_AS(std::out_of_range, bitmap.readPixelRef(bgeo::BlockPosition{2, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, bitmap.readPixelRef(bgeo::BlockPosition{2, 0}));
     }
 
     void testFlipHorizontalMirrorsContent() {

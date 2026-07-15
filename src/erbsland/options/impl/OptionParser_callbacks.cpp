@@ -3,12 +3,11 @@
 #include "OptionParser.hpp"
 
 #include "../Option.hpp"
+#include "../OptionError.hpp"
 #include "../OptionModule.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
 #include "../OptionValues.hpp"
-
-#include "../../err/OptionError.hpp"
 
 #include <utility>
 
@@ -20,7 +19,7 @@ auto OptionParser::runSelectedModulePreCallback() -> bool {
     }
     try {
         _selectedModule->preParsingFn()(_selectedModule);
-    } catch (const err::OptionError &error) {
+    } catch (const options::OptionError &error) {
         return makeCallbackError(error.context(), OptionErrorReason::None);
     }
     return true;
@@ -33,7 +32,7 @@ auto OptionParser::runActiveOptionSetPreCallbacks() -> bool {
         }
         try {
             optionSet->preParsingFn()(optionSet);
-        } catch (const err::OptionError &error) {
+        } catch (const options::OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::None, optionSet);
         }
     }
@@ -52,7 +51,7 @@ auto OptionParser::runValidators() -> bool {
             }
             try {
                 option->validateFn()(optionValue, _values);
-            } catch (const err::OptionError &error) {
+            } catch (const options::OptionError &error) {
                 return makeValidatorError(error.context(), optionSet, option);
             }
         }
@@ -67,14 +66,14 @@ auto OptionParser::runPostCallbacks() -> bool {
         }
         try {
             optionSet->postParsingFn()(_values);
-        } catch (const err::OptionError &error) {
+        } catch (const options::OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::ValidationError, optionSet);
         }
     }
     if (_selectedModule != nullptr && _selectedModule->postParsingFn()) {
         try {
             _selectedModule->postParsingFn()(_values);
-        } catch (const err::OptionError &error) {
+        } catch (const options::OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::ValidationError);
         }
     }
@@ -99,9 +98,6 @@ auto OptionParser::makeCallbackError(
     if (context.reason() == OptionErrorReason::None && defaultReason != OptionErrorReason::None) {
         context.setReason(defaultReason);
     }
-    if (context.moduleName().isEmpty()) {
-        context.setModuleName(_moduleName);
-    }
     if (optionSet != nullptr && context.optionSet() == nullptr) {
         context.setOptionSet(optionSet);
     }
@@ -113,14 +109,16 @@ auto OptionParser::makeValidatorError(
     if (context.reason() == OptionErrorReason::None) {
         context.setReason(OptionErrorReason::ValidationError);
     }
-    if (context.moduleName().isEmpty()) {
-        context.setModuleName(_moduleName);
-    }
     if (context.optionSet() == nullptr) {
         context.setOptionSet(optionSet);
     }
     if (context.option() == nullptr) {
         context.setOption(option);
+    }
+    if (context.argumentIndex().isNoIndex()) {
+        if (const auto value = valueForOption(option); value != nullptr) {
+            context.setArgumentIndex(value->argumentIndex());
+        }
     }
     return makeError(std::move(context));
 }

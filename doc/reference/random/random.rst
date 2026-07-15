@@ -15,6 +15,8 @@ Interface
     :members:
 .. doxygenclass:: erbsland::random::Random
     :members:
+.. doxygenclass:: erbsland::random::RandomError
+    :members:
 .. doxygenclass:: erbsland::random::SecureRandom
     :members:
 .. doxygenclass:: erbsland::random::ThreadSafeFastRandom

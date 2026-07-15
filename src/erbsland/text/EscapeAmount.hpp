@@ -48,17 +48,13 @@ public: // accessors
 
 public: // conversion
     /// Convert this escape amount to its canonical string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toString() const -> StringView;
     /// Create an escape amount from a canonical string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] static auto fromString(const StringView &text) noexcept -> std::optional<EscapeAmount>;
     /// Create an escape amount from a canonical string.
     /// @throws err::ParseError if the string is not a supported escape amount.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] static auto fromStringOrThrow(const StringView &text) -> EscapeAmount;
     /// Create an escape amount from a format suffix character.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] static auto fromSuffix(Char character) noexcept -> std::optional<EscapeAmount>;
 
 private:

@@ -4,4 +4,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void acceptAny();
+
+}

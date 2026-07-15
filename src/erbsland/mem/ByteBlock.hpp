@@ -6,6 +6,7 @@
 #include "ByteBlockView.hpp"
 
 #include "impl/ByteBlockData.hpp"
+#include "impl/UnsafeByteBlockBuffer_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
@@ -23,6 +24,7 @@ namespace erbsland::mem {
 /// @tested{ByteBlockTest}
 class ByteBlock final {
     friend class ByteBlockView;
+    friend class impl::UnsafeByteBlockBuffer;
 
 public:
     /// Create a byte block filled with the given byte value.

@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `slice()` and `kept()` select the same text but make different storage
 /// choices.
 ///
@@ -25,4 +27,6 @@ void sliceAndKept() {
     el::io::printLine("Kept result:  "_el, noteCopy);
     el::io::printLine("Slice byte length: "_el, noteSlice.length());
     el::io::printLine("Kept byte length:  "_el, noteCopy.length());
+}
+
 }

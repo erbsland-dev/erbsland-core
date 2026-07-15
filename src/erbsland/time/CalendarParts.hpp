@@ -13,7 +13,7 @@ namespace erbsland::time {
 ///
 /// Used by calendar extraction helpers that split an epoch day count into the containing year and the remaining day
 /// offset within that year.
-/// @tested{TimeCalendarPartsTest::testYearCalendarHelpers}
+/// @tested{TimeCalendarPartsTest}
 struct YearDayOfYearParts {
     Year year;      ///< The extracted year.
     Days dayOfYear; ///< The zero-based day offset within `year`.
@@ -24,7 +24,7 @@ struct YearDayOfYearParts {
 /// A year and month pair.
 ///
 /// Used by month navigation helpers that may cross a year boundary.
-/// @tested{TimeCalendarPartsTest::testMonthCalendarHelpers}
+/// @tested{TimeCalendarPartsTest}
 struct YearMonthParts {
     Year year;   ///< The year of the month.
     Month month; ///< The month in `year`.
@@ -35,7 +35,7 @@ struct YearMonthParts {
 /// A month and day pair.
 ///
 /// Used by calendar extraction helpers that resolve a day-of-year value into month and day components.
-/// @tested{TimeCalendarPartsTest::testMonthCalendarHelpers}
+/// @tested{TimeCalendarPartsTest}
 struct MonthDayParts {
     Month month; ///< The extracted month.
     Day day;     ///< The day within `month`.
@@ -44,7 +44,7 @@ struct MonthDayParts {
 };
 
 /// A calendar date split into named parts.
-/// @tested{TimeCoreTest::testDateCommonHandling}
+/// @tested{TimeCoreTest}
 struct DateParts {
     Year year;   ///< The year component.
     Month month; ///< The month component.

@@ -6,6 +6,8 @@
 #include <string>
 #include <vector>
 
+namespace demo {
+
 /// Erbsland Core uses a rich API approach to keep boilerplate to a minimum.
 /// The common case stays short, readable, and maintainable.
 /// More dangerous and error-prone code is intentionally more explicit.
@@ -47,4 +49,6 @@ void stdVsCoreSplitAndJoin() {
         stdJoin += value;
     }
     el::io::printLine("std:  "_el, stdJoin);
+}
+
 }

@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        AnsiSequenceTest.cpp
         ApiWrapperDispatchTest.cpp
         BackendTest.cpp
         InputDispatchProbe.hpp
@@ -15,8 +16,13 @@ target_sources(erbsland-core-unittest PRIVATE
         ReadableBufferDispatchProbe.hpp
         TerminalConvenienceTest.cpp
         TerminalFlagsTest.cpp
-        TerminalOptionsRendererTest.cpp
         TerminalStreamTest.cpp
         TerminalTest.cpp
         WritableBufferDispatchProbe.hpp
 )
+
+if(NOT WIN32)
+    target_sources(erbsland-core-unittest PRIVATE
+            PosixBackendTest.cpp
+    )
+endif()

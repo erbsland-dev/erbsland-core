@@ -1,0 +1,61 @@
+<h1>HTML Parser and TextDocument Demo</h1>
+
+<p>
+This demo reads an HTML file through <strong>Path</strong> and
+<strong>PathContent</strong>, parses it with <strong>HtmlParser</strong>, stores
+the result in a <strong>TextDocument</strong>, and renders that document into a
+scrollable terminal buffer. Use the cursor keys to move line by line, page up
+and page down to jump, press <strong>s</strong> to cycle between document styles,
+and press <strong>q</strong> when you want to quit.
+</p>
+
+<h2>What This Demonstrates</h2>
+
+<ul>
+<li>Reading UTF-8 text with Path::content().readTextOrThrow().</li>
+<li>Converting an HTML fragment or document into a semantic TextDocument.</li>
+<li>Rendering headings, paragraphs, emphasis, strong text, links, lists, and code blocks.</li>
+<li>Keeping the rendered document in a CursorBuffer for scrolling.</li>
+</ul>
+
+<h2>Pipeline</h2>
+
+<ol>
+<li>Convert the command-line file argument into a Core Path.</li>
+<li>Read the file content as an el::String.</li>
+<li>Parse the HTML into a TextDocument.
+    <ul>
+    <li>Document boilerplate such as head is ignored.</li>
+    <li>Malformed tags are recovered as text where possible.</li>
+    </ul>
+</li>
+<li>Render the semantic document to terminal cells.</li>
+</ol>
+
+<h2>Definition List</h2>
+
+<dl>
+<dt>HtmlParser</dt>
+<dd>The tolerant parser that converts HTML input into a TextDocument.</dd>
+<dt>TextDocument</dt>
+<dd>The mutable tree of document nodes used by the text and terminal renderers.</dd>
+<dt>TerminalDocumentRenderer</dt>
+<dd>The renderer that writes TextDocument nodes to a CursorWriter.</dd>
+<dt>CursorBuffer</dt>
+<dd>The terminal buffer that stores rendered output and can grow vertically.</dd>
+</dl>
+
+<h2>Code Block</h2>
+
+<pre>auto html = path.content().readTextOrThrow();
+auto document = el::html::HtmlParser{el::AnyStringView{html}}.parse();
+el::TerminalDocumentRenderer{}.renderTo(buffer, document);
+</pre>
+
+<hr>
+
+<p>
+Links render as link text only, for example <a href="https://erbsland.dev">erbsland.dev</a>.
+The source file for this document lives in the demo directory, and you can pass
+your own HTML file as the optional command-line argument.
+</p>

@@ -7,6 +7,8 @@
 #include <array>
 #include <cstddef>
 
+namespace demo {
+
 constexpr auto cSquareSize = el::BlockSize{3, 3};
 using SquareArray = std::array<int, cSquareSize.area().toSizeT()>;
 
@@ -33,31 +35,30 @@ void buildMagicSquare(MagicSquare &square) {
 
 void printMagicSquare(const el::TextOutputStreamPtr &outputStream);
 
-/// `StringBuilderStream` is the combination of a `TextOutputStream` and a `StringBuilder`.
-/// It allows you to write text output directly into an in-memory string, using the same interface
-/// as other text output streams.
-/// This is useful for generic stream writing functions: a caller can pass a string builder stream
-/// instead of a file or terminal stream to capture the output in memory.
+/// `StringBuilderStream` combines a `TextOutputStream` and a `StringBuilder`.
+/// It lets a generic stream-writing function capture output in an in-memory string.
 void captureOutput() {
     const auto stringBuilderStream = el::StringBuilderStream::create();
-    for (auto i = 0; i < 3; ++i) {
+    for (auto index = 0; index < 3; ++index) {
         printMagicSquare(stringBuilderStream);
     }
     el::io::print(stringBuilderStream->takeString());
 }
 
 void printMagicSquare(const el::TextOutputStreamPtr &outputStream) {
-    MagicSquare square{};
+    auto square = MagicSquare{};
     buildMagicSquare(square);
-    const auto intFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{3});
+    const auto integerFormat = el::IntegerFormat::decimal().setFieldWidth(el::CpLength{3});
     outputStream->printLine("┌─────┬─────┬─────┐ Sum: "_el, square.magicSum);
     outputStream->printLine(
-        intFormat, "│ "_el, square.values[0], " │ "_el, square.values[1], " │ "_el, square.values[2], " │"_el);
+        integerFormat, "│ "_el, square.values[0], " │ "_el, square.values[1], " │ "_el, square.values[2], " │"_el);
     outputStream->printLine("├─────┼─────┼─────┤"_el);
     outputStream->printLine(
-        intFormat, "│ "_el, square.values[3], " │ "_el, square.values[4], " │ "_el, square.values[5], " │"_el);
+        integerFormat, "│ "_el, square.values[3], " │ "_el, square.values[4], " │ "_el, square.values[5], " │"_el);
     outputStream->printLine("├─────┼─────┼─────┤"_el);
     outputStream->printLine(
-        intFormat, "│ "_el, square.values[6], " │ "_el, square.values[7], " │ "_el, square.values[8], " │"_el);
+        integerFormat, "│ "_el, square.values[6], " │ "_el, square.values[7], " │ "_el, square.values[8], " │"_el);
     outputStream->printLine("└─────┴─────┴─────┘"_el);
+}
+
 }

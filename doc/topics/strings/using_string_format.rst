@@ -72,7 +72,7 @@ Using a format pattern consists of two separate phases:
 
 When the pattern is created, the formatter validates its syntax.
 If the pattern is invalid,
-:cpp:class:`FormatError <erbsland::err::FormatError>` is thrown.
+:cpp:class:`FormatError <erbsland::text::FormatError>` is thrown.
 
 After a pattern has been constructed successfully, you can:
 
@@ -81,7 +81,7 @@ After a pattern has been constructed successfully, you can:
   :cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
 
 Formatting also validates the supplied arguments.
-A :cpp:class:`FormatError <erbsland::err::FormatError>` is thrown if the arguments do not satisfy the requirements of
+A :cpp:class:`FormatError <erbsland::text::FormatError>` is thrown if the arguments do not satisfy the requirements of
 the pattern.
 
 Typical causes include:
@@ -94,8 +94,8 @@ Typical causes include:
 
 .. erbsland-demo::
     :source: text/StringFormat/FormattingPatterns.cpp
-    :exec: string_format --demo FormattingPatterns
-    :source-sha256: 7a5c666a3ce2ef212f24f5501a70c699b20d596c0da5e0b304dee40b43786af4
+    :exec: text/string_format --demo FormattingPatterns
+    :source-sha256: 41fd0bcda8d16ff5d7efde31ea105164d94110d74ae9f8159313e96809bf9715
 
 .. code-block:: cpp
 
@@ -154,8 +154,8 @@ The simplest placeholder is ``{}``.
 
 .. erbsland-demo::
     :source: text/StringFormat/EmptyPlaceholder.cpp
-    :exec: string_format --demo EmptyPlaceholder
-    :source-sha256: d4197e90b7288d7d449feaf5b99af4124acadb0fbacdf3258c58c22292435ceb
+    :exec: text/string_format --demo EmptyPlaceholder
+    :source-sha256: 97da395741c84458a05993f32a3a5146d412165d3937b2788f22c191b1d2fb7f
 
 .. code-block:: cpp
 
@@ -186,8 +186,8 @@ For example, ``{1}`` refers to the second argument supplied to the format operat
 
 .. erbsland-demo::
     :source: text/StringFormat/PositionalPlaceholders.cpp
-    :exec: string_format --demo PositionalPlaceholders
-    :source-sha256: b1a2aa18fe6319360796bb0336fd1a4139aa005b07fa5fd11d1179f15cf3b974
+    :exec: text/string_format --demo PositionalPlaceholders
+    :source-sha256: 40cbe6bcb13b3eb5a0bf3e83a96e949ddb1db513030bf28e7e2783a1c63d27a1
 
 .. code-block:: cpp
 
@@ -299,8 +299,8 @@ Additional zeroes are inserted after the sign and base prefix, if present.
 
 .. erbsland-demo::
     :source: text/StringFormat/IntegerFormats.cpp
-    :exec: string_format --demo IntegerFormats
-    :source-sha256: 3a2bb3f7933afbcb4ebf66c570c73c83e3514b0c4655c1a9b1e49ae04c1254ad
+    :exec: text/string_format --demo IntegerFormats
+    :source-sha256: 468661b78094fcb9b102f14fb220abf032ca234c8bb6ce7546f51b495fa28b50
 
 .. code-block:: cpp
 
@@ -334,8 +334,8 @@ If no alignment is specified:
 
 .. erbsland-demo::
     :source: text/StringFormat/TextFormats.cpp
-    :exec: string_format --demo TextFormats
-    :source-sha256: 4ac6d080eddf791c4680b8b55a8847bfb2d5e9ea3f5f15bdf28b4d32e9be3b8a
+    :exec: text/string_format --demo TextFormats
+    :source-sha256: 2653d5fb04acae64dfc88051a6561f4b8106ab765ccb3dd2226f19f9526d5cf4
 
 .. code-block:: cpp
 
@@ -367,8 +367,8 @@ Precision is forwarded to
 
 .. erbsland-demo::
     :source: text/StringFormat/FloatFormats.cpp
-    :exec: string_format --demo FloatFormats
-    :source-sha256: 576a07b01b6f26d4af5bd48275a251c657da013714aebd53177c89c8eda88afc
+    :exec: text/string_format --demo FloatFormats
+    :source-sha256: a52b959ce58e4b99d7d57d9e14d27cb3b83f870f91ef218e107374fce96b0969
 
 .. code-block:: cpp
 
@@ -405,8 +405,8 @@ Supported escape formats:
 
 .. erbsland-demo::
     :source: text/StringFormat/EscapeFormat.cpp
-    :exec: string_format --demo EscapeFormat
-    :source-sha256: 56dc615cc07157eef0458aba4d957159e49825e4f2c87beb8310dada4b72ce85
+    :exec: text/string_format --demo EscapeFormat
+    :source-sha256: 8a246a1d36f1e4041bcd66f724414d04d2880c44c649fa10278c02fbfd3eca35
 
 .. code-block:: cpp
 
@@ -436,8 +436,8 @@ An optional suffix modifies the escape intensity:
 
 .. erbsland-demo::
     :source: text/StringFormat/EscapeAmount.cpp
-    :exec: string_format --demo EscapeAmount
-    :source-sha256: 1fba047df1f5bc131bb136b4ee95b2612e35a1c85c9df8679fc2c6285cc3cbba
+    :exec: text/string_format --demo EscapeAmount
+    :source-sha256: c9373595f66a1a2942ce9ca2184a95e61f20981affe79030c8833aaa7d720e96
 
 .. code-block:: cpp
 
@@ -487,8 +487,8 @@ Character values are inserted as Unicode characters.
 
 .. erbsland-demo::
     :source: text/StringFormat/SupportedTypes.cpp
-    :exec: string_format --demo SupportedTypes
-    :source-sha256: a24ef92efc3efc89213f4cc10b9ff0ff3d314ec96750ff666980c9993692c530
+    :exec: text/string_format --demo SupportedTypes
+    :source-sha256: b00b0a269cbd1e690236a6866a61176a53c822f16405c33de0c5a0da6e47e060
 
 .. code-block:: cpp
 

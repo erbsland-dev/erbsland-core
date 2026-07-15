@@ -5,7 +5,6 @@
 namespace erbsland::options {
 
 /// The status of option processing.
-/// @tested{OptionsFrameworkTest}
 enum class OptionResultStatus {
     Success,        ///< Parsing succeeded.
     DisplayVersion, ///< The version should be displayed.

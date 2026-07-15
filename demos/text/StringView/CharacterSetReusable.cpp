@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Reuse named `CharSet` objects for validation policies that are applied repeatedly.
 ///
 /// Building a set once makes the policy easier to read and avoids reconstructing category or pattern based sets in hot
@@ -21,4 +23,6 @@ void characterSetReusable() {
     optionNames.forEach([&](const el::StringView &optionName) -> void {
         el::io::printLine(optionName, " -> "_el, yesNo, optionName.containsOnly(optionNameChars));
     });
+}
+
 }

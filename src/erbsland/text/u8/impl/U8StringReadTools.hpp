@@ -63,11 +63,16 @@ public: // find
 public: // read
     /// Get the byte length of the view.
     [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength;
+    /// Get the approximate display width of the decoded text.
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// Access the character at the given start byte position.
     [[nodiscard]] auto charAt(unit::ByteIndex startIndex) const noexcept -> Char;
     /// Read the character at the given index and advance the index.
     /// If the index is out of bounds, returns a signal character and does not advance the index.
     [[nodiscard]] auto read(unit::ByteIndex &index) const noexcept -> Char;
+    /// Read the character before the given index and retreat the index.
+    /// If the index is out of bounds, returns a signal character and does not retreat the index.
+    [[nodiscard]] auto readAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// Access the character at the given start byte position or throw if no valid character is found.
     [[nodiscard]] auto charAtOrThrow(unit::ByteIndex startIndex) const -> Char;
     /// Read the character at the given index and advance the index.

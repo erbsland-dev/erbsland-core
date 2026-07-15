@@ -5,13 +5,14 @@ from __future__ import annotations
 
 import re
 from collections.abc import Callable
-from pathlib import Path
+from dataclasses import dataclass
+from pathlib import Path, PurePosixPath
 from re import Match
 
 from lib.error import UtilityError
 from lib.file_update import FileUpdate
 from lib.include_block import IncludeBlock, IncludeBlockScanner
-from lib.path_safety import read_safe_text, require_safe_existing_file
+from lib.path_safety import read_safe_text
 
 from .config import CleanupConfig
 
@@ -29,10 +30,10 @@ class Include:
         (re.compile(r".*"), 7),
     ]
 
-    def __init__(self, path: str, is_global: bool):
+    def __init__(self, path: str, is_global: bool, *, allow_project_global: bool):
         self.path = path
         self.is_global = is_global
-        self.check_for_problems()
+        self.check_for_problems(allow_project_global=allow_project_global)
         self.group_id = self.get_group_id()
         self.sort_path = self.get_sort_path()
 
@@ -41,8 +42,10 @@ class Include:
             return False
         return self.sort_path == other.sort_path and self.is_global == other.is_global
 
-    def check_for_problems(self):
-        if self.path.startswith("src/") or self.path.startswith("erbsland/"):
+    def check_for_problems(self, *, allow_project_global: bool):
+        if "src" in PurePosixPath(self.path).parts:
+            raise UtilityError(f"Include statement with invalid path: {self.path}")
+        if self.path.startswith("erbsland/") and not allow_project_global:
             raise UtilityError(f"Include statement with invalid path: {self.path}")
 
     def get_group_id(self) -> int:
@@ -81,12 +84,12 @@ class IncludeCleanup:
         """Normalize the spacing between the copyright block and the first directive."""
         return IncludeBlockScanner.normalize_leading_spacing(text, is_header)
 
-    def create_include_from_match(self, path: Path, line_match: Match[str]) -> Include:
+    def create_include_from_match(self, path: Path, line_match: Match[str], scan_context: "IncludeCleanupContext") -> Include:
         """Create an include model from one parsed include line."""
         include_path = line_match.group(2)
-        if include_path.startswith("src/erbsland/"):
+        if include_path.startswith("src/erbsland/") and not scan_context.allow_project_global:
             include_path = self.fix_clion_refactoring_include_path(path, include_path)
-        return Include(include_path, line_match.group(1) == "<")
+        return Include(include_path, line_match.group(1) == "<", allow_project_global=scan_context.allow_project_global)
 
     def fix_clion_refactoring_include_path(self, path: Path, include_path: str) -> str:
         """Convert CLion's occasional source-root include into a local relative include."""
@@ -101,21 +104,25 @@ class IncludeCleanup:
         up_count = max(0, len(rel_to_path_parts) - 1)
         return "../" * up_count + "/".join(rel_to_target_parts)
 
-    def find_include_block(self, text: str, is_header: bool) -> IncludeBlock | None:
+    def find_include_block(
+        self, text: str, is_header: bool, scan_context: "IncludeCleanupContext"
+    ) -> IncludeBlock | None:
         """Find the include block that is managed by this utility."""
         try:
-            return IncludeBlockScanner.find_include_block(text, is_header)
+            return IncludeBlockScanner.find_include_block(
+                text, is_header, include_first_cpp=scan_context.include_first_cpp
+            )
         except ValueError as error:
             raise UtilityError(str(error)) from None
 
-    def collect_includes(self, path: Path, include_block: str) -> list[Include]:
+    def collect_includes(self, path: Path, include_block: str, scan_context: "IncludeCleanupContext") -> list[Include]:
         """Parse, deduplicate and sort all include lines from one include block."""
         include_list: list[Include] = []
         for line in include_block.splitlines():
             line_match = self.RE_INCLUDE_LINE.match(line)
             if not line_match:
                 continue
-            include = self.create_include_from_match(path, line_match)
+            include = self.create_include_from_match(path, line_match, scan_context)
             if include in include_list:
                 self.print_verbose(f"  ignored duplicate include statement: {line}")
                 continue
@@ -139,19 +146,19 @@ class IncludeCleanup:
         lines.append("")
         return "\n".join(lines) + "\n"
 
-    def process_file(self, path: Path, is_header: bool) -> None:
+    def process_file(self, path: Path, is_header: bool, scan_context: "IncludeCleanupContext") -> None:
         """Cleanup a single C++ file."""
-        self.print_verbose(f"Processing file: {path.relative_to(self.config.library_source_dir)}")
+        self.print_verbose(f"Processing file: {path.relative_to(scan_context.root)}")
         original_text = read_safe_text(path, "C++ source file", FileUpdate.MAX_COMPARE_FILE_SIZE)
         text = self.normalize_leading_spacing(original_text, is_header)
-        include_block = self.find_include_block(text, is_header)
+        include_block = self.find_include_block(text, is_header, scan_context)
         if include_block is None:
             if original_text != text:
                 self.file_update.write_if_changed(path, text)
                 return
             self.print_verbose("  no include block found.")
             return
-        include_list = self.collect_includes(path, include_block.text)
+        include_list = self.collect_includes(path, include_block.text, scan_context)
         if not include_list:
             self.print_verbose("Ignoring file without relevant includes.")
             return
@@ -160,13 +167,28 @@ class IncludeCleanup:
 
     def run(self) -> None:
         """Run the include cleanup pass."""
-        paths = [
-            path
-            for path in self.config.library_source_dir.rglob("*")
-            if not path.is_symlink() and path.suffix in self.config.scanned_file_suffixes
+        contexts = [
+            IncludeCleanupContext(self.config.library_source_dir, False, False),
+            IncludeCleanupContext(self.config.unit_test_source_dir, True, True),
+            *(IncludeCleanupContext(directory, True, True) for directory in self.config.demo_source_dirs),
         ]
-        paths.sort(key=lambda p: str(p).casefold())
-        for path in paths:
-            if path.name in self.config.excluded_names:
-                continue
-            self.process_file(path, path.suffix in self.config.header_file_suffixes)
+        for scan_context in contexts:
+            paths = [
+                path
+                for path in scan_context.root.rglob("*")
+                if not path.is_symlink() and path.suffix in self.config.scanned_file_suffixes
+            ]
+            paths.sort(key=lambda p: str(p).casefold())
+            for path in paths:
+                if path.name in self.config.excluded_names:
+                    continue
+                self.process_file(path, path.suffix in self.config.header_file_suffixes, scan_context)
+
+
+@dataclass(frozen=True)
+class IncludeCleanupContext:
+    """Include cleanup policy for one source tree."""
+
+    root: Path
+    allow_project_global: bool
+    include_first_cpp: bool

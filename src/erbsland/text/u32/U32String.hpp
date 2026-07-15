@@ -54,6 +54,7 @@
 #include "../../util/LoopResult.hpp"
 
 #include <cstddef>
+#include <initializer_list>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -70,7 +71,7 @@ namespace erbsland::text {
 /// Use `String` for most use cases and `U32String` only if you need random access to code points or require
 /// UTF-32 encoding.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U32StringTest}
+/// @tested{U32StringTest StringEscapingTest}
 class U32String {
     friend class debug::impl::StringDebugAccess;
     friend class U32StringView;
@@ -138,12 +139,20 @@ public: // tests
 public: // read
     /// @copydoc erbsland::text::U32StringView::length() const
     [[nodiscard]] auto length() const noexcept -> unit::CpLength;
+    /// @copydoc erbsland::text::U32StringView::characterLength() const
+    [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
+    /// @copydoc erbsland::text::U32StringView::displayWidth() const
+    [[nodiscard]] auto displayWidth() const noexcept -> int;
     /// @copydoc erbsland::text::U32StringView::indexAt(StringSide) const
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::CpIndex;
     /// @copydoc erbsland::text::U32StringView::charAt(StringSide) const
     [[nodiscard]] auto charAt(StringSide side) const noexcept -> Char;
     /// @copydoc erbsland::text::U32StringView::charAt(unit::CpIndex) const
     [[nodiscard]] auto charAt(unit::CpIndex startIndex) const noexcept -> Char;
+    /// @copydoc erbsland::text::U32StringView::readCharAndAdvance(unit::CpIndex &) const
+    [[nodiscard]] auto readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U32StringView::readCharAndRetreat(unit::CpIndex &) const
+    [[nodiscard]] auto readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U32StringView::advance(unit::CpIndex &, unit::CpLength) const
     auto advance(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
     /// @copydoc erbsland::text::U32StringView::retreat(unit::CpIndex &, unit::CpLength) const
@@ -160,8 +169,12 @@ public: // slice
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U32String;
     /// @copydoc erbsland::text::U32StringView::slice(StringSide, unit::CpLength) const
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U32String;
+    /// @copydoc erbsland::text::U32StringView::slice(StringSide, unit::CpIndex) const
+    [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U32String;
     /// @copydoc erbsland::text::U32StringView::slice(StringSide) const
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U32String>;
+    /// @copydoc erbsland::text::U32StringView::splitAt(unit::CpIndex) const
+    [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U32String, U32String>;
 
 public: // trim
     /// Remove leading and trailing ASCII whitespace or selected characters.
@@ -195,6 +208,7 @@ public: // find
     /// Find text in this string starting at a code point index.
     /// @param text The text to find.
     /// @param start The code point index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The code point index of the first match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto find(const U32StringView &text, unit::CpIndex start, CharCompareFn compareFn = {}) const noexcept
@@ -295,16 +309,18 @@ public: // conversion
     template <impl::AnyFloatType T>
     [[nodiscard]] auto toFloatOrThrow(FloatParseOptions options = FloatParseOptions::defaultOptions()) const -> T;
     /// Get the size of the escaped string.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto escapedSize(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const noexcept
         -> unit::CpLength;
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    /// @tested{StringEscapingTest}
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U32String;
     /// Create a string from one Unicode code point repeated one or more times.
     [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one()) -> U32String;
+    /// Create a string by joining all parts without a separator.
+    /// @param parts The UTF-32 string views to join.
+    /// @return The joined string.
+    [[nodiscard]] static auto fromJoined(std::initializer_list<U32StringView> parts) -> U32String;
     /// Create a string from an integer using the given format.
     template <math::AnyIntegerType T>
     [[nodiscard]] static auto fromInteger(T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> U32String;

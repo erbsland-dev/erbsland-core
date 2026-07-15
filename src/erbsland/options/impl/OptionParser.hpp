@@ -16,6 +16,7 @@
 #include "../OptionValues_fwd.hpp"
 
 #include "../../core/CommandLineArguments.hpp"
+#include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../unit/ArgumentUnit.hpp"
 
 #include <cstddef>
@@ -30,7 +31,7 @@ namespace erbsland::options::impl {
 class OptionParser final {
 public:
     /// Create a parser for the given options and command line arguments.
-    OptionParser(OptionsPtr options, const core::CommandLineArguments &args);
+    OptionParser(OptionsPtr options, const core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText);
 
     // defaults
     ~OptionParser() = default;
@@ -58,7 +59,8 @@ private:
     [[nodiscard]] auto parseActiveOptions() -> bool;
     [[nodiscard]] auto parseLongOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
     [[nodiscard]] auto parseShortOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
-    [[nodiscard]] auto consumeFollowingValue(text::StringView &value, unit::ArgumentIndex optionIndex) -> bool;
+    [[nodiscard]] auto consumeFollowingValue(
+        text::StringView &value, unit::ArgumentIndex optionIndex, const OptionPtr &option) -> bool;
     [[nodiscard]] auto collectPositionalArgument(const text::StringView &value, unit::ArgumentIndex index) -> bool;
     [[nodiscard]] auto assignPositionals() -> bool;
     [[nodiscard]] auto positionalOptions() const -> std::vector<OptionPtr>;
@@ -96,13 +98,23 @@ private:
 
     auto makeError(OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index) -> bool;
     auto makeError(
+        OptionErrorReason reason, text::StringView title, text::StringView description, unit::ArgumentIndex index)
+        -> bool;
+    auto makeError(
         OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)
         -> bool;
+    auto makeError(
+        OptionErrorReason reason,
+        text::StringView title,
+        text::StringView description,
+        unit::ArgumentIndex index,
+        const OptionPtr &option) -> bool;
     auto makeError(OptionErrorContext context) -> bool;
 
 private:
     OptionsPtr _options;                          ///< The options root.
     const core::CommandLineArguments &_args;      ///< The arguments to parse.
+    i18n::DisplayTextMapConstPtr _displayText;    ///< The wording captured for diagnostics.
     OptionModulePtr _selectedModule;              ///< The selected module, if any.
     text::StringView _moduleName;                 ///< The canonical selected module name.
     std::vector<OptionSetPtr> _activeOptionSets;  ///< The option sets active for parsing.

@@ -7,6 +7,8 @@
 #include <array>
 #include <vector>
 
+namespace demo {
+
 void BitmapShowcaseApp::beforeInitialize() {
     _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{68}, BlockCoordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
@@ -577,4 +579,6 @@ auto BitmapShowcaseApp::rainbowColors() -> const ColorSequence & {
         {Color{fg::BrightMagenta, bg::Black}, 3},
     };
     return colors;
+}
+
 }

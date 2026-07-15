@@ -79,6 +79,14 @@ The convenience predicates
         // Handle connector punctuation explicitly.
     }
 
+Display Width
+~~~~~~~~~~~~~
+
+``displayWidth()`` returns the approximate cell width for one Unicode code point.
+It uses the Unicode Light database and returns ``0`` for Unicode control characters, invalid code points, and internal
+signal values.
+Use it for straightforward alignment and measuring tasks where a per-code-point width is enough.
+
 Simple Case Mapping
 ~~~~~~~~~~~~~~~~~~~
 
@@ -262,6 +270,17 @@ caring about the exact subcategory.
 You usually reach it through :cpp:func:`Char::categoryGroup() <erbsland::text::Char::categoryGroup>`.
 That keeps user code short and readable when the precise subcategory would add no extra value.
 
+Combined Char
+-------------
+
+``CombinedChar`` stores one base Unicode code point and up to two combining marks.
+It is a small text-domain value type for places that need to keep a visually combined input character together without
+modeling full grapheme-cluster rules.
+
+The type normalizes unsupported input to the Unicode replacement character.
+Use ``first()`` for the leading code point, ``singleOrNull()`` for fast single-code-point checks, and ``toString()`` or
+``toU32String()`` to materialize the stored sequence.
+
 Interface
 =========
 
@@ -274,6 +293,8 @@ Interface
 .. doxygenclass:: erbsland::text::CharSet
     :members:
 .. doxygenenum:: erbsland::text::CharSignal
+.. doxygenclass:: erbsland::text::CombinedChar
+    :members:
 .. doxygenenum:: erbsland::text::UnicodeCategory
 .. doxygenenum:: erbsland::text::UnicodeCategoryGroup
 .. doxygenfunction:: erbsland::text::ucdVersion() noexcept -> unit::Version

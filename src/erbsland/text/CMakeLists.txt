@@ -3,7 +3,9 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(html)
 add_subdirectory(impl)
+add_subdirectory(pattern)
 add_subdirectory(u16)
 add_subdirectory(u32)
 add_subdirectory(u8)
@@ -11,6 +13,7 @@ add_subdirectory(u8)
 target_sources(erbsland-core PRIVATE
         AnyString.hpp
         AnyString_fwd.hpp
+        AnyStringView.cpp
         AnyStringView.hpp
         AnyStringView_fwd.hpp
         AsciiCategory.hpp
@@ -35,6 +38,10 @@ target_sources(erbsland-core PRIVATE
         CharSet_fwd.hpp
         CharSet_unicode.cpp
         CharSignal.hpp
+        CodeSnippetMarker.hpp
+        CombinedChar.cpp
+        CombinedChar.hpp
+        EncodingError.hpp
         EncodingErrorMode.hpp
         EscapeAmount.cpp
         EscapeAmount.hpp
@@ -49,6 +56,7 @@ target_sources(erbsland-core PRIVATE
         FormatArgumentKind.hpp
         FormatAs.hpp
         FormatAs_fwd.hpp
+        FormatError.hpp
         IntegerBase.cpp
         IntegerBase.hpp
         IntegerFormat.cpp
@@ -61,6 +69,10 @@ target_sources(erbsland-core PRIVATE
         LetterCase.hpp
         Literals.cpp
         Literals.hpp
+        ParseNumberError.hpp
+        PlainTextRenderer.cpp
+        PlainTextRenderer.hpp
+        PlainTextRenderer_fwd.hpp
         ProcessCharacterFn.hpp
         ReadIntegerResult.hpp
         ReadNumberStatus.hpp
@@ -90,6 +102,9 @@ target_sources(erbsland-core PRIVATE
         StringConverter.cpp
         StringConverter.hpp
         StringConverter_fwd.hpp
+        StringDecodeBuffer.cpp
+        StringDecodeBuffer.hpp
+        StringDecodeBuffer_decode.cpp
         StringDecoder.cpp
         StringDecoder.hpp
         StringDecoder_fwd.hpp
@@ -110,6 +125,10 @@ target_sources(erbsland-core PRIVATE
         StringLiteral_fwd.hpp
         StringMap.hpp
         StringMap_fwd.hpp
+        StringPattern.cpp
+        StringPattern.hpp
+        StringPattern.tpp
+        StringPattern_fwd.hpp
         StringSet.hpp
         StringSet_fwd.hpp
         StringSide.hpp
@@ -121,10 +140,29 @@ target_sources(erbsland-core PRIVATE
         StringView_fwd.hpp
         StringViewList.hpp
         StringViewList_fwd.hpp
+        TextDocument.cpp
+        TextDocument.hpp
+        TextDocument_fwd.hpp
+        TextNode.cpp
+        TextNode.hpp
+        TextNode.tpp
+        TextNode_fwd.hpp
+        TextNodeData.cpp
+        TextNodeData.hpp
+        TextNodeData_fwd.hpp
+        TextNodeType.cpp
+        TextNodeType.hpp
+        TextRingBuffer.cpp
+        TextRingBuffer.hpp
+        TextWalkResult.hpp
+        TextWalkStatus.hpp
         ToString.cpp
         ToString.hpp
         TransformCharacterFn.hpp
         TruncateMode.hpp
+        U16EncodingError.hpp
+        U32EncodingError.hpp
+        U8EncodingError.hpp
         UnicodeCategory.hpp
         UnicodeCategoryGroup.hpp
         UnicodeVersion.cpp

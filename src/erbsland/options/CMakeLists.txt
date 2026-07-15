@@ -16,10 +16,10 @@ target_sources(erbsland-core PRIVATE
         OptionChoices.cpp
         OptionChoices.hpp
         OptionChoices_fwd.hpp
-        OptionDisplayText.cpp
-        OptionDisplayText.hpp
         OptionEditor.cpp
         OptionEditor.hpp
+        OptionError.cpp
+        OptionError.hpp
         OptionErrorContext.hpp
         OptionErrorContext_fwd.hpp
         OptionErrorReason.hpp
@@ -33,11 +33,6 @@ target_sources(erbsland-core PRIVATE
         OptionModule.cpp
         OptionModule.hpp
         OptionModule_fwd.hpp
-        OptionRenderer.cpp
-        OptionRenderer.hpp
-        OptionRenderer_fwd.hpp
-        OptionRendererBase.cpp
-        OptionRendererBase.hpp
         OptionResult.hpp
         OptionResult_fwd.hpp
         OptionResultStatus.hpp
@@ -60,7 +55,4 @@ target_sources(erbsland-core PRIVATE
         OptionValues_fwd.hpp
         OptionValueStorage.hpp
         OptionValueType.hpp
-        StandardOptionRenderer.cpp
-        StandardOptionRenderer.hpp
-        StandardOptionRenderer_fwd.hpp
 )

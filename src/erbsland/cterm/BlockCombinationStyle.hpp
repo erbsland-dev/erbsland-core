@@ -99,7 +99,7 @@ public:
     /// @param characters The supported Unicode characters in matrix index order.
     /// @param resultMatrix The result matrix in row-major order using result indexes.
     /// The matrix size must be `characters.size() * characters.size()`.
-    /// @throws std::invalid_argument If the matrix size is invalid or the character count exceeds 255.
+    /// @throws err::ParameterError If the matrix size is invalid or the character count exceeds 255.
     MatrixBlockCombinationStyle(const text::U32StringView &characters, std::span<const uint8_t> resultMatrix);
 
 public: // implement BlockCombinationStyle

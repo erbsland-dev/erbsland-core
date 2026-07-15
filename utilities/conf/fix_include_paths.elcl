@@ -8,6 +8,16 @@ Sources                     : "src"
 # All paths are relative to the project root.
 Unittests                   : "test/unittest"
 
+# Directories with demo C++ sources.
+# All paths are relative to the project root.
+Demo Directories            :
+    * "demos"
+
+# Extra include roots used by demo targets.
+# All paths are relative to the project root.
+Demo Include Roots          :
+    * "demos/_common/src"
+
 # File names excluded from include path fixing.
 Excluded Names              :
     * "fwd.hpp"

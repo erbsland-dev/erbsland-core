@@ -1,5 +1,5 @@
-Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
-SPDX-License-Identifier: Apache-2.0
+Copyright (c) 2026 Tobias Erbsland - Erbsland DEV.
+https://erbsland.dev SPDX-License-Identifier: Apache-2.0
 
 .. index::
     !single: Slicing, Splitting, and Joining Strings
@@ -16,20 +16,20 @@ SPDX-License-Identifier: Apache-2.0
     single: StringList
     single: StringViewList
 
-*****************************************
+***************************************
 Slicing, Splitting, and Joining Strings
-*****************************************
+***************************************
 
 String processing often starts with a simple task: take a useful part from a larger text.
-You may want to extract a field, split a document into lines, keep a small fragment from a large buffer, or combine
-many strings into one result.
+You may want to extract a field, split a document into lines, keep a small fragment from a large buffer, or combine many
+strings into one result.
 
 Erbsland Core provides dedicated APIs for these common tasks:
 
 *   :cpp:func:`slice() <erbsland::text::U8StringView::slice>` selects a range without unnecessary work.
 *   :cpp:func:`kept() <erbsland::text::U8StringView::kept>` copies the selected range into independent storage.
-*   :cpp:func:`fromSplit() <erbsland::text::StringViewList::fromSplit>` splits text into a list of parts.
-*   :cpp:func:`join() <erbsland::text::StringList::join>` combines list entries into a single string.
+*   ``fromSplit()`` splits text into a list of parts.
+*   ``join()`` combines list entries into a single string.
 
 Most operations work with the native storage positions of a string.
 For UTF-8 text, these are byte positions.
@@ -66,10 +66,10 @@ Choose the operation that matches the information you already have and the stora
         - :cpp:func:`kept() <erbsland::text::U8StringView::kept>`
         - Copies the selected range so the large source can be released.
     *   - Split text into fields or lines.
-        - :cpp:func:`StringViewList::fromSplit() <erbsland::text::StringViewList::fromSplit>`
+        - ``StringViewList::fromSplit()``
         - Produces views into the original text.
     *   - Combine list entries into one text.
-        - :cpp:func:`StringList::join() <erbsland::text::StringList::join>`
+        - ``StringList::join()``
         - Calculates the final size first, then copies once.
 
 The examples on this page use :cpp:type:`StringView <erbsland::text::StringView>`,
@@ -98,8 +98,8 @@ were found by the string API.
 
 .. erbsland-demo::
     :source: text/StringView/ByteRangeSlicing.cpp
-    :exec: string_view --demo ByteRangeSlicing
-    :source-sha256: 8ec0a2682d1a5f522d8daa0afee166ff220fc1a1a9004a0484e98352c82877a4
+    :exec: text/string_view --demo ByteRangeSlicing
+    :source-sha256: cb4d8150296a80b753ef17448b611cbca6b77f8e8ac8dd6cb2892f011ed4b499
 
 .. code-block:: cpp
 
@@ -159,13 +159,12 @@ The special :cpp:func:`ByteRange::noRange() <erbsland::unit::IntegerUnitRange::n
 
 Byte slicing does not validate whether the start and end positions are UTF-8 character boundaries.
 If you cut through a multi-byte sequence, the resulting view is still safe to store and pass around, but it contains
-invalid UTF-8.
-When decoded, malformed sequences are represented with the Unicode replacement character.
+invalid UTF-8. When decoded, malformed sequences are represented with the Unicode replacement character.
 
 .. erbsland-demo::
     :source: text/StringView/SliceBoundaries.cpp
-    :exec: string_view --demo SliceBoundaries
-    :source-sha256: 195acacad6cedf70e7bde2a0fb43b3474fd5496e4fad43b642ac8361837b7757
+    :exec: text/string_view --demo SliceBoundaries
+    :source-sha256: 6a3f96ae3f612254a4dd6fca7931e1b51601a3c6e10721d62055f60a19143829
 
 .. code-block:: cpp
 
@@ -223,8 +222,8 @@ use byte ranges instead.
 
 .. erbsland-demo::
     :source: text/StringView/CodePointRangeSlicing.cpp
-    :exec: string_view --demo CodePointRangeSlicing
-    :source-sha256: aa9c29dfd9c69a3e683cb1b4f60c41b908639ce909866ebfa6e634be7d832b9d
+    :exec: text/string_view --demo CodePointRangeSlicing
+    :source-sha256: 97ff97116df3ab62470737d882c8b75f39a3350b7d6204d4dd142fbf1ff6756b
 
 .. code-block:: cpp
 
@@ -276,8 +275,8 @@ After you have the suffix, you can subtract its native length from the original 
 
 .. erbsland-demo::
     :source: text/StringView/FrontBackSlicing.cpp
-    :exec: string_view --demo FrontBackSlicing
-    :source-sha256: d98bbbf5fe6cab843f65ca349658840f056d73bc2f872f9b8bf5c1c9dad05699
+    :exec: text/string_view --demo FrontBackSlicing
+    :source-sha256: 768f43f9084249d6f7435c882896e635b87623b0f0a3a5ea592db5d642a5c7db
 
 .. code-block:: cpp
 
@@ -339,8 +338,8 @@ If you keep a copy, the large source can be released after the call.
 
 .. erbsland-demo::
     :source: text/StringView/SliceAndKept.cpp
-    :exec: string_view --demo SliceAndKept
-    :source-sha256: b2ac7ae9bb2fe182deedbbceb66cb59177ae2ec364ea3bfc77fa8331385c4a8b
+    :exec: text/string_view --demo SliceAndKept
+    :source-sha256: 8e9fdb406bc1e7a823c7982bec198ef3da9cddab1845c1ceea5a98c59518fd63
 
 .. code-block:: cpp
 
@@ -381,7 +380,7 @@ If you keep a copy, the large source can be released after the call.
 Splitting Strings
 =================
 
-Use :cpp:func:`StringViewList::fromSplit() <erbsland::text::StringViewList::fromSplit>` to split text into parts.
+Use ``StringViewList::fromSplit()`` to split text into parts.
 For the common UTF-8 aliases, :cpp:type:`StringViewList <erbsland::text::StringViewList>` stores views, while
 :cpp:type:`StringList <erbsland::text::StringList>` stores editable strings.
 
@@ -391,15 +390,15 @@ Empty parts are dropped by default, which is convenient for word splitting and w
 Pass ``keepEmpty = true`` when empty fields are meaningful, for example in table data.
 
 The split limit is the maximum number of split points to apply.
-:cpp:func:`ElementCount::infinite() <erbsland::unit::IntegerUnit::infinite>` is the default and uses all split points.
-:cpp:func:`ElementCount::zero() <erbsland::unit::IntegerUnit::zero>` applies no split points and returns one unsplit
+``ElementCount::infinite()`` is the default and uses all split points.
+``ElementCount::zero()`` applies no split points and returns one unsplit
 element.
 A finite limit of ``n`` produces at most ``n + 1`` parts.
 
 .. erbsland-demo::
     :source: text/StringView/SplittingText.cpp
-    :exec: string_view --demo SplittingText
-    :source-sha256: d008df4e390f5e50e62ce64958bb7319ef3731c0c967437c759a28c3132ff30a
+    :exec: text/string_view --demo SplittingText
+    :source-sha256: 94da9770e88894f9a73902f11bfae21ba40ae35df8d4d2d33cdeadd965beb7f3
 
 .. code-block:: cpp
 
@@ -438,19 +437,18 @@ A finite limit of ``n`` produces at most ``n + 1`` parts.
       12 | Åsleden | klar
       13 |  | dimma
       14 | Nordljus | stjärnklart
-    Limited split: 14 / Nordljus;stjärnklart
 
 .. erbsland-demo-end::
 
 Joining Strings
 ===============
 
-Use :cpp:func:`join() <erbsland::text::StringList::join>` to combine a list of strings.
+Use ``join()`` to combine a list of strings.
 The separator is optional.
 An empty separator joins entries directly.
 
-:cpp:func:`join() <erbsland::text::StringList::join>` is the natural counterpart to
-:cpp:func:`fromSplit() <erbsland::text::StringViewList::fromSplit>`.
+``join()`` is the natural counterpart to
+``fromSplit()``.
 It calculates the final size, reserves the required storage, and then copies the pieces into the result.
 This is both clearer and more efficient than appending repeatedly in application code.
 
@@ -459,8 +457,8 @@ You can split a document into views, transform or sort the list, and join it bac
 
 .. erbsland-demo::
     :source: text/StringView/JoiningText.cpp
-    :exec: string_view --demo JoiningText
-    :source-sha256: 11fba5e9fea5bb2d0b80b88a4bf9ec3336d9e579cf815452b95bfd9cb5db2d97
+    :exec: text/string_view --demo JoiningText
+    :source-sha256: 53eebd6e083f404e6cf693f763b365d1ad769129468654da079aab1a99b78b07
 
 .. code-block:: cpp
 
@@ -493,4 +491,3 @@ You can split a document into views, transform or sort the list, and join it bac
     14 Nordljus: stjärnklart
 
 .. erbsland-demo-end::
-

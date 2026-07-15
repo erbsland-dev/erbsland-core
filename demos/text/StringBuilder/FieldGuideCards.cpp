@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 struct Observation {
     el::StringView symbol;
     el::StringView species;
@@ -94,4 +96,6 @@ void appendFieldGuideCard(el::StringBuilder &builder, const Observation &observa
     builder.append("│ Count : "_el).append(observation.count).append(U'\n');
     builder.append("│ Note  : "_el).append(observation.note).append(U'\n');
     builder.append(U'╰').append(U'─', el::CpLength{58}).append("╯\n"_el);
+}
+
 }

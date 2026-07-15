@@ -63,9 +63,9 @@ public:
 
     void testMatrixCombinationStyleRejectsInvalidDefinitions() {
         static constexpr auto cTooSmallResultMatrix = std::array<uint8_t, 2>{{0x00U, 0x01U}};
-        REQUIRE_THROWS_AS(std::invalid_argument, MatrixBlockCombinationStyle(U"ab"_el, cTooSmallResultMatrix));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, MatrixBlockCombinationStyle(U"ab"_el, cTooSmallResultMatrix));
         REQUIRE_THROWS_AS(
-            std::invalid_argument,
+            erbsland::err::ParameterError,
             MatrixBlockCombinationStyle(
                 erbsland::text::U32String::fromCharacter(U'a', erbsland::unit::CpLength{256U}), {}));
     }

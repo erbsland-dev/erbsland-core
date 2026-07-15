@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `join()` combines all entries from a string list with an optional separator.
 ///
 /// This is more efficient and clearer than appending in a manual loop. The
@@ -21,4 +23,6 @@ void joiningText() {
 
     el::io::printLine("Sorted journal page:"_el);
     el::io::printLine(document);
+}
+
 }

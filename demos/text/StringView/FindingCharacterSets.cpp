@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// Character-set search functions find positions of decoded characters.
 ///
 /// Use findFirstOf and findLastOf to locate delimiters from a set. Use
@@ -29,9 +31,12 @@ void findingCharacterSets() {
         "First separator ...........: "_el, firstSeparator, " ('"_el, logLine.charAt(firstSeparator), "')"_el);
     el::io::printLine(
         "Last separator ............: "_el, lastSeparator, " ('"_el, logLine.charAt(lastSeparator), "')"_el);
-    el::io::printLine("Separator before status ...: "_el,
+    el::io::printLine(
+        "Separator before status ...: "_el,
         separatorBeforeStatus,
         " ('"_el,
         logLine.charAt(separatorBeforeStatus),
         "')"_el);
+}
+
 }

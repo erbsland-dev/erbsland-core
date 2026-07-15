@@ -10,7 +10,6 @@ namespace erbsland::unit {
 ///
 /// The order of the values follows their significance in a version.
 ///
-/// @tested{VersionTest}
 enum class VersionPart : uint8_t {
     Major,    ///< The major version part.
     Minor,    ///< The minor version part.

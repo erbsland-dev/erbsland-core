@@ -1,10 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/StreamError.hpp>
 #include <erbsland/math/SaturatingInteger.hpp>
 #include <erbsland/stream/impl/NativeOutputStream.hpp>
 #include <erbsland/stream/impl/StandardTextOutputStream.hpp>
+#include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/BooleanFormat.hpp>
 #include <erbsland/text/IntegerFormatFlag.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -15,10 +15,11 @@
 #include <span>
 #include <string>
 
-using el::err::StreamError;
+using el::stream::StreamError;
 using el::stream::TextOutputStream;
 using el::unit::ElementCount;
 using namespace el::text;
+using namespace el::text::literals;
 
 namespace {
 
@@ -79,23 +80,30 @@ class StandardTextOutputStreamTest final : public el::UnitTest {
     public:
         void writeBytes(const std::span<const char> bytes) override {
             if (failOnWrite) {
-                throw StreamError{"Expected write failure."};
+                throw StreamError{el::stream::StreamErrorContext{
+                    "Failed to write to the test output stream."_el,
+                    "The configured test write failure was triggered."_el}};
             }
             text.append(bytes.data(), bytes.size());
         }
 
         void flush() override {
             if (failOnFlush) {
-                throw StreamError{"Expected flush failure."};
+                throw StreamError{el::stream::StreamErrorContext{
+                    "Failed to flush the test output stream."_el,
+                    "The configured test flush failure was triggered."_el}};
             }
             flushCount += 1U;
         }
+
+        void abort() noexcept override { aborted = true; }
 
     public:
         std::string text;
         std::size_t flushCount{0};
         bool failOnWrite{false};
         bool failOnFlush{false};
+        bool aborted{false};
     };
 
 public:
@@ -112,6 +120,7 @@ public:
         textStream.write(Char{U' '});
         textStream.writeLine("World"_el);
         textStream.writeLine();
+        textStream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"Hello World\n\n"});
     }
@@ -130,6 +139,7 @@ public:
         stream.printLine("styled=", booleanFormat, true, "|", false);
         stream.print("next");
         stream.printLine();
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"value=0xff, ok=true, ratio=1.25\nstyled=Yes|No\nnext\n"});
     }
@@ -150,6 +160,7 @@ public:
             PrintRawValueType{},
             "|",
             PrintBothType{});
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"string|view|0xff|string-wins\n"});
     }
@@ -159,6 +170,7 @@ public:
         auto stream = el::stream::impl::StandardTextOutputStream{fake};
 
         stream.printLine("value=", el::math::SatInt32{42}, ", size=", std::size_t{7U});
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"value=42, size=7\n"});
     }
@@ -183,6 +195,7 @@ public:
             std::int64_t{-64},
             "|",
             std::uint64_t{64U});
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"-8|8|-16|16|-32|32|-64|64\n"});
     }
@@ -199,6 +212,7 @@ public:
         stream.printLine('A', u8'B', u'C', U'D');
         stream.printLine(plainText, "|", utf8Text, "|", utf16Text, "|", utf32Text, "|", false);
         stream.printLine("null:", nullptr);
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"ABCD\nplain|utf8|utf16|utf32|false\nnull:\n"});
     }
@@ -213,6 +227,7 @@ public:
         const auto utf32Text = std::u32string{U"utf32"};
 
         stream.printLine(plainText, "|", utf8Text, "|", utf16Text, "|", utf32Text);
+        stream.flush();
 
         REQUIRE_EQUAL(fake->text, std::string{"plain|utf8|utf16|utf32\n"});
     }
@@ -227,15 +242,14 @@ public:
         REQUIRE_EQUAL(fake->flushCount, std::size_t{2U});
     }
 
-    void testCloseIsIgnored() {
+    void testCloseDrainsAndCloses() {
         const auto fake = std::make_shared<FakeNativeOutputStream>();
         auto stream = el::stream::impl::StandardTextOutputStream{fake};
 
-        stream.close();
-
-        REQUIRE(stream.isOpen());
-        stream.printLine("Still open");
-        REQUIRE_EQUAL(fake->text, std::string{"Still open\n"});
+        stream.printLine("Before close");
+        REQUIRE(stream.close() == el::stream::StreamCloseStatus::Closed);
+        REQUIRE_FALSE(stream.isOpen());
+        REQUIRE_EQUAL(fake->text, std::string{"Before close\n"});
     }
 
     void testNativeErrorsPropagate() {
@@ -243,7 +257,8 @@ public:
         auto stream = el::stream::impl::StandardTextOutputStream{fake};
         fake->failOnWrite = true;
 
-        REQUIRE_THROWS_AS(StreamError, stream.write(String{std::string_view{"test"}}));
+        stream.write(String{std::string_view{"test"}});
+        REQUIRE_THROWS_AS(StreamError, stream.flush());
 
         fake->failOnWrite = false;
         fake->failOnFlush = true;

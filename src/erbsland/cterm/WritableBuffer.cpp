@@ -7,6 +7,7 @@
 #include "impl/FramePainter.hpp"
 
 #include "../bgeo/BlockAlignedSource.hpp"
+#include "../err/ParameterError.hpp"
 #include "../text/EncodingErrorMode.hpp"
 
 namespace erbsland::cterm {
@@ -375,7 +376,8 @@ void WritableBuffer::drawBuffer(
 
 void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOptions &options) {
     if (static_cast<const ReadableBuffer *>(this) == &buffer) {
-        throw std::invalid_argument{"WritableBuffer::drawBuffer() does not support drawing a buffer onto itself."};
+        throw err::ParameterError{
+            "WritableBuffer::drawBuffer() does not support drawing a buffer onto itself.", "buffer"};
     }
     const auto *source = &buffer;
     auto sourceRect = options.useFullSource() ? source->rect() : options.sourceRect();

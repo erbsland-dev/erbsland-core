@@ -71,6 +71,8 @@ Interface
 
 .. doxygenstruct:: erbsland::text::FormatAsU32Text
     :members:
+.. doxygenclass:: erbsland::text::FormatError
+    :members:
 .. doxygentypedef:: erbsland::text::StringFormat
 .. doxygenclass:: erbsland::text::U16Format
     :members:

@@ -95,6 +95,8 @@ Interface
     :members:
 .. doxygenclass:: erbsland::text::AnyStringView
     :members:
+.. doxygenclass:: erbsland::text::EncodingError
+    :members:
 .. doxygenenum:: erbsland::text::EncodingErrorMode
 .. doxygenclass:: erbsland::text::StringConverter
     :members:
@@ -131,3 +133,9 @@ Interface
 .. doxygenfunction:: erbsland::text::toString(float value, FloatFormat format = FloatFormat::defaultFormat()) -> String
 
 .. doxygenfunction:: erbsland::text::toString(double value, FloatFormat format = FloatFormat::defaultFormat()) -> String
+.. doxygenclass:: erbsland::text::U16EncodingError
+    :members:
+.. doxygenclass:: erbsland::text::U32EncodingError
+    :members:
+.. doxygenclass:: erbsland::text::U8EncodingError
+    :members:

@@ -6,10 +6,11 @@
 
 namespace erbsland::stream::impl {
 
-void PrintContextToWrite::commit() {
+auto PrintContextToWrite::commit() -> StreamWriteStatus {
     if (!_builder.isEmpty()) {
-        _output.write(_builder.takeU8String());
+        return _output.write(_builder.takeU8String());
     }
+    return StreamWriteStatus::Success;
 }
 
 }

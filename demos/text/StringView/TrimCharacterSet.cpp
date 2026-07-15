@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 /// `StringView::trimmed()` returns a view with selected characters removed from the front, back, or both sides.
 ///
 /// With a custom `CharSet`, trimming is not limited to whitespace.
@@ -18,4 +20,6 @@ void trimCharacterSet() {
     el::io::printLine("Both sides : \"", clean, "\""_el);
     el::io::printLine("Front only : \"", frontOnly, "\""_el);
     el::io::printLine("Back only .: \"", backOnly, "\""_el);
+}
+
 }

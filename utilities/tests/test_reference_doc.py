@@ -32,7 +32,8 @@ class ReferenceDocTest(unittest.TestCase):
             reference_dir=self.reference_dir,
             excluded_directory_names=frozenset({"impl"}),
             excluded_header_names=frozenset({"all.hpp", "fwd.hpp"}),
-            manual_header_paths=frozenset({Path("core/Definitions.hpp")}),
+            excluded_header_globs=(),
+            manual_page_relative_paths=frozenset({Path("core/definitions.rst")}),
             exclude_underscore_headers=True,
         )
         self.generator = ReferenceDocGenerator(self.config)
@@ -54,20 +55,13 @@ class ReferenceDocTest(unittest.TestCase):
         path.write_text(text, encoding="utf-8")
         return path
 
-    def test_path_mapping_and_exclusions(self) -> None:
+    def test_header_exclusions(self) -> None:
         header_path = self.source_dir / "math" / "SaturatingInteger.hpp"
-        page_path = self.config.reference_page_path(header_path)
 
-        self.assertEqual(self.reference_dir / "math" / "saturating_integer.rst", page_path)
-        self.assertEqual(
-            self.reference_dir / "unit" / "index_api.rst",
-            self.config.reference_page_path(self.source_dir / "unit" / "Index.hpp"),
-        )
         self.assertTrue(self.config.should_skip_header(self.source_dir / "math" / "all.hpp"))
         self.assertTrue(self.config.should_skip_header(self.source_dir / "math" / "fwd.hpp"))
         self.assertTrue(self.config.should_skip_header(self.source_dir / "math" / "Name_fwd.hpp"))
         self.assertTrue(self.config.should_skip_header(self.source_dir / "math" / "impl" / "Name.hpp"))
-        self.assertTrue(self.config.should_skip_header(self.source_dir / "core" / "Definitions.hpp"))
         self.assertFalse(self.config.should_skip_header(header_path))
 
     def test_extracts_documented_namespace_scope_declarations(self) -> None:
@@ -137,10 +131,10 @@ class Undocumented {};
 
     def test_extracts_documented_functions_with_attributes_and_split_return(self) -> None:
         path = self.write_header(
-            "err/ThrowHelper.hpp",
+            "text/ThrowingFunctions.hpp",
             """#pragma once
 
-namespace erbsland::err {
+namespace erbsland::text {
 
 /// Throw an error.
 [[noreturn]]
@@ -172,15 +166,15 @@ makeValue(int value) noexcept -> int {
 
         self.assertEqual(
             [
-                (ApiEntryKind.FUNCTION, "erbsland::err::throwError()"),
-                (ApiEntryKind.FUNCTION, "erbsland::err::makeValue(int value) noexcept -> int"),
-                (ApiEntryKind.FUNCTION, "erbsland::err::addValues(int first, int second) noexcept -> int"),
-                (ApiEntryKind.FUNCTION, "erbsland::err::wideValue(int value) noexcept -> int"),
+                (ApiEntryKind.FUNCTION, "erbsland::text::throwError()"),
+                (ApiEntryKind.FUNCTION, "erbsland::text::makeValue(int value) noexcept -> int"),
+                (ApiEntryKind.FUNCTION, "erbsland::text::addValues(int first, int second) noexcept -> int"),
+                (ApiEntryKind.FUNCTION, "erbsland::text::wideValue(int value) noexcept -> int"),
             ],
             [(entry.kind, entry.full_name) for entry in entries],
         )
 
-    def test_uses_doxygenfile_fallback_for_headers_without_documented_entries(self) -> None:
+    def test_omits_headers_without_supported_documented_entries(self) -> None:
         path = self.write_header(
             "math/Functions.hpp",
             """#pragma once
@@ -195,7 +189,7 @@ class Undocumented {};
         header = HeaderScanner(self.config).scan(path)
 
         self.assertEqual((), header.entries)
-        self.assertEqual(".. doxygenfile:: erbsland/math/Functions.hpp\n", self.generator.interface_for_header(header))
+        self.assertEqual("", self.generator.interface_for_header(header))
 
     def test_replace_interface_preserves_text_before_section(self) -> None:
         path = self.write_reference(
@@ -228,7 +222,7 @@ Interface
             updated,
         )
 
-    def test_orphan_page_gets_warning_interface(self) -> None:
+    def test_orphan_page_is_removed(self) -> None:
         path = self.write_reference(
             "math/old.rst",
             """Old
@@ -243,7 +237,7 @@ Interface
 
         self.generator.update_orphan_pages([])
 
-        self.assertIn("No matching public API header was found", path.read_text(encoding="utf-8"))
+        self.assertFalse(path.exists())
 
     def test_manual_reference_page_is_not_marked_as_orphan(self) -> None:
         path = self.write_reference(
@@ -260,7 +254,7 @@ Interface
 
         self.generator.update_orphan_pages([])
 
-        self.assertNotIn("No matching public API header was found", path.read_text(encoding="utf-8"))
+        self.assertTrue(path.exists())
 
     def test_toctree_entries_are_sorted(self) -> None:
         path = self.write_reference(
@@ -291,7 +285,7 @@ Interface
             updated,
         )
 
-    def test_indexes_include_existing_reference_pages(self) -> None:
+    def test_indexes_exclude_unmanaged_reference_pages(self) -> None:
         self.write_reference(
             "err/error.rst",
             """Error
@@ -308,8 +302,7 @@ Interface
 
         entries = self.generator.index_entries([])
 
-        self.assertIn("error", entries[self.reference_dir / "err"])
-        self.assertIn("err/index", entries[self.reference_dir])
+        self.assertNotIn(self.reference_dir / "err", entries)
 
     def test_malformed_reference_page_fails(self) -> None:
         path = self.write_reference(
@@ -361,7 +354,8 @@ using StringMap = int;
             reference_dir=self.reference_dir,
             excluded_directory_names=frozenset({"impl"}),
             excluded_header_names=frozenset({"all.hpp", "fwd.hpp"}),
-            manual_header_paths=frozenset(),
+            excluded_header_globs=(),
+            manual_page_relative_paths=frozenset(),
             exclude_underscore_headers=True,
             reference_groups=(group,),
         )
@@ -402,7 +396,8 @@ using StringList = int;
             reference_dir=self.reference_dir,
             excluded_directory_names=frozenset(),
             excluded_header_names=frozenset(),
-            manual_header_paths=frozenset(),
+            excluded_header_globs=(),
+            manual_page_relative_paths=frozenset(),
             exclude_underscore_headers=True,
             reference_groups=(group,),
         )
@@ -413,7 +408,7 @@ using StringList = int;
         self.assertIn("string_collections", entries[self.reference_dir / "text"])
         self.assertIn("text/index", entries[self.reference_dir])
 
-    def test_uncategorized_headers_are_warned_but_still_use_legacy_pages(self) -> None:
+    def test_uncategorized_headers_are_warned_without_pages(self) -> None:
         self.write_header(
             "math/Example.hpp",
             """#pragma once
@@ -433,7 +428,33 @@ using Example = int;
             self.generator.warn_uncategorized_headers(headers)
 
         self.assertIn("not assigned to reference groups", stderr.getvalue())
-        self.assertEqual(self.reference_dir / "math" / "example.rst", headers[0].page_path)
+        self.assertIsNone(headers[0].page_path)
+        self.generator.update_reference_pages(headers)
+        self.assertFalse((self.reference_dir / "math" / "example.rst").exists())
+
+    def test_group_globs_expand_and_apply_exclusions(self) -> None:
+        self.write_header("text/StringOne.hpp", "#pragma once\n")
+        self.write_header("text/StringTwo.hpp", "#pragma once\n")
+        self.write_header("text/StringExcluded.hpp", "#pragma once\n")
+        config_path = self.project_dir / "reference_doc.elcl"
+        config_path.write_text(
+            """[Main]
+Source Directory: "src/erbsland"
+Reference Directory: "doc/reference"
+
+*[Reference Groups]
+Page: "text/strings.rst"
+Header Globs: "text/String*.hpp"
+Excluded Header Globs: "text/*Excluded.hpp"
+""",
+            encoding="utf-8",
+        )
+
+        config = ReferenceDocConfig.read(self.project_dir, config_path)
+        self.assertEqual(
+            (Path("text/StringOne.hpp"), Path("text/StringTwo.hpp")),
+            config.reference_groups[0].header_paths,
+        )
 
     def test_duplicate_group_headers_fail_when_reading_config(self) -> None:
         self.write_header(

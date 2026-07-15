@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <ranges>
 
+namespace demo {
+
 constexpr static auto cStory = "🌲 Im stillen Wald hinter dem alten Observatorium sammelte Léa leuchtende Blätter, "
                                "während Mehmet den Windgeschwindigkeitsmesser reparierte. Über den Baumwipfeln "
                                "zogen schwere Regenwolken auf, doch zwischen den Ästen sangen die Vögel weiter. "
@@ -80,7 +82,8 @@ void efficientLiteralUsage() {
     // The memory debug view exposes both the visible range identity and the backing storage identity.
     // The original text and the selected word have different ranges but the same backing storage.
     constexpr auto debugDetails = el::DebugViewDetail::BackingStore;
-    el::io::printLine("The output below shows the memory view of the original text and three selected words.\n"_el,
+    el::io::printLine(
+        "The output below shows the memory view of the original text and three selected words.\n"_el,
         "Compare the field \"backingStorageId\" - all strings share the original literal data.\n\n"_el,
         "Original text:\n"_el,
         el::toDebugString(text, debugDetails),
@@ -92,4 +95,6 @@ void efficientLiteralUsage() {
             "Word "_el, index, ": \""_el, entry.first, "\", (length: "_el, entry.second.toRawValue(), ")"_el);
         el::io::printLine(el::toDebugString(wordList.at(index).first, debugDetails));
     }
+}
+
 }

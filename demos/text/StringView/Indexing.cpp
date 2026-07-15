@@ -3,6 +3,8 @@
 
 #include <DemoCommon.hpp>
 
+namespace demo {
+
 void printCharacterAtByByteIndex(const el::StringView &text, const el::ByteIndex byteIndex) {
     auto character = text.charAt(byteIndex);
     auto charText = el::String{};
@@ -90,4 +92,6 @@ void indexing() {
     el::io::printLine("\nSignal validation:"_el);
     const auto outOfRangeChar = text.charAt(el::ByteIndex{1024});
     el::io::printLine("  out-of-range access returned signal: "_el, outOfRangeChar.isSignal() ? "yes"_el : "no"_el);
+}
+
 }

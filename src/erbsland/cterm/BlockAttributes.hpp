@@ -204,6 +204,10 @@ public: // per-attribute modifiers
     constexpr void setStrikethroughInherited() noexcept { setInheritedFlag(Strikethrough); }
 
 public: // deprecated methods
+    /// Return these attributes resolved against a base state.
+    /// @param base The base attributes.
+    /// @return The resolved attributes.
+    /// @deprecated Use ``withBase()`` instead.
     [[deprecated("Please use withBase(base)"), nodiscard]]
     constexpr auto resolvedWith(const BlockAttributes base) const noexcept -> BlockAttributes {
         return withBase(base);

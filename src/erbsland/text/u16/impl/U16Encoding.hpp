@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../err/ThrowHelper.hpp"
 #include "../../../mem/ByteBlockView.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../unit/U16DataIndex.hpp"
 #include "../../../unit/U16DataLength.hpp"
+#include "../../impl/ThrowHelper.hpp"
 #include "../../StringEncoding.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
 
@@ -22,32 +22,27 @@
 namespace erbsland::text::impl::utf16 {
 
 /// Test if the string encoding is a UTF-16 encoding.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] constexpr auto isEncoding(const StringEncoding encoding) noexcept -> bool {
     return encoding == StringEncoding::Utf16 || encoding == StringEncoding::Utf16LittleEndian ||
         encoding == StringEncoding::Utf16BigEndian;
 }
 
 /// Get the UTF-16 byte order mark length.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] constexpr auto bomLength() noexcept -> std::size_t {
     return 2U;
 }
 
 /// Test if the byte data starts with a UTF-16 little-endian byte order mark.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto hasLittleEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
     return data.startsWith({0xFFU, 0xFEU});
 }
 
 /// Test if the byte data starts with a UTF-16 big-endian byte order mark.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto hasBigEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
     return data.startsWith({0xFEU, 0xFFU});
 }
 
 /// Read one UTF-16 code unit from a byte reader.
-/// @tested{U8StringEncodingTest}
 [[nodiscard]] inline auto readCodeUnit(mem::ByteReader &reader) noexcept -> char16_t {
     return static_cast<char16_t>(reader.readUInt16());
 }
@@ -71,12 +66,12 @@ inline auto encodedLength(const Char character) noexcept -> unit::U16DataLength 
 inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16DataIndex &position) -> Char {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
-        err::throwOutOfRange("Read position out of range");
+        text::impl::throwOutOfRange("Read position out of range");
     }
     const auto unit = buffer[index];
     if (Char::isHighSurrogate(unit)) {
         if (index + 1U >= buffer.size() || !Char::isLowSurrogate(buffer[index + 1U])) {
-            err::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
+            text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
         }
         const char32_t codePoint = char32_t{0x10000U} + (static_cast<char32_t>(unit - 0xD800U) << 10U) +
             static_cast<char32_t>(buffer[index + 1U] - 0xDC00U);
@@ -84,7 +79,7 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         return Char{codePoint};
     }
     if (Char::isLowSurrogate(unit)) {
-        err::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
+        text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
     }
     position.advance(unit::U16DataLength::one());
     return Char{static_cast<char32_t>(unit)};
@@ -92,7 +87,6 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// Malformed surrogate units are replaced and advance by one code unit.
-/// @tested{U16EncodingTest}
 [[nodiscard]] inline auto decodeCharOrReplace(
     const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept -> Char {
     const auto index = position.toSizeT();
@@ -120,7 +114,6 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// Malformed surrogate units return no character and advance by one code unit.
-/// @tested{U16EncodingTest}
 [[nodiscard]] inline auto decodeCharOrIgnore(
     const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept -> std::optional<Char> {
     const auto index = position.toSizeT();
@@ -191,7 +184,7 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
             }
             switch (errorMode) {
             case EncodingErrorMode::Throw:
-                err::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
+                text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
             case EncodingErrorMode::Ignore:
                 break;
             case EncodingErrorMode::Replace:
@@ -203,7 +196,7 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
         if (Char::isLowSurrogate(unit)) {
             switch (errorMode) {
             case EncodingErrorMode::Throw:
-                err::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
+                text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
             case EncodingErrorMode::Ignore:
                 break;
             case EncodingErrorMode::Replace:
@@ -270,7 +263,6 @@ auto forEachDecodedCharacter(const std::span<const char16_t> data, const Encodin
 }
 
 /// Test if the UTF-16 code-unit sequence is fully valid.
-/// @tested{U16EncodingTest}
 [[nodiscard]] inline auto isValid(const std::span<const char16_t> data) noexcept -> bool {
     auto position = unit::U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
@@ -289,7 +281,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
     while (!reader.isAtEnd()) {
         if (!reader.canRead(2U)) {
             if constexpr (errorMode == EncodingErrorMode::Throw) {
-                err::throwEncodingError("Truncated UTF-16 data");
+                text::impl::throwEncodingError("Truncated UTF-16 data");
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -328,7 +320,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
             }
             if constexpr (errorMode == EncodingErrorMode::Throw) {
                 reader.setPosition(unitPosition);
-                err::throwU16EncodingError("Invalid UTF-16 high surrogate", unitIndex);
+                text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", unitIndex);
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -346,7 +338,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
         if (Char::isLowSurrogate(unit)) {
             if constexpr (errorMode == EncodingErrorMode::Throw) {
                 reader.setPosition(unitPosition);
-                err::throwU16EncodingError("Invalid UTF-16 low surrogate", unitIndex);
+                text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", unitIndex);
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {

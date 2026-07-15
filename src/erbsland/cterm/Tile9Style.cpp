@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Tile9Style.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../text/EncodingErrorMode.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
-#include <stdexcept>
 
 namespace erbsland::cterm {
 
@@ -138,7 +138,7 @@ Tile9Style::Tile9Style(const ParsedTiles &parsed) noexcept :
 
 auto Tile9Style::parseTiles(const BlockStringView &tiles) -> ParsedTiles {
     if (tiles.length() != BlockCount{9U} && tiles.length() != BlockCount{16U}) {
-        throw std::invalid_argument{"Tile9Style requires exactly 9 or 16 terminal characters."};
+        throw err::ParameterError{"Tile9Style requires exactly 9 or 16 terminal characters.", "tiles"};
     }
     auto result = ParsedTiles{};
     result.hasExtendedTiles = tiles.length() == BlockCount{16U};

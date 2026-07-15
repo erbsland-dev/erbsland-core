@@ -69,8 +69,8 @@ It is convenient for small edits on an already editable string.
 
 .. erbsland-demo::
     :source: text/String/ClearResetAndAppend.cpp
-    :exec: string --demo ClearResetAndAppend
-    :source-sha256: b67d9e5fab0e8822bd34a57e109691e007dabc4552a1327af82fa339286da763
+    :exec: text/string --demo ClearResetAndAppend
+    :source-sha256: 81fdbe13c703e5d98b6f75a258d8a0f5a7f7522cd1c203b7d76e05aa1c2241a7
 
 .. code-block:: cpp
 
@@ -107,9 +107,6 @@ It is convenient for small edits on an already editable string.
     Draft: ridge log: lichen, moss···
       bytes=29 capacity=80
     After clear: reused after clear
-      bytes=18 capacity=80
-    After reset: fresh after reset
-      bytes=17 capacity=19
 
 .. erbsland-demo-end::
 
@@ -128,8 +125,8 @@ intent clearer.
 
 .. erbsland-demo::
     :source: text/String/RemoveAndKeepRanges.cpp
-    :exec: string --demo RemoveAndKeepRanges
-    :source-sha256: 4d11190346b8700f6a6c56959e072b0e190cad203bf470240e2595566255d256
+    :exec: text/string --demo RemoveAndKeepRanges
+    :source-sha256: a0f2cec03a7bdc8e6d5d37eeb8a8676fbc81bcf34a08afc933a9050ef5999178
 
 .. code-block:: cpp
 
@@ -188,8 +185,8 @@ Text removal works on decoded text, and an optional comparison function can be u
 
 .. erbsland-demo::
     :source: text/String/RemoveFirstAndAll.cpp
-    :exec: string --demo RemoveFirstAndAll
-    :source-sha256: 4635fdab710ede0cb9cdde8cc0765d05650bd69ddae2e813e84ee59333ace1f7
+    :exec: text/string --demo RemoveFirstAndAll
+    :source-sha256: 34396085312e2860a73e71391bb83ea659a9dd6fb37ca19bceb962a199f8b078
 
 .. code-block:: cpp
 
@@ -228,8 +225,6 @@ Text removal works on decoded text, and an optional comparison function can be u
     Source: mist :: frost :: mist :: aurora
     First text removed:  :: frost :: mist :: aurora
     All text removed:  :: frost ::  :: aurora
-    Characters removed: mistfrostmistaurora
-    Case-folded removal:  |  | aster
 
 .. erbsland-demo-end::
 
@@ -248,8 +243,8 @@ Use code-point positions only when that is the natural way to describe the edit.
 
 .. erbsland-demo::
     :source: text/String/InsertAndReplace.cpp
-    :exec: string --demo InsertAndReplace
-    :source-sha256: f3a34fa2bc5a4b20ca36d16107829c8200ea0f36666c7371105778dcc4e2d396
+    :exec: text/string --demo InsertAndReplace
+    :source-sha256: 91ea7e86f23849efd3d116f95371386c30fd77c55d7acb67c33961b2f0f99483
 
 .. code-block:: cpp
 
@@ -307,8 +302,8 @@ An optional ellipsis can be inserted into the result.
 
 .. erbsland-demo::
     :source: text/String/AlignAndTruncate.cpp
-    :exec: string --demo AlignAndTruncate
-    :source-sha256: a08e36e59f45ec63e270943c5d3857812c6e9523cce677377fc4681a399ce024
+    :exec: text/string --demo AlignAndTruncate
+    :source-sha256: 5fa4352a4a7ee321a90f43e3bd1b6ec87447ad0d4e39cf771e4c3322bcaa8d49
 
 .. code-block:: cpp
 
@@ -361,8 +356,8 @@ For larger generated documents, use :cpp:class:`StringBuilder <erbsland::text::S
 
 .. erbsland-demo::
     :source: text/String/EditingText.cpp
-    :exec: string --demo EditingText
-    :source-sha256: 2b71e8a574dba07cbd2999b08dc18032f29256ae67769d22ad719af40e05c7d4
+    :exec: text/string --demo EditingText
+    :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 

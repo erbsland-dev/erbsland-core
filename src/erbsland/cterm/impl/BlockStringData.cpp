@@ -51,10 +51,10 @@ void BlockStringData::appendCodePoint(const text::Char codePoint, const Color co
         append(Block{codePoint.toRawValue(), color, attributes});
         return;
     }
-    if (isControlCode(codePoint)) {
+    if (codePoint.isControl()) {
         return;
     }
-    if (text::impl::unicodeDisplayWidthFor(codePoint.toRawValue()) == 0) {
+    if (codePoint.displayWidth() == 0) {
         if (!_chars.empty()) {
             _chars.back() = _chars.back().withCombining(codePoint);
         }
@@ -102,7 +102,7 @@ auto BlockStringData::measureDisplayWidth(const text::U32StringView &text) -> in
             break;
         }
         if (isStringCharacter(codePoint)) {
-            result += Block{codePoint.toRawValue()}.displayWidth();
+            result += codePoint.displayWidth();
         }
     }
     return result;

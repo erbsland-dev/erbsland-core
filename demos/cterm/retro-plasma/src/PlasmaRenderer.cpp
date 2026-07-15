@@ -7,6 +7,8 @@
 #include <array>
 #include <cmath>
 
+namespace demo {
+
 void PlasmaRenderer::render(
     Buffer &buffer, const BlockRectangle rect, const double phase, const std::size_t paletteIndex) const noexcept {
 
@@ -73,4 +75,6 @@ auto PlasmaRenderer::cellForValue(const double normalizedValue, const std::size_
     const auto background = palette.color(baseIndex);
     const auto foreground = palette.color(nextIndex);
     return Block{cShades[shadeIndex], Color{foreground.fg(), background.bg()}};
+}
+
 }

@@ -6,6 +6,8 @@
 
 #include <chrono>
 
+namespace demo {
+
 /// Browse several text rendering demonstrations with left and right cursor keys.
 class TextGalleryApp final : public TerminalApplication {
 public:
@@ -42,3 +44,5 @@ private:
     FontPtr _font;
     std::size_t _pageIndex{0};
 };
+
+}

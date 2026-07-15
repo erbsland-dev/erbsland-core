@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Bitmap.hpp"
 
-#include "impl/SaturatingMath.hpp"
-
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
 

@@ -6,6 +6,10 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        CoAsyncGenerator.hpp
+        CoGenerator.hpp
+        CoTask.hpp
+        CoTask_fwd.hpp
         EnumFlags.hpp
         HashHelper.hpp
         HashMap.hpp
@@ -52,6 +56,8 @@ target_sources(erbsland-core PRIVATE
         Map_set.tpp
         Map_take.tpp
         Map_tests.tpp
+        Result.hpp
+        ResultWithData.hpp
         Set.hpp
         Set_algorithm.tpp
         Set_change.tpp

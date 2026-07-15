@@ -14,8 +14,8 @@
 
 namespace erbsland::options {
 
-/// Root configuration object for command line options and modules.
-/// @tested{OptionsFrameworkTest, OptionsParserTest}
+/// Root configuration object for command line options, global option sets, built-ins, and modules.
+/// @tested{OptionsFrameworkTest OptionsParserTest}
 class Options : public OptionSetManager {
 public:
     Options();
@@ -31,10 +31,13 @@ public:
     using OptionSetManager::addOption;
 
     /// Create an empty shared options root.
+    /// @return A shared options root with the built-in help and version options.
     [[nodiscard]] static auto create() -> OptionsPtr;
     /// Add a main option set.
+    /// @param optionSet The global option set to activate for root parsing and every selected module.
     void addSet(OptionSetPtr optionSet);
     /// Add an option module.
+    /// @param optionModule The module that can be selected as the first ordinary command-line argument.
     void addModule(OptionModulePtr optionModule);
 
 public: // implement OptionsManager
@@ -42,13 +45,27 @@ public: // implement OptionsManager
     auto editOption(const text::StringView &name) -> OptionEditor override;
 
 public: // accessors
-    /// Get the help text for the options root.
+    /// Get the help metadata for the options root.
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
-    /// Set the help text for the options root.
+    /// Set the complete help metadata for the options root.
+    /// @param help The replacement help metadata. The description becomes the root help summary.
     void setHelp(OptionHelp help) { _help = std::move(help); }
+    /// Set the help title for the options root.
+    /// @param title Root title used by renderers that expose title text.
+    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    /// Set the help description for the options root.
+    /// @param description Summary paragraph shown before generated root help.
+    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    /// Set the help epilog for the options root.
+    /// @param epilog Text rendered after root help output.
+    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    /// Set the help visibility for the options root.
+    /// @param visibility Root help visibility metadata for custom renderers.
+    void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get the unprocessed executable path from the command line.
     [[nodiscard]] auto executablePath() const noexcept -> const text::StringView & { return _executablePath; }
     /// Set the unprocessed executable path from the command line.
+    /// @param executablePath The original `argv[0]` text. The executable name is extracted for usage output.
     void setExecutablePath(text::StringView executablePath);
     /// Get the extracted executable name.
     [[nodiscard]] auto executableName() const noexcept -> const text::StringView & { return _executableName; }

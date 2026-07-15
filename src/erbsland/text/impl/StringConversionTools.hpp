@@ -97,21 +97,29 @@ public:
     [[nodiscard]] static auto toStdWString(const U32String &str, EncodingErrorMode errorMode) -> std::wstring;
     [[nodiscard]] static auto toStdWString(const U32StringView &str, EncodingErrorMode errorMode) -> std::wstring;
 
-    [[nodiscard]] static auto encode(const U8String &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U8String &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U8StringView &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U8StringView &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U8StringCharView &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U8StringCharView &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U16String &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U16String &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U16StringView &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U16StringView &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U16StringCharView &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U16StringCharView &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U32String &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U32String &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
-    [[nodiscard]] static auto encode(const U32StringView &str, StringEncoding encoding, StringBomMode bomMode)
+    [[nodiscard]] static auto encode(
+        const U32StringView &str, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
 
     [[nodiscard]] static auto decodeU8String(

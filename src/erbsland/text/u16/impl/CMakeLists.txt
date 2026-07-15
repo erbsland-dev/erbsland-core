@@ -26,6 +26,7 @@ target_sources(erbsland-core PRIVATE
         U16StringLiteralStorage.hpp
         U16StringModifyTools.cpp
         U16StringModifyTools.hpp
+        U16StringModifyTools_replace.cpp
         U16StringReader.cpp
         U16StringReader.hpp
         U16StringReader_fwd.hpp

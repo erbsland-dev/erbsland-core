@@ -25,6 +25,7 @@ extensions = [
     "sphinx_copybutton",
     "breathe",
     "erbsland.sphinx.ansi",
+    "erbsland_draft",
     "erbsland_demo",
     "erbsland_styles",
 ]
@@ -52,9 +53,13 @@ breathe_doxygen_config_options = {
     "STRIP_FROM_PATH": _processed_src_dir,
     "STRIP_FROM_INC_PATH": _processed_src_dir,
     "JAVADOC_AUTOBRIEF": "yes",
+    # Reference pages explicitly select the public API they render. Missing
+    # comments on every parsed implementation detail are therefore not an
+    # actionable diagnostic; malformed documentation remains reported.
+    "WARN_IF_UNDOCUMENTED": "no",
     "ALIASES": '"tested{1}=@verbatim embed:rst^^:el-tested:`\\1`^^@endverbatim", '
     '"notest{1}=@verbatim embed:rst^^:el-notest:`\\1`^^@endverbatim", '
-    '"needtest{1}=@verbatim embed:rst^^:el-notest:`\\1`^^@endverbatim", '
+    '"needtest{1}=@verbatim embed:rst^^:el-needtest:`\\1`^^@endverbatim", '
     '"usesunidb{1}=@verbatim embed:rst^^:el-unicode-db:`\\1`^^@endverbatim", '
     '"wip=@par Work in Progress:^^", '
     '"seedoc{1}=@verbatim embed:rst^^See: :doc:`\\1`^^@endverbatim", '

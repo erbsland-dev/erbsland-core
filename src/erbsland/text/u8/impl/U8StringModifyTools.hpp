@@ -8,6 +8,7 @@
 
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteRange.hpp"
+#include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"

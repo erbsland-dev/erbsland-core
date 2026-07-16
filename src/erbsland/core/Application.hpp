@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Application_fwd.hpp"
 #include "ApplicationInfo.hpp"
 #include "CommandLineArguments.hpp"
 #include "InitializeFn.hpp"

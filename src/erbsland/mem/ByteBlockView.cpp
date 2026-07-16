@@ -4,6 +4,8 @@
 
 #include "ByteBlock.hpp"
 
+#include "impl/ByteBlockData.hpp"
+
 #include "../err/OutOfRangeError.hpp"
 #include "../util/HashHelper.hpp"
 
@@ -11,6 +13,18 @@
 #include <utility>
 
 namespace erbsland::mem {
+
+ByteBlockView::ByteBlockView() = default;
+
+ByteBlockView::~ByteBlockView() = default;
+
+ByteBlockView::ByteBlockView(const ByteBlockView &) = default;
+
+ByteBlockView::ByteBlockView(ByteBlockView &&) noexcept = default;
+
+auto ByteBlockView::operator=(const ByteBlockView &) -> ByteBlockView & = default;
+
+auto ByteBlockView::operator=(ByteBlockView &&) noexcept -> ByteBlockView & = default;
 
 ByteBlockView::ByteBlockView(const ByteBlock &block) noexcept :
     _data{block._data}, _range{unit::ByteRange::fromLength(block.length())} {

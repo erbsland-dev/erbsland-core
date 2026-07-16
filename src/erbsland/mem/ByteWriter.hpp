@@ -4,6 +4,7 @@
 
 #include "Byte.hpp"
 #include "ByteBlock.hpp"
+#include "ByteWriter_fwd.hpp"
 #include "Endianness.hpp"
 
 #include "../unit/ByteIndex.hpp"

@@ -4,7 +4,7 @@
 
 #include "OptionHelpVisibility.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringView.hpp"
 
 #include <utility>
 

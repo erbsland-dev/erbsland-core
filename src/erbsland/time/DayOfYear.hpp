@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DayOfYear_fwd.hpp"
 #include "Year_fwd.hpp"
 
 #include "impl/TimePartBases.hpp"

@@ -2,18 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U32StringTraits.hpp"
+#include "U32StringData_fwd.hpp"
+
+#include "../../../mem/SharedArrayData.hpp"
 
 #include <string_view>
 
 namespace erbsland::text::impl {
-
-/// String data for UTF-32 encoded strings.
-/// We allocate one additional code unit for the null terminator and always ensure it is set.
-using U32StringData = U32StringTraits::StorageData;
-
-/// A shared pointer to UTF-32 string data.
-using U32StringDataPtr = U32StringTraits::StoragePtr;
 
 /// Create UTF-32 string data from a standard string view.
 /// The UTF-32 encoding is not validated, but the null terminator is always set.

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Version.hpp"
+#include "VersionRange_fwd.hpp"
 
 #include "../util/HashHelper.hpp"
 #include "../util/impl/ComparisonHelper.hpp"

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U32String_fwd.hpp"
+#include "U32StringConstIterator_fwd.hpp"
 #include "U32StringView_fwd.hpp"
 
 #include "../Char.hpp"

@@ -4,6 +4,7 @@
 
 #include "../StringBuilder.hpp"
 #include "../u32/U32String.hpp"
+#include "../u32/U32StringConstIterator.hpp"
 
 #include <algorithm>
 #include <string>

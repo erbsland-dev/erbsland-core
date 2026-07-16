@@ -4,6 +4,7 @@
 
 #include "AsciiCategory.hpp"
 #include "CharRange.hpp"
+#include "CharSet_fwd.hpp"
 #include "String_fwd.hpp"
 #include "UnicodeCategory.hpp"
 

@@ -22,7 +22,7 @@ public:
         Json = 2,    ///< Escape for JSON text.
         Cpp = 3,     ///< Escape for C++ literals.
         Xml = 4,     ///< Escape for XML text.
-        PCRE = 5,    ///< Escape for PCRE compatible formats.
+        RegEx = 5,   ///< Escape for regular expression literal patterns.
         Display = 6, ///< Escape unsafe characters for human-readable display text.
     };
 

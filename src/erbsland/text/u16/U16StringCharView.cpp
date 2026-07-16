@@ -6,6 +6,7 @@
 
 #include "impl/U16StringCharReadTool.hpp"
 #include "impl/U16StringComparisonTools.hpp"
+#include "impl/U16StringData.hpp"
 #include "impl/U16StringEncodingTools.hpp"
 #include "impl/U16StringModifyTools.hpp"
 #include "impl/U16StringReadTools.hpp"

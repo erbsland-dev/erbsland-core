@@ -3,9 +3,9 @@
 #pragma once
 
 #include "U8String.hpp"
+#include "U8StringCharView_fwd.hpp"
 #include "U8StringView_fwd.hpp"
 
-#include "impl/U8StringTransformTools.hpp"
 #include "impl/U8StringViewStorage.hpp"
 
 #include "../Char.hpp"

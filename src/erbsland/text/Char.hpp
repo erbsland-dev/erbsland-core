@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AsciiCategory.hpp"
+#include "Char_fwd.hpp"
 #include "CharCompareFn.hpp"
 #include "CharSignal.hpp"
 #include "IntegerBase.hpp"
@@ -11,8 +12,8 @@
 #include "UnicodeCategory.hpp"
 #include "UnicodeCategoryGroup.hpp"
 
-#include "../unit/ByteLength.hpp"
-#include "../unit/U16DataLength.hpp"
+#include "../unit/ByteLength_fwd.hpp"
+#include "../unit/U16DataLength_fwd.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <optional>
@@ -82,6 +83,10 @@ public: // tests
     [[nodiscard]] constexpr auto isAsciiAlphanumeric() const noexcept -> bool {
         return isAsciiLetter() || isAsciiDigit();
     }
+    /// Test if the Char is an ASCII word character (letter, digit, or underscore).
+    [[nodiscard]] constexpr auto isAsciiWord() const noexcept -> bool {
+        return isAsciiAlphanumeric() || _codePoint == U'_';
+    }
     /// Get the ASCII digit value.
     [[nodiscard]] constexpr auto digitValue() const noexcept -> std::optional<unsigned int> {
         if (_codePoint >= U'0' && _codePoint <= U'9') {
@@ -116,6 +121,13 @@ public: // tests
     [[nodiscard]] constexpr auto isAsciiPunctuation() const noexcept -> bool {
         return (_codePoint >= U'!' && _codePoint <= U'/') || (_codePoint >= U':' && _codePoint <= U'@') ||
             (_codePoint >= U'[' && _codePoint <= U'`') || (_codePoint >= U'{' && _codePoint <= U'~');
+    }
+    /// Test if the Char has a special meaning in regular-expression syntax.
+    [[nodiscard]] constexpr auto isSpecialRegexCharacter() const noexcept -> bool {
+        return _codePoint == U'.' || _codePoint == U'\\' || _codePoint == U'^' || _codePoint == U'$' ||
+            _codePoint == U'|' || _codePoint == U'{' || _codePoint == U'}' || _codePoint == U'(' ||
+            _codePoint == U')' || _codePoint == U'[' || _codePoint == U']' || _codePoint == U'+' ||
+            _codePoint == U'*' || _codePoint == U'?';
     }
     /// Test if the Char matches an ASCII-only category without using the Unicode Light database.
     [[nodiscard]] constexpr auto isAsciiCategory(const AsciiCategory category) const noexcept -> bool {
@@ -159,6 +171,16 @@ public: // tests
     /// Test if the Char represents a valid Unicode code-point.
     [[nodiscard]] constexpr auto isValidUnicode() const noexcept -> bool {
         return _codePoint <= 0x10FFFF && (_codePoint < 0xD800 || _codePoint > 0xDFFF);
+    }
+    /// Test if the Char can be displayed directly in diagnostics and other safe strings.
+    /// This rejects invalid values, controls, invisible formatting characters, and reserved display ranges.
+    [[nodiscard]] constexpr auto isSafeUnicode() const noexcept -> bool {
+        return isValidUnicode() && _codePoint > 0x001FU && !(_codePoint >= 0x007FU && _codePoint <= 0x009FU) &&
+            _codePoint != 0x061CU && !(_codePoint >= 0x200EU && _codePoint <= 0x200FU) &&
+            !(_codePoint >= 0x202AU && _codePoint <= 0x202EU) && !(_codePoint >= 0x2066U && _codePoint <= 0x2069U) &&
+            !(_codePoint >= 0x2400U && _codePoint <= 0x243FU) && !(_codePoint >= 0xFE00U && _codePoint <= 0xFE0FU) &&
+            !(_codePoint >= 0xFFF9U && _codePoint <= 0xFFFBU) && !(_codePoint >= 0xE0000U && _codePoint <= 0xE007FU) &&
+            !(_codePoint >= 0xE0100U && _codePoint <= 0xE01EFU);
     }
     /// Get the Unicode general category for this character.
     /// @usesunidb{Uses generated Unicode Character Database character metadata.}

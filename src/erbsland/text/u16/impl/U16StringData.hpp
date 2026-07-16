@@ -2,21 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U16StringTraits.hpp"
+#include "U16StringData_fwd.hpp"
 
-#include "../../impl/UnsafeU16StringAccess_fwd.hpp"
-#include "../../impl/UnsafeU16StringBuffer_fwd.hpp"
+#include "../../../mem/SharedArrayData.hpp"
 
 #include <string_view>
 
 namespace erbsland::text::impl {
-
-/// String data for UTF-16 encoded strings.
-/// We allocate one additional code unit for the null terminator and always ensure it is set.
-using U16StringData = U16StringTraits::StorageData;
-
-/// A shared pointer to UTF-16 string data.
-using U16StringDataPtr = U16StringTraits::StoragePtr;
 
 /// Create UTF-16 string data from a standard string view.
 /// The UTF-16 encoding is not validated, but the null terminator is always set.

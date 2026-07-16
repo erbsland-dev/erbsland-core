@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UnsafeU8StringAccess_fwd.hpp"
+
 #include "../u8/U8String.hpp"
 
 namespace erbsland::text::impl {

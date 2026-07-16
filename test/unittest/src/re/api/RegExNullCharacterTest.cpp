@@ -1,0 +1,142 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include "../StringHelper.hpp"
+#include "../TestHelper.hpp"
+
+#include <erbsland/re/RegEx.hpp>
+#include <erbsland/text/EncodingError.hpp>
+#include <erbsland/text/u16/U16String.hpp>
+#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/unittest/UnitTest.hpp>
+
+using namespace el::re;
+
+TESTED_TARGETS(RegEx)
+TAGS(Api Unicode)
+class RegExNullCharacterTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
+private:
+    template <typename StringType>
+    [[nodiscard]] static auto exactText() -> StringType {
+        StringType result;
+        result.append(el::text::Char{U'A'});
+        result.append(el::text::Char{U'\0'});
+        result.append(el::text::Char{U'B'});
+        return result;
+    }
+
+    template <typename StringType>
+    [[nodiscard]] static auto searchText() -> StringType {
+        StringType result;
+        result.append(el::text::Char{U'X'});
+        result.append(el::text::Char{U'A'});
+        result.append(el::text::Char{U'\0'});
+        result.append(el::text::Char{U'B'});
+        result.append(el::text::Char{U'Y'});
+        return result;
+    }
+
+    template <typename StringType>
+    void requireAllMatchingApis(const RegExPtr &regEx) {
+        const auto exact = exactText<StringType>();
+        const auto searchable = searchText<StringType>();
+        const auto match = regEx->match(exact);
+        REQUIRE(match != nullptr);
+        REQUIRE_EQUAL(match->begin(), 0U);
+        REQUIRE_EQUAL(match->end(), 3U);
+        REQUIRE_EQUAL(match->begin(1), 1U);
+        REQUIRE_EQUAL(match->end(1), 2U);
+
+        const auto fullMatch = regEx->fullMatch(exact);
+        REQUIRE(fullMatch != nullptr);
+        REQUIRE_EQUAL(fullMatch->begin(), 0U);
+        REQUIRE_EQUAL(fullMatch->end(), 3U);
+
+        const auto findFirst = regEx->findFirst(searchable);
+        REQUIRE(findFirst != nullptr);
+        REQUIRE_EQUAL(findFirst->begin(), 1U);
+        REQUIRE_EQUAL(findFirst->end(), 4U);
+        REQUIRE_EQUAL(findFirst->begin(1), 2U);
+        REQUIRE_EQUAL(findFirst->end(1), 3U);
+
+        REQUIRE(regEx->fullMatch(StringType{}) == nullptr);
+    }
+
+    template <typename StringType>
+    void requireFullMatch(const RegExPtr &regEx) {
+        REQUIRE(regEx->fullMatch(exactText<StringType>()) != nullptr);
+    }
+
+    void requireFullMatchAllWidths(const RegExPtr &regEx) {
+        WITH_CONTEXT(requireFullMatch<String>(regEx));
+        WITH_CONTEXT(requireFullMatch<el::text::U16String>(regEx));
+        WITH_CONTEXT(requireFullMatch<el::text::U32String>(regEx));
+    }
+
+    template <typename StringType>
+    void requireSingleNullFullMatch(const RegExPtr &regEx) {
+        const auto nullText = StringType::fromCharacter(el::text::Char{U'\0'});
+        REQUIRE(regEx->fullMatch(nullText) != nullptr);
+        REQUIRE(regEx->fullMatch(StringType{}) == nullptr);
+    }
+
+public:
+    void testNullPatternsAreRejectedByDefault() {
+        const auto nullPattern = String::fromCharacter(el::text::Char{U'\0'});
+        REQUIRE_THROWS_AS(RegExError, RegEx::compile(StringView{nullPattern}));
+        REQUIRE_THROWS_AS(RegExError, RegEx::compile("\\x00"_el));
+        REQUIRE_THROWS_AS(RegExError, RegEx::compile("\\u0000"_el));
+        REQUIRE_THROWS_AS(RegExError, RegEx::compile("[\\x{0}]"_el));
+    }
+
+    void testNullPatternsCanBeExplicitlyEnabled() {
+        auto settings = Settings{};
+        settings.enableFeature(Feature::AcceptNullInPattern);
+        const auto nullPattern = String::fromCharacter(el::text::Char{U'\0'});
+        const auto raw = RegEx::compile(StringView{nullPattern}, {}, settings);
+        const auto xEscape = RegEx::compile("\\x00"_el, {}, settings);
+        const auto uEscape = RegEx::compile("\\u0000"_el, {}, settings);
+        WITH_CONTEXT(requireSingleNullFullMatch<String>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<String>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<String>(uEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(uEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(uEscape));
+    }
+
+    void testMatchCaptureFullMatchFindAndEmptyInput() {
+        auto settings = Settings{};
+        settings.enableFeature(Feature::AcceptNullInPattern);
+        const auto regEx = RegEx::compile("A(\\x00)B"_el, {}, settings);
+        WITH_CONTEXT(requireAllMatchingApis<String>(regEx));
+        WITH_CONTEXT(requireAllMatchingApis<el::text::U16String>(regEx));
+        WITH_CONTEXT(requireAllMatchingApis<el::text::U32String>(regEx));
+    }
+
+    void testDotClassCategoryAndAnchors() {
+        auto settings = Settings{};
+        settings.enableFeature(Feature::AcceptNullInPattern);
+        for (
+            const auto pattern : {
+                StringView{"^A.B$"_el},
+                StringView{"^A[\\x00]B$"_el},
+                StringView{"^A\\WB$"_el},
+                StringView{"^A\\SB$"_el},
+                StringView{"^A\\DB$"_el},
+            }) {
+            WITH_CONTEXT(requireFullMatchAllWidths(RegEx::compile(pattern, {}, settings)));
+        }
+    }
+
+    void testNullInputCanBeExplicitlyRejected() {
+        auto settings = Settings{};
+        settings.enableFeature(Feature::AcceptNullInPattern);
+        settings.disableFeature(Feature::AcceptNullInInput);
+        const auto regEx = RegEx::compile("\\x00"_el, {}, settings);
+
+        REQUIRE_THROWS_AS(el::text::EncodingError, regEx->fullMatch(String::fromCharacter(el::text::Char{U'\0'})));
+    }
+};

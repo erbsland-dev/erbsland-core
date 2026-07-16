@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AnyString_fwd.hpp"
+#include "AnyStringView_fwd.hpp"
 #include "StringConverter.hpp"
 #include "StringKind.hpp"
 

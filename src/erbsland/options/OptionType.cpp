@@ -3,6 +3,7 @@
 #include "OptionType.hpp"
 
 #include "../text/Literals.hpp"
+#include "../text/StringView.hpp"
 
 namespace erbsland::options {
 

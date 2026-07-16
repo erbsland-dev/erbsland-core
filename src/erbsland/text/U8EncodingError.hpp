@@ -20,6 +20,10 @@ public:
     // defaults
     ~U8EncodingError() override = default;
 
+public:
+    /// Get the byte index where the malformed sequence was detected.
+    [[nodiscard]] auto index() const noexcept -> unit::ByteIndex { return _index; }
+
 private:
     unit::ByteIndex _index;
 };

@@ -4,12 +4,14 @@
 
 #include "U8String.hpp"
 #include "U8StringCharView.hpp"
+#include "U8StringConstIterator.hpp"
 #include "U8StringList.hpp"
 #include "U8StringLiteral.hpp"
 #include "U8StringViewList.hpp"
 
 #include "impl/U8StringCharReadTool.hpp"
 #include "impl/U8StringComparisonTools.hpp"
+#include "impl/U8StringData.hpp"
 #include "impl/U8StringEncodingTools.hpp"
 #include "impl/U8StringModifyTools.hpp"
 #include "impl/U8StringReadTools.hpp"

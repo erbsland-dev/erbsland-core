@@ -1,0 +1,64 @@
+name: Conventional CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Conventional build and test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: ${{ matrix.os == 'windows-latest' && 60 || 40 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest, windows-latest ]
+    env:
+      BUILD_DIR: cmake-build
+
+    steps:
+      # actions/checkout@v5.0.1
+      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+        with:
+          persist-credentials: false
+          submodules: recursive
+
+      - name: Install dependencies (Ubuntu)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake ninja-build
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          if ! command -v ninja >/dev/null; then
+            brew install ninja
+          fi
+
+      - name: Setup MSVC (Windows)
+        if: runner.os == 'Windows'
+        # ilammy/msvc-dev-cmd@v1.13.0
+        uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DCMAKE_UNITY_BUILD=OFF -DERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS=OFF -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+
+      - name: Configure (non-Windows)
+        if: runner.os != 'Windows'
+        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DCMAKE_UNITY_BUILD=OFF -DERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS=OFF
+
+      - name: Build
+        run: cmake --build cmake-build --parallel
+
+      - name: Run tests
+        shell: bash
+        working-directory: cmake-build
+        run: ctest --output-on-failure

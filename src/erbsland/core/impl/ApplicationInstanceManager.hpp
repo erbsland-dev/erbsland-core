@@ -3,6 +3,7 @@
 #pragma once
 
 #include "ApplicationData_fwd.hpp"
+#include "ApplicationInstanceManager_fwd.hpp"
 
 #include "../Application_fwd.hpp"
 

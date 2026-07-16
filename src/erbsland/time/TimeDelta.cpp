@@ -11,8 +11,8 @@ namespace erbsland::time {
 using namespace text::literals;
 
 namespace {
-constexpr auto cNanosecondsPerSecond = 1000000000.0;
-constexpr auto cNanosecondsPerDay = 86400.0 * cNanosecondsPerSecond;
+constexpr auto cNanosecondsPerSecondFloat = 1000000000.0;
+constexpr auto cNanosecondsPerDayFloat = 86400.0 * cNanosecondsPerSecondFloat;
 }
 
 template <typename tTimeUnit>
@@ -50,11 +50,11 @@ auto TimeDelta::toSeconds() const noexcept -> Seconds {
 }
 
 auto TimeDelta::toSecondsWithFractions() const noexcept -> double {
-    return static_cast<double>(_nanoseconds.toValue().toRawValue()) / cNanosecondsPerSecond;
+    return static_cast<double>(_nanoseconds.toValue().toRawValue()) / cNanosecondsPerSecondFloat;
 }
 
 auto TimeDelta::toDaysWithFractions() const noexcept -> double {
-    return static_cast<double>(_nanoseconds.toValue().toRawValue()) / cNanosecondsPerDay;
+    return static_cast<double>(_nanoseconds.toValue().toRawValue()) / cNanosecondsPerDayFloat;
 }
 
 auto TimeDelta::toStdNanoseconds() const noexcept -> std::chrono::nanoseconds {

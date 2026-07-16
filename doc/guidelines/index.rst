@@ -47,6 +47,7 @@ project.
     api/options
     api/path
     api/random
+    api/re
     api/stream
     api/system
     api/text

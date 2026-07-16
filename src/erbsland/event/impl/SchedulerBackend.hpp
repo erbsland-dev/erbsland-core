@@ -3,6 +3,7 @@
 #pragma once
 
 #include "EventTimer_fwd.hpp"
+#include "SchedulerBackend_fwd.hpp"
 
 #include "../EventBackend.hpp"
 #include "../EventBackendTarget_fwd.hpp"

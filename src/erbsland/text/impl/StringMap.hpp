@@ -5,6 +5,7 @@
 #include "StringHashSet.hpp"
 #include "StringKey.hpp"
 #include "StringList.hpp"
+#include "StringMap_fwd.hpp"
 #include "StringSet.hpp"
 
 #include "../../util/Map.hpp"

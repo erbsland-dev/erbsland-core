@@ -12,41 +12,6 @@
 
 using el::util::CoTask;
 
-namespace erbsland::test::cotasktest {
-
-template <typename T>
-void waitFor(CoTask<T> &task) {
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
-    while (!task.isComplete() && std::chrono::steady_clock::now() < deadline) {
-        std::this_thread::yield();
-    }
-}
-
-[[nodiscard]] static auto chainedTask() -> CoTask<int> {
-    const auto first = co_await CoTask<int>::run([]() -> int { return 20; });
-    const auto second = co_await CoTask<int>::run([first]() -> int { return first + 21; });
-    co_return second + 1;
-}
-
-[[nodiscard]] static auto voidTask(std::atomic<bool> &completed) -> CoTask<void> {
-    co_await CoTask<void>::run([&completed]() -> void { completed.store(true); });
-}
-
-[[nodiscard]] static auto cancelledTask(
-    std::atomic<bool> &release, std::atomic<bool> &workCompleted, std::atomic<bool> &continued) -> CoTask<void> {
-    co_await CoTask<void>::run([&release, &workCompleted]() -> void {
-        while (!release.load()) {
-            std::this_thread::yield();
-        }
-        workCompleted.store(true);
-    });
-    continued.store(true);
-}
-
-}
-
-using namespace erbsland::test::cotasktest;
-
 TESTED_TARGETS(CoTask CoWorkerService)
 class CoTaskTest final : public el::UnitTest {
 public:
@@ -133,5 +98,35 @@ public:
         REQUIRE_THROWS_AS(el::err::LogicError, task.result());
         release.store(true);
         waitFor(task);
+    }
+
+private:
+    template <typename T>
+    static void waitFor(CoTask<T> &task) {
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+        while (!task.isComplete() && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::yield();
+        }
+    }
+
+    [[nodiscard]] static auto chainedTask() -> CoTask<int> {
+        const auto first = co_await CoTask<int>::run([]() -> int { return 20; });
+        const auto second = co_await CoTask<int>::run([first]() -> int { return first + 21; });
+        co_return second + 1;
+    }
+
+    [[nodiscard]] static auto voidTask(std::atomic<bool> &completed) -> CoTask<void> {
+        co_await CoTask<void>::run([&completed]() -> void { completed.store(true); });
+    }
+
+    [[nodiscard]] static auto cancelledTask(
+        std::atomic<bool> &release, std::atomic<bool> &workCompleted, std::atomic<bool> &continued) -> CoTask<void> {
+        co_await CoTask<void>::run([&release, &workCompleted]() -> void {
+            while (!release.load()) {
+                std::this_thread::yield();
+            }
+            workCompleted.store(true);
+        });
+        continued.store(true);
     }
 };

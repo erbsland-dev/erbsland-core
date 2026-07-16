@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U16String.hpp"
+#include "U16StringCIMap_fwd.hpp"
 
 #include "../impl/StringMap.hpp"
 

@@ -10,6 +10,7 @@
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
 #include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u8/U8StringCharView.hpp>
 #include <erbsland/text/u8/U8StringView.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>

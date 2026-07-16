@@ -9,6 +9,7 @@
 #include "CursorWriter.hpp"
 #include "MoveMode.hpp"
 #include "ParagraphOptions.hpp"
+#include "Terminal_fwd.hpp"
 #include "TerminalFlags.hpp"
 #include "UpdateSettings.hpp"
 #include "WritableBuffer.hpp"

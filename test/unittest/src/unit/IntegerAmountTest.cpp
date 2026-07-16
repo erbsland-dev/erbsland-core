@@ -15,31 +15,22 @@ using el::math::SatInt16;
 using el::math::SatInt64;
 using el::math::SatUInt64;
 
-namespace erbsland::test::integeramounttest {
-
-struct SecondsUnit {};
-struct MetersUnit {};
-
-using DoubleSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<2>>;
-using Hours = el::unit::IntegerAmount<SecondsUnit, std::ratio<3600>>;
-using LargeMilliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli, SatInt64>;
-using Meters = el::unit::IntegerAmount<MetersUnit, std::ratio<1>>;
-using Milliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli>;
-using Minutes = el::unit::IntegerAmount<SecondsUnit, std::ratio<60>>;
-using Seconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<1>>;
-using SmallMilliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli, SatInt16>;
-using SmallSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<1>, SatInt16>;
-using TripleSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<3>>;
-
-template <typename tSource, typename tTarget>
-concept CanConvertIntegerAmount = requires(tSource source) { source.template converted<tTarget>(); };
-
-}
-
-using namespace erbsland::test::integeramounttest;
-
 TESTED_TARGETS(IntegerAmount)
 class IntegerAmountTest final : public el::UnitTest {
+    struct SecondsUnit {};
+    struct MetersUnit {};
+
+    using DoubleSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<2>>;
+    using Hours = el::unit::IntegerAmount<SecondsUnit, std::ratio<3600>>;
+    using LargeMilliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli, SatInt64>;
+    using Meters = el::unit::IntegerAmount<MetersUnit, std::ratio<1>>;
+    using Milliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli>;
+    using Minutes = el::unit::IntegerAmount<SecondsUnit, std::ratio<60>>;
+    using Seconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<1>>;
+    using SmallMilliseconds = el::unit::IntegerAmount<SecondsUnit, std::milli, SatInt16>;
+    using SmallSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<1>, SatInt16>;
+    using TripleSeconds = el::unit::IntegerAmount<SecondsUnit, std::ratio<3>>;
+
 public:
     void testCompileTimeContracts() {
         static_assert(Seconds{}.isZero());
@@ -70,8 +61,8 @@ public:
         static_assert(!std::equality_comparable_with<Seconds, Meters>);
         static_assert(!el::unit::impl::CompatibleIntegerAmount<Meters, typename Seconds::Unit>);
         static_assert(std::ratio_divide<typename Milliseconds::Ratio, typename Seconds::Ratio>::den != 1);
-        static_assert(CanConvertIntegerAmount<Seconds, Milliseconds>);
-        static_assert(!CanConvertIntegerAmount<DoubleSeconds, TripleSeconds>);
+        static_assert(canConvertIntegerAmount<Seconds, Milliseconds>);
+        static_assert(!canConvertIntegerAmount<DoubleSeconds, TripleSeconds>);
     }
 
     void testConstructionAndComparison() {
@@ -156,4 +147,8 @@ public:
         REQUIRE_EQUAL(negativeSeconds, Seconds{-123});
         REQUIRE_EQUAL(negative, Milliseconds{-4});
     }
+
+private:
+    template <typename tSource, typename tTarget>
+    static constexpr bool canConvertIntegerAmount = requires(tSource source) { source.template converted<tTarget>(); };
 };

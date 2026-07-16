@@ -6,6 +6,7 @@
 #include "U32StringDataView.hpp"
 #include "U32StringSharedStorage.hpp"
 
+#include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpRange.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringConversionTools_fwd.hpp"
+
 #include "../EncodingErrorMode.hpp"
 #include "../StringBomMode.hpp"
 #include "../StringEncoding.hpp"

@@ -15,6 +15,7 @@ Topics
     err/index
     path/index
     random/index
+    re/index
     event/index
     stream/index
     cterm/index

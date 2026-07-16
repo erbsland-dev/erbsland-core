@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringCIHashSet_fwd.hpp"
+
 #include "u8/U8StringCIHashSet.hpp"
 
 namespace erbsland::text {

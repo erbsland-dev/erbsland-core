@@ -6,6 +6,7 @@
 #include "String.hpp"
 #include "StringView.hpp"
 #include "StringViewList.hpp"
+#include "TextDocument_fwd.hpp"
 #include "TextNode.hpp"
 
 namespace erbsland::text {

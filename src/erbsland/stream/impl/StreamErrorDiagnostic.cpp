@@ -11,6 +11,7 @@
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode.hpp"
 #include "../../text/TextNodeType.hpp"
+#include "../../text/u8/U8StringConstIterator.hpp"
 
 #include <utility>
 

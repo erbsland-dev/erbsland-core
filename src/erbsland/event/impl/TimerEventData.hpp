@@ -3,6 +3,7 @@
 #pragma once
 
 #include "EventTimer.hpp"
+#include "TimerEventData_fwd.hpp"
 
 #include "../EventData.hpp"
 

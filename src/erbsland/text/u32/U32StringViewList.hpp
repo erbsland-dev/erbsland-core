@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U32StringView.hpp"
+#include "U32StringViewList_fwd.hpp"
 
 #include "../impl/StringList.hpp"
 

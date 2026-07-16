@@ -123,6 +123,14 @@ public:
         static_assert(!Char{U'A'}.isAsciiCategory(AsciiCategory::LowercaseLetter));
         static_assert(Char{U'9'}.isAsciiCategory(AsciiCategory::Digit));
         static_assert(Char{U'F'}.isAsciiCategory(AsciiCategory::HexDigit));
+        static_assert(Char{U'A'}.isAsciiWord());
+        static_assert(Char{U'9'}.isAsciiWord());
+        static_assert(Char{U'_'}.isAsciiWord());
+        static_assert(!Char{U'-'}.isAsciiWord());
+        static_assert(!Char{U'ä'}.isAsciiWord());
+        static_assert(Char{U'['}.isSpecialRegexCharacter());
+        static_assert(Char{U'\\'}.isSpecialRegexCharacter());
+        static_assert(!Char{U'A'}.isSpecialRegexCharacter());
         static_assert(Char{U'_'}.isAsciiCategory(AsciiCategory::Punctuation));
         static_assert(Char{U' '}.isAsciiCategory(AsciiCategory::Whitespace));
         static_assert(Char{U'\t'}.isAsciiCategory(AsciiCategory::Blank));
@@ -131,6 +139,10 @@ public:
         static_assert(!Char{U'ä'}.isAsciiCategory(AsciiCategory::Letter));
 
         REQUIRE(Char{U'Z'}.isAsciiCategory(AsciiCategory::Alphanumeric));
+        REQUIRE(Char{U'_'}.isAsciiWord());
+        REQUIRE_FALSE(Char{U'-'}.isAsciiWord());
+        REQUIRE(Char{U'?'}.isSpecialRegexCharacter());
+        REQUIRE_FALSE(Char{U'_'}.isSpecialRegexCharacter());
         REQUIRE(Char{U'~'}.isAsciiCategory(AsciiCategory::Punctuation));
         REQUIRE_FALSE(Char{U' '}.isAsciiCategory(AsciiCategory::Alphanumeric));
     }
@@ -154,6 +166,32 @@ public:
         REQUIRE_EQUAL(Char{U'8'}.digitValue().value(), 8U);
         REQUIRE_FALSE(Char{U'g'}.isDigitValue(IntegerBase::Hexadecimal));
         REQUIRE_EQUAL(Char::fromDigitValue(3U), Char{U'3'});
+    }
+
+    void testSafeUnicode() {
+        static_assert(!Char{0x001FU}.isSafeUnicode());
+        static_assert(Char{0x0020U}.isSafeUnicode());
+        static_assert(Char{0x007EU}.isSafeUnicode());
+        static_assert(!Char{0x007FU}.isSafeUnicode());
+        static_assert(!Char{0x009FU}.isSafeUnicode());
+        static_assert(Char{0x00A0U}.isSafeUnicode());
+        static_assert(!Char{0x061CU}.isSafeUnicode());
+        static_assert(!Char{0x200EU}.isSafeUnicode());
+        static_assert(!Char{0x202AU}.isSafeUnicode());
+        static_assert(!Char{0x2066U}.isSafeUnicode());
+        static_assert(!Char{0x2400U}.isSafeUnicode());
+        static_assert(!Char{0xFE00U}.isSafeUnicode());
+        static_assert(!Char{0xFFF9U}.isSafeUnicode());
+        static_assert(!Char{0xE0000U}.isSafeUnicode());
+        static_assert(!Char{0xE0100U}.isSafeUnicode());
+        static_assert(Char{0x1F600U}.isSafeUnicode());
+        static_assert(!Char{0xD800U}.isSafeUnicode());
+        static_assert(!Char::endOfData().isSafeUnicode());
+
+        REQUIRE(Char{U'A'}.isSafeUnicode());
+        REQUIRE_FALSE(Char{U'\n'}.isSafeUnicode());
+        REQUIRE_FALSE(Char{0x2400U}.isSafeUnicode());
+        REQUIRE_FALSE(Char::endOfData().isSafeUnicode());
     }
 
     void testUnicodeCategoryLookup() {

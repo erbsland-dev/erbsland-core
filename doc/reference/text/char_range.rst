@@ -43,6 +43,10 @@ For common ASCII checks, use :cpp:func:`isAscii() <erbsland::text::Char::isAscii
 They do not use the Unicode Light database and are a good fit for protocol parsing, command-line tooling, and other text
 formats that intentionally stay in the ASCII subset.
 
+Use :cpp:func:`isAsciiWord() <erbsland::text::Char::isAsciiWord>` for the common ASCII letter, digit, or underscore set.
+:cpp:func:`isSpecialRegexCharacter() <erbsland::text::Char::isSpecialRegexCharacter>` identifies characters that must be
+escaped when inserted literally into regular-expression syntax.
+
 .. code-block:: cpp
 
     using Char = el::Char;
@@ -138,6 +142,11 @@ It rejects values above ``U+10FFFF`` and surrogate code points.
 When a decoder encounters invalid input in a tolerant API, it can return
 :cpp:func:`replacement() <erbsland::text::Char::replacement>`.
 You can detect that value with :cpp:func:`isReplacement() <erbsland::text::Char::isReplacement>`.
+
+Use :cpp:func:`isSafeUnicode() <erbsland::text::Char::isSafeUnicode>` before inserting a character directly into
+diagnostics or other safe display text.
+It rejects invalid values, controls, invisible formatting characters, and reserved display ranges without consulting the
+Unicode Light database.
 
 Char Range
 ----------

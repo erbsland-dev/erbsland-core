@@ -7,7 +7,7 @@
 #include "HtmlEscapeFormatter.hpp"
 #include "JsonEscapeFormatter.hpp"
 #include "NoneEscapeFormatter.hpp"
-#include "PcreEscapeFormatter.hpp"
+#include "RegExEscapeFormatter.hpp"
 #include "XmlEscapeFormatter.hpp"
 
 #include <array>
@@ -43,7 +43,7 @@ auto EscapeFormatter::forFormat(const EscapeFormat format) noexcept -> const Esc
         FormatterEntry{EscapeFormat::Json, &JsonEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Cpp, &CppEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Xml, &XmlEscapeFormatter::instance},
-        FormatterEntry{EscapeFormat::PCRE, &PcreEscapeFormatter::instance},
+        FormatterEntry{EscapeFormat::RegEx, &RegExEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Display, &DisplayEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::None, &NoneEscapeFormatter::instance},
     };

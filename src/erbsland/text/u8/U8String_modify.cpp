@@ -3,6 +3,7 @@
 #include "U8String.hpp"
 
 #include "U8StringCharView.hpp"
+#include "U8StringConstIterator.hpp"
 #include "U8StringList.hpp"
 #include "U8StringLiteral.hpp"
 #include "U8StringView.hpp"

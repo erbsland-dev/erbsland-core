@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AnyString_fwd.hpp"
 #include "AnyStringView.hpp"
 #include "StringConverter.hpp"
 #include "StringKind.hpp"

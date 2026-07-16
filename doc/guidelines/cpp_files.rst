@@ -32,6 +32,37 @@ Forward Declarations
 If forward declarations to a nontrivial declared class or template are used from multiple files, put them
 into a special header ``Class_fwd.hpp``, that only contains the fwd implementation and all required includes.
 
+The forward header is the authoritative declaration location:
+
+1.  If ``Class_fwd.hpp`` exists, ``Class.hpp`` must include it. This lets the compiler diagnose declaration and
+    definition mismatches.
+2.  Use the canonical forward header for friends, pointers, references, function declarations with by-value
+    parameters or returns, and aliases that accept incomplete types.
+3.  Include the full definition for inheritance, by-value data members, inline, template, or ``constexpr`` bodies,
+    nested-type access, ``sizeof``, or default arguments that construct or access the type.
+4.  Template constraints and default template arguments belong in the canonical forward declaration. The
+    implementation header defines the same template without repeating defaults.
+5.  A forward header should include other canonical forward headers. A full project header is only appropriate when
+    an exposed alias or declaration genuinely requires its definition.
+
+Out-of-Line Implementations
+===========================
+
+Keep headers focused on declarations and code that must be visible to callers. Move non-template, non-``constexpr``
+implementations to the matching ``cpp`` file when they contain more than a defaulted special member or one simple
+member expression. Move dependencies used only by the extracted body to the ``cpp`` file as well.
+
+Templates stay in the owning ``tpp`` file and are included through that header. Do not add a heap-backed PImpl only
+to reduce compile time. Representation splitting is appropriate only when an existing heap or shared-storage design
+allows it without another allocation or a semantic or runtime regression.
+
+Include Ownership
+=================
+
+Each header and source file directly includes the declarations it uses. After moving an implementation out of a
+header, remove dependencies that were used only by that implementation. Source files are reviewed independently for
+stale includes and direct dependency completeness; they must not rely on unrelated transitive includes.
+
 Directories and Namespaces
 ==========================
 
@@ -53,4 +84,3 @@ Separating Implementation Details from the Public API
 4.  For classes, it is ok to have a ``impl`` variant. E.g. ``math::Example`` may have a ``math::impl::Example`` if
     this makes sense for hiding implementation details.
 5.  If naming clashes must be avoided, adding the suffix ``Impl`` to functions is ok – but discouraged.  
-

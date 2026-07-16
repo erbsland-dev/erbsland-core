@@ -6,6 +6,7 @@
 
 #include "impl/U8StringCharReadTool.hpp"
 #include "impl/U8StringComparisonTools.hpp"
+#include "impl/U8StringData.hpp"
 #include "impl/U8StringEncodingTools.hpp"
 #include "impl/U8StringModifyTools.hpp"
 #include "impl/U8StringReadTools.hpp"

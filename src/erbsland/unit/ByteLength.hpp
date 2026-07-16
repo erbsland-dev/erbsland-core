@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "ByteUnit.hpp"
+#include "ByteLength_fwd.hpp"
 #include "IntegerUnitAmount.hpp"
 
-namespace erbsland::unit {
-
-/// A byte-based length.
-using ByteLength = IntegerUnitAmount<ByteUnit>;
-
-}
+// The public alias is declared in the canonical forward header.

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U16StringSharedStorage.hpp"
 
+#include "U16StringData.hpp"
 #include "U16StringReadTools.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
@@ -13,6 +14,20 @@
 #include <utility>
 
 namespace erbsland::text::impl {
+
+U16StringSharedStorage::~U16StringSharedStorage() = default;
+
+U16StringSharedStorage::U16StringSharedStorage(const U16StringSharedStorage &) = default;
+
+U16StringSharedStorage::U16StringSharedStorage(U16StringSharedStorage &&) noexcept = default;
+
+auto U16StringSharedStorage::operator=(const U16StringSharedStorage &) -> U16StringSharedStorage & = default;
+
+auto U16StringSharedStorage::operator=(U16StringSharedStorage &&) noexcept -> U16StringSharedStorage & = default;
+
+auto U16StringSharedStorage::isEmpty() const noexcept -> bool {
+    return _range.isEmpty() || _data.isNull();
+}
 
 U16StringSharedStorage::U16StringSharedStorage(const std::u16string_view text) :
     _data{createU16StringData(text)}, _range{unit::U16DataRange::fromSizeT(text.size())} {
@@ -32,6 +47,39 @@ U16StringSharedStorage::U16StringSharedStorage(U16StringDataPtr data, unit::U16D
 
 U16StringSharedStorage::U16StringSharedStorage(const unit::U16DataRange range) noexcept :
     _data{createU16StringData(range.length().toSizeT())}, _range{range} {
+}
+
+auto U16StringSharedStorage::data() const noexcept -> const char16_t * {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.constGet()->data();
+}
+
+auto U16StringSharedStorage::dataForWrite() noexcept -> char16_t * {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.get()->data();
+}
+
+auto U16StringSharedStorage::dataSize() const noexcept -> std::size_t {
+    if (_data.isNull()) {
+        return 0;
+    }
+    return _data.get()->size() - 1U;
+}
+
+auto U16StringSharedStorage::storageId() const noexcept -> mem::StorageIdentifier {
+    if (data() == nullptr) {
+        return {};
+    }
+    const auto *begin = data() + _range.index().toSizeT();
+    return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
+}
+
+auto U16StringSharedStorage::isUniqueFullRange() const noexcept -> bool {
+    return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
 }
 
 auto U16StringSharedStorage::fromCodeUnits(const std::span<const char16_t> codeUnits) -> U16StringSharedStorage {

@@ -36,7 +36,7 @@ public:
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Json), 2U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Cpp), 3U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Xml), 4U);
-        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::PCRE), 5U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::RegEx), 5U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Display), 6U);
 
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::None}.toString(), "none"_el);
@@ -44,12 +44,13 @@ public:
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Json}.toString(), "json"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Cpp}.toString(), "cpp"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Xml}.toString(), "xml"_el);
-        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::PCRE}.toString(), "pcre"_el);
+        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::RegEx}.toString(), "regex"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Display}.toString(), "display"_el);
 
         REQUIRE_EQUAL(EscapeFormat::fromString("html"_el).value(), EscapeFormat::Html);
         REQUIRE_EQUAL(EscapeFormat::fromString("json"_el).value(), EscapeFormat::Json);
-        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("pcre"_el), EscapeFormat::PCRE);
+        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("regex"_el), EscapeFormat::RegEx);
+        REQUIRE_FALSE(EscapeFormat::fromString("pcre"_el).has_value());
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("display"_el), EscapeFormat::Display);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
         REQUIRE_THROWS(EscapeFormat::fromStringOrThrow("unknown"_el));
@@ -112,7 +113,7 @@ public:
         REQUIRE_EQUAL(xmlBalanced.length(), text.escapedSize(EscapeFormat::Xml));
     }
 
-    void testJsonCppAndPcreTargets() {
+    void testJsonCppAndRegExTargets() {
         const auto jsonText = U8String{std::u8string_view{u8"\"\\\n😀"}};
         const auto jsonEscaped = jsonText.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{jsonEscaped}.toStdString(), std::string{"\\\"\\\\\\n\\uD83D\\uDE00"});
@@ -123,10 +124,10 @@ public:
         REQUIRE_EQUAL(StringConverter{cppEscaped}.toStdString(), std::string{"A\\n\\u00E9\\U0001F600"});
         REQUIRE_EQUAL(cppEscaped.length(), cppText.escapedSize(EscapeFormat::Cpp, EscapeAmount::NonAscii));
 
-        const auto pcreText = U8String{std::string_view{"a+b*(c)"}};
-        const auto pcreEscaped = pcreText.toEscaped(EscapeFormat::PCRE, EscapeAmount::Required);
-        REQUIRE_EQUAL(StringConverter{pcreEscaped}.toStdString(), std::string{"a\\+b\\*\\(c\\)"});
-        REQUIRE_EQUAL(pcreEscaped.length(), pcreText.escapedSize(EscapeFormat::PCRE, EscapeAmount::Required));
+        const auto regExText = U8String{std::string_view{"a+b*(c)"}};
+        const auto regExEscaped = regExText.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{regExEscaped}.toStdString(), std::string{"a\\+b\\*\\(c\\)"});
+        REQUIRE_EQUAL(regExEscaped.length(), regExText.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
     }
 
     void testEscapeAmounts() {
@@ -172,14 +173,14 @@ public:
         REQUIRE_EQUAL(u16ViewResult.length(), u16View.escapedSize(EscapeFormat::Xml));
 
         const auto u32Text = U32String{std::u32string_view{U"[x]é"}};
-        const auto u32Result = u32Text.toEscaped(EscapeFormat::PCRE, EscapeAmount::NonAscii);
+        const auto u32Result = u32Text.toEscaped(EscapeFormat::RegEx, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{u32Result}.toStdU32String(), std::u32string{U"\\[x\\]\\x{E9}"});
-        REQUIRE_EQUAL(u32Result.length(), u32Text.escapedSize(EscapeFormat::PCRE, EscapeAmount::NonAscii));
+        REQUIRE_EQUAL(u32Result.length(), u32Text.escapedSize(EscapeFormat::RegEx, EscapeAmount::NonAscii));
 
         const auto u32View = U32StringView{u32Text};
-        const auto u32ViewResult = u32View.toEscaped(EscapeFormat::PCRE, EscapeAmount::Required);
+        const auto u32ViewResult = u32View.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{u32ViewResult}.toStdU32String(), std::u32string{U"\\[x\\]é"});
-        REQUIRE_EQUAL(u32ViewResult.length(), u32View.escapedSize(EscapeFormat::PCRE, EscapeAmount::Required));
+        REQUIRE_EQUAL(u32ViewResult.length(), u32View.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
     }
 
     void testMalformedInputHandling() {

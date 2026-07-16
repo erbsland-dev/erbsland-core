@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U32String.hpp"
 
+#include "U32StringConstIterator.hpp"
 #include "U32StringList.hpp"
 #include "U32StringLiteral.hpp"
 #include "U32StringView.hpp"

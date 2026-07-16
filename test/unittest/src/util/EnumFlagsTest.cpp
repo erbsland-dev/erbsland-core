@@ -27,6 +27,16 @@ using Flags = EnumFlags<Flag>;
     return Flags{left} | right;
 }
 
+class DerivedFlags final : public EnumFlags<Flag, DerivedFlags> {
+    using Base = EnumFlags<Flag, DerivedFlags>;
+
+public:
+    using Base::Base;
+
+public: // diagnostics
+    [[nodiscard]] constexpr auto diagnosticValue() const noexcept -> Value { return toRawValue(); }
+};
+
 enum class OpenFlag : uint16_t {
     Read = 1U << 0U,
     Write = 1U << 1U,
@@ -71,10 +81,28 @@ public:
         static_assert(HasComplement<Flags>);
         static_assert(!HasComplement<OpenFlags>);
 
+        static_assert(std::default_initializable<DerivedFlags>);
+        static_assert(std::is_nothrow_default_constructible_v<DerivedFlags>);
+        static_assert(std::constructible_from<DerivedFlags, Flag>);
+        static_assert(std::same_as<decltype(DerivedFlags{Flag::Read} & Flag::Read), DerivedFlags>);
+        static_assert(std::same_as<decltype(Flag::Read & DerivedFlags{Flag::Read}), DerivedFlags>);
+        static_assert(std::same_as<decltype(DerivedFlags{Flag::Read} | Flag::Write), DerivedFlags>);
+        static_assert(std::same_as<decltype(Flag::Write | DerivedFlags{Flag::Read}), DerivedFlags>);
+        static_assert(std::same_as<decltype(DerivedFlags{Flag::Read} ^ Flag::Write), DerivedFlags>);
+        static_assert(std::same_as<decltype(Flag::Write ^ DerivedFlags{Flag::Read}), DerivedFlags>);
+        static_assert(std::same_as<decltype(~DerivedFlags{Flag::Read}), DerivedFlags>);
+        static_assert(std::same_as<decltype(DerivedFlags::fromRawValue(0x80U)), DerivedFlags>);
+        static_assert(std::same_as<decltype(std::declval<DerivedFlags &>() &= Flag::Read), DerivedFlags &>);
+        static_assert(std::same_as<decltype(std::declval<DerivedFlags &>() |= Flag::Read), DerivedFlags &>);
+        static_assert(std::same_as<decltype(std::declval<DerivedFlags &>() ^= Flag::Read), DerivedFlags &>);
+
         static_assert(Flags{}.isEmpty());
         static_assert(!Flags{}.hasAny());
         static_assert(!Flags{}.isSet(Flag::None));
+        static_assert(!Flags{}.isCleared(Flag::None));
+        static_assert(Flags{}.isCleared(Flag::Read));
         static_assert(Flags{Flag::Read}.isSet(Flag::Read));
+        static_assert(!Flags{Flag::Read}.isCleared(Flag::Read));
         static_assert((Flags{Flag::Read} | Flag::Write).contains(Flags{Flag::Read, Flag::Write}));
         static_assert((Flag::Read | Flag::Write).toRawValue() == 0x03U);
         static_assert((~Flags{Flag::Read}).toRawValue() == 0x06U);
@@ -87,6 +115,8 @@ public:
         REQUIRE_FALSE(empty.hasAny());
         REQUIRE_FALSE(empty.isSet(Flag::None));
         REQUIRE_FALSE(empty.isSet(Flag::Read));
+        REQUIRE_FALSE(empty.isCleared(Flag::None));
+        REQUIRE(empty.isCleared(Flag::Read));
         REQUIRE(empty.contains(Flags{}));
         REQUIRE_FALSE(empty.intersects(Flags{Flag::Read}));
 
@@ -95,6 +125,9 @@ public:
         REQUIRE(read.hasAny());
         REQUIRE(read.isSet(Flag::Read));
         REQUIRE_FALSE(read.isSet(Flag::Write));
+        REQUIRE_FALSE(read.isCleared(Flag::Read));
+        REQUIRE(read.isCleared(Flag::Write));
+        REQUIRE_FALSE(read.isCleared(Flag::All));
         REQUIRE(read.contains(Flags{Flag::Read}));
         REQUIRE_FALSE(read.contains(Flags{Flag::Read, Flag::Write}));
         REQUIRE(read.intersects(Flags{Flag::Read, Flag::Write}));
@@ -168,6 +201,30 @@ public:
 
         flags.replaceMasked(Flags::fromRawValue(0x80U), Flags{Flag::Read, Flag::Write});
         REQUIRE(flags == Flags{Flag::Execute});
+    }
+
+    void testDerivedType() {
+        auto flags = DerivedFlags{Flag::Read, Flag::Write};
+        REQUIRE_EQUAL(flags.diagnosticValue(), 0x03U);
+
+        const auto withExecute = flags | Flag::Execute;
+        REQUIRE_EQUAL(withExecute.diagnosticValue(), 0x07U);
+
+        const auto readOnly = Flag::Read & withExecute;
+        REQUIRE_EQUAL(readOnly.diagnosticValue(), 0x01U);
+
+        const auto toggled = readOnly ^ Flag::Write;
+        REQUIRE_EQUAL(toggled.diagnosticValue(), 0x03U);
+
+        const auto inverted = ~toggled;
+        REQUIRE_EQUAL(inverted.diagnosticValue(), 0x04U);
+
+        auto &assignmentResult = (flags |= Flag::Execute);
+        REQUIRE(&assignmentResult == &flags);
+        REQUIRE_EQUAL(flags.diagnosticValue(), 0x07U);
+
+        const auto raw = DerivedFlags::fromRawValue(0x80U);
+        REQUIRE_EQUAL(raw.diagnosticValue(), 0x80U);
     }
 
     void testHashSupport() {

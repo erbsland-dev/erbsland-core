@@ -10,6 +10,7 @@
 #include "PathCreateDirectoryOptions.hpp"
 #include "PathCreateFileOptions.hpp"
 #include "PathMoveOptions.hpp"
+#include "PathOperations_fwd.hpp"
 #include "PathProgress.hpp"
 #include "PathRemoveOptions.hpp"
 #include "PathTempDirectoryOptions.hpp"

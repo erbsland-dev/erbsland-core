@@ -1,0 +1,198 @@
+// Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+
+#include "RegExBase.hpp"
+
+#include <erbsland/unittest/FileHelper.hpp>
+
+#include <vector>
+
+using namespace el::re;
+using namespace el::unittest::fh;
+namespace string_helper = re_test::string_helper;
+
+TESTED_TARGETS(RegEx)
+TAGS(RealWorld Performance)
+class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
+    std::unique_ptr<String> _shakespeareText = nullptr;
+    std::unique_ptr<String> _shakespeareHtml = nullptr;
+    std::unique_ptr<String> _shakespeareHtmlOnce = nullptr;
+
+    [[nodiscard]] static auto loadText(const std::string_view filename) -> std::unique_ptr<String> {
+        auto offset = el::unit::ByteIndex::zero();
+        auto text = String{readDataText(filename)};
+        if (text.startsWith(string_helper::bytesToString({0xEF, 0xBB, 0xBF}))) {
+            offset = el::unit::ByteIndex{3U};
+        }
+        return std::make_unique<String>(text.slice(el::text::StringSide::Back, offset));
+    }
+
+    // create test text by repeating the loaded text twice.
+    static auto loadAndRepeatText(const std::string_view filename) -> std::unique_ptr<String> {
+        auto offset = el::unit::ByteIndex::zero();
+        auto text = String{readDataText(filename)};
+        if (text.startsWith(string_helper::bytesToString({0xEF, 0xBB, 0xBF}))) {
+            offset = el::unit::ByteIndex{3U};
+        }
+        const auto sourceText = text.slice(el::text::StringSide::Back, offset);
+        constexpr auto repetitionCount = 2U;
+        const auto finalSize = sourceText.length() * repetitionCount;
+        auto result = std::make_unique<String>();
+        result->reserve(finalSize);
+        for (std::size_t i = 0; i < repetitionCount; ++i) {
+            result->append(sourceText);
+        }
+        return result;
+    }
+
+    auto shakespeare() -> const String & {
+        if (!_shakespeareText) {
+            _shakespeareText = loadAndRepeatText("data/re/shakespeare.txt");
+        }
+        return *_shakespeareText;
+    }
+
+    auto shakespeareHtml() -> const String & {
+        if (!_shakespeareHtml) {
+            _shakespeareHtml = loadAndRepeatText("data/re/shakespeare.html");
+        }
+        return *_shakespeareHtml;
+    }
+
+    auto shakespeareHtmlOnce() -> const String & {
+        if (!_shakespeareHtmlOnce) {
+            _shakespeareHtmlOnce = loadText("data/re/shakespeare.html");
+        }
+        return *_shakespeareHtmlOnce;
+    }
+
+    auto countMatchesIn(const StringView &text) -> std::size_t {
+        this->text = String{text};
+        REQUIRE(regex != nullptr);
+        std::size_t matchCount = 0;
+        for (const auto &match : regex->findAll(text)) {
+            REQUIRE(match != nullptr);
+            matchCount += 1;
+        }
+        return matchCount;
+    }
+
+    auto extractGroupsToLines(
+        const StringView &text,
+        const StringView &pattern,
+        const Flags flags,
+        const std::vector<std::size_t> &groupIndices) -> std::vector<std::string> {
+
+        requireCompile(pattern, flags);
+        this->text = String{text};
+        REQUIRE(regex != nullptr);
+
+        auto lines = std::vector<std::string>{};
+        for (const auto &match : regex->findAll(text)) {
+            REQUIRE(match != nullptr);
+            lastMatch = match;
+
+            auto line = std::string{};
+            for (std::size_t i = 0; i < groupIndices.size(); ++i) {
+                const auto groupIndex = groupIndices[i];
+                REQUIRE(groupIndex < match->groupCount());
+                if (i != 0) {
+                    line += "|";
+                }
+                line += string_helper::toStdString(match->content(groupIndex));
+            }
+            lines.emplace_back(std::move(line));
+        }
+
+        return lines;
+    }
+
+public:
+    void testAllWords() {
+        requireCompile(R"(\b\w+\b)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 229192);
+    }
+
+    void testCapitalizedWords() {
+        requireCompile(R"(\b[A-Z][a-z]*\b)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 38760);
+    }
+
+    void testEmailAddresses() {
+        requireCompile(R"(([a-zA-Z0-9\._%\+\-]+)@([a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,}))"_el);
+        // Sanity test: Make sure the pattern works.
+        REQUIRE_EQUAL(countMatchesIn("012 unit-test@example.com 345 unit-test@example.com 678"_el), 2);
+        // There are no email addresses in the test text, so no matches must be found.
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 0);
+    }
+
+    void testURLs() {
+        requireCompile(R"(https?://([a-zA-Z0-9\.]+))"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 2);
+    }
+
+    void testHtmlTags() {
+        requireCompile(R"(<[a-z1-6]+[^>]*>)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeareHtml()), 27588);
+    }
+
+    void testExtractTocLinksCaptureGroups() {
+        const auto pattern = R"re(<a href="#(chap([0-9]{2}))" class="pginternal">([^<]+)</a>)re"_el;
+        const auto groupIndices = std::vector<std::size_t>{1, 2, 3};
+
+        const auto actualLines = extractGroupsToLines(shakespeareHtmlOnce(), pattern, {}, groupIndices);
+        const auto expectedLines = readDataLines("data/re/toc_links.txt");
+        requireLines(actualLines, expectedLines);
+    }
+
+    void testExtractLicenseDivCaptureGroups() {
+        const auto pattern = R"re(<div id="(([^-\"]+)-([^-\"]+)-([^"]+))">([^<]+)</div>)re"_el;
+        const auto groupIndices = std::vector<std::size_t>{1, 2, 3, 4, 5};
+
+        const auto actualLines = extractGroupsToLines(shakespeareHtmlOnce(), pattern, {}, groupIndices);
+        const auto expectedLines = readDataLines("data/re/license_div.txt");
+        requireLines(actualLines, expectedLines);
+    }
+
+    void testExtractTocLinksPossessiveQuantifiersCaptureGroups() {
+        const auto pattern = R"re(<a href=\"#(chap([0-9]{2}))\" class=\"pginternal\">([^<]++)</a>)re"_el;
+        const auto groupIndices = std::vector<std::size_t>{1, 2, 3};
+
+        const auto actualLines = extractGroupsToLines(shakespeareHtmlOnce(), pattern, {}, groupIndices);
+        const auto expectedLines = readDataLines("data/re/toc_links_possessive.txt");
+        requireLines(actualLines, expectedLines);
+    }
+
+    void testDotPlus() {
+        requireCompile(R"(.+)"_el, Flag::CRLF);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 34916);
+
+        requireCompile(R"((?s).+)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 1);
+    }
+
+    void testSimpleWord() {
+        requireCompile(R"(simple)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 32);
+    }
+
+    void testSimpleWordAtStart() {
+        requireCompile(R"((?m)^This)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 150);
+    }
+
+    void testSimpleWordInMiddle() {
+        requireCompile(R"(contains)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 2);
+    }
+
+    void testSimpleWordWithBoundary() {
+        requireCompile(R"(\bsimple\b)"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 28);
+    }
+
+    void testComplexMarkdownLinks() {
+        requireCompile(R"(\[([^\]]+)\]\(([^\)]+)\))"_el);
+        REQUIRE_EQUAL(countMatchesIn(shakespeare()), 0);
+    }
+};

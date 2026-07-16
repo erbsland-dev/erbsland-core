@@ -4,6 +4,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/String.hpp"
+#include "../text/StringView.hpp"
 
 namespace erbsland::system {
 

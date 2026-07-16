@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../text/String.hpp"
+#include "../text/u8/U8StringConstIterator.hpp"
 #include "../util/HashHelper.hpp"
 
 #include <cstddef>

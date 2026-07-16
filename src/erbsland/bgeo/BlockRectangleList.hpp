@@ -3,6 +3,7 @@
 #pragma once
 
 #include "BlockRectangle.hpp"
+#include "BlockRectangleList_fwd.hpp"
 
 #include "../util/List.hpp"
 

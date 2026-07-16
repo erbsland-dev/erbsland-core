@@ -143,36 +143,38 @@ public:
 
     void testImplDoubleCore() {
         const auto success =
-            impl::parseDoubleCore(StringCharReader{U8String{"12.5"}}, FloatParseOptions::defaultOptions());
-        REQUIRE_EQUAL(success.status, impl::FloatParseStatus::Success);
+            el::text::impl::parseDoubleCore(StringCharReader{U8String{"12.5"}}, FloatParseOptions::defaultOptions());
+        REQUIRE_EQUAL(success.status, el::text::impl::FloatParseStatus::Success);
         REQUIRE_EQUAL(success.value, 12.5);
 
-        const auto empty = impl::parseDoubleCore(StringCharReader{U8String{}}, FloatParseOptions::defaultOptions());
-        REQUIRE_EQUAL(empty.status, impl::FloatParseStatus::ParseError);
+        const auto empty =
+            el::text::impl::parseDoubleCore(StringCharReader{U8String{}}, FloatParseOptions::defaultOptions());
+        REQUIRE_EQUAL(empty.status, el::text::impl::FloatParseStatus::ParseError);
         REQUIRE_EQUAL(empty.message, std::string_view{"Floating point text is empty"});
 
         const auto trailing =
-            impl::parseDoubleCore(StringCharReader{U8String{"12.5m"}}, FloatParseOptions::defaultOptions());
-        REQUIRE_EQUAL(trailing.status, impl::FloatParseStatus::ParseError);
+            el::text::impl::parseDoubleCore(StringCharReader{U8String{"12.5m"}}, FloatParseOptions::defaultOptions());
+        REQUIRE_EQUAL(trailing.status, el::text::impl::FloatParseStatus::ParseError);
         REQUIRE_EQUAL(trailing.message, std::string_view{"Floating point text has trailing characters"});
 
         auto ignoreTrailing = FloatParseOptions{};
         ignoreTrailing.setFlags(FloatParseFlag::IgnoreTrailingChars);
-        const auto acceptedTrailing = impl::parseDoubleCore(StringCharReader{U8String{"12.5m"}}, ignoreTrailing);
-        REQUIRE_EQUAL(acceptedTrailing.status, impl::FloatParseStatus::Success);
+        const auto acceptedTrailing =
+            el::text::impl::parseDoubleCore(StringCharReader{U8String{"12.5m"}}, ignoreTrailing);
+        REQUIRE_EQUAL(acceptedTrailing.status, el::text::impl::FloatParseStatus::Success);
         REQUIRE_EQUAL(acceptedTrailing.value, 12.5);
     }
 
     void testImplStyleRestrictions() {
         auto fixed = FloatParseOptions{};
         fixed.setStyle(FloatParseOptions::Style::Fixed);
-        const auto fixedResult = impl::parseDoubleCore(StringCharReader{U8String{"1.25e2"}}, fixed);
-        REQUIRE_EQUAL(fixedResult.status, impl::FloatParseStatus::ParseError);
+        const auto fixedResult = el::text::impl::parseDoubleCore(StringCharReader{U8String{"1.25e2"}}, fixed);
+        REQUIRE_EQUAL(fixedResult.status, el::text::impl::FloatParseStatus::ParseError);
 
         auto scientific = FloatParseOptions{};
         scientific.setStyle(FloatParseOptions::Style::Scientific);
-        const auto scientificResult = impl::parseDoubleCore(StringCharReader{U8String{"12.5"}}, scientific);
-        REQUIRE_EQUAL(scientificResult.status, impl::FloatParseStatus::ParseError);
+        const auto scientificResult = el::text::impl::parseDoubleCore(StringCharReader{U8String{"12.5"}}, scientific);
+        REQUIRE_EQUAL(scientificResult.status, el::text::impl::FloatParseStatus::ParseError);
     }
 
     void testDefaultAndThrowingParseErrors() {
@@ -233,12 +235,13 @@ public:
     }
 
     void testFloatBoundaryRepresentability() {
-        REQUIRE(impl::isFloatRepresentable(0.0));
-        REQUIRE(impl::isFloatRepresentable(42.5));
-        REQUIRE(impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::max())));
-        REQUIRE(impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::denorm_min())));
-        REQUIRE_FALSE(impl::isFloatRepresentable(1e100));
-        REQUIRE_FALSE(impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::denorm_min()) / 2.0));
+        REQUIRE(el::text::impl::isFloatRepresentable(0.0));
+        REQUIRE(el::text::impl::isFloatRepresentable(42.5));
+        REQUIRE(el::text::impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::max())));
+        REQUIRE(el::text::impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::denorm_min())));
+        REQUIRE_FALSE(el::text::impl::isFloatRepresentable(1e100));
+        REQUIRE_FALSE(
+            el::text::impl::isFloatRepresentable(static_cast<double>(std::numeric_limits<float>::denorm_min()) / 2.0));
     }
 
     void testMalformedInputFailsAsParseError() {
@@ -247,16 +250,16 @@ public:
         REQUIRE_THROWS(invalidUtf8.toFloatOrThrow<double>());
 
         const auto invalidUtf8Result =
-            impl::parseDoubleCore(StringCharReader{invalidUtf8}, FloatParseOptions::defaultOptions());
-        REQUIRE_EQUAL(invalidUtf8Result.status, impl::FloatParseStatus::ParseError);
+            el::text::impl::parseDoubleCore(StringCharReader{invalidUtf8}, FloatParseOptions::defaultOptions());
+        REQUIRE_EQUAL(invalidUtf8Result.status, el::text::impl::FloatParseStatus::ParseError);
 
         const auto invalidUtf16 = U16String{std::u16string{u'1', char16_t{0xD800U}, u'2'}};
         REQUIRE_EQUAL(invalidUtf16.toFloat<double>(-1.0), -1.0);
         REQUIRE_THROWS(invalidUtf16.toFloatOrThrow<double>());
 
         const auto invalidUtf16Result =
-            impl::parseDoubleCore(StringCharReader{invalidUtf16}, FloatParseOptions::defaultOptions());
-        REQUIRE_EQUAL(invalidUtf16Result.status, impl::FloatParseStatus::ParseError);
+            el::text::impl::parseDoubleCore(StringCharReader{invalidUtf16}, FloatParseOptions::defaultOptions());
+        REQUIRE_EQUAL(invalidUtf16Result.status, el::text::impl::FloatParseStatus::ParseError);
 
         const auto invalidUtf32 = U32String{std::u32string{U'1', char32_t{0x110000U}, U'2'}};
         REQUIRE_EQUAL(invalidUtf32.toFloat<double>(-1.0), -1.0);
@@ -265,24 +268,24 @@ public:
 
     void testLibcppStrtodFallbackHelpers() {
 #if defined(_LIBCPP_VERSION)
-        REQUIRE(impl::hasHexFloatPrefix("0x1.8p3"));
-        REQUIRE(impl::hasHexFloatPrefix("-0X1.8p3"));
-        REQUIRE_FALSE(impl::hasHexFloatPrefix("1.8p3"));
-        REQUIRE_EQUAL(impl::addHexFloatPrefix("1.8p3"), std::string{"0x1.8p3"});
-        REQUIRE_EQUAL(impl::addHexFloatPrefix("-1.8p3"), std::string{"-0x1.8p3"});
-        REQUIRE_EQUAL(impl::removeAddedHexPrefixFromLength(7U, false), 5U);
-        REQUIRE_EQUAL(impl::removeAddedHexPrefixFromLength(8U, true), 6U);
+        REQUIRE(el::text::impl::hasHexFloatPrefix("0x1.8p3"));
+        REQUIRE(el::text::impl::hasHexFloatPrefix("-0X1.8p3"));
+        REQUIRE_FALSE(el::text::impl::hasHexFloatPrefix("1.8p3"));
+        REQUIRE_EQUAL(el::text::impl::addHexFloatPrefix("1.8p3"), std::string{"0x1.8p3"});
+        REQUIRE_EQUAL(el::text::impl::addHexFloatPrefix("-1.8p3"), std::string{"-0x1.8p3"});
+        REQUIRE_EQUAL(el::text::impl::removeAddedHexPrefixFromLength(7U, false), 5U);
+        REQUIRE_EQUAL(el::text::impl::removeAddedHexPrefixFromLength(8U, true), 6U);
 
         auto hexadecimal = FloatParseOptions{};
         hexadecimal.setStyle(FloatParseOptions::Style::Hexadecimal);
-        const auto hexResult = impl::parseDoubleWithStrtod("1.8p3", hexadecimal);
+        const auto hexResult = el::text::impl::parseDoubleWithStrtod("1.8p3", hexadecimal);
         REQUIRE_EQUAL(hexResult.error, std::errc{});
         REQUIRE_EQUAL(hexResult.parsedLength, 5U);
         REQUIRE_EQUAL(hexResult.value, 12.0);
 
         auto fixed = FloatParseOptions{};
         fixed.setStyle(FloatParseOptions::Style::Fixed);
-        const auto fixedResult = impl::parseDoubleWithStrtod("1.25e2", fixed);
+        const auto fixedResult = el::text::impl::parseDoubleWithStrtod("1.25e2", fixed);
         REQUIRE_EQUAL(fixedResult.error, std::errc{});
         REQUIRE_EQUAL(fixedResult.parsedLength, 4U);
         REQUIRE_EQUAL(fixedResult.value, 1.25);

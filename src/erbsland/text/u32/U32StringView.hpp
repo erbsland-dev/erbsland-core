@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U32String.hpp"
-#include "U32StringConstIterator.hpp"
+#include "U32String_fwd.hpp"
+#include "U32StringConstIterator_fwd.hpp"
 #include "U32StringList_fwd.hpp"
 #include "U32StringLiteral_fwd.hpp"
+#include "U32StringView_fwd.hpp"
 #include "U32StringViewList_fwd.hpp"
 
 #include "impl/U32StringReader_fwd.hpp"
-#include "impl/U32StringTransformTools.hpp"
 #include "impl/U32StringViewStorage.hpp"
 
 #include "../Char.hpp"
@@ -22,6 +22,7 @@
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
 #include "../impl/StringReaderBase_fwd.hpp"
+#include "../impl/UnsafeU32StringViewAccess_fwd.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
 #include "../ProcessCharacterFn.hpp"
@@ -73,6 +74,7 @@ class U32StringView final {
     friend class U32StringConstIterator;
     friend class impl::StringReaderBase;
     friend class impl::StringConversionTools;
+    friend class impl::UnsafeU32StringViewAccess;
     friend class impl::U16StringBuilder;
     friend class impl::U32StringReader;
     friend class impl::U8StringBuilder;
@@ -406,6 +408,4 @@ struct std::hash<erbsland::text::U32StringView> {
     }
 };
 
-#include "U32StringList.hpp"
 #include "U32StringView_integer.tpp"
-#include "U32StringViewList.hpp"

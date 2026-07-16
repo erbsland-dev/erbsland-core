@@ -37,6 +37,7 @@ target_sources(erbsland-core PRIVATE
         List_change.tpp
         List_construction.tpp
         List_elements.tpp
+        List_fwd.hpp
         List_memory.tpp
         List_remove.tpp
         List_search.tpp

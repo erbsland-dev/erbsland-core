@@ -3,9 +3,9 @@
 #pragma once
 
 #include "U16String.hpp"
+#include "U16StringCharView_fwd.hpp"
 #include "U16StringView_fwd.hpp"
 
-#include "impl/U16StringTransformTools.hpp"
 #include "impl/U16StringViewStorage.hpp"
 
 #include "../Char.hpp"

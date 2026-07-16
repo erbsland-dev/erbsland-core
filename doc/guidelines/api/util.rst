@@ -34,7 +34,7 @@ Primary Types
     HashSet<Key, HashFn, EqualFn> // COW wrapper around std::unordered_set with set operations.
     Map<Key, Value, CompareFn> // COW wrapper around std::map with key/value operations.
     HashMap<Key, Value, HashFn, EqualFn> // COW wrapper around std::unordered_map with key/value operations.
-    EnumFlags<Enum> // safe value wrapper for enum-class flag sets.
+    EnumFlags<Enum[, Derived]> // safe value wrapper for enum-class flag sets.
     CoGenerator<Value> // simple lazy synchronous pull generator.
     CoTask<Value> // eagerly started, move-only coroutine task.
     CoAsyncGenerator<Value> // lazy asynchronous single-pass generator.

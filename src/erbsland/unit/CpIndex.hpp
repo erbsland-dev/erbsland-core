@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CpUnit.hpp"
+#include "CpIndex_fwd.hpp"
 #include "IntegerUnitIndex.hpp"
 
-namespace erbsland::unit {
-
-/// A Unicode code-point-based index.
-using CpIndex = IntegerUnitIndex<CpUnit>;
-
-}
+// The public alias is declared in the canonical forward header.

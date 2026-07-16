@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StandardStreamRedirectData_fwd.hpp"
 #include "StandardStreamSlot.hpp"
 
 #include "../TextInputStream.hpp"

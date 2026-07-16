@@ -3,6 +3,7 @@
 #pragma once
 
 #include "OptionErrorContext.hpp"
+#include "OptionResult_fwd.hpp"
 #include "OptionResultStatus.hpp"
 #include "OptionValues_fwd.hpp"
 

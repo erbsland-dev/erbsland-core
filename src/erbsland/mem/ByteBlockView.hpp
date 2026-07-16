@@ -4,8 +4,9 @@
 
 #include "Byte.hpp"
 #include "ByteBlock_fwd.hpp"
+#include "ByteBlockView_fwd.hpp"
 
-#include "impl/ByteBlockData.hpp"
+#include "impl/ByteBlockData_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
@@ -29,12 +30,12 @@ public:
     /// @param block The byte block to view.
     ByteBlockView(const ByteBlock &block) noexcept; // NOLINT(*-explicit-constructor)
 
-    ByteBlockView() = default;
-    ~ByteBlockView() = default;
-    ByteBlockView(const ByteBlockView &) = default;
-    ByteBlockView(ByteBlockView &&) = default;
-    auto operator=(const ByteBlockView &) -> ByteBlockView & = default;
-    auto operator=(ByteBlockView &&) -> ByteBlockView & = default;
+    ByteBlockView();
+    ~ByteBlockView();
+    ByteBlockView(const ByteBlockView &);
+    ByteBlockView(ByteBlockView &&) noexcept;
+    auto operator=(const ByteBlockView &) -> ByteBlockView &;
+    auto operator=(ByteBlockView &&) noexcept -> ByteBlockView &;
 
 public: // comparison
     [[nodiscard]] auto operator<=>(const ByteBlock &other) const noexcept -> std::strong_ordering;

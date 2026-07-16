@@ -20,6 +20,10 @@ public:
     // defaults
     ~U32EncodingError() override = default;
 
+public:
+    /// Get the code-point index where the invalid value was detected.
+    [[nodiscard]] auto index() const noexcept -> unit::CpIndex { return _index; }
+
 private:
     unit::CpIndex _index;
 };

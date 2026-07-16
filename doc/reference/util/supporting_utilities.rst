@@ -49,6 +49,27 @@ Use :cpp:func:`toRawValue() <erbsland::util::EnumFlags::toRawValue>` and
 Raw construction preserves all bits, including bits outside ``All``.
 This makes raw import explicit and avoids silently changing data from an external source.
 
+Named Flag Wrappers
+~~~~~~~~~~~~~~~~~~~
+
+When a flag set needs domain-specific methods, define a named class using the optional CRTP parameter.
+Inherit the Core constructors so the wrapper retains the regular single-flag and initializer-list syntax:
+
+.. code-block:: cpp
+
+    class Modes : public el::EnumFlags<Mode, Modes> {
+        using Base = el::EnumFlags<Mode, Modes>;
+
+    public:
+        using Base::Base;
+
+        auto toString() const -> el::String;
+    };
+
+The derived class must be nothrow default-constructible.
+Bitwise operators, compound assignments and ``fromRawValue()`` return the derived type, so domain-specific methods
+remain available on expression results.
+
 Hash Helper
 -----------
 

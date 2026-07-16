@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "IntegerUnit_fwd.hpp"
+
 #include <cstdint>
 
 namespace erbsland::unit {

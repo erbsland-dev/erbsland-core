@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "U16String_fwd.hpp"
 #include "U16StringCharView_fwd.hpp"
-#include "U16StringConstIterator.hpp"
+#include "U16StringConstIterator_fwd.hpp"
 #include "U16StringList_fwd.hpp"
 #include "U16StringLiteral_fwd.hpp"
 #include "U16StringView_fwd.hpp"
@@ -12,7 +13,6 @@
 #include "impl/U16StringBuilder_fwd.hpp"
 #include "impl/U16StringEncodingTools_fwd.hpp"
 #include "impl/U16StringSharedStorage.hpp"
-#include "impl/U16StringTransformTools.hpp"
 
 #include "../BooleanFormat.hpp"
 #include "../Char.hpp"
@@ -439,5 +439,3 @@ struct std::hash<erbsland::text::U16String> {
 };
 
 #include "U16String_integer.tpp"
-#include "U16StringList.hpp"
-#include "U16StringViewList.hpp"

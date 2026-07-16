@@ -2,25 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "IntegerUnit.hpp"
 #include "IntegerUnitAmount_fwd.hpp"
 
 #include "impl/Throw.hpp"
 #include "impl/TypeTraits.hpp"
 
 #include "../math/ConstexprSaturatingMath.hpp"
-#include "../math/impl/IntegerComparisonHelper.hpp"
 #include "../math/IntegerConversion.hpp"
 #include "../math/IntegerTraits.hpp"
 #include "../math/SaturatingMath.hpp"
-#include "../text/FormatAs_fwd.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <compare>
 #include <concepts>
 #include <cstddef>
-#include <cstdint>
-#include <exception>
 #include <limits>
 
 namespace erbsland::unit {

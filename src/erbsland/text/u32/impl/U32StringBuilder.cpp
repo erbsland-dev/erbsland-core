@@ -7,8 +7,10 @@
 #include "../../AnyString.hpp"
 #include "../../StringConverter.hpp"
 #include "../../u16/U16String.hpp"
+#include "../../u16/U16StringConstIterator.hpp"
 #include "../../u16/U16StringView.hpp"
 #include "../../u8/U8String.hpp"
+#include "../../u8/U8StringConstIterator.hpp"
 #include "../../u8/U8StringView.hpp"
 
 #include <utility>

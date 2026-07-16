@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionSetManager.hpp"
 
+#include "../text/StringView.hpp"
+
 namespace erbsland::options {
 
 auto OptionSetManager::addOption(const text::StringView &name) -> OptionEditor {

@@ -3,12 +3,14 @@
 #include "U32StringView.hpp"
 
 #include "U32String.hpp"
+#include "U32StringConstIterator.hpp"
 #include "U32StringList.hpp"
 #include "U32StringLiteral.hpp"
 #include "U32StringViewList.hpp"
 
 #include "impl/U32Encoding.hpp"
 #include "impl/U32StringComparisonTools.hpp"
+#include "impl/U32StringData.hpp"
 #include "impl/U32StringEncodingTools.hpp"
 #include "impl/U32StringModifyTools.hpp"
 #include "impl/U32StringReadTools.hpp"

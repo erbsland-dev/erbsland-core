@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UnsafeU16StringViewAccess_fwd.hpp"
+
 #include "../u16/U16StringView.hpp"
 
 #include "../../core/Definitions.hpp"

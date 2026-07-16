@@ -27,6 +27,7 @@ target_sources(erbsland-core PRIVATE
         BlockString_layout.cpp
         BlockStringView.cpp
         BlockStringView.hpp
+        BlockStyle.cpp
         BlockStyle.hpp
         BlockText.hpp
         BlockTextAnimation.hpp

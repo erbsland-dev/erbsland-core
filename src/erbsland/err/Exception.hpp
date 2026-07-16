@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Diagnostic.hpp"
+#include "Exception_fwd.hpp"
 
 #include "../mem/UnsafeCharPtr.hpp"
 #include "../text/StringView.hpp"
@@ -28,10 +29,9 @@ public:
     explicit Exception(text::StringView reason, std::exception_ptr cause) noexcept :
         _reason{std::move(reason)}, _cause{std::move(cause)} {}
     /// @overload
-    explicit Exception(const std::string_view reason) noexcept : Exception(text::String{reason}) {}
+    explicit Exception(std::string_view reason) noexcept;
     /// @overload
-    explicit Exception(const std::string_view reason, std::exception_ptr cause) noexcept :
-        Exception{text::String{reason}, std::move(cause)} {}
+    explicit Exception(std::string_view reason, std::exception_ptr cause) noexcept;
 
     // defaults
     ~Exception() override = default;

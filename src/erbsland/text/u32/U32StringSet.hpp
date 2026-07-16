@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U32String.hpp"
+#include "U32StringSet_fwd.hpp"
 
 #include "../impl/StringSet.hpp"
 

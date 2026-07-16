@@ -4,7 +4,9 @@
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringView.hpp>
+#include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringView.hpp>
 #include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/text/u8/U8StringView.hpp>

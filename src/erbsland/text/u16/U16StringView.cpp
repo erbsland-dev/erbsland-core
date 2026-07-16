@@ -4,6 +4,7 @@
 
 #include "U16String.hpp"
 #include "U16StringCharView.hpp"
+#include "U16StringConstIterator.hpp"
 #include "U16StringList.hpp"
 #include "U16StringLiteral.hpp"
 #include "U16StringViewList.hpp"
@@ -11,6 +12,7 @@
 #include "impl/U16Encoding.hpp"
 #include "impl/U16StringCharReadTool.hpp"
 #include "impl/U16StringComparisonTools.hpp"
+#include "impl/U16StringData.hpp"
 #include "impl/U16StringEncodingTools.hpp"
 #include "impl/U16StringModifyTools.hpp"
 #include "impl/U16StringReadTools.hpp"

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PathContent_fwd.hpp"
+
 #include "../Path.hpp"
 
 namespace erbsland::path::impl {

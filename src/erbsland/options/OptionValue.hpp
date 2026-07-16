@@ -7,6 +7,7 @@
 #include "OptionValueStorage.hpp"
 #include "OptionValueType.hpp"
 
+#include "../text/StringView.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <utility>

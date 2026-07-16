@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UnsafeU16StringBuffer_fwd.hpp"
+
 #include "../u16/impl/U16StringData.hpp"
 #include "../u16/U16String.hpp"
 

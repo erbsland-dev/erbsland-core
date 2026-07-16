@@ -9,6 +9,7 @@
 #include "FloatFormat.hpp"
 #include "IntegerFormat.hpp"
 #include "String_fwd.hpp"
+#include "StringBuilder_fwd.hpp"
 #include "StringKind.hpp"
 
 #include "impl/FloatTraits.hpp"

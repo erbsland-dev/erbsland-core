@@ -8,6 +8,7 @@
 #include "u16/U16String.hpp"
 #include "u32/U32String.hpp"
 #include "u8/U8String.hpp"
+#include "u8/U8StringConstIterator.hpp"
 #include "u8/U8StringView.hpp"
 
 #include <algorithm>

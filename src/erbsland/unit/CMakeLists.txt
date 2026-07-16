@@ -8,9 +8,12 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         ArgumentUnit.hpp
         ByteIndex.hpp
+        ByteIndex_fwd.hpp
         ByteLength.hpp
+        ByteLength_fwd.hpp
         ByteOffset.hpp
         ByteRange.hpp
+        ByteRange_fwd.hpp
         ByteUnit.hpp
         CodeContinuousRange.hpp
         CodeLocation.hpp
@@ -20,11 +23,15 @@ target_sources(erbsland-core PRIVATE
         ColumnRange.hpp
         ColumnUnit.hpp
         CpIndex.hpp
+        CpIndex_fwd.hpp
         CpLength.hpp
+        CpLength_fwd.hpp
         CpOffset.hpp
         CpRange.hpp
+        CpRange_fwd.hpp
         CpUnit.hpp
         ElementCount.hpp
+        ElementCount_fwd.hpp
         ElementIndex.hpp
         ElementOffset.hpp
         ElementRange.hpp
@@ -51,6 +58,7 @@ target_sources(erbsland-core PRIVATE
         StdFormatForUnit.hpp
         U16DataIndex.hpp
         U16DataLength.hpp
+        U16DataLength_fwd.hpp
         U16DataOffset.hpp
         U16DataRange.hpp
         U16DataUnit.hpp

@@ -75,16 +75,12 @@ public: // tools
     /// Inherited color components keep the existing color, and unspecified attributes keep the existing attributes.
     /// @param overlay The overlay style.
     /// @return The combined style.
-    [[nodiscard]] auto withOverlay(const BlockStyle overlay) const noexcept -> BlockStyle {
-        return BlockStyle{_color.overlayWith(overlay._color), overlay._attributes.withBase(_attributes)};
-    }
+    [[nodiscard]] auto withOverlay(BlockStyle overlay) const noexcept -> BlockStyle;
     /// Create a new style by placing a base style underneath this one.
     /// The current style overwrites inherited or unspecified parts from the base style.
     /// @param base The base style.
     /// @return The resolved style.
-    [[nodiscard]] auto withBase(const BlockStyle base) const noexcept -> BlockStyle {
-        return BlockStyle{base._color.overlayWith(_color), _attributes.withBase(base._attributes)};
-    }
+    [[nodiscard]] auto withBase(BlockStyle base) const noexcept -> BlockStyle;
     /// Get a stable hash for the character style.
     [[nodiscard]] constexpr auto hash() const noexcept -> std::size_t {
         return impl::hashCreate(_color.hash(), _attributes.hash());

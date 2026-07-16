@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U8StringDataView.hpp"
+#include "U8StringEncodingTools_fwd.hpp"
 #include "U8StringSharedStorage.hpp"
 #include "U8Writer.hpp"
 

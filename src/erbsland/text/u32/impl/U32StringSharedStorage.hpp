@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U32StringData.hpp"
+#include "U32StringData_fwd.hpp"
 #include "U32StringDataView.hpp"
 #include "U32StringLiteralStorage.hpp"
 
@@ -21,7 +21,7 @@ namespace erbsland::text::impl {
 class U32StringSharedStorage final {
 public:
     /// Create empty shared storage.
-    U32StringSharedStorage() = default;
+    constexpr U32StringSharedStorage() noexcept : _data{}, _range{unit::CpRange::empty()} {}
     /// Create shared storage by copying a standard UTF-32 string view.
     explicit U32StringSharedStorage(std::u32string_view text);
     /// Create shared storage by copying a literal storage.
@@ -34,15 +34,15 @@ public:
     explicit U32StringSharedStorage(unit::CpRange range) noexcept;
 
 public: // defaults
-    ~U32StringSharedStorage() = default;
-    U32StringSharedStorage(const U32StringSharedStorage &) = default;
-    U32StringSharedStorage(U32StringSharedStorage &&) = default;
-    auto operator=(const U32StringSharedStorage &) -> U32StringSharedStorage & = default;
-    auto operator=(U32StringSharedStorage &&) -> U32StringSharedStorage & = default;
+    ~U32StringSharedStorage();
+    U32StringSharedStorage(const U32StringSharedStorage &);
+    U32StringSharedStorage(U32StringSharedStorage &&) noexcept;
+    auto operator=(const U32StringSharedStorage &) -> U32StringSharedStorage &;
+    auto operator=(U32StringSharedStorage &&) noexcept -> U32StringSharedStorage &;
 
 public: // tests
     /// Test if the storage is empty.
-    [[nodiscard]] auto isEmpty() const noexcept -> bool { return _range.isEmpty() || _data.isNull(); }
+    [[nodiscard]] auto isEmpty() const noexcept -> bool;
 
 public: // accessors
     /// Access the shared data pointer.
@@ -50,38 +50,15 @@ public: // accessors
     /// Access the storage range.
     [[nodiscard]] auto range() const noexcept -> unit::CpRange { return _range; }
     /// Access the string as a string pointer, or `nullptr` if empty.
-    [[nodiscard]] auto data() const noexcept -> const char32_t * {
-        if (_data.isNull()) {
-            return nullptr;
-        }
-        return _data.constGet()->data();
-    }
+    [[nodiscard]] auto data() const noexcept -> const char32_t *;
     /// Access the string as a string pointer, or `nullptr` if empty.
-    [[nodiscard]] auto dataForWrite() noexcept -> char32_t * {
-        if (_data.isNull()) {
-            return nullptr;
-        }
-        return _data.get()->data();
-    }
+    [[nodiscard]] auto dataForWrite() noexcept -> char32_t *;
     /// Get the size of the string data.
-    [[nodiscard]] auto dataSize() const noexcept -> std::size_t {
-        if (_data.isNull()) {
-            return 0;
-        }
-        return _data.get()->size() - 1U;
-    }
+    [[nodiscard]] auto dataSize() const noexcept -> std::size_t;
     /// Get a unique identifier for the visible storage range.
-    [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier {
-        if (data() == nullptr) {
-            return {};
-        }
-        const auto *begin = data() + _range.index().toSizeT();
-        return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
-    }
+    [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
     /// Test if the storage can be mutated in place without detaching or materializing a slice.
-    [[nodiscard]] auto isUniqueFullRange() const noexcept -> bool {
-        return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
-    }
+    [[nodiscard]] auto isUniqueFullRange() const noexcept -> bool;
 
 public:
     /// Create string storage by copying the exact UTF-32 code units from a span.

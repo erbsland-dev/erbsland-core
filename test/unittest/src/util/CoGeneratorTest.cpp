@@ -14,42 +14,6 @@
 
 using el::util::CoGenerator;
 
-namespace erbsland::test::cogeneratortest {
-
-[[nodiscard]] static auto numbers(int count) -> CoGenerator<int> {
-    for (auto value = 0; value < count; ++value) {
-        co_yield value;
-    }
-}
-
-[[nodiscard]] static auto emptyNumbers() -> CoGenerator<int> {
-    if (false) {
-        co_yield 0;
-    }
-}
-
-[[nodiscard]] static auto strings() -> CoGenerator<std::string> {
-    co_yield "alpha";
-    auto beta = std::string{"beta"};
-    co_yield beta;
-    co_yield std::string{"gamma"};
-}
-
-[[nodiscard]] static auto uniqueNumbers() -> CoGenerator<std::unique_ptr<int>> {
-    co_yield std::make_unique<int>(4);
-    co_yield std::make_unique<int>(5);
-}
-
-[[nodiscard]] static auto valuesBeforeFailure() -> CoGenerator<int> {
-    co_yield 1;
-    co_yield 2;
-    throw std::runtime_error{"test failure"};
-}
-
-}
-
-using namespace erbsland::test::cogeneratortest;
-
 TESTED_TARGETS(CoGenerator)
 class CoGeneratorTest final : public el::UnitTest {
 public:
@@ -190,5 +154,36 @@ public:
 
         REQUIRE_THROWS(*iterator);
         REQUIRE_THROWS(++iterator);
+    }
+
+private:
+    [[nodiscard]] static auto numbers(int count) -> CoGenerator<int> {
+        for (auto value = 0; value < count; ++value) {
+            co_yield value;
+        }
+    }
+
+    [[nodiscard]] static auto emptyNumbers() -> CoGenerator<int> {
+        if (false) {
+            co_yield 0;
+        }
+    }
+
+    [[nodiscard]] static auto strings() -> CoGenerator<std::string> {
+        co_yield "alpha";
+        auto beta = std::string{"beta"};
+        co_yield beta;
+        co_yield std::string{"gamma"};
+    }
+
+    [[nodiscard]] static auto uniqueNumbers() -> CoGenerator<std::unique_ptr<int>> {
+        co_yield std::make_unique<int>(4);
+        co_yield std::make_unique<int>(5);
+    }
+
+    [[nodiscard]] static auto valuesBeforeFailure() -> CoGenerator<int> {
+        co_yield 1;
+        co_yield 2;
+        throw std::runtime_error{"test failure"};
     }
 };

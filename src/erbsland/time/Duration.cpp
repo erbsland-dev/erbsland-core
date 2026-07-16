@@ -9,7 +9,7 @@
 namespace erbsland::time {
 
 namespace {
-constexpr auto cSecondsPerDay = 86400.0;
+constexpr auto cSecondsPerDayFloat = 86400.0;
 }
 
 Duration::Duration(Parts parts) noexcept :
@@ -98,7 +98,7 @@ auto Duration::toDaysAndNanoseconds() const noexcept -> DaysAndNanoseconds {
 }
 
 auto Duration::toDaysWithFractions() const noexcept -> double {
-    return static_cast<double>(_seconds.toValue().toRawValue()) / cSecondsPerDay;
+    return static_cast<double>(_seconds.toValue().toRawValue()) / cSecondsPerDayFloat;
 }
 
 auto Duration::wouldConvertToTimeDeltaSaturate() const noexcept -> bool {

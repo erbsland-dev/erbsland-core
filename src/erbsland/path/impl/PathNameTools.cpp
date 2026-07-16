@@ -6,6 +6,7 @@
 
 #include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/String.hpp"
 #include "../../text/StringBuilder.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringList_fwd.hpp"
+
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
 #include "../CharSet.hpp"

@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "ByteUnit.hpp"
+#include "ByteIndex_fwd.hpp"
 #include "IntegerUnitIndex.hpp"
 
-namespace erbsland::unit {
-
-/// A byte-based index.
-using ByteIndex = IntegerUnitIndex<ByteUnit>;
-
-}
+// The public alias is declared in the canonical forward header.

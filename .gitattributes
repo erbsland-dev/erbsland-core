@@ -1,0 +1,3 @@
+# Keep these test data files as-is (binary) so CRLF line endings are preserved.
+test/unittest/data/re/shakespeare.html -text
+test/unittest/data/re/shakespeare.txt -text

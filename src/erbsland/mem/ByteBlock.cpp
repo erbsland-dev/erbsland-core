@@ -4,6 +4,7 @@
 
 #include "ByteBlockView.hpp"
 
+#include "impl/ByteBlockData.hpp"
 #include "impl/SharedArrayCapacity.hpp"
 
 #include "../err/OutOfRangeError.hpp"
@@ -13,6 +14,18 @@
 #include <utility>
 
 namespace erbsland::mem {
+
+ByteBlock::ByteBlock() = default;
+
+ByteBlock::~ByteBlock() = default;
+
+ByteBlock::ByteBlock(const ByteBlock &) = default;
+
+ByteBlock::ByteBlock(ByteBlock &&) noexcept = default;
+
+auto ByteBlock::operator=(const ByteBlock &) -> ByteBlock & = default;
+
+auto ByteBlock::operator=(ByteBlock &&) noexcept -> ByteBlock & = default;
 
 ByteBlock::ByteBlock(const unit::ByteLength length, const Byte value) :
     _data{createData(length.toSizeTOrThrow(), length.toSizeTOrThrow())} {

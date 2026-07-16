@@ -13,8 +13,7 @@ target_include_directories(erbsland-core-unittest PRIVATE
 
 add_subdirectory(src)
 
-erbsland_unittest(
-        TARGET erbsland-core-unittest
+erbsland_core_configure_unittest(erbsland-core-unittest
         COPY_TEST_DATA data
         ENABLE_DATA_DEPS
 )

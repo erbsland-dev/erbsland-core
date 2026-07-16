@@ -4,6 +4,7 @@
 
 #include "Literals.hpp"
 #include "String.hpp"
+#include "StringView.hpp"
 
 #include "impl/ThrowHelper.hpp"
 
@@ -21,8 +22,8 @@ auto EscapeFormat::toString() const -> StringView {
         return "cpp"_el;
     case Xml:
         return "xml"_el;
-    case PCRE:
-        return "pcre"_el;
+    case RegEx:
+        return "regex"_el;
     case Display:
         return "display"_el;
     case None:
@@ -47,8 +48,8 @@ auto EscapeFormat::fromString(const StringView &text) noexcept -> std::optional<
     if (text == "xml"_el) {
         return EscapeFormat{Xml};
     }
-    if (text == "pcre"_el) {
-        return EscapeFormat{PCRE};
+    if (text == "regex"_el) {
+        return EscapeFormat{RegEx};
     }
     if (text == "display"_el) {
         return EscapeFormat{Display};

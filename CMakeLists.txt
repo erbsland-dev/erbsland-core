@@ -9,10 +9,20 @@ project(erbsland-core LANGUAGES CXX)
 option(ERBSLAND_CORE_ENABLE_TESTS "Enable unit tests" ${PROJECT_IS_TOP_LEVEL})
 # Option if demos should be enabled in this build.
 option(ERBSLAND_CORE_ENABLE_DEMOS "Enable demos" ${PROJECT_IS_TOP_LEVEL})
+# Option if precompiled headers should be enabled in this build.
+option(ERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS "Enable precompiled headers" ${PROJECT_IS_TOP_LEVEL})
 # Option if namespaces shall be not flattened. This is mainly relevant for development.
 option(ERBSLAND_CORE_DO_NOT_FLATTEN_NS "Do not flatten namespaces" ${PROJECT_IS_TOP_LEVEL})
 # Option to create a developer build.
 option(ERBSLAND_CORE_DEVELOPER_BUILD "Enables developer build." ${PROJECT_IS_TOP_LEVEL})
+
+# Unity builds substantially reduce clean build times for this library. Enable them for top-level developer builds,
+# while preserving an explicit CMAKE_UNITY_BUILD setting and leaving embedded consumers unaffected.
+if(PROJECT_IS_TOP_LEVEL
+        AND ERBSLAND_CORE_DEVELOPER_BUILD
+        AND NOT DEFINED CMAKE_UNITY_BUILD)
+    set(CMAKE_UNITY_BUILD ON)
+endif()
 
 include(cmake/debug-warnings.cmake)
 include(cmake/compiler-options.cmake)
@@ -22,6 +32,9 @@ add_library(erbsland-core STATIC)
 add_library(erbsland::core ALIAS erbsland-core)
 erbsland_set_required_compiler_options(erbsland-core)
 erbsland_enable_debug_warnings(erbsland-core)
+erbsland_enable_precompiled_headers(erbsland-core
+        GNU_EXCLUDED_SOURCES src/erbsland/options/Options.cpp
+)
 
 add_subdirectory(src/erbsland)
 

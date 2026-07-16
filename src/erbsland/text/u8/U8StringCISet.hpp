@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U8String.hpp"
+#include "U8StringCISet_fwd.hpp"
 
 #include "../impl/StringSet.hpp"
 

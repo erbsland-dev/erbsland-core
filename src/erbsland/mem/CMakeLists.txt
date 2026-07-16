@@ -26,6 +26,7 @@ target_sources(erbsland-core PRIVATE
         RingBuffer.cpp
         RingBuffer.hpp
         SharedArrayData.hpp
+        SharedArrayData_fwd.hpp
         SharedData.hpp
         SharedDataPointer.hpp
         SharedVirtualData.hpp

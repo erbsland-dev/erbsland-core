@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../text/Literals.hpp"
+#include "../../unit/CpLength.hpp"
+#include "../../unit/ElementCount.hpp"
+
 namespace erbsland::path::impl {
 
 using namespace text::literals;

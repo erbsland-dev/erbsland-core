@@ -59,8 +59,15 @@ types cache-friendly while still using the intrusive reference-counting model.
 
 Use this type when you build library internals that need copy-on-write array storage.
 The allocation must be created, cloned, and destroyed through
-:cpp:any:`SharedArrayData <erbsland::mem::SharedArrayData>` itself, because the header and trailing elements are one
+:cpp:class:`SharedArrayData <erbsland::mem::SharedArrayData>` itself, because the header and trailing elements are one
 memory block.
+
+Headers that only store or pass a :cpp:class:`SharedDataPointer <erbsland::mem::SharedDataPointer>` to shared array data
+can include ``SharedArrayData_fwd.hpp``.
+Constructors, destructors, copies, detach operations, and direct data access must be implemented in a source file that
+includes ``SharedArrayData.hpp``.
+This keeps the full allocation template out of dependent headers without adding a PImpl allocation or changing the
+storage layout.
 
 Shared Data
 -----------
@@ -100,10 +107,10 @@ Interface
     :members:
 .. doxygenclass:: erbsland::mem::ReferenceCounter
     :members:
-.. doxygenenum:: erbsland::mem::SharedArrayDataConstructMethod
-
 .. doxygenclass:: erbsland::mem::SharedArrayData
     :members:
+
+.. doxygenenum:: erbsland::mem::SharedArrayDataConstructMethod
 .. doxygenclass:: erbsland::mem::SharedData
     :members:
 .. doxygenclass:: erbsland::mem::SharedDataPointer

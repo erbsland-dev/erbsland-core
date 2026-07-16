@@ -103,6 +103,34 @@ using ExampleAlias = Example<int>;
             [(entry.kind, entry.full_name) for entry in entries],
         )
 
+    def test_extracts_authoritative_declarations_from_matching_forward_header(self) -> None:
+        path = self.write_header(
+            "unit/Length.hpp",
+            """#pragma once
+
+#include "Length_fwd.hpp"
+""",
+        )
+        self.write_header(
+            "unit/Length_fwd.hpp",
+            """#pragma once
+
+namespace erbsland::unit {
+
+/// A documented unit alias.
+using Length = int;
+
+}
+""",
+        )
+
+        entries = HeaderScanner(self.config).scan(path).entries
+
+        self.assertEqual(
+            [(ApiEntryKind.TYPEDEF, "erbsland::unit::Length")],
+            [(entry.kind, entry.full_name) for entry in entries],
+        )
+
     def test_extracts_documented_namespace_scope_functions(self) -> None:
         path = self.write_header(
             "math/Functions.hpp",
@@ -407,6 +435,49 @@ using StringList = int;
 
         self.assertIn("string_collections", entries[self.reference_dir / "text"])
         self.assertIn("text/index", entries[self.reference_dir])
+
+    def test_duplicate_entries_are_only_documented_once(self) -> None:
+        for relative_path in ("alpha/Shared.hpp", "beta/Shared.hpp"):
+            self.write_header(
+                relative_path,
+                """#pragma once
+
+namespace erbsland::common {
+
+/// A documented alias repeated by two public headers.
+using Shared = int;
+
+}
+""",
+            )
+        groups = tuple(
+            ReferenceGroup(
+                page_path=self.reference_dir / namespace / "shared.rst",
+                relative_page_path=Path(namespace) / "shared.rst",
+                title=f"{namespace.title()} Shared",
+                header_paths=(Path(namespace) / "Shared.hpp",),
+            )
+            for namespace in ("alpha", "beta")
+        )
+        config = ReferenceDocConfig(
+            project_dir=self.project_dir,
+            source_dir=self.source_dir,
+            reference_dir=self.reference_dir,
+            excluded_directory_names=frozenset(),
+            excluded_header_names=frozenset(),
+            excluded_header_globs=(),
+            manual_page_relative_paths=frozenset(),
+            exclude_underscore_headers=True,
+            reference_groups=groups,
+        )
+        generator = ReferenceDocGenerator(config)
+
+        generator.update_reference_pages(generator.collect_headers())
+
+        alpha_text = (self.reference_dir / "alpha" / "shared.rst").read_text(encoding="utf-8")
+        beta_text = (self.reference_dir / "beta" / "shared.rst").read_text(encoding="utf-8")
+        self.assertNotIn(".. doxygentypedef:: erbsland::common::Shared", alpha_text)
+        self.assertIn(".. doxygentypedef:: erbsland::common::Shared", beta_text)
 
     def test_uncategorized_headers_are_warned_without_pages(self) -> None:
         self.write_header(

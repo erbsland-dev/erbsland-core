@@ -5,6 +5,7 @@
 #include "Alignment.hpp"
 #include "BlockAnchor.hpp"
 #include "BlockPosition.hpp"
+#include "BlockSize_fwd.hpp"
 #include "Orientation.hpp"
 #include "Symmetry.hpp"
 

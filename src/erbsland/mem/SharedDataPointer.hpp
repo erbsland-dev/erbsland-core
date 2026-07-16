@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "SharedArrayData.hpp"
 #include "SharedData.hpp"
 
 #include "impl/SharedDataPointerTraits.hpp"

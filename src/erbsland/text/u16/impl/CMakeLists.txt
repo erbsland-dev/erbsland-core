@@ -16,6 +16,7 @@ target_sources(erbsland-core PRIVATE
         U16StringComparisonTools.hpp
         U16StringData.cpp
         U16StringData.hpp
+        U16StringData_fwd.hpp
         U16StringDataView.hpp
         U16StringDataView_fwd.hpp
         U16StringEncodingTools.cpp

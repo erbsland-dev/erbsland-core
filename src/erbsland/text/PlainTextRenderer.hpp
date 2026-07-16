@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PlainTextRenderer_fwd.hpp"
 #include "StringBuilder.hpp"
 #include "TextDocument_fwd.hpp"
 

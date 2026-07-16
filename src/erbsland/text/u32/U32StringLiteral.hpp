@@ -10,6 +10,7 @@
 #include "impl/U32StringReadTools.hpp"
 
 #include "../FormatAs_fwd.hpp"
+#include "../StringSide.hpp"
 
 #include "../../mem/UnsafeCharPtr.hpp"
 #include "../../unit/CpLength.hpp"

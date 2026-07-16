@@ -3,6 +3,7 @@
 #pragma once
 
 #include "BlockPosition.hpp"
+#include "BlockPositionList_fwd.hpp"
 
 #include "../util/List.hpp"
 

@@ -71,10 +71,10 @@ public:
         const auto u16Text = U16String{std::u16string_view{u"\"x\""}};
         const auto u32Text = U32String{std::u32string_view{U"a+b"}};
 
-        const auto format = U8Format{"{:/html}|{:/json}|{:/pcre}"};
+        const auto format = U8Format{"{:/html}|{:/json}|{:/regex}"};
         const auto expected = StringConverter{u8Text.toEscaped(EscapeFormat::Html)}.toStdString() + "|" +
             StringConverter{u16Text.toEscaped(EscapeFormat::Json)}.toStdString() + "|" +
-            StringConverter{u32Text.toEscaped(EscapeFormat::PCRE)}.toStdString();
+            StringConverter{u32Text.toEscaped(EscapeFormat::RegEx)}.toStdString();
 
         REQUIRE_EQUAL(StringConverter{format.build(u8Text, u16Text, u32Text)}.toStdString(), expected);
     }

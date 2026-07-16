@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../mem/SharedArrayData.hpp"
-#include "../../../mem/SharedDataPointer.hpp"
+#include "U16StringData_fwd.hpp"
+
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
@@ -20,8 +20,8 @@ namespace erbsland::text::impl {
 /// @tested{U16StringDataTest}
 struct U16StringTraits final {
     using CodeUnit = char16_t;
-    using StorageData = mem::SharedArrayData<CodeUnit>;
-    using StoragePtr = mem::SharedDataPointer<StorageData>;
+    using StorageData = U16StringData;
+    using StoragePtr = U16StringDataPtr;
     using StandardView = std::u16string_view;
     using LiteralChar = char16_t;
     using DataIndex = unit::U16DataIndex;

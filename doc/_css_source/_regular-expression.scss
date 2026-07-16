@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2025-2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+:root {
+    --ela-re-expression-color: #505090;
+    --ela-re-parameter-color: #000000;
+    --ela-re-parameter-background-color: rgba(0, 0, 0, 0.05);
+    --ela-re-parameter-border-color: rgba(0, 0, 0, 0.05);
+    --ela-re-unicode-codepoint-color: #7f08a3;
+}
+
+.text-code,
+.esc-expression {
+    font-family: var(--font-family-monospace), monospace;
+    font-weight: 800;
+    color: var(--ela-re-expression-color);
+    white-space: nowrap;
+}
+
+.esc-parameter {
+    color: var(--ela-re-parameter-color);
+    font-weight: normal;
+    font-style: italic;
+    padding: 0 0.1em;
+    background-color: var(--ela-re-parameter-background-color);
+    border: 1px solid var(--ela-re-parameter-border-color);
+    border-radius: 3px;
+}
+
+.unicode-codepoint {
+    color: var(--ela-re-unicode-codepoint-color);
+}
+
+.wy-table-responsive table.expressions td {
+    vertical-align: top;
+}
+
+.wy-table-responsive table.flags-table td:not(:first-child) {
+    vertical-align: middle;
+}
+
+.wy-table-responsive table.flags-table th:first-child {
+    vertical-align: bottom;
+}
+
+.wy-table-responsive table.flags-table th:not(:first-child) {
+    height: 100px;
+    vertical-align: bottom;
+}
+
+.wy-table-responsive table.flags-table th:not(:first-child) p {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+}

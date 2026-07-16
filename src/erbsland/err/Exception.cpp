@@ -5,10 +5,18 @@
 #include "impl/ExceptionDiagnostic.hpp"
 
 #include "../text/impl/UnsafeU8StringViewAccess.hpp"
+#include "../text/String.hpp"
 
 #include <utility>
 
 namespace erbsland::err {
+
+Exception::Exception(const std::string_view reason) noexcept : Exception{text::String{reason}} {
+}
+
+Exception::Exception(const std::string_view reason, std::exception_ptr cause) noexcept :
+    Exception{text::String{reason}, std::move(cause)} {
+}
 
 auto Exception::what() const noexcept -> mem::UnsafeConstCharPtr {
     if (_reason.isEmpty()) {

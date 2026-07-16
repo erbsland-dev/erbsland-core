@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "List_fwd.hpp"
 #include "LoopResult.hpp"
 
 #include "../mem/CowManualStorage.hpp"
@@ -24,7 +25,7 @@ namespace erbsland::util {
 /// @tparam tElement The element type stored in this list.
 /// @tparam tSelf Internal CRTP type used by derived public list types.
 /// @tested{ListTest}
-template <typename tElement, typename tSelf = void>
+template <typename tElement, typename tSelf>
 class List {
 public:
     using Element = tElement;                                                     ///< The stored element type.

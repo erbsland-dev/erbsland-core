@@ -7,6 +7,7 @@ target_sources(erbsland-core PRIVATE
         BestGrowth.cpp
         BestGrowth.hpp
         ByteBlockData.hpp
+        ByteBlockData_fwd.hpp
         RingBufferStorageTraits.hpp
         SharedArrayCapacity.hpp
         SharedArrayDataTraits.hpp

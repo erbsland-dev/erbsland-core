@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringDebugAccess_fwd.hpp"
+
 #include "../../mem/StorageIdentifier.hpp"
 #include "../../text/u16/impl/U16StringLiteralStorage.hpp"
 #include "../../text/u16/impl/U16StringSharedStorage.hpp"

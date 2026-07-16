@@ -4,6 +4,7 @@
 
 #include "DayOfYear_fwd.hpp"
 #include "Month_fwd.hpp"
+#include "Year_fwd.hpp"
 
 #include "impl/TimePartBases.hpp"
 

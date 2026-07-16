@@ -50,11 +50,11 @@ target_sources(erbsland-core PRIVATE
         LinkData.hpp
         NoneEscapeFormatter.cpp
         NoneEscapeFormatter.hpp
-        PcreEscapeFormatter.cpp
-        PcreEscapeFormatter.hpp
         PlainTextRenderer.cpp
         PlainTextRenderer.hpp
         PlainTextRenderer_fwd.hpp
+        RegExEscapeFormatter.cpp
+        RegExEscapeFormatter.hpp
         RepeatCount.hpp
         SafeStringEscapeTools.cpp
         SafeStringEscapeTools.hpp
@@ -101,6 +101,8 @@ target_sources(erbsland-core PRIVATE
         UnsafeU16StringBuffer_fwd.hpp
         UnsafeU16StringViewAccess.hpp
         UnsafeU16StringViewAccess_fwd.hpp
+        UnsafeU32StringViewAccess.hpp
+        UnsafeU32StringViewAccess_fwd.hpp
         UnsafeU8StringAccess.hpp
         UnsafeU8StringAccess_fwd.hpp
         UnsafeU8StringBuffer.hpp

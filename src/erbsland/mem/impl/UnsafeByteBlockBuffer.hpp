@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ByteBlockData.hpp"
 #include "UnsafeByteBlockBuffer_fwd.hpp"
 
 #include "../ByteBlock.hpp"

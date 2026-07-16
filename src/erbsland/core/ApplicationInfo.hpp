@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/String.hpp"
+#include "../text/StringView.hpp"
 #include "../unit/Version.hpp"
 
 #include <utility>

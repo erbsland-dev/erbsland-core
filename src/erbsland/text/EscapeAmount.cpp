@@ -5,6 +5,7 @@
 #include "Char.hpp"
 #include "Literals.hpp"
 #include "String.hpp"
+#include "StringView.hpp"
 
 #include "impl/ThrowHelper.hpp"
 

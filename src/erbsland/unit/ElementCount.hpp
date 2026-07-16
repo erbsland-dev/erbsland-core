@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "ElementUnit.hpp"
+#include "ElementCount_fwd.hpp"
 #include "IntegerUnitAmount.hpp"
 
-namespace erbsland::unit {
-
-/// A non-negative number of elements.
-using ElementCount = IntegerUnitAmount<ElementUnit>;
-
-}
+// The public alias is declared in the canonical forward header.

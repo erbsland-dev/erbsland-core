@@ -13,6 +13,7 @@ target_sources(erbsland-core PRIVATE
         U32StringComparisonTools.hpp
         U32StringData.cpp
         U32StringData.hpp
+        U32StringData_fwd.hpp
         U32StringDataView.hpp
         U32StringDataView_fwd.hpp
         U32StringEncodingTools.cpp

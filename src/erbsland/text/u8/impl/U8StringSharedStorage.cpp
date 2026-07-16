@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U8StringSharedStorage.hpp"
 
+#include "U8StringData.hpp"
 #include "U8StringReadTools.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
@@ -13,6 +14,20 @@
 #include <utility>
 
 namespace erbsland::text::impl {
+
+U8StringSharedStorage::~U8StringSharedStorage() = default;
+
+U8StringSharedStorage::U8StringSharedStorage(const U8StringSharedStorage &) = default;
+
+U8StringSharedStorage::U8StringSharedStorage(U8StringSharedStorage &&) noexcept = default;
+
+auto U8StringSharedStorage::operator=(const U8StringSharedStorage &) -> U8StringSharedStorage & = default;
+
+auto U8StringSharedStorage::operator=(U8StringSharedStorage &&) noexcept -> U8StringSharedStorage & = default;
+
+auto U8StringSharedStorage::isEmpty() const noexcept -> bool {
+    return _range.isEmpty() || _data.isNull();
+}
 
 U8StringSharedStorage::U8StringSharedStorage(const std::string_view text) :
     _data{createU8StringData(text)}, _range{unit::ByteRange::fromSizeT(text.size())} {
@@ -36,6 +51,39 @@ U8StringSharedStorage::U8StringSharedStorage(U8StringDataPtr data, unit::ByteRan
 
 U8StringSharedStorage::U8StringSharedStorage(const unit::ByteRange range) noexcept :
     _data{createU8StringData(range.length().toSizeT())}, _range{range} {
+}
+
+auto U8StringSharedStorage::data() const noexcept -> mem::UnsafeConstCharPtr {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.constGet()->data();
+}
+
+auto U8StringSharedStorage::dataForWrite() noexcept -> mem::UnsafeCharPtr {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.get()->data();
+}
+
+auto U8StringSharedStorage::dataSize() const noexcept -> std::size_t {
+    if (_data.isNull()) {
+        return 0;
+    }
+    return _data.get()->size() - 1U;
+}
+
+auto U8StringSharedStorage::storageId() const noexcept -> mem::StorageIdentifier {
+    if (data() == nullptr) {
+        return {};
+    }
+    const auto *begin = data() + _range.index().toSizeT();
+    return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
+}
+
+auto U8StringSharedStorage::isUniqueFullRange() const noexcept -> bool {
+    return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
 }
 
 auto U8StringSharedStorage::fromBytes(const std::span<const char> bytes) -> U8StringSharedStorage {

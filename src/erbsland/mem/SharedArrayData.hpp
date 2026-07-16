@@ -3,9 +3,10 @@
 #pragma once
 
 #include "ReferenceCounter.hpp"
+#include "SharedArrayData_fwd.hpp"
 
 #include "impl/SharedArrayDataTraits.hpp"
-#include "impl/SharedDataPointerTraits_fwd.hpp"
+#include "impl/SharedDataPointerTraits.hpp"
 
 #include "../math/SaturatingMath.hpp"
 
@@ -15,16 +16,12 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
-#include <functional>
 #include <limits>
 #include <memory>
 #include <new>
 #include <type_traits>
 
 namespace erbsland::mem {
-
-/// The method to construct the shared array data.
-enum class SharedArrayDataConstructMethod : uint8_t { None, DefaultConstruct, ValueConstruct };
 
 /// A class for custom implicitly/explicitly shared byte data.
 /// @seedoc{/reference/mem/cow_storage}
@@ -34,10 +31,7 @@ enum class SharedArrayDataConstructMethod : uint8_t { None, DefaultConstruct, Va
 /// @tparam tDataType The element type stored in the trailing array.
 /// @tparam tSizeType The size type, either `uint32_t` or `uint64_t`.
 /// @tparam tConstructMethod Controls if and how array elements are constructed.
-template <
-    typename tDataType,
-    impl::SharedArrayDataSizeType tSizeType = uint32_t,
-    SharedArrayDataConstructMethod tConstructMethod = SharedArrayDataConstructMethod::None>
+template <typename tDataType, impl::SharedArrayDataSizeType tSizeType, SharedArrayDataConstructMethod tConstructMethod>
 class SharedArrayData final {
     static_assert(
         tConstructMethod != SharedArrayDataConstructMethod::None || std::is_trivially_copyable_v<tDataType>,
@@ -312,5 +306,32 @@ private:
 
     // The actual element array is stored in the aligned trailing memory immediately after this header object.
 };
+
+}
+
+namespace erbsland::mem::impl {
+
+template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::referenceCounter(
+    Type *data) noexcept -> ReferenceCounter & {
+    return data->_referenceCount;
+}
+
+template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::referenceCounter(
+    const Type *data) noexcept -> const ReferenceCounter & {
+    return data->_referenceCount;
+}
+
+template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::clone(const Type *data)
+    -> Type * {
+    return data->clone();
+}
+
+template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+void SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::destroy(Type *data) noexcept {
+    Type::destroy(data);
+}
 
 }

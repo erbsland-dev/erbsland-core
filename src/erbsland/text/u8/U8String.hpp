@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "U8String_fwd.hpp"
 #include "U8StringCharView_fwd.hpp"
-#include "U8StringConstIterator.hpp"
+#include "U8StringConstIterator_fwd.hpp"
 #include "U8StringList_fwd.hpp"
 #include "U8StringLiteral_fwd.hpp"
 #include "U8StringView_fwd.hpp"
@@ -12,7 +13,6 @@
 #include "impl/U8StringBuilder_fwd.hpp"
 #include "impl/U8StringEncodingTools_fwd.hpp"
 #include "impl/U8StringSharedStorage.hpp"
-#include "impl/U8StringTransformTools.hpp"
 
 #include "../BooleanFormat.hpp"
 #include "../Char.hpp"
@@ -440,5 +440,3 @@ struct std::hash<erbsland::text::U8String> {
 };
 
 #include "U8String_integer.tpp"
-#include "U8StringList.hpp"
-#include "U8StringViewList.hpp"

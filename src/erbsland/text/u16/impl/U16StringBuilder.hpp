@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "U16StringBuilder_fwd.hpp"
+
 #include "../U16String.hpp"
 
 #include "../../impl/StringBuilderBase.hpp"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../util/List.hpp"
+#include "../util/List_fwd.hpp"
 
 #include <memory>
 

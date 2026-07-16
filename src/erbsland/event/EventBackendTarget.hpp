@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Event.hpp"
+#include "EventBackendTarget_fwd.hpp"
 
 namespace erbsland::event {
 

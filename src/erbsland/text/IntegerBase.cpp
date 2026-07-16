@@ -3,8 +3,12 @@
 #include "IntegerBase.hpp"
 
 #include "Char.hpp"
+#include "Literals.hpp"
+#include "StringView.hpp"
 
 namespace erbsland::text {
+
+using namespace text::literals;
 
 auto IntegerBase::fromPrefixChar(const Char character) noexcept -> std::optional<IntegerBase> {
     const auto value = character.toRawValue();
@@ -31,6 +35,20 @@ auto IntegerBase::prefixChar(const LetterCase letterCase) const noexcept -> Char
     case Decimal:
     default:
         return {};
+    }
+}
+
+auto IntegerBase::toString() const noexcept -> StringView {
+    switch (_value) {
+    case Hexadecimal:
+        return "hexadecimal"_el;
+    case Binary:
+        return "binary"_el;
+    case Octal:
+        return "octal"_el;
+    case Decimal:
+    default:
+        return "decimal"_el;
     }
 }
 

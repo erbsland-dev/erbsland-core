@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "IntegerUnit.hpp"
 #include "IntegerUnitAmount.hpp"
 #include "IntegerUnitIndex.hpp"
 #include "IntegerUnitOffset.hpp"
@@ -14,9 +13,7 @@
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <compare>
-#include <concepts>
-#include <cstdint>
-#include <type_traits>
+#include <cstddef>
 #include <utility>
 
 namespace erbsland::unit {

@@ -245,6 +245,59 @@ Headers     :
     * "random/ThreadSafeFastRandom.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "re/regex.rst"
+Title       : "Regular Expression"
+Headers     :
+    * "re/RegEx.hpp"
+    * "re/Flag.hpp"
+    * "re/Flags.hpp"
+
+------------*[ Reference Groups ]
+Page        : "re/match.rst"
+Title       : "Regular Expression Matches"
+Headers     :
+    * "re/MatchBase.hpp"
+    * "re/Match.hpp"
+    * "re/Match16.hpp"
+    * "re/Match32.hpp"
+    * "re/CaptureRange.hpp"
+    * "re/CaptureGroup.hpp"
+    * "re/CaptureGroupIndex.hpp"
+
+------------*[ Reference Groups ]
+Page        : "re/settings.rst"
+Title       : "Regular Expression Settings"
+Headers     :
+    * "re/Settings.hpp"
+    * "re/Feature.hpp"
+    * "re/Features.hpp"
+
+------------*[ Reference Groups ]
+Page        : "re/input.rst"
+Title       : "Regular Expression Inputs"
+Headers     :
+    * "re/InputBase.hpp"
+    * "re/Input.hpp"
+    * "re/Input16.hpp"
+    * "re/Input32.hpp"
+    * "re/InputPosition.hpp"
+
+------------*[ Reference Groups ]
+Page        : "re/error.rst"
+Title       : "Regular Expression Errors"
+Headers     :
+    * "re/ErrorCategory.hpp"
+    * "re/RegExErrorContext.hpp"
+    * "re/RegExError.hpp"
+
+------------*[ Reference Groups ]
+Page        : "re/diagnostics.rst"
+Title       : "Regular Expression Diagnostics"
+Headers     :
+    * "re/diagnostics/Assembler.hpp"
+    * "re/diagnostics/Disassembler.hpp"
+
+------------*[ Reference Groups ]
 Page        : "system/user_lookup.rst"
 Title       : "User Lookup"
 Headers     :

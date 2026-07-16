@@ -4,6 +4,7 @@
 
 #include "EventCallback.hpp"
 #include "EventRegistry.hpp"
+#include "EventScheduler_fwd.hpp"
 #include "EventTimer_fwd.hpp"
 
 #include "../time/TimeDelta.hpp"

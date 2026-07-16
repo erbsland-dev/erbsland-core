@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U32StringDataView.hpp"
+#include "U32StringEncodingTools_fwd.hpp"
 #include "U32StringSharedStorage.hpp"
 #include "U32Writer.hpp"
 

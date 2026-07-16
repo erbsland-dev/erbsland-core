@@ -21,4 +21,7 @@ target_include_directories(erbsland-core-stream-demo-support
 )
 erbsland_set_required_compiler_options(erbsland-core-stream-demo-support)
 erbsland_enable_debug_warnings(erbsland-core-stream-demo-support)
-set_target_properties(erbsland-core-stream-demo-support PROPERTIES FOLDER "Demos/stream")
+set_target_properties(erbsland-core-stream-demo-support PROPERTIES
+        FOLDER "Demos/stream"
+        UNITY_BUILD OFF
+)

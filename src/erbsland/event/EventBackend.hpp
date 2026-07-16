@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Event.hpp"
+#include "EventBackend_fwd.hpp"
 #include "EventBackendId.hpp"
 #include "EventBackendTarget_fwd.hpp"
 

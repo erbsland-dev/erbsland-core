@@ -17,6 +17,7 @@ Reference
     options/index
     path/index
     random/index
+    re/index
     stream/index
     system/index
     text/index

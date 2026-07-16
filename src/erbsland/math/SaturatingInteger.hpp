@@ -5,6 +5,7 @@
 #include "IntegerMath.hpp"
 #include "IntegerRange.hpp"
 #include "IntegerTraits.hpp"
+#include "SaturatingInteger_fwd.hpp"
 #include "SaturatingMath.hpp"
 
 #include "impl/SaturatingMathHelper.hpp"

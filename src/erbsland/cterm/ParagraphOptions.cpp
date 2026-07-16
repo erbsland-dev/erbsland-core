@@ -3,6 +3,7 @@
 #include "ParagraphOptions.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/u32/U32StringConstIterator.hpp"
 
 namespace erbsland::cterm {
 

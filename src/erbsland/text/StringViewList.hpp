@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringViewList_fwd.hpp"
+
 #include "u8/U8StringViewList.hpp"
 
 namespace erbsland::text {

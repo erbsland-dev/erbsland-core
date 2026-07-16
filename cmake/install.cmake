@@ -11,7 +11,7 @@ install(TARGETS ${_erbsland_core_install_targets}
 install(DIRECTORY include/
         DESTINATION include
 )
-install(DIRECTORY src/erbsland
+install(DIRECTORY src/erbsland/
         DESTINATION src/erbsland
         FILES_MATCHING
         PATTERN "*.hpp"

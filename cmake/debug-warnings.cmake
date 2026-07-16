@@ -6,17 +6,16 @@ include_guard()
 
 function(erbsland_enable_debug_warnings target)
     if(MSVC)
-        target_compile_options(${target} PRIVATE
+        target_compile_options(${target} BEFORE PRIVATE
                 $<$<CONFIG:Debug>:/W4>
                 $<$<CONFIG:Debug>:/WX>
         )
     else()
-        target_compile_options(${target} PRIVATE
+        target_compile_options(${target} BEFORE PRIVATE
                 $<$<CONFIG:Debug>:-Wall>
                 $<$<CONFIG:Debug>:-Wextra>
                 $<$<CONFIG:Debug>:-Werror>
                 $<$<CONFIG:Debug>:-Wconversion>
-                $<$<CONFIG:Debug>:-Wno-trigraphs>
         )
         if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             target_compile_options(${target} PRIVATE

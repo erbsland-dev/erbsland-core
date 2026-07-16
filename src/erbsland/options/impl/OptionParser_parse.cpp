@@ -10,6 +10,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
 #include "../../text/StringSide.hpp"
+#include "../../text/u8/U8StringConstIterator.hpp"
 
 namespace erbsland::options::impl {
 

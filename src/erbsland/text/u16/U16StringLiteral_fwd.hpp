@@ -7,8 +7,6 @@
 
 #include "impl/U16StringLiteralFactory_fwd.hpp"
 
-#include "../../mem/UnsafeCharPtr.hpp"
-
 #include <cstddef>
 
 namespace erbsland::text {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ByteFormat_fwd.hpp"
 #include "ByteFormatFlag.hpp"
 #include "LetterCase.hpp"
 #include "StringView_fwd.hpp"

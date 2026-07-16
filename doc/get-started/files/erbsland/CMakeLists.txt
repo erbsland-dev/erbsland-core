@@ -1,0 +1,1 @@
+add_subdirectory(core EXCLUDE_FROM_ALL)

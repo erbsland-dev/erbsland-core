@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UnsafeU16StringAccess_fwd.hpp"
+
 #include "../u16/U16String.hpp"
 
 namespace erbsland::text::impl {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BlockAlignedSource_fwd.hpp"
 #include "BlockRectangle.hpp"
 
 namespace erbsland::bgeo {

@@ -4,7 +4,7 @@
 
 #include "BlockRectangle_fwd.hpp"
 
-#include "../util/List.hpp"
+#include "../util/List_fwd.hpp"
 
 namespace erbsland::bgeo {
 

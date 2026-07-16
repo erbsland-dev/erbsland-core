@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringHashMap_fwd.hpp"
 #include "StringHashSet.hpp"
 #include "StringKey.hpp"
 #include "StringList.hpp"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U8StringData.hpp"
+#include "U8StringData_fwd.hpp"
 #include "U8StringDataView.hpp"
 #include "U8StringLiteralStorage.hpp"
 
@@ -21,7 +21,7 @@ namespace erbsland::text::impl {
 class U8StringSharedStorage final {
 public:
     /// Create empty shared storage.
-    U8StringSharedStorage() = default;
+    constexpr U8StringSharedStorage() noexcept : _data{}, _range{unit::ByteRange::empty()} {}
     /// Create shared storage by copying a standard string view.
     explicit U8StringSharedStorage(std::string_view text);
     /// Create shared storage by copying a standard UTF-8 string view.
@@ -36,15 +36,15 @@ public:
     explicit U8StringSharedStorage(unit::ByteRange range) noexcept;
 
 public: // defaults
-    ~U8StringSharedStorage() = default;
-    U8StringSharedStorage(const U8StringSharedStorage &) = default;
-    U8StringSharedStorage(U8StringSharedStorage &&) = default;
-    auto operator=(const U8StringSharedStorage &) -> U8StringSharedStorage & = default;
-    auto operator=(U8StringSharedStorage &&) -> U8StringSharedStorage & = default;
+    ~U8StringSharedStorage();
+    U8StringSharedStorage(const U8StringSharedStorage &);
+    U8StringSharedStorage(U8StringSharedStorage &&) noexcept;
+    auto operator=(const U8StringSharedStorage &) -> U8StringSharedStorage &;
+    auto operator=(U8StringSharedStorage &&) noexcept -> U8StringSharedStorage &;
 
 public: // tests
     /// Test if the storage is empty.
-    [[nodiscard]] auto isEmpty() const noexcept -> bool { return _range.isEmpty() || _data.isNull(); }
+    [[nodiscard]] auto isEmpty() const noexcept -> bool;
 
 public: // accessors
     /// Access the shared data pointer.
@@ -52,38 +52,15 @@ public: // accessors
     /// Access the storage range.
     [[nodiscard]] auto range() const noexcept -> unit::ByteRange { return _range; }
     /// Access the string as a string pointer, or `nullptr` if empty.
-    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr {
-        if (_data.isNull()) {
-            return nullptr;
-        }
-        return _data.constGet()->data();
-    }
+    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr;
     /// Access the string as a string pointer, or `nullptr` if empty.
-    [[nodiscard]] auto dataForWrite() noexcept -> mem::UnsafeCharPtr {
-        if (_data.isNull()) {
-            return nullptr;
-        }
-        return _data.get()->data();
-    }
+    [[nodiscard]] auto dataForWrite() noexcept -> mem::UnsafeCharPtr;
     /// Get the size of the string data.
-    [[nodiscard]] auto dataSize() const noexcept -> std::size_t {
-        if (_data.isNull()) {
-            return 0;
-        }
-        return _data.get()->size() - 1U;
-    }
+    [[nodiscard]] auto dataSize() const noexcept -> std::size_t;
     /// Get a unique identifier for the visible storage range.
-    [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier {
-        if (data() == nullptr) {
-            return {};
-        }
-        const auto *begin = data() + _range.index().toSizeT();
-        return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
-    }
+    [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
     /// Test if the storage can be mutated in place without detaching or materializing a slice.
-    [[nodiscard]] auto isUniqueFullRange() const noexcept -> bool {
-        return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
-    }
+    [[nodiscard]] auto isUniqueFullRange() const noexcept -> bool;
 
 public:
     /// Create string storage by copying the exact bytes from a span.

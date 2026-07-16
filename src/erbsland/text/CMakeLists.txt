@@ -69,6 +69,7 @@ target_sources(erbsland-core PRIVATE
         LetterCase.hpp
         Literals.cpp
         Literals.hpp
+        ParseNumberError.cpp
         ParseNumberError.hpp
         PlainTextRenderer.cpp
         PlainTextRenderer.hpp

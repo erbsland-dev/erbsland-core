@@ -6,6 +6,7 @@
 #include "EventBackendIdInfo.hpp"
 #include "EventId.hpp"
 #include "EventIdInfo.hpp"
+#include "EventRegistry_fwd.hpp"
 
 #include "../core/impl/ApplicationData_fwd.hpp"
 #include "../text/StringHashMap.hpp"

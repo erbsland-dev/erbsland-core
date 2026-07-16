@@ -5,6 +5,7 @@
 #include "Path.hpp"
 #include "PathAccessInfo.hpp"
 #include "PathAttribute.hpp"
+#include "PathInfo_fwd.hpp"
 #include "PathInfoParts.hpp"
 #include "PathType.hpp"
 

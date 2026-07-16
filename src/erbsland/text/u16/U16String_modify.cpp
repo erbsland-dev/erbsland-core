@@ -3,6 +3,7 @@
 #include "U16String.hpp"
 
 #include "U16StringCharView.hpp"
+#include "U16StringConstIterator.hpp"
 #include "U16StringList.hpp"
 #include "U16StringLiteral.hpp"
 #include "U16StringView.hpp"

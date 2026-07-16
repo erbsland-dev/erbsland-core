@@ -2,13 +2,36 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../SharedArrayData.hpp"
+#include "SharedDataPointerTraits_fwd.hpp"
+
+#include "../SharedArrayData_fwd.hpp"
 #include "../SharedData.hpp"
 #include "../SharedVirtualData.hpp"
 
 #include <type_traits>
 
 namespace erbsland::mem::impl {
+
+template <typename tDataType>
+struct IsSharedArrayData : std::false_type {};
+
+template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+struct IsSharedArrayData<SharedArrayData<tDataType, tSizeType, tConstructMethod>> : std::true_type {};
+
+template <typename tDataType, bool tIsSharedArrayData = IsSharedArrayData<tDataType>::value>
+struct IsRegularSharedData : std::false_type {};
+
+template <typename tDataType>
+struct IsRegularSharedData<tDataType, false>
+    : std::bool_constant<std::is_base_of_v<SharedData, tDataType> && !std::is_base_of_v<SharedVirtualData, tDataType>> {
+};
+
+template <typename tDataType, bool tIsSharedArrayData = IsSharedArrayData<tDataType>::value>
+struct IsPolymorphicSharedData : std::false_type {};
+
+template <typename tDataType>
+struct IsPolymorphicSharedData<tDataType, false> : std::bool_constant<std::is_base_of_v<SharedVirtualData, tDataType>> {
+};
 
 /// The default traits for types that are not supported by `SharedDataPointer`.
 /// `SharedDataPointer` uses this traits class as a narrow bridge between pointer ownership logic and the concrete data
@@ -36,9 +59,7 @@ struct SharedDataPointerTraits {
 ///
 /// @tparam tDataType The concrete data type derived from `SharedData`.
 template <typename tDataType>
-struct SharedDataPointerTraits<
-    tDataType,
-    std::enable_if_t<std::is_base_of_v<SharedData, tDataType> && !std::is_base_of_v<SharedVirtualData, tDataType>>> {
+struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsRegularSharedData<tDataType>::value>> {
     /// The concrete managed type.
     using Type = tDataType;
 
@@ -72,7 +93,7 @@ struct SharedDataPointerTraits<
 /// allocated object compatible with the managed static type.
 /// @tparam tDataType The polymorphic shared data type.
 template <typename tDataType>
-struct SharedDataPointerTraits<tDataType, std::enable_if_t<std::is_base_of_v<SharedVirtualData, tDataType>>> {
+struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsPolymorphicSharedData<tDataType>::value>> {
     /// The concrete managed type.
     using Type = tDataType;
 
@@ -112,22 +133,18 @@ struct SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructM
     /// Access the intrusive counter of a mutable array header.
     /// @param data A non-null array header.
     /// @return The reference counter embedded in the array header.
-    [[nodiscard]] static auto referenceCounter(Type *data) noexcept -> ReferenceCounter & {
-        return data->_referenceCount;
-    }
+    [[nodiscard]] static auto referenceCounter(Type *data) noexcept -> ReferenceCounter &;
     /// Access the intrusive counter of a const array header.
     /// @param data A non-null array header.
     /// @return The reference counter embedded in the array header.
-    [[nodiscard]] static auto referenceCounter(const Type *data) noexcept -> const ReferenceCounter & {
-        return data->_referenceCount;
-    }
+    [[nodiscard]] static auto referenceCounter(const Type *data) noexcept -> const ReferenceCounter &;
     /// Create an unreferenced copy for copy-on-write detach.
     /// @param data A non-null source array header.
     /// @return A new array allocated by `SharedArrayData::clone()`.
-    [[nodiscard]] static auto clone(const Type *data) -> Type * { return data->clone(); }
+    [[nodiscard]] static auto clone(const Type *data) -> Type *;
     /// Destroy an array allocated by `SharedArrayData::create()` or `SharedArrayData::clone()`.
     /// @param data A non-null array header.
-    static void destroy(Type *data) noexcept { Type::destroy(data); }
+    static void destroy(Type *data) noexcept;
 };
 
 }

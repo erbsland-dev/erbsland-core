@@ -25,10 +25,7 @@ public:
         err::ParseError{std::move(reason), position}, _status{status} {}
     /// @overload
     explicit ParseNumberError(
-        const std::string_view reason,
-        ReadNumberStatus status,
-        unit::CpIndex position = unit::CpIndex::noIndex()) noexcept :
-        ParseNumberError{String{reason}, status, position} {}
+        std::string_view reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
 
     // defaults
     ~ParseNumberError() override = default;

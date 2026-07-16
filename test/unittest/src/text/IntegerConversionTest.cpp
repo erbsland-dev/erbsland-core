@@ -32,6 +32,7 @@ using el::math::SatInt16;
 using el::math::SatUInt16;
 using el::unit::CpLength;
 using namespace el::text;
+using namespace el::text::literals;
 
 namespace th = erbsland::unittest::th;
 
@@ -65,6 +66,10 @@ public:
         REQUIRE_EQUAL(IntegerBase{IntegerBase::Binary}.prefixChar(LetterCase::Lowercase), U'b');
         REQUIRE_EQUAL(IntegerBase{IntegerBase::Octal}.prefixChar(LetterCase::Uppercase), U'O');
         REQUIRE(IntegerBase{IntegerBase::Decimal}.prefixChar(LetterCase::Lowercase).isNull());
+        REQUIRE_EQUAL(IntegerBase{IntegerBase::Decimal}.toString(), "decimal"_el);
+        REQUIRE_EQUAL(IntegerBase{IntegerBase::Hexadecimal}.toString(), "hexadecimal"_el);
+        REQUIRE_EQUAL(IntegerBase{IntegerBase::Binary}.toString(), "binary"_el);
+        REQUIRE_EQUAL(IntegerBase{IntegerBase::Octal}.toString(), "octal"_el);
         REQUIRE_EQUAL(IntegerBase::fromPrefixChar(U'x').value(), IntegerBase::Hexadecimal);
         REQUIRE_EQUAL(IntegerBase::fromPrefixChar(U'B').value(), IntegerBase::Binary);
         REQUIRE_EQUAL(IntegerBase::fromPrefixChar(U'o').value(), IntegerBase::Octal);

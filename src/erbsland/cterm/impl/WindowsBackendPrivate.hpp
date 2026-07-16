@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "WindowsBackendPrivate_fwd.hpp"
 #include "WindowsSignalDispatcher.hpp"
 
 #include "../Input.hpp"

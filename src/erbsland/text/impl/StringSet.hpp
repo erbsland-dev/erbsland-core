@@ -4,6 +4,7 @@
 
 #include "StringKey.hpp"
 #include "StringList.hpp"
+#include "StringSet_fwd.hpp"
 
 #include "../../util/Set.hpp"
 

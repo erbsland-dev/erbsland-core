@@ -23,36 +23,6 @@ using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
 
-namespace {
-
-[[nodiscard]] auto lineValue(const std::string &text, const std::string &label) -> std::string {
-    const auto prefix = label + ": ";
-    auto position = std::size_t{0U};
-    while (position < text.size()) {
-        const auto lineEnd = text.find('\n', position);
-        const auto length = lineEnd == std::string::npos ? std::string::npos : lineEnd - position;
-        auto line = text.substr(position, length);
-        const auto first = line.find_first_not_of(' ');
-        if (first != std::string::npos) {
-            line = line.substr(first);
-        }
-        if (line.starts_with(prefix)) {
-            return line.substr(prefix.size());
-        }
-        if (lineEnd == std::string::npos) {
-            break;
-        }
-        position = lineEnd + 1U;
-    }
-    return {};
-}
-
-[[nodiscard]] auto containsText(const std::string &text, const std::string &needle) noexcept -> bool {
-    return text.find(needle) != std::string::npos;
-}
-
-}
-
 TESTED_TARGETS(DebugViewDetail DebugViewDetails StringDebug)
 class StringDebugTest final : public el::UnitTest {
 public:
@@ -93,5 +63,32 @@ public:
         REQUIRE(
             StringConverter{toDebugString(u32Text, DebugViewDetail::ContentInTitle)}.toStdString().find(
                 "U32String(中)") != std::string::npos);
+    }
+
+private:
+    [[nodiscard]] static auto lineValue(const std::string &text, const std::string &label) -> std::string {
+        const auto prefix = label + ": ";
+        auto position = std::size_t{0U};
+        while (position < text.size()) {
+            const auto lineEnd = text.find('\n', position);
+            const auto length = lineEnd == std::string::npos ? std::string::npos : lineEnd - position;
+            auto line = text.substr(position, length);
+            const auto first = line.find_first_not_of(' ');
+            if (first != std::string::npos) {
+                line = line.substr(first);
+            }
+            if (line.starts_with(prefix)) {
+                return line.substr(prefix.size());
+            }
+            if (lineEnd == std::string::npos) {
+                break;
+            }
+            position = lineEnd + 1U;
+        }
+        return {};
+    }
+
+    [[nodiscard]] static auto containsText(const std::string &text, const std::string &needle) noexcept -> bool {
+        return text.find(needle) != std::string::npos;
     }
 };

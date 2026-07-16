@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U16String.hpp"
+#include "U16StringHashSet_fwd.hpp"
 
 #include "../impl/StringHashSet.hpp"
 

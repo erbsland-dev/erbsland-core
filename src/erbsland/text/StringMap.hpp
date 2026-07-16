@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringMap_fwd.hpp"
+
 #include "u8/U8StringMap.hpp"
 
 namespace erbsland::text {

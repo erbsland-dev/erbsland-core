@@ -13,14 +13,6 @@ using el::debug::DebugViewDetail;
 using el::text::String;
 using el::text::StringConverter;
 
-namespace {
-
-[[nodiscard]] auto containsText(const std::string &text, const std::string &needle) noexcept -> bool {
-    return text.find(needle) != std::string::npos;
-}
-
-}
-
 TESTED_TARGETS(StringDebugBuilder)
 class StringDebugBuilderTest final : public el::UnitTest {
 public:
@@ -50,5 +42,10 @@ public:
         REQUIRE(containsText(output, "U8String(\"A\\nB\")"));
         REQUIRE(containsText(output, "isEncodingValid: true"));
         REQUIRE(containsText(output, "characterLength: 3"));
+    }
+
+private:
+    [[nodiscard]] static auto containsText(const std::string &text, const std::string &needle) noexcept -> bool {
+        return text.find(needle) != std::string::npos;
     }
 };

@@ -43,6 +43,12 @@ REGISTERED_UTILITIES = {
         "DemoDocApp",
         help="Validate or synchronize erbsland-demo documentation blocks.",
     ),
+    "build_performance": RegisteredUtility(
+        "Build Performance",
+        "dev.build_performance",
+        "BuildPerformanceApp",
+        help="Audit source-level build dependencies and collect compiler performance measurements.",
+    ),
     "dev_setup": RegisteredUtility(
         "Development Setup",
         "dev.dev_setup",

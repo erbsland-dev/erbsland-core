@@ -4,6 +4,7 @@
 
 #include "../Char.hpp"
 #include "../Literals.hpp"
+#include "../String.hpp"
 #include "../StringBuilder.hpp"
 #include "../StringCharReader.hpp"
 

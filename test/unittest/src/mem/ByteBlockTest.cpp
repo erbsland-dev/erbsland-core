@@ -4,6 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockView.hpp>
 #include <erbsland/mem/impl/BestGrowth.hpp>
+#include <erbsland/mem/impl/ByteBlockData.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/ByteRange.hpp>

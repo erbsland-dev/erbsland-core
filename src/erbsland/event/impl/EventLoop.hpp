@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EventLoop_fwd.hpp"
+
 #include "../EventBackend.hpp"
 #include "../EventBackendId.hpp"
 #include "../EventBackendTarget.hpp"

@@ -20,6 +20,10 @@ public:
     // defaults
     ~U16EncodingError() override = default;
 
+public:
+    /// Get the UTF-16 data index where the malformed sequence was detected.
+    [[nodiscard]] auto index() const noexcept -> unit::U16DataIndex { return _index; }
+
 private:
     unit::U16DataIndex _index;
 };

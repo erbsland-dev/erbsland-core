@@ -2,22 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U8StringTraits.hpp"
+#include "U8StringData_fwd.hpp"
 
-#include "../../impl/UnsafeU8StringAccess_fwd.hpp"
-#include "../../impl/UnsafeU8StringBuffer_fwd.hpp"
+#include "../../../mem/SharedArrayData.hpp"
 
 #include <string_view>
 
 namespace erbsland::text::impl {
-
-/// String data for UTF-8 encoded strings.
-/// We allocate one additional byte for the null terminator and always ensure it is set.
-/// Therefore, even strongly discouraged, Low-level implementations can safely access the data via `const char*`.
-using U8StringData = U8StringTraits::StorageData;
-
-/// A shared pointer to UTF-8 string data.
-using U8StringDataPtr = U8StringTraits::StoragePtr;
 
 /// Create UTF-8 string data from a standard string view.
 /// The UTF-8 encoding is not validated, but the null terminator is always set.

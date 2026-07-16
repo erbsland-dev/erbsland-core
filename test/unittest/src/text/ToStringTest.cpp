@@ -8,6 +8,7 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/String.hpp>
+#include <erbsland/text/StringView.hpp>
 #include <erbsland/text/ToString.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

@@ -114,8 +114,8 @@ After the final successful write, call :cpp:func:`OutputStream::close() <erbslan
 output stream you own.
 This is the normal successful end of writing: the stream stops accepting new output, delivers the data it already
 accepted, and then closes its target.
-When ``close()`` returns :cpp:enumerator:`Closed <erbsland::stream::StreamCloseStatus::Closed>`, you know that this work
-is complete.
+When ``close()`` returns :cpp:member:`Closed <erbsland::stream::StreamCloseStatus::Closed>`, you know that this work is
+complete.
 
 You do not need to call ``flush()`` before a normal close.
 Use :cpp:func:`OutputStream::flush() <erbsland::stream::OutputStream::flush>` while the stream remains open when a
@@ -178,7 +178,7 @@ to the caller instead.
 Continue a Slow Close Within Your Application Deadline
 ======================================================
 
-A :cpp:enumerator:`Timeout <erbsland::stream::StreamCloseStatus::Timeout>` result means that this one bounded wait ended
+A :cpp:member:`Timeout <erbsland::stream::StreamCloseStatus::Timeout>` result means that this one bounded wait ended
 before graceful close completed.
 The stream stays ``Closing`` and continues the close operation.
 It does not become open again, and the data it has already accepted must not be written again.

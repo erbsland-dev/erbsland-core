@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U8String.hpp"
+#include "U8StringCIHashMap_fwd.hpp"
 
 #include "../impl/StringHashMap.hpp"
 

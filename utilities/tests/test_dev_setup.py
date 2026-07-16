@@ -89,6 +89,7 @@ class DevSetupTest(unittest.TestCase):
                 "-G",
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_UNITY_BUILD=ON",
             ],
             self.commands[3][0],
         )

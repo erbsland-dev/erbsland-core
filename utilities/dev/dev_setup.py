@@ -124,6 +124,7 @@ class DevSetupRunner:
                 "-G",
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_UNITY_BUILD=ON",
             ],
             label="Configuring CMake",
         )

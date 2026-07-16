@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Path_fwd.hpp"
+#include "PathContent_fwd.hpp"
 #include "PathReadDataOptions.hpp"
 #include "PathReadTextOptions.hpp"
 #include "PathWriteDataOptions.hpp"

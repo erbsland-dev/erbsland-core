@@ -4,6 +4,7 @@
 
 #include "Char_fwd.hpp"
 #include "LetterCase.hpp"
+#include "String_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -72,6 +73,10 @@ public: // accessors
     [[nodiscard]] constexpr auto digitCount(T value) const noexcept -> std::size_t;
     /// Get the ASCII prefix character for this base, or a null character if the base has no prefix.
     [[nodiscard]] auto prefixChar(LetterCase letterCase) const noexcept -> Char;
+
+public: // conversion
+    /// Convert this integer base to its canonical name.
+    [[nodiscard]] auto toString() const noexcept -> StringView;
 
 public: // factories
     /// Create an integer base from an ASCII prefix character.

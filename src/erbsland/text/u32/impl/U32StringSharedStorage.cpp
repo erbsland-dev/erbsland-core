@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U32StringSharedStorage.hpp"
 
+#include "U32StringData.hpp"
 #include "U32StringReadTools.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
@@ -13,6 +14,20 @@
 #include <utility>
 
 namespace erbsland::text::impl {
+
+U32StringSharedStorage::~U32StringSharedStorage() = default;
+
+U32StringSharedStorage::U32StringSharedStorage(const U32StringSharedStorage &) = default;
+
+U32StringSharedStorage::U32StringSharedStorage(U32StringSharedStorage &&) noexcept = default;
+
+auto U32StringSharedStorage::operator=(const U32StringSharedStorage &) -> U32StringSharedStorage & = default;
+
+auto U32StringSharedStorage::operator=(U32StringSharedStorage &&) noexcept -> U32StringSharedStorage & = default;
+
+auto U32StringSharedStorage::isEmpty() const noexcept -> bool {
+    return _range.isEmpty() || _data.isNull();
+}
 
 U32StringSharedStorage::U32StringSharedStorage(const std::u32string_view text) :
     _data{createU32StringData(text)}, _range{unit::CpRange::fromSizeT(text.size())} {
@@ -32,6 +47,39 @@ U32StringSharedStorage::U32StringSharedStorage(U32StringDataPtr data, unit::CpRa
 
 U32StringSharedStorage::U32StringSharedStorage(const unit::CpRange range) noexcept :
     _data{createU32StringData(range.length().toSizeT())}, _range{range} {
+}
+
+auto U32StringSharedStorage::data() const noexcept -> const char32_t * {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.constGet()->data();
+}
+
+auto U32StringSharedStorage::dataForWrite() noexcept -> char32_t * {
+    if (_data.isNull()) {
+        return nullptr;
+    }
+    return _data.get()->data();
+}
+
+auto U32StringSharedStorage::dataSize() const noexcept -> std::size_t {
+    if (_data.isNull()) {
+        return 0;
+    }
+    return _data.get()->size() - 1U;
+}
+
+auto U32StringSharedStorage::storageId() const noexcept -> mem::StorageIdentifier {
+    if (data() == nullptr) {
+        return {};
+    }
+    const auto *begin = data() + _range.index().toSizeT();
+    return mem::StorageIdentifier::fromMemoryRange(begin, begin + _range.length().toSizeT());
+}
+
+auto U32StringSharedStorage::isUniqueFullRange() const noexcept -> bool {
+    return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
 }
 
 auto U32StringSharedStorage::fromCodeUnits(const std::span<const char32_t> codeUnits) -> U32StringSharedStorage {

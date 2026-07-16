@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "U8StringReader_fwd.hpp"
+
+#include "../U8String.hpp"
 #include "../U8StringView.hpp"
 
 #include "../../../unit/ByteIndex.hpp"

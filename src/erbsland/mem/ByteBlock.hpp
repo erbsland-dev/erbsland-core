@@ -3,9 +3,10 @@
 #pragma once
 
 #include "Byte.hpp"
+#include "ByteBlock_fwd.hpp"
 #include "ByteBlockView.hpp"
 
-#include "impl/ByteBlockData.hpp"
+#include "impl/ByteBlockData_fwd.hpp"
 #include "impl/UnsafeByteBlockBuffer_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
@@ -44,12 +45,12 @@ public:
     /// Create a byte block from char values.
     explicit ByteBlock(const std::vector<char> &bytes);
 
-    ByteBlock() = default;
-    ~ByteBlock() = default;
-    ByteBlock(const ByteBlock &) = default;
-    ByteBlock(ByteBlock &&) = default;
-    auto operator=(const ByteBlock &) -> ByteBlock & = default;
-    auto operator=(ByteBlock &&) -> ByteBlock & = default;
+    ByteBlock();
+    ~ByteBlock();
+    ByteBlock(const ByteBlock &);
+    ByteBlock(ByteBlock &&) noexcept;
+    auto operator=(const ByteBlock &) -> ByteBlock &;
+    auto operator=(ByteBlock &&) noexcept -> ByteBlock &;
 
 public: // comparison
     [[nodiscard]] auto operator<=>(const ByteBlock &other) const noexcept -> std::strong_ordering;

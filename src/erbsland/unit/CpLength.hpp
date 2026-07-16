@@ -2,12 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CpUnit.hpp"
+#include "CpLength_fwd.hpp"
 #include "IntegerUnitAmount.hpp"
 
-namespace erbsland::unit {
-
-/// A Unicode code-point-based length.
-using CpLength = IntegerUnitAmount<CpUnit>;
-
-}
+// The public alias is declared in the canonical forward header.

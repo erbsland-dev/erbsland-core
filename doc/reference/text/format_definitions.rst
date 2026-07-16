@@ -107,6 +107,8 @@ Use :cpp:func:`baseFactor() <erbsland::text::IntegerBase::baseFactor>` for arith
 :cpp:func:`digitGroupSize() <erbsland::text::IntegerBase::digitGroupSize>` for separator grouping.
 :cpp:func:`prefixChar() <erbsland::text::IntegerBase::prefixChar>` returns the base prefix character used after the
 leading ``0`` for prefixed output.
+:cpp:func:`toString() <erbsland::text::IntegerBase::toString>` returns the canonical name: ``decimal``,
+``hexadecimal``, ``binary``, or ``octal``.
 
 When parsing with :cpp:class:`IntegerParseOptions <erbsland::text::IntegerParseOptions>` and no fixed base, the parser
 detects ``0x`` /``0X`` as hexadecimal, ``0b`` /``0B`` as binary, and ``0o`` /``0O`` as octal.

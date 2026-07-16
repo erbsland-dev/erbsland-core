@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParameterError.hpp"
 
+#include "../text/String.hpp"
 #include "../text/StringBuilder.hpp"
 
 #include <utility>

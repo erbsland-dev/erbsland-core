@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AbbreviationOffset.hpp"
+#include "Database_fwd.hpp"
 #include "Info.hpp"
 #include "TextId.hpp"
 #include "ZoneId.hpp"

@@ -16,62 +16,6 @@
 using el::util::CoAsyncGenerator;
 using el::util::CoTask;
 
-namespace erbsland::test::coasyncgeneratortest {
-
-template <typename T>
-void waitFor(CoTask<T> &task) {
-    const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
-    while (!task.isComplete() && std::chrono::steady_clock::now() < deadline) {
-        std::this_thread::yield();
-    }
-}
-
-[[nodiscard]] static auto numbers(std::atomic<int> &steps) -> CoAsyncGenerator<int> {
-    steps.fetch_add(1);
-    co_yield 1;
-    const auto value = co_await CoTask<int>::run([]() -> int { return 2; });
-    steps.fetch_add(1);
-    co_yield value;
-    co_yield 3;
-}
-
-[[nodiscard]] static auto uniqueNumbers() -> CoAsyncGenerator<std::unique_ptr<int>> {
-    co_yield std::make_unique<int>(4);
-    co_yield std::make_unique<int>(5);
-}
-
-[[nodiscard]] static auto failingNumbers() -> CoAsyncGenerator<int> {
-    co_yield 1;
-    throw std::runtime_error{"generator failure"};
-}
-
-template <typename T>
-[[nodiscard]] auto nextValue(CoAsyncGenerator<T> &generator) -> CoTask<std::optional<T>> {
-    co_return co_await generator.next();
-}
-
-[[nodiscard]] static auto collectNumbers(CoAsyncGenerator<int> generator) -> CoTask<std::vector<int>> {
-    auto result = std::vector<int>{};
-    while (auto value = co_await generator.next()) {
-        result.push_back(*value);
-    }
-    co_return result;
-}
-
-[[nodiscard]] static auto delayedNumber(std::atomic<bool> &release) -> CoAsyncGenerator<int> {
-    const auto value = co_await CoTask<int>::run([&release]() -> int {
-        while (!release.load()) {
-            std::this_thread::yield();
-        }
-        return 7;
-    });
-    co_yield value;
-}
-
-}
-
-using namespace erbsland::test::coasyncgeneratortest;
-
 TESTED_TARGETS(CoAsyncGenerator)
 class CoAsyncGeneratorTest final : public el::UnitTest {
 public:
@@ -133,5 +77,56 @@ public:
         release.store(true);
         waitFor(first);
         REQUIRE_EQUAL(*first.takeResult(), 7);
+    }
+
+private:
+    template <typename T>
+    static void waitFor(CoTask<T> &task) {
+        const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds{2};
+        while (!task.isComplete() && std::chrono::steady_clock::now() < deadline) {
+            std::this_thread::yield();
+        }
+    }
+
+    [[nodiscard]] static auto numbers(std::atomic<int> &steps) -> CoAsyncGenerator<int> {
+        steps.fetch_add(1);
+        co_yield 1;
+        const auto value = co_await CoTask<int>::run([]() -> int { return 2; });
+        steps.fetch_add(1);
+        co_yield value;
+        co_yield 3;
+    }
+
+    [[nodiscard]] static auto uniqueNumbers() -> CoAsyncGenerator<std::unique_ptr<int>> {
+        co_yield std::make_unique<int>(4);
+        co_yield std::make_unique<int>(5);
+    }
+
+    [[nodiscard]] static auto failingNumbers() -> CoAsyncGenerator<int> {
+        co_yield 1;
+        throw std::runtime_error{"generator failure"};
+    }
+
+    template <typename T>
+    [[nodiscard]] static auto nextValue(CoAsyncGenerator<T> &generator) -> CoTask<std::optional<T>> {
+        co_return co_await generator.next();
+    }
+
+    [[nodiscard]] static auto collectNumbers(CoAsyncGenerator<int> generator) -> CoTask<std::vector<int>> {
+        auto result = std::vector<int>{};
+        while (auto value = co_await generator.next()) {
+            result.push_back(*value);
+        }
+        co_return result;
+    }
+
+    [[nodiscard]] static auto delayedNumber(std::atomic<bool> &release) -> CoAsyncGenerator<int> {
+        const auto value = co_await CoTask<int>::run([&release]() -> int {
+            while (!release.load()) {
+                std::this_thread::yield();
+            }
+            return 7;
+        });
+        co_yield value;
     }
 };

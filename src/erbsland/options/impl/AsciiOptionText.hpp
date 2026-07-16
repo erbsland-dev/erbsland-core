@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../text/CharCompareFn.hpp"
-#include "../../text/String.hpp"
+#include "../../text/CharSet.hpp"
+#include "../../text/Literals.hpp"
+#include "../../text/StringSide.hpp"
+#include "../../text/StringView.hpp"
+#include "../../unit/CpLength.hpp"
 
 #include <compare>
 #include <cstddef>

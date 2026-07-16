@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Duration_fwd.hpp"
 #include "DurationPart.hpp"
 #include "TimeAmounts.hpp"
 

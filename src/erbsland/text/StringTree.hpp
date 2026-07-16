@@ -4,6 +4,7 @@
 
 #include "IntegerFormat.hpp"
 #include "String.hpp"
+#include "StringTree_fwd.hpp"
 #include "StringView.hpp"
 
 #include "impl/StringTreeData.hpp"

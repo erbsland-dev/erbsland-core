@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 import sys
+from collections import Counter
 from dataclasses import dataclass
 from enum import Enum
 from fnmatch import fnmatchcase
@@ -310,6 +311,14 @@ class HeaderScanner:
         require_safe_existing_file(path, "Header file", FileUpdate.MAX_COMPARE_FILE_SIZE)
         text = read_safe_text(path, "Header file", FileUpdate.MAX_COMPARE_FILE_SIZE)
         entries = self.scan_text(text, path)
+        if not path.name.endswith("_fwd.hpp"):
+            forward_path = path.with_name(f"{path.stem}_fwd.hpp")
+            if forward_path.is_file():
+                require_safe_existing_file(forward_path, "Forward header file", FileUpdate.MAX_COMPARE_FILE_SIZE)
+                forward_text = read_safe_text(forward_path, "Forward header file", FileUpdate.MAX_COMPARE_FILE_SIZE)
+                for entry in self.scan_text(forward_text, forward_path):
+                    if entry not in entries:
+                        entries.append(entry)
         relative_path = path.relative_to(self.config.source_dir)
         group = self.config.reference_group_for_header(relative_path)
         return HeaderApi(
@@ -522,8 +531,12 @@ class ReferenceDocGenerator:
 
     def update_reference_pages(self, headers: list[HeaderApi]) -> None:
         """Create or update reference pages for all headers."""
-        for page_path, page_headers in self.headers_by_page(headers).items():
-            interface_text = self.interface_for_headers(page_headers)
+        headers_by_page = self.headers_by_page(headers)
+        remaining_entries = Counter(
+            entry for page_headers in headers_by_page.values() for header in page_headers for entry in header.entries
+        )
+        for page_path, page_headers in headers_by_page.items():
+            interface_text = self.interface_for_headers(page_headers, remaining_entries)
             if page_path.exists():
                 text = read_safe_text(page_path, "Reference page", FileUpdate.MAX_COMPARE_FILE_SIZE)
                 updated_text = self.replace_interface_body(page_path, text, interface_text)
@@ -590,17 +603,23 @@ class ReferenceDocGenerator:
                 current = next_dir
         return {directory: sorted(entries, key=str.casefold) for directory, entries in result.items()}
 
-    def interface_for_headers(self, headers: list[HeaderApi]) -> str:
+    def interface_for_headers(
+        self, headers: list[HeaderApi], remaining_entries: Counter[ApiEntry] | None = None
+    ) -> str:
         """Create the managed Interface section body for one or more headers."""
-        entries = [self.interface_for_header(header).rstrip() for header in headers]
+        entries = [self.interface_for_header(header, remaining_entries).rstrip() for header in headers]
         return "\n".join(entry for entry in entries if entry).rstrip() + "\n"
 
-    def interface_for_header(self, header: HeaderApi) -> str:
+    def interface_for_header(self, header: HeaderApi, remaining_entries: Counter[ApiEntry] | None = None) -> str:
         """Create the managed Interface section body for one header."""
         if not header.entries:
             return ""
         result = []
         for entry in header.entries:
+            if remaining_entries is not None:
+                remaining_entries[entry] -= 1
+                if remaining_entries[entry] > 0:
+                    continue
             result.append(self.interface_for_entry(entry))
         return "\n".join(result).rstrip() + "\n"
 

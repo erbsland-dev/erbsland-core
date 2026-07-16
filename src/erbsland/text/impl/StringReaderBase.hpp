@@ -3,6 +3,7 @@
 #pragma once
 
 #include "StringReaderBackendKind.hpp"
+#include "StringReaderBase_fwd.hpp"
 
 #include "../AnyString_fwd.hpp"
 #include "../AnyStringView_fwd.hpp"

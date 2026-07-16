@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "InlineTextBuilder.hpp"
 
+#include "../../../text/u8/U8StringConstIterator.hpp"
+
 namespace erbsland::cterm::impl::document_renderer {
 
 void InlineTextBuilder::reset() noexcept {

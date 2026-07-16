@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IntegerBase.hpp"
+#include "IntegerFormat_fwd.hpp"
 #include "IntegerFormatFlag.hpp"
 #include "IntegerSignMode.hpp"
 #include "LetterCase.hpp"

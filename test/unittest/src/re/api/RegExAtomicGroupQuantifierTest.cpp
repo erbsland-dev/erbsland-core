@@ -24,7 +24,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "a"_el,
             "aa"_el,
@@ -36,9 +36,9 @@ public:
     TESTED_TARGETS(fullMatch)
     void testFullMatch() {
         compilePattern();
-        auto veryLongMatch = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{10'000U});
+        auto veryLongMatch = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{10'000U});
         veryLongMatch.append("b"_el);
-        const auto matchCases = std::vector<StringView>{
+        const auto matchCases = std::vector<String>{
             "ab"_el,
             "aab"_el,
             "aaab"_el,
@@ -47,7 +47,7 @@ public:
         WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
         const auto veryLongNoMatch = String::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{10'000U});
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "a"_el,
             "aa"_el,
@@ -68,7 +68,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "a"_el,
             "aa"_el,

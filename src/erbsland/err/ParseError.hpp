@@ -19,7 +19,7 @@ public:
     /// Create a parse error with a reason.
     /// @param reason The reason for the parse error.
     /// @param position The optional code-point position of the parse error.
-    explicit ParseError(text::StringView reason, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
+    explicit ParseError(text::String reason, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
     /// @overload
     explicit ParseError(std::string_view reason, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
 
@@ -27,7 +27,7 @@ public:
     ~ParseError() override = default;
 
 public: // implement Exception
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     [[nodiscard]] auto diagnostic() const -> DiagnosticConstPtr override;
 
 public: // accessors

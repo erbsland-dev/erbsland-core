@@ -41,8 +41,8 @@ public:
     void addModule(OptionModulePtr optionModule);
 
 public: // implement OptionsManager
-    auto addOption(std::initializer_list<text::StringView> names) -> OptionEditor override;
-    auto editOption(const text::StringView &name) -> OptionEditor override;
+    auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
     /// Get the help metadata for the options root.
@@ -52,23 +52,23 @@ public: // accessors
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for the options root.
     /// @param title Root title used by renderers that expose title text.
-    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for the options root.
     /// @param description Summary paragraph shown before generated root help.
-    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for the options root.
     /// @param epilog Text rendered after root help output.
-    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
     /// Set the help visibility for the options root.
     /// @param visibility Root help visibility metadata for custom renderers.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get the unprocessed executable path from the command line.
-    [[nodiscard]] auto executablePath() const noexcept -> const text::StringView & { return _executablePath; }
+    [[nodiscard]] auto executablePath() const noexcept -> const text::String & { return _executablePath; }
     /// Set the unprocessed executable path from the command line.
     /// @param executablePath The original `argv[0]` text. The executable name is extracted for usage output.
-    void setExecutablePath(text::StringView executablePath);
+    void setExecutablePath(text::String executablePath);
     /// Get the extracted executable name.
-    [[nodiscard]] auto executableName() const noexcept -> const text::StringView & { return _executableName; }
+    [[nodiscard]] auto executableName() const noexcept -> const text::String & { return _executableName; }
     /// Get the application metadata.
     [[nodiscard]] auto applicationInfo() const noexcept -> const core::ApplicationInfo & { return _applicationInfo; }
     /// Set the application metadata.
@@ -86,8 +86,8 @@ private:
 
 private:
     OptionHelp _help;                            ///< The help text for the options root.
-    text::StringView _executablePath;            ///< The unprocessed executable path from the command line.
-    text::StringView _executableName;            ///< The extracted executable name.
+    text::String _executablePath;                ///< The unprocessed executable path from the command line.
+    text::String _executableName;                ///< The extracted executable name.
     core::ApplicationInfo _applicationInfo;      ///< The application metadata.
     std::vector<OptionModulePtr> _optionModules; ///< The available option modules.
     OptionSetPtr _builtInOptionSet;              ///< The built-in option set.

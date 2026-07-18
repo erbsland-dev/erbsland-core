@@ -16,7 +16,7 @@ auto OptionEditor::isValid() const noexcept -> bool {
     return _option != nullptr;
 }
 
-auto OptionEditor::setHelp(text::StringView description) -> OptionEditor & {
+auto OptionEditor::setHelp(text::String description) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelp(OptionHelp{std::move(description)});
     }
@@ -30,21 +30,21 @@ auto OptionEditor::setHelp(OptionHelp help) -> OptionEditor & {
     return *this;
 }
 
-auto OptionEditor::setHelpTitle(text::StringView title) -> OptionEditor & {
+auto OptionEditor::setHelpTitle(text::String title) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpTitle(std::move(title));
     }
     return *this;
 }
 
-auto OptionEditor::setHelpDescription(text::StringView description) -> OptionEditor & {
+auto OptionEditor::setHelpDescription(text::String description) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpDescription(std::move(description));
     }
     return *this;
 }
 
-auto OptionEditor::setHelpEpilog(text::StringView epilog) -> OptionEditor & {
+auto OptionEditor::setHelpEpilog(text::String epilog) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpEpilog(std::move(epilog));
     }
@@ -58,7 +58,7 @@ auto OptionEditor::setHelpVisibility(const OptionHelpVisibility visibility) -> O
     return *this;
 }
 
-auto OptionEditor::setValueName(text::StringView valueName) -> OptionEditor & {
+auto OptionEditor::setValueName(text::String valueName) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setValueName(std::move(valueName));
     }
@@ -111,7 +111,7 @@ auto OptionEditor::setChoices(OptionChoicesPtr choices) -> OptionEditor & {
     return *this;
 }
 
-auto OptionEditor::addChoice(text::StringView text) -> OptionEditor & {
+auto OptionEditor::addChoice(text::String text) -> OptionEditor & {
     if (_option == nullptr) {
         return *this;
     }

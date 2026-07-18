@@ -5,7 +5,7 @@
 
 #include <DemoCommon.hpp>
 
-namespace demo {
+using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
@@ -17,10 +17,4 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("ProcessLineGenerator"_el, processLineGenerator);
     app.registerDemo("RetainStreamOwnership"_el, retainStreamOwnership);
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

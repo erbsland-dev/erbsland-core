@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HtmlTokenizer.hpp"
 
-#include "../../AnyString.hpp"
+#include "../../AnyStringEditor.hpp"
 
 #include <array>
 #include <cstdint>
@@ -11,7 +11,7 @@
 
 namespace erbsland::text::html::impl {
 
-HtmlTokenizer::HtmlTokenizer(AnyStringView html) : _reader{std::move(html)} {
+HtmlTokenizer::HtmlTokenizer(AnyString html) : _reader{std::move(html)} {
 }
 
 auto HtmlTokenizer::tokenize() -> TokenGenerator {
@@ -98,7 +98,7 @@ auto HtmlTokenizer::tokenizeOpeningTag() -> bool {
         if (_reader.advanceIf(U'=')) {
             skipWhitespace();
 
-            auto attributeValue = StringView{};
+            auto attributeValue = String{};
             if (!parseAttributeValue(attributeValue)) {
                 return false;
             }
@@ -119,7 +119,7 @@ void HtmlTokenizer::tokenizeText() {
         }
         static_cast<void>(_reader.readToBuffer());
     }
-    _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferStringView()};
+    _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferString()};
 }
 
 void HtmlTokenizer::tokenizeLiteralTagText() {
@@ -135,7 +135,7 @@ void HtmlTokenizer::tokenizeLiteralTagText() {
         }
         static_cast<void>(_reader.readToBuffer());
     }
-    _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferStringView()};
+    _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferString()};
 }
 
 auto HtmlTokenizer::tokenizeComment() -> bool {
@@ -151,7 +151,7 @@ auto HtmlTokenizer::tokenizeComment() -> bool {
             if (!_reader.advanceIf(U'>')) {
                 return false;
             }
-            _currentToken = HtmlToken{HtmlTokenType::Comment, takeBufferStringView()};
+            _currentToken = HtmlToken{HtmlTokenType::Comment, takeBufferString()};
             return true;
         }
         static_cast<void>(_reader.readToBuffer());
@@ -179,7 +179,7 @@ auto HtmlTokenizer::tokenizeDocType() -> bool {
     if (!_reader.advanceIf(U'>')) {
         return false;
     }
-    _currentToken = HtmlToken{HtmlTokenType::DocType, trimmedBufferStringView()};
+    _currentToken = HtmlToken{HtmlTokenType::DocType, trimmedBufferString()};
     return true;
 }
 
@@ -257,7 +257,7 @@ auto HtmlTokenizer::decodeEntity(Char &decodedCharacter) -> bool {
     return false;
 }
 
-auto HtmlTokenizer::parseAttributeValue(StringView &value) -> bool {
+auto HtmlTokenizer::parseAttributeValue(String &value) -> bool {
     if (_reader.isAtEnd()) {
         return false;
     }
@@ -277,7 +277,7 @@ auto HtmlTokenizer::parseAttributeValue(StringView &value) -> bool {
         if (!_reader.advanceIf(quoteCharacter)) {
             return false;
         }
-        value = takeBufferStringView();
+        value = takeBufferString();
         return true;
     }
 
@@ -293,16 +293,16 @@ auto HtmlTokenizer::parseAttributeValue(StringView &value) -> bool {
         }
         static_cast<void>(_reader.readToBuffer());
     }
-    value = takeBufferStringView();
+    value = takeBufferString();
     return !value.isEmpty();
 }
 
-auto HtmlTokenizer::parseName() -> std::optional<StringView> {
+auto HtmlTokenizer::parseName() -> std::optional<String> {
     _reader.clearBuffer();
     while (!_reader.isAtEnd() && !_reader.peek().isAsciiWhitespace() && !isNameTerminator(_reader.peek())) {
         static_cast<void>(_reader.readToBuffer());
     }
-    auto result = takeBufferStringView();
+    auto result = takeBufferString();
     if (result.isEmpty()) {
         return std::nullopt;
     }
@@ -315,12 +315,12 @@ void HtmlTokenizer::skipWhitespace() noexcept {
     }
 }
 
-auto HtmlTokenizer::takeBufferStringView() -> StringView {
+auto HtmlTokenizer::takeBufferString() -> String {
     return _reader.takeBuffer().toU8String();
 }
 
-auto HtmlTokenizer::trimmedBufferStringView() const -> StringView {
-    return _reader.bufferView().toU8StringView().trimmed();
+auto HtmlTokenizer::trimmedBufferString() const -> String {
+    return _reader.bufferView().toU8String().trimmed();
 }
 
 auto HtmlTokenizer::peekNext() noexcept -> Char {

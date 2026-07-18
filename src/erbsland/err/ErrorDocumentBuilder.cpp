@@ -4,15 +4,20 @@
 
 #include "../i18n/DisplayTextMap.hpp"
 #include "../text/Literals.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/TextNode.hpp"
 
 namespace erbsland::err {
 
 using namespace text::literals;
 
+using text::String;
+using text::TextDocument;
+using text::TextNodePtr;
+using text::TextNodeType;
+
 ErrorDocumentBuilder::ErrorDocumentBuilder(
-    text::StringView title, text::StringView description, const i18n::DisplayTextMapConstPtr &displayText) :
+    String title, String description, const i18n::DisplayTextMapConstPtr &displayText) :
     _displayText{displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap()} {
     _document.root()->setStyle("error"_el);
     auto titleNode = _document.addHeading(1);
@@ -23,7 +28,7 @@ ErrorDocumentBuilder::ErrorDocumentBuilder(
     }
 }
 
-auto ErrorDocumentBuilder::addSection(text::StringView title) -> text::TextNodePtr {
+auto ErrorDocumentBuilder::addSection(String title) -> TextNodePtr {
     auto heading = _document.addHeading(2);
     heading->setStyle("diagnostic-section"_el);
     heading->addText(std::move(title));
@@ -31,18 +36,18 @@ auto ErrorDocumentBuilder::addSection(text::StringView title) -> text::TextNodeP
 }
 
 void ErrorDocumentBuilder::addSource(
-    const text::StringView &sourceName, const text::StringView &sourcePath, const unit::CodeLocation location) {
+    const String &sourceName, const String &sourcePath, const unit::CodeLocation location) {
     if (sourceName.isEmpty() && sourcePath.isEmpty() && location.line.isNoIndex() && location.column.isNoIndex() &&
         location.position.isNoIndex()) {
         return;
     }
     addSection(_displayText->text("ErrorSourceHeading"_el));
-    auto list = _document.root()->add(text::TextNodeType::FieldList);
-    const auto addField = [&](const text::StringView &label, text::StringView value, const text::StringView &style) {
-        auto item = list->add(text::TextNodeType::FieldItem);
+    auto list = _document.root()->add(TextNodeType::FieldList);
+    const auto addField = [&](const String &label, String value, const String &style) -> void {
+        auto item = list->add(TextNodeType::FieldItem);
         item->setStyle(style);
-        item->add(text::TextNodeType::FieldLabel)->addText(label);
-        item->add(text::TextNodeType::FieldContent)->addText(std::move(value));
+        item->add(TextNodeType::FieldLabel)->addText(label);
+        item->add(TextNodeType::FieldContent)->addText(std::move(value));
     };
     if (!sourceName.isEmpty()) {
         addField(_displayText->text("SourceNameLabel"_el), sourceName, "diagnostic-source-name"_el);
@@ -53,25 +58,24 @@ void ErrorDocumentBuilder::addSource(
     if (!location.line.isNoIndex()) {
         addField(
             _displayText->text("LineLabel"_el),
-            text::String::fromInteger(location.line.toSizeT() + 1U),
+            String::fromInteger(location.line.toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
     if (!location.column.isNoIndex()) {
         addField(
             _displayText->text("ColumnLabel"_el),
-            text::String::fromInteger(location.column.toSizeT() + 1U),
+            String::fromInteger(location.column.toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
     if (!location.position.isNoIndex()) {
         addField(
             _displayText->text("PositionLabel"_el),
-            text::String::fromInteger(location.position.toSizeT() + 1U),
+            String::fromInteger(location.position.toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
 }
 
-void ErrorDocumentBuilder::addSourceField(
-    const text::StringView &label, text::StringView value, const text::StringView &style) {
+void ErrorDocumentBuilder::addSourceField(const String &label, String value, const String &style) {
     auto paragraph = _document.addParagraph();
     paragraph->setStyle(style);
     paragraph->addText(label);
@@ -80,7 +84,7 @@ void ErrorDocumentBuilder::addSourceField(
     paragraph->addText(std::move(value));
 }
 
-auto ErrorDocumentBuilder::takeDocument() -> text::TextDocument {
+auto ErrorDocumentBuilder::takeDocument() -> TextDocument {
     return std::move(_document);
 }
 

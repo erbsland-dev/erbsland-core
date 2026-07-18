@@ -17,7 +17,7 @@ auto Color::overlayWith(const Color &overlay) const -> Color {
     return result;
 }
 
-auto Color::fromString(const text::StringView &str) -> Color {
+auto Color::fromString(const text::String &str) -> Color {
     if (const auto splitPos = str.findFirstOf(text::CharSet{text::Char{U':'}}); !splitPos.isNoIndex()) {
         const auto fgStr = str.slice(unit::ByteRange{unit::ByteIndex::zero(), splitPos});
         const auto bgStr = str.slice(unit::ByteRange{splitPos + unit::ByteLength::one(), unit::ByteLength::infinite()});

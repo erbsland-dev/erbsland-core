@@ -5,9 +5,7 @@
 #include "ThrowHelper.hpp"
 
 #include "../CharSet.hpp"
-#include "../StringBuilder.hpp"
-#include "../StringKind.hpp"
-#include "../u32/U32String.hpp"
+#include "../u32/U32StringEditor.hpp"
 
 #include <limits>
 
@@ -33,7 +31,7 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
             continue;
         }
         if (character == Char{U'['}) {
-            auto builder = StringBuilder{StringKind::U32};
+            auto builder = U32StringEditor{};
             auto hasContent = false;
             auto isClosed = false;
             while (!reader.isAtEnd()) {
@@ -42,7 +40,7 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
                     if (!hasContent) {
                         text::impl::throwParseError("String pattern character set must not be empty");
                     }
-                    data->appendSetPattern(builder.takeU32String());
+                    data->appendSetPattern(builder);
                     hasContent = false;
                     isClosed = true;
                     break;
@@ -115,7 +113,7 @@ void DynamicStringPatternData::appendSet(const CharSet &charSet) {
     }
 }
 
-void DynamicStringPatternData::appendSetPattern(const U32StringView &pattern) {
+void DynamicStringPatternData::appendSetPattern(const U32String &pattern) {
     appendSet(CharSet::fromPattern(pattern));
 }
 

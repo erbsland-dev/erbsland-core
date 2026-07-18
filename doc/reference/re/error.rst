@@ -73,7 +73,7 @@ Interface
 
 .. doxygenenum:: erbsland::re::ErrorCategory
 
-.. doxygenfunction:: erbsland::re::toString(const ErrorCategory category) noexcept -> text::StringView
+.. doxygenfunction:: erbsland::re::toString(const ErrorCategory category) noexcept -> text::String
 .. doxygenclass:: erbsland::re::RegExError
     :members:
 .. doxygenclass:: erbsland::re::RegExErrorContext

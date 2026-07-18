@@ -6,7 +6,6 @@
 
 #include "../FloatFormat.hpp"
 #include "../FloatParseOptions.hpp"
-#include "../String_fwd.hpp"
 #include "../StringCharReader.hpp"
 
 #include <charconv>
@@ -17,7 +16,7 @@
 
 namespace erbsland::text::impl {
 
-/// Format a floating point value into a temporary UTF-8 compatible standard string.
+/// Format a floating point value into a UTF-8 compatible standard string.
 [[nodiscard]] auto formatFloat(double value, const FloatFormat &format) -> String;
 
 /// The result status for floating point parsing.

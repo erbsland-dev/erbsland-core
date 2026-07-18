@@ -13,7 +13,9 @@ public:
 
     void setMode(const Mode mode) override { _mode = mode; }
 
-    [[nodiscard]] auto readLine() -> erbsland::text::String override { return erbsland::text::String{_readLineResult}; }
+    [[nodiscard]] auto readLine() -> erbsland::text::String override {
+        return erbsland::text::StringEditor{_readLineResult};
+    }
 
 public:
     Mode _mode = Mode::ReadLine;

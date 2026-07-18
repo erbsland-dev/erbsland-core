@@ -19,11 +19,11 @@
 #include "../../system/WindowsErrorContext.hpp"
 #include "../../text/impl/UnsafeU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
-#include "../../text/impl/UnsafeU16StringViewAccess.hpp"
+#include "../../text/impl/UnsafeU16StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../text/u16/U16String.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/u16/U16StringEditor.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
 #include "../../unit/U16DataLength.hpp"
 
@@ -41,7 +41,7 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
-auto WindowsPathBackend::pathTextOrThrow(const Path &path) -> text::U16StringView {
+auto WindowsPathBackend::pathTextOrThrow(const Path &path) -> text::U16String {
     const auto pathText = path.toWindows(PathWindowsFormat::Extended);
     if (pathText.isEmpty()) {
         throw PathError{PathErrorContext{
@@ -66,7 +66,7 @@ void WindowsPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryTextAccess = text::impl::UnsafeU16StringViewAccess{directoryText};
+        const auto directoryTextAccess = text::impl::UnsafeU16StringAccess{directoryText};
         if (CreateDirectoryW(directoryTextAccess.dataAsWide(), nullptr) != 0) {
             continue;
         }
@@ -183,7 +183,7 @@ auto WindowsPathBackend::sidString(void *sid) -> text::String {
 
 auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathTextAccess.dataAsWide(),
         FILE_READ_ATTRIBUTES,
@@ -224,7 +224,7 @@ auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
 
 auto WindowsPathBackend::existingPath(const Path &path) -> bool {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto attributes = GetFileAttributesW(pathTextAccess.dataAsWide());
     if (attributes != INVALID_FILE_ATTRIBUTES) {
         return true;
@@ -274,8 +274,8 @@ auto WindowsPathBackend::physicalNoFinalSymlinkPathOrThrow(const Path &path) -> 
     return joinedLexicalPath(physicalPathOrThrow(parent), Path{path.name()});
 }
 
-auto WindowsPathBackend::nonRootElements(const Path &path) -> text::StringViewList {
-    auto result = text::StringViewList{};
+auto WindowsPathBackend::nonRootElements(const Path &path) -> text::StringList {
+    auto result = text::StringList{};
     for (const auto &element : path.elements()) {
         if (path.isAbsolute() && element == path.root()) {
             continue;
@@ -286,18 +286,15 @@ auto WindowsPathBackend::nonRootElements(const Path &path) -> text::StringViewLi
 }
 
 void WindowsPathBackend::throwSystemError(
-    const text::StringView &title,
-    const text::StringView &description,
-    const Path &path,
-    const unsigned long errorCode) {
+    const text::String &title, const text::String &description, const Path &path, const unsigned long errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
             .setPlatformContext(system::WindowsErrorContext::fromErrorCode(errorCode))};
 }
 
 void WindowsPathBackend::throwSystemError(
-    const text::StringView &title,
-    const text::StringView &description,
+    const text::String &title,
+    const text::String &description,
     const Path &source,
     const Path &destination,
     const unsigned long errorCode) {

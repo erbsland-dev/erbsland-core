@@ -16,7 +16,7 @@ public:
     /// Create a text element from a UTF-32 literal.
     template <std::size_t N>
     explicit constexpr Text(const char32_t (&data)[N]) noexcept : _text{data, N - 1U} {}
-    /// Create a text element from a UTF-32 string view.
+    /// Create a text element from a UTF-32 read-only string.
     explicit constexpr Text(const std::u32string_view text) noexcept : _text{text} {}
 
 public: // accessors

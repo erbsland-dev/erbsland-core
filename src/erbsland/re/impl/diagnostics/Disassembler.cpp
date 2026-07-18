@@ -15,11 +15,13 @@
 
 namespace erbsland::re::impl {
 
-void Disassembler::setLabel(const LabelTarget target, text::String label) {
+using namespace text;
+
+void Disassembler::setLabel(const LabelTarget target, String label) {
     _labels[target] = std::move(label);
 }
 
-auto Disassembler::disassemble() -> text::StringViewList {
+auto Disassembler::disassemble() -> StringList {
     if (_data == nullptr) {
         return {};
     }
@@ -30,19 +32,19 @@ auto Disassembler::disassemble() -> text::StringViewList {
     return _lines;
 }
 
-auto Disassembler::disassembleSequence() -> text::StringViewList {
+auto Disassembler::disassembleSequence() -> StringList {
     _lines.clear();
     writeSequence();
     return _lines;
 }
 
-auto Disassembler::disassembleClasses() -> text::StringViewList {
+auto Disassembler::disassembleClasses() -> StringList {
     _lines.clear();
     writeClasses();
     return _lines;
 }
 
-auto Disassembler::disassembleProgram() -> text::StringViewList {
+auto Disassembler::disassembleProgram() -> StringList {
     _lines.clear();
     writeProgram();
     return _lines;
@@ -70,12 +72,12 @@ void Disassembler::writeSequence() {
     _lines.append(".section &sequence"_el);
     SequenceIndex sequenceIndex = 0U;
     auto groupStart = sequenceIndex;
-    text::String groupedSequence;
+    StringEditor groupedSequence;
     auto writeGroup = [&]() -> void {
         writeLineLayout(
             createTarget(LabelTarget{DataSection::Sequence, groupStart}),
             {},
-            text::StringFormat{".data \"{}\""}.build(groupedSequence),
+            StringFormat{".data \"{}\""}.build(groupedSequence),
             {});
         groupedSequence.clear();
     };
@@ -88,7 +90,7 @@ void Disassembler::writeSequence() {
             writeLineLayout(
                 createTarget(LabelTarget{DataSection::Sequence, sequenceIndex}),
                 {},
-                text::StringFormat{".data ${:06X}"}.build(static_cast<uint32_t>(character.toRawValue())),
+                StringFormat{".data ${:06X}"}.build(static_cast<uint32_t>(character.toRawValue())),
                 {});
         } else {
             if (groupedSequence.isEmpty()) {
@@ -112,14 +114,14 @@ void Disassembler::writeClasses() {
     _lines.append(".section &class"_el);
     CharClassIndex index = 0U;
     for (const auto &classData : _data->charClassData) {
-        auto comment = text::StringFormat{"; [{}]"}.build(classData.toString());
+        auto comment = StringEditor{StringFormat{"; [{}]"}.build(classData.toString())};
         if (comment.characterLength() > unit::CpLength{40U}) {
-            comment = comment.slice(text::StringSide::Front, unit::CpLength{37U});
+            comment = comment.slice(StringSide::Front, unit::CpLength{37U});
             comment.append("..."_el);
         }
         writeLineLayout(createTarget(LabelTarget{DataSection::Class, index}), {}, ".class"_el, comment);
         for (const auto &range : classData.ranges()) {
-            auto dataStr = text::StringFormat{".data ${:06X}-${:06X}"}.build(
+            auto dataStr = StringFormat{".data ${:06X}-${:06X}"}.build(
                 static_cast<uint32_t>(range.first().toRawValue()), static_cast<uint32_t>(range.last().toRawValue()));
             writeLineLayout(createTarget(LabelTarget{DataSection::Class, index}), {}, dataStr, {});
         }
@@ -147,16 +149,16 @@ void Disassembler::writeProgram() {
         auto [operation, arguments] = reader.readOperation(programCounter);
         // read the raw codes.
         const auto operationSize = static_cast<std::size_t>(programCounter - operationStart);
-        text::String codesStr;
+        StringEditor codesStr;
         programCounter = operationStart;
         for (std::size_t i = 0; i < operationSize; ++i) {
             if (i > 0) {
                 codesStr.append(U' ');
             }
-            codesStr.append(text::StringFormat{"{:08x}"}.build(_data->program.readCode(programCounter)));
+            codesStr.append(StringFormat{"{:08x}"}.build(_data->program.readCode(programCounter)));
         }
         const auto operationData = dataForOperation(operation);
-        auto operationStr = operationData.displayName.copy();
+        auto operationStr = StringEditor{operationData.displayName};
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(
             operationData.argumentCount() == arguments.size(), "Invalid number of arguments"_el);
         for (std::size_t i = 0; i < arguments.size(); ++i) {
@@ -176,100 +178,83 @@ void Disassembler::writeProgram() {
     }
 }
 
-void Disassembler::writeTitle(const text::StringView &title) {
+void Disassembler::writeTitle(const String &title) {
     if (_flags.isSet(DisassemblerFlag::TestOutput)) {
         return;
     }
     using namespace text::literals;
-    _lines.append(text::StringFormat{"; {}"}.build(title));
-    auto separator = text::String{"; "_el};
-    separator.append(text::String::fromCharacter(U'=', unit::CpLength{76U}));
-    _lines.append(std::move(separator));
+    _lines.append(StringFormat{"; {}"}.build(title));
+    _lines.append(String::fromJoined({"; "_el, String::fromCharacter(U'=', unit::CpLength{76U})}));
 }
 
 void Disassembler::writeLineLayout(
-    const text::StringView &location,
-    const text::StringView &code,
-    const text::StringView &operation,
-    const text::StringView &comment) {
+    const String &location, const String &code, const String &operation, const String &comment) {
 
     if (_flags.isSet(DisassemblerFlag::TestOutput)) {
-        _lines.append(text::StringFormat{"{} {}"}.build(location, operation));
+        _lines.append(StringFormat{"{} {}"}.build(location, operation));
         return;
     }
     using bgeo::Alignment;
     using namespace text::literals;
-    auto line = location.aligned(unit::CpLength{17U}, Alignment::Left);
-    line.append(U' ');
-    line.append(code.aligned(unit::CpLength{21U}, Alignment::Left));
-    line.append(U' ');
+    const auto prefix = String::fromJoined(
+        {location.aligned(unit::CpLength{17U}, Alignment::Left),
+            " "_el,
+            code.aligned(unit::CpLength{21U}, Alignment::Left),
+            " "_el});
     if (comment.isEmpty()) {
-        line.append(operation);
-        _lines.append(std::move(line));
+        _lines.append(String::fromJoined({prefix, operation}));
         return;
     }
-    line.append(operation.aligned(unit::CpLength{19U}, Alignment::Left));
-    line.append(U' ');
-    line.append(comment);
-    _lines.append(std::move(line));
+    _lines.append(
+        String::fromJoined({prefix, operation.aligned(unit::CpLength{19U}, Alignment::Left), " "_el, comment}));
 }
 
-auto Disassembler::createTarget(LabelTarget target) const -> text::String {
+auto Disassembler::createTarget(LabelTarget target) const -> String {
     if (_flags.isCleared(DisassemblerFlag::TestOutput) && _labels.contains(target)) {
-        auto result = _labels.at(target);
-        result.append(U':');
-        return result;
+        return String::fromJoined({_labels.at(target), ":"_el});
     }
-    return text::StringFormat{"${:04X}:"}.build(target.offset);
+    return StringFormat{"${:04X}:"}.build(target.offset);
 }
 
-auto Disassembler::createLabel(LabelTarget target) const -> text::String {
+auto Disassembler::createLabel(LabelTarget target) const -> String {
     if (_flags.isCleared(DisassemblerFlag::TestOutput) && _labels.contains(target)) {
-        auto result = text::String::fromCharacter(U'%');
-        result.append(_labels.at(target));
-        return result;
+        return String::fromJoined({"%"_el, _labels.at(target)});
     }
-    return text::StringFormat{"${:04X}"}.build(target.offset);
+    return StringFormat{"${:04X}"}.build(target.offset);
 }
 
-auto Disassembler::formatArgument(Operation operation, ArgumentKind argumentKind, ArgumentValue value) const
-    -> text::String {
-    text::String result;
+auto Disassembler::formatArgument(Operation operation, ArgumentKind argumentKind, ArgumentValue value) const -> String {
+    StringEditor result;
     switch (argumentKind) {
     case ArgumentKind::ProgramCounter:
         switch (operation.raw()) {
         case Operation::Sequence:
         case Operation::CiSequence:
-            result = createLabel(LabelTarget{DataSection::Sequence, std::get<uint32_t>(value)});
-            break;
+            return createLabel(LabelTarget{DataSection::Sequence, std::get<uint32_t>(value)});
         case Operation::Class:
         case Operation::CiClass:
         case Operation::NotClass:
         case Operation::NotCiClass:
-            result = createLabel(LabelTarget{DataSection::Class, std::get<uint32_t>(value)});
-            break;
+            return createLabel(LabelTarget{DataSection::Class, std::get<uint32_t>(value)});
         case Operation::Jump:
         case Operation::Split:
         default:
-            result = createLabel(LabelTarget{DataSection::Program, std::get<uint32_t>(value)});
-            break;
+            return createLabel(LabelTarget{DataSection::Program, std::get<uint32_t>(value)});
         }
-        break;
     case ArgumentKind::Char: {
         const auto unicodeValue = std::get<uint32_t>(value);
-        const auto character = text::Char(unicodeValue);
+        const auto character = Char(unicodeValue);
         if (character.isSafeUnicode()) {
             result.append(U'\'');
             appendToSafeString(result, character);
             result.append(U'\'');
         } else {
-            result = text::StringFormat{"${:06X}"}.build(unicodeValue);
+            return StringFormat{"${:06X}"}.build(unicodeValue);
         }
         break;
     }
     case ArgumentKind::CaptureGroup:
-        result = text::String::fromInteger(std::get<uint32_t>(value));
-        break;
+        return String::fromInteger(std::get<uint32_t>(value));
     case ArgumentKind::Anchor: {
         const auto anchor = TextAnchor(static_cast<TextAnchor::Value>(std::get<uint32_t>(value)));
         result.append(U'&');
@@ -283,19 +268,15 @@ auto Disassembler::formatArgument(Operation operation, ArgumentKind argumentKind
         break;
     }
     case ArgumentKind::SequenceIndex:
-        result = text::StringFormat{"${:04x}"}.build(std::get<uint32_t>(value));
-        break;
+        return StringFormat{"${:04x}"}.build(std::get<uint32_t>(value));
     case ArgumentKind::SequenceLength:
-        result = text::StringFormat{"${:02x}"}.build(std::get<uint32_t>(value));
-        break;
+        return StringFormat{"${:02x}"}.build(std::get<uint32_t>(value));
     case ArgumentKind::CharClassIndex:
-        result = text::StringFormat{"${:04x}"}.build(std::get<uint32_t>(value));
-        break;
+        return StringFormat{"${:04x}"}.build(std::get<uint32_t>(value));
     case ArgumentKind::CounterIndex:
     case ArgumentKind::CounterValue:
     case ArgumentKind::AtomicGroupId:
-        result = text::String::fromInteger(std::get<uint32_t>(value));
-        break;
+        return String::fromInteger(std::get<uint32_t>(value));
     default:
         break;
     }

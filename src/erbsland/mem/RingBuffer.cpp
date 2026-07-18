@@ -15,10 +15,12 @@
 
 namespace erbsland::mem {
 
-RingBuffer::RingBuffer(const unit::ByteLength capacity) : RingBuffer{capacity, capacity} {
+using unit::ByteLength;
+
+RingBuffer::RingBuffer(const ByteLength capacity) : RingBuffer{capacity, capacity} {
 }
 
-RingBuffer::RingBuffer(const unit::ByteLength initialCapacity, const unit::ByteLength maximumCapacity) :
+RingBuffer::RingBuffer(const ByteLength initialCapacity, const ByteLength maximumCapacity) :
     _storage(initialCapacity.toSizeTOrThrow()),
     _initialCapacity{initialCapacity.toSizeTOrThrow()},
     _maximumCapacity{maximumCapacity.toSizeTOrThrow()} {
@@ -31,27 +33,27 @@ RingBuffer::RingBuffer(const unit::ByteLength initialCapacity, const unit::ByteL
     }
 }
 
-auto RingBuffer::capacity() const noexcept -> unit::ByteLength {
-    return unit::ByteLength::fromSizeT(_storage.size());
+auto RingBuffer::capacity() const noexcept -> ByteLength {
+    return ByteLength::fromSizeT(_storage.size());
 }
 
-auto RingBuffer::maximumCapacity() const noexcept -> unit::ByteLength {
-    return unit::ByteLength::fromSizeT(_maximumCapacity);
+auto RingBuffer::maximumCapacity() const noexcept -> ByteLength {
+    return ByteLength::fromSizeT(_maximumCapacity);
 }
 
-auto RingBuffer::length() const noexcept -> unit::ByteLength {
-    return unit::ByteLength::fromSizeT(_length);
+auto RingBuffer::length() const noexcept -> ByteLength {
+    return ByteLength::fromSizeT(_length);
 }
 
-auto RingBuffer::available() const noexcept -> unit::ByteLength {
-    return unit::ByteLength::fromSizeT(_storage.size() - _length);
+auto RingBuffer::available() const noexcept -> ByteLength {
+    return ByteLength::fromSizeT(_storage.size() - _length);
 }
 
-auto RingBuffer::canWrite(const unit::ByteLength length) const noexcept -> bool {
+auto RingBuffer::canWrite(const ByteLength length) const noexcept -> bool {
     return !length.isInfinite() && length.toSizeT() <= _maximumCapacity - _length;
 }
 
-auto RingBuffer::reserveAdditional(const unit::ByteLength length) -> util::Result {
+auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
     verifySafeAccess();
     if (!canWrite(length)) {
         return util::Result::Failure;
@@ -77,11 +79,11 @@ auto RingBuffer::reserveAdditional(const unit::ByteLength length) -> util::Resul
     return util::Result::Success;
 }
 
-auto RingBuffer::write(const std::span<const Byte> bytes) -> unit::ByteLength {
+auto RingBuffer::write(const std::span<const Byte> bytes) -> ByteLength {
     verifySafeAccess();
     const auto maximumWrite = std::min(bytes.size(), _maximumCapacity - _length);
-    if (isFailure(reserveAdditional(unit::ByteLength::fromSizeT(maximumWrite)))) {
-        return unit::ByteLength::zero();
+    if (isFailure(reserveAdditional(ByteLength::fromSizeT(maximumWrite)))) {
+        return ByteLength::zero();
     }
     auto remaining = maximumWrite;
     auto sourceOffset = std::size_t{0};
@@ -94,18 +96,18 @@ auto RingBuffer::write(const std::span<const Byte> bytes) -> unit::ByteLength {
         }
     }
     commitWritten(maximumWrite);
-    return unit::ByteLength::fromSizeT(maximumWrite);
+    return ByteLength::fromSizeT(maximumWrite);
 }
 
 auto RingBuffer::writeExact(const std::span<const Byte> bytes) -> util::Result {
     verifySafeAccess();
-    if (isFailure(reserveAdditional(unit::ByteLength::fromSizeT(bytes.size())))) {
+    if (isFailure(reserveAdditional(ByteLength::fromSizeT(bytes.size())))) {
         return util::Result::Failure;
     }
-    return write(bytes) == unit::ByteLength::fromSizeT(bytes.size()) ? util::Result::Success : util::Result::Failure;
+    return write(bytes) == ByteLength::fromSizeT(bytes.size()) ? util::Result::Success : util::Result::Failure;
 }
 
-auto RingBuffer::read(const std::span<Byte> destination) -> unit::ByteLength {
+auto RingBuffer::read(const std::span<Byte> destination) -> ByteLength {
     verifySafeAccess();
     const auto maximumRead = std::min(destination.size(), _length);
     auto remaining = maximumRead;
@@ -119,10 +121,10 @@ auto RingBuffer::read(const std::span<Byte> destination) -> unit::ByteLength {
         }
     }
     consumeRead(maximumRead);
-    return unit::ByteLength::fromSizeT(maximumRead);
+    return ByteLength::fromSizeT(maximumRead);
 }
 
-auto RingBuffer::read(const unit::ByteLength maximum) -> ByteBlock {
+auto RingBuffer::read(const ByteLength maximum) -> ByteBlock {
     verifySafeAccess();
     const auto readLength = maximum.isInfinite() ? _length : std::min(maximum.toSizeT(), _length);
     auto bytes = std::vector<Byte>(readLength);

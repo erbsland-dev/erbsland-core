@@ -17,7 +17,7 @@ Usage
 =====
 
 Create :cpp:class:`HtmlParser <erbsland::text::html::HtmlParser>` with an
-:cpp:class:`AnyStringView <erbsland::text::AnyStringView>` compatible value and call ``parse()`` for the default
+:cpp:class:`AnyString <erbsland::text::AnyString>` compatible value and call ``parse()`` for the default
 tolerant API.
 Use ``parseOrThrow()`` when future unrecoverable parser errors should be reported as
 :cpp:class:`ParseError <erbsland::err::ParseError>`.

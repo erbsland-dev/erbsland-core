@@ -3,18 +3,21 @@
 #include "RegEx.hpp"
 
 #include "impl/compiler/Compiler.hpp"
+#include "impl/engine/Engine.hpp"
+
+#include "../text/StringCharReader.hpp"
 
 namespace erbsland::re {
 
-auto RegEx::compile(const text::StringView &pattern, const Flags flags, Settings settings) -> RegExPtr {
+auto RegEx::compile(const text::String &pattern, const Flags flags, Settings settings) -> RegExPtr {
     return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
 }
 
-auto RegEx::compile(const text::U16StringView &pattern, const Flags flags, Settings settings) -> RegExPtr {
+auto RegEx::compile(const text::U16String &pattern, const Flags flags, Settings settings) -> RegExPtr {
     return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
 }
 
-auto RegEx::compile(const text::U32StringView &pattern, const Flags flags, Settings settings) -> RegExPtr {
+auto RegEx::compile(const text::U32String &pattern, const Flags flags, Settings settings) -> RegExPtr {
     return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
 }
 

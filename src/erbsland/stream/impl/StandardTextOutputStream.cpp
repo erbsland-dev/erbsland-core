@@ -5,7 +5,7 @@
 #include "IoService.hpp"
 
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../time/TimePoint.hpp"
 
 #include <atomic>
@@ -21,6 +21,10 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
+
+using text::Char;
+using text::String;
+using text::StringEncoding;
 
 class StandardTextOutputStream::Data final : public std::enable_shared_from_this<Data> {
 public:
@@ -39,10 +43,11 @@ public:
         workInProgress = true;
         auto self = shared_from_this();
         auto text = queue.front();
-        IoService::submitIoWork([self = std::move(self), text = std::move(text)] { self->performWrite(text); });
+        IoService::submitIoWork(
+            [self = std::move(self), text = std::move(text)]() -> void { self->performWrite(text); });
     }
 
-    void performWrite(const text::String &text) {
+    void performWrite(const String &text) {
         auto failure = std::exception_ptr{};
         try {
             native->writeText(text);
@@ -70,8 +75,9 @@ public:
         }
         workInProgress = true;
         auto self = shared_from_this();
-        IoService::submitIoWork(
-            [self = std::move(self), closeAfterFlush, generation] { self->performFlush(closeAfterFlush, generation); });
+        IoService::submitIoWork([self = std::move(self), closeAfterFlush, generation]() -> void {
+            self->performFlush(closeAfterFlush, generation);
+        });
     }
 
     void performFlush(const bool closeAfterFlush, const uint64_t generation) {
@@ -102,7 +108,7 @@ public:
     OutputStreamSettings settings;
     mutable std::mutex mutex;
     std::condition_variable condition;
-    std::deque<text::String> queue;
+    std::deque<String> queue;
     std::size_t pendingBytes{0U};
     std::atomic<StreamState> streamState{StreamState::Open};
     std::atomic<bool> aborted{false};
@@ -125,12 +131,12 @@ auto StandardTextOutputStream::createErrorContext() const noexcept -> StreamErro
     return _data->native->createErrorContext();
 }
 
-auto StandardTextOutputStream::encoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+auto StandardTextOutputStream::encoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
-auto StandardTextOutputStream::effectiveEncoding() const noexcept -> text::StringEncoding {
-    return text::StringEncoding::Utf8;
+auto StandardTextOutputStream::effectiveEncoding() const noexcept -> StringEncoding {
+    return StringEncoding::Utf8;
 }
 
 auto StandardTextOutputStream::outputSettings() const noexcept -> const OutputStreamSettings & {
@@ -148,7 +154,7 @@ auto StandardTextOutputStream::isReady() const noexcept -> bool {
 
 auto StandardTextOutputStream::waitForReady() -> StreamWaitStatus {
     auto lock = std::unique_lock{_data->mutex};
-    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this] {
+    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
         return _data->pendingBytes <= _data->settings.bufferCapacity().toSizeT() || _data->error ||
             state() != StreamState::Open;
     });
@@ -161,7 +167,7 @@ auto StandardTextOutputStream::waitForReady() -> StreamWaitStatus {
 auto StandardTextOutputStream::flush() -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
-    const auto drained = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this] {
+    const auto drained = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
         return (_data->queue.empty() && !_data->workInProgress) || _data->error || state() != StreamState::Open;
     });
     if (_data->error) {
@@ -172,7 +178,7 @@ auto StandardTextOutputStream::flush() -> StreamWriteStatus {
     }
     const auto generation = ++_data->flushGeneration;
     _data->scheduleFlush(false, generation);
-    const auto flushed = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this, generation] {
+    const auto flushed = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this, generation]() -> bool {
         return _data->completedFlushGeneration >= generation || _data->error;
     });
     if (_data->error) {
@@ -190,7 +196,7 @@ auto StandardTextOutputStream::close() -> StreamCloseStatus {
         _data->streamState.store(StreamState::Closing);
         _data->schedule();
     }
-    const auto closed = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this] {
+    const auto closed = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
         return state() == StreamState::Closed || state() == StreamState::Failed;
     });
     if (_data->error) {
@@ -219,11 +225,11 @@ void StandardTextOutputStream::abort() noexcept {
     _data->condition.notify_all();
 }
 
-auto StandardTextOutputStream::write(const text::Char character) -> StreamWriteStatus {
-    return write(text::String::fromCharacter(character));
+auto StandardTextOutputStream::write(const Char character) -> StreamWriteStatus {
+    return write(String::fromCharacter(character));
 }
 
-auto StandardTextOutputStream::write(const text::StringView &text) -> StreamWriteStatus {
+auto StandardTextOutputStream::write(const String &text) -> StreamWriteStatus {
     const auto byteLength = text.length().toSizeT();
     const auto requestLimit = _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > requestLimit) {
@@ -252,14 +258,11 @@ auto StandardTextOutputStream::write(const text::StringView &text) -> StreamWrit
 }
 
 auto StandardTextOutputStream::writeLine() -> StreamWriteStatus {
-    return write(text::String::fromCharacter(U'\n'));
+    return write(String::fromCharacter(U'\n'));
 }
 
-auto StandardTextOutputStream::writeLine(const text::StringView &text) -> StreamWriteStatus {
-    auto builder = text::StringBuilder{};
-    builder.append(text);
-    builder.append(U'\n');
-    return write(builder.takeString());
+auto StandardTextOutputStream::writeLine(const String &text) -> StreamWriteStatus {
+    return write(String::fromJoined({text, "\n"_el}));
 }
 
 }

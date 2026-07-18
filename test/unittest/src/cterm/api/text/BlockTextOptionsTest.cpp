@@ -44,13 +44,13 @@ public:
         paragraphOptions.setWrappedLineIndent(6);
         paragraphOptions.setMargins(bgeo::BlockMargins{1, 2});
         paragraphOptions.setBackgroundMode(ParagraphBackgroundMode::FullBoth);
-        paragraphOptions.setLineBreakEndMark(BlockString{"<"_el});
-        paragraphOptions.setLineBreakStartMark(BlockString{">"_el});
+        paragraphOptions.setLineBreakEndMark(BlockStringEditor{"<"_el});
+        paragraphOptions.setLineBreakStartMark(BlockStringEditor{">"_el});
         paragraphOptions.setParagraphSpacing(ParagraphSpacing::DoubleLine);
         paragraphOptions.setWordSeparators(U".,"_el);
         paragraphOptions.setWordBreakMark(Block{U'~'});
         paragraphOptions.setMaximumLineWraps(5);
-        paragraphOptions.setParagraphEllipsisMark(BlockString{"..."_el});
+        paragraphOptions.setParagraphEllipsisMark(BlockStringEditor{"..."_el});
         paragraphOptions.setTabStops({2, 8});
         paragraphOptions.setTabOverflowBehavior(TabOverflowBehavior::LineBreak);
         paragraphOptions.setOnError(ParagraphOnError::Empty);
@@ -94,9 +94,9 @@ public:
         options.setWrappedLineIndent(-7);
         options.setMargins(bgeo::BlockMargins{2});
         options.setMaximumLineWraps(-2);
-        options.setLineBreakEndMark(BlockString{"!"_el});
-        options.setLineBreakStartMark(BlockString{"?"_el});
-        options.setParagraphEllipsisMark(BlockString{"(more)"_el});
+        options.setLineBreakEndMark(BlockStringEditor{"!"_el});
+        options.setLineBreakStartMark(BlockStringEditor{"?"_el});
+        options.setParagraphEllipsisMark(BlockStringEditor{"(more)"_el});
         options.setTabStops({4});
 
         REQUIRE_EQUAL(options.colorSequence().sequenceLength(), std::size_t{1});
@@ -115,7 +115,7 @@ public:
     }
 
 private:
-    void requireStringEqual(const BlockString &actual, const erbsland::text::U32StringView &expected) {
+    void requireStringEqual(const BlockString &actual, const erbsland::text::U32String &expected) {
         REQUIRE_EQUAL(actual.length().toSizeT(), expected.length().toSizeT());
         for (std::size_t i = 0; i < expected.length().toSizeT(); ++i) {
             REQUIRE_EQUAL(actual[BlockIndex::fromSizeT(i)], expected[erbsland::unit::CpIndex::fromSizeT(i)]);

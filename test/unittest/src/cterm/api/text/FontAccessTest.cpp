@@ -10,7 +10,7 @@ class FontAccessTest final : public el::UnitTest {
 public:
     void testConstructorsAndAccessorsExposeTheConfiguredGlyphs() {
         auto glyphs = Font::GlyphMap{};
-        glyphs.emplace("A"_els, FontGlyph{bgeo::BlockSize{1, 1}});
+        glyphs.emplace("A"_el, FontGlyph{bgeo::BlockSize{1, 1}});
         auto font = Font{3, glyphs};
 
         REQUIRE_EQUAL(font.height(), 3);

@@ -69,7 +69,7 @@ instruction set.
 .. code-block:: cpp
 
     using namespace erbsland::text::literals;
-    const auto program = text::StringViewList{
+    const auto program = text::StringList{
         "; my custom program"_el,
         "loop: CHAR 'a'"_el,
         "      SPLIT %loop, %end"_el,
@@ -88,7 +88,7 @@ instruction set.
 Custom programs are useful for testing the engine, experimenting with new instruction sequences, or creating minimal
 reproducible examples when investigating bugs.
 
-The assembler accepts :cpp:type:`text::StringViewList <erbsland::text::U8StringViewList>`.
+The assembler accepts :cpp:type:`text::StringList <erbsland::text::U8StringList>`.
 The disassembler returns the same owning Core list type, so listings remain valid independently of the disassembler
 object.
 Assembler source uses tolerant Core-string decoding.

@@ -25,7 +25,7 @@ OptionParser::OptionParser(
     _argumentIndex{unit::ArgumentIndex::one()},
     _moduleArgumentIndex{unit::ArgumentIndex::noIndex()} {
     if (_options != nullptr) {
-        _options->setExecutablePath(_args.isEmpty() ? text::StringView{} : _args.first());
+        _options->setExecutablePath(_args.isEmpty() ? text::String{} : _args.first());
     }
 }
 
@@ -123,16 +123,14 @@ auto OptionParser::acceptStorageResult(const bool success) -> bool {
     return false;
 }
 
-auto OptionParser::makeError(
-    const OptionErrorReason reason, text::StringView description, const unit::ArgumentIndex index) -> bool {
+auto OptionParser::makeError(const OptionErrorReason reason, text::String description, const unit::ArgumentIndex index)
+    -> bool {
     return makeError(OptionErrorContext{}.setReason(reason).setTitle(std::move(description)).setArgumentIndex(index));
 }
 
 auto OptionParser::makeError(
-    const OptionErrorReason reason,
-    text::StringView title,
-    text::StringView description,
-    const unit::ArgumentIndex index) -> bool {
+    const OptionErrorReason reason, text::String title, text::String description, const unit::ArgumentIndex index)
+    -> bool {
     return makeError(
         OptionErrorContext{}
             .setReason(reason)
@@ -142,10 +140,8 @@ auto OptionParser::makeError(
 }
 
 auto OptionParser::makeError(
-    const OptionErrorReason reason,
-    text::StringView description,
-    const unit::ArgumentIndex index,
-    const OptionPtr &option) -> bool {
+    const OptionErrorReason reason, text::String description, const unit::ArgumentIndex index, const OptionPtr &option)
+    -> bool {
     return makeError(
         OptionErrorContext{}
             .setReason(reason)
@@ -156,8 +152,8 @@ auto OptionParser::makeError(
 
 auto OptionParser::makeError(
     const OptionErrorReason reason,
-    text::StringView title,
-    text::StringView description,
+    text::String title,
+    text::String description,
     const unit::ArgumentIndex index,
     const OptionPtr &option) -> bool {
     return makeError(

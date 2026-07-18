@@ -13,8 +13,8 @@
 
 namespace demo {
 
-[[nodiscard]] auto createStreamDemoDirectory(const el::StringView &prefix) -> el::TempDirectoryPtr;
-[[nodiscard]] auto bytesFromText(const el::StringView &text) -> el::ByteBlock;
+[[nodiscard]] auto createStreamDemoDirectory(const el::String &prefix) -> el::TempDirectoryPtr;
+[[nodiscard]] auto bytesFromText(const el::String &text) -> el::ByteBlock;
 
 template <typename tValue>
 void waitForTask(el::CoTask<tValue> &task) {

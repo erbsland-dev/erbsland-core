@@ -17,13 +17,13 @@ refer directly to the original literal storage.
 
     using namespace erbsland::text::literals;
 
-    constexpr auto label = u8"Status"_el; // U8StringLiteral<char8_t>
-    auto labelView = u8"Status"_elv;      // U8StringView
-    auto labelText = u8"Status"_els;      // U8String
+    constexpr auto label = u8"Status"_el;        // U8StringLiteral<char8_t>
+    auto labelText = el::U8String{label};         // owning read-only value
+    auto labelEditor = el::U8StringEditor{label}; // explicit mutable value
 
 Use ``"_el"`` when you want a constexpr-capable :cpp:class:`U8StringLiteral <erbsland::text::U8StringLiteral>`.
-Use ``"_elv"`` for APIs that inspect text through :cpp:class:`U8StringView <erbsland::text::U8StringView>`.
-Use ``"_els"`` for APIs that need an owning :cpp:class:`U8String <erbsland::text::U8String>`.
+Pass the literal directly when an API accepts it. Otherwise construct :cpp:class:`U8String <erbsland::text::U8String>`
+or :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` explicitly.
 
 Interface
 =========
@@ -35,22 +35,6 @@ Interface
 .. doxygenfunction:: erbsland::text::literals::operator""_el(const char16_t *data, const std::size_t size) noexcept -> U16StringLiteral
 
 .. doxygenfunction:: erbsland::text::literals::operator""_el(const char32_t *data, const std::size_t size) noexcept -> U32StringLiteral
-
-.. doxygenfunction:: erbsland::text::literals::operator""_elv(const char *data, std::size_t size) noexcept -> U8StringView
-
-.. doxygenfunction:: erbsland::text::literals::operator""_elv(const char8_t *data, std::size_t size) noexcept -> U8StringView
-
-.. doxygenfunction:: erbsland::text::literals::operator""_elv(const char16_t *data, std::size_t size) noexcept -> U16StringView
-
-.. doxygenfunction:: erbsland::text::literals::operator""_elv(const char32_t *data, std::size_t size) noexcept -> U32StringView
-
-.. doxygenfunction:: erbsland::text::literals::operator""_els(const char *data, std::size_t size) -> U8String
-
-.. doxygenfunction:: erbsland::text::literals::operator""_els(const char8_t *data, std::size_t size) -> U8String
-
-.. doxygenfunction:: erbsland::text::literals::operator""_els(const char16_t *data, std::size_t size) -> U16String
-
-.. doxygenfunction:: erbsland::text::literals::operator""_els(const char32_t *data, std::size_t size) -> U32String
 .. doxygentypedef:: erbsland::text::StringLiteral
 .. doxygenclass:: erbsland::text::U16StringLiteral
     :members:

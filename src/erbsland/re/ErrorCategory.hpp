@@ -4,7 +4,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StdFormatForText.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -23,7 +23,7 @@ enum class ErrorCategory : uint8_t {
 };
 
 /// Convert an error category into a stable, human-readable name.
-[[nodiscard]] inline auto toString(const ErrorCategory category) noexcept -> text::StringView {
+[[nodiscard]] inline auto toString(const ErrorCategory category) noexcept -> text::String {
     using namespace text::literals;
     switch (category) {
     case ErrorCategory::Parser:
@@ -49,8 +49,8 @@ enum class ErrorCategory : uint8_t {
 }
 
 template <>
-struct std::formatter<erbsland::re::ErrorCategory> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::ErrorCategory> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::ErrorCategory category, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::toString(category), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(category), ctx);
     }
 };

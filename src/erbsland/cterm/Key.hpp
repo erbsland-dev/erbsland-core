@@ -9,11 +9,10 @@
 #include "../text/Char.hpp"
 #include "../text/CombinedChar.hpp"
 #include "../text/String.hpp"
-#include "../text/StringBuilder_fwd.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringLiteral.hpp"
-#include "../text/StringView.hpp"
 #include "../text/u32/U32String.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 
 #include <array>
 #include <cstdint>
@@ -81,7 +80,7 @@ public:
     /// @param type The key type.
     /// @param character The combined Unicode text for `Type::Character` or `Type::Combined`.
     /// @param modifiers The modifiers pressed together with this key.
-    Key(Type type, const text::U32StringView &character, KeyModifiers modifiers = {});
+    Key(Type type, const text::U32String &character, KeyModifiers modifiers = {});
 
     // defaults
     ~Key() = default;
@@ -100,8 +99,8 @@ public: // operators
     [[nodiscard]] auto operator!=(text::Char other) const noexcept -> bool;
     /// Compare against a combined key
     /// This requires `type()` == `Combined` and `combined()` == `other`.
-    [[nodiscard]] auto operator==(const text::U32StringView &other) const noexcept -> bool;
-    [[nodiscard]] auto operator!=(const text::U32StringView &other) const noexcept -> bool;
+    [[nodiscard]] auto operator==(const text::U32String &other) const noexcept -> bool;
+    [[nodiscard]] auto operator!=(const text::U32String &other) const noexcept -> bool;
     /// Compare against a special key.
     /// This requires `type()` == `type` and `type` != `Character`|`Combined`.
     [[nodiscard]] auto operator==(Type type) const noexcept -> bool;
@@ -137,11 +136,11 @@ public: // conversion
     /// Decode a key from the configuration text.
     /// @param text The textual key name.
     /// @return The decoded key, or `Type::None` if the text is unsupported.
-    [[nodiscard]] static auto fromString(const text::StringView &text) noexcept -> Key;
+    [[nodiscard]] static auto fromString(const text::String &text) noexcept -> Key;
     /// Decode a key from console input text.
     /// @param text The input text or escape sequence.
     /// @return The decoded key, or `Type::None` if the input is unsupported.
-    [[nodiscard]] static auto fromConsoleInput(const text::StringView &text) noexcept -> Key;
+    [[nodiscard]] static auto fromConsoleInput(const text::String &text) noexcept -> Key;
     /// Convert the key to configuration text.
     /// @return The canonical textual key name.
     [[nodiscard]] auto toString() const -> text::String;
@@ -169,21 +168,21 @@ private:
     /// Find the display and serialization text for a special key.
     [[nodiscard]] static auto findKeyTextDefinition(Type type) noexcept -> std::optional<KeyTextDefinition>;
     /// Normalize a key name for case-insensitive alias matching.
-    [[nodiscard]] static auto normalizeKeyText(const text::StringView &text) -> text::String;
+    [[nodiscard]] static auto normalizeKeyText(const text::String &text) -> text::String;
     /// Remove parsed modifiers from the beginning of a key string.
     [[nodiscard]] static auto parseModifiers(text::String &text) noexcept -> KeyModifiers;
     /// Parse one modifier name.
-    [[nodiscard]] static auto parseModifierText(const text::StringView &text) noexcept -> std::optional<KeyModifier>;
+    [[nodiscard]] static auto parseModifierText(const text::String &text) noexcept -> std::optional<KeyModifier>;
     /// Append modifier configuration text to a string.
-    static void appendModifierString(text::StringBuilder &builder, KeyModifiers modifiers);
+    static void appendModifierString(text::StringEditor &builder, KeyModifiers modifiers);
     /// Append modifier display text to a string.
-    static void appendModifierDisplayText(text::StringBuilder &builder, KeyModifiers modifiers);
+    static void appendModifierDisplayText(text::StringEditor &builder, KeyModifiers modifiers);
     /// Wrap display text in square brackets when requested.
-    [[nodiscard]] static auto wrapDisplayText(const text::StringView &text, bool useBrackets) -> text::String;
+    [[nodiscard]] static auto wrapDisplayText(const text::String &text, bool useBrackets) -> text::String;
     /// Create a character or combined key from normalized Unicode input.
     [[nodiscard]] static auto createCharacterKey(const text::CombinedChar &character) noexcept -> Key;
     /// Parse Unicode text into a character key when possible.
-    [[nodiscard]] static auto parseCharacterKeyText(const text::StringView &text) -> std::optional<Key>;
+    [[nodiscard]] static auto parseCharacterKeyText(const text::String &text) -> std::optional<Key>;
 
 private:
     Type _type{None};

@@ -2,34 +2,33 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U32String.hpp"
 
-#include "U32StringView.hpp"
+#include "U32StringEditor.hpp"
 
 #include "impl/U32StringComparisonTools.hpp"
 
 namespace erbsland::text {
 
-auto U32String::compare(const U32StringView &other, const CharCompareFn compareFn) const noexcept
-    -> std::strong_ordering {
+auto U32String::compare(const U32String &other, const CharCompareFn compareFn) const noexcept -> std::strong_ordering {
     return impl::U32StringComparisonTools{dataView()}.compare(other.dataView(), compareFn);
 }
 
-auto U32String::operator<=>(const U32StringView &other) const noexcept -> std::strong_ordering {
+auto U32String::operator<=>(const U32String &other) const noexcept -> std::strong_ordering {
     return compare(other);
 }
 
-auto U32String::startsWith(const U32StringView &other, const CharCompareFn compareFn) const noexcept -> bool {
+auto U32String::startsWith(const U32String &other, const CharCompareFn compareFn) const noexcept -> bool {
     return impl::U32StringComparisonTools{dataView()}.startsWith(other.dataView(), compareFn);
 }
 
-auto U32String::endsWith(const U32StringView &other, const CharCompareFn compareFn) const noexcept -> bool {
+auto U32String::endsWith(const U32String &other, const CharCompareFn compareFn) const noexcept -> bool {
     return impl::U32StringComparisonTools{dataView()}.endsWith(other.dataView(), compareFn);
 }
 
-auto U32String::contains(const U32StringView &other, const CharCompareFn compareFn) const noexcept -> bool {
+auto U32String::contains(const U32String &other, const CharCompareFn compareFn) const noexcept -> bool {
     return impl::U32StringComparisonTools{dataView()}.contains(other.dataView(), compareFn);
 }
 
-auto U32String::count(const U32StringView &text, const CharCompareFn compareFn) const noexcept -> unit::ElementCount {
+auto U32String::count(const U32String &text, const CharCompareFn compareFn) const noexcept -> unit::ElementCount {
     return impl::U32StringComparisonTools{dataView()}.count(text.dataView(), compareFn);
 }
 

@@ -31,16 +31,16 @@ void Options::addModule(OptionModulePtr optionModule) {
     _optionModules.emplace_back(std::move(optionModule));
 }
 
-void Options::setExecutablePath(text::StringView executablePath) {
+void Options::setExecutablePath(text::String executablePath) {
     _executablePath = std::move(executablePath);
     _executableName = impl::extractExecutableName(_executablePath);
 }
 
-auto Options::addOption(std::initializer_list<text::StringView> names) -> OptionEditor {
+auto Options::addOption(std::initializer_list<text::String> names) -> OptionEditor {
     return defaultOptionSet()->addOption(names);
 }
 
-auto Options::editOption(const text::StringView &name) -> OptionEditor {
+auto Options::editOption(const text::String &name) -> OptionEditor {
     for (const auto &optionSet : _optionSets) {
         auto editor = optionSet->editOption(name);
         if (editor.isValid()) {

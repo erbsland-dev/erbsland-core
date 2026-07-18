@@ -6,6 +6,7 @@
 #include "IoService.hpp"
 
 #include "../../text/Literals.hpp"
+#include "../../text/StringEncoder.hpp"
 #include "../../time/TimePoint.hpp"
 
 #include <algorithm>
@@ -40,7 +41,7 @@ auto BufferedByteOutputStream::isReady() const noexcept -> bool {
 
 auto BufferedByteOutputStream::waitForReady() -> StreamWaitStatus {
     auto lock = std::unique_lock{_data->mutex};
-    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this] {
+    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
         return _data->back.isEmpty() || _data->error || state() != StreamState::Open;
     });
     if (_data->error) {
@@ -52,7 +53,7 @@ auto BufferedByteOutputStream::waitForReady() -> StreamWaitStatus {
 auto BufferedByteOutputStream::flush() -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
-    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this] {
+    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
         return (_data->front.isEmpty() && _data->back.isEmpty() && !_data->workInProgress) || _data->error ||
             state() != StreamState::Open;
     });
@@ -65,7 +66,7 @@ auto BufferedByteOutputStream::flush() -> StreamWriteStatus {
     _data->workInProgress = true;
     const auto generation = ++_data->flushGeneration;
     const auto data = _data;
-    IoService::submitIoWork([data, generation] {
+    IoService::submitIoWork([data, generation]() -> void {
         auto failure = std::exception_ptr{};
         try {
             data->native->flush();
@@ -85,7 +86,7 @@ auto BufferedByteOutputStream::flush() -> StreamWriteStatus {
         }
         data->condition.notify_all();
     });
-    const auto flushed = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this, generation] {
+    const auto flushed = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this, generation]() -> bool {
         return _data->completedFlushGeneration >= generation || _data->error;
     });
     if (_data->error) {
@@ -106,7 +107,7 @@ auto BufferedByteOutputStream::close() -> StreamCloseStatus {
         _data->streamState.store(StreamState::Closing);
         _data->scheduleWrite();
     }
-    const auto closed = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this] {
+    const auto closed = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
         return state() == StreamState::Closed || state() == StreamState::Failed;
     });
     if (state() == StreamState::Failed && _data->error) {
@@ -191,11 +192,12 @@ auto BufferedByteOutputStream::write(const std::span<const mem::Byte> bytes) -> 
 }
 
 auto BufferedByteOutputStream::writeEncodedText(
-    const text::StringView &source,
+    const text::String &source,
     const text::StringEncoding encoding,
     const text::StringBomMode bomMode,
     const text::EncodingErrorMode errorMode) -> StreamWriteStatus {
-    const auto encodedLength = text::TextRingBuffer::encodedLength(source, encoding, bomMode, errorMode);
+    const auto encoder = text::StringEncoder{source};
+    const auto encodedLength = encoder.encodedLength(encoding, bomMode, errorMode);
     if (encodedLength > _data->settings.backBufferLimit()) {
         throwError(
             "Failed to write text to the output stream."_el,
@@ -216,7 +218,7 @@ auto BufferedByteOutputStream::writeEncodedText(
             }
             continue;
         }
-        if (_data->back.writeEncoded(source, encoding, bomMode, errorMode)) {
+        if (isSuccessful(encoder.encodeTo(_data->back, encoding, bomMode, errorMode))) {
             _data->logicalPosition.fetch_add(encodedLength.toRawValue());
             _data->scheduleWrite();
             return StreamWriteStatus::Success;
@@ -285,7 +287,7 @@ auto BufferedByteOutputStream::movePosition(const StreamPositionOrigin origin, c
 auto BufferedByteOutputStream::beginPositioning(std::unique_lock<std::mutex> &lock, const time::TimePoint deadline)
     -> bool {
     _data->positioning = true;
-    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this] {
+    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
         return (_data->front.isEmpty() && _data->back.isEmpty() && !_data->workInProgress) || _data->error ||
             state() != StreamState::Open;
     });

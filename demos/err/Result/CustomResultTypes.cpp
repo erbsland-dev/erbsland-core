@@ -24,7 +24,7 @@ inline constexpr RobotSetupResult RobotSetupResult::AlreadyReady = Value::succes
 inline constexpr RobotSetupResult RobotSetupResult::Obstructed = Value::failure<0>();
 inline constexpr RobotSetupResult RobotSetupResult::ControllerOffline = Value::failure<1>();
 
-[[nodiscard]] auto setUpRobot(const el::StringView &robotName) noexcept -> RobotSetupResult {
+[[nodiscard]] auto setUpRobot(const el::String &robotName) noexcept -> RobotSetupResult {
     if (robotName == "Lume"_el) {
         return RobotSetupResult::Ready;
     }

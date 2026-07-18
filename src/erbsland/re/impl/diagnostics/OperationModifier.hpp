@@ -4,7 +4,7 @@
 
 #include "../../../text/Literals.hpp"
 #include "../../../text/StdFormatForText.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -13,7 +13,7 @@ namespace erbsland::re::impl {
 
 enum class OperationModifier : uint8_t { Negated, Assert, CaseInsensitive, Skip, Add, Start, Stop };
 
-[[nodiscard]] inline auto toString(const OperationModifier modifier) -> text::StringView {
+[[nodiscard]] inline auto toString(const OperationModifier modifier) -> text::String {
     using namespace text::literals;
     switch (modifier) {
     case OperationModifier::Negated:
@@ -37,8 +37,8 @@ enum class OperationModifier : uint8_t { Negated, Assert, CaseInsensitive, Skip,
 }
 
 template <>
-struct std::formatter<erbsland::re::impl::OperationModifier> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::impl::OperationModifier> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::impl::OperationModifier modifier, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::impl::toString(modifier), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(modifier), ctx);
     }
 };

@@ -6,8 +6,7 @@
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringCharView.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/ByteRange.hpp>
@@ -24,132 +23,132 @@ using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(U8String U8StringView U8StringCharView U8StringTrimTools)
+TESTED_TARGETS(U8StringEditor U8String U8StringTrimTools)
 class U8StringTrimTest final : public el::UnitTest {
 public:
     void testStringInPlaceTrim() {
         using namespace el::text::literals;
 
-        auto text = U8String{std::string_view{" \tvalue\r\n"}};
+        auto text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
         REQUIRE_EQUAL(text.trim(), "value"_el);
 
-        text = U8String{std::string_view{"***value**"}};
-        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}), "value"_el);
+        text = U8StringEditor{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_el}), "value"_el);
 
-        text = U8String{std::string_view{" \tvalue\r\n"}};
+        text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
         REQUIRE_EQUAL(text.trim({}, StringSide::Front), "value\r\n"_el);
 
-        text = U8String{std::string_view{"***value**"}};
-        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}, StringSide::Front), "value**"_el);
+        text = U8StringEditor{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_el}, StringSide::Front), "value**"_el);
 
-        text = U8String{std::string_view{" \tvalue\r\n"}};
+        text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
         REQUIRE_EQUAL(text.trim({}, StringSide::Back), " \tvalue"_el);
 
-        text = U8String{std::string_view{"***value**"}};
-        REQUIRE_EQUAL(text.trim(CharSet{"*"_elv}, StringSide::Back), "***value"_el);
+        text = U8StringEditor{std::string_view{"***value**"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"*"_el}, StringSide::Back), "***value"_el);
     }
 
     void testStringCopyTrim() {
         using namespace el::text::literals;
 
-        const auto text = U8String{std::string_view{"xxValueXX"}};
+        const auto text = U8StringEditor{std::string_view{"xxValueXX"}};
 
-        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}), "Value"_el);
-        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}, StringSide::Front), "ValueXX"_el);
-        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_elv}, StringSide::Back), "xxValue"_el);
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_el}), "Value"_el);
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_el}, StringSide::Front), "ValueXX"_el);
+        REQUIRE_EQUAL(text.trimmed(CharSet{"xX"_el}, StringSide::Back), "xxValue"_el);
         REQUIRE_EQUAL(text, "xxValueXX"_el);
     }
 
     void testViewTrim() {
         using namespace el::text::literals;
 
-        const auto text = U8String{std::string_view{" \tvalue\r\n"}};
-        const auto view = U8StringView{text};
+        const auto text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
+        const auto view = U8String{text};
 
         REQUIRE_EQUAL(view.trimmed(), "value"_el);
         REQUIRE_EQUAL(view.trimmed({}, StringSide::Front), "value\r\n"_el);
         REQUIRE_EQUAL(view.trimmed({}, StringSide::Back), " \tvalue"_el);
-        REQUIRE_EQUAL(view.trimmed(CharSet{" \n\r\t"_elv}), "value"_el);
+        REQUIRE_EQUAL(view.trimmed(CharSet{" \n\r\t"_el}), "value"_el);
         REQUIRE_EQUAL(view.trimmed(), "value"_el);
     }
 
-    void testCharViewTrim() {
+    void testCodePointTrim() {
         using namespace el::text::literals;
 
-        const auto text = U8String{std::string_view{"***value**"}};
-        const auto view = text.toCharView();
+        const auto text = U8StringEditor{std::string_view{"***value**"}};
+        const auto view = text;
 
-        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv})}.toStdString(), "value");
-        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv}, StringSide::Front)}.toStdString(), "value**");
-        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv}, StringSide::Back)}.toStdString(), "***value");
-        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_elv})}.toStdString(), "value");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_el})}.toStdString(), "value");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_el}, StringSide::Front)}.toStdString(), "value**");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_el}, StringSide::Back)}.toStdString(), "***value");
+        REQUIRE_EQUAL(StringConverter{view.trimmed(CharSet{"*"_el})}.toStdString(), "value");
     }
 
     void testEmptyNoOpAndAllTrimmed() {
         using namespace el::text::literals;
 
-        const auto empty = U8String{};
+        const auto empty = U8StringEditor{};
         REQUIRE(empty.trimmed().isEmpty());
-        REQUIRE(empty.trimmed(CharSet{"*"_elv}).isEmpty());
+        REQUIRE(empty.trimmed(CharSet{"*"_el}).isEmpty());
 
-        const auto noOp = U8String{std::string_view{"value"}};
+        const auto noOp = U8StringEditor{std::string_view{"value"}};
         REQUIRE_EQUAL(noOp.trimmed(), "value"_el);
-        REQUIRE_EQUAL(noOp.trimmed(CharSet{"*"_elv}), "value"_el);
+        REQUIRE_EQUAL(noOp.trimmed(CharSet{"*"_el}), "value"_el);
 
-        auto allWhitespace = U8String{std::string_view{" \t\r\n"}};
+        auto allWhitespace = U8StringEditor{std::string_view{" \t\r\n"}};
         REQUIRE(allWhitespace.trim().isEmpty());
 
-        const auto allCustom = U8String{std::string_view{"****"}};
-        REQUIRE(allCustom.trimmed(CharSet{"*"_elv}).isEmpty());
-        REQUIRE(allCustom.toCharView().trimmed(CharSet{"*"_elv}).isEmpty());
+        const auto allCustom = U8StringEditor{std::string_view{"****"}};
+        REQUIRE(allCustom.trimmed(CharSet{"*"_el}).isEmpty());
+        REQUIRE(allCustom.trimmed(CharSet{"*"_el}).isEmpty());
     }
 
     void testNestedViewTrimKeepsCorrectOrigin() {
         using namespace el::text::literals;
 
-        const auto text = U8String{std::string_view{"xx--value--yy"}};
-        const auto first = U8StringView{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{11U}});
+        const auto text = U8StringEditor{std::string_view{"xx--value--yy"}};
+        const auto first = U8String{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{11U}});
         const auto second = first.slice(ByteRange{ByteIndex{1U}, ByteLength{9U}});
 
         REQUIRE_EQUAL(first, "x--value--y"_el);
         REQUIRE_EQUAL(second, "--value--"_el);
-        REQUIRE_EQUAL(second.trimmed(CharSet{"-"_elv}), "value"_el);
-        REQUIRE_EQUAL(StringConverter{second.toCharView().trimmed(CharSet{"-"_elv})}.toStdString(), "value");
+        REQUIRE_EQUAL(second.trimmed(CharSet{"-"_el}), "value"_el);
+        REQUIRE_EQUAL(StringConverter{second.trimmed(CharSet{"-"_el})}.toStdString(), "value");
     }
 
     void testMultibyteBoundaryCharacters() {
         using namespace el::text::literals;
 
-        const auto text = U8String{std::u8string_view{u8"¢€data€¢"}};
-        const auto characters = CharSet{u8"¢€"_elv};
+        const auto text = U8StringEditor{std::u8string_view{u8"¢€data€¢"}};
+        const auto characters = CharSet{u8"¢€"_el};
 
         REQUIRE_EQUAL(text.trimmed(characters), "data"_el);
-        REQUIRE_EQUAL(U8StringView{text}.trimmed(characters), "data"_el);
-        REQUIRE_EQUAL(StringConverter{text.toCharView().trimmed(characters)}.toStdString(), "data");
+        REQUIRE_EQUAL(U8String{text}.trimmed(characters), "data"_el);
+        REQUIRE_EQUAL(StringConverter{text.trimmed(characters)}.toStdString(), "data");
     }
 
     void testMalformedUtf8ReplacementTrim() {
         const auto bytes = th::stdStringFromHex("C0 41 C0");
-        const auto text = U8String{std::string_view{bytes}};
+        const auto text = U8StringEditor{std::string_view{bytes}};
         const auto characters = CharSet{Char::replacement()};
 
         using namespace el::text::literals;
 
         REQUIRE_EQUAL(text.trimmed(characters), "A"_el);
-        REQUIRE_EQUAL(U8StringView{text}.trimmed(characters), "A"_el);
-        REQUIRE_EQUAL(StringConverter{text.toCharView().trimmed(characters)}.toStdString(), "A");
+        REQUIRE_EQUAL(U8String{text}.trimmed(characters), "A"_el);
+        REQUIRE_EQUAL(StringConverter{text.trimmed(characters)}.toStdString(), "A");
     }
 
     void testCaseInsensitiveTrim() {
         using namespace el::text::literals;
 
-        auto text = U8String{std::string_view{"XXvalueX"}};
-        REQUIRE_EQUAL(text.trim(CharSet{"xX"_elv}), "value"_el);
+        auto text = U8StringEditor{std::string_view{"XXvalueX"}};
+        REQUIRE_EQUAL(text.trim(CharSet{"xX"_el}), "value"_el);
 
-        const auto unicodeText = U8String{std::u8string_view{u8"\u00C4value\u00E4"}};
-        const auto unicodeCharacters = CharSet{u8"\u00C4\u00E4"_elv};
+        const auto unicodeText = U8StringEditor{std::u8string_view{u8"\u00C4value\u00E4"}};
+        const auto unicodeCharacters = CharSet{u8"\u00C4\u00E4"_el};
         REQUIRE_EQUAL(unicodeText.trimmed(unicodeCharacters), "value"_el);
-        REQUIRE_EQUAL(U8StringView{unicodeText}.trimmed(unicodeCharacters), "value"_el);
-        REQUIRE_EQUAL(StringConverter{unicodeText.toCharView().trimmed(unicodeCharacters)}.toStdString(), "value");
+        REQUIRE_EQUAL(U8String{unicodeText}.trimmed(unicodeCharacters), "value"_el);
+        REQUIRE_EQUAL(StringConverter{unicodeText.trimmed(unicodeCharacters)}.toStdString(), "value");
     }
 };

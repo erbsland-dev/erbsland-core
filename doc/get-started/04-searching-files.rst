@@ -26,7 +26,7 @@ All other whitespace is preserved for matching and display.
     :end-before: void ElGrepApp::searchDirectory(
 
 The regular-expression engine reports UTF-8 byte ranges.
-These ranges can safely slice the same :cpp:type:`String <erbsland::text::String>` without splitting a Unicode code
+These ranges can safely slice the same :cpp:type:`StringEditor <erbsland::text::StringEditor>` without splitting a Unicode code
 point.
 Only the ranges and matching lines are retained; unmatched lines are released immediately.
 

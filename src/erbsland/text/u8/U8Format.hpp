@@ -3,10 +3,10 @@
 #pragma once
 
 #include "U8String.hpp"
-#include "U8StringView.hpp"
+#include "U8StringEditor.hpp"
 
+#include "../AnyStringBuilder.hpp"
 #include "../impl/FormatData.hpp"
-#include "../StringBuilder.hpp"
 
 #include <cstddef>
 #include <string_view>
@@ -23,7 +23,7 @@ public:
     explicit U8Format(std::string_view pattern);
     /// Parse and validate a UTF-8 format pattern.
     /// @throws text::FormatError If the pattern is invalid or exceeds format limits.
-    explicit U8Format(const U8StringView &pattern);
+    explicit U8Format(const U8String &pattern);
 
     // defaults
     ~U8Format() = default;
@@ -44,7 +44,7 @@ public: // formatting
     /// Append formatted arguments to a string builder.
     /// @throws text::FormatError If arguments do not match the pattern or output exceeds limits.
     template <typename... Args>
-    auto appendTo(StringBuilder &builder, Args &&...args) const -> StringBuilder &;
+    auto appendTo(AnyStringBuilder &builder, Args &&...args) const -> AnyStringBuilder &;
 
 private:
     using DataPtr = impl::FormatDataPtr;

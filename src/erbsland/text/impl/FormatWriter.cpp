@@ -6,16 +6,19 @@
 
 #include "../Literals.hpp"
 #include "../StringConverter.hpp"
-#include "../u16/U16String.hpp"
-#include "../u32/U32String.hpp"
+#include "../u16/U16StringEditor.hpp"
+#include "../u32/U32StringEditor.hpp"
+#include "../u8/U8String.hpp"
 #include "../u8/U8StringLiteral.hpp"
-#include "../u8/U8StringView.hpp"
 
 namespace erbsland::text::impl {
 
 using namespace erbsland::text::literals;
 
-FormatWriter::FormatWriter(StringBuilder &builder) : _builder{builder} {
+using bgeo::Alignment;
+using bgeo::AlignmentFlag;
+
+FormatWriter::FormatWriter(AnyStringBuilder &builder) : _builder{builder} {
 }
 
 void FormatWriter::appendField(const FormatPart &part, const FormatArgument &argument) {
@@ -29,7 +32,7 @@ void FormatWriter::appendField(const FormatPart &part, const FormatArgument &arg
     }
 }
 
-auto FormatWriter::defaultFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
+auto FormatWriter::defaultFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor {
     if (spec.presentation == FormatPresentation::EscapedText) {
         return escapedFieldText(argument, spec);
     }
@@ -49,22 +52,22 @@ auto FormatWriter::defaultFieldText(const FormatArgument &argument, const Format
     text::impl::throwFormatError("Unsupported format argument"_el);
 }
 
-auto FormatWriter::textFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
+auto FormatWriter::textFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor {
     requireTextCompatibleSpec(spec);
 
-    auto text = U8String{};
+    auto text = U8StringEditor{};
     switch (argument.kind()) {
     case FormatArgumentKind::U8Text:
-        text = U8String{argument.u8Text()};
+        text = U8StringEditor{argument.u8Text()};
         break;
     case FormatArgumentKind::U16Text:
-        text = StringConverter{argument.u16Text()}.toU8String();
+        text = U8StringEditor{StringConverter{argument.u16Text()}.toU8String()};
         break;
     case FormatArgumentKind::U32Text:
-        text = StringConverter{argument.u32Text()}.toU8String();
+        text = U8StringEditor{StringConverter{argument.u32Text()}.toU8String()};
         break;
     case FormatArgumentKind::Boolean:
-        text = U8String::fromBoolean(argument.boolean());
+        text = U8StringEditor::fromBoolean(argument.boolean());
         break;
     case FormatArgumentKind::Character:
         text = characterText(argument.character());
@@ -73,21 +76,21 @@ auto FormatWriter::textFieldText(const FormatArgument &argument, const FormatSpe
         text::impl::throwFormatError("Format field requires a text argument"_el);
     }
 
-    return applyLayout(applyPrecision(text, spec), spec, bgeo::AlignmentFlag::Left);
+    return applyLayout(applyPrecision(text, spec), spec, AlignmentFlag::Left);
 }
 
-auto FormatWriter::integerFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
+auto FormatWriter::integerFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor {
     switch (argument.kind()) {
     case FormatArgumentKind::SignedInteger:
-        return applyLayout(integerFieldText(argument.signedInteger(), spec), spec, bgeo::AlignmentFlag::Right);
+        return applyLayout(integerFieldText(argument.signedInteger(), spec), spec, AlignmentFlag::Right);
     case FormatArgumentKind::UnsignedInteger:
-        return applyLayout(integerFieldText(argument.unsignedInteger(), spec), spec, bgeo::AlignmentFlag::Right);
+        return applyLayout(integerFieldText(argument.unsignedInteger(), spec), spec, AlignmentFlag::Right);
     default:
         text::impl::throwFormatError("Format field requires an integer argument"_el);
     }
 }
 
-auto FormatWriter::floatFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
+auto FormatWriter::floatFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor {
     if (spec.alternateForm) {
         text::impl::throwFormatError("Alternate floating point format is not supported"_el);
     }
@@ -95,33 +98,27 @@ auto FormatWriter::floatFieldText(const FormatArgument &argument, const FormatSp
         text::impl::throwFormatError("Format field requires a floating point argument"_el);
     }
 
-    auto builder = StringBuilder{};
-    builder.appendFloat(argument.floatingPoint(), floatFormat(spec));
-    auto text = builder.takeU8String();
+    auto text = U8StringEditor{String::fromFloat(argument.floatingPoint(), floatFormat(spec))};
     if (spec.signMode == IntegerSignMode::Always && !text.startsWith("-"_el)) {
-        auto signedBuilder = StringBuilder{};
-        signedBuilder.append(U'+').append(text);
-        text = signedBuilder.takeU8String();
+        text = U8StringEditor{String::fromJoined({"+"_el, text})};
     } else if (spec.signMode == IntegerSignMode::Space && !text.startsWith("-"_el)) {
-        auto signedBuilder = StringBuilder{};
-        signedBuilder.append(U' ').append(text);
-        text = signedBuilder.takeU8String();
+        text = U8StringEditor{String::fromJoined({" "_el, text})};
     }
-    return applyLayout(std::move(text), spec, bgeo::AlignmentFlag::Right);
+    return applyLayout(std::move(text), spec, AlignmentFlag::Right);
 }
 
-auto FormatWriter::escapedFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8String {
+auto FormatWriter::escapedFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor {
     if (spec.signMode != IntegerSignMode::NegativeOnly || spec.alternateForm || spec.zeroFill) {
         text::impl::throwFormatError("Escaped text format does not support numeric modifiers"_el);
     }
 
     switch (argument.kind()) {
     case FormatArgumentKind::U8Text: {
-        auto text = U8String{argument.u8Text()};
+        auto text = U8StringEditor{argument.u8Text()};
         if (spec.precision.has_value()) {
             text.truncate(spec.precision.value());
         }
-        return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, bgeo::AlignmentFlag::Left);
+        return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, AlignmentFlag::Left);
     }
     case FormatArgumentKind::U16Text: {
         auto text = argument.u16Text();
@@ -129,36 +126,36 @@ auto FormatWriter::escapedFieldText(const FormatArgument &argument, const Format
             text = text.truncated(spec.precision.value());
         }
         return applyLayout(
-            StringConverter{text.toEscaped(spec.escapeFormat, spec.escapeAmount)}.toU8String(),
+            U8StringEditor{StringConverter{text.toEscaped(spec.escapeFormat, spec.escapeAmount)}.toU8String()},
             spec,
-            bgeo::AlignmentFlag::Left);
+            AlignmentFlag::Left);
     }
     case FormatArgumentKind::U32Text: {
-        auto text = U32String{argument.u32Text()};
+        auto text = U32StringEditor{argument.u32Text()};
         if (spec.precision.has_value()) {
             text.truncate(spec.precision.value());
         }
         return applyLayout(
-            StringConverter{text.toEscaped(spec.escapeFormat, spec.escapeAmount)}.toU8String(),
+            U8StringEditor{StringConverter{text.toEscaped(spec.escapeFormat, spec.escapeAmount)}.toU8String()},
             spec,
-            bgeo::AlignmentFlag::Left);
+            AlignmentFlag::Left);
     }
     case FormatArgumentKind::Boolean:
-        return applyLayout(U8String::fromBoolean(argument.boolean()), spec, bgeo::AlignmentFlag::Left);
+        return applyLayout(U8StringEditor::fromBoolean(argument.boolean()), spec, AlignmentFlag::Left);
     case FormatArgumentKind::Character: {
         auto text = characterText(argument.character());
         if (spec.precision.has_value()) {
             text.truncate(spec.precision.value());
         }
-        return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, bgeo::AlignmentFlag::Left);
+        return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, AlignmentFlag::Left);
     }
     default:
         text::impl::throwFormatError("Escaped format field requires a text argument"_el);
     }
 }
 
-auto FormatWriter::characterText(const Char character) -> U8String {
-    return U8String::fromCharacter(character);
+auto FormatWriter::characterText(const Char character) -> U8StringEditor {
+    return U8StringEditor::fromCharacter(character);
 }
 
 auto FormatWriter::isIntegerPresentation(const FormatPresentation presentation) noexcept -> bool {
@@ -186,7 +183,7 @@ auto FormatWriter::isFloatPresentation(const FormatPresentation presentation) no
 }
 
 auto FormatWriter::isTextPresentation(const FormatPresentation presentation) noexcept -> bool {
-    return presentation == FormatPresentation::String;
+    return presentation == FormatPresentation::StringEditor;
 }
 
 auto FormatWriter::integerFormat(const FormatSpec &spec) -> IntegerFormat {
@@ -246,18 +243,17 @@ auto FormatWriter::floatFormat(const FormatSpec &spec) -> FloatFormat {
     return result;
 }
 
-auto FormatWriter::formattedAlignment(const FormatSpec &spec, const bgeo::AlignmentFlag defaultAlignment)
-    -> bgeo::Alignment {
-    const auto alignment = spec.alignment == bgeo::AlignmentFlag::None ? defaultAlignment : spec.alignment;
-    return bgeo::Alignment{alignment};
+auto FormatWriter::formattedAlignment(const FormatSpec &spec, const AlignmentFlag defaultAlignment) -> Alignment {
+    const auto alignment = spec.alignment == AlignmentFlag::None ? defaultAlignment : spec.alignment;
+    return Alignment{alignment};
 }
 
-auto FormatWriter::zeroPaddedNumericText(const String &text, const unit::CpLength width) -> U8String {
+auto FormatWriter::zeroPaddedNumericText(const String &text, const unit::CpLength width) -> U8StringEditor {
     static const auto signPrefixCharSet = CharSet{U'-', U'+', U' '};
     static const auto basePrefixCharSet = CharSet{U'x', U'X', U'b', U'B', U'o', U'O'};
     const auto textLength = text.characterLength();
     if (textLength >= width) {
-        return text;
+        return U8StringEditor{text};
     }
 
     auto cpPrefixEnd = unit::CpIndex::zero();
@@ -274,30 +270,28 @@ auto FormatWriter::zeroPaddedNumericText(const String &text, const unit::CpLengt
         }
     }
 
-    const auto view = U8StringView{text};
     const auto prefixEnd = text.indexAt(cpPrefixEnd);
-    auto result = U8String{};
-    result.append(view.slice(unit::ByteRange{unit::ByteIndex::zero(), prefixEnd}));
-    result.append(U'0', width - textLength);
-    result.append(view.slice(unit::ByteRange{prefixEnd, text.indexAt(StringSide::Back)}));
-    return result;
+    return U8StringEditor{String::fromJoined(
+        {text.slice(unit::ByteRange{unit::ByteIndex::zero(), prefixEnd}),
+            String::fromCharacter(U'0', width - textLength),
+            text.slice(unit::ByteRange{prefixEnd, text.indexAt(StringSide::Back)})})};
 }
 
-auto FormatWriter::applyPrecision(const String &text, const FormatSpec &spec) -> String {
+auto FormatWriter::applyPrecision(const String &text, const FormatSpec &spec) -> StringEditor {
     if (!spec.precision.has_value()) {
-        return text;
+        return StringEditor{text};
     }
-    return text.truncated(spec.precision.value());
+    return StringEditor{text.truncated(spec.precision.value())};
 }
 
-auto FormatWriter::applyLayout(U8String text, const FormatSpec &spec, const bgeo::AlignmentFlag defaultAlignment)
-    -> String {
+auto FormatWriter::applyLayout(U8StringEditor text, const FormatSpec &spec, const AlignmentFlag defaultAlignment)
+    -> StringEditor {
     if (!spec.width.has_value()) {
         return text;
     }
     if (spec.zeroFill && spec.fill == U' ' &&
-        (spec.alignment == bgeo::AlignmentFlag::None || spec.alignment == bgeo::AlignmentFlag::Right) &&
-        defaultAlignment == bgeo::AlignmentFlag::Right) {
+        (spec.alignment == AlignmentFlag::None || spec.alignment == AlignmentFlag::Right) &&
+        defaultAlignment == AlignmentFlag::Right) {
         return zeroPaddedNumericText(text, spec.width.value());
     }
     return text.aligned(spec.width.value(), formattedAlignment(spec, defaultAlignment), spec.fill);

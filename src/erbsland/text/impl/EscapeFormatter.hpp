@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../AnyStringBuilder.hpp"
 #include "../Char.hpp"
 #include "../EscapeAmount.hpp"
 #include "../EscapeFormat.hpp"
-#include "../StringBuilder.hpp"
 
 #include <cstddef>
 #include <memory>
@@ -21,7 +21,7 @@ public:
 
 public:
     [[nodiscard]] virtual auto needsEscape(Char character, EscapeAmount) const noexcept -> bool = 0;
-    virtual void escape(Char character, StringBuilder &builder) const = 0;
+    virtual void escape(Char character, AnyStringBuilder &builder) const = 0;
     [[nodiscard]] virtual auto escapeSize(Char character, StringKind stringKind) const noexcept -> std::size_t = 0;
 
 protected:

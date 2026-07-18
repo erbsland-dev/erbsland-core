@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../../../text/Literals.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 #include "../../RegExError.hpp"
 
 #include <utility>
@@ -15,7 +15,7 @@ using namespace text::literals;
 /// Throw an internal error.
 /// This dedicated method exists as a convenient breakpoint for debugging.
 /// @param message The error message.
-[[noreturn]] inline void throwInternalError(text::StringView message) {
+[[noreturn]] inline void throwInternalError(text::String message) {
     throw RegExError{ErrorCategory::Internal, "Internal regular-expression failure"_el, std::move(message)};
 }
 
@@ -30,7 +30,7 @@ inline void require(const bool condition) {
 /// Require an expression to be true.
 /// @param condition The condition that must be true.
 /// @param message The message in case the condition is false.
-inline void require(const bool condition, text::StringView message) {
+inline void require(const bool condition, text::String message) {
     if (!condition) {
         throwInternalError(std::move(message));
     }

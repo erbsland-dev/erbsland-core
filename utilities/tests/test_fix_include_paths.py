@@ -264,7 +264,7 @@ class FixIncludePathsTest(unittest.TestCase):
 
     def test_demos_use_erbsland_global_include_and_keep_local_helpers(self) -> None:
         self.write_file(
-            "src/erbsland/text/String.hpp",
+            "src/erbsland/text/StringEditor.hpp",
             """// Copyright (c) 2026 Tobias Erbsland
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
@@ -290,7 +290,7 @@ class FixIncludePathsTest(unittest.TestCase):
 // SPDX-License-Identifier: Apache-2.0
 
 #include "SampleDemos.hpp"
-#include "../../../../src/erbsland/text/String.hpp"
+#include "../../../../src/erbsland/text/StringEditor.hpp"
 #include <DemoCommon.hpp>
 """,
         )
@@ -299,7 +299,7 @@ class FixIncludePathsTest(unittest.TestCase):
 
         text = self.read_file("demos/text/Sample/main.cpp")
         self.assertIn('#include "SampleDemos.hpp"', text)
-        self.assertIn("#include <erbsland/text/String.hpp>", text)
+        self.assertIn("#include <erbsland/text/StringEditor.hpp>", text)
         self.assertIn("#include <DemoCommon.hpp>", text)
 
     def test_unit_tests_report_unknown_quoted_project_include(self) -> None:

@@ -28,7 +28,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "a"_el,
                 "ab"_el,
@@ -43,13 +43,13 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupPlusWithPrefixAndPostfix());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "xabby"_el,
                 "xaabby"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "xaby"_el,
                 "xaaby"_el,
@@ -70,7 +70,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "xaby"_el,
             "zzxaby"_el,
@@ -94,7 +94,7 @@ public:
         WITH_CONTEXT(requireFindAll("xabby xaby xaabby"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "xaby"_el,
             "xabb"_el,

@@ -3,19 +3,16 @@
 #include "CodeLineMarkerData.hpp"
 
 #include "../Literals.hpp"
-#include "../StringBuilder.hpp"
+#include "../StringEditor.hpp"
 
 namespace erbsland::text::impl {
 
 using namespace literals;
 
-auto CodeLineMarkerData::toString() const -> StringView {
+auto CodeLineMarkerData::toString() const -> String {
     if (_text.isEmpty()) {
-        auto builder = StringBuilder{};
-        builder.append(String::fromInteger(_range.index().toSizeT()));
-        builder.append(":"_el);
-        builder.append(String::fromInteger(_range.length().toSizeT()));
-        _text = builder.toString();
+        _text = String::fromJoined(
+            {String::fromInteger(_range.index().toSizeT()), ":"_el, String::fromInteger(_range.length().toSizeT())});
     }
     return _text;
 }

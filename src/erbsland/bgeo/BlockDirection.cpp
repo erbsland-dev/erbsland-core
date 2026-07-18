@@ -71,7 +71,7 @@ auto BlockDirection::fromDelta(const BlockPosition delta) noexcept -> BlockDirec
     }
 }
 
-auto BlockDirection::toString() const noexcept -> text::StringView {
+auto BlockDirection::toString() const noexcept -> text::String {
     auto it = std::ranges::find_if(directionToStringMap(), [this](const DirectionToStringEntry &entry) -> bool {
         return std::get<0>(entry) == _value;
     });
@@ -81,12 +81,12 @@ auto BlockDirection::toString() const noexcept -> text::StringView {
     return std::get<1>(*it);
 }
 
-auto BlockDirection::isValidString(const text::StringView text) noexcept -> bool {
+auto BlockDirection::isValidString(const text::String &text) noexcept -> bool {
     auto direction = BlockDirection{};
     return findStringDirection(text, direction);
 }
 
-auto BlockDirection::fromString(const text::StringView text) noexcept -> BlockDirection {
+auto BlockDirection::fromString(const text::String &text) noexcept -> BlockDirection {
     auto direction = BlockDirection{};
     if (findStringDirection(text, direction)) {
         return direction;
@@ -152,10 +152,9 @@ auto BlockDirection::stringToDirectionMap() noexcept -> const StringToDirectionM
     return map;
 }
 
-auto BlockDirection::findStringDirection(const text::StringView text, BlockDirection &direction) noexcept -> bool {
+auto BlockDirection::findStringDirection(const text::String &text, BlockDirection &direction) noexcept -> bool {
     auto it = std::ranges::find_if(stringToDirectionMap(), [text](const StringToDirectionEntry &entry) -> bool {
-        return text.compare(text::StringView{std::get<0>(entry)}, text::Char::compareIdentifier) ==
-            std::strong_ordering::equal;
+        return text.compare(std::get<0>(entry), text::Char::compareIdentifier) == std::strong_ordering::equal;
     });
     if (it == stringToDirectionMap().end()) {
         return false;

@@ -8,13 +8,13 @@ namespace erbsland::text {
 
 template <typename... Args>
 auto U32Format::build(Args &&...args) const -> U32String {
-    auto builder = StringBuilder{StringKind::U32};
+    auto builder = AnyStringBuilder{StringKind::U32};
     appendTo(builder, std::forward<Args>(args)...);
     return builder.takeU32String();
 }
 
 template <typename... Args>
-auto U32Format::appendTo(StringBuilder &builder, Args &&...args) const -> StringBuilder & {
+auto U32Format::appendTo(AnyStringBuilder &builder, Args &&...args) const -> AnyStringBuilder & {
     const auto arguments = impl::makeFormatArguments(std::forward<Args>(args)...);
     return impl::appendFormat(*_data, builder, std::span<const FormatArgument>{arguments});
 }

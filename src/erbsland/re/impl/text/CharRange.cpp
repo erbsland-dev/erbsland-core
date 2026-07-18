@@ -14,7 +14,7 @@ auto CharRange::matches(const text::Char character) const noexcept -> bool {
 }
 
 auto CharRange::toString() const -> text::String {
-    text::String result;
+    text::StringEditor result;
     if (_first == _last) {
         appendToCharRangeString(result, _first);
     } else {

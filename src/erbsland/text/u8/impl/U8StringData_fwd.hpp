@@ -4,8 +4,8 @@
 
 #include "../../../mem/SharedArrayData_fwd.hpp"
 #include "../../../mem/SharedDataPointer.hpp"
-#include "../../impl/UnsafeU8StringAccess_fwd.hpp"
 #include "../../impl/UnsafeU8StringBuffer_fwd.hpp"
+#include "../../impl/UnsafeU8StringEditorAccess_fwd.hpp"
 
 namespace erbsland::text::impl {
 

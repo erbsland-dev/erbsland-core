@@ -6,6 +6,7 @@
 
 #include "../../../text/EncodingError.hpp"
 #include "../../../text/Literals.hpp"
+#include "../../CharAndPosition.hpp"
 
 namespace erbsland::re::impl {
 

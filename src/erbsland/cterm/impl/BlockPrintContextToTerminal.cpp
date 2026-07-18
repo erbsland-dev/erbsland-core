@@ -28,19 +28,19 @@ void BlockPrintContextToTerminal::print(const Block &character) noexcept {
     _terminal.write(character);
 }
 
+void BlockPrintContextToTerminal::print(const BlockStringEditor &text) noexcept {
+    print(BlockString{text});
+}
+
 void BlockPrintContextToTerminal::print(const BlockString &text) noexcept {
-    print(BlockStringView{text});
-}
-
-void BlockPrintContextToTerminal::print(const BlockStringView &text) noexcept {
     _terminal.write(text);
 }
 
-void BlockPrintContextToTerminal::print(const text::StringView &text) noexcept {
+void BlockPrintContextToTerminal::print(const text::String &text) noexcept {
     _terminal.write(text);
 }
 
-void BlockPrintContextToTerminal::print(const text::U32StringView &text) noexcept {
+void BlockPrintContextToTerminal::print(const text::U32String &text) noexcept {
     _terminal.write(text);
 }
 

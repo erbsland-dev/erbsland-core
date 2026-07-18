@@ -16,6 +16,8 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
+using unit::ElementCount;
+
 void PathOperations::removeOrThrow(const PathRemoveOptions options, const PathProgressFn &progressFn) {
     if (_path.isRoot()) {
         throw PathError{
@@ -30,14 +32,13 @@ void PathOperations::removeOrThrow(const PathRemoveOptions options, const PathPr
     }
     if (info.isDirectory() && !options.recursive()) {
         pathBackend().removeEntryOrThrow(_path);
-        reportProgress(
-            progressFn, PathProgressStatus::Success, unit::ElementCount::one(), unit::ElementCount::one(), {});
+        reportProgress(progressFn, PathProgressStatus::Success, ElementCount::one(), ElementCount::one(), {});
         return;
     }
 
-    const auto total = options.prescan() ? countForProgress(SymlinkMode::Use) : unit::ElementCount::infinite();
-    auto processed = unit::ElementCount{};
-    auto errors = unit::ElementCount{};
+    const auto total = options.prescan() ? countForProgress(SymlinkMode::Use) : ElementCount::infinite();
+    auto processed = ElementCount{};
+    auto errors = ElementCount{};
     auto walkOptions = PathWalkOptions{};
     walkOptions.setDirection(PathWalkDirection::LeafToRoot);
     walkOptions.setSymlinkMode(SymlinkMode::Use);
@@ -110,9 +111,9 @@ void PathOperations::copyToOrThrow(
         createParentsOrThrow(destination);
     }
 
-    const auto total = options.prescan() ? countForProgress(options.symlinkMode()) : unit::ElementCount::infinite();
-    auto processed = unit::ElementCount{};
-    auto errors = unit::ElementCount{};
+    const auto total = options.prescan() ? countForProgress(options.symlinkMode()) : ElementCount::infinite();
+    auto processed = ElementCount{};
+    auto errors = ElementCount{};
     auto walkOptions = PathWalkOptions{};
     walkOptions.setSymlinkMode(options.symlinkMode());
     walkOptions.setTypes(PathType::All);
@@ -272,8 +273,8 @@ auto PathOperations::applyChange(
     return result.isSuccessful() && !hadErrors;
 }
 
-auto PathOperations::countForProgress(const SymlinkMode symlinkMode) const -> unit::ElementCount {
-    auto result = unit::ElementCount{};
+auto PathOperations::countForProgress(const SymlinkMode symlinkMode) const -> ElementCount {
+    auto result = ElementCount{};
     auto options = PathWalkOptions{};
     options.setSymlinkMode(symlinkMode);
     options.setTypes(PathType::All);
@@ -304,9 +305,9 @@ void PathOperations::removeExistingOrThrow(const Path &path) {
 void PathOperations::reportProgress(
     const PathProgressFn &progressFn,
     const PathProgressStatus status,
-    const unit::ElementCount total,
-    const unit::ElementCount processed,
-    const unit::ElementCount errors) {
+    const ElementCount total,
+    const ElementCount processed,
+    const ElementCount errors) {
     if (progressFn) {
         progressFn(PathProgress{status, total, processed, errors});
     }

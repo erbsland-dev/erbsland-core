@@ -12,8 +12,8 @@
 #include "tz/TimeOffset.hpp"
 
 #include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringList.hpp"
-#include "../text/StringView.hpp"
 #include "../unit/Version.hpp"
 
 #include <optional>
@@ -89,18 +89,18 @@ public:
     /// Test if a name is known.
     /// @param name The zone name to check.
     /// @return `true` if the zone is supported.
-    [[nodiscard]] static auto isValidName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidName(const text::String &name) noexcept -> bool;
     /// Create a named zone from a name.
     /// Also accepts special UTC names such as `UTC`, `GMT`, `Z`, and fixed-offset names such as `UTC+02:00`.
     /// @param name The zone name.
     /// @return The time zone, or `std::nullopt` if unknown.
-    [[nodiscard]] static auto fromName(const text::StringView &name) noexcept -> std::optional<TimeZone>;
+    [[nodiscard]] static auto fromName(const text::String &name) noexcept -> std::optional<TimeZone>;
     /// Create a named zone from a name or throw.
     /// Also accepts special UTC names such as `UTC`, `GMT`, `Z`, and fixed-offset names such as `UTC+02:00`.
     /// @param name The zone name.
     /// @return The time zone.
     /// @throws err::ParseError if the zone name is unknown.
-    [[nodiscard]] static auto fromNameOrThrow(const text::StringView &name) -> TimeZone;
+    [[nodiscard]] static auto fromNameOrThrow(const text::String &name) -> TimeZone;
     /// Return all supported zone names.
     /// @return A list of all IANA zone names in the bundled database.
     [[nodiscard]] static auto names() -> text::StringList;
@@ -115,8 +115,8 @@ private:
     [[nodiscard]] static auto abbreviation(tz::TimeOffset offset) -> text::String;
     [[nodiscard]] static auto database() noexcept -> const tz::impl::Database &;
     [[nodiscard]] static auto normalizeOffset(Seconds seconds) noexcept -> Seconds;
-    [[nodiscard]] static auto parseFixedOffsetText(const text::StringView &text, Seconds &offset) noexcept -> bool;
-    [[nodiscard]] static auto specialTimeZoneFromName(text::StringView name) noexcept -> std::optional<TimeZone>;
+    [[nodiscard]] static auto parseFixedOffsetText(const text::String &text, Seconds &offset) noexcept -> bool;
+    [[nodiscard]] static auto specialTimeZoneFromName(const text::String &name) noexcept -> std::optional<TimeZone>;
     [[nodiscard]] auto timeOffsetAtLocal(Date date, Time time, TimeOccurrenceInFold occurrence) const noexcept
         -> tz::TimeOffset;
     [[nodiscard]] auto timeOffsetAtUtc(Date date, Time time) const noexcept -> tz::TimeOffset;

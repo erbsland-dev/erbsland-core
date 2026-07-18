@@ -8,7 +8,7 @@
 
 #include "../BlockStringBuilder.hpp"
 
-#include "../../../text/StringBuilder.hpp"
+#include "../../../text/StringEditor_fwd.hpp"
 #include "../../../text/TextNode.hpp"
 #include "../../TerminalDocumentStyle.hpp"
 
@@ -64,7 +64,7 @@ private:
     void appendContainer(const text::TextNode &node, const RenderContext &context);
     void appendCodeSnippet(const text::TextNode &node, const RenderContext &context);
     void appendCodeSnippetLine(const text::TextNode &line, const RenderContext &context);
-    [[nodiscard]] auto makeCodeSnippetGutter(text::StringView number, bool hasNumber, const RenderContext &context)
+    [[nodiscard]] auto makeCodeSnippetGutter(const text::String &number, bool hasNumber, const RenderContext &context)
         -> BlockString;
     void appendList(const text::TextNode &node, text::TextNodeType itemType, const RenderContext &context);
     void appendListItem(
@@ -115,7 +115,7 @@ private:
     [[nodiscard]] static auto usesLevel(text::TextNodeType nodeType) noexcept -> bool;
     [[nodiscard]] static auto positive(bgeo::BlockCoordinate value) noexcept -> int;
     [[nodiscard]] auto frameWidth() const noexcept -> int;
-    static void appendNodeText(text::StringBuilder &builder, const text::TextNode &node);
+    static void appendNodeText(text::StringEditor &builder, const text::TextNode &node);
     [[nodiscard]] static auto nodeText(const text::TextNode &node) -> text::String;
 
 private:

@@ -8,7 +8,7 @@ namespace demo {
 using namespace el::text::literals;
 
 struct ModuleSettings {
-    el::StringView laatsteModule;
+    el::String laatsteModule;
     bool luid{false};
 };
 
@@ -58,7 +58,7 @@ ModuleSettings settings;
     module->addOption({"-f"_el, "--format"_el, "format"_el})
         .addChoice("text"_el)
         .addChoice("table"_el)
-        .setDefaultValue(el::String{"text"_el})
+        .setDefaultValue("text"_el)
         .setHelpDescription("File format for the export."_el);
     module->addOption("logbook"_el).setRequired().setHelpDescription("Name of the logbook."_el);
     module->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {

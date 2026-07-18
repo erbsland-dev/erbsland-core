@@ -11,15 +11,14 @@
 #include "U8StringCIHashSet.hpp"
 #include "U8StringCIMap.hpp"
 #include "U8StringCISet.hpp"
-#include "U8StringCharView.hpp"
 #include "U8StringConstIterator.hpp"
+#include "U8StringEditor.hpp"
+#include "U8StringEditorList.hpp"
 #include "U8StringHashMap.hpp"
 #include "U8StringHashSet.hpp"
 #include "U8StringList.hpp"
 #include "U8StringLiteral.hpp"
 #include "U8StringMap.hpp"
 #include "U8StringSet.hpp"
-#include "U8StringView.hpp"
-#include "U8StringViewList.hpp"
 
 

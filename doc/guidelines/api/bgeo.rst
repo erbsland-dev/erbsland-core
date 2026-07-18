@@ -116,7 +116,7 @@ Direction and Ring Patterns
     o.contains(direction) -> bool // lexical containment of compass components
     o.toDelta() -> BlockPosition // convert direction to unit position delta
     T::fromDelta(delta) -> BlockDirection // convert delta signs to direction
-    o.toString() -> text::StringView // normalized lowercase direction name
+    o.toString() -> text::String // normalized lowercase direction name
     T::fromString(text) -> T // parse text, returning the neutral state on failure
     T::isValidString(text) -> bool // test if text can be parsed
     o.cardinalFour() -> array<BlockPosition, 4> // four neighbor positions

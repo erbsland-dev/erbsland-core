@@ -4,27 +4,29 @@
 
 namespace erbsland::cterm::impl {
 
-void FramePainter::drawFrame(
-    const bgeo::BlockRectangle rect,
-    const Block &frameBlock,
-    const BlockCombinationStylePtr &combinationStyle) noexcept {
+using bgeo::BlockCoordinate;
+using bgeo::BlockPosition;
+using bgeo::BlockRectangle;
 
-    rect.forEachInFrame([&, this](const bgeo::BlockPosition pos) -> void { set(pos, frameBlock, combinationStyle); });
+void FramePainter::drawFrame(
+    const BlockRectangle rect, const Block &frameBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
+
+    rect.forEachInFrame([&, this](const BlockPosition pos) -> void { set(pos, frameBlock, combinationStyle); });
 }
 
 void FramePainter::drawFrame(
-    bgeo::BlockRectangle rect,
+    BlockRectangle rect,
     const Block16StylePtr &frameStyle,
     const BlockCombinationStylePtr &combinationStyle,
     const Color frameColor) noexcept {
 
-    rect.forEachInFrame([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEachInFrame([&, this](const BlockPosition pos) -> void {
         set(pos, blockForFrame(rect, pos, frameStyle).withBase(frameColor), combinationStyle);
     });
 }
 
 void FramePainter::drawFrame(
-    const bgeo::BlockRectangle rect,
+    const BlockRectangle rect,
     const Tile9StylePtr &style,
     const Color frameColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -32,13 +34,12 @@ void FramePainter::drawFrame(
     if (style == nullptr) {
         return;
     }
-    rect.forEachInFrame([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEachInFrame([&, this](const BlockPosition pos) -> void {
         set(pos, style->block(rect, pos).withBase(frameColor), combinationStyle);
     });
 }
 
-void FramePainter::drawFrame(
-    const bgeo::BlockRectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
+void FramePainter::drawFrame(const BlockRectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFrame(rect, tile9Style, frameColor, BlockCombinationStyle::commonBoxFrame());
         return;
@@ -49,7 +50,7 @@ void FramePainter::drawFrame(
 }
 
 void FramePainter::drawFrame(
-    const bgeo::BlockRectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
+    const BlockRectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
     if (rect.width() <= 0 || rect.height() <= 0) {
         return;
     }
@@ -65,7 +66,7 @@ void FramePainter::drawFrame(
     if (block16Style == nullptr && tile9Style == nullptr) {
         return;
     }
-    rect.forEach([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEach([&, this](const BlockPosition pos) -> void {
         const auto frameBaseColor = colorForFramePosition(
             options.frameColor(), options.frameColorMode(), rect, pos, animationCycle, options.animationOffset());
         if (rect.isFrame(pos)) {
@@ -92,7 +93,7 @@ void FramePainter::drawFrame(
 }
 
 void FramePainter::drawGridLayout(
-    const bgeo::BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept {
+    const BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept {
 
     const auto layoutSize = layout.size(border);
     const auto &topBorder = border.border(FrameBorder::Element::Top);
@@ -140,12 +141,12 @@ void FramePainter::drawGridLayout(
 }
 
 void FramePainter::drawFilledFrame(
-    bgeo::BlockRectangle rect,
+    BlockRectangle rect,
     const Block &frameBlock,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
 
-    rect.forEach([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEach([&, this](const BlockPosition pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, frameBlock, combinationStyle);
         } else {
@@ -155,13 +156,13 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    bgeo::BlockRectangle rect,
+    BlockRectangle rect,
     const Block16StylePtr &frameStyle,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
     const Color frameColor) noexcept {
 
-    rect.forEach([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEach([&, this](const BlockPosition pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, blockForFrame(rect, pos, frameStyle).withBase(frameColor), combinationStyle);
         } else {
@@ -171,7 +172,7 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    bgeo::BlockRectangle rect,
+    BlockRectangle rect,
     const Tile9StylePtr &style,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -181,7 +182,7 @@ void FramePainter::drawFilledFrame(
         fill(rect, fillBlock, combinationStyle);
         return;
     }
-    rect.forEach([&, this](const bgeo::BlockPosition pos) -> void {
+    rect.forEach([&, this](const BlockPosition pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, style->block(rect, pos).withBase(frameColor), combinationStyle);
         } else {
@@ -191,10 +192,7 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    const bgeo::BlockRectangle rect,
-    const FrameStyle frameStyle,
-    const Block &fillBlock,
-    const Color frameColor) noexcept {
+    const BlockRectangle rect, const FrameStyle frameStyle, const Block &fillBlock, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFilledFrame(rect, tile9Style, fillBlock, BlockCombinationStyle::commonBoxFrame(), frameColor);
         return;
@@ -204,11 +202,11 @@ void FramePainter::drawFilledFrame(
     }
 }
 
-auto FramePainter::blockForFrame(
-    const bgeo::BlockRectangle rect, const bgeo::BlockPosition pos, const Block16StylePtr &frameStyle) -> Block {
+auto FramePainter::blockForFrame(const BlockRectangle rect, const BlockPosition pos, const Block16StylePtr &frameStyle)
+    -> Block {
 
     const auto bitMask =
-        pos.cardinalFourBitmask([&](const bgeo::BlockPosition deltaPos) -> bool { return rect.isFrame(deltaPos); });
+        pos.cardinalFourBitmask([&](const BlockPosition deltaPos) -> bool { return rect.isFrame(deltaPos); });
     return frameStyle->block(bitMask);
 }
 
@@ -219,12 +217,11 @@ auto FramePainter::blockForGridLine(const FrameBorder::Border &border, const uin
     return {};
 }
 
-auto FramePainter::lineSize(const FrameBorder::Border &border) noexcept -> bgeo::BlockCoordinate {
-    return bgeo::BlockCoordinate{border.style != FrameStyle::None && FrameBorder::isLineStyle(border.style) ? 1 : 0};
+auto FramePainter::lineSize(const FrameBorder::Border &border) noexcept -> BlockCoordinate {
+    return BlockCoordinate{border.style != FrameStyle::None && FrameBorder::isLineStyle(border.style) ? 1 : 0};
 }
 
-auto FramePainter::lineAt(
-    const FrameLineList &lines, const bgeo::BlockCoordinate coordinate, std::size_t &index) noexcept
+auto FramePainter::lineAt(const FrameLineList &lines, const BlockCoordinate coordinate, std::size_t &index) noexcept
     -> OptionalFrameBorderReference {
 
     while (index < lines.size() && lines[index].coordinate < coordinate) {
@@ -237,7 +234,7 @@ auto FramePainter::lineAt(
 }
 
 void FramePainter::addGridLine(
-    FrameLineList &lines, const bgeo::BlockCoordinate coordinate, const FrameBorder::Border &border) noexcept {
+    FrameLineList &lines, const BlockCoordinate coordinate, const FrameBorder::Border &border) noexcept {
 
     if (lineSize(border) == 0) {
         return;
@@ -248,10 +245,10 @@ void FramePainter::addGridLine(
 void FramePainter::drawHorizontalGridLine(
     const FrameLine &horizontalLine,
     const FrameLineList &verticalLines,
-    const bgeo::BlockCoordinate x1,
-    const bgeo::BlockCoordinate x2,
-    const bgeo::BlockCoordinate y1,
-    const bgeo::BlockCoordinate y2) noexcept {
+    const BlockCoordinate x1,
+    const BlockCoordinate x2,
+    const BlockCoordinate y1,
+    const BlockCoordinate y2) noexcept {
 
     const auto &horizontalBorder = horizontalLine.border.get();
     const auto block = blockForGridLine(horizontalBorder, 0b0101);
@@ -259,7 +256,7 @@ void FramePainter::drawHorizontalGridLine(
     for (auto x = x1; x <= x2; ++x) {
         const auto verticalBorder = lineAt(verticalLines, x, verticalLineIndex);
         if (!verticalBorder.has_value()) {
-            drawFrameBlock(bgeo::BlockPosition{x, horizontalLine.coordinate}, block, horizontalBorder.color, {});
+            drawFrameBlock(BlockPosition{x, horizontalLine.coordinate}, block, horizontalBorder.color, {});
             continue;
         }
         auto eastBorder = OptionalFrameBorderReference{};
@@ -278,16 +275,15 @@ void FramePainter::drawHorizontalGridLine(
         if (horizontalLine.coordinate > y1) {
             northBorder = verticalBorder;
         }
-        drawGridBlock(
-            bgeo::BlockPosition{x, horizontalLine.coordinate}, eastBorder, southBorder, westBorder, northBorder);
+        drawGridBlock(BlockPosition{x, horizontalLine.coordinate}, eastBorder, southBorder, westBorder, northBorder);
     }
 }
 
 void FramePainter::drawVerticalGridLine(
     const FrameLine &verticalLine,
     const FrameLineList &horizontalLines,
-    const bgeo::BlockCoordinate y1,
-    const bgeo::BlockCoordinate y2) noexcept {
+    const BlockCoordinate y1,
+    const BlockCoordinate y2) noexcept {
 
     const auto &verticalBorder = verticalLine.border.get();
     const auto block = blockForGridLine(verticalBorder, 0b1010);
@@ -296,12 +292,12 @@ void FramePainter::drawVerticalGridLine(
         if (lineAt(horizontalLines, y, horizontalLineIndex).has_value()) {
             continue;
         }
-        drawFrameBlock(bgeo::BlockPosition{verticalLine.coordinate, y}, block, verticalBorder.color, {});
+        drawFrameBlock(BlockPosition{verticalLine.coordinate, y}, block, verticalBorder.color, {});
     }
 }
 
 void FramePainter::drawGridBlock(
-    const bgeo::BlockPosition pos,
+    const BlockPosition pos,
     const OptionalFrameBorderReference east,
     const OptionalFrameBorderReference south,
     const OptionalFrameBorderReference west,
@@ -320,7 +316,7 @@ void FramePainter::drawGridBlock(
 }
 
 void FramePainter::drawFrameBlock(
-    const bgeo::BlockPosition pos,
+    const BlockPosition pos,
     const Block &block,
     const Color baseColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -335,8 +331,8 @@ void FramePainter::drawFrameBlock(
 auto FramePainter::colorForFramePosition(
     const ColorSequence &colorSequence,
     const FrameColorMode colorMode,
-    const bgeo::BlockRectangle rect,
-    const bgeo::BlockPosition pos,
+    const BlockRectangle rect,
+    const BlockPosition pos,
     const std::size_t animationCycle,
     const std::size_t animationOffset) noexcept -> Color {
 

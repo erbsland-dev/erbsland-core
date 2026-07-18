@@ -2,12 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "SafeStringEscapeTools.hpp"
 
-#include "../StringBuilder.hpp"
+#include "../AnyStringBuilder.hpp"
+#include "../String.hpp"
 #include "../u32/U32String.hpp"
 #include "../u32/U32StringConstIterator.hpp"
+#include "../u8/U8StringConstIterator.hpp"
 
 #include <algorithm>
-#include <string>
 
 namespace erbsland::text::impl {
 
@@ -43,7 +44,7 @@ void SafeStringEscapeTools::finish(const std::size_t sourceEnd) noexcept {
     }
 }
 
-void SafeStringEscapeTools::appendTo(StringBuilder &builder, const std::size_t sourceLength) const {
+void SafeStringEscapeTools::appendTo(AnyStringBuilder &builder, const std::size_t sourceLength) const {
     if (_maximumWidth.isZero()) {
         return;
     }
@@ -102,7 +103,7 @@ void SafeStringEscapeTools::appendTo(StringBuilder &builder, const std::size_t s
 auto SafeStringEscapeTools::escapedChunk(const Char character) const -> Chunk {
     auto result = Chunk{};
     if (_formatter->needsEscape(character, _amount)) {
-        auto builder = StringBuilder{StringKind::U32};
+        auto builder = AnyStringBuilder{StringKind::U32};
         _formatter->escape(character, builder);
         const auto escapedText = builder.takeU32String();
         for (const auto escapedCharacter : escapedText) {
@@ -155,13 +156,11 @@ auto SafeStringEscapeTools::suffixLength(const std::size_t remainingUnits) noexc
 }
 
 auto SafeStringEscapeTools::suffix(const std::size_t remainingUnits) -> std::vector<Char> {
-    auto text = std::string{"(... +"};
-    text += std::to_string(remainingUnits);
-    text += " more)";
+    const auto text = String::fromJoined({String{"(... +"}, String::fromInteger(remainingUnits), String{" more)"}});
     auto result = std::vector<Char>{};
-    result.reserve(text.size());
+    result.reserve(text.length().toSizeT());
     for (const auto character : text) {
-        result.emplace_back(Char{static_cast<char32_t>(character)});
+        result.emplace_back(character);
     }
     return result;
 }

@@ -12,7 +12,7 @@ namespace demo {
 /// replacement, and `shuffle()` when the complete order should change in place.
 void elementSampling() {
     auto &random = el::application().random();
-    auto palette = el::StringViewList{
+    auto palette = el::StringList{
         "błękit"_el,
         "zieleń"_el,
         "karmin"_el,
@@ -21,7 +21,7 @@ void elementSampling() {
 
     // Select one element directly or provide a fallback for empty input.
     const auto accent = random.selectElement(palette);
-    const auto fallback = random.selectElement(el::List<el::String>{}, el::String{"biel"_el});
+    const auto fallback = random.selectElement(el::StringList{}, el::String{"biel"_el});
     el::io::printLine("Accent color : "_el, accent);
     el::io::printLine("Fallback     : "_el, fallback);
 

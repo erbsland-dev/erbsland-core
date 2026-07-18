@@ -21,7 +21,7 @@ public:
 public:
     /// Create a stable string used for validating node trees in tests.
     [[nodiscard]] auto toTestString() const -> text::String {
-        text::String safeString;
+        text::StringEditor safeString;
         std::ranges::for_each(*chars.sequence(), [&safeString](const auto character) -> void {
             appendToSafeString(safeString, character);
         });

@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U16StringConstIterator.hpp"
 
-#include "U16StringView.hpp"
+#include "U16String.hpp"
 
 namespace erbsland::text {
 
 struct U16StringConstIterator::Private {
-    U16StringView view;       ///< The view accessed by this iterator
+    U16String string;         ///< The string accessed by this iterator
     unit::U16DataIndex index; ///< The current byte index within the storage
 };
 
 U16StringConstIterator::U16StringConstIterator() : _p{nullptr} {
 }
 
-U16StringConstIterator::U16StringConstIterator(const U16StringView &view, unit::U16DataIndex index) :
-    _p{std::make_unique<Private>(view, index)} {
+U16StringConstIterator::U16StringConstIterator(const U16String &string, unit::U16DataIndex index) :
+    _p{std::make_unique<Private>(string, index)} {
 }
 
 U16StringConstIterator::U16StringConstIterator(const U16StringConstIterator &other) :
@@ -50,7 +50,7 @@ auto U16StringConstIterator::operator==(const U16StringConstIterator &other) con
     if (!isValid() || !other.isValid()) {
         return false;
     }
-    if (_p->view.storageId() != other._p->view.storageId()) {
+    if (_p->string.storageId() != other._p->string.storageId()) {
         return false;
     }
     return _p->index == other._p->index;
@@ -61,21 +61,21 @@ auto U16StringConstIterator::operator!=(const U16StringConstIterator &other) con
 }
 
 auto U16StringConstIterator::isValid() const noexcept -> bool {
-    return _p != nullptr && !_p->view.isEmpty() && !_p->index.isNoIndex();
+    return _p != nullptr && !_p->string.isEmpty() && !_p->index.isNoIndex();
 }
 
 auto U16StringConstIterator::operator*() const -> Char {
     if (!isValid()) {
         return Char::null();
     }
-    return _p->view.charAt(_p->index);
+    return _p->string.charAt(_p->index);
 }
 
 auto U16StringConstIterator::operator++() -> U16StringConstIterator & {
     if (!isValid()) {
         return *this;
     }
-    _p->view.advance(_p->index);
+    _p->string.advance(_p->index);
     return *this;
 }
 
@@ -84,7 +84,7 @@ auto U16StringConstIterator::operator++(int) -> U16StringConstIterator {
         return *this;
     }
     const auto result = *this;
-    _p->view.advance(_p->index);
+    _p->string.advance(_p->index);
     return result;
 }
 

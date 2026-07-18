@@ -129,7 +129,7 @@ void LogViewerApp::drawHeader(const BlockRectangle rect) {
 
 void LogViewerApp::drawFooter(const BlockRectangle rect) {
     _buffer.fill(rect, Block{U' ', bg::BrightBlack});
-    auto footer = BlockString{};
+    auto footer = BlockStringEditor{};
     footer.append(
         fg::BrightCyan,
         Key{Key::Left}.toDisplayText(),
@@ -201,10 +201,9 @@ auto LogViewerApp::shouldCopyCell(const Block &cell) noexcept -> bool {
     return !(cell.isEmpty() || cell == U' ');
 }
 
-void LogViewerApp::renderInitialLine(
-    const el::StringView &timestamp, const LogLevel level, const el::StringView &text) {
+void LogViewerApp::renderInitialLine(const el::String &timestamp, const LogLevel level, const el::String &text) {
     _logBuffer->setColor(logLevelColor(level));
-    auto line = BlockString{timestamp, Color{fg::BrightWhite, bg::Black}};
+    auto line = BlockStringEditor{timestamp, Color{fg::BrightWhite, bg::Black}};
     line += BlockString{" "_el, Color{fg::White, bg::Black}};
     line += BlockString{logTypeCode(level), logLevelColor(level)};
     line += BlockString{" "_el, logLevelColor(level)};
@@ -212,7 +211,7 @@ void LogViewerApp::renderInitialLine(
     _logBuffer->printParagraph(line, initialLineOptions());
 }
 
-void LogViewerApp::renderContinuationLine(const el::StringView &text) {
+void LogViewerApp::renderContinuationLine(const el::String &text) {
     _logBuffer->setColor(Color{fg::White, bg::Black});
     _logBuffer->printParagraph(BlockString{text, Color{fg::Inherited, bg::Inherited}}, continuationLineOptions());
 }
@@ -229,7 +228,7 @@ auto LogViewerApp::generateLogMessage() -> LogMessage {
     return LogMessage{level, generateMultilineMessage(level)};
 }
 
-auto LogViewerApp::generateShortMessage(const LogLevel level) -> el::StringView {
+auto LogViewerApp::generateShortMessage(const LogLevel level) -> el::String {
     static const auto traceFormat = el::StringFormat("{} {} {} on {} with {} for {} in {} ms"_el);
     static const auto infoFormat = el::StringFormat("{} {} completed with 200 for {} in {} ms"_el);
     static const auto warningFormat = el::StringFormat("{} {} {} for {} after {} ms"_el);
@@ -241,7 +240,7 @@ auto LogViewerApp::generateShortMessage(const LogLevel level) -> el::StringView 
     const auto backend = random().selectElement(backendChoices());
     const auto cache = random().selectElement(cacheChoices());
     const auto ipAddress = randomIpAddress();
-    auto message = el::StringBuilder{};
+    auto message = el::AnyStringBuilder{};
     switch (level) {
     case LogLevel::Trace:
         traceFormat.appendTo(
@@ -273,11 +272,11 @@ auto LogViewerApp::generateShortMessage(const LogLevel level) -> el::StringView 
     return message.toString().slice(el::StringSide::Front, el::CpLength{random().selectInteger<unsigned int>(75, 120)});
 }
 
-auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::StringView {
+auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::String {
     static const auto format = el::StringFormat(
         "; request-id {}; upstream {}; user-agent {}; rate-limit bucket {}; payload {} bytes; cache state {}; "
         "TLS resume {}; compression {}; forwarded-for {}; origin latency {} ms"_el);
-    auto message = el::StringBuilder::basedOn(generateShortMessage(level));
+    auto message = el::AnyStringBuilder::basedOn(generateShortMessage(level));
     const auto targetLength = el::CpLength{random().selectInteger<unsigned int>(300, 600)};
     while (true) {
         format.appendTo(
@@ -288,8 +287,8 @@ auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::StringView {
             random().selectInteger(1, 16),
             random().selectInteger(820, 64'000),
             random().selectElement(cacheChoices()),
-            random().selectElement({"hit"_elv, "miss"_elv}),
-            random().selectElement({"brotli"_elv, "gzip"_elv}),
+            random().selectElement({el::String{"hit"_el}, el::String{"miss"_el}}),
+            random().selectElement({el::String{"brotli"_el}, el::String{"gzip"_el}}),
             randomIpAddress(),
             random().selectInteger(8, 430));
         if (message.length() > targetLength && message.length() >= el::CpLength{300}) {
@@ -299,7 +298,7 @@ auto LogViewerApp::generateLongMessage(const LogLevel level) -> el::StringView {
     return message.toString();
 }
 
-auto LogViewerApp::generateMultilineMessage(const LogLevel level) -> el::StringView {
+auto LogViewerApp::generateMultilineMessage(const LogLevel level) -> el::String {
     static const auto format = el::StringFormat{
         "{}\nroute: {}\nrequest-id: {}\nclient: {} via {}\nuser-agent: {}\nextra: retry={}, cache={}, worker={}"_el};
     return format.build(
@@ -314,7 +313,7 @@ auto LogViewerApp::generateMultilineMessage(const LogLevel level) -> el::StringV
         random().selectInteger(1, 24));
 }
 
-auto LogViewerApp::nextTimestamp() -> el::StringView {
+auto LogViewerApp::nextTimestamp() -> el::String {
     const auto days = std::chrono::floor<std::chrono::days>(_logTimestamp);
     const auto ymd = std::chrono::year_month_day{days};
     const auto time = std::chrono::hh_mm_ss{_logTimestamp - days};
@@ -353,13 +352,13 @@ auto LogViewerApp::randomTimestampStep() -> std::chrono::seconds {
     return std::chrono::seconds{random().selectInteger(3, 95)};
 }
 
-auto LogViewerApp::randomRequestId() -> el::StringView {
+auto LogViewerApp::randomRequestId() -> el::String {
     static const auto format = el::StringFormat{"req-{:08x}"_el};
     const auto value = std::uniform_int_distribution<uint32_t>{0U, 0xffff'ffffU}(_rng);
     return format.build(value);
 }
 
-auto LogViewerApp::randomIpAddress() -> el::StringView {
+auto LogViewerApp::randomIpAddress() -> el::String {
     static const auto format = el::StringFormat{"203.0.113.{}"_el};
     return format.build(random().selectInteger(2, 254));
 }
@@ -420,7 +419,7 @@ auto LogViewerApp::logLevelColor(const LogLevel level) noexcept -> Color {
     return Color::reset();
 }
 
-auto LogViewerApp::logTypeCode(const LogLevel level) noexcept -> el::StringView {
+auto LogViewerApp::logTypeCode(const LogLevel level) noexcept -> el::String {
     switch (level) {
     case LogLevel::Trace:
         return "TRC"_el;
@@ -444,8 +443,8 @@ auto LogViewerApp::delayPresets() noexcept -> std::span<const DelayPreset> {
     return cValues;
 }
 
-auto LogViewerApp::methodChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 4>{
+auto LogViewerApp::methodChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 4>{
         "GET"_el,
         "POST"_el,
         "PUT"_el,
@@ -454,8 +453,8 @@ auto LogViewerApp::methodChoices() noexcept -> std::span<const el::StringView> {
     return cValues;
 }
 
-auto LogViewerApp::routeChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 9>{
+auto LogViewerApp::routeChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 9>{
         "/"_el,
         "/healthz"_el,
         "/checkout"_el,
@@ -468,8 +467,8 @@ auto LogViewerApp::routeChoices() noexcept -> std::span<const el::StringView> {
     return cValues;
 }
 
-auto LogViewerApp::staticRouteChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 5>{
+auto LogViewerApp::staticRouteChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 5>{
         "/assets/site.css"_el,
         "/assets/app.bundle.js"_el,
         "/images/logo.svg"_el,
@@ -478,8 +477,8 @@ auto LogViewerApp::staticRouteChoices() noexcept -> std::span<const el::StringVi
     return cValues;
 }
 
-auto LogViewerApp::backendChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 6>{
+auto LogViewerApp::backendChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 6>{
         "edge-gw-1"_el,
         "edge-gw-2"_el,
         "api-eu-1"_el,
@@ -490,8 +489,8 @@ auto LogViewerApp::backendChoices() noexcept -> std::span<const el::StringView> 
     return cValues;
 }
 
-auto LogViewerApp::cacheChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 5>{
+auto LogViewerApp::cacheChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 5>{
         "warm cache"_el,
         "cold cache"_el,
         "stale-if-error"_el,
@@ -500,8 +499,8 @@ auto LogViewerApp::cacheChoices() noexcept -> std::span<const el::StringView> {
     return cValues;
 }
 
-auto LogViewerApp::userAgentChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 4>{
+auto LogViewerApp::userAgentChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 4>{
         "Mozilla/5.0 Chrome/135"_el,
         "curl/8.9.1"_el,
         "Firefox/139.0"_el,
@@ -510,8 +509,8 @@ auto LogViewerApp::userAgentChoices() noexcept -> std::span<const el::StringView
     return cValues;
 }
 
-auto LogViewerApp::warningChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 4>{
+auto LogViewerApp::warningChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 4>{
         "needed a retry"_el,
         "hit the slow-path cache refresh"_el,
         "waited for an upstream reconnect"_el,
@@ -520,8 +519,8 @@ auto LogViewerApp::warningChoices() noexcept -> std::span<const el::StringView> 
     return cValues;
 }
 
-auto LogViewerApp::errorChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 4>{
+auto LogViewerApp::errorChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 4>{
         "failed with 502 after upstream reset"_el,
         "failed with 503 because all workers were busy"_el,
         "aborted after TLS negotiation failed"_el,
@@ -530,8 +529,8 @@ auto LogViewerApp::errorChoices() noexcept -> std::span<const el::StringView> {
     return cValues;
 }
 
-auto LogViewerApp::traceChoices() noexcept -> std::span<const el::StringView> {
-    static const auto cValues = std::array<const el::StringView, 5>{
+auto LogViewerApp::traceChoices() noexcept -> std::span<const el::String> {
+    static const auto cValues = std::array<const el::String, 5>{
         "header normalization complete"_el,
         "route candidate matched"_el,
         "gzip dictionary selected"_el,

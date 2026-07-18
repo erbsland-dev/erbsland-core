@@ -12,7 +12,6 @@ target_sources(erbsland-core PRIVATE
         U32String.cpp
         U32String.hpp
         U32String_comparison.cpp
-        U32String_float.cpp
         U32String_fwd.hpp
         U32String_integer.tpp
         U32String_trim.cpp
@@ -27,6 +26,15 @@ target_sources(erbsland-core PRIVATE
         U32StringConstIterator.cpp
         U32StringConstIterator.hpp
         U32StringConstIterator_fwd.hpp
+        U32StringEditor.cpp
+        U32StringEditor.hpp
+        U32StringEditor_comparison.cpp
+        U32StringEditor_float.cpp
+        U32StringEditor_fwd.hpp
+        U32StringEditor_integer.tpp
+        U32StringEditor_trim.cpp
+        U32StringEditorList.hpp
+        U32StringEditorList_fwd.hpp
         U32StringHashMap.hpp
         U32StringHashMap_fwd.hpp
         U32StringHashSet.hpp
@@ -39,12 +47,4 @@ target_sources(erbsland-core PRIVATE
         U32StringMap_fwd.hpp
         U32StringSet.hpp
         U32StringSet_fwd.hpp
-        U32StringView.cpp
-        U32StringView.hpp
-        U32StringView_comparison.cpp
-        U32StringView_fwd.hpp
-        U32StringView_integer.tpp
-        U32StringView_trim.cpp
-        U32StringViewList.hpp
-        U32StringViewList_fwd.hpp
 )

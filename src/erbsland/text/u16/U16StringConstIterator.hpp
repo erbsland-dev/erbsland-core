@@ -4,7 +4,7 @@
 
 #include "U16String_fwd.hpp"
 #include "U16StringConstIterator_fwd.hpp"
-#include "U16StringView_fwd.hpp"
+#include "U16StringEditor_fwd.hpp"
 
 #include "../Char.hpp"
 
@@ -19,8 +19,8 @@ namespace erbsland::text {
 /// @tested{U16StringTest}
 class U16StringConstIterator final {
     struct Private;
+    friend class U16StringEditor;
     friend class U16String;
-    friend class U16StringView;
 
 public: // iterator traits
     /// Standard iterator category for this iterator.
@@ -72,7 +72,7 @@ public:
 
 private:
     /// Create an iterator pointing to the given position in the given view.
-    U16StringConstIterator(const U16StringView &view, unit::U16DataIndex index);
+    U16StringConstIterator(const U16String &view, unit::U16DataIndex index);
 
 private:
     std::unique_ptr<Private> _p; ///< Private implementation

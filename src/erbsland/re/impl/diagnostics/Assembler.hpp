@@ -13,9 +13,9 @@
 
 #include "../../../text/Literals.hpp"
 #include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../text/StringHashMap.hpp"
-#include "../../../text/StringView.hpp"
-#include "../../../text/StringViewList.hpp"
+#include "../../../text/StringList.hpp"
 #include "../../../unit/CodeLocation.hpp"
 #include "../../RegExError.hpp"
 
@@ -61,12 +61,12 @@ public:
     /// Compile the given lines into engine data.
     /// @return The engine data created by the assembler code.
     /// @throws RegExError on any parsing or compilation error.
-    [[nodiscard]] auto compile(const text::StringViewList &lines) -> EngineDataPtr;
+    [[nodiscard]] auto compile(const text::StringList &lines) -> EngineDataPtr;
 
 private:
     void patchLabelOffsets();
-    void processLine(const text::StringView &line);
-    void tokenizeLine(const text::StringView &line);
+    void processLine(const text::String &line);
+    void tokenizeLine(const text::String &line);
     [[nodiscard]] auto hasCurrentToken() const noexcept -> bool;
     [[nodiscard]] auto currentToken() const noexcept -> const AssemblerToken &;
     void nextToken() noexcept;
@@ -118,7 +118,7 @@ private:
     [[nodiscard]] auto expectSequenceIndex(const AssemblerToken &argument) -> SequenceIndex;
     [[nodiscard]] auto expectSequenceLength(const AssemblerToken &argument) -> SequenceLength;
     [[noreturn]] void throwAssemblerError(
-        text::StringView description, unit::ColumnIndex column = unit::ColumnIndex::noIndex()) const {
+        text::String description, unit::ColumnIndex column = unit::ColumnIndex::noIndex()) const {
         throw RegExError{
             ErrorCategory::Assembler,
             "Failed to assemble regular expression"_el,

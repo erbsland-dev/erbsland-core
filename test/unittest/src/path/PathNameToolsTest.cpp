@@ -11,7 +11,7 @@
 
 using namespace el::text::literals;
 using namespace el::unit;
-using el::text::StringView;
+using el::text::String;
 using erbsland::test::pathtest::toStdString;
 using namespace el::path::impl;
 
@@ -20,7 +20,7 @@ class PathNameToolsTest final : public el::UnitTest {
 public:
     void testSuffixPositions() {
         struct TestCase {
-            StringView name;
+            String name;
             ByteIndex first;
             ByteIndex last;
         };

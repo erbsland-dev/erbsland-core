@@ -9,9 +9,9 @@
 #include "../../text/impl/UnsafeU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../text/u16/U16String.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/u16/U16StringEditor.hpp"
 #include "../../unit/U16DataLength.hpp"
 
 #include <sddl.h>
@@ -24,7 +24,7 @@ namespace erbsland::system::impl {
 using namespace text::literals;
 
 void WindowsUserLookupBackend::throwLookupError(
-    const text::StringView &reason, const system::WindowsErrorContext::ErrorCode errorCode) {
+    const text::String &reason, const system::WindowsErrorContext::ErrorCode errorCode) {
     throw system::PlatformError{reason, system::WindowsErrorContext::fromErrorCode(errorCode)};
 }
 
@@ -44,11 +44,11 @@ auto WindowsUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId 
     return GroupId{sidStringForAccountName(name.toString())};
 }
 
-auto WindowsUserLookupBackend::accountNameForSidString(const text::StringView &sid) -> text::String {
+auto WindowsUserLookupBackend::accountNameForSidString(const text::String &sid) -> text::String {
     const auto sidText = text::StringConverter{sid}.toU16String();
     const auto sidTextAccess = text::impl::UnsafeU16StringAccess{sidText};
     auto *rawSid = static_cast<void *>(nullptr);
-    if (::ConvertStringSidToSidW(sidTextAccess.dataWide(), &rawSid) == 0) {
+    if (::ConvertStringSidToSidW(sidTextAccess.dataAsWide(), &rawSid) == 0) {
         throwLookupError("Cannot parse Windows SID."_el, ::GetLastError());
     }
     auto sidPtr = std::unique_ptr<void, decltype(&::LocalFree)>{rawSid, &::LocalFree};
@@ -75,7 +75,7 @@ auto WindowsUserLookupBackend::accountNameForSidString(const text::StringView &s
         throwLookupError("Cannot resolve Windows SID."_el, ::GetLastError());
     }
 
-    auto result = text::String{};
+    auto result = text::StringEditor{};
     if (domainLength > 0U) {
         result.append(domainBuffer.takeAsUtf8(unit::U16DataLength::fromSizeT(domainLength)));
         result.append("\\"_el);
@@ -84,14 +84,14 @@ auto WindowsUserLookupBackend::accountNameForSidString(const text::StringView &s
     return result;
 }
 
-auto WindowsUserLookupBackend::sidStringForAccountName(const text::StringView &name) -> text::String {
+auto WindowsUserLookupBackend::sidStringForAccountName(const text::String &name) -> text::String {
     const auto accountName = text::StringConverter{name}.toU16String();
     const auto accountNameAccess = text::impl::UnsafeU16StringAccess{accountName};
     auto sidLength = DWORD{0};
     auto domainLength = DWORD{0};
     auto sidNameUse = SID_NAME_USE{};
     ::LookupAccountNameW(
-        nullptr, accountNameAccess.dataWide(), nullptr, &sidLength, nullptr, &domainLength, &sidNameUse);
+        nullptr, accountNameAccess.dataAsWide(), nullptr, &sidLength, nullptr, &domainLength, &sidNameUse);
     const auto lengthError = ::GetLastError();
     if (lengthError != ERROR_INSUFFICIENT_BUFFER) {
         throwLookupError("Cannot resolve Windows account name."_el, lengthError);
@@ -101,7 +101,7 @@ auto WindowsUserLookupBackend::sidStringForAccountName(const text::StringView &n
     auto domainBuffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(domainLength)};
     if (::LookupAccountNameW(
             nullptr,
-            accountNameAccess.dataWide(),
+            accountNameAccess.dataAsWide(),
             sid.data(),
             &sidLength,
             domainBuffer.dataAsWide(),

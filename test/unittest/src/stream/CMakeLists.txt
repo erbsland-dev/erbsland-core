@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        AnyStringBuilderStreamTest.cpp
         AsyncStreamTest.cpp
         BufferedStreamTest.cpp
         ByteStreamTest.cpp
@@ -14,7 +15,6 @@ target_sources(erbsland-core-unittest PRIVATE
         StreamPositionTest.cpp
         StreamResultTest.cpp
         StreamSettingsTest.cpp
-        StringBuilderStreamTest.cpp
 )
 
 if(WIN32)

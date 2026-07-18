@@ -8,8 +8,8 @@
 
 #include <vector>
 
-using el::text::String;
 using el::text::StringConverter;
+using el::text::StringEditor;
 using el::unit::ElementCount;
 using el::unit::Version;
 
@@ -49,25 +49,25 @@ public:
         using namespace el::time;
 
         struct ValidCase {
-            String name;
+            StringEditor name;
             Seconds offset;
         };
         const auto validCases = std::vector<ValidCase>{
-            {String{"+1"}, Seconds{3600}},
-            {String{"+01"}, Seconds{3600}},
-            {String{"+0130"}, Seconds{5400}},
-            {String{"-0330"}, Seconds{-12600}},
-            {String{"+01:30"}, Seconds{5400}},
-            {String{"-03:30"}, Seconds{-12600}},
-            {String{"+01:02:03"}, Seconds{3723}},
-            {String{"UTC+1"}, Seconds{3600}},
-            {String{"utc+01:30"}, Seconds{5400}},
-            {String{"GMT-0330"}, Seconds{-12600}},
-            {String{"gmt+01:02:03"}, Seconds{3723}},
-            {String{"UtC+1"}, Seconds{3600}},
-            {String{"uTc+01:30"}, Seconds{5400}},
-            {String{"GmT-0330"}, Seconds{-12600}},
-            {String{"gMt+01:02:03"}, Seconds{3723}},
+            {StringEditor{"+1"}, Seconds{3600}},
+            {StringEditor{"+01"}, Seconds{3600}},
+            {StringEditor{"+0130"}, Seconds{5400}},
+            {StringEditor{"-0330"}, Seconds{-12600}},
+            {StringEditor{"+01:30"}, Seconds{5400}},
+            {StringEditor{"-03:30"}, Seconds{-12600}},
+            {StringEditor{"+01:02:03"}, Seconds{3723}},
+            {StringEditor{"UTC+1"}, Seconds{3600}},
+            {StringEditor{"utc+01:30"}, Seconds{5400}},
+            {StringEditor{"GMT-0330"}, Seconds{-12600}},
+            {StringEditor{"gmt+01:02:03"}, Seconds{3723}},
+            {StringEditor{"UtC+1"}, Seconds{3600}},
+            {StringEditor{"uTc+01:30"}, Seconds{5400}},
+            {StringEditor{"GmT-0330"}, Seconds{-12600}},
+            {StringEditor{"gMt+01:02:03"}, Seconds{3723}},
         };
         for (const auto &testCase : validCases) {
             const auto zone = TimeZone::fromNameOrThrow(testCase.name);
@@ -102,10 +102,10 @@ public:
         REQUIRE_EQUAL(TimeZone::databaseVersion(), (Version{1, 2026, 2}));
         const auto names = TimeZone::names();
         REQUIRE(names.count() > ElementCount{500});
-        REQUIRE(names.contains(String{"Europe/Zurich"}));
-        REQUIRE(names.contains(String{"America/New_York"}));
-        REQUIRE(names.contains(String{"Etc/GMT+1"}));
-        REQUIRE(names.contains(String{"US/Eastern"}));
+        REQUIRE(names.contains(StringEditor{"Europe/Zurich"}));
+        REQUIRE(names.contains(StringEditor{"America/New_York"}));
+        REQUIRE(names.contains(StringEditor{"Etc/GMT+1"}));
+        REQUIRE(names.contains(StringEditor{"US/Eastern"}));
 
         const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         const auto zurichAgain = TimeZone::fromNameOrThrow("Europe/Zurich"_el);

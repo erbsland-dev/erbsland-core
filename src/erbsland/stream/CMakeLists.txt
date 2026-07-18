@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        AnyStringBuilderStream.cpp
+        AnyStringBuilderStream.hpp
         ByteInputStream.cpp
         ByteInputStream.hpp
         ByteInputStream_fwd.hpp
@@ -36,8 +38,6 @@ target_sources(erbsland-core PRIVATE
         StreamState.hpp
         StreamWaitStatus.hpp
         StreamWriteStatus.hpp
-        StringBuilderStream.cpp
-        StringBuilderStream.hpp
         TempByteOutputStream.cpp
         TempByteOutputStream.hpp
         TempByteOutputStream_fwd.hpp

@@ -5,8 +5,8 @@
 #include "KeyDecoder.hpp"
 #include "PosixSignalDispatcher.hpp"
 
-#include "../../text/String.hpp"
 #include "../../text/StringConverter.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <sys/ioctl.h>
 #include <sys/select.h>
@@ -125,7 +125,7 @@ auto PosixBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
     return std::nullopt;
 }
 
-void PosixBackend::emitText(const text::StringView &str) {
+void PosixBackend::emitText(const text::String &str) {
     const auto text = text::StringConverter{str}.toStdString();
     std::cout.write(text.data(), static_cast<std::streamsize>(text.size()));
 }

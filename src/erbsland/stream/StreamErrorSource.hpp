@@ -18,7 +18,7 @@ public:
     /// Throw an error with a user-facing title and explanation.
     /// @param title What operation failed.
     /// @param description Why the operation failed.
-    [[noreturn]] void throwError(text::StringView title, text::StringView description) const;
+    [[noreturn]] void throwError(text::String title, text::String description) const;
     /// Create a diagnostic context for errors reported by this source.
     /// Implementations can add source-specific data or delegate to a wrapped source.
     [[nodiscard]] virtual auto createErrorContext() const noexcept -> StreamErrorContext;

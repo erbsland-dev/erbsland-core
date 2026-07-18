@@ -5,7 +5,7 @@
 #include "BlockStringBuilder.hpp"
 
 #include "../BlockPrintContext.hpp"
-#include "../BlockString.hpp"
+#include "../BlockStringEditor.hpp"
 #include "../CursorWriter.hpp"
 
 namespace erbsland::cterm::impl {
@@ -33,10 +33,10 @@ public:
     void print(BlockStyle style) noexcept override;
     void print(BlockAttributes attributes) noexcept override;
     void print(const Block &character) noexcept override;
+    void print(const BlockStringEditor &text) noexcept override;
     void print(const BlockString &text) noexcept override;
-    void print(const BlockStringView &text) noexcept override;
-    void print(const text::StringView &text) noexcept override;
-    void print(const text::U32StringView &text) noexcept override;
+    void print(const text::String &text) noexcept override;
+    void print(const text::U32String &text) noexcept override;
 
 protected:
     BlockStringBuilder _builder;
@@ -70,7 +70,7 @@ private:
 class BlockPrintContextToBlockString final : public BlockPrintContextToString {
 public:
     /// Create a new print context for a block string.
-    explicit BlockPrintContextToBlockString(BlockString &text) noexcept;
+    explicit BlockPrintContextToBlockString(BlockStringEditor &text) noexcept;
 
     // defaults / prevent copy and move
     ~BlockPrintContextToBlockString() override = default;
@@ -83,7 +83,7 @@ public:
     void commit() noexcept override;
 
 private:
-    BlockString &_text;
+    BlockStringEditor &_text;
 };
 
 }

@@ -5,7 +5,7 @@
 #include "ByteBlockData.hpp"
 #include "UnsafeByteBlockBuffer_fwd.hpp"
 
-#include "../ByteBlock.hpp"
+#include "../ByteBlockEditor.hpp"
 
 #include "../../unit/ByteLength.hpp"
 
@@ -46,7 +46,7 @@ public:
     /// Access the usable buffer capacity.
     [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength { return _block.capacity(); }
     /// Create a byte block from the buffer and release the buffer.
-    [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> ByteBlock {
+    [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> ByteBlockEditor {
         const auto finalLength = checkedFinalLength(length);
         if (finalLength.isZero()) {
             _block.reset();
@@ -70,7 +70,7 @@ private:
     }
 
 private:
-    ByteBlock _block; ///< The uncommitted byte block storage.
+    ByteBlockEditor _block; ///< The uncommitted byte block storage.
 };
 
 }

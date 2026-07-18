@@ -8,9 +8,9 @@
 
 namespace erbsland::stream {
 
-void StreamErrorSource::throwError(const text::StringView title, const text::StringView description) const {
+void StreamErrorSource::throwError(text::String title, text::String description) const {
     auto context = createErrorContext();
-    context.setTitle(title).setDescription(description);
+    context.setTitle(std::move(title)).setDescription(std::move(description));
     throw StreamError{std::move(context)};
 }
 

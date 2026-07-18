@@ -10,16 +10,13 @@ namespace erbsland::system {
 using namespace text::literals;
 
 auto UserName::toString() const -> text::String {
-    auto result = text::String{};
-    if (!_domain.isEmpty()) {
-        result.append(_domain);
-        result.append("\\"_el);
+    if (_domain.isEmpty()) {
+        return _name;
     }
-    result.append(_name);
-    return result;
+    return text::String::fromJoined({_domain, "\\"_el, _name});
 }
 
-auto UserName::fromString(const text::StringView &text) -> UserName {
+auto UserName::fromString(const text::String &text) -> UserName {
     constexpr auto cSeparator = "\\"_el;
     const auto separator = text.find(cSeparator);
     if (!separator.isNoIndex()) {

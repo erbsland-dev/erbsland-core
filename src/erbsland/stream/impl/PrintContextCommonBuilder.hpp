@@ -5,16 +5,16 @@
 #include "../TextOutputStream_fwd.hpp"
 #include "../TextPrintContext.hpp"
 
+#include "../../text/AnyStringBuilder.hpp"
 #include "../../text/BooleanFormat.hpp"
 #include "../../text/ByteFormat.hpp"
 #include "../../text/FloatFormat.hpp"
 #include "../../text/IntegerFormat.hpp"
-#include "../../text/StringBuilder.hpp"
 
 namespace erbsland::stream::impl {
 
 /// A print context that uses the `write` method of a text stream to print a collected line.
-/// @tested{StandardTextOutputStreamTest StringBuilderStreamTest}
+/// @tested{StandardTextOutputStreamTest AnyStringBuilderStreamTest}
 class PrintContextCommonBuilder : public TextPrintContext {
 public:
     // defaults / prevent copy and move
@@ -42,15 +42,15 @@ public:
     void print(std::u8string_view text) override;
     void print(std::u16string_view text) override;
     void print(std::u32string_view text) override;
-    void print(const text::StringView &text) override;
-    void print(const text::U16StringView &text) override;
-    void print(const text::U32StringView &text) override;
+    void print(const text::String &text) override;
+    void print(const text::U16String &text) override;
+    void print(const text::U32String &text) override;
     void print(bool value) override;
     void print(double value) override;
     void print(float value) override;
     void print(int64_t value) override;
     void print(uint64_t value) override;
-    void print(const mem::ByteBlockView &bytes) override;
+    void print(const mem::ByteBlock &bytes) override;
     void print(text::BooleanFormat newFormat) override;
     void print(text::ByteFormat newFormat) override;
     void print(text::IntegerFormat newFormat) override;
@@ -58,11 +58,11 @@ public:
 
 private:
     template <typename T>
-    static void convertAndAppendToBuilder(text::StringBuilder &builder, T text);
+    static void convertAndAppendToBuilder(text::AnyStringBuilder &builder, T text);
 
 protected:
     /// Access the builder for text output.
-    [[nodiscard]] virtual auto builder() -> text::StringBuilder & = 0;
+    [[nodiscard]] virtual auto builder() -> text::AnyStringBuilder & = 0;
 
 protected:
     text::BooleanFormat _booleanFormat = text::BooleanFormat::defaultFormat();

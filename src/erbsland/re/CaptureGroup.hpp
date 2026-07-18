@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CaptureGroup_fwd.hpp"
 #include "CaptureGroupIndex.hpp"
 #include "CaptureRange.hpp"
 #include "InputPosition.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <cstdint>
-#include <vector>
 
 namespace erbsland::re {
 
@@ -23,8 +23,7 @@ public:
     /// @param index The index of the group. 0 = complete match, 1 = first capture group.
     /// @param range The character range for the group.
     /// @param name The name of the group.
-    constexpr CaptureGroup(
-        const CaptureGroupIndex index, const CaptureRange range, const text::StringView &name) noexcept :
+    constexpr CaptureGroup(const CaptureGroupIndex index, const CaptureRange range, const text::String &name) noexcept :
         _index{index}, _range{range}, _name{name} {}
 
 public: // accessors
@@ -46,7 +45,7 @@ public: // accessors
     /// @return The range.
     [[nodiscard]] constexpr auto range() const noexcept -> CaptureRange { return _range; }
     /// Get the name of the match group.
-    [[nodiscard]] constexpr auto name() const noexcept -> text::StringView { return _name; }
+    [[nodiscard]] constexpr auto name() const noexcept -> text::String { return _name; }
 
 public: // modifiers
     /// Set the index for the group.
@@ -60,15 +59,12 @@ public: // modifiers
     void setEnd(const InputPosition end) noexcept { _range.setEnd(end); }
     /// Set the name of the match group.
     /// @param name The name of the group.
-    void setName(const text::StringView &name) noexcept { _name = name; }
+    void setName(const text::String &name) noexcept { _name = name; }
 
 private:
     CaptureGroupIndex _index{};
     CaptureRange _range{};
-    text::StringView _name;
+    text::String _name;
 };
-
-/// A list of capture groups.
-using CaptureGroupList = std::vector<CaptureGroup>;
 
 }

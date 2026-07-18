@@ -4,7 +4,7 @@
 #include "PathTestHelper.hpp"
 
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unit/ElementRange.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -35,7 +35,7 @@ public:
         auto text = std::string{"visivel"};
         text.push_back('\0');
         text += "oculto";
-        const auto replacement = el::text::String{text};
+        const auto replacement = el::text::StringEditor{text};
 
         REQUIRE(path.withName(replacement).isEmpty());
         REQUIRE(path.withSuffix(replacement).isEmpty());
@@ -114,11 +114,11 @@ public:
     }
 
     void testFromElements() {
-        const auto path = Path::fromElements(el::text::StringViewList{"/"_el, "arquivo"_el, "rotas"_el});
+        const auto path = Path::fromElements(el::text::StringList{"/"_el, "arquivo"_el, "rotas"_el});
         REQUIRE(path.isAbsolute());
         REQUIRE_EQUAL(toStdString(path), "/arquivo/rotas");
 
-        const auto relative = Path::fromElements(el::text::StringViewList{"arquivo"_el, "rotas"_el});
+        const auto relative = Path::fromElements(el::text::StringList{"arquivo"_el, "rotas"_el});
         REQUIRE(relative.isRelative());
         REQUIRE_EQUAL(toStdString(relative), "arquivo/rotas");
     }

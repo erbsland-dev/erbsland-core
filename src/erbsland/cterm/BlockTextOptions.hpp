@@ -121,7 +121,7 @@ public: // wrappers for common paragraph options
     /// @copydoc ParagraphOptions::wordSeparators
     [[nodiscard]] auto wordSeparators() const -> text::U32String { return _paragraphOptions.wordSeparators(); }
     /// @copydoc ParagraphOptions::setWordSeparators
-    void setWordSeparators(const text::U32StringView &separators) { _paragraphOptions.setWordSeparators(separators); }
+    void setWordSeparators(const text::U32String &separators) { _paragraphOptions.setWordSeparators(separators); }
     /// @copydoc ParagraphOptions::wordBreakMark
     [[nodiscard]] auto wordBreakMark() const noexcept -> const Block & { return _paragraphOptions.wordBreakMark(); }
     /// @copydoc ParagraphOptions::setWordBreakMark

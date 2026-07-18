@@ -8,15 +8,15 @@
 
 namespace erbsland::err {
 
-ParseError::ParseError(text::StringView reason, unit::CpIndex position) noexcept :
+ParseError::ParseError(text::String reason, const unit::CpIndex position) noexcept :
     RuntimeError{std::move(reason)}, _position{position} {
 }
 
-ParseError::ParseError(const std::string_view reason, unit::CpIndex position) noexcept :
+ParseError::ParseError(const std::string_view reason, const unit::CpIndex position) noexcept :
     ParseError{text::String{reason}, position} {
 }
 
-auto ParseError::toString() const noexcept -> text::StringView {
+auto ParseError::toString() const noexcept -> text::String {
     if (!hasPosition()) {
         return reason();
     }

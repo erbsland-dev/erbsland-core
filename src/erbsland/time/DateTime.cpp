@@ -10,12 +10,17 @@
 #include "../err/ParseError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
 
 #include <chrono>
 
 namespace erbsland::time {
+
+using text::IntegerFormat;
+using text::IntegerFormatFlag;
+using text::String;
+using text::StringEditor;
 
 namespace {
 constexpr auto cLastValidSecond = Seconds{315569519999};
@@ -55,7 +60,7 @@ auto DateTime::parts() const noexcept -> DateTimeParts {
         .nanosecondFraction = localTime.nanosecondFraction()};
 }
 
-auto DateTime::timeZoneAbbreviation() const -> text::String {
+auto DateTime::timeZoneAbbreviation() const -> String {
     return TimeZone::abbreviation(_offset);
 }
 
@@ -140,22 +145,22 @@ auto DateTime::toWindowsFileTimeTicks() const noexcept -> std::optional<std::uin
     return impl::WindowsTimeConverter::toFileTimeTicks(*this);
 }
 
-auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision) const -> text::String {
+auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision) const -> String {
     if (!isValid()) {
         return {};
     }
     const auto datePrecision = precision < DateTimePrecision::Day ? precision : DateTimePrecision::Day;
-    auto result = date().toIsoString(flags, datePrecision);
-    if (precision >= DateTimePrecision::Hour) {
-        result.append(flags.isSet(IsoTimeFormat::TimePrefix) ? "T"_el : " "_el);
-        auto timeFlags = flags;
-        timeFlags.clear(IsoTimeFormat::TimePrefix);
-        result.append(time().toIsoString(timeFlags, precision));
-        if (flags.isSet(IsoTimeFormat::TimeShift)) {
-            result.append(isoTimeShiftString(_offset.offset(), flags));
-        }
+    const auto dateText = date().toIsoString(flags, datePrecision);
+    if (precision < DateTimePrecision::Hour) {
+        return dateText;
     }
-    return result;
+    auto timeFlags = flags;
+    timeFlags.clear(IsoTimeFormat::TimePrefix);
+    return String::fromJoined(
+        {dateText,
+            flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{" "_el},
+            time().toIsoString(timeFlags, precision),
+            flags.isSet(IsoTimeFormat::TimeShift) ? isoTimeShiftString(_offset.offset(), flags) : String{}});
 }
 
 auto DateTime::now() noexcept -> DateTime {
@@ -188,7 +193,7 @@ auto DateTime::fromWindowsFileTimeTicks(const std::uint64_t ticks) noexcept -> D
     return impl::WindowsTimeConverter::fromFileTimeTicks(ticks);
 }
 
-auto DateTime::fromIsoString(text::StringView text, DateTimePrecision requiredPrecision) noexcept -> DateTime {
+auto DateTime::fromIsoString(const String &text, DateTimePrecision requiredPrecision) noexcept -> DateTime {
     const auto parsed = impl::IsoDateTimeParser::parse(text, true);
     if (!parsed.has_value()) {
         return {};
@@ -202,7 +207,7 @@ auto DateTime::fromIsoString(text::StringView text, DateTimePrecision requiredPr
     return DateTime{parsed->date, parsed->time};
 }
 
-auto DateTime::fromIsoStringOrThrow(text::StringView text, DateTimePrecision requiredPrecision) -> DateTime {
+auto DateTime::fromIsoStringOrThrow(const String &text, DateTimePrecision requiredPrecision) -> DateTime {
     auto result = fromIsoString(text, requiredPrecision);
     if (!result.isValid()) {
         throw err::ParseError{"Invalid ISO date/time string"};
@@ -210,7 +215,7 @@ auto DateTime::fromIsoStringOrThrow(text::StringView text, DateTimePrecision req
     return result;
 }
 
-auto DateTime::fromIsoString(text::StringView text, TimeZone timeZone, DateTimePrecision requiredPrecision) noexcept
+auto DateTime::fromIsoString(const String &text, TimeZone timeZone, DateTimePrecision requiredPrecision) noexcept
     -> DateTime {
     const auto parsed = impl::IsoDateTimeParser::parse(text, false);
     if (!parsed.has_value()) {
@@ -222,7 +227,7 @@ auto DateTime::fromIsoString(text::StringView text, TimeZone timeZone, DateTimeP
     return DateTime{parsed->date, parsed->time, timeZone};
 }
 
-auto DateTime::fromIsoStringOrThrow(text::StringView text, TimeZone timeZone, DateTimePrecision requiredPrecision)
+auto DateTime::fromIsoStringOrThrow(const String &text, TimeZone timeZone, DateTimePrecision requiredPrecision)
     -> DateTime {
     auto result = fromIsoString(text, timeZone, requiredPrecision);
     if (!result.isValid()) {
@@ -231,13 +236,13 @@ auto DateTime::fromIsoStringOrThrow(text::StringView text, TimeZone timeZone, Da
     return result;
 }
 
-auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> text::String {
+auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> String {
     if (offset.isZero() && !flags.isSet(IsoTimeFormat::TimeShiftAlwaysComplete)) {
-        return text::String{"Z"_el};
+        return "Z"_el;
     }
 
-    auto digitFormat = text::IntegerFormat::decimal();
-    digitFormat.addFlags(text::IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    auto digitFormat = IntegerFormat::decimal();
+    digitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
 
     const auto sign = offset.isNegative() ? U'-' : U'+';
     auto remainingOffset = offset.isNegative() ? -offset : offset;
@@ -248,20 +253,14 @@ auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> t
     const auto includeSeconds = flags.isSet(IsoTimeFormat::TimeShiftUpToSeconds) &&
         (!seconds.isZero() || flags.isSet(IsoTimeFormat::TimeShiftAlwaysComplete));
 
-    auto builder = text::StringBuilder{};
-    builder.append(sign);
-    builder.appendInteger(hours.toValue(), digitFormat);
-    if (extended) {
-        builder.append(U':');
-    }
-    builder.appendInteger(minutes.toValue(), digitFormat);
-    if (includeSeconds) {
-        if (extended) {
-            builder.append(U':');
-        }
-        builder.appendInteger(seconds.toValue(), digitFormat);
-    }
-    return builder.takeU8String();
+    const auto separator = extended ? String{":"_el} : String{};
+    return String::fromJoined(
+        {String::fromCharacter(sign),
+            String::fromInteger(hours.toValue(), digitFormat),
+            separator,
+            String::fromInteger(minutes.toValue(), digitFormat),
+            includeSeconds ? separator : String{},
+            includeSeconds ? String::fromInteger(seconds.toValue(), digitFormat) : String{}});
 }
 
 auto DateTime::posixEpochSecondsDelta() noexcept -> Seconds {

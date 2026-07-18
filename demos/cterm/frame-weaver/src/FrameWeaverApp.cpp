@@ -225,7 +225,7 @@ auto FrameWeaverApp::availableStyles() const -> std::vector<FrameSpec> {
     }
 }
 
-auto FrameWeaverApp::modeName() const -> el::StringView {
+auto FrameWeaverApp::modeName() const -> el::String {
     switch (_styleMode) {
     case StyleMode::Light:
         return "light"_el;
@@ -246,7 +246,7 @@ auto FrameWeaverApp::modeName() const -> el::StringView {
 }
 
 auto FrameWeaverApp::buildPrompt() const -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     result.append(
         fg::BrightYellow,
         bg::BrightBlack,

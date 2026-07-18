@@ -2,18 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/core/MakeOneNamespace.hpp>
-#include <erbsland/text/AnyStringView.hpp>
+#include <erbsland/text/AnyString.hpp>
+#include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/html/HtmlParser.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
-#include <erbsland/text/StringBuilder.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringView.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>
 #include <erbsland/text/TextNodeData.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <initializer_list>
@@ -21,16 +21,16 @@
 #include <utility>
 #include <vector>
 
-using el::text::AnyStringView;
-using el::text::StringBuilder;
+using el::text::AnyString;
+using el::text::AnyStringBuilder;
+using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
 using el::text::TextDocument;
 using el::text::TextNode;
 using el::text::TextNodePtr;
-using el::text::U16String;
-using el::text::U32String;
-using el::text::U8String;
+using el::text::U16StringEditor;
+using el::text::U32StringEditor;
+using el::text::U8StringEditor;
 using el::text::html::HtmlParser;
 
 TESTED_TARGETS(HtmlParser TextDocument TextNode)
@@ -202,31 +202,31 @@ public:
     void testPublicFacadeAndEncodings() {
         using namespace el::text::literals;
 
-        auto parser = HtmlParser{"<p>Hello <em>world</em></p>"_elv};
+        auto parser = HtmlParser{String{"<p>Hello <em>world</em></p>"_el}};
         requirePlainText(parser.parse(), "Hello world");
         requirePlainText(parser.parseOrThrow(), "Hello world");
 
-        auto aliasParser = el::html::HtmlParser{"<strong>Alias</strong>"_elv};
+        auto aliasParser = el::html::HtmlParser{String{"<strong>Alias</strong>"_el}};
         requirePlainText(aliasParser.parse(), "Alias");
 
-        const auto utf8 = U8String{std::u8string_view{u8"<p>A¢</p>"}};
-        const auto utf16 = U16String{std::u16string_view{u"<p>A¢</p>"}};
-        const auto utf32 = U32String{std::u32string_view{U"<p>A¢</p>"}};
-        requirePlainText(HtmlParser{AnyStringView{utf8}}.parse(), "A¢");
-        requirePlainText(HtmlParser{AnyStringView{utf16}}.parse(), "A¢");
-        requirePlainText(HtmlParser{AnyStringView{utf32}}.parse(), "A¢");
+        const auto utf8 = U8StringEditor{std::u8string_view{u8"<p>A¢</p>"}};
+        const auto utf16 = U16StringEditor{std::u16string_view{u"<p>A¢</p>"}};
+        const auto utf32 = U32StringEditor{std::u32string_view{U"<p>A¢</p>"}};
+        requirePlainText(HtmlParser{AnyString{utf8}}.parse(), "A¢");
+        requirePlainText(HtmlParser{AnyString{utf16}}.parse(), "A¢");
+        requirePlainText(HtmlParser{AnyString{utf32}}.parse(), "A¢");
     }
 
     void testMalformedHtmlIsRecoveredByBothParseMethods() {
         using namespace el::text::literals;
 
-        auto parser = HtmlParser{R"(prefix <strong title="A &amp; B suffix)"_elv};
+        auto parser = HtmlParser{String{R"(prefix <strong title="A &amp; B suffix)"_el}};
         requirePlainText(parser.parse(), R"(prefix <strong title="A & B suffix)");
         requirePlainText(parser.parseOrThrow(), R"(prefix <strong title="A & B suffix)");
     }
 
 private:
-    [[nodiscard]] static auto parse(StringView html) -> TextDocument { return HtmlParser{html}.parse(); }
+    [[nodiscard]] static auto parse(String html) -> TextDocument { return HtmlParser{html}.parse(); }
 
     void requirePlainText(const TextDocument &document, const std::string &expected) {
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), expected);
@@ -268,7 +268,7 @@ private:
         }
     }
 
-    void appendProperty(std::string &line, const std::string &name, StringView value) {
+    void appendProperty(std::string &line, const std::string &name, String value) {
         if (value.isEmpty()) {
             return;
         }
@@ -277,7 +277,7 @@ private:
         line += "\"";
     }
 
-    [[nodiscard]] auto escape(StringView value) -> std::string {
+    [[nodiscard]] auto escape(String value) -> std::string {
         auto reader = el::text::StringCharReader{value};
         auto builder = std::string{};
         while (!reader.isAtEnd()) {
@@ -286,7 +286,7 @@ private:
                 builder += "\\n";
                 continue;
             }
-            builder += StringConverter{StringBuilder{}.append(character).takeString()}.toStdString();
+            builder += StringConverter{AnyStringBuilder{}.append(character).takeString()}.toStdString();
         }
         return builder;
     }

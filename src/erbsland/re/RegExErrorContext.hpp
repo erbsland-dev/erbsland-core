@@ -4,7 +4,7 @@
 
 #include "ErrorCategory.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../unit/CodeLocation.hpp"
 
 #include <utility>
@@ -22,8 +22,8 @@ public:
     /// @param location The optional source location.
     explicit RegExErrorContext(
         ErrorCategory category,
-        text::StringView title,
-        text::StringView description = {},
+        text::String title,
+        text::String description = {},
         unit::CodeLocation location = {}) noexcept :
         _category{category}, _title{std::move(title)}, _description{std::move(description)}, _location{location} {}
 
@@ -43,16 +43,16 @@ public: // accessors
         return *this;
     }
     /// Get the concise error title.
-    [[nodiscard]] auto title() const noexcept -> const text::StringView & { return _title; }
+    [[nodiscard]] auto title() const noexcept -> const text::String & { return _title; }
     /// Set the concise error title.
-    auto setTitle(text::StringView title) noexcept -> RegExErrorContext & {
+    auto setTitle(text::String title) noexcept -> RegExErrorContext & {
         _title = std::move(title);
         return *this;
     }
     /// Get the detailed error description.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _description; }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _description; }
     /// Set the detailed error description.
-    auto setDescription(text::StringView description) noexcept -> RegExErrorContext & {
+    auto setDescription(text::String description) noexcept -> RegExErrorContext & {
         _description = std::move(description);
         return *this;
     }
@@ -72,8 +72,8 @@ public: // accessors
 
 private:
     ErrorCategory _category{ErrorCategory::Internal}; ///< The error category.
-    text::StringView _title;                          ///< Concise error title.
-    text::StringView _description;                    ///< Detailed error description.
+    text::String _title;                              ///< Concise error title.
+    text::String _description;                        ///< Detailed error description.
     unit::CodeLocation _location;                     ///< Optional source location.
 };
 

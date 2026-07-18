@@ -10,11 +10,11 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 
-Block16Style::Block16Style(const text::StringView &tiles) :
-    _tiles(toTiles(BlockString{tiles, text::EncodingErrorMode::Replace})) {
+Block16Style::Block16Style(const text::String &tiles) :
+    _tiles(toTiles(BlockStringEditor{tiles, text::EncodingErrorMode::Replace})) {
 }
 
-Block16Style::Block16Style(const text::U32StringView &tiles) : _tiles(toTiles(BlockString{tiles})) {
+Block16Style::Block16Style(const text::U32String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
 }
 
 auto Block16Style::block(const uint32_t bitMask) const noexcept -> Block {
@@ -89,11 +89,11 @@ auto Block16Style::noneFrame() -> Block16StylePtr {
     return style;
 }
 
-auto Block16Style::create(const text::StringView &tiles) -> Block16StylePtr {
+auto Block16Style::create(const text::String &tiles) -> Block16StylePtr {
     return std::make_shared<Block16Style>(tiles);
 }
 
-auto Block16Style::create(const text::U32StringView &tiles) -> Block16StylePtr {
+auto Block16Style::create(const text::U32String &tiles) -> Block16StylePtr {
     return std::make_shared<Block16Style>(tiles);
 }
 
@@ -133,7 +133,7 @@ auto Block16Style::forStyle(const FrameStyle frameStyle) -> Block16StylePtr {
     }
 }
 
-auto Block16Style::toTiles(const BlockStringView &tiles) -> std::array<Block, 16> {
+auto Block16Style::toTiles(const BlockString &tiles) -> std::array<Block, 16> {
     if (tiles.length() != BlockCount{16U}) {
         throw err::ParameterError{"Block16Style requires exactly 16 terminal characters.", "tiles"};
     }

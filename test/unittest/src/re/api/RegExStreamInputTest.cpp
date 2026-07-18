@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/ParameterError.hpp>
+#include <erbsland/re/Match.hpp>
 #include <erbsland/re/RegEx.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/stream/TextInputStream.hpp>
@@ -74,7 +75,7 @@ private:
         }
         [[nodiscard]] auto read(const el::unit::CpLength maximum)
             -> el::stream::StreamReadResult<el::text::String> override {
-            auto result = el::text::String{};
+            auto result = el::text::StringEditor{};
             while (result.characterLength() < maximum) {
                 const auto character = readChar();
                 if (character.isTimeout()) {
@@ -113,9 +114,9 @@ private:
     };
 
     [[nodiscard]] static auto createStream(
-        const el::text::StringView &text, const bool supportsPositioning = true, const bool timeout = false)
+        el::text::String text, const bool supportsPositioning = true, const bool timeout = false)
         -> el::stream::TextInputStreamPtr {
-        return std::make_shared<MemoryTextInputStream>(el::text::String{text}, supportsPositioning, timeout);
+        return std::make_shared<MemoryTextInputStream>(std::move(text), supportsPositioning, timeout);
     }
 
 public:
@@ -189,7 +190,7 @@ public:
         auto patternSettings = Settings{};
         patternSettings.enableFeature(Feature::AcceptNullInPattern);
         const auto expression = RegEx::compile("\\x00"_el, {}, patternSettings);
-        auto text = el::text::String{};
+        auto text = el::text::StringEditor{};
         text.append(el::text::Char{U'\0'});
 
         REQUIRE(expression->fullMatch(createStream(text)) != nullptr);

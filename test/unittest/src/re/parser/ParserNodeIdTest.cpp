@@ -117,7 +117,7 @@ public:
     }
 
     void testParserIdTreeComplexPatterns() {
-        const std::vector<StringView> patterns = {
+        const std::vector<String> patterns = {
             "a|b|c"_el,
             "(ab)c"_el,
             "(?:ab)+"_el,

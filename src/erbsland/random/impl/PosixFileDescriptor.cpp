@@ -7,7 +7,7 @@
 #include "../../system/PlatformError.hpp"
 #include "../../system/PosixErrorContext.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <fcntl.h>
 #include <unistd.h>

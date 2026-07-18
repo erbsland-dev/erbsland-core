@@ -6,6 +6,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/diagnostics/Disassembler.hpp>
+#include <erbsland/re/Match.hpp>
 #include <erbsland/re/RegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -17,11 +18,11 @@ using namespace el::re;
 
 class RegExBase : public re_test::TestHelper {
 public:
-    String pattern;
+    StringEditor pattern;
     Flags flags;
     Settings settings;
     RegExPtr regex;
-    String text;
+    StringEditor text;
     MatchBasePtr lastMatch;
     std::vector<std::string> matchLines;
     String textWithReplacements;
@@ -94,9 +95,8 @@ public:
         }
     }
 
-    void requireCompile(
-        const StringView &sourcePattern, const Flags sourceFlags = {}, const Settings sourceSettings = {}) {
-        pattern = String{sourcePattern};
+    void requireCompile(const String &sourcePattern, const Flags sourceFlags = {}, const Settings sourceSettings = {}) {
+        pattern = StringEditor{sourcePattern};
         flags = sourceFlags;
         settings = sourceSettings;
         REQUIRE_NOTHROW(regex = RegEx::compile(sourcePattern, sourceFlags, sourceSettings));
@@ -104,44 +104,44 @@ public:
     }
 
     void requireCompileFail(
-        const StringView &sourcePattern, const Flags sourceFlags = {}, const Settings sourceSettings = {}) {
-        pattern = String{sourcePattern};
+        const String &sourcePattern, const Flags sourceFlags = {}, const Settings sourceSettings = {}) {
+        pattern = StringEditor{sourcePattern};
         flags = sourceFlags;
         settings = sourceSettings;
         REQUIRE_THROWS(regex = RegEx::compile(sourcePattern, sourceFlags, sourceSettings));
     }
 
-    void requireMatch(const StringView &subject) {
-        text = String{subject};
+    void requireMatch(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(lastMatch = regex->match(subject));
         REQUIRE(lastMatch != nullptr);
     }
 
-    void requireNoMatch(const StringView &subject) {
-        text = String{subject};
+    void requireNoMatch(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(lastMatch = regex->match(subject));
         REQUIRE(lastMatch == nullptr);
     }
 
-    void requireNoMatch(const std::vector<StringView> &testCases) {
+    void requireNoMatch(const std::vector<String> &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoMatch(testCase));
         }
     }
 
     struct NoCaptureTestCase {
-        StringView text;
+        String text;
         InputPosition begin = 0;
-        std::optional<StringView> expectedMatch = std::nullopt;
+        std::optional<String> expectedMatch = std::nullopt;
     };
     using NoneCapGroupTestCases = std::vector<NoCaptureTestCase>;
 
     void requireMatchWithNoneCapGroups(
-        const StringView &subject,
+        const String &subject,
         const InputPosition begin = 0,
-        const std::optional<StringView> &expectedMatch = std::nullopt) {
+        const std::optional<String> &expectedMatch = std::nullopt) {
         const auto expected = expectedMatch.value_or(subject);
         const auto expectedLine = std::format(
             "00: {:04}-{:04} '{}'",
@@ -158,27 +158,27 @@ public:
         }
     }
 
-    void requireFullMatch(const StringView &subject) {
-        text = String{subject};
+    void requireFullMatch(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(lastMatch = regex->fullMatch(subject));
         REQUIRE(lastMatch != nullptr);
     }
 
-    void requireNoFullMatch(const StringView &subject) {
-        text = String{subject};
+    void requireNoFullMatch(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(lastMatch = regex->fullMatch(subject));
         REQUIRE(lastMatch == nullptr);
     }
 
-    void requireNoFullMatch(const std::vector<StringView> &testCases) {
+    void requireNoFullMatch(const std::vector<String> &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFullMatch(testCase));
         }
     }
 
-    void requireFullMatchWithNoCaptures(const StringView &subject) {
+    void requireFullMatchWithNoCaptures(const String &subject) {
         const auto expectedLine = std::format(
             "00: {:04}-{:04} '{}'",
             0,
@@ -188,33 +188,33 @@ public:
         WITH_CONTEXT(requireGroups({expectedLine}));
     }
 
-    void requireFullMatchWithNoCaptures(const std::vector<StringView> &testCases) {
+    void requireFullMatchWithNoCaptures(const std::vector<String> &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireFullMatchWithNoCaptures(testCase));
         }
     }
 
-    void requireFindFirst(const StringView &subject) {
-        text = String{subject};
+    void requireFindFirst(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(lastMatch = regex->findFirst(subject));
     }
 
-    void requireNoFindFirst(const StringView &subject) {
+    void requireNoFindFirst(const String &subject) {
         requireFindFirst(subject);
         REQUIRE(lastMatch == nullptr);
     }
 
-    void requireNoFindFirst(const std::vector<StringView> &testCases) {
+    void requireNoFindFirst(const std::vector<String> &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFindFirst(testCase));
         }
     }
 
     void requireFindFirstNoCaptures(
-        const StringView &subject,
+        const String &subject,
         const InputPosition begin = 0,
-        const std::optional<StringView> &expectedMatch = std::nullopt) {
+        const std::optional<String> &expectedMatch = std::nullopt) {
         const auto expected = expectedMatch.value_or(subject);
         const auto expectedLine = std::format(
             "00: {:04}-{:04} '{}'",
@@ -231,8 +231,8 @@ public:
         }
     }
 
-    void requireFindAll(const StringView &subject) {
-        text = String{subject};
+    void requireFindAll(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         auto matchCount = 0;
         matchLines.clear();
@@ -248,8 +248,8 @@ public:
         REQUIRE_GREATER(matchCount, 0);
     }
 
-    void requireNoFindAll(const StringView &subject) {
-        text = String{subject};
+    void requireNoFindAll(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         auto matchCount = 0;
         for ([[maybe_unused]] const auto &match : regex->findAll(subject)) {
@@ -258,14 +258,14 @@ public:
         REQUIRE_EQUAL(matchCount, 0);
     }
 
-    void requireNoFindAll(const std::vector<StringView> &testCases) {
+    void requireNoFindAll(const std::vector<String> &testCases) {
         for (const auto &testCase : testCases) {
             WITH_CONTEXT(requireNoFindAll(testCase));
         }
     }
 
-    void requireCollectAll(const StringView &subject) {
-        text = String{subject};
+    void requireCollectAll(const String &subject) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         const auto matches = regex->collectAll(subject);
         REQUIRE_GREATER(matches.size(), 0);
@@ -282,14 +282,14 @@ public:
     }
 
     struct ReplaceTestCase {
-        StringView text;
-        StringView replacementExpression;
-        StringView expectedResult;
+        String text;
+        String replacementExpression;
+        String expectedResult;
     };
     using ReplaceTestCases = std::vector<ReplaceTestCase>;
 
-    void requireReplaceAll(const StringView &subject, const StringView &replacementExpression) {
-        text = String{subject};
+    void requireReplaceAll(const String &subject, const String &replacementExpression) {
+        text = StringEditor{subject};
         REQUIRE(regex != nullptr);
         REQUIRE_NOTHROW(textWithReplacements = regex->replaceAll(subject, replacementExpression));
     }

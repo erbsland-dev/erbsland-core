@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <cstddef>
 
@@ -17,7 +17,7 @@ public:
     /// Create an empty group identifier.
     GroupId() = default;
     /// Create a group identifier from its platform representation.
-    explicit GroupId(const text::StringView &value) : _value{value} {}
+    explicit GroupId(const text::String &value) : _value{value} {}
 
     // defaults
     ~GroupId() = default;

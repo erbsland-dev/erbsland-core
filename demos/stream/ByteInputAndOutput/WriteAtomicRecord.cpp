@@ -31,7 +31,7 @@ void writeAtomicRecord(const el::Path &path) {
             if (!output->isReady()) {
                 el::io::printLine("The output is still processing earlier data."_el);
             }
-            if (output->write(el::ByteBlockView{record}).isSuccess()) {
+            if (output->write(record).isSuccess()) {
                 if (output->close().isTimeout()) {
                     output->abort();
                     throw el::RuntimeError{"Closing the geometry-record file timed out."_el};

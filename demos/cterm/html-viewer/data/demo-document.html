@@ -48,7 +48,7 @@ and press <strong>q</strong> when you want to quit.
 <h2>Code Block</h2>
 
 <pre>auto html = path.content().readTextOrThrow();
-auto document = el::html::HtmlParser{el::AnyStringView{html}}.parse();
+auto document = el::html::HtmlParser{html}.parse();
 el::TerminalDocumentRenderer{}.renderTo(buffer, document);
 </pre>
 

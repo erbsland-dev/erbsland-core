@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../text/StringView.hpp"
+#include "../../text/String.hpp"
 #include "../../unit/Version.hpp"
 
 namespace erbsland::core::impl {
 
 auto libraryVersion() noexcept -> unit::Version;
-auto libraryVersionText() noexcept -> text::StringView;
+auto libraryVersionText() noexcept -> text::String;
 
 }

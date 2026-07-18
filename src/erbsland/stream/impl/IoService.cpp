@@ -34,7 +34,7 @@ void IoService::addWorker() {
     }
     ++_workerCount;
     ++_idleWorkerCount;
-    std::thread{[this] { run(); }}.detach();
+    std::thread{[this]() -> void { run(); }}.detach();
 }
 
 void IoService::run() {

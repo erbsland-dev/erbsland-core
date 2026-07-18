@@ -10,8 +10,8 @@
 #include "OptionSet_fwd.hpp"
 
 #include "../i18n/DisplayTextMap_fwd.hpp"
-#include "../text/StringView.hpp"
-#include "../text/StringViewList.hpp"
+#include "../text/String.hpp"
+#include "../text/StringList.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <utility>
@@ -32,20 +32,20 @@ public:
 
 public:
     /// Get the short user-facing error title.
-    [[nodiscard]] auto title() const -> text::StringView { return _title; }
+    [[nodiscard]] auto title() const -> text::String { return _title; }
     /// Set the short user-facing error title.
     /// @param title The title text.
     /// @return A reference to this context.
-    auto setTitle(text::StringView title) -> OptionErrorContext & {
+    auto setTitle(text::String title) -> OptionErrorContext & {
         _title = std::move(title);
         return *this;
     }
     /// Get the detailed user-facing error description.
-    [[nodiscard]] auto description() const -> text::StringView { return _description; }
+    [[nodiscard]] auto description() const -> text::String { return _description; }
     /// Set the detailed user-facing error description.
     /// @param description The description text.
     /// @return A reference to this context.
-    auto setDescription(text::StringView description) -> OptionErrorContext & {
+    auto setDescription(text::String description) -> OptionErrorContext & {
         _description = std::move(description);
         return *this;
     }
@@ -104,11 +104,11 @@ public:
         return *this;
     }
     /// Get all command-line arguments related to the error.
-    [[nodiscard]] auto arguments() const noexcept -> const text::StringViewList & { return _arguments; }
+    [[nodiscard]] auto arguments() const noexcept -> const text::StringList & { return _arguments; }
     /// Set all command-line arguments related to the error.
     /// @param arguments The command-line arguments.
     /// @return A reference to this context.
-    auto setArguments(text::StringViewList arguments) -> OptionErrorContext & {
+    auto setArguments(text::StringList arguments) -> OptionErrorContext & {
         _arguments = std::move(arguments);
         return *this;
     }
@@ -123,8 +123,8 @@ public:
     }
 
 private:
-    text::StringView _title;                            ///< The short error title.
-    text::StringView _description;                      ///< The detailed error description.
+    text::String _title;                                ///< The short error title.
+    text::String _description;                          ///< The detailed error description.
     OptionErrorReason _reason{OptionErrorReason::None}; ///< Machine readable reason for the error.
     unit::ArgumentIndex _argumentIndex{
         unit::ArgumentIndex::noIndex()};                ///< The argument index where the error occurred.
@@ -132,7 +132,7 @@ private:
     OptionModulePtr _module;                            ///< The selected module, if any.
     OptionPtr _option;                                  ///< The option where the error occurred.
     OptionSetPtr _optionSet;                            ///< The option set where the error occurred.
-    text::StringViewList _arguments;                    ///< The command-line arguments, if available.
+    text::StringList _arguments;                        ///< The command-line arguments, if available.
     i18n::DisplayTextMapConstPtr _displayText;          ///< The wording captured for diagnostic rendering.
 };
 

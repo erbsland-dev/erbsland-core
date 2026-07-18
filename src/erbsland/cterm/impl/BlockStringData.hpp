@@ -9,14 +9,14 @@
 #include "../../mem/SharedData.hpp"
 #include "../../mem/SharedDataPointer.hpp"
 #include "../../text/EncodingErrorMode.hpp"
-#include "../../text/StringView.hpp"
-#include "../../text/u32/U32StringView.hpp"
+#include "../../text/String.hpp"
+#include "../../text/u32/U32String.hpp"
 
 #include <vector>
 
 namespace erbsland::cterm::impl {
 
-/// Shared immutable backing storage for `BlockString` and `BlockStringView`.
+/// Shared immutable backing storage for `BlockStringEditor` and `BlockString`.
 class BlockStringData final : public mem::SharedData {
 public:
     using Storage = std::vector<Block>;
@@ -77,17 +77,14 @@ public:
     /// @param text The source text.
     /// @param color The base color for newly appended characters.
     /// @param attributes The base attributes for newly appended characters.
-    void appendCharacters(const text::U32StringView &text, Color color, BlockAttributes attributes) noexcept;
+    void appendCharacters(const text::U32String &text, Color color, BlockAttributes attributes) noexcept;
     /// Append UTF-8 text to the storage.
     /// @param text The source text.
     /// @param color The base color for newly appended characters.
     /// @param attributes The base attributes for newly appended characters.
     /// @param encodingErrorMode How malformed UTF-8 is handled.
     void appendCharacters(
-        const text::StringView &text,
-        Color color,
-        BlockAttributes attributes,
-        text::EncodingErrorMode encodingErrorMode);
+        const text::String &text, Color color, BlockAttributes attributes, text::EncodingErrorMode encodingErrorMode);
 
 public:
     /// Measure the terminal display width produced by UTF-8 text.
@@ -95,12 +92,11 @@ public:
     /// @param encodingErrorMode How malformed UTF-8 is handled.
     /// @return The display width of the accepted terminal characters.
     [[nodiscard]] static auto measureDisplayWidth(
-        const text::StringView &text, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace)
-        -> int;
+        const text::String &text, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace) -> int;
     /// Measure the terminal display width produced by text.
     /// @param text The source text.
     /// @return The display width of the accepted terminal characters.
-    [[nodiscard]] static auto measureDisplayWidth(const text::U32StringView &text) -> int;
+    [[nodiscard]] static auto measureDisplayWidth(const text::U32String &text) -> int;
 
 private:
     Storage _chars;      ///< The stored characters.

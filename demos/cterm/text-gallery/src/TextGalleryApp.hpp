@@ -29,8 +29,8 @@ private:
     void drawBitmapFontPage(BlockRectangle contentRect);
     void drawPanel(
         BlockRectangle rect,
-        el::StringView title,
-        el::StringView text,
+        el::String title,
+        el::String text,
         Alignment alignment,
         FrameStyle frameStyle,
         Color fillColor,
@@ -38,7 +38,7 @@ private:
     void drawFooter(BlockRectangle rect);
     [[nodiscard]] auto buildFooterText() const -> BlockString;
     [[nodiscard]] static auto titleColors() -> ColorSequence;
-    [[nodiscard]] static auto titleForWidth(BlockCoordinate width) -> el::StringView;
+    [[nodiscard]] static auto titleForWidth(BlockCoordinate width) -> el::String;
 
 private:
     FontPtr _font;

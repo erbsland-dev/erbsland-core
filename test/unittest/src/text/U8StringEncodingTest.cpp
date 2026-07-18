@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockView.hpp>
 #include <erbsland/mem/ByteReader.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
@@ -12,8 +11,7 @@
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 #include <erbsland/text/u8/impl/U8StringEncodingTools.hpp>
 #include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringCharView.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -25,7 +23,7 @@ using el::mem::Endianness;
 using namespace el::text;
 using namespace el::unit;
 
-TESTED_TARGETS(U8String U8StringView U8StringCharView U8StringEncodingTools StringEncoding StringBomMode)
+TESTED_TARGETS(U8StringEditor U8String U8StringEncodingTools StringEncoding StringBomMode)
 class U8StringEncodingTest final : public el::UnitTest {
 public:
     void testEncodeUtf8AndBomModes() {
@@ -206,9 +204,9 @@ public:
     }
 
     void testEncodeEntryPointsAndSlices() {
-        const auto source = U8String{std::u8string_view{u8"xxA¢€😀yy"}};
-        const auto view = U8StringView{source}.slice(ByteRange{ByteIndex{2U}, ByteLength{10U}});
-        const auto charView = source.toCharView().slice(CpRange{CpIndex{2U}, CpLength{4U}}).toCharView();
+        const auto source = U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}};
+        const auto view = U8String{source}.slice(ByteRange{ByteIndex{2U}, ByteLength{10U}});
+        const auto charView = source.slice(CpRange{CpIndex{2U}, CpLength{4U}});
 
         REQUIRE_EQUAL(
             StringEncoder{source}.encode(StringEncoding::Utf8, StringBomMode::Reject).toUInt8Vector(), withAffixes());
@@ -221,21 +219,6 @@ public:
 
     void testHelperMethods() {
         using Tools = el::text::impl::U8StringEncodingTools;
-
-        REQUIRE(el::text::impl::utf8::hasBom(makeBlock({0xEFU, 0xBBU, 0xBFU, 0x41U})));
-        REQUIRE(el::text::impl::utf16::hasLittleEndianBom(makeBlock({0xFFU, 0xFEU, 0x41U, 0x00U})));
-        REQUIRE(el::text::impl::utf16::hasBigEndianBom(makeBlock({0xFEU, 0xFFU, 0x00U, 0x41U})));
-        REQUIRE(el::text::impl::utf32::hasLittleEndianBom(makeBlock({0xFFU, 0xFEU, 0x00U, 0x00U})));
-        REQUIRE(el::text::impl::utf32::hasBigEndianBom(makeBlock({0x00U, 0x00U, 0xFEU, 0xFFU})));
-        REQUIRE_EQUAL(el::text::impl::utf8::bomLength(), std::size_t{3U});
-        REQUIRE_EQUAL(el::text::impl::utf16::bomLength(), std::size_t{2U});
-        REQUIRE_EQUAL(el::text::impl::utf32::bomLength(), std::size_t{4U});
-        REQUIRE(el::text::impl::utf16::isEncoding(StringEncoding::Utf16BigEndian));
-        REQUIRE_FALSE(el::text::impl::utf16::isEncoding(StringEncoding::Utf32BigEndian));
-        REQUIRE(el::text::impl::utf32::isEncoding(StringEncoding::Utf32LittleEndian));
-        REQUIRE_EQUAL(Tools::defaultEndianness(StringEncoding::Utf16BigEndian), Endianness::Big);
-        REQUIRE(Tools::shouldWriteBom(StringEncoding::Utf16, StringBomMode::Automatic));
-        REQUIRE_FALSE(Tools::shouldWriteBom(StringEncoding::Utf8, StringBomMode::Automatic));
 
         const auto utf16Data = makeBlock({0x34U, 0x12U, 0x12U, 0x34U});
         auto utf16Reader = ByteReader{utf16Data};
@@ -256,7 +239,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto sampleText() -> U8String { return U8String{std::u8string_view{u8"A¢€😀"}}; }
+    [[nodiscard]] static auto sampleText() -> U8StringEditor { return U8StringEditor{std::u8string_view{u8"A¢€😀"}}; }
 
     [[nodiscard]] static auto sampleU32() -> std::u32string { return std::u32string{U"A¢€😀"}; }
 

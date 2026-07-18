@@ -35,7 +35,7 @@ handle every :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` in the same
 .. code-block:: cpp
 
     /// A parser throws `ParseError` when its input violates the notation grammar.
-    auto parseDynamics(const el::StringView &text) -> el::StringView {
+    auto parseDynamics(const el::String &text) -> el::String {
         if (text == "piano"_el || text == "forte"_el) {
             return text;
         }
@@ -92,7 +92,7 @@ Choose the Right Text Interface
     /// `what()` provides the null-terminated compatibility string expected by standard C++ interfaces.
     void exceptionText() {
         try {
-            const auto tempo = el::String{"速い"_el}.toIntegerOrThrow<int>();
+            const auto tempo = el::StringEditor{"速い"_el}.toIntegerOrThrow<int>();
             el::io::printLine("Tempo: "_el, tempo);
         } catch (const el::ParseError &error) {
             el::io::printLine("reason(): "_el, error.reason());

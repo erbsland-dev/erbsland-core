@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Engine_fwd.hpp"
 #include "EngineData.hpp"
 #include "EngineMatch.hpp"
 #include "EngineResult.hpp"
@@ -18,10 +19,6 @@
 #include "../../Settings.hpp"
 
 namespace erbsland::re::impl {
-
-class Engine;
-using EnginePtr = std::shared_ptr<Engine>;
-using ConstEnginePtr = std::shared_ptr<const Engine>;
 
 /// The engine for executing regular expressions.
 /// Made for Thompson's construction algorithm.
@@ -197,7 +194,7 @@ private:
     void handleStopAtomic(EngineState &state, EngineThread &thread, size_t threadIndex) const;
 
     /// Throw an engine error.
-    [[noreturn]] static void throwError(const text::StringView &message);
+    [[noreturn]] static void throwError(const text::String &message);
 
 public:
     ConstEngineDataPtr _data;      ///< The data for the engine.

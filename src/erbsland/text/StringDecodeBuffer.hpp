@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "AnyString.hpp"
+#include "AnyStringEditor.hpp"
 #include "Char.hpp"
 #include "EncodingErrorMode.hpp"
 #include "String.hpp"
 #include "StringBomMode.hpp"
+#include "StringEditor.hpp"
 #include "StringEncoding.hpp"
-#include "StringView.hpp"
 
-#include "u16/U16String.hpp"
-#include "u32/U32String.hpp"
-#include "u8/U8String.hpp"
+#include "u16/U16StringEditor.hpp"
+#include "u32/U32StringEditor.hpp"
+#include "u8/U8StringEditor.hpp"
 
 #include "../mem/Byte.hpp"
-#include "../mem/ByteBlockView.hpp"
+#include "../mem/ByteBlock.hpp"
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
@@ -94,7 +94,7 @@ public: // input
     void write(std::span<const mem::Byte> bytes);
     /// Write bytes to the buffer.
     /// @throws err::ParameterError If the data does not fit into the available space.
-    void write(const mem::ByteBlockView &bytes);
+    void write(const mem::ByteBlock &bytes);
     /// Write bytes to the buffer.
     /// @throws err::ParameterError If the data does not fit into the available space.
     void write(const std::vector<mem::Byte> &bytes);
@@ -107,9 +107,9 @@ public: // input
     /// Write bytes to the buffer.
     /// @throws err::ParameterError If the data does not fit into the available space.
     void write(std::string_view bytes);
-    /// Write raw UTF-8 bytes from a string view.
+    /// Write raw UTF-8 bytes from a read-only string.
     /// @throws err::ParameterError If the data does not fit into the available space.
-    void writeStringBytes(const StringView &bytes);
+    void writeStringBytes(const String &bytes);
     /// Mark the input as complete.
     void finish() noexcept { _finished = true; }
     /// Reset the buffer.
@@ -158,8 +158,8 @@ private:
     void appendByte(mem::Byte byte) noexcept;
     [[nodiscard]] auto writeIndex() const noexcept -> unit::ByteIndex;
     [[nodiscard]] auto byteAt(unit::ByteIndex index) const noexcept -> mem::Byte;
-    [[nodiscard]] auto byteMatches(std::span<const uint8_t> prefix) const noexcept -> bool;
-    [[nodiscard]] auto byteMatchesAvailable(std::span<const uint8_t> prefix) const noexcept -> bool;
+    [[nodiscard]] auto byteMatches(std::span<const mem::Byte> prefix) const noexcept -> bool;
+    [[nodiscard]] auto byteMatchesAvailable(std::span<const mem::Byte> prefix) const noexcept -> bool;
     [[nodiscard]] auto materialize(unit::ByteLength length) const -> mem::ByteBlock;
     void consume(unit::ByteLength length) noexcept;
     [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength;
@@ -178,9 +178,6 @@ private:
     [[nodiscard]] auto readUInt16(unit::ByteIndex index) const noexcept -> char16_t;
     [[nodiscard]] auto readUInt32(unit::ByteIndex index) const noexcept -> char32_t;
     [[nodiscard]] static auto isContinuationByte(uint8_t value) noexcept -> bool;
-    [[nodiscard]] static auto defaultEffectiveEncoding(StringEncoding encoding) noexcept -> StringEncoding;
-    [[nodiscard]] static auto isUtf16Encoding(StringEncoding encoding) noexcept -> bool;
-    [[nodiscard]] static auto isUtf32Encoding(StringEncoding encoding) noexcept -> bool;
 
 private:
     std::vector<mem::Byte> _buffer; ///< The ring buffer storage.

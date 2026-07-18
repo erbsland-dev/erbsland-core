@@ -5,7 +5,7 @@
 #include "PathAccessProfile.hpp"
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
 #include "../unit/ElementCount.hpp"
 
@@ -22,14 +22,14 @@ public:
     /// The prefix to add in front of the random name part.
     [[nodiscard]] auto prefix() const noexcept -> const text::String & { return _prefix; }
     /// Set the prefix to add in front of the random name part.
-    auto setPrefix(const text::StringView &value) -> PathTempFileOptions & {
+    auto setPrefix(const text::String &value) -> PathTempFileOptions & {
         _prefix = text::String{value};
         return *this;
     }
     /// The suffix to add after the random name part.
     [[nodiscard]] auto suffix() const noexcept -> const text::String & { return _suffix; }
     /// Set the suffix to add after the random name part.
-    auto setSuffix(const text::StringView &value) -> PathTempFileOptions & {
+    auto setSuffix(const text::String &value) -> PathTempFileOptions & {
         _suffix = text::String{value};
         return *this;
     }

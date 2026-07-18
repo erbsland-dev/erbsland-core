@@ -10,8 +10,8 @@
 #include <utility>
 #include <vector>
 
+using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
 using el::text::html::impl::HtmlToken;
 using el::text::html::impl::HtmlTokenizer;
 using el::text::html::impl::HtmlTokenType;
@@ -20,13 +20,13 @@ TESTED_TARGETS(HtmlTokenizer HtmlToken HtmlTokenType)
 class HtmlTokenizerTest final : public el::UnitTest {
 public:
     struct ExpectedAttribute final {
-        StringView name;
-        StringView value;
+        String name;
+        String value;
     };
 
     struct ExpectedToken final {
         HtmlTokenType type;
-        StringView value;
+        String value;
         std::vector<ExpectedAttribute> attributes{};
         bool selfClosing{false};
     };
@@ -172,7 +172,7 @@ public:
     void testTokenizeYieldsConstructsIncrementally() {
         using namespace el::text::literals;
 
-        auto tokenizer = HtmlTokenizer{"<p>one</p><broken title=\"x"_elv};
+        auto tokenizer = HtmlTokenizer{String{"<p>one</p><broken title=\"x"_el}};
         auto generator = tokenizer.tokenize();
 
         auto token = generator.next();
@@ -197,7 +197,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto tokenize(StringView text) -> std::vector<HtmlToken> {
+    [[nodiscard]] static auto tokenize(String text) -> std::vector<HtmlToken> {
         auto result = std::vector<HtmlToken>{};
         auto tokenizer = HtmlTokenizer{text};
         for (auto token : tokenizer.tokenize()) {

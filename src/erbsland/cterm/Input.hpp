@@ -4,7 +4,7 @@
 
 #include "Key.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <chrono>
 #include <cstdint>

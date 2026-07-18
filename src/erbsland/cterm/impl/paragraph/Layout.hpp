@@ -11,7 +11,7 @@
 #include "LayoutSemantics.hpp"
 
 #include "../../BlockRange.hpp"
-#include "../../BlockStringView.hpp"
+#include "../../BlockString.hpp"
 #include "../../ParagraphOptions.hpp"
 
 #include <vector>
@@ -22,7 +22,7 @@ namespace erbsland::cterm::impl::paragraph {
 class Layout final {
 public:
     Layout(
-        const BlockStringView &text,
+        const BlockString &text,
         int width,
         const ParagraphOptions &options,
         LayoutNewlineMode newlineMode,

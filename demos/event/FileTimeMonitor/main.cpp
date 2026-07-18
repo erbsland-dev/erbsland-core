@@ -3,16 +3,10 @@
 
 #include "FileTimeMonitor.hpp"
 
-namespace demo {
+using namespace demo;
 
 /// This simple main method is the entry point of the application.
 auto main(const int argc, char *argv[]) -> int {
     auto app = FileTimeMonitorApp{argc, argv};
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

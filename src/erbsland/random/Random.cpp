@@ -3,6 +3,7 @@
 #include "Random.hpp"
 
 #include "../mem/ByteWriter.hpp"
+#include "../text/String.hpp"
 
 #include <algorithm>
 #include <array>
@@ -14,7 +15,7 @@ auto Random::buildString(const unit::CpLength length, const text::CharSet &chara
         return {};
     }
     const auto choices = characters.toList();
-    auto result = text::String{};
+    auto result = text::StringEditor{};
     for (auto i = unit::CpLength{}; i < length; ++i) {
         result.append(selectElement(choices));
     }

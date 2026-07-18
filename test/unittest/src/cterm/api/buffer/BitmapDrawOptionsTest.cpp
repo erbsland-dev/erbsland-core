@@ -84,8 +84,8 @@ public:
         options.setCombinationStyle(combinationStyle);
         options.setScaleMode(BitmapScaleMode::DoubleBlock);
         options.setFullBlock(Block{U'#', fg::Green, bg::Black});
-        options.setDoubleBlocks(BlockString{"[]"_el});
-        options.setHalfBlocks(BlockString{"abcdefghijklmnop"_el});
+        options.setDoubleBlocks(BlockStringEditor{"[]"_el});
+        options.setHalfBlocks(BlockStringEditor{"abcdefghijklmnop"_el});
 
         REQUIRE(options.block16Style() == block16Style);
         REQUIRE(options.combinationStyle() == combinationStyle);
@@ -104,9 +104,10 @@ public:
         auto options = BitmapDrawOptions{};
 
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setFullBlock(Block{U'界'}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockString{"X"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockString{U"界X"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockString{"short"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockString{U"abcdefghijklmno界"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockStringEditor{"X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setDoubleBlocks(BlockStringEditor{U"界X"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setHalfBlocks(BlockStringEditor{"short"_el}));
+        REQUIRE_THROWS_AS(
+            erbsland::err::ParameterError, options.setHalfBlocks(BlockStringEditor{U"abcdefghijklmno界"_el}));
     }
 };

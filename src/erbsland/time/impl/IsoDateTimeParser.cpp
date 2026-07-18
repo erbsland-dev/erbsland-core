@@ -6,12 +6,14 @@
 
 namespace erbsland::time::impl {
 
-auto IsoDateTimeParser::parse(const text::StringView &text, const bool allowOffset) noexcept
+using unit::CpLength;
+
+auto IsoDateTimeParser::parse(const text::String &text, const bool allowOffset) noexcept
     -> std::optional<ParsedIsoDateTime> {
     return IsoDateTimeParser{text}.parse(allowOffset);
 }
 
-IsoDateTimeParser::IsoDateTimeParser(const text::StringView &text) noexcept : _reader{text} {
+IsoDateTimeParser::IsoDateTimeParser(const text::String &text) noexcept : _reader{text} {
 }
 
 auto IsoDateTimeParser::parse(const bool allowOffset) noexcept -> std::optional<ParsedIsoDateTime> {
@@ -53,7 +55,7 @@ auto IsoDateTimeParser::parse(const bool allowOffset) noexcept -> std::optional<
 }
 
 auto IsoDateTimeParser::parseDate() noexcept -> bool {
-    if (!readNDigits(unit::CpLength{4U}, _year)) {
+    if (!readNDigits(CpLength{4U}, _year)) {
         return false;
     }
     const auto extended = _reader.advanceIf(U'-');
@@ -64,7 +66,7 @@ auto IsoDateTimeParser::parseDate() noexcept -> bool {
     if (!current.isAsciiDigit()) {
         return true;
     }
-    if (!readNDigits(unit::CpLength{2U}, _month)) {
+    if (!readNDigits(CpLength{2U}, _month)) {
         return false;
     }
     _precision = DateTimePrecision::Month;
@@ -80,7 +82,7 @@ auto IsoDateTimeParser::parseDate() noexcept -> bool {
     } else if (!current.isAsciiDigit()) {
         return true;
     }
-    if (!readNDigits(unit::CpLength{2U}, _day)) {
+    if (!readNDigits(CpLength{2U}, _day)) {
         return false;
     }
     _precision = DateTimePrecision::Day;
@@ -89,7 +91,7 @@ auto IsoDateTimeParser::parseDate() noexcept -> bool {
 
 auto IsoDateTimeParser::parseTime() noexcept -> bool {
     static const auto fractionSeparator = text::CharSet{U'.', U','};
-    if (!readNDigits(unit::CpLength{2U}, _hour)) {
+    if (!readNDigits(CpLength{2U}, _hour)) {
         return false;
     }
     _precision = DateTimePrecision::Hour;
@@ -101,7 +103,7 @@ auto IsoDateTimeParser::parseTime() noexcept -> bool {
     if (!current.isAsciiDigit()) {
         return true;
     }
-    if (!readNDigits(unit::CpLength{2U}, _minute)) {
+    if (!readNDigits(CpLength{2U}, _minute)) {
         return false;
     }
     _precision = DateTimePrecision::Minute;
@@ -117,7 +119,7 @@ auto IsoDateTimeParser::parseTime() noexcept -> bool {
     } else if (!current.isAsciiDigit()) {
         return true;
     }
-    if (!readNDigits(unit::CpLength{2U}, _second)) {
+    if (!readNDigits(CpLength{2U}, _second)) {
         return false;
     }
     _precision = DateTimePrecision::Second;
@@ -130,14 +132,14 @@ auto IsoDateTimeParser::parseTime() noexcept -> bool {
 auto IsoDateTimeParser::parseFraction() noexcept -> bool {
     constexpr auto options = text::IntegerParseOptions::parserDefault()
                                  .setFixedBase(text::IntegerBase::Decimal)
-                                 .setMaximumDigits(unit::CpLength{9});
+                                 .setMaximumDigits(CpLength{9});
     const auto result = _reader.parseInteger(options);
     using St = text::ReadNumberStatus;
     if (result.status != St::Success) {
         return false;
     }
     _nanosecond = static_cast<int>(result.value); // parsed range is 0-999'999'999, always fit signed 32bit.
-    for (auto i = result.digitCount; i < unit::CpLength{9}; ++i) {
+    for (auto i = result.digitCount; i < CpLength{9}; ++i) {
         _nanosecond *= 10;
     }
     _precision = DateTimePrecision::Nanosecond;
@@ -159,18 +161,18 @@ auto IsoDateTimeParser::parseOffset() noexcept -> bool {
     auto hour = 0;
     auto minute = 0;
     auto second = 0;
-    if (!readNDigits(unit::CpLength{2U}, hour)) {
+    if (!readNDigits(CpLength{2U}, hour)) {
         return false;
     }
     const auto extended = _reader.advanceIf(U':');
     if (extended) {
-        if (!readNDigits(unit::CpLength{2U}, minute)) {
+        if (!readNDigits(CpLength{2U}, minute)) {
             return false;
         }
-        if (_reader.advanceIf(U':') && !readNDigits(unit::CpLength{2U}, second)) {
+        if (_reader.advanceIf(U':') && !readNDigits(CpLength{2U}, second)) {
             return false;
         }
-    } else if (_reader.peek().isAsciiDigit() && !readNDigits(unit::CpLength{2U}, minute)) {
+    } else if (_reader.peek().isAsciiDigit() && !readNDigits(CpLength{2U}, minute)) {
         return false;
     }
     if (hour > 23 || minute > 59 || second > 59) {
@@ -181,7 +183,7 @@ auto IsoDateTimeParser::parseOffset() noexcept -> bool {
     return true;
 }
 
-auto IsoDateTimeParser::readNDigits(const unit::CpLength count, int &value) noexcept -> bool {
+auto IsoDateTimeParser::readNDigits(const CpLength count, int &value) noexcept -> bool {
     value = 0;
     auto options = text::IntegerParseOptions::fixedDecimal(count);
     const auto result = _reader.parseInteger(options);

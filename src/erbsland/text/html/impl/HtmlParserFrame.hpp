@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../StringView.hpp"
+#include "../../String.hpp"
 #include "../../TextNode.hpp"
 
 #include <utility>
@@ -20,7 +20,7 @@ public:
     /// @param suppressSubtree `true` if all content below this frame is ignored.
     /// @param preserveWhitespace `true` if text below this frame is parsed verbatim.
     HtmlParserFrame(
-        StringView tagName = {},
+        String tagName = {},
         TextNodePtr node = {},
         const bool transparent = false,
         const bool suppressSubtree = false,
@@ -33,7 +33,7 @@ public:
 
 public:
     /// Access the lower-case ASCII tag name.
-    [[nodiscard]] auto tagName() const noexcept -> const StringView & { return _tagName; }
+    [[nodiscard]] auto tagName() const noexcept -> const String & { return _tagName; }
     /// Access the created node, if this frame owns one.
     [[nodiscard]] auto node() const noexcept -> const TextNodePtr & { return _node; }
     /// Access the created node, if this frame owns one.
@@ -46,7 +46,7 @@ public:
     [[nodiscard]] auto preserveWhitespace() const noexcept -> bool { return _preserveWhitespace; }
 
 private:
-    StringView _tagName;             ///< The lower-case ASCII tag name.
+    String _tagName;                 ///< The lower-case ASCII tag name.
     TextNodePtr _node;               ///< The created node, if this frame owns one.
     bool _transparent{false};        ///< `true` if the tag itself is ignored.
     bool _suppressSubtree{false};    ///< `true` if all content below this frame is ignored.

@@ -9,7 +9,7 @@ namespace erbsland::cterm {
 using namespace erbsland::text::literals;
 
 auto Font::defaultAscii() -> FontPtr {
-    static const auto cFont = [] {
+    static const auto cFont = []() -> Font {
         auto result = Font{8};
         result.addGlyph(" "_el, FontGlyph{bgeo::BlockSize{6, 8}});
         result.addGlyph("A"_el, FontGlyph{std::vector<uint8_t>{0x00, 0x0c, 0x1e, 0x33, 0x3f, 0x33, 0x33, 0x33}});

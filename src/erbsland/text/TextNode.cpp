@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TextNode.hpp"
 
+#include "AnyStringBuilder.hpp"
 #include "Literals.hpp"
-#include "String.hpp"
-#include "StringBuilder.hpp"
 #include "StringCharReader.hpp"
+#include "StringEditor.hpp"
 #include "StringTree.hpp"
 #include "TextNodeData.hpp"
 
@@ -35,13 +35,7 @@ auto TextNode::codeSnippetLineIndex(const unit::LineIndex startLine, const std::
 }
 
 TextNode::TextNode(
-    Type type,
-    StringView text,
-    StringView identifier,
-    StringView style,
-    TextNodeDataPtr data,
-    const Level level,
-    PrivateTag) :
+    Type type, String text, String identifier, String style, TextNodeDataPtr data, const Level level, PrivateTag) :
     _type{type},
     _text{std::move(text)},
     _identifier{std::move(identifier)},
@@ -106,7 +100,7 @@ auto TextNode::createDefinitionDescription() -> TextNodePtr {
     return createNode(Type::DefinitionDescription);
 }
 
-auto TextNode::createCodeBlock(StringView language) -> TextNodePtr {
+auto TextNode::createCodeBlock(String language) -> TextNodePtr {
     auto data = TextNodeDataPtr{};
     if (!language.isEmpty()) {
         data = std::make_shared<impl::CodeBlockData>(std::move(language));
@@ -115,8 +109,7 @@ auto TextNode::createCodeBlock(StringView language) -> TextNodePtr {
 }
 
 auto TextNode::createCodeSnippet(
-    StringViewList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, StringView language)
-    -> TextNodePtr {
+    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
     auto data = TextNodeDataPtr{};
     if (!language.isEmpty()) {
         data = std::make_shared<impl::CodeSnippetData>(std::move(language));
@@ -145,7 +138,7 @@ auto TextNode::createHorizontalLine() -> TextNodePtr {
     return createNode(Type::HorizontalLine);
 }
 
-auto TextNode::createText(StringView text) -> TextNodePtr {
+auto TextNode::createText(String text) -> TextNodePtr {
     return createNode(Type::Text, std::move(text));
 }
 
@@ -165,7 +158,7 @@ auto TextNode::createSpan() -> TextNodePtr {
     return createNode(Type::Span);
 }
 
-auto TextNode::createLink(StringView url) -> TextNodePtr {
+auto TextNode::createLink(String url) -> TextNodePtr {
     auto data = TextNodeDataPtr{};
     if (!url.isEmpty()) {
         data = std::make_shared<impl::LinkData>(std::move(url));
@@ -177,11 +170,11 @@ auto TextNode::createCode() -> TextNodePtr {
     return createNode(Type::Code);
 }
 
-auto TextNode::createUnsupported(StringView text) -> TextNodePtr {
+auto TextNode::createUnsupported(String text) -> TextNodePtr {
     return createNode(Type::Unsupported, std::move(text));
 }
 
-auto TextNode::createError(StringView text) -> TextNodePtr {
+auto TextNode::createError(String text) -> TextNodePtr {
     return createNode(Type::Error, std::move(text));
 }
 
@@ -251,13 +244,12 @@ auto TextNode::addDefinitionDescription() -> TextNodePtr {
     return appendChild(createDefinitionDescription());
 }
 
-auto TextNode::addCodeBlock(StringView language) -> TextNodePtr {
+auto TextNode::addCodeBlock(String language) -> TextNodePtr {
     return appendChild(createCodeBlock(std::move(language)));
 }
 
 auto TextNode::addCodeSnippet(
-    StringViewList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, StringView language)
-    -> TextNodePtr {
+    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
     return appendChild(createCodeSnippet(std::move(lines), startLine, std::move(markers), std::move(language)));
 }
 
@@ -265,14 +257,14 @@ auto TextNode::addHorizontalLine() -> TextNodePtr {
     return appendChild(createHorizontalLine());
 }
 
-auto TextNode::addText(StringView text) -> TextNodePtr {
+auto TextNode::addText(String text) -> TextNodePtr {
     return appendChild(createText(std::move(text)));
 }
 
-auto TextNode::addEscapedText(StringView text, const EscapeFormat format, const EscapeAmount amount) -> TextNode & {
+auto TextNode::addEscapedText(const String &text, const EscapeFormat format, const EscapeAmount amount) -> TextNode & {
     const auto formatter = impl::EscapeFormatter::forFormat(format);
     auto reader = StringCharReader{text};
-    auto plainText = StringBuilder{};
+    auto plainText = AnyStringBuilder{};
     const auto flushPlainText = [this, &plainText]() -> void {
         if (!plainText.isEmpty()) {
             addText(plainText.toString());
@@ -286,7 +278,7 @@ auto TextNode::addEscapedText(StringView text, const EscapeFormat format, const 
             continue;
         }
         flushPlainText();
-        auto escapeText = StringBuilder{};
+        auto escapeText = AnyStringBuilder{};
         formatter->escape(character, escapeText);
         add(Type::EscapeSequence)->setText(escapeText.toString());
     }
@@ -310,7 +302,7 @@ auto TextNode::addSpan() -> TextNodePtr {
     return appendChild(createSpan());
 }
 
-auto TextNode::addLink(StringView url) -> TextNodePtr {
+auto TextNode::addLink(String url) -> TextNodePtr {
     return appendChild(createLink(std::move(url)));
 }
 
@@ -318,25 +310,25 @@ auto TextNode::addCode() -> TextNodePtr {
     return appendChild(createCode());
 }
 
-auto TextNode::addUnsupported(StringView text) -> TextNodePtr {
+auto TextNode::addUnsupported(String text) -> TextNodePtr {
     return appendChild(createUnsupported(std::move(text)));
 }
 
-auto TextNode::addError(StringView text) -> TextNodePtr {
+auto TextNode::addError(String text) -> TextNodePtr {
     return appendChild(createError(std::move(text)));
 }
 
-auto TextNode::setText(StringView text) noexcept -> TextNode & {
+auto TextNode::setText(String text) noexcept -> TextNode & {
     _text = std::move(text);
     return *this;
 }
 
-auto TextNode::setIdentifier(StringView identifier) noexcept -> TextNode & {
+auto TextNode::setIdentifier(String identifier) noexcept -> TextNode & {
     _identifier = std::move(identifier);
     return *this;
 }
 
-auto TextNode::setStyle(StringView style) noexcept -> TextNode & {
+auto TextNode::setStyle(String style) noexcept -> TextNode & {
     _style = std::move(style);
     return *this;
 }
@@ -364,7 +356,7 @@ auto TextNode::parent() const noexcept -> TextNodePtr {
 }
 
 auto TextNode::contains(const Type type) const -> bool {
-    return anyOf([type](const TextNode &node) { return node.type() == type; });
+    return anyOf([type](const TextNode &node) -> bool { return node.type() == type; });
 }
 
 auto TextNode::clone() const -> TextNodePtr {
@@ -393,14 +385,14 @@ auto TextNode::toDiagnosticTree() const -> StringTree {
         result.append("text"_el, _text);
     }
     if (!_children.isEmpty()) {
-        result.appendList("children"_el, _children, [](const TextNodePtr &child) { return child->toDiagnosticTree(); });
+        result.appendList(
+            "children"_el, _children, [](const TextNodePtr &child) -> StringTree { return child->toDiagnosticTree(); });
     }
     return result;
 }
 
 auto TextNode::createNode(
-    Type type, StringView text, StringView identifier, StringView style, TextNodeDataPtr data, const Level level)
-    -> TextNodePtr {
+    Type type, String text, String identifier, String style, TextNodeDataPtr data, const Level level) -> TextNodePtr {
     return std::make_shared<TextNode>(
         type, std::move(text), std::move(identifier), std::move(style), std::move(data), level, PrivateTag{});
 }

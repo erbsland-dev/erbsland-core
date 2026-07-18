@@ -7,8 +7,8 @@
 #include "../DateTimePrecision.hpp"
 #include "../TimeAmounts.hpp"
 
+#include "../../text/String.hpp"
 #include "../../text/StringCharReader.hpp"
-#include "../../text/StringView.hpp"
 
 #include <optional>
 
@@ -24,11 +24,11 @@ public:
     /// @param text The text to parse.
     /// @param allowOffset Whether to allow an explicit UTC offset in the text.
     /// @return The parsed fields, or `std::nullopt` on failure.
-    [[nodiscard]] static auto parse(const text::StringView &text, bool allowOffset) noexcept
+    [[nodiscard]] static auto parse(const text::String &text, bool allowOffset) noexcept
         -> std::optional<ParsedIsoDateTime>;
 
 private:
-    explicit IsoDateTimeParser(const text::StringView &text) noexcept;
+    explicit IsoDateTimeParser(const text::String &text) noexcept;
 
     /// Parse the date/time string.
     /// @param allowOffset Whether to allow an explicit UTC offset.

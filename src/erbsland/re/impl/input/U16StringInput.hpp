@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../text/u16/U16StringView.hpp"
+#include "../../../text/u16/U16String.hpp"
 #include "../../../unit/U16DataIndex.hpp"
 #include "../../Input16.hpp"
 
 namespace erbsland::re::impl {
 
-/// An input that reads from an owning UTF-16 string view.
+/// An input that reads from an owning UTF-16 read-only string.
 class U16StringInput final : public Input16 {
 public:
-    [[nodiscard]] static auto create(const text::U16StringView &text) noexcept -> Input16Ptr {
+    [[nodiscard]] static auto create(const text::U16String &text) noexcept -> Input16Ptr {
         return std::make_shared<U16StringInput>(text);
     }
-    explicit U16StringInput(const text::U16StringView &text) noexcept : _text{text} {}
+    explicit U16StringInput(const text::U16String &text) noexcept : _text{text} {}
 
 public: // implement InputBase
     [[nodiscard]] auto read() -> CharAndPosition override;
@@ -22,10 +22,10 @@ public: // implement InputBase
     void skip(unit::CpLength characterCount) override;
 
 public: // implement Input16
-    [[nodiscard]] auto createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> Match16Ptr override;
+    [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> Match16Ptr override;
 
 private:
-    text::U16StringView _text;
+    text::U16String _text;
     unit::U16DataIndex _position;
 };
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/mem/ByteBlockEditor.hpp>
 #include <erbsland/mem/ByteReader.hpp>
 #include <erbsland/mem/ByteWriter.hpp>
 #include <erbsland/mem/Endianness.hpp>
@@ -13,6 +14,7 @@
 
 using el::mem::Byte;
 using el::mem::ByteBlock;
+using el::mem::ByteBlockEditor;
 using el::mem::ByteReader;
 using el::mem::ByteWriter;
 using el::mem::Endianness;
@@ -96,7 +98,6 @@ public:
         writer.reserve(ByteLength{8U});
         writer.writeByte(Byte{1U}).writeByte(Byte{2U});
         REQUIRE_EQUAL(writer.toByteBlock().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
-        REQUIRE(writer.toByteBlock().capacity() >= ByteLength{8U});
 
         writer.setPosition(ByteIndex{1U});
         writer.writeByte(Byte{9U});
@@ -127,12 +128,14 @@ public:
         auto writer = ByteWriter{};
         writer.writeUInt8(1U).writeUInt8(2U);
 
-        auto first = writer.toByteBlock();
-        auto second = first;
-        first.set(ByteIndex{0U}, Byte{9U});
+        const auto first = writer.toByteBlock();
+        auto editor = ByteBlockEditor{first};
+        editor.set(ByteIndex{0U}, Byte{9U});
+        writer.writeUInt8(3U);
 
-        REQUIRE_EQUAL(first.toUInt8Vector(), std::vector<uint8_t>({9U, 2U}));
-        REQUIRE_EQUAL(second.toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
+        REQUIRE_EQUAL(first.toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
+        REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({9U, 2U}));
+        REQUIRE_EQUAL(writer.toByteBlock().toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U}));
     }
 
 private:

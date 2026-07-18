@@ -7,39 +7,42 @@
 
 namespace erbsland::cterm {
 
-auto TerminalDocumentStyleSelector::styleTokenSeparators() -> const text::CharSet & {
-    static const auto cSeparators = text::CharSet::from(text::AsciiCategory::Whitespace);
+using text::AsciiCategory;
+using text::CharSet;
+using text::String;
+using text::TextNodeType;
+
+auto TerminalDocumentStyleSelector::styleTokenSeparators() -> const CharSet & {
+    static const auto cSeparators = CharSet::from(AsciiCategory::Whitespace);
     return cSeparators;
 }
 
 TerminalDocumentStyleSelector::TerminalDocumentStyleSelector(
-    const text::TextNodeType nodeType, std::initializer_list<text::StringView> requiredStyleTokens) :
+    const TextNodeType nodeType, std::initializer_list<String> requiredStyleTokens) :
     _nodeType{nodeType}, _requiredStyleTokens{requiredStyleTokens} {
     normalizeTokens(_requiredStyleTokens);
 }
 
 TerminalDocumentStyleSelector::TerminalDocumentStyleSelector(
-    text::TextNodeType nodeType,
-    std::optional<int> level,
-    std::initializer_list<text::StringView> requiredStyleTokens) :
+    TextNodeType nodeType, std::optional<int> level, std::initializer_list<String> requiredStyleTokens) :
     _nodeType{nodeType}, _level{level}, _requiredStyleTokens{requiredStyleTokens} {
     normalizeTokens(_requiredStyleTokens);
 }
 
 TerminalDocumentStyleSelector::TerminalDocumentStyleSelector(
-    const text::TextNodeType nodeType,
+    const TextNodeType nodeType,
     std::optional<int> level,
-    std::initializer_list<text::StringView> requiredStyleTokens,
-    std::optional<text::TextNodeType> ancestorType) :
+    std::initializer_list<String> requiredStyleTokens,
+    std::optional<TextNodeType> ancestorType) :
     _nodeType{nodeType}, _level{level}, _requiredStyleTokens{requiredStyleTokens}, _ancestorType{ancestorType} {
     normalizeTokens(_requiredStyleTokens);
 }
 
 void TerminalDocumentStyleSelector::normalizeTokens(TokenList &tokens) {
     tokens.sort();
-    auto previousToken = text::StringView{};
+    auto previousToken = String{};
     auto hasPreviousToken = false;
-    tokens.removeIf([&](const text::StringView &token) -> bool {
+    tokens.removeIf([&](const String &token) -> bool {
         if (hasPreviousToken && token == previousToken) {
             return true;
         }
@@ -49,7 +52,7 @@ void TerminalDocumentStyleSelector::normalizeTokens(TokenList &tokens) {
     });
 }
 
-auto TerminalDocumentStyleSelector::splitStyleTokens(text::StringView value) -> TokenList {
+auto TerminalDocumentStyleSelector::splitStyleTokens(const String &value) -> TokenList {
     auto result = TokenList::fromSplit(value, styleTokenSeparators());
     normalizeTokens(result);
     return result;

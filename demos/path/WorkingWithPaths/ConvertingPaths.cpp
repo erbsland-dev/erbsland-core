@@ -28,7 +28,7 @@ void convertingPaths() {
 
     // Use std::filesystem interop only when another API requires it.
     const auto stdPath = relative.toStdPath();
-    el::io::printLine("std ...............: "_el, el::String{stdPath.generic_string()});
+    el::io::printLine("std ...............: "_el, el::StringConverter{stdPath.generic_string()}.toString());
 }
 
 }

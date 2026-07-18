@@ -7,12 +7,14 @@
 #include "U16StringSharedStorage.hpp"
 #include "U16Writer.hpp"
 
-#include "../U16String.hpp"
+#include "../U16StringEditor.hpp"
 
 #include "../../../mem/ByteBlock_fwd.hpp"
-#include "../../../mem/ByteBlockView_fwd.hpp"
 #include "../../../mem/ByteWriter_fwd.hpp"
 #include "../../../mem/Endianness.hpp"
+#include "../../../mem/RingBuffer_fwd.hpp"
+#include "../../../unit/ByteLength_fwd.hpp"
+#include "../../../util/Result.hpp"
 #include "../../EncodingErrorMode.hpp"
 #include "../../StringBomMode.hpp"
 #include "../../StringEncoding.hpp"
@@ -43,16 +45,22 @@ public:
     [[nodiscard]] auto encode(
         StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
         -> mem::ByteBlock;
+    /// Calculate the exact byte length produced by `encode()`.
+    [[nodiscard]] auto encodedLength(
+        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
+        -> unit::ByteLength;
+    /// Atomically encode the visible UTF-16 data directly into a ring buffer.
+    [[nodiscard]] auto encodeTo(
+        mem::RingBuffer &buffer,
+        StringEncoding encoding,
+        StringBomMode bomMode,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> util::Result;
     /// Decode byte data into a UTF-16 string.
     [[nodiscard]] static auto decode(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
-        -> U16String;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        -> U16StringEditor;
 
 public: // helpers
-    /// Get the default byte order for the string encoding.
-    [[nodiscard]] static auto defaultEndianness(StringEncoding encoding) noexcept -> mem::Endianness;
-    /// Test if the given BOM mode should write a BOM for this encoding.
-    [[nodiscard]] static auto shouldWriteBom(StringEncoding encoding, StringBomMode bomMode) noexcept -> bool;
     /// Encode visible UTF-16 data as UTF-8 bytes.
     [[nodiscard]] static auto encodeUtf8(
         std::span<const char16_t> data, StringBomMode bomMode, EncodingErrorMode errorMode) -> mem::ByteBlock;
@@ -66,30 +74,30 @@ public: // helpers
         -> mem::ByteBlock;
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
     /// Decode characters to UTF-16 string storage using a two-pass algorithm.
     template <typename Function>
-    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U16String;
+    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U16StringEditor;
     /// Decode byte data as UTF-8.
-    [[nodiscard]] static auto decodeUtf8(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U16String;
+    [[nodiscard]] static auto decodeUtf8(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U16StringEditor;
     /// Decode byte data as UTF-16.
-    [[nodiscard]] static auto decodeUtf16(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U16String;
+    [[nodiscard]] static auto decodeUtf16(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U16StringEditor;
     /// Decode byte data as UTF-32.
-    [[nodiscard]] static auto decodeUtf32(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U16String;
+    [[nodiscard]] static auto decodeUtf32(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U16StringEditor;
 
 private:
     U16StringDataView _data;
 };
 
 template <typename Function>
-auto U16StringEncodingTools::decodeFromCharacters(Function function) -> U16String {
+auto U16StringEncodingTools::decodeFromCharacters(Function function) -> U16StringEditor {
     auto reservedSize = unit::U16DataLength::zero();
     function([&](const Char character) -> void { reservedSize += utf16::encodedLength(character); });
     if (reservedSize.isZero()) {
-        return U16String{};
+        return U16StringEditor{};
     }
 
     auto storage = U16StringSharedStorage::forSize(reservedSize.toSizeT());
@@ -100,7 +108,7 @@ auto U16StringEncodingTools::decodeFromCharacters(Function function) -> U16Strin
 
     auto writer = U16Writer{std::span{data, storage.dataSize()}};
     function([&](const Char character) -> void { writer.write(character); });
-    return U16String{std::move(storage)};
+    return U16StringEditor{std::move(storage)};
 }
 
 }

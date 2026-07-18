@@ -14,6 +14,10 @@ namespace erbsland::stream::impl {
 
 using namespace text::literals;
 
+using unit::ByteIndex;
+using unit::ByteLength;
+using unit::ByteOffset;
+
 BufferedByteInputStream::BufferedByteInputStream(NativeByteStreamPtr nativeStream, InputStreamSettings settings) :
     _data{std::make_shared<BufferedByteInputStreamData>(std::move(nativeStream), settings)} {
     const auto lock = std::scoped_lock{_data->mutex};
@@ -45,7 +49,7 @@ auto BufferedByteInputStream::waitForReady() -> StreamWaitStatus {
         return StreamWaitStatus::Ready;
     }
     auto lock = std::unique_lock{_data->mutex};
-    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this] {
+    const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
         return !_data->front.isEmpty() || _data->finished || _data->error || state() != StreamState::Open;
     });
     return ready ? StreamWaitStatus::Ready : StreamWaitStatus::Timeout;
@@ -78,22 +82,22 @@ auto BufferedByteInputStream::createErrorContext() const noexcept -> StreamError
 }
 
 auto BufferedByteInputStream::readFromSource(const std::span<mem::Byte> destination, const ReadDeadline deadline)
-    -> StreamReadResult<unit::ByteLength> {
+    -> StreamReadResult<ByteLength> {
     if (destination.empty()) {
-        return {StreamReadStatus::Data, unit::ByteLength::zero()};
+        return {StreamReadStatus::Data, ByteLength::zero()};
     }
     auto lock = std::unique_lock{_data->mutex};
-    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this] {
+    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
         return !_data->front.isEmpty() || _data->finished || _data->error || state() != StreamState::Open;
     });
     if (!ready) {
-        return {StreamReadStatus::Timeout, unit::ByteLength::zero()};
+        return {StreamReadStatus::Timeout, ByteLength::zero()};
     }
     if (_data->error) {
         std::rethrow_exception(_data->error);
     }
     if (_data->front.isEmpty()) {
-        return {StreamReadStatus::Finished, unit::ByteLength::zero()};
+        return {StreamReadStatus::Finished, ByteLength::zero()};
     }
     const auto readLength = _data->front.read(destination);
     _data->logicalPosition.fetch_add(readLength.toRawValue());
@@ -108,14 +112,14 @@ auto BufferedByteInputStream::sourceSupportsPositioning() const noexcept -> bool
     return _data->native->supportsPositioning();
 }
 
-auto BufferedByteInputStream::sourcePosition() const -> unit::ByteIndex {
+auto BufferedByteInputStream::sourcePosition() const -> ByteIndex {
     if (!sourceSupportsPositioning()) {
         return StreamPositioning::position();
     }
-    return unit::ByteIndex{_data->logicalPosition.load()};
+    return ByteIndex{_data->logicalPosition.load()};
 }
 
-auto BufferedByteInputStream::setSourcePosition(const unit::ByteIndex position) -> StreamPositionStatus {
+auto BufferedByteInputStream::setSourcePosition(const ByteIndex position) -> StreamPositionStatus {
     if (!sourceSupportsPositioning()) {
         return StreamPositioning::setPosition(position);
     }
@@ -132,7 +136,7 @@ auto BufferedByteInputStream::setSourcePosition(const unit::ByteIndex position) 
     return StreamPositionStatus::Success;
 }
 
-auto BufferedByteInputStream::moveSourcePosition(const StreamPositionOrigin origin, const unit::ByteOffset offset)
+auto BufferedByteInputStream::moveSourcePosition(const StreamPositionOrigin origin, const ByteOffset offset)
     -> StreamPositionStatus {
     if (!sourceSupportsPositioning()) {
         return StreamPositioning::movePosition(origin, offset);
@@ -142,9 +146,9 @@ auto BufferedByteInputStream::moveSourcePosition(const StreamPositionOrigin orig
         return StreamPositionStatus::Timeout;
     }
     try {
-        auto result = unit::ByteIndex{};
+        auto result = ByteIndex{};
         if (origin == StreamPositionOrigin::Current) {
-            const auto current = unit::ByteIndex{_data->logicalPosition.load()};
+            const auto current = ByteIndex{_data->logicalPosition.load()};
             result = _data->native->setPosition(current.movedOrThrow(offset));
         } else {
             result = _data->native->movePosition(origin, offset);
@@ -160,7 +164,7 @@ auto BufferedByteInputStream::moveSourcePosition(const StreamPositionOrigin orig
 auto BufferedByteInputStream::beginPositioning(std::unique_lock<std::mutex> &lock, const ReadDeadline deadline)
     -> bool {
     _data->positioning = true;
-    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this] {
+    const auto ready = _data->condition.wait_until(lock, deadline.toStdTimePoint(), [this]() -> bool {
         return !_data->readInProgress || _data->error || state() != StreamState::Open;
     });
     if (_data->error) {
@@ -178,7 +182,7 @@ auto BufferedByteInputStream::beginPositioning(std::unique_lock<std::mutex> &loc
     return true;
 }
 
-void BufferedByteInputStream::completePositioning(const unit::ByteIndex position) {
+void BufferedByteInputStream::completePositioning(const ByteIndex position) {
     _data->front.clear();
     _data->back.clear();
     _data->finished = false;

@@ -4,8 +4,8 @@
 
 #include "IntegerFormat.hpp"
 #include "String.hpp"
+#include "StringEditor.hpp"
 #include "StringTree_fwd.hpp"
-#include "StringView.hpp"
 
 #include "impl/StringTreeData.hpp"
 
@@ -24,7 +24,7 @@ public:
     /// Create an empty tree.
     StringTree();
     /// Create a tree with a title.
-    explicit StringTree(StringView title);
+    explicit StringTree(String title);
 
     // defaults
     ~StringTree() = default;
@@ -37,36 +37,35 @@ public: // accessors
     /// Test if this tree has no title and no entries.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
     /// Access the title.
-    [[nodiscard]] auto title() const noexcept -> StringView;
+    [[nodiscard]] auto title() const noexcept -> String;
 
 public: // modifiers
     /// Set the tree title.
-    auto setTitle(StringView title) -> StringTree &;
+    auto setTitle(String title) -> StringTree &;
     /// Append one text line.
-    auto append(StringView text) -> StringTree &;
+    auto append(String text) -> StringTree &;
     /// Append a labeled string value.
-    auto append(StringView label, StringView value) -> StringTree &;
+    auto append(String label, String value) -> StringTree &;
     /// Append a labeled boolean value.
-    auto append(StringView label, bool value) -> StringTree &;
+    auto append(String label, bool value) -> StringTree &;
     /// Append a labeled integer value.
     template <math::AnyIntegerType T>
-    auto append(StringView label, T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> StringTree &;
+    auto append(String label, T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> StringTree &;
     /// @cond INTERNAL
     /// Append a labeled value with a `toRawValue()` method.
     template <typename T>
         requires requires(const T &value) { value.toRawValue(); } && (!math::AnyIntegerType<T>)
-    auto append(StringView label, const T &value, IntegerFormat format = IntegerFormat::defaultFormat())
-        -> StringTree &;
+    auto append(String label, const T &value, IntegerFormat format = IntegerFormat::defaultFormat()) -> StringTree &;
     /// @endcond
     /// Append a labeled subtree.
-    auto append(StringView label, const StringTree &tree) -> StringTree &;
+    auto append(String label, const StringTree &tree) -> StringTree &;
     /// Append a labeled subtree.
-    auto append(StringView label, StringTree &&tree) -> StringTree &;
+    auto append(String label, StringTree &&tree) -> StringTree &;
     /// Append all entries from another tree.
     auto append(const StringTree &tree) -> StringTree &;
     /// Append an indexed list.
     template <std::ranges::input_range Range, typename Convert>
-    auto appendList(StringView label, Range &&range, Convert convert) -> StringTree &;
+    auto appendList(String label, Range &&range, Convert convert) -> StringTree &;
 
 public: // conversion
     /// Convert the tree into formatted text.
@@ -76,20 +75,20 @@ public: // conversion
 
 private:
     explicit StringTree(impl::StringTreeDataPtr data);
-    [[nodiscard]] static auto createData(StringView title = {}) -> impl::StringTreeDataPtr;
+    [[nodiscard]] static auto createData(String title = {}) -> impl::StringTreeDataPtr;
     static void appendData(
-        StringBuilder &builder,
+        StringEditor &result,
         const impl::StringTreeData &data,
         unit::CpLength indentWidth,
         unit::CpLength indent,
         bool &firstLine);
     static void appendEntry(
-        StringBuilder &builder,
+        StringEditor &result,
         const impl::StringTreeEntry &entry,
         unit::CpLength indentWidth,
         unit::CpLength indent,
         bool &firstLine);
-    static void appendLinePrefix(StringBuilder &builder, unit::CpLength indent, bool &firstLine);
+    static void appendLinePrefix(StringEditor &result, unit::CpLength indent, bool &firstLine);
     [[nodiscard]] static auto listIndexLabel(std::size_t index) -> String;
     void ensureUnique();
 

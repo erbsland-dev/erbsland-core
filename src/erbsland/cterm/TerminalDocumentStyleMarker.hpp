@@ -3,11 +3,10 @@
 #pragma once
 
 #include "BlockString.hpp"
-#include "BlockStringView.hpp"
 #include "BlockStyle.hpp"
 
-#include "../text/StringView.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/String.hpp"
+#include "../text/u32/U32String.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -42,9 +41,9 @@ public: // accessors
     /// Get the marker style overlay.
     [[nodiscard]] auto style() const noexcept -> BlockStyle { return _style; }
     /// Get the literal marker text.
-    [[nodiscard]] auto literal() const noexcept -> BlockStringView { return _literal; }
+    [[nodiscard]] auto literal() const noexcept -> BlockString { return _literal; }
     /// Get the ordered-list suffix text.
-    [[nodiscard]] auto suffix() const noexcept -> BlockStringView { return _suffix; }
+    [[nodiscard]] auto suffix() const noexcept -> BlockString { return _suffix; }
 
 public:
     /// Clear the marker.
@@ -58,17 +57,17 @@ public:
     /// @param literal The literal marker text.
     /// @param style Optional marker style overlay.
     /// @return Reference to this marker.
-    auto setLiteral(BlockStringView literal, BlockStyle style = {}) noexcept -> TerminalDocumentStyleMarker &;
+    auto setLiteral(BlockString literal, BlockStyle style = {}) noexcept -> TerminalDocumentStyleMarker &;
     /// Use a literal marker string.
     /// @param literal The literal marker text.
     /// @param style Optional marker style overlay.
     /// @return Reference to this marker.
-    auto setLiteral(const text::U32StringView &literal, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
+    auto setLiteral(const text::U32String &literal, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
     /// Use a literal marker string.
     /// @param literal The literal marker text.
     /// @param style Optional marker style overlay.
     /// @return Reference to this marker.
-    auto setLiteral(text::StringView literal, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
+    auto setLiteral(const text::String &literal, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
     /// Use an ordered marker with the default suffix and style.
     /// @return Reference to this marker.
     auto setOrdered() -> TerminalDocumentStyleMarker &;
@@ -76,12 +75,12 @@ public:
     /// @param suffix The suffix appended after the item number.
     /// @param style Optional marker style overlay.
     /// @return Reference to this marker.
-    auto setOrdered(BlockStringView suffix, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
+    auto setOrdered(BlockString suffix, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
     /// Use an ordered marker with the given suffix.
     /// @param suffix The suffix appended after the item number.
     /// @param style Optional marker style overlay.
     /// @return Reference to this marker.
-    auto setOrdered(const text::U32StringView &suffix, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
+    auto setOrdered(const text::U32String &suffix, BlockStyle style = {}) -> TerminalDocumentStyleMarker &;
     /// Render this marker for one list item number.
     /// @param number The one-based item number for ordered lists.
     /// @param baseStyle The base text style used for marker text.

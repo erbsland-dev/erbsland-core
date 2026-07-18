@@ -4,7 +4,6 @@
 
 #include "../../impl/LinkData.hpp"
 #include "../../Literals.hpp"
-#include "../../StringBuilder.hpp"
 #include "../../StringCharReader.hpp"
 
 #include <memory>
@@ -14,7 +13,7 @@ namespace erbsland::text::html::impl {
 
 using namespace literals;
 
-HtmlParser::HtmlParser(AnyStringView html) : _html{std::move(html)} {
+HtmlParser::HtmlParser(AnyString html) : _html{std::move(html)} {
 }
 
 auto HtmlParser::parse() -> TextDocument {
@@ -38,7 +37,7 @@ auto HtmlParser::parse() -> TextDocument {
             handleText(std::move(_currentToken.value));
             break;
         case HtmlTokenType::TagOpen: {
-            auto tagName = toLowerAscii(std::move(_currentToken.value));
+            auto tagName = toLowerAscii(_currentToken.value);
             auto attributes = std::move(_currentToken.attributes);
             for (auto &attribute : attributes) {
                 attribute.setName(toLowerAscii(attribute.name()));
@@ -47,14 +46,14 @@ auto HtmlParser::parse() -> TextDocument {
             if (selfClosing) {
                 auto closeTagName = tagName;
                 handleOpenTag(std::move(tagName), attributes);
-                handleCloseTag(std::move(closeTagName));
+                handleCloseTag(closeTagName);
             } else {
                 handleOpenTag(std::move(tagName), attributes);
             }
             break;
         }
         case HtmlTokenType::TagClose:
-            handleCloseTag(toLowerAscii(std::move(_currentToken.value)));
+            handleCloseTag(toLowerAscii(_currentToken.value));
             break;
         case HtmlTokenType::End:
         case HtmlTokenType::Comment:
@@ -79,7 +78,7 @@ void HtmlParser::advanceToken(TokenGenerator &generator) {
     loadNextToken(generator);
 }
 
-void HtmlParser::handleText(StringView text) {
+void HtmlParser::handleText(String text) {
     if (isSuppressed()) {
         return;
     }
@@ -112,7 +111,7 @@ void HtmlParser::handleText(StringView text) {
     _current->addText(std::move(text));
 }
 
-void HtmlParser::handleOpenTag(StringView tagName, const Attributes &attributes) {
+void HtmlParser::handleOpenTag(String tagName, const Attributes &attributes) {
     if (isSuppressed()) {
         pushTransparentFrame(std::move(tagName), true);
         return;
@@ -169,10 +168,11 @@ void HtmlParser::handleOpenTag(StringView tagName, const Attributes &attributes)
     if (node->type() == TextNode::Type::LineBreak || node->type() == TextNode::Type::HorizontalLine) {
         return;
     }
-    pushNodeFrame(std::move(tagName), std::move(node), tagName == "pre"_el);
+    const auto preserveWhitespace = tagName == "pre"_el;
+    pushNodeFrame(std::move(tagName), std::move(node), preserveWhitespace);
 }
 
-void HtmlParser::handleCloseTag(StringView tagName) {
+void HtmlParser::handleCloseTag(const String &tagName) {
     for (auto index = _frames.size(); index > 0; --index) {
         if (_frames[index - 1].tagName() == tagName) {
             closeFramesTo(index - 1);
@@ -181,13 +181,13 @@ void HtmlParser::handleCloseTag(StringView tagName) {
     }
 }
 
-void HtmlParser::pushNodeFrame(StringView tagName, TextNodePtr node, const bool preserveWhitespace) {
+void HtmlParser::pushNodeFrame(String tagName, TextNodePtr node, const bool preserveWhitespace) {
     _frames.push_back(Frame{std::move(tagName), std::move(node), false, false, preserveWhitespace});
     updateFrameStateForPush(_frames.back());
     refreshCurrent();
 }
 
-void HtmlParser::pushTransparentFrame(StringView tagName, const bool suppressSubtree, const bool preserveWhitespace) {
+void HtmlParser::pushTransparentFrame(String tagName, const bool suppressSubtree, const bool preserveWhitespace) {
     _frames.push_back(Frame{std::move(tagName), {}, true, suppressSubtree, preserveWhitespace});
     updateFrameStateForPush(_frames.back());
 }

@@ -20,7 +20,7 @@
 using el::core::CommandLineArguments;
 using el::options::OptionError;
 using el::text::String;
-using el::text::StringView;
+using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
 using el::unit::ElementIndex;
@@ -229,17 +229,17 @@ public:
         auto sourceOption = Option::create({"-v"_el, "--verbose"_el});
         values->setValue({"-v"_el, "--verbose"_el}, OptionValue::create(sourceOption, true));
         values->setValue("--count"_el, OptionValue::create(OptionInteger{42}));
-        values->setValue("name"_el, OptionValue::create(String{"Ada"_el}));
+        values->setValue("name"_el, OptionValue::create(StringEditor{"Ada"_el}));
         values->setValue("names"_el, OptionValue::create(std::vector<String>{String{"Ada"_el}, String{"Bjarne"_el}}));
         values->setValue(
             "counts"_el, OptionValue::create(std::vector<OptionInteger>{OptionInteger{1}, OptionInteger{2}}));
-        auto indexedValue =
-            OptionValue::create(String{"Indexed"_el}, std::vector<ArgumentIndex>{ArgumentIndex{3U}, ArgumentIndex{5U}});
+        auto indexedValue = OptionValue::create(
+            StringEditor{"Indexed"_el}, std::vector<ArgumentIndex>{ArgumentIndex{3U}, ArgumentIndex{5U}});
         auto indexedSourceValue =
             OptionValue::create(sourceOption, true, std::vector<ArgumentIndex>{ArgumentIndex{7U}});
         auto countedFlagValue =
             OptionValue::create(sourceOption, true, std::vector<ArgumentIndex>{ArgumentIndex{2U}, ArgumentIndex{4U}});
-        auto mutableIndexesValue = OptionValue::create(String{"Mutable"_el});
+        auto mutableIndexesValue = OptionValue::create(StringEditor{"Mutable"_el});
         mutableIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{11U}});
         auto mutableFlagIndexesValue = OptionValue::create(true);
         mutableFlagIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{13U}, ArgumentIndex{17U}});
@@ -305,7 +305,7 @@ public:
         auto options = Options::create();
         auto manager = OptionManager{options};
 
-        auto args = CommandLineArguments{String{"tool"_el}};
+        auto args = CommandLineArguments{StringEditor{"tool"_el}};
         const auto result = manager.parse(args);
 
         REQUIRE(result.status() == OptionResultStatus::Success);
@@ -320,7 +320,7 @@ public:
         REQUIRE_FALSE(manager.helpDocument({}).isEmpty());
         REQUIRE_FALSE(manager.versionDocument({}).isEmpty());
 
-        auto errorArgs = CommandLineArguments{String{"tool"_el}, String{"--unknown"_el}};
+        auto errorArgs = CommandLineArguments{StringEditor{"tool"_el}, StringEditor{"--unknown"_el}};
         const auto errorResult = manager.parse(errorArgs);
         REQUIRE(errorResult.status() == OptionResultStatus::Error);
         REQUIRE(errorResult.errorContext().has_value());

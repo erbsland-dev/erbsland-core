@@ -9,7 +9,7 @@ namespace demo {
 /// The pattern uses the same placeholder syntax as `std::format`.
 ///
 /// Use `build()` to create a new string from formatted values.
-/// Use `appendTo()` to add formatted text to an existing `StringBuilder` without
+/// Use `appendTo()` to add formatted text to an existing `AnyStringBuilder` without
 /// creating temporary strings.
 void formattingPatterns() {
     // Create a reusable pattern for ISO 8601 date-time values.
@@ -21,7 +21,7 @@ void formattingPatterns() {
     // Create a pattern to for simple HTML tags.
     const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"_el};
 
-    el::StringBuilder htmlOutput;
+    el::AnyStringBuilder htmlOutput;
     htmlTag.appendTo(htmlOutput, "h1"_el, "Hello World"_el);
     htmlTag.appendTo(htmlOutput, "p"_el, "This paragraph was appended to a string builder."_el);
     htmlTag.appendTo(htmlOutput, "p"_el, "We add another <p> tag with \"useful\" text."_el);

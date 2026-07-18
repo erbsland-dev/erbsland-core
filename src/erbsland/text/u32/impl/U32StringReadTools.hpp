@@ -17,7 +17,7 @@
 namespace erbsland::text::impl {
 
 /// A view into string data with a specific code-point range.
-/// This helper class provides all read-only algorithms on the string data, shared by `U32String` and `U32StringView`.
+/// This helper class provides all read-only algorithms on the string data, shared by `U32StringEditor` and `U32String`.
 /// It's meant to be used inline like `U32StringDataView{dataView()}.doSomething()`.
 /// @tested{U32StringTest}
 class U32StringReadTools final {

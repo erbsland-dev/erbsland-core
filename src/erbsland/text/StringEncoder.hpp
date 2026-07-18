@@ -8,15 +8,16 @@
 #include "StringEncoding.hpp"
 
 #include "u16/U16String.hpp"
-#include "u16/U16StringCharView.hpp"
-#include "u16/U16StringView.hpp"
+#include "u16/U16StringEditor.hpp"
 #include "u32/U32String.hpp"
-#include "u32/U32StringView.hpp"
+#include "u32/U32StringEditor.hpp"
 #include "u8/U8String.hpp"
-#include "u8/U8StringCharView.hpp"
-#include "u8/U8StringView.hpp"
+#include "u8/U8StringEditor.hpp"
 
 #include "../mem/ByteBlock_fwd.hpp"
+#include "../mem/RingBuffer_fwd.hpp"
+#include "../unit/ByteLength_fwd.hpp"
+#include "../util/Result.hpp"
 
 #include <type_traits>
 
@@ -42,6 +43,27 @@ public:
         EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> mem::ByteBlock {
         return StringEncoderTraits<Source>::encode(*_source, encoding, bomMode, errorMode);
     }
+    /// Calculate the exact byte length produced by `encode()` without allocating the encoded byte block.
+    /// @throws text::EncodingError If invalid source data is encountered in `EncodingErrorMode::Throw` mode.
+    /// @throws err::OverflowError If the encoded length exceeds the supported finite byte length.
+    [[nodiscard]] auto encodedLength(
+        StringEncoding encoding,
+        StringBomMode bomMode = StringBomMode::Automatic,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> unit::ByteLength {
+        return StringEncoderTraits<Source>::encodedLength(*_source, encoding, bomMode, errorMode);
+    }
+    /// Atomically encode the source directly into a ring buffer.
+    /// Each call independently applies `bomMode`; stateful streams must suppress the BOM after their first write.
+    /// @return Success, or failure without modification if the encoded data exceeds the remaining hard capacity.
+    /// @throws text::EncodingError If invalid source data is encountered in `EncodingErrorMode::Throw` mode.
+    /// @throws err::OverflowError If the encoded length exceeds the supported finite byte length.
+    [[nodiscard]] auto encodeTo(
+        mem::RingBuffer &buffer,
+        StringEncoding encoding,
+        StringBomMode bomMode = StringBomMode::Automatic,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> util::Result {
+        return StringEncoderTraits<Source>::encodeTo(*_source, buffer, encoding, bomMode, errorMode);
+    }
 
 private:
     const Source *_source;
@@ -56,16 +78,23 @@ StringEncoder(const T &) -> StringEncoder<std::remove_cvref_t<T>>;
         [[nodiscard]] static auto encode(                                                                              \
             const TYPE &source, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)           \
             -> mem::ByteBlock;                                                                                         \
+        [[nodiscard]] static auto encodedLength(                                                                       \
+            const TYPE &source, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)           \
+            -> unit::ByteLength;                                                                                       \
+        [[nodiscard]] static auto encodeTo(                                                                            \
+            const TYPE &source,                                                                                        \
+            mem::RingBuffer &buffer,                                                                                   \
+            StringEncoding encoding,                                                                                   \
+            StringBomMode bomMode,                                                                                     \
+            EncodingErrorMode errorMode) -> util::Result;                                                              \
     }
 
+ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U8StringEditor);
 ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U8String);
-ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U8StringView);
-ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U8StringCharView);
+ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U16StringEditor);
 ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U16String);
-ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U16StringView);
-ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U16StringCharView);
+ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U32StringEditor);
 ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U32String);
-ERBSLAND_DECLARE_STRING_ENCODER_TRAITS(U32StringView);
 
 #undef ERBSLAND_DECLARE_STRING_ENCODER_TRAITS
 

@@ -34,7 +34,7 @@ public:
     EngineHasMatch hasMatch;
     CaptureGroupList captureGroups;
     std::vector<std::string> assemblerListing;
-    String text;
+    StringEditor text;
 
     auto createGroupLines() noexcept -> std::vector<std::string> {
         std::vector<std::string> result;
@@ -44,7 +44,7 @@ public:
             if (group.begin() <= text.length().toSizeT() && group.end() <= text.length().toSizeT() &&
                 group.begin() <= group.end()) {
 
-                const auto groupText = StringView{text}.slice(
+                const auto groupText = String{text}.slice(
                     el::unit::ByteRange{el::unit::ByteIndex{group.begin()}, el::unit::ByteIndex{group.end()}});
                 line += re_test::string_helper::toStdString(
                     groupText.toSafeString(el::unit::CpLength{200U}, el::text::SafeStringFlag::None));
@@ -92,7 +92,7 @@ public:
         }
     }
 
-    void assembleProgram(const el::text::StringViewList &lines) {
+    void assembleProgram(const el::text::StringList &lines) {
         assemblerListing = {};
         auto lineNumber = std::size_t{1};
         for (const auto &line : lines) {
@@ -105,7 +105,7 @@ public:
     }
 
     void assembleProgram(const std::initializer_list<std::string_view> lines) {
-        assembleProgram(re_test::string_helper::toStringViewList(lines));
+        assembleProgram(re_test::string_helper::toStringList(lines));
     }
 
     void setUp() override {
@@ -118,8 +118,8 @@ public:
         text.clear();
     }
 
-    void runEngineMatch(const StringView &textToMatch) {
-        text = String{textToMatch};
+    void runEngineMatch(const String &textToMatch) {
+        text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
         state = engine->createState(input);
         hasMatch = engine->match(*state);
@@ -130,8 +130,8 @@ public:
         }
     }
 
-    void runEngineFullMatch(const StringView &textToMatch) {
-        text = String{textToMatch};
+    void runEngineFullMatch(const String &textToMatch) {
+        text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
         state = engine->createState(input);
         hasMatch = engine->fullMatch(*state);
@@ -142,8 +142,8 @@ public:
         }
     }
 
-    void runEngineFindFirst(const StringView &textToMatch) {
-        text = String{textToMatch};
+    void runEngineFindFirst(const String &textToMatch) {
+        text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
         state = engine->createState(input);
         hasMatch = engine->findFirst(*state);
@@ -155,13 +155,13 @@ public:
     }
 
     /// require no match with a pattern that has zero capture groups.
-    void requireNoMatch(const StringView &textToMatch) {
+    void requireNoMatch(const String &textToMatch) {
         runEngineMatch(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::No);
     }
 
     /// require a match with the given text and no capture groups.
-    void requireMatch(const StringView &textToMatch, const std::optional<std::size_t> matchEnd = std::nullopt) {
+    void requireMatch(const String &textToMatch, const std::optional<std::size_t> matchEnd = std::nullopt) {
         runEngineMatch(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::Yes);
         REQUIRE_GREATER_EQUAL(captureGroups.size(), 1);
@@ -172,13 +172,13 @@ public:
     }
 
     /// require no match with a pattern that has zero capture groups.
-    void requireNoFullMatch(const StringView &textToMatch) {
+    void requireNoFullMatch(const String &textToMatch) {
         runEngineFullMatch(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::No);
     }
 
     /// require a match with the given text and no capture groups.
-    void requireFullMatch(const StringView &textToMatch, const std::optional<std::size_t> matchEnd = std::nullopt) {
+    void requireFullMatch(const String &textToMatch, const std::optional<std::size_t> matchEnd = std::nullopt) {
         runEngineFullMatch(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::Yes);
         REQUIRE_GREATER_EQUAL(captureGroups.size(), 1);
@@ -188,12 +188,12 @@ public:
         }
     }
 
-    void requireNoFindFirst(const StringView &textToMatch) {
+    void requireNoFindFirst(const String &textToMatch) {
         runEngineFindFirst(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::No);
     }
 
-    void requireFindFirst(const StringView &textToMatch, const std::optional<CaptureRange> &matchRange = std::nullopt) {
+    void requireFindFirst(const String &textToMatch, const std::optional<CaptureRange> &matchRange = std::nullopt) {
         runEngineFindFirst(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::Yes);
         REQUIRE_GREATER_EQUAL(captureGroups.size(), 1);
@@ -203,7 +203,7 @@ public:
     }
 
     /// require an exception.
-    void requireErrorException(const StringView &textToMatch, ErrorCategory expectedCategory) {
+    void requireErrorException(const String &textToMatch, ErrorCategory expectedCategory) {
         try {
             runEngineMatch(textToMatch);
             REQUIRE(false);

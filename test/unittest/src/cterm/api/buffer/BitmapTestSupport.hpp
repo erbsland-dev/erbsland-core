@@ -30,7 +30,7 @@ public:
         REQUIRE_EQUAL_LINES(renderRows(bitmap), expectedRows);
     }
 
-    void requireRowsEqual(const Bitmap &bitmap, const std::initializer_list<erbsland::text::StringView> expectedRows) {
+    void requireRowsEqual(const Bitmap &bitmap, const std::initializer_list<erbsland::text::String> expectedRows) {
         auto convertedRows = std::vector<std::string>{};
         convertedRows.reserve(expectedRows.size());
         for (const auto row : expectedRows) {

@@ -4,19 +4,21 @@
 
 namespace erbsland::text::impl {
 
-auto StringPatternData::matches(const U8StringView &text) const noexcept -> bool {
+using namespace unit;
+
+auto StringPatternData::matches(const U8String &text) const noexcept -> bool {
     return match(view(), text).matched;
 }
 
-auto StringPatternData::matches(const U16StringView &text) const noexcept -> bool {
+auto StringPatternData::matches(const U16String &text) const noexcept -> bool {
     return match(view(), text).matched;
 }
 
-auto StringPatternData::matches(const U32StringView &text) const noexcept -> bool {
+auto StringPatternData::matches(const U32String &text) const noexcept -> bool {
     return match(view(), text).matched;
 }
 
-auto StringPatternData::trim(U8StringView &text) const noexcept -> bool {
+auto StringPatternData::trim(U8String &text) const noexcept -> bool {
     const auto trimmedView = trimmed(text);
     if (trimmedView == text) {
         return false;
@@ -25,7 +27,7 @@ auto StringPatternData::trim(U8StringView &text) const noexcept -> bool {
     return true;
 }
 
-auto StringPatternData::trim(U16StringView &text) const noexcept -> bool {
+auto StringPatternData::trim(U16String &text) const noexcept -> bool {
     const auto trimmedView = trimmed(text);
     if (trimmedView == text) {
         return false;
@@ -34,7 +36,7 @@ auto StringPatternData::trim(U16StringView &text) const noexcept -> bool {
     return true;
 }
 
-auto StringPatternData::trim(U32StringView &text) const noexcept -> bool {
+auto StringPatternData::trim(U32String &text) const noexcept -> bool {
     const auto trimmedView = trimmed(text);
     if (trimmedView == text) {
         return false;
@@ -43,37 +45,37 @@ auto StringPatternData::trim(U32StringView &text) const noexcept -> bool {
     return true;
 }
 
-auto StringPatternData::trim(U8String &text) const -> bool {
-    const auto textView = U8StringView{text};
+auto StringPatternData::trim(U8StringEditor &text) const -> bool {
+    const auto textView = U8String{text};
     const auto trimmedView = trimmed(textView);
     if (trimmedView == textView) {
         return false;
     }
-    text = U8String{trimmedView};
+    text = U8StringEditor{trimmedView};
     return true;
 }
 
-auto StringPatternData::trim(U16String &text) const -> bool {
-    const auto textView = U16StringView{text};
+auto StringPatternData::trim(U16StringEditor &text) const -> bool {
+    const auto textView = U16String{text};
     const auto trimmedView = trimmed(textView);
     if (trimmedView == textView) {
         return false;
     }
-    text = U16String{trimmedView};
+    text = U16StringEditor{trimmedView};
     return true;
 }
 
-auto StringPatternData::trim(U32String &text) const -> bool {
-    const auto textView = U32StringView{text};
+auto StringPatternData::trim(U32StringEditor &text) const -> bool {
+    const auto textView = U32String{text};
     const auto trimmedView = trimmed(textView);
     if (trimmedView == textView) {
         return false;
     }
-    text = U32String{trimmedView};
+    text = U32StringEditor{trimmedView};
     return true;
 }
 
-auto StringPatternData::trimmed(const U8StringView &text) const noexcept -> U8StringView {
+auto StringPatternData::trimmed(const U8String &text) const noexcept -> U8String {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
@@ -85,10 +87,10 @@ auto StringPatternData::trimmed(const U8StringView &text) const noexcept -> U8St
     if (patternView.divider == 0U) {
         return text.slice(StringSide::Front, result.suffixStart);
     }
-    return text.slice(unit::ByteRange{result.frontEnd, result.suffixStart});
+    return text.slice(ByteRange{result.frontEnd, result.suffixStart});
 }
 
-auto StringPatternData::trimmed(const U16StringView &text) const noexcept -> U16StringView {
+auto StringPatternData::trimmed(const U16String &text) const noexcept -> U16String {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
@@ -100,10 +102,10 @@ auto StringPatternData::trimmed(const U16StringView &text) const noexcept -> U16
     if (patternView.divider == 0U) {
         return text.slice(StringSide::Front, result.suffixStart);
     }
-    return text.slice(unit::U16DataRange{result.frontEnd, result.suffixStart});
+    return text.slice(U16DataRange{result.frontEnd, result.suffixStart});
 }
 
-auto StringPatternData::trimmed(const U32StringView &text) const noexcept -> U32StringView {
+auto StringPatternData::trimmed(const U32String &text) const noexcept -> U32String {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
@@ -115,116 +117,116 @@ auto StringPatternData::trimmed(const U32StringView &text) const noexcept -> U32
     if (patternView.divider == 0U) {
         return text.slice(StringSide::Front, result.suffixStart);
     }
-    return text.slice(unit::CpRange{result.frontEnd, result.suffixStart});
+    return text.slice(CpRange{result.frontEnd, result.suffixStart});
 }
 
-auto StringPatternData::split(const U8StringView &text) const noexcept -> std::pair<U8StringView, U8StringView> {
+auto StringPatternData::split(const U8String &text) const noexcept -> std::pair<U8String, U8String> {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return {U8StringView{}, text};
+        return {U8String{}, text};
     }
     if (patternView.divider == 0U) {
         return text.splitAt(result.suffixStart);
     }
     auto [prefix, rest] = text.splitAt(result.frontEnd);
     if (patternView.divider != cNoStringPatternDivider && patternView.divider < patternView.elements.size()) {
-        rest = text.slice(unit::ByteRange{result.frontEnd, result.suffixStart});
+        rest = text.slice(ByteRange{result.frontEnd, result.suffixStart});
     }
     return {prefix, rest};
 }
 
-auto StringPatternData::split(const U16StringView &text) const noexcept -> std::pair<U16StringView, U16StringView> {
+auto StringPatternData::split(const U16String &text) const noexcept -> std::pair<U16String, U16String> {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return {U16StringView{}, text};
+        return {U16String{}, text};
     }
     if (patternView.divider == 0U) {
         return text.splitAt(result.suffixStart);
     }
     auto [prefix, rest] = text.splitAt(result.frontEnd);
     if (patternView.divider != cNoStringPatternDivider && patternView.divider < patternView.elements.size()) {
-        rest = text.slice(unit::U16DataRange{result.frontEnd, result.suffixStart});
+        rest = text.slice(U16DataRange{result.frontEnd, result.suffixStart});
     }
     return {prefix, rest};
 }
 
-auto StringPatternData::split(const U32StringView &text) const noexcept -> std::pair<U32StringView, U32StringView> {
+auto StringPatternData::split(const U32String &text) const noexcept -> std::pair<U32String, U32String> {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return {U32StringView{}, text};
+        return {U32String{}, text};
     }
     if (patternView.divider == 0U) {
         return text.splitAt(result.suffixStart);
     }
     auto [prefix, rest] = text.splitAt(result.frontEnd);
     if (patternView.divider != cNoStringPatternDivider && patternView.divider < patternView.elements.size()) {
-        rest = text.slice(unit::CpRange{result.frontEnd, result.suffixStart});
+        rest = text.slice(CpRange{result.frontEnd, result.suffixStart});
     }
     return {prefix, rest};
 }
 
-auto StringPatternData::length(const U8StringView &text) const noexcept -> unit::ByteLength {
+auto StringPatternData::length(const U8String &text) const noexcept -> ByteLength {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::ByteLength::zero();
+        return ByteLength::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<unit::ByteLength>(result.frontEnd);
+    return lengthFromStart<ByteLength>(result.frontEnd);
 }
 
-auto StringPatternData::length(const U16StringView &text) const noexcept -> unit::U16DataLength {
+auto StringPatternData::length(const U16String &text) const noexcept -> U16DataLength {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::U16DataLength::zero();
+        return U16DataLength::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<unit::U16DataLength>(result.frontEnd);
+    return lengthFromStart<U16DataLength>(result.frontEnd);
 }
 
-auto StringPatternData::length(const U32StringView &text) const noexcept -> unit::CpLength {
+auto StringPatternData::length(const U32String &text) const noexcept -> CpLength {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     if (patternView.divider == 0U) {
         return lengthToEnd(text.length(), result.suffixStart);
     }
-    return lengthFromStart<unit::CpLength>(result.frontEnd);
+    return lengthFromStart<CpLength>(result.frontEnd);
 }
 
-auto StringPatternData::index(const U8StringView &text) const noexcept -> unit::ByteIndex {
+auto StringPatternData::index(const U8String &text) const noexcept -> ByteIndex {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::ByteIndex::noIndex();
+        return ByteIndex::noIndex();
     }
     return patternView.divider == 0U ? result.suffixStart : result.frontEnd;
 }
 
-auto StringPatternData::index(const U16StringView &text) const noexcept -> unit::U16DataIndex {
+auto StringPatternData::index(const U16String &text) const noexcept -> U16DataIndex {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
     return patternView.divider == 0U ? result.suffixStart : result.frontEnd;
 }
 
-auto StringPatternData::index(const U32StringView &text) const noexcept -> unit::CpIndex {
+auto StringPatternData::index(const U32String &text) const noexcept -> CpIndex {
     const auto patternView = view();
     const auto result = match(patternView, text);
     if (!result.matched) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
     return patternView.divider == 0U ? result.suffixStart : result.frontEnd;
 }

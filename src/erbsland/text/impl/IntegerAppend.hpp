@@ -6,7 +6,6 @@
 
 #include "../Char.hpp"
 #include "../IntegerFormat.hpp"
-#include "../StringBuilder.hpp"
 
 #include "../../math/SignedMagnitude.hpp"
 
@@ -16,10 +15,10 @@
 
 namespace erbsland::text::impl {
 
-/// Append a grouped digit field to a builder.
-template <typename tDigits>
+/// Append a grouped digit field to a decoded-character sink.
+template <typename tSink, typename tDigits>
 void appendDigitField(
-    StringBuilder &builder,
+    tSink &sink,
     const tDigits &digits,
     const std::size_t digitCount,
     const std::size_t zeroPadCount,
@@ -35,20 +34,20 @@ void appendDigitField(
 
     for (auto index = std::size_t{0U}; index < paddedDigitCount; ++index) {
         if (useSeparator && index > 0U && index >= firstGroupSize && ((index - firstGroupSize) % groupSize) == 0U) {
-            builder.append(U'\'');
+            sink.append(Char{U'\''});
         }
         if (index < zeroPadCount) {
-            builder.append(U'0');
+            sink.append(Char{U'0'});
         } else {
             const auto digitIndex = digitCount - 1U - (index - zeroPadCount);
-            builder.append(digits[digitIndex]);
+            sink.append(Char{digits[digitIndex]});
         }
     }
 }
 
-/// Append an integer to a decoded string builder.
-template <math::AnyIntegerType T>
-void appendInteger(StringBuilder &builder, T value, const IntegerFormat &format) {
+/// Append an integer to a decoded-character sink.
+template <typename tSink, math::AnyIntegerType T>
+void appendInteger(tSink &sink, T value, const IntegerFormat &format) {
     using NativeValue = math::NativeIntegerOfT<T>;
     using Magnitude = math::SignedMagnitude<NativeValue>;
     using UnsignedValue = typename Magnitude::Unsigned;
@@ -78,23 +77,23 @@ void appendInteger(StringBuilder &builder, T value, const IntegerFormat &format)
     const auto spacePadCount = format.hasFlag(IntegerFormatFlag::ZeroFill) ? std::size_t{0U} : missingDigits;
 
     for (auto i = std::size_t{0U}; i < spacePadCount; ++i) {
-        builder.append(U' ');
+        sink.append(Char{U' '});
     }
     if (negative) {
-        builder.append(U'-');
+        sink.append(Char{U'-'});
     } else if (format.signMode() == IntegerSignMode::Always) {
-        builder.append(U'+');
+        sink.append(Char{U'+'});
     } else if (format.signMode() == IntegerSignMode::Space) {
-        builder.append(U' ');
+        sink.append(Char{U' '});
     }
     if (format.hasFlag(IntegerFormatFlag::BasePrefix)) {
         const auto prefix = format.base().prefixChar(format.letterCase());
         if (!prefix.isNull()) {
-            builder.append(U'0');
-            builder.append(prefix);
+            sink.append(Char{U'0'});
+            sink.append(prefix);
         }
     }
-    appendDigitField(builder, digits, digitCount, zeroPadCount, format);
+    appendDigitField(sink, digits, digitCount, zeroPadCount, format);
 }
 
 }

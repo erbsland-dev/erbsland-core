@@ -17,7 +17,7 @@ auto HtmlEscapeFormatter::needsEscape(const Char character, const EscapeAmount a
     return needsEscapeByAmount(character, amount, required, balanced);
 }
 
-void HtmlEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void HtmlEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     switch (character.toRawValue()) {
     case U'&':
         builder.append("&amp;"_el);

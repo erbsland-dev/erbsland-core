@@ -17,12 +17,12 @@ public:
         return terminal;
     }
 
-    auto createMinimumSizeWarningSettings(const bgeo::BlockSize minimumSize, const erbsland::text::StringView &message)
+    auto createMinimumSizeWarningSettings(const bgeo::BlockSize minimumSize, const erbsland::text::String &message)
         -> UpdateSettings {
         auto settings = UpdateSettings{};
         settings.setMinimumSize(minimumSize);
         settings.setMinimumSizeBackground(Block{U'.'});
-        settings.setMinimumSizeMessage(BlockString{message});
+        settings.setMinimumSizeMessage(BlockStringEditor{message});
         settings.setSwitchToAlternateBuffer(false);
         return settings;
     }

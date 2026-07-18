@@ -6,7 +6,7 @@
 
 namespace erbsland::re::impl {
 
-void Replacement::appendTo(text::String &text, const MatchPtr &match) const {
+void Replacement::appendTo(text::StringEditor &text, const MatchPtr &match) const {
     const auto replacementLength = length(match);
     if (replacementLength.isZero()) {
         return;
@@ -41,7 +41,7 @@ auto Replacement::length(const MatchPtr &match) const -> unit::ByteLength {
     return result;
 }
 
-auto Replacement::create(const text::StringView &expression, const CaptureGroupNames &groupNames) -> Replacement {
+auto Replacement::create(const text::String &expression, const CaptureGroupNames &groupNames) -> Replacement {
     ReplacementParser parser{expression, groupNames};
     return parser.parse();
 }

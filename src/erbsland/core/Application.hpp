@@ -185,7 +185,7 @@ public: // library version
     /// Get the build-time library version.
     [[nodiscard]] static auto libraryVersion() noexcept -> unit::Version;
     /// Get the build-time library version text.
-    [[nodiscard]] static auto libraryVersionText() noexcept -> text::StringView;
+    [[nodiscard]] static auto libraryVersionText() noexcept -> text::String;
 
 protected: // debugging methods
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD

@@ -28,12 +28,12 @@ private:
     void drawColorModeVariant(BlockRectangle rect, std::size_t variantIndex);
     void drawLayoutVariant(BlockRectangle rect, std::size_t variantIndex);
     void drawStyleVariant(BlockRectangle rect, std::size_t variantIndex);
-    void drawPreviewPanel(BlockRectangle rect, el::StringView title, Color fillColor);
+    void drawPreviewPanel(BlockRectangle rect, el::String title, Color fillColor);
     void drawFooter(BlockRectangle rect);
     [[nodiscard]] auto footerText() const -> BlockString;
-    [[nodiscard]] auto pageTitle() const -> el::StringView;
+    [[nodiscard]] auto pageTitle() const -> el::String;
     [[nodiscard]] auto variantCount(std::size_t pageIndex) const noexcept -> std::size_t;
-    [[nodiscard]] auto variantTitle(std::size_t pageIndex, std::size_t variantIndex) const -> el::StringView;
+    [[nodiscard]] auto variantTitle(std::size_t pageIndex, std::size_t variantIndex) const -> el::String;
     [[nodiscard]] auto selectedVariantIndex() const noexcept -> std::size_t;
     void selectVariantDelta(int delta) noexcept;
 

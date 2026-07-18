@@ -7,8 +7,9 @@
 
 #include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/StringBuilder.hpp"
-#include "../../../text/StringViewList.hpp"
+#include "../../../text/StringConverter.hpp"
+#include "../../../text/StringEditor.hpp"
+#include "../../../text/StringList.hpp"
 
 #include <mutex>
 
@@ -16,37 +17,38 @@ namespace erbsland::time::tz::impl {
 
 using namespace text::literals;
 
-auto Database::zoneNameToString(const ZoneName &zoneName) -> text::String {
-    auto builder = text::StringBuilder{};
-    builder.append(text::String{Database::textFromIndex(zoneName.text1)});
-    if (zoneName.text2 != cEmptyTextId) {
-        builder.append("/"_el);
-        builder.append(text::String{Database::textFromIndex(zoneName.text2)});
-    }
-    if (zoneName.text3 != cEmptyTextId) {
-        builder.append("/"_el);
-        builder.append(text::String{Database::textFromIndex(zoneName.text3)});
-    }
-    return builder.takeU8String();
+using namespace text;
+
+auto Database::zoneNameToString(const ZoneName &zoneName) -> String {
+    const auto secondText =
+        zoneName.text2 == cEmptyTextId ? String{} : StringConverter{Database::textFromIndex(zoneName.text2)}.toString();
+    const auto thirdText =
+        zoneName.text3 == cEmptyTextId ? String{} : StringConverter{Database::textFromIndex(zoneName.text3)}.toString();
+    return String::fromJoined(
+        {StringConverter{Database::textFromIndex(zoneName.text1)}.toString(),
+            zoneName.text2 == cEmptyTextId ? String{} : String{"/"_el},
+            secondText,
+            zoneName.text3 == cEmptyTextId ? String{} : String{"/"_el},
+            thirdText});
 }
 
-auto Database::names() const -> text::StringList {
-    auto result = text::StringList{};
+auto Database::names() const -> StringList {
+    auto result = StringList{};
     for (const auto &zoneName : zoneNames()) {
         result.append(zoneNameToString(zoneName));
     }
     return result;
 }
 
-auto Database::hasName(text::StringView zoneName) const noexcept -> bool {
+auto Database::hasName(const String &zoneName) const noexcept -> bool {
     return zoneIdFromName(zoneName) != cZoneIdNotFound;
 }
 
-auto Database::zoneIdFromName(text::StringView zoneName) const noexcept -> ZoneId {
+auto Database::zoneIdFromName(const String &zoneName) const noexcept -> ZoneId {
     if (zoneName.isEmpty()) {
         return cZoneIdNotFound;
     }
-    const auto parts = text::StringViewList::fromSplit(zoneName, text::CharSet{U'/'}, unit::ElementCount{3U}, true);
+    const auto parts = StringList::fromSplit(zoneName, CharSet{U'/'}, unit::ElementCount{3U}, true);
     if (parts.isEmpty() || parts.count() > unit::ElementCount{3U}) {
         return cZoneIdNotFound;
     }
@@ -66,20 +68,20 @@ auto Database::zoneIdFromName(text::StringView zoneName) const noexcept -> ZoneI
     return cZoneIdNotFound;
 }
 
-auto Database::nameFromZoneId(ZoneId zoneId) const -> text::String {
+auto Database::nameFromZoneId(ZoneId zoneId) const -> String {
     if (zoneId == cUtcZoneId || zoneId - 1U >= primaryZoneNames().size()) {
         return {};
     }
     return zoneNameToString(primaryZoneNames()[zoneId - 1U]);
 }
 
-auto Database::abbreviation(ZoneId zoneId, AbbreviationOffset abbreviationOffset) const -> text::String {
+auto Database::abbreviation(ZoneId zoneId, AbbreviationOffset abbreviationOffset) const -> String {
     const auto zoneInfo = info(zoneId);
     if (zoneInfo == nullptr) {
         return {};
     }
     const auto textId = zoneInfo->textIdFromAbbreviationOffset(abbreviationOffset);
-    return text::String{textFromIndex(textId)};
+    return StringConverter{textFromIndex(textId)}.toString();
 }
 
 auto Database::info(ZoneId zoneId) const noexcept -> std::shared_ptr<const Info> {
@@ -125,12 +127,12 @@ auto Database::indexFromText(std::string_view text) noexcept -> TextId {
     return cEmptyTextId;
 }
 
-auto Database::indexFromText(text::StringView textView) noexcept -> TextId {
+auto Database::indexFromText(const String &textView) noexcept -> TextId {
     if (textView.isEmpty()) {
         return cEmptyTextId;
     }
     for (auto i = std::size_t{1}; i < textEntries().size(); ++i) {
-        if (textView == text::String{textFromIndex(static_cast<TextId>(i))}) {
+        if (textView == StringConverter{textFromIndex(static_cast<TextId>(i))}.toString()) {
             return static_cast<TextId>(i);
         }
     }

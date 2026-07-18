@@ -31,7 +31,9 @@ class StringMap : public util::Map<
 public:
     using Compare = std::conditional_t<tCaseInsensitive, StringCICompare<tString>, StringCompare<tString>>;
     using Base = util::Map<tString, tValue, Compare, StringMap<tString, tValue, tCaseInsensitive>>;
-    using View = typename StringViewFor<tString>::Type;
+    using Key = tString;
+    using Entry = typename Base::Entry;
+    using Raw = typename Base::Raw;
 
 public:
     using Base::Base;
@@ -39,36 +41,48 @@ public:
     using Base::get;
     using Base::remove;
     using Base::removed;
-    using Base::set;
     using Base::take;
-    using Base::tryInsert;
-    using Base::tryReplace;
     StringMap() = default;
+    explicit StringMap(std::initializer_list<Entry> values) {
+        for (const auto &[key, value] : values) {
+            set(key, value);
+        }
+    }
+    explicit StringMap(const Raw &raw) {
+        for (const auto &[key, value] : raw) {
+            set(key, value);
+        }
+    }
+    explicit StringMap(Raw &&raw) {
+        for (auto &[key, value] : raw) {
+            set(key, std::move(value));
+        }
+    }
     ~StringMap() = default;
     StringMap(const StringMap &) noexcept = default;
     StringMap(StringMap &&) noexcept = default;
     auto operator=(const StringMap &) noexcept -> StringMap & = default;
     auto operator=(StringMap &&) noexcept -> StringMap & = default;
 
-public: // view key access
-    /// Get a value by a string view key.
-    [[nodiscard]] auto get(const View &key) const -> std::optional<tValue> {
+public: // key access
+    /// Get a value by a string key.
+    [[nodiscard]] auto get(const Key &key) const -> std::optional<tValue> {
         const auto iterator = this->raw().find(key);
         if (iterator == this->raw().end()) {
             return {};
         }
         return iterator->second;
     }
-    /// Get a value by a string view key, with a default.
-    [[nodiscard]] auto get(const View &key, const tValue &defaultValue) const -> tValue {
+    /// Get a value by a string key, with a default.
+    [[nodiscard]] auto get(const Key &key, const tValue &defaultValue) const -> tValue {
         const auto iterator = this->raw().find(key);
         if (iterator == this->raw().end()) {
             return defaultValue;
         }
         return iterator->second;
     }
-    /// Remove an entry by a string view key.
-    auto remove(const View &key) -> StringMap & {
+    /// Remove an entry by a string key.
+    auto remove(const Key &key) -> StringMap & {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator != data.end()) {
@@ -76,14 +90,14 @@ public: // view key access
         }
         return *this;
     }
-    /// Return a map with a string view key removed.
-    [[nodiscard]] auto removed(const View &key) const -> StringMap {
+    /// Return a map with a string key removed.
+    [[nodiscard]] auto removed(const Key &key) const -> StringMap {
         auto result = *this;
         result.remove(key);
         return result;
     }
-    /// Take a value by a string view key.
-    auto take(const View &key) -> tValue {
+    /// Take a value by a string key.
+    auto take(const Key &key) -> tValue {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator == data.end()) {
@@ -93,41 +107,41 @@ public: // view key access
         data.erase(iterator);
         return result;
     }
-    /// Set a key-value pair from a string view key.
+    /// Set a key-value pair from a string key.
     template <typename tValueFwd>
         requires std::constructible_from<tValue, tValueFwd &&>
-    auto set(const View &key, tValueFwd &&value) -> StringMap & {
-        Base::set(tString{key}, std::forward<tValueFwd>(value));
+    auto set(const Key &key, tValueFwd &&value) -> StringMap & {
+        Base::set(key.copy(), std::forward<tValueFwd>(value));
         return *this;
     }
-    /// Try to replace an existing value by a string view key.
+    /// Try to replace an existing value by a string key.
     template <typename tValueFwd>
         requires std::constructible_from<tValue, tValueFwd &&>
-    [[nodiscard]] auto tryReplace(const View &key, tValueFwd &&value) -> bool {
+    [[nodiscard]] auto tryReplace(const Key &key, tValueFwd &&value) -> bool {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator == data.end()) {
             return false;
         }
         data.erase(iterator);
-        data.emplace(tString{key}, std::forward<tValueFwd>(value));
+        data.emplace(key.copy(), std::forward<tValueFwd>(value));
         return true;
     }
-    /// Try to insert a new entry from a string view key.
+    /// Try to insert a new entry from a string key.
     template <typename tValueFwd>
         requires std::constructible_from<tValue, tValueFwd &&>
-    [[nodiscard]] auto tryInsert(const View &key, tValueFwd &&value) -> bool {
+    [[nodiscard]] auto tryInsert(const Key &key, tValueFwd &&value) -> bool {
         auto &data = this->mutableRaw();
         if (data.find(key) != data.end()) {
             return false;
         }
-        data.emplace(tString{key}, std::forward<tValueFwd>(value));
+        data.emplace(key.copy(), std::forward<tValueFwd>(value));
         return true;
     }
 
-public: // view key tests
-    /// Test if the map contains a string view key.
-    [[nodiscard]] auto contains(const View &key) const -> bool { return this->raw().find(key) != this->raw().end(); }
+public: // key tests
+    /// Test if the map contains a string key.
+    [[nodiscard]] auto contains(const Key &key) const -> bool { return this->raw().find(key) != this->raw().end(); }
 
 public:
     /// Return the keys as a matching string list.

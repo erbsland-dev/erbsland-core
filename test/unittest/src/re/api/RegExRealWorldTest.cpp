@@ -37,12 +37,12 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
         const auto sourceText = text.slice(el::text::StringSide::Back, offset);
         constexpr auto repetitionCount = 2U;
         const auto finalSize = sourceText.length() * repetitionCount;
-        auto result = std::make_unique<String>();
-        result->reserve(finalSize);
+        auto result = StringEditor{};
+        result.reserve(finalSize);
         for (std::size_t i = 0; i < repetitionCount; ++i) {
-            result->append(sourceText);
+            result.append(sourceText);
         }
-        return result;
+        return std::make_unique<String>(result);
     }
 
     auto shakespeare() -> const String & {
@@ -66,8 +66,8 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
         return *_shakespeareHtmlOnce;
     }
 
-    auto countMatchesIn(const StringView &text) -> std::size_t {
-        this->text = String{text};
+    auto countMatchesIn(const String &text) -> std::size_t {
+        this->text = StringEditor{text};
         REQUIRE(regex != nullptr);
         std::size_t matchCount = 0;
         for (const auto &match : regex->findAll(text)) {
@@ -78,13 +78,11 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
     }
 
     auto extractGroupsToLines(
-        const StringView &text,
-        const StringView &pattern,
-        const Flags flags,
-        const std::vector<std::size_t> &groupIndices) -> std::vector<std::string> {
+        const String &text, const String &pattern, const Flags flags, const std::vector<std::size_t> &groupIndices)
+        -> std::vector<std::string> {
 
         requireCompile(pattern, flags);
-        this->text = String{text};
+        this->text = StringEditor{text};
         REQUIRE(regex != nullptr);
 
         auto lines = std::vector<std::string>{};

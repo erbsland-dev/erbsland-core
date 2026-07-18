@@ -5,9 +5,9 @@
 #include "DisplayTextMap_fwd.hpp"
 #include "DisplayTextTranslator.hpp"
 
+#include "../text/String.hpp"
 #include "../text/StringFormat.hpp"
 #include "../text/StringHashMap.hpp"
-#include "../text/StringView.hpp"
 
 #include <memory>
 #include <mutex>
@@ -40,15 +40,15 @@ public:
 public: // access
     /// Resolve and translate a display text.
     /// Lookup order is the exact key, `domain.key`, and `key`. A missing entry returns the requested key.
-    [[nodiscard]] auto text(const text::StringView &key) const -> text::StringView;
+    [[nodiscard]] auto text(const text::String &key) const -> text::String;
     /// Resolve, translate, and compile a reusable format.
-    [[nodiscard]] auto format(const text::StringView &key) const -> text::StringFormat;
+    [[nodiscard]] auto format(const text::String &key) const -> text::StringFormat;
 
 public: // modifiers
     /// Set an English source text and clear all caches.
-    auto set(text::StringView key, text::StringView sourceText) -> DisplayTextMap &;
+    auto set(const text::String &key, text::String sourceText) -> DisplayTextMap &;
     /// Remove a source text and clear all caches.
-    auto remove(const text::StringView &key) -> DisplayTextMap &;
+    auto remove(const text::String &key) -> DisplayTextMap &;
     /// Set the translator and clear all caches.
     auto setTranslator(DisplayTextTranslatorConstPtr translator) -> DisplayTextMap &;
 
@@ -59,15 +59,15 @@ public: // accessors
 private:
     void addDefaultTexts();
     void clearCaches();
-    [[nodiscard]] auto findSourceText(const text::StringView &key) const -> std::optional<text::StringView>;
-    [[nodiscard]] static auto domainKey(const text::StringView &key) -> text::StringView;
-    [[nodiscard]] static auto finalKey(const text::StringView &key) noexcept -> text::StringView;
+    [[nodiscard]] auto findSourceText(const text::String &key) const -> std::optional<text::String>;
+    [[nodiscard]] static auto domainKey(const text::String &key) -> text::String;
+    [[nodiscard]] static auto finalKey(const text::String &key) noexcept -> text::String;
 
 private:
-    text::StringHashMap<text::StringView> _sourceTexts;
+    text::StringHashMap<text::String> _sourceTexts;
     DisplayTextTranslatorConstPtr _translator;
     mutable std::mutex _cacheMutex;
-    mutable text::StringHashMap<text::StringView> _textCache;
+    mutable text::StringHashMap<text::String> _textCache;
     mutable text::StringHashMap<std::shared_ptr<const text::StringFormat>> _formatCache;
 };
 

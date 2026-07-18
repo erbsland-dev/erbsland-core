@@ -7,7 +7,7 @@ namespace demo {
 
 /// A `Result` gives both outcomes meaningful names at the function boundary and at the call site.
 /// Unlike a `bool`, the return type communicates that the value reports the outcome of an operation.
-[[nodiscard]] auto prepareRobotArm(const el::StringView &armName) noexcept -> el::Result {
+[[nodiscard]] auto prepareRobotArm(const el::String &armName) noexcept -> el::Result {
     return armName == "Aurora"_el ? el::Result::Success : el::Result::Failure;
 }
 

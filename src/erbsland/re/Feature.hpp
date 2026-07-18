@@ -4,7 +4,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StdFormatForText.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -41,7 +41,7 @@ enum class Feature : uint16_t {
 };
 
 /// Convert a feature to a string representation.
-[[nodiscard]] inline auto toString(const Feature feature) -> text::StringView {
+[[nodiscard]] inline auto toString(const Feature feature) -> text::String {
     using namespace text::literals;
     switch (feature) {
     case Feature::QuotedLiterals:
@@ -84,8 +84,8 @@ enum class Feature : uint16_t {
 }
 
 template <>
-struct std::formatter<erbsland::re::Feature> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::Feature> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::Feature feature, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::toString(feature), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(feature), ctx);
     }
 };

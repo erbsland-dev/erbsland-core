@@ -100,12 +100,12 @@ public:
     /// Help is displayed using the configured renderer.
     /// The default renderer writes the output to the terminal or standard output.
     /// @param moduleName The name of the module to display help for. Empty for main help.
-    void displayHelp(text::StringView moduleName) const;
+    void displayHelp(const text::String &moduleName) const;
     /// Display version information using the configured renderer.
     /// Version is displayed using the configured renderer.
     /// The default renderer writes the output to the terminal or standard output.
     /// @param moduleName The name of the module to display help for. Empty for main help.
-    void displayVersion(text::StringView moduleName) const;
+    void displayVersion(const text::String &moduleName) const;
     /// Display an error message.
     /// The error message is displayed using the configured renderer.
     /// @param errorContext Structured parser or validation error details.
@@ -113,11 +113,11 @@ public:
     /// Build the help document.
     /// @param moduleName The selected module name, or empty for root help.
     /// @return A neutral document tree that can be rendered as plain text or terminal output.
-    [[nodiscard]] auto helpDocument(text::StringView moduleName) const -> text::TextDocument;
+    [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build the version document.
     /// @param moduleName The selected module name, or empty for root version output.
     /// @return A neutral document tree with application version information.
-    [[nodiscard]] auto versionDocument(text::StringView moduleName) const -> text::TextDocument;
+    [[nodiscard]] auto versionDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build an option error document.
     /// @param errorContext Structured parser or validation error details.
     /// @return A neutral document tree with the diagnostic message and optional source context.

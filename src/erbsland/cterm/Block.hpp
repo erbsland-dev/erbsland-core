@@ -10,9 +10,9 @@
 #include "../text/Char.hpp"
 #include "../text/CombinedChar.hpp"
 #include "../text/EncodingErrorMode.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
 
@@ -35,14 +35,14 @@ public:
     /// Invalid or unsupported text normalizes deterministically to a single renderable character.
     /// Empty input, control codes, and leading zero-width code points normalize to `U+FFFD`.
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
-    explicit Block(const text::StringView &charStr) noexcept : Block{charStr, BlockStyle{}} {}
+    explicit Block(const text::String &charStr) noexcept : Block{charStr, BlockStyle{}} {}
     /// Construct a block character with inherited colors.
     /// @param charStr The UTF-32 encoded text to display.
     /// Invalid or unsupported text normalizes deterministically to a single renderable character.
     /// Empty input, control codes, invalid Unicode scalar values, and leading zero-width code points normalize to
     /// `U+FFFD`. Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is
     /// ignored.
-    explicit Block(const text::U32StringView &charStr) noexcept : Block{charStr, BlockStyle{}} {}
+    explicit Block(const text::U32String &charStr) noexcept : Block{charStr, BlockStyle{}} {}
     /// Construct a block character from a single Unicode code point with explicit style.
     /// @param character The base Unicode code point.
     /// @param style The style for the character.
@@ -60,7 +60,7 @@ public:
     /// Invalid or unsupported text normalizes deterministically to a single renderable character.
     /// Empty input, control codes, and leading zero-width code points normalize to `U+FFFD`.
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
-    explicit Block(const text::StringView &charStr, BlockStyle style) noexcept : _character{charStr}, _style{style} {}
+    explicit Block(const text::String &charStr, BlockStyle style) noexcept : _character{charStr}, _style{style} {}
     /// Construct a block character with explicit text, color, and attributes.
     /// @param charStr The UTF-8 encoded text to display.
     /// @param color The color for the character.
@@ -68,7 +68,7 @@ public:
     /// Invalid or unsupported text normalizes deterministically to a single renderable character.
     /// Empty input, control codes, and leading zero-width code points normalize to `U+FFFD`.
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
-    explicit Block(const text::StringView &charStr, const Color color, const BlockAttributes attributes) noexcept :
+    explicit Block(const text::String &charStr, const Color color, const BlockAttributes attributes) noexcept :
         Block{charStr, BlockStyle{color, attributes}} {}
     /// Construct a block character with explicit text and style.
     /// @param charStr The UTF-32 encoded text to display.
@@ -77,7 +77,7 @@ public:
     /// Empty input, control codes, invalid Unicode scalar values, and leading zero-width code points normalize to
     /// `U+FFFD`. Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is
     /// ignored.
-    explicit Block(const text::U32StringView &charStr, const BlockStyle style) noexcept :
+    explicit Block(const text::U32String &charStr, const BlockStyle style) noexcept :
         _character{charStr}, _style{style} {}
     /// Construct a block character with explicit text, color, and attributes.
     /// @param charStr The UTF-32 encoded text to display.
@@ -87,7 +87,7 @@ public:
     /// Empty input, control codes, invalid Unicode scalar values, and leading zero-width code points normalize to
     /// `U+FFFD`. Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is
     /// ignored.
-    explicit Block(const text::U32StringView &charStr, const Color color, const BlockAttributes attributes) noexcept :
+    explicit Block(const text::U32String &charStr, const Color color, const BlockAttributes attributes) noexcept :
         Block{charStr, BlockStyle{color, attributes}} {}
     /// Construct a block character from a single Unicode code point and a color.
     /// @param character The base Unicode code point.
@@ -104,7 +104,7 @@ public:
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
     template <typename... tColorArgs>
         requires CharColorConstructorArgs<tColorArgs...>
-    explicit Block(const text::StringView &charStr, tColorArgs... color) noexcept :
+    explicit Block(const text::String &charStr, tColorArgs... color) noexcept :
         _character{charStr}, _style{Color{color...}} {}
     /// Construct a block character with explicit text and colors.
     /// @param charStr The UTF-32 encoded text to display.
@@ -115,7 +115,7 @@ public:
     /// ignored.
     template <typename... tColorArgs>
         requires CharColorConstructorArgs<tColorArgs...>
-    explicit Block(const text::U32StringView &charStr, tColorArgs... color) noexcept :
+    explicit Block(const text::U32String &charStr, tColorArgs... color) noexcept :
         _character{charStr}, _style{Color{color...}} {}
 
     // defaults

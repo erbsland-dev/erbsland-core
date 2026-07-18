@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TerminalDocumentStyleRule.hpp"
 
-#include "../text/u32/U32String.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 
 namespace erbsland::cterm {
 
@@ -11,25 +11,25 @@ auto TerminalDocumentStyleRule::setTextStyle(const BlockStyle style) noexcept ->
     return *this;
 }
 
-auto TerminalDocumentStyleRule::prefix() const noexcept -> std::optional<BlockStringView> {
+auto TerminalDocumentStyleRule::prefix() const noexcept -> std::optional<BlockString> {
     if (!_prefix.has_value()) {
         return std::nullopt;
     }
-    return BlockStringView{*_prefix};
+    return BlockString{*_prefix};
 }
 
-auto TerminalDocumentStyleRule::suffix() const noexcept -> std::optional<BlockStringView> {
+auto TerminalDocumentStyleRule::suffix() const noexcept -> std::optional<BlockString> {
     if (!_suffix.has_value()) {
         return std::nullopt;
     }
-    return BlockStringView{*_suffix};
+    return BlockString{*_suffix};
 }
 
-auto TerminalDocumentStyleRule::linePrefix() const noexcept -> std::optional<BlockStringView> {
+auto TerminalDocumentStyleRule::linePrefix() const noexcept -> std::optional<BlockString> {
     if (!_linePrefix.has_value()) {
         return std::nullopt;
     }
-    return BlockStringView{*_linePrefix};
+    return BlockString{*_linePrefix};
 }
 
 auto TerminalDocumentStyleRule::setTextStyle(const Color color, const BlockAttributes attributes) noexcept
@@ -76,17 +76,17 @@ auto TerminalDocumentStyleRule::setWrappedLineIndent(const int indent) noexcept 
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setPrefix(const BlockStringView prefix) noexcept -> TerminalDocumentStyleRule & {
-    _prefix = BlockString{prefix};
+auto TerminalDocumentStyleRule::setPrefix(const BlockString prefix) noexcept -> TerminalDocumentStyleRule & {
+    _prefix = prefix;
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setPrefix(const text::U32StringView &prefix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setPrefix(const text::U32String &prefix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setPrefix(BlockString{prefix, style});
 }
 
-auto TerminalDocumentStyleRule::setPrefix(const text::StringView prefix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setPrefix(const text::String &prefix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setPrefix(BlockString{prefix, style});
 }
@@ -96,17 +96,17 @@ auto TerminalDocumentStyleRule::clearPrefix() noexcept -> TerminalDocumentStyleR
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setSuffix(const BlockStringView suffix) noexcept -> TerminalDocumentStyleRule & {
-    _suffix = BlockString{suffix};
+auto TerminalDocumentStyleRule::setSuffix(const BlockString suffix) noexcept -> TerminalDocumentStyleRule & {
+    _suffix = suffix;
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setSuffix(const text::U32StringView &suffix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setSuffix(const text::U32String &suffix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setSuffix(BlockString{suffix, style});
 }
 
-auto TerminalDocumentStyleRule::setSuffix(const text::StringView suffix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setSuffix(const text::String &suffix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setSuffix(BlockString{suffix, style});
 }
@@ -116,17 +116,17 @@ auto TerminalDocumentStyleRule::clearSuffix() noexcept -> TerminalDocumentStyleR
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setLinePrefix(const BlockStringView prefix) noexcept -> TerminalDocumentStyleRule & {
-    _linePrefix = BlockString{prefix};
+auto TerminalDocumentStyleRule::setLinePrefix(const BlockString prefix) noexcept -> TerminalDocumentStyleRule & {
+    _linePrefix = prefix;
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setLinePrefix(const text::U32StringView &prefix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setLinePrefix(const text::U32String &prefix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setLinePrefix(BlockString{prefix, style});
 }
 
-auto TerminalDocumentStyleRule::setLinePrefix(const text::StringView prefix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setLinePrefix(const text::String &prefix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     return setLinePrefix(BlockString{prefix, style});
 }
@@ -156,19 +156,19 @@ auto TerminalDocumentStyleRule::setMarker(TerminalDocumentStyleMarker marker) no
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setLiteralMarker(const BlockStringView literal, const BlockStyle style)
+auto TerminalDocumentStyleRule::setLiteralMarker(const BlockString literal, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     _marker.setLiteral(literal, style);
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setLiteralMarker(const text::U32StringView &literal, const BlockStyle style)
+auto TerminalDocumentStyleRule::setLiteralMarker(const text::U32String &literal, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     _marker.setLiteral(literal, style);
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setOrderedMarker(const BlockStringView suffix, const BlockStyle style)
+auto TerminalDocumentStyleRule::setOrderedMarker(const BlockString suffix, const BlockStyle style)
     -> TerminalDocumentStyleRule & {
     _marker.setOrdered(suffix, style);
     return *this;

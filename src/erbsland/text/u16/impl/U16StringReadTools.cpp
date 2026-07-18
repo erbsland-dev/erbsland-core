@@ -16,61 +16,65 @@
 
 namespace erbsland::text::impl {
 
+using unit::CpLength;
+using unit::U16DataIndex;
+using unit::U16DataLength;
+using unit::U16DataRange;
+
 auto U16StringReadTools::isValidUtf16() const noexcept -> bool {
     return utf16::isValid(_data.dataSpan());
 }
 
-auto U16StringReadTools::findFirstOf(const CharSet &characters) const noexcept -> unit::U16DataIndex {
-    return findFirstOf(characters, unit::U16DataIndex::zero());
+auto U16StringReadTools::findFirstOf(const CharSet &characters) const noexcept -> U16DataIndex {
+    return findFirstOf(characters, U16DataIndex::zero());
 }
 
-auto U16StringReadTools::findFirstOf(const CharSet &characters, const unit::U16DataIndex start) const noexcept
-    -> unit::U16DataIndex {
+auto U16StringReadTools::findFirstOf(const CharSet &characters, const U16DataIndex start) const noexcept
+    -> U16DataIndex {
     return findFirstOfCharacterSet(characters, start, true);
 }
 
-auto U16StringReadTools::findFirstNotOf(const CharSet &characters) const noexcept -> unit::U16DataIndex {
-    return findFirstNotOf(characters, unit::U16DataIndex::zero());
+auto U16StringReadTools::findFirstNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+    return findFirstNotOf(characters, U16DataIndex::zero());
 }
 
-auto U16StringReadTools::findFirstNotOf(const CharSet &characters, const unit::U16DataIndex start) const noexcept
-    -> unit::U16DataIndex {
+auto U16StringReadTools::findFirstNotOf(const CharSet &characters, const U16DataIndex start) const noexcept
+    -> U16DataIndex {
     return findFirstOfCharacterSet(characters, start, false);
 }
 
-auto U16StringReadTools::findLastOf(const CharSet &characters) const noexcept -> unit::U16DataIndex {
-    return findLastOf(characters, unit::U16DataIndex::end(byteLength()));
+auto U16StringReadTools::findLastOf(const CharSet &characters) const noexcept -> U16DataIndex {
+    return findLastOf(characters, U16DataIndex::end(byteLength()));
 }
 
-auto U16StringReadTools::findLastOf(const CharSet &characters, const unit::U16DataIndex end) const noexcept
-    -> unit::U16DataIndex {
+auto U16StringReadTools::findLastOf(const CharSet &characters, const U16DataIndex end) const noexcept -> U16DataIndex {
     return findLastOfCharacterSet(characters, end, true);
 }
 
-auto U16StringReadTools::findLastNotOf(const CharSet &characters) const noexcept -> unit::U16DataIndex {
-    return findLastNotOf(characters, unit::U16DataIndex::end(byteLength()));
+auto U16StringReadTools::findLastNotOf(const CharSet &characters) const noexcept -> U16DataIndex {
+    return findLastNotOf(characters, U16DataIndex::end(byteLength()));
 }
 
-auto U16StringReadTools::findLastNotOf(const CharSet &characters, const unit::U16DataIndex end) const noexcept
-    -> unit::U16DataIndex {
+auto U16StringReadTools::findLastNotOf(const CharSet &characters, const U16DataIndex end) const noexcept
+    -> U16DataIndex {
     return findLastOfCharacterSet(characters, end, false);
 }
 
-auto U16StringReadTools::byteLength() const noexcept -> unit::U16DataLength {
-    return unit::U16DataLength::fromSizeT(_data.dataSpan().size());
+auto U16StringReadTools::byteLength() const noexcept -> U16DataLength {
+    return U16DataLength::fromSizeT(_data.dataSpan().size());
 }
 
 auto U16StringReadTools::displayWidth() const noexcept -> int {
     auto result = 0;
     const auto data = _data.dataSpan();
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         result += utf16::decodeCharOrReplace(data, position).displayWidth();
     }
     return result;
 }
 
-auto U16StringReadTools::charAt(const unit::U16DataIndex startIndex) const noexcept -> Char {
+auto U16StringReadTools::charAt(const U16DataIndex startIndex) const noexcept -> Char {
     if (startIndex.isNoIndex()) {
         return Char::noCodePoint();
     }
@@ -85,7 +89,7 @@ auto U16StringReadTools::charAt(const unit::U16DataIndex startIndex) const noexc
     return Char{utf16::decodeCharOrReplace(data, position)};
 }
 
-auto U16StringReadTools::read(unit::U16DataIndex &index) const noexcept -> Char {
+auto U16StringReadTools::read(U16DataIndex &index) const noexcept -> Char {
     if (index.isNoIndex()) {
         return Char::noCodePoint();
     }
@@ -99,7 +103,7 @@ auto U16StringReadTools::read(unit::U16DataIndex &index) const noexcept -> Char 
     return Char{utf16::decodeCharOrReplace(data, index)};
 }
 
-auto U16StringReadTools::readAndRetreat(unit::U16DataIndex &index) const noexcept -> Char {
+auto U16StringReadTools::readAndRetreat(U16DataIndex &index) const noexcept -> Char {
     if (index.isNoIndex()) {
         return Char::noCodePoint();
     }
@@ -118,7 +122,7 @@ auto U16StringReadTools::readAndRetreat(unit::U16DataIndex &index) const noexcep
     return result;
 }
 
-auto U16StringReadTools::charAtOrThrow(const unit::U16DataIndex startIndex) const -> Char {
+auto U16StringReadTools::charAtOrThrow(const U16DataIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
         text::impl::throwOutOfRange("Read position out of range");
@@ -127,7 +131,7 @@ auto U16StringReadTools::charAtOrThrow(const unit::U16DataIndex startIndex) cons
     return utf16::decodeCharOrThrow(data, position);
 }
 
-auto U16StringReadTools::readOrThrow(unit::U16DataIndex &index) const -> Char {
+auto U16StringReadTools::readOrThrow(U16DataIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
         text::impl::throwOutOfRange("Read position out of range");
@@ -135,12 +139,12 @@ auto U16StringReadTools::readOrThrow(unit::U16DataIndex &index) const -> Char {
     return Char{utf16::decodeCharOrThrow(data, index)};
 }
 
-auto U16StringReadTools::advance(unit::U16DataIndex &index, unit::CpLength count) const noexcept -> bool {
+auto U16StringReadTools::advance(U16DataIndex &index, CpLength count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero()) {
         return false;
     }
     const auto data = _data.dataSpan();
-    const auto endIndex = unit::U16DataIndex::fromSizeT(data.size());
+    const auto endIndex = U16DataIndex::fromSizeT(data.size());
     const auto moveToEnd = [&]() -> bool {
         const auto didAdvance = index < endIndex;
         index = endIndex;
@@ -156,17 +160,17 @@ auto U16StringReadTools::advance(unit::U16DataIndex &index, unit::CpLength count
     return true;
 }
 
-auto U16StringReadTools::retreat(unit::U16DataIndex &index, unit::CpLength count) const noexcept -> bool {
+auto U16StringReadTools::retreat(U16DataIndex &index, CpLength count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero() || index.isZero()) {
         return false;
     }
     const auto data = _data.dataSpan();
-    const auto endIndex = unit::U16DataIndex::fromSizeT(data.size());
+    const auto endIndex = U16DataIndex::fromSizeT(data.size());
     if (index > endIndex) {
         index = endIndex;
     }
     if (count.isInfinite() || count.toSizeT() >= index.toSizeT() || data.empty()) {
-        index = unit::U16DataIndex::zero();
+        index = U16DataIndex::zero();
         return true;
     }
     while (!count.isZero() && !index.isZero()) {
@@ -176,9 +180,9 @@ auto U16StringReadTools::retreat(unit::U16DataIndex &index, unit::CpLength count
     return true;
 }
 
-auto U16StringReadTools::sliceRange(const unit::U16DataRange range) const noexcept -> unit::U16DataRange {
+auto U16StringReadTools::sliceRange(const U16DataRange range) const noexcept -> U16DataRange {
     if (!_data.range().isValid()) {
-        return unit::U16DataRange::empty();
+        return U16DataRange::empty();
     }
     return range.clampedTo(byteLength()).withOrigin(_data.range().index());
 }
@@ -208,15 +212,14 @@ auto U16StringReadTools::toStdWString() const noexcept -> std::wstring {
 }
 
 auto U16StringReadTools::findFirstOfCharacterSet(
-    const CharacterSet &characters, const unit::U16DataIndex start, const bool isMatching) const noexcept
-    -> unit::U16DataIndex {
+    const CharacterSet &characters, const U16DataIndex start, const bool isMatching) const noexcept -> U16DataIndex {
     if (start.isNoIndex()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() >= data.size()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     auto position = start;
@@ -227,19 +230,18 @@ auto U16StringReadTools::findFirstOfCharacterSet(
             return characterStart;
         }
     }
-    return unit::U16DataIndex::noIndex();
+    return U16DataIndex::noIndex();
 }
 
 auto U16StringReadTools::findLastOfCharacterSet(
-    const CharacterSet &characters, const unit::U16DataIndex end, const bool isMatching) const noexcept
-    -> unit::U16DataIndex {
+    const CharacterSet &characters, const U16DataIndex end, const bool isMatching) const noexcept -> U16DataIndex {
     if (end.isNoIndex() || end.isZero()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (data.empty() || end.toSizeT() > data.size()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     auto position = end;
@@ -251,7 +253,7 @@ auto U16StringReadTools::findLastOfCharacterSet(
             return position;
         }
     }
-    return unit::U16DataIndex::noIndex();
+    return U16DataIndex::noIndex();
 }
 
 }

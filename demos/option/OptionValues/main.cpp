@@ -9,7 +9,7 @@ namespace demo {
 
 using namespace el::text::literals;
 
-[[nodiscard]] auto makeArgs(std::initializer_list<el::StringView> args) -> el::CommandLineArguments {
+[[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
     result.reserve(el::ElementCount{args.size()});
     for (const auto &arg : args) {

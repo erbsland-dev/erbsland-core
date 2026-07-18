@@ -4,7 +4,7 @@
 
 #include "Literals.hpp"
 #include "String.hpp"
-#include "StringView.hpp"
+#include "StringEditor.hpp"
 
 #include "impl/ThrowHelper.hpp"
 
@@ -12,7 +12,7 @@ namespace erbsland::text {
 
 using namespace text::literals;
 
-auto EscapeFormat::toString() const -> StringView {
+auto EscapeFormat::toString() const -> String {
     switch (_value) {
     case Html:
         return "html"_el;
@@ -32,7 +32,7 @@ auto EscapeFormat::toString() const -> StringView {
     }
 }
 
-auto EscapeFormat::fromString(const StringView &text) noexcept -> std::optional<EscapeFormat> {
+auto EscapeFormat::fromString(const String &text) noexcept -> std::optional<EscapeFormat> {
     if (text == "none"_el) {
         return EscapeFormat{None};
     }
@@ -57,7 +57,7 @@ auto EscapeFormat::fromString(const StringView &text) noexcept -> std::optional<
     return {};
 }
 
-auto EscapeFormat::fromStringOrThrow(const StringView &text) -> EscapeFormat {
+auto EscapeFormat::fromStringOrThrow(const String &text) -> EscapeFormat {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }

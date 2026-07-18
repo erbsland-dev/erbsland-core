@@ -40,7 +40,7 @@ public:
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
             // The possessive quantifier consumes the longest possible match and does not backtrack.
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "xab"_el,
                 "xabab"_el,
@@ -56,14 +56,14 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupZeroOrMorePostfix());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "xb"_el,
                 "xabb"_el,
                 "xababb"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "xab"_el,
                 "xabab"_el,
@@ -86,7 +86,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "xabab"_el,
             "zzxabab"_el,
@@ -111,7 +111,7 @@ public:
         WITH_CONTEXT(requireFindAll("xabb xabab xabb"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "xabab"_el,
             "xaba"_el,

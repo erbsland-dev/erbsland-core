@@ -4,9 +4,9 @@
 
 #include "ThrowHelper.hpp"
 
-#include "../StringBuilder.hpp"
 #include "../StringConverter.hpp"
-#include "../u8/U8String.hpp"
+#include "../StringEditor.hpp"
+#include "../u8/U8StringEditor.hpp"
 
 #include <cerrno>
 #include <charconv>
@@ -37,17 +37,25 @@ namespace erbsland::text::impl {
 [[nodiscard]] auto formatPattern(const FloatFormat &format) -> std::string {
     const auto type = presentationType(format);
     if (!format.hasPrecision()) {
-        return type == '\0' ? std::string{"{}"} : std::format("{{:{}}}", type);
+        if (type == '\0') {
+            return "{}";
+        }
+        return StringConverter{
+            String::fromJoined({String{"{:"}, String::fromCharacter(Char{static_cast<char32_t>(type)}), String{"}"}})}
+            .toStdString();
     }
+    const auto precision = String::fromInteger(format.precision().toRawValue());
     if (type == '\0') {
-        return std::format("{{:.{}}}", format.precision().toRawValue());
+        return StringConverter{String::fromJoined({String{"{:."}, precision, String{"}"}})}.toStdString();
     }
-    return std::format("{{:.{}{}}}", format.precision().toRawValue(), type);
+    return StringConverter{
+        String::fromJoined(
+            {String{"{:."}, precision, String::fromCharacter(Char{static_cast<char32_t>(type)}), String{"}"}})}
+        .toStdString();
 }
 
 auto formatFloat(const double value, const FloatFormat &format) -> String {
-    auto stdString = std::vformat(formatPattern(format), std::make_format_args(value));
-    return String{stdString};
+    return String{std::vformat(formatPattern(format), std::make_format_args(value))};
 }
 
 auto charsFormat(const FloatParseOptions::Style style) noexcept -> std::chars_format {
@@ -80,7 +88,7 @@ auto floatParseFailure(const FloatParseStatus status, const std::string_view mes
 }
 
 auto readFloatText(StringCharReader reader) -> FloatTextResult {
-    auto builder = StringBuilder{};
+    auto text = StringEditor{};
     while (true) {
         const auto next = reader.read();
         if (next.isEndOfData()) {
@@ -93,10 +101,10 @@ auto readFloatText(StringCharReader reader) -> FloatTextResult {
                 .message = "Floating point text contains an invalid character",
             };
         }
-        builder.append(next);
+        text.append(next);
     }
     return FloatTextResult{
-        .text = StringConverter{builder.takeU8String()}.toStdString(),
+        .text = StringConverter{text}.toStdString(),
         .status = FloatParseStatus::Success,
         .message = {},
     };

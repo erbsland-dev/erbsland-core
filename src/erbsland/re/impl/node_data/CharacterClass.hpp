@@ -24,7 +24,7 @@ public:
     [[nodiscard]] auto toTestString() const -> text::String {
         using namespace text::literals;
         return text::StringFormat{"CharacterClass([{}{}])"}.build(
-            isNegated ? "^"_el : text::StringView{}, characterClass.toString());
+            isNegated ? "^"_el : text::String{}, characterClass.toString());
     }
 
     /// Access the children of this node as a zero‑overhead view (always empty for leaves).

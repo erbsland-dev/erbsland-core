@@ -14,7 +14,6 @@
 
 #include "../../i18n/DisplayTextMap.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
 
 #include <algorithm>
 #include <compare>
@@ -26,35 +25,34 @@ namespace erbsland::options::impl {
 using namespace text;
 using namespace literals;
 
-void OptionDisplayModel::appendMetaPlaceholder(StringBuilder &builder, const StringView &placeholder) {
-    builder.append(U'<');
-    builder.append(placeholder);
-    builder.append(U'>');
+void OptionDisplayModel::appendMetaPlaceholder(StringEditor &result, const String &placeholder) {
+    result.append(U'<');
+    result.append(placeholder);
+    result.append(U'>');
 }
 
 auto OptionDisplayModel::optionSetTitle(const OptionSetPtr &optionSet, const i18n::DisplayTextMapConstPtr &displayText)
     -> String {
     if (optionSet != nullptr && !optionSet->help().title().isEmpty()) {
-        return String{optionSet->help().title()};
+        return optionSet->help().title();
     }
-    return String{displayText->text("options.OptionsHeading"_el)};
+    return displayText->text("options.OptionsHeading"_el);
 }
 
 OptionDisplayModel::OptionDisplayModel(
-    OptionsPtr options, StringView moduleName, const i18n::DisplayTextMapConstPtr &displayText) :
-    _options{std::move(options)},
-    _displayText{displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap()} {
-    _module = findModule(std::move(moduleName));
+    OptionsPtr options, const String &moduleName, const i18n::DisplayTextMapConstPtr &displayText) :
+    _options{std::move(options)}, _displayText{resolveDisplayText(displayText)} {
+    _module = findModule(moduleName);
 }
 
-auto OptionDisplayModel::displayName() const -> StringView {
+auto OptionDisplayModel::displayName() const -> String {
     if (_options == nullptr || _options->applicationInfo().applicationName().isEmpty()) {
         return _displayText->text("options.ApplicationNameFallback"_el);
     }
     return _options->applicationInfo().applicationName();
 }
 
-auto OptionDisplayModel::executableName() const -> StringView {
+auto OptionDisplayModel::executableName() const -> String {
     if (_options == nullptr || _options->executableName().isEmpty()) {
         return displayName();
     }
@@ -62,20 +60,12 @@ auto OptionDisplayModel::executableName() const -> StringView {
 }
 
 auto OptionDisplayModel::helpTitleText() const -> String {
-    auto builder = StringBuilder{};
-    builder.append("► "_el);
-    builder.append(displayName());
-    builder.append(U' ');
-    if (_options == nullptr) {
-        builder.append("0.0.0"_el);
-    } else {
-        builder.append(_options->applicationInfo().applicationVersion().toString());
-    }
-    builder.append(" Help"_el);
-    return builder.toString();
+    const auto version =
+        _options == nullptr ? String{"0.0.0"_el} : _options->applicationInfo().applicationVersion().toString();
+    return String::fromJoined({"► "_el, displayName(), " "_el, version, " Help"_el});
 }
 
-auto OptionDisplayModel::titleText() const -> StringView {
+auto OptionDisplayModel::titleText() const -> String {
     if (_module != nullptr && !_module->help().title().isEmpty()) {
         return _module->help().title();
     }
@@ -175,11 +165,11 @@ auto OptionDisplayModel::moduleRows() const -> std::vector<OptionDisplayRow> {
         }
         auto description = String{};
         if (!module->help().description().isEmpty()) {
-            description = String{module->help().description()};
+            description = module->help().description();
         } else if (!module->help().title().isEmpty()) {
-            description = String{module->help().title()};
+            description = module->help().title();
         }
-        rows.emplace_back(OptionDisplayRow{String{module->name()}, description, {}, {}});
+        rows.emplace_back(OptionDisplayRow{module->name(), description, {}, {}});
     }
     return rows;
 }
@@ -218,8 +208,7 @@ auto OptionDisplayModel::usagePositionalOptions() const -> std::vector<OptionPtr
 
 auto OptionDisplayModel::optionTitle(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
     -> String {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
-    auto builder = StringBuilder{};
+    auto result = StringEditor{};
     auto first = true;
     if (option->isRegularOption()) {
         for (const auto &name : option->names()) {
@@ -227,45 +216,43 @@ auto OptionDisplayModel::optionTitle(const OptionPtr &option, const i18n::Displa
                 continue;
             }
             if (!first) {
-                builder.append(", "_el);
+                result.append(", "_el);
             }
-            builder.append(name);
+            result.append(name);
             first = false;
         }
-        const auto valueName = optionValueName(option, resolvedDisplayText);
+        const auto valueName = optionValueName(option, displayText);
         if (!valueName.isEmpty()) {
-            builder.append(U' ');
-            appendMetaPlaceholder(builder, valueName);
+            result.append(U' ');
+            appendMetaPlaceholder(result, valueName);
         }
-        return builder.toString();
+        return result;
     }
-    const auto valueName = positionalValueName(option, resolvedDisplayText);
+    const auto valueName = positionalValueName(option, displayText);
     if (!valueName.isEmpty()) {
-        appendMetaPlaceholder(builder, valueName);
+        appendMetaPlaceholder(result, valueName);
     }
-    return builder.toString();
+    return result;
 }
 
 auto OptionDisplayModel::optionDescription(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
     -> String {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
-    auto builder = StringBuilder{};
+    const auto resolvedDisplayText = resolveDisplayText(displayText);
     if (isHelpOption(option)) {
-        builder.append(resolvedDisplayText->text("options.HelpOptionDescription"_el));
-    } else if (isVersionOption(option)) {
-        builder.append(resolvedDisplayText->text("options.VersionOptionDescription"_el));
-    } else if (!option->help().description().isEmpty()) {
-        builder.append(option->help().description());
-    } else if (!option->help().title().isEmpty()) {
-        builder.append(option->help().title());
+        return resolvedDisplayText->text("options.HelpOptionDescription"_el);
     }
-    return builder.toString();
+    if (isVersionOption(option)) {
+        return resolvedDisplayText->text("options.VersionOptionDescription"_el);
+    }
+    if (!option->help().description().isEmpty()) {
+        return option->help().description();
+    }
+    return option->help().title();
 }
 
 auto OptionDisplayModel::optionDetails(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
     -> String {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
-    auto builder = StringBuilder{};
+    auto result = StringEditor{};
     if (option->choices() != nullptr) {
         auto first = true;
         for (const auto &choice : option->choices()->choices()) {
@@ -273,33 +260,33 @@ auto OptionDisplayModel::optionDetails(const OptionPtr &option, const i18n::Disp
                 continue;
             }
             if (first) {
-                if (!builder.isEmpty()) {
-                    builder.append(U' ');
+                if (!result.isEmpty()) {
+                    result.append(U' ');
                 }
-                builder.append(resolvedDisplayText->text("options.ChoicesLabel"_el));
-                builder.append(": "_el);
+                result.append(resolveDisplayText(displayText)->text("options.ChoicesLabel"_el));
+                result.append(": "_el);
             } else {
-                builder.append(", "_el);
+                result.append(", "_el);
             }
-            builder.append(choice->text());
+            result.append(choice->text());
             first = false;
         }
         if (!first) {
-            builder.append(U'.');
+            result.append(U'.');
         }
     }
-    return builder.toString();
+    return result;
 }
 
 auto OptionDisplayModel::optionValueName(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> StringView {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
+    -> String {
     if (option == nullptr || option->type() == OptionType::Flag) {
         return {};
     }
     if (!option->valueName().isEmpty()) {
         return option->valueName();
     }
+    const auto resolvedDisplayText = resolveDisplayText(displayText);
     if (option->type() == OptionType::Integer) {
         return resolvedDisplayText->text("options.IntegerPlaceholder"_el);
     }
@@ -313,8 +300,7 @@ auto OptionDisplayModel::optionValueName(const OptionPtr &option, const i18n::Di
 }
 
 auto OptionDisplayModel::positionalValueName(const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText)
-    -> StringView {
-    const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
+    -> String {
     if (option == nullptr) {
         return {};
     }
@@ -324,7 +310,7 @@ auto OptionDisplayModel::positionalValueName(const OptionPtr &option, const i18n
     if (!option->names().empty()) {
         return option->names().front();
     }
-    return resolvedDisplayText->text("options.ValuePlaceholder"_el);
+    return resolveDisplayText(displayText)->text("options.ValuePlaceholder"_el);
 }
 
 auto OptionDisplayModel::resolvedVisibility(const OptionHelp &help, const OptionHelpVisibility inherited) noexcept
@@ -347,7 +333,7 @@ auto OptionDisplayModel::isVersionOption(const OptionPtr &option) -> bool {
     return option != nullptr && option->hasLongName("--version"_el);
 }
 
-auto OptionDisplayModel::findModule(StringView moduleName) const -> OptionModulePtr {
+auto OptionDisplayModel::findModule(const String &moduleName) const -> OptionModulePtr {
     if (_options == nullptr || moduleName.isEmpty()) {
         return {};
     }
@@ -407,12 +393,12 @@ auto OptionDisplayModel::choiceRows(const OptionPtr &option) const -> std::vecto
         }
         auto description = String{};
         if (!choice->help().description().isEmpty()) {
-            description = String{choice->help().description()};
+            description = choice->help().description();
         } else if (!choice->help().title().isEmpty()) {
-            description = String{choice->help().title()};
+            description = choice->help().title();
         }
         if (!description.isEmpty()) {
-            rows.emplace_back(OptionDisplayRow{String{choice->text()}, description, {}, {}});
+            rows.emplace_back(OptionDisplayRow{choice->text(), description, {}, {}});
         }
     }
     return rows;
@@ -422,7 +408,7 @@ auto OptionDisplayModel::optionSortKey(const OptionPtr &option) const -> String 
     if (option == nullptr) {
         return {};
     }
-    auto result = StringView{};
+    auto result = String{};
     for (const auto &name : option->names()) {
         if (Option::isLongName(name)) {
             result = name.slice({unit::CpIndex{2}, unit::CpLength::infinite()});
@@ -435,6 +421,14 @@ auto OptionDisplayModel::optionSortKey(const OptionPtr &option) const -> String 
         }
     }
     return result.transformed(Char::toAsciiLowercase);
+}
+
+auto OptionDisplayModel::resolveDisplayText(const i18n::DisplayTextMapConstPtr &displayText) noexcept
+    -> i18n::DisplayTextMapConstPtr {
+    if (displayText == nullptr) {
+        return i18n::DisplayTextMap::defaultMap();
+    }
+    return displayText;
 }
 
 }

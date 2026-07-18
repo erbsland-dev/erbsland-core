@@ -5,16 +5,10 @@
 
 #include <DemoCommon.hpp>
 
-namespace demo {
+using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
     app.registerDemo("UsingTimers"_el, usingTimers, DemoApplication::Mode::EventLoop);
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

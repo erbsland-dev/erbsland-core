@@ -20,7 +20,7 @@ class OptionModule : public OptionSetManager {
 public:
     OptionModule() = default;
     /// Create a module with a command line name.
-    explicit OptionModule(text::StringView name);
+    explicit OptionModule(const text::String &name);
 
     // defaults
     ~OptionModule() override = default;
@@ -38,27 +38,27 @@ public:
     /// Create a shared module with a command line name.
     /// @param name The module selector accepted on the command line.
     /// @return A shared module with the given selector.
-    [[nodiscard]] static auto create(text::StringView name) -> OptionModulePtr;
+    [[nodiscard]] static auto create(const text::String &name) -> OptionModulePtr;
     /// Test if a module name is valid.
     /// @param name The module selector to validate.
     /// @return `true` if the name can be used as a module selector.
-    [[nodiscard]] static auto isValidName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidName(const text::String &name) noexcept -> bool;
     /// Add an option set to this module.
     /// @param optionSet The set that becomes active when this module is selected.
     void addSet(OptionSetPtr optionSet);
 
 public: // implement OptionsManager
-    auto addOption(std::initializer_list<text::StringView> names) -> OptionEditor override;
-    auto editOption(const text::StringView &name) -> OptionEditor override;
+    auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
     /// Get the command line module name.
-    [[nodiscard]] auto name() const noexcept -> const text::StringView & { return _name; }
+    [[nodiscard]] auto name() const noexcept -> const text::String & { return _name; }
     /// Set the command line module name.
     /// @param name The selector accepted as the first ordinary argument.
-    void setName(text::StringView name);
+    void setName(const text::String &name);
     /// Test if the given name matches this module.
-    [[nodiscard]] auto hasName(const text::StringView &name) const -> bool;
+    [[nodiscard]] auto hasName(const text::String &name) const -> bool;
     /// Get the help metadata for this module.
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
     /// Set the complete help metadata for this module.
@@ -66,13 +66,13 @@ public: // accessors
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this module.
     /// @param title Short module title used when no description is available.
-    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this module.
     /// @param description Description shown for this module and as module-help summary.
-    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this module.
     /// @param epilog Text rendered after module-specific help output.
-    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
     /// Set the help visibility for this module.
     /// @param visibility Controls whether this module appears in root help.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
@@ -96,7 +96,7 @@ private:
     [[nodiscard]] auto defaultOptionSet() -> OptionSetPtr;
 
 private:
-    text::StringView _name;                 ///< The command line module name.
+    text::String _name;                     ///< The command line module name.
     OptionHelp _help;                       ///< The help text for the module.
     std::vector<OptionSetPtr> _optionSets;  ///< The option sets for this module.
     PreOptionModuleParsingFn _preParsingFn; ///< Called before parsing starts.

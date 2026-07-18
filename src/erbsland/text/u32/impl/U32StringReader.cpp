@@ -5,20 +5,25 @@
 #include "U32StringReadTools.hpp"
 
 #include "../../AnyString.hpp"
-#include "../../AnyStringView.hpp"
+#include "../../AnyStringEditor.hpp"
 
 #include <utility>
 
 namespace erbsland::text::impl {
 
-U32StringReader::U32StringReader(U32StringView text) noexcept : _text{std::move(text)} {
+using unit::CpIndex;
+using unit::CpLength;
+using util::LoopResult;
+using util::LoopStatus;
+
+U32StringReader::U32StringReader(U32String text) noexcept : _text{std::move(text)} {
 }
 
 auto U32StringReader::clone() const -> U32StringReader * {
     return new U32StringReader{*this};
 }
 
-auto U32StringReader::position() const noexcept -> unit::CpIndex {
+auto U32StringReader::position() const noexcept -> CpIndex {
     return _cpPosition;
 }
 
@@ -28,7 +33,7 @@ auto U32StringReader::save() const noexcept -> StringCharReaderState {
 
 auto U32StringReader::restore(const StringCharReaderState state) noexcept -> bool {
     const auto raw = rawPosition(state);
-    const auto rawIndex = unit::CpIndex::fromSizeT(raw);
+    const auto rawIndex = CpIndex::fromSizeT(raw);
     if (stateKind(state) != StringReaderBackendKind::U32 || storageId(state) != viewStorageId(_text) ||
         raw > _text.length().toSizeT() || _text.toCharIndex(rawIndex) != cpPosition(state)) {
         return false;
@@ -39,8 +44,8 @@ auto U32StringReader::restore(const StringCharReaderState state) noexcept -> boo
 }
 
 void U32StringReader::reset() noexcept {
-    _position = unit::CpIndex::zero();
-    _cpPosition = unit::CpIndex::zero();
+    _position = CpIndex::zero();
+    _cpPosition = CpIndex::zero();
 }
 
 auto U32StringReader::read() noexcept -> Char {
@@ -113,7 +118,7 @@ auto U32StringReader::isAtEnd() const noexcept -> bool {
     return peek().isEndOfData();
 }
 
-auto U32StringReader::canRead(unit::CpLength count) const noexcept -> bool {
+auto U32StringReader::canRead(CpLength count) const noexcept -> bool {
     if (count.isZero()) {
         return true;
     }
@@ -132,7 +137,7 @@ auto U32StringReader::canRead(unit::CpLength count) const noexcept -> bool {
     return true;
 }
 
-auto U32StringReader::advance(unit::CpLength count) noexcept -> bool {
+auto U32StringReader::advance(CpLength count) noexcept -> bool {
     if (count.isZero()) {
         return false;
     }
@@ -160,13 +165,12 @@ auto U32StringReader::advanceIfOrThrow(const CharSet &expected) -> bool {
     return readIfOrThrow(expected).has_value();
 }
 
-auto U32StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+auto U32StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept
+    -> LoopResult {
     return readLoop(readFn, expected, maximum, false);
 }
 
-auto U32StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+auto U32StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept -> LoopResult {
     return readLoop(readFn, stopSet, maximum, true);
 }
 
@@ -174,8 +178,8 @@ void U32StringReader::startCapture() noexcept {
     _captureStart = _position;
 }
 
-auto U32StringReader::takeCapture() noexcept -> AnyStringView {
-    auto result = AnyStringView{};
+auto U32StringReader::takeCapture() noexcept -> AnyString {
+    auto result = AnyString{};
     if (_captureStart.isNoIndex() || _captureStart >= _position) {
         _captureStart = _position;
         return result;
@@ -190,16 +194,16 @@ void U32StringReader::clearBuffer() noexcept {
 }
 
 auto U32StringReader::takeBuffer() -> AnyString {
-    auto result = AnyString{std::move(_buffer)};
-    _buffer = U32String{};
+    auto result = AnyStringEditor{std::move(_buffer)};
+    _buffer = U32StringEditor{};
     return result;
 }
 
-auto U32StringReader::bufferView() const noexcept -> AnyStringView {
-    return AnyStringView{_buffer};
+auto U32StringReader::bufferView() const noexcept -> AnyString {
+    return AnyString{_buffer};
 }
 
-auto U32StringReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+auto U32StringReader::bufferCharacterLength() const noexcept -> CpLength {
     return _buffer.length();
 }
 
@@ -207,8 +211,8 @@ auto U32StringReader::isBufferEmpty() const noexcept -> bool {
     return _buffer.isEmpty();
 }
 
-void U32StringReader::setBuffer(const AnyStringView &text) {
-    _buffer = text.toU32String();
+void U32StringReader::setBuffer(const AnyString &text) {
+    _buffer = U32StringEditor{text.toU32String()};
 }
 
 void U32StringReader::appendToBuffer(const Char character) {
@@ -218,11 +222,11 @@ void U32StringReader::appendToBuffer(const Char character) {
     _buffer.append(character);
 }
 
-void U32StringReader::appendToBuffer(const AnyStringView &text) {
+void U32StringReader::appendToBuffer(const AnyString &text) {
     if (text.isEmpty()) {
         return;
     }
-    _buffer.append(text.toU32StringView());
+    _buffer.append(text.toU32String());
 }
 
 void U32StringReader::appendCaptureToBuffer() {
@@ -235,7 +239,7 @@ auto U32StringReader::readToBuffer() -> Char {
         return character;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return character;
 }
 
@@ -245,7 +249,7 @@ auto U32StringReader::readToBufferIf(const Char expected) -> bool {
         return false;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return true;
 }
 
@@ -255,65 +259,63 @@ auto U32StringReader::readToBufferIf(const CharSet &expected) -> std::optional<C
         return {};
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return character;
 }
 
-auto U32StringReader::readToBufferWhile(const CharSet &expected, const unit::CpLength maximum) -> util::LoopResult {
+auto U32StringReader::readToBufferWhile(const CharSet &expected, const CpLength maximum) -> LoopResult {
     return readToBufferLoop(expected, maximum, false);
 }
 
-auto U32StringReader::readToBufferUntil(const CharSet &stopSet, const unit::CpLength maximum) -> util::LoopResult {
+auto U32StringReader::readToBufferUntil(const CharSet &stopSet, const CpLength maximum) -> LoopResult {
     return readToBufferLoop(stopSet, maximum, true);
 }
 
 auto U32StringReader::readLoop(
-    const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
-    -> util::LoopResult {
-    auto count = unit::CpLength::zero();
+    const ReadFn &readFn, const CharSet &charSet, CpLength maximum, bool stopOnMatch) noexcept -> LoopResult {
+    auto count = CpLength::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;
         const auto character = read();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (charSet.contains(character) == stopOnMatch) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
-        const auto result = readFn != nullptr ? readFn(character) : util::LoopStatus::Continue;
-        if (result != util::LoopStatus::Continue) {
+        const auto result = readFn != nullptr ? readFn(character) : LoopStatus::Continue;
+        if (result != LoopStatus::Continue) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return result == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
+            return result == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped;
         }
         ++count;
     }
 }
 
-auto U32StringReader::readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch)
-    -> util::LoopResult {
-    auto count = unit::CpLength::zero();
+auto U32StringReader::readToBufferLoop(const CharSet &charSet, CpLength maximum, bool stopOnMatch) -> LoopResult {
+    auto count = CpLength::zero();
     while (true) {
         const auto character = peek();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (charSet.contains(character) == stopOnMatch) {
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
         appendToBuffer(character);
-        static_cast<void>(advance(unit::CpLength::one()));
+        static_cast<void>(advance(CpLength::one()));
         ++count;
     }
 }

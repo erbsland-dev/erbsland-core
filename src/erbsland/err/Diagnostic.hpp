@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../i18n/DisplayTextMap_fwd.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../text/TextDocument_fwd.hpp"
 #include "../unit/CodeLocation.hpp"
 
@@ -26,15 +26,15 @@ public:
 
 public:
     /// Get the source name, if this diagnostic points to one.
-    [[nodiscard]] virtual auto sourceName() const noexcept -> text::StringView;
+    [[nodiscard]] virtual auto sourceName() const noexcept -> text::String;
     /// Get the source path, if this diagnostic points to one.
-    [[nodiscard]] virtual auto sourcePath() const noexcept -> text::StringView;
+    [[nodiscard]] virtual auto sourcePath() const noexcept -> text::String;
     /// Get the source location, if this diagnostic points to one.
     [[nodiscard]] virtual auto location() const noexcept -> unit::CodeLocation;
 
 public: // conversion
     /// Render this diagnostic as plain text.
-    [[nodiscard]] virtual auto toString() const noexcept -> text::StringView;
+    [[nodiscard]] virtual auto toString() const noexcept -> text::String;
     /// Render this diagnostic as a structured text document.
     [[nodiscard]] virtual auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
         -> text::TextDocument;

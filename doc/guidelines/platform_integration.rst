@@ -19,10 +19,10 @@ General Rules
 Strings and Buffers
 ===================
 
-1.  Use ``text::String``/``text::StringView`` for regular library code and POSIX/macOS API inputs.
-2.  Use ``text::U16String``/``text::U16StringView`` for Windows API inputs that require UTF-16.
+1.  Use ``text::String`` (or ``text::StringEditor``) for regular library code and POSIX/macOS API inputs.
+2.  Use ``text::U16String`` (or ``text::U16StringEditor``) for Windows API inputs that require UTF-16.
 3.  Use ``text::StringConverter`` for explicit UTF-8/UTF-16 conversion at platform boundaries.
-4.  Use ``text::impl::UnsafeU8StringAccess`` and ``text::impl::UnsafeU16StringAccess`` only for read-only,
+4.  Use ``text::impl::UnsafeU8StringEditorAccess`` and ``text::impl::UnsafeU16StringEditorAccess`` only for read-only,
     null-terminated access to existing strings.
 5.  Use ``text::impl::UnsafeU8StringBuffer`` and ``text::impl::UnsafeU16StringBuffer`` for APIs that fill caller-owned
     buffers.

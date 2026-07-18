@@ -4,9 +4,9 @@
 
 #include "EscapeFormatter.hpp"
 
+#include "../AnyStringBuilder_fwd.hpp"
 #include "../Char.hpp"
 #include "../SafeStringFlag.hpp"
-#include "../StringBuilder_fwd.hpp"
 
 #include "../../unit/CpLength.hpp"
 
@@ -38,7 +38,7 @@ public:
     /// Finish scanning after the input was consumed.
     void finish(std::size_t sourceEnd) noexcept;
     /// Append the final bounded escaped representation to the given builder.
-    void appendTo(StringBuilder &builder, std::size_t sourceLength) const;
+    void appendTo(AnyStringBuilder &builder, std::size_t sourceLength) const;
 
 private:
     [[nodiscard]] auto escapedChunk(Char character) const -> Chunk;

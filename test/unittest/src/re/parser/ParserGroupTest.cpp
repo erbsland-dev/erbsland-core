@@ -132,7 +132,7 @@ public:
     }
 
     void testErrors_TooManyCaptureGroups() {
-        String pattern;
+        StringEditor pattern;
         for (std::size_t i = 0; i < impl::limits::maximumCaptureGroupCount; ++i) {
             pattern.append("(abc)"_el);
         }
@@ -217,7 +217,7 @@ public:
     }
 
     void prepareParserWithNestedGroups(const std::size_t opens, Settings settings = {}) {
-        String s;
+        StringEditor s;
         s.reserve(el::unit::ByteLength{(opens * 4U) + 1U});
         for (std::size_t i = 0; i < opens; ++i) {
             s.append("(?:"_el);

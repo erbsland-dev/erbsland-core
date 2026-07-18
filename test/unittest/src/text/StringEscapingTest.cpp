@@ -6,11 +6,11 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringView.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringView.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/U16DataIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -25,7 +25,7 @@ using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(EscapeFormat EscapeAmount U8String U8StringView U16String U16StringView U32String U32StringView)
+TESTED_TARGETS(EscapeFormat EscapeAmount U8StringEditor U8String U16StringEditor U16String U32StringEditor U32String)
 class StringEscapingTest final : public el::UnitTest {
 public:
     void testEscapeFormatConversion() {
@@ -87,13 +87,13 @@ public:
     void testDisplayEscapingPreservesPunctuationAndEscapesControls() {
         using namespace el::text::literals;
 
-        auto text = el::text::String{"\"quoted\" \\ path"_el};
+        auto text = el::text::StringEditor{"\"quoted\" \\ path"_el};
         text.append(U'\x1b').append(U'\n');
         REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Display), "\"quoted\" \\ path\\033\\n"_el);
     }
 
     void testHtmlAndXmlTargets() {
-        const auto text = U8String{std::string_view{"<tag attr=\"x\">&'</tag>"}};
+        const auto text = U8StringEditor{std::string_view{"<tag attr=\"x\">&'</tag>"}};
 
         const auto htmlRequired = text.toEscaped(EscapeFormat::Html, EscapeAmount::Required);
         REQUIRE_EQUAL(
@@ -114,24 +114,24 @@ public:
     }
 
     void testJsonCppAndRegExTargets() {
-        const auto jsonText = U8String{std::u8string_view{u8"\"\\\n😀"}};
+        const auto jsonText = U8StringEditor{std::u8string_view{u8"\"\\\n😀"}};
         const auto jsonEscaped = jsonText.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{jsonEscaped}.toStdString(), std::string{"\\\"\\\\\\n\\uD83D\\uDE00"});
         REQUIRE_EQUAL(jsonEscaped.length(), jsonText.escapedSize(EscapeFormat::Json, EscapeAmount::NonAscii));
 
-        const auto cppText = U8String{std::u8string_view{u8"A\né😀"}};
+        const auto cppText = U8StringEditor{std::u8string_view{u8"A\né😀"}};
         const auto cppEscaped = cppText.toEscaped(EscapeFormat::Cpp, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{cppEscaped}.toStdString(), std::string{"A\\n\\u00E9\\U0001F600"});
         REQUIRE_EQUAL(cppEscaped.length(), cppText.escapedSize(EscapeFormat::Cpp, EscapeAmount::NonAscii));
 
-        const auto regExText = U8String{std::string_view{"a+b*(c)"}};
+        const auto regExText = U8StringEditor{std::string_view{"a+b*(c)"}};
         const auto regExEscaped = regExText.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{regExEscaped}.toStdString(), std::string{"a\\+b\\*\\(c\\)"});
         REQUIRE_EQUAL(regExEscaped.length(), regExText.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
     }
 
     void testEscapeAmounts() {
-        const auto text = U8String{std::u8string_view{u8"A\né"}};
+        const auto text = U8StringEditor{std::u8string_view{u8"A\né"}};
 
         REQUIRE_EQUAL(
             StringConverter{text.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing)}.toStdString(),
@@ -150,65 +150,65 @@ public:
             StringConverter{text.toEscaped(EscapeFormat::Json, EscapeAmount::Everything)}.toStdString(),
             std::string{"\\u0041\\n\\u00E9"});
 
-        const auto formatText = U8String{std::u8string_view{u8"A‍B"}};
+        const auto formatText = U8StringEditor{std::u8string_view{u8"A‍B"}};
         REQUIRE_EQUAL(
             StringConverter{formatText.toEscaped(EscapeFormat::Json)}.toStdString(), std::string{"A\\u200DB"});
     }
 
     void testNativeStringAndViewApis() {
-        const auto u8Text = U8String{std::string_view{"<&>"}};
-        const auto u8View = U8StringView{u8Text};
+        const auto u8Text = U8StringEditor{std::string_view{"<&>"}};
+        const auto u8View = U8String{u8Text};
         const auto u8Result = u8View.toEscaped(EscapeFormat::Html);
         REQUIRE_EQUAL(StringConverter{u8Result}.toStdString(), std::string{"&lt;&amp;&gt;"});
         REQUIRE_EQUAL(u8Result.length(), u8View.escapedSize(EscapeFormat::Html));
 
-        const auto u16Text = U16String{std::u16string_view{u"<>&é😀"}};
+        const auto u16Text = U16StringEditor{std::u16string_view{u"<>&é😀"}};
         const auto u16Result = u16Text.toEscaped(EscapeFormat::Html, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{u16Result}.toStdU16String(), std::u16string{u"&lt;&gt;&amp;&#233;&#128512;"});
         REQUIRE_EQUAL(u16Result.length(), u16Text.escapedSize(EscapeFormat::Html, EscapeAmount::NonAscii));
 
-        const auto u16View = U16StringView{u16Text};
+        const auto u16View = U16String{u16Text};
         const auto u16ViewResult = u16View.toEscaped(EscapeFormat::Xml);
         REQUIRE_EQUAL(StringConverter{u16ViewResult}.toStdU16String(), std::u16string{u"&lt;&gt;&amp;é😀"});
         REQUIRE_EQUAL(u16ViewResult.length(), u16View.escapedSize(EscapeFormat::Xml));
 
-        const auto u32Text = U32String{std::u32string_view{U"[x]é"}};
+        const auto u32Text = U32StringEditor{std::u32string_view{U"[x]é"}};
         const auto u32Result = u32Text.toEscaped(EscapeFormat::RegEx, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{u32Result}.toStdU32String(), std::u32string{U"\\[x\\]\\x{E9}"});
         REQUIRE_EQUAL(u32Result.length(), u32Text.escapedSize(EscapeFormat::RegEx, EscapeAmount::NonAscii));
 
-        const auto u32View = U32StringView{u32Text};
+        const auto u32View = U32String{u32Text};
         const auto u32ViewResult = u32View.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{u32ViewResult}.toStdU32String(), std::u32string{U"\\[x\\]é"});
         REQUIRE_EQUAL(u32ViewResult.length(), u32View.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
     }
 
     void testMalformedInputHandling() {
-        const auto invalidUtf8 = U8String{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
         const auto escapedUtf8 = invalidUtf8.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{escapedUtf8}.toStdString(), std::string{"A\\uFFFDB"});
 
-        const auto invalidUtf16 = U16String{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
+        const auto invalidUtf16 = U16StringEditor{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
         const auto escapedUtf16 = invalidUtf16.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{escapedUtf16}.toStdU16String(), std::u16string{u"A\\uFFFDB"});
 
-        const auto invalidUtf32 = U32String{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
+        const auto invalidUtf32 = U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
         const auto escapedUtf32 = invalidUtf32.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{escapedUtf32}.toStdU32String(), std::u32string{U"A\\uFFFDB"});
     }
 
     void testNoEscapePreservesNativeInvalidData() {
-        const auto invalidUtf8 = U8String{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
         const auto unchangedUtf8 = invalidUtf8.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing);
         REQUIRE_FALSE(unchangedUtf8.isValidUtf8());
         REQUIRE_EQUAL(unchangedUtf8.length(), invalidUtf8.length());
 
-        const auto invalidUtf16 = U16String{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
+        const auto invalidUtf16 = U16StringEditor{std::u16string{u'A', char16_t{0xD800U}, u'B'}};
         const auto unchangedUtf16 = invalidUtf16.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing);
         REQUIRE_EQUAL(unchangedUtf16.length(), invalidUtf16.length());
         REQUIRE(unchangedUtf16.charAt(U16DataIndex{1U}).isReplacement());
 
-        const auto invalidUtf32 = U32String{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
+        const auto invalidUtf32 = U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
         const auto unchangedUtf32 = invalidUtf32.toEscaped(EscapeFormat::None, EscapeAmount::Everything);
         REQUIRE_EQUAL(unchangedUtf32.length(), invalidUtf32.length());
         REQUIRE(unchangedUtf32.charAt(CpIndex{1U}).isReplacement());

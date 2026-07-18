@@ -17,7 +17,7 @@ auto XmlEscapeFormatter::needsEscape(const Char character, const EscapeAmount am
     return needsEscapeByAmount(character, amount, required, balanced);
 }
 
-void XmlEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void XmlEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     switch (character.toRawValue()) {
     case U'&':
         builder.append("&amp;"_el);

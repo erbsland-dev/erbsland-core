@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AnyStringBuilder.hpp"
 #include "PlainTextRenderer_fwd.hpp"
-#include "StringBuilder.hpp"
 #include "TextDocument_fwd.hpp"
 
 #include "impl/PlainTextRenderer_fwd.hpp"
@@ -34,7 +34,7 @@ public:
     /// Append the rendered plain text to an existing builder.
     /// @param builder The builder to append to.
     /// @return The same builder.
-    auto appendTo(StringBuilder &builder) -> StringBuilder &;
+    auto appendTo(AnyStringBuilder &builder) -> AnyStringBuilder &;
 
 private:
     std::unique_ptr<impl::PlainTextRenderer> _impl; ///< The renderer implementation.

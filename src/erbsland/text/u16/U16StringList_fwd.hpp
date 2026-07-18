@@ -8,7 +8,7 @@
 
 namespace erbsland::text {
 
-/// A list of UTF-16 strings.
+/// A list of UTF-16 read-only strings.
 using U16StringList = impl::StringList<U16String>;
 
 }

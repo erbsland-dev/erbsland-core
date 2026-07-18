@@ -18,8 +18,8 @@ Storage Vocabulary
 .. code-block:: text
 
     Byte // explicit single-byte value
-    ByteBlock // owning copy-on-write byte sequence
-    ByteBlockView // read-only shared byte sequence view
+    ByteBlock // owning read-only shared byte sequence
+    ByteBlockEditor // mutable copy-on-write byte sequence
     CowStorage // automatic-detach copy-on-write wrapper
     CowManualStorage // explicit-detach copy-on-write wrapper
     SharedDataPointer // intrusive copy-on-write pointer for library storage internals
@@ -44,8 +44,8 @@ Primary Types
 .. code-block:: text
 
     Byte // wrapper around one uint8_t value
-    ByteBlock // copy-on-write byte container
-    ByteBlockView // read-only shared view into byte block data
+    ByteBlock // owning read-only byte container and shared slice
+    ByteBlockEditor // mutable copy-on-write byte container
     ByteReader // sequential byte and integer reader
     ByteWriter // sequential byte and integer writer
     Endianness // byte order for multi-byte integer IO
@@ -66,7 +66,7 @@ Storage and Pointer Types
     UnsafeConstMemoryPtr, UnsafeMemoryPtr // raw memory pointer aliases
     UnsafeConstCharPtr, UnsafeCharPtr // raw char pointer aliases
     UnsafeConstChar8Ptr, UnsafeChar8Ptr // raw char8_t pointer aliases
-    impl::UnsafeByteBlockBuffer // uncommitted ByteBlock storage for native byte reads
+    impl::UnsafeByteBlockBuffer // uncommitted ByteBlockEditor storage for native byte reads
 
 Byte Value Patterns
 ===================
@@ -86,7 +86,10 @@ Byte Sequence Patterns
 
     ByteBlock(length[, value]) // create repeated byte value
     ByteBlock(span/vector) // create byte block from raw byte values
-    ByteBlockView(block) // create view to a full byte block
+    ByteBlock(editor) // share the complete editor data without copying
+    ByteBlockEditor(length[, value]) // create editable repeated byte values
+    ByteBlockEditor(span/vector) // create an editor from raw byte values
+    ByteBlockEditor(block) // create an editable copy of visible block data
     o.isEmpty() -> bool // test for no visible bytes
     o.startsWith/endsWith(bytes) -> bool // prefix or suffix test
     o.contains(bytes) -> bool // byte sequence membership
@@ -94,9 +97,7 @@ Byte Sequence Patterns
     o.endIndex() -> unit::ByteIndex // first index after visible bytes
     o.get(index[, defaultValue]) -> Byte // tolerant indexed byte access
     o.getOrThrow(index) -> Byte // strict indexed byte access, throws err::OutOfRangeError
-    o.set(index, byte) -> void // tolerant indexed byte write
-    o.setOrThrow(index, byte) -> void // strict indexed byte write, throws err::OutOfRangeError
-    o.slice(range/begin, end-or-length) -> ByteBlockView // shared byte slice
+    o.slice(range/begin, end-or-length) -> ByteBlock // shared byte slice
     o.find(bytes[, start]) -> unit::ByteIndex // first byte-sequence occurrence
     o.findLast(bytes) -> unit::ByteIndex // last byte-sequence occurrence
     o.toByteVector() -> vector<Byte> // materialize explicit byte values
@@ -108,17 +109,19 @@ Byte Block Mutation Patterns
 
 .. code-block:: text
 
-    o.clear() -> ByteBlock& // remove bytes while keeping capacity
+    o.set(index, byte) -> void // tolerant indexed byte write
+    o.setOrThrow(index, byte) -> void // strict indexed byte write, throws err::OutOfRangeError
+    o.clear() -> ByteBlockEditor& // remove bytes while keeping capacity
     o.reset() -> void // remove bytes and release storage
-    o.remove(range) -> ByteBlock& // remove byte range in-place
-    o.keep(range) -> ByteBlock& // keep only byte range in-place
-    o.replace(range, bytes) -> ByteBlock& // replace range in-place
-    o.insert(index, bytes) -> ByteBlock& // insert bytes, appending for out-of-range index
-    o.append(byte/bytes) -> ByteBlock& // append bytes
-    o.removed(range) -> ByteBlock // return copy with range removed
-    o.replaced(range, bytes) -> ByteBlock // return copy with range replaced
-    o.join(parts) -> ByteBlock // join byte blocks using this block as separator
-    T::fromJoined(parts) -> ByteBlock // join byte blocks without a separator
+    o.remove(range) -> ByteBlockEditor& // remove byte range in-place
+    o.keep(range) -> ByteBlockEditor& // keep only byte range in-place
+    o.replace(range, bytes) -> ByteBlockEditor& // replace range in-place
+    o.insert(index, bytes) -> ByteBlockEditor& // insert bytes, appending for out-of-range index
+    o.append(byte/bytes) -> ByteBlockEditor& // append bytes
+    o.removed(range) -> ByteBlockEditor // return editable copy with range removed
+    o.replaced(range, bytes) -> ByteBlockEditor // return editable copy with range replaced
+    o.join(parts) -> ByteBlockEditor // join byte blocks using this editor as separator
+    ByteBlockEditor::fromJoined(parts) -> ByteBlockEditor // join byte blocks without a separator
 
 Capacity and Identity Patterns
 ==============================
@@ -140,7 +143,7 @@ Reader and Writer Patterns
 
 .. code-block:: text
 
-    ByteReader(block/view) // create sequential reader
+    ByteReader(block/editor) // create sequential reader sharing the input data
     ByteWriter() // create sequential writer
     o.length() -> unit::ByteLength // readable or written byte length
     o.position() -> unit::ByteIndex // current read or write position
@@ -171,7 +174,7 @@ Unsafe Byte Buffer Patterns
     UnsafeByteBlockBuffer(capacity) // allocate uncommitted byte block storage
     o.data() -> span<Byte> // writable byte span for low-level APIs
     o.capacity() -> ByteLength // usable byte capacity
-    o.take(length) -> ByteBlock // commit length bytes and move out the byte block
+    o.take(length) -> ByteBlockEditor // commit length bytes and move out the editable byte block
 
 Copy-On-Write Storage Patterns
 ==============================

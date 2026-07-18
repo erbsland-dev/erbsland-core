@@ -34,6 +34,8 @@ namespace erbsland::core {
 
 using namespace text::literals;
 
+using namespace event;
+
 Application::Application() {
     _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
 }
@@ -258,23 +260,22 @@ void Application::setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexc
     _data->setSystemOutputStyle(std::move(style));
 }
 
-auto Application::eventLoop() -> event::EventLoop & {
+auto Application::eventLoop() -> EventLoop & {
     return *_data->event().eventLoop;
 }
 
 auto Application::runEventLoop() -> unit::ExitCode {
     auto &eventData = _data->event();
-    eventData.eventLoop->setErrorHandler(
-        [this]([[maybe_unused]] std::exception_ptr error) -> event::EventLoopErrorAction {
-            quit(unit::ExitCode::failure());
-            return event::EventLoopErrorAction::Stop;
-        });
+    eventData.eventLoop->setErrorHandler([this]([[maybe_unused]] std::exception_ptr error) -> EventLoopErrorAction {
+        quit(unit::ExitCode::failure());
+        return EventLoopErrorAction::Stop;
+    });
     {
         auto currentEventsScope = event::impl::CurrentEventsScope{eventData.eventLoop};
         eventData.eventLoop->run();
     }
     auto exitCode = unit::ExitCode::success();
-    auto eventThreads = std::vector<event::ManagedEventThreadPtr>{};
+    auto eventThreads = std::vector<ManagedEventThreadPtr>{};
     {
         std::scoped_lock lock{eventData.mutex};
         if (eventData.quitExitCodeSet) {
@@ -295,20 +296,20 @@ auto Application::runEventLoop() -> unit::ExitCode {
     return exitCode;
 }
 
-auto Application::events() -> event::EventsPtr {
+auto Application::events() -> EventsPtr {
     return _data->event().eventLoop;
 }
 
-auto Application::eventRegistry() -> event::EventRegistry & {
+auto Application::eventRegistry() -> EventRegistry & {
     return _data->event().eventIdRegistry;
 }
 
-auto Application::createEventThread() -> event::ManagedEventThreadPtr {
+auto Application::createEventThread() -> ManagedEventThreadPtr {
     auto result = std::make_shared<event::impl::ManagedEventThread>();
     auto &eventData = _data->event();
     {
         std::scoped_lock lock{eventData.mutex};
-        std::erase_if(eventData.eventThreads, [](const event::ManagedEventThreadWeakPtr &eventThreadWeakPtr) -> bool {
+        std::erase_if(eventData.eventThreads, [](const ManagedEventThreadWeakPtr &eventThreadWeakPtr) -> bool {
             return eventThreadWeakPtr.expired();
         });
         eventData.eventThreads.emplace_back(result);
@@ -318,8 +319,8 @@ auto Application::createEventThread() -> event::ManagedEventThreadPtr {
 
 void Application::quit(unit::ExitCode exitCode) noexcept {
     try {
-        auto eventThreads = std::vector<event::ManagedEventThreadPtr>{};
-        auto eventLoop = event::EventLoopPtr{};
+        auto eventThreads = std::vector<ManagedEventThreadPtr>{};
+        auto eventLoop = EventLoopPtr{};
         auto &eventData = _data->event();
         {
             std::scoped_lock lock{eventData.mutex};
@@ -328,10 +329,9 @@ void Application::quit(unit::ExitCode exitCode) noexcept {
                 eventData.quitExitCodeSet = true;
             }
             eventLoop = eventData.eventLoop;
-            std::erase_if(
-                eventData.eventThreads, [](const event::ManagedEventThreadWeakPtr &eventThreadWeakPtr) -> bool {
-                    return eventThreadWeakPtr.expired();
-                });
+            std::erase_if(eventData.eventThreads, [](const ManagedEventThreadWeakPtr &eventThreadWeakPtr) -> bool {
+                return eventThreadWeakPtr.expired();
+            });
             for (const auto &eventThreadWeakPtr : eventData.eventThreads) {
                 if (auto eventThread = eventThreadWeakPtr.lock(); eventThread != nullptr) {
                     eventThreads.emplace_back(std::move(eventThread));
@@ -359,7 +359,7 @@ auto Application::libraryVersion() noexcept -> unit::Version {
     return impl::libraryVersion();
 }
 
-auto Application::libraryVersionText() noexcept -> text::StringView {
+auto Application::libraryVersionText() noexcept -> text::String {
     return impl::libraryVersionText();
 }
 

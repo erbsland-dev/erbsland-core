@@ -8,23 +8,29 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/String.hpp>
-#include <erbsland/text/StringView.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/ToString.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
 #include <cstdint>
+#include <type_traits>
+#include <utility>
 
 using namespace el::text;
 
-TESTED_TARGETS(toString BooleanFormat Capitalization U8String)
+static_assert(std::is_same_v<decltype(toString(std::declval<const String &>())), String>);
+static_assert(std::is_same_v<decltype(toString(std::declval<const StringEditor &>())), String>);
+static_assert(std::is_same_v<decltype(toString(42)), String>);
+
+TESTED_TARGETS(toString BooleanFormat Capitalization U8StringEditor)
 class ToStringTest final : public el::UnitTest {
 public:
     void testStringsAndBooleans() {
         using namespace el::text::literals;
 
-        const auto string = String{"hello"_el};
-        const auto view = StringView{"world"_el};
+        const auto string = StringEditor{"hello"_el};
+        const auto view = String{"world"_el};
 
         REQUIRE_EQUAL(toString(string), "hello"_el);
         REQUIRE_EQUAL(toString(view), "world"_el);
@@ -34,9 +40,9 @@ public:
             toString(true, BooleanFormat::trueFalse().setCapitalization(Capitalization::Uppercase)), "TRUE"_el);
         REQUIRE_EQUAL(
             toString(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Titlecase)), "False"_el);
-        REQUIRE_EQUAL(String::fromBoolean(true), "true"_el);
+        REQUIRE_EQUAL(StringEditor::fromBoolean(true), "true"_el);
         REQUIRE_EQUAL(
-            String::fromBoolean(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Uppercase)),
+            StringEditor::fromBoolean(false, BooleanFormat::trueFalse().setCapitalization(Capitalization::Uppercase)),
             "FALSE"_el);
     }
 

@@ -4,15 +4,15 @@
 
 #include "U16StringBuilder_fwd.hpp"
 
-#include "../U16String.hpp"
+#include "../U16StringEditor.hpp"
 
-#include "../../impl/StringBuilderBase.hpp"
+#include "../../impl/AnyStringBuilderBase.hpp"
 
 namespace erbsland::text::impl {
 
 /// A string builder backend for UTF-16 strings.
-/// @tested{StringBuilderTest}
-class U16StringBuilder final : public StringBuilderBase {
+/// @tested{AnyStringBuilderTest}
+class U16StringBuilder final : public AnyStringBuilderBase {
 public:
     U16StringBuilder() = default;
     explicit U16StringBuilder(unit::U16DataLength capacity);
@@ -30,23 +30,24 @@ public:
     void clear() noexcept override;
     void append(Char character) override;
     void append(Char character, unit::CpLength count) override;
-    void append(const U8StringView &text) override;
-    void append(const U8StringView &text, unit::ElementCount count) override;
-    void append(const U16StringView &text) override;
-    void append(const U16StringView &text, unit::ElementCount count) override;
-    void append(const U32StringView &text) override;
-    void append(const U32StringView &text, unit::ElementCount count) override;
-    [[nodiscard]] auto toU8String() const -> U8String override;
-    [[nodiscard]] auto toU16String() const -> U16String override;
-    [[nodiscard]] auto toU32String() const -> U32String override;
-    [[nodiscard]] auto takeU8String() -> U8String override;
-    [[nodiscard]] auto takeU16String() -> U16String override;
-    [[nodiscard]] auto takeU32String() -> U32String override;
-    [[nodiscard]] auto toAnyString() const -> AnyString override;
-    [[nodiscard]] auto takeAnyString() -> AnyString override;
+    void append(const U8String &text) override;
+    void append(const U8String &text, unit::ElementCount count) override;
+    void append(const U16String &text) override;
+    void append(const U16String &text, unit::ElementCount count) override;
+    void append(const U32String &text) override;
+    void append(const U32String &text, unit::ElementCount count) override;
+    void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
+    [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;
+    [[nodiscard]] auto toU16StringEditor() const -> U16StringEditor override;
+    [[nodiscard]] auto toU32StringEditor() const -> U32StringEditor override;
+    [[nodiscard]] auto takeU8StringEditor() -> U8StringEditor override;
+    [[nodiscard]] auto takeU16StringEditor() -> U16StringEditor override;
+    [[nodiscard]] auto takeU32StringEditor() -> U32StringEditor override;
+    [[nodiscard]] auto toAnyStringEditor() const -> AnyStringEditor override;
+    [[nodiscard]] auto takeAnyStringEditor() -> AnyStringEditor override;
 
 private:
-    U16String _text;                                ///< The built string.
+    U16StringEditor _text;                          ///< The built string.
     unit::CpLength _length{unit::CpLength::zero()}; ///< The cached decoded code-point length.
 };
 

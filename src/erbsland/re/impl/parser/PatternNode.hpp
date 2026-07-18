@@ -121,7 +121,7 @@ public: // inspection
     /// Create a vector of debug strings with the full node-tree, starting with this one.
     /// Each level of the tree is indented with two space characters.
     /// @return A vector of debug strings.
-    [[nodiscard]] auto toTestTree() const -> text::StringViewList;
+    [[nodiscard]] auto toTestTree() const -> text::StringList;
 
 private:
     PatternNodeId _id;                  ///< The unique ID of this node.

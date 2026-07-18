@@ -5,20 +5,26 @@
 #include "U8StringReadTools.hpp"
 
 #include "../../AnyString.hpp"
-#include "../../AnyStringView.hpp"
+#include "../../AnyStringEditor.hpp"
 
 #include <utility>
 
 namespace erbsland::text::impl {
 
-U8StringReader::U8StringReader(U8StringView text) noexcept : _text{std::move(text)} {
+using unit::ByteIndex;
+using unit::CpIndex;
+using unit::CpLength;
+using util::LoopResult;
+using util::LoopStatus;
+
+U8StringReader::U8StringReader(U8String text) noexcept : _text{std::move(text)} {
 }
 
 auto U8StringReader::clone() const -> U8StringReader * {
     return new U8StringReader{*this};
 }
 
-auto U8StringReader::position() const noexcept -> unit::CpIndex {
+auto U8StringReader::position() const noexcept -> CpIndex {
     return _cpPosition;
 }
 
@@ -28,7 +34,7 @@ auto U8StringReader::save() const noexcept -> StringCharReaderState {
 
 auto U8StringReader::restore(const StringCharReaderState state) noexcept -> bool {
     const auto raw = rawPosition(state);
-    const auto rawIndex = unit::ByteIndex::fromSizeT(raw);
+    const auto rawIndex = ByteIndex::fromSizeT(raw);
     if (stateKind(state) != StringReaderBackendKind::U8 || storageId(state) != viewStorageId(_text) ||
         raw > _text.length().toSizeT() || _text.toCharIndex(rawIndex) != cpPosition(state)) {
         return false;
@@ -39,8 +45,8 @@ auto U8StringReader::restore(const StringCharReaderState state) noexcept -> bool
 }
 
 void U8StringReader::reset() noexcept {
-    _position = unit::ByteIndex::zero();
-    _cpPosition = unit::CpIndex::zero();
+    _position = ByteIndex::zero();
+    _cpPosition = CpIndex::zero();
 }
 
 auto U8StringReader::read() noexcept -> Char {
@@ -115,7 +121,7 @@ auto U8StringReader::isAtEnd() const noexcept -> bool {
     return _position.distanceFromZero() >= _text.length();
 }
 
-auto U8StringReader::canRead(const unit::CpLength count) const noexcept -> bool {
+auto U8StringReader::canRead(const CpLength count) const noexcept -> bool {
     if (count.isZero()) {
         return true;
     }
@@ -124,7 +130,7 @@ auto U8StringReader::canRead(const unit::CpLength count) const noexcept -> bool 
     }
     auto position = _position;
     const auto tools = U8StringReadTools{_text.dataView()};
-    for (auto i = unit::CpLength{0}; i < count; ++i) {
+    for (auto i = CpLength{0}; i < count; ++i) {
         if (tools.read(position).isSignal()) {
             return false;
         }
@@ -132,11 +138,11 @@ auto U8StringReader::canRead(const unit::CpLength count) const noexcept -> bool 
     return true;
 }
 
-auto U8StringReader::advance(const unit::CpLength count) noexcept -> bool {
+auto U8StringReader::advance(const CpLength count) noexcept -> bool {
     if (count.isZero() || isAtEnd()) {
         return false;
     }
-    for (auto i = unit::CpLength{0}; i < count; ++i) {
+    for (auto i = CpLength{0}; i < count; ++i) {
         _text.advance(_position);
         ++_cpPosition;
         if (isAtEnd()) {
@@ -162,13 +168,11 @@ auto U8StringReader::advanceIfOrThrow(const CharSet &expected) -> bool {
     return readIfOrThrow(expected).has_value();
 }
 
-auto U8StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+auto U8StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept -> LoopResult {
     return readLoop(readFn, expected, maximum, false);
 }
 
-auto U8StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+auto U8StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept -> LoopResult {
     return readLoop(readFn, stopSet, maximum, true);
 }
 
@@ -176,8 +180,8 @@ void U8StringReader::startCapture() noexcept {
     _captureStart = _position;
 }
 
-auto U8StringReader::takeCapture() noexcept -> AnyStringView {
-    auto result = AnyStringView{};
+auto U8StringReader::takeCapture() noexcept -> AnyString {
+    auto result = AnyString{};
     if (_captureStart.isNoIndex() || _captureStart >= _position) {
         _captureStart = _position;
         return result;
@@ -189,21 +193,21 @@ auto U8StringReader::takeCapture() noexcept -> AnyStringView {
 
 void U8StringReader::clearBuffer() noexcept {
     _buffer.clear();
-    _bufferLength = unit::CpLength::zero();
+    _bufferLength = CpLength::zero();
 }
 
 auto U8StringReader::takeBuffer() -> AnyString {
-    auto result = AnyString{std::move(_buffer)};
-    _buffer = U8String{};
-    _bufferLength = unit::CpLength::zero();
+    auto result = AnyStringEditor{std::move(_buffer)};
+    _buffer = U8StringEditor{};
+    _bufferLength = CpLength::zero();
     return result;
 }
 
-auto U8StringReader::bufferView() const noexcept -> AnyStringView {
-    return AnyStringView{_buffer};
+auto U8StringReader::bufferView() const noexcept -> AnyString {
+    return AnyString{_buffer};
 }
 
-auto U8StringReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+auto U8StringReader::bufferCharacterLength() const noexcept -> CpLength {
     return _bufferLength;
 }
 
@@ -211,8 +215,8 @@ auto U8StringReader::isBufferEmpty() const noexcept -> bool {
     return _bufferLength.isZero();
 }
 
-void U8StringReader::setBuffer(const AnyStringView &text) {
-    _buffer = text.toU8String();
+void U8StringReader::setBuffer(const AnyString &text) {
+    _buffer = U8StringEditor{text.toU8String()};
     _bufferLength = text.characterLength();
 }
 
@@ -224,11 +228,11 @@ void U8StringReader::appendToBuffer(const Char character) {
     ++_bufferLength;
 }
 
-void U8StringReader::appendToBuffer(const AnyStringView &text) {
+void U8StringReader::appendToBuffer(const AnyString &text) {
     if (text.isEmpty()) {
         return;
     }
-    _buffer.append(text.toU8StringView());
+    _buffer.append(text.toU8String());
     _bufferLength += text.characterLength();
 }
 
@@ -242,7 +246,7 @@ auto U8StringReader::readToBuffer() -> Char {
         return character;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return character;
 }
 
@@ -252,7 +256,7 @@ auto U8StringReader::readToBufferIf(const Char expected) -> bool {
         return false;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return true;
 }
 
@@ -262,65 +266,63 @@ auto U8StringReader::readToBufferIf(const CharSet &expected) -> std::optional<Ch
         return {};
     }
     appendToBuffer(character);
-    static_cast<void>(advance(unit::CpLength::one()));
+    static_cast<void>(advance(CpLength::one()));
     return character;
 }
 
-auto U8StringReader::readToBufferWhile(const CharSet &expected, const unit::CpLength maximum) -> util::LoopResult {
+auto U8StringReader::readToBufferWhile(const CharSet &expected, const CpLength maximum) -> LoopResult {
     return readToBufferLoop(expected, maximum, false);
 }
 
-auto U8StringReader::readToBufferUntil(const CharSet &stopSet, const unit::CpLength maximum) -> util::LoopResult {
+auto U8StringReader::readToBufferUntil(const CharSet &stopSet, const CpLength maximum) -> LoopResult {
     return readToBufferLoop(stopSet, maximum, true);
 }
 
-auto U8StringReader::readLoop(
-    const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
-    -> util::LoopResult {
-    auto count = unit::CpLength::zero();
+auto U8StringReader::readLoop(const ReadFn &readFn, const CharSet &charSet, CpLength maximum, bool stopOnMatch) noexcept
+    -> LoopResult {
+    auto count = CpLength::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;
         const auto character = read();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (charSet.contains(character) == stopOnMatch) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
-        const auto result = readFn != nullptr ? readFn(character) : util::LoopStatus::Continue;
-        if (result != util::LoopStatus::Continue) {
+        const auto result = readFn != nullptr ? readFn(character) : LoopStatus::Continue;
+        if (result != LoopStatus::Continue) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return result == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
+            return result == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped;
         }
         ++count;
     }
 }
 
-auto U8StringReader::readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch)
-    -> util::LoopResult {
-    auto count = unit::CpLength::zero();
+auto U8StringReader::readToBufferLoop(const CharSet &charSet, CpLength maximum, bool stopOnMatch) -> LoopResult {
+    auto count = CpLength::zero();
     while (true) {
         const auto character = peek();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (charSet.contains(character) == stopOnMatch) {
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
         appendToBuffer(character);
-        static_cast<void>(advance(unit::CpLength::one()));
+        static_cast<void>(advance(CpLength::one()));
         ++count;
     }
 }

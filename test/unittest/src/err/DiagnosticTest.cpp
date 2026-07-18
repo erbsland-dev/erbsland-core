@@ -204,9 +204,9 @@ public:
     }
 
     void testExternalPathAndSystemTextAreEscaped() {
-        auto unsafePath = el::text::String{"/tmp/a"_el};
+        auto unsafePath = el::text::StringEditor{"/tmp/a"_el};
         unsafePath.append(U'\x1b').append("b"_el);
-        auto unsafeMessage = el::text::String{"bad"_el};
+        auto unsafeMessage = el::text::StringEditor{"bad"_el};
         unsafeMessage.append(U'\n').append("message"_el);
         const auto platform = std::make_shared<const el::system::PosixErrorContext>(5, unsafeMessage);
         const auto error = el::path::PathError{el::path::PathErrorContext{"Path operation failed"_el}
@@ -268,10 +268,6 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto toStdString(const el::text::StringView &text) -> std::string {
-        return el::text::StringConverter{text}.toStdString();
-    }
-
     [[nodiscard]] static auto toStdString(const el::text::String &text) -> std::string {
         return el::text::StringConverter{text}.toStdString();
     }

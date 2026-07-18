@@ -44,7 +44,7 @@ auto KeyDecoder::createCharacterKey(const CombinedChar &character) noexcept -> K
     return Key{Key::Combined, character.toU32String()};
 }
 
-auto KeyDecoder::decodeCodePointPrefix(const StringView &text, const ByteIndex offset) noexcept -> CharParseResult {
+auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offset) noexcept -> CharParseResult {
     if (offset >= ByteIndex::end(text.length())) {
         return CharParseResult{KeyParseStatus::Invalid, offset};
     }
@@ -114,7 +114,7 @@ auto KeyDecoder::parseModifierParameter(const int value) noexcept -> std::option
     }
 }
 
-auto KeyDecoder::parseCsiParameters(const StringView &text) noexcept -> std::optional<std::vector<int>> {
+auto KeyDecoder::parseCsiParameters(const String &text) noexcept -> std::optional<std::vector<int>> {
     auto result = std::vector<int>{};
     if (text.isEmpty()) {
         return result;
@@ -161,7 +161,7 @@ auto KeyDecoder::parseCsiParameters(const StringView &text) noexcept -> std::opt
     }
 }
 
-auto KeyDecoder::findCsiFinalByte(const StringView &text) noexcept -> std::optional<ByteIndex> {
+auto KeyDecoder::findCsiFinalByte(const String &text) noexcept -> std::optional<ByteIndex> {
     auto index = cCsiPrefixIndex;
     const auto end = ByteIndex::end(text.length());
     while (index < end) {
@@ -238,7 +238,7 @@ auto KeyDecoder::keyFromCsiTildeParameter(const int parameter) noexcept -> Key::
     }
 }
 
-auto KeyDecoder::decodeCsi(const StringView &text) noexcept -> ParseResult {
+auto KeyDecoder::decodeCsi(const String &text) noexcept -> ParseResult {
     const auto finalIndex = findCsiFinalByte(text);
     if (!finalIndex.has_value()) {
         return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
@@ -294,7 +294,7 @@ auto KeyDecoder::decodeCsi(const StringView &text) noexcept -> ParseResult {
     return ParseResult{KeyParseStatus::Parsed, Key{type, modifiers}, sequenceSize};
 }
 
-auto KeyDecoder::decodeSs3(const StringView &text) noexcept -> ParseResult {
+auto KeyDecoder::decodeSs3(const String &text) noexcept -> ParseResult {
     if (text.length() < ByteLength{3U}) {
         return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }

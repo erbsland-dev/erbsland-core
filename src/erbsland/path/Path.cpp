@@ -14,34 +14,46 @@
 
 #include "../core/Definitions.hpp"
 #include "../err/ParseError.hpp"
-#include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <utility>
 
 namespace erbsland::path {
 using namespace text::literals;
 
-Path::Path(const text::StringView &path) noexcept {
+using impl::PathData;
+using impl::PathDataPtr;
+using impl::PathParseMode;
+using impl::PathParser;
+using text::CharCompareFn;
+using text::String;
+using text::StringConverter;
+using text::StringList;
+using unit::ElementCount;
+using unit::ElementIndex;
+using unit::ElementRange;
+
+Path::Path(const String &path) noexcept {
     try {
-        _data = impl::PathParser{path, impl::PathParseMode::Generic}.parse();
+        _data = PathParser{path, PathParseMode::Generic}.parse();
     } catch (const err::ParseError &) {}
 }
 
 Path::Path(const std::filesystem::path &path) noexcept {
     try {
-        _data = impl::PathParser{text::String{path.generic_string()}, impl::PathParseMode::Generic}.parse();
+        _data = PathParser{String{path.generic_string()}, PathParseMode::Generic}.parse();
     } catch (const err::ParseError &) {}
 }
 
-Path::Path(impl::PathDataPtr data) noexcept : _data{std::move(data)} {
+Path::Path(PathDataPtr data) noexcept : _data{std::move(data)} {
 }
 
 auto Path::operator/(const Path &other) const -> Path {
     return joined(other);
 }
 
-auto Path::operator/(const text::StringView &other) const -> Path {
+auto Path::operator/(const String &other) const -> Path {
     return joined(other);
 }
 
@@ -49,7 +61,7 @@ auto Path::operator/=(const Path &other) -> Path & {
     return join(other);
 }
 
-auto Path::operator/=(const text::StringView &other) -> Path & {
+auto Path::operator/=(const String &other) -> Path & {
     return join(other);
 }
 
@@ -73,7 +85,7 @@ auto Path::isRoot() const noexcept -> bool {
     return !isEmpty() && _data->isRoot();
 }
 
-auto Path::compare(const Path &other, const text::CharCompareFn compareFn) const noexcept -> std::strong_ordering {
+auto Path::compare(const Path &other, const CharCompareFn compareFn) const noexcept -> std::strong_ordering {
     if (isEmpty() && other.isEmpty()) {
         return std::strong_ordering::equal;
     }
@@ -90,11 +102,11 @@ auto Path::format() const noexcept -> PathFormat {
     return isEmpty() ? PathFormat::Generic : _data->format();
 }
 
-auto Path::elementCount() const noexcept -> unit::ElementCount {
-    return isEmpty() ? unit::ElementCount::zero() : _data->publicElementCount();
+auto Path::elementCount() const noexcept -> ElementCount {
+    return isEmpty() ? ElementCount::zero() : _data->publicElementCount();
 }
 
-auto Path::element(const unit::ElementIndex index) const noexcept -> text::StringView {
+auto Path::element(const ElementIndex index) const noexcept -> String {
     if (isEmpty() || !index.isValid() || !index.isWithin(elementCount())) {
         return {};
     }
@@ -102,13 +114,13 @@ auto Path::element(const unit::ElementIndex index) const noexcept -> text::Strin
         if (index.isZero()) {
             return _data->root();
         }
-        return _data->elements().get(index - unit::ElementCount::one());
+        return _data->elements().get(index - ElementCount::one());
     }
     return _data->elements().get(index);
 }
 
-auto Path::elements() const noexcept -> text::StringViewList {
-    return isEmpty() ? text::StringViewList{} : _data->publicElements();
+auto Path::elements() const noexcept -> StringList {
+    return isEmpty() ? StringList{} : _data->publicElements();
 }
 
 auto Path::parent() const noexcept -> Path {
@@ -117,14 +129,12 @@ auto Path::parent() const noexcept -> Path {
     }
     if (_data->elements().count().isOne()) {
         if (_data->isAbsolute()) {
-            return Path{impl::PathData::create(_data->format(), _data->root(), {})};
+            return Path{PathData::create(_data->format(), _data->root(), {})};
         }
         return {};
     }
-    return Path{impl::PathData::create(
-        _data->format(),
-        _data->root(),
-        _data->elements().prefix(_data->elements().count() - unit::ElementCount::one()))};
+    return Path{PathData::create(
+        _data->format(), _data->root(), _data->elements().prefix(_data->elements().count() - ElementCount::one()))};
 }
 
 auto Path::parents() const noexcept -> PathList {
@@ -140,30 +150,30 @@ auto Path::parents() const noexcept -> PathList {
     return result;
 }
 
-auto Path::root() const noexcept -> text::StringView {
-    return isEmpty() ? text::StringView{} : _data->root();
+auto Path::root() const noexcept -> String {
+    return isEmpty() ? String{} : _data->root();
 }
 
-auto Path::name() const noexcept -> text::StringView {
+auto Path::name() const noexcept -> String {
     if (isEmpty() || _data->elements().count().isZero()) {
         return {};
     }
     return _data->elements().last();
 }
 
-auto Path::suffix() const noexcept -> text::StringView {
+auto Path::suffix() const noexcept -> String {
     return impl::lastSuffix(name());
 }
 
-auto Path::suffixes() const noexcept -> text::StringView {
+auto Path::suffixes() const noexcept -> String {
     return impl::suffixes(name());
 }
 
-auto Path::stem() const noexcept -> text::StringView {
+auto Path::stem() const noexcept -> String {
     return impl::stem(name());
 }
 
-auto Path::withName(const text::StringView &newName) const noexcept -> Path {
+auto Path::withName(const String &newName) const noexcept -> Path {
     if (isEmpty() || newName.isEmpty() || !newName.isValidUtf8()) {
         return {};
     }
@@ -171,28 +181,22 @@ auto Path::withName(const text::StringView &newName) const noexcept -> Path {
     if (elements.count().isZero()) {
         return {};
     }
-    elements.set(unit::ElementIndex::zero() + (elements.count() - unit::ElementCount::one()), newName);
-    return Path{impl::PathData::create(_data->format(), _data->root(), std::move(elements))};
+    elements.set(ElementIndex::zero() + (elements.count() - ElementCount::one()), newName);
+    return Path{PathData::create(_data->format(), _data->root(), std::move(elements))};
 }
 
-auto Path::withSuffix(const text::StringView &replacement) const noexcept -> Path {
+auto Path::withSuffix(const String &replacement) const noexcept -> Path {
     if (isEmpty() || !replacement.isValidUtf8()) {
         return {};
     }
-    auto builder = text::StringBuilder{};
-    builder.append(stem());
-    builder.append(impl::normalizedSuffixReplacement(replacement));
-    return withName(text::StringView{builder.toString()});
+    return withName(String::fromJoined({stem(), impl::normalizedSuffixReplacement(replacement)}));
 }
 
-auto Path::withStem(const text::StringView &replacement) const noexcept -> Path {
+auto Path::withStem(const String &replacement) const noexcept -> Path {
     if (isEmpty() || replacement.isEmpty() || !replacement.isValidUtf8()) {
         return {};
     }
-    auto builder = text::StringBuilder{};
-    builder.append(replacement);
-    builder.append(suffixes());
-    return withName(text::StringView{builder.toString()});
+    return withName(String::fromJoined({replacement, suffixes()}));
 }
 
 auto Path::join(const Path &other) noexcept -> Path & {
@@ -201,11 +205,11 @@ auto Path::join(const Path &other) noexcept -> Path & {
     }
     auto elements = _data->elements();
     elements.append(other._data->elements());
-    _data = impl::PathData::create(_data->format(), _data->root(), std::move(elements));
+    _data = PathData::create(_data->format(), _data->root(), std::move(elements));
     return *this;
 }
 
-auto Path::join(const text::StringView &other) noexcept -> Path & {
+auto Path::join(const String &other) noexcept -> Path & {
     return join(Path{other});
 }
 
@@ -215,11 +219,11 @@ auto Path::joined(const Path &other) const noexcept -> Path {
     return result;
 }
 
-auto Path::joined(const text::StringView &other) const noexcept -> Path {
+auto Path::joined(const String &other) const noexcept -> Path {
     return joined(Path{other});
 }
 
-auto Path::slice(const unit::ElementRange range) const noexcept -> Path {
+auto Path::slice(const ElementRange range) const noexcept -> Path {
     if (isEmpty()) {
         return {};
     }
@@ -229,14 +233,14 @@ auto Path::slice(const unit::ElementRange range) const noexcept -> Path {
         return {};
     }
     auto startsWithRoot = false;
-    auto nonRootElements = impl::PathData::nonRootElementsFromPublicSlice(slicedElements, startsWithRoot);
-    return Path{impl::PathData::create(
+    auto nonRootElements = PathData::nonRootElementsFromPublicSlice(slicedElements, startsWithRoot);
+    return Path{PathData::create(
         startsWithRoot ? _data->format() : PathFormat::Generic,
-        startsWithRoot ? slicedElements.first() : text::StringView{},
+        startsWithRoot ? slicedElements.first() : String{},
         std::move(nonRootElements))};
 }
 
-auto Path::splitAfter(const unit::ElementCount count) const noexcept -> std::pair<Path, Path> {
+auto Path::splitAfter(const ElementCount count) const noexcept -> std::pair<Path, Path> {
     if (isEmpty()) {
         return {{}, {}};
     }
@@ -247,8 +251,8 @@ auto Path::splitAfter(const unit::ElementCount count) const noexcept -> std::pai
         return {*this, currentElement()};
     }
     return {
-        slice({unit::ElementIndex::zero(), count}),
-        slice({unit::ElementIndex::end(count), unit::ElementCount::infinite()}),
+        slice({ElementIndex::zero(), count}),
+        slice({ElementIndex::end(count), ElementCount::infinite()}),
     };
 }
 
@@ -314,74 +318,74 @@ auto Path::operations() const noexcept -> PathOperations {
 
 auto Path::toStdPath() const noexcept -> std::filesystem::path {
 #ifdef ERBSLAND_OS_WINDOWS
-    return std::filesystem::path{text::StringConverter{toWindows()}.toStdWString()};
+    return std::filesystem::path{StringConverter{toWindows()}.toStdWString()};
 #else
-    return std::filesystem::path{text::StringConverter{toString()}.toStdString()};
+    return std::filesystem::path{StringConverter{toString()}.toStdString()};
 #endif
 }
 
-auto Path::toPosix() const noexcept -> text::StringView {
+auto Path::toPosix() const noexcept -> String {
     if (isEmpty() || (format() == PathFormat::Windows && isAbsolute())) {
         return {};
     }
     return toString();
 }
 
-auto Path::toWindows(const PathWindowsFormat format) const noexcept -> text::StringView {
+auto Path::toWindows(const PathWindowsFormat format) const noexcept -> String {
     if (isEmpty()) {
         return {};
     }
     return _data->toWindows(format);
 }
 
-auto Path::toString() const noexcept -> text::StringView {
-    return isEmpty() ? text::StringView{} : _data->toString();
+auto Path::toString() const noexcept -> String {
+    return isEmpty() ? String{} : _data->toString();
 }
 
-auto Path::fromElements(const text::StringViewList &elements) noexcept -> Path {
+auto Path::fromElements(const StringList &elements) noexcept -> Path {
     if (elements.count().isZero()) {
         return {};
     }
     auto startsWithRoot = false;
-    auto nonRootElements = impl::PathData::nonRootElementsFromPublicSlice(elements, startsWithRoot);
-    return Path{impl::PathData::create(
-        PathFormat::Generic, startsWithRoot ? elements.first() : text::StringView{}, std::move(nonRootElements))};
+    auto nonRootElements = PathData::nonRootElementsFromPublicSlice(elements, startsWithRoot);
+    return Path{PathData::create(
+        PathFormat::Generic, startsWithRoot ? elements.first() : String{}, std::move(nonRootElements))};
 }
 
-auto Path::fromPosix(const text::StringView &path) noexcept -> Path {
+auto Path::fromPosix(const String &path) noexcept -> Path {
     try {
-        return Path{impl::PathParser{path, impl::PathParseMode::Posix}.parse()};
+        return Path{PathParser{path, PathParseMode::Posix}.parse()};
     } catch (const err::ParseError &) {
         return {};
     }
 }
 
-auto Path::fromPosixOrThrow(const text::StringView &path) -> Path {
-    return Path{impl::PathParser{path, impl::PathParseMode::Posix}.parse()};
+auto Path::fromPosixOrThrow(const String &path) -> Path {
+    return Path{PathParser{path, PathParseMode::Posix}.parse()};
 }
 
-auto Path::fromWindows(const text::StringView &path) noexcept -> Path {
+auto Path::fromWindows(const String &path) noexcept -> Path {
     try {
-        return Path{impl::PathParser{path, impl::PathParseMode::Windows}.parse()};
+        return Path{PathParser{path, PathParseMode::Windows}.parse()};
     } catch (const err::ParseError &) {
         return {};
     }
 }
 
-auto Path::fromWindowsOrThrow(const text::StringView &path) -> Path {
-    return Path{impl::PathParser{path, impl::PathParseMode::Windows}.parse()};
+auto Path::fromWindowsOrThrow(const String &path) -> Path {
+    return Path{PathParser{path, PathParseMode::Windows}.parse()};
 }
 
-auto Path::fromNative(const text::StringView &path) noexcept -> Path {
+auto Path::fromNative(const String &path) noexcept -> Path {
     try {
-        return Path{impl::PathParser{path, impl::PathParseMode::Native}.parse()};
+        return Path{PathParser{path, PathParseMode::Native}.parse()};
     } catch (const err::ParseError &) {
         return {};
     }
 }
 
-auto Path::fromNativeOrThrow(const text::StringView &path) -> Path {
-    return Path{impl::PathParser{path, impl::PathParseMode::Native}.parse()};
+auto Path::fromNativeOrThrow(const String &path) -> Path {
+    return Path{PathParser{path, PathParseMode::Native}.parse()};
 }
 
 auto Path::empty() noexcept -> const Path & {
@@ -410,11 +414,11 @@ auto Path::systemTempDirectoryOrThrow() -> Path {
 }
 
 auto Path::currentElement() noexcept -> Path {
-    return Path{impl::PathData::create(PathFormat::Generic, {}, text::StringViewList{{"."_el}})};
+    return Path{PathData::create(PathFormat::Generic, {}, StringList{{"."_el}})};
 }
 
 auto Path::parentElement() noexcept -> Path {
-    return Path{impl::PathData::create(PathFormat::Generic, {}, text::StringViewList{{".."_el}})};
+    return Path{PathData::create(PathFormat::Generic, {}, StringList{{".."_el}})};
 }
 
 }

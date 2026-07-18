@@ -29,7 +29,7 @@ public:
 
     void testConstructorStoresTextRectangleAndAlignment() {
         const auto text =
-            BlockText{BlockString{"Hello"_el}, bgeo::BlockRectangle{1, 2, 7, 3}, bgeo::Alignment::CenterRight};
+            BlockText{BlockStringEditor{"Hello"_el}, bgeo::BlockRectangle{1, 2, 7, 3}, bgeo::Alignment::CenterRight};
 
         requireStringEqual(text.blockString(), U"Hello"_el);
         REQUIRE_EQUAL(text.rectangle(), (bgeo::BlockRectangle{1, 2, 7, 3}));
@@ -50,7 +50,7 @@ public:
         options.setParagraphSpacing(ParagraphSpacing::DoubleLine);
         options.setTabStops({6});
 
-        text.setBlockString(BlockString{"ABC"_el});
+        text.setBlockString(BlockStringEditor{"ABC"_el});
         text.setRectangle(bgeo::BlockRectangle{4, 5, 6, 7});
         text.setBlockTextOptions(options);
 
@@ -93,7 +93,7 @@ public:
     }
 
     void testSetColorCreatesSingleEntryColorSequence() {
-        auto text = BlockText{BlockString{"A"_el}, bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A"_el}, bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::Alignment::TopLeft};
 
         REQUIRE_EQUAL(text.color(), Color{});
 
@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    void requireStringEqual(const BlockString &actual, const erbsland::text::U32StringView &expected) {
+    void requireStringEqual(const BlockString &actual, const erbsland::text::U32String &expected) {
         REQUIRE_EQUAL(actual.length().toSizeT(), expected.length().toSizeT());
         for (std::size_t i = 0; i < expected.length().toSizeT(); ++i) {
             REQUIRE_EQUAL(actual[BlockIndex::fromSizeT(i)], expected[erbsland::unit::CpIndex::fromSizeT(i)]);

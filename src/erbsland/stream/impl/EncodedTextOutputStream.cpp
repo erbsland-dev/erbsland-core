@@ -4,9 +4,9 @@
 
 #include "BufferedByteOutputStream.hpp"
 
-#include "../../mem/ByteBlockView.hpp"
+#include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../text/StringEncoder.hpp"
 
 #include <exception>
@@ -17,15 +17,17 @@ namespace erbsland::stream::impl {
 
 using namespace text::literals;
 
+using namespace text;
+
 EncodedTextOutputStream::EncodedTextOutputStream(
     ByteOutputStreamPtr byteOutputStream,
-    const text::StringEncoding encoding,
-    const text::StringBomMode bomMode,
-    const text::EncodingErrorMode errorMode,
+    const StringEncoding encoding,
+    const StringBomMode bomMode,
+    const EncodingErrorMode errorMode,
     const bool initialBomAlreadyHandled) :
     _byteOutputStream{std::move(byteOutputStream)},
     _encoding{encoding},
-    _effectiveEncoding{effectiveEncodingFor(encoding)},
+    _effectiveEncoding{encoding.effectiveEncoding()},
     _bomMode{bomMode},
     _errorMode{errorMode},
     _bomWritten{initialBomAlreadyHandled} {
@@ -39,11 +41,11 @@ auto EncodedTextOutputStream::createErrorContext() const noexcept -> StreamError
     return _byteOutputStream->createErrorContext();
 }
 
-auto EncodedTextOutputStream::encoding() const noexcept -> text::StringEncoding {
+auto EncodedTextOutputStream::encoding() const noexcept -> StringEncoding {
     return _encoding;
 }
 
-auto EncodedTextOutputStream::effectiveEncoding() const noexcept -> text::StringEncoding {
+auto EncodedTextOutputStream::effectiveEncoding() const noexcept -> StringEncoding {
     return _effectiveEncoding;
 }
 
@@ -116,12 +118,12 @@ void EncodedTextOutputStream::abort() noexcept {
     }
 }
 
-auto EncodedTextOutputStream::write(const text::Char character) -> StreamWriteStatus {
-    const auto text = text::String::fromCharacter(character.isValidUnicode() ? character : text::Char::replacement());
+auto EncodedTextOutputStream::write(const Char character) -> StreamWriteStatus {
+    const auto text = String::fromCharacter(character.isValidUnicode() ? character : Char::replacement());
     return write(text);
 }
 
-auto EncodedTextOutputStream::write(const text::StringView &text) -> StreamWriteStatus {
+auto EncodedTextOutputStream::write(const String &text) -> StreamWriteStatus {
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
         return StreamWriteStatus::Timeout;
@@ -129,13 +131,13 @@ auto EncodedTextOutputStream::write(const text::StringView &text) -> StreamWrite
     return writeLocked(text);
 }
 
-auto EncodedTextOutputStream::writeLocked(const text::StringView &text) -> StreamWriteStatus {
+auto EncodedTextOutputStream::writeLocked(const String &text) -> StreamWriteStatus {
     const auto bomMode = bomModeForNextWrite();
     auto result = StreamWriteStatus::Timeout;
     if (const auto buffered = std::dynamic_pointer_cast<BufferedByteOutputStream>(_byteOutputStream)) {
         result = buffered->writeEncodedText(text, _encoding, bomMode, _errorMode);
     } else {
-        const auto data = text::StringEncoder{text}.encode(_encoding, bomMode, _errorMode);
+        const auto data = StringEncoder{text}.encode(_encoding, bomMode, _errorMode);
         result = _byteOutputStream->write(data);
     }
     if (result == StreamWriteStatus::Success) {
@@ -145,37 +147,22 @@ auto EncodedTextOutputStream::writeLocked(const text::StringView &text) -> Strea
 }
 
 auto EncodedTextOutputStream::writeLine() -> StreamWriteStatus {
-    return write(text::String::fromCharacter(U'\n'));
+    return write(String::fromCharacter(U'\n'));
 }
 
-auto EncodedTextOutputStream::writeLine(const text::StringView &text) -> StreamWriteStatus {
+auto EncodedTextOutputStream::writeLine(const String &text) -> StreamWriteStatus {
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
         return StreamWriteStatus::Timeout;
     }
-    auto builder = text::StringBuilder{};
-    builder.append(text);
-    builder.append(U'\n');
-    return writeLocked(builder.takeString());
+    return writeLocked(String::fromJoined({text, "\n"_el}));
 }
 
-auto EncodedTextOutputStream::bomModeForNextWrite() const noexcept -> text::StringBomMode {
+auto EncodedTextOutputStream::bomModeForNextWrite() const noexcept -> StringBomMode {
     if (_bomWritten) {
-        return text::StringBomMode::Reject;
+        return StringBomMode::Reject;
     }
     return _bomMode;
-}
-
-auto EncodedTextOutputStream::effectiveEncodingFor(const text::StringEncoding encoding) noexcept
-    -> text::StringEncoding {
-    switch (encoding) {
-    case text::StringEncoding::Utf16:
-        return text::StringEncoding::Utf16LittleEndian;
-    case text::StringEncoding::Utf32:
-        return text::StringEncoding::Utf32LittleEndian;
-    default:
-        return encoding;
-    }
 }
 
 }

@@ -13,7 +13,7 @@ namespace erbsland::re::impl {
 
 using namespace text::literals;
 
-ReplacementParser::ReplacementParser(const text::StringView &expression, const CaptureGroupNames &groupNames) :
+ReplacementParser::ReplacementParser(const text::String &expression, const CaptureGroupNames &groupNames) :
     _reader{expression}, _nameMap{createCaptureGroupNameToIndexMap(groupNames)} {
 }
 
@@ -99,7 +99,7 @@ void ReplacementParser::parseGroupIndex() {
 }
 
 void ReplacementParser::parseGroupName() {
-    text::String groupName;
+    text::StringEditor groupName;
     while (_currentChar.isAsciiWord()) {
         groupName.append(_currentChar);
         readNext();
@@ -122,7 +122,7 @@ void ReplacementParser::requireMoreContent() {
     }
 }
 
-void ReplacementParser::throwError(const text::StringView &description) const {
+void ReplacementParser::throwError(const text::String &description) const {
     auto position = _reader.position();
     if (!_currentChar.isSignal()) {
         position -= unit::CpLength::one();

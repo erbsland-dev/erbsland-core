@@ -3,14 +3,13 @@
 #pragma once
 
 #include "../IntegerFormat_fwd.hpp"
-#include "../StringBuilder_fwd.hpp"
 
 #include "../../math/IntegerTraits.hpp"
 
 namespace erbsland::text::impl {
 
-/// Append an integer to a decoded string builder.
-template <math::AnyIntegerType T>
-void appendInteger(StringBuilder &builder, T value, const IntegerFormat &format);
+/// Append an integer to a decoded-character sink.
+template <typename tSink, math::AnyIntegerType T>
+void appendInteger(tSink &sink, T value, const IntegerFormat &format);
 
 }

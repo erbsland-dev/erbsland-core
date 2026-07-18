@@ -6,7 +6,6 @@
 
 #include "../text/CharSet.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
 #include "../unit/CpLength.hpp"
 
 #include <array>
@@ -15,6 +14,8 @@
 namespace erbsland::cterm {
 
 using namespace erbsland::text::literals;
+
+using namespace text;
 
 auto Key::keyTextDefinitions() noexcept -> const std::array<KeyTextDefinition, 28> & {
     static constexpr auto cKeyTextDefinitions = std::array<KeyTextDefinition, 28>{{
@@ -104,11 +105,11 @@ auto Key::findKeyTextDefinition(const Type type) noexcept -> std::optional<KeyTe
     return std::nullopt;
 }
 
-auto Key::normalizeKeyText(const text::StringView &text) -> text::String {
-    return text.transformed(text::Char::toLowercase);
+auto Key::normalizeKeyText(const String &text) -> String {
+    return text.transformed(Char::toLowercase);
 }
 
-auto Key::parseModifierText(const text::StringView &text) noexcept -> std::optional<KeyModifier> {
+auto Key::parseModifierText(const String &text) noexcept -> std::optional<KeyModifier> {
     if (text == "shift"_el) {
         return KeyModifier::Shift;
     }
@@ -121,10 +122,10 @@ auto Key::parseModifierText(const text::StringView &text) noexcept -> std::optio
     return std::nullopt;
 }
 
-auto Key::parseModifiers(text::String &text) noexcept -> KeyModifiers {
+auto Key::parseModifiers(String &text) noexcept -> KeyModifiers {
     auto modifiers = KeyModifiers{};
     while (true) {
-        const auto separator = text.findFirstOf(text::CharSet{text::Char{U'+'}});
+        const auto separator = text.findFirstOf(CharSet{Char{U'+'}});
         if (separator.isNoIndex()) {
             return modifiers;
         }
@@ -138,7 +139,7 @@ auto Key::parseModifiers(text::String &text) noexcept -> KeyModifiers {
     }
 }
 
-void Key::appendModifierString(text::StringBuilder &builder, const KeyModifiers modifiers) {
+void Key::appendModifierString(StringEditor &builder, const KeyModifiers modifiers) {
     if (modifiers.has(KeyModifier::Shift)) {
         builder.append("shift+"_el);
     }
@@ -150,7 +151,7 @@ void Key::appendModifierString(text::StringBuilder &builder, const KeyModifiers 
     }
 }
 
-void Key::appendModifierDisplayText(text::StringBuilder &builder, const KeyModifiers modifiers) {
+void Key::appendModifierDisplayText(StringEditor &builder, const KeyModifiers modifiers) {
     if (modifiers.has(KeyModifier::Shift)) {
         builder.append("Shift+"_el);
     }
@@ -162,64 +163,60 @@ void Key::appendModifierDisplayText(text::StringBuilder &builder, const KeyModif
     }
 }
 
-auto Key::wrapDisplayText(const text::StringView &text, const bool useBrackets) -> text::String {
+auto Key::wrapDisplayText(const String &text, const bool useBrackets) -> String {
     if (!useBrackets) {
-        return text::String{text};
+        return text;
     }
-    auto builder = text::StringBuilder{};
-    builder.append(U'[');
-    builder.append(text);
-    builder.append(U']');
-    return builder.toString();
+    return String::fromJoined({"["_el, text, "]"_el});
 }
 
-auto Key::createCharacterKey(const text::CombinedChar &character) noexcept -> Key {
+auto Key::createCharacterKey(const CombinedChar &character) noexcept -> Key {
     if (character.characterCount() <= unit::CpLength::one()) {
         return Key{Character, character.first()};
     }
     return Key{Combined, character.toU32String()};
 }
 
-auto Key::parseCharacterKeyText(const text::StringView &text) -> std::optional<Key> {
+auto Key::parseCharacterKeyText(const String &text) -> std::optional<Key> {
     if (text.isEmpty()) {
         return std::nullopt;
     }
-    return createCharacterKey(text::CombinedChar::fromString(text));
+    return createCharacterKey(CombinedChar::fromString(text));
 }
 
-Key::Key(const Type type, const text::Char codePoint, const KeyModifiers modifiers) noexcept :
+Key::Key(const Type type, const Char codePoint, const KeyModifiers modifiers) noexcept :
     _type{type}, _modifiers{modifiers} {
     if (type == Character || type == Combined) {
-        _character = text::CombinedChar{codePoint};
+        _character = CombinedChar{codePoint};
     }
 }
 
-Key::Key(const Type type, const KeyModifiers modifiers) noexcept : Key{type, text::Char{}, modifiers} {
+Key::Key(const Type type, const KeyModifiers modifiers) noexcept : Key{type, Char{}, modifiers} {
 }
 
-Key::Key(const text::Char codePoint, const KeyModifiers modifiers) noexcept : Key{Character, codePoint, modifiers} {
+Key::Key(const Char codePoint, const KeyModifiers modifiers) noexcept : Key{Character, codePoint, modifiers} {
 }
 
-Key::Key(const Type type, const text::U32StringView &character, const KeyModifiers modifiers) :
+Key::Key(const Type type, const U32String &character, const KeyModifiers modifiers) :
     _type{type}, _modifiers{modifiers} {
     if (type == Character || type == Combined) {
-        _character = text::CombinedChar{character};
+        _character = CombinedChar{character};
     }
 }
 
-auto Key::operator==(const text::Char other) const noexcept -> bool {
+auto Key::operator==(const Char other) const noexcept -> bool {
     return _type == Character && _modifiers.empty() && _character.first() == other;
 }
 
-auto Key::operator!=(const text::Char other) const noexcept -> bool {
+auto Key::operator!=(const Char other) const noexcept -> bool {
     return !operator==(other);
 }
 
-auto Key::operator==(const text::U32StringView &other) const noexcept -> bool {
+auto Key::operator==(const U32String &other) const noexcept -> bool {
     return _type == Combined && _modifiers.empty() && combined() == other;
 }
 
-auto Key::operator!=(const text::U32StringView &other) const noexcept -> bool {
+auto Key::operator!=(const U32String &other) const noexcept -> bool {
     return !operator==(other);
 }
 
@@ -242,14 +239,14 @@ auto Key::character() const noexcept -> char {
     return static_cast<char>(codePoint.toRawValue());
 }
 
-auto Key::unicode() const noexcept -> text::Char {
+auto Key::unicode() const noexcept -> Char {
     if (_type != Character || _character.characterCount() != unit::CpLength::one()) {
         return {};
     }
     return _character.first();
 }
 
-auto Key::combined() const -> text::U32String {
+auto Key::combined() const -> U32String {
     if (_type != Character && _type != Combined) {
         return {};
     }
@@ -262,12 +259,12 @@ auto Key::withoutModifiers() const noexcept -> Key {
     return result;
 }
 
-auto Key::fromString(const text::StringView &text) noexcept -> Key {
-    auto parsedText = text::String{text};
+auto Key::fromString(const String &text) noexcept -> Key {
+    auto parsedText = text;
     const auto modifiers = parseModifiers(parsedText);
     const auto keyText = normalizeKeyText(parsedText);
     for (const auto &definition : keyAliasDefinitions()) {
-        if (text::StringView{definition.text} == keyText) {
+        if (keyText == definition.text) {
             return Key{definition.type, modifiers};
         }
     }
@@ -280,34 +277,34 @@ auto Key::fromString(const text::StringView &text) noexcept -> Key {
     return Key{None};
 }
 
-auto Key::fromConsoleInput(const text::StringView &text) noexcept -> Key {
+auto Key::fromConsoleInput(const String &text) noexcept -> Key {
     return impl::KeyDecoder{text}.decodeConsoleInput();
 }
 
-auto Key::toString() const -> text::String {
-    auto builder = text::StringBuilder{};
+auto Key::toString() const -> String {
+    auto builder = StringEditor{};
     appendModifierString(builder, _modifiers);
     if (_type == Character || _type == Combined) {
         builder.append(_character.toString());
-        return builder.toString();
+        return builder;
     }
     if (const auto definition = findKeyTextDefinition(_type)) {
         builder.append(definition->text);
-        return builder.toString();
+        return builder;
     }
     return {};
 }
 
-auto Key::toDisplayText(const bool useBrackets) const -> text::String {
-    auto builder = text::StringBuilder{};
+auto Key::toDisplayText(const bool useBrackets) const -> String {
+    auto builder = StringEditor{};
     appendModifierDisplayText(builder, _modifiers);
     if (_type == Character || _type == Combined) {
         builder.append(_character.toString());
-        return wrapDisplayText(builder.toString(), useBrackets);
+        return wrapDisplayText(builder, useBrackets);
     }
     if (const auto definition = findKeyTextDefinition(_type)) {
         builder.append(definition->displayText);
-        return wrapDisplayText(builder.toString(), useBrackets);
+        return wrapDisplayText(builder, useBrackets);
     }
     return {};
 }

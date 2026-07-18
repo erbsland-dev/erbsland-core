@@ -18,9 +18,9 @@ public:
     explicit OptionErrorDiagnostic(OptionErrorContext context);
 
 public: // implement Diagnostic
-    [[nodiscard]] auto sourceName() const noexcept -> text::StringView override;
+    [[nodiscard]] auto sourceName() const noexcept -> text::String override;
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation override;
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText = {}) const
         -> text::TextDocument override;
 

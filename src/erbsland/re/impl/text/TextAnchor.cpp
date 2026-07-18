@@ -9,7 +9,7 @@ namespace erbsland::re::impl {
 
 using namespace text::literals;
 
-auto TextAnchor::toString() const -> text::StringView {
+auto TextAnchor::toString() const -> text::String {
     for (const auto &[value, name] : valueToNameList()) {
         if (value == _value) {
             return name;
@@ -18,7 +18,7 @@ auto TextAnchor::toString() const -> text::StringView {
     return {};
 }
 
-auto TextAnchor::fromString(const text::StringView &str) -> TextAnchor {
+auto TextAnchor::fromString(const text::String &str) -> TextAnchor {
     for (const auto &[value, name] : valueToNameList()) {
         if (name.compare(str, text::Char::compareCaseFolded) == std::strong_ordering::equal) {
             return value;

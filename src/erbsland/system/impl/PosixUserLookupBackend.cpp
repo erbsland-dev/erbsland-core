@@ -26,7 +26,7 @@ namespace erbsland::system::impl {
 
 using namespace text::literals;
 
-void PosixUserLookupBackend::throwLookupError(const text::StringView &reason, const int status) {
+void PosixUserLookupBackend::throwLookupError(const text::String &reason, const int status) {
     throw system::PlatformError{reason, system::PosixErrorContext::fromErrorCode(status)};
 }
 
@@ -89,7 +89,7 @@ auto PosixUserLookupBackend::userIdForName(const UserName &name) -> UserId {
         auto *result = static_cast<passwd *>(nullptr);
         const auto status = ::getpwnam_r(nameText.c_str(), &password, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return UserId{text::String{std::to_string(static_cast<unsigned long>(result->pw_uid))}};
+            return UserId{text::String::fromInteger(static_cast<unsigned long>(result->pw_uid))};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -113,7 +113,7 @@ auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
         auto *result = static_cast<::group *>(nullptr);
         const auto status = ::getgrnam_r(nameText.c_str(), &group, buffer.get(), bufferSize, &result);
         if (status == 0 && result != nullptr) {
-            return GroupId{text::String{std::to_string(static_cast<unsigned long>(result->gr_gid))}};
+            return GroupId{text::String::fromInteger(static_cast<unsigned long>(result->gr_gid))};
         }
         if (status == ERANGE) {
             bufferSize *= 2U;
@@ -126,7 +126,7 @@ auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
     }
 }
 
-auto PosixUserLookupBackend::parseId(const text::StringView &id, const text::StringView &kind) -> unsigned long {
+auto PosixUserLookupBackend::parseId(const text::String &id, const text::String &kind) -> unsigned long {
     static_cast<void>(kind);
     const auto idText = text::StringConverter{id}.toStdString();
     auto result = 0UL;

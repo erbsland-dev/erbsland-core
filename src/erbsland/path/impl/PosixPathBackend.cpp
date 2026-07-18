@@ -21,9 +21,9 @@
 #include "../../system/UserId.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
-#include "../../text/impl/UnsafeU8StringViewAccess.hpp"
+#include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../time/impl/PosixTimeConverter.hpp"
 #include "../../unit/ByteLength.hpp"
 
@@ -77,7 +77,7 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
             const auto absolutePath = path.toAbsolute();
             if (!absolutePath.isEmpty()) {
                 const auto pathText = pathTextOrThrow(absolutePath);
-                const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+                const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
                 struct stat info{};
                 if (::stat(pathAccess.data(), &info) == 0 && S_ISDIR(info.st_mode) != 0) {
                     return absolutePath;
@@ -87,7 +87,7 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
     }
     const auto fallback = Path::fromPosix("/tmp"_el);
     const auto fallbackText = pathTextOrThrow(fallback);
-    const auto fallbackAccess = text::impl::UnsafeU8StringViewAccess{fallbackText};
+    const auto fallbackAccess = text::impl::UnsafeU8StringAccess{fallbackText};
     struct stat fallbackInfo{};
     errno = 0;
     const auto fallbackResult = ::stat(fallbackAccess.data(), &fallbackInfo);
@@ -125,7 +125,7 @@ auto PosixPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts par
     result.resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.data(), &info) != 0) {
         throwSystemError(
@@ -158,11 +158,11 @@ auto PosixPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts par
         result.loadedParts.set(PathInfoPart::Times);
     }
     if (parts.isSet(PathInfoPart::OwnerId)) {
-        result.ownerId = system::UserId{text::String{std::to_string(static_cast<unsigned long>(info.st_uid))}};
+        result.ownerId = system::UserId{text::String::fromInteger(static_cast<unsigned long>(info.st_uid))};
         result.loadedParts.set(PathInfoPart::OwnerId);
     }
     if (parts.isSet(PathInfoPart::GroupId)) {
-        result.groupId = system::GroupId{text::String{std::to_string(static_cast<unsigned long>(info.st_gid))}};
+        result.groupId = system::GroupId{text::String::fromInteger(static_cast<unsigned long>(info.st_gid))};
         result.loadedParts.set(PathInfoPart::GroupId);
     }
     if (parts.isSet(PathInfoPart::AccessRights)) {
@@ -196,7 +196,7 @@ auto PosixPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts par
 auto PosixPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
     -> stream::ByteInputStreamPtr {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     const auto fileDescriptor = ::open(pathAccess.data(), O_RDONLY);
     if (fileDescriptor < 0) {
         throwSystemError(
@@ -215,7 +215,7 @@ void PosixPathBackend::setAccessProfileOrThrow(
     const Path &path, const PathAccessProfile profile, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.data(), &info) != 0) {
         throwSystemError(
@@ -271,7 +271,7 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     const auto existed = existingPath(path);
     const auto fileDescriptor =
         ::open(pathAccess.data(), flags, profileMode(options.accessProfile(), PathType::RegularFile));
@@ -300,7 +300,7 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 }
 
-auto PosixPathBackend::pathTextOrThrow(const Path &path) -> text::StringView {
+auto PosixPathBackend::pathTextOrThrow(const Path &path) -> text::String {
     const auto pathText = path.toPosix();
     if (pathText.isEmpty()) {
         throw PathError{PathErrorContext{
@@ -325,7 +325,7 @@ void PosixPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryAccess = text::impl::UnsafeU8StringViewAccess{directoryText};
+        const auto directoryAccess = text::impl::UnsafeU8StringAccess{directoryText};
         if (::mkdir(directoryAccess.data(), static_cast<mode_t>(0777)) == 0) {
             continue;
         }
@@ -478,7 +478,7 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.data(), &info) != 0) {
         throwSystemError(
@@ -520,7 +520,7 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     const auto fileDescriptor = ::open(pathAccess.data(), O_RDONLY | O_NONBLOCK);
     if (fileDescriptor < 0) {
         throwSystemError(
@@ -562,5 +562,4 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
     }
 #endif
 }
-
 }

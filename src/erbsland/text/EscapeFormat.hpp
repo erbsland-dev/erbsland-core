@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "String_fwd.hpp"
+#include "StringEditor_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -49,12 +49,12 @@ public: // accessors
 
 public: // conversion
     /// Convert this escape format to its canonical string.
-    [[nodiscard]] auto toString() const -> StringView;
+    [[nodiscard]] auto toString() const -> String;
     /// Create an escape format from a canonical string.
-    [[nodiscard]] static auto fromString(const StringView &text) noexcept -> std::optional<EscapeFormat>;
+    [[nodiscard]] static auto fromString(const String &text) noexcept -> std::optional<EscapeFormat>;
     /// Create an escape format from a canonical string.
     /// @throws err::ParseError if the string is not a supported escape format.
-    [[nodiscard]] static auto fromStringOrThrow(const StringView &text) -> EscapeFormat;
+    [[nodiscard]] static auto fromStringOrThrow(const String &text) -> EscapeFormat;
 
 private:
     Value _value{None}; ///< The escape format value.

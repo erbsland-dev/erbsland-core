@@ -62,9 +62,7 @@ private:
 
 private:
     [[noreturn]] void throwError(
-        text::StringView title,
-        text::StringView description,
-        system::PlatformErrorContextConstPtr platformContext) const;
+        text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const;
 
 private:
     path::Path _path;

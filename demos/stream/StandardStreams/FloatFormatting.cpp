@@ -17,9 +17,9 @@ void captureOutput() {
 
 /// Capture output from code that writes to the standard-output proxy.
 /// Keep the redirect guard in a narrow scope so automatic restoration also covers early returns and exceptions.
-/// A `StringBuilderStream` performs no external I/O, therefore timeout would violate an in-memory stream invariant.
+/// A `AnyStringBuilderStream` performs no external I/O, therefore timeout would violate an in-memory stream invariant.
 auto captureRehearsalNotes() -> el::String {
-    const auto capture = el::StringBuilderStream::create();
+    const auto capture = el::AnyStringBuilderStream::create();
     {
         auto redirect = el::redirectStdOut(capture);
         if (el::io::printLine("Moderato, 96 bpm"_el).isTimeout() ||

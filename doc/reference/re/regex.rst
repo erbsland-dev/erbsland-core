@@ -9,7 +9,7 @@ The Regular Expression Interface
 Creating an Expression
 ======================
 
-:cpp:func:`RegEx::compile <erbsland::re::RegEx::compile>` accepts owning UTF-8, UTF-16 and UTF-32 Core string views.
+:cpp:func:`RegEx::compile <erbsland::re::RegEx::compile>` accepts owning UTF-8, UTF-16 and UTF-32 Core strings.
 Every overload returns :cpp:type:`RegExPtr <erbsland::re::RegExPtr>` and produces equivalent compiled behaviour.
 
 .. code-block:: cpp
@@ -17,8 +17,8 @@ Every overload returns :cpp:type:`RegExPtr <erbsland::re::RegExPtr>` and produce
     using namespace erbsland::text::literals;
 
     const auto expression8 = re::RegEx::compile("(A)(😀)(B)"_el);
-    const auto expression16 = re::RegEx::compile(text::U16StringView{u"(A)(😀)(B)"_el});
-    const auto expression32 = re::RegEx::compile(text::U32StringView{U"(A)(😀)(B)"_el});
+    const auto expression16 = re::RegEx::compile(text::U16String{u"(A)(😀)(B)"_el});
+    const auto expression32 = re::RegEx::compile(text::U32String{U"(A)(😀)(B)"_el});
 
 Invalid syntax and configured limits throw :cpp:class:`RegExError <erbsland::re::RegExError>`.
 Pattern length is measured in decoded code points, independently of the source encoding.
@@ -42,14 +42,14 @@ Subjects and Results
 
 The subject parameter determines the result family:
 
-*   :cpp:class:`text::StringView <erbsland::text::U8StringView>` returns
+*   :cpp:class:`text::String <erbsland::text::U8String>` returns
     :cpp:class:`Match <erbsland::re::Match>`.
-*   :cpp:class:`text::U16StringView <erbsland::text::U16StringView>` returns
+*   :cpp:class:`text::U16String <erbsland::text::U16String>` returns
     :cpp:class:`Match16 <erbsland::re::Match16>`.
-*   :cpp:class:`text::U32StringView <erbsland::text::U32StringView>` returns
+*   :cpp:class:`text::U32String <erbsland::text::U32String>` returns
     :cpp:class:`Match32 <erbsland::re::Match32>`.
 
-Core string views own their backing storage.
+Core strings own their backing storage.
 Inputs, returned matches and lazy generators therefore remain valid after the caller's original string or temporary has
 been destroyed.
 
@@ -95,8 +95,10 @@ Replacement
 ===========
 
 ``replaceAll`` accepts either a replacement expression or a callback receiving
-:cpp:type:`MatchPtr <erbsland::re::MatchPtr>`.
-Use :cpp:func:`text::U8StringView::toEscaped <erbsland::text::U8StringView::toEscaped>` with
+:cpp:type:`MatchPtr <erbsland::re::MatchPtr>`. The callback returns an owning
+:cpp:class:`text::String <erbsland::text::U8String>`, allowing it to reuse unchanged input or match content
+without creating an intermediate string copy.
+Use :cpp:func:`text::U8String::toEscaped <erbsland::text::U8String::toEscaped>` with
 :cpp:enumerator:`text::EscapeFormat::RegEx <erbsland::text::EscapeFormat::RegEx>` to escape text for insertion as a
 literal pattern.
 
@@ -105,12 +107,12 @@ Interface
 
 .. doxygenenum:: erbsland::re::Flag
 
-.. doxygenfunction:: erbsland::re::toString(const Flag flag) -> text::StringView
+.. doxygenfunction:: erbsland::re::toString(const Flag flag) -> text::String
 .. doxygenclass:: erbsland::re::Flags
     :members:
+.. doxygenclass:: erbsland::re::RegEx
+    :members:
+
 .. doxygentypedef:: erbsland::re::RegExPtr
 
 .. doxygentypedef:: erbsland::re::ConstRegExPtr
-
-.. doxygenclass:: erbsland::re::RegEx
-    :members:

@@ -5,7 +5,7 @@
 #include "HtmlAttribute.hpp"
 #include "HtmlTokenType.hpp"
 
-#include "../../StringView.hpp"
+#include "../../String.hpp"
 
 #include <utility>
 #include <vector>
@@ -24,13 +24,13 @@ struct HtmlToken final {
     /// @param selfClosing Whether this opening tag uses self-closing syntax.
     HtmlToken(
         HtmlTokenType type = HtmlTokenType::End,
-        StringView value = {},
+        String value = {},
         Attributes attributes = {},
         bool selfClosing = false) :
         type{type}, value{std::move(value)}, attributes{std::move(attributes)}, selfClosing{selfClosing} {}
 
     HtmlTokenType type{HtmlTokenType::End}; ///< The token type.
-    StringView value;                       ///< The token value.
+    String value;                           ///< The token value.
     Attributes attributes;                  ///< The attributes for an opening tag.
     bool selfClosing{false};                ///< Whether this opening tag uses self-closing syntax.
 };

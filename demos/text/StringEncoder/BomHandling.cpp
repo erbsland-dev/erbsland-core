@@ -14,7 +14,7 @@ namespace demo {
 /// convention, `Require` forces a BOM, and `Reject` forbids one entirely.
 void bomHandling() {
     // Encode a nature observation in multiple encodings, each with a different BOM strategy.
-    const auto observation = el::StringView{u8"🌲 Waldlichtung im Morgennebel 🌫️"_el};
+    const auto observation = el::String{u8"🌲 Waldlichtung im Morgennebel 🌫️"_el};
     el::io::printLine("Beobachtung: \"", observation, "\"\n"_el);
 
     // `Automatic` follows encoding conventions: no BOM for UTF-8, BOM for UTF-16 and UTF-32.

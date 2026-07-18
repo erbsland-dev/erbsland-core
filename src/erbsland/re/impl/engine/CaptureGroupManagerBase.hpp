@@ -56,7 +56,7 @@ public:
         for (std::size_t i = 0U; i < actualGroupCount; ++i) {
             const auto index = static_cast<CaptureGroupIndex>(i);
             if (i == 0) {
-                captureGroups.emplace_back(index, set.ranges()[i], text::StringView{});
+                captureGroups.emplace_back(index, set.ranges()[i], text::String{});
             } else {
                 captureGroups.emplace_back(index, set.ranges()[i], names[i - 1]);
             }

@@ -8,15 +8,15 @@
 #include "../../text/u16/impl/U16StringLiteralStorage.hpp"
 #include "../../text/u16/impl/U16StringSharedStorage.hpp"
 #include "../../text/u16/U16String.hpp"
-#include "../../text/u16/U16StringView.hpp"
+#include "../../text/u16/U16StringEditor.hpp"
 #include "../../text/u32/impl/U32StringLiteralStorage.hpp"
 #include "../../text/u32/impl/U32StringSharedStorage.hpp"
 #include "../../text/u32/U32String.hpp"
-#include "../../text/u32/U32StringView.hpp"
+#include "../../text/u32/U32StringEditor.hpp"
 #include "../../text/u8/impl/U8StringLiteralStorage.hpp"
 #include "../../text/u8/impl/U8StringSharedStorage.hpp"
 #include "../../text/u8/U8String.hpp"
-#include "../../text/u8/U8StringView.hpp"
+#include "../../text/u8/U8StringEditor.hpp"
 
 #include <span>
 #include <variant>
@@ -31,60 +31,60 @@ enum class StringStorageKind {
 
 class StringDebugAccess final {
 public:
+    [[nodiscard]] static auto dataView(const text::U8StringEditor &value) noexcept -> text::impl::U8StringDataView {
+        return value.dataView();
+    }
     [[nodiscard]] static auto dataView(const text::U8String &value) noexcept -> text::impl::U8StringDataView {
         return value.dataView();
     }
-    [[nodiscard]] static auto dataView(const text::U8StringView &value) noexcept -> text::impl::U8StringDataView {
+    [[nodiscard]] static auto dataView(const text::U16StringEditor &value) noexcept -> text::impl::U16StringDataView {
         return value.dataView();
     }
     [[nodiscard]] static auto dataView(const text::U16String &value) noexcept -> text::impl::U16StringDataView {
         return value.dataView();
     }
-    [[nodiscard]] static auto dataView(const text::U16StringView &value) noexcept -> text::impl::U16StringDataView {
+    [[nodiscard]] static auto dataView(const text::U32StringEditor &value) noexcept -> text::impl::U32StringDataView {
         return value.dataView();
     }
     [[nodiscard]] static auto dataView(const text::U32String &value) noexcept -> text::impl::U32StringDataView {
         return value.dataView();
     }
-    [[nodiscard]] static auto dataView(const text::U32StringView &value) noexcept -> text::impl::U32StringDataView {
-        return value.dataView();
-    }
 
-    [[nodiscard]] static auto storageKind(const text::U8String &) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U8StringEditor &) noexcept -> StringStorageKind {
         return StringStorageKind::Shared;
     }
-    [[nodiscard]] static auto storageKind(const text::U16String &) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U16StringEditor &) noexcept -> StringStorageKind {
         return StringStorageKind::Shared;
     }
-    [[nodiscard]] static auto storageKind(const text::U32String &) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U32StringEditor &) noexcept -> StringStorageKind {
         return StringStorageKind::Shared;
     }
-    [[nodiscard]] static auto storageKind(const text::U8StringView &value) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U8String &value) noexcept -> StringStorageKind {
         return viewStorageKind<text::impl::U8StringSharedStorage, text::impl::U8StringLiteralStorage>(value._storage);
     }
-    [[nodiscard]] static auto storageKind(const text::U16StringView &value) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U16String &value) noexcept -> StringStorageKind {
         return viewStorageKind<text::impl::U16StringSharedStorage, text::impl::U16StringLiteralStorage>(value._storage);
     }
-    [[nodiscard]] static auto storageKind(const text::U32StringView &value) noexcept -> StringStorageKind {
+    [[nodiscard]] static auto storageKind(const text::U32String &value) noexcept -> StringStorageKind {
         return viewStorageKind<text::impl::U32StringSharedStorage, text::impl::U32StringLiteralStorage>(value._storage);
     }
 
+    [[nodiscard]] static auto isShared(const text::U8StringEditor &value) noexcept -> bool {
+        return value._storage.sharedData().isShared();
+    }
+    [[nodiscard]] static auto isShared(const text::U16StringEditor &value) noexcept -> bool {
+        return value._storage.sharedData().isShared();
+    }
+    [[nodiscard]] static auto isShared(const text::U32StringEditor &value) noexcept -> bool {
+        return value._storage.sharedData().isShared();
+    }
     [[nodiscard]] static auto isShared(const text::U8String &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U16String &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U32String &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U8StringView &value) noexcept -> bool {
         return viewShared<text::impl::U8StringSharedStorage>(value._storage);
     }
-    [[nodiscard]] static auto isShared(const text::U16StringView &value) noexcept -> bool {
+    [[nodiscard]] static auto isShared(const text::U16String &value) noexcept -> bool {
         return viewShared<text::impl::U16StringSharedStorage>(value._storage);
     }
-    [[nodiscard]] static auto isShared(const text::U32StringView &value) noexcept -> bool {
+    [[nodiscard]] static auto isShared(const text::U32String &value) noexcept -> bool {
         return viewShared<text::impl::U32StringSharedStorage>(value._storage);
     }
 

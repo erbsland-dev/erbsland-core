@@ -5,6 +5,7 @@
 #include "U8Encoding.hpp"
 
 #include "../../../mem/ByteWriter.hpp"
+#include "../../../mem/impl/RingBufferWriter.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u32/impl/U32Encoding.hpp"
 
@@ -74,10 +75,11 @@ private:
 
 /// A writer for UTF-8 encoded text into a byte writer.
 /// @tested{U8WriterTest}
-template <>
-class U8Writer<mem::ByteWriter> {
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+class U8Writer<tWriter> {
 public:
-    explicit constexpr U8Writer(mem::ByteWriter &writer) noexcept : _writer{writer} {}
+    explicit constexpr U8Writer(tWriter &writer) noexcept : _writer{writer} {}
 
 public:
     /// Get the current position in the destination buffer.
@@ -114,13 +116,15 @@ private:
     void writeChar8(const uint8_t byte) noexcept { _writer.writeUInt8(byte); }
 
 private:
-    mem::ByteWriter &_writer;
+    tWriter &_writer;
 };
 
 template <typename tChar8>
 U8Writer(std::span<tChar8>) -> U8Writer<std::span<tChar8>>;
 
-U8Writer(mem::ByteWriter &) -> U8Writer<mem::ByteWriter>;
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+U8Writer(tWriter &) -> U8Writer<tWriter>;
 
 /// Generic method to create a UTF-8 encoded string from UTF-8 encoded text.
 /// @tested{U8WriterTest}

@@ -4,8 +4,8 @@
 
 #include "BlockPosition.hpp"
 
+#include "../text/String.hpp"
 #include "../text/StringLiteral.hpp"
-#include "../text/StringView.hpp"
 
 #include <array>
 #include <cstddef>
@@ -94,19 +94,19 @@ public: // conversion
 
     /// Convert this direction into a canonical lowercase string.
     /// @return The normalized direction name.
-    [[nodiscard]] auto toString() const noexcept -> text::StringView;
+    [[nodiscard]] auto toString() const noexcept -> text::String;
 
     /// Test if text can be parsed as a direction.
     /// Accepts empty text, abbreviations and normalized names.
     /// @param text The direction text.
     /// @return `true` if `fromString()` accepts the text.
-    [[nodiscard]] static auto isValidString(text::StringView text) noexcept -> bool;
+    [[nodiscard]] static auto isValidString(const text::String &text) noexcept -> bool;
 
     /// Parse a direction from text.
     /// Accepts empty text, abbreviations and normalized names.
     /// @param text The direction text.
     /// @return The parsed direction, or `None` if the text is invalid.
-    [[nodiscard]] static auto fromString(text::StringView text) noexcept -> BlockDirection;
+    [[nodiscard]] static auto fromString(const text::String &text) noexcept -> BlockDirection;
 
 private:
     using DirectionToDeltaEntry = std::tuple<Enum, BlockPosition>;
@@ -119,7 +119,7 @@ private:
     [[nodiscard]] static auto directionToDeltaMap() noexcept -> const DirectionToDeltaMap &;
     [[nodiscard]] static auto directionToStringMap() noexcept -> const DirectionToStringMap &;
     [[nodiscard]] static auto stringToDirectionMap() noexcept -> const StringToDirectionMap &;
-    [[nodiscard]] static auto findStringDirection(text::StringView text, BlockDirection &direction) noexcept -> bool;
+    [[nodiscard]] static auto findStringDirection(const text::String &text, BlockDirection &direction) noexcept -> bool;
 
 private:
     Enum _value{None}; ///< The internal enum value.

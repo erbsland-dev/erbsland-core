@@ -3,8 +3,8 @@
 
 #include "ParserBase.hpp"
 
-#include <erbsland/text/u16/U16StringView.hpp>
-#include <erbsland/text/u32/U32StringView.hpp>
+#include <erbsland/text/u16/U16String.hpp>
+#include <erbsland/text/u32/U32String.hpp>
 
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
@@ -53,15 +53,15 @@ public:
         Settings settings;
         settings.setMaximumPatternLength(el::unit::CpLength{3U});
 
-        parser = Parser{el::text::U16StringView{u"😀😀😀"_el}, {}, settings};
+        parser = Parser{el::text::U16String{u"😀😀😀"_el}, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
-        parser = Parser{el::text::U32StringView{U"😀😀😀"_el}, {}, settings};
+        parser = Parser{el::text::U32String{U"😀😀😀"_el}, {}, settings};
         REQUIRE_THROWS(node = parser.parse());
 
         settings.setMaximumPatternLength(el::unit::CpLength{4U});
-        parser = Parser{el::text::U16StringView{u"😀😀😀"_el}, {}, settings};
+        parser = Parser{el::text::U16String{u"😀😀😀"_el}, {}, settings};
         REQUIRE_NOTHROW(node = parser.parse());
-        parser = Parser{el::text::U32StringView{U"😀😀😀"_el}, {}, settings};
+        parser = Parser{el::text::U32String{U"😀😀😀"_el}, {}, settings};
         REQUIRE_NOTHROW(node = parser.parse());
     }
 };

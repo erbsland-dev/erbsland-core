@@ -7,7 +7,7 @@
 
 #include "Byte.hpp"
 #include "ByteBlock.hpp"
-#include "ByteBlockView.hpp"
+#include "ByteBlockEditor.hpp"
 #include "ByteReader.hpp"
 #include "ByteRingBuffer.hpp"
 #include "ByteWriter.hpp"

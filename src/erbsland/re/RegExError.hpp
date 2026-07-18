@@ -16,14 +16,14 @@ namespace erbsland::re {
 class RegExError final : public err::RuntimeError {
 public:
     /// Create an error with a concise title.
-    RegExError(ErrorCategory category, text::StringView title) noexcept;
+    RegExError(ErrorCategory category, text::String title) noexcept;
     /// Create an error with a title and source location.
-    RegExError(ErrorCategory category, text::StringView title, unit::CodeLocation location) noexcept;
+    RegExError(ErrorCategory category, text::String title, unit::CodeLocation location) noexcept;
     /// Create an error with a title, description, and optional source location.
     RegExError(
         ErrorCategory category,
-        text::StringView title,
-        text::StringView description,
+        text::String title,
+        text::String description,
         unit::CodeLocation location = {}) noexcept;
     /// Create an error from complete context.
     explicit RegExError(RegExErrorContext context) noexcept;
@@ -37,7 +37,7 @@ public:
 
 public: // implement RuntimeError
     /// Create a compact one-line summary containing category, title and description.
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     /// Create the complete structured diagnostic.
     [[nodiscard]] auto diagnostic() const -> err::DiagnosticConstPtr override;
 
@@ -47,9 +47,9 @@ public: // accessors
     /// Get the error category.
     [[nodiscard]] auto category() const noexcept -> ErrorCategory { return _context.category(); }
     /// Get the concise error title.
-    [[nodiscard]] auto title() const noexcept -> const text::StringView & { return _context.title(); }
+    [[nodiscard]] auto title() const noexcept -> const text::String & { return _context.title(); }
     /// Get the detailed error description.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _context.description(); }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _context.description(); }
     /// Get the source location.
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation { return _context.location(); }
     /// Get the source line index.
@@ -70,8 +70,8 @@ private:
 }
 
 template <>
-struct std::formatter<erbsland::re::RegExError> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::RegExError> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::RegExError &error, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(error.toString(), ctx);
+        return std::formatter<erbsland::text::String>::format(error.toString(), ctx);
     }
 };

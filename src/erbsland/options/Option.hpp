@@ -10,7 +10,7 @@
 #include "OptionType.hpp"
 #include "OptionValueStorage.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <initializer_list>
@@ -29,7 +29,7 @@ class Option {
 public:
     Option() = default;
     /// Create an option with names.
-    Option(std::initializer_list<text::StringView> names);
+    Option(std::initializer_list<text::String> names);
 
     // defaults
     ~Option() = default;
@@ -45,41 +45,41 @@ public:
     /// Create a shared option with names.
     /// @param names The command-line names and lookup aliases for this option.
     /// @return A shared option whose implicit type is derived from the names.
-    [[nodiscard]] static auto create(std::initializer_list<text::StringView> names) -> OptionPtr;
+    [[nodiscard]] static auto create(std::initializer_list<text::String> names) -> OptionPtr;
     /// Test if a name is a long command line option name.
     /// @param name The name to classify.
     /// @return `true` if the name starts with `--`.
-    [[nodiscard]] static auto isLongName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isLongName(const text::String &name) noexcept -> bool;
     /// Test if a name is a short command line option name.
     /// @param name The name to classify.
     /// @return `true` if the name starts with one dash and contains exactly one option character.
-    [[nodiscard]] static auto isShortName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isShortName(const text::String &name) noexcept -> bool;
     /// Test if a name is a command line option name.
-    [[nodiscard]] static auto isOptionName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isOptionName(const text::String &name) noexcept -> bool;
     /// Test if a name is a positional argument name.
-    [[nodiscard]] static auto isPositionalName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isPositionalName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid long command line option name.
-    [[nodiscard]] static auto isValidLongName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidLongName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid short command line option name.
-    [[nodiscard]] static auto isValidShortName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidShortName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid command line option name.
-    [[nodiscard]] static auto isValidOptionName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidOptionName(const text::String &name) noexcept -> bool;
     /// Test if a name is a valid positional argument name.
-    [[nodiscard]] static auto isValidPositionalName(const text::StringView &name) noexcept -> bool;
+    [[nodiscard]] static auto isValidPositionalName(const text::String &name) noexcept -> bool;
     /// Add a command-line name or lookup alias for this option.
     /// @param name The name to append. Dashed names are accepted on the command line, dashless names are lookup aliases
     ///     or positional argument names.
-    void addName(text::StringView name);
+    void addName(text::String name);
 
 public: // accessors
     /// Get all names for this option.
-    [[nodiscard]] auto names() const noexcept -> const std::vector<text::StringView> & { return _names; }
+    [[nodiscard]] auto names() const noexcept -> const std::vector<text::String> & { return _names; }
     /// Replace all names for this option.
-    void setNames(std::initializer_list<text::StringView> names);
+    void setNames(std::initializer_list<text::String> names);
     /// Test if this option is disabled.
     [[nodiscard]] auto isDisabled() const noexcept -> bool;
     /// Test if this option has the given long name.
-    [[nodiscard]] auto hasLongName(const text::StringView &name) const -> bool;
+    [[nodiscard]] auto hasLongName(const text::String &name) const -> bool;
     /// Test if this option has the given short name.
     [[nodiscard]] auto hasShortName(text::Char shortName) const -> bool;
     /// Test if this option has any dashed regular option name.
@@ -91,13 +91,13 @@ public: // accessors
     /// Test if this option has any dashless name.
     [[nodiscard]] auto hasPositionalName() const -> bool;
     /// Test if this option has the given dashless name.
-    [[nodiscard]] auto hasPositionalName(const text::StringView &name) const -> bool;
+    [[nodiscard]] auto hasPositionalName(const text::String &name) const -> bool;
     /// Test if all names in this option are valid.
     [[nodiscard]] auto hasValidOptionNames() const noexcept -> bool;
     /// Test if this option has a name that conflicts with another option.
     [[nodiscard]] auto hasConflictingOptionName(const Option &other) const -> bool;
     /// Find a configured choice text matching `text` case-insensitively.
-    [[nodiscard]] auto matchingChoiceText(const text::StringView &text) const -> std::optional<text::StringView>;
+    [[nodiscard]] auto matchingChoiceText(const text::String &text) const -> std::optional<text::String>;
     /// Get the help metadata for this option.
     [[nodiscard]] auto help() const noexcept -> const OptionHelp & { return _help; }
     /// Set the complete help metadata for this option.
@@ -105,21 +105,21 @@ public: // accessors
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this option.
     /// @param title Short title used when no description is available.
-    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this option.
     /// @param description User-facing description shown next to this option in help output.
-    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this option.
     /// @param epilog Optional trailing text for renderers that support option-level epilogs.
-    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
     /// Set the help visibility for this option.
     /// @param visibility Controls where this option appears in generated help output.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get the custom value name shown in help output.
-    [[nodiscard]] auto valueName() const noexcept -> const text::StringView & { return _valueName; }
+    [[nodiscard]] auto valueName() const noexcept -> const text::String & { return _valueName; }
     /// Set the custom value name shown in help output.
     /// @param valueName Bare value name without angle brackets. Empty restores the type-derived default.
-    void setValueName(text::StringView valueName) { _valueName = std::move(valueName); }
+    void setValueName(text::String valueName) { _valueName = std::move(valueName); }
     /// Get the option type.
     [[nodiscard]] auto type() const noexcept -> OptionType { return _type; }
     /// Set the option type.
@@ -156,9 +156,9 @@ private:
     void updateImplicitTypeFromNames() noexcept;
 
 private:
-    std::vector<text::StringView> _names;                     ///< The names for this option.
+    std::vector<text::String> _names;                         ///< The names for this option.
     OptionHelp _help;                                         ///< The help text for the option.
-    text::StringView _valueName;                              ///< The custom value name for help output.
+    text::String _valueName;                                  ///< The custom value name for help output.
     OptionType _type;                                         ///< The value type.
     bool _explicitType{false};                                ///< Whether the type was explicitly set.
     OptionFlags _flags;                                       ///< The option flags.

@@ -138,7 +138,7 @@ Option Name Patterns
 .. code-block:: text
 
     Option(names) // create option and derive implicit type from names
-    o.names() -> const vector<StringView>& // configured lookup names
+    o.names() -> const vector<String>& // configured lookup names
     o.setNames(names) -> void // replace names and update implicit type
     o.addName(name) -> void // add one lookup name
     T::isLongName/isShortName(name) -> bool // classify dashed name shape
@@ -169,7 +169,7 @@ Option Definition Patterns
     o.flags()/setFlags(flags) // get or set definition flags
     o.isDisabled() -> bool // test disabled flag
     o.choices()/setChoices(choices) // get or set accepted choices
-    o.matchingChoiceText(text) -> optional<StringView> // case-insensitive choice match
+    o.matchingChoiceText(text) -> optional<String> // case-insensitive choice match
     o.maximum()/setMaximum(count) // get or set maximum value count
     o.hasDefaultValue() -> bool // test if default storage exists
     o.defaultValue()/setDefaultValue(value) // get or set default storage
@@ -249,8 +249,8 @@ Typed Value Access Patterns
     o.getFlag([name, ][default]) -> bool // read flag value or default
     o.getFlagCount(name[, default]) -> unit::ArgumentCount // read flag occurrence count or default
     o.getInteger([name, ][default]) -> OptionInteger // read integer value or default
-    o.getText([name, ][default]) -> text::StringView // read text value or default
-    o.getTextList([name, ][default]) -> vector<text::StringView> // read text list or default
+    o.getText([name, ][default]) -> text::String // read text value or default
+    o.getTextList([name, ][default]) -> vector<text::String> // read text list or default
     o.getIntegerList([name, ][default]) -> vector<OptionInteger> // read integer list or default
 
 Help and Error Context Patterns

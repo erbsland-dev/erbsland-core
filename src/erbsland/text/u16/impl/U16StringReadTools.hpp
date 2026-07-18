@@ -18,7 +18,7 @@
 namespace erbsland::text::impl {
 
 /// A view into string data with a specific byte range.
-/// This helper class provides all read-only algorithms on the string data, shared by `U16String` and `U16StringView`.
+/// This helper class provides all read-only algorithms on the string data, shared by `U16StringEditor` and `U16String`.
 /// It's meant to be used inline like `U16StringDataView{dataView()}.doSomething()`.
 /// @tested{U16StringTest}
 class U16StringReadTools final {

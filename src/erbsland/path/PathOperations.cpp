@@ -28,6 +28,9 @@ namespace erbsland::path {
 
 using namespace text::literals;
 
+using err::Exception;
+using util::Result;
+
 PathOperations::PathOperations() = default;
 
 PathOperations::PathOperations(const Path &path) {
@@ -51,16 +54,15 @@ auto PathOperations::path() const -> const Path & {
     return _impl == nullptr ? Path::empty() : _impl->path();
 }
 
-auto PathOperations::remove(const PathRemoveOptions options, const PathProgressFn &progressFn) noexcept
-    -> util::Result {
+auto PathOperations::remove(const PathRemoveOptions options, const PathProgressFn &progressFn) noexcept -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
         _impl->removeOrThrow(options, progressFn);
-        return util::Result::Success;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return Result::Success;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -78,16 +80,15 @@ void PathOperations::removeOrThrow(const PathRemoveOptions options, const PathPr
 }
 
 auto PathOperations::copyTo(
-    const Path &destination, const PathCopyOptions options, const PathProgressFn &progressFn) const noexcept
-    -> util::Result {
+    const Path &destination, const PathCopyOptions options, const PathProgressFn &progressFn) const noexcept -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
         _impl->copyToOrThrow(destination, options, progressFn);
-        return util::Result::Success;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return Result::Success;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -105,15 +106,15 @@ void PathOperations::copyToOrThrow(
     _impl->copyToOrThrow(destination, options, progressFn);
 }
 
-auto PathOperations::moveTo(const Path &destination, const PathMoveOptions options) const noexcept -> util::Result {
+auto PathOperations::moveTo(const Path &destination, const PathMoveOptions options) const noexcept -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
         _impl->moveToOrThrow(destination, options);
-        return util::Result::Success;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return Result::Success;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -130,12 +131,12 @@ void PathOperations::moveToOrThrow(const Path &destination, const PathMoveOption
     _impl->moveToOrThrow(destination, options);
 }
 
-auto PathOperations::createFile(const PathCreateFileOptions options) const noexcept -> util::Result {
+auto PathOperations::createFile(const PathCreateFileOptions options) const noexcept -> Result {
     try {
         createFileOrThrow(options);
-        return util::Result::Success;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return Result::Success;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -146,12 +147,12 @@ void PathOperations::createFileOrThrow(const PathCreateFileOptions options) cons
     _impl->createFileOrThrow(options);
 }
 
-auto PathOperations::createDirectory(const PathCreateDirectoryOptions options) const noexcept -> util::Result {
+auto PathOperations::createDirectory(const PathCreateDirectoryOptions options) const noexcept -> Result {
     try {
         createDirectoryOrThrow(options);
-        return util::Result::Success;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return Result::Success;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -165,7 +166,7 @@ void PathOperations::createDirectoryOrThrow(const PathCreateDirectoryOptions opt
 auto PathOperations::createTempDirectory(PathTempDirectoryOptions options) const noexcept -> TempDirectoryPtr {
     try {
         return createTempDirectoryOrThrow(options);
-    } catch (const err::Exception &) {
+    } catch (const Exception &) {
         return {};
     }
 }
@@ -180,9 +181,7 @@ auto PathOperations::createTempDirectoryOrThrow(PathTempDirectoryOptions options
         throw PathError{PathErrorContext{
             "Temporary directory could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    auto probeText = text::String{options.prefix()};
-    probeText.append("x"_el);
-    probeText.append(options.suffix());
+    const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
     const auto nameProbe = Path{probeText};
     if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
         throw PathError{PathErrorContext{
@@ -192,9 +191,8 @@ auto PathOperations::createTempDirectoryOrThrow(PathTempDirectoryOptions options
         auto &random = core::application().secureRandom();
         const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
-            auto name = text::String{options.prefix()};
-            name.append(random.buildString(options.randomLength(), alphabet));
-            name.append(options.suffix());
+            const auto name = text::String::fromJoined(
+                {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
             const auto temporaryPath = path() / name;
             try {
                 impl::pathBackend().createDirectoryEntryOrThrow(temporaryPath, options.accessProfile());
@@ -218,7 +216,7 @@ auto PathOperations::openTempByteOutputStream(PathTempFileOptions options) const
     -> stream::TempByteOutputStreamPtr {
     try {
         return openTempByteOutputStreamOrThrow(options);
-    } catch (const err::Exception &) {
+    } catch (const Exception &) {
         return {};
     }
 }
@@ -234,9 +232,7 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    auto probeText = text::String{options.prefix()};
-    probeText.append("x"_el);
-    probeText.append(options.suffix());
+    const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
     const auto nameProbe = Path{probeText};
     if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
         throw PathError{PathErrorContext{
@@ -246,9 +242,8 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
         auto &random = core::application().secureRandom();
         const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
-            auto name = text::String{options.prefix()};
-            name.append(random.buildString(options.randomLength(), alphabet));
-            name.append(options.suffix());
+            const auto name = text::String::fromJoined(
+                {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
             const auto temporaryPath = path() / name;
             try {
                 auto writeOptions = PathWriteDataOptions{};
@@ -277,7 +272,7 @@ auto PathOperations::openTempTextOutputStream(
     -> stream::TempTextOutputStreamPtr {
     try {
         return openTempTextOutputStreamOrThrow(temporaryOptions, writeOptions);
-    } catch (const err::Exception &) {
+    } catch (const Exception &) {
         return {};
     }
 }
@@ -293,9 +288,7 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The random length or attempt count is invalid."_el}};
     }
-    auto probeText = text::String{temporaryOptions.prefix()};
-    probeText.append("x"_el);
-    probeText.append(temporaryOptions.suffix());
+    const auto probeText = text::String::fromJoined({temporaryOptions.prefix(), "x"_el, temporaryOptions.suffix()});
     const auto nameProbe = Path{probeText};
     if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
         throw PathError{PathErrorContext{
@@ -305,9 +298,10 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
         auto &random = core::application().secureRandom();
         const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
-            auto name = text::String{temporaryOptions.prefix()};
-            name.append(random.buildString(temporaryOptions.randomLength(), alphabet));
-            name.append(temporaryOptions.suffix());
+            const auto name = text::String::fromJoined(
+                {temporaryOptions.prefix(),
+                    random.buildString(temporaryOptions.randomLength(), alphabet),
+                    temporaryOptions.suffix()});
             const auto temporaryPath = path() / name;
             try {
                 writeOptions.setCreationMode(PathCreateMode::CreateNew);
@@ -331,14 +325,14 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
 }
 
 auto PathOperations::setAccessProfile(const PathAccessProfile profile, const PathChangeOptions options) const noexcept
-    -> util::Result {
+    -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
-        return _impl->setAccessProfile(profile, options) ? util::Result::Success : util::Result::Failure;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return _impl->setAccessProfile(profile, options) ? Result::Success : Result::Failure;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -352,14 +346,14 @@ void PathOperations::setAccessProfileOrThrow(const PathAccessProfile profile, co
 }
 
 auto PathOperations::addAttributes(const PathAttributes attributes, const PathChangeOptions options) const noexcept
-    -> util::Result {
+    -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
-        return _impl->addAttributes(attributes, options) ? util::Result::Success : util::Result::Failure;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return _impl->addAttributes(attributes, options) ? Result::Success : Result::Failure;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 
@@ -373,14 +367,14 @@ void PathOperations::addAttributesOrThrow(const PathAttributes attributes, const
 }
 
 auto PathOperations::clearAttributes(const PathAttributes attributes, const PathChangeOptions options) const noexcept
-    -> util::Result {
+    -> Result {
     try {
         if (isEmpty()) {
-            return util::Result::Failure;
+            return Result::Failure;
         }
-        return _impl->clearAttributes(attributes, options) ? util::Result::Success : util::Result::Failure;
-    } catch (const err::Exception &) {
-        return util::Result::Failure;
+        return _impl->clearAttributes(attributes, options) ? Result::Success : Result::Failure;
+    } catch (const Exception &) {
+        return Result::Failure;
     }
 }
 

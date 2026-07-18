@@ -17,7 +17,7 @@
 #include "BlockPrintContext.hpp"
 #include "BlockRange.hpp"
 #include "BlockString.hpp"
-#include "BlockStringView.hpp"
+#include "BlockStringEditor.hpp"
 #include "BlockStyle.hpp"
 #include "BlockText.hpp"
 #include "BlockTextAnimation.hpp"

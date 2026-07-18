@@ -50,7 +50,7 @@ public:
             const auto name = punctuation[index];
             runWithContext(
                 SOURCE_LOCATION(),
-                [&]() { REQUIRE(font->glyph(erbsland::text::String{name}) != nullptr); },
+                [&]() { REQUIRE(font->glyph(erbsland::text::StringEditor{name}) != nullptr); },
                 [&]() -> std::string { return std::format("index = {} / glyph = \"{}\"", index, name); });
         }
         REQUIRE(font->glyph("\u3042"_el) == nullptr);

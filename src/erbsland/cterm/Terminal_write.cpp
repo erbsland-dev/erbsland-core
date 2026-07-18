@@ -12,7 +12,7 @@
 
 #include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -29,7 +29,7 @@ void Terminal::write(const Block &character) noexcept {
     _lineBuffer.handleEmit();
 }
 
-void Terminal::write(const BlockStringView &str) noexcept {
+void Terminal::write(const BlockString &str) noexcept {
     for (const auto &character : str) {
         const auto resolvedCharacter = character.withBase(_style);
         setStyle(resolvedCharacter.style());
@@ -44,7 +44,7 @@ void Terminal::writeResolved(const Block &character) noexcept {
     _lineBuffer.handleEmit();
 }
 
-void Terminal::writeResolved(const BlockStringView &str) noexcept {
+void Terminal::writeResolved(const BlockString &str) noexcept {
     for (const auto &character : str) {
         setStyle(character.style());
         _lineBuffer.write(character);
@@ -69,7 +69,7 @@ auto Terminal::createPrintContext() noexcept -> BlockPrintContextPtr {
     return std::make_unique<impl::BlockPrintContextToTerminal>(*this);
 }
 
-auto Terminal::printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept -> int {
+auto Terminal::printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int {
     const auto margins = options.margins();
     const auto x1 = std::max(margins.left(), bgeo::BlockCoordinate{0});
     const auto width = std::max(
@@ -107,7 +107,7 @@ auto Terminal::printParagraphImpl(const BlockStringView &paragraph, const Paragr
     return lineCount;
 }
 
-auto Terminal::printParagraphPlainOutput(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept
+auto Terminal::printParagraphPlainOutput(const BlockString &paragraph, const ParagraphOptions &options) noexcept
     -> int {
     if (options.onError() == ParagraphOnError::Empty) {
         return 0;

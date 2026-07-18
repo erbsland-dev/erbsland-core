@@ -12,12 +12,11 @@
 
 namespace erbsland::system::impl {
 
-PlatformErrorDiagnostic::PlatformErrorDiagnostic(text::StringView title, PlatformErrorContextConstPtr context) noexcept
-    :
+PlatformErrorDiagnostic::PlatformErrorDiagnostic(text::String title, PlatformErrorContextConstPtr context) noexcept :
     _title{std::move(title)}, _context{std::move(context)} {
 }
 
-auto PlatformErrorDiagnostic::toString() const noexcept -> text::StringView {
+auto PlatformErrorDiagnostic::toString() const noexcept -> text::String {
     return _title;
 }
 

@@ -10,6 +10,8 @@
 
 #include <algorithm>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using el::mem::Byte;
@@ -24,6 +26,10 @@ using el::unit::ByteLength;
 using el::unit::CpLength;
 
 namespace th = erbsland::unittest::th;
+
+static_assert(std::is_same_v<decltype(std::declval<StringDecodeBuffer &>().peekString()), el::text::String>);
+static_assert(std::is_same_v<decltype(std::declval<StringDecodeBuffer &>().takeString()), el::text::String>);
+static_assert(std::is_same_v<decltype(std::declval<StringDecodeBuffer &>().takeAnyString()), el::text::AnyString>);
 
 TESTED_TARGETS(StringDecodeBuffer UnsafeDecodeBufferAccess)
 class StringDecodeBufferTest final : public el::UnitTest {

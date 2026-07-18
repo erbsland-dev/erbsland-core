@@ -6,7 +6,7 @@
 
 #include "../BlockStringBuilder.hpp"
 
-#include "../../BlockString.hpp"
+#include "../../BlockStringEditor.hpp"
 #include "../../CursorBuffer.hpp"
 #include "../../ParagraphOptions.hpp"
 
@@ -34,7 +34,7 @@ public:
     /// Materialize all logical blocks.
     /// @param blocks The blocks created by `RenderEngine`.
     /// @return Styled physical lines without trailing buffer fill cells.
-    [[nodiscard]] auto build(const std::vector<RenderBlock> &blocks) -> std::vector<BlockString>;
+    [[nodiscard]] auto build(const std::vector<RenderBlock> &blocks) -> BlockStringLines;
 
 private:
     void appendBlock(const RenderBlock &block);
@@ -43,7 +43,7 @@ private:
     void appendFilledLine(const RenderBlock &block);
     void appendHorizontalRule(const RenderBlock &block);
     void appendGap(int count, const BlockString &prefix);
-    void appendContentLine(const RenderBlock &block, const BlockStringView &content);
+    void appendContentLine(const RenderBlock &block, const BlockString &content);
     [[nodiscard]] auto paragraphOptions(const RenderBlock &block) const -> ParagraphOptions;
     [[nodiscard]] auto availableContentWidth(const RenderBlock &block) const noexcept -> int;
     [[nodiscard]] static auto trimmedLine(const CursorBuffer &buffer, int y) -> BlockString;
@@ -51,7 +51,7 @@ private:
 
 private:
     int _width;
-    std::vector<BlockString> _lines;
+    BlockStringLines _lines;
     BlockStringBuilder _builder;
     BlockString _previousFramePrefix;
     int _previousBottomMargin{0};

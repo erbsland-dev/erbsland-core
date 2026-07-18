@@ -4,53 +4,56 @@
 
 namespace erbsland::text::impl {
 
+using util::LoopResult;
+using util::LoopStatus;
+
 auto StringReaderBase::readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+    -> LoopResult {
     auto count = unit::CpLength::zero();
     while (true) {
         const auto state = save();
         const auto character = read();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (!expected.contains(character)) {
             restore(state);
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
             restore(state);
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
         const auto readFnResult = readFn(character);
-        if (readFnResult != util::LoopStatus::Continue) {
+        if (readFnResult != LoopStatus::Continue) {
             restore(state);
-            return readFnResult == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
+            return readFnResult == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped;
         }
         ++count;
     }
 }
 
 auto StringReaderBase::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
-    -> util::LoopResult {
+    -> LoopResult {
     auto count = unit::CpLength::zero();
     while (true) {
         const auto state = save();
         const auto character = read();
         if (character.isEndOfData()) {
-            return util::LoopResult::EndOfData;
+            return LoopResult::EndOfData;
         }
         if (stopSet.contains(character)) {
             restore(state);
-            return util::LoopResult::Success;
+            return LoopResult::Success;
         }
         if (!maximum.isInfinite() && count >= maximum) {
             restore(state);
-            return util::LoopResult::LimitReached;
+            return LoopResult::LimitReached;
         }
         const auto readFnResult = readFn(character);
-        if (readFnResult != util::LoopStatus::Continue) {
+        if (readFnResult != LoopStatus::Continue) {
             restore(state);
-            return readFnResult == util::LoopStatus::Error ? util::LoopResult::Error : util::LoopResult::Stopped;
+            return readFnResult == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped;
         }
         ++count;
     }

@@ -19,7 +19,7 @@ inline constexpr CalibrationResult CalibrationResult::Calibrated = Value::succes
 inline constexpr CalibrationResult CalibrationResult::AlreadyCalibrated = Value::success<1>();
 inline constexpr CalibrationResult CalibrationResult::Obstructed = Value::failure<0>();
 
-[[nodiscard]] auto calibrateModule(const el::StringView &module) noexcept -> CalibrationResult {
+[[nodiscard]] auto calibrateModule(const el::String &module) noexcept -> CalibrationResult {
     if (module == "visão"_el) {
         return CalibrationResult::Calibrated;
     }

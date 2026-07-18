@@ -4,14 +4,14 @@
 #include <erbsland/debug/impl/StringDebugBuilder.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 
 using el::debug::DebugViewDetail;
-using el::text::String;
 using el::text::StringConverter;
+using el::text::StringEditor;
 
 TESTED_TARGETS(StringDebugBuilder)
 class StringDebugBuilderTest final : public el::UnitTest {
@@ -33,13 +33,13 @@ public:
     void testMakeStringDebugTree() {
         using namespace el::text::literals;
 
-        const auto text = String{"A\nB"_el};
+        const auto text = StringEditor{"A\nB"_el};
         const auto details = DebugViewDetail::ContentInTitle | DebugViewDetail::CoreDetails;
         const auto output =
-            StringConverter{el::debug::impl::makeStringDebugTree("U8String"_el, text, details).toString()}
+            StringConverter{el::debug::impl::makeStringDebugTree("U8StringEditor"_el, text, details).toString()}
                 .toStdString();
 
-        REQUIRE(containsText(output, "U8String(\"A\\nB\")"));
+        REQUIRE(containsText(output, "U8StringEditor(\"A\\nB\")"));
         REQUIRE(containsText(output, "isEncodingValid: true"));
         REQUIRE(containsText(output, "characterLength: 3"));
     }

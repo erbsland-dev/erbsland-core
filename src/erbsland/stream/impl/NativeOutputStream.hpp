@@ -5,7 +5,7 @@
 #include "../ByteInputStream.hpp"
 #include "../StreamErrorSource.hpp"
 
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -42,7 +42,7 @@ public:
     /// Write UTF-8 text to the native stream.
     /// @param text The text to write.
     /// @throws stream::StreamError If the native stream cannot write all text.
-    virtual void writeText(const text::StringView &text);
+    virtual void writeText(const text::String &text);
     /// Flush the native stream.
     /// @throws stream::StreamError If the native stream cannot flush.
     virtual void flush() = 0;

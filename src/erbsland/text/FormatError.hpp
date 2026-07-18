@@ -17,7 +17,7 @@ class FormatError final : public err::RuntimeError {
 public:
     /// Create a format error with a reason.
     /// @param reason The reason for the format error.
-    explicit FormatError(StringView reason) noexcept : err::RuntimeError{std::move(reason)} {}
+    explicit FormatError(String reason) noexcept : err::RuntimeError{std::move(reason)} {}
     /// @overload
     explicit FormatError(const std::string_view reason) noexcept : err::RuntimeError{reason} {}
 

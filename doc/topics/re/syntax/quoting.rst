@@ -142,7 +142,7 @@ Instead of relying on a broad quoting mode, prefer one of the following approach
 
 * Quote only the characters that actually need quoting using the escape sequences above.
 * When matching an arbitrary external string, call
-  :cpp:func:`text.toEscaped(text::EscapeFormat::RegEx) <erbsland::text::U8StringView::toEscaped>` before inserting the
+  :cpp:func:`text.toEscaped(text::EscapeFormat::RegEx) <erbsland::text::U8String::toEscaped>` before inserting the
   text into the pattern.
 
 Strict escaping and the absence of a broad quoting mode serve the same purpose: they make patterns **explicit,

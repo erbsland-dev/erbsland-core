@@ -4,10 +4,10 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringView.hpp>
-#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -46,12 +46,12 @@ public:
     }
 
     void testErbslandToStdStrings() {
-        const auto u8Text = U8String{std::u8string_view{u8"A¢€😀"}};
-        const auto u16Text = U16String{std::u16string_view{u"A¢€😀"}};
-        const auto u32Text = U32String{std::u32string_view{U"A¢€😀"}};
+        const auto u8Text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto u16Text = U16StringEditor{std::u16string_view{u"A¢€😀"}};
+        const auto u32Text = U32StringEditor{std::u32string_view{U"A¢€😀"}};
 
         REQUIRE_EQUAL(StringConverter{u8Text}.toStdU8String(), std::u8string{u8"A¢€😀"});
-        REQUIRE_EQUAL(StringConverter{U16StringView{u16Text}}.toStdU16String(), std::u16string{u"A¢€😀"});
+        REQUIRE_EQUAL(StringConverter{U16String{u16Text}}.toStdU16String(), std::u16string{u"A¢€😀"});
         REQUIRE_EQUAL(StringConverter{u32Text}.toStdU32String(), std::u32string{U"A¢€😀"});
         REQUIRE_EQUAL(th::toStdU32String(StringConverter{u8Text}.toStdWString()), std::u32string{U"A¢€😀"});
     }
@@ -59,7 +59,7 @@ public:
     void testCrossWidthConversions() {
         using namespace el::text::literals;
 
-        const auto u16Text = StringConverter{u8"A¢€😀"_elv}.toU16String();
+        const auto u16Text = StringConverter{u8"A¢€😀"_el}.toU16String();
         const auto u32Text = StringConverter{u16Text}.toU32String();
         const auto u8Text = StringConverter{u32Text}.toU8String();
 
@@ -76,13 +76,13 @@ public:
         REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingErrorMode::Throw));
     }
 
-    void testStringViewLifetimeAndAliasing() {
-        const auto owningView = StringConverter{std::string{th::stdStringFromHex("41 C2 A2")}}.toStringView();
+    void testStringLifetimeAndAliasing() {
+        const auto owningView = StringConverter{std::string{th::stdStringFromHex("41 C2 A2")}}.toString();
         REQUIRE_EQUAL(StringConverter{owningView}.toStdString(), th::stdStringFromHex("41 C2 A2"));
 
-        const auto text = U8String{std::string_view{"alias"}};
-        const auto sourceView = U8StringView{text};
-        const auto aliasView = StringConverter{sourceView}.toStringView();
+        const auto text = U8StringEditor{std::string_view{"alias"}};
+        const auto sourceView = U8String{text};
+        const auto aliasView = StringConverter{sourceView}.toString();
         REQUIRE_EQUAL(aliasView.storageId(), sourceView.storageId());
     }
 };

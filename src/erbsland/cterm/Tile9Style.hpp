@@ -3,13 +3,13 @@
 #pragma once
 
 #include "Block.hpp"
-#include "BlockStringView.hpp"
+#include "BlockString.hpp"
 #include "FrameStyle.hpp"
 
 #include "../bgeo/BlockRectangle.hpp"
 #include "../text/Char.hpp"
-#include "../text/StringView.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/String.hpp"
+#include "../text/u32/U32String.hpp"
 
 #include <array>
 #include <cstdint>
@@ -68,11 +68,11 @@ public:
     /// Create a new 9-tile style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
-    explicit Tile9Style(const text::StringView &tiles);
+    explicit Tile9Style(const text::String &tiles);
     /// Create a new 9-tile style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
-    explicit Tile9Style(const text::U32StringView &tiles);
+    explicit Tile9Style(const text::U32String &tiles);
 
 public: // accessors
     /// Resolve the tile for a given position inside a rectangle.
@@ -91,12 +91,12 @@ public:
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @return A shared style instance.
     /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
-    [[nodiscard]] static auto create(const text::StringView &tiles) -> Tile9StylePtr;
+    [[nodiscard]] static auto create(const text::String &tiles) -> Tile9StylePtr;
     /// Create a new shared style from 9 or 16 terminal characters.
     /// @param tiles A sequence of 9 tiles, or 16 tiles including the degenerate cases.
     /// @return A shared style instance.
     /// @throws err::ParameterError If `tiles` does not contain exactly 9 or 16 terminal characters.
-    [[nodiscard]] static auto create(const text::U32StringView &tiles) -> Tile9StylePtr;
+    [[nodiscard]] static auto create(const text::U32String &tiles) -> Tile9StylePtr;
     /// For drawing half-block frames on the outer cell edges.
     [[nodiscard]] static auto outerHalfBlockFrame() -> Tile9StylePtr;
     /// For drawing half-block frames on the inner cell edges.
@@ -114,7 +114,7 @@ private:
 
 private:
     explicit Tile9Style(const ParsedTiles &parsed) noexcept;
-    [[nodiscard]] static auto parseTiles(const BlockStringView &tiles) -> ParsedTiles;
+    [[nodiscard]] static auto parseTiles(const BlockString &tiles) -> ParsedTiles;
     [[nodiscard]] static auto toParsedTiles(const std::array<Block, 9> &tiles) noexcept -> ParsedTiles;
     [[nodiscard]] static auto toParsedTiles(const std::array<Block, 16> &tiles) noexcept -> ParsedTiles;
 

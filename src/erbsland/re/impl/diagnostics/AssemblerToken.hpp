@@ -55,7 +55,7 @@ public: // accessors and tests.
     [[nodiscard]] auto value() const noexcept -> const Value & { return _value; }
     [[nodiscard]] auto column() const noexcept -> unit::ColumnIndex { return _column; }
 
-    [[nodiscard]] auto typeName() const noexcept -> text::StringView {
+    [[nodiscard]] auto typeName() const noexcept -> text::String {
         using namespace text::literals;
         switch (_type) {
         case Integer:
@@ -92,7 +92,7 @@ public: // accessors and tests.
         using namespace text::literals;
         auto valueString = text::String{};
         std::visit(
-            [&](const auto &v) {
+            [&](const auto &v) -> void {
                 using ValueType = std::decay_t<decltype(v)>;
                 if constexpr (std::is_same_v<ValueType, text::String>) {
                     valueString = text::StringFormat{"\"{}\""}.build(v);
@@ -101,11 +101,11 @@ public: // accessors and tests.
                 } else if constexpr (std::is_same_v<ValueType, bool>) {
                     valueString = text::String::fromBoolean(v);
                 } else if constexpr (std::is_same_v<ValueType, impl::Operation>) {
-                    valueString = text::String{impl::toString(v)};
+                    valueString = impl::toString(v);
                 } else if constexpr (std::is_same_v<ValueType, OperationModifier>) {
-                    valueString = text::String{impl::toString(v)};
+                    valueString = impl::toString(v);
                 } else {
-                    valueString = text::String{"<unprintable>"_el};
+                    valueString = "<unprintable>"_el;
                 }
             },
             _value);

@@ -8,7 +8,7 @@
 #include "U16StringDataView.hpp"
 #include "U16StringSharedStorage.hpp"
 
-#include "../U16String_fwd.hpp"
+#include "../U16StringEditor_fwd.hpp"
 
 #include "../../../bgeo/Alignment.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -54,9 +54,10 @@ public: // escaping.
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U16String;
+    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
+        -> U16StringEditor;
     /// Create a bounded representation that is safe for logs and debug output.
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U16String;
+    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U16StringEditor;
 
 private:
     [[nodiscard]] auto dataView(unit::U16DataRange range) const -> U16StringDataView;

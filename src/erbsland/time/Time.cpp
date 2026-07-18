@@ -4,10 +4,14 @@
 
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
 
 namespace erbsland::time {
+
+using text::IntegerFormat;
+using text::IntegerFormatFlag;
+using text::String;
 
 namespace {
 constexpr auto cNanosecondsPerSecond = int64_t{1000000000};
@@ -64,31 +68,20 @@ auto Time::toNanosecondsSinceMidnight() const noexcept -> Nanoseconds {
     return Nanoseconds{_nanoseconds};
 }
 
-auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> text::String {
+auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> String {
     const auto extended = flags.isSet(IsoTimeFormat::Extended);
     const auto separator = flags.isSet(IsoTimeFormat::UseDotFraction) ? U'.' : U',';
-    auto twoDigitFormat = text::IntegerFormat::decimal();
-    twoDigitFormat.addFlags(text::IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    auto twoDigitFormat = IntegerFormat::decimal();
+    twoDigitFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
 
-    auto builder = text::StringBuilder{};
-    if (flags.isSet(IsoTimeFormat::TimePrefix)) {
-        builder.append("T"_el);
-    }
-    builder.appendInteger(hour().toValue(), twoDigitFormat);
-    if (precision >= DateTimePrecision::Minute) {
-        if (extended) {
-            builder.append(U':');
-        }
-        builder.appendInteger(minute().toValue(), twoDigitFormat);
-    }
-    if (precision >= DateTimePrecision::Second) {
-        if (extended) {
-            builder.append(U':');
-        }
-        builder.appendInteger(second().toValue(), twoDigitFormat);
-    }
+    const auto partSeparator = extended ? String{":"_el} : String{};
+    const auto minuteText =
+        precision >= DateTimePrecision::Minute ? String::fromInteger(minute().toValue(), twoDigitFormat) : String{};
+    const auto secondText =
+        precision >= DateTimePrecision::Second ? String::fromInteger(second().toValue(), twoDigitFormat) : String{};
+    auto fractionText = String{};
     if (precision >= DateTimePrecision::Millisecond) {
-        auto fractionFormat = text::IntegerFormat::decimal();
+        auto fractionFormat = IntegerFormat::decimal();
         auto fraction = nanosecondFraction().toValue();
         auto fieldWidth = unit::CpLength{3};
         if (precision == DateTimePrecision::Microsecond) {
@@ -99,11 +92,18 @@ auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision p
         } else {
             fraction /= 1000000LL;          // millisecond fraction
         }
-        fractionFormat.addFlags(text::IntegerFormatFlag::ZeroFill).setFieldWidth(fieldWidth);
-        builder.append(separator);
-        builder.appendInteger(fraction, fractionFormat);
+        fractionFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(fieldWidth);
+        fractionText = String::fromInteger(fraction, fractionFormat);
     }
-    return builder.takeU8String();
+    return String::fromJoined(
+        {flags.isSet(IsoTimeFormat::TimePrefix) ? String{"T"_el} : String{},
+            String::fromInteger(hour().toValue(), twoDigitFormat),
+            precision >= DateTimePrecision::Minute ? partSeparator : String{},
+            minuteText,
+            precision >= DateTimePrecision::Second ? partSeparator : String{},
+            secondText,
+            precision >= DateTimePrecision::Millisecond ? String::fromCharacter(separator) : String{},
+            fractionText});
 }
 
 auto Time::addWithWrap(const TimeDelta delta) noexcept -> Days {

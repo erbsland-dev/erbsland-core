@@ -46,7 +46,7 @@ public:
         REQUIRE_EQUAL(input.waitForKey(), Key{Key::Enter});
         REQUIRE_EQUAL(firstBackend->_waitForKeyCallCount, 1);
 
-        firstBackend->_readLineResults.push("first line"_els);
+        firstBackend->_readLineResults.push("first line"_el);
         REQUIRE_EQUAL(input.readLine(), "first line"_el);
         REQUIRE_EQUAL(firstBackend->_readLineCallCount, 1);
 
@@ -73,7 +73,7 @@ public:
         REQUIRE_EQUAL(secondBackend->_waitForKeyCallCount, 1);
         REQUIRE_EQUAL(firstBackend->_waitForKeyCallCount, 1);
 
-        secondBackend->_readLineResults.push("second line"_els);
+        secondBackend->_readLineResults.push("second line"_el);
         REQUIRE_EQUAL(input.readLine(), "second line"_el);
         REQUIRE_EQUAL(secondBackend->_readLineCallCount, 1);
         REQUIRE_EQUAL(firstBackend->_readLineCallCount, 1);
@@ -171,7 +171,7 @@ public:
     void testPrintParagraphResetsTheBackgroundBeforeNewlinesInFullControlMode() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         auto terminal = createTerminal(backend, bgeo::BlockSize{4, 4});
-        auto paragraph = BlockString{};
+        auto paragraph = BlockStringEditor{};
         paragraph.append(bg::Blue, "AB CD"_el);
         auto options = ParagraphOptions{};
         options.setBackgroundMode(ParagraphBackgroundMode::FullRight);
@@ -183,13 +183,13 @@ public:
         REQUIRE_EQUAL(backend->output(), std::string{"\x1b[44mAB  \x1b[49m\n\x1b[44mCD  \x1b[49m\n"});
     }
 
-    void testPrintParagraphAcceptsStringViewSlices() {
+    void testPrintParagraphAcceptsStringSlices() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         auto terminal = createTerminal(backend, bgeo::BlockSize{4, 4});
-        const auto source = BlockString{"xAB CD!"_el};
+        const auto source = BlockStringEditor{"xAB CD!"_el};
 
         const auto writtenLines =
-            terminal->printParagraph(BlockStringView{source}.slice(BlockRange{BlockIndex{1U}, BlockCount{5U}}));
+            terminal->printParagraph(BlockString{source}.slice(BlockRange{BlockIndex{1U}, BlockCount{5U}}));
         terminal->flush();
 
         REQUIRE_EQUAL(writtenLines, 2);

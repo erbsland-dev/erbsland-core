@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 
 #include <cstdint>
 #include <vector>
@@ -40,7 +40,7 @@ public: // operators
 
 public:
     /// Return a string for the given anchor. Mainly used for testing.
-    [[nodiscard]] auto toString() const -> text::StringView;
+    [[nodiscard]] auto toString() const -> text::String;
 
     /// Return the raw value.
     [[nodiscard]] auto raw() const noexcept -> Value { return _value; }
@@ -49,10 +49,10 @@ public:
     /// @param str The string representation of the anchor.
     /// @return The created text anchor or None if the string is invalid.
     /// @throws err::ParameterError if the string is invalid.
-    [[nodiscard]] static auto fromString(const text::StringView &str) -> TextAnchor;
+    [[nodiscard]] static auto fromString(const text::String &str) -> TextAnchor;
 
 private:
-    using ValueToNameList = std::vector<std::pair<Value, text::StringView>>;
+    using ValueToNameList = std::vector<std::pair<Value, text::String>>;
     [[nodiscard]] static auto valueToNameList() noexcept -> const ValueToNameList &;
 
 private:

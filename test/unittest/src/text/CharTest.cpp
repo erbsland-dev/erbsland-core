@@ -5,6 +5,7 @@
 #include <erbsland/text/CharSignal.hpp>
 #include <erbsland/text/IntegerBase.hpp>
 #include <erbsland/text/LetterCase.hpp>
+#include <erbsland/text/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -274,6 +275,25 @@ public:
         REQUIRE_EQUAL(Char{0x110000U}.displayWidth(), 0);
         REQUIRE_EQUAL(Char::endOfData().displayWidth(), 0);
         REQUIRE_EQUAL(Char::noCodePoint().displayWidth(), 0);
+    }
+
+    void testEncodedBytes() {
+        using el::text::StringEncoding;
+        using el::unit::ByteLength;
+
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf8), ByteLength{1U});
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf16), ByteLength{2U});
+        REQUIRE_EQUAL(Char{U'A'}.encodedBytes(StringEncoding::Utf32), ByteLength{4U});
+        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf8), ByteLength{2U});
+        REQUIRE_EQUAL(Char{0x00A2U}.encodedBytes(StringEncoding::Utf16BigEndian), ByteLength{2U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf8), ByteLength{4U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf16LittleEndian), ByteLength{4U});
+        REQUIRE_EQUAL(Char{0x1F600U}.encodedBytes(StringEncoding::Utf32BigEndian), ByteLength{4U});
+        REQUIRE_EQUAL(Char{0xD800U}.encodedBytes(StringEncoding::Utf8), ByteLength::zero());
+        REQUIRE_EQUAL(Char{0x110000U}.encodedBytes(StringEncoding::Utf16), ByteLength::zero());
+        REQUIRE_EQUAL(Char::endOfData().encodedBytes(StringEncoding::Utf32), ByteLength::zero());
+        REQUIRE_EQUAL(
+            Char{U'A'}.encodedBytes(StringEncoding{static_cast<StringEncoding::Value>(0xffU)}), ByteLength::zero());
     }
 
     void testAsciiCaseMapping() {

@@ -3,7 +3,7 @@
 #pragma once
 
 #include "BlockPrintContext.hpp"
-#include "BlockStringView.hpp"
+#include "BlockString.hpp"
 #include "MoveMode.hpp"
 #include "ParagraphOptions.hpp"
 
@@ -13,9 +13,9 @@
 #include "../bgeo/BlockSize.hpp"
 #include "../text/EncodingErrorMode.hpp"
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -187,11 +187,11 @@ public: // write
     /// Inherited color components in each character resolve against the currently active color.
     /// Overwrites the characters under the cursor.
     /// @param str The string to write.
-    virtual void write(const BlockStringView &str) noexcept = 0;
+    virtual void write(const BlockString &str) noexcept = 0;
     /// Write a string whose characters are already fully resolved against the writer state.
     /// This bypasses any additional inherited-style resolution in implementations that can optimize for it.
     /// @param str The already resolved string to write.
-    virtual void writeResolved(const BlockStringView &str) noexcept { write(str); }
+    virtual void writeResolved(const BlockString &str) noexcept { write(str); }
     /// Write a character that is already fully resolved against the writer state.
     /// This bypasses any additional inherited-style resolution in implementations that can optimize for it.
     /// @param character The already resolved character to write.
@@ -218,9 +218,9 @@ public: // write
     }
     /// @overload
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
-    void write(const text::StringView &text) noexcept { write(BlockString{text, text::EncodingErrorMode::Replace}); }
+    void write(const text::String &text) noexcept { write(BlockStringEditor{text, text::EncodingErrorMode::Replace}); }
     /// @overload
-    void write(const text::U32StringView &text) noexcept { write(BlockString{text}); }
+    void write(const text::U32String &text) noexcept { write(BlockStringEditor{text}); }
     /// Write a buffer at the current cursor position.
     /// This will not perform any additional formatting, clipping, or processing.
     /// Each line of the buffer will be written, and a line-break added after each line.
@@ -251,22 +251,22 @@ public: // write
     /// @param options The paragraph options to use.
     /// @return The number of lines written (including empty lines).
     auto printParagraph(
-        const BlockStringView &paragraph, const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept
+        const BlockString &paragraph, const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept
         -> int {
         return printParagraphImpl(paragraph, options);
     }
     /// @overload
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
     auto printParagraph(
-        const text::StringView &paragraph,
-        const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept -> int {
-        return printParagraphImpl(BlockString{paragraph, text::EncodingErrorMode::Replace}, options);
+        const text::String &paragraph, const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept
+        -> int {
+        return printParagraphImpl(BlockStringEditor{paragraph, text::EncodingErrorMode::Replace}, options);
     }
     /// @overload
     auto printParagraph(
-        const text::U32StringView &paragraph,
-        const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept -> int {
-        return printParagraphImpl(BlockString{paragraph}, options);
+        const text::U32String &paragraph, const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept
+        -> int {
+        return printParagraphImpl(BlockStringEditor{paragraph}, options);
     }
 
 protected:
@@ -275,8 +275,7 @@ protected:
     /// @param paragraph The paragraph text to print.
     /// @param options The paragraph layout settings to apply.
     /// @return The number of rendered lines.
-    virtual auto printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept
-        -> int = 0;
+    virtual auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int = 0;
     /// Create a new temporary print context that only lives for the print method.
     virtual auto createPrintContext() noexcept -> BlockPrintContextPtr;
 };

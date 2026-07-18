@@ -19,7 +19,7 @@ Exception Model
 .. code-block:: text
 
     Exception // common base for all library exceptions
-    reason // human-readable error text stored as text::StringView
+    reason // human-readable error text stored as text::String
     cause // optional std::exception_ptr with extended diagnostic cause
     what() // std::exception compatible null-terminated reason text
     toString() // local plain text for one exception, without rendering causes
@@ -93,10 +93,10 @@ Exception and Domain Exception Patterns
     ❮Type❯Error(reason[, cause]) // Error with reason and cause
     ❮Type❯Error(context[, cause]) // Using a context to store more info than reason alone.
     o.what() -> mem::UnsafeConstCharPtr // std::exception reason text
-    o.reason() -> const text::StringView& // stored human-readable reason
+    o.reason() -> const text::String& // stored human-readable reason
     o.hasCause() -> bool // test if a chained diagnostic cause is available
     o.cause() -> std::exception_ptr // access the chained diagnostic cause
-    o.toString() -> text::StringView // local display text for one exception
+    o.toString() -> text::String // local display text for one exception
     o.diagnostic() -> DiagnosticConstPtr // abstract diagnostic for one exception
     o.toTextDocument([displayText]) -> TextDocument // render one diagnostic with optional display text
 

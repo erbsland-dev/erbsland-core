@@ -24,7 +24,7 @@ public:
 public:
     /// Access the logical source range.
     [[nodiscard]] auto range() const noexcept -> unit::ColumnRange { return _range; }
-    [[nodiscard]] auto toString() const -> StringView override;
+    [[nodiscard]] auto toString() const -> String override;
 
 private:
     unit::ColumnRange _range; ///< The logical source range.

@@ -7,7 +7,7 @@
 #include "../../system/PlatformErrorContext.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode.hpp"
 #include "../../text/TextNodeType.hpp"
@@ -19,29 +19,31 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
+using namespace text;
+
 PathErrorDiagnostic::PathErrorDiagnostic(PathErrorContext context) noexcept : _context{std::move(context)} {
 }
 
-auto PathErrorDiagnostic::sourcePath() const noexcept -> text::StringView {
+auto PathErrorDiagnostic::sourcePath() const noexcept -> String {
     return !_context.sourcePath().isEmpty() ? _context.sourcePath() : _context.targetPath();
 }
 
-auto PathErrorDiagnostic::toString() const noexcept -> text::StringView {
+auto PathErrorDiagnostic::toString() const noexcept -> String {
     return _context.title();
 }
 
-void PathErrorDiagnostic::appendPath(text::TextNode &content, const text::StringView path) {
-    auto segment = text::StringBuilder{};
+void PathErrorDiagnostic::appendPath(TextNode &content, const String &path) {
+    auto segment = StringEditor{};
     const auto flushSegment = [&content, &segment]() -> void {
         if (!segment.isEmpty()) {
-            content.addEscapedText(segment.toString(), text::EscapeFormat::Display);
+            content.addEscapedText(segment, EscapeFormat::Display);
             segment.clear();
         }
     };
     for (const auto character : path) {
         if (character == U'/' || character == U'\\') {
             flushSegment();
-            content.add(text::TextNodeType::Separator)->addText(text::String::fromCharacter(character));
+            content.add(TextNodeType::Separator)->addText(String::fromCharacter(character));
             continue;
         }
         segment.append(character);
@@ -49,7 +51,7 @@ void PathErrorDiagnostic::appendPath(text::TextNode &content, const text::String
     flushSegment();
 }
 
-auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> text::TextDocument {
+auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> TextDocument {
     const auto resolvedDisplayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
     auto builder = err::ErrorDocumentBuilder{_context.title(), _context.description(), resolvedDisplayText};
     const auto help = _context.help();
@@ -61,11 +63,11 @@ auto PathErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &dis
     const auto hasTarget = !_context.targetPath().isEmpty();
     if (hasSource || hasTarget) {
         builder.addSection(resolvedDisplayText->text("PathValuesHeading"_el));
-        auto list = builder.root()->add(text::TextNodeType::FieldList);
-        const auto addPath = [&list](const text::StringView label, const text::StringView path) -> void {
-            auto item = list->add(text::TextNodeType::FieldItem);
-            item->add(text::TextNodeType::FieldLabel)->addText(label);
-            auto content = item->add(text::TextNodeType::FieldContent);
+        auto list = builder.root()->add(TextNodeType::FieldList);
+        const auto addPath = [&list](const String &label, const String &path) -> void {
+            auto item = list->add(TextNodeType::FieldItem);
+            item->add(TextNodeType::FieldLabel)->addText(label);
+            auto content = item->add(TextNodeType::FieldContent);
             content->setStyle("path"_el);
             PathErrorDiagnostic::appendPath(*content, path);
         };

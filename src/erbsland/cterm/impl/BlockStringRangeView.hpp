@@ -17,7 +17,7 @@ namespace erbsland::cterm::impl {
 
 /// A non-owning read-only view over one range in `BlockStringData`.
 ///
-/// This type keeps shared range algorithms out of the public `BlockString` and `BlockStringView` API classes. All
+/// This type keeps shared range algorithms out of the public `BlockStringEditor` and `BlockString` API classes. All
 /// indexes used by public methods are local to the visible range; returned `BlockRange` values are absolute storage
 /// ranges.
 class BlockStringRangeView final {

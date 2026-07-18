@@ -25,12 +25,12 @@ namespace {
 
 class PrintStringType final {
 public:
-    [[nodiscard]] auto toString() const -> String { return String{std::string_view{"string"}}; }
+    [[nodiscard]] auto toString() const -> String { return String{"string"_el}; }
 };
 
-class PrintStringViewType final {
+class PrintReadOnlyStringType final {
 public:
-    [[nodiscard]] auto toString() const -> StringView {
+    [[nodiscard]] auto toString() const -> String {
         using namespace el::text::literals;
 
         return "view"_el;
@@ -44,7 +44,7 @@ public:
 
 class PrintBothType final {
 public:
-    [[nodiscard]] auto toString() const -> String { return String{std::string_view{"string-wins"}}; }
+    [[nodiscard]] auto toString() const -> String { return String{"string-wins"_el}; }
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 17U; }
 };
 
@@ -64,7 +64,7 @@ public:
 };
 
 static_assert(el::stream::impl::PrintObjectWithToString<PrintStringType>);
-static_assert(el::stream::impl::PrintObjectWithToString<PrintStringViewType>);
+static_assert(el::stream::impl::PrintObjectWithToString<PrintReadOnlyStringType>);
 static_assert(el::stream::impl::PrintObjectWithToString<PrintBothType>);
 static_assert(el::stream::impl::PrintObjectWithRawInteger<PrintRawValueType>);
 static_assert(!el::stream::impl::PrintObjectWithRawInteger<PrintBothType>);
@@ -154,7 +154,7 @@ public:
         stream.printLine(
             PrintStringType{},
             "|",
-            PrintStringViewType{},
+            PrintReadOnlyStringType{},
             "|",
             integerFormat,
             PrintRawValueType{},
@@ -257,7 +257,7 @@ public:
         auto stream = el::stream::impl::StandardTextOutputStream{fake};
         fake->failOnWrite = true;
 
-        stream.write(String{std::string_view{"test"}});
+        stream.write(StringEditor{std::string_view{"test"}});
         REQUIRE_THROWS_AS(StreamError, stream.flush());
 
         fake->failOnWrite = false;

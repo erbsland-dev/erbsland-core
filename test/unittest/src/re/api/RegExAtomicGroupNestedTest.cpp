@@ -19,7 +19,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "abc"_el, // critical case.
                 "xyz"_el,
@@ -47,7 +47,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "abcd"_el, // critical case.
             "xyz"_el,
@@ -65,7 +65,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             "ac"_el,
             "abb"_el,
         };

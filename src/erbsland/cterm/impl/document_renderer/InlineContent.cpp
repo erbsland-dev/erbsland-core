@@ -4,7 +4,7 @@
 
 namespace erbsland::cterm::impl::document_renderer {
 
-void InlineContent::append(const BlockStringView text) {
+void InlineContent::append(const BlockString text) {
     _text += text;
 }
 

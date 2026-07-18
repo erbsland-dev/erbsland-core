@@ -351,7 +351,7 @@ all producers or consumers have finished.
     /// Library-created streams use shared ownership so decorators and coroutine operations can safely keep their backing
     /// stream alive. The caller that owns the complete operation remains responsible for flushing or closing the stream.
     void shareStreamWithWriter() {
-        const auto output = el::StringBuilderStream::create();
+        const auto output = el::AnyStringBuilderStream::create();
 
         // The helper depends only on text output, not on a particular destination.
         writeStudyLabel(output, "Birken im Morgennebel"_el);

@@ -4,9 +4,9 @@
 #include <erbsland/debug/StringDebug.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -14,11 +14,11 @@
 
 using el::debug::DebugViewDetail;
 using el::debug::toDebugString;
+using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
-using el::text::U16String;
-using el::text::U32String;
-using el::text::U8String;
+using el::text::U16StringEditor;
+using el::text::U32StringEditor;
+using el::text::U8StringEditor;
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
@@ -27,11 +27,11 @@ TESTED_TARGETS(DebugViewDetail DebugViewDetails StringDebug)
 class StringDebugTest final : public el::UnitTest {
 public:
     void testContentsPreview() {
-        const auto text = U8String{std::u8string_view{u8"A\né"}};
+        const auto text = U8StringEditor{std::u8string_view{u8"A\né"}};
         const auto details = DebugViewDetail::ContentInTitle | DebugViewDetail::CoreDetails;
         const auto output = StringConverter{toDebugString(text, details)}.toStdString();
 
-        REQUIRE(containsText(output, "U8String(\"A\\né\")"));
+        REQUIRE(containsText(output, "U8StringEditor(\"A\\né\")"));
         REQUIRE(containsText(output, "isEmpty: false"));
         REQUIRE(containsText(output, "isEncodingValid: true"));
         REQUIRE_FALSE(containsText(output, "backingStorageId"));
@@ -40,7 +40,7 @@ public:
     void testMemoryDetailsForLiteralViewAndSlice() {
         using namespace el::text::literals;
 
-        const auto text = StringView{"abcdef"_el};
+        const auto text = String{"abcdef"_el};
         const auto slice = text.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
         const auto details = DebugViewDetail::BackingStore | DebugViewDetail::CoreDetails | DebugViewDetail::StorageId;
         const auto textOutput = StringConverter{toDebugString(text, details)}.toStdString();
@@ -54,15 +54,15 @@ public:
     }
 
     void testUtf16AndUtf32Contents() {
-        const auto u16Text = U16String{std::u16string_view{u"β\n"}};
-        const auto u32Text = U32String{std::u32string_view{U"中"}};
+        const auto u16Text = U16StringEditor{std::u16string_view{u"β\n"}};
+        const auto u32Text = U32StringEditor{std::u32string_view{U"中"}};
 
         REQUIRE(
             StringConverter{toDebugString(u16Text, DebugViewDetail::ContentInTitle)}.toStdString().find(
-                "U16String(\"β\\n\")") != std::string::npos);
+                "U16StringEditor(\"β\\n\")") != std::string::npos);
         REQUIRE(
             StringConverter{toDebugString(u32Text, DebugViewDetail::ContentInTitle)}.toStdString().find(
-                "U32String(中)") != std::string::npos);
+                "U32StringEditor(中)") != std::string::npos);
     }
 
 private:

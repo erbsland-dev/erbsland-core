@@ -28,7 +28,7 @@ public:
     void testDrawTextAtPositionUsesTheExistingBufferColorAsBaseColor() {
         auto buffer = Buffer{bgeo::BlockSize{4, 2}};
         buffer.fill(Block{U' ', fg::White, bg::Blue});
-        auto text = BlockString{"A\nB"_el};
+        auto text = BlockStringEditor{"A\nB"_el};
 
         buffer.drawBlockText(bgeo::BlockPosition{1, 0}, text);
 
@@ -83,17 +83,17 @@ public:
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.drawBuffer(buffer, bgeo::BlockPosition{1, 0}));
     }
 
-    void testDrawTextStringViewReplacesInvalidUtf8() {
+    void testDrawTextStringReplacesInvalidUtf8() {
         auto buffer = Buffer{bgeo::BlockSize{3, 1}};
         const auto text = bytes({0x41, 0xC3, 0x42});
 
-        buffer.drawBlockText(erbsland::text::String{std::string_view{text}}, bgeo::BlockRectangle{0, 0, 3, 1});
+        buffer.drawBlockText(erbsland::text::StringEditor{std::string_view{text}}, bgeo::BlockRectangle{0, 0, 3, 1});
 
         requireRowsEqual(buffer, {"A�B"});
     }
 
     void testDrawTextConvenienceOverloadUsesTheSameColorResolutionAsTextOptions() {
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text.append(Block{U'A', fg::Red, bg::Inherited});
         text.append(Block{U'B', fg::Inherited, bg::Blue});
         auto buffer = Buffer{bgeo::BlockSize{2, 1}};
@@ -120,7 +120,8 @@ public:
         options.setMargins(bgeo::BlockMargins{0, 0, 1, 0});
 
         REQUIRE_EQUAL(
-            WritableBuffer::blockTextHeightForWidth(BlockString{"alpha beta gamma"_el}, blockCoordinate(10), options),
+            WritableBuffer::blockTextHeightForWidth(
+                BlockStringEditor{"alpha beta gamma"_el}, blockCoordinate(10), options),
             3);
     }
 };

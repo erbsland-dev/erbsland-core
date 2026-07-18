@@ -4,7 +4,7 @@
 
 #include "WritableBuffer.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <vector>
 
@@ -76,7 +76,7 @@ public: // builders
     /// This function splits the given string into lines and creates a buffer with a matching size.
     /// @param text The string to split into lines and create a buffer from. Must not be empty.
     /// @return A buffer containing the lines from the input string.
-    [[nodiscard]] static auto fromLinesInString(const BlockStringView &text) -> Buffer;
+    [[nodiscard]] static auto fromLinesInString(const BlockString &text) -> Buffer;
 
     /// Creates a buffer from the lines in a string.
     /// @param lines The lines to create the buffer from. Must not be empty.
@@ -92,7 +92,7 @@ public: // compatibility
     /// @param animationCycle Animation cycle for animated text.
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
     void drawBlockText(
-        const text::StringView &text,
+        const text::String &text,
         bgeo::Alignment alignment,
         bgeo::BlockRectangle rect,
         Color color = {},

@@ -16,11 +16,11 @@ public:
     void testGroupCountAndHasGroupIndex() {
         constexpr auto text = "abc123xyz"_el;
         CaptureGroupList groups;
-        groups.emplace_back(0, CaptureRange{0, 6}, StringView{});
+        groups.emplace_back(0, CaptureRange{0, 6}, String{});
         groups.emplace_back(1, CaptureRange{0, 3}, "letters"_el);
         groups.emplace_back(2, CaptureRange{3, 6}, "digits"_el);
         groups.emplace_back(3, CaptureRange{6, 6}, "empty"_el);
-        const auto match = std::make_shared<MockStringMatch>(ConstRegExPtr{}, std::move(groups), text);
+        const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
         REQUIRE_EQUAL(match->groupCount(), 4U);
 
@@ -35,11 +35,11 @@ public:
     void testHasGroupNameIsCaseInsensitiveAndIgnoresEmptyNames() {
         constexpr auto text = "abc123xyz"_el;
         CaptureGroupList groups;
-        groups.emplace_back(0, CaptureRange{0, 6}, StringView{});
+        groups.emplace_back(0, CaptureRange{0, 6}, String{});
         groups.emplace_back(1, CaptureRange{0, 3}, "Letters"_el);
         groups.emplace_back(2, CaptureRange{3, 6}, "digits"_el);
-        groups.emplace_back(3, CaptureRange{6, 6}, StringView{});
-        const auto match = std::make_shared<MockStringMatch>(ConstRegExPtr{}, std::move(groups), text);
+        groups.emplace_back(3, CaptureRange{6, 6}, String{});
+        const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
         REQUIRE(match->hasGroupName("letters"_el));
         REQUIRE(match->hasGroupName("LETTERS"_el));
@@ -47,17 +47,17 @@ public:
         REQUIRE_EQUAL(match->content("LETTERS"_el), "abc"_el);
         REQUIRE_EQUAL(match->group("DIGITS"_el).index(), 2U);
         REQUIRE_FALSE(match->hasGroupName("missing"_el));
-        REQUIRE_FALSE(match->hasGroupName(StringView{}));
+        REQUIRE_FALSE(match->hasGroupName(String{}));
     }
 
     void testContentBeginEndRangeAndGroupAccessByIndexAndName() {
         constexpr auto text = "abc123xyz"_el;
         CaptureGroupList groups;
-        groups.emplace_back(0, CaptureRange{0, 6}, StringView{});
+        groups.emplace_back(0, CaptureRange{0, 6}, String{});
         groups.emplace_back(1, CaptureRange{0, 3}, "letters"_el);
         groups.emplace_back(2, CaptureRange{3, 6}, "digits"_el);
         groups.emplace_back(3, CaptureRange{6, 6}, "empty"_el);
-        const auto match = std::make_shared<MockStringMatch>(ConstRegExPtr{}, std::move(groups), text);
+        const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
         // content()
         REQUIRE_EQUAL(match->content(), "abc123"_el);
@@ -104,9 +104,9 @@ public:
     void testRangeAndGroupAccessByIndexAndName() {
         constexpr auto text = "abc123xyz"_el;
         CaptureGroupList groups;
-        groups.emplace_back(0, CaptureRange{0, 6}, StringView{});
+        groups.emplace_back(0, CaptureRange{0, 6}, String{});
         groups.emplace_back(1, CaptureRange{3, 6}, "digits"_el);
-        const auto match = std::make_shared<MockStringMatch>(ConstRegExPtr{}, std::move(groups), text);
+        const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
         REQUIRE_EQUAL(match->range().begin(), 0U);
         REQUIRE_EQUAL(match->range().end(), 6U);
@@ -129,8 +129,8 @@ public:
     void testRangeAndGroupThrowOnInvalidIndexOrName() {
         constexpr auto text = "abc"_el;
         CaptureGroupList groups;
-        groups.emplace_back(0, CaptureRange{0, 3}, StringView{});
-        const auto match = std::make_shared<MockStringMatch>(ConstRegExPtr{}, std::move(groups), text);
+        groups.emplace_back(0, CaptureRange{0, 3}, String{});
+        const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
 
         REQUIRE_THROWS_AS(el::err::ParameterError, match->content(1));
         REQUIRE_THROWS_AS(el::err::ParameterError, match->content("missing"_el));

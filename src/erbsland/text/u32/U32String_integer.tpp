@@ -16,9 +16,10 @@ auto U32String::toIntegerOrThrow(IntegerParseOptions options) const -> T {
 
 template <math::AnyIntegerType T>
 auto U32String::fromInteger(T value, IntegerFormat format) -> U32String {
-    auto builder = StringBuilder{StringKind::U32};
-    builder.appendInteger(value, format);
-    return builder.takeU32String();
+    auto storage = impl::U32StringSharedStorage{};
+    auto appendTools = impl::U32StringAppendTools{storage};
+    impl::appendInteger(appendTools, value, format);
+    return U32String{impl::U32StringStorage{std::move(storage)}};
 }
 
 }

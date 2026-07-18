@@ -16,7 +16,7 @@ auto RegExEscapeFormatter::needsEscape(const Char character, const EscapeAmount 
     return needsEscapeByAmount(character, amount, character.isSpecialRegexCharacter(), false);
 }
 
-void RegExEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void RegExEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     if (character.isSpecialRegexCharacter()) {
         builder.append(U'\\');
         builder.append(character);

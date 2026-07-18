@@ -12,9 +12,9 @@ namespace erbsland::text {
 auto toString(StringKind kind) -> String {
     using namespace literals;
     static auto const names = std::array<String, 3>{
-        String{"U8"_el},
-        String{"U16"_el},
-        String{"U32"_el},
+        "U8"_el,
+        "U16"_el,
+        "U32"_el,
     };
     return names[std::min(static_cast<std::size_t>(kind), names.size() - 1U)];
 }

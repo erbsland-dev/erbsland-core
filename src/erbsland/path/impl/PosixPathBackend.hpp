@@ -8,8 +8,8 @@
 #include "../PathAccessProfile.hpp"
 #include "../PathType.hpp"
 
-#include "../../text/String.hpp"
-#include "../../text/StringViewList.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/StringList.hpp"
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -40,7 +40,7 @@ public: // implement PathBackend
     void clearAttributesOrThrow(const Path &path, PathAttributes attributes, PathChangeOptions options) const override;
 
 private:
-    [[nodiscard]] static auto pathTextOrThrow(const Path &path) -> text::StringView;
+    [[nodiscard]] static auto pathTextOrThrow(const Path &path) -> text::String;
     static void createParentDirectoriesOrThrow(const Path &path);
     [[nodiscard]] static auto fileDescriptorHasContentOrThrow(int fileDescriptor, const Path &path) -> bool;
     [[nodiscard]] static auto typeFromMode(mode_t mode) noexcept -> PathType;
@@ -55,10 +55,10 @@ private:
     [[nodiscard]] static auto weakPathOrThrow(const Path &path) -> Path;
     [[nodiscard]] static auto physicalNoFinalSymlinkPathOrThrow(const Path &path) -> Path;
     [[noreturn]] static void throwSystemError(
-        const text::StringView &title, const text::StringView &description, const Path &path, int errorCode);
+        const text::String &title, const text::String &description, const Path &path, int errorCode);
     [[noreturn]] static void throwSystemError(
-        const text::StringView &title,
-        const text::StringView &description,
+        const text::String &title,
+        const text::String &description,
         const Path &source,
         const Path &destination,
         int errorCode);

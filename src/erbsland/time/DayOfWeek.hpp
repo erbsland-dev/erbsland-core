@@ -7,7 +7,7 @@
 
 #include "impl/TimePartBases.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 namespace erbsland::time {
 
@@ -30,8 +30,8 @@ public:
     [[nodiscard]] auto daysToPrevious(DayOfWeek dayOfWeek) const noexcept -> Days;
     /// Convert this day to a display string.
     /// @param format The formatting style (short or long name).
-    /// @return A string view of the day name.
-    [[nodiscard]] auto toString(DayOfWeekFormat format = DayOfWeekFormat::Long) const -> text::StringView;
+    /// @return A read-only string of the day name.
+    [[nodiscard]] auto toString(DayOfWeekFormat format = DayOfWeekFormat::Long) const -> text::String;
 
 public: // factory methods
     /// Monday

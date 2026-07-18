@@ -16,7 +16,7 @@
 
 namespace erbsland::text::impl {
 
-/// Append algorithms for `U8String`.
+/// Append algorithms for `U8StringEditor`.
 /// @tested{U8StringModifierTest}
 class U8StringAppendTools final {
 public:

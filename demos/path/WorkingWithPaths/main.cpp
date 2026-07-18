@@ -5,7 +5,7 @@
 
 #include <DemoCommon.hpp>
 
-namespace demo {
+using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
@@ -15,10 +15,4 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("JoiningAndSlicing"_el, joiningAndSlicing);
     app.registerDemo("ConvertingPaths"_el, convertingPaths);
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

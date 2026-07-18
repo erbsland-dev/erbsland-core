@@ -151,7 +151,7 @@ Date Patterns
     o.next/previous([dayOfWeek]) -> Date // adjacent date or adjacent weekday
     o.toDaysSinceEpoch() -> Days // internal epoch day offset, -1 for invalid
     o.daysTo(date) -> Days // signed day distance
-    o.toIsoString(flags, precision) -> text::String // ISO date text or empty for invalid
+    o.toIsoString(flags, precision) -> text::StringEditor // ISO date text or empty for invalid
     T::fromYearMonthDay(...) -> Date // create from raw parts or invalid state
     T::fromYearMonthDayOrThrow(...) -> Date // create from raw parts or throw err::OutOfRangeError
     T::fromParts(...) -> Date // create from typed parts or invalid state
@@ -175,7 +175,7 @@ Time Patterns
     o.timeDeltaSinceMidnight() -> TimeDelta // nanoseconds since midnight
     o.toSecondsSinceMidnight() -> Seconds // total seconds since midnight
     o.toNanosecondsSinceMidnight() -> Nanoseconds // total nanoseconds since midnight
-    o.toIsoString(flags, precision) -> text::String // ISO time text
+    o.toIsoString(flags, precision) -> text::StringEditor // ISO time text
     o.addWithWrap(delta-or-duration) -> Days // add in-place and return day crossings
     o.addedWithWrap(delta-or-duration) -> TimeWrapResult // wrapped copy and day crossings
     T::fromDurationSinceMidnight(delta-or-duration) -> Time // wrap duration into one day
@@ -214,7 +214,7 @@ DateTime Patterns
     o.date()/time() -> Date/Time // local display values
     o.timeOffset() -> Duration // display UTC offset
     o.timeZone() -> TimeZone // display time zone or UTC
-    o.timeZoneAbbreviation() -> text::String // zone abbreviation or empty string
+    o.timeZoneAbbreviation() -> text::StringEditor // zone abbreviation or empty string
     o.wouldAddSaturate/wouldSubtractSaturate(duration) -> bool // arithmetic saturation tests
     o.added/subtracted(duration) -> DateTime // saturated instant arithmetic
     o.addedOrThrow/subtractedOrThrow(duration) -> DateTime // instant arithmetic or throw err::OverflowError
@@ -226,7 +226,7 @@ DateTime Patterns
     o.toTimeZone(zone) -> DateTime // convert display zone
     o.toSecondsSinceEpoch() -> Seconds // internal epoch second offset, -1 for invalid
     o.toTimeT() -> std::time_t // convert using POSIX epoch
-    o.toIsoString(flags, precision) -> text::String // ISO date/time text or empty for invalid
+    o.toIsoString(flags, precision) -> text::StringEditor // ISO date/time text or empty for invalid
     T::now() -> DateTime // current UTC date/time
     T::fromSecondsSinceEpoch(seconds[, fractions]) -> DateTime // create from internal epoch
     T::fromDurationSinceEpoch(duration) -> DateTime // create from internal epoch duration
@@ -245,12 +245,12 @@ Time Zone Patterns
     TimeZone(hours[, minutes[, seconds]]) // create normalized fixed offset
     o.isUtc()/isStaticOffset()/isNamed() -> bool // time-zone storage state tests
     o.staticOffset() -> Duration // fixed offset or zero
-    o.name() -> text::String // primary zone name or empty string
+    o.name() -> text::StringEditor // primary zone name or empty string
     o.id() -> TimeZoneId // transient zone identifier
     T::isValidName(name) -> bool // test supported zone or special UTC/fixed-offset text
     T::fromName(name) -> optional<TimeZone> // create named zone or empty optional
     T::fromNameOrThrow(name) -> TimeZone // create named zone or throw err::ParseError
-    T::names() -> text::StringList // all supported IANA zone names
+    T::names() -> text::StringEditorList // all supported IANA zone names
     T::databaseVersion() -> unit::Version // bundled IANA database version
     T::utc() -> TimeZone // UTC zone
     o.isDst() -> bool // test daylight-saving state on tz::TimeOffset

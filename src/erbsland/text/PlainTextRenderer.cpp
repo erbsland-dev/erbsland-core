@@ -18,7 +18,7 @@ auto PlainTextRenderer::build() -> String {
     return _impl->build();
 }
 
-auto PlainTextRenderer::appendTo(StringBuilder &builder) -> StringBuilder & {
+auto PlainTextRenderer::appendTo(AnyStringBuilder &builder) -> AnyStringBuilder & {
     return _impl->appendTo(builder);
 }
 

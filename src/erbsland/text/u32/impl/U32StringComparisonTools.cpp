@@ -7,6 +7,9 @@
 
 namespace erbsland::text::impl {
 
+using unit::CpIndex;
+using unit::ElementCount;
+
 auto U32StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char32_t> data, const CharacterSet &characters) -> bool {
     if (characters.isEmpty()) {
@@ -27,20 +30,19 @@ auto U32StringComparisonTools::compare(const U32StringDataView &other, const Cha
 }
 
 auto U32StringComparisonTools::find(const U32StringDataView &text, const CharCompareFn compareFn) const noexcept
-    -> unit::CpIndex {
-    return find(text, unit::CpIndex::zero(), compareFn);
+    -> CpIndex {
+    return find(text, CpIndex::zero(), compareFn);
 }
 
 auto U32StringComparisonTools::find(
-    const U32StringDataView &text, const unit::CpIndex start, const CharCompareFn compareFn) const noexcept
-    -> unit::CpIndex {
+    const U32StringDataView &text, const CpIndex start, const CharCompareFn compareFn) const noexcept -> CpIndex {
     if (start.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() > data.size()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     const auto needle = text.dataSpan();
@@ -55,7 +57,7 @@ auto U32StringComparisonTools::find(
         }
         utf32::fastAdvanceChar(data, position);
     }
-    return unit::CpIndex::noIndex();
+    return CpIndex::noIndex();
 }
 
 auto U32StringComparisonTools::startsWith(const U32StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -64,7 +66,7 @@ auto U32StringComparisonTools::startsWith(const U32StringDataView &other, const 
 }
 
 auto U32StringComparisonTools::startsWith(const Char character) const noexcept -> bool {
-    return U32StringReadTools{_data}.charAt(unit::CpIndex::zero()) == character;
+    return U32StringReadTools{_data}.charAt(CpIndex::zero()) == character;
 }
 
 auto U32StringComparisonTools::endsWith(const U32StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -73,7 +75,7 @@ auto U32StringComparisonTools::endsWith(const U32StringDataView &other, const Ch
 }
 
 auto U32StringComparisonTools::endsWith(const Char character) const noexcept -> bool {
-    auto index = unit::CpIndex::end(U32StringReadTools{_data}.length());
+    auto index = CpIndex::end(U32StringReadTools{_data}.length());
     return U32StringReadTools{_data}.retreat(index) && U32StringReadTools{_data}.charAt(index) == character;
 }
 
@@ -93,15 +95,15 @@ auto U32StringComparisonTools::contains(const Char character) const noexcept -> 
 }
 
 auto U32StringComparisonTools::count(const U32StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> unit::ElementCount {
+    -> ElementCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
     }
 
     const auto data = _data.dataSpan();
-    auto result = unit::ElementCount{};
-    auto position = unit::CpIndex::zero();
+    auto result = ElementCount{};
+    auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
             ++result;
@@ -113,8 +115,8 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
     return result;
 }
 
-auto U32StringComparisonTools::count(const Char character) const noexcept -> unit::ElementCount {
-    auto result = unit::ElementCount{};
+auto U32StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
+    auto result = ElementCount{};
     utf32::forEachDecodedCharacter(
         _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
             if (currentCharacter == character) {
@@ -142,8 +144,8 @@ auto U32StringComparisonTools::containsOnly(const CharSet &characters) const noe
 auto U32StringComparisonTools::compareDecodedSpans(
     const std::span<const char32_t> left, const std::span<const char32_t> right, const CharCompareFn compareFn) noexcept
     -> std::strong_ordering {
-    auto leftPosition = unit::CpIndex::zero();
-    auto rightPosition = unit::CpIndex::zero();
+    auto leftPosition = CpIndex::zero();
+    auto rightPosition = CpIndex::zero();
 
     while (leftPosition.toSizeT() < left.size() && rightPosition.toSizeT() < right.size()) {
         const auto leftCharacter = utf32::decodeCharOrReplace(left, leftPosition);
@@ -165,11 +167,11 @@ auto U32StringComparisonTools::compareDecodedSpans(
 
 auto U32StringComparisonTools::matchesDecodedSpan(
     const std::span<const char32_t> haystack,
-    const unit::CpIndex candidateStart,
+    const CpIndex candidateStart,
     const std::span<const char32_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
     auto haystackPosition = candidateStart;
-    auto needlePosition = unit::CpIndex::zero();
+    auto needlePosition = CpIndex::zero();
     while (needlePosition.toSizeT() < needle.size()) {
         if (haystackPosition.toSizeT() >= haystack.size()) {
             return false;
@@ -187,7 +189,7 @@ auto U32StringComparisonTools::startsWithDecodedSpan(
     const std::span<const char32_t> haystack,
     const std::span<const char32_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
-    return needle.empty() || matchesDecodedSpan(haystack, unit::CpIndex::zero(), needle, compareFn);
+    return needle.empty() || matchesDecodedSpan(haystack, CpIndex::zero(), needle, compareFn);
 }
 
 auto U32StringComparisonTools::endsWithDecodedSpan(
@@ -198,8 +200,8 @@ auto U32StringComparisonTools::endsWithDecodedSpan(
         return true;
     }
 
-    auto haystackPosition = unit::CpIndex::fromSizeT(haystack.size());
-    auto needlePosition = unit::CpIndex::fromSizeT(needle.size());
+    auto haystackPosition = CpIndex::fromSizeT(haystack.size());
+    auto needlePosition = CpIndex::fromSizeT(needle.size());
     while (!needlePosition.isZero()) {
         if (haystackPosition.isZero()) {
             return false;
@@ -219,9 +221,9 @@ auto U32StringComparisonTools::endsWithDecodedSpan(
 }
 
 auto U32StringComparisonTools::endOfMatch(
-    const std::span<const char32_t> haystack, unit::CpIndex start, const std::span<const char32_t> needle) noexcept
-    -> unit::CpIndex {
-    auto needlePosition = unit::CpIndex::zero();
+    const std::span<const char32_t> haystack, CpIndex start, const std::span<const char32_t> needle) noexcept
+    -> CpIndex {
+    auto needlePosition = CpIndex::zero();
     while (needlePosition.toSizeT() < needle.size() && start.toSizeT() < haystack.size()) {
         utf32::fastAdvanceChar(haystack, start);
         utf32::fastAdvanceChar(needle, needlePosition);

@@ -10,10 +10,13 @@
 
 namespace erbsland::options {
 
+using unit::ArgumentCount;
+using unit::ArgumentIndex;
+
 OptionValue::OptionValue(OptionValueStorage storage) : _storage{std::move(storage)} {
 }
 
-OptionValue::OptionValue(OptionValueStorage storage, std::vector<unit::ArgumentIndex> argumentIndexes) :
+OptionValue::OptionValue(OptionValueStorage storage, std::vector<ArgumentIndex> argumentIndexes) :
     _storage{std::move(storage)}, _argumentIndexes{std::move(argumentIndexes)} {
 }
 
@@ -21,8 +24,7 @@ OptionValue::OptionValue(OptionWeakPtr option, OptionValueStorage storage) :
     _option{std::move(option)}, _storage{std::move(storage)} {
 }
 
-OptionValue::OptionValue(
-    OptionWeakPtr option, OptionValueStorage storage, std::vector<unit::ArgumentIndex> argumentIndexes) :
+OptionValue::OptionValue(OptionWeakPtr option, OptionValueStorage storage, std::vector<ArgumentIndex> argumentIndexes) :
     _option{std::move(option)}, _storage{std::move(storage)}, _argumentIndexes{std::move(argumentIndexes)} {
 }
 
@@ -30,8 +32,7 @@ auto OptionValue::create(OptionValueStorage storage) -> OptionValuePtr {
     return std::make_shared<OptionValue>(std::move(storage));
 }
 
-auto OptionValue::create(OptionValueStorage storage, std::vector<unit::ArgumentIndex> argumentIndexes)
-    -> OptionValuePtr {
+auto OptionValue::create(OptionValueStorage storage, std::vector<ArgumentIndex> argumentIndexes) -> OptionValuePtr {
     return std::make_shared<OptionValue>(std::move(storage), std::move(argumentIndexes));
 }
 
@@ -39,35 +40,34 @@ auto OptionValue::create(OptionWeakPtr option, OptionValueStorage storage) -> Op
     return std::make_shared<OptionValue>(std::move(option), std::move(storage));
 }
 
-auto OptionValue::create(
-    OptionWeakPtr option, OptionValueStorage storage, std::vector<unit::ArgumentIndex> argumentIndexes)
+auto OptionValue::create(OptionWeakPtr option, OptionValueStorage storage, std::vector<ArgumentIndex> argumentIndexes)
     -> OptionValuePtr {
     return std::make_shared<OptionValue>(std::move(option), std::move(storage), std::move(argumentIndexes));
 }
 
-auto OptionValue::argumentIndex() const noexcept -> unit::ArgumentIndex {
+auto OptionValue::argumentIndex() const noexcept -> ArgumentIndex {
     if (_argumentIndexes.empty()) {
-        return unit::ArgumentIndex::noIndex();
+        return ArgumentIndex::noIndex();
     }
     return _argumentIndexes.front();
 }
 
-auto OptionValue::flagCount() const noexcept -> unit::ArgumentCount {
+auto OptionValue::flagCount() const noexcept -> ArgumentCount {
     if (std::holds_alternative<bool>(_storage)) {
-        return unit::ArgumentCount::fromSizeT(_argumentIndexes.size());
+        return ArgumentCount::fromSizeT(_argumentIndexes.size());
     }
-    return unit::ArgumentCount::zero();
+    return ArgumentCount::zero();
 }
 
-auto OptionValue::valueCount() const noexcept -> unit::ArgumentCount {
+auto OptionValue::valueCount() const noexcept -> ArgumentCount {
     return std::visit(
-        [](const auto &value) -> unit::ArgumentCount {
+        [](const auto &value) -> ArgumentCount {
             using Value = std::decay_t<decltype(value)>;
             if constexpr (
                 std::is_same_v<Value, std::vector<OptionInteger>> || std::is_same_v<Value, std::vector<text::String>>) {
-                return unit::ArgumentCount::fromSizeT(value.size());
+                return ArgumentCount::fromSizeT(value.size());
             } else {
-                return unit::ArgumentCount::one();
+                return ArgumentCount::one();
             }
         },
         _storage);
@@ -106,16 +106,16 @@ auto OptionValue::getInteger(const OptionInteger defaultInteger) const -> Option
     return defaultInteger;
 }
 
-auto OptionValue::getText(const text::StringView &defaultText) const -> text::StringView {
+auto OptionValue::getText(const text::String &defaultText) const -> text::String {
     if (const auto text = std::get_if<text::String>(&_storage)) {
         return *text;
     }
     return defaultText;
 }
 
-auto OptionValue::getTextList(std::vector<text::StringView> defaultTextList) const -> std::vector<text::StringView> {
+auto OptionValue::getTextList(std::vector<text::String> defaultTextList) const -> std::vector<text::String> {
     if (const auto textList = std::get_if<std::vector<text::String>>(&_storage)) {
-        auto result = std::vector<text::StringView>{};
+        auto result = std::vector<text::String>{};
         result.reserve(textList->size());
         for (const auto &text : *textList) {
             result.emplace_back(text);

@@ -85,10 +85,10 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
     This is not a thesaurus, index, or encyclopedia. Well-known and unambiguous terms do not belong in such a list.
 
   - **Special Naming Rules:** Short prose or illustrative text blocks.
-    A good example from the text domain is explaining the relationship between ``String``, ``U(8/16/32)String``,
-    ``StringView``, ``U(8/16/32)StringView``, and ``U(8/16)StringCharView``.
+    A good example from the text domain is explaining the relationship between ``StringEditor``, ``U(8/16/32)StringEditor``,
+    ``String``, ``StringEditor``, and their ``U(8/16/32)`` width-specific forms.
     A simple type list would not adequately explain the API surface and could lead to confusion.
-    By explaining how these names relate, the pattern sections can focus on ``String`` and ``StringView``.
+    By explaining how these names relate, the pattern sections can focus on ``StringEditor`` and ``String``.
 
   - **Special Placeholders:** Used when the placeholders defined in :doc:`api/common` are not sufficient and introducing additional placeholders improves the readability of the following patterns.
 

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../unit/Version.hpp"
 
 #include <utility>
@@ -22,32 +22,32 @@ public:
 
 public: // accessors
     /// Get the application name.
-    [[nodiscard]] auto applicationName() const noexcept -> const text::StringView & { return _applicationName; }
+    [[nodiscard]] auto applicationName() const noexcept -> const text::String & { return _applicationName; }
     /// Set the application name.
-    void setApplicationName(text::StringView applicationName) { _applicationName = std::move(applicationName); }
+    void setApplicationName(text::String applicationName) { _applicationName = std::move(applicationName); }
     /// Get the application version.
     [[nodiscard]] auto applicationVersion() const noexcept -> const unit::Version & { return _applicationVersion; }
     /// Set the application version.
     void setApplicationVersion(unit::Version applicationVersion) noexcept { _applicationVersion = applicationVersion; }
     /// Get the author or organization name.
-    [[nodiscard]] auto authorName() const noexcept -> const text::StringView & { return _authorName; }
+    [[nodiscard]] auto authorName() const noexcept -> const text::String & { return _authorName; }
     /// Set the author or organization name.
-    void setAuthorName(text::StringView authorName) { _authorName = std::move(authorName); }
+    void setAuthorName(text::String authorName) { _authorName = std::move(authorName); }
     /// Get the copyright line.
-    [[nodiscard]] auto copyrightLine() const noexcept -> const text::StringView & { return _copyrightLine; }
+    [[nodiscard]] auto copyrightLine() const noexcept -> const text::String & { return _copyrightLine; }
     /// Set the copyright line.
-    void setCopyrightLine(text::StringView copyrightLine) { _copyrightLine = std::move(copyrightLine); }
+    void setCopyrightLine(text::String copyrightLine) { _copyrightLine = std::move(copyrightLine); }
     /// Get the license text.
-    [[nodiscard]] auto licenseText() const noexcept -> const text::StringView & { return _licenseText; }
+    [[nodiscard]] auto licenseText() const noexcept -> const text::String & { return _licenseText; }
     /// Set the license text.
-    void setLicenseText(text::StringView licenseText) { _licenseText = std::move(licenseText); }
+    void setLicenseText(text::String licenseText) { _licenseText = std::move(licenseText); }
 
 private:
-    text::StringView _applicationName; ///< The name of the application.
+    text::String _applicationName;     ///< The name of the application.
     unit::Version _applicationVersion; ///< The application version.
-    text::StringView _authorName;      ///< The author or organization name.
-    text::StringView _copyrightLine;   ///< A copyright line.
-    text::StringView _licenseText;     ///< A license text.
+    text::String _authorName;          ///< The author or organization name.
+    text::String _copyrightLine;       ///< A copyright line.
+    text::String _licenseText;         ///< A license text.
 };
 
 }

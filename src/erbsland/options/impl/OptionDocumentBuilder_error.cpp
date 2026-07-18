@@ -14,8 +14,8 @@
 #include "../../text/CodeSnippetMarker.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
-#include "../../text/StringViewList.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/StringList.hpp"
 #include "../../text/TextNode.hpp"
 #include "../../unit/ColumnIndex.hpp"
 #include "../../unit/LineCount.hpp"
@@ -30,19 +30,21 @@ using namespace text;
 using namespace literals;
 using NodeType = TextNodeType;
 
-auto OptionDocumentBuilder::lineIndexFromArgumentIndex(const unit::ArgumentIndex index) noexcept -> unit::LineIndex {
-    return unit::LineIndex::fromSizeT(index.toSizeT());
+using namespace unit;
+
+auto OptionDocumentBuilder::lineIndexFromArgumentIndex(const ArgumentIndex index) noexcept -> LineIndex {
+    return LineIndex::fromSizeT(index.toSizeT());
 }
 
-auto OptionDocumentBuilder::elementIndexFromLineIndex(const unit::LineIndex index) noexcept -> unit::ElementIndex {
-    return unit::ElementIndex::fromSizeT(index.toSizeT());
+auto OptionDocumentBuilder::elementIndexFromLineIndex(const LineIndex index) noexcept -> ElementIndex {
+    return ElementIndex::fromSizeT(index.toSizeT());
 }
 
-auto OptionDocumentBuilder::markerLength(const StringView text) noexcept -> unit::ColumnCount {
-    return unit::ColumnCount::fromSizeT(std::max(text.length().toSizeT(), std::size_t{1U}));
+auto OptionDocumentBuilder::markerLength(const String &text) noexcept -> ColumnCount {
+    return ColumnCount::fromSizeT(std::max(text.length().toSizeT(), std::size_t{1U}));
 }
 
-auto OptionDocumentBuilder::defaultErrorTitle(const OptionErrorReason reason) const -> StringView {
+auto OptionDocumentBuilder::defaultErrorTitle(const OptionErrorReason reason) const -> String {
     switch (reason) {
     case OptionErrorReason::SyntaxError:
         return _displayText->text("options.SyntaxErrorTitle"_el);
@@ -88,23 +90,21 @@ void OptionDocumentBuilder::appendCommandLineSnippet(TextDocument &document, con
     }
 
     const auto argumentCount = arguments.count();
-    const auto argumentLineCount = unit::LineCount::fromSizeT(argumentCount.toSizeT());
-    const auto errorLine = context.argumentIndex().isNoIndex() ? unit::LineIndex::zero()
-                                                               : lineIndexFromArgumentIndex(context.argumentIndex());
-    const auto hasErrorIndex =
-        !context.argumentIndex().isNoIndex() && errorLine < unit::LineIndex::end(argumentLineCount);
+    const auto argumentLineCount = LineCount::fromSizeT(argumentCount.toSizeT());
+    const auto errorLine =
+        context.argumentIndex().isNoIndex() ? LineIndex::zero() : lineIndexFromArgumentIndex(context.argumentIndex());
+    const auto hasErrorIndex = !context.argumentIndex().isNoIndex() && errorLine < LineIndex::end(argumentLineCount);
     const auto lineCount = std::min(argumentLineCount, cMaximumArgumentLines);
-    auto firstLine = unit::LineIndex::zero();
+    auto firstLine = LineIndex::zero();
     if (argumentLineCount > cMaximumArgumentLines && hasErrorIndex) {
-        const auto preferredContextStart = unit::LineIndex::end(cPreferredLinesBeforeError);
-        firstLine =
-            errorLine > preferredContextStart ? errorLine - cPreferredLinesBeforeError : unit::LineIndex::zero();
-        if (firstLine + cMaximumArgumentLines > unit::LineIndex::end(argumentLineCount)) {
-            firstLine = unit::LineIndex::end(argumentLineCount - cMaximumArgumentLines);
+        const auto preferredContextStart = LineIndex::end(cPreferredLinesBeforeError);
+        firstLine = errorLine > preferredContextStart ? errorLine - cPreferredLinesBeforeError : LineIndex::zero();
+        if (firstLine + cMaximumArgumentLines > LineIndex::end(argumentLineCount)) {
+            firstLine = LineIndex::end(argumentLineCount - cMaximumArgumentLines);
         }
     }
 
-    auto lines = StringViewList{};
+    auto lines = StringList{};
     for (auto index = firstLine; index < firstLine + lineCount; ++index) {
         lines.append(arguments.get(elementIndexFromLineIndex(index)).toEscaped(EscapeFormat::Display));
     }
@@ -114,7 +114,7 @@ void OptionDocumentBuilder::appendCommandLineSnippet(TextDocument &document, con
         const auto argument = arguments.get(elementIndexFromLineIndex(errorLine));
         const auto escapedArgument = argument.toEscaped(EscapeFormat::Display);
         markers.append(
-            CodeSnippetMarker{errorLine, unit::ColumnIndex::zero(), markerLength(escapedArgument), {}, "error"_el});
+            CodeSnippetMarker{errorLine, ColumnIndex::zero(), markerLength(escapedArgument), {}, "error"_el});
     }
 
     auto heading = document.addHeading(2);
@@ -186,8 +186,8 @@ void OptionDocumentBuilder::appendFullHelpCommand(TextDocument &document, const 
     auto list = document.add(NodeType::TermList);
     auto item = list->add(NodeType::TermItem);
     auto name = item->add(NodeType::TermName);
-    const auto model = OptionDisplayModel{
-        _options, context.module() == nullptr ? StringView{} : context.module()->name(), _displayText};
+    const auto model =
+        OptionDisplayModel{_options, context.module() == nullptr ? String{} : context.module()->name(), _displayText};
     name->add(NodeType::OptionExecutable)->addEscapedText(model.executableName(), EscapeFormat::Display);
     if (context.module() != nullptr) {
         name->addText(" "_el);

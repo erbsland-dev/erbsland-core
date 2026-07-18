@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/re/CharAndPosition.hpp>
 #include <erbsland/re/Input.hpp>
 #include <erbsland/re/InputBase.hpp>
 #include <erbsland/re/RegEx.hpp>
@@ -79,7 +80,7 @@ private:
                 throwEncodingError();
             }
         }
-        [[nodiscard]] auto createMatch(el::re::ConstRegExPtr, el::re::CaptureGroupList) -> el::re::MatchPtr override {
+        [[nodiscard]] auto createMatch(el::re::CaptureGroupList) -> el::re::MatchPtr override {
             if (_operation == Operation::CreateMatch) {
                 throwEncodingError();
             }

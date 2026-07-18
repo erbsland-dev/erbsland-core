@@ -3,10 +3,14 @@
 #include "Assembler.hpp"
 
 #include "../impl/diagnostics/Assembler.hpp"
+#include "../impl/engine/Engine.hpp"
+#include "../RegEx.hpp"
+
+#include "../../text/StringList.hpp"
 
 namespace erbsland::re::diagnostics {
 
-auto Assembler::compile(const text::StringViewList &lines) const -> RegExPtr {
+auto Assembler::compile(const text::StringList &lines) const -> RegExPtr {
     impl::Assembler assembler{};
     auto engineData = assembler.compile(lines);
     auto engine = impl::Engine::create(std::move(engineData));

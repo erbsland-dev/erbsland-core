@@ -8,10 +8,10 @@
 
 class RegExCharClassBase : public RegExBase {
 public:
-    StringView patternFormat;
-    StringView pattern;
-    StringView textFormat;
-    String textChar;
+    String patternFormat;
+    String pattern;
+    String textFormat;
+    StringEditor textChar;
 
     auto additionalErrorMessages() -> std::string override {
         auto result = RegExBase::additionalErrorMessages();
@@ -25,7 +25,7 @@ public:
 
     /// A test case for character class matching.
     struct CharClassTestCase {
-        StringView pattern;
+        String pattern;
         std::vector<char32_t> matches;
         std::vector<char32_t> notMatches;
     };
@@ -37,8 +37,8 @@ public:
 
     /// The prepared pattern for testing.
     struct PreparedPattern {
-        String pattern;
-        String text;
+        StringEditor pattern;
+        StringEditor text;
         ExpectedMatchLocations expectedMatchLocations;
         std::vector<std::string> expectedGroupLines;
     };
@@ -50,9 +50,9 @@ public:
     ///     using Unicode `⟪` to mark the begin of a match and `⟫` to mark the end of a match.
     /// @param testedChar The character to match in the pattern.
     [[nodiscard]] auto buildPattern(
-        const StringView patternFormatStr,
-        const StringView &patternStr,
-        const StringView textFormatStr,
+        const String &patternFormatStr,
+        const String &patternStr,
+        const String &textFormatStr,
         const el::text::Char testedChar) -> PreparedPattern {
 
         try {
@@ -65,7 +65,7 @@ public:
                 }
             }
             std::size_t begin;
-            String capturedText;
+            StringEditor capturedText;
             enum class State { Outside, Inside } state = State::Outside;
             bool insertedChar = false;
             for (const auto c : textFormatStr) {
@@ -102,7 +102,7 @@ public:
             REQUIRE(!result.expectedMatchLocations.empty()); // sanity
             return result;
         } catch (const el::AssertFailed &) {
-            auto testedCharText = String{"'"_el};
+            auto testedCharText = StringEditor{"'"_el};
             testedCharText.append(testedChar);
             testedCharText.append('\'');
             consoleWriteLine(
@@ -118,8 +118,8 @@ public:
     }
 
     struct PatternTestCase {
-        StringView patternFormat;
-        std::vector<StringView> textFormats;
+        String patternFormat;
+        std::vector<String> textFormats;
     };
     using PatternTestCases = std::vector<PatternTestCase>;
 

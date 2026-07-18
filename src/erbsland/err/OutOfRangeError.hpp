@@ -12,7 +12,7 @@ class OutOfRangeError : public LogicError {
 public:
     /// Create an out-of-range error with a reason.
     /// @param reason The reason for the out-of-range error.
-    explicit OutOfRangeError(text::StringView reason) noexcept : LogicError{std::move(reason)} {}
+    explicit OutOfRangeError(text::String reason) noexcept : LogicError{std::move(reason)} {}
     /// @overload
     explicit OutOfRangeError(const std::string_view reason) noexcept : LogicError{reason} {}
 

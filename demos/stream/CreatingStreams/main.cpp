@@ -5,7 +5,7 @@
 
 #include <DemoCommon.hpp>
 
-namespace demo {
+using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
@@ -14,10 +14,4 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("OpenFileStreams"_el, openFileStreams);
     app.registerDemo("ShareStreamWithWriter"_el, shareStreamWithWriter);
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

@@ -17,7 +17,7 @@
 namespace erbsland::text::impl {
 
 /// A character-indexed view into string data with a specific byte range.
-/// This helper class provides the read-only algorithms shared by `U16StringCharView`.
+/// This helper class provides code-point-indexed read algorithms for `U16String`.
 /// @tested{U16StringTest}
 class U16StringCharReadTool final {
 public:

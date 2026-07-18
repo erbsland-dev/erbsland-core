@@ -20,7 +20,7 @@ void addSharedOptions(const el::OptionsPtr &options) {
     options->addOption({"-f"_el, "--format"_el, "format"_el})
         .addChoice("short"_el)
         .addChoice("full"_el)
-        .setDefaultValue(el::String{"short"_el})
+        .setDefaultValue("short"_el)
         .setHelpDescription("Output detail level."_el);
 }
 

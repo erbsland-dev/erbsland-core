@@ -6,7 +6,7 @@
 #include "StringReaderBase_fwd.hpp"
 
 #include "../AnyString_fwd.hpp"
-#include "../AnyStringView_fwd.hpp"
+#include "../AnyStringEditor_fwd.hpp"
 #include "../Char.hpp"
 #include "../CharSet.hpp"
 #include "../StringCharReaderState.hpp"
@@ -90,7 +90,7 @@ public: // capture
     /// Set the capture start position.
     virtual void startCapture() noexcept = 0;
     /// Take the current capture and set the new capture start point.
-    [[nodiscard]] virtual auto takeCapture() noexcept -> AnyStringView = 0;
+    [[nodiscard]] virtual auto takeCapture() noexcept -> AnyString = 0;
 
 public: // buffer
     /// Clear the buffer.
@@ -98,17 +98,17 @@ public: // buffer
     /// Move out the buffer and reset it.
     [[nodiscard]] virtual auto takeBuffer() -> AnyString = 0;
     /// Create a view to the current buffer content.
-    [[nodiscard]] virtual auto bufferView() const noexcept -> AnyStringView = 0;
+    [[nodiscard]] virtual auto bufferView() const noexcept -> AnyString = 0;
     /// Get the current decoded code-point length of the buffer.
     [[nodiscard]] virtual auto bufferCharacterLength() const noexcept -> unit::CpLength = 0;
     /// Test if the buffer is empty.
     [[nodiscard]] virtual auto isBufferEmpty() const noexcept -> bool = 0;
     /// Replace the buffer with text.
-    virtual void setBuffer(const AnyStringView &text) = 0;
+    virtual void setBuffer(const AnyString &text) = 0;
     /// Append one Unicode code point to the buffer.
     virtual void appendToBuffer(Char character) = 0;
     /// Append text to the buffer.
-    virtual void appendToBuffer(const AnyStringView &text) = 0;
+    virtual void appendToBuffer(const AnyString &text) = 0;
     /// Take the current capture and append it to the buffer.
     virtual void appendCaptureToBuffer() = 0;
     /// Read one tolerant character and append it to the buffer.
@@ -149,7 +149,7 @@ protected:
     [[nodiscard]] static constexpr auto cpPosition(StringCharReaderState state) noexcept -> unit::CpIndex {
         return state.cpPosition();
     }
-    /// Get the identity of a string view.
+    /// Get the identity of a read-only string.
     template <typename View>
     [[nodiscard]] static auto viewStorageId(const View &view) noexcept -> mem::StorageIdentifier {
         return view.storageId();

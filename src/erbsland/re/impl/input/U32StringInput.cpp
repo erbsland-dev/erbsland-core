@@ -6,6 +6,8 @@
 
 #include "../error/InternalError.hpp"
 
+#include "../../CharAndPosition.hpp"
+
 namespace erbsland::re::impl {
 
 auto U32StringInput::read() -> CharAndPosition {
@@ -25,10 +27,10 @@ void U32StringInput::skip(const unit::CpLength characterCount) {
     }
 }
 
-auto U32StringInput::createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> Match32Ptr {
+auto U32StringInput::createMatch(CaptureGroupList captureGroupList) -> Match32Ptr {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         !captureGroupList.empty(), "Capture group list must contain at least one element (the whole string)"_el);
-    return std::make_shared<U32StringMatch>(std::move(regEx), std::move(captureGroupList), _text);
+    return std::make_shared<U32StringMatch>(std::move(captureGroupList), _text);
 }
 
 }

@@ -16,8 +16,17 @@ namespace erbsland::options::impl {
 
 using namespace text::literals;
 
+using text::EscapeFormat;
+using text::String;
+using text::StringFormat;
+using text::StringSide;
+using unit::ArgumentIndex;
+using unit::ByteIndex;
+using unit::ByteLength;
+using unit::CpIndex;
+
 auto OptionParser::prepareModuleParsing() -> bool {
-    _argumentIndex = unit::ArgumentIndex::one();
+    _argumentIndex = ArgumentIndex::one();
     if (!isIndexInArgs(_argumentIndex)) {
         return makeError(
             OptionErrorReason::SyntaxError,
@@ -41,8 +50,8 @@ auto OptionParser::prepareModuleParsing() -> bool {
         return makeError(
             OptionErrorReason::UnknownName,
             "Unknown module"_el,
-            text::StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
-                argument.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
+                argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
     }
 
@@ -51,8 +60,8 @@ auto OptionParser::prepareModuleParsing() -> bool {
         return makeError(
             OptionErrorReason::UnknownName,
             "Unknown module"_el,
-            text::StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
-                argument.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
+                argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
     }
     _moduleName = _selectedModule->name();
@@ -96,15 +105,15 @@ auto OptionParser::parseActiveOptions() -> bool {
     return true;
 }
 
-auto OptionParser::parseLongOption(const text::StringView &argument, const unit::ArgumentIndex index) -> bool {
+auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex index) -> bool {
     const auto equalsIndex = argument.find("="_el);
-    const auto name = argument.slice({unit::ByteIndex::zero(), equalsIndex});
+    const auto name = argument.slice({ByteIndex::zero(), equalsIndex});
     if (!Option::isValidLongName(name)) {
         return makeError(
             OptionErrorReason::SyntaxError,
             "Malformed long option"_el,
-            text::StringFormat{"\"{}\" is not a valid long option. Use two dashes followed by an option name."}.build(
-                argument.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not a valid long option. Use two dashes followed by an option name."}.build(
+                argument.toEscaped(EscapeFormat::Display)),
             index);
     }
     const auto match = findLongOption(name);
@@ -112,8 +121,7 @@ auto OptionParser::parseLongOption(const text::StringView &argument, const unit:
         return makeError(
             OptionErrorReason::UnknownName,
             "Unknown option"_el,
-            text::StringFormat{"\"{}\" is not available for this command."}.build(
-                name.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
             index);
     }
 
@@ -123,18 +131,18 @@ auto OptionParser::parseLongOption(const text::StringView &argument, const unit:
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
-                text::StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
-                    name.toEscaped(text::EscapeFormat::Display)),
+                StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
+                    name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
         }
         return acceptStorageResult(_storage.storeFlag(match.option, index));
     }
 
-    auto value = text::StringView{};
+    auto value = String{};
     auto valueIndex = index;
     if (!equalsIndex.isNoIndex()) {
-        value = argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()});
+        value = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
     } else if (!consumeFollowingValue(value, index, match.option)) {
         return false;
     } else {
@@ -143,60 +151,58 @@ auto OptionParser::parseLongOption(const text::StringView &argument, const unit:
     return acceptStorageResult(_storage.storeValue(match.option, value, valueIndex));
 }
 
-auto OptionParser::parseShortOption(const text::StringView &argument, const unit::ArgumentIndex index) -> bool {
-    const auto equalsIndex = argument.find("="_elv);
+auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex index) -> bool {
+    const auto equalsIndex = argument.find("="_el);
     if (!equalsIndex.isNoIndex()) {
-        const auto name = argument.slice(text::StringSide::Front, equalsIndex.distanceFromZero());
+        const auto name = argument.slice(StringSide::Front, equalsIndex.distanceFromZero());
         if (!Option::isValidShortName(name)) {
             return makeError(
                 OptionErrorReason::SyntaxError,
                 "Malformed short option"_el,
-                text::StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}
-                    .build(argument.toEscaped(text::EscapeFormat::Display)),
+                StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
+                    argument.toEscaped(EscapeFormat::Display)),
                 index);
         }
-        const auto shortName = name.charAt(unit::CpIndex::one());
+        const auto shortName = name.charAt(CpIndex::one());
         const auto match = findShortOption(shortName);
         if (match.option == nullptr || match.disabled) {
             return makeError(
                 OptionErrorReason::UnknownName,
                 "Unknown option"_el,
-                text::StringFormat{"\"{}\" is not available for this command."}.build(
-                    name.toEscaped(text::EscapeFormat::Display)),
+                StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
                 index);
         }
         if (match.option->type() == OptionType::Flag) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
-                text::StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
-                    name.toEscaped(text::EscapeFormat::Display)),
+                StringFormat{"\"{}\" is a flag and must be specified without a value."}.build(
+                    name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
         }
         return acceptStorageResult(_storage.storeValue(
-            match.option, argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()}), index));
+            match.option, argument.slice({equalsIndex.incremented(), ByteLength::infinite()}), index));
     }
 
     if (!argument.startsWith("-"_el)) {
         return makeError(
             OptionErrorReason::SyntaxError,
             "Malformed short option"_el,
-            text::StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
-                argument.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
+                argument.toEscaped(EscapeFormat::Display)),
             index);
     }
 
-    const auto shortNames = argument.slice({unit::ByteIndex::one(), unit::ByteLength::infinite()});
-    const auto firstCharacter = shortNames.charAt(text::StringSide::Front);
-    const auto remainingNames =
-        shortNames.slice({shortNames.indexAt(unit::CpIndex::one()), unit::ByteLength::infinite()});
+    const auto shortNames = argument.slice({ByteIndex::one(), ByteLength::infinite()});
+    const auto firstCharacter = shortNames.charAt(StringSide::Front);
+    const auto remainingNames = shortNames.slice({shortNames.indexAt(CpIndex::one()), ByteLength::infinite()});
     if (firstCharacter.isNull()) {
         return makeError(
             OptionErrorReason::SyntaxError,
             "Malformed short option"_el,
-            text::StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
-                argument.toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"{}\" is not a valid short option. Use one dash followed by an option letter."}.build(
+                argument.toEscaped(EscapeFormat::Display)),
             index);
     }
     const auto firstMatch = findShortOption(firstCharacter);
@@ -204,15 +210,15 @@ auto OptionParser::parseShortOption(const text::StringView &argument, const unit
         return makeError(
             OptionErrorReason::UnknownName,
             "Unknown option"_el,
-            text::StringFormat{"\"-{}\" is not available for this command."}.build(
-                text::String::fromCharacter(firstCharacter).toEscaped(text::EscapeFormat::Display)),
+            StringFormat{"\"-{}\" is not available for this command."}.build(
+                String::fromCharacter(firstCharacter).toEscaped(EscapeFormat::Display)),
             index);
     }
     if (remainingNames.isEmpty()) {
         if (firstMatch.option->type() == OptionType::Flag) {
             return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
         }
-        auto value = text::StringView{};
+        auto value = String{};
         if (!consumeFollowingValue(value, index, firstMatch.option)) {
             return false;
         }
@@ -222,7 +228,7 @@ auto OptionParser::parseShortOption(const text::StringView &argument, const unit
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option cannot be grouped"_el,
-            text::StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(firstCharacter),
+            StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(firstCharacter),
             index,
             firstMatch.option);
     }
@@ -235,15 +241,15 @@ auto OptionParser::parseShortOption(const text::StringView &argument, const unit
             return makeError(
                 OptionErrorReason::UnknownName,
                 "Unknown option"_el,
-                text::StringFormat{"\"-{}\" is not available for this command."}.build(
-                    text::String::fromCharacter(character).toEscaped(text::EscapeFormat::Display)),
+                StringFormat{"\"-{}\" is not available for this command."}.build(
+                    String::fromCharacter(character).toEscaped(EscapeFormat::Display)),
                 index);
         }
         if (match.option->type() != OptionType::Flag) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Option cannot be grouped"_el,
-                text::StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(character),
+                StringFormat{"\"-{}\" requires a value and must be specified separately."}.build(character),
                 index,
                 match.option);
         }
@@ -254,15 +260,15 @@ auto OptionParser::parseShortOption(const text::StringView &argument, const unit
     return true;
 }
 
-auto OptionParser::consumeFollowingValue(
-    text::StringView &value, const unit::ArgumentIndex optionIndex, const OptionPtr &option) -> bool {
-    const auto optionName = option == nullptr || option->names().empty() ? text::StringView{} : option->names().front();
+auto OptionParser::consumeFollowingValue(String &value, const ArgumentIndex optionIndex, const OptionPtr &option)
+    -> bool {
+    const auto optionName = option == nullptr || option->names().empty() ? String{} : option->names().front();
     const auto valueIndex = _argumentIndex.incremented();
     if (!isIndexInArgs(valueIndex)) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option value is missing"_el,
-            text::StringFormat{"\"{}\" requires a value."}.build(optionName),
+            StringFormat{"\"{}\" requires a value."}.build(optionName),
             optionIndex,
             option);
     }
@@ -271,7 +277,7 @@ auto OptionParser::consumeFollowingValue(
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option value is missing"_el,
-            text::StringFormat{"\"{}\" requires a value before the next option."}.build(optionName),
+            StringFormat{"\"{}\" requires a value before the next option."}.build(optionName),
             optionIndex,
             option);
     }

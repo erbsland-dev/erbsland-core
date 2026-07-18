@@ -6,7 +6,6 @@
 #include "FloatFormat.hpp"
 #include "IntegerFormat.hpp"
 #include "String_fwd.hpp"
-#include "StringView_fwd.hpp"
 
 #include <compare>
 
@@ -14,9 +13,6 @@ namespace erbsland::text {
 
 /// Convert a string to the common string type.
 [[nodiscard]] auto toString(const String &value) -> String;
-
-/// Convert a string view to the common string type.
-[[nodiscard]] auto toString(const StringView &value) -> String;
 
 /// Convert a boolean value to a string.
 [[nodiscard]] auto toString(bool value, BooleanFormat format = BooleanFormat::defaultFormat()) -> String;

@@ -53,7 +53,7 @@ public: // implement Backend
         _alternateScreenBufferChanges.push_back(enabled);
         _isAlternateScreenActive = enabled;
     }
-    void emitText(const erbsland::text::StringView &text) override {
+    void emitText(const erbsland::text::String &text) override {
         _emittedText.emplace_back(erbsland::text::StringConverter{text}.toStdString());
     }
     void emitFlush() override { _emitFlushCallCount += 1; }

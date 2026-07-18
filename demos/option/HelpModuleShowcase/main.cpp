@@ -42,7 +42,7 @@ using namespace el::text::literals;
     set->addOption({"--workspace"_el, "workspace"_el})
         .setType(el::OptionType::Text)
         .setValueName("directory"_el)
-        .setDefaultValue(el::String{"laboratory"_el})
+        .setDefaultValue("laboratory"_el)
         .setHelpDescription("Working directory for instrument data."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"--color"_el, "color"_el})
@@ -50,7 +50,7 @@ using namespace el::text::literals;
         .addChoice("always"_el)
         .addChoice("never"_el)
         .setValueName("mode"_el)
-        .setDefaultValue(el::String{"auto"_el})
+        .setDefaultValue("auto"_el)
         .setHelpDescription("Color control for compatible terminals."_el)
         .setHelpVisibility(el::OptionHelpVisibility::Overview);
     set->addOption({"--trace-options"_el, "trace-options"_el})
@@ -88,7 +88,7 @@ using namespace el::text::literals;
         .addChoice("medium"_el)
         .addChoice("large"_el)
         .setValueName("size"_el)
-        .setDefaultValue(el::String{"medium"_el})
+        .setDefaultValue("medium"_el)
         .setHelpDescription("Default visual scale for charts."_el);
     set->addOption({"--order"_el, "order"_el})
         .addChoice("name"_el)
@@ -133,7 +133,7 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
         .addChoice("file"_el)
         .addChoice("training"_el)
         .setValueName("profile"_el)
-        .setDefaultValue(el::String{"field"_el})
+        .setDefaultValue("field"_el)
         .setHelpDescription("Execution profile for this module."_el);
     commonSet->addOption({"--jobs"_el, "jobs"_el})
         .setType(el::OptionType::Integer)
@@ -236,13 +236,13 @@ void addCommonModuleOptions(const el::OptionModulePtr &module) {
     set->setHelpDescription("Format, language, and destination for the exported report."_el);
     set->addOption({"--format"_el, "format"_el})
         .setChoices(createExportChoices())
-        .setDefaultValue(el::String{"text"_el})
+        .setDefaultValue("text"_el)
         .setHelpDescription("Output format."_el);
     set->addOption({"--language"_el, "language"_el})
         .addChoice("es"_el)
         .addChoice("en"_el)
         .addChoice("de"_el)
-        .setDefaultValue(el::String{"en"_el})
+        .setDefaultValue("en"_el)
         .setHelpDescription("Language for generated labels."_el);
     set->addOption({"--audience"_el, "audience"_el})
         .addChoice("class"_el)

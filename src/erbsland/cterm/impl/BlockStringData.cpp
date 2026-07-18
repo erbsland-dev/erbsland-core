@@ -9,6 +9,8 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace text;
+
 BlockStringData::BlockStringData(Storage chars) noexcept : _chars{std::move(chars)} {
     for (const auto &character : _chars) {
         _displayWidth += character.displayWidth();
@@ -46,7 +48,7 @@ auto BlockStringData::copyChars(BlockRange range) const -> Storage {
         _chars.cbegin() + static_cast<Storage::difference_type>(range.endIndex().toSizeT())};
 }
 
-void BlockStringData::appendCodePoint(const text::Char codePoint, const Color color, const BlockAttributes attributes) {
+void BlockStringData::appendCodePoint(const Char codePoint, const Color color, const BlockAttributes attributes) {
     if (codePoint == U'\t' || codePoint == U'\n') {
         append(Block{codePoint.toRawValue(), color, attributes});
         return;
@@ -64,8 +66,8 @@ void BlockStringData::appendCodePoint(const text::Char codePoint, const Color co
 }
 
 void BlockStringData::appendCharacters(
-    const text::U32StringView &text, const Color color, const BlockAttributes attributes) noexcept {
-    auto reader = text::StringCharReader{text};
+    const U32String &text, const Color color, const BlockAttributes attributes) noexcept {
+    auto reader = StringCharReader{text};
     while (true) {
         const auto codePoint = reader.read();
         if (codePoint.isEndOfData()) {
@@ -76,11 +78,11 @@ void BlockStringData::appendCharacters(
 }
 
 void BlockStringData::appendCharacters(
-    const text::StringView &text,
+    const String &text,
     const Color color,
     const BlockAttributes attributes,
-    const text::EncodingErrorMode encodingErrorMode) {
-    appendCharacters(text::StringConverter{text}.toU32String(encodingErrorMode), color, attributes);
+    const EncodingErrorMode encodingErrorMode) {
+    appendCharacters(StringConverter{text}.toU32String(encodingErrorMode), color, attributes);
 }
 
 auto sharedEmptyBlockStringData() -> const BlockStringDataPtr & {
@@ -88,14 +90,13 @@ auto sharedEmptyBlockStringData() -> const BlockStringDataPtr & {
     return data;
 }
 
-auto BlockStringData::measureDisplayWidth(const text::StringView &text, const text::EncodingErrorMode encodingErrorMode)
-    -> int {
-    return measureDisplayWidth(text::StringConverter{text}.toU32String(encodingErrorMode));
+auto BlockStringData::measureDisplayWidth(const String &text, const EncodingErrorMode encodingErrorMode) -> int {
+    return measureDisplayWidth(StringConverter{text}.toU32String(encodingErrorMode));
 }
 
-auto BlockStringData::measureDisplayWidth(const text::U32StringView &text) -> int {
+auto BlockStringData::measureDisplayWidth(const U32String &text) -> int {
     auto result = 0;
-    auto reader = text::StringCharReader{text};
+    auto reader = StringCharReader{text};
     while (true) {
         const auto codePoint = reader.read();
         if (codePoint.isEndOfData()) {

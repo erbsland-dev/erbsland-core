@@ -3,18 +3,18 @@
 #include "StringCharReader.hpp"
 
 #include "AnyString.hpp"
-#include "AnyStringView.hpp"
+#include "AnyStringEditor.hpp"
 #include "ParseNumberError.hpp"
 
 #include "u16/impl/U16StringReader.hpp"
 #include "u16/U16String.hpp"
-#include "u16/U16StringView.hpp"
+#include "u16/U16StringEditor.hpp"
 #include "u32/impl/U32StringReader.hpp"
 #include "u32/U32String.hpp"
-#include "u32/U32StringView.hpp"
+#include "u32/U32StringEditor.hpp"
 #include "u8/impl/U8StringReader.hpp"
 #include "u8/U8String.hpp"
-#include "u8/U8StringView.hpp"
+#include "u8/U8StringEditor.hpp"
 
 #include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
@@ -26,49 +26,52 @@ namespace erbsland::text {
 
 using namespace literals;
 
-auto StringCharReader::createBackendForAnyStringView(const AnyStringView &text) -> impl::StringReaderBase * {
+using unit::CpIndex;
+using unit::CpLength;
+
+auto StringCharReader::createBackendForAnyString(const AnyString &text) -> impl::StringReaderBase * {
     if (text.isEmpty()) {
-        return new impl::U8StringReader{U8StringView{}};
+        return new impl::U8StringReader{U8String{}};
     }
     switch (text.kind().value()) {
     case StringKind::U8:
-        return new impl::U8StringReader{text.toU8StringView()};
+        return new impl::U8StringReader{text.toU8String()};
     case StringKind::U16:
-        return new impl::U16StringReader{text.toU16StringView()};
+        return new impl::U16StringReader{text.toU16String()};
     case StringKind::U32:
-        return new impl::U32StringReader{text.toU32StringView()};
+        return new impl::U32StringReader{text.toU32String()};
     }
-    return new impl::U8StringReader{text.toU8StringView()}; // unused, prevent warnings
+    return new impl::U8StringReader{text.toU8String()}; // unused, prevent warnings
 }
 
-StringCharReader::StringCharReader() : _reader{new impl::U8StringReader{U8StringView{}}} {
+StringCharReader::StringCharReader() : _reader{new impl::U8StringReader{U8String{}}} {
 }
 
-StringCharReader::StringCharReader(const U8String &text) : StringCharReader{U8StringView{text}} {
+StringCharReader::StringCharReader(const U8StringEditor &text) : StringCharReader{U8String{text}} {
 }
 
-StringCharReader::StringCharReader(const U8StringView &text) : _reader{new impl::U8StringReader{text}} {
+StringCharReader::StringCharReader(const U8String &text) : _reader{new impl::U8StringReader{text}} {
 }
 
-StringCharReader::StringCharReader(const U16String &text) : StringCharReader{U16StringView{text}} {
+StringCharReader::StringCharReader(const U16StringEditor &text) : StringCharReader{U16String{text}} {
 }
 
-StringCharReader::StringCharReader(const U16StringView &text) : _reader{new impl::U16StringReader{text}} {
+StringCharReader::StringCharReader(const U16String &text) : _reader{new impl::U16StringReader{text}} {
 }
 
-StringCharReader::StringCharReader(const U32String &text) : StringCharReader{U32StringView{text}} {
+StringCharReader::StringCharReader(const U32StringEditor &text) : StringCharReader{U32String{text}} {
 }
 
-StringCharReader::StringCharReader(const U32StringView &text) : _reader{new impl::U32StringReader{text}} {
+StringCharReader::StringCharReader(const U32String &text) : _reader{new impl::U32StringReader{text}} {
 }
 
-StringCharReader::StringCharReader(const AnyString &text) : StringCharReader(AnyStringView{text}) {
+StringCharReader::StringCharReader(const AnyStringEditor &text) : StringCharReader(AnyString{text}) {
 }
 
-StringCharReader::StringCharReader(const AnyStringView &text) : _reader{createBackendForAnyStringView(text)} {
+StringCharReader::StringCharReader(const AnyString &text) : _reader{createBackendForAnyString(text)} {
 }
 
-auto StringCharReader::position() const noexcept -> unit::CpIndex {
+auto StringCharReader::position() const noexcept -> CpIndex {
     return _reader->position();
 }
 
@@ -96,21 +99,21 @@ auto StringCharReader::readIf(const CharSet &expected) noexcept -> std::optional
     return _reader->readIf(expected);
 }
 
-auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
+auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept
     -> util::LoopResult {
     return _reader->readWhile(readFn, expected, maximum);
 }
 
-auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
+auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept
     -> util::LoopResult {
     return _reader->readUntil(readFn, stopSet, maximum);
 }
 
-auto StringCharReader::advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> util::LoopResult {
+auto StringCharReader::advanceWhile(const CharSet &expected, CpLength maximum) noexcept -> util::LoopResult {
     return _reader->readWhile([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, expected, maximum);
 }
 
-auto StringCharReader::advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> util::LoopResult {
+auto StringCharReader::advanceUntil(const CharSet &stopSet, CpLength maximum) noexcept -> util::LoopResult {
     return _reader->readUntil([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, stopSet, maximum);
 }
 
@@ -138,15 +141,15 @@ auto StringCharReader::isAtEnd() const noexcept -> bool {
     return _reader->isAtEnd();
 }
 
-auto StringCharReader::canRead(const unit::CpLength count) const noexcept -> bool {
+auto StringCharReader::canRead(const CpLength count) const noexcept -> bool {
     return _reader->canRead(count);
 }
 
 auto StringCharReader::advance() noexcept -> bool {
-    return advance(unit::CpLength::one());
+    return advance(CpLength::one());
 }
 
-auto StringCharReader::advance(const unit::CpLength count) noexcept -> bool {
+auto StringCharReader::advance(const CpLength count) noexcept -> bool {
     return _reader->advance(count);
 }
 
@@ -159,10 +162,10 @@ auto StringCharReader::advanceIf(const CharSet &expected) noexcept -> bool {
 }
 
 void StringCharReader::advanceOrThrow() {
-    advanceOrThrow(unit::CpLength::one());
+    advanceOrThrow(CpLength::one());
 }
 
-void StringCharReader::advanceOrThrow(const unit::CpLength count) {
+void StringCharReader::advanceOrThrow(const CpLength count) {
     if (!advance(count)) {
         throw err::OutOfRangeError("String reader cannot advance by the requested number of characters"_el);
     }
@@ -184,7 +187,7 @@ void StringCharReader::startCapture() noexcept {
     _reader->startCapture();
 }
 
-auto StringCharReader::takeCapture() noexcept -> AnyStringView {
+auto StringCharReader::takeCapture() noexcept -> AnyString {
     return _reader->takeCapture();
 }
 
@@ -196,11 +199,11 @@ auto StringCharReader::takeBuffer() -> AnyString {
     return _reader->takeBuffer();
 }
 
-auto StringCharReader::bufferView() const noexcept -> AnyStringView {
+auto StringCharReader::bufferView() const noexcept -> AnyString {
     return _reader->bufferView();
 }
 
-auto StringCharReader::bufferCharacterLength() const noexcept -> unit::CpLength {
+auto StringCharReader::bufferCharacterLength() const noexcept -> CpLength {
     return _reader->bufferCharacterLength();
 }
 
@@ -208,7 +211,7 @@ auto StringCharReader::isBufferEmpty() const noexcept -> bool {
     return _reader->isBufferEmpty();
 }
 
-void StringCharReader::setBuffer(const AnyStringView &text) {
+void StringCharReader::setBuffer(const AnyString &text) {
     _reader->setBuffer(text);
 }
 
@@ -216,7 +219,7 @@ void StringCharReader::appendToBuffer(const Char character) {
     _reader->appendToBuffer(character);
 }
 
-void StringCharReader::appendToBuffer(const AnyStringView &text) {
+void StringCharReader::appendToBuffer(const AnyString &text) {
     _reader->appendToBuffer(text);
 }
 
@@ -236,11 +239,11 @@ auto StringCharReader::readToBufferIf(const CharSet &expected) -> std::optional<
     return _reader->readToBufferIf(expected);
 }
 
-auto StringCharReader::readToBufferWhile(const CharSet &expected, unit::CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferWhile(const CharSet &expected, CpLength maximum) -> util::LoopResult {
     return _reader->readToBufferWhile(expected, maximum);
 }
 
-auto StringCharReader::readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum) -> util::LoopResult {
+auto StringCharReader::readToBufferUntil(const CharSet &stopSet, CpLength maximum) -> util::LoopResult {
     return _reader->readToBufferUntil(stopSet, maximum);
 }
 
@@ -310,7 +313,7 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options, const boo
     const auto stopAtMaximum = options.hasFlag(IntegerParseFlag::StopAtMaximum);
     const auto separator = options.separator();
     auto result = std::uint64_t{0U};
-    auto digitCount = unit::CpLength::zero();
+    auto digitCount = CpLength::zero();
     auto lastWasSeparator = false;
 
     while (true) {
@@ -394,7 +397,7 @@ auto StringCharReader::readIntegerResultOrThrow(const IntegerParseOptions &optio
     }
 }
 
-void StringCharReader::throwError(const ReadNumberStatus status, const unit::CpIndex position) {
+void StringCharReader::throwError(const ReadNumberStatus status, const CpIndex position) {
     switch (status) {
     case ReadNumberStatus::Success:
         throw text::ParseNumberError("Integer number was read successfully"_el, status, position);

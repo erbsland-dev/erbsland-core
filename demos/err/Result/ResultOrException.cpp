@@ -9,7 +9,7 @@ namespace demo {
     return areaIsClear ? el::Result::Success : el::Result::Failure;
 }
 
-[[nodiscard]] auto loadMissionOrThrow(const el::StringView &missionName) -> el::StringView {
+[[nodiscard]] auto loadMissionOrThrow(const el::String &missionName) -> el::String {
     if (missionName != "Explorar Marte"_el) {
         throw el::RuntimeError{"The mission plan was not found."_el};
     }

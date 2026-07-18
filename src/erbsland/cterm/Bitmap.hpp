@@ -8,7 +8,7 @@
 #include "../bgeo/BlockSize.hpp"
 #include "../err/OutOfRangeError.hpp"
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <array>
 #include <bit>
@@ -152,7 +152,7 @@ public: // conversion
     /// pixel. Shorter rows are padded with cleared pixels to the maximum row width.
     /// @param rows The pattern rows to parse.
     /// @return The created bitmap.
-    [[nodiscard]] static auto fromPattern(std::initializer_list<text::StringView> rows) -> Bitmap;
+    [[nodiscard]] static auto fromPattern(std::initializer_list<text::String> rows) -> Bitmap;
     /// Convert this bitmap to a simple ASCII representation.
     /// This function is meant for debugging and visualization.
     /// Use `Buffer` for a true character matrix.

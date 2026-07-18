@@ -37,7 +37,7 @@ Block Direction
 
 :cpp:class:`BlockDirection <erbsland::bgeo::BlockDirection>` represents the eight compass directions on a block grid,
 plus ``None``.
-Direction strings use ``text::StringView`` for parsing and ``text::StringLiteral`` backed values for canonical output.
+Direction strings use ``text::String`` for parsing and ``text::StringLiteral`` backed values for canonical output.
 
 Block Margins
 -------------

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "StringView.hpp"
+#include "String.hpp"
 #include "TextNodeData_fwd.hpp"
 
 namespace erbsland::text {
@@ -19,7 +19,7 @@ public:
 
 public:
     /// Convert the metadata to a diagnostic string.
-    [[nodiscard]] virtual auto toString() const -> StringView = 0;
+    [[nodiscard]] virtual auto toString() const -> String = 0;
 };
 
 }

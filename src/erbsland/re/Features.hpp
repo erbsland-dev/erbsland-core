@@ -6,7 +6,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StdFormatForText.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../util/EnumFlags.hpp"
 
 #include <array>
@@ -26,7 +26,7 @@ public: // diagnostics
     /// Create a diagnostic string for the enabled features.
     [[nodiscard]] auto toString() const -> text::String {
         using namespace text::literals;
-        text::String result;
+        text::StringEditor result;
         for (const auto feature : all()) {
             if (!isSet(feature)) {
                 continue;

@@ -12,23 +12,18 @@ namespace demo {
 /// reserve explicitly seeded `FastRandom` instances for reproducible tests and
 /// simulations.
 auto buildMapRows(el::Random &random) -> el::StringList {
-    const auto terrain = el::List<el::String>{
-        el::String{"les"_el},
-        el::String{"skala"_el},
-        el::String{"voda"_el},
-        el::String{"louka"_el},
-    };
+    const auto terrain = el::StringList{"les"_el, "skala"_el, "voda"_el, "louka"_el};
     auto rows = el::StringList{};
 
     for (auto y = 0; y < 3; ++y) {
-        auto row = el::String{};
+        auto row = el::StringEditor{};
         for (auto x = 0; x < 4; ++x) {
             if (x > 0) {
                 row.append(" "_el);
             }
             row.append(random.selectElement(terrain));
         }
-        rows.append(row);
+        rows.append(el::String{row});
     }
     return rows;
 }

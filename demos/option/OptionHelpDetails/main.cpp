@@ -52,7 +52,7 @@ protected:
             .setHelpVisibility(el::OptionHelpVisibility::Usage);
         options->addOption({"-f"_el, "--phase"_el, "phase"_el})
             .setChoices(activityChoices())
-            .setDefaultValue(el::String{"night"_el})
+            .setDefaultValue("night"_el)
             .setHelpDescription("Time window in which the observation occurs."_el);
         options->addOption({"-r"_el, "--round"_el, "round"_el})
             .setType(el::OptionType::Integer)

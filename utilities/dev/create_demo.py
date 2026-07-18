@@ -361,7 +361,7 @@ class CreateDemoPlanner:
             "",
             "#include <DemoCommon.hpp>",
             "",
-            "namespace demo {",
+            "using namespace demo;",
             "",
             "auto main(const int argc, char *argv[]) -> int {",
             "    auto app = DemoApplication{argc, argv};",
@@ -371,12 +371,6 @@ class CreateDemoPlanner:
         lines.extend(
             [
                 "    return app.run();",
-                "}",
-                "",
-                "}",
-                "",
-                "auto main(const int argc, char *argv[]) -> int {",
-                "    return demo::main(argc, argv);",
                 "}",
             ]
         )

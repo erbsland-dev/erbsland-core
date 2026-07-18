@@ -16,7 +16,7 @@
 #include <erbsland/path/PathErrorContext.hpp>
 #include <erbsland/system/PosixErrorContext.hpp>
 #include <erbsland/text/TextDocument.hpp>
-#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -191,7 +191,7 @@ public:
         auto list = document.addBulletList(0);
         for (auto level = 0; level < 10; ++level) {
             auto item = list->addListItem();
-            item->addText(text::String{std::string{"level "} + std::to_string(level)});
+            item->addText(text::StringEditor{std::string{"level "} + std::to_string(level)});
             if (level + 1 < 10) {
                 list = item->addBulletList(level + 1);
             }
@@ -221,7 +221,7 @@ public:
     }
 
     void testSemanticSeparatorsAndEscapeSequencesControlWrappingWithoutHiddenCharacters() {
-        const auto prefix = text::String{std::string(58, 'a')};
+        const auto prefix = text::StringEditor{std::string(58, 'a')};
         auto separatorDocument = text::TextDocument{};
         auto separatorParagraph = separatorDocument.addParagraph();
         separatorParagraph->addText(prefix);
@@ -236,7 +236,8 @@ public:
 
         auto oversizedEscapeDocument = text::TextDocument{};
         auto oversizedEscapeParagraph = oversizedEscapeDocument.addParagraph();
-        oversizedEscapeParagraph->add(text::TextNodeType::EscapeSequence)->addText(text::String{std::string(70, 'e')});
+        oversizedEscapeParagraph->add(text::TextNodeType::EscapeSequence)
+            ->addText(text::StringEditor{std::string(70, 'e')});
         oversizedEscapeParagraph->addText("tail"_el);
 
         auto renderer = TerminalDocumentRenderer{};
@@ -253,7 +254,7 @@ public:
 
     void testEffectiveWidthSnapshotsUseOneLayoutAlgorithm() {
         auto document = text::TextDocument{};
-        document.addParagraph()->addText(text::String{std::string(70, 'x')});
+        document.addParagraph()->addText(text::StringEditor{std::string(70, 'x')});
         auto renderer = TerminalDocumentRenderer{};
 
         REQUIRE_EQUAL(renderDocument(renderer, document, 60), std::string(59, 'x') + "-\n" + std::string(11, 'x'));
@@ -382,7 +383,7 @@ public:
 
     void testCodeSnippetUsesStableGutterAndMarkerStyles() {
         auto document = text::TextDocument{};
-        auto lines = text::StringViewList{};
+        auto lines = text::StringList{};
         lines.append("  padded value"_el);
         lines.append("next"_el);
         auto markers = text::CodeSnippetMarkerList{};
@@ -419,9 +420,9 @@ public:
 
     void testCodeSnippetWrapsPointMarkersAndWideCharacters() {
         auto document = text::TextDocument{};
-        auto lines = text::StringViewList{};
+        auto lines = text::StringList{};
         lines.append("abcdefghijklmnop"_el);
-        lines.append(text::String{std::string_view{el::unittest::th::stdStringFromHex("41 E7 95 8C 42")}});
+        lines.append(text::StringEditor{std::string_view{el::unittest::th::stdStringFromHex("41 E7 95 8C 42")}});
         auto markers = text::CodeSnippetMarkerList{};
         markers.append(
             text::CodeSnippetMarker{el::unit::LineIndex{0U}, el::unit::ColumnIndex{6U}, {}, "here"_el, "error"_el});
@@ -631,7 +632,7 @@ public:
         auto expected = std::string{};
         for (auto index = 0; index < 96; ++index) {
             const auto line = std::string{"paragraph "} + std::to_string(index);
-            document.addParagraph()->addText(text::String{line});
+            document.addParagraph()->addText(text::StringEditor{line});
             if (!expected.empty()) {
                 expected += '\n';
             }
@@ -655,12 +656,12 @@ public:
             renderer_impl::collapsedVerticalMarginValue(bgeo::BlockCoordinate{4}, bgeo::BlockCoordinate{-1}),
             bgeo::BlockCoordinate{3});
 
-        const auto preservedText = text::String{std::string{"  alpha  "}};
+        const auto preservedText = text::StringEditor{std::string{"  alpha  "}};
         auto builder = renderer_impl::InlineTextBuilder{};
         builder.appendText(preservedText, BlockStyle{}, true);
         REQUIRE_EQUAL(render(builder.takeString()), std::string{"  alpha  "});
 
-        const auto decoration = BlockString{text::U32String{U"  beta  "}};
+        const auto decoration = BlockStringEditor{text::U32StringEditor{U"  beta  "}};
         builder.reset();
         builder.appendDecoration(decoration, BlockStyle{}, false);
         REQUIRE_EQUAL(render(builder.takeString()), std::string{"beta"});

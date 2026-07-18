@@ -6,7 +6,7 @@
 #include <erbsland/cterm/TerminalDocumentStyle.hpp>
 #include <erbsland/cterm/TerminalDocumentStyleMarker.hpp>
 #include <erbsland/text/TextNodeType.hpp>
-#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -60,7 +60,7 @@ public:
 
     void testMarkerRenderingPreservesTabs() {
         auto literal = TerminalDocumentStyleMarker{};
-        literal.setLiteral(BlockString{text::U32String{U"•\t"}});
+        literal.setLiteral(BlockStringEditor{text::U32StringEditor{U"•\t"}});
         const auto renderedLiteral = literal.render(1U, BlockStyle{});
 
         REQUIRE_EQUAL(render(renderedLiteral), std::string{"•\t"});

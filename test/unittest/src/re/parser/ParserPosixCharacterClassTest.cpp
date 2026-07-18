@@ -10,7 +10,7 @@ public:
     void testAllNamesUnicode() {
         // All supported names in Unicode mode (default). We do not validate exact set definitions.
         // We only assert that a character class/category node is created and parsing succeeds.
-        const std::vector<StringView> patterns = {
+        const std::vector<String> patterns = {
             "[[:alnum:]]"_el,
             "[[:alpha:]]"_el,
             "[[:ascii:]]"_el,
@@ -51,7 +51,7 @@ public:
     void testAllNamesAscii() {
         // Same patterns, but in ASCII mode. Ensure they still parse to a range/category node.
         const GroupFlags ascii{GroupFlag::Ascii};
-        const std::vector<StringView> patterns = {
+        const std::vector<String> patterns = {
             "[[:alnum:]]"_el,
             "[[:alpha:]]"_el,
             "[[:ascii:]]"_el,

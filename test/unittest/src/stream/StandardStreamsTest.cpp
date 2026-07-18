@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
 #include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/stream/StringBuilderStream.hpp>
 #include <erbsland/stream/TextInputStream.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -69,7 +69,7 @@ class StandardStreamsTest final : public el::UnitTest {
             const auto count = std::min(maximum.toSizeT(), _text.size() - _position);
             auto result = _text.substr(_position, count);
             _position += count;
-            return {el::stream::StreamReadStatus::Data, el::text::String{std::string_view{result}}};
+            return {el::stream::StreamReadStatus::Data, el::text::StringEditor{std::string_view{result}}};
         }
 
         [[nodiscard]] auto readLine(el::unit::CpLength maximum)
@@ -131,7 +131,7 @@ public:
 
     void testRedirectedOutputUsesStableProxy() {
         const auto capturedOutput = stdOut();
-        const auto replacement = el::stream::StringBuilderStream::create();
+        const auto replacement = el::stream::AnyStringBuilderStream::create();
         auto redirect = el::stream::redirectStdOut(replacement);
 
         REQUIRE(redirect.isActive());
@@ -159,8 +159,8 @@ public:
     }
 
     void testNestedRedirectsRestorePreviousTargets() {
-        const auto first = el::stream::StringBuilderStream::create();
-        const auto second = el::stream::StringBuilderStream::create();
+        const auto first = el::stream::AnyStringBuilderStream::create();
+        const auto second = el::stream::AnyStringBuilderStream::create();
 
         auto firstRedirect = el::stream::redirectStdOut(first);
         stdOut()->writeLine("first-a"_el);
@@ -177,8 +177,8 @@ public:
     }
 
     void testRedirectBothStreamsAndMoveGuard() {
-        const auto output = el::stream::StringBuilderStream::create();
-        const auto error = el::stream::StringBuilderStream::create();
+        const auto output = el::stream::AnyStringBuilderStream::create();
+        const auto error = el::stream::AnyStringBuilderStream::create();
 
         auto redirect = el::stream::redirectStandardStreams(output, error);
         auto movedRedirect = std::move(redirect);
@@ -194,7 +194,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto toStdString(const el::stream::StringBuilderStreamPtr &stream) -> std::string {
+    [[nodiscard]] static auto toStdString(const el::stream::AnyStringBuilderStreamPtr &stream) -> std::string {
         return el::text::StringConverter{stream->toU8String()}.toStdString();
     }
 

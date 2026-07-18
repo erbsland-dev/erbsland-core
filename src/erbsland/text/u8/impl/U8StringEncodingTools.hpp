@@ -7,12 +7,14 @@
 #include "U8StringSharedStorage.hpp"
 #include "U8Writer.hpp"
 
-#include "../U8String.hpp"
+#include "../U8StringEditor.hpp"
 
 #include "../../../mem/ByteBlock_fwd.hpp"
-#include "../../../mem/ByteBlockView_fwd.hpp"
 #include "../../../mem/ByteWriter_fwd.hpp"
 #include "../../../mem/Endianness.hpp"
+#include "../../../mem/RingBuffer_fwd.hpp"
+#include "../../../unit/ByteLength_fwd.hpp"
+#include "../../../util/Result.hpp"
 #include "../../EncodingErrorMode.hpp"
 #include "../../StringBomMode.hpp"
 #include "../../StringEncoding.hpp"
@@ -43,16 +45,22 @@ public:
     [[nodiscard]] auto encode(
         StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
         -> mem::ByteBlock;
+    /// Calculate the exact byte length produced by `encode()`.
+    [[nodiscard]] auto encodedLength(
+        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
+        -> unit::ByteLength;
+    /// Atomically encode the visible UTF-8 data directly into a ring buffer.
+    [[nodiscard]] auto encodeTo(
+        mem::RingBuffer &buffer,
+        StringEncoding encoding,
+        StringBomMode bomMode,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> util::Result;
     /// Decode byte data into a UTF-8 string.
     [[nodiscard]] static auto decode(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
-        -> U8String;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        -> U8StringEditor;
 
 public: // helpers
-    /// Get the default byte order for the string encoding.
-    [[nodiscard]] static auto defaultEndianness(StringEncoding encoding) noexcept -> mem::Endianness;
-    /// Test if the given BOM mode should write a BOM for this encoding.
-    [[nodiscard]] static auto shouldWriteBom(StringEncoding encoding, StringBomMode bomMode) noexcept -> bool;
     /// Encode visible UTF-8 data as UTF-8 bytes.
     [[nodiscard]] static auto encodeUtf8(std::span<const char> data, StringBomMode bomMode, EncodingErrorMode errorMode)
         -> mem::ByteBlock;
@@ -66,30 +74,30 @@ public: // helpers
         -> mem::ByteBlock;
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
     /// Decode characters to UTF-8 string storage using a two-pass algorithm.
     template <typename Function>
-    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U8String;
+    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U8StringEditor;
     /// Decode byte data as UTF-8.
-    [[nodiscard]] static auto decodeUtf8(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U8String;
+    [[nodiscard]] static auto decodeUtf8(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U8StringEditor;
     /// Decode byte data as UTF-16.
-    [[nodiscard]] static auto decodeUtf16(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U8String;
+    [[nodiscard]] static auto decodeUtf16(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U8StringEditor;
     /// Decode byte data as UTF-32.
-    [[nodiscard]] static auto decodeUtf32(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U8String;
+    [[nodiscard]] static auto decodeUtf32(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U8StringEditor;
 
 private:
     U8StringDataView _data;
 };
 
 template <typename Function>
-auto U8StringEncodingTools::decodeFromCharacters(Function function) -> U8String {
+auto U8StringEncodingTools::decodeFromCharacters(Function function) -> U8StringEditor {
     auto reservedSize = unit::ByteLength::zero();
     function([&](const Char character) -> void { reservedSize += utf8::encodedLength(character); });
     if (reservedSize.isZero()) {
-        return U8String{};
+        return U8StringEditor{};
     }
 
     auto storage = U8StringSharedStorage::forSize(reservedSize.toSizeT());
@@ -100,7 +108,7 @@ auto U8StringEncodingTools::decodeFromCharacters(Function function) -> U8String 
 
     auto writer = U8Writer{std::span{data, storage.dataSize()}};
     function([&](const Char character) -> void { writer.write(character); });
-    return U8String{std::move(storage)};
+    return U8StringEditor{std::move(storage)};
 }
 
 }

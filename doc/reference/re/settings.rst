@@ -96,7 +96,7 @@ Interface
 
 .. doxygenenum:: erbsland::re::Feature
 
-.. doxygenfunction:: erbsland::re::toString(const Feature feature) -> text::StringView
+.. doxygenfunction:: erbsland::re::toString(const Feature feature) -> text::String
 .. doxygenclass:: erbsland::re::Features
     :members:
 .. doxygenclass:: erbsland::re::Settings

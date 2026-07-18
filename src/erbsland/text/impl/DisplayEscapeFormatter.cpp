@@ -12,7 +12,7 @@ auto DisplayEscapeFormatter::needsEscape(const Char character, const EscapeAmoun
     return needsEscapeByAmount(character, amount, character.isControlOrFormat(), false);
 }
 
-void DisplayEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void DisplayEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     CppEscapeFormatter::instance()->escape(character, builder);
 }
 

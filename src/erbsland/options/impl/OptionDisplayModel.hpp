@@ -13,8 +13,7 @@
 
 #include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/String.hpp"
-#include "../../text/StringBuilder_fwd.hpp"
-#include "../../text/StringView.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <vector>
 
@@ -26,7 +25,7 @@ class OptionDisplayModel final {
 public:
     /// Create a display model for the given options and module name.
     OptionDisplayModel(
-        OptionsPtr options, text::StringView moduleName, const i18n::DisplayTextMapConstPtr &displayText = {});
+        OptionsPtr options, const text::String &moduleName, const i18n::DisplayTextMapConstPtr &displayText = {});
 
     // defaults
     ~OptionDisplayModel() = default;
@@ -43,13 +42,13 @@ public:
     /// Access the display text used by the model.
     [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
     /// Get the application display name.
-    [[nodiscard]] auto displayName() const -> text::StringView;
+    [[nodiscard]] auto displayName() const -> text::String;
     /// Get the executable name for usage text.
-    [[nodiscard]] auto executableName() const -> text::StringView;
+    [[nodiscard]] auto executableName() const -> text::String;
     /// Get the first help heading.
     [[nodiscard]] auto helpTitleText() const -> text::String;
     /// Get the selected title text.
-    [[nodiscard]] auto titleText() const -> text::StringView;
+    [[nodiscard]] auto titleText() const -> text::String;
     /// Get the selected help object.
     [[nodiscard]] auto selectedHelp() const -> const OptionHelp *;
     /// Get the visible option sets for the selected scope.
@@ -75,10 +74,10 @@ public:
         const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
     /// Resolve the displayed value name for one option.
     [[nodiscard]] static auto optionValueName(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::StringView;
+        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
     /// Resolve the displayed value name for one positional argument.
     [[nodiscard]] static auto positionalValueName(
-        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::StringView;
+        const OptionPtr &option, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::String;
     /// Resolve inherited help visibility.
     [[nodiscard]] static auto resolvedVisibility(
         const OptionHelp &help, OptionHelpVisibility inherited = OptionHelpVisibility::Normal) noexcept
@@ -91,11 +90,11 @@ public:
     [[nodiscard]] static auto isVersionOption(const OptionPtr &option) -> bool;
 
 private:
-    static void appendMetaPlaceholder(text::StringBuilder &builder, const text::StringView &placeholder);
+    static void appendMetaPlaceholder(text::StringEditor &result, const text::String &placeholder);
     [[nodiscard]] static auto optionSetTitle(
         const OptionSetPtr &optionSet, const i18n::DisplayTextMapConstPtr &displayText) -> text::String;
 
-    [[nodiscard]] auto findModule(text::StringView moduleName) const -> OptionModulePtr;
+    [[nodiscard]] auto findModule(const text::String &moduleName) const -> OptionModulePtr;
     [[nodiscard]] auto hasModules() const noexcept -> bool;
     [[nodiscard]] auto visibleOptionSet(const OptionSetPtr &optionSet) const noexcept -> bool;
     [[nodiscard]] auto visibleOption(
@@ -105,6 +104,8 @@ private:
     [[nodiscard]] auto visibleModule(const OptionHelp &help) const noexcept -> bool;
     [[nodiscard]] auto choiceRows(const OptionPtr &option) const -> std::vector<OptionDisplayRow>;
     [[nodiscard]] auto optionSortKey(const OptionPtr &option) const -> text::String;
+    [[nodiscard]] static auto resolveDisplayText(const i18n::DisplayTextMapConstPtr &displayText) noexcept
+        -> i18n::DisplayTextMapConstPtr;
 
 private:
     OptionsPtr _options;                       ///< The options root to render.

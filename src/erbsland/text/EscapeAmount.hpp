@@ -3,7 +3,7 @@
 #pragma once
 
 #include "Char_fwd.hpp"
-#include "String_fwd.hpp"
+#include "StringEditor_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -48,12 +48,12 @@ public: // accessors
 
 public: // conversion
     /// Convert this escape amount to its canonical string.
-    [[nodiscard]] auto toString() const -> StringView;
+    [[nodiscard]] auto toString() const -> String;
     /// Create an escape amount from a canonical string.
-    [[nodiscard]] static auto fromString(const StringView &text) noexcept -> std::optional<EscapeAmount>;
+    [[nodiscard]] static auto fromString(const String &text) noexcept -> std::optional<EscapeAmount>;
     /// Create an escape amount from a canonical string.
     /// @throws err::ParseError if the string is not a supported escape amount.
-    [[nodiscard]] static auto fromStringOrThrow(const StringView &text) -> EscapeAmount;
+    [[nodiscard]] static auto fromStringOrThrow(const String &text) -> EscapeAmount;
     /// Create an escape amount from a format suffix character.
     [[nodiscard]] static auto fromSuffix(Char character) noexcept -> std::optional<EscapeAmount>;
 

@@ -38,7 +38,7 @@ public:
     [[nodiscard]] auto supportsCursorCodes() const noexcept -> bool override;
     [[nodiscard]] auto isInteractive() const noexcept -> bool override;
     [[nodiscard]] auto detectScreenSize() -> std::optional<bgeo::BlockSize> override;
-    void emitText(const text::StringView &text) override;
+    void emitText(const text::String &text) override;
     void emitFlush() override;
     void setAlternateScreenBuffer(bool enabled) override;
 

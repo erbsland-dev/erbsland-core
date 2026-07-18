@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RegEx.hpp"
 
+#include "Match.hpp"
+#include "Match16.hpp"
+#include "Match32.hpp"
+
+#include "impl/engine/Engine.hpp"
 #include "impl/error/InternalError.hpp"
 #include "impl/input/StreamInput.hpp"
 #include "impl/input/StringInput.hpp"
@@ -15,15 +20,15 @@ namespace erbsland::re {
 
 using namespace text::literals;
 
-auto RegEx::findAll(const text::StringView &text) const -> MatchGenerator {
+auto RegEx::findAll(const text::String &text) const -> MatchGenerator {
     return findAll(impl::StringInput::create(text));
 }
 
-auto RegEx::findAll(const text::U16StringView &text) const -> Match16Generator {
+auto RegEx::findAll(const text::U16String &text) const -> Match16Generator {
     return findAll(impl::U16StringInput::create(text));
 }
 
-auto RegEx::findAll(const text::U32StringView &text) const -> Match32Generator {
+auto RegEx::findAll(const text::U32String &text) const -> Match32Generator {
     return findAll(impl::U32StringInput::create(text));
 }
 
@@ -42,7 +47,7 @@ auto RegEx::findAll(const InputPtr input) const -> MatchGenerator {
         auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
-        auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+        auto match = input->createMatch(std::move(captureGroups));
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
         co_yield std::move(match);
         if (state->isAtEnd()) {
@@ -66,7 +71,7 @@ auto RegEx::findAll(const Input16Ptr input) const -> Match16Generator {
         auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
-        auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+        auto match = input->createMatch(std::move(captureGroups));
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
         co_yield std::move(match);
         if (state->isAtEnd()) {
@@ -90,7 +95,7 @@ auto RegEx::findAll(const Input32Ptr input) const -> Match32Generator {
         auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
-        auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+        auto match = input->createMatch(std::move(captureGroups));
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
         co_yield std::move(match);
         if (state->isAtEnd()) {

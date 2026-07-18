@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StringView.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/unit/all.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

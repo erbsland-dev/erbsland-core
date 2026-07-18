@@ -17,6 +17,9 @@ namespace erbsland::event::impl {
 
 using namespace text::literals;
 
+using time::TimeDelta;
+using time::TimePoint;
+
 EventLoop::EventLoop() {
 }
 
@@ -42,7 +45,7 @@ void EventLoop::invoke(EventCallback callback) {
     post(Event{id::InvocationEvent, std::make_unique<CallbackEventData>(std::move(callback))});
 }
 
-void EventLoop::invokeAfter(const time::TimeDelta delay, EventCallback callback) {
+void EventLoop::invokeAfter(const TimeDelta delay, EventCallback callback) {
     if (!delay.isPositive()) {
         invoke(std::move(callback));
         return;
@@ -107,7 +110,7 @@ auto EventLoop::runOnce() -> bool {
     return result;
 }
 
-auto EventLoop::runOnce(const time::TimeDelta maximumWait) -> bool {
+auto EventLoop::runOnce(const TimeDelta maximumWait) -> bool {
     ensureBackendsAttached();
     {
         std::scoped_lock lock{_mutex};
@@ -142,7 +145,7 @@ auto EventLoop::runUntilIdle() -> std::size_t {
     }
     auto result = std::size_t{0};
     try {
-        while (runOnceImpl(time::TimeDelta::zero())) {
+        while (runOnceImpl(TimeDelta::zero())) {
             result += 1U;
         }
     } catch (...) {
@@ -297,18 +300,18 @@ void EventLoop::notifyWake() noexcept {
     _cv.notify_all();
 }
 
-auto EventLoop::runOnceImpl(const std::optional<time::TimeDelta> maximumWait) -> bool {
-    auto maximumWaitEnd = std::optional<time::TimePoint>{};
+auto EventLoop::runOnceImpl(const std::optional<TimeDelta> maximumWait) -> bool {
+    auto maximumWaitEnd = std::optional<TimePoint>{};
     if (maximumWait.has_value()) {
         if (maximumWait->isPositive()) {
-            maximumWaitEnd = time::TimePoint::inFuture(*maximumWait);
+            maximumWaitEnd = TimePoint::inFuture(*maximumWait);
         } else {
-            maximumWaitEnd = time::TimePoint::now();
+            maximumWaitEnd = TimePoint::now();
         }
     }
 
     while (true) {
-        const auto now = time::TimePoint::now();
+        const auto now = TimePoint::now();
         pollBackends(now);
         if (auto event = takeNextEvent(); event.has_value()) {
             processEvent(*event);
@@ -324,7 +327,7 @@ auto EventLoop::runOnceImpl(const std::optional<time::TimeDelta> maximumWait) ->
             return false;
         }
 
-        auto waitEnd = std::optional<time::TimePoint>{};
+        auto waitEnd = std::optional<TimePoint>{};
         const auto backendWakeTime = nextBackendWakeTime();
         if (backendWakeTime.has_value()) {
             waitEnd = *backendWakeTime;
@@ -338,7 +341,7 @@ auto EventLoop::runOnceImpl(const std::optional<time::TimeDelta> maximumWait) ->
             continue;
         }
 
-        const auto waitStart = time::TimePoint::now();
+        const auto waitStart = TimePoint::now();
         const auto waitTime = waitStart.timeDeltaTo(*waitEnd);
         if (waitTime.isPositive()) {
             waitForWake(waitTime);
@@ -455,14 +458,14 @@ auto EventLoop::backendSnapshot() const -> std::vector<EventBackend *> {
     return result;
 }
 
-void EventLoop::pollBackends(const time::TimePoint now) {
+void EventLoop::pollBackends(const TimePoint now) {
     for (const auto backend : backendSnapshot()) {
         backend->poll(now);
     }
 }
 
-auto EventLoop::nextBackendWakeTime() const -> std::optional<time::TimePoint> {
-    auto result = std::optional<time::TimePoint>{};
+auto EventLoop::nextBackendWakeTime() const -> std::optional<TimePoint> {
+    auto result = std::optional<TimePoint>{};
     for (const auto backend : backendSnapshot()) {
         const auto nextWakeTime = backend->nextWakeTime();
         if (!nextWakeTime.has_value()) {
@@ -489,7 +492,7 @@ void EventLoop::waitForWake() {
     });
 }
 
-void EventLoop::waitForWake(const time::TimeDelta waitTime) {
+void EventLoop::waitForWake(const TimeDelta waitTime) {
     std::unique_lock lock{_mutex};
     const auto wakeCounter = _wakeCounter;
     _cv.wait_for(lock, waitTime.toStdNanoseconds(), [this, wakeCounter]() -> bool {

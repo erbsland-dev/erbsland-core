@@ -3,8 +3,7 @@
 #include <erbsland/Char.hpp>
 #include <erbsland/re/Input.hpp>
 #include <erbsland/re/Match.hpp>
-#include <erbsland/re/RegEx.hpp>
-#include <erbsland/text/u32/U32StringView.hpp>
+#include <erbsland/text/u32/U32String.hpp>
 
 #include <string>
 #include <utility>
@@ -12,25 +11,22 @@
 
 // FIXME!
 // This should be moved into a demo - to make sure it compiles and works as expected.
+// This demo also makes no sense with Erbsland Core, it needs to adapted to use the correct types.
 
 class VectorMatch : public erbsland::re::Match32 {
 public:
     using Match32::Match32;
 
 public:
-    VectorMatch(
-        const el::re::ConstRegExPtr &regEx,
-        const el::re::CaptureGroupList &captureGroupList,
-        std::u32string &&capturedContent,
-        const std::size_t offset) :
-        Match32(regEx, captureGroupList), _capturedContent{std::move(capturedContent)}, _offset{offset} {}
+    VectorMatch(el::re::CaptureGroupList captureGroupList, std::u32string &&capturedContent, const std::size_t offset) :
+        Match32(std::move(captureGroupList)), _capturedContent{std::move(capturedContent)}, _offset{offset} {}
     ~VectorMatch() override = default;
 
 protected:
     [[nodiscard]] auto getContentForGroup(const el::re::CaptureGroup &group) const noexcept
-        -> el::text::U32StringView override {
+        -> el::text::U32String override {
 
-        return el::text::U32String{_capturedContent}.slice({group.begin() - _offset, group.size()});
+        return el::text::U32StringEditor{_capturedContent}.slice({group.begin() - _offset, group.size()});
     }
 
 private:
@@ -65,8 +61,7 @@ public:
             _position = _vectorRef.size();
         }
     }
-    [[nodiscard]] auto createMatch(el::re::ConstRegExPtr regEx, el::re::CaptureGroupList captureGroupList)
-        -> el::re::Match32Ptr override {
+    [[nodiscard]] auto createMatch(el::re::CaptureGroupList captureGroupList) -> el::re::Match32Ptr override {
 
         std::u32string capturedContent;
         const std::size_t offset = captureGroupList.front().begin();
@@ -74,8 +69,7 @@ public:
         for (std::size_t i = offset; i < end; ++i) {
             capturedContent.push_back(decodeCodePoint(_vectorRef.at(i)).toRawValue());
         }
-        return std::make_shared<VectorMatch>(
-            std::move(regEx), std::move(captureGroupList), std::move(capturedContent), offset);
+        return std::make_shared<VectorMatch>(std::move(captureGroupList), std::move(capturedContent), offset);
     }
 
 private:

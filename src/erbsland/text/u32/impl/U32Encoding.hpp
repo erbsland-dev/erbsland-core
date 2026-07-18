@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../mem/ByteBlockView.hpp"
+#include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -18,27 +18,6 @@
 #include <type_traits>
 
 namespace erbsland::text::impl::utf32 {
-
-/// Test if the string encoding is a UTF-32 encoding.
-[[nodiscard]] constexpr auto isEncoding(const StringEncoding encoding) noexcept -> bool {
-    return encoding == StringEncoding::Utf32 || encoding == StringEncoding::Utf32LittleEndian ||
-        encoding == StringEncoding::Utf32BigEndian;
-}
-
-/// Get the UTF-32 byte order mark length.
-[[nodiscard]] constexpr auto bomLength() noexcept -> std::size_t {
-    return 4U;
-}
-
-/// Test if the byte data starts with a UTF-32 little-endian byte order mark.
-[[nodiscard]] inline auto hasLittleEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
-    return data.startsWith({0xFFU, 0xFEU, 0x00U, 0x00U});
-}
-
-/// Test if the byte data starts with a UTF-32 big-endian byte order mark.
-[[nodiscard]] inline auto hasBigEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
-    return data.startsWith({0x00U, 0x00U, 0xFEU, 0xFFU});
-}
 
 /// Read one UTF-32 code unit from a byte reader.
 [[nodiscard]] inline auto readCodeUnit(mem::ByteReader &reader) noexcept -> char32_t {

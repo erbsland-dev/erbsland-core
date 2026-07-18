@@ -7,17 +7,17 @@
 
 #include "../pattern/AnyElement.hpp"
 #include "../pattern/Limits.hpp"
-#include "../u16/U16StringView_fwd.hpp"
-#include "../u32/U32StringView_fwd.hpp"
-#include "../u8/U8StringView_fwd.hpp"
+#include "../u16/U16String_fwd.hpp"
+#include "../u32/U32String_fwd.hpp"
+#include "../u8/U8String_fwd.hpp"
 
 #include <memory>
 
 namespace erbsland::text::impl {
 
-[[nodiscard]] auto createStringPatternData(const U8StringView &pattern) -> StringPatternDataPtr;
-[[nodiscard]] auto createStringPatternData(const U16StringView &pattern) -> StringPatternDataPtr;
-[[nodiscard]] auto createStringPatternData(const U32StringView &pattern) -> StringPatternDataPtr;
+[[nodiscard]] auto createStringPatternData(const U8String &pattern) -> StringPatternDataPtr;
+[[nodiscard]] auto createStringPatternData(const U16String &pattern) -> StringPatternDataPtr;
+[[nodiscard]] auto createStringPatternData(const U32String &pattern) -> StringPatternDataPtr;
 
 template <pattern::AnyElement... Args>
 [[nodiscard]] auto createStaticStringPatternData(const Args &...elements) -> StringPatternDataPtr {

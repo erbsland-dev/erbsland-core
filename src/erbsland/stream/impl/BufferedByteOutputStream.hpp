@@ -8,9 +8,9 @@
 #include "../ByteOutputStream.hpp"
 
 #include "../../text/EncodingErrorMode.hpp"
+#include "../../text/String.hpp"
 #include "../../text/StringBomMode.hpp"
 #include "../../text/StringEncoding.hpp"
-#include "../../text/StringView.hpp"
 #include "../../time/TimePoint.hpp"
 
 #include <memory>
@@ -59,7 +59,7 @@ public:
     /// @param errorMode How encoding errors are handled.
     /// @return `Success` if all encoded bytes were accepted, or `Timeout` if nothing was accepted.
     auto writeEncodedText(
-        const text::StringView &text,
+        const text::String &text,
         text::StringEncoding encoding,
         text::StringBomMode bomMode,
         text::EncodingErrorMode errorMode) -> StreamWriteStatus;

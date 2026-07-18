@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringKey.hpp"
 #include "StringList_fwd.hpp"
 
 #include "../Char.hpp"
@@ -18,7 +19,7 @@
 namespace erbsland::text::impl {
 
 /// A string-specific list container with character-comparison operations and joining.
-/// @tparam tString The string or string view type stored in this list.
+/// @tparam tString The editable or read-only string type stored in this list.
 /// @tested{StringListTest}
 template <typename tString>
 class StringList : public util::List<tString, StringList<tString>> {
@@ -26,9 +27,9 @@ public:
     using Base = util::List<tString, StringList<tString>>;
     using Element = Base::Element;
     using Index = Base::Index;
-    using View = Element::View;
+    using ReadOnly = typename StringTypes<Element>::ReadOnly;
     using Count = unit::ElementCount;
-    using NativeIndex = decltype(std::declval<View>().findFirstOf(std::declval<const CharSet &>()));
+    using NativeIndex = decltype(std::declval<ReadOnly>().findFirstOf(std::declval<const CharSet &>()));
     using NativeLength = typename NativeIndex::Length;
     using NativeRange = unit::IntegerUnitRange<typename NativeIndex::Unit>;
 
@@ -108,19 +109,21 @@ public:
     /// @param compareFn The character comparison function.
     /// @return `true` if a matching value is present.
     [[nodiscard]] auto contains(const Element &value, CharCompareFn compareFn) const noexcept -> bool;
-    /// Split a string view into this list type.
+    /// Split a read-only string into this list type.
     /// @param text The text to split.
     /// @param separators The separator characters.
     /// @param maximumSplits The maximum number of split points to apply.
     /// @param keepEmpty Whether empty parts are kept.
     /// @return A list with the split parts.
     [[nodiscard]] static auto fromSplit(
-        const View &text, const CharSet &separators, Count maximumSplits = Count::infinite(), bool keepEmpty = false)
-        -> StringList;
+        const ReadOnly &text,
+        const CharSet &separators,
+        Count maximumSplits = Count::infinite(),
+        bool keepEmpty = false) -> StringList;
     /// Join all strings in this list.
     /// @param separator The separator inserted between elements.
     /// @return The joined string.
-    [[nodiscard]] auto join(const View &separator = {}) const -> Element;
+    [[nodiscard]] auto join(const ReadOnly &separator = {}) const -> Element;
     /// Remove all empty strings from this list.
     /// @return A reference to this list.
     auto removeEmpty() -> StringList &;
@@ -130,8 +133,8 @@ public:
 
 private:
     /// Estimate the capacity for a split result.
-    [[nodiscard]] static auto estimatedSplitCapacity(const View &text, const CharSet &separators, Count maximumSplits)
-        -> std::size_t;
+    [[nodiscard]] static auto estimatedSplitCapacity(
+        const ReadOnly &text, const CharSet &separators, Count maximumSplits) -> std::size_t;
     /// Return a safe list capacity for a finite split count.
     [[nodiscard]] static auto capacityForSplitLimit(std::size_t maximumSplits) noexcept -> std::size_t;
 };

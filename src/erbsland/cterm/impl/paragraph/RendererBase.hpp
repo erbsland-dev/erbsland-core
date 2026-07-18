@@ -23,7 +23,7 @@ protected:
     RendererBase(
         const bgeo::Alignment alignment,
         const LayoutResult &layout,
-        const BlockStringView &sourceText,
+        const BlockString &sourceText,
         const ParagraphOptions &options,
         ParagraphBackgroundMode backgroundMode) noexcept :
         _alignment{alignment},
@@ -42,7 +42,7 @@ public: // defaults/deletions
 protected:
     [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment { return _alignment; }
     [[nodiscard]] auto layout() const noexcept -> const LayoutResult & { return _layout; }
-    [[nodiscard]] auto sourceText() const noexcept -> const BlockStringView & { return _sourceText; }
+    [[nodiscard]] auto sourceText() const noexcept -> const BlockString & { return _sourceText; }
     [[nodiscard]] auto options() const noexcept -> const ParagraphOptions & { return _options; }
     [[nodiscard]] auto usesLeftFill() const noexcept -> bool {
         return _backgroundMode == ParagraphBackgroundMode::WrappedLeft ||
@@ -69,7 +69,7 @@ protected:
 private:
     bgeo::Alignment _alignment;
     const LayoutResult &_layout;
-    const BlockStringView &_sourceText;
+    const BlockString &_sourceText;
     const ParagraphOptions &_options;
     ParagraphBackgroundMode _backgroundMode;
 };

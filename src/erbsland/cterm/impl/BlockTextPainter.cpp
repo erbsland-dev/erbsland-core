@@ -12,7 +12,13 @@
 
 namespace erbsland::cterm::impl {
 
-void BlockTextPainter::drawBlockText(bgeo::BlockPosition pos, const BlockStringView &str) {
+using namespace bgeo;
+using text::Char;
+using text::EncodingErrorMode;
+using text::String;
+using text::U32String;
+
+void BlockTextPainter::drawBlockText(BlockPosition pos, const BlockString &str) {
     if (str.isEmpty()) {
         return;
     }
@@ -20,7 +26,7 @@ void BlockTextPainter::drawBlockText(bgeo::BlockPosition pos, const BlockStringV
     for (const auto character : str) {
         if (character == U'\n') {
             pos.setX(x);
-            pos += bgeo::BlockPosition{0, 1};
+            pos += BlockPosition{0, 1};
             continue;
         }
         if (character.displayWidth() == 0) {
@@ -29,7 +35,7 @@ void BlockTextPainter::drawBlockText(bgeo::BlockPosition pos, const BlockStringV
         if (rect().contains(pos)) {
             set(pos, character.withBase(get(pos).color()));
         }
-        pos += bgeo::BlockPosition{character.displayWidth(), 0};
+        pos += BlockPosition{character.displayWidth(), 0};
     }
 }
 
@@ -37,7 +43,7 @@ void BlockTextPainter::drawBlockText(const BlockText &text, const std::size_t an
     drawBlockText(text.blockString(), text.rectangle(), text.blockTextOptions(), animationCycle);
 }
 
-auto BlockTextPainter::simpleBlockTextOptions(const bgeo::Alignment alignment, BlockStyle style) noexcept
+auto BlockTextPainter::simpleBlockTextOptions(const Alignment alignment, BlockStyle style) noexcept
     -> BlockTextOptions {
     auto options = BlockTextOptions{alignment};
     options.setColor(style.color());
@@ -46,8 +52,8 @@ auto BlockTextPainter::simpleBlockTextOptions(const bgeo::Alignment alignment, B
 }
 
 void BlockTextPainter::drawBlockText(
-    const BlockStringView &text,
-    const bgeo::BlockRectangle rect,
+    const BlockString &text,
+    const BlockRectangle rect,
     const BlockTextOptions &options,
     const std::size_t animationCycle) {
     const auto textRect = contentRect(rect, options.paragraphOptions());
@@ -86,72 +92,72 @@ void BlockTextPainter::drawBlockText(
         text,
         options.paragraphOptions(),
         options.backgroundMode(),
-        [&](const Block &character, const bgeo::BlockPosition position) -> Color {
+        [&](const Block &character, const BlockPosition position) -> Color {
             return colorForBlockTextPosition(options, character, position, animationCycle);
         }}
         .paint();
 }
 
 void BlockTextPainter::drawBlockText(
-    const text::StringView &text,
-    const bgeo::BlockRectangle rect,
-    const bgeo::Alignment alignment,
+    const String &text,
+    const BlockRectangle rect,
+    const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
     drawBlockText(
-        BlockString{text, text::EncodingErrorMode::Replace},
+        BlockStringEditor{text, EncodingErrorMode::Replace},
         rect,
         simpleBlockTextOptions(alignment, style),
         animationCycle);
 }
 
 void BlockTextPainter::drawBlockText(
-    const text::U32StringView &text,
-    const bgeo::BlockRectangle rect,
-    const bgeo::Alignment alignment,
+    const U32String &text,
+    const BlockRectangle rect,
+    const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
-    drawBlockText(BlockString{text}, rect, simpleBlockTextOptions(alignment, style), animationCycle);
+    drawBlockText(BlockStringEditor{text}, rect, simpleBlockTextOptions(alignment, style), animationCycle);
 }
 
 void BlockTextPainter::drawBlockText(
-    const BlockStringView &text,
-    const bgeo::BlockRectangle rect,
-    const bgeo::Alignment alignment,
+    const BlockString &text,
+    const BlockRectangle rect,
+    const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
     drawBlockText(text, rect, simpleBlockTextOptions(alignment, style), animationCycle);
 }
 
-auto BlockTextPainter::contentRect(const bgeo::BlockRectangle rect, const ParagraphOptions &options) noexcept
-    -> bgeo::BlockRectangle {
+auto BlockTextPainter::contentRect(const BlockRectangle rect, const ParagraphOptions &options) noexcept
+    -> BlockRectangle {
     return rect.insetBy(options.margins());
 }
 
 auto BlockTextPainter::buildSimpleBlockTextLines(
-    const BlockStringView &text, const bgeo::BlockRectangle rect, ParagraphSpacing spacing) const -> BlockStringLines {
-    return BlockStringWrapper{text}.wrapIntoLines(rect.width().toRawValue(), spacing);
+    const BlockString &text, const BlockRectangle rect, ParagraphSpacing spacing) const -> BlockStringLines {
+    return text.wrapIntoLines(rect.width().toRawValue(), spacing);
 }
 
-auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, const BlockStringView &paragraph) const
+auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, const BlockString &paragraph) const
     -> BlockStringLines {
-    static constexpr auto pixelMap = std::array<text::Char, 16>{
-        text::Char{U' '},
-        text::Char{U'▘'},
-        text::Char{U'▝'},
-        text::Char{U'▀'},
-        text::Char{U'▖'},
-        text::Char{U'▌'},
-        text::Char{U'▞'},
-        text::Char{U'▛'},
-        text::Char{U'▗'},
-        text::Char{U'▚'},
-        text::Char{U'▐'},
-        text::Char{U'▜'},
-        text::Char{U'▄'},
-        text::Char{U'▙'},
-        text::Char{U'▟'},
-        text::Char{U'█'}};
+    static constexpr auto pixelMap = std::array<Char, 16>{
+        Char{U' '},
+        Char{U'▘'},
+        Char{U'▝'},
+        Char{U'▀'},
+        Char{U'▖'},
+        Char{U'▌'},
+        Char{U'▞'},
+        Char{U'▛'},
+        Char{U'▗'},
+        Char{U'▚'},
+        Char{U'▐'},
+        Char{U'▜'},
+        Char{U'▄'},
+        Char{U'▙'},
+        Char{U'▟'},
+        Char{U'█'}};
     if (options.font() == nullptr) {
         return {};
     }
@@ -168,7 +174,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
         return {};
     }
     bitmapWidth += renderedGlyphs - 1;
-    auto bitmap = Bitmap{bgeo::BlockSize{bitmapWidth, font.height()}};
+    auto bitmap = Bitmap{BlockSize{bitmapWidth, font.height()}};
     auto columnColors = std::vector<Color>(static_cast<std::size_t>((bitmapWidth + 1) / 2 + 1));
     auto insertX = 0;
     auto isFirstGlyph = true;
@@ -180,7 +186,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
         if (!isFirstGlyph) {
             ++insertX;
         }
-        bitmap.draw(bgeo::BlockPosition{insertX, 0}, *glyph);
+        bitmap.draw(BlockPosition{insertX, 0}, *glyph);
         const auto startColumn = insertX / 2;
         const auto columnCount = glyph->size().width().toRawValue() / 2 + 1;
         for (auto columnIndex = 0; columnIndex < columnCount; ++columnIndex) {
@@ -191,20 +197,22 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
     }
     const auto rowCount = std::max(1, (font.height() + 1) / 2);
     const auto columns = std::max(1, (bitmapWidth + 1) / 2);
-    auto lines = BlockStringLines(static_cast<std::size_t>(rowCount));
+    auto lines = BlockStringLines{};
+    lines.reserve(static_cast<std::size_t>(rowCount));
     for (auto y = 0; y < rowCount; ++y) {
-        auto &line = lines[static_cast<std::size_t>(y)];
+        auto line = BlockStringEditor{};
         line.reserve(BlockCount::fromSizeT(static_cast<std::size_t>(columns)));
         for (auto x = 0; x < columns; ++x) {
             const auto color = columnColors[static_cast<std::size_t>(x)];
-            line.append(Block{pixelMap[bitmap.pixelQuad(bgeo::BlockPosition{x, y})], color});
+            line.append(Block{pixelMap[bitmap.pixelQuad(BlockPosition{x, y})], color});
         }
+        lines.emplace_back(line);
     }
     return lines;
 }
 
 void BlockTextPainter::applyBlockTextLines(
-    const bgeo::BlockRectangle rect,
+    const BlockRectangle rect,
     const BlockTextOptions &options,
     const BlockStringLines &lines,
     const std::size_t animationCycle) noexcept {
@@ -218,14 +226,14 @@ void BlockTextPainter::applyBlockTextLines(
     }
     for (auto lineIndex = 0; lineIndex < maxLines; ++lineIndex) {
         const auto &line = lines[static_cast<std::size_t>(lineIndex)];
-        const auto lineWidth = bgeo::BlockCoordinate{std::min(line.displayWidth(), rect.width().toRawValue())};
+        const auto lineWidth = BlockCoordinate{std::min(line.displayWidth(), rect.width().toRawValue())};
         auto xStart = rect.topLeft().x();
         if (alignment.isRight()) {
             xStart = rect.x2() - lineWidth;
         } else if (alignment.isHorizontalCenter()) {
             xStart += (rect.width() - lineWidth) / 2;
         }
-        auto pos = bgeo::BlockPosition{xStart, yStart + lineIndex};
+        auto pos = BlockPosition{xStart, yStart + lineIndex};
         for (const auto &character : line) {
             const auto characterWidth = character.displayWidth();
             if (characterWidth <= 0) {
@@ -240,7 +248,7 @@ void BlockTextPainter::applyBlockTextLines(
                 finalColor = get(pos).color().overlayWith(finalColor);
                 set(pos, character.withOverlay(finalColor));
             }
-            pos = pos + bgeo::BlockPosition{characterWidth, 0};
+            pos = pos + BlockPosition{characterWidth, 0};
         }
     }
 }
@@ -248,7 +256,7 @@ void BlockTextPainter::applyBlockTextLines(
 auto BlockTextPainter::colorForBlockTextPosition(
     const BlockTextOptions &options,
     const Block &character,
-    const bgeo::BlockPosition position,
+    const BlockPosition position,
     const std::size_t animationCycle) const noexcept -> Color {
 
     auto color = Color{};

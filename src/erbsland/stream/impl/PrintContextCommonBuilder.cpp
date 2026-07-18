@@ -6,36 +6,38 @@
 
 namespace erbsland::stream::impl {
 
+using namespace text;
+
 /// Prevent an extra copy when converting a string to be appended to a builder by choosing the correct string kind.
 template <typename T>
-void PrintContextCommonBuilder::convertAndAppendToBuilder(text::StringBuilder &builder, T text) {
-    if (builder.kind() == text::StringKind::U32) {
-        builder.append(text::StringConverter{text}.toU32String());
-    } else if (builder.kind() == text::StringKind::U16) {
-        builder.append(text::StringConverter{text}.toU16String());
+void PrintContextCommonBuilder::convertAndAppendToBuilder(AnyStringBuilder &builder, T text) {
+    if (builder.kind() == StringKind::U32) {
+        builder.append(StringConverter{text}.toU32String());
+    } else if (builder.kind() == StringKind::U16) {
+        builder.append(StringConverter{text}.toU16String());
     } else {
-        builder.append(text::StringConverter{text}.toU8String());
+        builder.append(StringConverter{text}.toU8String());
     }
 }
 
-void PrintContextCommonBuilder::print(const text::Char character) {
+void PrintContextCommonBuilder::print(const Char character) {
     builder().append(character);
 }
 
 void PrintContextCommonBuilder::print(const char character) {
-    builder().append(text::Char{static_cast<char32_t>(static_cast<unsigned char>(character))});
+    builder().append(Char{static_cast<char32_t>(static_cast<unsigned char>(character))});
 }
 
 void PrintContextCommonBuilder::print(const char8_t character) {
-    builder().append(text::Char{static_cast<char32_t>(character)});
+    builder().append(Char{static_cast<char32_t>(character)});
 }
 
 void PrintContextCommonBuilder::print(const char16_t character) {
-    builder().append(text::Char{static_cast<char32_t>(character)});
+    builder().append(Char{static_cast<char32_t>(character)});
 }
 
 void PrintContextCommonBuilder::print(const char32_t character) {
-    builder().append(text::Char{character});
+    builder().append(Char{character});
 }
 
 void PrintContextCommonBuilder::print(const char *text) {
@@ -82,15 +84,15 @@ void PrintContextCommonBuilder::print(const std::u32string_view text) {
     convertAndAppendToBuilder(builder(), text);
 }
 
-void PrintContextCommonBuilder::print(const text::StringView &text) {
+void PrintContextCommonBuilder::print(const String &text) {
     builder().append(text);
 }
 
-void PrintContextCommonBuilder::print(const text::U16StringView &text) {
+void PrintContextCommonBuilder::print(const U16String &text) {
     builder().append(text);
 }
 
-void PrintContextCommonBuilder::print(const text::U32StringView &text) {
+void PrintContextCommonBuilder::print(const U32String &text) {
     builder().append(text);
 }
 
@@ -114,23 +116,23 @@ void PrintContextCommonBuilder::print(uint64_t value) {
     builder().appendInteger(value, _integerFormat);
 }
 
-void PrintContextCommonBuilder::print(const mem::ByteBlockView &bytes) {
+void PrintContextCommonBuilder::print(const mem::ByteBlock &bytes) {
     builder().appendByteBlock(bytes, _byteFormat);
 }
 
-void PrintContextCommonBuilder::print(const text::BooleanFormat newFormat) {
+void PrintContextCommonBuilder::print(const BooleanFormat newFormat) {
     _booleanFormat = newFormat;
 }
 
-void PrintContextCommonBuilder::print(const text::ByteFormat newFormat) {
+void PrintContextCommonBuilder::print(const ByteFormat newFormat) {
     _byteFormat = newFormat;
 }
 
-void PrintContextCommonBuilder::print(const text::IntegerFormat newFormat) {
+void PrintContextCommonBuilder::print(const IntegerFormat newFormat) {
     _integerFormat = newFormat;
 }
 
-void PrintContextCommonBuilder::print(const text::FloatFormat newFormat) {
+void PrintContextCommonBuilder::print(const FloatFormat newFormat) {
     _floatFormat = newFormat;
 }
 

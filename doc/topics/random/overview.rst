@@ -90,17 +90,17 @@ Only the final replay check uses an explicit seed, because that line intentional
     /// switch to `SecureRandom` for values that protect access or identity, and
     /// reserve explicitly seeded `FastRandom` instances for reproducible tests and
     /// simulations.
-    auto buildMapRows(el::Random &random) -> el::StringList {
-        const auto terrain = el::List<el::String>{
-            el::String{"les"_el},
-            el::String{"skala"_el},
-            el::String{"voda"_el},
-            el::String{"louka"_el},
+    auto buildMapRows(el::Random &random) -> el::StringEditorList {
+        const auto terrain = el::List<el::StringEditor>{
+            el::StringEditor{"les"_el},
+            el::StringEditor{"skala"_el},
+            el::StringEditor{"voda"_el},
+            el::StringEditor{"louka"_el},
         };
-        auto rows = el::StringList{};
+        auto rows = el::StringEditorList{};
 
         for (auto y = 0; y < 3; ++y) {
-            auto row = el::String{};
+            auto row = el::StringEditor{};
             for (auto x = 0; x < 4; ++x) {
                 if (x > 0) {
                     row.append(" "_el);

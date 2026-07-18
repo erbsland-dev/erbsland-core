@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../../../text/Char.hpp"
-#include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 
 #include <compare>
 
@@ -12,15 +12,15 @@ namespace erbsland::re::impl {
 /// Append a character as a regular-expression Unicode hex escape.
 /// Values up to U+FFFF use `\\uxxxx`; larger values use `\\u{xxxxxxxx}`.
 /// @tested{ReCharacterTest}
-void appendAsHexEscape(text::String &str, text::Char character);
+void appendAsHexEscape(text::StringEditor &str, text::Char character);
 
 /// Append a character using an unambiguous representation suitable for diagnostics.
 /// @tested{ReCharacterTest}
-void appendToSafeString(text::String &str, text::Char character);
+void appendToSafeString(text::StringEditor &str, text::Char character);
 
 /// Append a character using a stable representation suitable for a character class.
 /// @tested{ReCharacterTest}
-void appendToCharRangeString(text::String &str, text::Char character);
+void appendToCharRangeString(text::StringEditor &str, text::Char character);
 
 /// Compare two characters, optionally applying Unicode simple case folding.
 [[nodiscard]] auto compareCharacters(text::Char left, text::Char right, bool caseInsensitive) noexcept

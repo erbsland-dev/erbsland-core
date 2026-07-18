@@ -26,7 +26,7 @@ public:
     }
 
     void testFeaturesToStringAndFormatter() {
-        REQUIRE_EQUAL(Features{}.toString(), String{});
+        REQUIRE_EQUAL(Features{}.toString(), StringEditor{});
         REQUIRE_EQUAL(std::format("{}", Features{}), std::string{});
 
         const auto features = Features{Feature::EscapeBell, Feature::PosixClasses, Feature::AnchorLowercaseZ};

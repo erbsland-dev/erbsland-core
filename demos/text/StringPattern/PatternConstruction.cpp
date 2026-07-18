@@ -14,7 +14,7 @@ void patternConstruction() {
     // A pattern can describe the small fixed shell around a laboratory record.
     const auto probeRecord = el::StringPattern{"probe-??[0-9]*"_el};
 
-    const auto probeLines = el::StringViewList{{
+    const auto probeLines = el::StringList{{
         "probe-AB7 temperatur=21.4C"_el,
         "probe-A7 temperatur=21.4C"_el,
     }};

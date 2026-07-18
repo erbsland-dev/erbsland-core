@@ -7,12 +7,14 @@
 #include "U32StringSharedStorage.hpp"
 #include "U32Writer.hpp"
 
-#include "../U32String.hpp"
+#include "../U32StringEditor.hpp"
 
 #include "../../../mem/ByteBlock_fwd.hpp"
-#include "../../../mem/ByteBlockView_fwd.hpp"
 #include "../../../mem/ByteWriter_fwd.hpp"
 #include "../../../mem/Endianness.hpp"
+#include "../../../mem/RingBuffer_fwd.hpp"
+#include "../../../unit/ByteLength_fwd.hpp"
+#include "../../../util/Result.hpp"
 #include "../../EncodingErrorMode.hpp"
 #include "../../StringBomMode.hpp"
 #include "../../StringEncoding.hpp"
@@ -43,16 +45,22 @@ public:
     [[nodiscard]] auto encode(
         StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
         -> mem::ByteBlock;
+    /// Calculate the exact byte length produced by `encode()`.
+    [[nodiscard]] auto encodedLength(
+        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
+        -> unit::ByteLength;
+    /// Atomically encode the visible UTF-32 data directly into a ring buffer.
+    [[nodiscard]] auto encodeTo(
+        mem::RingBuffer &buffer,
+        StringEncoding encoding,
+        StringBomMode bomMode,
+        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> util::Result;
     /// Decode byte data into a UTF-32 string.
     [[nodiscard]] static auto decode(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
-        -> U32String;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        -> U32StringEditor;
 
 public: // helpers
-    /// Get the default byte order for the string encoding.
-    [[nodiscard]] static auto defaultEndianness(StringEncoding encoding) noexcept -> mem::Endianness;
-    /// Test if the given BOM mode should write a BOM for this encoding.
-    [[nodiscard]] static auto shouldWriteBom(StringEncoding encoding, StringBomMode bomMode) noexcept -> bool;
     /// Encode visible UTF-32 data as UTF-8 bytes.
     [[nodiscard]] static auto encodeUtf8(
         std::span<const char32_t> data, StringBomMode bomMode, EncodingErrorMode errorMode) -> mem::ByteBlock;
@@ -66,30 +74,30 @@ public: // helpers
         -> mem::ByteBlock;
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
-        const mem::ByteBlockView &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
     /// Decode characters to UTF-32 string storage using a two-pass algorithm.
     template <typename Function>
-    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U32String;
+    [[nodiscard]] static auto decodeFromCharacters(Function function) -> U32StringEditor;
     /// Decode byte data as UTF-8.
-    [[nodiscard]] static auto decodeUtf8(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U32String;
+    [[nodiscard]] static auto decodeUtf8(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U32StringEditor;
     /// Decode byte data as UTF-16.
-    [[nodiscard]] static auto decodeUtf16(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U32String;
+    [[nodiscard]] static auto decodeUtf16(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U32StringEditor;
     /// Decode byte data as UTF-32.
-    [[nodiscard]] static auto decodeUtf32(
-        const mem::ByteBlockView &data, DecodeLayout layout, EncodingErrorMode errorMode) -> U32String;
+    [[nodiscard]] static auto decodeUtf32(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+        -> U32StringEditor;
 
 private:
     U32StringDataView _data;
 };
 
 template <typename Function>
-auto U32StringEncodingTools::decodeFromCharacters(Function function) -> U32String {
+auto U32StringEncodingTools::decodeFromCharacters(Function function) -> U32StringEditor {
     auto reservedSize = unit::CpLength::zero();
     function([&](const Char character) -> void { reservedSize += utf32::encodedLength(character); });
     if (reservedSize.isZero()) {
-        return U32String{};
+        return U32StringEditor{};
     }
 
     auto storage = U32StringSharedStorage::forSize(reservedSize.toSizeT());
@@ -100,7 +108,7 @@ auto U32StringEncodingTools::decodeFromCharacters(Function function) -> U32Strin
 
     auto writer = U32Writer{std::span{data, storage.dataSize()}};
     function([&](const Char character) -> void { writer.write(character); });
-    return U32String{std::move(storage)};
+    return U32StringEditor{std::move(storage)};
 }
 
 }

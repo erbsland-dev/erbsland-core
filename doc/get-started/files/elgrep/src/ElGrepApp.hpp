@@ -4,7 +4,7 @@
 
 #include <erbsland/Application.hpp>
 #include <erbsland/Path.hpp>
-#include <erbsland/String.hpp>
+#include <erbsland/StringEditor.hpp>
 #include <erbsland/re/CaptureRange.hpp>
 #include <erbsland/re/RegEx.hpp>
 
@@ -38,11 +38,11 @@ protected: // implement Application
 
 private:
     [[nodiscard]] auto searchFile(
-        const el::Path &path, const el::StringView &displayPath, const el::re::RegEx &expression) const -> FileResult;
+        const el::Path &path, const el::String &displayPath, const el::re::RegEx &expression) const -> FileResult;
     void searchDirectory(const el::Path &path, const el::re::RegEx &expression) const;
     void printResult(const FileResult &result) const;
     void printMatchingLine(const MatchingLine &line) const;
-    void printText(const el::StringView &text) const;
+    void printText(const el::String &text) const;
 };
 
 }

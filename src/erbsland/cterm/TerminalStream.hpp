@@ -60,9 +60,9 @@ public: // implement TextOutputStream
     auto close() -> stream::StreamCloseStatus override;
     void abort() noexcept override;
     auto write(text::Char character) -> stream::StreamWriteStatus override;
-    auto write(const text::StringView &text) -> stream::StreamWriteStatus override;
+    auto write(const text::String &text) -> stream::StreamWriteStatus override;
     auto writeLine() -> stream::StreamWriteStatus override;
-    auto writeLine(const text::StringView &text) -> stream::StreamWriteStatus override;
+    auto writeLine(const text::String &text) -> stream::StreamWriteStatus override;
 
 public: // accessors
     /// Get the terminal used by this stream.

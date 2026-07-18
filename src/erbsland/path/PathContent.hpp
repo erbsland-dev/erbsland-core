@@ -16,7 +16,7 @@
 #include "../stream/TextInputStream_fwd.hpp"
 #include "../stream/TextOutputStream_fwd.hpp"
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../util/Result.hpp"
 
@@ -71,13 +71,13 @@ public: // content methods
     /// @param text The text to write.
     /// @param options The options to use.
     /// @return True on success, false on error.
-    auto writeText(const text::StringView &text, PathWriteTextOptions options = {}) const noexcept -> util::Result;
+    auto writeText(const text::String &text, PathWriteTextOptions options = {}) const noexcept -> util::Result;
     /// Write text into the file at this path.
     /// @param text The text to write.
     /// @param options The options to use.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
     /// @throws text::EncodingError if the operation failed due to encoding errors.
-    void writeTextOrThrow(const text::StringView &text, PathWriteTextOptions options = {}) const;
+    void writeTextOrThrow(const text::String &text, PathWriteTextOptions options = {}) const;
     /// Write byte data into a file at this path.
     /// @param options The options to use.
     /// @param data The data to write.

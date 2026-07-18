@@ -65,16 +65,16 @@ class DocumentationOutputFilterTest(unittest.TestCase):
 
     def test_shows_doxygen_unexpanded_alias_warning_and_error(self) -> None:
         self.assertEqual(
-            "erbsland/text/String.hpp:20: warning: Found unknown command '@tested'",
+            "erbsland/text/StringEditor.hpp:20: warning: Found unknown command '@tested'",
             self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/text/String.hpp:20: "
+                "/workspace/erbsland-core/_doxygen_input/erbsland/text/StringEditor.hpp:20: "
                 "warning: Found unknown command '@tested'"
             ),
         )
         self.assertEqual(
-            "erbsland/text/String.hpp:21: error: failed to parse declaration",
+            "erbsland/text/StringEditor.hpp:21: error: failed to parse declaration",
             self.output_filter.filter_line(
-                "/workspace/erbsland-core/_doxygen_input/erbsland/text/String.hpp:21: "
+                "/workspace/erbsland-core/_doxygen_input/erbsland/text/StringEditor.hpp:21: "
                 "error: failed to parse declaration"
             ),
         )

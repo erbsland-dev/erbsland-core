@@ -297,7 +297,7 @@ Typical examples include integration tests, command embedding, report previews, 
 component's console output.
 The producer remains unaware of the capture and continues to use the standard-output API.
 
-Create a :cpp:class:`StringBuilderStream <erbsland::stream::StringBuilderStream>`, redirect standard output to it, and
+Create a :cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>`, redirect standard output to it, and
 keep the guard in the narrowest scope that covers the producer call.
 Once the guard is gone, standard output again points to the previous target and the captured string can safely be
 printed, compared, or returned.
@@ -318,9 +318,9 @@ Automatic guard destruction also restores standard output when producing the reh
 
     /// Capture output from code that writes to the standard-output proxy.
     /// Keep the redirect guard in a narrow scope so automatic restoration also covers early returns and exceptions.
-    /// A `StringBuilderStream` performs no external I/O, therefore timeout would violate an in-memory stream invariant.
+    /// A `AnyStringBuilderStream` performs no external I/O, therefore timeout would violate an in-memory stream invariant.
     auto captureRehearsalNotes() -> el::String {
-        const auto capture = el::StringBuilderStream::create();
+        const auto capture = el::AnyStringBuilderStream::create();
         {
             auto redirect = el::redirectStdOut(capture);
             if (el::io::printLine("Moderato, 96 bpm"_el).isTimeout() ||

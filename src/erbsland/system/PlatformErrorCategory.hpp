@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/String_fwd.hpp"
+#include "../text/StringEditor_fwd.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -52,7 +52,7 @@ public: // accessors
 
 public: // conversion
     /// Get the stable category identifier.
-    [[nodiscard]] auto toString() const -> text::StringView;
+    [[nodiscard]] auto toString() const -> text::String;
 
 private:
     Value _value{Unknown};

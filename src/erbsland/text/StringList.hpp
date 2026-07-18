@@ -8,7 +8,7 @@
 
 namespace erbsland::text {
 
-/// The common UTF-8 string list type.
+/// The common UTF-8 read-only string list type.
 using StringList = U8StringList;
 
 }

@@ -11,7 +11,7 @@ expression engine.
 
 Because the regular expression engine in Erbsland Core is based on a Thompson NFA, input is consumed sequentially and
 processed in a highly efficient streaming fashion.
-This makes it possible to match patterns not only against built-in Core string views, but also against custom iterators
+This makes it possible to match patterns not only against built-in Core strings, but also against custom iterators
 or application-specific sources.
 
 The input interface is a low-level extension point intended for advanced use cases.
@@ -113,23 +113,22 @@ its content.
 Interface
 =========
 
-.. doxygentypedef:: erbsland::re::InputPtr
-
-.. doxygenclass:: erbsland::re::Input
-    :members:
-.. doxygentypedef:: erbsland::re::Input16Ptr
-
-.. doxygenclass:: erbsland::re::Input16
-    :members:
-.. doxygentypedef:: erbsland::re::Input32Ptr
-
-.. doxygenclass:: erbsland::re::Input32
-    :members:
-.. doxygentypedef:: erbsland::re::InputBasePtr
-
 .. doxygenstruct:: erbsland::re::CharAndPosition
     :members:
+.. doxygenclass:: erbsland::re::Input
+    :members:
 
+.. doxygentypedef:: erbsland::re::InputPtr
+.. doxygenclass:: erbsland::re::Input16
+    :members:
+
+.. doxygentypedef:: erbsland::re::Input16Ptr
+.. doxygenclass:: erbsland::re::Input32
+    :members:
+
+.. doxygentypedef:: erbsland::re::Input32Ptr
 .. doxygenclass:: erbsland::re::InputBase
     :members:
+
+.. doxygentypedef:: erbsland::re::InputBasePtr
 .. doxygentypedef:: erbsland::re::InputPosition

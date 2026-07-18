@@ -11,8 +11,7 @@
 namespace erbsland::stream::impl {
 
 template <typename T>
-concept PrintStringResult =
-    std::same_as<std::remove_cvref_t<T>, text::String> || std::same_as<std::remove_cvref_t<T>, text::StringView>;
+concept PrintStringResult = std::same_as<std::remove_cvref_t<T>, text::String>;
 
 template <typename T>
 concept PrintCharacterArgument =

@@ -6,9 +6,9 @@
 
 #include "../DebugViewDetails.hpp"
 
-#include "../../text/AnyStringView.hpp"
+#include "../../text/AnyString.hpp"
+#include "../../text/AnyStringBuilder.hpp"
 #include "../../text/SafeStringFlag.hpp"
-#include "../../text/StringBuilder.hpp"
 #include "../../text/StringFormat.hpp"
 #include "../../text/StringTree.hpp"
 
@@ -20,7 +20,7 @@ namespace erbsland::debug::impl {
 constexpr auto cContentsPreviewWidth = unit::CpLength{60U};
 
 /// Convert a string storage kind to debug text.
-[[nodiscard]] auto storageKindText(StringStorageKind kind) noexcept -> text::StringView;
+[[nodiscard]] auto storageKindText(StringStorageKind kind) noexcept -> text::String;
 
 /// Convert a storage identifier to debug text.
 [[nodiscard]] auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> text::String;
@@ -63,9 +63,9 @@ void appendStorage(text::StringTree &tree, const T &value, const DebugViewDetail
 /// Create the title text for a string debug tree.
 /// @tested{StringDebugBuilderTest}
 template <typename T>
-[[nodiscard]] auto labelWithContents(text::StringView typeName, const T &value, const DebugViewDetails details)
+[[nodiscard]] auto labelWithContents(const text::String &typeName, const T &value, const DebugViewDetails details)
     -> text::String {
-    auto builder = text::StringBuilder{};
+    auto builder = text::AnyStringBuilder{};
     builder.append(typeName);
     if (details.isSet(DebugViewDetail::ContentInTitle)) {
         builder.append(U'(');
@@ -75,14 +75,14 @@ template <typename T>
     return builder.toU8String();
 }
 
-/// Build a debug tree for any string or string view type.
+/// Build a debug tree for any editable or read-only string type.
 /// @tested{StringDebugBuilderTest}
 template <typename T>
-[[nodiscard]] auto makeStringDebugTree(text::StringView typeName, const T &value, const DebugViewDetails details)
+[[nodiscard]] auto makeStringDebugTree(const text::String &typeName, const T &value, const DebugViewDetails details)
     -> text::StringTree {
     using namespace text::literals;
 
-    const auto anyView = text::AnyStringView{value};
+    const auto anyView = text::AnyString{value};
     auto result = text::StringTree{labelWithContents(typeName, value, details)};
     if (details.isSet(DebugViewDetail::States) || details.isSet(DebugViewDetail::CoreDetails)) {
         result.append("isEmpty"_el, value.isEmpty());

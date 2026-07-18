@@ -5,10 +5,10 @@
 #include "HtmlToken.hpp"
 
 #include "../../../util/CoGenerator.hpp"
-#include "../../AnyStringView.hpp"
+#include "../../AnyString.hpp"
 #include "../../Char.hpp"
+#include "../../String.hpp"
 #include "../../StringCharReader.hpp"
-#include "../../StringView.hpp"
 
 #include <optional>
 
@@ -25,7 +25,7 @@ public:
 public:
     /// Create a tokenizer for the given HTML source text.
     /// @param html The HTML fragment or document to tokenize.
-    explicit HtmlTokenizer(AnyStringView html);
+    explicit HtmlTokenizer(AnyString html);
 
     // defaults
     ~HtmlTokenizer() = default;
@@ -49,11 +49,11 @@ private:
     [[nodiscard]] auto tokenizeComment() -> bool;
     [[nodiscard]] auto tokenizeDocType() -> bool;
     [[nodiscard]] auto decodeEntity(Char &decodedCharacter) -> bool;
-    [[nodiscard]] auto parseAttributeValue(StringView &value) -> bool;
-    [[nodiscard]] auto parseName() -> std::optional<StringView>;
+    [[nodiscard]] auto parseAttributeValue(String &value) -> bool;
+    [[nodiscard]] auto parseName() -> std::optional<String>;
     void skipWhitespace() noexcept;
-    [[nodiscard]] auto takeBufferStringView() -> StringView;
-    [[nodiscard]] auto trimmedBufferStringView() const -> StringView;
+    [[nodiscard]] auto takeBufferString() -> String;
+    [[nodiscard]] auto trimmedBufferString() const -> String;
     [[nodiscard]] auto peekNext() noexcept -> Char;
 
     [[nodiscard]] static auto isNameTerminator(Char character) noexcept -> bool;

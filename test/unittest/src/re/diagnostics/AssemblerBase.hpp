@@ -55,7 +55,7 @@ public:
     }
 
     // Compile and expect an error. Test if a given string is part of the error message
-    void requireCompilerError(const el::text::StringViewList &lines, const std::string_view expectedError = {}) {
+    void requireCompilerError(const el::text::StringList &lines, const std::string_view expectedError = {}) {
 
         Assembler assembler;
         std::string errorMessage;
@@ -80,13 +80,13 @@ public:
 
     void requireCompilerError(
         const std::initializer_list<std::string_view> lines, const std::string_view expectedError = {}) {
-        requireCompilerError(re_test::string_helper::toStringViewList(lines), expectedError);
+        requireCompilerError(re_test::string_helper::toStringList(lines), expectedError);
     }
 
     // Compile and expect no errors.
     void requireCompile(const std::initializer_list<std::string_view> lines) {
         Assembler assembler;
-        REQUIRE_NOTHROW(engineData = assembler.compile(re_test::string_helper::toStringViewList(lines)));
+        REQUIRE_NOTHROW(engineData = assembler.compile(re_test::string_helper::toStringList(lines)));
         reader = std::make_unique<ProgramReader>(engineData->program);
         programCounter = 0;
     }

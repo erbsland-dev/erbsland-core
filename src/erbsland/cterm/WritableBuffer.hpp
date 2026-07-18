@@ -5,7 +5,7 @@
 #include "BitmapDrawOptions.hpp"
 #include "Block16Style.hpp"
 #include "BlockCombinationStyle.hpp"
-#include "BlockStringView.hpp"
+#include "BlockString.hpp"
 #include "BlockText.hpp"
 #include "BufferDrawOptions.hpp"
 #include "BufferResizeMode.hpp"
@@ -15,8 +15,8 @@
 #include "ReadableBuffer.hpp"
 #include "Tile9Style.hpp"
 
-#include "../text/StringView.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/String.hpp"
+#include "../text/u32/U32String.hpp"
 
 #include <optional>
 
@@ -67,7 +67,7 @@ public: // convenience methods
     /// Color (even inherited) overwrites the existing characters. Use `drawBlockText(pos, text)` for a color overlay.
     /// @param pos The coordinates within the buffer.
     /// @param str The string to write.
-    virtual void set(bgeo::BlockPosition pos, const BlockStringView &str) noexcept;
+    virtual void set(bgeo::BlockPosition pos, const BlockString &str) noexcept;
     /// Copy the content from another buffer into this one.
     /// This buffer is completely overwritten but not resized.
     /// If there is a size mismatch, the contents are either cut off or filled using `fillChar`.
@@ -209,7 +209,7 @@ public: // drawing methods
     /// Characters outside this buffer are cut off.
     /// @param pos The start position (top-left corner).
     /// @param str The text to draw on this buffer.
-    virtual void drawBlockText(bgeo::BlockPosition pos, const BlockStringView &str);
+    virtual void drawBlockText(bgeo::BlockPosition pos, const BlockString &str);
     /// If fg or bg is set to `Inherited`, the current color from the buffer is used.
     /// Draw simple text into a rectangle.
     /// If fg or bg is set to `Inherited`, the current color from the buffer is used.
@@ -225,28 +225,28 @@ public: // drawing methods
     /// @param animationCycle Animation cycle for animated text.
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
     void drawBlockText(
-        const text::StringView &text,
+        const text::String &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
         std::size_t animationCycle = 0);
     /// @overload
     void drawBlockText(
-        const text::U32StringView &text,
+        const text::U32String &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
         std::size_t animationCycle = 0);
     /// @overload
     void drawBlockText(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
         std::size_t animationCycle = 0);
     /// @overload
     void drawBlockText(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         const BlockTextOptions &options,
         std::size_t animationCycle = 0);
@@ -257,7 +257,7 @@ public: // drawing methods
     /// @param options The text options used for paragraph layout.
     /// @return The required rectangle height in terminal cells.
     [[nodiscard]] static auto blockTextHeightForWidth(
-        const BlockStringView &text, bgeo::BlockCoordinate width, const BlockTextOptions &options) noexcept
+        const BlockString &text, bgeo::BlockCoordinate width, const BlockTextOptions &options) noexcept
         -> bgeo::BlockCoordinate;
     /// Draw a bitmap at a given position.
     /// The bitmap is rendered according to `options.scaleMode()`. If `options.block16Style()` is set,
@@ -389,7 +389,7 @@ protected: // implementation
     /// @param text The text description.
     /// @param animationCycle Animation cycle for animated text.
     virtual void drawBlockTextImpl(const BlockText &text, std::size_t animationCycle);
-    /// Implement `drawBlockText(BlockStringView, bgeo::BlockRectangle, ...)`.
+    /// Implement `drawBlockText(BlockString, bgeo::BlockRectangle, ...)`.
     /// The public overload forwards to this method.
     /// @param text The text to render.
     /// @param rect The target rectangle.
@@ -397,19 +397,19 @@ protected: // implementation
     /// @param style The text color.
     /// @param animationCycle Animation cycle for animated text.
     virtual void drawBlockTextImpl(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment,
         BlockStyle style,
         std::size_t animationCycle);
-    /// Implement `drawBlockText(BlockStringView, bgeo::BlockRectangle, BlockTextOptions, ...)`.
+    /// Implement `drawBlockText(BlockString, bgeo::BlockRectangle, BlockTextOptions, ...)`.
     /// The public overload forwards to this method.
     /// @param text The text to render.
     /// @param rect The target rectangle.
     /// @param options The text drawing options.
     /// @param animationCycle Animation cycle for animated text.
     virtual void drawBlockTextImpl(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         const BlockTextOptions &options,
         std::size_t animationCycle);

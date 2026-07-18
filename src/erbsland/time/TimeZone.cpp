@@ -20,6 +20,10 @@ namespace erbsland::time {
 
 using namespace text::literals;
 
+using namespace text;
+using unit::CpLength;
+using unit::Version;
+
 auto TimeZone::normalizeOffset(Seconds seconds) noexcept -> Seconds {
     auto secondsValue = seconds % 86400;
     if (secondsValue > Seconds{43200}) {
@@ -35,16 +39,16 @@ auto TimeZone::database() noexcept -> const tz::impl::Database & {
     return instance;
 }
 
-auto TimeZone::parseFixedOffsetText(const text::StringView &text, Seconds &offset) noexcept -> bool {
-    auto reader = text::StringCharReader{text};
-    const auto readDecimal = [&reader](const unit::CpLength minimum, const unit::CpLength maximum, int &value) -> bool {
-        auto options = text::IntegerParseOptions::parserDefault();
-        options.setFixedBase(text::IntegerBase::Decimal)
+auto TimeZone::parseFixedOffsetText(const String &text, Seconds &offset) noexcept -> bool {
+    auto reader = StringCharReader{text};
+    const auto readDecimal = [&reader](const CpLength minimum, const CpLength maximum, int &value) -> bool {
+        auto options = IntegerParseOptions::parserDefault();
+        options.setFixedBase(IntegerBase::Decimal)
             .setMinimumDigits(minimum)
             .setMaximumDigits(maximum)
-            .addFlags(text::IntegerParseFlag::StopAtMaximum);
+            .addFlags(IntegerParseFlag::StopAtMaximum);
         const auto result = reader.parseInteger(options);
-        if (result.status != text::ReadNumberStatus::Success) {
+        if (result.status != ReadNumberStatus::Success) {
             return false;
         }
         value = static_cast<int>(result.value);
@@ -61,21 +65,21 @@ auto TimeZone::parseFixedOffsetText(const text::StringView &text, Seconds &offse
     auto hour = 0;
     auto minute = 0;
     auto second = 0;
-    if (!readDecimal(unit::CpLength{1U}, unit::CpLength{2U}, hour)) {
+    if (!readDecimal(CpLength{1U}, CpLength{2U}, hour)) {
         return false;
     }
     const auto extended = reader.advanceIf(U':');
     if (extended) {
-        if (!readDecimal(unit::CpLength{2U}, unit::CpLength{2U}, minute)) {
+        if (!readDecimal(CpLength{2U}, CpLength{2U}, minute)) {
             return false;
         }
         if (reader.advanceIf(U':')) {
-            if (!readDecimal(unit::CpLength{2U}, unit::CpLength{2U}, second)) {
+            if (!readDecimal(CpLength{2U}, CpLength{2U}, second)) {
                 return false;
             }
         }
     } else if (reader.peek().isAsciiDigit()) {
-        if (!readDecimal(unit::CpLength{2U}, unit::CpLength{2U}, minute)) {
+        if (!readDecimal(CpLength{2U}, CpLength{2U}, minute)) {
             return false;
         }
     }
@@ -86,9 +90,9 @@ auto TimeZone::parseFixedOffsetText(const text::StringView &text, Seconds &offse
     return true;
 }
 
-auto TimeZone::specialTimeZoneFromName(text::StringView name) noexcept -> std::optional<TimeZone> {
+auto TimeZone::specialTimeZoneFromName(const String &name) noexcept -> std::optional<TimeZone> {
     const auto isAsciiFoldedName = [&name](const auto &expected) -> bool {
-        return name.compare(expected, text::Char::compareAsciiFolded) == std::strong_ordering::equal;
+        return name.compare(expected, Char::compareAsciiFolded) == std::strong_ordering::equal;
     };
     if (isAsciiFoldedName("Z"_el) || isAsciiFoldedName("Universal"_el) || isAsciiFoldedName("Zulu"_el) ||
         isAsciiFoldedName("Factory"_el)) {
@@ -101,10 +105,10 @@ auto TimeZone::specialTimeZoneFromName(text::StringView name) noexcept -> std::o
     }
 
     const auto prefixedOffset = [&name, &offset](const auto &prefix) -> std::optional<TimeZone> {
-        if (!name.startsWith(prefix, text::Char::compareAsciiFolded)) {
+        if (!name.startsWith(prefix, Char::compareAsciiFolded)) {
             return std::nullopt;
         }
-        const auto suffix = name.slice(text::StringSide::Back, name.length() - prefix.length());
+        const auto suffix = name.slice(StringSide::Back, name.length() - prefix.length());
         if (suffix.isEmpty()) {
             return TimeZone{};
         }
@@ -158,7 +162,7 @@ auto TimeZone::staticOffset() const noexcept -> Duration {
     return {};
 }
 
-auto TimeZone::name() const -> text::String {
+auto TimeZone::name() const -> String {
     if (const auto *named = std::get_if<NamedZone>(&_storage)) {
         return database().nameFromZoneId(named->id.toRawValue());
     }
@@ -172,11 +176,11 @@ auto TimeZone::id() const noexcept -> TimeZoneId {
     return {};
 }
 
-auto TimeZone::isValidName(const text::StringView &name) noexcept -> bool {
+auto TimeZone::isValidName(const String &name) noexcept -> bool {
     return fromName(name).has_value();
 }
 
-auto TimeZone::fromName(const text::StringView &name) noexcept -> std::optional<TimeZone> {
+auto TimeZone::fromName(const String &name) noexcept -> std::optional<TimeZone> {
     const auto id = database().zoneIdFromName(name);
     if (id != tz::impl::cZoneIdNotFound) {
         return TimeZone{TimeZoneId{id}};
@@ -184,22 +188,22 @@ auto TimeZone::fromName(const text::StringView &name) noexcept -> std::optional<
     return specialTimeZoneFromName(name);
 }
 
-auto TimeZone::fromNameOrThrow(const text::StringView &name) -> TimeZone {
+auto TimeZone::fromNameOrThrow(const String &name) -> TimeZone {
     if (auto result = fromName(name); result.has_value()) {
         return result.value();
     }
     throw err::ParseError{"Unknown time zone name"};
 }
 
-auto TimeZone::names() -> text::StringList {
+auto TimeZone::names() -> StringList {
     return database().names();
 }
 
-auto TimeZone::databaseVersion() noexcept -> unit::Version {
+auto TimeZone::databaseVersion() noexcept -> Version {
     return tz::impl::Database::version();
 }
 
-auto TimeZone::abbreviation(const tz::TimeOffset offset) -> text::String {
+auto TimeZone::abbreviation(const tz::TimeOffset offset) -> String {
     if (!offset.isZone()) {
         return {};
     }

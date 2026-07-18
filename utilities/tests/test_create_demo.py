@@ -84,21 +84,21 @@ class CreateDemoTest(unittest.TestCase):
         """Create a deliberately unsorted existing schema-style demo."""
         self.write_file(
             "demos/text/CMakeLists.txt",
-            f"{CMAKE_HEADER}\nadd_subdirectory(StringView)\n",
+            f"{CMAKE_HEADER}\nadd_subdirectory(String)\n",
         )
         self.write_file(
-            "demos/text/StringView/CMakeLists.txt",
+            "demos/text/String/CMakeLists.txt",
             f"{CMAKE_HEADER}\n"
             "erbsland_core_add_demo(string_view)\n"
             "target_sources(string_view PRIVATE\n"
             "        Zebra.cpp\n"
             "        Alpha.cpp\n"
             "        main.cpp\n"
-            "        StringViewDemos.hpp\n"
+            "        StringDemos.hpp\n"
             ")\n",
         )
         self.write_file(
-            "demos/text/StringView/StringViewDemos.hpp",
+            "demos/text/String/StringDemos.hpp",
             "// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev\n"
             "// SPDX-License-Identifier: Apache-2.0\n"
             "#pragma once\n"
@@ -109,11 +109,11 @@ class CreateDemoTest(unittest.TestCase):
             "void alpha();\n",
         )
         self.write_file(
-            "demos/text/StringView/main.cpp",
+            "demos/text/String/main.cpp",
             "// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev\n"
             "// SPDX-License-Identifier: Apache-2.0\n"
             "\n"
-            '#include "StringViewDemos.hpp"\n'
+            '#include "StringDemos.hpp"\n'
             "\n"
             "#include <DemoCommon.hpp>\n"
             "\n"
@@ -129,14 +129,14 @@ class CreateDemoTest(unittest.TestCase):
         self.assertIn("create_demo", REGISTERED_UTILITIES)
 
     def test_validates_demo_path(self) -> None:
-        DemoPath.parse("text/StringView/BasicUsage")
+        DemoPath.parse("text/String/BasicUsage")
         invalid_paths = (
-            "text/StringView",
-            "/text/StringView/BasicUsage",
+            "text/String",
+            "/text/String/BasicUsage",
             "text/stringView/BasicUsage",
-            "text/StringView/basicUsage",
-            "Text/StringView/BasicUsage",
-            "text/../StringView/BasicUsage",
+            "text/String/basicUsage",
+            "Text/String/BasicUsage",
+            "text/../String/BasicUsage",
         )
         for invalid_path in invalid_paths:
             with self.subTest(invalid_path=invalid_path):
@@ -144,8 +144,8 @@ class CreateDemoTest(unittest.TestCase):
                     DemoPath.parse(invalid_path)
 
     def test_converts_demo_name_to_target_name(self) -> None:
-        self.assertEqual("string_view", lower_underscore("StringView"))
-        self.assertEqual("u8_string_view", lower_underscore("U8StringView"))
+        self.assertEqual("string", lower_underscore("String"))
+        self.assertEqual("u8_string", lower_underscore("U8String"))
 
     def test_creates_new_domain_and_demo_with_warning_and_documentation_block(self) -> None:
         output = self.run_create_demo("alpha/NewDemo/BasicUsage")
@@ -162,28 +162,30 @@ class CreateDemoTest(unittest.TestCase):
         self.assertIn(
             'app.registerDemo("BasicUsage"_el, basicUsage);\n', self.read_file("demos/alpha/NewDemo/main.cpp")
         )
+        self.assertIn("using namespace demo;\n", self.read_file("demos/alpha/NewDemo/main.cpp"))
+        self.assertEqual(1, self.read_file("demos/alpha/NewDemo/main.cpp").count("auto main("))
         self.assertIn(
             "void basicUsage() {\n    // FIXME! Implement this demo.\n}\n",
             self.read_file("demos/alpha/NewDemo/BasicUsage.cpp"),
         )
 
     def test_creates_new_demo_in_existing_domain_and_warns_for_missing_header(self) -> None:
-        self.write_file("demos/text/CMakeLists.txt", f"{CMAKE_HEADER}\nadd_subdirectory(StringView)\n")
+        self.write_file("demos/text/CMakeLists.txt", f"{CMAKE_HEADER}\nadd_subdirectory(String)\n")
         (self.project_dir / "src" / "erbsland" / "text").mkdir(parents=True)
 
         output = self.run_create_demo("text/NewDemo/BasicUsage")
 
         self.assertIn("No matching library header found below src/erbsland/text/: NewDemo.hpp", output.getvalue())
         self.assertEqual(
-            f"{CMAKE_HEADER}\nadd_subdirectory(NewDemo)\nadd_subdirectory(StringView)\n",
+            f"{CMAKE_HEADER}\nadd_subdirectory(NewDemo)\nadd_subdirectory(String)\n",
             self.read_file("demos/text/CMakeLists.txt"),
         )
 
     def test_adds_demo_part_to_existing_demo_and_sorts_managed_lists(self) -> None:
         self.create_existing_schema_demo()
-        self.write_file("src/erbsland/text/StringView.hpp", "#pragma once\n")
+        self.write_file("src/erbsland/text/String.hpp", "#pragma once\n")
 
-        self.run_create_demo("text/StringView/Mango")
+        self.run_create_demo("text/String/Mango")
 
         self.assertEqual(
             f"{CMAKE_HEADER}\n"
@@ -192,34 +194,36 @@ class CreateDemoTest(unittest.TestCase):
             "        Alpha.cpp\n"
             "        main.cpp\n"
             "        Mango.cpp\n"
-            "        StringViewDemos.hpp\n"
+            "        StringDemos.hpp\n"
             "        Zebra.cpp\n"
             ")\n",
-            self.read_file("demos/text/StringView/CMakeLists.txt"),
+            self.read_file("demos/text/String/CMakeLists.txt"),
         )
         self.assertIn(
             "void alpha();\n" "void mango();\n" "void zebra();\n",
-            self.read_file("demos/text/StringView/StringViewDemos.hpp"),
+            self.read_file("demos/text/String/StringDemos.hpp"),
         )
         self.assertIn(
             '    app.registerDemo("Alpha"_el, alpha);\n'
             '    app.registerDemo("Mango"_el, mango);\n'
             '    app.registerDemo("Zebra"_el, zebra);\n',
-            self.read_file("demos/text/StringView/main.cpp"),
+            self.read_file("demos/text/String/main.cpp"),
         )
+        self.assertIn("using namespace demo;\n", self.read_file("demos/text/String/main.cpp"))
+        self.assertEqual(1, self.read_file("demos/text/String/main.cpp").count("auto main("))
 
     def test_duplicate_demo_part_fails_without_changes(self) -> None:
         self.create_existing_schema_demo()
-        self.write_file("demos/text/StringView/Mango.cpp", "already here\n")
+        self.write_file("demos/text/String/Mango.cpp", "already here\n")
 
         with self.assertRaises(UtilityError):
-            CreateDemoPlanner(self.project_dir, DemoPath.parse("text/StringView/Mango")).create_plan()
+            CreateDemoPlanner(self.project_dir, DemoPath.parse("text/String/Mango")).create_plan()
 
-        self.assertEqual("already here\n", self.read_file("demos/text/StringView/Mango.cpp"))
+        self.assertEqual("already here\n", self.read_file("demos/text/String/Mango.cpp"))
 
     def test_parallel_processes_can_extend_same_demo(self) -> None:
         self.create_existing_schema_demo()
-        self.write_file("src/erbsland/text/StringView.hpp", "#pragma once\n")
+        self.write_file("src/erbsland/text/String.hpp", "#pragma once\n")
         demo_parts = ("Banana", "Mango", "Apricot", "Papaya", "Lychee", "Orange")
 
         context = multiprocessing.get_context("spawn")
@@ -227,7 +231,7 @@ class CreateDemoTest(unittest.TestCase):
         processes = [
             context.Process(
                 target=run_create_demo_process,
-                args=(str(self.project_dir), f"text/StringView/{demo_part}", result_queue),
+                args=(str(self.project_dir), f"text/String/{demo_part}", result_queue),
             )
             for demo_part in demo_parts
         ]
@@ -247,12 +251,12 @@ class CreateDemoTest(unittest.TestCase):
         self.assertEqual([], [result for result in results if result[0] != "ok"])
         self.assertEqual([], [process.exitcode for process in processes if process.exitcode != 0])
 
-        cmake_text = self.read_file("demos/text/StringView/CMakeLists.txt")
-        header_text = self.read_file("demos/text/StringView/StringViewDemos.hpp")
-        main_text = self.read_file("demos/text/StringView/main.cpp")
+        cmake_text = self.read_file("demos/text/String/CMakeLists.txt")
+        header_text = self.read_file("demos/text/String/StringDemos.hpp")
+        main_text = self.read_file("demos/text/String/main.cpp")
         for demo_part in demo_parts:
             function_name = demo_part[:1].lower() + demo_part[1:]
-            self.assertTrue((self.project_dir / "demos" / "text" / "StringView" / f"{demo_part}.cpp").is_file())
+            self.assertTrue((self.project_dir / "demos" / "text" / "String" / f"{demo_part}.cpp").is_file())
             self.assertIn(f"        {demo_part}.cpp\n", cmake_text)
             self.assertIn(f"void {function_name}();\n", header_text)
             self.assertIn(f'    app.registerDemo("{demo_part}"_el, {function_name});\n', main_text)

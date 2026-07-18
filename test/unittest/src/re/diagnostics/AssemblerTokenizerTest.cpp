@@ -46,7 +46,7 @@ public:
 
     void requireTokenizeSuccess(const std::string_view line) {
         tokens.clear();
-        AssemblerTokenizer tokenizer{String{line}};
+        AssemblerTokenizer tokenizer{StringEditor{line}};
         REQUIRE_NOTHROW(tokens = tokenizer.tokens());
     }
 
@@ -58,13 +58,13 @@ public:
 
         tokens.clear();
         try {
-            AssemblerTokenizer tokenizer{String{line}};
+            AssemblerTokenizer tokenizer{StringEditor{line}};
             (void)tokenizer.tokens();
             REQUIRE(false);
         } catch (const RegExError &e) {
             REQUIRE_EQUAL(e.category(), expectedCategory);
             REQUIRE_EQUAL(e.title(), "Failed to assemble regular expression"_el);
-            REQUIRE_EQUAL(e.description(), String{expectedMessage});
+            REQUIRE_EQUAL(e.description(), StringEditor{expectedMessage});
             if (expectedColumn.has_value()) {
                 REQUIRE_EQUAL(e.column().toSizeT() + 1U, expectedColumn.value());
             }
@@ -75,7 +75,7 @@ public:
     void requireTokensCallTwiceFails(
         const std::string_view line, const ErrorCategory expectedCategory, const std::string_view expectedMessage) {
 
-        AssemblerTokenizer tokenizer{String{line}};
+        AssemblerTokenizer tokenizer{StringEditor{line}};
         REQUIRE_EQUAL(tokenizer.tokens().size(), 1U);
         REQUIRE_THROWS_AS(RegExError, tokenizer.tokens());
         try {
@@ -83,7 +83,7 @@ public:
         } catch (const RegExError &e) {
             REQUIRE_EQUAL(e.category(), expectedCategory);
             REQUIRE_EQUAL(e.title(), "Internal regular-expression failure"_el);
-            REQUIRE_EQUAL(e.description(), String{expectedMessage});
+            REQUIRE_EQUAL(e.description(), StringEditor{expectedMessage});
         }
     }
 
@@ -273,7 +273,7 @@ public:
         std::string line;
         line.push_back(';');
         line.push_back(static_cast<char>(0xFF));
-        AssemblerTokenizer tokenizer{String{line}};
+        AssemblerTokenizer tokenizer{StringEditor{line}};
         REQUIRE_NOTHROW(tokens = tokenizer.tokens());
         REQUIRE(tokens.empty());
     }

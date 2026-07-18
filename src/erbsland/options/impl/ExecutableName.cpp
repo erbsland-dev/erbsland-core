@@ -10,7 +10,7 @@ namespace erbsland::options::impl {
 
 using namespace text::literals;
 
-auto extractExecutableName(const text::StringView &executablePath) -> text::String {
+auto extractExecutableName(const text::String &executablePath) -> text::String {
     auto executableName = executablePath;
     auto separatorIndex = executableName.findLastOf(text::CharSet{"/\\"_el});
     if (!separatorIndex.isNoIndex()) {
@@ -22,7 +22,7 @@ auto extractExecutableName(const text::StringView &executablePath) -> text::Stri
         executableName =
             executableName.slice(unit::ByteRange{unit::ByteIndex::zero(), executableName.length() - suffix.length()});
     }
-    return text::String{executableName};
+    return executableName.copy();
 }
 
 }

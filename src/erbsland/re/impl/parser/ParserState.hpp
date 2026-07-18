@@ -46,7 +46,7 @@ public: // accessors
 
 public: // reading characters
     /// Throw a parsing error.
-    [[noreturn]] void throwParsingError(text::StringView description) const {
+    [[noreturn]] void throwParsingError(text::String description) const {
         throw RegExError{
             ErrorCategory::Parser,
             "Failed to parse regular expression"_el,
@@ -152,7 +152,7 @@ public: // Node and group handling.
     }
 
     /// Add a group name and throw an error on duplicates.
-    void addGroupName(const text::StringView &name) {
+    void addGroupName(const text::String &name) {
         if (_groupNames.contains(name)) {
             throwParsingError("Duplicate group name"_el);
         }

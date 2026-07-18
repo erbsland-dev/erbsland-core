@@ -12,13 +12,13 @@
 #include "U32StringCIMap.hpp"
 #include "U32StringCISet.hpp"
 #include "U32StringConstIterator.hpp"
+#include "U32StringEditor.hpp"
+#include "U32StringEditorList.hpp"
 #include "U32StringHashMap.hpp"
 #include "U32StringHashSet.hpp"
 #include "U32StringList.hpp"
 #include "U32StringLiteral.hpp"
 #include "U32StringMap.hpp"
 #include "U32StringSet.hpp"
-#include "U32StringView.hpp"
-#include "U32StringViewList.hpp"
 
 

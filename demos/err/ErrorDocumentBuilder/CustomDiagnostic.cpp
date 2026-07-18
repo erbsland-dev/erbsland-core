@@ -9,11 +9,11 @@ namespace demo {
 /// `ErrorDocumentBuilder` supplies the common error title, source fields, display texts, and document styling.
 class InstrumentDiagnostic final : public el::Diagnostic {
 public:
-    InstrumentDiagnostic(el::StringView instrument, el::StringView problem, el::StringView sourcePath) :
+    InstrumentDiagnostic(el::String instrument, el::String problem, el::String sourcePath) :
         _instrument{std::move(instrument)}, _problem{std::move(problem)}, _sourcePath{std::move(sourcePath)} {}
 
 public: // implement Diagnostic
-    [[nodiscard]] auto sourcePath() const noexcept -> el::StringView override { return _sourcePath; }
+    [[nodiscard]] auto sourcePath() const noexcept -> el::String override { return _sourcePath; }
     [[nodiscard]] auto toTextDocument(const el::DisplayTextMapConstPtr &displayText) const
         -> el::TextDocument override {
         auto builder = el::ErrorDocumentBuilder{_problem, {}, displayText};
@@ -26,15 +26,15 @@ public: // implement Diagnostic
     }
 
 private:
-    el::StringView _instrument;
-    el::StringView _problem;
-    el::StringView _sourcePath;
+    el::String _instrument;
+    el::String _problem;
+    el::String _sourcePath;
 };
 
 /// A domain exception owns its context and creates the matching immutable diagnostic on demand.
 class InstrumentError final : public el::RuntimeError {
 public:
-    InstrumentError(el::StringView instrument, el::StringView problem, el::StringView sourcePath) :
+    InstrumentError(el::String instrument, el::String problem, el::String sourcePath) :
         RuntimeError{problem}, _instrument{std::move(instrument)}, _sourcePath{std::move(sourcePath)} {}
     ~InstrumentError() override = default;
 
@@ -44,8 +44,8 @@ public: // implement Exception
     }
 
 private:
-    el::StringView _instrument;
-    el::StringView _sourcePath;
+    el::String _instrument;
+    el::String _sourcePath;
 };
 
 /// Reporting code remains independent from the custom exception and diagnostic implementations.

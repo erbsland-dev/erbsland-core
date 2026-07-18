@@ -11,7 +11,7 @@
 
 namespace erbsland::cterm {
 
-class BlockStringView;
+class BlockString;
 
 }
 
@@ -69,7 +69,7 @@ public:
         return _startIndex + offset;
     }
     /// Get the remaining display width from the given character offset onward.
-    [[nodiscard]] auto remainingWidth(const BlockStringView &text, BlockCount offset) const noexcept -> int;
+    [[nodiscard]] auto remainingWidth(const BlockString &text, BlockCount offset) const noexcept -> int;
     /// Split the word to fit into the available width.
     /// @param text The source text that contains the word characters.
     /// @param offset The first source character offset to place on the current line.
@@ -77,7 +77,7 @@ public:
     /// @param trailingMarkerWidth The width of an optional trailing split marker.
     /// @return The split result, or `std::nullopt` if nothing can be rendered.
     [[nodiscard]] auto split(
-        const BlockStringView &text, BlockCount offset, int availableWidth, int trailingMarkerWidth) const noexcept
+        const BlockString &text, BlockCount offset, int availableWidth, int trailingMarkerWidth) const noexcept
         -> std::optional<SplitResult>;
 
 private:

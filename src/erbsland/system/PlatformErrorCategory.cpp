@@ -4,13 +4,13 @@
 
 #include "../text/Literals.hpp"
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 namespace erbsland::system {
 
 using namespace text::literals;
 
-auto PlatformErrorCategory::toString() const -> text::StringView {
+auto PlatformErrorCategory::toString() const -> text::String {
     switch (_value) {
     case NotFound:
         return "not-found"_el;

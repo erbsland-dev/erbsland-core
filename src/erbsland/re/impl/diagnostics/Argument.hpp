@@ -6,7 +6,7 @@
 
 #include "../../../text/StdFormatForText.hpp"
 #include "../../../text/String.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/StringEditor.hpp"
 
 #include <cstdint>
 #include <format>
@@ -39,7 +39,7 @@ enum class ArgumentType : uint8_t {
 };
 
 /// A single argument.
-using ArgumentValue = std::variant<text::String, uint32_t, bool>;
+using ArgumentValue = std::variant<text::StringEditor, uint32_t, bool>;
 
 /// An index of an argument in an operation.
 using ArgumentIndex = uint8_t;
@@ -48,10 +48,10 @@ using ArgumentIndex = uint8_t;
 using Arguments = std::vector<ArgumentValue>;
 
 /// Get a string for the argument kind.
-[[nodiscard]] auto toString(ArgumentKind argumentKind) noexcept -> text::StringView;
+[[nodiscard]] auto toString(ArgumentKind argumentKind) noexcept -> text::String;
 
 /// Get a string for the argument type.
-[[nodiscard]] auto toString(ArgumentType argumentType) noexcept -> text::StringView;
+[[nodiscard]] auto toString(ArgumentType argumentType) noexcept -> text::String;
 
 /// Get the type from a value.
 [[nodiscard]] auto argumentTypeFromValue(const ArgumentValue &value) noexcept -> ArgumentType;
@@ -59,15 +59,15 @@ using Arguments = std::vector<ArgumentValue>;
 }
 
 template <>
-struct std::formatter<erbsland::re::impl::ArgumentKind> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::impl::ArgumentKind> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::impl::ArgumentKind argumentKind, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::impl::toString(argumentKind), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(argumentKind), ctx);
     }
 };
 
 template <>
-struct std::formatter<erbsland::re::impl::ArgumentType> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::impl::ArgumentType> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::impl::ArgumentType argumentType, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::impl::toString(argumentType), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(argumentType), ctx);
     }
 };

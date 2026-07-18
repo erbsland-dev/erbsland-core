@@ -13,7 +13,9 @@
 
 namespace erbsland::text::impl {
 
-auto U16StringModifyTools::removed(const unit::CpRange range) const -> U16StringSharedStorage {
+using namespace unit;
+
+auto U16StringModifyTools::removed(const CpRange range) const -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto removeRange = _data.relativeRangeForAbsolute(U16StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || removeRange.isEmpty()) {
@@ -49,7 +51,7 @@ auto U16StringModifyTools::removed(const U16StringDataView &text, const CharComp
     return replacedText(text, {}, compareFn);
 }
 
-auto U16StringModifyTools::kept(const unit::CpRange range) const -> U16StringSharedStorage {
+auto U16StringModifyTools::kept(const CpRange range) const -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto keepRange = _data.relativeRangeForAbsolute(U16StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || keepRange.isEmpty()) {
@@ -87,16 +89,16 @@ auto U16StringModifyTools::replacedAll(
     return replacedText(text, replacement.dataSpan(), compareFn);
 }
 
-auto U16StringModifyTools::removed(const unit::U16DataRange range) const -> U16StringSharedStorage {
+auto U16StringModifyTools::removed(const U16DataRange range) const -> U16StringSharedStorage {
     return replaced(range, {});
 }
 
-auto U16StringModifyTools::kept(const unit::U16DataRange range) const -> U16StringSharedStorage {
+auto U16StringModifyTools::kept(const U16DataRange range) const -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || !range.isValid()) {
         return {};
     }
-    const auto keepRange = range.clampedTo(unit::U16DataLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         return {};
     }
@@ -104,34 +106,34 @@ auto U16StringModifyTools::kept(const unit::U16DataRange range) const -> U16Stri
         data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
 }
 
-auto U16StringModifyTools::inserted(const unit::U16DataIndex index, const U16StringDataView &text) const
+auto U16StringModifyTools::inserted(const U16DataIndex index, const U16StringDataView &text) const
     -> U16StringSharedStorage {
     if (index.isNoIndex()) {
         return U16StringSharedStorage::fromCodeUnits(_data.dataSpan());
     }
-    const auto insertIndex = unit::U16DataIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
-    return replaced(unit::U16DataRange::emptyAt(insertIndex), text);
+    const auto insertIndex = U16DataIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
+    return replaced(U16DataRange::emptyAt(insertIndex), text);
 }
 
-auto U16StringModifyTools::inserted(const unit::CpIndex index, const U16StringDataView &text) const
+auto U16StringModifyTools::inserted(const CpIndex index, const U16StringDataView &text) const
     -> U16StringSharedStorage {
     if (index.isNoIndex()) {
         return U16StringSharedStorage::fromCodeUnits(_data.dataSpan());
     }
     auto dataIndex = dataIndexForCharacterIndex(_data, index);
     if (dataIndex.isNoIndex()) {
-        dataIndex = unit::U16DataIndex::end(unit::U16DataLength::fromSizeT(_data.dataSpan().size()));
+        dataIndex = U16DataIndex::end(U16DataLength::fromSizeT(_data.dataSpan().size()));
     }
     return inserted(dataIndex, text);
 }
 
-auto U16StringModifyTools::replaced(const unit::U16DataRange range, const U16StringDataView &text) const
+auto U16StringModifyTools::replaced(const U16DataRange range, const U16StringDataView &text) const
     -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
     if (!range.isValid()) {
         return U16StringSharedStorage::fromCodeUnits(data);
     }
-    const auto replaceRange = range.clampedTo(unit::U16DataLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
     const auto replacement = text.dataSpan();
     if (replaceRange.isEmpty() && replacement.empty()) {
         return U16StringSharedStorage::fromCodeUnits(data);
@@ -158,7 +160,7 @@ auto U16StringModifyTools::replaced(const unit::U16DataRange range, const U16Str
     return storage;
 }
 
-auto U16StringModifyTools::replaced(const unit::CpRange range, const U16StringDataView &text) const
+auto U16StringModifyTools::replaced(const CpRange range, const U16StringDataView &text) const
     -> U16StringSharedStorage {
     return replaced(dataRangeForCharacterRange(_data, range), text);
 }
@@ -188,7 +190,7 @@ auto U16StringModifyTools::replacedText(
     }
 
     auto newSize = std::size_t{0};
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             newSize = U16StringSharedStorage::checkedAddSize(
@@ -205,7 +207,7 @@ auto U16StringModifyTools::replacedText(
     U16StringSharedStorage::validateSize(newSize);
     auto storage = U16StringSharedStorage::forSize(newSize);
     auto writePosition = std::size_t{0};
-    position = unit::U16DataIndex::zero();
+    position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             if (!replacement.empty()) {
@@ -233,11 +235,11 @@ auto U16StringModifyTools::replacedText(
 
 auto U16StringModifyTools::matchesText(
     const std::span<const char16_t> data,
-    const unit::U16DataIndex start,
+    const U16DataIndex start,
     const std::span<const char16_t> text,
     const CharCompareFn compareFn) noexcept -> bool {
     auto dataPosition = start;
-    auto textPosition = unit::U16DataIndex::zero();
+    auto textPosition = U16DataIndex::zero();
     while (textPosition.toSizeT() < text.size()) {
         if (dataPosition.toSizeT() >= data.size()) {
             return false;
@@ -277,7 +279,7 @@ auto U16StringModifyTools::replaceTextInStorage(
 
     auto hasMatch = false;
     auto writePosition = std::size_t{0};
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             hasMatch = true;
@@ -303,60 +305,60 @@ auto U16StringModifyTools::replaceTextInStorage(
     return storage;
 }
 
-auto U16StringModifyTools::dataRangeForCharacterRange(const U16StringDataView &data, const unit::CpRange range) noexcept
-    -> unit::U16DataRange {
+auto U16StringModifyTools::dataRangeForCharacterRange(const U16StringDataView &data, const CpRange range) noexcept
+    -> U16DataRange {
     if (!range.isValid()) {
-        return unit::U16DataRange::noRange();
+        return U16DataRange::noRange();
     }
     auto start = dataIndexForCharacterIndex(data, range.index());
     if (start.isNoIndex()) {
-        start = unit::U16DataIndex::end(unit::U16DataLength::fromSizeT(data.dataSpan().size()));
+        start = U16DataIndex::end(U16DataLength::fromSizeT(data.dataSpan().size()));
     }
     if (range.length().isZero()) {
-        return unit::U16DataRange::emptyAt(start);
+        return U16DataRange::emptyAt(start);
     }
     if (range.length().isInfinite()) {
-        return unit::U16DataRange{start, unit::U16DataLength::infinite()}.clampedTo(
-            unit::U16DataLength::fromSizeT(data.dataSpan().size()));
+        return U16DataRange{start, U16DataLength::infinite()}.clampedTo(
+            U16DataLength::fromSizeT(data.dataSpan().size()));
     }
     auto end = range.endIndex();
-    auto endData = end.isNoIndex() ? unit::U16DataIndex::noIndex() : dataIndexForCharacterIndex(data, end);
+    auto endData = end.isNoIndex() ? U16DataIndex::noIndex() : dataIndexForCharacterIndex(data, end);
     if (endData.isNoIndex()) {
-        endData = unit::U16DataIndex::end(unit::U16DataLength::fromSizeT(data.dataSpan().size()));
+        endData = U16DataIndex::end(U16DataLength::fromSizeT(data.dataSpan().size()));
     }
-    return unit::U16DataRange{start, endData}.clampedTo(unit::U16DataLength::fromSizeT(data.dataSpan().size()));
+    return U16DataRange{start, endData}.clampedTo(U16DataLength::fromSizeT(data.dataSpan().size()));
 }
 
-auto U16StringModifyTools::dataIndexForCharacterIndex(const U16StringDataView &data, const unit::CpIndex index) noexcept
-    -> unit::U16DataIndex {
+auto U16StringModifyTools::dataIndexForCharacterIndex(const U16StringDataView &data, const CpIndex index) noexcept
+    -> U16DataIndex {
     return U16StringCharReadTool{data}.byteIndexAt(index);
 }
 
 auto U16StringModifyTools::findFirstTextRange(
     const U16StringDataView &dataView, const U16StringDataView &text, const CharCompareFn compareFn) noexcept
-    -> unit::U16DataRange {
+    -> U16DataRange {
     const auto data = dataView.dataSpan();
     const auto needle = text.dataSpan();
     if (data.empty() || needle.empty()) {
-        return unit::U16DataRange::noRange();
+        return U16DataRange::noRange();
     }
 
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         const auto start = position;
         if (matchesText(data, start, needle, compareFn)) {
-            return unit::U16DataRange{start, endOfMatch(data, start, needle)};
+            return U16DataRange{start, endOfMatch(data, start, needle)};
         }
         const auto character = utf16::decodeCharOrReplace(data, position);
         static_cast<void>(character);
     }
-    return unit::U16DataRange::noRange();
+    return U16DataRange::noRange();
 }
 
 auto U16StringModifyTools::endOfMatch(
-    const std::span<const char16_t> data, unit::U16DataIndex start, const std::span<const char16_t> text) noexcept
-    -> unit::U16DataIndex {
-    auto textPosition = unit::U16DataIndex::zero();
+    const std::span<const char16_t> data, U16DataIndex start, const std::span<const char16_t> text) noexcept
+    -> U16DataIndex {
+    auto textPosition = U16DataIndex::zero();
     while (textPosition.toSizeT() < text.size() && start.toSizeT() < data.size()) {
         utf16::fastAdvanceChar(data, start);
         utf16::fastAdvanceChar(text, textPosition);

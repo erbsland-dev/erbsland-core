@@ -18,8 +18,8 @@ public: // implement UserLookupBackend
     [[nodiscard]] auto groupIdForName(const GroupName &name) -> GroupId override;
 
 private:
-    [[noreturn]] static void throwLookupError(const text::StringView &reason, int status);
-    [[nodiscard]] static auto parseId(const text::StringView &id, const text::StringView &kind) -> unsigned long;
+    [[noreturn]] static void throwLookupError(const text::String &reason, int status);
+    [[nodiscard]] static auto parseId(const text::String &id, const text::String &kind) -> unsigned long;
 };
 
 }

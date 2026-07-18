@@ -17,10 +17,10 @@ using namespace text::literals;
 OptionErrorDiagnostic::OptionErrorDiagnostic(OptionErrorContext context) : _context{std::move(context)} {
 }
 
-auto OptionErrorDiagnostic::sourceName() const noexcept -> text::StringView {
+auto OptionErrorDiagnostic::sourceName() const noexcept -> text::String {
     try {
         return _context.arguments().isEmpty() || _context.displayText() == nullptr
-            ? text::StringView{}
+            ? text::String{}
             : _context.displayText()->text("options.CommandLineArgumentsHeading"_el);
     } catch (...) {
         return {};
@@ -35,7 +35,7 @@ auto OptionErrorDiagnostic::location() const noexcept -> unit::CodeLocation {
     return result;
 }
 
-auto OptionErrorDiagnostic::toString() const noexcept -> text::StringView {
+auto OptionErrorDiagnostic::toString() const noexcept -> text::String {
     try {
         auto document = toTextDocument();
         return text::PlainTextRenderer{document}.build();

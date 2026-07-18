@@ -4,24 +4,22 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace bgeo;
+
 void BitmapPainter::drawBitmap(
     const Bitmap &bitmap,
-    const bgeo::BlockPosition pos,
+    const BlockPosition pos,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {
 
     drawBitmap(
-        bitmap,
-        bgeo::BlockRectangle{pos, bitmapRenderSize(bitmap, options)},
-        bgeo::Alignment::TopLeft,
-        options,
-        animationCycle);
+        bitmap, BlockRectangle{pos, bitmapRenderSize(bitmap, options)}, Alignment::TopLeft, options, animationCycle);
 }
 
 void BitmapPainter::drawBitmap(
     const Bitmap &bitmap,
-    const bgeo::BlockRectangle rect,
-    const bgeo::Alignment alignment,
+    const BlockRectangle rect,
+    const Alignment alignment,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {
 
@@ -33,30 +31,30 @@ void BitmapPainter::drawBitmap(
         return;
     }
     auto visibleSize = renderedSize.limitedWith(rect.size());
-    auto sourceOffset = bgeo::BlockPosition{};
+    auto sourceOffset = BlockPosition{};
     auto targetPos = rect.alignmentOffset(renderedSize, alignment);
     const auto alignmentOffset = rect.size().alignmentOffset(renderedSize, alignment);
     if (renderedSize.width() <= rect.width()) {
     } else {
-        sourceOffset += bgeo::BlockPosition{-alignmentOffset.x(), bgeo::BlockCoordinate{0}};
+        sourceOffset += BlockPosition{-alignmentOffset.x(), BlockCoordinate{0}};
         targetPos.setX(rect.x1());
     }
     if (renderedSize.height() <= rect.height()) {
     } else {
-        sourceOffset += bgeo::BlockPosition{bgeo::BlockCoordinate{0}, -alignmentOffset.y()};
+        sourceOffset += BlockPosition{BlockCoordinate{0}, -alignmentOffset.y()};
         targetPos.setY(rect.y1());
     }
     if (options.block16Style() != nullptr) {
         for (auto y = 0; y < visibleSize.height(); ++y) {
             for (auto x = 0; x < visibleSize.width(); ++x) {
-                const auto bitmapPos = sourceOffset + bgeo::BlockPosition{x, y};
+                const auto bitmapPos = sourceOffset + BlockPosition{x, y};
                 if (!bitmap.pixel(bitmapPos)) {
                     continue;
                 }
                 const auto bitMask = bitmapPos.cardinalFourBitmask(
-                    [&](const bgeo::BlockPosition neighborPos) noexcept -> bool { return bitmap.pixel(neighborPos); });
+                    [&](const BlockPosition neighborPos) noexcept -> bool { return bitmap.pixel(neighborPos); });
                 drawBitmapBlock(
-                    targetPos + bgeo::BlockPosition{x, y},
+                    targetPos + BlockPosition{x, y},
                     options.block16Style()->block(bitMask),
                     colorForBitmapPosition(options, bitmapPos, animationCycle),
                     options);
@@ -68,10 +66,10 @@ void BitmapPainter::drawBitmap(
     case BitmapScaleMode::HalfBlock:
         for (auto y = 0; y < visibleSize.height(); ++y) {
             for (auto x = 0; x < visibleSize.width(); ++x) {
-                const auto bitmapCellPos = sourceOffset + bgeo::BlockPosition{x, y};
+                const auto bitmapCellPos = sourceOffset + BlockPosition{x, y};
                 const auto bitMask = bitmap.pixelQuad(bitmapCellPos);
                 drawBitmapBlock(
-                    targetPos + bgeo::BlockPosition{x, y},
+                    targetPos + BlockPosition{x, y},
                     options.halfBlocks()[BlockIndex::fromSizeT(bitMask)],
                     colorForBitmapPosition(options, bitmapCellPos, animationCycle),
                     options);
@@ -81,13 +79,13 @@ void BitmapPainter::drawBitmap(
     case BitmapScaleMode::DoubleBlock:
         for (auto y = 0; y < visibleSize.height(); ++y) {
             for (auto x = 0; x < visibleSize.width(); ++x) {
-                const auto renderedBitmapPos = sourceOffset + bgeo::BlockPosition{x, y};
-                const auto bitmapPos = bgeo::BlockPosition{renderedBitmapPos.x() / 2, renderedBitmapPos.y()};
+                const auto renderedBitmapPos = sourceOffset + BlockPosition{x, y};
+                const auto bitmapPos = BlockPosition{renderedBitmapPos.x() / 2, renderedBitmapPos.y()};
                 if (!bitmap.pixel(bitmapPos)) {
                     continue;
                 }
                 drawBitmapBlock(
-                    targetPos + bgeo::BlockPosition{x, y},
+                    targetPos + BlockPosition{x, y},
                     options.doubleBlocks()[BlockIndex::fromSizeT((renderedBitmapPos.x() % 2).toSizeT())],
                     colorForBitmapPosition(options, bitmapPos, animationCycle),
                     options);
@@ -98,12 +96,12 @@ void BitmapPainter::drawBitmap(
     default:
         for (auto y = 0; y < visibleSize.height(); ++y) {
             for (auto x = 0; x < visibleSize.width(); ++x) {
-                const auto bitmapPos = sourceOffset + bgeo::BlockPosition{x, y};
+                const auto bitmapPos = sourceOffset + BlockPosition{x, y};
                 if (!bitmap.pixel(bitmapPos)) {
                     continue;
                 }
                 drawBitmapBlock(
-                    targetPos + bgeo::BlockPosition{x, y},
+                    targetPos + BlockPosition{x, y},
                     options.fullBlock(),
                     colorForBitmapPosition(options, bitmapPos, animationCycle),
                     options);
@@ -113,8 +111,7 @@ void BitmapPainter::drawBitmap(
     }
 }
 
-auto BitmapPainter::bitmapRenderSize(const Bitmap &bitmap, const BitmapDrawOptions &options) noexcept
-    -> bgeo::BlockSize {
+auto BitmapPainter::bitmapRenderSize(const Bitmap &bitmap, const BitmapDrawOptions &options) noexcept -> BlockSize {
     if (options.block16Style() != nullptr) {
         return bitmap.size();
     }
@@ -131,7 +128,7 @@ auto BitmapPainter::bitmapRenderSize(const Bitmap &bitmap, const BitmapDrawOptio
 
 auto BitmapPainter::colorForBitmapPosition(
     const BitmapDrawOptions &options,
-    const bgeo::BlockPosition bitmapPosition,
+    const BlockPosition bitmapPosition,
     const std::size_t animationCycle) const noexcept -> Color {
 
     const auto &colorSequence = options.color();
@@ -162,10 +159,7 @@ auto BitmapPainter::colorForBitmapPosition(
 }
 
 void BitmapPainter::drawBitmapBlock(
-    const bgeo::BlockPosition pos,
-    const Block &block,
-    const Color baseColor,
-    const BitmapDrawOptions &options) noexcept {
+    const BlockPosition pos, const Block &block, const Color baseColor, const BitmapDrawOptions &options) noexcept {
 
     if (!rect().contains(pos)) {
         return;

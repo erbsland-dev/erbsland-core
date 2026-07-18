@@ -19,8 +19,8 @@ auto U32StringAppendTools::append(const U32StringDataView &text) -> U32StringSha
         return _storage;
     }
     const auto oldSize = _storage.range().length().toSizeT();
-    const auto newSize =
-        U32StringSharedStorage::checkedAddSize(oldSize, source.size(), "String append exceeds string size bounds");
+    const auto newSize = U32StringSharedStorage::checkedAddSize(
+        oldSize, source.size(), "StringEditor append exceeds string size bounds");
     _storage.ensureMutableCapacity(newSize);
     std::memcpy(_storage.dataForWrite() + oldSize, source.data(), source.size() * sizeof(char32_t));
     _storage.resize(newSize);

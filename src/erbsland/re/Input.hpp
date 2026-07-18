@@ -2,16 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CaptureGroup_fwd.hpp"
+#include "Input_fwd.hpp"
 #include "InputBase.hpp"
-#include "Match.hpp"
-
-#include <memory>
+#include "Match_fwd.hpp"
 
 namespace erbsland::re {
-
-class Input;
-/// A shared pointer to an input instance.
-using InputPtr = std::shared_ptr<Input>;
 
 /// An abstract input for regular expression matching.
 /// @tested{InputBaseTest}
@@ -24,11 +20,10 @@ public:
 
 public:
     /// Create a match object for this input.
-    /// @param regEx The regular expression object that created the match.
     /// @param captureGroupList The list of capture groups.
     /// @return An owning match result that holds a copy of the matched text.
     /// Implementations may throw encoding errors or other runtime errors; matching operations propagate them unchanged.
-    [[nodiscard]] virtual auto createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> MatchPtr = 0;
+    [[nodiscard]] virtual auto createMatch(CaptureGroupList captureGroupList) -> MatchPtr = 0;
 };
 
 }

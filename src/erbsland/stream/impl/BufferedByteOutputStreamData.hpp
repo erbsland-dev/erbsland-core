@@ -9,7 +9,6 @@
 #include "../StreamState.hpp"
 
 #include "../../mem/RingBuffer.hpp"
-#include "../../text/TextRingBuffer.hpp"
 
 #include <atomic>
 #include <condition_variable>
@@ -47,7 +46,7 @@ public:
     mutable std::mutex mutex;          ///< Protects rings and non-atomic state.
     std::condition_variable condition; ///< Signals capacity, completion, failure, or state changes.
     mem::RingBuffer front;             ///< Fixed buffer consumed by the current background write.
-    text::TextRingBuffer back;         ///< Bounded growing queue for atomic byte and encoded-text writes.
+    mem::RingBuffer back;              ///< Bounded growing queue for atomic byte and encoded-text writes.
     std::atomic<StreamState> streamState{StreamState::Open}; ///< Current stream lifecycle state.
     std::atomic<bool> aborted{false};                        ///< Whether pending work must be abandoned.
     std::atomic<uint64_t> logicalPosition{0U};               ///< Logical byte position including accepted output.

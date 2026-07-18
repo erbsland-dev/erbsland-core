@@ -11,18 +11,18 @@
 
 namespace erbsland::options {
 
-OptionModule::OptionModule(text::StringView name) : _name{name.transformed(text::Char::toAsciiLowercase)} {
+OptionModule::OptionModule(const text::String &name) : _name{name.transformed(text::Char::toAsciiLowercase)} {
 }
 
 auto OptionModule::create() -> OptionModulePtr {
     return std::make_shared<OptionModule>();
 }
 
-auto OptionModule::create(text::StringView name) -> OptionModulePtr {
-    return std::make_shared<OptionModule>(std::move(name));
+auto OptionModule::create(const text::String &name) -> OptionModulePtr {
+    return std::make_shared<OptionModule>(name);
 }
 
-auto OptionModule::isValidName(const text::StringView &name) noexcept -> bool {
+auto OptionModule::isValidName(const text::String &name) noexcept -> bool {
     return impl::isAsciiNameToken(name);
 }
 
@@ -30,11 +30,11 @@ void OptionModule::addSet(OptionSetPtr optionSet) {
     _optionSets.emplace_back(std::move(optionSet));
 }
 
-auto OptionModule::addOption(std::initializer_list<text::StringView> names) -> OptionEditor {
+auto OptionModule::addOption(std::initializer_list<text::String> names) -> OptionEditor {
     return defaultOptionSet()->addOption(names);
 }
 
-auto OptionModule::editOption(const text::StringView &name) -> OptionEditor {
+auto OptionModule::editOption(const text::String &name) -> OptionEditor {
     for (const auto &optionSet : _optionSets) {
         auto editor = optionSet->editOption(name);
         if (editor.isValid()) {
@@ -44,11 +44,11 @@ auto OptionModule::editOption(const text::StringView &name) -> OptionEditor {
     return {};
 }
 
-void OptionModule::setName(text::StringView name) {
+void OptionModule::setName(const text::String &name) {
     _name = name.transformed(text::Char::toAsciiLowercase);
 }
 
-auto OptionModule::hasName(const text::StringView &name) const -> bool {
+auto OptionModule::hasName(const text::String &name) const -> bool {
     return _name.compare(name, text::Char::compareAsciiFolded) == std::strong_ordering::equal;
 }
 

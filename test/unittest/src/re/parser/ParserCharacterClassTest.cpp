@@ -231,7 +231,7 @@ public:
 
     void testNegatedClassesAndAnchorsNotAllowed() {
         // Negated ranges inside class are not allowed
-        const std::vector<StringView> negated = {
+        const std::vector<String> negated = {
             "[\\D]"_el, "[\\S]"_el, "[\\W]"_el, "[\\H]"_el, "[\\N]"_el, "[\\V]"_el, "[\\P{Ll}]"_el};
         for (const auto &pat : negated) {
             runWithContext(
@@ -243,7 +243,7 @@ public:
                 [&]() { return std::format("pattern: {}", pat.toSafeString(el::unit::CpLength{200U})); });
         }
         // Anchors are not allowed in classes
-        const std::vector<StringView> anchors = {"[\\A]"_el, "[\\z]"_el, "[\\Z]"_el, "[\\b]"_el, "[\\B]"_el};
+        const std::vector<String> anchors = {"[\\A]"_el, "[\\z]"_el, "[\\Z]"_el, "[\\b]"_el, "[\\B]"_el};
         for (const auto &pat : anchors) {
             runWithContext(
                 SOURCE_LOCATION(),

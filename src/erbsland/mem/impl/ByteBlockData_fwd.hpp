@@ -10,7 +10,7 @@
 
 namespace erbsland::mem::impl {
 
-/// Shared byte data for `ByteBlock` and `ByteBlockView`.
+/// Shared byte data for `ByteBlockEditor` and `ByteBlock`.
 using ByteBlockData = SharedArrayData<Byte, uint64_t>;
 
 /// Shared pointer to byte block data.

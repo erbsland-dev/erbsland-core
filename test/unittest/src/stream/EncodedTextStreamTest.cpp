@@ -115,6 +115,10 @@ class EncodedTextStreamTest final : public el::UnitTest {
                 throw StreamError{el::stream::StreamErrorContext{
                     "Failed to write to the test stream."_el, "The test output stream is closed."_el}};
             }
+            if (timeoutWrites > 0U) {
+                --timeoutWrites;
+                return el::stream::StreamWriteStatus::Timeout;
+            }
             for (const auto byte : bytes) {
                 data.push_back(byte.toUInt8());
             }
@@ -126,14 +130,16 @@ class EncodedTextStreamTest final : public el::UnitTest {
 
     public:
         std::vector<uint8_t> data;
+        std::size_t timeoutWrites{0U};
 
     private:
         el::stream::OutputStreamSettings _settings;
         el::stream::StreamState _state{el::stream::StreamState::Open};
     };
 
-    static auto readLineBlocking(el::stream::impl::EncodedTextInputStream &stream, const CpLength maximum) -> String {
-        auto result = String{};
+    static auto readLineBlocking(el::stream::impl::EncodedTextInputStream &stream, const CpLength maximum)
+        -> StringEditor {
+        auto result = StringEditor{};
         while (result.characterLength() < maximum) {
             const auto readResult = stream.readLine(maximum - result.characterLength());
             if (readResult == StreamReadStatus::Timeout) {
@@ -150,8 +156,8 @@ class EncodedTextStreamTest final : public el::UnitTest {
         return result;
     }
 
-    static auto readAllBlocking(el::stream::impl::EncodedTextInputStream &stream) -> String {
-        auto result = String{};
+    static auto readAllBlocking(el::stream::impl::EncodedTextInputStream &stream) -> StringEditor {
+        auto result = StringEditor{};
         while (true) {
             const auto readResult = stream.readAll();
             if (readResult == StreamReadStatus::Timeout) {
@@ -166,7 +172,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
 
 public:
     void testReadCharAndRead() {
-        auto bytes = StringEncoder{String{std::string_view{"Hello"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"Hello"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
         auto &textStream = static_cast<TextInputStream &>(stream);
@@ -180,7 +186,7 @@ public:
     }
 
     void testReadLinesKeepEndingsAndTruncate() {
-        auto bytes = StringEncoder{String{std::string_view{"a\r\nb\rc\nlast"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"a\r\nb\rc\nlast"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
         auto &textStream = static_cast<TextInputStream &>(stream);
@@ -194,7 +200,7 @@ public:
     }
 
     void testLineReadRetainsTextAcrossTimeout() {
-        auto bytes = StringEncoder{String{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -208,7 +214,7 @@ public:
     }
 
     void testAggregateReadRetainsTextAcrossTimeout() {
-        auto bytes = StringEncoder{String{std::string_view{"abcd"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abcd"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -219,7 +225,7 @@ public:
     }
 
     void testLineReadUsesOneDeadlineForAllShortRefills() {
-        auto bytes = StringEncoder{String{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -232,7 +238,7 @@ public:
     }
 
     void testChangingTextReadReplaysRetainedText() {
-        auto bytes = StringEncoder{String{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -242,13 +248,13 @@ public:
     }
 
     void testMixedInputReadsPreserveOrder() {
-        auto bytes = StringEncoder{String{std::string_view{"A\nBC\nD"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"A\nBC\nD"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
         REQUIRE_EQUAL(stream.readChar().data(), Char{U'A'});
         REQUIRE_EQUAL(StringConverter{readLineBlocking(stream, CpLength{8U})}.toStdString(), std::string{"\n"});
-        auto middle = String{};
+        auto middle = StringEditor{};
         while (middle.characterLength() < CpLength{2U}) {
             const auto value = stream.read(CpLength{2U} - middle.characterLength());
             if (value == StreamReadStatus::Data) {
@@ -262,7 +268,7 @@ public:
     }
 
     void testZeroMaximumReturnsEmptyWithoutAdvancing() {
-        auto bytes = StringEncoder{String{std::string_view{"abc"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abc"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -271,7 +277,7 @@ public:
     }
 
     void testAllocatingReadsRejectInfiniteMaximum() {
-        auto bytes = StringEncoder{String{std::string_view{"A"}}}.encode(StringEncoding::Utf8);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"A"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -281,7 +287,7 @@ public:
     }
 
     void testBomAndEffectiveEncoding() {
-        auto bytes = StringEncoder{String{std::string_view{"A"}}}.encode(StringEncoding::Utf16);
+        auto bytes = StringEncoder{StringEditor{std::string_view{"A"}}}.encode(StringEncoding::Utf16);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf16};
 
@@ -336,6 +342,60 @@ public:
         REQUIRE_EQUAL(byteStream->data, std::vector<uint8_t>({0xffU, 0xfeU, 0x41U, 0x00U, 0x42U, 0x00U, 0x0aU, 0x00U}));
         REQUIRE_EQUAL(stream.encoding(), StringEncoding::Utf16);
         REQUIRE_EQUAL(stream.effectiveEncoding(), StringEncoding::Utf16LittleEndian);
+    }
+
+    void testOutputRequiredUtf8BomOnlyOnce() {
+        const auto byteStream = std::make_shared<MemoryOutputStream>();
+        auto stream =
+            el::stream::impl::EncodedTextOutputStream{byteStream, StringEncoding::Utf8, StringBomMode::Require};
+
+        REQUIRE(stream.write("A"_el).isSuccess());
+        REQUIRE(stream.write(Char{U'B'}).isSuccess());
+
+        REQUIRE_EQUAL(byteStream->data, std::vector<uint8_t>({0xefU, 0xbbU, 0xbfU, 0x41U, 0x42U}));
+    }
+
+    void testOutputRequiredUtf32BomOnlyOnce() {
+        const auto byteStream = std::make_shared<MemoryOutputStream>();
+        auto stream = el::stream::impl::EncodedTextOutputStream{
+            byteStream, StringEncoding::Utf32BigEndian, StringBomMode::Require};
+
+        stream.print("A");
+        REQUIRE(stream.writeLine("B"_el).isSuccess());
+
+        REQUIRE_EQUAL(
+            byteStream->data,
+            std::vector<uint8_t>(
+                {0x00U,
+                    0x00U,
+                    0xfeU,
+                    0xffU,
+                    0x00U,
+                    0x00U,
+                    0x00U,
+                    0x41U,
+                    0x00U,
+                    0x00U,
+                    0x00U,
+                    0x42U,
+                    0x00U,
+                    0x00U,
+                    0x00U,
+                    0x0aU}));
+    }
+
+    void testTimedOutFirstWriteRetriesBomOnce() {
+        const auto byteStream = std::make_shared<MemoryOutputStream>();
+        byteStream->timeoutWrites = 1U;
+        auto stream =
+            el::stream::impl::EncodedTextOutputStream{byteStream, StringEncoding::Utf16, StringBomMode::Require};
+
+        REQUIRE(stream.write("A"_el).isTimeout());
+        REQUIRE(byteStream->data.empty());
+        REQUIRE(stream.write("A"_el).isSuccess());
+        REQUIRE(stream.write("B"_el).isSuccess());
+
+        REQUIRE_EQUAL(byteStream->data, std::vector<uint8_t>({0xffU, 0xfeU, 0x41U, 0x00U, 0x42U, 0x00U}));
     }
 
     void testOutputCanSuppressInitialBom() {

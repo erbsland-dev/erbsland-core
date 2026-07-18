@@ -39,7 +39,7 @@ Map Patterns
     DisplayTextMap()  // create a mutable map populated with built-in English text
     T::defaultMap() -> const DisplayTextMapConstPtr&  // immutable process-wide English defaults
     o.clone() -> DisplayTextMapPtr  // copy sources and translator without cached results
-    o.text(key) -> StringView  // resolve and translate text; return key if it is missing
+    o.text(key) -> String  // resolve and translate text; return key if it is missing
     o.format(key) -> StringFormat  // resolve, translate, compile, and cache a format
     o.set(key, text)/remove(key) -> DisplayTextMap&  // edit source text and clear caches
     o.translator()/setTranslator(translator)  // access or replace translation behavior
@@ -49,4 +49,4 @@ Translator Patterns
 
 .. code-block:: text
 
-    o.translate(key, sourceText) -> StringView  // translate source text; empty keeps the English source
+    o.translate(key, sourceText) -> String  // translate source text; empty keeps the English source

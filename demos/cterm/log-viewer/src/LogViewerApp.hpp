@@ -41,7 +41,7 @@ private:
 
     struct LogMessage final {
         LogLevel level{};
-        el::StringView text;
+        el::String text;
     };
 
     struct DelayPreset final {
@@ -61,35 +61,35 @@ private:
     void updateView(BlockSize viewSize) noexcept;
     void renderLogMessage(const LogMessage &message);
     [[nodiscard]] static auto shouldCopyCell(const Block &cell) noexcept -> bool;
-    void renderInitialLine(const el::StringView &timestamp, LogLevel level, const el::StringView &text);
-    void renderContinuationLine(const el::StringView &text);
+    void renderInitialLine(const el::String &timestamp, LogLevel level, const el::String &text);
+    void renderContinuationLine(const el::String &text);
     [[nodiscard]] auto generateLogMessage() -> LogMessage;
-    [[nodiscard]] auto generateShortMessage(LogLevel level) -> el::StringView;
-    [[nodiscard]] auto generateLongMessage(LogLevel level) -> el::StringView;
-    [[nodiscard]] auto generateMultilineMessage(LogLevel level) -> el::StringView;
-    [[nodiscard]] auto nextTimestamp() -> el::StringView;
+    [[nodiscard]] auto generateShortMessage(LogLevel level) -> el::String;
+    [[nodiscard]] auto generateLongMessage(LogLevel level) -> el::String;
+    [[nodiscard]] auto generateMultilineMessage(LogLevel level) -> el::String;
+    [[nodiscard]] auto nextTimestamp() -> el::String;
     [[nodiscard]] auto randomLogLevel() -> LogLevel;
     [[nodiscard]] auto randomDelay() -> std::chrono::milliseconds;
     [[nodiscard]] auto randomTimestampStep() -> std::chrono::seconds;
-    [[nodiscard]] auto randomRequestId() -> el::StringView;
-    [[nodiscard]] auto randomIpAddress() -> el::StringView;
+    [[nodiscard]] auto randomRequestId() -> el::String;
+    [[nodiscard]] auto randomIpAddress() -> el::String;
     [[nodiscard]] static auto initialLineOptions() -> const ParagraphOptions &;
     [[nodiscard]] static auto continuationLineOptions() -> const ParagraphOptions &;
     [[nodiscard]] static auto contentRectForBuffer(BlockSize bufferSize) noexcept -> BlockRectangle;
     [[nodiscard]] static auto clampViewOffset(BlockPosition offset, BlockSize viewSize, BlockSize contentSize) noexcept
         -> BlockPosition;
     [[nodiscard]] static auto logLevelColor(LogLevel level) noexcept -> Color;
-    [[nodiscard]] static auto logTypeCode(LogLevel level) noexcept -> el::StringView;
+    [[nodiscard]] static auto logTypeCode(LogLevel level) noexcept -> el::String;
     [[nodiscard]] static auto delayPresets() noexcept -> std::span<const DelayPreset>;
-    [[nodiscard]] static auto methodChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto routeChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto staticRouteChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto backendChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto cacheChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto userAgentChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto warningChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto errorChoices() noexcept -> std::span<const el::StringView>;
-    [[nodiscard]] static auto traceChoices() noexcept -> std::span<const el::StringView>;
+    [[nodiscard]] static auto methodChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto routeChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto staticRouteChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto backendChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto cacheChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto userAgentChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto warningChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto errorChoices() noexcept -> std::span<const el::String>;
+    [[nodiscard]] static auto traceChoices() noexcept -> std::span<const el::String>;
 
 private:
     std::shared_ptr<CursorBuffer> _logBuffer = std::make_shared<CursorBuffer>(

@@ -74,7 +74,7 @@ This makes complete option declarations compact while still keeping the importan
             .addChoice("fast"_el)
             .addChoice("precise"_el)
             .addChoice("night"_el)
-            .setDefaultValue(el::String{"precise"_el})
+            .setDefaultValue("precise"_el)
             .setHelpDescription("Measurement mode for the output."_el);
         options->addOption({"--minimum-signal"_el, "minimum-signal"_el})
             .setType(el::OptionType::Integer)
@@ -209,7 +209,7 @@ Hidden choices remain parseable, but do not appear in the help output.
                 .setHelpVisibility(el::OptionHelpVisibility::Usage);
             options->addOption({"-f"_el, "--phase"_el, "phase"_el})
                 .setChoices(activityChoices())
-                .setDefaultValue(el::String{"night"_el})
+                .setDefaultValue("night"_el)
                 .setHelpDescription("Time window in which the observation occurs."_el);
             options->addOption({"-r"_el, "--round"_el, "round"_el})
                 .setType(el::OptionType::Integer)

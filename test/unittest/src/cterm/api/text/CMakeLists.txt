@@ -5,8 +5,8 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
         BlockStringConversionTest.cpp
+        BlockStringEditorTest.cpp
         BlockStringTest.cpp
-        BlockStringViewTest.cpp
         BlockTest.cpp
         BlockTextOptionsTest.cpp
         BlockTextRenderTest.cpp

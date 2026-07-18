@@ -26,7 +26,7 @@ TESTED_TARGETS(Disassembler)
 TAGS(Diagnostics) class DisassemblerTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
 public:
     EngineData data;
-    el::text::StringViewList lines;
+    el::text::StringList lines;
 
     void setUp() override {
         data = {};

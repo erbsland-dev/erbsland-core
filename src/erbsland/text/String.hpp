@@ -8,7 +8,7 @@
 
 namespace erbsland::text {
 
-/// The common string type used in the library.
+/// The common read-only string used in the library.
 using String = U8String;
 
 }

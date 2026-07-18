@@ -17,16 +17,18 @@
 
 namespace erbsland::text::impl {
 
-auto U8StringAppendTools::repeatedCharacterCount(const unit::CpLength characterCount, const std::size_t countSize)
-    -> unit::CpLength {
+using namespace unit;
+
+auto U8StringAppendTools::repeatedCharacterCount(const CpLength characterCount, const std::size_t countSize)
+    -> CpLength {
     const auto totalCharacterCount = U8StringSharedStorage::checkedMultiplySize(
         characterCount.toSizeTOrThrow(), countSize, "Repeated string exceeds character length bounds");
-    return unit::CpLength::fromSizeTOrThrow(totalCharacterCount);
+    return CpLength::fromSizeTOrThrow(totalCharacterCount);
 }
 
-auto U8StringAppendTools::countDecodedCharacters(const std::span<const char> source) noexcept -> unit::CpLength {
-    auto position = unit::ByteIndex::zero();
-    auto result = unit::CpLength::zero();
+auto U8StringAppendTools::countDecodedCharacters(const std::span<const char> source) noexcept -> CpLength {
+    auto position = ByteIndex::zero();
+    auto result = CpLength::zero();
     while (position.toSizeT() < source.size()) {
         utf8::fastAdvanceChar(source, position);
         ++result;
@@ -36,13 +38,13 @@ auto U8StringAppendTools::countDecodedCharacters(const std::span<const char> sou
 
 auto U8StringAppendTools::summarizeForUtf8(const std::span<const char16_t> source) -> AppendSummary {
     auto result = AppendSummary{};
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < source.size()) {
         const auto character = utf16::decodeCharOrReplace(source, position);
         result.encodedLength = U8StringSharedStorage::checkedAddSize(
             result.encodedLength,
             utf8::encodedLength(character).toSizeTOrThrow(),
-            "String append exceeds string size bounds");
+            "StringEditor append exceeds string size bounds");
         ++result.characterCount;
     }
     return result;
@@ -50,41 +52,41 @@ auto U8StringAppendTools::summarizeForUtf8(const std::span<const char16_t> sourc
 
 auto U8StringAppendTools::summarizeForUtf8(const std::span<const char32_t> source) -> AppendSummary {
     auto result = AppendSummary{};
-    auto position = unit::CpIndex::zero();
+    auto position = CpIndex::zero();
     while (position.toSizeT() < source.size()) {
         const auto character = utf32::decodeCharOrReplace(source, position);
         result.encodedLength = U8StringSharedStorage::checkedAddSize(
             result.encodedLength,
             utf8::encodedLength(character).toSizeTOrThrow(),
-            "String append exceeds string size bounds");
+            "StringEditor append exceeds string size bounds");
         ++result.characterCount;
     }
     return result;
 }
 
-auto U8StringAppendTools::append(const U8StringDataView &text) -> unit::CpLength {
+auto U8StringAppendTools::append(const U8StringDataView &text) -> CpLength {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto appendedLength = countDecodedCharacters(source);
     const auto oldSize = _storage.range().length().toSizeT();
     const auto newSize =
-        U8StringSharedStorage::checkedAddSize(oldSize, source.size(), "String append exceeds string size bounds");
+        U8StringSharedStorage::checkedAddSize(oldSize, source.size(), "StringEditor append exceeds string size bounds");
     _storage.ensureMutableCapacity(newSize);
     std::memcpy(_storage.dataForWrite() + oldSize, source.data(), source.size());
     _storage.resize(newSize);
     return appendedLength;
 }
 
-auto U8StringAppendTools::append(const U8StringDataView &text, const unit::ElementCount count) -> unit::CpLength {
+auto U8StringAppendTools::append(const U8StringDataView &text, const ElementCount count) -> CpLength {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto appendedLength = countDecodedCharacters(source);
     const auto appendSize = U8StringSharedStorage::checkedMultiplySize(
@@ -102,18 +104,18 @@ auto U8StringAppendTools::append(const U8StringDataView &text, const unit::Eleme
     return repeatedCharacterCount(appendedLength, countSize);
 }
 
-auto U8StringAppendTools::append(const U16StringDataView &text) -> unit::CpLength {
+auto U8StringAppendTools::append(const U16StringDataView &text) -> CpLength {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto summary = summarizeForUtf8(source);
     const auto oldSize = _storage.range().length().toSizeT();
     const auto newSize = U8StringSharedStorage::checkedAddSize(
-        oldSize, summary.encodedLength, "String append exceeds string size bounds");
+        oldSize, summary.encodedLength, "StringEditor append exceeds string size bounds");
     _storage.ensureMutableCapacity(newSize);
     U8Writer writer{std::span<char>{_storage.dataForWrite() + oldSize, summary.encodedLength}};
-    auto position = unit::U16DataIndex::zero();
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < source.size()) {
         writer.write(utf16::decodeCharOrReplace(source, position));
     }
@@ -121,14 +123,14 @@ auto U8StringAppendTools::append(const U16StringDataView &text) -> unit::CpLengt
     return summary.characterCount;
 }
 
-auto U8StringAppendTools::append(const U16StringDataView &text, const unit::ElementCount count) -> unit::CpLength {
+auto U8StringAppendTools::append(const U16StringDataView &text, const ElementCount count) -> CpLength {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto summary = summarizeForUtf8(source);
     const auto appendSize = U8StringSharedStorage::checkedMultiplySize(
@@ -139,7 +141,7 @@ auto U8StringAppendTools::append(const U16StringDataView &text, const unit::Elem
     _storage.ensureMutableCapacity(newSize);
     U8Writer writer{std::span<char>{_storage.dataForWrite() + oldSize, appendSize}};
     for (auto i = std::size_t{0}; i < countSize; ++i) {
-        auto position = unit::U16DataIndex::zero();
+        auto position = U16DataIndex::zero();
         while (position.toSizeT() < source.size()) {
             writer.write(utf16::decodeCharOrReplace(source, position));
         }
@@ -148,18 +150,18 @@ auto U8StringAppendTools::append(const U16StringDataView &text, const unit::Elem
     return repeatedCharacterCount(summary.characterCount, countSize);
 }
 
-auto U8StringAppendTools::append(const U32StringDataView &text) -> unit::CpLength {
+auto U8StringAppendTools::append(const U32StringDataView &text) -> CpLength {
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto summary = summarizeForUtf8(source);
     const auto oldSize = _storage.range().length().toSizeT();
     const auto newSize = U8StringSharedStorage::checkedAddSize(
-        oldSize, summary.encodedLength, "String append exceeds string size bounds");
+        oldSize, summary.encodedLength, "StringEditor append exceeds string size bounds");
     _storage.ensureMutableCapacity(newSize);
     U8Writer writer{std::span<char>{_storage.dataForWrite() + oldSize, summary.encodedLength}};
-    auto position = unit::CpIndex::zero();
+    auto position = CpIndex::zero();
     while (position.toSizeT() < source.size()) {
         writer.write(utf32::decodeCharOrReplace(source, position));
     }
@@ -167,14 +169,14 @@ auto U8StringAppendTools::append(const U32StringDataView &text) -> unit::CpLengt
     return summary.characterCount;
 }
 
-auto U8StringAppendTools::append(const U32StringDataView &text, const unit::ElementCount count) -> unit::CpLength {
+auto U8StringAppendTools::append(const U32StringDataView &text, const ElementCount count) -> CpLength {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto countSize = repeatCountToSize(count);
     const auto source = text.dataSpan();
     if (source.empty()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto summary = summarizeForUtf8(source);
     const auto appendSize = U8StringSharedStorage::checkedMultiplySize(
@@ -185,7 +187,7 @@ auto U8StringAppendTools::append(const U32StringDataView &text, const unit::Elem
     _storage.ensureMutableCapacity(newSize);
     U8Writer writer{std::span<char>{_storage.dataForWrite() + oldSize, appendSize}};
     for (auto i = std::size_t{0}; i < countSize; ++i) {
-        auto position = unit::CpIndex::zero();
+        auto position = CpIndex::zero();
         while (position.toSizeT() < source.size()) {
             writer.write(utf32::decodeCharOrReplace(source, position));
         }
@@ -194,9 +196,9 @@ auto U8StringAppendTools::append(const U32StringDataView &text, const unit::Elem
     return repeatedCharacterCount(summary.characterCount, countSize);
 }
 
-auto U8StringAppendTools::append(const Char character) -> unit::CpLength {
+auto U8StringAppendTools::append(const Char character) -> CpLength {
     if (!character.isValidUnicode()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto oldSize = _storage.range().length().toSizeT();
     const auto appendSize = impl::utf8::encodedLength(character).toSizeTOrThrow();
@@ -206,16 +208,16 @@ auto U8StringAppendTools::append(const Char character) -> unit::CpLength {
     U8Writer writer{std::span<char>{_storage.dataForWrite() + oldSize, appendSize}};
     writer.write(character);
     _storage.resize(newSize);
-    return unit::CpLength::one();
+    return CpLength::one();
 }
 
-auto U8StringAppendTools::append(const Char character, unit::CpLength count) -> unit::CpLength {
+auto U8StringAppendTools::append(const Char character, CpLength count) -> CpLength {
     if (count.isZero()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto countSize = repeatCountToSize(count);
     if (!character.isValidUnicode()) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     const auto oldSize = _storage.range().length().toSizeT();
     const auto characterSize = impl::utf8::encodedLength(character).toSizeTOrThrow();
@@ -229,7 +231,7 @@ auto U8StringAppendTools::append(const Char character, unit::CpLength count) -> 
         writer.write(character);
     }
     _storage.resize(newSize);
-    return unit::CpLength::fromSizeTOrThrow(countSize);
+    return CpLength::fromSizeTOrThrow(countSize);
 }
 
 }

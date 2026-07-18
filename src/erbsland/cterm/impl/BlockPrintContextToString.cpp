@@ -37,19 +37,19 @@ void BlockPrintContextToString::print(const Block &character) noexcept {
     _builder.append(character.withBase(_style));
 }
 
-void BlockPrintContextToString::print(const BlockString &text) noexcept {
-    print(BlockStringView{text});
+void BlockPrintContextToString::print(const BlockStringEditor &text) noexcept {
+    print(BlockString{text});
 }
 
-void BlockPrintContextToString::print(const BlockStringView &text) noexcept {
+void BlockPrintContextToString::print(const BlockString &text) noexcept {
     _builder.appendWithBaseStyle(text, _style);
 }
 
-void BlockPrintContextToString::print(const text::StringView &text) noexcept {
+void BlockPrintContextToString::print(const text::String &text) noexcept {
     _builder.appendStyled(text, _style);
 }
 
-void BlockPrintContextToString::print(const text::U32StringView &text) noexcept {
+void BlockPrintContextToString::print(const text::U32String &text) noexcept {
     _builder.appendStyled(text, _style);
 }
 
@@ -64,12 +64,12 @@ void BlockPrintContextToCursorWriter::commit() noexcept {
     _writer.setStyle(_style);
 }
 
-BlockPrintContextToBlockString::BlockPrintContextToBlockString(BlockString &text) noexcept : _text{text} {
+BlockPrintContextToBlockString::BlockPrintContextToBlockString(BlockStringEditor &text) noexcept : _text{text} {
 }
 
 void BlockPrintContextToBlockString::commit() noexcept {
     if (!_builder.isEmpty()) {
-        _text.appendView(_builder.takeString(), {});
+        _text.appendString(_builder.takeString(), {});
     }
 }
 

@@ -6,7 +6,7 @@
 
 namespace erbsland::re::impl {
 
-auto toString(ArgumentKind argumentKind) noexcept -> text::StringView {
+auto toString(ArgumentKind argumentKind) noexcept -> text::String {
     using namespace text::literals;
     switch (argumentKind) {
     case ArgumentKind::Unknown:
@@ -37,7 +37,7 @@ auto toString(ArgumentKind argumentKind) noexcept -> text::StringView {
     return {};
 }
 
-auto toString(ArgumentType argumentType) noexcept -> text::StringView {
+auto toString(ArgumentType argumentType) noexcept -> text::String {
     using namespace text::literals;
     switch (argumentType) {
     case ArgumentType::Text:
@@ -53,7 +53,7 @@ auto toString(ArgumentType argumentType) noexcept -> text::StringView {
 auto argumentTypeFromValue(const ArgumentValue &value) noexcept -> ArgumentType {
     return std::visit(
         []<typename T>(const T &) -> ArgumentType {
-            if constexpr (std::is_same_v<T, text::String>) {
+            if constexpr (std::is_same_v<T, text::StringEditor>) {
                 return ArgumentType::Text;
             } else if constexpr (std::is_same_v<T, uint32_t>) {
                 return ArgumentType::Integer;

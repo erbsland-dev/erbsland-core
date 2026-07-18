@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../StringView.hpp"
+#include "../../String.hpp"
 #include "../../TextNode.hpp"
 
 #include <cstdint>
@@ -46,7 +46,7 @@ public:
     /// Create one placeholder tag description.
     /// @param placeholderText The placeholder text for unsupported tags.
     /// @param subtreeBehavior Whether nested content is ignored.
-    explicit HtmlTagInfo(StringView placeholderText, SubtreeBehavior subtreeBehavior = SubtreeBehavior::Keep) noexcept :
+    explicit HtmlTagInfo(String placeholderText, SubtreeBehavior subtreeBehavior = SubtreeBehavior::Keep) noexcept :
         _placeholderText{std::move(placeholderText)}, _suppressSubtree{subtreeBehavior == SubtreeBehavior::Suppress} {}
 
     /// Create one transparent tag description.
@@ -62,7 +62,7 @@ public:
     /// Access the configured heading level.
     [[nodiscard]] auto level() const noexcept -> TextNode::Level { return _level; }
     /// Access the placeholder text for unsupported tags.
-    [[nodiscard]] auto placeholderText() const noexcept -> const StringView & { return _placeholderText; }
+    [[nodiscard]] auto placeholderText() const noexcept -> const String & { return _placeholderText; }
     /// Test if the tag creates a node.
     [[nodiscard]] auto hasNodeType() const noexcept -> bool { return _hasNodeType; }
     /// Test if the list nesting defines the node level.
@@ -77,7 +77,7 @@ public:
 private:
     TextNode::Type _nodeType{TextNode::Type::Document}; ///< The mapped node type.
     TextNode::Level _level{0};                          ///< The configured heading level.
-    StringView _placeholderText{};                      ///< Placeholder text for unsupported tags.
+    String _placeholderText{};                          ///< Placeholder text for unsupported tags.
     bool _hasNodeType{false};                           ///< `true` if the tag creates a node.
     bool _usesListLevel{false};                         ///< `true` if the list nesting defines the node level.
     bool _isBlock{false};                               ///< `true` if the tag starts a block node.

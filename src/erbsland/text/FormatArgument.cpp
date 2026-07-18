@@ -8,16 +8,16 @@ auto FormatArgument::kind() const noexcept -> FormatArgumentKind {
     return static_cast<FormatArgumentKind>(_value.index());
 }
 
-auto FormatArgument::u8Text() const -> U8StringView {
-    return std::get<U8StringView>(_value);
+auto FormatArgument::u8Text() const -> U8String {
+    return std::get<U8String>(_value);
 }
 
-auto FormatArgument::u16Text() const -> U16StringView {
-    return std::get<U16StringView>(_value);
+auto FormatArgument::u16Text() const -> U16String {
+    return std::get<U16String>(_value);
 }
 
-auto FormatArgument::u32Text() const -> U32StringView {
-    return std::get<U32StringView>(_value);
+auto FormatArgument::u32Text() const -> U32String {
+    return std::get<U32String>(_value);
 }
 
 auto FormatArgument::signedInteger() const -> int64_t {

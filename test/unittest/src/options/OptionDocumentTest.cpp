@@ -18,9 +18,9 @@
 #include <erbsland/options/OptionSet.hpp>
 #include <erbsland/options/OptionType.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringViewList.hpp>
+#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/text/StringList.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>
 #include <erbsland/text/TextNodeData.hpp>
@@ -217,7 +217,7 @@ public:
 
     void testExternalCommandLineTextIsEscapedAndMarkerMatches() {
         const auto unsafeBytes = th::stdStringFromHex("2D 2D 74 65 73 74 1B");
-        const auto unsafeArgument = el::text::String{std::string_view{unsafeBytes}};
+        const auto unsafeArgument = el::text::StringEditor{std::string_view{unsafeBytes}};
         auto options = Options::create();
         options->setExecutablePath("demo-tool"_el);
         auto manager = OptionManager{options};
@@ -234,7 +234,7 @@ public:
     void testExternalExecutableNameIsEscaped() {
         const auto unsafeBytes = th::stdStringFromHex("2F 75 73 72 2F 62 69 6E 2F 74 6F 6F 6C 1B");
         auto options = Options::create();
-        options->setExecutablePath(el::text::String{std::string_view{unsafeBytes}});
+        options->setExecutablePath(el::text::StringEditor{std::string_view{unsafeBytes}});
         auto manager = OptionManager{options};
 
         const auto text = toStdString(manager.helpDocument({}).toString());
@@ -419,12 +419,12 @@ private:
         return options;
     }
 
-    [[nodiscard]] static auto toStdString(const el::text::StringView text) -> std::string {
+    [[nodiscard]] static auto toStdString(const el::text::String &text) -> std::string {
         return el::text::StringConverter{text}.toStdString();
     }
 
-    [[nodiscard]] static auto makeArgs(std::initializer_list<el::text::StringView> args) -> el::text::StringViewList {
-        auto result = el::text::StringViewList{};
+    [[nodiscard]] static auto makeArgs(std::initializer_list<el::text::String> args) -> el::text::StringList {
+        auto result = el::text::StringList{};
         result.reserve(el::unit::ElementCount{args.size()});
         for (const auto &arg : args) {
             result.append(arg.copy());
@@ -454,8 +454,8 @@ private:
     void requireContainsNode(
         const el::text::TextDocument &document,
         const el::text::TextNodeType type,
-        const el::text::StringView style = {},
-        const el::text::StringView data = {}) {
+        const el::text::String &style = {},
+        const el::text::String &data = {}) {
         REQUIRE(document.root()->anyOf([type, style, data](const el::text::TextNode &node) {
             if (node.type() != type) {
                 return false;

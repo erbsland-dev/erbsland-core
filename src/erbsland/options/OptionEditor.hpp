@@ -10,7 +10,7 @@
 #include "OptionType.hpp"
 #include "OptionValueStorage.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <optional>
@@ -43,7 +43,7 @@ public:
     /// Set the help description.
     /// @param description User-facing help description for this option.
     /// @return This editor for chaining.
-    auto setHelp(text::StringView description) -> OptionEditor &;
+    auto setHelp(text::String description) -> OptionEditor &;
     /// Set the full help definition.
     /// @param help Complete help metadata.
     /// @return This editor for chaining.
@@ -51,15 +51,15 @@ public:
     /// Set the help title.
     /// @param title Short title used when no description is available.
     /// @return This editor for chaining.
-    auto setHelpTitle(text::StringView title) -> OptionEditor &;
+    auto setHelpTitle(text::String title) -> OptionEditor &;
     /// Set the help description.
     /// @param description User-facing help description for this option.
     /// @return This editor for chaining.
-    auto setHelpDescription(text::StringView description) -> OptionEditor &;
+    auto setHelpDescription(text::String description) -> OptionEditor &;
     /// Set the help epilog.
     /// @param epilog Optional trailing text for renderers that support option-level epilogs.
     /// @return This editor for chaining.
-    auto setHelpEpilog(text::StringView epilog) -> OptionEditor &;
+    auto setHelpEpilog(text::String epilog) -> OptionEditor &;
     /// Set the help visibility.
     /// @param visibility Controls where this option appears in generated help output.
     /// @return This editor for chaining.
@@ -67,7 +67,7 @@ public:
     /// Set the custom value name shown in help output.
     /// @param valueName Bare value name without angle brackets. Empty restores the type-derived default.
     /// @return This editor for chaining.
-    auto setValueName(text::StringView valueName) -> OptionEditor &;
+    auto setValueName(text::String valueName) -> OptionEditor &;
     /// Set the option type.
     /// @param type The expected command-line value type.
     /// @return This editor for chaining.
@@ -85,7 +85,7 @@ public:
     /// Set the choices and promote the option type to `OptionType::Choice`.
     auto setChoices(OptionChoicesPtr choices) -> OptionEditor &;
     /// Add a choice by text and promote the option type to `OptionType::Choice`.
-    auto addChoice(text::StringView text) -> OptionEditor &;
+    auto addChoice(text::String text) -> OptionEditor &;
     /// Set the maximum number of values.
     auto setMaximum(unit::ArgumentCount maximum) -> OptionEditor &;
     /// Set the default value.

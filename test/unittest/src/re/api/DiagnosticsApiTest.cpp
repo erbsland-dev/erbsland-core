@@ -19,13 +19,13 @@ class DiagnosticsApiTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
 public:
     void testAssemblerCompile() {
         Assembler assembler;
-        auto regEx = assembler.compile(el::text::StringViewList{"None"_el, "Match"_el});
+        auto regEx = assembler.compile(el::text::StringList{"None"_el, "Match"_el});
         REQUIRE(regEx != nullptr);
     }
 
     void testAssemblerError() {
         Assembler assembler;
-        REQUIRE_THROWS_AS(el::re::RegExError, assembler.compile(el::text::StringViewList{"INVALID_OP"_el}));
+        REQUIRE_THROWS_AS(el::re::RegExError, assembler.compile(el::text::StringList{"INVALID_OP"_el}));
     }
 
     void testDisassembler() {
@@ -50,7 +50,7 @@ public:
 
     void testAssemblerAndDisassembler() {
         Assembler assembler;
-        auto regEx = assembler.compile(el::text::StringViewList{"Char 'x'"_el, "Match"_el});
+        auto regEx = assembler.compile(el::text::StringList{"Char 'x'"_el, "Match"_el});
         REQUIRE(regEx != nullptr);
 
         Disassembler disassembler{regEx};

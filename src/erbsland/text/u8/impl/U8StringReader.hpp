@@ -5,7 +5,7 @@
 #include "U8StringReader_fwd.hpp"
 
 #include "../U8String.hpp"
-#include "../U8StringView.hpp"
+#include "../U8StringEditor.hpp"
 
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/CpIndex.hpp"
@@ -19,7 +19,7 @@ namespace erbsland::text::impl {
 /// @tested{StringReaderTest}
 class U8StringReader final : public StringReaderBase {
 public:
-    explicit U8StringReader(U8StringView text) noexcept;
+    explicit U8StringReader(U8String text) noexcept;
     U8StringReader(const U8StringReader &) = default;
     U8StringReader(U8StringReader &&) = default;
     auto operator=(const U8StringReader &) -> U8StringReader & = default;
@@ -52,15 +52,15 @@ public:
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
     void startCapture() noexcept override;
-    [[nodiscard]] auto takeCapture() noexcept -> AnyStringView override;
+    [[nodiscard]] auto takeCapture() noexcept -> AnyString override;
     void clearBuffer() noexcept override;
     [[nodiscard]] auto takeBuffer() -> AnyString override;
-    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView override;
+    [[nodiscard]] auto bufferView() const noexcept -> AnyString override;
     [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength override;
     [[nodiscard]] auto isBufferEmpty() const noexcept -> bool override;
-    void setBuffer(const AnyStringView &text) override;
+    void setBuffer(const AnyString &text) override;
     void appendToBuffer(Char character) override;
-    void appendToBuffer(const AnyStringView &text) override;
+    void appendToBuffer(const AnyString &text) override;
     void appendCaptureToBuffer() override;
     [[nodiscard]] auto readToBuffer() -> Char override;
     [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
@@ -74,11 +74,11 @@ private:
     auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:
-    U8StringView _text;                                        ///< The string view to read.
+    U8String _text;                                            ///< The read-only string to read.
     unit::ByteIndex _position{unit::ByteIndex::zero()};        ///< The current byte position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()};          ///< The current decoded code-point position.
     unit::ByteIndex _captureStart{unit::ByteIndex::noIndex()}; ///< The start position of the capture.
-    U8String _buffer;                                          ///< The reader buffer.
+    U8StringEditor _buffer;                                    ///< The reader buffer.
     unit::CpLength _bufferLength{unit::CpLength::zero()};      ///< The decoded code-point length of the buffer.
 };
 

@@ -16,13 +16,13 @@ public:
     explicit PathErrorDiagnostic(PathErrorContext context) noexcept;
 
 public: // implement Diagnostic
-    [[nodiscard]] auto sourcePath() const noexcept -> text::StringView override;
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto sourcePath() const noexcept -> text::String override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
         -> text::TextDocument override;
 
 private:
-    static void appendPath(text::TextNode &content, text::StringView path);
+    static void appendPath(text::TextNode &content, const text::String &path);
 
 private:
     PathErrorContext _context;

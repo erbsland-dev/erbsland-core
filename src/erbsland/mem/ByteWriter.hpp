@@ -4,6 +4,7 @@
 
 #include "Byte.hpp"
 #include "ByteBlock.hpp"
+#include "ByteBlockEditor.hpp"
 #include "ByteWriter_fwd.hpp"
 #include "Endianness.hpp"
 
@@ -16,7 +17,7 @@
 
 namespace erbsland::mem {
 
-/// A sequential byte writer that produces a `ByteBlock`.
+/// A sequential byte writer that produces a read-only `ByteBlock`.
 /// Use it to assemble a multi-field binary record for one atomic byte-stream write.
 /// @tested{ByteReaderWriterTest}
 class ByteWriter final {
@@ -80,7 +81,7 @@ public: // integer wrappers
     auto writeUInt64(uint64_t value) -> ByteWriter & { return writeInteger(value); }
 
 private:
-    ByteBlock _block;                           ///< The written bytes.
+    ByteBlockEditor _block;                     ///< The written bytes.
     unit::ByteIndex _position{};                ///< Current write position.
     Endianness _endianness{Endianness::Little}; ///< Integer byte order.
 };

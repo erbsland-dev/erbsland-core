@@ -38,8 +38,8 @@ public:
     void addOption(OptionPtr option);
 
 public: // implement OptionsManager
-    auto addOption(std::initializer_list<text::StringView> names) -> OptionEditor override;
-    auto editOption(const text::StringView &name) -> OptionEditor override;
+    auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
     /// Get the help metadata for this set.
@@ -49,13 +49,13 @@ public: // accessors
     void setHelp(OptionHelp help) { _help = std::move(help); }
     /// Set the help title for this set.
     /// @param title Group title used in generated help output.
-    void setHelpTitle(text::StringView title) { _help.setTitle(std::move(title)); }
+    void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
     /// Set the help description for this set.
     /// @param description Description for renderers that expose set-level help text.
-    void setHelpDescription(text::StringView description) { _help.setDescription(std::move(description)); }
+    void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
     /// Set the help epilog for this set.
     /// @param epilog Optional trailing text for renderers that expose set-level epilogs.
-    void setHelpEpilog(text::StringView epilog) { _help.setEpilog(std::move(epilog)); }
+    void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
     /// Set the help visibility for this set.
     /// @param visibility Controls whether options in this set are visible in generated help output.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
@@ -76,7 +76,7 @@ public: // accessors
     void setPostParsingFn(PostParsingFn fn) { _postParsingFn = std::move(fn); }
 
 private:
-    [[nodiscard]] auto findOption(const text::StringView &name) const -> OptionPtr;
+    [[nodiscard]] auto findOption(const text::String &name) const -> OptionPtr;
 
 private:
     OptionHelp _help;                    ///< The help text for the option set.

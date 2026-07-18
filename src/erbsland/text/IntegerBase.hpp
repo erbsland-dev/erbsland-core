@@ -4,7 +4,7 @@
 
 #include "Char_fwd.hpp"
 #include "LetterCase.hpp"
-#include "String_fwd.hpp"
+#include "StringEditor_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -76,7 +76,7 @@ public: // accessors
 
 public: // conversion
     /// Convert this integer base to its canonical name.
-    [[nodiscard]] auto toString() const noexcept -> StringView;
+    [[nodiscard]] auto toString() const noexcept -> String;
 
 public: // factories
     /// Create an integer base from an ASCII prefix character.

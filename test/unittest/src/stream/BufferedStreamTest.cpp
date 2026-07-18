@@ -5,10 +5,13 @@
 #include <erbsland/stream/impl/BufferedByteInputStreamData.hpp>
 #include <erbsland/stream/impl/BufferedByteOutputStream.hpp>
 #include <erbsland/stream/impl/BufferedByteOutputStreamData.hpp>
+#include <erbsland/stream/impl/EncodedTextOutputStream.hpp>
 #include <erbsland/stream/impl/IoService.hpp>
 #include <erbsland/stream/impl/NativeByteStream.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StringBomMode.hpp>
+#include <erbsland/text/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -255,6 +258,33 @@ public:
         REQUIRE(stream.close().isClosed());
         REQUIRE_EQUAL(native->output.size(), std::size_t{13U});
         REQUIRE_EQUAL(native->output.back(), Byte{13U});
+    }
+
+    void testBufferedEncodedWritesBomOnlyOnce() {
+        const auto native = std::make_shared<NativeStream>();
+        native->allowWrites();
+        const auto byteStream = std::make_shared<el::stream::impl::BufferedByteOutputStream>(native, outputSettings());
+        auto stream = el::stream::impl::EncodedTextOutputStream{
+            byteStream, el::text::StringEncoding::Utf16, el::text::StringBomMode::Require};
+
+        REQUIRE(stream.write("A"_el).isSuccess());
+        REQUIRE(stream.write(el::text::Char{U'B'}).isSuccess());
+        REQUIRE(stream.writeLine("C"_el).isSuccess());
+        REQUIRE(stream.close().isClosed());
+
+        REQUIRE_EQUAL(
+            native->output,
+            std::vector<Byte>(
+                {Byte{0xffU},
+                    Byte{0xfeU},
+                    Byte{0x41U},
+                    Byte{0x00U},
+                    Byte{0x42U},
+                    Byte{0x00U},
+                    Byte{0x43U},
+                    Byte{0x00U},
+                    Byte{0x0aU},
+                    Byte{0x00U}}));
     }
 
     void testInputPositionIgnoresReadAheadAndResetsBuffers() {

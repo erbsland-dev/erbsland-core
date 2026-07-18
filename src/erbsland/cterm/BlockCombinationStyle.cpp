@@ -43,8 +43,7 @@ SimpleBlockCombinationStyle::SimpleBlockCombinationStyle(Map map) noexcept : _ma
 
 auto SimpleBlockCombinationStyle::combine(const Block &current, const Block &overlay) const noexcept -> Block {
     auto result = Block{};
-    auto key = current.toString();
-    key.append(overlay.toString());
+    const auto key = text::String::fromJoined({current.toString(), overlay.toString()});
     if (const auto combined = map().get(key)) {
         result = Block{*combined};
     } else {
@@ -63,14 +62,12 @@ void SimpleBlockCombinationStyle::setMap(Map map) noexcept {
 }
 
 void SimpleBlockCombinationStyle::add(
-    const text::StringView &current, const text::StringView &overlay, const text::StringView &combined) noexcept {
-    auto key = current.copy();
-    key.append(overlay);
-    _map.set(key, combined.copy());
+    const text::String &current, const text::String &overlay, const text::String &combined) noexcept {
+    _map.set(text::String::fromJoined({current, overlay}), combined.copy());
 }
 
 MatrixBlockCombinationStyle::MatrixBlockCombinationStyle(
-    const text::U32StringView &characters, const std::span<const uint8_t> resultMatrix) :
+    const text::U32String &characters, const std::span<const uint8_t> resultMatrix) :
     _characters{characters.copy()}, _resultMatrix{resultMatrix.begin(), resultMatrix.end()} {
     if (_characters.length().toSizeT() > std::numeric_limits<uint8_t>::max()) {
         throw err::ParameterError{"MatrixBlockCombinationStyle supports at most 255 characters.", "characters"};

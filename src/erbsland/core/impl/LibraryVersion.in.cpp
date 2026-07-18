@@ -16,7 +16,7 @@ auto libraryVersion() noexcept -> unit::Version {
     // clang-format on
 }
 
-auto libraryVersionText() noexcept -> text::StringView {
+auto libraryVersionText() noexcept -> text::String {
     return "@ERBSLAND_CORE_VERSION_TEXT@"_el;
 }
 

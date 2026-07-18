@@ -5,7 +5,7 @@
 #include "../paragraph/LayoutSemantics.hpp"
 
 #include "../../BlockString.hpp"
-#include "../../BlockStringView.hpp"
+#include "../../BlockStringEditor.hpp"
 
 #include <utility>
 
@@ -20,17 +20,23 @@ public:
     InlineContent() = default;
     /// Create metadata-free content from styled text.
     /// @param text The styled text.
-    explicit InlineContent(BlockString text) : _text{std::move(text)} {}
+    explicit InlineContent(BlockStringEditor text) : _text{std::move(text)} {}
+    /// Create metadata-free content from completed styled text.
+    /// @param text The styled text.
+    explicit InlineContent(const BlockString &text) : _text{text} {}
     /// Create content with source-relative semantic boundaries.
     /// @param text The styled text.
     /// @param semantics The semantic boundaries for `text`.
-    InlineContent(BlockString text, paragraph::LayoutSemantics semantics) :
+    InlineContent(BlockStringEditor text, paragraph::LayoutSemantics semantics) :
         _text{std::move(text)}, _semantics{std::move(semantics)} {}
+    /// Create content from completed styled text and source-relative semantic boundaries.
+    InlineContent(const BlockString &text, paragraph::LayoutSemantics semantics) :
+        _text{text}, _semantics{std::move(semantics)} {}
 
 public:
     /// Access the styled source text.
     /// @return The source text.
-    [[nodiscard]] auto text() const noexcept -> const BlockString & { return _text; }
+    [[nodiscard]] auto text() const noexcept -> const BlockStringEditor & { return _text; }
     /// Access the semantic layout boundaries.
     /// @return The source-relative semantic boundaries.
     [[nodiscard]] auto semantics() const noexcept -> const paragraph::LayoutSemantics & { return _semantics; }
@@ -47,7 +53,7 @@ public:
 public:
     /// Append metadata-free styled text.
     /// @param text The text to append.
-    void append(BlockStringView text);
+    void append(BlockString text);
     /// Append content and shift its semantic boundaries to the new source position.
     /// @param content The content to append.
     void append(const InlineContent &content);
@@ -58,7 +64,7 @@ public:
     void addIndivisibleRange(BlockRange range);
 
 private:
-    BlockString _text;
+    BlockStringEditor _text;
     paragraph::LayoutSemantics _semantics;
 };
 

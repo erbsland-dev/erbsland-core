@@ -169,8 +169,8 @@ private:
     Block16StylePtr _block16Style;
     BlockCombinationStylePtr _combinationStyle;
     Block _fullBlock{text::Char{U'█'}};
-    BlockString _doubleBlocks{text::U32String{U"██"}};
-    BlockString _halfBlocks{text::U32String{U" ▘▝▀▖▌▞▛▗▚▐▜▄▙▟█"}};
+    BlockString _doubleBlocks{text::U32String{text::U32StringLiteral{U"██"}}};
+    BlockString _halfBlocks{text::U32String{text::U32StringLiteral{U" ▘▝▀▖▌▞▛▗▚▐▜▄▙▟█"}}};
     BitmapScaleMode _scaleMode = BitmapScaleMode::HalfBlock;
 };
 

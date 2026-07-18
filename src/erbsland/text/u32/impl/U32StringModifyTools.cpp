@@ -13,6 +13,10 @@
 
 namespace erbsland::text::impl {
 
+using unit::CpIndex;
+using unit::CpLength;
+using unit::CpRange;
+
 auto U32StringModifyTools::characterBytes(const Char character) noexcept -> std::array<char32_t, 2> {
     auto result = std::array<char32_t, 2>{};
     U32Writer writer{std::span<char32_t>{result}};
@@ -41,8 +45,7 @@ auto U32StringModifyTools::spansOverlap(const std::span<const T> first, const st
     return firstBegin < secondEnd && secondBegin < firstEnd;
 }
 
-auto U32StringModifyTools::remove(U32StringSharedStorage &storage, const unit::CpRange range)
-    -> U32StringSharedStorage & {
+auto U32StringModifyTools::remove(U32StringSharedStorage &storage, const CpRange range) -> U32StringSharedStorage & {
     return replace(storage, range, {});
 }
 
@@ -61,8 +64,7 @@ auto U32StringModifyTools::remove(
     return replaceTextInStorage(storage, text, {}, compareFn);
 }
 
-auto U32StringModifyTools::keep(U32StringSharedStorage &storage, const unit::CpRange range)
-    -> U32StringSharedStorage & {
+auto U32StringModifyTools::keep(U32StringSharedStorage &storage, const CpRange range) -> U32StringSharedStorage & {
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     if (data.empty()) {
@@ -72,7 +74,7 @@ auto U32StringModifyTools::keep(U32StringSharedStorage &storage, const unit::CpR
         storage.clear();
         return storage;
     }
-    const auto keepRange = range.clampedTo(unit::CpLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(CpLength::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         storage.clear();
         return storage;
@@ -90,18 +92,16 @@ auto U32StringModifyTools::keep(U32StringSharedStorage &storage, const unit::CpR
     return storage;
 }
 
-auto U32StringModifyTools::insert(
-    U32StringSharedStorage &storage, const unit::CpIndex index, const U32StringDataView &text)
+auto U32StringModifyTools::insert(U32StringSharedStorage &storage, const CpIndex index, const U32StringDataView &text)
     -> U32StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
-    const auto insertIndex = unit::CpIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
-    return replace(storage, unit::CpRange::emptyAt(insertIndex), text);
+    const auto insertIndex = CpIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
+    return replace(storage, CpRange::emptyAt(insertIndex), text);
 }
 
-auto U32StringModifyTools::replace(
-    U32StringSharedStorage &storage, const unit::CpRange range, const U32StringDataView &text)
+auto U32StringModifyTools::replace(U32StringSharedStorage &storage, const CpRange range, const U32StringDataView &text)
     -> U32StringSharedStorage & {
     if (!range.isValid()) {
         return storage;
@@ -110,7 +110,7 @@ auto U32StringModifyTools::replace(
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     const auto replacement = text.dataSpan();
-    const auto replaceRange = range.clampedTo(unit::CpLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(CpLength::fromSizeT(data.size()));
     if (replaceRange.isEmpty() && replacement.empty()) {
         return storage;
     }
@@ -193,7 +193,7 @@ auto U32StringModifyTools::replaceAll(
     return replaceTextInStorage(storage, text, replacement.dataSpan(), compareFn);
 }
 
-auto U32StringModifyTools::removed(const unit::CpRange range) const -> U32StringSharedStorage {
+auto U32StringModifyTools::removed(const CpRange range) const -> U32StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto removeRange = _data.relativeRangeForAbsolute(U32StringReadTools{_data}.sliceRange(range));
     if (data.empty() || removeRange.isEmpty()) {
@@ -229,7 +229,7 @@ auto U32StringModifyTools::removed(const U32StringDataView &text, const CharComp
     return replacedText(text, {}, compareFn);
 }
 
-auto U32StringModifyTools::kept(const unit::CpRange range) const -> U32StringSharedStorage {
+auto U32StringModifyTools::kept(const CpRange range) const -> U32StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto keepRange = _data.relativeRangeForAbsolute(U32StringReadTools{_data}.sliceRange(range));
     if (data.empty() || keepRange.isEmpty()) {
@@ -267,22 +267,22 @@ auto U32StringModifyTools::replacedAll(
     return replacedText(text, replacement.dataSpan(), compareFn);
 }
 
-auto U32StringModifyTools::inserted(const unit::CpIndex index, const U32StringDataView &text) const
+auto U32StringModifyTools::inserted(const CpIndex index, const U32StringDataView &text) const
     -> U32StringSharedStorage {
     if (index.isNoIndex()) {
         return U32StringSharedStorage::fromCodeUnits(_data.dataSpan());
     }
-    const auto insertIndex = unit::CpIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
-    return replaced(unit::CpRange::emptyAt(insertIndex), text);
+    const auto insertIndex = CpIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
+    return replaced(CpRange::emptyAt(insertIndex), text);
 }
 
-auto U32StringModifyTools::replaced(const unit::CpRange range, const U32StringDataView &text) const
+auto U32StringModifyTools::replaced(const CpRange range, const U32StringDataView &text) const
     -> U32StringSharedStorage {
     const auto data = _data.dataSpan();
     if (!range.isValid()) {
         return U32StringSharedStorage::fromCodeUnits(data);
     }
-    const auto replaceRange = range.clampedTo(unit::CpLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(CpLength::fromSizeT(data.size()));
     const auto replacement = text.dataSpan();
     if (replaceRange.isEmpty() && replacement.empty()) {
         return U32StringSharedStorage::fromCodeUnits(data);
@@ -334,7 +334,7 @@ auto U32StringModifyTools::replacedText(
     }
 
     auto newSize = std::size_t{0};
-    auto position = unit::CpIndex::zero();
+    auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             newSize = U32StringSharedStorage::checkedAddSize(
@@ -351,7 +351,7 @@ auto U32StringModifyTools::replacedText(
     U32StringSharedStorage::validateSize(newSize);
     auto storage = U32StringSharedStorage::forSize(newSize);
     auto writePosition = std::size_t{0};
-    position = unit::CpIndex::zero();
+    position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             if (!replacement.empty()) {
@@ -379,11 +379,11 @@ auto U32StringModifyTools::replacedText(
 
 auto U32StringModifyTools::matchesText(
     const std::span<const char32_t> data,
-    const unit::CpIndex start,
+    const CpIndex start,
     const std::span<const char32_t> text,
     const CharCompareFn compareFn) noexcept -> bool {
     auto dataPosition = start;
-    auto textPosition = unit::CpIndex::zero();
+    auto textPosition = CpIndex::zero();
     while (textPosition.toSizeT() < text.size()) {
         if (dataPosition.toSizeT() >= data.size()) {
             return false;
@@ -423,7 +423,7 @@ auto U32StringModifyTools::replaceTextInStorage(
 
     auto hasMatch = false;
     auto writePosition = std::size_t{0};
-    auto position = unit::CpIndex::zero();
+    auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             hasMatch = true;
@@ -451,29 +451,28 @@ auto U32StringModifyTools::replaceTextInStorage(
 
 auto U32StringModifyTools::findFirstTextRange(
     const U32StringDataView &dataView, const U32StringDataView &text, const CharCompareFn compareFn) noexcept
-    -> unit::CpRange {
+    -> CpRange {
     const auto data = dataView.dataSpan();
     const auto needle = text.dataSpan();
     if (data.empty() || needle.empty()) {
-        return unit::CpRange::noRange();
+        return CpRange::noRange();
     }
 
-    auto position = unit::CpIndex::zero();
+    auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         const auto start = position;
         if (matchesText(data, start, needle, compareFn)) {
-            return unit::CpRange{start, endOfMatch(data, start, needle)};
+            return CpRange{start, endOfMatch(data, start, needle)};
         }
         const auto character = utf32::decodeCharOrReplace(data, position);
         static_cast<void>(character);
     }
-    return unit::CpRange::noRange();
+    return CpRange::noRange();
 }
 
 auto U32StringModifyTools::endOfMatch(
-    const std::span<const char32_t> data, unit::CpIndex start, const std::span<const char32_t> text) noexcept
-    -> unit::CpIndex {
-    auto textPosition = unit::CpIndex::zero();
+    const std::span<const char32_t> data, CpIndex start, const std::span<const char32_t> text) noexcept -> CpIndex {
+    auto textPosition = CpIndex::zero();
     while (textPosition.toSizeT() < text.size() && start.toSizeT() < data.size()) {
         utf32::fastAdvanceChar(data, start);
         utf32::fastAdvanceChar(text, textPosition);

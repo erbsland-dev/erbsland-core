@@ -6,27 +6,25 @@ String Width Variants
 *********************
 
 .. _u8-string-storage-management:
-.. _u8-string-view-byte-based-reading:
-.. _u8-string-view-advance-retreat:
-.. _u8-string-view-character-indexed-reading:
-.. _u8-string-view-indexed-sequential-read:
-.. _u8-string-char-view-character-based-reading:
+.. _u8-string-byte-based-reading:
+.. _u8-string-advance-retreat:
+.. _u8-string-character-indexed-reading:
+.. _u8-string-indexed-sequential-read:
 .. _u16-string-storage-management:
-.. _u16-string-view-code-unit-based-reading:
-.. _u16-string-view-advance-retreat:
-.. _u16-string-view-character-indexed-reading:
-.. _u16-string-view-indexed-sequential-read:
-.. _u16-string-char-view-character-based-reading:
+.. _u16-string-code-unit-based-reading:
+.. _u16-string-advance-retreat:
+.. _u16-string-character-indexed-reading:
+.. _u16-string-indexed-sequential-read:
 .. _u32-string-storage-management:
-.. _u32-string-view-code-unit-based-reading:
-.. _u32-string-view-advance-retreat:
-.. _u32-string-view-character-indexed-reading:
-.. _u32-string-view-indexed-sequential-read:
+.. _u32-string-code-unit-based-reading:
+.. _u32-string-advance-retreat:
+.. _u32-string-character-indexed-reading:
+.. _u32-string-indexed-sequential-read:
 
 Indexed Character Access
 ========================
 
-The UTF-8 and UTF-16 string and view types support direct character access by native data index and by
+The UTF-8 and UTF-16 read-only and editor types support direct character access by native data index and by
 ``unit::CpIndex``.
 Native data-index access reads from the given byte or UTF-16 data position.
 ``unit::CpIndex`` access is a convenience for small offsets and may be slow for large strings, because the
@@ -54,7 +52,7 @@ Unlike ``retreat(index)``, this method does not clamp a past-end index to the en
 Character-Indexed Slices
 ========================
 
-The UTF-8, UTF-16 and UTF-32 string and view types support direct slicing by ``unit::CpRange`` and by ``StringSide``
+The UTF-8, UTF-16 and UTF-32 read-only and editor types support direct slicing by ``unit::CpRange`` and by ``StringSide``
 with ``unit::CpLength``.
 For UTF-8 and UTF-16, character-indexed slices return ranges aligned to decoded code-point boundaries, while the native
 ``ByteRange`` and ``U16DataRange`` overloads remain available for raw data-unit slices.
@@ -66,7 +64,7 @@ Side-based slices with zero length return an empty string, while infinite length
 Display Width
 =============
 
-``displayWidth()`` returns the approximate display width of a string or string view by summing the decoded
+``displayWidth()`` returns the approximate display width of a string by summing the decoded
 :cpp:class:`Char <erbsland::text::Char>` display widths.
 Unicode control characters, including line breaks, contribute ``0``.
 
@@ -78,7 +76,7 @@ For text containing line breaks, the result is usually not the width of any rend
 Searching
 =========
 
-All string and string-view ``find...`` overloads that accept a start or end position treat a no-index position as
+All string ``find...`` overloads that accept a start or end position treat a no-index position as
 invalid input and return the matching ``noIndex()`` value immediately.
 
 Interface
@@ -86,17 +84,13 @@ Interface
 
 .. doxygenclass:: erbsland::text::U16String
     :members:
-.. doxygenclass:: erbsland::text::U16StringCharView
-    :members:
-.. doxygenclass:: erbsland::text::U16StringView
+.. doxygenclass:: erbsland::text::U16StringEditor
     :members:
 .. doxygenclass:: erbsland::text::U32String
     :members:
-.. doxygenclass:: erbsland::text::U32StringView
+.. doxygenclass:: erbsland::text::U32StringEditor
     :members:
 .. doxygenclass:: erbsland::text::U8String
     :members:
-.. doxygenclass:: erbsland::text::U8StringCharView
-    :members:
-.. doxygenclass:: erbsland::text::U8StringView
+.. doxygenclass:: erbsland::text::U8StringEditor
     :members:

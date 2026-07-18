@@ -6,54 +6,57 @@
 
 namespace erbsland::stream {
 
-auto TextInputStream::read() -> StreamReadResult<text::String> {
+using text::String;
+using util::CoAsyncGenerator;
+using util::CoTask;
+
+auto TextInputStream::read() -> StreamReadResult<String> {
     return read(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::readLine() -> StreamReadResult<text::String> {
+auto TextInputStream::readLine() -> StreamReadResult<String> {
     return readLine(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::readAll() -> StreamReadResult<text::String> {
+auto TextInputStream::readAll() -> StreamReadResult<String> {
     return readAll(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coRead() -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coRead() -> CoTask<StreamReadResult<String>> {
     return coRead(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coRead(const unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coRead(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
-    return util::CoTask<StreamReadResult<text::String>>::run(
-        [self = std::move(self), maximum]() -> StreamReadResult<text::String> { return self->read(maximum); });
+    return CoTask<StreamReadResult<String>>::run(
+        [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->read(maximum); });
 }
 
-auto TextInputStream::coReadLine() -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coReadLine() -> CoTask<StreamReadResult<String>> {
     return coReadLine(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadLine(const unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coReadLine(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
-    return util::CoTask<StreamReadResult<text::String>>::run(
-        [self = std::move(self), maximum]() -> StreamReadResult<text::String> { return self->readLine(maximum); });
+    return CoTask<StreamReadResult<String>>::run(
+        [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->readLine(maximum); });
 }
 
-auto TextInputStream::coReadAll() -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coReadAll() -> CoTask<StreamReadResult<String>> {
     return coReadAll(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadAll(const unit::CpLength maximum) -> util::CoTask<StreamReadResult<text::String>> {
+auto TextInputStream::coReadAll(const unit::CpLength maximum) -> CoTask<StreamReadResult<String>> {
     auto self = std::static_pointer_cast<TextInputStream>(sharedInputStream());
-    return util::CoTask<StreamReadResult<text::String>>::run(
-        [self = std::move(self), maximum]() -> StreamReadResult<text::String> { return self->readAll(maximum); });
+    return CoTask<StreamReadResult<String>>::run(
+        [self = std::move(self), maximum]() -> StreamReadResult<String> { return self->readAll(maximum); });
 }
 
-auto TextInputStream::coReadBlocks() -> util::CoAsyncGenerator<StreamReadResult<text::String>> {
+auto TextInputStream::coReadBlocks() -> CoAsyncGenerator<StreamReadResult<String>> {
     return coReadBlocks(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadBlocks(const unit::CpLength maximum)
-    -> util::CoAsyncGenerator<StreamReadResult<text::String>> {
+auto TextInputStream::coReadBlocks(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
         throw err::ParameterError{"The coroutine text-block length must be positive and finite.", "maximum"};
     }
@@ -69,12 +72,11 @@ auto TextInputStream::coReadBlocks(const unit::CpLength maximum)
     }
 }
 
-auto TextInputStream::coReadLines() -> util::CoAsyncGenerator<StreamReadResult<text::String>> {
+auto TextInputStream::coReadLines() -> CoAsyncGenerator<StreamReadResult<String>> {
     return coReadLines(cDefaultTextReadMaximum);
 }
 
-auto TextInputStream::coReadLines(const unit::CpLength maximum)
-    -> util::CoAsyncGenerator<StreamReadResult<text::String>> {
+auto TextInputStream::coReadLines(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
         throw err::ParameterError{"The coroutine line length must be positive and finite.", "maximum"};
     }

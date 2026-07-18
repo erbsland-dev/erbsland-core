@@ -4,7 +4,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StdFormatForText.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -30,7 +30,7 @@ enum class Flag : uint8_t {
 };
 
 /// Convert a flag to a string representation.
-[[nodiscard]] inline auto toString(const Flag flag) -> text::StringView {
+[[nodiscard]] inline auto toString(const Flag flag) -> text::String {
     using namespace text::literals;
     switch (flag) {
     case Flag::IgnoreCase:
@@ -53,8 +53,8 @@ enum class Flag : uint8_t {
 }
 
 template <>
-struct std::formatter<erbsland::re::Flag> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::Flag> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::Flag flag, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::toString(flag), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(flag), ctx);
     }
 };

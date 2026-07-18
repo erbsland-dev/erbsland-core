@@ -46,7 +46,7 @@ auto OptionParser::collectActiveOptionSets() -> std::vector<OptionSetPtr> {
     return result;
 }
 
-auto OptionParser::findModule(const text::StringView &name) const -> OptionModulePtr {
+auto OptionParser::findModule(const text::String &name) const -> OptionModulePtr {
     if (_options == nullptr) {
         return {};
     }
@@ -58,7 +58,7 @@ auto OptionParser::findModule(const text::StringView &name) const -> OptionModul
     return {};
 }
 
-auto OptionParser::findLongOption(const text::StringView &name) const -> NameMatch {
+auto OptionParser::findLongOption(const text::String &name) const -> NameMatch {
     auto result = NameMatch{};
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
@@ -185,7 +185,7 @@ auto OptionParser::isIndexInArgs(const unit::ArgumentIndex index) const -> bool 
     return index.toSizeT() < _args.count().toSizeT();
 }
 
-auto OptionParser::getArgAt(const unit::ArgumentIndex index) const -> text::StringView {
+auto OptionParser::getArgAt(const unit::ArgumentIndex index) const -> text::String {
     if (!isIndexInArgs(index)) {
         return {};
     }

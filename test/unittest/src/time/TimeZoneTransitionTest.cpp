@@ -8,14 +8,14 @@
 
 #include <array>
 
+using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
 using el::time::Seconds;
 
 TESTED_TARGETS(time TimeZone DateTime)
 class TimeZoneTransitionTest final : public el::UnitTest {
     struct Case final {
-        StringView name;
+        String name;
         int month;
         int day;
         int hour;

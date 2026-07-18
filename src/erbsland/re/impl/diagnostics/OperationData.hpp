@@ -8,7 +8,7 @@
 #include "../engine/Operation.hpp"
 
 #include "../../../text/StdFormatForText.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -26,9 +26,9 @@ struct ArgumentDefinition {
 struct OperationData {
     Operation operation;                       ///< The operation.
     Operation baseOperation;                   ///< The base operation.
-    text::StringView baseName;                 ///< The base name for the operation.
+    text::String baseName;                     ///< The base name for the operation.
     std::set<OperationModifier> modifiers;     ///< Modifiers required to the base name to convert the operation.
-    text::StringView displayName;              ///< The display name for the operation.
+    text::String displayName;                  ///< The display name for the operation.
     std::vector<ArgumentDefinition> arguments; /// The arguments and their types.
 
     /// Get the number of arguments for the operation.
@@ -47,7 +47,7 @@ struct OperationData {
 /// @param baseName The case-insensitive string to search.
 /// @return The operation.
 /// @throws err::ParameterError If the given string does not match any operation.
-[[nodiscard]] auto baseOperationForString(const text::StringView &baseName) -> Operation;
+[[nodiscard]] auto baseOperationForString(const text::String &baseName) -> Operation;
 
 /// Get the modified operation.
 /// @param baseOperation The base operation.
@@ -60,18 +60,18 @@ struct OperationData {
 /// Get the diagnostic name for an operation (empty if unknown).
 /// @param operation The operation.
 /// @return The name for the operation.
-[[nodiscard]] auto toString(Operation operation) noexcept -> text::StringView;
+[[nodiscard]] auto toString(Operation operation) noexcept -> text::String;
 
 /// Get the base name for an operation.
 /// @param operation The operation.
 /// @return The name for the operation.
-[[nodiscard]] auto toBaseName(Operation operation) noexcept -> text::StringView;
+[[nodiscard]] auto toBaseName(Operation operation) noexcept -> text::String;
 
 }
 
 template <>
-struct std::formatter<erbsland::re::impl::Operation> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::impl::Operation> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::impl::Operation op, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::impl::toString(op), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(op), ctx);
     }
 };

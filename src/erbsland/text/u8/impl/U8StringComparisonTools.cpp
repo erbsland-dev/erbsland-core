@@ -7,6 +7,9 @@
 
 namespace erbsland::text::impl {
 
+using unit::ByteIndex;
+using unit::ElementCount;
+
 auto U8StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char> data, const CharacterSet &characters) -> bool {
     if (characters.isEmpty()) {
@@ -27,20 +30,19 @@ auto U8StringComparisonTools::compare(const U8StringDataView &other, const CharC
 }
 
 auto U8StringComparisonTools::find(const U8StringDataView &text, const CharCompareFn compareFn) const noexcept
-    -> unit::ByteIndex {
-    return find(text, unit::ByteIndex::zero(), compareFn);
+    -> ByteIndex {
+    return find(text, ByteIndex::zero(), compareFn);
 }
 
 auto U8StringComparisonTools::find(
-    const U8StringDataView &text, const unit::ByteIndex start, const CharCompareFn compareFn) const noexcept
-    -> unit::ByteIndex {
+    const U8StringDataView &text, const ByteIndex start, const CharCompareFn compareFn) const noexcept -> ByteIndex {
     if (start.isNoIndex()) {
-        return unit::ByteIndex::noIndex();
+        return ByteIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() > data.size()) {
-        return unit::ByteIndex::noIndex();
+        return ByteIndex::noIndex();
     }
 
     const auto needle = text.dataSpan();
@@ -55,7 +57,7 @@ auto U8StringComparisonTools::find(
         }
         utf8::fastAdvanceChar(data, position);
     }
-    return unit::ByteIndex::noIndex();
+    return ByteIndex::noIndex();
 }
 
 auto U8StringComparisonTools::startsWith(const U8StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -64,7 +66,7 @@ auto U8StringComparisonTools::startsWith(const U8StringDataView &other, const Ch
 }
 
 auto U8StringComparisonTools::startsWith(const Char character) const noexcept -> bool {
-    return U8StringReadTools{_data}.charAt(unit::ByteIndex::zero()) == character;
+    return U8StringReadTools{_data}.charAt(ByteIndex::zero()) == character;
 }
 
 auto U8StringComparisonTools::endsWith(const U8StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -73,7 +75,7 @@ auto U8StringComparisonTools::endsWith(const U8StringDataView &other, const Char
 }
 
 auto U8StringComparisonTools::endsWith(const Char character) const noexcept -> bool {
-    auto index = unit::ByteIndex::end(U8StringReadTools{_data}.byteLength());
+    auto index = ByteIndex::end(U8StringReadTools{_data}.byteLength());
     return U8StringReadTools{_data}.retreat(index) && U8StringReadTools{_data}.charAt(index) == character;
 }
 
@@ -93,15 +95,15 @@ auto U8StringComparisonTools::contains(const Char character) const noexcept -> b
 }
 
 auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> unit::ElementCount {
+    -> ElementCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
     }
 
     const auto data = _data.dataSpan();
-    auto result = unit::ElementCount{};
-    auto position = unit::ByteIndex::zero();
+    auto result = ElementCount{};
+    auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
             ++result;
@@ -113,8 +115,8 @@ auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCom
     return result;
 }
 
-auto U8StringComparisonTools::count(const Char character) const noexcept -> unit::ElementCount {
-    auto result = unit::ElementCount{};
+auto U8StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
+    auto result = ElementCount{};
     utf8::forEachDecodedCharacter(
         _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
             if (currentCharacter == character) {
@@ -142,8 +144,8 @@ auto U8StringComparisonTools::containsOnly(const CharSet &characters) const noex
 auto U8StringComparisonTools::compareDecodedSpans(
     const std::span<const char> left, const std::span<const char> right, const CharCompareFn compareFn) noexcept
     -> std::strong_ordering {
-    auto leftPosition = unit::ByteIndex::zero();
-    auto rightPosition = unit::ByteIndex::zero();
+    auto leftPosition = ByteIndex::zero();
+    auto rightPosition = ByteIndex::zero();
 
     while (leftPosition.toSizeT() < left.size() && rightPosition.toSizeT() < right.size()) {
         const auto leftCharacter = utf8::decodeCharOrReplace(left, leftPosition);
@@ -165,11 +167,11 @@ auto U8StringComparisonTools::compareDecodedSpans(
 
 auto U8StringComparisonTools::matchesDecodedSpan(
     const std::span<const char> haystack,
-    const unit::ByteIndex candidateStart,
+    const ByteIndex candidateStart,
     const std::span<const char> needle,
     const CharCompareFn compareFn) noexcept -> bool {
     auto haystackPosition = candidateStart;
-    auto needlePosition = unit::ByteIndex::zero();
+    auto needlePosition = ByteIndex::zero();
     while (needlePosition.toSizeT() < needle.size()) {
         if (haystackPosition.toSizeT() >= haystack.size()) {
             return false;
@@ -186,7 +188,7 @@ auto U8StringComparisonTools::matchesDecodedSpan(
 auto U8StringComparisonTools::startsWithDecodedSpan(
     const std::span<const char> haystack, const std::span<const char> needle, const CharCompareFn compareFn) noexcept
     -> bool {
-    return needle.empty() || matchesDecodedSpan(haystack, unit::ByteIndex::zero(), needle, compareFn);
+    return needle.empty() || matchesDecodedSpan(haystack, ByteIndex::zero(), needle, compareFn);
 }
 
 auto U8StringComparisonTools::endsWithDecodedSpan(
@@ -196,8 +198,8 @@ auto U8StringComparisonTools::endsWithDecodedSpan(
         return true;
     }
 
-    auto haystackPosition = unit::ByteIndex::fromSizeT(haystack.size());
-    auto needlePosition = unit::ByteIndex::fromSizeT(needle.size());
+    auto haystackPosition = ByteIndex::fromSizeT(haystack.size());
+    auto needlePosition = ByteIndex::fromSizeT(needle.size());
     while (!needlePosition.isZero()) {
         if (haystackPosition.isZero()) {
             return false;
@@ -217,9 +219,8 @@ auto U8StringComparisonTools::endsWithDecodedSpan(
 }
 
 auto U8StringComparisonTools::endOfMatch(
-    const std::span<const char> haystack, unit::ByteIndex start, const std::span<const char> needle) noexcept
-    -> unit::ByteIndex {
-    auto needlePosition = unit::ByteIndex::zero();
+    const std::span<const char> haystack, ByteIndex start, const std::span<const char> needle) noexcept -> ByteIndex {
+    auto needlePosition = ByteIndex::zero();
     while (needlePosition.toSizeT() < needle.size() && start.toSizeT() < haystack.size()) {
         utf8::fastAdvanceChar(haystack, start);
         utf8::fastAdvanceChar(needle, needlePosition);

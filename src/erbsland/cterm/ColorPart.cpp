@@ -42,11 +42,11 @@ auto ColorBase::colorTable() noexcept -> const ColorTable & {
     return table;
 }
 
-auto ColorBase::toString() const -> text::StringView {
+auto ColorBase::toString() const -> text::String {
     return tableEntry().name;
 }
 
-auto ColorBase::enumFromString(const text::StringView &str) -> Value {
+auto ColorBase::enumFromString(const text::String &str) -> Value {
     const auto normalizedIdentifier = str.trimmed().transformed(text::Char::toIdentifierNormalized);
     const auto &table = colorTable();
     auto it =

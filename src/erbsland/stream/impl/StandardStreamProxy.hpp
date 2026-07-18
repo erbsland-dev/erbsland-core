@@ -33,9 +33,9 @@ public: // implement TextOutputStream
     auto close() -> StreamCloseStatus override;
     void abort() noexcept override;
     auto write(text::Char character) -> StreamWriteStatus override;
-    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto write(const text::String &text) -> StreamWriteStatus override;
     auto writeLine() -> StreamWriteStatus override;
-    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine(const text::String &text) -> StreamWriteStatus override;
 
 private:
     [[nodiscard]] auto target() const -> TextOutputStreamPtr;

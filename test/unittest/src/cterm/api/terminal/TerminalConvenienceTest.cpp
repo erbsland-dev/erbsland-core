@@ -34,7 +34,7 @@ public:
         terminal->setBackground(Background::Inherited);
         terminal->setForeground(fg::Red);
         terminal->setBackground(bg::Blue);
-        terminal->write(BlockString{"A"_el});
+        terminal->write(BlockStringEditor{"A"_el});
         terminal->write(Block{U'B', fg::Inherited, bg::Green});
         terminal->flush();
 
@@ -49,7 +49,7 @@ public:
 
         terminal->setBold(true);
         terminal->setUnderline(true);
-        terminal->write(BlockString{"A"_el});
+        terminal->write(BlockStringEditor{"A"_el});
 
         auto attributes = BlockAttributes{};
         attributes.setBold(false);
@@ -69,7 +69,7 @@ public:
         auto bold = BlockAttributes{};
         bold.setBold(true);
         const auto style = BlockStyle{Color{fg::Green, bg::Blue}, bold};
-        terminal->print(style, Block{U'A'}, BlockString{"B"_el}, "C"_els, "D"_el, "E"_el);
+        terminal->print(style, Block{U'A'}, BlockStringEditor{"B"_el}, "C"_el, "D"_el, "E"_el);
         terminal->printLine("F"_el);
         terminal->flush();
 
@@ -138,8 +138,8 @@ public:
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(3);
-        options.setLineBreakStartMark(BlockString{">"_el});
-        options.setLineBreakEndMark(BlockString{"<"_el});
+        options.setLineBreakStartMark(BlockStringEditor{">"_el});
+        options.setLineBreakEndMark(BlockStringEditor{"<"_el});
 
         const auto writtenLines = terminal->printParagraph("AA BB CC"_el, options);
         terminal->flush();
@@ -184,7 +184,7 @@ public:
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(6);
-        options.setLineBreakEndMark(BlockString{"<"_el});
+        options.setLineBreakEndMark(BlockStringEditor{"<"_el});
         options.setTabStops({6});
         options.setTabOverflowBehavior(TabOverflowBehavior::LineBreak);
 
@@ -297,7 +297,7 @@ public:
         auto terminal = createTerminal(backend, bgeo::BlockSize{2, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
-        options.setLineBreakEndMark(BlockString{">>"_el});
+        options.setLineBreakEndMark(BlockStringEditor{">>"_el});
         options.setOnError(ParagraphOnError::PlainOutput);
 
         const auto writtenLines = terminal->printParagraph("AA BB"_el, options);
@@ -327,7 +327,7 @@ public:
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         const auto text = bytes({0x41, 0xC3, 0x42});
 
-        const auto writtenLines = terminal->printParagraph(erbsland::text::String{text});
+        const auto writtenLines = terminal->printParagraph(erbsland::text::StringEditor{text});
         terminal->flush();
 
         REQUIRE_EQUAL(writtenLines, 1);

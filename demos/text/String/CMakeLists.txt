@@ -5,16 +5,50 @@ cmake_minimum_required(VERSION 3.28)
 
 erbsland_core_add_demo(string)
 target_sources(string PRIVATE
-        AlignAndTruncate.cpp
-        ClearResetAndAppend.cpp
-        CopyOnWrite.cpp
-        EditingText.cpp
-        InsertAndReplace.cpp
-        ManualDetach.cpp
-        ReserveForAppend.cpp
-        ShrinkSlices.cpp
+        BasicTests.cpp
+        ByteRangeSlicing.cpp
+        CanonicalStationName.cpp
+        CaseTransformation.cpp
+        CharacterAccess.cpp
+        CharacterReplacement.cpp
+        CharacterSetCategories.cpp
+        CharacterSetCharacters.cpp
+        CharacterSetEmpty.cpp
+        CharacterSetPatterns.cpp
+        CharacterSetReusable.cpp
+        CharacterSetText.cpp
+        CombineCharacterSets.cpp
+        Comparison.cpp
+        ComparisonFunctions.cpp
+        ConstructionAndStorage.cpp
+        CodePointRangeSlicing.cpp
+        EfficientLiteralUsage.cpp
+        FirstAndLastCharacter.cpp
+        FindingAllOccurrences.cpp
+        FindingCharacterSets.cpp
+        FrontBackSlicing.cpp
+        Hashing.cpp
+        IdealFunctionParameter.cpp
+        Indexing.cpp
+        IteratingCharacters.cpp
+        JoiningText.cpp
+        LengthAttributes.cpp
         main.cpp
-        RemoveAndKeepRanges.cpp
-        RemoveFirstAndAll.cpp
+        PartialStringComparison.cpp
+        RemoveCharacters.cpp
+        SharedTools.hpp
+        SliceAndKept.cpp
+        SliceBoundaries.cpp
+        StorageIdentifier.cpp
+        SplittingText.cpp
+        StdVsCoreCaseFold.cpp
+        StdVsCoreEscape.cpp
+        StdVsCoreSplitAndJoin.cpp
         StringDemos.hpp
+        TestForCharacters.cpp
+        TestStartsEndsAndContains.cpp
+        TokenRuns.cpp
+        TrimCharacterSet.cpp
+        ValidateCharacterPolicy.cpp
+        WholeStringComparison.cpp
 )

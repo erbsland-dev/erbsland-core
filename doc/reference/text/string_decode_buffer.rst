@@ -17,10 +17,10 @@ bytes that produced the returned complete characters.
 Use ``readChar()`` to consume a single decoded character without constructing a string, and ``takeStringLine()`` to
 consume decoded UTF-8 text up to and including the next LF character.
 
-``TextRingBuffer`` provides the output-side counterpart.
-It preflights the complete encoded length and atomically encodes text into a bounded byte ring.
-The default replacement mode writes incrementally without materializing a second byte block for the complete encoded
-string.
+For the output direction, use ``StringEncoder::encodedLength()`` and ``StringEncoder::encodeTo()`` with a
+:cpp:class:`RingBuffer <erbsland::mem::RingBuffer>`.
+The encoder preflights the complete encoded length and atomically writes text into a bounded byte ring without
+materializing a second byte block.
 
 .. code-block:: cpp
 
@@ -39,6 +39,4 @@ Interface
 =========
 
 .. doxygenclass:: erbsland::text::StringDecodeBuffer
-    :members:
-.. doxygenclass:: erbsland::text::TextRingBuffer
     :members:

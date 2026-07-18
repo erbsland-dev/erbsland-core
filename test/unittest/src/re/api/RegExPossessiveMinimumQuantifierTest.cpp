@@ -46,7 +46,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "b"_el,
                 "ba"_el,
@@ -64,7 +64,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "a"_el,
                 "b"_el,
@@ -82,7 +82,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "aaaaaaaaaaaaaaaaaaaaaaaa"_el,
                 "b"_el,
             };
@@ -98,7 +98,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "xa"_el,
@@ -118,7 +118,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "xa"_el,
@@ -132,7 +132,7 @@ public:
     void testNoBacktrackingBehavior() {
         // Greedy minimum quantifier could backtrack to satisfy the trailing "a".
         WITH_CONTEXT(compileBacktrackingSensitiveMinTwoOrMore());
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             "aaa"_el,
             "aaaa"_el,
             "aaaaa"_el,
@@ -145,14 +145,14 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileSingleCharMinZeroOrMore());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 ""_el,
                 "a"_el,
                 "aa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "b"_el,
                 "ab"_el,
                 "😀"_el,
@@ -162,13 +162,13 @@ public:
 
         WITH_CONTEXT(compileSingleCharMinTwentyFiveOrMore());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "aaaaaaaaaaaaaaaaaaaaaaaaa"_el,
                 "aaaaaaaaaaaaaaaaaaaaaaaaaa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "aaaaaaaaaaaaaaaaaaaaaaaa"_el,
                 "b"_el,
             };
@@ -190,7 +190,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "x"_el,
             "xab"_el,

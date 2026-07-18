@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../StringBuilder.hpp"
+#include "../AnyStringBuilder.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -95,7 +95,7 @@ auto StringList<tString>::contains(const Element &value, const CharCompareFn com
 
 template <typename tString>
 auto StringList<tString>::fromSplit(
-    const View &text, const CharSet &separators, const Count maximumSplits, const bool keepEmpty) -> StringList {
+    const ReadOnly &text, const CharSet &separators, const Count maximumSplits, const bool keepEmpty) -> StringList {
     auto result = typename Base::Raw{};
     result.reserve(estimatedSplitCapacity(text, separators, maximumSplits));
 
@@ -138,7 +138,7 @@ auto StringList<tString>::fromSplit(
 }
 
 template <typename tString>
-auto StringList<tString>::join(const View &separator) const -> Element {
+auto StringList<tString>::join(const ReadOnly &separator) const -> Element {
     const auto &raw = this->raw();
     if (raw.empty()) {
         return Element{};
@@ -150,20 +150,20 @@ auto StringList<tString>::join(const View &separator) const -> Element {
         if (!first) {
             finalLength = finalLength.addedOrThrow(separator.length());
         }
-        finalLength = finalLength.addedOrThrow(View{part}.length());
+        finalLength = finalLength.addedOrThrow(ReadOnly{part}.length());
         first = false;
     }
 
-    auto result = StringBuilder::basedOn(View{}, finalLength);
+    auto result = AnyStringBuilder::basedOn(ReadOnly{}, finalLength);
     first = true;
     for (const auto &part : raw) {
         if (!first) {
             result.append(separator);
         }
-        result.append(View{part});
+        result.append(ReadOnly{part});
         first = false;
     }
-    return Element{result.template to<typename Element::Editable>()};
+    return Element{result.template toEditor<typename StringTypes<Element>::Editor>()};
 }
 
 template <typename tString>
@@ -179,8 +179,8 @@ auto StringList<tString>::removedEmpty() const -> StringList {
 }
 
 template <typename tString>
-auto StringList<tString>::estimatedSplitCapacity(const View &text, const CharSet &separators, const Count maximumSplits)
-    -> std::size_t {
+auto StringList<tString>::estimatedSplitCapacity(
+    const ReadOnly &text, const CharSet &separators, const Count maximumSplits) -> std::size_t {
     constexpr auto cSmallSplitLimit = std::size_t{32U};
     constexpr auto cSampleLength = std::size_t{1024U};
     constexpr auto cMaximumReservation = std::size_t{100'000U};

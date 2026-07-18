@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CharSet.hpp"
 
-#include "StringBuilder.hpp"
-
 #include "impl/CharSetFromPattern.hpp"
 #include "u16/U16String.hpp"
+#include "u16/U16StringEditor.hpp"
 #include "u32/U32String.hpp"
+#include "u32/U32StringEditor.hpp"
 #include "u8/U8String.hpp"
 #include "u8/U8StringConstIterator.hpp"
-#include "u8/U8StringView.hpp"
+#include "u8/U8StringEditor.hpp"
 
 #include <algorithm>
 
@@ -19,7 +19,7 @@ CharSet::CharSet(const Char character) {
     add(character);
 }
 
-CharSet::CharSet(const U8StringView &characters) {
+CharSet::CharSet(const U8String &characters) {
     for (const auto character : characters) {
         add(character);
     }
@@ -192,21 +192,21 @@ auto CharSet::toString() const -> String {
 }
 
 auto CharSet::toU8String() const -> U8String {
-    auto builder = StringBuilder{};
-    forEach([&builder](const Char character) -> void { builder.append(character); });
-    return builder.takeU8String();
+    auto result = U8StringEditor{};
+    forEach([&result](const Char character) -> void { result.append(character); });
+    return result;
 }
 
 auto CharSet::toU16String() const -> U16String {
-    auto builder = StringBuilder{StringKind::U16};
-    forEach([&builder](const Char character) -> void { builder.append(character); });
-    return builder.takeU16String();
+    auto result = U16StringEditor{};
+    forEach([&result](const Char character) -> void { result.append(character); });
+    return result;
 }
 
 auto CharSet::toU32String() const -> U32String {
-    auto builder = StringBuilder{StringKind::U32};
-    forEach([&builder](const Char character) -> void { builder.append(character); });
-    return builder.takeU32String();
+    auto result = U32StringEditor{};
+    forEach([&result](const Char character) -> void { result.append(character); });
+    return result;
 }
 
 auto CharSet::toSet() const -> util::Set<Char> {
@@ -221,17 +221,17 @@ auto CharSet::toList() const -> util::List<Char> {
     return result;
 }
 
-auto CharSet::fromPattern(const U8StringView &pattern) -> CharSet {
+auto CharSet::fromPattern(const U8String &pattern) -> CharSet {
     auto reader = StringCharReader{pattern};
     return impl::charSetFromPatternCharacters(reader);
 }
 
-auto CharSet::fromPattern(const U16StringView &pattern) -> CharSet {
+auto CharSet::fromPattern(const U16String &pattern) -> CharSet {
     auto reader = StringCharReader{pattern};
     return impl::charSetFromPatternCharacters(reader);
 }
 
-auto CharSet::fromPattern(const U32StringView &pattern) -> CharSet {
+auto CharSet::fromPattern(const U32String &pattern) -> CharSet {
     auto reader = StringCharReader{pattern};
     return impl::charSetFromPatternCharacters(reader);
 }

@@ -104,7 +104,7 @@ auto ParagraphOptions::wordSeparatorSet() const noexcept -> const text::CharSet 
     return _wordSeparators;
 }
 
-void ParagraphOptions::setWordSeparators(const text::U32StringView &separators) {
+void ParagraphOptions::setWordSeparators(const text::U32String &separators) {
     auto characters = text::CharSet{};
     for (const auto character : separators) {
         characters.add(character);

@@ -6,7 +6,7 @@
 #include "Exception_fwd.hpp"
 
 #include "../mem/UnsafeCharPtr.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <exception>
 #include <string>
@@ -22,11 +22,11 @@ public:
 
     /// Create an error with the given reason text.
     /// @param reason The reason for the exception.
-    explicit Exception(text::StringView reason) noexcept : _reason{std::move(reason)} {}
+    explicit Exception(text::String reason) noexcept : _reason{std::move(reason)} {}
     /// Create an error with the given reason text and diagnostic cause.
     /// @param reason The reason for the exception.
     /// @param cause The diagnostic cause.
-    explicit Exception(text::StringView reason, std::exception_ptr cause) noexcept :
+    explicit Exception(text::String reason, std::exception_ptr cause) noexcept :
         _reason{std::move(reason)}, _cause{std::move(cause)} {}
     /// @overload
     explicit Exception(std::string_view reason) noexcept;
@@ -46,7 +46,7 @@ public: // implement std::exception
 
 public: // getters
     /// Get the reason text for the exception.
-    [[nodiscard]] auto reason() const noexcept -> const text::StringView & { return _reason; }
+    [[nodiscard]] auto reason() const noexcept -> const text::String & { return _reason; }
     /// Test if this exception has a diagnostic cause.
     [[nodiscard]] auto hasCause() const noexcept -> bool { return _cause != nullptr; }
     /// Get the diagnostic cause.
@@ -54,12 +54,12 @@ public: // getters
 
 public: // conversion
     /// Convert the error with all its details into a string.
-    [[nodiscard]] virtual auto toString() const noexcept -> text::StringView;
+    [[nodiscard]] virtual auto toString() const noexcept -> text::String;
     /// Convert the error with all its details into a structured diagnostic.
     [[nodiscard]] virtual auto diagnostic() const -> DiagnosticConstPtr;
 
 protected:
-    text::StringView _reason;  ///< The reason for the exception.
+    text::String _reason;      ///< The reason for the exception.
     std::exception_ptr _cause; ///< Optional diagnostic cause.
 };
 

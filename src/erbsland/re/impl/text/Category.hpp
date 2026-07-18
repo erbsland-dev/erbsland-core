@@ -5,8 +5,8 @@
 #include "Character.hpp"
 
 #include "../../../text/CharSet.hpp"
+#include "../../../text/String.hpp"
 #include "../../../text/StringHashMap.hpp"
-#include "../../../text/StringView.hpp"
 #include "../../../util/impl/ComparisonHelper.hpp"
 
 #include <cstdint>
@@ -193,19 +193,19 @@ public: // conversion
     /// Get the character class for a given name.
     /// Assumes a lowercase name with removed underscores.
     /// @return The character class or `None` if it wasn't found.
-    [[nodiscard]] static auto fromString(const text::StringView &str) -> Category;
+    [[nodiscard]] static auto fromString(const text::String &str) -> Category;
 
     /// Get a character class for a given unprocessed name.
     /// @param str The unprocessed string.
     /// @return The category.
     /// @throws std::out_of_bounds if the category is unknown.
-    [[nodiscard]] static auto fromUnprocessedString(const text::StringView &str) -> Category;
+    [[nodiscard]] static auto fromUnprocessedString(const text::String &str) -> Category;
 
     /// Return a long string for the given character category.
-    [[nodiscard]] auto toLongString() const -> text::StringView;
+    [[nodiscard]] auto toLongString() const -> text::String;
 
     /// Return a short string for the given character category.
-    [[nodiscard]] auto toShortString() const -> text::StringView;
+    [[nodiscard]] auto toShortString() const -> text::String;
 
     /// Create the Core character set represented by this category.
     [[nodiscard]] auto characterSet() const -> text::CharSet;
@@ -232,8 +232,8 @@ private:
 private:
     using NameToValueMap = text::StringHashMap<Value>;
     struct Names {
-        text::StringView unicodeShort;
-        text::StringView unicodeLong;
+        text::String unicodeShort;
+        text::String unicodeLong;
     };
     using ValueToNameMap = std::unordered_map<Value, Names>;
     [[nodiscard]] static auto nameToValueMap() noexcept -> const NameToValueMap &;

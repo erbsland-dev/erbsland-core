@@ -3,8 +3,8 @@
 #pragma once
 
 #include "U8String_fwd.hpp"
+#include "U8StringEditor_fwd.hpp"
 #include "U8StringLiteral_fwd.hpp"
-#include "U8StringView_fwd.hpp"
 
 #include "impl/U8StringDataView.hpp"
 
@@ -26,8 +26,8 @@ namespace erbsland::text {
 /// @tested{U8StringLiteralTest}
 template <typename tChar>
 class U8StringLiteral final {
+    friend class U8StringEditor;
     friend class U8String;
-    friend class U8StringView;
     friend constexpr auto impl::createU8StringLiteral(const char *data, std::size_t size) noexcept
         -> U8StringLiteral<char>;
     friend constexpr auto impl::createU8StringLiteral(const char8_t *data, std::size_t size) noexcept

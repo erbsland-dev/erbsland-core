@@ -11,7 +11,7 @@ namespace erbsland::test::pathtest {
     return el::text::StringConverter{path.toString()}.toStdString();
 }
 
-[[nodiscard]] inline auto toStdString(const el::text::StringView &text) -> std::string {
+[[nodiscard]] inline auto toStdString(const el::text::String &text) -> std::string {
     return el::text::StringConverter{text}.toStdString();
 }
 

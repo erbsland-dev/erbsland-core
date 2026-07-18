@@ -6,7 +6,7 @@
 namespace demo {
 
 /// A parser throws `ParseError` when its input violates the notation grammar.
-auto parseDynamics(const el::StringView &text) -> el::StringView {
+auto parseDynamics(const el::String &text) -> el::String {
     if (text == "piano"_el || text == "forte"_el) {
         return text;
     }

@@ -4,14 +4,15 @@
 
 #include "U16StringAppendTools.hpp"
 
-#include "../U16StringView.hpp"
+#include "../U16String.hpp"
 
-#include "../../AnyString.hpp"
+#include "../../AnyStringEditor.hpp"
+#include "../../impl/ByteBlockFormatter.hpp"
 #include "../../StringConverter.hpp"
 #include "../../u32/U32String.hpp"
-#include "../../u32/U32StringView.hpp"
+#include "../../u32/U32StringEditor.hpp"
 #include "../../u8/U8String.hpp"
-#include "../../u8/U8StringView.hpp"
+#include "../../u8/U8StringEditor.hpp"
 
 #include <utility>
 
@@ -50,66 +51,70 @@ void U16StringBuilder::append(const Char character, unit::CpLength count) {
     _length += U16StringAppendTools{_text._storage}.append(character, count);
 }
 
-void U16StringBuilder::append(const U8StringView &text) {
+void U16StringBuilder::append(const U8String &text) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView());
 }
 
-void U16StringBuilder::append(const U8StringView &text, const unit::ElementCount count) {
+void U16StringBuilder::append(const U8String &text, const unit::ElementCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-void U16StringBuilder::append(const U16StringView &text) {
+void U16StringBuilder::append(const U16String &text) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView());
 }
 
-void U16StringBuilder::append(const U16StringView &text, const unit::ElementCount count) {
+void U16StringBuilder::append(const U16String &text, const unit::ElementCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-void U16StringBuilder::append(const U32StringView &text) {
+void U16StringBuilder::append(const U32String &text) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView());
 }
 
-void U16StringBuilder::append(const U32StringView &text, const unit::ElementCount count) {
+void U16StringBuilder::append(const U32String &text, const unit::ElementCount count) {
     _length += U16StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-auto U16StringBuilder::toU8String() const -> U8String {
-    return StringConverter{_text}.toU8String();
+void U16StringBuilder::appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) {
+    formatByteBlock(*this, bytes, format);
 }
 
-auto U16StringBuilder::toU16String() const -> U16String {
+auto U16StringBuilder::toU8StringEditor() const -> U8StringEditor {
+    return U8StringEditor{StringConverter{_text}.toU8String()};
+}
+
+auto U16StringBuilder::toU16StringEditor() const -> U16StringEditor {
     return _text;
 }
 
-auto U16StringBuilder::toU32String() const -> U32String {
-    return StringConverter{_text}.toU32String();
+auto U16StringBuilder::toU32StringEditor() const -> U32StringEditor {
+    return U32StringEditor{StringConverter{_text}.toU32String()};
 }
 
-auto U16StringBuilder::takeU8String() -> U8String {
-    auto result = toU8String();
+auto U16StringBuilder::takeU8StringEditor() -> U8StringEditor {
+    auto result = toU8StringEditor();
     clear();
     return result;
 }
 
-auto U16StringBuilder::takeU16String() -> U16String {
+auto U16StringBuilder::takeU16StringEditor() -> U16StringEditor {
     auto result = std::move(_text);
     clear();
     return result;
 }
 
-auto U16StringBuilder::takeU32String() -> U32String {
-    auto result = toU32String();
+auto U16StringBuilder::takeU32StringEditor() -> U32StringEditor {
+    auto result = toU32StringEditor();
     clear();
     return result;
 }
 
-auto U16StringBuilder::toAnyString() const -> AnyString {
-    return AnyString{_text};
+auto U16StringBuilder::toAnyStringEditor() const -> AnyStringEditor {
+    return AnyStringEditor{_text};
 }
 
-auto U16StringBuilder::takeAnyString() -> AnyString {
-    auto result = AnyString{std::move(_text)};
+auto U16StringBuilder::takeAnyStringEditor() -> AnyStringEditor {
+    auto result = AnyStringEditor{std::move(_text)};
     clear();
     return result;
 }

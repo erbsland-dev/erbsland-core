@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <memory>
 
@@ -28,8 +28,8 @@ public:
     /// @param key The originally requested display-text key.
     /// @param sourceText The resolved English source text.
     /// @return The translated text, or an empty string to keep `sourceText`.
-    [[nodiscard]] virtual auto translate(const text::StringView &key, const text::StringView &sourceText) const
-        -> text::StringView = 0;
+    [[nodiscard]] virtual auto translate(const text::String &key, const text::String &sourceText) const
+        -> text::String = 0;
 };
 
 using DisplayTextTranslatorPtr = std::shared_ptr<DisplayTextTranslator>;

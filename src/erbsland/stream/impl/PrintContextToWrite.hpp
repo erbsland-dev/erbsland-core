@@ -6,7 +6,7 @@
 
 #include "../TextOutputStream_fwd.hpp"
 
-#include "../../text/StringBuilder.hpp"
+#include "../../text/AnyStringBuilder.hpp"
 
 namespace erbsland::stream::impl {
 
@@ -30,10 +30,10 @@ public:
     auto commit() -> StreamWriteStatus override;
 
 protected:
-    [[nodiscard]] auto builder() -> text::StringBuilder & override { return _builder; }
+    [[nodiscard]] auto builder() -> text::AnyStringBuilder & override { return _builder; }
 
 private:
-    text::StringBuilder _builder;
+    text::AnyStringBuilder _builder;
     TextOutputStream &_output;
 };
 

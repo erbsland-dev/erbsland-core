@@ -2,27 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../text/StringView.hpp"
+#include "../../text/String.hpp"
 #include "../../unit/ByteIndex.hpp"
 
 namespace erbsland::path::impl {
 
 /// Find the first suffix separator in a file name.
-[[nodiscard]] auto firstSuffixPosition(const text::StringView &name) noexcept -> unit::ByteIndex;
+[[nodiscard]] auto firstSuffixPosition(const text::String &name) noexcept -> unit::ByteIndex;
 
 /// Find the last suffix separator in a file name.
-[[nodiscard]] auto lastSuffixPosition(const text::StringView &name) noexcept -> unit::ByteIndex;
+[[nodiscard]] auto lastSuffixPosition(const text::String &name) noexcept -> unit::ByteIndex;
 
 /// Return the last suffix of a file name.
-[[nodiscard]] auto lastSuffix(const text::StringView &name) noexcept -> text::StringView;
+[[nodiscard]] auto lastSuffix(const text::String &name) noexcept -> text::String;
 
 /// Return all suffixes of a file name.
-[[nodiscard]] auto suffixes(const text::StringView &name) noexcept -> text::StringView;
+[[nodiscard]] auto suffixes(const text::String &name) noexcept -> text::String;
 
 /// Return the stem of a file name.
-[[nodiscard]] auto stem(const text::StringView &name) noexcept -> text::StringView;
+[[nodiscard]] auto stem(const text::String &name) noexcept -> text::String;
 
 /// Normalize a suffix replacement.
-[[nodiscard]] auto normalizedSuffixReplacement(const text::StringView &replacement) -> text::StringView;
+[[nodiscard]] auto normalizedSuffixReplacement(const text::String &replacement) -> text::String;
 
 }

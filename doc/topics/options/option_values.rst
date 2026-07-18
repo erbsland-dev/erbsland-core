@@ -72,11 +72,7 @@ values, except that they do not have a source argument index.
         el::io::printLine("verbose count: "_el, values->getFlagCount("verbose"_el));
         el::io::printLine("instrument: "_el, values->getText("instrument"_el));
         el::io::printLine("level: "_el, values->getInteger("level"_el));
-        auto pointList = el::StringList{};
-        for (const auto &point : points) {
-            pointList.append(point.copy());
-        }
-        el::io::printLine("points: "_el, pointList.join(", "_el));
+        el::io::printLine("points: "_el, points.join(", "_el));
         el::io::printLine("first index: "_el, values->value("point"_el)->argumentIndex().toSizeT());
         return el::ExitCode::success();
     }
@@ -142,7 +138,7 @@ Applications that do not use module main functions can dispatch manually with th
             makeArgs({"night-values"_el, "count"_el, "-vv"_el, "--route"_el, "forest-edge"_el, "-r"_el, "pond"_el, "dune"_el}));
 
         const auto routes = values->getTextList("route"_el);
-        auto routeList = el::StringList{};
+        auto routeList = el::StringEditorList{};
         for (const auto &route : routes) {
             routeList.append(route.copy());
         }

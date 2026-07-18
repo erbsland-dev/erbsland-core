@@ -5,8 +5,8 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/text/u8/U8StringLiteral.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -18,16 +18,16 @@
 using el::mem::StorageIdentifier;
 using el::text::StringConverter;
 using el::text::U8String;
+using el::text::U8StringEditor;
 using el::text::U8StringLiteral;
-using el::text::U8StringView;
 
-TESTED_TARGETS(U8StringLiteral operator_el operator_elv operator_els)
+TESTED_TARGETS(U8StringLiteral operator_el operator_el operator_el)
 class U8StringLiteralTest final : public el::UnitTest {
 public:
     void testConstexprNarrowLiteralConstructor() {
         constexpr auto literal = U8StringLiteral{"Hello"};
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         static_assert(std::is_same_v<decltype(literal), const U8StringLiteral<char>>);
         REQUIRE_FALSE(view.isEmpty());
@@ -37,8 +37,8 @@ public:
 
     void testConstexprUtf8LiteralConstructor() {
         constexpr auto literal = U8StringLiteral{u8"Hello"};
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         static_assert(std::is_same_v<decltype(literal), const U8StringLiteral<char8_t>>);
         REQUIRE_FALSE(view.isEmpty());
@@ -50,8 +50,8 @@ public:
         static constexpr char cLiteral[] = "Literal";
         const auto literalStorageId = storageIdFor(cLiteral, std::size(cLiteral) - 1U);
         constexpr auto literal = U8StringLiteral{cLiteral};
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Literal"});
         REQUIRE_EQUAL(view.storageId(), literalStorageId);
@@ -63,8 +63,8 @@ public:
         static constexpr char8_t cLiteral[] = u8"Literal";
         const auto literalStorageId = storageIdFor(cLiteral, std::size(cLiteral) - 1U);
         constexpr auto literal = U8StringLiteral{cLiteral};
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Literal"});
         REQUIRE_EQUAL(view.storageId(), literalStorageId);
@@ -73,8 +73,8 @@ public:
     }
 
     void testStaticConstexprLiterals() {
-        const auto narrowView = U8StringView{cStaticNarrowLiteral};
-        const auto utf8View = U8StringView{cStaticUtf8Literal};
+        const auto narrowView = U8String{cStaticNarrowLiteral};
+        const auto utf8View = U8String{cStaticUtf8Literal};
 
         REQUIRE_EQUAL(StringConverter{narrowView}.toStdString(), std::string{"Static"});
         REQUIRE_EQUAL(StringConverter{utf8View}.toStdString(), std::string{"Statisch"});
@@ -84,8 +84,8 @@ public:
         using namespace el::text::literals;
 
         constexpr auto literal = "Hello"_el;
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         static_assert(std::is_same_v<decltype(literal), const U8StringLiteral<char>>);
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Hello"});
@@ -96,63 +96,63 @@ public:
         using namespace el::text::literals;
 
         constexpr auto literal = u8"Hello"_el;
-        const auto view = U8StringView{literal};
-        const auto text = U8String{literal};
+        const auto view = U8String{literal};
+        const auto text = U8StringEditor{literal};
 
         static_assert(std::is_same_v<decltype(literal), const U8StringLiteral<char8_t>>);
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Hello"});
         REQUIRE_NOT_EQUAL(text.storageId(), view.storageId());
     }
 
-    void testNarrowLiteralOperatorCreatesView() {
+    void testNarrowLiteralCreatesReadOnlyStringExplicitly() {
         using namespace el::text::literals;
 
-        const auto view = "Hello"_elv;
+        const auto view = U8String{"Hello"_el};
 
-        static_assert(std::is_same_v<decltype(view), const U8StringView>);
+        static_assert(std::is_same_v<decltype(view), const U8String>);
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Hello"});
     }
 
-    void testUtf8LiteralOperatorCreatesView() {
+    void testUtf8LiteralCreatesReadOnlyStringExplicitly() {
         using namespace el::text::literals;
 
-        const auto view = u8"Hello"_elv;
+        const auto view = U8String{u8"Hello"_el};
 
-        static_assert(std::is_same_v<decltype(view), const U8StringView>);
+        static_assert(std::is_same_v<decltype(view), const U8String>);
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Hello"});
     }
 
-    void testNarrowLiteralOperatorCreatesString() {
+    void testNarrowLiteralCreatesEditorExplicitly() {
         using namespace el::text::literals;
 
-        const auto text = "Hello"_els;
-        const auto view = "Hello"_elv;
+        const auto text = U8StringEditor{"Hello"_el};
+        const auto view = U8String{"Hello"_el};
 
-        static_assert(std::is_same_v<decltype(text), const U8String>);
+        static_assert(std::is_same_v<decltype(text), const U8StringEditor>);
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
         REQUIRE_NOT_EQUAL(text.storageId(), view.storageId());
     }
 
-    void testUtf8LiteralOperatorCreatesString() {
+    void testUtf8LiteralCreatesEditorExplicitly() {
         using namespace el::text::literals;
 
-        const auto text = u8"Hello"_els;
-        const auto view = u8"Hello"_elv;
+        const auto text = U8StringEditor{u8"Hello"_el};
+        const auto view = U8String{u8"Hello"_el};
 
-        static_assert(std::is_same_v<decltype(text), const U8String>);
+        static_assert(std::is_same_v<decltype(text), const U8StringEditor>);
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
         REQUIRE_NOT_EQUAL(text.storageId(), view.storageId());
     }
 
-    void testViewsAreNotConstructibleFromPointersOrStringViews() {
-        static_assert(!std::is_constructible_v<U8StringView, const char *>);
-        static_assert(!std::is_constructible_v<U8StringView, const char8_t *>);
-        static_assert(!std::is_constructible_v<U8StringView, std::string_view>);
-        static_assert(!std::is_constructible_v<U8StringView, std::u8string_view>);
+    void testStringsAreConstructibleFromPointersAndStdStringViews() {
         static_assert(std::is_constructible_v<U8String, const char *>);
         static_assert(std::is_constructible_v<U8String, const char8_t *>);
         static_assert(std::is_constructible_v<U8String, std::string_view>);
         static_assert(std::is_constructible_v<U8String, std::u8string_view>);
+        static_assert(std::is_constructible_v<U8StringEditor, const char *>);
+        static_assert(std::is_constructible_v<U8StringEditor, const char8_t *>);
+        static_assert(std::is_constructible_v<U8StringEditor, std::string_view>);
+        static_assert(std::is_constructible_v<U8StringEditor, std::u8string_view>);
     }
 
     void testConstCharPointersCreateStringCopies() {
@@ -172,7 +172,7 @@ public:
         REQUIRE_NOT_EQUAL(utf8Text.storageId(), storageIdFor(utf8Pointer, 7U));
     }
 
-    void testStringViewInputsCreateStringCopies() {
+    void testStdStringViewInputsCreateStringCopies() {
         auto narrowSource = std::string{"View"};
         auto utf8Source = std::u8string{u8"View"};
         const auto narrowText = U8String{std::string_view{narrowSource}};

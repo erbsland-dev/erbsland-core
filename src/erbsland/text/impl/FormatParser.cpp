@@ -5,7 +5,7 @@
 #include "ThrowHelper.hpp"
 
 #include "../Literals.hpp"
-#include "../String.hpp"
+#include "../StringEditor.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -14,15 +14,19 @@ namespace erbsland::text::impl {
 
 using namespace erbsland::text::literals;
 
-FormatParser::FormatParser(const U8StringView &pattern) :
+using unit::ArgumentCount;
+using unit::ArgumentIndex;
+using unit::CpLength;
+
+FormatParser::FormatParser(const U8String &pattern) :
     _reader{pattern}, _staticText{StringKind::U8}, _data{new FormatData{}} {
 }
 
-FormatParser::FormatParser(const U16StringView &pattern) :
+FormatParser::FormatParser(const U16String &pattern) :
     _reader{pattern}, _staticText{StringKind::U16}, _data{new FormatData{}} {
 }
 
-FormatParser::FormatParser(const U32StringView &pattern) :
+FormatParser::FormatParser(const U32String &pattern) :
     _reader{pattern}, _staticText{StringKind::U32}, _data{new FormatData{}} {
 }
 
@@ -65,7 +69,7 @@ void FormatParser::requireFieldLimit() const {
     }
 }
 
-auto FormatParser::readIndex() -> std::optional<unit::ArgumentIndex> {
+auto FormatParser::readIndex() -> std::optional<ArgumentIndex> {
     auto options = IntegerParseOptions::parserDefault();
     options.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumArgumentIndexDigits);
     const auto result = _reader.parseInteger(options);
@@ -75,7 +79,7 @@ auto FormatParser::readIndex() -> std::optional<unit::ArgumentIndex> {
     if (result.status != ReadNumberStatus::Success || result.value >= cMaximumFields.toSizeT()) {
         text::impl::throwFormatError("Format argument index is too large"_el);
     }
-    return unit::ArgumentIndex::fromSizeT(static_cast<std::size_t>(result.value));
+    return ArgumentIndex::fromSizeT(static_cast<std::size_t>(result.value));
 }
 
 auto FormatParser::currentChar() const noexcept -> Char {
@@ -104,17 +108,17 @@ auto FormatParser::consumeSpecificationChar() -> Char {
     return character;
 }
 
-auto FormatParser::readLimitedDecimal(const StringLiteral &tooLargeMessage) -> unit::CpLength {
+auto FormatParser::readLimitedDecimal(const StringLiteral &tooLargeMessage) -> CpLength {
     auto options = IntegerParseOptions::parserDefault();
     options.setFixedBase(IntegerBase::Decimal).setMaximumDigits(cMaximumDecimalDigits);
     const auto result = _reader.parseInteger(options);
     if (result.status == ReadNumberStatus::NoDigits) {
-        return unit::CpLength::zero();
+        return CpLength::zero();
     }
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
         text::impl::throwFormatError(tooLargeMessage);
     }
-    return unit::CpLength::fromSizeT(static_cast<std::size_t>(result.value));
+    return CpLength::fromSizeT(static_cast<std::size_t>(result.value));
 }
 
 auto FormatParser::parseSpecification() -> FormatSpec {
@@ -196,7 +200,7 @@ void FormatParser::parsePrecision(FormatSpec &spec) {
     if (result.status != ReadNumberStatus::Success || result.value > cMaximumFieldWidth.toRawValue()) {
         text::impl::throwFormatError("Format field precision is too large"_el);
     }
-    spec.precision = unit::CpLength::fromSizeT(static_cast<std::size_t>(result.value));
+    spec.precision = CpLength::fromSizeT(static_cast<std::size_t>(result.value));
 }
 
 void FormatParser::parsePresentation(FormatSpec &spec) {
@@ -229,7 +233,7 @@ void FormatParser::parsePresentation(FormatSpec &spec) {
         spec.presentation = FormatPresentation::Octal;
         spec.letterCase = LetterCase::Uppercase;
     } else if (type == U's') {
-        spec.presentation = FormatPresentation::String;
+        spec.presentation = FormatPresentation::StringEditor;
     } else if (type == U'f') {
         spec.presentation = FormatPresentation::FloatFixed;
     } else if (type == U'F') {
@@ -261,7 +265,7 @@ void FormatParser::parsePresentation(FormatSpec &spec) {
 
 void FormatParser::parseEscapedPresentation(FormatSpec &spec) {
     consumeSpecificationChar(); // '/'
-    auto formatName = String{};
+    auto formatName = StringEditor{};
     auto amount = EscapeAmount{EscapeAmount::Balanced};
     while (true) {
         const auto character = consumeSpecificationChar();
@@ -286,7 +290,7 @@ void FormatParser::parseEscapedPresentation(FormatSpec &spec) {
     spec.escapeAmount = amount;
 }
 
-auto FormatParser::resolveArgumentIndex(const std::optional<unit::ArgumentIndex> explicitIndex) -> unit::ArgumentIndex {
+auto FormatParser::resolveArgumentIndex(const std::optional<ArgumentIndex> explicitIndex) -> ArgumentIndex {
     if (explicitIndex.has_value()) {
         if (_indexMode == IndexMode::Automatic) {
             text::impl::throwFormatError("Format pattern mixes automatic and manual argument indexes"_el);
@@ -303,7 +307,7 @@ auto FormatParser::resolveArgumentIndex(const std::optional<unit::ArgumentIndex>
     return result;
 }
 
-void FormatParser::markArgumentIndex(const unit::ArgumentIndex argumentIndex) {
+void FormatParser::markArgumentIndex(const ArgumentIndex argumentIndex) {
     if (!argumentIndex.isWithin(cMaximumFields)) {
         text::impl::throwFormatError("Format argument index is too large"_el);
     }
@@ -312,8 +316,7 @@ void FormatParser::markArgumentIndex(const unit::ArgumentIndex argumentIndex) {
         _data->usedArguments.resize(argumentIndexValue + 1U, false);
     }
     _data->usedArguments[argumentIndexValue] = true;
-    _data->argumentCount =
-        std::max(_data->argumentCount, argumentIndex.distanceFromZero() + unit::ArgumentCount::one());
+    _data->argumentCount = std::max(_data->argumentCount, argumentIndex.distanceFromZero() + ArgumentCount::one());
 }
 
 void FormatParser::parseField() {
@@ -342,7 +345,7 @@ void FormatParser::parseField() {
 auto FormatParser::finish() -> FormatDataPtr {
     flushStaticText();
     for (
-        auto argumentIndex = unit::ArgumentIndex::zero(); argumentIndex.toSizeT() < _data->usedArguments.size();
+        auto argumentIndex = ArgumentIndex::zero(); argumentIndex.toSizeT() < _data->usedArguments.size();
         ++argumentIndex) {
         if (!_data->usedArguments[argumentIndex.toSizeT()]) {
             text::impl::throwFormatError("Manual format argument indexes must be contiguous from zero"_el);

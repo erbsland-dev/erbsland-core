@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RegEx.hpp"
 
+#include "impl/engine/Engine.hpp"
 #include "impl/error/InternalError.hpp"
 #include "impl/input/StreamInput.hpp"
 #include "impl/input/StringInput.hpp"
@@ -15,15 +16,15 @@ namespace erbsland::re {
 
 using namespace text::literals;
 
-auto RegEx::match(const text::StringView &text) const -> MatchPtr {
+auto RegEx::match(const text::String &text) const -> MatchPtr {
     return match(impl::StringInput::create(text));
 }
 
-auto RegEx::match(const text::U16StringView &text) const -> Match16Ptr {
+auto RegEx::match(const text::U16String &text) const -> Match16Ptr {
     return match(impl::U16StringInput::create(text));
 }
 
-auto RegEx::match(const text::U32StringView &text) const -> Match32Ptr {
+auto RegEx::match(const text::U32String &text) const -> Match32Ptr {
     return match(impl::U32StringInput::create(text));
 }
 
@@ -40,7 +41,7 @@ auto RegEx::match(const InputPtr &input) const -> MatchPtr {
         return {};
     }
     auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
-    auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+    auto match = input->createMatch(std::move(captureGroups));
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
     return match;
 }
@@ -54,7 +55,7 @@ auto RegEx::match(const Input16Ptr &input) const -> Match16Ptr {
         return {};
     }
     auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
-    auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+    auto match = input->createMatch(std::move(captureGroups));
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
     return match;
 }
@@ -68,7 +69,7 @@ auto RegEx::match(const Input32Ptr &input) const -> Match32Ptr {
         return {};
     }
     auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
-    auto match = input->createMatch(shared_from_this(), std::move(captureGroups));
+    auto match = input->createMatch(std::move(captureGroups));
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(match != nullptr, "Expected match, got null"_el);
     return match;
 }

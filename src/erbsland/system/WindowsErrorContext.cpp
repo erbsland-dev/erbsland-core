@@ -4,7 +4,6 @@
 
 #include "../text/EscapeFormat.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
 #include "../text/StringConverter.hpp"
 #include "../text/TextDocument.hpp"
 #include "../text/TextNode.hpp"
@@ -16,11 +15,13 @@ namespace erbsland::system {
 
 using namespace text::literals;
 
-WindowsErrorContext::WindowsErrorContext(const ErrorCode errorCode, text::StringView errorMessage) noexcept :
+using namespace text;
+
+WindowsErrorContext::WindowsErrorContext(const ErrorCode errorCode, String errorMessage) noexcept :
     _errorCode{errorCode}, _errorMessage{std::move(errorMessage)} {
 }
 
-auto WindowsErrorContext::messageFromErrorCode(const ErrorCode errorCode) -> text::String {
+auto WindowsErrorContext::messageFromErrorCode(const ErrorCode errorCode) -> String {
     wchar_t *buffer = nullptr;
     const auto length = ::FormatMessageW(
         FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
@@ -34,7 +35,7 @@ auto WindowsErrorContext::messageFromErrorCode(const ErrorCode errorCode) -> tex
     if (length == 0U || buffer == nullptr) {
         return {};
     }
-    return text::StringConverter{std::wstring_view{buffer, length}}.toString().trim();
+    return StringConverter{std::wstring_view{buffer, length}}.toString().trimmed();
 }
 
 auto WindowsErrorContext::fromErrorCode(const ErrorCode errorCode) -> std::shared_ptr<const WindowsErrorContext> {
@@ -91,22 +92,20 @@ auto WindowsErrorContext::category() const noexcept -> PlatformErrorCategory {
     }
 }
 
-auto WindowsErrorContext::toString() const noexcept -> text::StringView {
+auto WindowsErrorContext::toString() const noexcept -> String {
     return _errorMessage;
 }
 
-auto WindowsErrorContext::toTextDocument() const -> text::TextDocument {
-    auto document = text::TextDocument{};
-    auto list = document.add(text::TextNodeType::FieldList);
-    auto code = list->add(text::TextNodeType::FieldItem);
-    code->add(text::TextNodeType::FieldLabel)->addText("Windows error code"_el);
-    auto codeText = text::StringBuilder{};
-    codeText.appendInteger(_errorCode);
-    code->add(text::TextNodeType::FieldContent)->addText(codeText.toString());
+auto WindowsErrorContext::toTextDocument() const -> TextDocument {
+    auto document = TextDocument{};
+    auto list = document.add(TextNodeType::FieldList);
+    auto code = list->add(TextNodeType::FieldItem);
+    code->add(TextNodeType::FieldLabel)->addText("Windows error code"_el);
+    code->add(TextNodeType::FieldContent)->addText(String::fromInteger(_errorCode));
     if (!_errorMessage.isEmpty()) {
-        auto message = list->add(text::TextNodeType::FieldItem);
-        message->add(text::TextNodeType::FieldLabel)->addText("message"_el);
-        message->add(text::TextNodeType::FieldContent)->addEscapedText(_errorMessage, text::EscapeFormat::Display);
+        auto message = list->add(TextNodeType::FieldItem);
+        message->add(TextNodeType::FieldLabel)->addText("message"_el);
+        message->add(TextNodeType::FieldContent)->addEscapedText(_errorMessage, EscapeFormat::Display);
     }
     return document;
 }

@@ -4,8 +4,9 @@
 
 #include "MockStringMatch.hpp"
 
+#include <erbsland/re/CharAndPosition.hpp>
 #include <erbsland/re/Input.hpp>
-#include <erbsland/text/impl/UnsafeU8StringViewAccess.hpp>
+#include <erbsland/text/impl/UnsafeU8StringAccess.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 
 using namespace erbsland::re;
@@ -17,7 +18,7 @@ using MockStringInputPtr = std::shared_ptr<MockStringInput>;
 
 class MockStringInput : public Input {
 public:
-    explicit MockStringInput(const text::StringView &text) noexcept : _text{text} {}
+    explicit MockStringInput(const text::String &text) noexcept : _text{text} {}
 
 public:
     [[nodiscard]] auto read() -> CharAndPosition override {
@@ -41,14 +42,14 @@ public:
         }
     }
 
-    [[nodiscard]] auto createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> MatchPtr override {
+    [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> MatchPtr override {
         callLog.emplace_back("createMatch()");
-        return std::make_shared<MockStringMatch>(regEx, std::move(captureGroupList), _text);
+        return std::make_shared<MockStringMatch>(std::move(captureGroupList), _text);
     }
 
 private:
     [[nodiscard]] auto readCharacter(unit::ByteIndex &readPosition) const -> text::Char {
-        const auto data = text::impl::UnsafeU8StringViewAccess{_text}.dataView().dataSpan();
+        const auto data = text::impl::UnsafeU8StringAccess{_text}.dataView().dataSpan();
         if (readPosition.toSizeT() >= data.size()) {
             return text::Char::endOfData();
         }
@@ -56,7 +57,7 @@ private:
     }
 
 public:
-    text::StringView _text;
+    text::String _text;
     unit::ByteIndex position;
     mutable std::vector<std::string> callLog;
 };

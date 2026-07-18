@@ -3,11 +3,12 @@
 
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
 #include <erbsland/stream/ByteInputStream.hpp>
 #include <erbsland/stream/ByteOutputStream.hpp>
 #include <erbsland/stream/impl/EncodedTextInputStream.hpp>
 #include <erbsland/stream/StreamError.hpp>
-#include <erbsland/stream/StringBuilderStream.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -29,8 +30,8 @@ using el::stream::StreamError;
 using el::stream::StreamReadResult;
 using el::stream::StreamReadStatus;
 using el::stream::StreamWriteStatus;
-using el::text::String;
 using el::text::StringConverter;
+using el::text::StringEditor;
 using el::text::StringEncoder;
 using el::text::StringEncoding;
 using el::unit::ByteLength;
@@ -180,7 +181,7 @@ private:
     el::stream::StreamState _state{el::stream::StreamState::Open};
 };
 
-[[nodiscard]] static auto createTextInput(const String &text, const StringEncoding encoding)
+[[nodiscard]] static auto createTextInput(const text::String &text, const StringEncoding encoding)
     -> std::shared_ptr<el::stream::impl::EncodedTextInputStream> {
     const auto bytes = StringEncoder{text}.encode(encoding);
     auto byteStream = std::make_shared<ControlledByteInputStream>(bytes, 1U);
@@ -297,11 +298,11 @@ public:
         REQUIRE(timeoutTask.result().isTimeout());
         REQUIRE(timeoutStream->data().empty());
 
-        auto textStream = el::stream::StringBuilderStream::create();
-        auto textTask = textStream->coWrite(String{std::u8string_view{u8"A😀"}});
+        auto textStream = el::stream::AnyStringBuilderStream::create();
+        auto textTask = textStream->coWrite(StringEditor{std::u8string_view{u8"A😀"}});
         waitFor(textTask);
         REQUIRE(textTask.result().isSuccess());
-        auto lineTask = textStream->coWriteLine(String{std::string_view{"B"}});
+        auto lineTask = textStream->coWriteLine(StringEditor{std::string_view{"B"}});
         waitFor(lineTask);
         REQUIRE(lineTask.result().isSuccess());
         auto emptyLineTask = textStream->coWriteLine();
@@ -312,7 +313,7 @@ public:
 
     void testTextBlocksPreserveCodePointBoundaries() {
         for (const auto encoding : {StringEncoding::Utf8, StringEncoding::Utf16}) {
-            auto stream = createTextInput(String{std::u8string_view{u8"A😀B"}}, encoding);
+            auto stream = createTextInput(StringEditor{std::u8string_view{u8"A😀B"}}, encoding);
             auto generator = stream->coReadBlocks(CpLength{1U});
 
             auto first = nextValue(generator);
@@ -331,7 +332,7 @@ public:
     }
 
     void testTextLineGeneratorPreservesEndings() {
-        auto stream = createTextInput(String{std::u8string_view{u8"A😀\r\nB"}}, StringEncoding::Utf8);
+        auto stream = createTextInput(StringEditor{std::u8string_view{u8"A😀\r\nB"}}, StringEncoding::Utf8);
         auto generator = stream->coReadLines(CpLength{8U});
 
         auto first = nextValue(generator);

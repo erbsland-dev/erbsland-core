@@ -24,9 +24,9 @@ target_sources(erbsland-core PRIVATE
         BlockRange.hpp
         BlockString.cpp
         BlockString.hpp
-        BlockString_layout.cpp
-        BlockStringView.cpp
-        BlockStringView.hpp
+        BlockStringEditor.cpp
+        BlockStringEditor.hpp
+        BlockStringEditor_layout.cpp
         BlockStyle.cpp
         BlockStyle.hpp
         BlockText.hpp

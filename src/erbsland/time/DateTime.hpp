@@ -12,7 +12,7 @@
 
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <compare>
 #include <cstdint>
@@ -249,21 +249,21 @@ public:
     /// @param requiredPrecision The minimum precision required.
     /// @return The date-time or an invalid date/time if parsing fails.
     [[nodiscard]] static auto fromIsoString(
-        text::StringView text, DateTimePrecision requiredPrecision = DateTimePrecision::Second) noexcept -> DateTime;
+        const text::String &text, DateTimePrecision requiredPrecision = DateTimePrecision::Second) noexcept -> DateTime;
     /// Parse an ISO date/time string or throw on errors.
     /// @param text The text to parse.
     /// @param requiredPrecision The minimum precision required.
     /// @return A valid date/time.
     /// @throws err::ParseError If parsing fails.
     [[nodiscard]] static auto fromIsoStringOrThrow(
-        text::StringView text, DateTimePrecision requiredPrecision = DateTimePrecision::Second) -> DateTime;
+        const text::String &text, DateTimePrecision requiredPrecision = DateTimePrecision::Second) -> DateTime;
     /// Parse an ISO local date/time string in the given time zone.
     /// @param text The text to parse.
     /// @param timeZone The time zone to interpret the local time.
     /// @param requiredPrecision The minimum precision required.
     /// @return The date-time or an invalid date/time if parsing fails.
     [[nodiscard]] static auto fromIsoString(
-        text::StringView text,
+        const text::String &text,
         TimeZone timeZone,
         DateTimePrecision requiredPrecision = DateTimePrecision::Second) noexcept -> DateTime;
     /// Parse an ISO local date/time string in the given time zone or throw on errors.
@@ -273,7 +273,7 @@ public:
     /// @return A valid date/time.
     /// @throws err::ParseError If parsing fails.
     [[nodiscard]] static auto fromIsoStringOrThrow(
-        text::StringView text, TimeZone timeZone, DateTimePrecision requiredPrecision = DateTimePrecision::Second)
+        const text::String &text, TimeZone timeZone, DateTimePrecision requiredPrecision = DateTimePrecision::Second)
         -> DateTime;
     /// Get the epoch date-time.
     [[nodiscard]] static auto epoch() noexcept -> DateTime { return DateTime{Date::epoch(), Time{}}; }
@@ -301,8 +301,8 @@ private:
 }
 
 template <>
-struct erbsland::text::FormatAsText<erbsland::time::DateTime> : FormatAs<time::DateTime, StringView> {
-    [[nodiscard]] auto format(const time::DateTime &value) const -> StringView { return value.toIsoString(); }
+struct erbsland::text::FormatAsText<erbsland::time::DateTime> : FormatAs<time::DateTime, String> {
+    [[nodiscard]] auto format(const time::DateTime &value) const -> String { return value.toIsoString(); }
 };
 
 template <>

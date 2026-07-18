@@ -5,17 +5,17 @@
 #include "EncodingErrorMode.hpp"
 #include "String.hpp"
 #include "StringConverter_fwd.hpp"
-#include "StringView.hpp"
+#include "StringEditor.hpp"
 
 #include "u16/U16String.hpp"
+#include "u16/U16StringEditor.hpp"
 #include "u16/U16StringLiteral.hpp"
-#include "u16/U16StringView.hpp"
 #include "u32/U32String.hpp"
+#include "u32/U32StringEditor.hpp"
 #include "u32/U32StringLiteral.hpp"
-#include "u32/U32StringView.hpp"
 #include "u8/U8String.hpp"
+#include "u8/U8StringEditor.hpp"
 #include "u8/U8StringLiteral.hpp"
-#include "u8/U8StringView.hpp"
 
 #include <string>
 #include <string_view>
@@ -40,11 +40,6 @@ public:
     /// Convert to the default UTF-8 string type.
     [[nodiscard]] auto toString(EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> String {
         return toU8String(errorMode);
-    }
-    /// Convert to the default UTF-8 string view type.
-    /// The returned view owns shared string storage if the source cannot be viewed directly.
-    [[nodiscard]] auto toStringView(EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> StringView {
-        return StringConverterTraits<Source>::toStringView(_source, errorMode);
     }
     /// Convert to a UTF-8 string.
     [[nodiscard]] auto toU8String(EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> U8String {
@@ -91,7 +86,6 @@ StringConverter(T &&) -> StringConverter<std::decay_t<T>>;
 #define ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(TYPE)                                                                 \
     template <>                                                                                                        \
     struct StringConverterTraits<TYPE> final {                                                                         \
-        [[nodiscard]] static auto toStringView(const TYPE &source, EncodingErrorMode errorMode) -> StringView;         \
         [[nodiscard]] static auto toU8String(const TYPE &source, EncodingErrorMode errorMode) -> U8String;             \
         [[nodiscard]] static auto toU16String(const TYPE &source, EncodingErrorMode errorMode) -> U16String;           \
         [[nodiscard]] static auto toU32String(const TYPE &source, EncodingErrorMode errorMode) -> U32String;           \
@@ -102,15 +96,15 @@ StringConverter(T &&) -> StringConverter<std::decay_t<T>>;
         [[nodiscard]] static auto toStdWString(const TYPE &source, EncodingErrorMode errorMode) -> std::wstring;       \
     }
 
+ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U8StringEditor);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U8String);
-ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U8StringView);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U8StringLiteral<char>);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U8StringLiteral<char8_t>);
+ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U16StringEditor);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U16String);
-ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U16StringView);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U16StringLiteral);
+ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U32StringEditor);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U32String);
-ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U32StringView);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(U32StringLiteral);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(std::string);
 ERBSLAND_DECLARE_STRING_CONVERTER_TRAITS(std::string_view);

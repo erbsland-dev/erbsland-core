@@ -11,8 +11,8 @@
 #include "impl/UserLookupBackend.hpp"
 
 #include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringHashMap.hpp"
-#include "../text/StringView.hpp"
 
 #include <mutex>
 

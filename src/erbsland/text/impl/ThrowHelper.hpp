@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../ReadNumberStatus.hpp"
-#include "../StringView_fwd.hpp"
+#include "../String_fwd.hpp"
 
 #include <cstddef>
 #include <limits>
@@ -39,27 +39,27 @@ namespace erbsland::text::impl {
 /// @param reason The reason for the format error.
 [[noreturn]] void throwFormatError(std::string_view reason);
 /// @overload
-[[noreturn]] void throwFormatError(StringView reason);
+[[noreturn]] void throwFormatError(String reason);
 
 /// Throw an out-of-range error with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the out-of-range error.
 [[noreturn]] void throwOutOfRange(std::string_view reason);
 /// @overload
-[[noreturn]] void throwOutOfRange(StringView reason);
+[[noreturn]] void throwOutOfRange(String reason);
 
 /// Throw an OverflowError with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the overflow error.
 [[noreturn]] void throwOverflow(std::string_view reason);
 /// @overload
-[[noreturn]] void throwOverflow(StringView reason);
+[[noreturn]] void throwOverflow(String reason);
 
 /// Throw a ParseError with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the parse error.
 [[noreturn]] void throwParseError(std::string_view reason);
 /// @overload
-[[noreturn]] void throwParseError(StringView reason);
+[[noreturn]] void throwParseError(String reason);
 
 }

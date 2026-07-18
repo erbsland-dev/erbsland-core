@@ -13,7 +13,7 @@ namespace erbsland::re::impl {
 Assembler::Assembler() : _data{std::make_shared<EngineData>()}, _writer{_data->program, _programCounter} {
 }
 
-auto Assembler::compile(const text::StringViewList &lines) -> EngineDataPtr {
+auto Assembler::compile(const text::StringList &lines) -> EngineDataPtr {
     _lineIndex = unit::LineIndex::zero();
     for (const auto &line : lines) {
         processLine(line);
@@ -42,8 +42,8 @@ void Assembler::patchLabelOffsets() {
     }
 }
 
-void Assembler::processLine(const text::StringView &line) {
-    _currentLabel.clear();
+void Assembler::processLine(const text::String &line) {
+    _currentLabel = {};
     _modifiers.clear();
     tokenizeLine(line);
     if (!hasCurrentToken()) {
@@ -96,7 +96,7 @@ void Assembler::processLine(const text::StringView &line) {
     }
 }
 
-void Assembler::tokenizeLine(const text::StringView &line) {
+void Assembler::tokenizeLine(const text::String &line) {
     try {
         _tokens = AssemblerTokenizer{line}.tokens();
         _tokenIndex = 0;

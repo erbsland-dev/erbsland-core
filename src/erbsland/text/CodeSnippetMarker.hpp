@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "StringView.hpp"
+#include "String.hpp"
 
 #include "../unit/ColumnCount.hpp"
 #include "../unit/ColumnIndex.hpp"
@@ -28,8 +28,8 @@ public:
         unit::LineIndex line,
         unit::ColumnIndex column,
         unit::ColumnCount length = unit::ColumnCount::one(),
-        StringView label = {},
-        StringView style = {}) noexcept :
+        String label = {},
+        String style = {}) noexcept :
         _line{line}, _column{column}, _length{length}, _label{std::move(label)}, _style{std::move(style)} {}
 
 public: // accessors
@@ -40,16 +40,16 @@ public: // accessors
     /// Get the marker length in logical source code points.
     [[nodiscard]] auto length() const noexcept -> unit::ColumnCount { return _length; }
     /// Get the optional marker label.
-    [[nodiscard]] auto label() const noexcept -> StringView { return _label; }
+    [[nodiscard]] auto label() const noexcept -> String { return _label; }
     /// Get the optional marker style token.
-    [[nodiscard]] auto style() const noexcept -> StringView { return _style; }
+    [[nodiscard]] auto style() const noexcept -> String { return _style; }
 
 private:
     unit::LineIndex _line{unit::LineIndex::noIndex()};       ///< Original line index.
     unit::ColumnIndex _column{unit::ColumnIndex::noIndex()}; ///< Marker start column.
     unit::ColumnCount _length{unit::ColumnCount::one()};     ///< Marker length.
-    StringView _label;                                       ///< Optional marker label.
-    StringView _style;                                       ///< Optional style token.
+    String _label;                                           ///< Optional marker label.
+    String _style;                                           ///< Optional style token.
 };
 
 /// A list of code snippet markers.

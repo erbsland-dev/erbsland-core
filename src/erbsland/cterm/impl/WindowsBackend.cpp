@@ -124,7 +124,7 @@ void WindowsBackend::setCursorVisible(const bool visible) {
     changeCursorVisibility(visible);
 }
 
-void WindowsBackend::emitText(const text::StringView &str) {
+void WindowsBackend::emitText(const text::String &str) {
     const auto text = text::StringConverter{str}.toStdString();
     if (text.empty()) {
         return;

@@ -2,19 +2,19 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../text/u32/U32StringView.hpp"
+#include "../../../text/u32/U32String.hpp"
 #include "../../../unit/CpIndex.hpp"
 #include "../../Input32.hpp"
 
 namespace erbsland::re::impl {
 
-/// An input that reads from an owning UTF-32 string view.
+/// An input that reads from an owning UTF-32 read-only string.
 class U32StringInput final : public Input32 {
 public:
-    [[nodiscard]] static auto create(const text::U32StringView &text) noexcept -> Input32Ptr {
+    [[nodiscard]] static auto create(const text::U32String &text) noexcept -> Input32Ptr {
         return std::make_shared<U32StringInput>(text);
     }
-    explicit U32StringInput(const text::U32StringView &text) noexcept : _text{text} {}
+    explicit U32StringInput(const text::U32String &text) noexcept : _text{text} {}
 
 public: // implement InputBase
     [[nodiscard]] auto read() -> CharAndPosition override;
@@ -22,10 +22,10 @@ public: // implement InputBase
     void skip(unit::CpLength characterCount) override;
 
 public: // implement Input32
-    [[nodiscard]] auto createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> Match32Ptr override;
+    [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> Match32Ptr override;
 
 private:
-    text::U32StringView _text;
+    text::U32String _text;
     unit::CpIndex _position;
 };
 

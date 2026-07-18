@@ -11,7 +11,7 @@
 
 namespace erbsland::text::impl {
 
-/// Append algorithms for `U32String`.
+/// Append algorithms for `U32StringEditor`.
 /// @tested{U32StringTest}
 class U32StringAppendTools final {
 public:

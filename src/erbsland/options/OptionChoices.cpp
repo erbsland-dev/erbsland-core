@@ -11,7 +11,7 @@ auto OptionChoices::create() -> OptionChoicesPtr {
     return std::make_shared<OptionChoices>();
 }
 
-auto OptionChoices::create(std::initializer_list<text::StringView> choices) -> OptionChoicesPtr {
+auto OptionChoices::create(std::initializer_list<text::String> choices) -> OptionChoicesPtr {
     auto result = std::make_shared<OptionChoices>();
     for (auto choice : choices) {
         result->addChoice(OptionChoice::create(std::move(choice)));
@@ -24,7 +24,7 @@ auto OptionChoices::addChoice(OptionChoicePtr choice) -> OptionChoices & {
     return *this;
 }
 
-auto OptionChoices::addChoice(text::StringView text) -> OptionChoices & {
+auto OptionChoices::addChoice(text::String text) -> OptionChoices & {
     return addChoice(OptionChoice::create(std::move(text)));
 }
 

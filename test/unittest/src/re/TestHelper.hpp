@@ -202,14 +202,13 @@ public:
         return reverseCompareWithQM(suffix, str);
     }
 
-    [[nodiscard]] static auto compareWithStar(const std::string_view &pattern, const el::text::StringView &str)
-        -> bool {
+    [[nodiscard]] static auto compareWithStar(const std::string_view &pattern, const el::text::String &str) -> bool {
         return compareWithStar(pattern, string_helper::toStdString(str));
     }
 
     template <typename tExpected>
         requires std::ranges::range<tExpected>
-    void requireLines(const el::text::StringViewList &actual, const tExpected &expected) {
+    void requireLines(const el::text::StringList &actual, const tExpected &expected) {
         std::vector<std::string> standardLines;
         standardLines.reserve(actual.count().toSizeT());
         for (const auto &line : actual) {

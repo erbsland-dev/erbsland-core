@@ -44,10 +44,9 @@ private:
     void updateView(BlockSize viewSize) noexcept;
     void advanceDocumentStylePreset() noexcept;
     [[nodiscard]] auto locationText() const -> el::String;
-    [[nodiscard]] auto displayName() const -> el::StringView;
-    [[nodiscard]] auto documentStylePresetName() const noexcept -> el::StringView;
-    [[nodiscard]] static auto parseDocumentStylePreset(el::StringView value, DocumentStylePreset &preset) noexcept
-        -> bool;
+    [[nodiscard]] auto displayName() const -> el::String;
+    [[nodiscard]] auto documentStylePresetName() const noexcept -> el::String;
+    [[nodiscard]] static auto parseDocumentStylePreset(el::String value, DocumentStylePreset &preset) noexcept -> bool;
     [[nodiscard]] static auto contentRectForBuffer(BlockSize bufferSize) noexcept -> BlockRectangle;
     [[nodiscard]] static auto clampViewOffset(
         BlockCoordinate offset, BlockCoordinate viewHeight, BlockCoordinate height) noexcept -> BlockCoordinate;

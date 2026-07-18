@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LayoutLineToken.hpp"
 
-#include "../../BlockStringView.hpp"
+#include "../../BlockString.hpp"
 
 namespace erbsland::cterm::impl::paragraph {
 
-auto LayoutLineToken::remainingWidth(const BlockStringView &text, const BlockCount offset) const noexcept -> int {
+auto LayoutLineToken::remainingWidth(const BlockString &text, const BlockCount offset) const noexcept -> int {
     assert(isWord());
     if (offset.isZero()) {
         return _displayWidth;
@@ -19,7 +19,7 @@ auto LayoutLineToken::remainingWidth(const BlockStringView &text, const BlockCou
 }
 
 auto LayoutLineToken::split(
-    const BlockStringView &text,
+    const BlockString &text,
     const BlockCount offset,
     const int availableWidth,
     const int trailingMarkerWidth) const noexcept -> std::optional<SplitResult> {

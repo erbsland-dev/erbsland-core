@@ -11,14 +11,14 @@ using namespace el::text::literals;
 
 struct LaboratorySettings {
     bool quiet{false};
-    el::StringView instrument;
-    el::StringView reportTitle;
+    el::String instrument;
+    el::String reportTitle;
     el::OptionInteger sampleCount{0};
 };
 
 LaboratorySettings appSettings;
 
-[[nodiscard]] auto makeArgs(std::initializer_list<el::StringView> args) -> el::CommandLineArguments {
+[[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
     result.reserve(el::ElementCount{args.size()});
     for (const auto &arg : args) {
@@ -54,7 +54,7 @@ auto createReportSet() -> el::OptionSetPtr {
     reportSet->setHelpDescription("Options for the component that writes the report."_el);
     reportSet->addOption({"-t"_el, "--title"_el, "title"_el})
         .setType(el::OptionType::Text)
-        .setDefaultValue(el::String{"Calibration report"_el})
+        .setDefaultValue("Calibration report"_el)
         .setHelpDescription("Title of the generated report."_el);
     reportSet->addOption({"-s"_el, "--samples"_el, "samples"_el})
         .setType(el::OptionType::Integer)

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <utility>
 
@@ -13,7 +13,7 @@ namespace erbsland::event {
 class EventBackendIdInfo {
 public:
     /// Create new backend identifier information.
-    EventBackendIdInfo(text::StringView name, text::StringView description) :
+    EventBackendIdInfo(text::String name, text::String description) :
         _name{std::move(name)}, _description{std::move(description)} {}
 
     // defaults
@@ -26,13 +26,13 @@ public:
 
 public:
     /// Get the reverse-DNS-style backend name.
-    [[nodiscard]] auto name() const noexcept -> const text::StringView & { return _name; }
+    [[nodiscard]] auto name() const noexcept -> const text::String & { return _name; }
     /// Get the backend description.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _description; }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _description; }
 
 private:
-    text::StringView _name;        ///< The reverse DNS style name of the backend.
-    text::StringView _description; ///< A description of the backend identifier.
+    text::String _name;        ///< The reverse DNS style name of the backend.
+    text::String _description; ///< A description of the backend identifier.
 };
 
 }

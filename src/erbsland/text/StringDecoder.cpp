@@ -3,15 +3,19 @@
 #include "StringDecoder.hpp"
 
 #include "impl/StringConversionTools.hpp"
+#include "u16/U16StringEditor.hpp"
+#include "u32/U32StringEditor.hpp"
+#include "u8/U8StringEditor.hpp"
 
 #include "../mem/ByteBlock.hpp"
+#include "../mem/ByteBlockEditor.hpp"
 
 namespace erbsland::text {
 
-StringDecoder::StringDecoder(const mem::ByteBlock &data) noexcept : _data{data} {
+StringDecoder::StringDecoder(const mem::ByteBlockEditor &data) noexcept : _data{data} {
 }
 
-StringDecoder::StringDecoder(const mem::ByteBlockView &data) noexcept : _data{data} {
+StringDecoder::StringDecoder(const mem::ByteBlock &data) noexcept : _data{data} {
 }
 
 auto StringDecoder::decode(

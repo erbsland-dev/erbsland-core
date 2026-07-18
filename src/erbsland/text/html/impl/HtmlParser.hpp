@@ -7,8 +7,8 @@
 #include "HtmlTagInfo.hpp"
 #include "HtmlTokenizer.hpp"
 
-#include "../../AnyStringView.hpp"
-#include "../../StringView.hpp"
+#include "../../AnyString.hpp"
+#include "../../String.hpp"
 #include "../../TextDocument.hpp"
 #include "../../TextNode.hpp"
 
@@ -24,7 +24,7 @@ class HtmlParser final {
 public:
     /// Create a parser implementation for the given HTML text.
     /// @param html The HTML fragment or document to parse.
-    explicit HtmlParser(AnyStringView html);
+    explicit HtmlParser(AnyString html);
 
     // defaults
     ~HtmlParser() = default;
@@ -45,7 +45,7 @@ private:
     using Frame = HtmlParserFrame;
     using FrameList = std::vector<Frame>;
     using TagInfo = HtmlTagInfo;
-    using TagInfoMap = std::vector<std::pair<StringView, TagInfo>>;
+    using TagInfoMap = std::vector<std::pair<String, TagInfo>>;
     using TokenGenerator = HtmlTokenizer::TokenGenerator;
 
 private:
@@ -53,11 +53,11 @@ private:
     void updateFrameStateForPop(const Frame &frame) noexcept;
     void loadNextToken(TokenGenerator &generator);
     void advanceToken(TokenGenerator &generator);
-    void handleText(StringView text);
-    void handleOpenTag(StringView tagName, const Attributes &attributes);
-    void handleCloseTag(StringView tagName);
-    void pushNodeFrame(StringView tagName, TextNodePtr node, bool preserveWhitespace = false);
-    void pushTransparentFrame(StringView tagName, bool suppressSubtree = false, bool preserveWhitespace = false);
+    void handleText(String text);
+    void handleOpenTag(String tagName, const Attributes &attributes);
+    void handleCloseTag(const String &tagName);
+    void pushNodeFrame(String tagName, TextNodePtr node, bool preserveWhitespace = false);
+    void pushTransparentFrame(String tagName, bool suppressSubtree = false, bool preserveWhitespace = false);
     void closeFramesTo(std::size_t targetSize);
     void refreshCurrent() noexcept;
     void closeInlineFrames();
@@ -68,8 +68,8 @@ private:
     void ensureImplicitListForItem();
     void ensureImplicitDefinitionList();
     void ensureTextContainer();
-    void applyAttributes(const TextNodePtr &node, const StringView &tagName, const Attributes &attributes);
-    [[nodiscard]] auto addNodeForTag(const StringView &tagName, TextNode::Level listLevel) -> TextNodePtr;
+    void applyAttributes(const TextNodePtr &node, const String &tagName, const Attributes &attributes);
+    [[nodiscard]] auto addNodeForTag(const String &tagName, TextNode::Level listLevel) -> TextNodePtr;
     [[nodiscard]] auto addListItemNode() -> TextNodePtr;
     [[nodiscard]] auto isSuppressed() const noexcept -> bool;
     [[nodiscard]] auto isPreservingWhitespace() const noexcept -> bool;
@@ -77,13 +77,13 @@ private:
     [[nodiscard]] auto currentNodeHasChildren() const noexcept -> bool;
     [[nodiscard]] auto countOpenListLevels() const noexcept -> TextNode::Level;
 
-    [[nodiscard]] static auto normalizeWhitespace(StringView text, bool &whitespaceOnly) -> StringView;
-    [[nodiscard]] static auto toLowerAscii(StringView text) -> StringView;
-    [[nodiscard]] static auto findTagInfo(const StringView &tagName) -> const TagInfo *;
+    [[nodiscard]] static auto normalizeWhitespace(const String &text, bool &whitespaceOnly) -> String;
+    [[nodiscard]] static auto toLowerAscii(const String &text) -> String;
+    [[nodiscard]] static auto findTagInfo(const String &tagName) -> const TagInfo *;
     [[nodiscard]] static auto tagInfoMap() -> const TagInfoMap &;
 
 private:
-    AnyStringView _html;                   ///< The parsed HTML text.
+    AnyString _html;                       ///< The parsed HTML text.
     HtmlToken _currentToken;               ///< The current token being processed.
     HtmlToken _nextToken;                  ///< The next token used for lookahead.
     TextDocument _document;                ///< The document being built.

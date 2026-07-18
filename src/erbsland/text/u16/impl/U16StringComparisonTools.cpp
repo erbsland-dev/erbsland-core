@@ -7,6 +7,9 @@
 
 namespace erbsland::text::impl {
 
+using unit::ElementCount;
+using unit::U16DataIndex;
+
 auto U16StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char16_t> data, const CharacterSet &characters) -> bool {
     if (characters.isEmpty()) {
@@ -27,20 +30,20 @@ auto U16StringComparisonTools::compare(const U16StringDataView &other, const Cha
 }
 
 auto U16StringComparisonTools::find(const U16StringDataView &text, const CharCompareFn compareFn) const noexcept
-    -> unit::U16DataIndex {
-    return find(text, unit::U16DataIndex::zero(), compareFn);
+    -> U16DataIndex {
+    return find(text, U16DataIndex::zero(), compareFn);
 }
 
 auto U16StringComparisonTools::find(
-    const U16StringDataView &text, const unit::U16DataIndex start, const CharCompareFn compareFn) const noexcept
-    -> unit::U16DataIndex {
+    const U16StringDataView &text, const U16DataIndex start, const CharCompareFn compareFn) const noexcept
+    -> U16DataIndex {
     if (start.isNoIndex()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (start.toSizeT() > data.size()) {
-        return unit::U16DataIndex::noIndex();
+        return U16DataIndex::noIndex();
     }
 
     const auto needle = text.dataSpan();
@@ -55,7 +58,7 @@ auto U16StringComparisonTools::find(
         }
         utf16::fastAdvanceChar(data, position);
     }
-    return unit::U16DataIndex::noIndex();
+    return U16DataIndex::noIndex();
 }
 
 auto U16StringComparisonTools::startsWith(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -64,7 +67,7 @@ auto U16StringComparisonTools::startsWith(const U16StringDataView &other, const 
 }
 
 auto U16StringComparisonTools::startsWith(const Char character) const noexcept -> bool {
-    return U16StringReadTools{_data}.charAt(unit::U16DataIndex::zero()) == character;
+    return U16StringReadTools{_data}.charAt(U16DataIndex::zero()) == character;
 }
 
 auto U16StringComparisonTools::endsWith(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
@@ -73,7 +76,7 @@ auto U16StringComparisonTools::endsWith(const U16StringDataView &other, const Ch
 }
 
 auto U16StringComparisonTools::endsWith(const Char character) const noexcept -> bool {
-    auto index = unit::U16DataIndex::end(U16StringReadTools{_data}.byteLength());
+    auto index = U16DataIndex::end(U16StringReadTools{_data}.byteLength());
     return U16StringReadTools{_data}.retreat(index) && U16StringReadTools{_data}.charAt(index) == character;
 }
 
@@ -93,15 +96,15 @@ auto U16StringComparisonTools::contains(const Char character) const noexcept -> 
 }
 
 auto U16StringComparisonTools::count(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> unit::ElementCount {
+    -> ElementCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
     }
 
     const auto data = _data.dataSpan();
-    auto result = unit::ElementCount{};
-    auto position = unit::U16DataIndex::zero();
+    auto result = ElementCount{};
+    auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
             ++result;
@@ -113,8 +116,8 @@ auto U16StringComparisonTools::count(const U16StringDataView &other, const CharC
     return result;
 }
 
-auto U16StringComparisonTools::count(const Char character) const noexcept -> unit::ElementCount {
-    auto result = unit::ElementCount{};
+auto U16StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
+    auto result = ElementCount{};
     utf16::forEachDecodedCharacter(
         _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
             if (currentCharacter == character) {
@@ -142,8 +145,8 @@ auto U16StringComparisonTools::containsOnly(const CharSet &characters) const noe
 auto U16StringComparisonTools::compareDecodedSpans(
     const std::span<const char16_t> left, const std::span<const char16_t> right, const CharCompareFn compareFn) noexcept
     -> std::strong_ordering {
-    auto leftPosition = unit::U16DataIndex::zero();
-    auto rightPosition = unit::U16DataIndex::zero();
+    auto leftPosition = U16DataIndex::zero();
+    auto rightPosition = U16DataIndex::zero();
 
     while (leftPosition.toSizeT() < left.size() && rightPosition.toSizeT() < right.size()) {
         const auto leftCharacter = utf16::decodeCharOrReplace(left, leftPosition);
@@ -165,11 +168,11 @@ auto U16StringComparisonTools::compareDecodedSpans(
 
 auto U16StringComparisonTools::matchesDecodedSpan(
     const std::span<const char16_t> haystack,
-    const unit::U16DataIndex candidateStart,
+    const U16DataIndex candidateStart,
     const std::span<const char16_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
     auto haystackPosition = candidateStart;
-    auto needlePosition = unit::U16DataIndex::zero();
+    auto needlePosition = U16DataIndex::zero();
     while (needlePosition.toSizeT() < needle.size()) {
         if (haystackPosition.toSizeT() >= haystack.size()) {
             return false;
@@ -187,7 +190,7 @@ auto U16StringComparisonTools::startsWithDecodedSpan(
     const std::span<const char16_t> haystack,
     const std::span<const char16_t> needle,
     const CharCompareFn compareFn) noexcept -> bool {
-    return needle.empty() || matchesDecodedSpan(haystack, unit::U16DataIndex::zero(), needle, compareFn);
+    return needle.empty() || matchesDecodedSpan(haystack, U16DataIndex::zero(), needle, compareFn);
 }
 
 auto U16StringComparisonTools::endsWithDecodedSpan(
@@ -198,8 +201,8 @@ auto U16StringComparisonTools::endsWithDecodedSpan(
         return true;
     }
 
-    auto haystackPosition = unit::U16DataIndex::fromSizeT(haystack.size());
-    auto needlePosition = unit::U16DataIndex::fromSizeT(needle.size());
+    auto haystackPosition = U16DataIndex::fromSizeT(haystack.size());
+    auto needlePosition = U16DataIndex::fromSizeT(needle.size());
     while (!needlePosition.isZero()) {
         if (haystackPosition.isZero()) {
             return false;
@@ -219,9 +222,9 @@ auto U16StringComparisonTools::endsWithDecodedSpan(
 }
 
 auto U16StringComparisonTools::endOfMatch(
-    const std::span<const char16_t> haystack, unit::U16DataIndex start, const std::span<const char16_t> needle) noexcept
-    -> unit::U16DataIndex {
-    auto needlePosition = unit::U16DataIndex::zero();
+    const std::span<const char16_t> haystack, U16DataIndex start, const std::span<const char16_t> needle) noexcept
+    -> U16DataIndex {
+    auto needlePosition = U16DataIndex::zero();
     while (needlePosition.toSizeT() < needle.size() && start.toSizeT() < haystack.size()) {
         utf16::fastAdvanceChar(haystack, start);
         utf16::fastAdvanceChar(needle, needlePosition);

@@ -14,10 +14,10 @@ auto StringPatternData::lengthToEnd(const tLength length, const tIndex index) no
     return tLength{static_cast<typename tLength::Value>(length.toRawValue() - index.toRawValue())};
 }
 
-template <typename tStringView>
-auto StringPatternData::match(const StringPatternView &patternView, const tStringView &text) const noexcept
-    -> MatchResult<tStringView> {
-    auto result = MatchResult<tStringView>{};
+template <typename tString>
+auto StringPatternData::match(const StringPatternView &patternView, const tString &text) const noexcept
+    -> MatchResult<tString> {
+    auto result = MatchResult<tString>{};
     result.frontEnd = text.indexAt(StringSide::Front);
     result.suffixStart = text.indexAt(StringSide::Back);
     if (patternView.elements.empty() && patternView.divider == cNoStringPatternDivider) {
@@ -48,10 +48,10 @@ auto StringPatternData::match(const StringPatternView &patternView, const tStrin
     return result;
 }
 
-template <typename tStringView, typename tIndex>
+template <typename tString, typename tIndex>
 auto StringPatternData::matchFront(
     const StringPatternView &patternView,
-    const tStringView &text,
+    const tString &text,
     const std::size_t begin,
     const std::size_t end,
     tIndex &index) const noexcept -> bool {
@@ -64,10 +64,10 @@ auto StringPatternData::matchFront(
     return true;
 }
 
-template <typename tStringView, typename tIndex>
+template <typename tString, typename tIndex>
 auto StringPatternData::matchBack(
     const StringPatternView &patternView,
-    const tStringView &text,
+    const tString &text,
     const std::size_t begin,
     const std::size_t end,
     tIndex &index) const noexcept -> bool {

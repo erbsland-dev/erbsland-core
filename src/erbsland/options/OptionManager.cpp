@@ -20,8 +20,13 @@
 
 namespace erbsland::options {
 
-void OptionManager::renderPlainDocument(const text::TextDocument &document, const stream::TextOutputStreamPtr &output) {
-    auto renderer = text::PlainTextRenderer{document};
+using text::PlainTextRenderer;
+using text::String;
+using text::StringConverter;
+using text::TextDocument;
+
+void OptionManager::renderPlainDocument(const TextDocument &document, const stream::TextOutputStreamPtr &output) {
+    auto renderer = PlainTextRenderer{document};
     output->writeLine(renderer.build());
     output->flush();
 }
@@ -84,27 +89,27 @@ auto OptionManager::parseOrThrow(const core::CommandLineArguments &args) -> Opti
     throw options::OptionError{result.errorContext().value()};
 }
 
-void OptionManager::displayHelp(text::StringView moduleName) const {
-    renderPlainDocument(helpDocument(std::move(moduleName)), stream::stdOut());
+void OptionManager::displayHelp(const String &moduleName) const {
+    renderPlainDocument(helpDocument(moduleName), stream::stdOut());
 }
 
-void OptionManager::displayVersion(text::StringView moduleName) const {
-    renderPlainDocument(versionDocument(std::move(moduleName)), stream::stdOut());
+void OptionManager::displayVersion(const String &moduleName) const {
+    renderPlainDocument(versionDocument(moduleName), stream::stdOut());
 }
 
 void OptionManager::displayError(const OptionErrorContext &errorContext) const {
     renderPlainDocument(errorDocument(errorContext), stream::stdErr());
 }
 
-auto OptionManager::helpDocument(text::StringView moduleName) const -> text::TextDocument {
-    return impl::OptionDocumentBuilder{_options, _displayText}.helpDocument(std::move(moduleName));
+auto OptionManager::helpDocument(const String &moduleName) const -> TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.helpDocument(moduleName);
 }
 
-auto OptionManager::versionDocument(text::StringView moduleName) const -> text::TextDocument {
-    return impl::OptionDocumentBuilder{_options, _displayText}.versionDocument(std::move(moduleName));
+auto OptionManager::versionDocument(const String &moduleName) const -> TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.versionDocument(moduleName);
 }
 
-auto OptionManager::errorDocument(const OptionErrorContext &errorContext) const -> text::TextDocument {
+auto OptionManager::errorDocument(const OptionErrorContext &errorContext) const -> TextDocument {
     return impl::OptionDocumentBuilder{_options, _displayText}.errorDocument(errorContext);
 }
 
@@ -116,9 +121,9 @@ auto OptionManager::convertCommandLineArguments(const int argc, char *argv[]) ->
     result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
-            result.append(text::StringView{});
+            result.append(String{});
         } else {
-            result.append(text::String{std::string_view{argv[index]}});
+            result.append(String{std::string_view{argv[index]}});
         }
     }
     return result;
@@ -132,9 +137,9 @@ auto OptionManager::convertCommandLineArguments(const int argc, wchar_t *argv[])
     result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
-            result.append(text::StringView{});
+            result.append(String{});
         } else {
-            result.append(text::StringConverter{std::wstring_view{argv[index]}}.toString());
+            result.append(StringConverter{std::wstring_view{argv[index]}}.toString());
         }
     }
     return result;

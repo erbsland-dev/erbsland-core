@@ -9,7 +9,7 @@ namespace demo {
 
 using namespace el::text::literals;
 
-[[nodiscard]] auto makeArgs(std::initializer_list<el::StringView> args) -> el::CommandLineArguments {
+[[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
     result.reserve(el::ElementCount{args.size()});
     for (const auto &arg : args) {
@@ -43,7 +43,7 @@ auto createDefinitionOptions() -> el::OptionsPtr {
         .addChoice("fast"_el)
         .addChoice("precise"_el)
         .addChoice("night"_el)
-        .setDefaultValue(el::String{"precise"_el})
+        .setDefaultValue("precise"_el)
         .setHelpDescription("Measurement mode for the output."_el);
     options->addOption({"--minimum-signal"_el, "minimum-signal"_el})
         .setType(el::OptionType::Integer)

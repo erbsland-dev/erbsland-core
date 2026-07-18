@@ -8,6 +8,7 @@
 #include "CaptureGroup.hpp"
 #include "CaptureGroupIndex.hpp"
 #include "CaptureRange.hpp"
+#include "CharAndPosition.hpp"
 #include "ErrorCategory.hpp"
 #include "Feature.hpp"
 #include "Features.hpp"

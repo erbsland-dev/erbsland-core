@@ -72,7 +72,7 @@ public:
     void testToStringForMappedValues() {
         struct Case {
             TextAnchor::Value value;
-            el::text::StringView expected;
+            el::text::String expected;
         };
 
         const Case cases[] = {

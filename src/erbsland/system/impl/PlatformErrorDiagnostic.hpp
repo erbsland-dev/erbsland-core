@@ -5,7 +5,7 @@
 #include "../PlatformErrorContext_fwd.hpp"
 
 #include "../../err/Diagnostic.hpp"
-#include "../../text/StringView.hpp"
+#include "../../text/String.hpp"
 
 namespace erbsland::system::impl {
 
@@ -13,15 +13,15 @@ namespace erbsland::system::impl {
 /// @tested{DiagnosticTest}
 class PlatformErrorDiagnostic final : public err::Diagnostic {
 public:
-    PlatformErrorDiagnostic(text::StringView title, PlatformErrorContextConstPtr context) noexcept;
+    PlatformErrorDiagnostic(text::String title, PlatformErrorContextConstPtr context) noexcept;
 
 public: // implement Diagnostic
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const
         -> text::TextDocument override;
 
 private:
-    text::StringView _title;
+    text::String _title;
     PlatformErrorContextConstPtr _context;
 };
 

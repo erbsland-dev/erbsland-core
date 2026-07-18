@@ -3,6 +3,8 @@
 #pragma once
 
 #include "../../../stream/TextInputStream.hpp"
+#include "../../CaptureRange_fwd.hpp"
+#include "../../CharAndPosition.hpp"
 #include "../../Input.hpp"
 
 #include <optional>
@@ -22,7 +24,7 @@ public: // implement Input
     [[nodiscard]] auto read() -> CharAndPosition override;
     [[nodiscard]] auto peek() -> CharAndPosition override;
     void skip(unit::CpLength characterCount) override;
-    [[nodiscard]] auto createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> MatchPtr override;
+    [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> MatchPtr override;
 
 private:
     [[nodiscard]] auto readFromStream() -> CharAndPosition;

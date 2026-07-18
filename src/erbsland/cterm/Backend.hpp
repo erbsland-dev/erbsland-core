@@ -10,7 +10,7 @@
 
 #include "../bgeo/BlockSize.hpp"
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <memory>
 #include <optional>
@@ -124,7 +124,7 @@ public:
     /// Line breaks are usually just NL and not CRLF.
     /// UTF-8 sequences, and ANSI sequences are always complete in one call of this method.
     /// @param text The UTF-8 encoded text to emit.
-    virtual void emitText(const text::StringView &text) = 0;
+    virtual void emitText(const text::String &text) = 0;
 
     /// Flush the output buffer.
     /// After a call of this method, the backend must flush all previously emitted text and control sequences

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "StringView.hpp"
+#include "String.hpp"
 
 #include <cstdint>
 
@@ -99,7 +99,7 @@ public: // accessors
     /// Get the raw value.
     [[nodiscard]] constexpr auto raw() const noexcept -> Value { return _value; }
     /// Get the display name of this node type.
-    [[nodiscard]] auto toString() const noexcept -> StringView;
+    [[nodiscard]] auto toString() const noexcept -> String;
     /// Get the broad rendering class of this node type.
     [[nodiscard]] auto renderClass() const noexcept -> RenderClass;
     /// Test if this type renders inline.

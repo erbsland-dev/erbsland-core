@@ -23,7 +23,7 @@ public:
         const bgeo::BlockRectangle rect,
         const bgeo::Alignment alignment,
         const LayoutResult &layout,
-        const BlockStringView &sourceText,
+        const BlockString &sourceText,
         const ParagraphOptions &options,
         const ParagraphBackgroundMode backgroundMode,
         const ColorResolver &colorResolver = {}) noexcept :

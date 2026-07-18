@@ -15,8 +15,8 @@ void matches() {
     const auto withUnit = el::StringPattern{"messung:*;C"_el};
     const auto finished = el::StringPattern{"*;fertig"_el};
 
-    const auto temperature = el::StringView{"messung:temperatur=21.4;C"_el};
-    const auto completed = el::StringView{"messung:leitwert=0.42;fertig"_el};
+    const auto temperature = el::String{"messung:temperatur=21.4;C"_el};
+    const auto completed = el::String{"messung:leitwert=0.42;fertig"_el};
 
     el::io::printLine("front only ..............: "_el, nameOnly.matches(temperature));
     el::io::printLine("front and back ..........: "_el, withUnit.matches(temperature));

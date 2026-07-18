@@ -13,23 +13,23 @@ Match Families
 
 A successful match is represented by one encoding-specific type:
 
-*   :cpp:class:`Match <erbsland::re::Match>` returns :cpp:class:`text::StringView
-    <erbsland::text::U8StringView>` content.
-*   :cpp:class:`Match16 <erbsland::re::Match16>` returns :cpp:class:`text::U16StringView
-    <erbsland::text::U16StringView>` content.
-*   :cpp:class:`Match32 <erbsland::re::Match32>` returns :cpp:class:`text::U32StringView
-    <erbsland::text::U32StringView>` content.
+*   :cpp:class:`Match <erbsland::re::Match>` returns :cpp:class:`text::String
+    <erbsland::text::U8String>` content.
+*   :cpp:class:`Match16 <erbsland::re::Match16>` returns :cpp:class:`text::U16String
+    <erbsland::text::U16String>` content.
+*   :cpp:class:`Match32 <erbsland::re::Match32>` returns :cpp:class:`text::U32String
+    <erbsland::text::U32String>` content.
 
 There is no separate view-result family.
-Core string views are read-only owning values, so matches retain their subject storage and return copy-free slices from
+Core strings are read-only owning values, so matches retain their subject storage and return copy-free slices from
 it.
 
 Lifetime and Ownership
 ======================
 
 Match objects are shared pointers and are immutable after creation.
-The match keeps the complete subject view alive; every value returned by ``content()`` also owns the referenced storage.
-It is safe to retain a match or captured view after the source variable, temporary subject or generator has been
+The match keeps the complete subject string alive; every value returned by ``content()`` also owns the referenced storage.
+It is safe to retain a match or captured string after the source variable, temporary subject or generator has been
 destroyed.
 
 Groups and Positions
@@ -38,8 +38,8 @@ Groups and Positions
 :cpp:class:`MatchBase <erbsland::re::MatchBase>` provides ``begin``, ``end``, ``range`` and ``group`` access. Overloads
 without a selector address capture group zero, which represents the whole match.
 Other groups are selected with
-:cpp:type:`CaptureGroupIndex <erbsland::re::CaptureGroupIndex>` or a :cpp:class:`text::StringView
-<erbsland::text::U8StringView>` name.
+:cpp:type:`CaptureGroupIndex <erbsland::re::CaptureGroupIndex>` or a :cpp:class:`text::String
+<erbsland::text::U8String>` name.
 
 Positions are coordinates in the original encoding:
 
@@ -60,31 +60,31 @@ Interface
 .. doxygentypedef:: erbsland::re::CaptureGroupIndex
 .. doxygenclass:: erbsland::re::CaptureRange
     :members:
-.. doxygentypedef:: erbsland::re::MatchPtr
-
 .. doxygenclass:: erbsland::re::Match
     :members:
+
+.. doxygentypedef:: erbsland::re::MatchPtr
 
 .. doxygentypedef:: erbsland::re::MatchGenerator
 
 .. doxygentypedef:: erbsland::re::MatchList
-.. doxygentypedef:: erbsland::re::Match16Ptr
-
 .. doxygenclass:: erbsland::re::Match16
     :members:
+
+.. doxygentypedef:: erbsland::re::Match16Ptr
 
 .. doxygentypedef:: erbsland::re::Match16Generator
 
 .. doxygentypedef:: erbsland::re::Match16List
-.. doxygentypedef:: erbsland::re::Match32Ptr
-
 .. doxygenclass:: erbsland::re::Match32
     :members:
+
+.. doxygentypedef:: erbsland::re::Match32Ptr
 
 .. doxygentypedef:: erbsland::re::Match32Generator
 
 .. doxygentypedef:: erbsland::re::Match32List
-.. doxygentypedef:: erbsland::re::MatchBasePtr
-
 .. doxygenclass:: erbsland::re::MatchBase
     :members:
+
+.. doxygentypedef:: erbsland::re::MatchBasePtr

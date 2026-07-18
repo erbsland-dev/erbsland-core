@@ -47,13 +47,12 @@ auto TextDocument::addDefinitionList() -> TextNodePtr {
     return _root->addDefinitionList();
 }
 
-auto TextDocument::addCodeBlock(StringView language) -> TextNodePtr {
+auto TextDocument::addCodeBlock(String language) -> TextNodePtr {
     return _root->addCodeBlock(std::move(language));
 }
 
 auto TextDocument::addCodeSnippet(
-    StringViewList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, StringView language)
-    -> TextNodePtr {
+    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
     return _root->addCodeSnippet(std::move(lines), startLine, std::move(markers), std::move(language));
 }
 
@@ -61,15 +60,15 @@ auto TextDocument::addHorizontalLine() -> TextNodePtr {
     return _root->addHorizontalLine();
 }
 
-auto TextDocument::addText(StringView text) -> TextNodePtr {
+auto TextDocument::addText(String text) -> TextNodePtr {
     return _root->addText(std::move(text));
 }
 
-auto TextDocument::addUnsupported(StringView text) -> TextNodePtr {
+auto TextDocument::addUnsupported(String text) -> TextNodePtr {
     return _root->addUnsupported(std::move(text));
 }
 
-auto TextDocument::addError(StringView text) -> TextNodePtr {
+auto TextDocument::addError(String text) -> TextNodePtr {
     return _root->addError(std::move(text));
 }
 

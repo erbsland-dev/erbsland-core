@@ -14,7 +14,7 @@ public:
     /// Create an overflow error exception with a reason.
     /// @param reason The reason for the overflow error.
     /// @param parameterName The name of the parameter that caused the error.
-    explicit ParameterError(text::StringView reason, text::StringView parameterName) noexcept;
+    explicit ParameterError(text::String reason, text::String parameterName) noexcept;
     /// @overload
     explicit ParameterError(std::string_view reason, std::string_view parameterName) noexcept;
 
@@ -22,10 +22,10 @@ public:
     ~ParameterError() override = default;
 
 public:
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
 
 private:
-    text::StringView _parameterName; ///< The name of the parameter that caused the error.
+    text::String _parameterName; ///< The name of the parameter that caused the error.
 };
 
 }

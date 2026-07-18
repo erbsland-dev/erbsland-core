@@ -7,7 +7,7 @@
 namespace demo {
 
 namespace {
-const auto cConfigurationLines = el::StringViewList{{
+const auto cConfigurationLines = el::StringList{{
     "# A configuration file written in the Erbsland Configuration Language."_el,
     "--[ Clang Format ]----------------------------------------------------------------------------------------------------"_el,
     "# Marker file used to remember when clang-format last processed all files."_el,

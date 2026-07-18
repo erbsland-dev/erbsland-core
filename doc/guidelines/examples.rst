@@ -90,10 +90,10 @@ Guidelines:
 
 * Prefer the common string aliases and literals provided by the library:
 
-  * ``StringView`` is an owning, read-only string for most purposes.
+  * ``String`` is an owning, read-only string for most purposes.
   * ``""_el`` - everywhere for string literals
   * ``StringFormat`` - for formatting strings (or use ``el::io::print``)
-  * ``String`` - when building strings from scratch.
+  * ``StringEditor`` - when building strings from scratch.
 
 * Avoid unnecessary usage of standard library string types in examples unless they are directly relevant to the topic.
 

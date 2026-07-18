@@ -13,6 +13,8 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
+
 auto U8StringModifyTools::characterBytes(const Char character) noexcept -> std::array<char, 4> {
     auto result = std::array<char, 4>{};
     U8Writer writer{std::span<char>{result}};
@@ -41,16 +43,15 @@ auto U8StringModifyTools::spansOverlap(const std::span<const T> first, const std
     return firstBegin < secondEnd && secondBegin < firstEnd;
 }
 
-auto U8StringModifyTools::remove(U8StringSharedStorage &storage, const unit::ByteRange range)
-    -> U8StringSharedStorage & {
+auto U8StringModifyTools::remove(U8StringSharedStorage &storage, const ByteRange range) -> U8StringSharedStorage & {
     return replace(storage, range, {});
 }
 
-auto U8StringModifyTools::remove(U8StringSharedStorage &storage, const unit::CpRange range) -> U8StringSharedStorage & {
+auto U8StringModifyTools::remove(U8StringSharedStorage &storage, const CpRange range) -> U8StringSharedStorage & {
     return remove(storage, byteRangeForCharacterRange(storage.dataView(), range));
 }
 
-auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const unit::ByteRange range) -> U8StringSharedStorage & {
+auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const ByteRange range) -> U8StringSharedStorage & {
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     if (data.empty()) {
@@ -60,7 +61,7 @@ auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const unit::ByteR
         storage.clear();
         return storage;
     }
-    const auto keepRange = range.clampedTo(unit::ByteLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(ByteLength::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         storage.clear();
         return storage;
@@ -78,36 +79,32 @@ auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const unit::ByteR
     return storage;
 }
 
-auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const unit::CpRange range) -> U8StringSharedStorage & {
+auto U8StringModifyTools::keep(U8StringSharedStorage &storage, const CpRange range) -> U8StringSharedStorage & {
     return keep(storage, byteRangeForCharacterRange(storage.dataView(), range));
 }
 
-auto U8StringModifyTools::insert(
-    U8StringSharedStorage &storage, const unit::ByteIndex index, const U8StringDataView &text)
+auto U8StringModifyTools::insert(U8StringSharedStorage &storage, const ByteIndex index, const U8StringDataView &text)
     -> U8StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
-    const auto insertIndex =
-        unit::ByteIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
-    return replace(storage, unit::ByteRange::emptyAt(insertIndex), text);
+    const auto insertIndex = ByteIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
+    return replace(storage, ByteRange::emptyAt(insertIndex), text);
 }
 
-auto U8StringModifyTools::insert(
-    U8StringSharedStorage &storage, const unit::CpIndex index, const U8StringDataView &text)
+auto U8StringModifyTools::insert(U8StringSharedStorage &storage, const CpIndex index, const U8StringDataView &text)
     -> U8StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
     auto byteIndex = byteIndexForCharacterIndex(storage.dataView(), index);
     if (byteIndex.isNoIndex()) {
-        byteIndex = unit::ByteIndex::end(unit::ByteLength::fromSizeT(storage.dataView().dataSpan().size()));
+        byteIndex = ByteIndex::end(ByteLength::fromSizeT(storage.dataView().dataSpan().size()));
     }
     return insert(storage, byteIndex, text);
 }
 
-auto U8StringModifyTools::replace(
-    U8StringSharedStorage &storage, const unit::ByteRange range, const U8StringDataView &text)
+auto U8StringModifyTools::replace(U8StringSharedStorage &storage, const ByteRange range, const U8StringDataView &text)
     -> U8StringSharedStorage & {
     if (!range.isValid()) {
         return storage;
@@ -116,7 +113,7 @@ auto U8StringModifyTools::replace(
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     const auto replacement = text.dataSpan();
-    const auto replaceRange = range.clampedTo(unit::ByteLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(ByteLength::fromSizeT(data.size()));
     if (replaceRange.isEmpty() && replacement.empty()) {
         return storage;
     }
@@ -149,8 +146,7 @@ auto U8StringModifyTools::replace(
     return storage;
 }
 
-auto U8StringModifyTools::replace(
-    U8StringSharedStorage &storage, const unit::CpRange range, const U8StringDataView &text)
+auto U8StringModifyTools::replace(U8StringSharedStorage &storage, const CpRange range, const U8StringDataView &text)
     -> U8StringSharedStorage & {
     return replace(storage, byteRangeForCharacterRange(storage.dataView(), range), text);
 }

@@ -21,9 +21,9 @@ public: // implement UserLookupBackend
 
 private:
     [[noreturn]] static void throwLookupError(
-        const text::StringView &reason, system::WindowsErrorContext::ErrorCode errorCode);
-    [[nodiscard]] static auto accountNameForSidString(const text::StringView &sid) -> text::String;
-    [[nodiscard]] static auto sidStringForAccountName(const text::StringView &name) -> text::String;
+        const text::String &reason, system::WindowsErrorContext::ErrorCode errorCode);
+    [[nodiscard]] static auto accountNameForSidString(const text::String &sid) -> text::String;
+    [[nodiscard]] static auto sidStringForAccountName(const text::String &name) -> text::String;
 };
 
 }

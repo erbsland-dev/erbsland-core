@@ -5,11 +5,11 @@
 #include "BlockStringData.hpp"
 
 #include "../BlockString.hpp"
-#include "../BlockStringView.hpp"
+#include "../BlockStringEditor.hpp"
 
 #include "../../text/EncodingErrorMode.hpp"
-#include "../../text/StringView.hpp"
-#include "../../text/u32/U32StringView.hpp"
+#include "../../text/String.hpp"
+#include "../../text/u32/U32String.hpp"
 
 #include <utility>
 
@@ -46,9 +46,9 @@ public:
     /// Append one terminal character as-is.
     /// @param character The character to append.
     void append(const Block &character) noexcept { _data.append(character); }
-    /// Append one styled terminal-string view as-is.
-    /// @param view The string view to append.
-    void append(const BlockStringView &view) noexcept {
+    /// Append one styled terminal string as-is.
+    /// @param view The read-only string to append.
+    void append(const BlockString &view) noexcept {
         if (view.isEmpty()) {
             return;
         }
@@ -56,10 +56,10 @@ public:
         chars.insert(chars.end(), view.begin(), view.end());
         _data.addDisplayWidth(view.displayWidth());
     }
-    /// Append one terminal-string view with a resolved base style.
-    /// @param view The string view to append.
+    /// Append one terminal string with a resolved base style.
+    /// @param view The read-only string to append.
     /// @param style The base style used for inherited color components or attributes.
-    void appendWithBaseStyle(const BlockStringView &view, const BlockStyle style) noexcept {
+    void appendWithBaseStyle(const BlockString &view, const BlockStyle style) noexcept {
         if (view.isEmpty()) {
             return;
         }
@@ -71,7 +71,7 @@ public:
     /// Append UTF-32 text using one uniform style.
     /// @param text The UTF-32 text to append.
     /// @param style The style applied to the appended characters.
-    void appendStyled(const text::U32StringView &text, const BlockStyle style) noexcept {
+    void appendStyled(const text::U32String &text, const BlockStyle style) noexcept {
         _data.appendCharacters(text, style.color(), style.attributes());
     }
     /// Append UTF-8 text using one uniform style.
@@ -79,23 +79,29 @@ public:
     /// @param style The style applied to the appended characters.
     /// @param encodingErrors How malformed UTF-8 is handled.
     void appendStyled(
-        const text::StringView &text,
+        const text::String &text,
         const BlockStyle style,
         const text::EncodingErrorMode encodingErrors = text::EncodingErrorMode::Replace) {
         _data.appendCharacters(text, style.color(), style.attributes(), encodingErrors);
     }
     /// Materialize the current builder contents into an owned string copy.
     /// @return A copied terminal string.
-    [[nodiscard]] auto toString() const -> BlockString {
-        return BlockString::fromStorageWithDisplayWidth(_data.chars(), _data.displayWidth());
-    }
+    [[nodiscard]] auto toString() const -> BlockString { return BlockString{toStringEditor()}; }
     /// Move the built string out and reset the builder for fast reuse.
     /// @return The built terminal string.
-    [[nodiscard]] auto takeString() -> BlockString {
+    [[nodiscard]] auto takeString() -> BlockString { return BlockString{takeStringEditor()}; }
+    /// Materialize the current builder contents as an editable string copy.
+    /// @return A copied terminal string editor.
+    [[nodiscard]] auto toStringEditor() const -> BlockStringEditor {
+        return BlockStringEditor::fromStorageWithDisplayWidth(_data.chars(), _data.displayWidth());
+    }
+    /// Move the built string into an editor and reset the builder for fast reuse.
+    /// @return The built terminal string editor.
+    [[nodiscard]] auto takeStringEditor() -> BlockStringEditor {
         const auto displayWidth = _data.displayWidth();
         auto chars = std::move(_data.chars());
         _data = BlockStringData{};
-        return BlockString::fromStorageWithDisplayWidth(std::move(chars), displayWidth);
+        return BlockStringEditor::fromStorageWithDisplayWidth(std::move(chars), displayWidth);
     }
 
 protected:

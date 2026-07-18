@@ -4,7 +4,7 @@
 
 #include "U8String_fwd.hpp"
 #include "U8StringConstIterator_fwd.hpp"
-#include "U8StringView_fwd.hpp"
+#include "U8StringEditor_fwd.hpp"
 
 #include "../Char.hpp"
 
@@ -19,8 +19,8 @@ namespace erbsland::text {
 /// @tested{U8StringConstIteratorTest}
 class U8StringConstIterator final {
     struct Private;
+    friend class U8StringEditor;
     friend class U8String;
-    friend class U8StringView;
 
 public: // iterator traits
     /// Standard iterator category for this iterator.
@@ -72,7 +72,7 @@ public:
 
 private:
     /// Create an iterator pointing to the given position in the given view.
-    U8StringConstIterator(const U8StringView &view, unit::ByteIndex index);
+    U8StringConstIterator(const U8String &view, unit::ByteIndex index);
 
 private:
     std::unique_ptr<Private> _p; ///< Private implementation

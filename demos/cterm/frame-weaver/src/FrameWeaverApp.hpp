@@ -59,7 +59,7 @@ private:
     [[nodiscard]] static auto prismFrameStyle() -> const Block16StylePtr &;
     [[nodiscard]] static auto colors() -> const ColorSequence &;
     [[nodiscard]] auto availableStyles() const -> std::vector<FrameSpec>;
-    [[nodiscard]] auto modeName() const -> el::StringView;
+    [[nodiscard]] auto modeName() const -> el::String;
     [[nodiscard]] auto buildPrompt() const -> BlockString;
 
 private:

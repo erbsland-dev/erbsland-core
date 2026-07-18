@@ -5,11 +5,11 @@ Text Processing
 .. toctree::
     :maxdepth: 1
 
+    any_string_builder
     char_range
     format_definitions
     html/index
     std_compatibility
-    string_builder
     string_collections
     string_converter
     string_decode_buffer

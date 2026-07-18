@@ -4,8 +4,8 @@
 
 #include "CodeSnippetMarker.hpp"
 #include "String.hpp"
-#include "StringView.hpp"
-#include "StringViewList.hpp"
+#include "StringEditor.hpp"
+#include "StringList.hpp"
 #include "TextDocument_fwd.hpp"
 #include "TextNode.hpp"
 
@@ -49,28 +49,28 @@ public:
     auto addDefinitionList() -> TextNodePtr;
     /// Add a code block to the document root.
     /// @param language The optional language identifier.
-    auto addCodeBlock(StringView language = {}) -> TextNodePtr;
+    auto addCodeBlock(String language = {}) -> TextNodePtr;
     /// Add a line-oriented code snippet to the document root.
     /// @param lines The source lines to include.
     /// @param startLine The original zero-based line index of the first line, or no-index for no line numbers.
     /// @param markers Optional marker ranges.
     /// @param language The optional language identifier.
     auto addCodeSnippet(
-        StringViewList lines,
+        StringList lines,
         unit::LineIndex startLine = unit::LineIndex::zero(),
         CodeSnippetMarkerList markers = {},
-        StringView language = {}) -> TextNodePtr;
+        String language = {}) -> TextNodePtr;
     /// Add a horizontal line to the document root.
     auto addHorizontalLine() -> TextNodePtr;
     /// Add plain text to the document root.
     /// @param text The text content.
-    auto addText(StringView text) -> TextNodePtr;
+    auto addText(String text) -> TextNodePtr;
     /// Add an unsupported-content block to the document root.
     /// @param text The preserved content text.
-    auto addUnsupported(StringView text = {}) -> TextNodePtr;
+    auto addUnsupported(String text = {}) -> TextNodePtr;
     /// Add an error-content block to the document root.
     /// @param text The preserved error text.
-    auto addError(StringView text = {}) -> TextNodePtr;
+    auto addError(String text = {}) -> TextNodePtr;
 
 public: // accessors
     /// Test if the document root has no children.

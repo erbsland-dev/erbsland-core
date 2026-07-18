@@ -5,7 +5,7 @@
 #include "../engine/CaptureGroupNames.hpp"
 
 #include "../../../text/String.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../unit/ByteLength.hpp"
 #include "../../CaptureGroup.hpp"
 #include "../../Match.hpp"
@@ -47,7 +47,7 @@ public: // use
     /// Append this replacement to the given text.
     /// @param text The text to edit.
     /// @param match The match to use for the replacement.
-    void appendTo(text::String &text, const MatchPtr &match) const;
+    void appendTo(text::StringEditor &text, const MatchPtr &match) const;
 
     /// Get the size of the replacement for the given match.
     /// @param match The match to use for the replacement.
@@ -65,7 +65,7 @@ public:
     /// @param groupNames The names of the capture groups.
     /// @return The replacement object.
     /// @throws RegExError in case of an invalid format string.
-    [[nodiscard]] static auto create(const text::StringView &expression, const CaptureGroupNames &groupNames)
+    [[nodiscard]] static auto create(const text::String &expression, const CaptureGroupNames &groupNames)
         -> Replacement;
 
 private:

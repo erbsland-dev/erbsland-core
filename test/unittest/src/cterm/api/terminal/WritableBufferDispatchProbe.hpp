@@ -174,14 +174,14 @@ protected:
     }
 
     void drawBlockTextImpl(
-        const BlockStringView &text,
+        const BlockString &text,
         const bgeo::BlockRectangle rect,
         const bgeo::Alignment alignment,
         BlockStyle style,
         const std::size_t animationCycle) override {
         _lastCall = Call::TextRect;
         _lastRect = rect;
-        _lastText = BlockString{text};
+        _lastText = BlockStringEditor{text};
         _lastAlignment = alignment;
         _lastAnimationCycle = animationCycle;
     }

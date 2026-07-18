@@ -18,7 +18,7 @@ public:
     }
 
     void testBufferRendersNewParagraphsWithSingleParagraphSpacing() {
-        auto text = BlockText{BlockString{"A\nB"_el}, bgeo::BlockRectangle{0, 0, 1, 2}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A\nB"_el}, bgeo::BlockRectangle{0, 0, 1, 2}, bgeo::Alignment::TopLeft};
         auto buffer = Buffer{bgeo::BlockSize{1, 2}};
         buffer.drawBlockText(text);
         REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 0}), U'A');
@@ -26,7 +26,8 @@ public:
     }
 
     void testBufferDoesNotInsertSpacingBetweenWrappedLines() {
-        auto text = BlockText{BlockString{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
+        auto text =
+            BlockText{BlockStringEditor{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
         text.setParagraphSpacing(ParagraphSpacing::DoubleLine);
         auto buffer = Buffer{bgeo::BlockSize{2, 2}};
         buffer.drawBlockText(text);
@@ -37,7 +38,7 @@ public:
     }
 
     void testBufferRendersDoubleParagraphSpacingWithVerticalAlignment() {
-        auto text = BlockText{BlockString{"A\nB"_el}, bgeo::BlockRectangle{0, 0, 3, 5}, bgeo::Alignment::Center};
+        auto text = BlockText{BlockStringEditor{"A\nB"_el}, bgeo::BlockRectangle{0, 0, 3, 5}, bgeo::Alignment::Center};
         text.setParagraphSpacing(ParagraphSpacing::DoubleLine);
         auto buffer = Buffer{bgeo::BlockSize{3, 5}};
         buffer.drawBlockText(text);
@@ -47,7 +48,7 @@ public:
     }
 
     void testBufferKeepsCharacterColorsIfNoColorSequenceIsDefined() {
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text.append(Block{U'A', fg::Red, bg::Black});
         text.append(Block{U'B', fg::Green, bg::Black});
         auto buffer = Buffer{bgeo::BlockSize{4, 1}};
@@ -58,7 +59,7 @@ public:
 
     void testBufferUsesExplicitAnimationCycleForFlashAnimation() {
         auto buffer = Buffer{bgeo::BlockSize{3, 1}};
-        auto text = BlockText{BlockString{"ABC"_el}, bgeo::BlockRectangle{0, 0, 3, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"ABC"_el}, bgeo::BlockRectangle{0, 0, 3, 1}, bgeo::Alignment::TopLeft};
         text.setColorSequence(
             ColorSequence{Color{fg::Red, bg::Black}, Color{fg::Green, bg::Black}, Color{fg::Blue, bg::Black}});
         text.setAnimation(BlockTextAnimation::ColorDiagonal);
@@ -69,7 +70,7 @@ public:
     }
 
     void testBufferKeepsCharacterColorPartsOverTextColor() {
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text.append(Block{U'A', fg::Red, bg::Inherited});
         text.append(Block{U'B', fg::Inherited, bg::Blue});
         auto renderedText = BlockText{text, bgeo::BlockRectangle{0, 0, 2, 1}, bgeo::Alignment::TopLeft};
@@ -81,7 +82,7 @@ public:
     }
 
     void testBufferUsesDefaultAsExplicitTextReset() {
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text.append(Block{U'A', fg::Default, bg::Inherited});
         auto renderedText = BlockText{text, bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::Alignment::TopLeft};
         renderedText.setColor(Color{fg::Green, bg::Yellow});
@@ -92,7 +93,7 @@ public:
     }
 
     void testBufferRespectsParagraphMarginsWhenRenderingText() {
-        auto text = BlockText{BlockString{"A"_el}, bgeo::BlockRectangle{0, 0, 5, 3}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A"_el}, bgeo::BlockRectangle{0, 0, 5, 3}, bgeo::Alignment::TopLeft};
         text.setMargins(bgeo::BlockMargins{1});
         auto buffer = Buffer{bgeo::BlockSize{5, 3}};
 
@@ -106,7 +107,7 @@ public:
     void testBufferRendersBitmapFontText() {
         auto font = std::make_shared<Font>(2);
         font->addGlyph("A"_el, FontGlyph{std::vector<uint64_t>{0b11U, 0b11U}});
-        auto text = BlockText{BlockString{"A"_el}, bgeo::BlockRectangle{0, 0, 2, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A"_el}, bgeo::BlockRectangle{0, 0, 2, 1}, bgeo::Alignment::TopLeft};
         text.setColor(Color{fg::BrightWhite, bg::Black});
         text.setFont(font);
         auto buffer = Buffer{bgeo::BlockSize{2, 1}};
@@ -116,10 +117,11 @@ public:
     }
 
     void testBufferRendersParagraphIndentAndWrapMarks() {
-        auto text = BlockText{BlockString{"AA BB CC"_el}, bgeo::BlockRectangle{0, 0, 6, 2}, bgeo::Alignment::TopLeft};
+        auto text =
+            BlockText{BlockStringEditor{"AA BB CC"_el}, bgeo::BlockRectangle{0, 0, 6, 2}, bgeo::Alignment::TopLeft};
         text.setWrappedLineIndent(3);
-        text.setLineBreakStartMark(BlockString{">"_el});
-        text.setLineBreakEndMark(BlockString{"<"_el});
+        text.setLineBreakStartMark(BlockStringEditor{">"_el});
+        text.setLineBreakEndMark(BlockStringEditor{"<"_el});
         auto buffer = Buffer{bgeo::BlockSize{6, 2}};
 
         buffer.drawBlockText(text);
@@ -128,7 +130,7 @@ public:
     }
 
     void testBufferUsesTabStopsForParagraphRendering() {
-        auto text = BlockText{BlockString{"A\tB"_el}, bgeo::BlockRectangle{0, 0, 5, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A\tB"_el}, bgeo::BlockRectangle{0, 0, 5, 1}, bgeo::Alignment::TopLeft};
         text.setTabStops({4});
         auto buffer = Buffer{bgeo::BlockSize{5, 1}};
 
@@ -138,10 +140,10 @@ public:
     }
 
     void testBufferBreaksAtNonAdvancingTabStopsWhenRequested() {
-        auto text =
-            BlockText{BlockString{"Heading\ttext"_el}, bgeo::BlockRectangle{0, 0, 12, 2}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{
+            BlockStringEditor{"Heading\ttext"_el}, bgeo::BlockRectangle{0, 0, 12, 2}, bgeo::Alignment::TopLeft};
         text.setWrappedLineIndent(6);
-        text.setLineBreakEndMark(BlockString{"<"_el});
+        text.setLineBreakEndMark(BlockStringEditor{"<"_el});
         text.setTabStops({6});
         text.setTabOverflowBehavior(TabOverflowBehavior::LineBreak);
         auto buffer = Buffer{bgeo::BlockSize{12, 2}};
@@ -152,8 +154,8 @@ public:
     }
 
     void testBufferReplacesNonAdvancingTabsWithSpacesByDefault() {
-        auto text =
-            BlockText{BlockString{"Heading\ttext"_el}, bgeo::BlockRectangle{0, 0, 12, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{
+            BlockStringEditor{"Heading\ttext"_el}, bgeo::BlockRectangle{0, 0, 12, 1}, bgeo::Alignment::TopLeft};
         text.setTabStops({6});
         auto buffer = Buffer{bgeo::BlockSize{12, 1}};
 
@@ -163,9 +165,10 @@ public:
     }
 
     void testBufferBreaksWhenTabStopsAreExhaustedAndLineBreakIsRequested() {
-        auto text = BlockText{BlockString{"A\tB\tC"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
+        auto text =
+            BlockText{BlockStringEditor{"A\tB\tC"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
         text.setWrappedLineIndent(2);
-        text.setLineBreakEndMark(BlockString{"<"_el});
+        text.setLineBreakEndMark(BlockStringEditor{"<"_el});
         text.setTabStops({2});
         text.setTabOverflowBehavior(TabOverflowBehavior::LineBreak);
         auto buffer = Buffer{bgeo::BlockSize{5, 2}};
@@ -176,7 +179,7 @@ public:
     }
 
     void testBufferUsesWordSeparatorsAsCollapsedSpacing() {
-        auto text = BlockText{BlockString{"A..B"_el}, bgeo::BlockRectangle{0, 0, 3, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A..B"_el}, bgeo::BlockRectangle{0, 0, 3, 1}, bgeo::Alignment::TopLeft};
         text.setWordSeparators(U"."_el);
         auto buffer = Buffer{bgeo::BlockSize{3, 1}};
 
@@ -186,7 +189,7 @@ public:
     }
 
     void testBufferTreatsTabsAsCollapsedWordSeparatorsForCenteredParagraphs() {
-        auto text = BlockText{BlockString{"A\tB"_el}, bgeo::BlockRectangle{0, 0, 5, 1}, bgeo::Alignment::Center};
+        auto text = BlockText{BlockStringEditor{"A\tB"_el}, bgeo::BlockRectangle{0, 0, 5, 1}, bgeo::Alignment::Center};
         auto buffer = Buffer{bgeo::BlockSize{5, 1}};
 
         buffer.drawBlockText(text);
@@ -195,7 +198,8 @@ public:
     }
 
     void testBufferSplitsLongWordsUsingTheConfiguredWordBreakMark() {
-        auto text = BlockText{BlockString{"ABCDEFG"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
+        auto text =
+            BlockText{BlockStringEditor{"ABCDEFG"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
         auto buffer = Buffer{bgeo::BlockSize{5, 2}};
 
         buffer.drawBlockText(text);
@@ -204,8 +208,8 @@ public:
     }
 
     void testBufferUsesParagraphEllipsisAfterMaximumWraps() {
-        auto text =
-            BlockText{BlockString{"AA BB CC DD EE"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{
+            BlockStringEditor{"AA BB CC DD EE"_el}, bgeo::BlockRectangle{0, 0, 5, 2}, bgeo::Alignment::TopLeft};
         text.setMaximumLineWraps(1);
         auto buffer = Buffer{bgeo::BlockSize{5, 2}};
 
@@ -215,7 +219,8 @@ public:
     }
 
     void testBufferUsesParagraphBackgroundModesForWrappedParagraphs() {
-        auto text = BlockText{BlockString{"AAAA BBBB"_el}, bgeo::BlockRectangle{0, 0, 6, 2}, bgeo::Alignment::TopLeft};
+        auto text =
+            BlockText{BlockStringEditor{"AAAA BBBB"_el}, bgeo::BlockRectangle{0, 0, 6, 2}, bgeo::Alignment::TopLeft};
         text.setColor(Color{fg::White, bg::Red});
         text.setWrappedLineIndent(2);
         text.setBackgroundMode(ParagraphBackgroundMode::WrappedBoth);
@@ -230,8 +235,9 @@ public:
     }
 
     void testBufferFallsBackToTheLegacySimpleDrawForInvalidParagraphSettings() {
-        auto text = BlockText{BlockString{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
-        text.setLineBreakEndMark(BlockString{">>"_el});
+        auto text =
+            BlockText{BlockStringEditor{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
+        text.setLineBreakEndMark(BlockStringEditor{">>"_el});
         text.setOnError(ParagraphOnError::PlainOutput);
         auto buffer = Buffer{bgeo::BlockSize{2, 2}};
 
@@ -241,8 +247,9 @@ public:
     }
 
     void testBufferSkipsInvalidParagraphsWhenOnErrorIsEmpty() {
-        auto text = BlockText{BlockString{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
-        text.setLineBreakEndMark(BlockString{">>"_el});
+        auto text =
+            BlockText{BlockStringEditor{"AA BB"_el}, bgeo::BlockRectangle{0, 0, 2, 2}, bgeo::Alignment::TopLeft};
+        text.setLineBreakEndMark(BlockStringEditor{">>"_el});
         text.setOnError(ParagraphOnError::Empty);
         auto buffer = Buffer{bgeo::BlockSize{2, 2}, Block{U'X', fg::White, bg::Blue}};
 

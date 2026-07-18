@@ -6,16 +6,16 @@
 
 #include "impl/TextOutputStreamTraits.hpp"
 
-#include "../mem/ByteBlockView.hpp"
+#include "../mem/ByteBlock.hpp"
 #include "../text/BooleanFormat_fwd.hpp"
 #include "../text/ByteFormat_fwd.hpp"
 #include "../text/Char.hpp"
 #include "../text/FloatFormat_fwd.hpp"
 #include "../text/IntegerFormat_fwd.hpp"
-#include "../text/StringView_fwd.hpp"
-#include "../text/u16/U16StringView_fwd.hpp"
-#include "../text/u32/U32StringView_fwd.hpp"
-#include "../text/u8/U8StringView_fwd.hpp"
+#include "../text/String_fwd.hpp"
+#include "../text/u16/U16String_fwd.hpp"
+#include "../text/u32/U32String_fwd.hpp"
+#include "../text/u8/U8String_fwd.hpp"
 
 #include <concepts>
 #include <memory>
@@ -31,7 +31,7 @@ using TextPrintContextPtr = std::unique_ptr<TextPrintContext>;
 /// The print context interface for the print commands in the text streams.
 /// You only need this interface if you implement a custom text stream subclass that uses an
 /// unusual backend storage, for all other uses, rely the default implementation and implement the `write` methods.
-/// @tested{StandardTextOutputStreamTest StringBuilderStreamTest}
+/// @tested{StandardTextOutputStreamTest AnyStringBuilderStreamTest}
 class TextPrintContext {
 public:
     virtual ~TextPrintContext() = default;
@@ -40,36 +40,36 @@ public:
     /// Commit the printed content
     virtual auto commit() -> StreamWriteStatus = 0;
 
-public:                                                      // main overloads
-    virtual void print(text::Char character) = 0;            ///< print a value.
-    virtual void print(char character) = 0;                  ///< print a value.
-    virtual void print(char8_t character) = 0;               ///< print a value.
-    virtual void print(char16_t character) = 0;              ///< print a value.
-    virtual void print(char32_t character) = 0;              ///< print a value.
-    virtual void print(const char *text) = 0;                ///< print a value.
-    virtual void print(const char8_t *text) = 0;             ///< print a value.
-    virtual void print(const char16_t *text) = 0;            ///< print a value.
-    virtual void print(const char32_t *text) = 0;            ///< print a value.
-    virtual void print(std::nullptr_t) = 0;                  ///< print a value.
-    virtual void print(std::string_view text) = 0;           ///< print a value.
-    virtual void print(std::u8string_view text) = 0;         ///< print a value.
-    virtual void print(std::u16string_view text) = 0;        ///< print a value.
-    virtual void print(std::u32string_view text) = 0;        ///< print a value.
-    virtual void print(const text::StringView &text) = 0;    ///< print a value.
-    virtual void print(const text::U16StringView &text) = 0; ///< print a value.
-    virtual void print(const text::U32StringView &text) = 0; ///< print a value.
-    virtual void print(bool value) = 0;                      ///< print a value.
-    virtual void print(double value) = 0;                    ///< print a value.
-    virtual void print(float value) = 0;                     ///< print a value.
-    virtual void print(int64_t value) = 0;                   ///< print a value.
-    virtual void print(uint64_t value) = 0;                  ///< print a value.
-    virtual void print(const mem::ByteBlockView &bytes) = 0; ///< print a value.
+public:                                                    // main overloads
+    virtual void print(text::Char character) = 0;          ///< print a value.
+    virtual void print(char character) = 0;                ///< print a value.
+    virtual void print(char8_t character) = 0;             ///< print a value.
+    virtual void print(char16_t character) = 0;            ///< print a value.
+    virtual void print(char32_t character) = 0;            ///< print a value.
+    virtual void print(const char *text) = 0;              ///< print a value.
+    virtual void print(const char8_t *text) = 0;           ///< print a value.
+    virtual void print(const char16_t *text) = 0;          ///< print a value.
+    virtual void print(const char32_t *text) = 0;          ///< print a value.
+    virtual void print(std::nullptr_t) = 0;                ///< print a value.
+    virtual void print(std::string_view text) = 0;         ///< print a value.
+    virtual void print(std::u8string_view text) = 0;       ///< print a value.
+    virtual void print(std::u16string_view text) = 0;      ///< print a value.
+    virtual void print(std::u32string_view text) = 0;      ///< print a value.
+    virtual void print(const text::String &text) = 0;      ///< print a value.
+    virtual void print(const text::U16String &text) = 0;   ///< print a value.
+    virtual void print(const text::U32String &text) = 0;   ///< print a value.
+    virtual void print(bool value) = 0;                    ///< print a value.
+    virtual void print(double value) = 0;                  ///< print a value.
+    virtual void print(float value) = 0;                   ///< print a value.
+    virtual void print(int64_t value) = 0;                 ///< print a value.
+    virtual void print(uint64_t value) = 0;                ///< print a value.
+    virtual void print(const mem::ByteBlock &bytes) = 0;   ///< print a value.
 
-public:                                                      // format control
-    virtual void print(text::BooleanFormat newFormat) = 0;   ///< change the format.
-    virtual void print(text::ByteFormat newFormat) = 0;      ///< change the format.
-    virtual void print(text::IntegerFormat newFormat) = 0;   ///< change the format.
-    virtual void print(text::FloatFormat newFormat) = 0;     ///< change the format.
+public:                                                    // format control
+    virtual void print(text::BooleanFormat newFormat) = 0; ///< change the format.
+    virtual void print(text::ByteFormat newFormat) = 0;    ///< change the format.
+    virtual void print(text::IntegerFormat newFormat) = 0; ///< change the format.
+    virtual void print(text::FloatFormat newFormat) = 0;   ///< change the format.
 
 public:
     template <std::size_t N>

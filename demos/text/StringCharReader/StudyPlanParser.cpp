@@ -10,7 +10,7 @@ constexpr auto decMax3Digits =
 
 auto readLessonName(el::StringCharReader &reader) -> el::String;
 auto readOptionalMinutes(el::StringCharReader &reader, int &minutes) -> bool;
-void printPlan(const el::StringView &label, el::StringCharReader reader);
+void printPlan(const el::String &label, el::StringCharReader reader);
 
 /// `StringCharReader` is the preferred tool for character-by-character parsers.
 ///
@@ -22,20 +22,20 @@ void printPlan(const el::StringView &label, el::StringCharReader reader);
 /// This demo parses a small Turkish study plan.
 /// Helper functions receive `StringCharReader` by reference when they consume input.
 void studyPlanParser() {
-    const auto utf8Plan = el::StringView{"matematik:45;fen:30;müzik"_el};
+    const auto utf8Plan = el::String{"matematik:45;fen:30;müzik"_el};
     printPlan("UTF-8 plan"_el, el::StringCharReader{utf8Plan});
 
-    const auto utf16Plan = el::U16StringView{u"geometri:25;şiir:15"_el};
+    const auto utf16Plan = el::U16String{u"geometri:25;şiir:15"_el};
     printPlan("UTF-16 plan"_el, el::StringCharReader{utf16Plan});
 
-    const auto utf32Plan = el::U32StringView{U"astronomi:40;çizim:20"_el};
+    const auto utf32Plan = el::U32String{U"astronomi:40;çizim:20"_el};
     printPlan("UTF-32 plan"_el, el::StringCharReader{utf32Plan});
 
-    const auto draftWithError = el::StringView{"tarih:25;kimya:x"_el};
+    const auto draftWithError = el::String{"tarih:25;kimya:x"_el};
     printPlan("plan with diagnostic"_el, el::StringCharReader{draftWithError});
 }
 
-void printPlan(const el::StringView &label, el::StringCharReader reader) {
+void printPlan(const el::String &label, el::StringCharReader reader) {
     el::io::printLine(label, ":"_el);
     while (!reader.isAtEnd()) {
         const auto lessonStart = reader.position();

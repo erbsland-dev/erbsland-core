@@ -31,10 +31,10 @@ public:
     void print(BlockStyle style) noexcept override;
     void print(BlockAttributes attributes) noexcept override;
     void print(const Block &character) noexcept override;
+    void print(const BlockStringEditor &text) noexcept override;
     void print(const BlockString &text) noexcept override;
-    void print(const BlockStringView &text) noexcept override;
-    void print(const text::StringView &text) noexcept override;
-    void print(const text::U32StringView &text) noexcept override;
+    void print(const text::String &text) noexcept override;
+    void print(const text::U32String &text) noexcept override;
 
 private:
     Terminal &_terminal;

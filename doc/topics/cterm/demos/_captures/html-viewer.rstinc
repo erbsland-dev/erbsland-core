@@ -43,7 +43,7 @@
     ␛[96;40m␛[1mCode␛[22m ␛[1mBlock␛[37m␛[22m                                                                      ␛[39;49m
     ␛[37;40m                                                                                ␛[39;49m
     ␛[37;40m auto html = path.content().readTextOrThrow();                                  ␛[39;49m
-    ␛[37;40m auto document = el::html::HtmlParser{el::AnyStringView{html}}.parse();         ␛[39;49m
+    ␛[37;40m auto document = el::html::HtmlParser{el::AnyString{html}}.parse();         ␛[39;49m
     ␛[37;40m el::TerminalDocumentRenderer{}.renderTo(buffer, document);                     ␛[39;49m
     ␛[37;40m                                                                                ␛[39;49m
     ␛[37;40m--------------------------------------------------------------------------------␛[39;49m

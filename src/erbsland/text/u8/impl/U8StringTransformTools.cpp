@@ -4,16 +4,18 @@
 
 #include "U8StringReadTools.hpp"
 
-#include "../U8String.hpp"
+#include "../U8StringEditor.hpp"
 
 #include "../../../util/impl/LoopControl.hpp"
+#include "../../AnyStringBuilder.hpp"
 #include "../../impl/EscapeFormatter.hpp"
 #include "../../impl/SafeStringEscapeTools.hpp"
-#include "../../StringBuilder.hpp"
 
 #include <string_view>
 
 namespace erbsland::text::impl {
+
+using namespace unit;
 
 auto U8StringTransformTools::forEach(const ProcessCharacterFn &function) const -> util::LoopResult {
     if (function == nullptr) {
@@ -40,7 +42,7 @@ auto U8StringTransformTools::transformedIfChanged(const TransformCharacterFn fun
     }
 
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
+    auto position = ByteIndex::zero();
     auto result = U8StringSharedStorage{};
     auto appendTools = U8StringAppendTools{result};
     auto changed = false;
@@ -53,7 +55,7 @@ auto U8StringTransformTools::transformedIfChanged(const TransformCharacterFn fun
             result.ensureMutableCapacity(data.size());
         }
         if (unchangedEnd > 0U) {
-            appendTools.append(U8StringDataView{data, unit::ByteRange::fromSizeT(unchangedEnd)});
+            appendTools.append(U8StringDataView{data, ByteRange::fromSizeT(unchangedEnd)});
         }
     };
 
@@ -88,16 +90,16 @@ auto U8StringTransformTools::transformed(const TransformCharacterFn function) co
     return U8StringSharedStorage{_data};
 }
 
-auto U8StringTransformTools::aligned(
-    const unit::CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U8StringSharedStorage {
+auto U8StringTransformTools::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
+    -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto currentLength = U8StringCharReadTool{_data}.charLength();
     if (length <= currentLength || !fill.isValidUnicode()) {
         return U8StringSharedStorage::fromBytes(data);
     }
     const auto padding = length - currentLength;
-    auto leftPadding = unit::CpLength::zero();
-    auto rightPadding = unit::CpLength::zero();
+    auto leftPadding = CpLength::zero();
+    auto rightPadding = CpLength::zero();
     if (alignment.isRight()) {
         leftPadding = padding;
     } else if (alignment.isHorizontalCenter()) {
@@ -115,7 +117,7 @@ auto U8StringTransformTools::aligned(
 }
 
 auto U8StringTransformTools::truncated(
-    const unit::CpLength maximumWidth, const TruncateMode mode, const U8StringDataView &ellipsis) const
+    const CpLength maximumWidth, const TruncateMode mode, const U8StringDataView &ellipsis) const
     -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (maximumWidth.isInfinite()) {
@@ -131,8 +133,8 @@ auto U8StringTransformTools::truncated(
     const auto reader = U8StringCharReadTool{_data};
     auto needsTruncation = data.size() / 4U > maximumWidth.toSizeT();
     if (!needsTruncation) {
-        auto position = unit::ByteIndex::zero();
-        auto count = unit::CpLength::zero();
+        auto position = ByteIndex::zero();
+        auto count = CpLength::zero();
         while (position.toSizeT() < data.size() && count <= maximumWidth) {
             utf8::fastAdvanceChar(data, position);
             ++count;
@@ -145,7 +147,7 @@ auto U8StringTransformTools::truncated(
     auto ellipsisLength = U8StringCharReadTool{ellipsis}.charLength();
     auto ellipsisView = ellipsis;
     if (ellipsisLength > maximumWidth) {
-        ellipsisLength = unit::CpLength::zero();
+        ellipsisLength = CpLength::zero();
         ellipsisView = {};
     }
     const auto keepLength = maximumWidth - ellipsisLength;
@@ -153,43 +155,42 @@ auto U8StringTransformTools::truncated(
     auto appendTools = U8StringAppendTools{result};
     switch (mode) {
     case TruncateMode::Begin: {
-        auto suffixStart = unit::ByteIndex::fromSizeT(data.size());
+        auto suffixStart = ByteIndex::fromSizeT(data.size());
         U8StringReadTools{_data}.retreat(suffixStart, keepLength);
         appendTools.append(ellipsisView);
-        appendTools.append(dataView(
-            unit::ByteRange{suffixStart, unit::ByteIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+        appendTools.append(
+            dataView(ByteRange{suffixStart, ByteIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
         break;
     }
     case TruncateMode::Middle: {
-        const auto prefixLength = keepLength.added(unit::CpLength::one()) / 2U;
+        const auto prefixLength = keepLength.added(CpLength::one()) / 2U;
         const auto suffixLength = keepLength - prefixLength;
-        auto suffixStart = unit::ByteIndex::fromSizeT(data.size());
+        auto suffixStart = ByteIndex::fromSizeT(data.size());
         U8StringReadTools{_data}.retreat(suffixStart, suffixLength);
-        appendTools.append(dataView(reader.sliceRange(unit::CpRange{unit::CpIndex::zero(), prefixLength})));
+        appendTools.append(dataView(reader.sliceRange(CpRange{CpIndex::zero(), prefixLength})));
         appendTools.append(ellipsisView);
-        appendTools.append(dataView(
-            unit::ByteRange{suffixStart, unit::ByteIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
+        appendTools.append(
+            dataView(ByteRange{suffixStart, ByteIndex::fromSizeT(data.size())}.withOrigin(_data.range().index())));
         break;
     }
     case TruncateMode::End:
     default:
-        appendTools.append(dataView(reader.sliceRange(unit::CpRange{unit::CpIndex::zero(), keepLength})));
+        appendTools.append(dataView(reader.sliceRange(CpRange{CpIndex::zero(), keepLength})));
         appendTools.append(ellipsisView);
         break;
     }
     return result;
 }
 
-auto U8StringTransformTools::escapedSize(const EscapeFormat format, EscapeAmount amount) const noexcept
-    -> unit::ByteLength {
+auto U8StringTransformTools::escapedSize(const EscapeFormat format, EscapeAmount amount) const noexcept -> ByteLength {
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return unit::ByteLength::fromSizeT(_data.dataSpan().size());
+        return ByteLength::fromSizeT(_data.dataSpan().size());
     }
     const auto formatter = EscapeFormatter::forFormat(format);
-    unit::ByteLength length;
+    ByteLength length;
     utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
-            length += unit::ByteLength{formatter->escapeSize(character, StringKind::U8)};
+            length += ByteLength{formatter->escapeSize(character, StringKind::U8)};
         } else {
             length += character.utf8Size();
         }
@@ -198,13 +199,13 @@ auto U8StringTransformTools::escapedSize(const EscapeFormat format, EscapeAmount
     return length;
 }
 
-auto U8StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U8String {
+auto U8StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAmount amount) const -> U8StringEditor {
     const auto data = _data.dataSpan();
     if (format == EscapeFormat::None || amount == EscapeAmount::Nothing) {
-        return U8String{std::string_view{data.data(), data.size()}};
+        return U8StringEditor{std::string_view{data.data(), data.size()}};
     }
     const auto formatter = EscapeFormatter::forFormat(format);
-    StringBuilder builder{StringKind::U8};
+    AnyStringBuilder builder{StringKind::U8};
     utf8::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
             formatter->escape(character, builder);
@@ -213,14 +214,14 @@ auto U8StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAm
         }
         return true;
     });
-    return builder.takeU8String();
+    return builder.takeU8StringEditor();
 }
 
-auto U8StringTransformTools::toSafeString(const unit::CpLength maximumWidth, const SafeStringFlags flags) const
-    -> U8String {
+auto U8StringTransformTools::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const
+    -> U8StringEditor {
     auto scanner = SafeStringEscapeTools{maximumWidth, flags};
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
+    auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         const auto sourceStart = position.toSizeT();
         const auto character = utf8::decodeCharOrReplace(data, position);
@@ -229,12 +230,12 @@ auto U8StringTransformTools::toSafeString(const unit::CpLength maximumWidth, con
         }
     }
     scanner.finish(data.size());
-    auto builder = StringBuilder{};
+    auto builder = AnyStringBuilder{};
     scanner.appendTo(builder, data.size());
-    return builder.takeU8String();
+    return builder.takeU8StringEditor();
 }
 
-auto U8StringTransformTools::dataView(const unit::ByteRange range) const -> U8StringDataView {
+auto U8StringTransformTools::dataView(const ByteRange range) const -> U8StringDataView {
     return U8StringDataView{_data.data(), range};
 }
 

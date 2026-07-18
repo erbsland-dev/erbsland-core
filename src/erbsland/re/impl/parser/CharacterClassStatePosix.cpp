@@ -27,7 +27,7 @@ void CharClassHandlerState::handlePosixCharacterClass() {
         if (!hasFeature(Feature::PosixClasses)) {
             throwParsingError("POSIX character classes are not supported"_el);
         }
-        text::String posixName;
+        text::StringEditor posixName;
         // Test for negation
         if (currentChar() == U'^') {
             if (classCount > 1) {
@@ -66,7 +66,7 @@ void CharClassHandlerState::handlePosixCharacterClass() {
     }
 }
 
-void CharClassHandlerState::processPosixRangesFor(const text::StringView &name) {
+void CharClassHandlerState::processPosixRangesFor(const text::String &name) {
     using namespace text::literals;
     // The definitions of the character sets are commonly expected sets for engines like PCRE.
     // They do not follow any formal rule and are only provided for compatibility.
@@ -75,16 +75,16 @@ void CharClassHandlerState::processPosixRangesFor(const text::StringView &name) 
         std::vector<Category> categories{};
     };
     static const text::StringHashMap<PosixRangeDefinition> unicodePosixRanges{{
-        {"alnum"_els, {.categories = {Category::L, Category::Nl, Category::Nd}}},
-        {"alpha"_els, {.categories = {Category::L, Category::Nl}}},
-        {"ascii"_els, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
-        {"blank"_els, {.ranges = {CharRange(U'\t')}, .categories = {Category::Zs}}},
-        {"cntrl"_els, {.categories = {Category::Cc}}},
-        {"digit"_els, {.categories = {Category::Nd}}},
-        {"graph"_els, {.categories = {Category::L, Category::M, Category::N, Category::P, Category::S}}},
-        {"lower"_els, {.categories = {Category::Ll}}},
-        {"print"_els, {.categories = {Category::L, Category::M, Category::N, Category::P, Category::S, Category::Z}}},
-        {"punct"_els,
+        {"alnum"_el, {.categories = {Category::L, Category::Nl, Category::Nd}}},
+        {"alpha"_el, {.categories = {Category::L, Category::Nl}}},
+        {"ascii"_el, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
+        {"blank"_el, {.ranges = {CharRange(U'\t')}, .categories = {Category::Zs}}},
+        {"cntrl"_el, {.categories = {Category::Cc}}},
+        {"digit"_el, {.categories = {Category::Nd}}},
+        {"graph"_el, {.categories = {Category::L, Category::M, Category::N, Category::P, Category::S}}},
+        {"lower"_el, {.categories = {Category::Ll}}},
+        {"print"_el, {.categories = {Category::L, Category::M, Category::N, Category::P, Category::S, Category::Z}}},
+        {"punct"_el,
             {.ranges =
                     {CharRange(U'$'),
                         CharRange(U'+'),
@@ -94,28 +94,27 @@ void CharClassHandlerState::processPosixRangesFor(const text::StringView &name) 
                         CharRange(U'|'),
                         CharRange(U'~')},
                 .categories = {Category::P}}},
-        {"space"_els, {.ranges = {CharRange(U'\u0009', U'\u000d')}, .categories = {Category::Z}}},
-        {"upper"_els, {.categories = {Category::Lu}}},
-        {"word"_els, {.categories = {Category::L, Category::Nl, Category::Nd, Category::Pc}}},
-        {"xdigit"_els, {.ranges = {CharRange(U'0', U'9'), CharRange(U'a', U'f'), CharRange(U'A', U'F')}}},
+        {"space"_el, {.ranges = {CharRange(U'\u0009', U'\u000d')}, .categories = {Category::Z}}},
+        {"upper"_el, {.categories = {Category::Lu}}},
+        {"word"_el, {.categories = {Category::L, Category::Nl, Category::Nd, Category::Pc}}},
+        {"xdigit"_el, {.ranges = {CharRange(U'0', U'9'), CharRange(U'a', U'f'), CharRange(U'A', U'F')}}},
     }};
     static const text::StringHashMap<PosixRangeDefinition> asciiPosixRanges{{
-        {"alnum"_els, {.ranges = {CharRange(U'0', U'9'), CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
-        {"alpha"_els, {.ranges = {CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
-        {"ascii"_els, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
-        {"blank"_els, {.ranges = {CharRange(U' '), CharRange(U'\t')}}},
-        {"cntrl"_els, {.ranges = {CharRange(U'\u0001', U'\u001f'), CharRange(U'\u007f')}}},
-        {"digit"_els, {.ranges = {CharRange(U'0', U'9')}}},
-        {"graph"_els, {.ranges = {CharRange(U'\u0021', U'\u007e')}}},
-        {"lower"_els, {.ranges = {CharRange(U'a', U'z')}}},
-        {"print"_els, {.ranges = {CharRange(U'\u0020', U'\u007e')}}},
-        {"punct"_els,
+        {"alnum"_el, {.ranges = {CharRange(U'0', U'9'), CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
+        {"alpha"_el, {.ranges = {CharRange(U'A', U'Z'), CharRange(U'a', U'z')}}},
+        {"ascii"_el, {.ranges = {CharRange(U'\u0001', U'\u007f')}}},
+        {"blank"_el, {.ranges = {CharRange(U' '), CharRange(U'\t')}}},
+        {"cntrl"_el, {.ranges = {CharRange(U'\u0001', U'\u001f'), CharRange(U'\u007f')}}},
+        {"digit"_el, {.ranges = {CharRange(U'0', U'9')}}},
+        {"graph"_el, {.ranges = {CharRange(U'\u0021', U'\u007e')}}},
+        {"lower"_el, {.ranges = {CharRange(U'a', U'z')}}},
+        {"print"_el, {.ranges = {CharRange(U'\u0020', U'\u007e')}}},
+        {"punct"_el,
             {.ranges = {CharRange(U'!', U'/'), CharRange(U':', U'@'), CharRange('[', U'`'), CharRange('{', U'~')}}},
-        {"space"_els, {.ranges = {CharRange(U'\u0009', U'\u000d'), CharRange(U'\u0020')}}},
-        {"upper"_els, {.ranges = {CharRange(U'A', U'Z')}}},
-        {"word"_els,
-            {.ranges = {CharRange(U'_'), CharRange(U'a', U'z'), CharRange(U'A', U'Z'), CharRange(U'0', U'9')}}},
-        {"xdigit"_els, {.ranges = {CharRange(U'0', U'9'), CharRange(U'a', U'f'), CharRange(U'A', U'F')}}},
+        {"space"_el, {.ranges = {CharRange(U'\u0009', U'\u000d'), CharRange(U'\u0020')}}},
+        {"upper"_el, {.ranges = {CharRange(U'A', U'Z')}}},
+        {"word"_el, {.ranges = {CharRange(U'_'), CharRange(U'a', U'z'), CharRange(U'A', U'Z'), CharRange(U'0', U'9')}}},
+        {"xdigit"_el, {.ranges = {CharRange(U'0', U'9'), CharRange(U'a', U'f'), CharRange(U'A', U'F')}}},
     }};
     const auto &posixRanges = currentFlags().isSet(GroupFlag::Ascii) ? asciiPosixRanges : unicodePosixRanges;
     if (const auto definition = posixRanges.get(name); definition.has_value()) {

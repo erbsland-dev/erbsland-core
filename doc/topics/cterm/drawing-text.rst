@@ -7,7 +7,7 @@ BlockText Rendering
 *******************
 
 The text rendering classes describe how terminal text is drawn into a writable buffer.
-They turn ``BlockString`` content into aligned labels, wrapped paragraphs, reusable text presets, and animated
+They turn ``BlockString`` content into aligned labels, wrapped paragraphs, reusable text presets and animated
 headlines.
 
 Bitmap fonts plug into the same pipeline through ``BlockTextOptions`` and ``BlockText``.
@@ -15,7 +15,7 @@ For font creation and font presets, see :doc:`font`.
 
 This page focuses on placing text inside rectangles, rendering wrapped text blocks, and reusing ``BlockTextOptions``
 across multiple ``BlockText`` instances.
-For the underlying ``Block`` and ``BlockString`` value types, see
+For the underlying ``Block``, ``BlockString`` and ``BlockStringEditor`` value types, see
 :doc:`text`.
 
 .. dropdown:: Details about the example output on this page
@@ -39,7 +39,7 @@ Drawing Direct Strings and Aligned Labels
 
 .. code-block:: cpp
 
-    auto footer = BlockString{};
+    auto footer = BlockStringEditor{};
     footer.append(
         bg::BrightBlack,
         fg::BrightYellow,
@@ -184,4 +184,3 @@ the supplied animation cycle.
     ␛[97;40m  ╰──────────────────────────────╯    ╰──────────────────────────────╯  ␛[39;49m
     ␛[97;40m             ␛[90mcycle = 1␛[97m                           ␛[90mcycle = 3␛[97m              ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
-

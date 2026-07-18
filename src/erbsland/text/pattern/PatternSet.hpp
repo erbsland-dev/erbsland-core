@@ -45,7 +45,7 @@ private:
         if (range.isEmpty()) {
             return;
         }
-        impl::requirePattern(_count < cMaximumSetRanges, "String pattern set has too many ranges");
+        impl::requirePattern(_count < cMaximumSetRanges, "StringEditor pattern set has too many ranges");
         _ranges[_count] = range;
         ++_count;
     }

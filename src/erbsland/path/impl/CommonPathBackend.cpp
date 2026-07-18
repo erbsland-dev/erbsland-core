@@ -9,7 +9,7 @@
 #include "../../stream/impl/EncodedTextInputStream.hpp"
 #include "../../stream/impl/EncodedTextOutputStream.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../unit/ElementIndex.hpp"
 
 namespace erbsland::path::impl {
@@ -69,7 +69,7 @@ auto CommonPathBackend::toRelativeOrThrow(const Path &path, std::optional<Path> 
         ++commonIndex;
     }
 
-    auto relativeElements = text::StringViewList{};
+    auto relativeElements = text::StringList{};
     for (auto index = commonIndex; index.isWithin(baseElements.count()); ++index) {
         relativeElements.append(".."_el);
     }
@@ -126,7 +126,7 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
         const auto pathElements = absolutePath.elements();
         const auto baseElements = absoluteBase.elements();
 
-        auto commonElements = text::StringViewList{};
+        auto commonElements = text::StringList{};
         commonElements.append(pathElements.first());
         auto index = unit::ElementIndex::one();
         while (
@@ -185,7 +185,7 @@ auto CommonPathBackend::lexicalPath(const Path &path) -> Path {
     }
 
     const auto isAbsolute = path.isAbsolute();
-    auto normalizedElements = text::StringViewList{};
+    auto normalizedElements = text::StringList{};
     for (const auto &element : path.elements()) {
         if (isAbsolute && element == path.root()) {
             continue;
@@ -218,8 +218,8 @@ auto CommonPathBackend::haveSameRoot(const Path &left, const Path &right) noexce
     return left.isAbsolute() && right.isAbsolute() && left.root() == right.root();
 }
 
-auto CommonPathBackend::assemblePath(const text::StringView &root, const text::StringViewList &elements) -> Path {
-    auto result = text::String{};
+auto CommonPathBackend::assemblePath(const text::String &root, const text::StringList &elements) -> Path {
+    auto result = text::StringEditor{};
     if (!root.isEmpty()) {
         result.append(root);
     }

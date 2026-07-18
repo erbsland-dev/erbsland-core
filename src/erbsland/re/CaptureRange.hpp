@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CaptureRange_fwd.hpp"
 #include "InputPosition.hpp"
 
 #include "../text/StdFormatForText.hpp"

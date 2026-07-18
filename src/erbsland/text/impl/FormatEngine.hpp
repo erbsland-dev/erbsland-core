@@ -5,23 +5,23 @@
 #include "FormatData.hpp"
 #include "FormatMakeArguments.hpp"
 
-#include "../StringBuilder.hpp"
-#include "../u16/U16StringView.hpp"
-#include "../u32/U32StringView.hpp"
-#include "../u8/U8StringView.hpp"
+#include "../AnyStringBuilder.hpp"
+#include "../u16/U16String.hpp"
+#include "../u32/U32String.hpp"
+#include "../u8/U8String.hpp"
 
 #include <span>
 
 namespace erbsland::text::impl {
 
 /// Compile a format pattern.
-[[nodiscard]] auto compileFormat(const U8StringView &pattern) -> FormatDataPtr;
+[[nodiscard]] auto compileFormat(const U8String &pattern) -> FormatDataPtr;
 /// Compile a format pattern.
-[[nodiscard]] auto compileFormat(const U16StringView &pattern) -> FormatDataPtr;
+[[nodiscard]] auto compileFormat(const U16String &pattern) -> FormatDataPtr;
 /// Compile a format pattern.
-[[nodiscard]] auto compileFormat(const U32StringView &pattern) -> FormatDataPtr;
+[[nodiscard]] auto compileFormat(const U32String &pattern) -> FormatDataPtr;
 /// Append a compiled format with the given arguments.
-auto appendFormat(const FormatData &format, StringBuilder &builder, std::span<const FormatArgument> arguments)
-    -> StringBuilder &;
+auto appendFormat(const FormatData &format, AnyStringBuilder &builder, std::span<const FormatArgument> arguments)
+    -> AnyStringBuilder &;
 
 }

@@ -4,16 +4,11 @@
 
 #include "Literals.hpp"
 #include "String.hpp"
-#include "StringView.hpp"
 
 namespace erbsland::text {
 
 auto toString(const String &value) -> String {
     return value;
-}
-
-auto toString(const StringView &value) -> String {
-    return String{value};
 }
 
 auto toString(const bool value, const BooleanFormat format) -> String {
@@ -24,12 +19,12 @@ auto toString(const std::strong_ordering value) -> String {
     using namespace literals;
 
     if (value == std::strong_ordering::less) {
-        return String{"less"_el};
+        return "less"_el;
     }
     if (value == std::strong_ordering::greater) {
-        return String{"greater"_el};
+        return "greater"_el;
     }
-    return String{"equal"_el};
+    return "equal"_el;
 }
 
 auto toString(int8_t value, IntegerFormat format) -> String {

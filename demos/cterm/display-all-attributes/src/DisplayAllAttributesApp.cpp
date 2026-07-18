@@ -167,11 +167,11 @@ void DisplayAllAttributesApp::printPausePrompt() noexcept {
     terminal()->printLine(fg::BrightBlack, "Press Enter to close the demo."_el);
 }
 
-auto DisplayAllAttributesApp::padded(const el::StringView text, const std::size_t width) -> el::String {
-    return el::String{text}.aligned(el::CpLength::fromSizeT(width), Alignment::Left, U' ');
+auto DisplayAllAttributesApp::padded(const el::String text, const std::size_t width) -> el::String {
+    return text.aligned(el::CpLength::fromSizeT(width), Alignment::Left, U' ');
 }
 
-auto DisplayAllAttributesApp::supportLabel(const bool supported) -> el::StringView {
+auto DisplayAllAttributesApp::supportLabel(const bool supported) -> el::String {
     if (supported) {
         return "yes"_el;
     }

@@ -6,10 +6,10 @@
 
 namespace erbsland::text {
 
-U32Format::U32Format(const std::u32string_view pattern) : U32Format{U32StringView{U32String{pattern}}} {
+U32Format::U32Format(const std::u32string_view pattern) : U32Format{U32String{pattern}} {
 }
 
-U32Format::U32Format(const U32StringView &pattern) : _data{impl::compileFormat(pattern)} {
+U32Format::U32Format(const U32String &pattern) : _data{impl::compileFormat(pattern)} {
 }
 
 auto U32Format::fieldCount() const noexcept -> unit::ArgumentCount {

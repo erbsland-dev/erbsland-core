@@ -26,7 +26,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto toStdString(const el::text::StringView &text) -> std::string {
+    [[nodiscard]] static auto toStdString(const el::text::String &text) -> std::string {
         return el::text::StringConverter{text}.toStdString();
     }
 };

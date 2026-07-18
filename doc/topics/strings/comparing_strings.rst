@@ -4,15 +4,15 @@
     single: Choose a Character Comparison Function
     single: Test Prefixes, Suffixes, and Contained Text
     single: Handle Invalid Encodings Before Comparing
-    single: StringView
     single: String
+    single: StringEditor
     single: StringLiteral
-    single: U8StringView
     single: U8String
-    single: U16StringView
+    single: U8StringEditor
     single: U16String
-    single: U32StringView
+    single: U16StringEditor
     single: U32String
+    single: U32StringEditor
     single: compare
     single: compareCaseFolded
     single: compareAsciiFolded
@@ -26,7 +26,7 @@
     single: isValidUtf32
     single: Case-Insensitive Comparison
     single: Identifier Comparison
-    single: Partial String Tests
+    single: Partial StringEditor Tests
     single: Encoding Validation
 
 ***********************************
@@ -44,23 +44,23 @@ For most code:
 
 - Use ``==`` and ``!=`` for exact whole-string equality.
 - Use ``<=>``, ``<``, ``<=``, ``>``, and ``>=`` when you need deterministic ordering.
-- Use :cpp:func:`compare() <erbsland::text::U8StringView::compare>` when you need an explicit
+- Use :cpp:func:`compare() <erbsland::text::U8String::compare>` when you need an explicit
   ``std::strong_ordering`` result or want to supply a custom character comparison function.
-- Use :cpp:func:`startsWith() <erbsland::text::U8StringView::startsWith>`,
-  :cpp:func:`endsWith() <erbsland::text::U8StringView::endsWith>`,
-  :cpp:func:`contains() <erbsland::text::U8StringView::contains>`, and
-  :cpp:func:`count() <erbsland::text::U8StringView::count>` when you need to inspect only part of a string.
+- Use :cpp:func:`startsWith() <erbsland::text::U8String::startsWith>`,
+  :cpp:func:`endsWith() <erbsland::text::U8String::endsWith>`,
+  :cpp:func:`contains() <erbsland::text::U8String::contains>`, and
+  :cpp:func:`count() <erbsland::text::U8String::count>` when you need to inspect only part of a string.
 
-The examples on this page use :cpp:type:`StringView <erbsland::text::StringView>`, the common UTF-8 read-only string
+The examples on this page use :cpp:type:`String <erbsland::text::String>`, the common UTF-8 read-only string
 type.
-The same comparison model is available for :cpp:type:`String <erbsland::text::String>`,
+The same comparison model is available for :cpp:type:`StringEditor <erbsland::text::StringEditor>`,
 :cpp:type:`StringLiteral <erbsland::text::StringLiteral>`,
-:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
 :cpp:class:`U8String <erbsland::text::U8String>`,
-:cpp:class:`U16StringView <erbsland::text::U16StringView>`,
+:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
 :cpp:class:`U16String <erbsland::text::U16String>`,
-:cpp:class:`U32StringView <erbsland::text::U32StringView>`, and
-:cpp:class:`U32String <erbsland::text::U32String>`.
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`,
+:cpp:class:`U32String <erbsland::text::U32String>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`.
 
 Compare Whole Strings
 =====================
@@ -73,31 +73,31 @@ This behavior is intentional.
 Exact comparison is deterministic, easy to reason about, and suitable for keys, caches, configuration values, protocol
 data, tests, and other situations where the stored text must match exactly.
 
-For UTF-8 code, compare a :cpp:type:`StringView <erbsland::text::StringView>` directly with another ``StringView``, a
-:cpp:type:`String <erbsland::text::String>`, or a ``"_el"`` literal.
+For UTF-8 code, compare a :cpp:type:`String <erbsland::text::String>` directly with another ``String``, a
+:cpp:type:`StringEditor <erbsland::text::StringEditor>`, or a ``"_el"`` literal.
 
 For UTF-16 and UTF-32 code, compare values of the same width.
-Compare ``U16StringView`` with ``U16String`` or ``u"..."_el``, and compare ``U32StringView`` with ``U32String`` or
+Compare ``U16String`` with ``U16StringEditor`` or ``u"..."_el``, and compare ``U32String`` with ``U32StringEditor`` or
 ``U"..."_el``.
 Convert explicitly when you intentionally compare text stored in different encodings.
 
 .. erbsland-demo::
-    :source: text/StringView/WholeStringComparison.cpp
-    :exec: text/string_view --demo WholeStringComparison
+    :source: text/String/WholeStringComparison.cpp
+    :exec: text/string --demo WholeStringComparison
     :source-sha256: 587a702fdd1412a4f8ad36e34d2ad57dca559130db3c51b0008a97a185ea62e5
 
 .. code-block:: cpp
 
-    /// `StringView` compares whole strings by decoded Unicode code point.
+    /// `String` compares whole strings by decoded Unicode code point.
     /// Use the comparison operators for ordinary equality and ordering. Use `compare()`
     /// when you need the `std::strong_ordering` result explicitly or want to pass a
     /// character comparison function. The common UTF-8 aliases compare with other UTF-8
     /// strings, views, and `"_el"` literals; UTF-16 and UTF-32 variants follow the same
     /// same-width pattern.
     void wholeStringComparison() {
-        const auto tag = el::StringView{"lišejník"_el};
-        const auto sameView = el::StringView{"lišejník"_el};
-        const auto editableTag = "lišejník"_els;
+        const auto tag = el::String{"lišejník"_el};
+        const auto sameView = el::String{"lišejník"_el};
+        const auto editableTag = "lišejník"_el;
         const auto booleanFormat = el::BooleanFormat::yesNo();
 
         // Compare a view with another view, an editable string, and a literal.
@@ -116,9 +116,9 @@ Convert explicitly when you intentionally compare text stored in different encod
         el::io::printLine("tag >= \"arka\"_el ..............: "_el, booleanFormat, tag >= "arka"_el);
 
         // Width-specific strings use the same operations with values of the same width.
-        const auto u8Habitat = u8"ledová kra"_elv;
-        const auto u16Habitat = u"ledová kra"_elv;
-        const auto u32Habitat = U"ledová kra"_elv;
+        const auto u8Habitat = u8"ledová kra"_el;
+        const auto u16Habitat = u"ledová kra"_el;
+        const auto u32Habitat = U"ledová kra"_el;
 
         el::io::printLine("u8Habitat == u8 literal .......: "_el, booleanFormat, u8Habitat == u8"ledová kra"_el);
         el::io::printLine("u16Habitat == u16 literal .....: "_el, booleanFormat, u16Habitat == u"ledová kra"_el);
@@ -149,7 +149,7 @@ Choose a Character Comparison Function
 The comparison operators always perform exact code-point comparison.
 
 When your application requires different matching rules, use
-:cpp:func:`compare() <erbsland::text::U8StringView::compare>` and provide a character comparison function.
+:cpp:func:`compare() <erbsland::text::U8String::compare>` and provide a character comparison function.
 
 Three comparison functions cover the most common use cases:
 
@@ -172,8 +172,8 @@ Do not use folded comparison when exact identity is required, and do not use ASC
 ASCII-only behavior is explicitly desired.
 
 .. erbsland-demo::
-    :source: text/StringView/ComparisonFunctions.cpp
-    :exec: text/string_view --demo ComparisonFunctions
+    :source: text/String/ComparisonFunctions.cpp
+    :exec: text/string --demo ComparisonFunctions
     :source-sha256: 04a7e20599b2c3768572a68078cf8276a0d63ed2bc674d5ecb9eb66eb54838dd
 
 .. code-block:: cpp
@@ -184,12 +184,12 @@ ASCII-only behavior is explicitly desired.
     /// `Char::compareIdentifier` for identifier-like names where ASCII case and spaces
     /// versus underscores should compare equally.
     void comparisonFunctions() {
-        const auto snowyOwl = "SOVA SNĚŽNÍ"_elv;
-        const auto snowyOwlLower = "sova sněžní"_elv;
-        const auto asciiLabel = "Polar Fox"_elv;
-        const auto asciiLabelLower = "polar fox"_elv;
-        const auto identifier = "Arctic Fox Trail"_elv;
-        const auto normalizedIdentifier = "arctic_fox_trail"_elv;
+        const auto snowyOwl = "SOVA SNĚŽNÍ"_el;
+        const auto snowyOwlLower = "sova sněžní"_el;
+        const auto asciiLabel = "Polar Fox"_el;
+        const auto asciiLabelLower = "polar fox"_el;
+        const auto identifier = "Arctic Fox Trail"_el;
+        const auto normalizedIdentifier = "arctic_fox_trail"_el;
 
         // Regular comparison is exact and uses decoded code points.
         printComparison("snowyOwl.compare(snowyOwlLower) .........................: "_el, snowyOwl.compare(snowyOwlLower));
@@ -231,13 +231,13 @@ comparison.
 
 The four core operations are:
 
-- :cpp:func:`startsWith() <erbsland::text::U8StringView::startsWith>` for prefixes.
-- :cpp:func:`endsWith() <erbsland::text::U8StringView::endsWith>` for suffixes.
-- :cpp:func:`contains() <erbsland::text::U8StringView::contains>` for containment tests.
-- :cpp:func:`count() <erbsland::text::U8StringView::count>` for counting non-overlapping occurrences.
+- :cpp:func:`startsWith() <erbsland::text::U8String::startsWith>` for prefixes.
+- :cpp:func:`endsWith() <erbsland::text::U8String::endsWith>` for suffixes.
+- :cpp:func:`contains() <erbsland::text::U8String::contains>` for containment tests.
+- :cpp:func:`count() <erbsland::text::U8String::count>` for counting non-overlapping occurrences.
 
 Each function accepts the same optional character comparison function as
-:cpp:func:`compare() <erbsland::text::U8StringView::compare>`.
+:cpp:func:`compare() <erbsland::text::U8String::compare>`.
 This allows case-folded or identifier-style matching for prefix, suffix, containment, and counting operations.
 
 An empty search string always produces a count of zero.
@@ -247,8 +247,8 @@ When you know that a match must occur at the beginning or end of the text, prefe
 These operations only inspect the relevant edge of the string and avoid a full containment search.
 
 .. erbsland-demo::
-    :source: text/StringView/PartialStringComparison.cpp
-    :exec: text/string_view --demo PartialStringComparison
+    :source: text/String/PartialStringComparison.cpp
+    :exec: text/string --demo PartialStringComparison
     :source-sha256: 6e75349fb59042cebcc0095231da2f23f8d29abc3110315a1ed043e4ee4878e5
 
 .. code-block:: cpp
@@ -258,7 +258,7 @@ These operations only inspect the relevant edge of the string and avoid a full c
     /// same optional character comparison function. Prefix and suffix tests are efficient
     /// even for large strings because only the required edge of the string is inspected.
     void partialStringComparison() {
-        const auto observationLog = "Lachtan: LEDOVÁ KRA; lachtan: tiché moře; tuleň: ledová kra; mrož: severní útes"_elv;
+        const auto observationLog = "Lachtan: LEDOVÁ KRA; lachtan: tiché moře; tuleň: ledová kra; mrož: severní útes"_el;
         const auto booleanFormat = el::BooleanFormat::yesNo();
 
         el::io::printLine("Observation Log:"_el);
@@ -325,11 +325,11 @@ As a result, two different invalid strings can compare equal after decoding.
 
 If invalid data must be rejected, validate the encoding before performing comparisons:
 
-- Use :cpp:func:`isValidUtf8() <erbsland::text::U8StringView::isValidUtf8>` for
-  :cpp:class:`U8StringView <erbsland::text::U8StringView>` and the common
-  :cpp:type:`StringView <erbsland::text::StringView>` alias.
-- Use :cpp:func:`isValidUtf16() <erbsland::text::U16StringView::isValidUtf16>` for UTF-16 text.
-- Use :cpp:func:`isValidUtf32() <erbsland::text::U32StringView::isValidUtf32>` for UTF-32 text.
+- Use :cpp:func:`isValidUtf8() <erbsland::text::U8String::isValidUtf8>` for
+  :cpp:class:`U8String <erbsland::text::U8String>` and the common
+  :cpp:type:`String <erbsland::text::String>` alias.
+- Use :cpp:func:`isValidUtf16() <erbsland::text::U16String::isValidUtf16>` for UTF-16 text.
+- Use :cpp:func:`isValidUtf32() <erbsland::text::U32String::isValidUtf32>` for UTF-32 text.
 
 Validation is particularly important for:
 
@@ -349,7 +349,7 @@ A few simple rules cover most situations:
 
 - Use exact comparison by default.
 - Apply case folding only where case-insensitive behavior is required.
-- Prefer :cpp:type:`StringView <erbsland::text::StringView>` parameters when a function only inspects text.
+- Prefer :cpp:type:`String <erbsland::text::String>` parameters when a function only inspects text.
 - Keep string widths consistent whenever possible.
 - Use ``startsWith()``, ``endsWith()``, ``contains()``, and ``count()`` instead of hand-written search loops.
 - Validate text before comparison whenever malformed input must be rejected.

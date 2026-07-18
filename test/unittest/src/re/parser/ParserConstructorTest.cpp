@@ -10,7 +10,7 @@ public:
     void testConstructor() {
         Settings settings;
         settings.enableFeature(Feature::EmptyGroups);
-        parser = Parser{StringView{}, {}, settings};
+        parser = Parser{String{}, {}, settings};
         REQUIRE_NOTHROW(node = parser.parse());
         REQUIRE(node->isGroup());
         REQUIRE_EQUAL(node->size(), 1U);
@@ -20,7 +20,7 @@ public:
         REQUIRE(node->isGroup());
         REQUIRE_EQUAL(node->size(), 1U);
         REQUIRE(node->children()[0]->isSequence());
-        parser = Parser{String{}, {}, settings};
+        parser = Parser{StringEditor{}, {}, settings};
         REQUIRE_NOTHROW(node = parser.parse());
         REQUIRE(node->isGroup());
         REQUIRE_EQUAL(node->size(), 1U);

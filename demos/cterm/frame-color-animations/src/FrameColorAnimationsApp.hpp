@@ -21,7 +21,7 @@ public:
 
 private:
     struct PanelSpec final {
-        el::StringView title;
+        el::String title;
         FrameStyle style;
         FrameColorMode mode;
         std::size_t sequenceIndex;

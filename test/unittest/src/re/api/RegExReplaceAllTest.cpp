@@ -30,7 +30,7 @@ public:
         WITH_CONTEXT(requireReplaceAll(testCases));
 
         // Special-case: both empty must return empty without requiring engine work.
-        REQUIRE_EQUAL(regex->replaceAll(StringView{}, StringView{}), String{});
+        REQUIRE_EQUAL(regex->replaceAll(String{}, String{}), StringEditor{});
     }
 
     void testReplaceAllExpression_CaptureGroupsByIndexAndEmptyExpression() {
@@ -117,19 +117,19 @@ public:
         WITH_CONTEXT(requireCompile("[a-z]+"_el));
 
         std::size_t calls = 0;
-        const auto replaceFn = [&calls](const MatchPtr &match) -> String {
+        const auto replaceFn = [&calls](const MatchPtr &match) -> StringEditor {
             calls += 1;
-            auto result = String{"["_el};
+            auto result = StringEditor{"["_el};
             result.append(match->content());
             result.append("]"_el);
             return result;
         };
-        REQUIRE_EQUAL(regex->replaceAll("ab cd"_el, replaceFn), String{"[ab] [cd]"_el});
+        REQUIRE_EQUAL(regex->replaceAll("ab cd"_el, replaceFn), StringEditor{"[ab] [cd]"_el});
         REQUIRE_EQUAL(calls, static_cast<std::size_t>(2));
 
         // No matches -> callback must not be called, input remains unchanged.
         calls = 0;
-        REQUIRE_EQUAL(regex->replaceAll("123"_el, replaceFn), String{"123"_el});
+        REQUIRE_EQUAL(regex->replaceAll("123"_el, replaceFn), StringEditor{"123"_el});
         REQUIRE_EQUAL(calls, static_cast<std::size_t>(0));
 
         // Callback can return empty string.
@@ -137,11 +137,11 @@ public:
         REQUIRE_EQUAL(
             regex->replaceAll(
                 "ab cd"_el,
-                [&calls](const MatchPtr &) -> String {
+                [&calls](const MatchPtr &) -> StringEditor {
                     calls += 1;
-                    return String{};
+                    return StringEditor{};
                 }),
-            String{" "_el});
+            StringEditor{" "_el});
         REQUIRE_EQUAL(calls, static_cast<std::size_t>(2));
     }
 
@@ -151,7 +151,7 @@ public:
         {
             std::size_t calls = 0;
             try {
-                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> String {
+                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> StringEditor {
                     calls += 1;
                     throw std::runtime_error{"replaceFn failed"};
                 });
@@ -165,12 +165,12 @@ public:
         {
             std::size_t calls = 0;
             try {
-                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> String {
+                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> StringEditor {
                     calls += 1;
                     if (calls == 2) {
                         throw std::runtime_error{"replaceFn failed (second match)"};
                     }
-                    return String{"X"_el};
+                    return StringEditor{"X"_el};
                 });
                 REQUIRE(false);
             } catch (const std::runtime_error &e) {

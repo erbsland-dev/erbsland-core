@@ -4,10 +4,10 @@
 
 #include "PathData.hpp"
 
-#include "../../text/StringBuilder_fwd.hpp"
+#include "../../text/String.hpp"
 #include "../../text/StringCharReader.hpp"
-#include "../../text/StringView.hpp"
-#include "../../text/StringViewList.hpp"
+#include "../../text/StringEditor_fwd.hpp"
+#include "../../text/StringList.hpp"
 
 #include <cstdint>
 
@@ -35,7 +35,7 @@ class PathParser final {
 
 public:
     /// Create a parser for one path string and parse mode.
-    PathParser(const text::StringView &path, PathParseMode mode);
+    PathParser(const text::String &path, PathParseMode mode);
 
     /// Parse the configured path.
     [[nodiscard]] auto parse() -> PathDataPtr;
@@ -59,16 +59,16 @@ private:
 
 private:
     [[nodiscard]] auto readCharacter() -> text::Char;
-    [[nodiscard]] auto readNormalizedLiteral(const text::StringView &literal) -> bool;
-    [[nodiscard]] auto readRootSegment(text::StringBuilder &builder, SeparatorMode mode, bool lowercase) -> bool;
+    [[nodiscard]] auto readNormalizedLiteral(const text::String &literal) -> bool;
+    [[nodiscard]] auto readRootSegment(text::StringEditor &builder, SeparatorMode mode, bool lowercase) -> bool;
     [[nodiscard]] auto consumeSeparator(SeparatorMode mode) -> bool;
     void appendCapturedElement();
-    void appendElement(text::StringView element);
+    void appendElement(text::String element);
     [[nodiscard]] auto save() const noexcept -> Checkpoint;
     void restore(const Checkpoint &checkpoint) noexcept;
-    [[noreturn]] void throwParseError(const text::StringView &reason) const;
-    [[nodiscard]] auto startsWithNormalized(const text::StringView &prefix) -> bool;
-    [[nodiscard]] auto equalsNormalized(const text::StringView &text) -> bool;
+    [[noreturn]] void throwParseError(const text::String &reason) const;
+    [[nodiscard]] auto startsWithNormalized(const text::String &prefix) -> bool;
+    [[nodiscard]] auto equalsNormalized(const text::String &text) -> bool;
     [[nodiscard]] auto startsWithWindowsDriveRoot() -> bool;
     [[nodiscard]] auto finish() -> PathDataPtr;
 
@@ -76,8 +76,8 @@ private:
     PathParseMode _mode = PathParseMode::Generic;
     text::StringCharReader _reader;
     PathFormat _format = PathFormat::Generic;
-    text::StringView _root;
-    text::StringViewList _elements;
+    text::String _root;
+    text::StringList _elements;
 };
 
 }

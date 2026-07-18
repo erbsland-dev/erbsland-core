@@ -11,8 +11,8 @@
 
 #include "../../../err/ParameterError.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/String.hpp"
 #include "../../../text/StringCharReader.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../unit/CodeLocation.hpp"
 #include "../../../unit/ColumnCount.hpp"
 
@@ -29,7 +29,7 @@ public:
     constexpr static std::size_t maxIdentifierLength = 16U;
 
 public:
-    explicit AssemblerTokenizer(text::StringView line) noexcept : _reader{line} {}
+    explicit AssemblerTokenizer(const text::String &line) noexcept : _reader{line} {}
 
     // disable assign and copy
     ~AssemblerTokenizer() = default;
@@ -89,7 +89,7 @@ private: // char-level
         return unit::ColumnIndex::fromSizeT(_reader.position().toSizeT()) - unit::ColumnCount::one();
     }
 
-    [[noreturn]] void throwError(const text::StringView &description) const {
+    [[noreturn]] void throwError(const text::String &description) const {
         throw RegExError{
             ErrorCategory::Assembler,
             "Failed to assemble regular expression"_el,
@@ -142,13 +142,13 @@ private: // token-level
             while (!_character.isEndOfData()) {
                 readNext();
             }
-            return createToken(AssemblerToken::Comment, text::String{});
+            return createToken(AssemblerToken::Comment, {});
         }
         throwError("Unexpected character"_el);
     }
 
     [[nodiscard]] auto readInteger() -> AssemblerToken {
-        text::String integerStr;
+        text::StringEditor integerStr;
         while (_character.isDigitValue(text::IntegerBase::Decimal)) {
             if (integerStr.length().toSizeT() >= std::numeric_limits<uint32_t>::digits10) {
                 throwError("Integer too large"_el);
@@ -163,7 +163,7 @@ private: // token-level
     }
 
     [[nodiscard]] auto readText() -> AssemblerToken {
-        text::String result;
+        text::StringEditor result;
         readNext(); // consume `"`
         while (_character != U'"') {
             if (result.length() > unit::ByteLength{2000U}) {
@@ -270,7 +270,7 @@ private: // token-level
     }
 
     [[nodiscard]] auto readKeywordOrLabel() -> AssemblerToken {
-        text::String keyword;
+        text::StringEditor keyword;
         while (_character.isAsciiWord()) {
             if (keyword.length().toSizeT() >= maxIdentifierLength) {
                 throwError("Keyword or label too long"_el);
@@ -331,7 +331,7 @@ private: // token-level
 
     [[nodiscard]] auto readLabel() -> AssemblerToken {
         readNext(); // consume `%`
-        text::String label;
+        text::StringEditor label;
         if (_character.isEndOfData() || _character.isAsciiBlank() || _character == U',') {
             throwError("Expected a label after '%'"_el);
         }
@@ -352,7 +352,7 @@ private: // token-level
 
     [[nodiscard]] auto readOffset() -> AssemblerToken {
         readNext(); // consume `$`
-        text::String offset;
+        text::StringEditor offset;
         while (_character.isDigitValue(text::IntegerBase::Hexadecimal)) {
             if (offset.length() >= unit::ByteLength{8U}) {
                 throwError("Offset has too many digits"_el);
@@ -373,7 +373,7 @@ private: // token-level
 
     [[nodiscard]] auto readIdentifier() -> AssemblerToken {
         readNext(); // consume `&`
-        text::String identifier;
+        text::StringEditor identifier;
         while (_character.isAsciiWord()) {
             if (identifier.length().toSizeT() >= maxIdentifierLength) {
                 throwError("identifier too long"_el);
@@ -391,7 +391,7 @@ private: // token-level
 
     [[nodiscard]] auto readCommand() -> AssemblerToken {
         readNext(); // consume `.`
-        text::String command;
+        text::StringEditor command;
         while (_character.isAsciiLetter()) {
             if (command.length().toSizeT() >= maxIdentifierLength) {
                 throwError("command too long"_el);

@@ -4,9 +4,9 @@
 
 #include "PlainTextRenderer_fwd.hpp"
 
+#include "../AnyStringBuilder.hpp"
 #include "../String.hpp"
-#include "../StringBuilder.hpp"
-#include "../StringView.hpp"
+#include "../StringEditor.hpp"
 #include "../TextDocument_fwd.hpp"
 #include "../TextNode_fwd.hpp"
 
@@ -24,28 +24,29 @@ public:
 
 public:
     [[nodiscard]] auto build() -> String;
-    auto appendTo(StringBuilder &builder) -> StringBuilder &;
+    auto appendTo(AnyStringBuilder &builder) -> AnyStringBuilder &;
 
 private:
     void resetRenderState() noexcept;
-    void renderNode(StringBuilder &builder, const TextNodePtr &node);
-    void renderChildren(StringBuilder &builder, const TextNode &node);
-    void renderCodeSnippet(StringBuilder &builder, const TextNode &node);
-    void renderList(StringBuilder &builder, const TextNode &node, bool numbered);
-    void renderListItem(StringBuilder &builder, const TextNode &node, StringView prefix);
-    void renderTermList(StringBuilder &builder, const TextNode &node);
-    void renderTermItem(StringBuilder &builder, const TextNode &node, unit::CpLength descriptionColumn);
+    void renderNode(AnyStringBuilder &builder, const TextNodePtr &node);
+    void renderChildren(AnyStringBuilder &builder, const TextNode &node);
+    void renderCodeSnippet(AnyStringBuilder &builder, const TextNode &node);
+    void renderList(AnyStringBuilder &builder, const TextNode &node, bool numbered);
+    void renderListItem(AnyStringBuilder &builder, const TextNode &node, const String &prefix);
+    void renderTermList(AnyStringBuilder &builder, const TextNode &node);
+    void renderTermItem(AnyStringBuilder &builder, const TextNode &node, unit::CpLength descriptionColumn);
     [[nodiscard]] static auto termName(const TextNode &node) -> String;
     [[nodiscard]] static auto termDescription(const TextNode &node) -> String;
     [[nodiscard]] static auto termListDescriptionColumn(const TextNode &node) -> unit::CpLength;
-    static void appendInline(StringBuilder &builder, const TextNode &node);
-    static void appendInlineChildren(StringBuilder &builder, const TextNode &node);
-    static void appendPlaceholder(StringBuilder &builder, const TextNode &node, StringView prefix, StringView suffix);
-    void appendLine(StringBuilder &builder, const StringView &prefix, const StringView &text);
+    static void appendInline(AnyStringBuilder &builder, const TextNode &node);
+    static void appendInlineChildren(AnyStringBuilder &builder, const TextNode &node);
+    static void appendPlaceholder(
+        AnyStringBuilder &builder, const TextNode &node, const String &prefix, const String &suffix);
+    void appendLine(AnyStringBuilder &builder, const String &prefix, const String &text);
     void appendWrappedLine(
-        StringBuilder &builder, const StringView &prefix, const StringView &continuation, const StringView &text);
-    static void appendIndent(StringBuilder &builder, unit::CpLength indent);
-    static void appendNodeText(StringBuilder &builder, const TextNode &node);
+        AnyStringBuilder &builder, const String &prefix, const String &continuation, const String &text);
+    static void appendIndent(AnyStringBuilder &builder, unit::CpLength indent);
+    static void appendNodeText(AnyStringBuilder &builder, const TextNode &node);
     [[nodiscard]] static auto nodeText(const TextNode &node) -> String;
     [[nodiscard]] static auto listPrefix(std::size_t index, bool numbered) -> String;
     [[nodiscard]] static auto isNestedBlock(const TextNode &node) noexcept -> bool;

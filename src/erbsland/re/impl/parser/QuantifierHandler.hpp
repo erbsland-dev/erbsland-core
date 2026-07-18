@@ -32,8 +32,8 @@ namespace erbsland::re::impl::parser {
             maximum = Quantifier::infinitelyMany();
         } else if (state.currentChar() == U'{') {
             state.readNext();
-            text::String minString;
-            text::String maxString;
+            text::StringEditor minString;
+            text::StringEditor maxString;
             if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
                 while (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
                     if (minString.length() >= unit::ByteLength{5U}) {

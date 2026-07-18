@@ -11,8 +11,8 @@
 #include "TimeDelta.hpp"
 
 #include "../text/FormatAs.hpp"
-#include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <compare>
 
@@ -164,8 +164,8 @@ struct TimeWrapResult {
 }
 
 template <>
-struct erbsland::text::FormatAsText<erbsland::time::Time> : FormatAs<time::Time, StringView> {
-    [[nodiscard]] auto format(const time::Time &value) const -> StringView { return value.toIsoString(); }
+struct erbsland::text::FormatAsText<erbsland::time::Time> : FormatAs<time::Time, String> {
+    [[nodiscard]] auto format(const time::Time &value) const -> String { return value.toIsoString(); }
 };
 
 template <>

@@ -15,7 +15,11 @@ namespace erbsland::options {
 
 using namespace text::literals;
 
-Option::Option(std::initializer_list<text::StringView> names) {
+using text::Char;
+using text::String;
+using text::StringSide;
+
+Option::Option(std::initializer_list<String> names) {
     setNames(names);
 }
 
@@ -23,27 +27,27 @@ auto Option::create() -> OptionPtr {
     return std::make_shared<Option>();
 }
 
-auto Option::create(std::initializer_list<text::StringView> names) -> OptionPtr {
+auto Option::create(std::initializer_list<String> names) -> OptionPtr {
     return std::make_shared<Option>(names);
 }
 
-auto Option::isLongName(const text::StringView &name) noexcept -> bool {
+auto Option::isLongName(const String &name) noexcept -> bool {
     return name.startsWith("--"_el);
 }
 
-auto Option::isShortName(const text::StringView &name) noexcept -> bool {
+auto Option::isShortName(const String &name) noexcept -> bool {
     return name.startsWith("-"_el) && !isLongName(name);
 }
 
-auto Option::isOptionName(const text::StringView &name) noexcept -> bool {
+auto Option::isOptionName(const String &name) noexcept -> bool {
     return isLongName(name) || isShortName(name);
 }
 
-auto Option::isPositionalName(const text::StringView &name) noexcept -> bool {
+auto Option::isPositionalName(const String &name) noexcept -> bool {
     return !isOptionName(name);
 }
 
-auto Option::isValidLongName(const text::StringView &name) noexcept -> bool {
+auto Option::isValidLongName(const String &name) noexcept -> bool {
     if (!isLongName(name)) {
         return false;
     }
@@ -51,36 +55,40 @@ auto Option::isValidLongName(const text::StringView &name) noexcept -> bool {
     return impl::isAsciiNameToken(token);
 }
 
-auto Option::isValidShortName(const text::StringView &name) noexcept -> bool {
+auto Option::isValidShortName(const String &name) noexcept -> bool {
     if (!isShortName(name)) {
         return false;
     }
 
     const auto [character, rest] =
-        name.slice({unit::ByteIndex::one(), unit::ByteLength::infinite()}).slice(text::StringSide::Front);
+        name.slice({unit::ByteIndex::one(), unit::ByteLength::infinite()}).slice(StringSide::Front);
     return character.isAsciiAlphanumeric() && rest.isEmpty();
 }
 
-auto Option::isValidOptionName(const text::StringView &name) noexcept -> bool {
+auto Option::isValidOptionName(const String &name) noexcept -> bool {
     return isLongName(name) ? isValidLongName(name) : isValidShortName(name);
 }
 
-auto Option::isValidPositionalName(const text::StringView &name) noexcept -> bool {
+auto Option::isValidPositionalName(const String &name) noexcept -> bool {
     if (!isPositionalName(name)) {
         return false;
     }
     return impl::isAsciiNameToken(name);
 }
 
-void Option::addName(text::StringView name) {
-    _names.emplace_back(isShortName(name) ? text::String{name} : name.transformed(text::Char::toAsciiLowercase));
+void Option::addName(String name) {
+    if (isShortName(name)) {
+        _names.emplace_back(std::move(name));
+    } else {
+        _names.emplace_back(name.transformed(Char::toAsciiLowercase));
+    }
     updateImplicitTypeFromNames();
 }
 
-void Option::setNames(std::initializer_list<text::StringView> names) {
+void Option::setNames(std::initializer_list<String> names) {
     _names.clear();
     for (const auto &name : names) {
-        _names.emplace_back(isShortName(name) ? text::String{name} : name.transformed(text::Char::toAsciiLowercase));
+        _names.emplace_back(isShortName(name) ? name : name.transformed(Char::toAsciiLowercase));
     }
     updateImplicitTypeFromNames();
 }
@@ -89,8 +97,8 @@ auto Option::isDisabled() const noexcept -> bool {
     return _flags.isSet(OptionFlag::Disabled);
 }
 
-auto Option::hasLongName(const text::StringView &name) const -> bool {
-    const auto canonicalName = name.transformed(text::Char::toAsciiLowercase);
+auto Option::hasLongName(const String &name) const -> bool {
+    const auto canonicalName = name.transformed(Char::toAsciiLowercase);
     for (const auto &optionName : _names) {
         if (isLongName(optionName) && optionName == canonicalName) {
             return true;
@@ -99,7 +107,7 @@ auto Option::hasLongName(const text::StringView &name) const -> bool {
     return false;
 }
 
-auto Option::hasShortName(const text::Char shortName) const -> bool {
+auto Option::hasShortName(const Char shortName) const -> bool {
     for (const auto &optionName : _names) {
         if (isValidShortName(optionName) && optionName.charAt(unit::ByteIndex::one()) == shortName) {
             return true;
@@ -126,8 +134,8 @@ auto Option::hasPositionalName() const -> bool {
     return false;
 }
 
-auto Option::hasPositionalName(const text::StringView &name) const -> bool {
-    const auto canonicalName = name.transformed(text::Char::toAsciiLowercase);
+auto Option::hasPositionalName(const String &name) const -> bool {
+    const auto canonicalName = name.transformed(Char::toAsciiLowercase);
     for (const auto &optionName : _names) {
         if (isPositionalName(optionName) && optionName == canonicalName) {
             return true;
@@ -165,12 +173,12 @@ auto Option::hasConflictingOptionName(const Option &other) const -> bool {
     return false;
 }
 
-auto Option::matchingChoiceText(const text::StringView &text) const -> std::optional<text::StringView> {
+auto Option::matchingChoiceText(const String &text) const -> std::optional<String> {
     if (_choices == nullptr) {
         return {};
     }
     for (const auto &choice : _choices->choices()) {
-        if (choice->text().compare(text, text::Char::compareAsciiFolded) == std::strong_ordering::equal) {
+        if (choice->text().compare(text, Char::compareAsciiFolded) == std::strong_ordering::equal) {
             return choice->text();
         }
     }

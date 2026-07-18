@@ -86,7 +86,7 @@ Add two static accessors to your application class:
     #pragma once
 
     #include <erbsland/Application.hpp>
-    #include <erbsland/StringView.hpp>
+    #include <erbsland/String.hpp>
     #include <erbsland/Version.hpp>
 
     class MyApplication final : public el::Application {
@@ -94,7 +94,7 @@ Add two static accessors to your application class:
         using el::Application::Application;
 
         [[nodiscard]] static auto appVersion() noexcept -> el::Version;
-        [[nodiscard]] static auto appVersionText() noexcept -> el::StringView;
+        [[nodiscard]] static auto appVersionText() noexcept -> el::String;
 
         void initialize() override;
     };
@@ -133,7 +133,7 @@ target.
         };
     }
 
-    auto MyApplication::appVersionText() noexcept -> el::StringView {
+    auto MyApplication::appVersionText() noexcept -> el::String {
         return "@ERBSLAND_GIT_VERSION_TEXT@"_el;
     }
 
@@ -168,11 +168,11 @@ Create a small ``AppVersion.hpp`` header that declares free functions for access
 
     #pragma once
 
-    #include <erbsland/StringView.hpp>
+    #include <erbsland/String.hpp>
     #include <erbsland/Version.hpp>
 
     [[nodiscard]] auto appVersion() noexcept -> el::Version;
-    [[nodiscard]] auto appVersionText() noexcept -> el::StringView;
+    [[nodiscard]] auto appVersionText() noexcept -> el::String;
 
 Create the matching ``AppVersion.in.cpp`` template:
 
@@ -189,7 +189,7 @@ Create the matching ``AppVersion.in.cpp`` template:
         };
     }
 
-    auto appVersionText() noexcept -> el::StringView {
+    auto appVersionText() noexcept -> el::String {
         using namespace el::text::literals;
         return "@ERBSLAND_GIT_VERSION_TEXT@"_el;
     }

@@ -118,7 +118,7 @@ public:
     void testWritableBufferTextWrappersDelegateToImplMethods() {
         auto buffer = WritableBufferDispatchProbe{};
 
-        buffer.drawBlockText(BlockText{BlockString{"Hello"_el}, bgeo::BlockRectangle{1, 2, 3, 4}});
+        buffer.drawBlockText(BlockText{BlockStringEditor{"Hello"_el}, bgeo::BlockRectangle{1, 2, 3, 4}});
         REQUIRE_EQUAL(buffer._lastCall, WritableBufferDispatchProbe::Call::TextObject);
         REQUIRE_EQUAL(buffer._lastRect, (bgeo::BlockRectangle{1, 2, 3, 4}));
         REQUIRE_EQUAL(buffer._lastText.length(), BlockCount{5U});

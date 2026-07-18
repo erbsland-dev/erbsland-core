@@ -9,7 +9,7 @@
 #include "../math/IntegerTypes.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../text/CharSet.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
 #include "../unit/ElementCount.hpp"

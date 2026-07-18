@@ -29,7 +29,7 @@ void BufferedByteInputStreamData::scheduleRead() {
     }
     readInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)] { self->performRead(); });
+    IoService::submitIoWork([self = std::move(self)]() -> void { self->performRead(); });
 }
 
 void BufferedByteInputStreamData::performRead() {

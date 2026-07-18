@@ -13,7 +13,9 @@
 
 namespace erbsland::text::impl {
 
-auto U8StringModifyTools::removed(const unit::CpRange range) const -> U8StringSharedStorage {
+using namespace unit;
+
+auto U8StringModifyTools::removed(const CpRange range) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto removeRange = _data.relativeRangeForAbsolute(U8StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || removeRange.isEmpty()) {
@@ -48,7 +50,7 @@ auto U8StringModifyTools::removed(const U8StringDataView &text, const CharCompar
     return replacedText(text, {}, compareFn);
 }
 
-auto U8StringModifyTools::kept(const unit::CpRange range) const -> U8StringSharedStorage {
+auto U8StringModifyTools::kept(const CpRange range) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto keepRange = _data.relativeRangeForAbsolute(U8StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || keepRange.isEmpty()) {
@@ -85,50 +87,47 @@ auto U8StringModifyTools::replacedAll(
     return replacedText(text, replacement.dataSpan(), compareFn);
 }
 
-auto U8StringModifyTools::removed(const unit::ByteRange range) const -> U8StringSharedStorage {
+auto U8StringModifyTools::removed(const ByteRange range) const -> U8StringSharedStorage {
     return replaced(range, {});
 }
 
-auto U8StringModifyTools::kept(const unit::ByteRange range) const -> U8StringSharedStorage {
+auto U8StringModifyTools::kept(const ByteRange range) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || !range.isValid()) {
         return {};
     }
-    const auto keepRange = range.clampedTo(unit::ByteLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(ByteLength::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         return {};
     }
     return U8StringSharedStorage::fromBytes(data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
 }
 
-auto U8StringModifyTools::inserted(const unit::ByteIndex index, const U8StringDataView &text) const
-    -> U8StringSharedStorage {
+auto U8StringModifyTools::inserted(const ByteIndex index, const U8StringDataView &text) const -> U8StringSharedStorage {
     if (index.isNoIndex()) {
         return U8StringSharedStorage::fromBytes(_data.dataSpan());
     }
-    const auto insertIndex = unit::ByteIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
-    return replaced(unit::ByteRange::emptyAt(insertIndex), text);
+    const auto insertIndex = ByteIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
+    return replaced(ByteRange::emptyAt(insertIndex), text);
 }
 
-auto U8StringModifyTools::inserted(const unit::CpIndex index, const U8StringDataView &text) const
-    -> U8StringSharedStorage {
+auto U8StringModifyTools::inserted(const CpIndex index, const U8StringDataView &text) const -> U8StringSharedStorage {
     if (index.isNoIndex()) {
         return U8StringSharedStorage::fromBytes(_data.dataSpan());
     }
     auto byteIndex = byteIndexForCharacterIndex(_data, index);
     if (byteIndex.isNoIndex()) {
-        byteIndex = unit::ByteIndex::end(unit::ByteLength::fromSizeT(_data.dataSpan().size()));
+        byteIndex = ByteIndex::end(ByteLength::fromSizeT(_data.dataSpan().size()));
     }
     return inserted(byteIndex, text);
 }
 
-auto U8StringModifyTools::replaced(const unit::ByteRange range, const U8StringDataView &text) const
-    -> U8StringSharedStorage {
+auto U8StringModifyTools::replaced(const ByteRange range, const U8StringDataView &text) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (!range.isValid()) {
         return U8StringSharedStorage::fromBytes(data);
     }
-    const auto replaceRange = range.clampedTo(unit::ByteLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(ByteLength::fromSizeT(data.size()));
     const auto replacement = text.dataSpan();
     if (replaceRange.isEmpty() && replacement.empty()) {
         return U8StringSharedStorage::fromBytes(data);
@@ -153,8 +152,7 @@ auto U8StringModifyTools::replaced(const unit::ByteRange range, const U8StringDa
     return storage;
 }
 
-auto U8StringModifyTools::replaced(const unit::CpRange range, const U8StringDataView &text) const
-    -> U8StringSharedStorage {
+auto U8StringModifyTools::replaced(const CpRange range, const U8StringDataView &text) const -> U8StringSharedStorage {
     return replaced(byteRangeForCharacterRange(_data, range), text);
 }
 
@@ -183,7 +181,7 @@ auto U8StringModifyTools::replacedText(
     }
 
     auto newSize = std::size_t{0};
-    auto position = unit::ByteIndex::zero();
+    auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             newSize = U8StringSharedStorage::checkedAddSize(
@@ -200,7 +198,7 @@ auto U8StringModifyTools::replacedText(
     U8StringSharedStorage::validateSize(newSize);
     auto storage = U8StringSharedStorage::forSize(newSize);
     auto writePosition = std::size_t{0};
-    position = unit::ByteIndex::zero();
+    position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             if (!replacement.empty()) {
@@ -224,11 +222,11 @@ auto U8StringModifyTools::replacedText(
 
 auto U8StringModifyTools::matchesText(
     const std::span<const char> data,
-    const unit::ByteIndex start,
+    const ByteIndex start,
     const std::span<const char> text,
     const CharCompareFn compareFn) noexcept -> bool {
     auto dataPosition = start;
-    auto textPosition = unit::ByteIndex::zero();
+    auto textPosition = ByteIndex::zero();
     while (textPosition.toSizeT() < text.size()) {
         if (dataPosition.toSizeT() >= data.size()) {
             return false;
@@ -260,7 +258,7 @@ auto U8StringModifyTools::replaceTextInStorage(
 
     auto hasMatch = false;
     auto writePosition = std::size_t{0};
-    auto position = unit::ByteIndex::zero();
+    auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesText(data, position, needle, compareFn)) {
             hasMatch = true;
@@ -284,60 +282,58 @@ auto U8StringModifyTools::replaceTextInStorage(
     return storage;
 }
 
-auto U8StringModifyTools::byteRangeForCharacterRange(const U8StringDataView &data, const unit::CpRange range) noexcept
-    -> unit::ByteRange {
+auto U8StringModifyTools::byteRangeForCharacterRange(const U8StringDataView &data, const CpRange range) noexcept
+    -> ByteRange {
     if (!range.isValid()) {
-        return unit::ByteRange::noRange();
+        return ByteRange::noRange();
     }
     auto start = byteIndexForCharacterIndex(data, range.index());
     if (start.isNoIndex()) {
-        start = unit::ByteIndex::end(unit::ByteLength::fromSizeT(data.dataSpan().size()));
+        start = ByteIndex::end(ByteLength::fromSizeT(data.dataSpan().size()));
     }
     if (range.length().isZero()) {
-        return unit::ByteRange::emptyAt(start);
+        return ByteRange::emptyAt(start);
     }
     if (range.length().isInfinite()) {
-        return unit::ByteRange{start, unit::ByteLength::infinite()}.clampedTo(
-            unit::ByteLength::fromSizeT(data.dataSpan().size()));
+        return ByteRange{start, ByteLength::infinite()}.clampedTo(ByteLength::fromSizeT(data.dataSpan().size()));
     }
     auto end = range.endIndex();
-    auto endByte = end.isNoIndex() ? unit::ByteIndex::noIndex() : byteIndexForCharacterIndex(data, end);
+    auto endByte = end.isNoIndex() ? ByteIndex::noIndex() : byteIndexForCharacterIndex(data, end);
     if (endByte.isNoIndex()) {
-        endByte = unit::ByteIndex::end(unit::ByteLength::fromSizeT(data.dataSpan().size()));
+        endByte = ByteIndex::end(ByteLength::fromSizeT(data.dataSpan().size()));
     }
-    return unit::ByteRange{start, endByte}.clampedTo(unit::ByteLength::fromSizeT(data.dataSpan().size()));
+    return ByteRange{start, endByte}.clampedTo(ByteLength::fromSizeT(data.dataSpan().size()));
 }
 
-auto U8StringModifyTools::byteIndexForCharacterIndex(const U8StringDataView &data, const unit::CpIndex index) noexcept
-    -> unit::ByteIndex {
+auto U8StringModifyTools::byteIndexForCharacterIndex(const U8StringDataView &data, const CpIndex index) noexcept
+    -> ByteIndex {
     return U8StringCharReadTool{data}.byteIndexAt(index);
 }
 
 auto U8StringModifyTools::findFirstTextRange(
     const U8StringDataView &dataView, const U8StringDataView &text, const CharCompareFn compareFn) noexcept
-    -> unit::ByteRange {
+    -> ByteRange {
     const auto data = dataView.dataSpan();
     const auto needle = text.dataSpan();
     if (data.empty() || needle.empty()) {
-        return unit::ByteRange::noRange();
+        return ByteRange::noRange();
     }
 
-    auto position = unit::ByteIndex::zero();
+    auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         const auto start = position;
         if (matchesText(data, start, needle, compareFn)) {
-            return unit::ByteRange{start, endOfMatch(data, start, needle)};
+            return ByteRange{start, endOfMatch(data, start, needle)};
         }
         const auto character = utf8::decodeCharOrReplace(data, position);
         static_cast<void>(character);
     }
-    return unit::ByteRange::noRange();
+    return ByteRange::noRange();
 }
 
 auto U8StringModifyTools::endOfMatch(
-    const std::span<const char> data, unit::ByteIndex start, const std::span<const char> text) noexcept
-    -> unit::ByteIndex {
-    auto textPosition = unit::ByteIndex::zero();
+    const std::span<const char> data, ByteIndex start, const std::span<const char> text) noexcept -> ByteIndex {
+    auto textPosition = ByteIndex::zero();
     while (textPosition.toSizeT() < text.size() && start.toSizeT() < data.size()) {
         utf8::fastAdvanceChar(data, start);
         utf8::fastAdvanceChar(text, textPosition);

@@ -92,9 +92,9 @@ An embedded build never changes this setting automatically.
 Select a conventional build with ``-DCMAKE_UNITY_BUILD=OFF`` or explicitly enable unity builds with
 ``-DCMAKE_UNITY_BUILD=ON``.
 
-Core's unit tests follow the selected unity-build mode. Demos keep independent translation units in either mode.
-The conventional CI workflow builds the unit tests without unity builds or precompiled headers to verify translation-unit
-isolation.
+Core's unit tests and demos follow the selected unity-build mode.
+The conventional CI workflow builds the unit tests without unity builds or precompiled headers to verify
+translation-unit isolation.
 
 Namespace Configuration
 =======================

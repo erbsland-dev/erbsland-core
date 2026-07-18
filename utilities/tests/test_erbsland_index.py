@@ -21,9 +21,9 @@ class ErbslandIndexTest(unittest.TestCase):
 
     def test_strips_erbsland_cpp_index_values_to_leaf_names(self) -> None:
         cases = {
-            "erbsland::text::String (C++ type)": "String (C++ type)",
+            "erbsland::text::StringEditor (C++ type)": "StringEditor (C++ type)",
             "erbsland::time::IsoTimeFormat::Extended (C++ enumerator)": "Extended (C++ enumerator)",
-            "erbsland::text::U8String::append (C++ function)": "append (C++ function)",
+            "erbsland::text::U8StringEditor::append (C++ function)": "append (C++ function)",
             "erbsland::stream::io::writeLine (C++ function)": "writeLine (C++ function)",
         }
 
@@ -33,10 +33,10 @@ class ErbslandIndexTest(unittest.TestCase):
 
     def test_leaves_non_matching_index_values_unchanged(self) -> None:
         cases = [
-            "String Types",
-            "erbsland::text::String",
+            "StringEditor Types",
+            "erbsland::text::StringEditor",
             "std::string (C++ class)",
-            "not_erbsland::text::String (C++ type)",
+            "not_erbsland::text::StringEditor (C++ type)",
         ]
 
         for value in cases:
@@ -47,10 +47,10 @@ class ErbslandIndexTest(unittest.TestCase):
         document = new_document("test.rst")
         index_node = addnodes.index(
             entries=[
-                ("single", "erbsland::text::String (C++ type)", "_CPPv4N8erbsland4text6StringE", "", None),
+                ("single", "erbsland::text::StringEditor (C++ type)", "_CPPv4N8erbsland4text6StringE", "", None),
                 (
                     "single",
-                    "erbsland::text::U8String::append (C++ function)",
+                    "erbsland::text::U8StringEditor::append (C++ function)",
                     "_CPPv4N8erbsland4text8U8String6appendE4Char",
                     "",
                     None,
@@ -101,8 +101,8 @@ class ErbslandIndexTest(unittest.TestCase):
 
         self.assertEqual(
             [
-                ("single", "String (C++ type)", "_CPPv4N8erbsland4text6StringE", "", None),
-                ("single", "append; U8String", "_CPPv4N8erbsland4text8U8String6appendE4Char", "", None),
+                ("single", "StringEditor (C++ type)", "_CPPv4N8erbsland4text6StringE", "", None),
+                ("single", "append; U8StringEditor", "_CPPv4N8erbsland4text8U8String6appendE4Char", "", None),
                 ("single", "writeLine (C++ function)", "_CPPv4N8erbsland6stream2io9writeLineEv", "", None),
                 (
                     "single",

@@ -6,20 +6,20 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/StringView.hpp>
-#include <erbsland/text/StringViewList.hpp>
+#include <erbsland/text/StringEditor.hpp>
+#include <erbsland/text/StringList.hpp>
 
 #include <cstdint>
 #include <initializer_list>
 #include <string>
 
 using el::text::String;
-using el::text::StringView;
+using el::text::StringEditor;
 using namespace el::text::literals;
 
 namespace re_test::string_helper {
 
-inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> String {
+inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> StringEditor {
     auto buffer = el::text::impl::UnsafeU8StringBuffer{el::unit::ByteLength::fromSizeT(bytes.size())};
     auto index = std::size_t{};
     for (const auto byte : bytes) {
@@ -47,15 +47,14 @@ inline auto bytesToU8String(const std::initializer_list<std::uint8_t> bytes) -> 
     return result;
 }
 
-[[nodiscard]] inline auto toStdString(const StringView &value) -> std::string {
+[[nodiscard]] inline auto toStdString(const String &value) -> std::string {
     return el::text::StringConverter{value}.toStdString();
 }
 
-[[nodiscard]] inline auto toStringViewList(const std::initializer_list<std::string_view> lines)
-    -> el::text::StringViewList {
-    el::text::StringViewList result;
+[[nodiscard]] inline auto toStringList(const std::initializer_list<std::string_view> lines) -> el::text::StringList {
+    el::text::StringList result;
     for (const auto line : lines) {
-        result.append(String{line});
+        result.append(StringEditor{line});
     }
     return result;
 }

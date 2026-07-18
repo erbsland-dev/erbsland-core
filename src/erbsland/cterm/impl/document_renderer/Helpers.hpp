@@ -6,7 +6,7 @@
 
 #include "../../../bgeo/BlockCoordinate.hpp"
 #include "../../BlockString.hpp"
-#include "../../BlockStringView.hpp"
+#include "../../BlockStringEditor.hpp"
 #include "../../BlockStyle.hpp"
 #include "../../ParagraphIndents.hpp"
 #include "../../TerminalDocumentStyleRule.hpp"
@@ -28,7 +28,7 @@ namespace erbsland::cterm::impl::document_renderer {
 /// @param textStyle The base text style.
 /// @return The styled decoration, or no value.
 [[nodiscard]] auto resolvedDecoration(
-    BlockStringBuilder &builder, const std::optional<BlockStringView> &decoration, BlockStyle textStyle)
+    BlockStringBuilder &builder, const std::optional<BlockString> &decoration, BlockStyle textStyle)
     -> std::optional<BlockString>;
 
 /// Create the neutral paragraph rule used for list-item text blocks.

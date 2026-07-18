@@ -16,7 +16,7 @@
 #include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <compare>
 #include <cstdint>
@@ -273,8 +273,8 @@ private:
 }
 
 template <>
-struct erbsland::text::FormatAsText<erbsland::time::Date> : FormatAs<time::Date, StringView> {
-    [[nodiscard]] auto format(const time::Date &value) const -> StringView { return value.toIsoString(); }
+struct erbsland::text::FormatAsText<erbsland::time::Date> : FormatAs<time::Date, String> {
+    [[nodiscard]] auto format(const time::Date &value) const -> String { return value.toIsoString(); }
 };
 
 template <>

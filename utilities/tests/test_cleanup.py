@@ -76,7 +76,7 @@ class IncludeCleanupTest(unittest.TestCase):
 // SPDX-License-Identifier: Apache-2.0
 
 #include <vector>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include "SampleDemos.hpp"
 #include <DemoCommon.hpp>
 """,
@@ -91,7 +91,7 @@ class IncludeCleanupTest(unittest.TestCase):
 #include "SampleDemos.hpp"
 
 #include <DemoCommon.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 
 #include <vector>
 

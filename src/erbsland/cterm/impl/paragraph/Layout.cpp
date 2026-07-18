@@ -9,7 +9,7 @@
 namespace erbsland::cterm::impl::paragraph {
 
 Layout::Layout(
-    const BlockStringView &text,
+    const BlockString &text,
     const int width,
     const ParagraphOptions &options,
     const LayoutNewlineMode newlineMode,

@@ -48,9 +48,9 @@ public: // implement TextOutputStream
     void abort() noexcept override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
     auto write(text::Char character) -> StreamWriteStatus override;
-    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto write(const text::String &text) -> StreamWriteStatus override;
     auto writeLine() -> StreamWriteStatus override;
-    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine(const text::String &text) -> StreamWriteStatus override;
 
 public: // implement StreamPositioning
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
@@ -64,8 +64,7 @@ public:
 
 private:
     [[nodiscard]] auto bomModeForNextWrite() const noexcept -> text::StringBomMode;
-    auto writeLocked(const text::StringView &text) -> StreamWriteStatus;
-    [[nodiscard]] static auto effectiveEncodingFor(text::StringEncoding encoding) noexcept -> text::StringEncoding;
+    auto writeLocked(const text::String &text) -> StreamWriteStatus;
 
 private:
     mutable std::mutex _mutex;

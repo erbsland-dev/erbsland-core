@@ -18,6 +18,11 @@ namespace erbsland::path {
 
 using namespace text::literals;
 
+using namespace system;
+using time::DateTime;
+using time::TimeDelta;
+using time::TimePoint;
+
 PathInfo::PathInfo(const Path &path, const PathInfoParts parts) noexcept {
     if (path.isEmpty()) {
         return;
@@ -60,31 +65,31 @@ auto PathInfo::fileSize() const noexcept -> unit::ByteLength {
     return pathInfoData == nullptr ? unit::ByteLength{} : pathInfoData->fileSize;
 }
 
-auto PathInfo::lastModified() const noexcept -> time::DateTime {
+auto PathInfo::lastModified() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? time::DateTime{} : pathInfoData->lastModified;
+    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastModified;
 }
 
-auto PathInfo::lastAccessed() const noexcept -> time::DateTime {
+auto PathInfo::lastAccessed() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? time::DateTime{} : pathInfoData->lastAccessed;
+    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastAccessed;
 }
 
-auto PathInfo::birthTime() const noexcept -> time::DateTime {
+auto PathInfo::birthTime() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? time::DateTime{} : pathInfoData->birthTime;
+    return pathInfoData == nullptr ? DateTime{} : pathInfoData->birthTime;
 }
 
-auto PathInfo::lastMetadataChange() const noexcept -> time::DateTime {
+auto PathInfo::lastMetadataChange() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? time::DateTime{} : pathInfoData->lastMetadataChange;
+    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastMetadataChange;
 }
 
-auto PathInfo::creationTime() const noexcept -> time::DateTime {
+auto PathInfo::creationTime() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     const auto *pathInfoData = data();
     if (pathInfoData == nullptr) {
@@ -111,13 +116,13 @@ auto PathInfo::isExecutable() const noexcept -> bool {
     return accessInfo().currentProcessRights().isSet(PathAccessRight::Execute);
 }
 
-auto PathInfo::ownerName() const noexcept -> system::UserName {
+auto PathInfo::ownerName() const noexcept -> UserName {
     ensureParts(PathInfoPart::OwnerName);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? system::UserName{} : pathInfoData->ownerName;
+    return pathInfoData == nullptr ? UserName{} : pathInfoData->ownerName;
 }
 
-auto PathInfo::ownerNameOrThrow() const -> system::UserName {
+auto PathInfo::ownerNameOrThrow() const -> UserName {
     ensurePartsOrThrow(PathInfoPart::OwnerName);
     const auto *pathInfoData = data();
     if (pathInfoData == nullptr || pathInfoData->ownerName.isEmpty()) {
@@ -128,13 +133,13 @@ auto PathInfo::ownerNameOrThrow() const -> system::UserName {
     return pathInfoData->ownerName;
 }
 
-auto PathInfo::ownerId() const noexcept -> system::UserId {
+auto PathInfo::ownerId() const noexcept -> UserId {
     ensureParts(PathInfoPart::OwnerId);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? system::UserId{} : pathInfoData->ownerId;
+    return pathInfoData == nullptr ? UserId{} : pathInfoData->ownerId;
 }
 
-auto PathInfo::ownerIdOrThrow() const -> system::UserId {
+auto PathInfo::ownerIdOrThrow() const -> UserId {
     ensurePartsOrThrow(PathInfoPart::OwnerId);
     const auto *pathInfoData = data();
     if (pathInfoData == nullptr || pathInfoData->ownerId.isEmpty()) {
@@ -145,13 +150,13 @@ auto PathInfo::ownerIdOrThrow() const -> system::UserId {
     return pathInfoData->ownerId;
 }
 
-auto PathInfo::groupName() const noexcept -> system::GroupName {
+auto PathInfo::groupName() const noexcept -> GroupName {
     ensureParts(PathInfoPart::GroupName);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? system::GroupName{} : pathInfoData->groupName;
+    return pathInfoData == nullptr ? GroupName{} : pathInfoData->groupName;
 }
 
-auto PathInfo::groupNameOrThrow() const -> system::GroupName {
+auto PathInfo::groupNameOrThrow() const -> GroupName {
     ensurePartsOrThrow(PathInfoPart::GroupName);
     const auto *pathInfoData = data();
     if (pathInfoData == nullptr || pathInfoData->groupName.isEmpty()) {
@@ -162,13 +167,13 @@ auto PathInfo::groupNameOrThrow() const -> system::GroupName {
     return pathInfoData->groupName;
 }
 
-auto PathInfo::groupId() const noexcept -> system::GroupId {
+auto PathInfo::groupId() const noexcept -> GroupId {
     ensureParts(PathInfoPart::GroupId);
     const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? system::GroupId{} : pathInfoData->groupId;
+    return pathInfoData == nullptr ? GroupId{} : pathInfoData->groupId;
 }
 
-auto PathInfo::groupIdOrThrow() const -> system::GroupId {
+auto PathInfo::groupIdOrThrow() const -> GroupId {
     ensurePartsOrThrow(PathInfoPart::GroupId);
     const auto *pathInfoData = data();
     if (pathInfoData == nullptr || pathInfoData->groupId.isEmpty()) {
@@ -275,8 +280,8 @@ void PathInfo::ensurePartsOrThrow(const PathInfoParts parts, const bool forceRel
     }
 
     const auto missingParts = !pathInfoData->loadedParts.contains(parts);
-    const auto hasCache = pathInfoData->lastRefresh != time::TimePoint{};
-    const auto cacheExpired = hasCache && pathInfoData->lastRefresh.timeDeltaToNow() > time::TimeDelta::seconds(1);
+    const auto hasCache = pathInfoData->lastRefresh != TimePoint{};
+    const auto cacheExpired = hasCache && pathInfoData->lastRefresh.timeDeltaToNow() > TimeDelta::seconds(1);
     if (forceReload || missingParts || cacheExpired) {
         const auto originalPath = pathInfoData->originalPath;
         auto requestedParts = pathInfoData->requestedParts | PathInfoPart::Type;
@@ -308,7 +313,7 @@ void PathInfo::ensurePartsOrThrow(const PathInfoParts parts, const bool forceRel
             pathInfoData->accessInfo = {};
             pathInfoData->attributes = {};
             pathInfoData->refreshFailed = true;
-            pathInfoData->lastRefresh = time::TimePoint::now();
+            pathInfoData->lastRefresh = TimePoint::now();
             throw;
         }
     }
@@ -331,7 +336,7 @@ void PathInfo::resolveNames(const PathInfoParts parts) const {
     if (needsOwner) {
         try {
             pathInfoData->ownerName = lookup.userNameForId(pathInfoData->ownerId);
-        } catch (const system::PlatformError &error) {
+        } catch (const PlatformError &error) {
             throw PathError{PathErrorContext{
                 "File owner is unavailable"_el,
                 "The operating system could not resolve the owner name for the path."_el}
@@ -343,7 +348,7 @@ void PathInfo::resolveNames(const PathInfoParts parts) const {
     if (needsGroup) {
         try {
             pathInfoData->groupName = lookup.groupNameForId(pathInfoData->groupId);
-        } catch (const system::PlatformError &error) {
+        } catch (const PlatformError &error) {
             throw PathError{PathErrorContext{
                 "File group is unavailable"_el,
                 "The operating system could not resolve the group name for the path."_el}

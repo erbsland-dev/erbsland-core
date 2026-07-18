@@ -4,7 +4,7 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -14,7 +14,7 @@
 
 using el::text::U8String;
 using el::text::U8StringConstIterator;
-using el::text::U8StringView;
+using el::text::U8StringEditor;
 
 TESTED_TARGETS(U8StringConstIterator)
 class U8StringConstIteratorTest final : public el::UnitTest {
@@ -30,14 +30,14 @@ public:
     }
 
     void testEmptyStringIteration() {
-        const auto text = U8String{};
+        const auto text = U8StringEditor{};
 
         REQUIRE(text.begin() == text.end());
         REQUIRE_FALSE(text.begin().isValid());
     }
 
     void testStringIteration() {
-        const auto text = U8String{std::u8string_view{u8"A¢€😀"}};
+        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
 
         const auto values = collectRawValues(text);
 
@@ -51,15 +51,15 @@ public:
     void testLiteralViewIteratorComparison() {
         using namespace el::text::literals;
 
-        const auto view = "Hello"_elv;
+        const auto view = U8String{"Hello"_el};
 
         REQUIRE(view.begin() == view.begin());
         REQUIRE(view.begin() != view.end());
     }
 
     void testViewIteration() {
-        const auto text = U8String{std::u8string_view{u8"A¢"}};
-        const auto view = U8StringView{text};
+        const auto text = U8StringEditor{std::u8string_view{u8"A¢"}};
+        const auto view = U8String{text};
 
         const auto values = collectRawValues(view);
 
@@ -70,7 +70,7 @@ public:
 
     void testInvalidUtf8Iteration() {
         const auto data = invalidUtf8Data();
-        const auto text = U8String{std::string_view{data}};
+        const auto text = U8StringEditor{std::string_view{data}};
 
         const auto values = collectRawValues(text);
 
@@ -81,7 +81,7 @@ public:
     }
 
     void testPreAndPostIncrement() {
-        const auto text = U8String{std::u8string_view{u8"A¢"}};
+        const auto text = U8StringEditor{std::u8string_view{u8"A¢"}};
         auto iterator = text.begin();
         const auto samePosition = iterator;
 
@@ -101,8 +101,8 @@ public:
     }
 
     void testCopyAndMoveAssignment() {
-        const auto firstText = U8String{std::string_view{"First"}};
-        const auto secondText = U8String{std::string_view{"Second"}};
+        const auto firstText = U8StringEditor{std::string_view{"First"}};
+        const auto secondText = U8StringEditor{std::string_view{"Second"}};
         auto first = firstText.begin();
         auto second = secondText.begin();
 

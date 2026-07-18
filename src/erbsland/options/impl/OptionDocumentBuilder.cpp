@@ -36,8 +36,8 @@ OptionDocumentBuilder::OptionDocumentBuilder(OptionsPtr options, i18n::DisplayTe
     _displayText{displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap()} {
 }
 
-auto OptionDocumentBuilder::helpDocument(StringView moduleName) const -> TextDocument {
-    const auto model = OptionDisplayModel{_options, std::move(moduleName), _displayText};
+auto OptionDocumentBuilder::helpDocument(const String &moduleName) const -> TextDocument {
+    const auto model = OptionDisplayModel{_options, moduleName, _displayText};
     auto document = TextDocument{};
     if (const auto help = model.selectedHelp(); help != nullptr && !help->description().isEmpty()) {
         document.addParagraph()->setStyle("option-summary"_el).addText(help->description());
@@ -87,10 +87,10 @@ void OptionDocumentBuilder::appendUsage(const TextNodePtr &parent, const OptionD
     }
 }
 
-auto OptionDocumentBuilder::versionDocument(StringView) const -> TextDocument {
+auto OptionDocumentBuilder::versionDocument(const String &) const -> TextDocument {
     auto document = TextDocument{};
     auto list = TextNodePtr{};
-    const auto addItem = [&document, &list](StringView name, const StringView &value) -> void {
+    const auto addItem = [&document, &list](String name, const String &value) -> void {
         if (value.isEmpty()) {
             return;
         }
@@ -133,7 +133,7 @@ auto OptionDocumentBuilder::errorDocument(const OptionErrorContext &errorContext
     appendErrorSource(document, errorContext);
     appendCommandLineSnippet(document, errorContext);
     if (_options != nullptr) {
-        const auto moduleName = errorContext.module() == nullptr ? StringView{} : errorContext.module()->name();
+        const auto moduleName = errorContext.module() == nullptr ? String{} : errorContext.module()->name();
         appendUsage(document.root(), OptionDisplayModel{_options, moduleName, _displayText});
     }
     if (appendContextHelp(document, errorContext)) {
@@ -143,14 +143,14 @@ auto OptionDocumentBuilder::errorDocument(const OptionErrorContext &errorContext
     return document;
 }
 
-void OptionDocumentBuilder::appendHeading(const TextNodePtr &parent, StringView title) const {
+void OptionDocumentBuilder::appendHeading(const TextNodePtr &parent, String title) const {
     auto heading = parent->addHeading(2);
     heading->setStyle("option-section"_el);
     heading->addText(std::move(title));
 }
 
 void OptionDocumentBuilder::appendPlaceholder(
-    const TextNodePtr &parent, const TextNodeType type, StringView placeholder, StringView style) const {
+    const TextNodePtr &parent, const TextNodeType type, String placeholder, String style) const {
     auto node = parent->add(type);
     node->setStyle(std::move(style));
     node->addText(std::move(placeholder));
@@ -181,7 +181,7 @@ void OptionDocumentBuilder::appendOptionValuePlaceholder(const TextNodePtr &term
 void OptionDocumentBuilder::appendUsageOption(const TextNodePtr &termName, const OptionPtr &option) const {
     auto wrapper = termName->add(NodeType::OptionOptional);
     wrapper->setStyle("optional"_el);
-    auto selectedName = StringView{};
+    auto selectedName = String{};
     for (const auto &name : option->names()) {
         if (Option::isLongName(name)) {
             selectedName = name;

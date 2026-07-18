@@ -24,7 +24,7 @@ public:
         };
         WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "_"_el,
             "_a"_el,
@@ -63,7 +63,7 @@ public:
     TESTED_TARGETS(fullMatch)
     void testFullMatch() {
         compilePattern();
-        const auto matchCases = std::vector<StringView>{
+        const auto matchCases = std::vector<String>{
             {"_abcdefghij123456789_"_el},
         };
         WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
@@ -77,7 +77,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(matchCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "__ab_abc_abcd_abcdef_abcdefghij123456789"_el,
         };

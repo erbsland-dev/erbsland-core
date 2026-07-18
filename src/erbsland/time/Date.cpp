@@ -6,7 +6,7 @@
 #include "../err/OverflowError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
+#include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
 
 #include <algorithm>
@@ -14,6 +14,10 @@
 namespace erbsland::time {
 
 using namespace text::literals;
+
+using text::IntegerFormat;
+using text::IntegerFormatFlag;
+using text::String;
 
 namespace {
 constexpr auto cLastValidDay = Days{3652424};
@@ -211,31 +215,27 @@ auto Date::daysTo(Date other) const noexcept -> Days {
     return isValid() && other.isValid() ? Days{other._days - _days} : Days{};
 }
 
-auto Date::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> text::String {
+auto Date::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> String {
     if (!isValid()) {
         return {};
     }
     const auto [year, month, day] = parts();
     const auto extended = flags.isSet(IsoTimeFormat::Extended);
-    auto yearFormat = text::IntegerFormat::decimal();
-    yearFormat.addFlags(text::IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{4U});
-    auto partFormat = text::IntegerFormat::decimal();
-    partFormat.addFlags(text::IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
-    auto builder = text::StringBuilder{};
-    builder.appendInteger(year.toValue(), yearFormat);
-    if (precision >= DateTimePrecision::Month) {
-        if (extended) {
-            builder.append("-"_el);
-        }
-        builder.appendInteger(month.toValue(), partFormat);
-    }
-    if (precision >= DateTimePrecision::Day) {
-        if (extended) {
-            builder.append("-"_el);
-        }
-        builder.appendInteger(day.toValue(), partFormat);
-    }
-    return builder.takeU8String();
+    auto yearFormat = IntegerFormat::decimal();
+    yearFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{4U});
+    auto partFormat = IntegerFormat::decimal();
+    partFormat.addFlags(IntegerFormatFlag::ZeroFill).setFieldWidth(unit::CpLength{2U});
+    const auto separator = extended ? String{"-"_el} : String{};
+    const auto monthText =
+        precision >= DateTimePrecision::Month ? String::fromInteger(month.toValue(), partFormat) : String{};
+    const auto dayText =
+        precision >= DateTimePrecision::Day ? String::fromInteger(day.toValue(), partFormat) : String{};
+    return String::fromJoined(
+        {String::fromInteger(year.toValue(), yearFormat),
+            precision >= DateTimePrecision::Month ? separator : String{},
+            monthText,
+            precision >= DateTimePrecision::Day ? separator : String{},
+            dayText});
 }
 
 auto Date::fromYearMonthDay(const int year, const int month, const int day) noexcept -> Date {

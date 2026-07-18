@@ -26,18 +26,17 @@ public:
     [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _size; }
     void clearScreen() noexcept override { _clearScreenCallCount += 1; }
     void write(const Block &character) noexcept override { _writtenChars.push_back(character); }
-    void write(const BlockStringView &str) noexcept override { _writtenStrings.push_back(BlockString{str}); }
+    void write(const BlockString &str) noexcept override { _writtenStrings.push_back(BlockStringEditor{str}); }
     void writeResolved(const Block &character) noexcept override { _writtenResolvedChars.push_back(character); }
-    void writeResolved(const BlockStringView &str) noexcept override {
-        _writtenResolvedStrings.push_back(BlockString{str});
+    void writeResolved(const BlockString &str) noexcept override {
+        _writtenResolvedStrings.push_back(BlockStringEditor{str});
     }
     void write(const ReadableBuffer &) noexcept override { _writeBufferCallCount += 1; }
     void writeLineBreak() noexcept override { _lineBreakCount += 1; }
 
 protected:
-    auto printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept
-        -> int override {
-        _lastParagraph = BlockString{paragraph};
+    auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override {
+        _lastParagraph = BlockStringEditor{paragraph};
         _lastParagraphAlignment = options.alignment();
         _lastParagraphTabStops = options.tabStops();
         _lastParagraphTabOverflowBehavior = options.tabOverflowBehavior();
@@ -53,12 +52,12 @@ public:
     bool _autoWrap{false};
     int _clearScreenCallCount{0};
     std::vector<Block> _writtenChars;
-    std::vector<BlockString> _writtenStrings;
+    std::vector<BlockStringEditor> _writtenStrings;
     std::vector<Block> _writtenResolvedChars;
-    std::vector<BlockString> _writtenResolvedStrings;
+    std::vector<BlockStringEditor> _writtenResolvedStrings;
     int _writeBufferCallCount{0};
     int _lineBreakCount{0};
-    BlockString _lastParagraph{};
+    BlockStringEditor _lastParagraph{};
     bgeo::Alignment _lastParagraphAlignment{bgeo::Alignment::TopLeft};
     std::vector<int> _lastParagraphTabStops;
     TabOverflowBehavior _lastParagraphTabOverflowBehavior{TabOverflowBehavior::AddSpace};

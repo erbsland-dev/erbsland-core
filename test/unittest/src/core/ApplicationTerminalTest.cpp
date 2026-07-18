@@ -10,8 +10,8 @@
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/options/OptionHelp.hpp>
 #include <erbsland/options/Options.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
 #include <erbsland/stream/StandardStreams.hpp>
-#include <erbsland/stream/StringBuilderStream.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
@@ -67,7 +67,7 @@ public:
     }
 
     void testNonInteractiveTerminalKeepsExistingStandardStreams() {
-        const auto replacement = el::stream::StringBuilderStream::create();
+        const auto replacement = el::stream::AnyStringBuilderStream::create();
         auto redirect = el::stream::redirectStdOut(replacement);
 
         auto scope = ApplicationTestScope<TestApplication>{};
@@ -97,8 +97,8 @@ public:
     }
 
     void testPlainSystemOutputUsesRootErrorStyleOnly() {
-        const auto output = el::stream::StringBuilderStream::create();
-        const auto error = el::stream::StringBuilderStream::create();
+        const auto output = el::stream::AnyStringBuilderStream::create();
+        const auto error = el::stream::AnyStringBuilderStream::create();
         auto outputRedirect = el::stream::redirectStdOut(output);
         auto errorRedirect = el::stream::redirectStdErr(error);
         auto data = el::core::impl::ApplicationDataImpl{};
@@ -174,7 +174,7 @@ private:
     };
 
 private:
-    [[nodiscard]] static auto toStdString(const el::stream::StringBuilderStreamPtr &stream) -> std::string {
+    [[nodiscard]] static auto toStdString(const el::stream::AnyStringBuilderStreamPtr &stream) -> std::string {
         return el::text::StringConverter{stream->toU8String()}.toStdString();
     }
 

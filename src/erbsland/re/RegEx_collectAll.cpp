@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RegEx.hpp"
 
+#include "Match.hpp"
+#include "Match16.hpp"
+#include "Match32.hpp"
+
 #include "impl/input/StreamInput.hpp"
 #include "impl/input/StringInput.hpp"
 #include "impl/input/U16StringInput.hpp"
@@ -14,15 +18,15 @@ namespace erbsland::re {
 
 using namespace text::literals;
 
-auto RegEx::collectAll(const text::StringView &text) const -> MatchList {
+auto RegEx::collectAll(const text::String &text) const -> MatchList {
     return collectAll(impl::StringInput::create(text));
 }
 
-auto RegEx::collectAll(const text::U16StringView &text) const -> Match16List {
+auto RegEx::collectAll(const text::U16String &text) const -> Match16List {
     return collectAll(impl::U16StringInput::create(text));
 }
 
-auto RegEx::collectAll(const text::U32StringView &text) const -> Match32List {
+auto RegEx::collectAll(const text::U32String &text) const -> Match32List {
     return collectAll(impl::U32StringInput::create(text));
 }
 

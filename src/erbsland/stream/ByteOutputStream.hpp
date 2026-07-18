@@ -7,7 +7,6 @@
 
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
-#include "../mem/ByteBlockView.hpp"
 #include "../mem/Endianness.hpp"
 #include "../util/CoTask.hpp"
 
@@ -48,16 +47,16 @@ public: // core interface
     virtual auto write(std::span<const mem::Byte> bytes) -> StreamWriteStatus = 0;
 
 public: // default interface
-    /// Write a byte block view.
+    /// Write a read-only byte block.
     /// @param bytes The bytes to write.
     /// @return `Success` if all bytes were accepted, or `Timeout` if nothing was accepted.
     /// @throws stream::StreamError If the stream is closed or the backing target fails.
-    virtual auto write(const mem::ByteBlockView &bytes) -> StreamWriteStatus;
+    virtual auto write(const mem::ByteBlock &bytes) -> StreamWriteStatus;
 
 public: // coroutine interface
     /// Asynchronously write an owned byte block.
     /// @param bytes The bytes retained by the operation until it completes.
-    /// @return A task with the same result as `write(ByteBlockView)`.
+    /// @return A task with the same result as `write(ByteBlock)`.
     /// @throws err::LogicError If this stream is not shared-owned.
     /// @throws stream::StreamError When the task result is observed if the stream or backing target fails.
     [[nodiscard]] auto coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus>;

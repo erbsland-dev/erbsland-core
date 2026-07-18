@@ -26,6 +26,11 @@ When run, the demo functions are executed and produce output in the terminal.
 
 The utility ``create_demo`` automatically creates new demos, or add new parts to existing demos.
 
+The generated executable entry point imports the ``demo`` namespace and defines only the required global ``main``
+function.
+A forwarding global ``main`` may be added when the namespaced implementation itself is embedded in the documentation and
+the wrapper must be omitted from the displayed source.
+
 If this framework is not suitable for the demo:
 - A demo must be safe to be started from the command line.
 - The command line option `--help` or `-h` shall display command line help.

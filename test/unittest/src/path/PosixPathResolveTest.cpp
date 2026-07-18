@@ -7,7 +7,7 @@
 #include <erbsland/path/PathResolveMode.hpp>
 #include <erbsland/system/PosixErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <unistd.h>
 
@@ -101,6 +101,6 @@ private:
     }
 
     [[nodiscard]] static auto pathFromStd(const std::filesystem::path &path) -> Path {
-        return Path::fromPosix(el::text::String{path.generic_string()});
+        return Path::fromPosix(el::text::StringEditor{path.generic_string()});
     }
 };

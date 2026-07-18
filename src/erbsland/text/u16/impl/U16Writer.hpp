@@ -5,6 +5,7 @@
 #include "U16Encoding.hpp"
 
 #include "../../../mem/ByteWriter.hpp"
+#include "../../../mem/impl/RingBufferWriter.hpp"
 #include "../../Char.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
 
@@ -66,10 +67,11 @@ private:
 
 /// A writer for UTF-16 encoded text into a byte writer.
 /// @tested{U16WriterTest}
-template <>
-class U16Writer<mem::ByteWriter> {
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+class U16Writer<tWriter> {
 public:
-    explicit constexpr U16Writer(mem::ByteWriter &writer) noexcept : _writer{writer} {}
+    explicit constexpr U16Writer(tWriter &writer) noexcept : _writer{writer} {}
 
 public:
     /// Get the current position in the destination buffer.
@@ -98,13 +100,15 @@ private:
     void writeChar16(const uint16_t char16) noexcept { _writer.writeUInt16(char16); }
 
 private:
-    mem::ByteWriter &_writer;
+    tWriter &_writer;
 };
 
 template <typename tChar16>
 U16Writer(std::span<tChar16>) -> U16Writer<std::span<tChar16>>;
 
-U16Writer(mem::ByteWriter &) -> U16Writer<mem::ByteWriter>;
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+U16Writer(tWriter &) -> U16Writer<tWriter>;
 
 /// Generic method to create a UTF-16 encoded string from UTF-8 encoded text.
 /// @tested{U16WriterTest}

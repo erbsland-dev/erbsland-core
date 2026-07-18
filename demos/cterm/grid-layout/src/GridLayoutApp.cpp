@@ -95,7 +95,7 @@ void GridLayoutApp::renderCellContent(const GridLayout &layout, const BlockPosit
 }
 
 void GridLayoutApp::renderStatus(const BlockRectangle statusRect) {
-    auto status = BlockString{};
+    auto status = BlockStringEditor{};
     appendBorderStatusLine(status, 0, 2);
     status += BlockString{U"\n"_el};
     appendBorderStatusLine(status, 2, 4);
@@ -104,7 +104,8 @@ void GridLayoutApp::renderStatus(const BlockRectangle statusRect) {
     _buffer.drawBlockText(BlockText{status, statusRect, Alignment::CenterLeft});
 }
 
-void GridLayoutApp::appendBorderStatusLine(BlockString &status, const std::size_t begin, const std::size_t end) const {
+void GridLayoutApp::appendBorderStatusLine(
+    BlockStringEditor &status, const std::size_t begin, const std::size_t end) const {
     const auto &elements = borderElements();
     for (auto index = begin; index < end; ++index) {
         const auto &info = elements[index];
@@ -118,7 +119,7 @@ void GridLayoutApp::appendBorderStatusLine(BlockString &status, const std::size_
 
 void GridLayoutApp::renderFooter(const BlockRectangle footerRect) {
     _buffer.fill(footerRect, Block{U' ', bg::BrightBlack});
-    auto prompt = BlockString{};
+    auto prompt = BlockStringEditor{};
     prompt.append(
         bg::BrightBlack,
         fg::BrightGreen,
@@ -189,7 +190,7 @@ auto GridLayoutApp::nextStyle(const FrameStyle style) noexcept -> FrameStyle {
     }
 }
 
-auto GridLayoutApp::styleName(const FrameStyle style) noexcept -> el::StringView {
+auto GridLayoutApp::styleName(const FrameStyle style) noexcept -> el::String {
     switch (style) {
     case FrameStyle::Light:
         return "Light"_el;

@@ -18,7 +18,7 @@ TESTED_TARGETS(RegExError RegExErrorContext RegExErrorDiagnostic)
 TAGS(Api Errors)
 class RegExErrorTest final : public el::UnitTest {
 private:
-    void requireContains(const el::text::StringView &text, const std::string_view expected) {
+    void requireContains(const el::text::String &text, const std::string_view expected) {
         const auto actual = re_test::string_helper::toStdString(text);
         REQUIRE(actual.find(expected) != std::string::npos);
     }

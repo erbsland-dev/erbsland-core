@@ -8,7 +8,7 @@ namespace erbsland::text {
 
 using namespace literals;
 
-auto TextNodeType::toString() const noexcept -> StringView {
+auto TextNodeType::toString() const noexcept -> String {
     switch (_value) {
     case Document:
         return "Document"_el;

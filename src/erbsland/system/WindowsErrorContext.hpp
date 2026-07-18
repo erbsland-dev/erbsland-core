@@ -5,7 +5,7 @@
 #include "PlatformErrorContext.hpp"
 
 #include "../core/impl/WindowsApi.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 namespace erbsland::system {
 
@@ -18,7 +18,7 @@ public:
 
 public:
     /// Create a context from an already captured code and message.
-    explicit WindowsErrorContext(ErrorCode errorCode, text::StringView errorMessage = {}) noexcept;
+    explicit WindowsErrorContext(ErrorCode errorCode, text::String errorMessage = {}) noexcept;
 
 public:
     /// Capture an explicit Windows error code and its current system message.
@@ -28,14 +28,14 @@ public:
 
 public: // implement PlatformErrorContext
     [[nodiscard]] auto category() const noexcept -> PlatformErrorCategory override;
-    [[nodiscard]] auto toString() const noexcept -> text::StringView override;
+    [[nodiscard]] auto toString() const noexcept -> text::String override;
     [[nodiscard]] auto toTextDocument() const -> text::TextDocument override;
 
 public: // accessors
     /// Get the captured Windows error code.
     [[nodiscard]] auto errorCode() const noexcept -> ErrorCode { return _errorCode; }
     /// Get the captured Windows error message.
-    [[nodiscard]] auto errorMessage() const noexcept -> text::StringView { return _errorMessage; }
+    [[nodiscard]] auto errorMessage() const noexcept -> text::String { return _errorMessage; }
 
 private:
     [[nodiscard]] static auto messageFromErrorCode(ErrorCode errorCode) -> text::String;

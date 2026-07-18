@@ -4,7 +4,7 @@
 
 #include "Backend.hpp"
 #include "Block.hpp"
-#include "BlockString.hpp"
+#include "BlockStringEditor.hpp"
 #include "Color.hpp"
 #include "CursorWriter.hpp"
 #include "MoveMode.hpp"
@@ -96,9 +96,9 @@ public: // implement CursorWriter
     void setAutoWrap(bool enabled) noexcept override;
     void setCursorVisible(bool visible) noexcept override;
     void write(const Block &character) noexcept override;
-    void write(const BlockStringView &str) noexcept override;
+    void write(const BlockString &str) noexcept override;
     void writeResolved(const Block &character) noexcept override;
-    void writeResolved(const BlockStringView &str) noexcept override;
+    void writeResolved(const BlockString &str) noexcept override;
     void write(const ReadableBuffer &buffer) noexcept override;
     void writeLineBreak() noexcept override;
 
@@ -220,7 +220,7 @@ public: // backward compatibility.
 
 protected: // implement CursorWriter
     auto createPrintContext() noexcept -> BlockPrintContextPtr override;
-    auto printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept -> int override;
+    auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override;
 
 private:
     /// Test whether the current backend combination supports full ANSI buffering.
@@ -255,8 +255,8 @@ private:
     /// @param paragraph The paragraph to write.
     /// @param options The paragraph options for error handling and spacing.
     /// @return The number of terminal lines written.
-    [[nodiscard]] auto printParagraphPlainOutput(
-        const BlockStringView &paragraph, const ParagraphOptions &options) noexcept -> int;
+    [[nodiscard]] auto printParagraphPlainOutput(const BlockString &paragraph, const ParagraphOptions &options) noexcept
+        -> int;
     /// Finish a paragraph by writing one or two explicit line breaks.
     /// @param renderedLines The number of already rendered paragraph lines.
     /// @param paragraphSpacing The spacing to append after the paragraph.

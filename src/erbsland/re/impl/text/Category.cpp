@@ -4,7 +4,7 @@
 
 #include "../../../err/ParameterError.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 
 #include <algorithm>
 #include <ranges>
@@ -13,12 +13,14 @@ namespace erbsland::re::impl {
 
 using namespace text::literals;
 
+using namespace text;
+
 auto Category::includes(const Category &other) const noexcept -> bool {
     return (mask() & other.mask()) == mask();
 }
 
-constexpr auto Category::unicodeMaskFor(const text::UnicodeCategory category) noexcept -> Mask {
-    using UC = text::UnicodeCategory;
+constexpr auto Category::unicodeMaskFor(const UnicodeCategory category) noexcept -> Mask {
+    using UC = UnicodeCategory;
     switch (category) {
     case UC::Control:
         return Control;
@@ -98,7 +100,7 @@ constexpr void Category::addRegexMask(
     }
 }
 
-auto Category::maskFor(const text::Char character) noexcept -> Mask {
+auto Category::maskFor(const Char character) noexcept -> Mask {
     if (!character.isValidUnicode()) {
         return 0U;
     }
@@ -108,14 +110,14 @@ auto Category::maskFor(const text::Char character) noexcept -> Mask {
     const auto value = character.toRawValue();
     auto result = unicodeMaskFor(unicodeCategory);
 
-    const auto isDecimalNumber = unicodeCategory == text::UnicodeCategory::DecimalNumber;
+    const auto isDecimalNumber = unicodeCategory == UnicodeCategory::DecimalNumber;
     addRegexMask(result, isDecimalNumber, character.isAsciiDigit(), DigitUnicode, DigitAscii);
 
-    const auto isWordUnicode = unicodeGroup == text::UnicodeCategoryGroup::Letter || isDecimalNumber || value == U'_';
+    const auto isWordUnicode = unicodeGroup == UnicodeCategoryGroup::Letter || isDecimalNumber || value == U'_';
     const auto isWordAscii = character.isAsciiWord();
     addRegexMask(result, isWordUnicode, isWordAscii, WordUnicode, WordAscii);
 
-    const auto isSpaceSeparator = unicodeCategory == text::UnicodeCategory::SpaceSeparator;
+    const auto isSpaceSeparator = unicodeCategory == UnicodeCategory::SpaceSeparator;
     const auto isHorizontalUnicode = value == U'\t' || isSpaceSeparator;
     // U+00A0 retains the imported engine's compatibility behavior. Its ASCII subcategory bit is shared with the
     // other regular-expression categories, so it also satisfies SpaceAscii below.
@@ -124,8 +126,7 @@ auto Category::maskFor(const text::Char character) noexcept -> Mask {
 
     const auto isVerticalAscii = value == U'\n' || value == U'\v' || value == U'\f' || value == U'\r';
     const auto isVerticalUnicode = isVerticalAscii || value == 0x0085U ||
-        unicodeCategory == text::UnicodeCategory::LineSeparator ||
-        unicodeCategory == text::UnicodeCategory::ParagraphSeparator;
+        unicodeCategory == UnicodeCategory::LineSeparator || unicodeCategory == UnicodeCategory::ParagraphSeparator;
     addRegexMask(result, isVerticalUnicode, isVerticalAscii, VerticalSpaceUnicode, VerticalSpaceAscii);
 
     const auto isSpaceUnicode = value == U'\t' || isSpaceSeparator;
@@ -133,8 +134,7 @@ auto Category::maskFor(const text::Char character) noexcept -> Mask {
     addRegexMask(result, isSpaceUnicode, isSpaceAscii, SpaceUnicode, SpaceAscii);
 
     const auto isSpaceUnicodeDotAll = isSpaceUnicode || isVerticalAscii ||
-        unicodeCategory == text::UnicodeCategory::LineSeparator ||
-        unicodeCategory == text::UnicodeCategory::ParagraphSeparator;
+        unicodeCategory == UnicodeCategory::LineSeparator || unicodeCategory == UnicodeCategory::ParagraphSeparator;
     const auto isSpaceAsciiDotAll = isSpaceAscii || isVerticalAscii;
     addRegexMask(result, isSpaceUnicodeDotAll, isSpaceAsciiDotAll, SpaceUnicodeDotAll, SpaceAsciiDotAll);
 
@@ -145,160 +145,160 @@ auto Category::maskFor(const text::Char character) noexcept -> Mask {
     return result;
 }
 
-auto Category::contains(const text::Char character) const noexcept -> bool {
+auto Category::contains(const Char character) const noexcept -> bool {
     const auto characterMask = maskFor(character);
     return characterMask != 0U && (characterMask & mask()) == mask();
 }
 
-auto Category::characterSet() const -> text::CharSet {
-    using UC = text::UnicodeCategory;
-    using UG = text::UnicodeCategoryGroup;
+auto Category::characterSet() const -> CharSet {
+    using UC = UnicodeCategory;
+    using UG = UnicodeCategoryGroup;
     switch (_value) {
     case Other:
-        return text::CharSet::from(UG::Other);
+        return CharSet::from(UG::Other);
     case Letter:
-        return text::CharSet::from(UG::Letter);
+        return CharSet::from(UG::Letter);
     case Mark:
-        return text::CharSet::from(UG::Mark);
+        return CharSet::from(UG::Mark);
     case Number:
-        return text::CharSet::from(UG::Number);
+        return CharSet::from(UG::Number);
     case Punctuation:
-        return text::CharSet::from(UG::Punctuation);
+        return CharSet::from(UG::Punctuation);
     case Symbol:
-        return text::CharSet::from(UG::Symbol);
+        return CharSet::from(UG::Symbol);
     case Separator:
-        return text::CharSet::from(UG::Separator);
+        return CharSet::from(UG::Separator);
     case Control:
-        return text::CharSet::from(UC::Control);
+        return CharSet::from(UC::Control);
     case Format:
-        return text::CharSet::from(UC::Format);
+        return CharSet::from(UC::Format);
     case Unassigned:
-        return text::CharSet::from(UC::Unassigned);
+        return CharSet::from(UC::Unassigned);
     case PrivateUse:
-        return text::CharSet::from(UC::PrivateUse);
+        return CharSet::from(UC::PrivateUse);
     case Surrogate:
-        return text::CharSet::from(UC::Surrogate);
+        return CharSet::from(UC::Surrogate);
     case LowercaseLetter:
-        return text::CharSet::from(UC::LowercaseLetter);
+        return CharSet::from(UC::LowercaseLetter);
     case ModifierLetter:
-        return text::CharSet::from(UC::ModifierLetter);
+        return CharSet::from(UC::ModifierLetter);
     case OtherLetter:
-        return text::CharSet::from(UC::OtherLetter);
+        return CharSet::from(UC::OtherLetter);
     case TitlecaseLetter:
-        return text::CharSet::from(UC::TitlecaseLetter);
+        return CharSet::from(UC::TitlecaseLetter);
     case UppercaseLetter:
-        return text::CharSet::from(UC::UppercaseLetter);
+        return CharSet::from(UC::UppercaseLetter);
     case SpacingMark:
-        return text::CharSet::from(UC::SpacingMark);
+        return CharSet::from(UC::SpacingMark);
     case EnclosingMark:
-        return text::CharSet::from(UC::EnclosingMark);
+        return CharSet::from(UC::EnclosingMark);
     case NonspacingMark:
-        return text::CharSet::from(UC::NonspacingMark);
+        return CharSet::from(UC::NonspacingMark);
     case DecimalNumber:
-        return text::CharSet::from(UC::DecimalNumber);
+        return CharSet::from(UC::DecimalNumber);
     case LetterNumber:
-        return text::CharSet::from(UC::LetterNumber);
+        return CharSet::from(UC::LetterNumber);
     case OtherNumber:
-        return text::CharSet::from(UC::OtherNumber);
+        return CharSet::from(UC::OtherNumber);
     case ConnectorPunctuation:
-        return text::CharSet::from(UC::ConnectorPunctuation);
+        return CharSet::from(UC::ConnectorPunctuation);
     case DashPunctuation:
-        return text::CharSet::from(UC::DashPunctuation);
+        return CharSet::from(UC::DashPunctuation);
     case ClosePunctuation:
-        return text::CharSet::from(UC::ClosePunctuation);
+        return CharSet::from(UC::ClosePunctuation);
     case FinalPunctuation:
-        return text::CharSet::from(UC::FinalPunctuation);
+        return CharSet::from(UC::FinalPunctuation);
     case InitialPunctuation:
-        return text::CharSet::from(UC::InitialPunctuation);
+        return CharSet::from(UC::InitialPunctuation);
     case OtherPunctuation:
-        return text::CharSet::from(UC::OtherPunctuation);
+        return CharSet::from(UC::OtherPunctuation);
     case OpenPunctuation:
-        return text::CharSet::from(UC::OpenPunctuation);
+        return CharSet::from(UC::OpenPunctuation);
     case CurrencySymbol:
-        return text::CharSet::from(UC::CurrencySymbol);
+        return CharSet::from(UC::CurrencySymbol);
     case ModifierSymbol:
-        return text::CharSet::from(UC::ModifierSymbol);
+        return CharSet::from(UC::ModifierSymbol);
     case MathSymbol:
-        return text::CharSet::from(UC::MathSymbol);
+        return CharSet::from(UC::MathSymbol);
     case OtherSymbol:
-        return text::CharSet::from(UC::OtherSymbol);
+        return CharSet::from(UC::OtherSymbol);
     case LineSeparator:
-        return text::CharSet::from(UC::LineSeparator);
+        return CharSet::from(UC::LineSeparator);
     case ParagraphSeparator:
-        return text::CharSet::from(UC::ParagraphSeparator);
+        return CharSet::from(UC::ParagraphSeparator);
     case SpaceSeparator:
-        return text::CharSet::from(UC::SpaceSeparator);
+        return CharSet::from(UC::SpaceSeparator);
     case DigitUnicode:
-        return text::CharSet::from(UC::DecimalNumber);
+        return CharSet::from(UC::DecimalNumber);
     case DigitAscii:
-        return text::CharSet::fromRange(U'0', U'9');
+        return CharSet::fromRange(U'0', U'9');
     case WordUnicode: {
-        auto result = text::CharSet::from(UG::Letter);
-        result.add(text::CharSet::from(UC::DecimalNumber));
+        auto result = CharSet::from(UG::Letter);
+        result.add(CharSet::from(UC::DecimalNumber));
         result.add(U'_');
         return result;
     }
     case WordAscii: {
-        auto result = text::CharSet::fromRange(U'0', U'9');
-        result.add(text::CharSet::fromRange(U'A', U'Z'));
-        result.add(text::CharSet::fromRange(U'a', U'z'));
+        auto result = CharSet::fromRange(U'0', U'9');
+        result.add(CharSet::fromRange(U'A', U'Z'));
+        result.add(CharSet::fromRange(U'a', U'z'));
         result.add(U'_');
         return result;
     }
     case SpaceUnicode: {
-        auto result = text::CharSet::from(UC::SpaceSeparator);
+        auto result = CharSet::from(UC::SpaceSeparator);
         result.add(U'\t');
         return result;
     }
     case SpaceAscii:
-        return text::CharSet{U'\t', U' ', text::Char{0x00A0U}};
+        return CharSet{U'\t', U' ', Char{0x00A0U}};
     case SpaceUnicodeDotAll: {
-        auto result = text::CharSet::from(UC::SpaceSeparator);
-        result.add(text::CharSet::from(UC::LineSeparator));
-        result.add(text::CharSet::from(UC::ParagraphSeparator));
-        result.add(text::CharSet{U'\t', U'\n', U'\v', U'\f', U'\r'});
+        auto result = CharSet::from(UC::SpaceSeparator);
+        result.add(CharSet::from(UC::LineSeparator));
+        result.add(CharSet::from(UC::ParagraphSeparator));
+        result.add(CharSet{U'\t', U'\n', U'\v', U'\f', U'\r'});
         return result;
     }
     case SpaceAsciiDotAll:
-        return text::CharSet{U'\t', U' ', U'\n', U'\v', U'\f', U'\r', text::Char{0x00A0U}};
+        return CharSet{U'\t', U' ', U'\n', U'\v', U'\f', U'\r', Char{0x00A0U}};
     case HorizontalSpaceUnicode: {
-        auto result = text::CharSet::from(UC::SpaceSeparator);
+        auto result = CharSet::from(UC::SpaceSeparator);
         result.add(U'\t');
         return result;
     }
     case HorizontalSpaceAscii:
-        return text::CharSet{U'\t', U' ', text::Char{0x00A0U}};
+        return CharSet{U'\t', U' ', Char{0x00A0U}};
     case VerticalSpaceUnicode: {
-        auto result = text::CharSet{U'\n', U'\v', U'\f', U'\r', text::Char{0x0085U}};
-        result.add(text::CharSet::from(UC::LineSeparator));
-        result.add(text::CharSet::from(UC::ParagraphSeparator));
+        auto result = CharSet{U'\n', U'\v', U'\f', U'\r', Char{0x0085U}};
+        result.add(CharSet::from(UC::LineSeparator));
+        result.add(CharSet::from(UC::ParagraphSeparator));
         return result;
     }
     case VerticalSpaceAscii:
-        return text::CharSet{U'\n', U'\v', U'\f', U'\r'};
+        return CharSet{U'\n', U'\v', U'\f', U'\r'};
     case Any: {
-        auto result = text::CharSet::fromRange(text::Char{0U}, text::Char{0x10FFFFU});
+        auto result = CharSet::fromRange(Char{0U}, Char{0x10FFFFU});
         result.remove(U'\n');
         return result;
     }
     case AnyDotAll:
-        return text::CharSet::fromRange(text::Char{0U}, text::Char{0x10FFFFU});
+        return CharSet::fromRange(Char{0U}, Char{0x10FFFFU});
     case None:
         return {};
     }
     return {};
 }
 
-auto Category::fromString(const text::StringView &str) -> Category {
+auto Category::fromString(const String &str) -> Category {
     if (const auto foundValue = nameToValueMap().get(str); foundValue.has_value()) {
         return *foundValue;
     }
     return {};
 }
 
-auto Category::fromUnprocessedString(const text::StringView &str) -> Category {
-    text::String normalized;
-    static_cast<void>(str.forEach([&normalized](text::Char character) {
+auto Category::fromUnprocessedString(const String &str) -> Category {
+    StringEditor normalized;
+    static_cast<void>(str.forEach([&normalized](Char character) -> util::LoopStatus {
         character = character.caseFolded();
         if (character >= U'a' && character <= U'z') {
             normalized.append(character);
@@ -313,14 +313,14 @@ auto Category::fromUnprocessedString(const text::StringView &str) -> Category {
     throw err::ParameterError{"Invalid category name."_el, "str"_el};
 }
 
-auto Category::toLongString() const -> text::StringView {
+auto Category::toLongString() const -> String {
     if (const auto foundName = valueToNameMap().find(_value); foundName != valueToNameMap().end()) {
         return foundName->second.unicodeLong;
     }
     return {};
 }
 
-auto Category::toShortString() const -> text::StringView {
+auto Category::toShortString() const -> String {
     if (const auto foundName = valueToNameMap().find(_value); foundName != valueToNameMap().end()) {
         return foundName->second.unicodeShort;
     }
@@ -333,8 +333,9 @@ void Category::normalizeList(std::vector<Category> &list) noexcept {
     list.erase(
         std::ranges::remove_if(
             list,
-            [&](const auto &x) {
-                return std::ranges::any_of(list, [&](const auto &other) { return x != other && other.includes(x); });
+            [&](const auto &x) -> bool {
+                return std::ranges::any_of(
+                    list, [&](const auto &other) -> bool { return x != other && other.includes(x); });
             })
             .begin(),
         list.end());
@@ -342,95 +343,95 @@ void Category::normalizeList(std::vector<Category> &list) noexcept {
 
 auto Category::nameToValueMap() noexcept -> const NameToValueMap & {
     static const NameToValueMap map{{
-        {"other"_els, Other},
-        {"letter"_els, Letter},
-        {"mark"_els, Mark},
-        {"number"_els, Number},
-        {"punctuation"_els, Punctuation},
-        {"symbol"_els, Symbol},
-        {"separator"_els, Separator},
-        {"control"_els, Control},
-        {"format"_els, Format},
-        {"unassigned"_els, Unassigned},
-        {"privateuse"_els, PrivateUse},
-        {"surrogate"_els, Surrogate},
-        {"lowercaseletter"_els, LowercaseLetter},
-        {"modifierletter"_els, ModifierLetter},
-        {"otherletter"_els, OtherLetter},
-        {"titlecaseletter"_els, TitlecaseLetter},
-        {"uppercaseletter"_els, UppercaseLetter},
-        {"spacingmark"_els, SpacingMark},
-        {"enclosingmark"_els, EnclosingMark},
-        {"nonspacingmark"_els, NonspacingMark},
-        {"decimalnumber"_els, DecimalNumber},
-        {"letternumber"_els, LetterNumber},
-        {"othernumber"_els, OtherNumber},
-        {"connectorpunctuation"_els, ConnectorPunctuation},
-        {"dashpunctuation"_els, DashPunctuation},
-        {"closepunctuation"_els, ClosePunctuation},
-        {"finalpunctuation"_els, FinalPunctuation},
-        {"initialpunctuation"_els, InitialPunctuation},
-        {"otherpunctuation"_els, OtherPunctuation},
-        {"openpunctuation"_els, OpenPunctuation},
-        {"currencysymbol"_els, CurrencySymbol},
-        {"modifiersymbol"_els, ModifierSymbol},
-        {"mathsymbol"_els, MathSymbol},
-        {"othersymbol"_els, OtherSymbol},
-        {"lineseparator"_els, LineSeparator},
-        {"paragraphseparator"_els, ParagraphSeparator},
-        {"spaceseparator"_els, SpaceSeparator},
-        {"c"_els, Other},
-        {"l"_els, Letter},
-        {"m"_els, Mark},
-        {"n"_els, Number},
-        {"p"_els, Punctuation},
-        {"s"_els, Symbol},
-        {"z"_els, Separator},
-        {"cc"_els, Control},
-        {"cf"_els, Format},
-        {"cn"_els, Unassigned},
-        {"co"_els, PrivateUse},
-        {"cs"_els, Surrogate},
-        {"ll"_els, LowercaseLetter},
-        {"lm"_els, ModifierLetter},
-        {"lo"_els, OtherLetter},
-        {"lt"_els, TitlecaseLetter},
-        {"lu"_els, UppercaseLetter},
-        {"mc"_els, SpacingMark},
-        {"me"_els, EnclosingMark},
-        {"mn"_els, NonspacingMark},
-        {"nd"_els, DecimalNumber},
-        {"nl"_els, LetterNumber},
-        {"no"_els, OtherNumber},
-        {"pc"_els, ConnectorPunctuation},
-        {"pd"_els, DashPunctuation},
-        {"pe"_els, ClosePunctuation},
-        {"pf"_els, FinalPunctuation},
-        {"pi"_els, InitialPunctuation},
-        {"po"_els, OtherPunctuation},
-        {"ps"_els, OpenPunctuation},
-        {"sc"_els, CurrencySymbol},
-        {"sk"_els, ModifierSymbol},
-        {"sm"_els, MathSymbol},
-        {"so"_els, OtherSymbol},
-        {"zl"_els, LineSeparator},
-        {"zp"_els, ParagraphSeparator},
-        {"zs"_els, SpaceSeparator},
+        {"other"_el, Other},
+        {"letter"_el, Letter},
+        {"mark"_el, Mark},
+        {"number"_el, Number},
+        {"punctuation"_el, Punctuation},
+        {"symbol"_el, Symbol},
+        {"separator"_el, Separator},
+        {"control"_el, Control},
+        {"format"_el, Format},
+        {"unassigned"_el, Unassigned},
+        {"privateuse"_el, PrivateUse},
+        {"surrogate"_el, Surrogate},
+        {"lowercaseletter"_el, LowercaseLetter},
+        {"modifierletter"_el, ModifierLetter},
+        {"otherletter"_el, OtherLetter},
+        {"titlecaseletter"_el, TitlecaseLetter},
+        {"uppercaseletter"_el, UppercaseLetter},
+        {"spacingmark"_el, SpacingMark},
+        {"enclosingmark"_el, EnclosingMark},
+        {"nonspacingmark"_el, NonspacingMark},
+        {"decimalnumber"_el, DecimalNumber},
+        {"letternumber"_el, LetterNumber},
+        {"othernumber"_el, OtherNumber},
+        {"connectorpunctuation"_el, ConnectorPunctuation},
+        {"dashpunctuation"_el, DashPunctuation},
+        {"closepunctuation"_el, ClosePunctuation},
+        {"finalpunctuation"_el, FinalPunctuation},
+        {"initialpunctuation"_el, InitialPunctuation},
+        {"otherpunctuation"_el, OtherPunctuation},
+        {"openpunctuation"_el, OpenPunctuation},
+        {"currencysymbol"_el, CurrencySymbol},
+        {"modifiersymbol"_el, ModifierSymbol},
+        {"mathsymbol"_el, MathSymbol},
+        {"othersymbol"_el, OtherSymbol},
+        {"lineseparator"_el, LineSeparator},
+        {"paragraphseparator"_el, ParagraphSeparator},
+        {"spaceseparator"_el, SpaceSeparator},
+        {"c"_el, Other},
+        {"l"_el, Letter},
+        {"m"_el, Mark},
+        {"n"_el, Number},
+        {"p"_el, Punctuation},
+        {"s"_el, Symbol},
+        {"z"_el, Separator},
+        {"cc"_el, Control},
+        {"cf"_el, Format},
+        {"cn"_el, Unassigned},
+        {"co"_el, PrivateUse},
+        {"cs"_el, Surrogate},
+        {"ll"_el, LowercaseLetter},
+        {"lm"_el, ModifierLetter},
+        {"lo"_el, OtherLetter},
+        {"lt"_el, TitlecaseLetter},
+        {"lu"_el, UppercaseLetter},
+        {"mc"_el, SpacingMark},
+        {"me"_el, EnclosingMark},
+        {"mn"_el, NonspacingMark},
+        {"nd"_el, DecimalNumber},
+        {"nl"_el, LetterNumber},
+        {"no"_el, OtherNumber},
+        {"pc"_el, ConnectorPunctuation},
+        {"pd"_el, DashPunctuation},
+        {"pe"_el, ClosePunctuation},
+        {"pf"_el, FinalPunctuation},
+        {"pi"_el, InitialPunctuation},
+        {"po"_el, OtherPunctuation},
+        {"ps"_el, OpenPunctuation},
+        {"sc"_el, CurrencySymbol},
+        {"sk"_el, ModifierSymbol},
+        {"sm"_el, MathSymbol},
+        {"so"_el, OtherSymbol},
+        {"zl"_el, LineSeparator},
+        {"zp"_el, ParagraphSeparator},
+        {"zs"_el, SpaceSeparator},
         // regex classes
-        {"DigitUnicode"_els, DigitUnicode},
-        {"DigitAscii"_els, DigitAscii},
-        {"WordUnicode"_els, WordUnicode},
-        {"WordAscii"_els, WordAscii},
-        {"SpaceUnicode"_els, SpaceUnicode},
-        {"SpaceAscii"_els, SpaceAscii},
-        {"SpaceUnicodeDotAll"_els, SpaceUnicodeDotAll},
-        {"SpaceAsciiDotAll"_els, SpaceAsciiDotAll},
-        {"HorizontalSpaceUnicode"_els, HorizontalSpaceUnicode},
-        {"HorizontalSpaceAscii"_els, HorizontalSpaceAscii},
-        {"VerticalSpaceUnicode"_els, VerticalSpaceUnicode},
-        {"VerticalSpaceAscii"_els, VerticalSpaceAscii},
-        {"Any"_els, Any},
-        {"AnyDotAll"_els, AnyDotAll},
+        {"DigitUnicode"_el, DigitUnicode},
+        {"DigitAscii"_el, DigitAscii},
+        {"WordUnicode"_el, WordUnicode},
+        {"WordAscii"_el, WordAscii},
+        {"SpaceUnicode"_el, SpaceUnicode},
+        {"SpaceAscii"_el, SpaceAscii},
+        {"SpaceUnicodeDotAll"_el, SpaceUnicodeDotAll},
+        {"SpaceAsciiDotAll"_el, SpaceAsciiDotAll},
+        {"HorizontalSpaceUnicode"_el, HorizontalSpaceUnicode},
+        {"HorizontalSpaceAscii"_el, HorizontalSpaceAscii},
+        {"VerticalSpaceUnicode"_el, VerticalSpaceUnicode},
+        {"VerticalSpaceAscii"_el, VerticalSpaceAscii},
+        {"Any"_el, Any},
+        {"AnyDotAll"_el, AnyDotAll},
     }};
     return map;
 }

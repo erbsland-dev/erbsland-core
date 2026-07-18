@@ -27,7 +27,7 @@ There is no separate narrow-output layout.
 Use ``TerminalDocumentStyle`` to customize the default text style, base block layout, and selector-specific rules.
 Rules use ``BlockStyle`` for terminal text style overlays and ``ParagraphIndents`` with ``bgeo::BlockMargins`` for
 layout.
-Prefixes, suffixes, and markers are exposed as read-only ``BlockStringView`` values.
+Prefixes, suffixes, and markers are exposed as read-only ``BlockString`` values.
 
 Selectors may constrain a rule to nodes below an ancestor node type.
 Ancestor matching considers the complete parent chain, which allows a diagnostic title inside a block quote to differ

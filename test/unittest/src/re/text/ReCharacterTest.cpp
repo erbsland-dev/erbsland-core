@@ -17,28 +17,29 @@ TAGS(Text)
 class ReCharacterTest final : public UNITTEST_SUBCLASS(re_test::TestHelper) {
 public:
     void testAppendUtf8() {
-        el::text::String result;
+        el::text::StringEditor result;
         result.append(el::text::Char{U'A'});
         result.append(el::text::Char{0x00DFU});
         result.append(el::text::Char{0x20ACU});
         result.append(el::text::Char{0x1F600U});
         REQUIRE_EQUAL(
             result,
-            el::text::String{bytesToStdString({0x41U, 0xC3U, 0x9FU, 0xE2U, 0x82U, 0xACU, 0xF0U, 0x9FU, 0x98U, 0x80U})});
+            el::text::StringEditor{
+                bytesToStdString({0x41U, 0xC3U, 0x9FU, 0xE2U, 0x82U, 0xACU, 0xF0U, 0x9FU, 0x98U, 0x80U})});
 
         result.append(el::text::Char::endOfData());
         REQUIRE_EQUAL(result.length(), el::unit::ByteLength{10U});
     }
 
     void testAppendUtf8ToU8String() {
-        el::text::String result;
+        el::text::StringEditor result;
         result.append(el::text::Char{U'A'});
         result.append(el::text::Char{0x1F600U});
-        REQUIRE_EQUAL(result, el::text::String{bytesToU8String({0x41U, 0xF0U, 0x9FU, 0x98U, 0x80U})});
+        REQUIRE_EQUAL(result, el::text::StringEditor{bytesToU8String({0x41U, 0xF0U, 0x9FU, 0x98U, 0x80U})});
     }
 
     void testSafeString() {
-        el::text::String result;
+        el::text::StringEditor result;
         appendToSafeString(result, el::text::Char{U'a'});
         appendToSafeString(result, el::text::Char{U'"'});
         appendToSafeString(result, el::text::Char{U'\\'});
@@ -50,7 +51,7 @@ public:
     }
 
     void testCharacterRangeString() {
-        el::text::String result;
+        el::text::StringEditor result;
         appendToCharRangeString(result, el::text::Char{U'a'});
         appendToCharRangeString(result, el::text::Char{U' '});
         appendToCharRangeString(result, el::text::Char{U'-'});

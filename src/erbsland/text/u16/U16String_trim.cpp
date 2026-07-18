@@ -6,16 +6,6 @@
 
 namespace erbsland::text {
 
-auto U16String::trim(const std::optional<CharSet> &characters, const std::optional<StringSide> side) -> U16String & {
-    const auto trimSide = impl::U16StringTrimTools::sideFrom(side);
-    if (characters.has_value()) {
-        *this = withRange(impl::U16StringTrimTools{dataView()}.trimmedRange(*characters, trimSide));
-    } else {
-        *this = withRange(impl::U16StringTrimTools{dataView()}.trimmedRange(trimSide));
-    }
-    return *this;
-}
-
 auto U16String::trimmed(const std::optional<CharSet> &characters, const std::optional<StringSide> side) const
     -> U16String {
     const auto trimSide = impl::U16StringTrimTools::sideFrom(side);

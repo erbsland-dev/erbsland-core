@@ -11,13 +11,16 @@ namespace erbsland::event {
 
 using namespace text::literals;
 
+using text::CharSet;
+using text::String;
+
 EventRegistry::EventRegistry(PrivateTag) {
     registerInternalIds();
 }
 
-auto EventRegistry::registerEvent(text::StringView name, text::StringView description) -> EventId {
+auto EventRegistry::registerEvent(String name, String description) -> EventId {
     std::scoped_lock lock{_mutex};
-    static const auto validNameCharSet = text::CharSet::fromPattern("-_.a-zA-Z0-9"_el);
+    static const auto validNameCharSet = CharSet::fromPattern("-_.a-zA-Z0-9"_el);
     if (!name.isValidUtf8() || !name.containsOnly(validNameCharSet)) {
         throw err::ParameterError{"The event name contains invalid characters."_el, "name"_el};
     }
@@ -45,12 +48,12 @@ auto EventRegistry::isRegistered(const EventId identifier) const noexcept -> boo
     return _eventInfo.contains(identifier);
 }
 
-auto EventRegistry::isRegistered(const text::StringView &name) const noexcept -> bool {
+auto EventRegistry::isRegistered(const String &name) const noexcept -> bool {
     std::scoped_lock lock{_mutex};
     return _eventIds.contains(name);
 }
 
-auto EventRegistry::getEventId(const text::StringView &name) const noexcept -> EventId {
+auto EventRegistry::getEventId(const String &name) const noexcept -> EventId {
     std::scoped_lock lock{_mutex};
     if (const auto eventId = _eventIds.get(name); eventId.has_value()) {
         return eventId.value();
@@ -64,9 +67,9 @@ auto EventRegistry::getEventInfo(const EventId identifier) const noexcept -> Eve
     return _eventInfo.get(identifier, noEventInfo);
 }
 
-auto EventRegistry::registerBackend(text::StringView name, text::StringView description) -> EventBackendId {
+auto EventRegistry::registerBackend(String name, String description) -> EventBackendId {
     std::scoped_lock lock{_mutex};
-    static const auto validNameCharSet = text::CharSet::fromPattern("-_.a-zA-Z0-9"_el);
+    static const auto validNameCharSet = CharSet::fromPattern("-_.a-zA-Z0-9"_el);
     if (!name.isValidUtf8() || !name.containsOnly(validNameCharSet)) {
         throw err::ParameterError{"The backend name contains invalid characters."_el, "name"_el};
     }
@@ -94,12 +97,12 @@ auto EventRegistry::isRegistered(const EventBackendId identifier) const noexcept
     return _backendInfo.contains(identifier);
 }
 
-auto EventRegistry::isBackendRegistered(const text::StringView &name) const noexcept -> bool {
+auto EventRegistry::isBackendRegistered(const String &name) const noexcept -> bool {
     std::scoped_lock lock{_mutex};
     return _backendIds.contains(name);
 }
 
-auto EventRegistry::getBackendId(const text::StringView &name) const noexcept -> EventBackendId {
+auto EventRegistry::getBackendId(const String &name) const noexcept -> EventBackendId {
     std::scoped_lock lock{_mutex};
     if (const auto backendId = _backendIds.get(name); backendId.has_value()) {
         return backendId.value();
@@ -122,14 +125,14 @@ void EventRegistry::registerInternalIds() noexcept {
     addBackend(schedulerBackend(), "dev.erbsland.core.SchedulerBackend"_el, "Scheduler backend"_el);
 }
 
-void EventRegistry::addEvent(EventId eventId, text::StringView name, text::StringView description) {
+void EventRegistry::addEvent(EventId eventId, String name, String description) {
     _eventIds.set(name, eventId);
     // created after eventId, to as `name` is moved into event info.
     auto eventInfo = EventIdInfo{std::move(name), std::move(description)};
     _eventInfo.set(eventId, std::move(eventInfo));
 }
 
-void EventRegistry::addBackend(EventBackendId backendId, text::StringView name, text::StringView description) {
+void EventRegistry::addBackend(EventBackendId backendId, String name, String description) {
     _backendIds.set(name, backendId);
     auto backendInfo = EventBackendIdInfo{std::move(name), std::move(description)};
     _backendInfo.set(backendId, std::move(backendInfo));

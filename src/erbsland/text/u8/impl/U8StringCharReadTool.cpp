@@ -10,10 +10,12 @@
 
 namespace erbsland::text::impl {
 
-auto U8StringCharReadTool::charLength() const noexcept -> unit::CpLength {
+using namespace unit;
+
+auto U8StringCharReadTool::charLength() const noexcept -> CpLength {
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
-    auto result = unit::CpLength::zero();
+    auto position = ByteIndex::zero();
+    auto result = CpLength::zero();
     while (position.toSizeT() < data.size()) {
         utf8::fastAdvanceChar(data, position);
         ++result;
@@ -21,13 +23,13 @@ auto U8StringCharReadTool::charLength() const noexcept -> unit::CpLength {
     return result;
 }
 
-auto U8StringCharReadTool::charAt(const unit::CpIndex index) const noexcept -> Char {
+auto U8StringCharReadTool::charAt(const CpIndex index) const noexcept -> Char {
     if (index.isNoIndex()) {
         return Char::noCodePoint();
     }
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
-    auto currentIndex = unit::CpIndex::zero();
+    auto position = ByteIndex::zero();
+    auto currentIndex = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (currentIndex == index) {
             return Char{utf8::decodeCharOrReplace(data, position)};
@@ -38,13 +40,13 @@ auto U8StringCharReadTool::charAt(const unit::CpIndex index) const noexcept -> C
     return currentIndex == index ? Char::endOfData() : Char::noCodePoint();
 }
 
-auto U8StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Char {
+auto U8StringCharReadTool::charAtOrThrow(const CpIndex index) const -> Char {
     if (index.isNoIndex()) {
         text::impl::throwOutOfRange("Read position out of range");
     }
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
-    auto currentIndex = unit::CpIndex::zero();
+    auto position = ByteIndex::zero();
+    auto currentIndex = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (currentIndex == index) {
             return utf8::decodeCharOrThrow(data, position);
@@ -55,13 +57,13 @@ auto U8StringCharReadTool::charAtOrThrow(const unit::CpIndex index) const -> Cha
     text::impl::throwOutOfRange("Read position out of range");
 }
 
-auto U8StringCharReadTool::byteIndexAt(const unit::CpIndex index) const noexcept -> unit::ByteIndex {
+auto U8StringCharReadTool::byteIndexAt(const CpIndex index) const noexcept -> ByteIndex {
     if (index.isNoIndex()) {
-        return unit::ByteIndex::noIndex();
+        return ByteIndex::noIndex();
     }
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
-    auto currentIndex = unit::CpIndex::zero();
+    auto position = ByteIndex::zero();
+    auto currentIndex = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (currentIndex == index) {
             return position;
@@ -69,20 +71,20 @@ auto U8StringCharReadTool::byteIndexAt(const unit::CpIndex index) const noexcept
         utf8::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    return currentIndex == index ? unit::ByteIndex::fromSizeT(data.size()) : unit::ByteIndex::noIndex();
+    return currentIndex == index ? ByteIndex::fromSizeT(data.size()) : ByteIndex::noIndex();
 }
 
-auto U8StringCharReadTool::charIndexAt(const unit::ByteIndex index) const noexcept -> unit::CpIndex {
+auto U8StringCharReadTool::charIndexAt(const ByteIndex index) const noexcept -> CpIndex {
     if (index.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
     const auto data = _data.dataSpan();
     if (index.toSizeT() > data.size()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
-    auto position = unit::ByteIndex::zero();
-    auto currentIndex = unit::CpIndex::zero();
+    auto position = ByteIndex::zero();
+    auto currentIndex = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         const auto characterStart = position;
         utf8::fastAdvanceChar(data, position);
@@ -94,20 +96,20 @@ auto U8StringCharReadTool::charIndexAt(const unit::ByteIndex index) const noexce
     return currentIndex;
 }
 
-auto U8StringCharReadTool::sliceRange(const unit::CpRange range) const noexcept -> unit::ByteRange {
+auto U8StringCharReadTool::sliceRange(const CpRange range) const noexcept -> ByteRange {
     if (!_data.range().isValid() || !range.isValid() || range.isEmpty()) {
-        return unit::ByteRange::empty();
+        return ByteRange::empty();
     }
 
     const auto data = _data.dataSpan();
-    auto position = unit::ByteIndex::zero();
-    auto currentIndex = unit::CpIndex::zero();
+    auto position = ByteIndex::zero();
+    auto currentIndex = CpIndex::zero();
     while (position.toSizeT() < data.size() && currentIndex < range.index()) {
         utf8::fastAdvanceChar(data, position);
         ++currentIndex;
     }
     if (currentIndex < range.index() || position.toSizeT() >= data.size()) {
-        return unit::ByteRange::empty();
+        return ByteRange::empty();
     }
 
     const auto sliceStart = position;
@@ -119,60 +121,55 @@ auto U8StringCharReadTool::sliceRange(const unit::CpRange range) const noexcept 
         }
     }
 
-    const auto sliceLength = unit::ByteLength::fromSizeT(position.toSizeT() - sliceStart.toSizeT());
-    return unit::ByteRange{sliceStart, sliceLength}.withOrigin(_data.range().index());
+    const auto sliceLength = ByteLength::fromSizeT(position.toSizeT() - sliceStart.toSizeT());
+    return ByteRange{sliceStart, sliceLength}.withOrigin(_data.range().index());
 }
 
-auto U8StringCharReadTool::findFirstOf(const CharSet &characters) const noexcept -> unit::CpIndex {
-    return findFirstOf(characters, unit::CpIndex::zero());
+auto U8StringCharReadTool::findFirstOf(const CharSet &characters) const noexcept -> CpIndex {
+    return findFirstOf(characters, CpIndex::zero());
 }
 
-auto U8StringCharReadTool::findFirstOf(const CharSet &characters, const unit::CpIndex start) const noexcept
-    -> unit::CpIndex {
+auto U8StringCharReadTool::findFirstOf(const CharSet &characters, const CpIndex start) const noexcept -> CpIndex {
     return findFirstOfCharacterSet(characters, start, true);
 }
 
-auto U8StringCharReadTool::findFirstNotOf(const CharSet &characters) const noexcept -> unit::CpIndex {
-    return findFirstNotOf(characters, unit::CpIndex::zero());
+auto U8StringCharReadTool::findFirstNotOf(const CharSet &characters) const noexcept -> CpIndex {
+    return findFirstNotOf(characters, CpIndex::zero());
 }
 
-auto U8StringCharReadTool::findFirstNotOf(const CharSet &characters, const unit::CpIndex start) const noexcept
-    -> unit::CpIndex {
+auto U8StringCharReadTool::findFirstNotOf(const CharSet &characters, const CpIndex start) const noexcept -> CpIndex {
     return findFirstOfCharacterSet(characters, start, false);
 }
 
-auto U8StringCharReadTool::findLastOf(const CharSet &characters) const noexcept -> unit::CpIndex {
-    return findLastOf(characters, unit::CpIndex::end(charLength()));
+auto U8StringCharReadTool::findLastOf(const CharSet &characters) const noexcept -> CpIndex {
+    return findLastOf(characters, CpIndex::end(charLength()));
 }
 
-auto U8StringCharReadTool::findLastOf(const CharSet &characters, const unit::CpIndex end) const noexcept
-    -> unit::CpIndex {
+auto U8StringCharReadTool::findLastOf(const CharSet &characters, const CpIndex end) const noexcept -> CpIndex {
     return findLastOfCharacterSet(characters, end, true);
 }
 
-auto U8StringCharReadTool::findLastNotOf(const CharSet &characters) const noexcept -> unit::CpIndex {
-    return findLastNotOf(characters, unit::CpIndex::end(charLength()));
+auto U8StringCharReadTool::findLastNotOf(const CharSet &characters) const noexcept -> CpIndex {
+    return findLastNotOf(characters, CpIndex::end(charLength()));
 }
 
-auto U8StringCharReadTool::findLastNotOf(const CharSet &characters, const unit::CpIndex end) const noexcept
-    -> unit::CpIndex {
+auto U8StringCharReadTool::findLastNotOf(const CharSet &characters, const CpIndex end) const noexcept -> CpIndex {
     return findLastOfCharacterSet(characters, end, false);
 }
 
-auto U8StringCharReadTool::find(const U8StringDataView &text) const noexcept -> unit::CpIndex {
-    return find(text, unit::CpIndex::zero());
+auto U8StringCharReadTool::find(const U8StringDataView &text) const noexcept -> CpIndex {
+    return find(text, CpIndex::zero());
 }
 
-auto U8StringCharReadTool::find(const U8StringDataView &text, const unit::CpIndex start) const noexcept
-    -> unit::CpIndex {
+auto U8StringCharReadTool::find(const U8StringDataView &text, const CpIndex start) const noexcept -> CpIndex {
     if (start.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     const auto needle = text.dataSpan();
     auto position = byteIndexAt(start);
     if (position.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
     if (needle.empty()) {
         return start;
@@ -180,7 +177,7 @@ auto U8StringCharReadTool::find(const U8StringDataView &text, const unit::CpInde
 
     const auto data = _data.dataSpan();
     if (position.toSizeT() >= data.size()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     auto currentIndex = start;
@@ -191,23 +188,23 @@ auto U8StringCharReadTool::find(const U8StringDataView &text, const unit::CpInde
         utf8::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    return unit::CpIndex::noIndex();
+    return CpIndex::noIndex();
 }
 
 auto U8StringCharReadTool::findFirstOfCharacterSet(
-    const CharacterSet &characters, const unit::CpIndex start, const bool isMatching) const noexcept -> unit::CpIndex {
+    const CharacterSet &characters, const CpIndex start, const bool isMatching) const noexcept -> CpIndex {
     if (start.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     auto position = byteIndexAt(start);
     if (position.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (position.toSizeT() >= data.size()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     auto currentIndex = start;
@@ -218,23 +215,23 @@ auto U8StringCharReadTool::findFirstOfCharacterSet(
         }
         ++currentIndex;
     }
-    return unit::CpIndex::noIndex();
+    return CpIndex::noIndex();
 }
 
 auto U8StringCharReadTool::findLastOfCharacterSet(
-    const CharacterSet &characters, const unit::CpIndex end, const bool isMatching) const noexcept -> unit::CpIndex {
+    const CharacterSet &characters, const CpIndex end, const bool isMatching) const noexcept -> CpIndex {
     if (end.isNoIndex() || end.isZero()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     auto position = byteIndexAt(end);
     if (position.isNoIndex()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     const auto data = _data.dataSpan();
     if (data.empty() || position.isZero()) {
-        return unit::CpIndex::noIndex();
+        return CpIndex::noIndex();
     }
 
     auto currentIndex = end;
@@ -247,15 +244,14 @@ auto U8StringCharReadTool::findLastOfCharacterSet(
             return currentIndex;
         }
     }
-    return unit::CpIndex::noIndex();
+    return CpIndex::noIndex();
 }
 
 auto U8StringCharReadTool::matchesCharacterSequence(
-    const std::span<const char> haystack,
-    const unit::ByteIndex candidateStart,
-    const std::span<const char> needle) noexcept -> bool {
+    const std::span<const char> haystack, const ByteIndex candidateStart, const std::span<const char> needle) noexcept
+    -> bool {
     auto haystackPosition = candidateStart;
-    auto needlePosition = unit::ByteIndex::zero();
+    auto needlePosition = ByteIndex::zero();
     while (needlePosition.toSizeT() < needle.size()) {
         if (haystackPosition.toSizeT() >= haystack.size()) {
             return false;

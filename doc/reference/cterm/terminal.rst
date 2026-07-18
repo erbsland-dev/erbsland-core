@@ -41,12 +41,14 @@ Interface
 .. doxygenclass:: erbsland::cterm::BlockPrintContext
     :members:
 .. doxygentypedef:: erbsland::cterm::BlockRange
+.. doxygentypedef:: erbsland::cterm::BlockStringLines
+
 .. doxygenclass:: erbsland::cterm::BlockString
     :members:
-
-.. doxygentypedef:: erbsland::cterm::BlockStringLines
-.. doxygenclass:: erbsland::cterm::BlockStringView
+.. doxygenclass:: erbsland::cterm::BlockStringEditor
     :members:
+
+.. doxygentypedef:: erbsland::cterm::BlockStringEditorLines
 .. doxygenclass:: erbsland::cterm::BlockStyle
     :members:
 .. doxygenclass:: erbsland::cterm::BlockText

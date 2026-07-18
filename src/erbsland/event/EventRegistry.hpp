@@ -9,8 +9,8 @@
 #include "EventRegistry_fwd.hpp"
 
 #include "../core/impl/ApplicationData_fwd.hpp"
+#include "../text/String.hpp"
 #include "../text/StringHashMap.hpp"
-#include "../text/StringView.hpp"
 
 #include <mutex>
 
@@ -39,7 +39,7 @@ public:
     /// @param name Must be a reverse domain name. E.g. `com.example.myapp.MyEvent`.
     ///    Valid characters are `-_.a-zA-Z0-9`. The maximum length is 200 code-points.
     /// @param description A description of the event type. The maximum length is 2000 code-points.
-    [[nodiscard]] auto registerEvent(text::StringView name, text::StringView description = {}) -> EventId;
+    [[nodiscard]] auto registerEvent(text::String name, text::String description = {}) -> EventId;
 
     /// Test if an event is registered.
     /// @param identifier The event identifier.
@@ -47,12 +47,12 @@ public:
 
     /// Test if an event is registered.
     /// @param name The event name.
-    [[nodiscard]] auto isRegistered(const text::StringView &name) const noexcept -> bool;
+    [[nodiscard]] auto isRegistered(const text::String &name) const noexcept -> bool;
 
     /// Get the event identifier from a given ID
     /// @param name The event name.
     /// @return The event identifier or `noEvent()` if the event is not registered.
-    [[nodiscard]] auto getEventId(const text::StringView &name) const noexcept -> EventId;
+    [[nodiscard]] auto getEventId(const text::String &name) const noexcept -> EventId;
 
     /// Access event information for a given ID
     /// @param identifier The event identifier.
@@ -63,7 +63,7 @@ public:
     /// @param name Must be a reverse domain name. E.g. `com.example.myapp.MyBackend`.
     ///    Valid characters are `-_.a-zA-Z0-9`. The maximum length is 200 code-points.
     /// @param description A description of the backend type. The maximum length is 2000 code-points.
-    [[nodiscard]] auto registerBackend(text::StringView name, text::StringView description = {}) -> EventBackendId;
+    [[nodiscard]] auto registerBackend(text::String name, text::String description = {}) -> EventBackendId;
 
     /// Test if a backend is registered.
     /// @param identifier The backend identifier.
@@ -71,12 +71,12 @@ public:
 
     /// Test if a backend is registered.
     /// @param name The backend name.
-    [[nodiscard]] auto isBackendRegistered(const text::StringView &name) const noexcept -> bool;
+    [[nodiscard]] auto isBackendRegistered(const text::String &name) const noexcept -> bool;
 
     /// Get the backend identifier from a given ID.
     /// @param name The backend name.
     /// @return The backend identifier or `noBackend()` if the backend is not registered.
-    [[nodiscard]] auto getBackendId(const text::StringView &name) const noexcept -> EventBackendId;
+    [[nodiscard]] auto getBackendId(const text::String &name) const noexcept -> EventBackendId;
 
     /// Access backend information for a given ID.
     /// @param identifier The backend identifier.
@@ -103,9 +103,9 @@ private:
     /// Register all internal identifiers.
     void registerInternalIds() noexcept;
     /// Add an event to the registry (unchecked).
-    void addEvent(EventId eventId, text::StringView name, text::StringView description);
+    void addEvent(EventId eventId, text::String name, text::String description);
     /// Add a backend to the registry (unchecked).
-    void addBackend(EventBackendId backendId, text::StringView name, text::StringView description);
+    void addBackend(EventBackendId backendId, text::String name, text::String description);
 
 private:
     mutable std::recursive_mutex _mutex;                               ///< The mutex to protect the registry.

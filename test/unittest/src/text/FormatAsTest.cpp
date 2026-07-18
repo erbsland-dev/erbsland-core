@@ -5,7 +5,7 @@
 #include <erbsland/text/impl/FormatMakeArguments.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8Format.hpp>
-#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ArgumentUnit.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
@@ -61,9 +61,9 @@ struct FormatAsUInt64<test::CustomUnsignedValue> : FormatAs<test::CustomUnsigned
 };
 
 template <>
-struct FormatAsU8Text<test::CustomTextValue> : FormatAs<test::CustomTextValue, U8String> {
-    [[nodiscard]] auto format(const test::CustomTextValue &value) const -> U8String {
-        return U8String{std::string_view{value.value}};
+struct FormatAsU8Text<test::CustomTextValue> : FormatAs<test::CustomTextValue, U8StringEditor> {
+    [[nodiscard]] auto format(const test::CustomTextValue &value) const -> U8StringEditor {
+        return U8StringEditor{std::string_view{value.value}};
     }
 };
 

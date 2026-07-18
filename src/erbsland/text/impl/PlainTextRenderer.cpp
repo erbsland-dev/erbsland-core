@@ -5,7 +5,7 @@
 #include "CodeLineMarkerData.hpp"
 #include "CodeSnippetLayout.hpp"
 
-#include "../AnyStringView.hpp"
+#include "../AnyString.hpp"
 #include "../CharSet.hpp"
 #include "../Literals.hpp"
 #include "../StringCharReader.hpp"
@@ -20,16 +20,18 @@ namespace erbsland::text::impl {
 
 using namespace literals;
 
+using unit::CpLength;
+
 PlainTextRenderer::PlainTextRenderer(const TextDocument &document) noexcept : _document{document} {
 }
 
 auto PlainTextRenderer::build() -> String {
-    auto builder = StringBuilder{};
+    auto builder = AnyStringBuilder{};
     appendTo(builder);
     return builder.toString();
 }
 
-auto PlainTextRenderer::appendTo(StringBuilder &builder) -> StringBuilder & {
+auto PlainTextRenderer::appendTo(AnyStringBuilder &builder) -> AnyStringBuilder & {
     resetRenderState();
     renderNode(builder, _document.root());
     return builder;
@@ -37,14 +39,15 @@ auto PlainTextRenderer::appendTo(StringBuilder &builder) -> StringBuilder & {
 
 void PlainTextRenderer::resetRenderState() noexcept {
     _firstLine = true;
-    _diagnosticDocument = std::ranges::any_of(_document.root()->children(), [](const TextNodePtr &node) noexcept {
-        return node != nullptr && node->type() == TextNodeType::Heading && node->level() == 1 &&
-            node->style().contains("diagnostic-title"_el) && node->style().contains("error"_el);
-    });
+    _diagnosticDocument =
+        std::ranges::any_of(_document.root()->children(), [](const TextNodePtr &node) noexcept -> bool {
+            return node != nullptr && node->type() == TextNodeType::Heading && node->level() == 1 &&
+                node->style().contains("diagnostic-title"_el) && node->style().contains("error"_el);
+        });
     _indent = {};
 }
 
-void PlainTextRenderer::renderNode(StringBuilder &builder, const TextNodePtr &node) {
+void PlainTextRenderer::renderNode(AnyStringBuilder &builder, const TextNodePtr &node) {
     if (node == nullptr) {
         return;
     }
@@ -56,7 +59,7 @@ void PlainTextRenderer::renderNode(StringBuilder &builder, const TextNodePtr &no
         return;
     case TextNodeType::Blockquote: {
         const auto previousIndent = _indent;
-        _indent += unit::CpLength{2U};
+        _indent += CpLength{2U};
         renderChildren(builder, *node);
         _indent = previousIndent;
         return;
@@ -92,14 +95,14 @@ void PlainTextRenderer::renderNode(StringBuilder &builder, const TextNodePtr &no
     case TextNodeType::_count:
         return;
     default:
-        auto line = StringBuilder{};
+        auto line = AnyStringBuilder{};
         appendInline(line, *node);
         appendLine(builder, {}, line.toString());
         return;
     }
 }
 
-void PlainTextRenderer::renderChildren(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::renderChildren(AnyStringBuilder &builder, const TextNode &node) {
     auto inDiagnosticSection = false;
     for (const auto &child : node.children()) {
         if (child->type() == TextNodeType::Heading) {
@@ -107,7 +110,7 @@ void PlainTextRenderer::renderChildren(StringBuilder &builder, const TextNode &n
         }
         const auto previousIndent = _indent;
         if (isRootDiagnosticContent(*child) || inDiagnosticSection) {
-            _indent += unit::CpLength{2U};
+            _indent += CpLength{2U};
         }
         renderNode(builder, child);
         _indent = previousIndent;
@@ -117,7 +120,7 @@ void PlainTextRenderer::renderChildren(StringBuilder &builder, const TextNode &n
     }
 }
 
-void PlainTextRenderer::renderCodeSnippet(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::renderCodeSnippet(AnyStringBuilder &builder, const TextNode &node) {
     for (const auto &line : node.children()) {
         if (line->type() != TextNodeType::CodeLine) {
             continue;
@@ -141,15 +144,15 @@ void PlainTextRenderer::renderCodeSnippet(StringBuilder &builder, const TextNode
         auto gutter = String{};
         auto markerGutter = String{};
         if (!number.isEmpty()) {
-            auto numberBuilder = StringBuilder{};
+            auto numberBuilder = AnyStringBuilder{};
             const auto padding =
                 std::max(cCodeLineNumberWidth - static_cast<int>(number.characterLength().toSizeT()), 0);
-            numberBuilder.append(Char{U' '}, unit::CpLength::fromSizeT(static_cast<std::size_t>(padding)));
+            numberBuilder.append(Char{U' '}, CpLength::fromSizeT(static_cast<std::size_t>(padding)));
             numberBuilder.append(number);
             numberBuilder.append(" │ "_el);
             gutter = numberBuilder.toString();
-            auto markerBuilder = StringBuilder{};
-            markerBuilder.append(Char{U' '}, unit::CpLength::fromSizeT(cCodeLineNumberWidth));
+            auto markerBuilder = AnyStringBuilder{};
+            markerBuilder.append(Char{U' '}, CpLength::fromSizeT(cCodeLineNumberWidth));
             markerBuilder.append(" │ "_el);
             markerGutter = markerBuilder.toString();
         }
@@ -157,7 +160,7 @@ void PlainTextRenderer::renderCodeSnippet(StringBuilder &builder, const TextNode
             std::max(cPlainCodeSnippetWidth - static_cast<int>(gutter.characterLength().toSizeT()), 1);
         const auto rows = CodeSnippetLayout::build(source, markers, sourceWidth);
         for (auto rowIndex = std::size_t{0}; rowIndex < rows.size(); ++rowIndex) {
-            auto rowBuilder = StringBuilder{};
+            auto rowBuilder = AnyStringBuilder{};
             for (const auto &cell : rows[rowIndex].cells) {
                 rowBuilder.append(cell.text);
             }
@@ -168,15 +171,15 @@ void PlainTextRenderer::renderCodeSnippet(StringBuilder &builder, const TextNode
                 if (!CodeSnippetLayout::markerIntersects(rows[rowIndex], marker)) {
                     continue;
                 }
-                auto markerBuilder = StringBuilder{};
+                auto markerBuilder = AnyStringBuilder{};
                 markerBuilder.append(
                     Char{U' '},
-                    unit::CpLength::fromSizeT(
+                    CpLength::fromSizeT(
                         static_cast<std::size_t>(CodeSnippetLayout::markerStart(rows[rowIndex], marker))));
                 const auto point = marker.range.isEmpty();
                 markerBuilder.append(
                     Char{point ? U'↑' : U'▔'},
-                    unit::CpLength::fromSizeT(
+                    CpLength::fromSizeT(
                         static_cast<std::size_t>(CodeSnippetLayout::markerLength(rows[rowIndex], marker))));
                 auto isLastMarkerRow = true;
                 for (auto following = rowIndex + 1; following < rows.size(); ++following) {
@@ -197,7 +200,7 @@ void PlainTextRenderer::renderCodeSnippet(StringBuilder &builder, const TextNode
     }
 }
 
-void PlainTextRenderer::renderTermList(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::renderTermList(AnyStringBuilder &builder, const TextNode &node) {
     const auto descriptionColumn = termListDescriptionColumn(node);
     for (const auto &child : node.children()) {
         if (child->type() == TextNodeType::TermItem || child->type() == TextNodeType::FieldItem) {
@@ -207,7 +210,7 @@ void PlainTextRenderer::renderTermList(StringBuilder &builder, const TextNode &n
 }
 
 void PlainTextRenderer::renderTermItem(
-    StringBuilder &builder, const TextNode &node, const unit::CpLength descriptionColumn) {
+    AnyStringBuilder &builder, const TextNode &node, const CpLength descriptionColumn) {
     auto name = String{};
     auto description = String{};
     for (const auto &child : node.children()) {
@@ -221,7 +224,7 @@ void PlainTextRenderer::renderTermItem(
     if (description.isEmpty()) {
         appendLine(builder, {}, name);
     } else {
-        auto prefix = StringBuilder{};
+        auto prefix = AnyStringBuilder{};
         prefix.append(name);
         const auto nameLength = name.characterLength();
         if (nameLength < descriptionColumn) {
@@ -230,13 +233,13 @@ void PlainTextRenderer::renderTermItem(
             appendLine(builder, {}, name);
             prefix.append(Char{U' '}, descriptionColumn);
         }
-        auto continuation = StringBuilder{};
+        auto continuation = AnyStringBuilder{};
         continuation.append(Char{U' '}, descriptionColumn);
         appendWrappedLine(builder, prefix.toString(), continuation.toString(), description);
     }
 
     const auto previousIndent = _indent;
-    _indent += unit::CpLength{2U};
+    _indent += CpLength{2U};
     for (const auto &child : node.children()) {
         if (child->type() == TextNodeType::TermList || child->type() == TextNodeType::FieldList) {
             renderTermList(builder, *child);
@@ -246,7 +249,7 @@ void PlainTextRenderer::renderTermItem(
 }
 
 auto PlainTextRenderer::termName(const TextNode &node) -> String {
-    auto builder = StringBuilder{};
+    auto builder = AnyStringBuilder{};
     auto firstOptionName = true;
     const auto usesOptionNames = node.contains(TextNodeType::OptionName);
     for (const auto &child : node.children()) {
@@ -273,7 +276,7 @@ auto PlainTextRenderer::termName(const TextNode &node) -> String {
 }
 
 auto PlainTextRenderer::termDescription(const TextNode &node) -> String {
-    auto builder = StringBuilder{};
+    auto builder = AnyStringBuilder{};
     for (const auto &child : node.children()) {
         if (child->type().renderClass() == TextNodeType::RenderClass::Structure) {
             continue;
@@ -286,8 +289,8 @@ auto PlainTextRenderer::termDescription(const TextNode &node) -> String {
     return builder.toString();
 }
 
-auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> unit::CpLength {
-    auto widest = unit::CpLength{};
+auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> CpLength {
+    auto widest = CpLength{};
     if (node.type() == TextNodeType::TermItem || node.type() == TextNodeType::FieldItem) {
         for (const auto &child : node.children()) {
             if (child->type() == TextNodeType::TermName || child->type() == TextNodeType::FieldLabel) {
@@ -306,12 +309,12 @@ auto PlainTextRenderer::termListDescriptionColumn(const TextNode &node) -> unit:
         }
     }
     if (node.type() == TextNodeType::FieldList || node.type() == TextNodeType::FieldItem) {
-        return widest + unit::CpLength::one();
+        return widest + CpLength::one();
     }
-    return std::clamp(widest + unit::CpLength{2U}, cTermDescriptionMinimumColumn, cTermDescriptionMaximumColumn);
+    return std::clamp(widest + CpLength{2U}, cTermDescriptionMinimumColumn, cTermDescriptionMaximumColumn);
 }
 
-void PlainTextRenderer::renderList(StringBuilder &builder, const TextNode &node, const bool numbered) {
+void PlainTextRenderer::renderList(AnyStringBuilder &builder, const TextNode &node, const bool numbered) {
     auto index = std::size_t{1U};
     for (const auto &child : node.children()) {
         const auto prefix = listPrefix(index, numbered);
@@ -322,14 +325,14 @@ void PlainTextRenderer::renderList(StringBuilder &builder, const TextNode &node,
         }
         appendLine(builder, prefix, {});
         const auto previousIndent = _indent;
-        _indent += unit::CpLength{2U};
+        _indent += CpLength{2U};
         renderNode(builder, child);
         _indent = previousIndent;
     }
 }
 
-void PlainTextRenderer::renderListItem(StringBuilder &builder, const TextNode &node, StringView prefix) {
-    auto line = StringBuilder{};
+void PlainTextRenderer::renderListItem(AnyStringBuilder &builder, const TextNode &node, const String &prefix) {
+    auto line = AnyStringBuilder{};
     if (!node.text().isEmpty()) {
         line.append(node.text());
     }
@@ -341,7 +344,7 @@ void PlainTextRenderer::renderListItem(StringBuilder &builder, const TextNode &n
     appendLine(builder, prefix, line.toString());
 
     const auto previousIndent = _indent;
-    _indent += unit::CpLength{2U};
+    _indent += CpLength{2U};
     for (const auto &child : node.children()) {
         if (isNestedBlock(*child)) {
             renderNode(builder, child);
@@ -350,7 +353,7 @@ void PlainTextRenderer::renderListItem(StringBuilder &builder, const TextNode &n
     _indent = previousIndent;
 }
 
-void PlainTextRenderer::appendInline(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::appendInline(AnyStringBuilder &builder, const TextNode &node) {
     switch (node.type().raw()) {
     case TextNodeType::LineBreak:
         builder.append(U'\n');
@@ -387,7 +390,7 @@ void PlainTextRenderer::appendInline(StringBuilder &builder, const TextNode &nod
 }
 
 void PlainTextRenderer::appendPlaceholder(
-    StringBuilder &builder, const TextNode &node, const StringView prefix, const StringView suffix) {
+    AnyStringBuilder &builder, const TextNode &node, const String &prefix, const String &suffix) {
     builder.append(prefix);
     if (!node.text().isEmpty()) {
         builder.append(node.text());
@@ -396,13 +399,13 @@ void PlainTextRenderer::appendPlaceholder(
     builder.append(suffix);
 }
 
-void PlainTextRenderer::appendInlineChildren(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::appendInlineChildren(AnyStringBuilder &builder, const TextNode &node) {
     for (const auto &child : node.children()) {
         appendInline(builder, *child);
     }
 }
 
-void PlainTextRenderer::appendNodeText(StringBuilder &builder, const TextNode &node) {
+void PlainTextRenderer::appendNodeText(AnyStringBuilder &builder, const TextNode &node) {
     if (!node.text().isEmpty()) {
         builder.append(node.text());
     }
@@ -412,12 +415,12 @@ void PlainTextRenderer::appendNodeText(StringBuilder &builder, const TextNode &n
 }
 
 auto PlainTextRenderer::nodeText(const TextNode &node) -> String {
-    auto builder = StringBuilder{};
+    auto builder = AnyStringBuilder{};
     appendNodeText(builder, node);
     return builder.toString();
 }
 
-void PlainTextRenderer::appendLine(StringBuilder &builder, const StringView &prefix, const StringView &text) {
+void PlainTextRenderer::appendLine(AnyStringBuilder &builder, const String &prefix, const String &text) {
     if (!_firstLine) {
         builder.append(U'\n');
     }
@@ -432,10 +435,10 @@ void PlainTextRenderer::appendLine(StringBuilder &builder, const StringView &pre
 }
 
 void PlainTextRenderer::appendWrappedLine(
-    StringBuilder &builder, const StringView &prefix, const StringView &continuation, const StringView &text) {
+    AnyStringBuilder &builder, const String &prefix, const String &continuation, const String &text) {
     const static auto whiteSpace = CharSet::from(AsciiCategory::Whitespace);
     auto reader = StringCharReader{text};
-    auto line = StringBuilder::basedOn(prefix);
+    auto line = AnyStringBuilder::basedOn(prefix);
     auto firstWord = true;
     auto continuationLine = false;
 
@@ -444,7 +447,7 @@ void PlainTextRenderer::appendWrappedLine(
             reader.advance();
         }
 
-        auto wordLength = unit::CpLength{};
+        auto wordLength = CpLength{};
         reader.startCapture();
         reader.readUntil(
             [&](Char) -> util::LoopStatus {
@@ -456,7 +459,7 @@ void PlainTextRenderer::appendWrappedLine(
             break;
         }
 
-        const auto separatorLength = firstWord ? unit::CpLength{} : unit::CpLength::one();
+        const auto separatorLength = firstWord ? CpLength{} : CpLength::one();
         if (!firstWord && line.length() + separatorLength + wordLength > cPlainTermListWidth) {
             appendLine(builder, {}, line.toString());
             line.clear();
@@ -475,7 +478,7 @@ void PlainTextRenderer::appendWrappedLine(
     }
 }
 
-void PlainTextRenderer::appendIndent(StringBuilder &builder, const unit::CpLength indent) {
+void PlainTextRenderer::appendIndent(AnyStringBuilder &builder, const CpLength indent) {
     if (!indent.isZero()) {
         builder.append(Char{U' '}, indent);
     }
@@ -483,12 +486,9 @@ void PlainTextRenderer::appendIndent(StringBuilder &builder, const unit::CpLengt
 
 auto PlainTextRenderer::listPrefix(const std::size_t index, const bool numbered) -> String {
     if (!numbered) {
-        return String{"- "_el};
+        return "- "_el;
     }
-    auto builder = StringBuilder{};
-    builder.appendInteger(index);
-    builder.append(". "_el);
-    return builder.toString();
+    return String::fromJoined({String::fromInteger(index), ". "_el});
 }
 
 auto PlainTextRenderer::isNestedBlock(const TextNode &node) noexcept -> bool {

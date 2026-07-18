@@ -20,11 +20,11 @@ public:
 private:
     /// One attribute row in the demo output.
     struct AttributeSpec {
-        el::StringView name;        ///< The display name for the row.
+        el::String name;            ///< The display name for the row.
         BlockAttributes::Flag flag; ///< The represented attribute.
-        el::StringView sgrCodes;    ///< The related ANSI SGR codes.
-        el::StringView note;        ///< A short note for the row.
-        el::StringView sampleText;  ///< The sample text rendered with the attribute.
+        el::String sgrCodes;        ///< The related ANSI SGR codes.
+        el::String note;            ///< A short note for the row.
+        el::String sampleText;      ///< The sample text rendered with the attribute.
     };
 
 private:
@@ -34,8 +34,8 @@ private:
     void printAttributeRow(const AttributeSpec &spec, bool supported) noexcept;
     void printCombinations() noexcept;
     void printPausePrompt() noexcept;
-    [[nodiscard]] static auto padded(el::StringView text, std::size_t width) -> el::String;
-    [[nodiscard]] static auto supportLabel(bool supported) -> el::StringView;
+    [[nodiscard]] static auto padded(el::String text, std::size_t width) -> el::String;
+    [[nodiscard]] static auto supportLabel(bool supported) -> el::String;
     [[nodiscard]] static auto sampleAttributes(BlockAttributes::Flag flag) -> BlockAttributes;
 };
 

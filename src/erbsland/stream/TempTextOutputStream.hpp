@@ -55,9 +55,9 @@ public: // implement OutputStream / TextOutputStream
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
     auto write(text::Char character) -> StreamWriteStatus override;
-    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto write(const text::String &text) -> StreamWriteStatus override;
     auto writeLine() -> StreamWriteStatus override;
-    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine(const text::String &text) -> StreamWriteStatus override;
 
 private:
     /// Create a temporary text output stream for an existing path and stream.
@@ -65,9 +65,7 @@ private:
 
 private:
     [[noreturn]] void throwError(
-        text::StringView title,
-        text::StringView description,
-        system::PlatformErrorContextConstPtr platformContext) const;
+        text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const;
 
 private:
     path::Path _path;

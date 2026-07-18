@@ -12,9 +12,9 @@ Interface
 .. doxygentypedef:: erbsland::text::StringCIHashSet
 .. doxygentypedef:: erbsland::text::StringCIMap
 .. doxygentypedef:: erbsland::text::StringCISet
+.. doxygentypedef:: erbsland::text::StringEditorList
 .. doxygentypedef:: erbsland::text::StringHashMap
 .. doxygentypedef:: erbsland::text::StringHashSet
 .. doxygentypedef:: erbsland::text::StringList
 .. doxygentypedef:: erbsland::text::StringMap
 .. doxygentypedef:: erbsland::text::StringSet
-.. doxygentypedef:: erbsland::text::StringViewList

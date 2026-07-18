@@ -10,15 +10,15 @@ namespace demo {
 using namespace el::text::literals;
 
 struct ObservationSettings {
-    el::StringView gebied;
-    el::StringView notitie;
+    el::String gebied;
+    el::String notitie;
     el::OptionInteger interval{0};
     bool stil{false};
 };
 
 ObservationSettings settings;
 
-[[nodiscard]] auto makeArgs(std::initializer_list<el::StringView> args) -> el::CommandLineArguments {
+[[nodiscard]] auto makeArgs(std::initializer_list<el::String> args) -> el::CommandLineArguments {
     auto result = el::CommandLineArguments{};
     result.reserve(el::ElementCount{args.size()});
     for (const auto &arg : args) {
@@ -59,7 +59,7 @@ ObservationSettings settings;
     set->setHelpDescription("Values used only by the reporting component."_el);
     set->addOption({"-n"_el, "--note"_el, "note"_el})
         .setType(el::OptionType::Text)
-        .setDefaultValue(el::String{"no observations"_el})
+        .setDefaultValue("no observations"_el)
         .setHelpDescription("Short text for the field report."_el);
     set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Suppresses progress lines."_el);
     set->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {

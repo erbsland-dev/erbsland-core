@@ -12,7 +12,7 @@ class EncodingError : public err::RuntimeError {
 public:
     /// Create an encoding error exception with a reason.
     /// @param reason The reason for the encoding error.
-    explicit EncodingError(StringView reason) noexcept : err::RuntimeError{std::move(reason)} {}
+    explicit EncodingError(String reason) noexcept : err::RuntimeError{std::move(reason)} {}
     /// @overload
     explicit EncodingError(const std::string_view reason) noexcept : err::RuntimeError{reason} {}
 

@@ -67,7 +67,7 @@ public:
         REQUIRE_THROWS_AS(
             erbsland::err::ParameterError,
             MatrixBlockCombinationStyle(
-                erbsland::text::U32String::fromCharacter(U'a', erbsland::unit::CpLength{256U}), {}));
+                erbsland::text::U32StringEditor::fromCharacter(U'a', erbsland::unit::CpLength{256U}), {}));
     }
 
     void testCommonBoxFrameCombinesExactMatches() {

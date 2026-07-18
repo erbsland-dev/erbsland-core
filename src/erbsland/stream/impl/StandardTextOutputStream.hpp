@@ -38,9 +38,9 @@ public: // implement TextOutputStream
     void abort() noexcept override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
     auto write(text::Char character) -> StreamWriteStatus override;
-    auto write(const text::StringView &text) -> StreamWriteStatus override;
+    auto write(const text::String &text) -> StreamWriteStatus override;
     auto writeLine() -> StreamWriteStatus override;
-    auto writeLine(const text::StringView &text) -> StreamWriteStatus override;
+    auto writeLine(const text::String &text) -> StreamWriteStatus override;
 
 public:
     using TextOutputStream::write;

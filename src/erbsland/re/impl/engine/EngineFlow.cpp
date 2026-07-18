@@ -296,7 +296,7 @@ void Engine::handleStopAtomic(EngineState &state, EngineThread &thread, const si
     state.pruneCurrentList(affectedReferences, threadIndex);
 }
 
-void Engine::throwError(const text::StringView &message) {
+void Engine::throwError(const text::String &message) {
     throw RegExError{ErrorCategory::Engine, "Failed to match regular expression"_el, message};
 }
 

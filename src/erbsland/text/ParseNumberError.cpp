@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParseNumberError.hpp"
 
-#include "String.hpp"
+#include "StringEditor.hpp"
 
 namespace erbsland::text {
 

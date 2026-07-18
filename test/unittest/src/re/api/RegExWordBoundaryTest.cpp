@@ -11,7 +11,7 @@ using namespace el::unittest::fh;
 TESTED_TARGETS(RegEx)
 TAGS(Api)
 class RegExWordBoundaryTest final : public UNITTEST_SUBCLASS(RegExBase) {
-    static auto countFindAll(const RegEx &re, const StringView &text) -> std::size_t {
+    static auto countFindAll(const RegEx &re, const String &text) -> std::size_t {
         std::size_t count = 0;
         for (const auto &match : re.findAll(text)) {
             static_cast<void>(match);
@@ -20,8 +20,8 @@ class RegExWordBoundaryTest final : public UNITTEST_SUBCLASS(RegExBase) {
         return count;
     }
 
-    static auto makeRepeatedWords(const std::size_t wordCount) -> String {
-        auto text = String{};
+    static auto makeRepeatedWords(const std::size_t wordCount) -> StringEditor {
+        auto text = StringEditor{};
         text.reserve(el::unit::ByteLength{wordCount * 5U});
         for (std::size_t i = 0; i < wordCount; ++i) {
             text.append("word"_el);

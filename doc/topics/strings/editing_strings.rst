@@ -4,8 +4,8 @@
 
 .. index::
     !single: Editing Strings
-    single: String Editing
-    single: String Modifiers
+    single: StringEditor Editing
+    single: StringEditor Modifiers
     single: clear
     single: reset
     single: append
@@ -19,14 +19,14 @@
 Editing Strings
 ***************
 
-:cpp:type:`String <erbsland::text::String>` is the editable string type for common application code.
+:cpp:type:`StringEditor <erbsland::text::StringEditor>` is the editable string type for common application code.
 Use it when text must change after it was created: fields are inserted, ranges are removed, markers are replaced, or a
 label is padded or shortened for display.
 
-The examples on this page use the common UTF-8 :cpp:type:`String <erbsland::text::String>` alias.
-The same editing model is available for the width-specific :cpp:class:`U8String <erbsland::text::U8String>`,
-:cpp:class:`U16String <erbsland::text::U16String>`, and
-:cpp:class:`U32String <erbsland::text::U32String>` types.
+The examples on this page use the common UTF-8 :cpp:type:`StringEditor <erbsland::text::StringEditor>` alias.
+The same editing model is available for the width-specific :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` types.
 
 You will learn how to choose between in-place and copy-based operations, when byte ranges are the most efficient
 coordinate system, and how to use higher-level editing helpers for replacement, alignment, and truncation.
@@ -38,37 +38,37 @@ Most editing operations have two forms.
 The in-place form changes the string and returns the same string object when chaining is useful.
 The copy form has a past-tense name and returns the edited result while leaving the source unchanged.
 
-For example, removal is available as :cpp:func:`remove() <erbsland::text::U8String::remove>` and
-:cpp:func:`removed() <erbsland::text::U8String::removed>`, replacement as
-:cpp:func:`replace() <erbsland::text::U8String::replace>` and
-:cpp:func:`replaced() <erbsland::text::U8String::replaced>`, and truncation as
-:cpp:func:`truncate() <erbsland::text::U8String::truncate>` and
-:cpp:func:`truncated() <erbsland::text::U8String::truncated>`.
+For example, removal is available as :cpp:func:`remove() <erbsland::text::U8StringEditor::remove>` and
+:cpp:func:`removed() <erbsland::text::U8StringEditor::removed>`, replacement as
+:cpp:func:`replace() <erbsland::text::U8StringEditor::replace>` and
+:cpp:func:`replaced() <erbsland::text::U8StringEditor::replaced>`, and truncation as
+:cpp:func:`truncate() <erbsland::text::U8StringEditor::truncate>` and
+:cpp:func:`truncated() <erbsland::text::U8StringEditor::truncated>`.
 
 Use byte ranges when indexes came from string search functions.
 For UTF-8 text, this keeps positions in the native storage coordinate system and avoids unnecessary conversions.
 Use code-point ranges for short, fixed-shape text where the edit position is naturally counted as decoded characters.
 
-For creating a new result from many fragments, prefer :cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
-Direct appending on :cpp:type:`String <erbsland::text::String>` is best when the string already exists and only a small
+For creating a new result from many fragments, prefer :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
+Direct appending on :cpp:type:`StringEditor <erbsland::text::StringEditor>` is best when the string already exists and only a small
 number of edits is needed.
 
 Clearing, Resetting, and Appending
 ==================================
 
-:cpp:func:`clear() <erbsland::text::U8String::clear>` removes all characters but keeps allocated storage for reuse.
-:cpp:func:`reset() <erbsland::text::U8String::reset>` returns the string to its default empty state and releases the
+:cpp:func:`clear() <erbsland::text::U8StringEditor::clear>` removes all characters but keeps allocated storage for reuse.
+:cpp:func:`reset() <erbsland::text::U8StringEditor::reset>` returns the string to its default empty state and releases the
 reserved storage.
 
 This distinction matters in parsers, formatters, and reusable buffers.
 Clear a temporary string when the next edit pass will likely need a similar capacity.
 Reset it when the storage should be released or the string should behave like a freshly constructed object.
 
-:cpp:func:`append() <erbsland::text::U8String::append>` can append text or repeat a single Unicode code point.
+:cpp:func:`append() <erbsland::text::U8StringEditor::append>` can append text or repeat a single Unicode code point.
 It is convenient for small edits on an already editable string.
 
 .. erbsland-demo::
-    :source: text/String/ClearResetAndAppend.cpp
+    :source: text/StringEditor/ClearResetAndAppend.cpp
     :exec: text/string --demo ClearResetAndAppend
     :source-sha256: 81fdbe13c703e5d98b6f75a258d8a0f5a7f7522cd1c203b7d76e05aa1c2241a7
 
@@ -79,10 +79,10 @@ It is convenient for small edits on an already editable string.
     /// the reserved storage.
     ///
     /// Use `append()` for a small number of direct edits on an existing string. When
-    /// a result is produced from many fragments in a loop, prefer `StringBuilder`
+    /// a result is produced from many fragments in a loop, prefer `AnyStringBuilder`
     /// because it is designed for incremental construction.
     void clearResetAndAppend() {
-        auto draft = "ridge log"_els;
+        auto draft = "ridge log"_el;
         draft.reserve(el::ByteLength{80U});
 
         // Append text and repeated code points directly to the editable string.
@@ -113,10 +113,10 @@ It is convenient for small edits on an already editable string.
 Removing and Keeping Ranges
 ===========================
 
-:cpp:func:`remove() <erbsland::text::U8String::remove>` deletes a byte or code-point range.
-:cpp:func:`keep() <erbsland::text::U8String::keep>` does the inverse and keeps only the selected range.
-The copy forms are :cpp:func:`removed() <erbsland::text::U8String::removed>` and
-:cpp:func:`kept() <erbsland::text::U8String::kept>`.
+:cpp:func:`remove() <erbsland::text::U8StringEditor::remove>` deletes a byte or code-point range.
+:cpp:func:`keep() <erbsland::text::U8StringEditor::keep>` does the inverse and keeps only the selected range.
+The copy forms are :cpp:func:`removed() <erbsland::text::U8StringEditor::removed>` and
+:cpp:func:`kept() <erbsland::text::U8StringEditor::kept>`.
 
 When a range is found by searching, keep it in byte coordinates and pass it directly to
 :cpp:class:`ByteRange <erbsland::unit::IntegerUnitRange>`.
@@ -124,7 +124,7 @@ For a small label or token with a known shape, :cpp:class:`CpRange <erbsland::un
 intent clearer.
 
 .. erbsland-demo::
-    :source: text/String/RemoveAndKeepRanges.cpp
+    :source: text/StringEditor/RemoveAndKeepRanges.cpp
     :exec: text/string --demo RemoveAndKeepRanges
     :source-sha256: a0f2cec03a7bdc8e6d5d37eeb8a8676fbc81bcf34a08afc933a9050ef5999178
 
@@ -138,7 +138,7 @@ intent clearer.
     /// are naturally counted as decoded characters. For long UTF-8 text, byte
     /// ranges avoid repeated scans from the beginning of the string.
     void removeAndKeepRanges() {
-        auto record = "site=Åsen|weather=klart|note=sol"_els;
+        auto record = "site=Åsen|weather=klart|note=sol"_el;
 
         // Search returns byte indexes, so the field can be removed without conversion.
         const auto weatherStart = record.find("weather="_el);
@@ -153,7 +153,7 @@ intent clearer.
         siteName.keep(el::ByteRange{siteValueStart, siteValueEnd});
 
         // Code-point ranges are readable for small labels with fixed structure.
-        auto label = "🌙Luna-04"_els;
+        auto label = "🌙Luna-04"_el;
         label.keep(el::CpRange{el::CpIndex{1U}, el::CpLength{4U}});
 
         el::io::printLine("Original: "_el, record);
@@ -175,16 +175,16 @@ intent clearer.
 Removing Text and Characters
 ============================
 
-:cpp:func:`removeFirst() <erbsland::text::U8String::removeFirst>` removes only the first matching text occurrence.
-:cpp:func:`removeAll() <erbsland::text::U8String::removeAll>` removes every matching occurrence.
+:cpp:func:`removeFirst() <erbsland::text::U8StringEditor::removeFirst>` removes only the first matching text occurrence.
+:cpp:func:`removeAll() <erbsland::text::U8StringEditor::removeAll>` removes every matching occurrence.
 
 There are two useful all-removal forms.
 Pass a :cpp:class:`CharSet <erbsland::text::CharSet>` when every matching character should disappear.
-Pass a string view when a complete text fragment should be removed.
+Pass a read-only string when a complete text fragment should be removed.
 Text removal works on decoded text, and an optional comparison function can be used for case-folded matching.
 
 .. erbsland-demo::
-    :source: text/String/RemoveFirstAndAll.cpp
+    :source: text/StringEditor/RemoveFirstAndAll.cpp
     :exec: text/string --demo RemoveFirstAndAll
     :source-sha256: 34396085312e2860a73e71391bb83ea659a9dd6fb37ca19bceb962a199f8b078
 
@@ -198,7 +198,7 @@ Text removal works on decoded text, and an optional comparison function can be u
     /// function such as `Char::compareCaseFolded` when case-insensitive matching is
     /// required.
     void removeFirstAndAll() {
-        const auto source = "mist :: frost :: mist :: aurora"_els;
+        const auto source = "mist :: frost :: mist :: aurora"_el;
 
         auto firstOnly = source;
         firstOnly.removeFirst("mist"_el);
@@ -209,7 +209,7 @@ Text removal works on decoded text, and an optional comparison function can be u
         auto withoutSeparators = source;
         withoutSeparators.removeAll(el::CharSet{": "_el});
 
-        auto folded = "Ähre | äHRE | aster"_els;
+        auto folded = "Ähre | äHRE | aster"_el;
         folded.removeAll("ähre"_el, el::Char::compareCaseFolded);
 
         el::io::printLine("Source: "_el, source);
@@ -231,10 +231,10 @@ Text removal works on decoded text, and an optional comparison function can be u
 Inserting and Replacing
 =======================
 
-:cpp:func:`insert() <erbsland::text::U8String::insert>` adds text at a byte or code-point index.
-:cpp:func:`replace() <erbsland::text::U8String::replace>` replaces a selected range with new text.
-:cpp:func:`replaceFirst() <erbsland::text::U8String::replaceFirst>` changes one matching text occurrence, while
-:cpp:func:`replaceAll() <erbsland::text::U8String::replaceAll>` changes all matching text occurrences or all characters
+:cpp:func:`insert() <erbsland::text::U8StringEditor::insert>` adds text at a byte or code-point index.
+:cpp:func:`replace() <erbsland::text::U8StringEditor::replace>` replaces a selected range with new text.
+:cpp:func:`replaceFirst() <erbsland::text::U8StringEditor::replaceFirst>` changes one matching text occurrence, while
+:cpp:func:`replaceAll() <erbsland::text::U8StringEditor::replaceAll>` changes all matching text occurrences or all characters
 from a character set.
 
 The same coordinate rule applies here as for removal.
@@ -242,7 +242,7 @@ Search first, then edit with byte indexes.
 Use code-point positions only when that is the natural way to describe the edit.
 
 .. erbsland-demo::
-    :source: text/String/InsertAndReplace.cpp
+    :source: text/StringEditor/InsertAndReplace.cpp
     :exec: text/string --demo InsertAndReplace
     :source-sha256: 91ea7e86f23849efd3d116f95371386c30fd77c55d7acb67c33961b2f0f99483
 
@@ -257,7 +257,7 @@ Use code-point positions only when that is the natural way to describe the edit.
     /// indexes and ranges when the text is short and the edit position is naturally
     /// counted in decoded characters.
     void insertAndReplace() {
-        auto report = "Plot 07 | sky=grey | sky=grey"_els;
+        auto report = "Plot 07 | sky=grey | sky=grey"_el;
 
         // A code-point index is readable for inserting at the beginning.
         report.insert(el::CpIndex{0U}, "☀ "_el);
@@ -273,7 +273,7 @@ Use code-point positions only when that is the natural way to describe the edit.
         // A character set replacement handles multiple separators in one pass.
         report.replaceAll(el::CharSet{"|="_el}, U'·');
 
-        auto token = "AβC"_els;
+        auto token = "AβC"_el;
         token.replace(el::CpRange{el::CpIndex{1U}, el::CpLength{1U}}, "beta"_el);
 
         el::io::printLine("Edited report: "_el, report);
@@ -291,17 +291,17 @@ Use code-point positions only when that is the natural way to describe the edit.
 Aligning and Truncating
 =======================
 
-:cpp:func:`aligned() <erbsland::text::U8String::aligned>` returns a padded copy with the requested decoded code-point
+:cpp:func:`aligned() <erbsland::text::U8StringEditor::aligned>` returns a padded copy with the requested decoded code-point
 width.
 It accepts a :cpp:class:`Alignment <erbsland::bgeo::Alignment>` value and an optional fill character.
 
-:cpp:func:`truncate() <erbsland::text::U8String::truncate>` shortens a string in place.
-:cpp:func:`truncated() <erbsland::text::U8String::truncated>` returns the shortened copy.
+:cpp:func:`truncate() <erbsland::text::U8StringEditor::truncate>` shortens a string in place.
+:cpp:func:`truncated() <erbsland::text::U8StringEditor::truncated>` returns the shortened copy.
 The :cpp:enum:`TruncateMode <erbsland::text::TruncateMode>` selects whether the beginning, middle, or end is removed.
 An optional ellipsis can be inserted into the result.
 
 .. erbsland-demo::
-    :source: text/String/AlignAndTruncate.cpp
+    :source: text/StringEditor/AlignAndTruncate.cpp
     :exec: text/string --demo AlignAndTruncate
     :source-sha256: 5fa4352a4a7ee321a90f43e3bd1b6ec87447ad0d4e39cf771e4c3322bcaa8d49
 
@@ -315,12 +315,12 @@ An optional ellipsis can be inserted into the result.
     /// copy. Truncation works by decoded code-point length and can keep the
     /// beginning, middle, or end of the original text.
     void alignAndTruncate() {
-        const auto label = "Alpenrose"_els;
+        const auto label = "Alpenrose"_el;
         el::io::printLine("|"_el, label.aligned(el::CpLength{14U}, el::Alignment::Left, U'.'), "|"_el);
         el::io::printLine("|"_el, label.aligned(el::CpLength{14U}, el::Alignment::HCenter, U'.'), "|"_el);
         el::io::printLine("|"_el, label.aligned(el::CpLength{14U}, el::Alignment::Right, U'.'), "|"_el);
 
-        const auto observation = "Observation: Alpenrose beside pale limestone under morning light"_els;
+        const auto observation = "Observation: Alpenrose beside pale limestone under morning light"_el;
         el::io::printLine("End: "_el, observation.truncated(el::CpLength{28U}, el::TruncateMode::End, "..."_el));
         el::io::printLine("Middle: "_el, observation.truncated(el::CpLength{28U}, el::TruncateMode::Middle, "..."_el));
         el::io::printLine("Begin: "_el, observation.truncated(el::CpLength{28U}, el::TruncateMode::Begin, "..."_el));
@@ -350,27 +350,27 @@ The following example combines the most common editing operations in one short w
 It starts with existing text, inserts a sentence, replaces repeated text, removes an unwanted range, appends a closing
 sentence, and finally formats the result with line breaks.
 
-This kind of workflow is a good fit for :cpp:type:`String <erbsland::text::String>` because the text already exists and
+This kind of workflow is a good fit for :cpp:type:`StringEditor <erbsland::text::StringEditor>` because the text already exists and
 only a limited number of direct edits are required.
-For larger generated documents, use :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` instead.
+For larger generated documents, use :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` instead.
 
 .. erbsland-demo::
-    :source: text/String/EditingText.cpp
+    :source: text/StringEditor/EditingText.cpp
     :exec: text/string --demo EditingText
     :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 
-    /// `String` is an owning, editable copy-on-write string type.
+    /// `StringEditor` is an owning, editable copy-on-write string type.
     /// Use it when you build text from scratch or modify existing text.
-    /// Use `StringView` for parameters and stored read-only text.
+    /// Use `String` for parameters and stored read-only text.
     void editingText() {
         // Create an editable string from a string literal.
-        auto story = el::String{"The frost lifts from the valley. A pale crocus opens beside the stone. "
+        auto story = el::StringEditor{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                 "Der Wind trägt Blätter durch die Luft."_el};
 
-        // Alternatively, create an editable string directly with the `""_els` literal.
-        auto intro = "A short alpine field note:"_els;
+        // Alternatively, create an editable string directly with the `""_el` literal.
+        auto intro = "A short alpine field note:"_el;
 
         // Find the insertion position after the first sentence.
         auto firstFullStopIndex = story.findFirstOf({U'.'});

@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <memory>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)
@@ -158,6 +160,30 @@ public:
             {"ab"_el, "{first}-{second}"_el, "a-b"_el},
         };
         WITH_CONTEXT(requireReplaceAll(testCases));
+    }
+
+    void testNamedGroupNamesOutliveRegEx() {
+        auto expression = RegEx::compile("(?<letter>a)"_el);
+        const auto match = expression->fullMatch("a"_el);
+        const auto weakExpression = std::weak_ptr<RegEx>{expression};
+
+        REQUIRE(match != nullptr);
+        expression.reset();
+
+        REQUIRE(weakExpression.expired());
+        REQUIRE(match->hasGroupName("LETTER"_el));
+        REQUIRE_EQUAL(match->group("letter"_el).name(), "letter"_el);
+        REQUIRE_EQUAL(match->content("letter"_el), "a"_el);
+    }
+
+    void testCopiedRegExCanCreateNamedMatch() {
+        const auto expression = RegEx::compile("(?<letter>a)"_el);
+        auto copiedExpression = *expression;
+
+        const auto match = copiedExpression.fullMatch("a"_el);
+
+        REQUIRE(match != nullptr);
+        REQUIRE_EQUAL(match->content("letter"_el), "a"_el);
     }
 
     void testNamedGroupAltSyntax() {

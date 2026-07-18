@@ -5,7 +5,7 @@
 #include "U16StringReader_fwd.hpp"
 
 #include "../U16String.hpp"
-#include "../U16StringView.hpp"
+#include "../U16StringEditor.hpp"
 
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/U16DataIndex.hpp"
@@ -19,7 +19,7 @@ namespace erbsland::text::impl {
 /// @tested{StringReaderTest}
 class U16StringReader final : public StringReaderBase {
 public:
-    explicit U16StringReader(U16StringView text) noexcept;
+    explicit U16StringReader(U16String text) noexcept;
     U16StringReader(const U16StringReader &) = default;
     U16StringReader(U16StringReader &&) = default;
     auto operator=(const U16StringReader &) -> U16StringReader & = default;
@@ -52,15 +52,15 @@ public:
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
     void startCapture() noexcept override;
-    [[nodiscard]] auto takeCapture() noexcept -> AnyStringView override;
+    [[nodiscard]] auto takeCapture() noexcept -> AnyString override;
     void clearBuffer() noexcept override;
     [[nodiscard]] auto takeBuffer() -> AnyString override;
-    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView override;
+    [[nodiscard]] auto bufferView() const noexcept -> AnyString override;
     [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength override;
     [[nodiscard]] auto isBufferEmpty() const noexcept -> bool override;
-    void setBuffer(const AnyStringView &text) override;
+    void setBuffer(const AnyString &text) override;
     void appendToBuffer(Char character) override;
-    void appendToBuffer(const AnyStringView &text) override;
+    void appendToBuffer(const AnyString &text) override;
     void appendCaptureToBuffer() override;
     [[nodiscard]] auto readToBuffer() -> Char override;
     [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
@@ -74,11 +74,11 @@ private:
     auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:
-    U16StringView _text;                                             ///< The string view to read.
+    U16String _text;                                                 ///< The read-only string to read.
     unit::U16DataIndex _position{unit::U16DataIndex::zero()};        ///< The current UTF-16 data position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()};                ///< The current decoded code-point position.
     unit::U16DataIndex _captureStart{unit::U16DataIndex::noIndex()}; ///< The start position of the capture.
-    U16String _buffer;                                               ///< The reader buffer.
+    U16StringEditor _buffer;                                         ///< The reader buffer.
     unit::CpLength _bufferLength{unit::CpLength::zero()};            ///< The decoded code-point length of the buffer.
 };
 

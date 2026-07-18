@@ -11,7 +11,7 @@ namespace demo {
 /// Demonstrates how to convert between library strings and standard string views using `StringConverter`.
 void crossConvertStrings() {
     // Convert between all library string types.
-    auto u8String = el::U8String{u8"Bonjour, forêt 🌲"};
+    auto u8String = el::U8String{u8"Bonjour, forêt 🌲"_el};
     auto u16String = el::StringConverter{u8String}.toU16String();
     auto u32String = el::StringConverter{u16String}.toU32String();
     auto backToU8String = el::StringConverter{u32String}.toU8String();

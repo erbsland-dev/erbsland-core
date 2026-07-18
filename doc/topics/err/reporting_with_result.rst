@@ -40,7 +40,7 @@ states without changing how callers test the broad success and failure groups.
 
     /// A `Result` gives both outcomes meaningful names at the function boundary and at the call site.
     /// Unlike a `bool`, the return type communicates that the value reports the outcome of an operation.
-    [[nodiscard]] auto prepareRobotArm(const el::StringView &armName) noexcept -> el::Result {
+    [[nodiscard]] auto prepareRobotArm(const el::String &armName) noexcept -> el::Result {
         return armName == "Aurora"_el ? el::Result::Success : el::Result::Failure;
     }
 
@@ -184,7 +184,7 @@ matters.
     inline constexpr RobotSetupResult RobotSetupResult::Obstructed = Value::failure<0>();
     inline constexpr RobotSetupResult RobotSetupResult::ControllerOffline = Value::failure<1>();
 
-    [[nodiscard]] auto setUpRobot(const el::StringView &robotName) noexcept -> RobotSetupResult {
+    [[nodiscard]] auto setUpRobot(const el::String &robotName) noexcept -> RobotSetupResult {
         if (robotName == "Lume"_el) {
             return RobotSetupResult::Ready;
         }

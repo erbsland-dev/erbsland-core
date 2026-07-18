@@ -2,26 +2,30 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ByteFormat.hpp"
 
+#include "String.hpp"
 #include "StringConverter.hpp"
-#include "StringView.hpp"
 
 namespace erbsland::text {
 
 using namespace literals;
 
+using unit::ByteIndex;
+using unit::ByteLength;
+using unit::ElementCount;
+
 struct ByteFormat::Private {
     Private() : byteSeparator{" "_el}, offsetSeparator{" | "_el}, lineSuffix{"\n"_el} {}
 
-    ByteFormatFlags flags;                                    ///< The active format flags.
-    LetterCase letterCase{LetterCase::Lowercase};             ///< The case for ASCII letters.
-    unit::ByteLength bytesPerLine{unit::ByteLength{32U}};     ///< The number of bytes per line.
-    unit::ByteLength byteGroupSize{unit::ByteLength{4U}};     ///< The number of bytes in a group.
-    unit::ElementCount lineGroupSize{unit::ElementCount{8U}}; ///< The number of lines in a group.
-    StringView byteSeparator;                                 ///< The separator between bytes or byte groups.
-    StringView offsetSeparator;                               ///< The separator between the offset and bytes.
-    StringView linePrefix;                                    ///< The prefix inserted before each byte-data line.
-    StringView lineSuffix;                                    ///< The suffix inserted after each byte-data line.
-    unit::ByteIndex startOffset{unit::ByteIndex::zero()};     ///< The start offset for the dump.
+    ByteFormatFlags flags;                        ///< The active format flags.
+    LetterCase letterCase{LetterCase::Lowercase}; ///< The case for ASCII letters.
+    ByteLength bytesPerLine{ByteLength{32U}};     ///< The number of bytes per line.
+    ByteLength byteGroupSize{ByteLength{4U}};     ///< The number of bytes in a group.
+    ElementCount lineGroupSize{ElementCount{8U}}; ///< The number of lines in a group.
+    String byteSeparator;                         ///< The separator between bytes or byte groups.
+    String offsetSeparator;                       ///< The separator between the offset and bytes.
+    String linePrefix;                            ///< The prefix inserted before each byte-data line.
+    String lineSuffix;                            ///< The suffix inserted after each byte-data line.
+    ByteIndex startOffset{ByteIndex::zero()};     ///< The start offset for the dump.
 };
 
 ByteFormat::ByteFormat() : _p{std::make_unique<Private>()} {
@@ -77,74 +81,74 @@ auto ByteFormat::setLetterCase(LetterCase letterCase) noexcept -> ByteFormat & {
     return *this;
 }
 
-auto ByteFormat::bytesPerLine() const noexcept -> unit::ByteLength {
+auto ByteFormat::bytesPerLine() const noexcept -> ByteLength {
     return _p->bytesPerLine;
 }
 
-auto ByteFormat::byteGroupSize() const noexcept -> unit::ByteLength {
+auto ByteFormat::byteGroupSize() const noexcept -> ByteLength {
     return _p->byteGroupSize;
 }
 
-auto ByteFormat::lineGroupSize() const noexcept -> unit::ElementCount {
+auto ByteFormat::lineGroupSize() const noexcept -> ElementCount {
     return _p->lineGroupSize;
 }
 
-auto ByteFormat::byteSeparator() const noexcept -> const StringView & {
+auto ByteFormat::byteSeparator() const noexcept -> const String & {
     return _p->byteSeparator;
 }
 
-auto ByteFormat::setByteSeparator(const StringView &byteSeparator) noexcept -> ByteFormat & {
+auto ByteFormat::setByteSeparator(const String &byteSeparator) noexcept -> ByteFormat & {
     _p->byteSeparator = byteSeparator;
     return *this;
 }
 
-auto ByteFormat::startOffset() const noexcept -> unit::ByteIndex {
+auto ByteFormat::startOffset() const noexcept -> ByteIndex {
     return _p->startOffset;
 }
 
-auto ByteFormat::setStartOffset(unit::ByteIndex startOffset) noexcept -> ByteFormat & {
+auto ByteFormat::setStartOffset(ByteIndex startOffset) noexcept -> ByteFormat & {
     _p->startOffset = startOffset;
     return *this;
 }
 
-auto ByteFormat::setBytesPerLine(const unit::ByteLength bytesPerLine) noexcept -> ByteFormat & {
+auto ByteFormat::setBytesPerLine(const ByteLength bytesPerLine) noexcept -> ByteFormat & {
     _p->bytesPerLine = atLeastOne(bytesPerLine);
     return *this;
 }
 
-auto ByteFormat::setByteGroupSize(const unit::ByteLength byteGroupSize) noexcept -> ByteFormat & {
+auto ByteFormat::setByteGroupSize(const ByteLength byteGroupSize) noexcept -> ByteFormat & {
     _p->byteGroupSize = atLeastOne(byteGroupSize);
     return *this;
 }
 
-auto ByteFormat::setLineGroupSize(const unit::ElementCount lineGroupSize) noexcept -> ByteFormat & {
+auto ByteFormat::setLineGroupSize(const ElementCount lineGroupSize) noexcept -> ByteFormat & {
     _p->lineGroupSize = atLeastOne(lineGroupSize);
     return *this;
 }
 
-auto ByteFormat::offsetSeparator() const noexcept -> const StringView & {
+auto ByteFormat::offsetSeparator() const noexcept -> const String & {
     return _p->offsetSeparator;
 }
 
-auto ByteFormat::setOffsetSeparator(const StringView &offsetSeparator) -> ByteFormat & {
+auto ByteFormat::setOffsetSeparator(const String &offsetSeparator) -> ByteFormat & {
     _p->offsetSeparator = offsetSeparator;
     return *this;
 }
 
-auto ByteFormat::linePrefix() const noexcept -> const StringView & {
+auto ByteFormat::linePrefix() const noexcept -> const String & {
     return _p->linePrefix;
 }
 
-auto ByteFormat::setLinePrefix(const StringView &linePrefix) -> ByteFormat & {
+auto ByteFormat::setLinePrefix(const String &linePrefix) -> ByteFormat & {
     _p->linePrefix = linePrefix;
     return *this;
 }
 
-auto ByteFormat::lineSuffix() const noexcept -> const StringView & {
+auto ByteFormat::lineSuffix() const noexcept -> const String & {
     return _p->lineSuffix;
 }
 
-auto ByteFormat::setLineSuffix(const StringView &lineSuffix) -> ByteFormat & {
+auto ByteFormat::setLineSuffix(const String &lineSuffix) -> ByteFormat & {
     _p->lineSuffix = lineSuffix;
     return *this;
 }
@@ -166,12 +170,12 @@ auto ByteFormat::memoryDump() -> ByteFormat {
         ByteFormatFlag::Separator | ByteFormatFlag::ByteGroups | ByteFormatFlag::Lines | ByteFormatFlag::Offset};
 }
 
-auto ByteFormat::atLeastOne(const unit::ByteLength value) noexcept -> unit::ByteLength {
-    return value.isZero() ? unit::ByteLength::one() : value;
+auto ByteFormat::atLeastOne(const ByteLength value) noexcept -> ByteLength {
+    return value.isZero() ? ByteLength::one() : value;
 }
 
-auto ByteFormat::atLeastOne(const unit::ElementCount value) noexcept -> unit::ElementCount {
-    return value.isZero() ? unit::ElementCount::one() : value;
+auto ByteFormat::atLeastOne(const ElementCount value) noexcept -> ElementCount {
+    return value.isZero() ? ElementCount::one() : value;
 }
 
 }

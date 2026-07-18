@@ -10,9 +10,9 @@ target_sources(erbsland-core PRIVATE
         ByteBlock.cpp
         ByteBlock.hpp
         ByteBlock_fwd.hpp
-        ByteBlockView.cpp
-        ByteBlockView.hpp
-        ByteBlockView_fwd.hpp
+        ByteBlockEditor.cpp
+        ByteBlockEditor.hpp
+        ByteBlockEditor_fwd.hpp
         ByteReader.cpp
         ByteReader.hpp
         ByteRingBuffer.hpp
@@ -25,6 +25,7 @@ target_sources(erbsland-core PRIVATE
         ReferenceCounter.hpp
         RingBuffer.cpp
         RingBuffer.hpp
+        RingBuffer_fwd.hpp
         SharedArrayData.hpp
         SharedArrayData_fwd.hpp
         SharedData.hpp

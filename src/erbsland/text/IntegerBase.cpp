@@ -4,7 +4,7 @@
 
 #include "Char.hpp"
 #include "Literals.hpp"
-#include "StringView.hpp"
+#include "String.hpp"
 
 namespace erbsland::text {
 
@@ -38,7 +38,7 @@ auto IntegerBase::prefixChar(const LetterCase letterCase) const noexcept -> Char
     }
 }
 
-auto IntegerBase::toString() const noexcept -> StringView {
+auto IntegerBase::toString() const noexcept -> String {
     switch (_value) {
     case Hexadecimal:
         return "hexadecimal"_el;

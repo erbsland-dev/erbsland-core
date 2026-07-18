@@ -30,7 +30,7 @@ using el::core::CommandLineArguments;
 using el::options::OptionError;
 using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
+using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
 using el::unit::ElementCount;
@@ -77,7 +77,7 @@ public:
         const auto option = options->addOption("--color"_el)
                                 .addChoice("auto"_el)
                                 .addChoice("never"_el)
-                                .setDefaultValue(String{"AUTO"_el})
+                                .setDefaultValue(StringEditor{"AUTO"_el})
                                 .option();
 
         REQUIRE(option != nullptr);
@@ -169,7 +169,7 @@ public:
     }
 
     void testOptionTypesDefaultsAndValidatorsWorkTogether() {
-        auto calls = std::vector<String>{};
+        auto calls = std::vector<StringEditor>{};
         auto options = Options::create();
         const auto flagOption =
             options->addOption({"-v"_el, "--verbose"_el})
@@ -193,7 +193,7 @@ public:
                                        .option();
         const auto textOption = options->addOption("--name"_el)
                                     .setType(OptionType::Text)
-                                    .setDefaultValue(String{"Ada"_el})
+                                    .setDefaultValue(StringEditor{"Ada"_el})
                                     .setValidateFn([this, &calls](OptionValuePtr value, OptionValuesPtr) -> void {
                                         REQUIRE(value->getText() == "Ada"_el);
                                         REQUIRE(value->argumentIndex().isNoIndex());
@@ -296,10 +296,10 @@ public:
 
     void testBuiltInMessagesEscapeAllExternalOptionText() {
         const auto esc = th::stdStringFromHex("1B");
-        const auto unsafe = [&esc](const std::string_view prefix) -> String {
+        const auto unsafe = [&esc](const std::string_view prefix) -> StringEditor {
             auto bytes = std::string{prefix};
             bytes.append(esc);
-            return String{std::string_view{bytes}};
+            return StringEditor{std::string_view{bytes}};
         };
         const auto requireSafeDescription = [this, &esc](const OptionResult &result) -> void {
             REQUIRE(result.errorContext().has_value());
@@ -388,7 +388,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto makeArgs(std::initializer_list<StringView> args) -> CommandLineArguments {
+    [[nodiscard]] static auto makeArgs(std::initializer_list<String> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
         result.reserve(ElementCount{args.size()});
         for (const auto &arg : args) {
@@ -397,7 +397,7 @@ private:
         return result;
     }
 
-    [[nodiscard]] static auto parse(const OptionsPtr &options, std::initializer_list<StringView> args) -> OptionResult {
+    [[nodiscard]] static auto parse(const OptionsPtr &options, std::initializer_list<String> args) -> OptionResult {
         auto manager = OptionManager{options};
         return manager.parse(makeArgs(args));
     }
@@ -405,7 +405,7 @@ private:
     void requireError(
         const OptionResult &result,
         const OptionErrorReason reason,
-        const StringView title = {},
+        const String &title = {},
         const OptionPtr &option = {},
         const OptionSetPtr &optionSet = {},
         const ArgumentIndex argumentIndex = ArgumentIndex::noIndex()) {

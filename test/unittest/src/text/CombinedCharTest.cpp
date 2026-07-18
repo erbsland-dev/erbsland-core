@@ -4,7 +4,7 @@
 #include <erbsland/text/CombinedChar.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -45,7 +45,7 @@ public:
     }
 
     void testConstructionFromUtf8AndUtf32Text() {
-        const auto utf8 = String{std::string_view{th::stdStringFromHex("65 CC 81")}};
+        const auto utf8 = StringEditor{std::string_view{th::stdStringFromHex("65 CC 81")}};
         const auto fromUtf8 = CombinedChar{utf8};
         const auto fromUtf32 = CombinedChar{U"e\u0301"_el};
 
@@ -98,10 +98,11 @@ public:
         REQUIRE_EQUAL(CombinedChar::fromString(U"ab"_el).first(), Char::replacement());
         REQUIRE_EQUAL(CombinedChar::fromString("\n"_el).first(), Char::replacement());
         REQUIRE_EQUAL(
-            CombinedChar::fromString(U32String{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}}).first(),
+            CombinedChar::fromString(U32StringEditor{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}})
+                .first(),
             Char::replacement());
         REQUIRE_EQUAL(
-            CombinedChar::fromString(String{std::string_view{th::stdStringFromHex("C3")}}).first(),
+            CombinedChar::fromString(StringEditor{std::string_view{th::stdStringFromHex("C3")}}).first(),
             Char::replacement());
         REQUIRE_EQUAL(
             CombinedChar::fromString(U"a\u0301\u0302\u0303"_el).characters(),

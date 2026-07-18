@@ -1,11 +1,11 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FormatError.hpp>
-#include <erbsland/text/StringBuilder.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16Format.hpp>
-#include <erbsland/text/u16/U16String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
@@ -27,8 +27,8 @@ public:
     }
 
     void testViewPatternAndTextArguments() {
-        const auto patternText = U16String{std::u16string_view{u"{}|{}|{}"}};
-        const auto format = U16Format{U16StringView{patternText}};
+        const auto patternText = U16StringEditor{std::u16string_view{u"{}|{}|{}"}};
+        const auto format = U16Format{U16String{patternText}};
 
         REQUIRE_EQUAL(
             StringConverter{format.build("u8", u"u16", U"u32")}.toStdU16String(), std::u16string{u"u8|u16|u32"});
@@ -36,7 +36,7 @@ public:
 
     void testAppendToNonUtf16Builder() {
         const auto format = U16Format{u"[{}:{}]"};
-        auto builder = StringBuilder{StringKind::U8};
+        auto builder = AnyStringBuilder{StringKind::U8};
 
         format.appendTo(builder, "count", 7);
 

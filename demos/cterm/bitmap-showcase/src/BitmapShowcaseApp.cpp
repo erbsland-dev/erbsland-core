@@ -99,7 +99,7 @@ void BitmapShowcaseApp::drawSelector(const BlockRectangle rect) {
         if (isSelected) {
             _buffer.fill(lineRect, Block{U' ', bg::BrightBlack});
         }
-        auto label = BlockString{};
+        auto label = BlockStringEditor{};
         if (isSelected) {
             label.append(fg::BrightYellow, "▶ "_el, fg::BrightWhite, variantTitle(_pageIndex, itemIndexAsSize));
         } else {
@@ -135,7 +135,7 @@ void BitmapShowcaseApp::drawScaleModeVariant(const BlockRectangle rect, const st
         Color{fg::BrightWhite, bg::Magenta},
         Color{fg::BrightWhite, bg::Green},
     };
-    static const auto cDescriptions = std::array<el::StringView, 4>{
+    static const auto cDescriptions = std::array<el::String, 4>{
         "2x2 pixels are packed into one terminal cell. Even the empty table entry is drawn, so the bitmap can paint a "
         "background."_el,
         "One full block is emitted for each set pixel. Unset pixels are left untouched, which keeps the panel fill "
@@ -197,7 +197,7 @@ void BitmapShowcaseApp::drawColorModeVariant(const BlockRectangle rect, const st
         BitmapColorMode::ForwardDiagonalStripes,
         BitmapColorMode::BackwardDiagonalStripes,
     };
-    static const auto cDescriptions = std::array<el::StringView, 5>{
+    static const auto cDescriptions = std::array<el::String, 5>{
         "OneColor locks the whole bitmap to the same entry in the ColorSequence."_el,
         "Vertical stripes advance the sequence with the rendered x position."_el,
         "Horizontal stripes advance the sequence with the rendered y position."_el,
@@ -235,7 +235,7 @@ void BitmapShowcaseApp::drawLayoutVariant(const BlockRectangle rect, const std::
         Alignment::Center,
         Alignment::Center,
     };
-    static const auto cDescriptions = std::array<el::StringView, 5>{
+    static const auto cDescriptions = std::array<el::String, 5>{
         "The viewport keeps the top-left part of the rendered bitmap when it must crop."_el,
         "Center alignment crops evenly around the preview whenever the rendered bitmap is larger than the viewport."_el,
         "Bottom-right alignment keeps the last visible part of the rendered bitmap."_el,
@@ -289,7 +289,7 @@ void BitmapShowcaseApp::drawStyleVariant(const BlockRectangle rect, const std::s
         Color{fg::BrightWhite, bg::BrightBlack},
         Color{fg::BrightWhite, bg::BrightBlack},
     };
-    static const auto cDescriptions = std::array<el::StringView, 5>{
+    static const auto cDescriptions = std::array<el::String, 5>{
         "fullBlock() can be replaced with any single-width character. Its own colors are still overlaid on the base "
         "bitmap color."_el,
         "doubleBlocks() picks one character for the left cell and one for the right cell of every rendered bitmap "
@@ -365,7 +365,7 @@ void BitmapShowcaseApp::drawStyleVariant(const BlockRectangle rect, const std::s
         cDescriptions[std::min(variantIndex, cDescriptions.size() - 1)], descriptionRect, Alignment::Center);
 }
 
-void BitmapShowcaseApp::drawPreviewPanel(const BlockRectangle rect, const el::StringView title, const Color fillColor) {
+void BitmapShowcaseApp::drawPreviewPanel(const BlockRectangle rect, const el::String title, const Color fillColor) {
 
     if (rect.width() <= 4 || rect.height() <= 4) {
         return;
@@ -389,7 +389,7 @@ void BitmapShowcaseApp::drawFooter(const BlockRectangle rect) {
 }
 
 auto BitmapShowcaseApp::footerText() const -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     result.append(
         fg::BrightCyan,
         "[←][→]"_el,
@@ -408,7 +408,7 @@ auto BitmapShowcaseApp::footerText() const -> BlockString {
     return result;
 }
 
-auto BitmapShowcaseApp::pageTitle() const -> el::StringView {
+auto BitmapShowcaseApp::pageTitle() const -> el::String {
     switch (_pageIndex) {
     case 0:
         return "scale modes"_el;
@@ -436,8 +436,7 @@ auto BitmapShowcaseApp::variantCount(const std::size_t pageIndex) const noexcept
     }
 }
 
-auto BitmapShowcaseApp::variantTitle(const std::size_t pageIndex, const std::size_t variantIndex) const
-    -> el::StringView {
+auto BitmapShowcaseApp::variantTitle(const std::size_t pageIndex, const std::size_t variantIndex) const -> el::String {
 
     switch (pageIndex) {
     case 0:

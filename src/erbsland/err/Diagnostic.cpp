@@ -7,11 +7,11 @@
 
 namespace erbsland::err {
 
-auto Diagnostic::sourceName() const noexcept -> text::StringView {
+auto Diagnostic::sourceName() const noexcept -> text::String {
     return {};
 }
 
-auto Diagnostic::sourcePath() const noexcept -> text::StringView {
+auto Diagnostic::sourcePath() const noexcept -> text::String {
     return {};
 }
 
@@ -19,7 +19,7 @@ auto Diagnostic::location() const noexcept -> unit::CodeLocation {
     return {};
 }
 
-auto Diagnostic::toString() const noexcept -> text::StringView {
+auto Diagnostic::toString() const noexcept -> text::String {
     try {
         auto document = toTextDocument();
         return text::PlainTextRenderer{document}.build();

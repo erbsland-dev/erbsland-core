@@ -8,6 +8,7 @@
 #include "../engine/CaptureGroupTypes.hpp"
 
 #include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 
 namespace erbsland::re::impl::node_data {
 
@@ -24,8 +25,8 @@ public:
     }
 
     /// Create a new, named capturing group.
-    [[nodiscard]] static auto createCapture(
-        const GroupFlags flags, const std::size_t index, text::String &&name) noexcept -> Group {
+    [[nodiscard]] static auto createCapture(const GroupFlags flags, const std::size_t index, text::String name) noexcept
+        -> Group {
         Group result;
         result.flags = flags;
         result.index = index;
@@ -65,7 +66,7 @@ private:
     /// @param flags The group flags.
     /// @param index The capture group index (1-based).
     /// @param name The name of the group.
-    Group(const GroupFlags flags, const std::size_t index, text::String &&name) noexcept :
+    Group(const GroupFlags flags, const std::size_t index, text::String name) noexcept :
         index{index}, name{std::move(name)}, flags{flags} {}
 
 public:
@@ -78,7 +79,7 @@ public:
     /// Note: To avoid string encoding conversions, the name length is reported instead of the actual name.
     [[nodiscard]] auto toTestString() const -> text::String {
         using namespace text::literals;
-        auto result = text::StringFormat{"Group(size={}"}.build(nodes.size());
+        auto result = text::StringEditor{text::StringFormat{"Group(size={}"}.build(nodes.size())};
         if (index != 0) {
             result.append(text::StringFormat{",index={}"}.build(index));
         }

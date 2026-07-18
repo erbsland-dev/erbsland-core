@@ -27,7 +27,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "a"_el,
                 "aa"_el,
@@ -45,12 +45,12 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileAmbiguousGroupRangePostfix());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "aaaaaaaa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "aaaaaaa"_el,
                 "aaaaaaaaa"_el,
             };
@@ -67,7 +67,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "xaaaaaaay"_el,
             "xaaaaaaaaay"_el,

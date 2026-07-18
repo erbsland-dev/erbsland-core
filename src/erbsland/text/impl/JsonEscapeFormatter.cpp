@@ -23,7 +23,7 @@ auto JsonEscapeFormatter::needsEscape(const Char character, const EscapeAmount a
     return needsEscapeByAmount(character, amount, required, false);
 }
 
-void JsonEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void JsonEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     switch (character.toRawValue()) {
     case U'"':
         builder.append("\\\""_el);
@@ -74,7 +74,7 @@ auto JsonEscapeFormatter::instance() noexcept -> const EscapeFormatterPtr & {
     return result;
 }
 
-void JsonEscapeFormatter::appendUnicodeEscape(StringBuilder &builder, const uint32_t codePoint) {
+void JsonEscapeFormatter::appendUnicodeEscape(AnyStringBuilder &builder, const uint32_t codePoint) {
     if (codePoint <= 0xFFFFU) {
         builder.append("\\u"_el);
         builder.appendInteger(codePoint, unicodeEscapeFormat(4U));

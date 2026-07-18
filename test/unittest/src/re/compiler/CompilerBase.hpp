@@ -24,7 +24,7 @@ public:
     String pattern;
     GroupFlags groupFlags;
     EnginePtr engine;
-    el::text::StringViewList lines; // disassembly lines
+    el::text::StringList lines; // disassembly lines
 
     auto additionalErrorMessages() -> std::string override {
         try {
@@ -40,9 +40,9 @@ public:
     void setUp() override { engine = {}; }
 
     void compileAndDisassemble(
-        const StringView patternView, const GroupFlags flags = GroupFlags{}, const Settings &settings = Settings{}) {
+        const String &patternView, const GroupFlags flags = GroupFlags{}, const Settings &settings = Settings{}) {
 
-        pattern = String{patternView};
+        pattern = patternView;
         groupFlags = flags;
         Compiler compiler{el::text::StringCharReader{pattern}, flags, settings};
         engine = compiler.buildEngine();

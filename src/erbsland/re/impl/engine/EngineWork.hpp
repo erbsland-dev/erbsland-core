@@ -92,9 +92,9 @@ public: // work list to non-recursively resolve next threads
             std::ranges::remove_if(
                 begin,
                 end,
-                [&](const auto &thread) {
+                [&](const auto &thread) -> bool {
                     const auto doPrune = std::ranges::any_of(
-                        referencesToPrune, [&](const auto &ref) { return thread.captureGroupSet == ref; });
+                        referencesToPrune, [&](const auto &ref) -> bool { return thread.captureGroupSet == ref; });
                     if (doPrune) {
                         // make sure we release the capture group set
                         _captureGroupManager->release(thread.captureGroupSet);

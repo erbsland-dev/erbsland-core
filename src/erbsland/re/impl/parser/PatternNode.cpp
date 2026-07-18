@@ -137,12 +137,13 @@ auto PatternNode::toTestString() const -> text::String {
     return std::visit([](const auto &data) -> text::String { return data.toTestString(); }, _data);
 }
 
-auto PatternNode::toTestTree() const -> text::StringViewList {
-    text::StringViewList tree;
+auto PatternNode::toTestTree() const -> text::StringList {
+    text::StringList tree;
     traverse([&tree](const PatternNode &node, const int depth) -> void {
-        auto line = text::String::fromCharacter(U' ', unit::CpLength{static_cast<std::uint32_t>(depth * 2)});
-        line.append(node.toTestString());
-        tree.append(std::move(line));
+        tree.append(
+            text::String::fromJoined(
+                {text::String::fromCharacter(U' ', unit::CpLength{static_cast<std::uint32_t>(depth * 2)}),
+                    node.toTestString()}));
     });
     return tree;
 }

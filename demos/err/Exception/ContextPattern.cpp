@@ -9,31 +9,31 @@ namespace demo {
 /// It is easy to prepare, pass between layers, test, and later embed in a richer diagnostic.
 class InstrumentErrorContext final {
 public:
-    explicit InstrumentErrorContext(el::StringView problem) : _problem{std::move(problem)} {}
+    explicit InstrumentErrorContext(el::String problem) : _problem{std::move(problem)} {}
 
 public: // accessors
-    auto setInstrument(el::StringView instrument) noexcept -> InstrumentErrorContext & {
+    auto setInstrument(el::String instrument) noexcept -> InstrumentErrorContext & {
         _instrument = std::move(instrument);
         return *this;
     }
-    [[nodiscard]] auto instrument() const noexcept -> const el::StringView & { return _instrument; }
+    [[nodiscard]] auto instrument() const noexcept -> const el::String & { return _instrument; }
     auto setStringNumber(const int stringNumber) noexcept -> InstrumentErrorContext & {
         _stringNumber = stringNumber;
         return *this;
     }
     [[nodiscard]] auto stringNumber() const noexcept -> int { return _stringNumber; }
-    [[nodiscard]] auto problem() const noexcept -> const el::StringView & { return _problem; }
+    [[nodiscard]] auto problem() const noexcept -> const el::String & { return _problem; }
 
 private:
-    el::StringView _problem;
-    el::StringView _instrument;
+    el::String _problem;
+    el::String _instrument;
     int _stringNumber{};
 };
 
 /// The exception accepts the complete context in one constructor and exposes it without duplicating accessors.
 class InstrumentSetupError final : public el::RuntimeError {
 public:
-    explicit InstrumentSetupError(el::StringView problem) : InstrumentSetupError{InstrumentErrorContext{problem}} {}
+    explicit InstrumentSetupError(el::String problem) : InstrumentSetupError{InstrumentErrorContext{problem}} {}
     explicit InstrumentSetupError(InstrumentErrorContext context) :
         RuntimeError{context.problem()}, _context{std::move(context)} {}
     ~InstrumentSetupError() override = default;

@@ -177,7 +177,7 @@ Byte Stream Patterns
     o.readByte() -> StreamReadResult<Byte> // read one byte
     o.readAll()/readAll(maximum) -> StreamReadResult<ByteBlock> // bounded convenience aggregation
     o.read❮IntType❯() -> StreamReadResult<T> // read an endian integer
-    o.write(byte/span/view) -> StreamWriteStatus // atomically accept all bytes
+    o.write(byte/span/block) -> StreamWriteStatus // atomically accept all bytes
     o.write❮IntType❯(value) -> StreamWriteStatus // atomically accept an endian integer
 
 Text Stream Patterns
@@ -205,9 +205,9 @@ Coroutine Stream Patterns
     o.coReadExact(length) -> CoTask<StreamReadResult<ByteBlock>> // byte input only: read an exact owned block.
     o.coReadLine([maximum]) -> CoTask<StreamReadResult<String>> // text input only: read one line.
     o.coReadAll([maximum]) -> CoTask<StreamReadResult<ByteBlock-or-String>> // bounded aggregate read.
-    o.coReadBlocks([maximum]) -> CoAsyncGenerator<StreamReadResult<Block>> // repeated blocks until EOF.
+    o.coReadBlocks([maximum]) -> CoAsyncGenerator<StreamReadResult<ByteBlock-or-String>> // repeated blocks until EOF.
     o.coReadLines([maximum]) -> CoAsyncGenerator<StreamReadResult<String>> // repeated lines until EOF.
-    o.coWrite(ownedBlock-or-String) -> CoTask<StreamWriteStatus> // atomically accept owned output.
+    o.coWrite(ByteBlock-or-String) -> CoTask<StreamWriteStatus> // atomically accept owned output.
     o.coWriteLine([ownedString]) -> CoTask<StreamWriteStatus> // text output only: atomically accept a line.
 
 Standard Stream Patterns

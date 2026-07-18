@@ -5,10 +5,10 @@
 #include "Block.hpp"
 
 #include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringMap.hpp"
-#include "../text/StringView.hpp"
 #include "../text/u32/U32String.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 
 #include <array>
 #include <cstdint>
@@ -83,8 +83,7 @@ public:
     /// Replace the map.
     void setMap(Map map) noexcept;
     /// Add a new entry to the map.
-    void add(
-        const text::StringView &current, const text::StringView &overlay, const text::StringView &combined) noexcept;
+    void add(const text::String &current, const text::String &overlay, const text::String &combined) noexcept;
 
 private:
     Map _map;
@@ -100,7 +99,7 @@ public:
     /// @param resultMatrix The result matrix in row-major order using result indexes.
     /// The matrix size must be `characters.size() * characters.size()`.
     /// @throws err::ParameterError If the matrix size is invalid or the character count exceeds 255.
-    MatrixBlockCombinationStyle(const text::U32StringView &characters, std::span<const uint8_t> resultMatrix);
+    MatrixBlockCombinationStyle(const text::U32String &characters, std::span<const uint8_t> resultMatrix);
 
 public: // implement BlockCombinationStyle
     [[nodiscard]] auto combine(const Block &current, const Block &overlay) const noexcept -> Block override;

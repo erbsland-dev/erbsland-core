@@ -5,7 +5,7 @@
 #include "PlatformErrorCategory.hpp"
 #include "PlatformErrorContext_fwd.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../text/TextDocument_fwd.hpp"
 
 namespace erbsland::system {
@@ -26,7 +26,7 @@ public:
 
 public: // conversion
     /// Get the native error message or a compact code representation.
-    [[nodiscard]] virtual auto toString() const noexcept -> text::StringView = 0;
+    [[nodiscard]] virtual auto toString() const noexcept -> text::String = 0;
     /// Convert the native details into a field-only diagnostic document.
     [[nodiscard]] virtual auto toTextDocument() const -> text::TextDocument = 0;
 

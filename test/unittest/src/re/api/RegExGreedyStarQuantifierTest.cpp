@@ -43,7 +43,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "y"_el,
                 "a"_el,
@@ -62,7 +62,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -80,7 +80,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -102,7 +102,7 @@ public:
             };
             WITH_CONTEXT(requireMatchWithNoneCapGroups(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -116,14 +116,14 @@ public:
     void testFullMatch() {
         WITH_CONTEXT(compileSingleCharZeroOrMore());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 ""_el,
                 "a"_el,
                 "aa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "b"_el,
                 "ab"_el,
                 "😀"_el,
@@ -134,14 +134,14 @@ public:
 
         WITH_CONTEXT(compilePrefixSingleCharZeroOrMorePostfix());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "xa"_el,
                 "xaa"_el,
                 "xaaaa"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 "x"_el,
                 "xaaaab"_el,
                 ""_el,
@@ -152,14 +152,14 @@ public:
 
         WITH_CONTEXT(compilePrefixGroupZeroOrMorePostfix());
         {
-            const auto matchCases = std::vector<StringView>{
+            const auto matchCases = std::vector<String>{
                 "xy"_el,
                 "xaby"_el,
                 "xabababy"_el,
             };
             WITH_CONTEXT(requireFullMatchWithNoCaptures(matchCases));
 
-            const auto noMatchCases = std::vector<StringView>{
+            const auto noMatchCases = std::vector<String>{
                 ""_el,
                 "x"_el,
                 "y"_el,
@@ -182,7 +182,7 @@ public:
         };
         WITH_CONTEXT(requireFindFirstNoCaptures(testCases));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "x"_el,
             "y"_el,
@@ -208,7 +208,7 @@ public:
         WITH_CONTEXT(requireFindAll("xaaa xa xaa"_el));
         WITH_CONTEXT(requireLines(matchLines, expectedLines));
 
-        const auto noMatchCases = std::vector<StringView>{
+        const auto noMatchCases = std::vector<String>{
             ""_el,
             "x"_el,
             "y"_el,

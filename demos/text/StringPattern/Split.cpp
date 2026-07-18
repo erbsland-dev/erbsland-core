@@ -11,7 +11,7 @@ namespace demo {
 /// with both a prefix and suffix, the suffix is validated and then dropped from the second result.
 void split() {
     const auto recordPattern = el::StringPattern{"probe-??*;ok"_el};
-    const auto record = el::StringView{"probe-A7 temperatur=21.4C;ok"_el};
+    const auto record = el::String{"probe-A7 temperatur=21.4C;ok"_el};
 
     const auto [recordId, valueText] = recordPattern.split(record);
     el::io::printLine("record id ...............: "_el, recordId);

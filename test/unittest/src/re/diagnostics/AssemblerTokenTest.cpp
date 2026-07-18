@@ -24,7 +24,7 @@ public:
         REQUIRE_FALSE(integerToken.isText());
         REQUIRE_FALSE(integerToken.isOperation());
 
-        const AssemblerToken textToken{AssemblerToken::Text, "hello"_els, el::unit::ColumnIndex{1U}};
+        const AssemblerToken textToken{AssemblerToken::Text, "hello"_el, el::unit::ColumnIndex{1U}};
         REQUIRE(textToken.isText());
         REQUIRE(textToken.isArgument());
         REQUIRE_EQUAL(textToken.getText(), "hello"_el);
@@ -51,12 +51,12 @@ public:
         REQUIRE_FALSE(operationToken.isArgument());
         REQUIRE_EQUAL(operationToken.getOperation(), Operation::Match);
 
-        const AssemblerToken labelToken{AssemblerToken::Label, "label"_els, el::unit::ColumnIndex{6U}};
+        const AssemblerToken labelToken{AssemblerToken::Label, "label"_el, el::unit::ColumnIndex{6U}};
         REQUIRE(labelToken.isLabel());
         REQUIRE(labelToken.isArgument());
         REQUIRE_EQUAL(labelToken.getText(), "label"_el);
 
-        const AssemblerToken identifierToken{AssemblerToken::Identifier, "Id_1"_els, el::unit::ColumnIndex{7U}};
+        const AssemblerToken identifierToken{AssemblerToken::Identifier, "Id_1"_el, el::unit::ColumnIndex{7U}};
         REQUIRE(identifierToken.isIdentifier());
         REQUIRE(identifierToken.isArgument());
         REQUIRE_EQUAL(identifierToken.getText(), "Id_1"_el);
@@ -74,11 +74,12 @@ public:
         REQUIRE(minusToken.isMinus());
         REQUIRE_FALSE(minusToken.isArgument());
 
-        const AssemblerToken commandToken{AssemblerToken::Command, "data"_els, el::unit::ColumnIndex{11U}};
+        const AssemblerToken commandToken{AssemblerToken::Command, "data"_el, el::unit::ColumnIndex{11U}};
         REQUIRE(commandToken.isCommand());
         REQUIRE_FALSE(commandToken.isArgument());
 
-        const AssemblerToken commentToken{AssemblerToken::Comment, el::text::String{}, el::unit::ColumnIndex{12U}};
+        const AssemblerToken commentToken{
+            AssemblerToken::Comment, el::text::StringEditor{}, el::unit::ColumnIndex{12U}};
         REQUIRE_EQUAL(commentToken.type(), AssemblerToken::Comment);
         REQUIRE_FALSE(commentToken.isArgument());
     }

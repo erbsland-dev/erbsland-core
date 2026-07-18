@@ -41,7 +41,7 @@ public:
     /// @param fileDescriptor The file descriptor to wrap.
     /// @param ownership If the wrapper owns the file descriptor.
     /// @param path The path represented by the descriptor, if available.
-    explicit PosixNativeStream(int fileDescriptor, NativeStreamOwnership ownership, text::StringView path = {});
+    explicit PosixNativeStream(int fileDescriptor, NativeStreamOwnership ownership, text::String path = {});
 
     // defaults
     ~PosixNativeStream() override;
@@ -78,14 +78,14 @@ public:
 
 private:
     [[noreturn]] void throwError(
-        text::StringView title, text::StringView description, system::PosixErrorContext::ErrorCode errorCode) const;
-    [[noreturn]] void throwErrorFromErrno(text::StringView title, text::StringView description) const;
+        text::String title, text::String description, system::PosixErrorContext::ErrorCode errorCode) const;
+    [[noreturn]] void throwErrorFromErrno(text::String title, text::String description) const;
     void finishOperation() const noexcept;
 
 private:
     std::atomic<int> _fileDescriptor{-1};                              ///< Wrapped POSIX file descriptor.
     NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Descriptor ownership mode.
-    text::StringView _path;                                            ///< Stream path, when available.
+    text::String _path;                                                ///< Stream path, when available.
     bool _supportsPositioning{false};                                  ///< Whether this descriptor can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.
     mutable unsigned int _operationCount{0U};                          ///< Number of native calls using the descriptor.

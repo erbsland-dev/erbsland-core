@@ -5,7 +5,7 @@
 #include "ApplicationErrorContext.hpp"
 
 #include "../err/RuntimeError.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../unit/ExitCode.hpp"
 
 namespace erbsland::core {
@@ -19,7 +19,7 @@ public:
     /// @param cause The diagnostic cause.
     /// @param exitCode The exit code to use when terminating the application.
     explicit ApplicationError(
-        text::StringView reason,
+        text::String reason,
         const std::exception_ptr &cause,
         const unit::ExitCode exitCode = unit::ExitCode::failure()) noexcept :
         err::RuntimeError{reason, cause}, _context{std::move(reason), exitCode} {}
@@ -29,8 +29,7 @@ public:
     explicit ApplicationError(ApplicationErrorContext context, const std::exception_ptr &cause) noexcept :
         err::RuntimeError{context.title(), cause}, _context{std::move(context)} {}
     /// @overload
-    explicit ApplicationError(
-        text::StringView reason, const unit::ExitCode exitCode = unit::ExitCode::failure()) noexcept :
+    explicit ApplicationError(text::String reason, const unit::ExitCode exitCode = unit::ExitCode::failure()) noexcept :
         ApplicationError(std::move(reason), {}, exitCode) {}
 
     // defaults
@@ -41,13 +40,13 @@ public: // overrides
 
 public: // accessors
     /// Get the title of the error.
-    [[nodiscard]] auto title() const noexcept -> const text::StringView & { return _context.title(); }
+    [[nodiscard]] auto title() const noexcept -> const text::String & { return _context.title(); }
     /// Get the description of the error.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _context.description(); }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _context.description(); }
     /// Get the name of the source that caused the error.
-    [[nodiscard]] auto sourceName() const noexcept -> const text::StringView & { return _context.sourceName(); }
+    [[nodiscard]] auto sourceName() const noexcept -> const text::String & { return _context.sourceName(); }
     /// Get the path of the source that caused the error.
-    [[nodiscard]] auto sourcePath() const noexcept -> const text::StringView & { return _context.sourcePath(); }
+    [[nodiscard]] auto sourcePath() const noexcept -> const text::String & { return _context.sourcePath(); }
     /// Get the code location of the source that caused the error.
     [[nodiscard]] auto codeLocation() const noexcept -> unit::CodeLocation { return _context.codeLocation(); }
     /// Get the exit code to end the application.

@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
-#include <erbsland/mem/ByteBlockView.hpp>
+#include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/ByteFormat.hpp>
-#include <erbsland/text/StringBuilder.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -25,7 +24,7 @@ using el::unit::CpLength;
 using el::unit::ElementCount;
 using namespace el::text;
 
-TESTED_TARGETS(ByteFormatFlag ByteFormat StringBuilder U8String U16String U32String)
+TESTED_TARGETS(ByteFormatFlag ByteFormat AnyStringBuilder U8String U16String U32String)
 class ByteFormatTest final : public el::UnitTest {
 public:
     void testStableEnumValuesAndFlags() {
@@ -98,12 +97,14 @@ public:
         REQUIRE_EQUAL(StringConverter{U16String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
         REQUIRE_EQUAL(StringConverter{U32String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
 
-        auto builder = StringBuilder{StringKind::U16};
-        builder.append(U'[').appendByteBlock(block).append(U']');
+        for (const auto kind : {StringKind::U8, StringKind::U16, StringKind::U32}) {
+            auto builder = AnyStringBuilder{kind};
+            builder.append(U'[').appendByteBlock(block).append(U']');
 
-        REQUIRE_EQUAL(builder.kind(), StringKind::U16);
-        REQUIRE_EQUAL(builder.length(), CpLength{6U});
-        REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"[1234]"});
+            REQUIRE_EQUAL(builder.kind(), kind);
+            REQUIRE_EQUAL(builder.length(), CpLength{6U});
+            REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"[1234]"});
+        }
     }
 
     void testFactoryDefaults() {

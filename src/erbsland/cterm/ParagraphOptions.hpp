@@ -12,7 +12,6 @@
 #include "../bgeo/Alignment.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/u32/U32String.hpp"
-#include "../text/u32/U32StringView.hpp"
 
 namespace erbsland::cterm {
 
@@ -151,7 +150,7 @@ public:
     /// other alignments when included here.
     /// The provided string is canonicalized automatically and mapped to shared defaults for common patterns.
     /// @param separators A string of Unicode characters that are used to split words.
-    void setWordSeparators(const text::U32StringView &separators);
+    void setWordSeparators(const text::U32String &separators);
     /// Get the word break mark.
     /// The word break mark is used when a long word had to be split in a paragraph.
     [[nodiscard]] auto wordBreakMark() const noexcept -> const Block &;
@@ -220,10 +219,10 @@ private:
     BlockString _lineBreakStartMark{}; ///< BlockString to mark wrapped lines on the left side.
     ParagraphSpacing _paragraphSpacing{ParagraphSpacing::SingleLine};     ///< Spacing between paragraphs.
     text::CharSet _wordSeparators{{text::Char{U'\t'}, text::Char{U' '}}}; ///< Shared word separators.
-    Block _wordBreakMark{text::Char{U'-'}};                    ///< The mark added if a long word needs to be broken.
-    int _maximumLineWraps{0};                                  ///< The maximum number of lines in a paragraph.
-    BlockString _paragraphEllipsisMark{text::U32String{U"…"}}; ///< The ellipsis mark.
-    std::vector<int> _tabStops{cTabWrappedLineIndent};         ///< Tab stops for TAB character.
+    Block _wordBreakMark{text::Char{U'-'}}; ///< The mark added if a long word needs to be broken.
+    int _maximumLineWraps{0};               ///< The maximum number of lines in a paragraph.
+    BlockString _paragraphEllipsisMark{text::U32String{text::U32StringLiteral{U"…"}}}; ///< The ellipsis mark.
+    std::vector<int> _tabStops{cTabWrappedLineIndent};                                 ///< Tab stops for TAB character.
     TabOverflowBehavior _tabOverflowBehavior{TabOverflowBehavior::AddSpace}; ///< Fallback for non-advancing tabs.
     ParagraphOnError _onError{ParagraphOnError::PlainOutput};                ///< Error handling mode for paragraphs.
 };

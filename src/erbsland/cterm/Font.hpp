@@ -5,7 +5,6 @@
 #include "FontGlyph.hpp"
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -38,7 +37,7 @@ public: // modifiers
     /// Add or replace one glyph in this font.
     /// @param name The UTF-8 encoded character represented by the glyph.
     /// @param glyph The bitmap glyph.
-    void addGlyph(const text::StringView &name, FontGlyph glyph);
+    void addGlyph(const text::String &name, FontGlyph glyph);
     /// Set the configured font height in bitmap rows.
     /// @param height The new glyph height.
     void setHeight(int height) noexcept;
@@ -51,7 +50,7 @@ public: // accessors
     /// Find one glyph by its UTF-8 character string.
     /// @param name The UTF-8 encoded character to look up.
     /// @return A pointer to the glyph, or `nullptr` if no glyph exists for `name`.
-    [[nodiscard]] auto glyph(const text::StringView &name) const -> const FontGlyph *;
+    [[nodiscard]] auto glyph(const text::String &name) const -> const FontGlyph *;
     /// Create a new font instance with the built-in ASCII-centric default glyph set.
     /// @return A new shared font instance containing the default Latin letters, punctuation, and spacing glyphs.
     [[nodiscard]] static auto defaultAscii() -> FontPtr;

@@ -16,9 +16,10 @@ auto U8String::toIntegerOrThrow(IntegerParseOptions options) const -> T {
 
 template <math::AnyIntegerType T>
 auto U8String::fromInteger(T value, IntegerFormat format) -> U8String {
-    auto builder = StringBuilder{StringKind::U8};
-    builder.appendInteger(value, format);
-    return builder.takeU8String();
+    auto storage = impl::U8StringSharedStorage{};
+    auto appendTools = impl::U8StringAppendTools{storage};
+    impl::appendInteger(appendTools, value, format);
+    return U8String{impl::U8StringStorage{std::move(storage)}};
 }
 
 }

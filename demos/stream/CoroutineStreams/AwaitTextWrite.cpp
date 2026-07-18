@@ -8,7 +8,7 @@ namespace demo {
 /// Asynchronous text output owns its string until the complete atomic request is accepted.
 /// This is useful when a producer coroutine must not wait for output back pressure on its current thread.
 void awaitTextWrite() {
-    const auto output = el::StringBuilderStream::create();
+    const auto output = el::AnyStringBuilderStream::create();
     auto task = output->coWriteLine(el::String{"Flodprofil: rolig strøm ved østbredden"_el});
     waitForTask(task);
 

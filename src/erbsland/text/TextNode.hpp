@@ -5,9 +5,9 @@
 #include "CodeSnippetMarker.hpp"
 #include "EscapeAmount.hpp"
 #include "EscapeFormat.hpp"
+#include "String.hpp"
+#include "StringList.hpp"
 #include "StringTree.hpp"
-#include "StringView.hpp"
-#include "StringViewList.hpp"
 #include "TextNode_fwd.hpp"
 #include "TextNodeData_fwd.hpp"
 #include "TextNodeType.hpp"
@@ -76,22 +76,22 @@ public:
     [[nodiscard]] static auto createDefinitionDescription() -> TextNodePtr;
     /// Create a code-block node.
     /// @param language The optional language identifier.
-    [[nodiscard]] static auto createCodeBlock(StringView language = {}) -> TextNodePtr;
+    [[nodiscard]] static auto createCodeBlock(String language = {}) -> TextNodePtr;
     /// Create a line-oriented code snippet node.
     /// @param lines The source lines to include.
     /// @param startLine The original zero-based line index of the first line, or no-index for no line numbers.
     /// @param markers Optional marker ranges.
     /// @param language The optional language identifier.
     [[nodiscard]] static auto createCodeSnippet(
-        StringViewList lines,
+        StringList lines,
         unit::LineIndex startLine = unit::LineIndex::zero(),
         CodeSnippetMarkerList markers = {},
-        StringView language = {}) -> TextNodePtr;
+        String language = {}) -> TextNodePtr;
     /// Create a horizontal-line node.
     [[nodiscard]] static auto createHorizontalLine() -> TextNodePtr;
     /// Create a plain text node.
     /// @param text The text content.
-    [[nodiscard]] static auto createText(StringView text) -> TextNodePtr;
+    [[nodiscard]] static auto createText(String text) -> TextNodePtr;
     /// Create an emphasis node.
     [[nodiscard]] static auto createEmphasis() -> TextNodePtr;
     /// Create a strong-emphasis node.
@@ -102,15 +102,15 @@ public:
     [[nodiscard]] static auto createSpan() -> TextNodePtr;
     /// Create a link node.
     /// @param url The link target.
-    [[nodiscard]] static auto createLink(StringView url = {}) -> TextNodePtr;
+    [[nodiscard]] static auto createLink(String url = {}) -> TextNodePtr;
     /// Create an inline code node.
     [[nodiscard]] static auto createCode() -> TextNodePtr;
     /// Create an unsupported-content node.
     /// @param text The preserved content text.
-    [[nodiscard]] static auto createUnsupported(StringView text = {}) -> TextNodePtr;
+    [[nodiscard]] static auto createUnsupported(String text = {}) -> TextNodePtr;
     /// Create an error-content node.
     /// @param text The preserved error text.
-    [[nodiscard]] static auto createError(StringView text = {}) -> TextNodePtr;
+    [[nodiscard]] static auto createError(String text = {}) -> TextNodePtr;
 
 public: // modifiers
     /// Add a child node with the given type.
@@ -152,28 +152,28 @@ public: // modifiers
     auto addDefinitionDescription() -> TextNodePtr;
     /// Add a code-block child.
     /// @param language The optional language identifier.
-    auto addCodeBlock(StringView language = {}) -> TextNodePtr;
+    auto addCodeBlock(String language = {}) -> TextNodePtr;
     /// Add a line-oriented code snippet child.
     /// @param lines The source lines to include.
     /// @param startLine The original zero-based line index of the first line, or no-index for no line numbers.
     /// @param markers Optional marker ranges.
     /// @param language The optional language identifier.
     auto addCodeSnippet(
-        StringViewList lines,
+        StringList lines,
         unit::LineIndex startLine = unit::LineIndex::zero(),
         CodeSnippetMarkerList markers = {},
-        StringView language = {}) -> TextNodePtr;
+        String language = {}) -> TextNodePtr;
     /// Add a horizontal-line child.
     auto addHorizontalLine() -> TextNodePtr;
     /// Add a plain-text child.
     /// @param text The text content.
-    auto addText(StringView text) -> TextNodePtr;
+    auto addText(String text) -> TextNodePtr;
     /// Add safely escaped text as plain-text and escape-sequence children.
     /// @param text The potentially unsafe text to append.
     /// @param format The escape format to use.
     /// @param amount The amount of text to escape.
     /// @return This node.
-    auto addEscapedText(StringView text, EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced)
+    auto addEscapedText(const String &text, EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced)
         -> TextNode &;
     /// Add an emphasis child.
     auto addEmphasis() -> TextNodePtr;
@@ -185,23 +185,23 @@ public: // modifiers
     auto addSpan() -> TextNodePtr;
     /// Add a link child.
     /// @param url The link target.
-    auto addLink(StringView url = {}) -> TextNodePtr;
+    auto addLink(String url = {}) -> TextNodePtr;
     /// Add an inline-code child.
     auto addCode() -> TextNodePtr;
     /// Add an unsupported-content child.
     /// @param text The preserved content text.
-    auto addUnsupported(StringView text = {}) -> TextNodePtr;
+    auto addUnsupported(String text = {}) -> TextNodePtr;
     /// Add an error-content child.
     /// @param text The preserved error text.
-    auto addError(StringView text = {}) -> TextNodePtr;
+    auto addError(String text = {}) -> TextNodePtr;
 
 public: // setters
     /// Replace the text payload.
-    auto setText(StringView text) noexcept -> TextNode &;
+    auto setText(String text) noexcept -> TextNode &;
     /// Replace the identifier.
-    auto setIdentifier(StringView identifier) noexcept -> TextNode &;
+    auto setIdentifier(String identifier) noexcept -> TextNode &;
     /// Replace the style/class information.
-    auto setStyle(StringView style) noexcept -> TextNode &;
+    auto setStyle(String style) noexcept -> TextNode &;
     /// Replace the node-specific metadata.
     auto setData(TextNodeDataPtr data) noexcept -> TextNode &;
     /// Replace the heading or nesting level.
@@ -221,11 +221,11 @@ public: // accessors
     /// Access the parent node, or an empty pointer for roots.
     [[nodiscard]] auto parent() const noexcept -> TextNodePtr;
     /// Access the text payload.
-    [[nodiscard]] auto text() const noexcept -> StringView { return _text; }
+    [[nodiscard]] auto text() const noexcept -> String { return _text; }
     /// Access the identifier.
-    [[nodiscard]] auto identifier() const noexcept -> StringView { return _identifier; }
+    [[nodiscard]] auto identifier() const noexcept -> String { return _identifier; }
     /// Access the style/class information.
-    [[nodiscard]] auto style() const noexcept -> StringView { return _style; }
+    [[nodiscard]] auto style() const noexcept -> String { return _style; }
     /// Access the optional node-specific metadata.
     [[nodiscard]] auto data() const noexcept -> const TextNodeDataPtr & { return _data; }
     /// Access the heading or nesting level.
@@ -264,21 +264,14 @@ public: // conversion
 public: // private ctor
     /// @internal
     /// Create a node with explicit metadata.
-    TextNode(
-        Type type,
-        StringView text,
-        StringView identifier,
-        StringView style,
-        TextNodeDataPtr data,
-        Level level,
-        PrivateTag);
+    TextNode(Type type, String text, String identifier, String style, TextNodeDataPtr data, Level level, PrivateTag);
 
 private:
     [[nodiscard]] static auto createNode(
         Type type,
-        StringView text = {},
-        StringView identifier = {},
-        StringView style = {},
+        String text = {},
+        String identifier = {},
+        String style = {},
         TextNodeDataPtr data = {},
         Level level = 0) -> TextNodePtr;
     [[nodiscard]] static auto codeSnippetLineIndex(unit::LineIndex startLine, std::size_t localLine) noexcept
@@ -289,9 +282,9 @@ private:
     Type _type;              ///< The semantic node type.
     TextNodeList _children;  ///< The child nodes.
     TextNodeWeakPtr _parent; ///< The parent node.
-    StringView _text;        ///< Text payload.
-    StringView _identifier;  ///< Optional identifier/anchor.
-    StringView _style;       ///< Optional style/class information.
+    String _text;            ///< Text payload.
+    String _identifier;      ///< Optional identifier/anchor.
+    String _style;           ///< Optional style/class information.
     TextNodeDataPtr _data;   ///< Node-specific extensible metadata.
     Level _level{0};         ///< Heading or nesting level.
 };

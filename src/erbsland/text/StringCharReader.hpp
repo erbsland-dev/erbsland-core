@@ -3,21 +3,22 @@
 #pragma once
 
 #include "AnyString_fwd.hpp"
-#include "AnyStringView_fwd.hpp"
+#include "AnyStringEditor_fwd.hpp"
 #include "Char.hpp"
 #include "CharSet.hpp"
 #include "IntegerBase.hpp"
 #include "IntegerParseOptions.hpp"
 #include "ReadIntegerResult.hpp"
+#include "StringCharReader_fwd.hpp"
 #include "StringCharReaderState.hpp"
 
 #include "impl/StringReaderBase.hpp"
 #include "u16/U16String_fwd.hpp"
-#include "u16/U16StringView_fwd.hpp"
+#include "u16/U16StringEditor_fwd.hpp"
 #include "u32/U32String_fwd.hpp"
-#include "u32/U32StringView_fwd.hpp"
+#include "u32/U32StringEditor_fwd.hpp"
 #include "u8/U8String_fwd.hpp"
-#include "u8/U8StringView_fwd.hpp"
+#include "u8/U8StringEditor_fwd.hpp"
 
 #include "../math/IntegerTraits.hpp"
 #include "../mem/SharedDataPointer.hpp"
@@ -47,21 +48,21 @@ public:
     /// Create an empty reader.
     StringCharReader();
     /// Create a reader for a UTF-8 string.
+    explicit StringCharReader(const U8StringEditor &text);
+    /// Create a reader for a UTF-8 read-only string.
     explicit StringCharReader(const U8String &text);
-    /// Create a reader for a UTF-8 string view.
-    explicit StringCharReader(const U8StringView &text);
     /// Create a reader for a UTF-16 string.
+    explicit StringCharReader(const U16StringEditor &text);
+    /// Create a reader for a UTF-16 read-only string.
     explicit StringCharReader(const U16String &text);
-    /// Create a reader for a UTF-16 string view.
-    explicit StringCharReader(const U16StringView &text);
     /// Create a reader for a UTF-32 string.
+    explicit StringCharReader(const U32StringEditor &text);
+    /// Create a reader for a UTF-32 read-only string.
     explicit StringCharReader(const U32String &text);
-    /// Create a reader for a UTF-32 string view.
-    explicit StringCharReader(const U32StringView &text);
+    /// Create a reader for AnyStringEditor.
+    explicit StringCharReader(const AnyStringEditor &text);
     /// Create a reader for AnyString.
     explicit StringCharReader(const AnyString &text);
-    /// Create a reader for AnyStringView.
-    explicit StringCharReader(const AnyStringView &text);
 
     // defaults
     ~StringCharReader() = default;
@@ -234,7 +235,7 @@ public: // capture strings
     /// The returned string always matches the encoding of the parsed string,
     /// it is returned as an inexpensive slice of that string - no copy is made.
     /// @return The captured string or an empty string if the capture point is invalid.
-    [[nodiscard]] auto takeCapture() noexcept -> AnyStringView;
+    [[nodiscard]] auto takeCapture() noexcept -> AnyString;
 
 public: // buffer
     /// Clear all text from the buffer while keeping any retained capacity.
@@ -242,9 +243,9 @@ public: // buffer
     /// Move out the buffer and reset it.
     /// @return The buffered text as an owning string.
     [[nodiscard]] auto takeBuffer() -> AnyString;
-    /// Create a view to the current buffer content.
-    /// @return A view to the buffer text.
-    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView;
+    /// Get the current buffer content without consuming it.
+    /// @return The buffer text.
+    [[nodiscard]] auto bufferView() const noexcept -> AnyString;
     /// Get the current decoded code-point length of the buffer.
     /// @return The buffer length in decoded code points.
     [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength;
@@ -252,14 +253,14 @@ public: // buffer
     [[nodiscard]] auto isBufferEmpty() const noexcept -> bool;
     /// Replace the buffer with text converted to the reader encoding.
     /// @param text The new buffer content.
-    void setBuffer(const AnyStringView &text);
+    void setBuffer(const AnyString &text);
     /// Append one Unicode code point to the buffer.
     /// Signal characters are ignored.
     /// @param character The character to append.
     void appendToBuffer(Char character);
     /// Append text to the buffer, converting it to the reader encoding if needed.
     /// @param text The text to append.
-    void appendToBuffer(const AnyStringView &text);
+    void appendToBuffer(const AnyString &text);
     /// Take the current capture and append it to the buffer.
     void appendCaptureToBuffer();
     /// Read a character and append it to the buffer.
@@ -291,7 +292,7 @@ private:
     using ReaderPtr = mem::SharedDataPointer<impl::StringReaderBase>;
 
 private:
-    [[nodiscard]] static auto createBackendForAnyStringView(const AnyStringView &text) -> impl::StringReaderBase *;
+    [[nodiscard]] static auto createBackendForAnyString(const AnyString &text) -> impl::StringReaderBase *;
     [[nodiscard]] auto scanInteger(const IntegerParseOptions &options, bool strict) -> ReadIntegerResult;
     [[nodiscard]] auto readIntegerResultOrThrow(const IntegerParseOptions &options) -> ReadIntegerResult;
     [[noreturn]] static void throwError(ReadNumberStatus status, unit::CpIndex position);

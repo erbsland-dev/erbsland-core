@@ -5,7 +5,7 @@
 #include "VersionRange_fwd.hpp"
 #include "VersionUnit.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../util/HashHelper.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 

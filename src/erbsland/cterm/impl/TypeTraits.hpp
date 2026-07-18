@@ -5,11 +5,11 @@
 #include "../Color.hpp"
 
 #include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../text/StringLiteral.hpp"
-#include "../../text/StringView.hpp"
 #include "../../text/u32/U32String.hpp"
+#include "../../text/u32/U32StringEditor.hpp"
 #include "../../text/u32/U32StringLiteral.hpp"
-#include "../../text/u32/U32StringView.hpp"
 #include "../../text/u8/U8StringLiteral.hpp"
 
 #include <concepts>
@@ -20,19 +20,19 @@ namespace erbsland::cterm {
 class Block;
 class BlockAttributes;
 class BlockStyle;
+class BlockStringEditor;
 class BlockString;
-class BlockStringView;
 
-/// A value accepted by `Terminal::print()` and `Terminal::printLine()` or `BlockString::append()`.
+/// A value accepted by `Terminal::print()` and `Terminal::printLine()` or `BlockStringEditor::append()`.
 template <typename T>
 concept PrintableArg = std::constructible_from<Foreground, T> || std::constructible_from<Background, T> ||
     std::same_as<Color, std::remove_cvref_t<T>> || std::same_as<BlockAttributes, std::remove_cvref_t<T>> ||
     std::same_as<BlockStyle, std::remove_cvref_t<T>> || std::same_as<Block, std::remove_cvref_t<T>> ||
-    std::same_as<BlockString, std::remove_cvref_t<T>> || std::same_as<BlockStringView, std::remove_cvref_t<T>> ||
-    std::same_as<text::String, std::remove_cvref_t<T>> || std::same_as<text::StringView, std::remove_cvref_t<T>> ||
+    std::same_as<BlockStringEditor, std::remove_cvref_t<T>> || std::same_as<BlockString, std::remove_cvref_t<T>> ||
+    std::same_as<text::StringEditor, std::remove_cvref_t<T>> || std::same_as<text::String, std::remove_cvref_t<T>> ||
     std::same_as<text::StringLiteral, std::remove_cvref_t<T>> ||
+    std::same_as<text::U32StringEditor, std::remove_cvref_t<T>> ||
     std::same_as<text::U32String, std::remove_cvref_t<T>> ||
-    std::same_as<text::U32StringView, std::remove_cvref_t<T>> ||
     std::same_as<text::U32StringLiteral, std::remove_cvref_t<T>> ||
     std::same_as<text::U8StringLiteral<char>, std::remove_cvref_t<T>> ||
     std::same_as<text::U8StringLiteral<char8_t>, std::remove_cvref_t<T>>;

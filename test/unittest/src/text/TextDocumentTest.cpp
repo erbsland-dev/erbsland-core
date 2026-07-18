@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/ParameterError.hpp>
+#include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/impl/CodeBlockData.hpp>
 #include <erbsland/text/impl/CodeSnippetData.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/PlainTextRenderer.hpp>
-#include <erbsland/text/StringBuilder.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>
@@ -25,24 +25,25 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace {
 
 class TestNodeData final : public el::text::TextNodeData {
 public:
-    explicit TestNodeData(const el::text::StringView text) noexcept : _text{text} {}
+    explicit TestNodeData(el::text::String text) noexcept : _text{std::move(text)} {}
 
 public:
-    [[nodiscard]] auto toString() const -> el::text::StringView override { return _text; }
+    [[nodiscard]] auto toString() const -> el::text::String override { return _text; }
 
 private:
-    el::text::StringView _text;
+    el::text::String _text;
 };
 
 }
 
+using el::text::AnyStringBuilder;
 using el::text::PlainTextRenderer;
-using el::text::StringBuilder;
 using el::text::StringConverter;
 using el::text::TextDocument;
 using el::text::TextNode;
@@ -164,7 +165,7 @@ public:
 
         auto paragraph = TextNode::createParagraph();
         const auto unsafe =
-            el::text::String{std::string_view{el::unittest::th::stdStringFromHex("61 22 5C 1B 62 0A 63 FF")}};
+            el::text::StringEditor{std::string_view{el::unittest::th::stdStringFromHex("61 22 5C 1B 62 0A 63 FF")}};
         REQUIRE_EQUAL(&paragraph->addEscapedText(unsafe, el::text::EscapeFormat::Display), paragraph.get());
         REQUIRE_EQUAL(paragraph->children().count(), el::text::TextNodeList::Count{5U});
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{0U}]->type(), TextNodeType::Text);
@@ -292,7 +293,7 @@ public:
                                           "mystery\n"
                                           "broken"};
         auto renderer = PlainTextRenderer{document};
-        auto builder = StringBuilder{};
+        auto builder = AnyStringBuilder{};
 
         REQUIRE_EQUAL(StringConverter{renderer.build()}.toStdString(), expected);
         REQUIRE_EQUAL(StringConverter{renderer.build()}.toStdString(), expected);
@@ -340,7 +341,7 @@ public:
         using namespace el::text::literals;
 
         auto document = TextDocument{};
-        auto lines = el::text::StringViewList{};
+        auto lines = el::text::StringList{};
         lines.append("alpha"_el);
         lines.append("--bad"_el);
         lines.append("omega"_el);
@@ -378,7 +379,7 @@ public:
         using namespace el::text::literals;
 
         auto document = TextDocument{};
-        auto lines = el::text::StringViewList{};
+        auto lines = el::text::StringList{};
         lines.append("return 0;"_el);
         document.addCodeSnippet(std::move(lines), el::unit::LineIndex::noIndex());
 
@@ -389,8 +390,8 @@ public:
         using namespace el::text::literals;
 
         auto document = TextDocument{};
-        auto lines = el::text::StringViewList{};
-        lines.append(el::text::String{std::string(100, 'x')});
+        auto lines = el::text::StringList{};
+        lines.append(el::text::StringEditor{std::string(100, 'x')});
         lines.append("a\tb"_el);
         document.addCodeSnippet(std::move(lines));
 

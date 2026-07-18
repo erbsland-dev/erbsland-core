@@ -3,8 +3,8 @@
 #pragma once
 
 #include "U32String_fwd.hpp"
+#include "U32StringEditor_fwd.hpp"
 #include "U32StringLiteral_fwd.hpp"
-#include "U32StringView_fwd.hpp"
 
 #include "impl/U32StringDataView.hpp"
 #include "impl/U32StringReadTools.hpp"
@@ -26,8 +26,8 @@ namespace erbsland::text {
 /// It allows work with literals that are only copied if a modification is required.
 /// @tested{U32StringLiteralTest}
 class U32StringLiteral final {
+    friend class U32StringEditor;
     friend class U32String;
-    friend class U32StringView;
     friend constexpr auto impl::createU32StringLiteral(const char32_t *data, std::size_t size) noexcept
         -> U32StringLiteral;
     // format

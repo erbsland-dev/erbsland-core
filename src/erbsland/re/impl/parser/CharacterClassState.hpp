@@ -97,7 +97,7 @@ public: // handler methods
     /// Handle any escape sequence starting with a backslash.
     void handleEscapeSequence();
     /// Add the ranges for a "POSIX" character class (PCRE compatibility).
-    void processPosixRangesFor(const text::StringView &name);
+    void processPosixRangesFor(const text::String &name);
     /// Process the start literal before a range.
     void processStartLiteralBeforeRange();
     /// Process a new literal that may be part of a range.

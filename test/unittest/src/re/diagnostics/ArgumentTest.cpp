@@ -31,7 +31,7 @@ public:
     }
 
     void testToStringArgumentKindUnknownValue() {
-        REQUIRE_EQUAL(toString(static_cast<ArgumentKind>(0xffU)), el::text::StringView{});
+        REQUIRE_EQUAL(toString(static_cast<ArgumentKind>(0xffU)), el::text::String{});
     }
 
     void testToStringArgumentTypeKnownValues() {
@@ -41,7 +41,7 @@ public:
     }
 
     void testToStringArgumentTypeUnknownValue() {
-        REQUIRE_EQUAL(toString(static_cast<ArgumentType>(0xffU)), el::text::StringView{});
+        REQUIRE_EQUAL(toString(static_cast<ArgumentType>(0xffU)), el::text::String{});
     }
 
     void testFormat() {

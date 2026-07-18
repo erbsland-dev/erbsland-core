@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <cstddef>
 
@@ -16,9 +16,9 @@ public:
     /// Create an empty group name.
     GroupName() = default;
     /// Create a group name without a domain.
-    explicit GroupName(const text::StringView &name) : _name{name} {}
+    explicit GroupName(const text::String &name) : _name{name} {}
     /// Create a group name with an optional domain.
-    GroupName(const text::StringView &name, const text::StringView &domain) : _name{name}, _domain{domain} {}
+    GroupName(const text::String &name, const text::String &domain) : _name{name}, _domain{domain} {}
 
     // defaults
     ~GroupName() = default;
@@ -43,7 +43,7 @@ public: // conversion
     /// Convert this name to display text.
     [[nodiscard]] auto toString() const -> text::String;
     /// Create a name from display text, splitting a Windows-style domain if present.
-    [[nodiscard]] static auto fromString(const text::StringView &text) -> GroupName;
+    [[nodiscard]] static auto fromString(const text::String &text) -> GroupName;
     /// Get a stable hash for this name.
     [[nodiscard]] auto hash() const noexcept -> std::size_t;
 

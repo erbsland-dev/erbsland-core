@@ -5,7 +5,7 @@ Regular Expression API Guidelines
 Core Semantics
 ==============
 
-Core string views own their backing storage.
+Core strings own their backing storage.
 Regular expression subjects, matches and captured slices may therefore share storage without a separate borrowed-view
 API.
 Names identify the encoding of the result, not its ownership mode.
@@ -27,9 +27,9 @@ Compilation Patterns
 
 .. code-block:: text
 
-    RegEx.compile(text::StringView) -> RegExPtr
-    RegEx.compile(text::U16StringView) -> RegExPtr
-    RegEx.compile(text::U32StringView) -> RegExPtr
+    RegEx.compile(text::String) -> RegExPtr
+    RegEx.compile(text::U16String) -> RegExPtr
+    RegEx.compile(text::U32String) -> RegExPtr
 
 All pattern overloads share the same reader-based compilation path.
 Pattern limits are code-point based.
@@ -61,13 +61,13 @@ Subject and Match Patterns
 
 .. code-block:: text
 
-    o.match(text::StringView) -> MatchPtr
-    o.match(text::U16StringView) -> Match16Ptr
-    o.match(text::U32StringView) -> Match32Ptr
+    o.match(text::String) -> MatchPtr
+    o.match(text::U16String) -> Match16Ptr
+    o.match(text::U32String) -> Match32Ptr
     o.❮operation❯(Input❮width❯Ptr) -> Match❮width❯Ptr // custom source, same result family
-    Match.content() -> text::StringView
-    Match16.content() -> text::U16StringView
-    Match32.content() -> text::U32StringView
+    Match.content() -> text::String
+    Match16.content() -> text::U16String
+    Match32.content() -> text::U32String
 
 The same mapping applies to ``fullMatch``, ``findFirst``, ``findAll`` and ``collectAll``.
 Do not add ``...View`` method, input or match names: ownership is already part of the Core view semantics.
@@ -78,9 +78,9 @@ Capture Group Patterns
 .. code-block:: text
 
     o.group(CaptureGroupIndex) -> CaptureGroup
-    o.group(text::StringView) -> CaptureGroup
-    o.content(CaptureGroupIndex) -> text::U❮width❯StringView
-    o.content(text::StringView) -> text::U❮width❯StringView
+    o.group(text::String) -> CaptureGroup
+    o.content(CaptureGroupIndex) -> text::U❮width❯String
+    o.content(text::String) -> text::U❮width❯String
 
 Use :cpp:type:`CaptureGroupIndex <erbsland::re::CaptureGroupIndex>` for group selectors.
 Keep

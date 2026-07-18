@@ -98,6 +98,6 @@ private:
     }
 
     [[nodiscard]] static auto pathFromStd(const std::filesystem::path &path) -> Path {
-        return Path::fromPosix(el::text::String{path.generic_string()});
+        return Path::fromPosix(el::text::StringEditor{path.generic_string()});
     }
 };

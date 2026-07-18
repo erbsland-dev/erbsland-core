@@ -29,7 +29,7 @@ public:
         view.set(bgeo::BlockPosition{9, 20}, Block{U'X'});
         view.set(bgeo::BlockPosition{13, 21}, Block{U'Y'});
         view.set(bgeo::BlockPosition{12, 20}, Block{U'界'});
-        view.set(bgeo::BlockPosition{9, 21}, BlockString{"ZCD"_el});
+        view.set(bgeo::BlockPosition{9, 21}, BlockStringEditor{"ZCD"_el});
 
         requireRowsEqual(
             buffer,
@@ -104,7 +104,7 @@ public:
         auto source = createBuffer({"abcdef"});
         view.drawBuffer(
             source, BufferDrawOptions{bgeo::BlockRectangle{98, 201, 6, 1}, bgeo::BlockRectangle{0, 0, 6, 1}});
-        view.drawBlockText(bgeo::BlockPosition{99, 201}, BlockString{"WXY"_el});
+        view.drawBlockText(bgeo::BlockPosition{99, 201}, BlockStringEditor{"WXY"_el});
 
         requireRowsEqual(
             buffer,

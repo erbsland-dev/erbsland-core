@@ -35,7 +35,7 @@ void throwFormatError(const std::string_view reason) {
     throw FormatError{reason};
 }
 
-void throwFormatError(StringView reason) {
+void throwFormatError(String reason) {
     throw FormatError{std::move(reason)};
 }
 
@@ -43,7 +43,7 @@ void throwOutOfRange(const std::string_view reason) {
     throw err::OutOfRangeError{reason};
 }
 
-void throwOutOfRange(StringView reason) {
+void throwOutOfRange(String reason) {
     throw err::OutOfRangeError{std::move(reason)};
 }
 
@@ -51,7 +51,7 @@ void throwOverflow(const std::string_view reason) {
     throw err::OverflowError{reason};
 }
 
-void throwOverflow(StringView reason) {
+void throwOverflow(String reason) {
     throw err::OverflowError{std::move(reason)};
 }
 
@@ -59,7 +59,7 @@ void throwParseError(const std::string_view reason) {
     throw err::ParseError{reason};
 }
 
-void throwParseError(StringView reason) {
+void throwParseError(String reason) {
     throw err::ParseError{std::move(reason)};
 }
 

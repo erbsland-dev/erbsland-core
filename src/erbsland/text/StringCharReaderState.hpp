@@ -57,7 +57,7 @@ private:
 
 private:
     impl::StringReaderBackendKind _kind{};            ///< The backend kind this state belongs to.
-    mem::StorageIdentifier _storageId;                ///< The string view storage identity.
+    mem::StorageIdentifier _storageId;                ///< The read-only string storage identity.
     std::size_t _rawPosition{0};                      ///< The raw backend position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()}; ///< The decoded code-point position.
 };

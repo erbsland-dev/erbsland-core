@@ -4,15 +4,15 @@
 
 .. index::
     !single: String Attributes
-    single: StringView
     single: String
+    single: StringEditor
     single: StringLiteral
-    single: U8StringView
     single: U8String
-    single: U16StringView
+    single: U8StringEditor
     single: U16String
-    single: U32StringView
+    single: U16StringEditor
     single: U32String
+    single: U32StringEditor
     single: isEmpty
     single: isValidUtf8
     single: isValidUtf16
@@ -35,16 +35,16 @@ String attributes answer simple questions about a string without changing it.
 They tell you whether a string is empty, whether its stored data is valid UTF, how long the string is in storage units
 or decoded code points, which hash value represents its decoded text, and which storage range a view refers to.
 
-The examples on this page use :cpp:type:`StringView <erbsland::text::StringView>`, the common UTF-8 read-only string
+The examples on this page use :cpp:type:`String <erbsland::text::String>`, the common UTF-8 read-only string
 type.
-The same attribute model is available for :cpp:type:`String <erbsland::text::String>`,
+The same attribute model is available for :cpp:type:`StringEditor <erbsland::text::StringEditor>`,
 :cpp:type:`StringLiteral <erbsland::text::StringLiteral>`,
-:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
 :cpp:class:`U8String <erbsland::text::U8String>`,
-:cpp:class:`U16StringView <erbsland::text::U16StringView>`,
+:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
 :cpp:class:`U16String <erbsland::text::U16String>`,
-:cpp:class:`U32StringView <erbsland::text::U32StringView>`, and
-:cpp:class:`U32String <erbsland::text::U32String>`.
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`,
+:cpp:class:`U32String <erbsland::text::U32String>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`.
 
 Use the attribute that matches the question you are asking:
 
@@ -56,39 +56,39 @@ Use the attribute that matches the question you are asking:
         - Method
         - Cost model
     *   - Does this string contain any stored text?
-        - :cpp:func:`isEmpty() <erbsland::text::U8StringView::isEmpty>`
+        - :cpp:func:`isEmpty() <erbsland::text::U8String::isEmpty>`
         - Constant time.
     *   - Is the stored UTF data well-formed?
-        - :cpp:func:`isValidUtf8() <erbsland::text::U8StringView::isValidUtf8>`,
-          :cpp:func:`isValidUtf16() <erbsland::text::U16StringView::isValidUtf16>`, or
-          :cpp:func:`isValidUtf32() <erbsland::text::U32StringView::isValidUtf32>`
+        - :cpp:func:`isValidUtf8() <erbsland::text::U8String::isValidUtf8>`,
+          :cpp:func:`isValidUtf16() <erbsland::text::U16String::isValidUtf16>`, or
+          :cpp:func:`isValidUtf32() <erbsland::text::U32String::isValidUtf32>`
         - Scans the stored data.
     *   - How large is the native storage range?
-        - :cpp:func:`length() <erbsland::text::U8StringView::length>`
+        - :cpp:func:`length() <erbsland::text::U8String::length>`
         - Constant time.
     *   - How many decoded code points does it contain?
-        - :cpp:func:`characterLength() <erbsland::text::U8StringView::characterLength>`
+        - :cpp:func:`characterLength() <erbsland::text::U8String::characterLength>`
         - Scans UTF-8 and UTF-16.
     *   - Which hash represents the decoded text?
-        - :cpp:func:`toHash() <erbsland::text::U8StringView::toHash>` or
-          :cpp:func:`toHashCI() <erbsland::text::U8StringView::toHashCI>`
+        - :cpp:func:`toHash() <erbsland::text::U8String::toHash>` or
+          :cpp:func:`toHashCI() <erbsland::text::U8String::toHashCI>`
         - Scans decoded code points.
     *   - Does an index belong to the same visible storage range?
-        - :cpp:func:`storageId() <erbsland::text::U8StringView::storageId>`
+        - :cpp:func:`storageId() <erbsland::text::U8String::storageId>`
         - Constant time.
 
 Empty Strings and Valid Encodings
 =================================
 
-Use :cpp:func:`isEmpty() <erbsland::text::U8StringView::isEmpty>` when you need to know whether a string contains any
+Use :cpp:func:`isEmpty() <erbsland::text::U8String::isEmpty>` when you need to know whether a string contains any
 stored data.
 This is clearer than comparing a length to zero, and it keeps the code independent of whether the string is stored as
 UTF-8 bytes, UTF-16 code units, or UTF-32 code points.
 
 Encoding validation is a different question.
-Use :cpp:func:`isValidUtf8() <erbsland::text::U8StringView::isValidUtf8>` for UTF-8 strings,
-:cpp:func:`isValidUtf16() <erbsland::text::U16StringView::isValidUtf16>` for UTF-16 strings, and
-:cpp:func:`isValidUtf32() <erbsland::text::U32StringView::isValidUtf32>` for UTF-32 strings.
+Use :cpp:func:`isValidUtf8() <erbsland::text::U8String::isValidUtf8>` for UTF-8 strings,
+:cpp:func:`isValidUtf16() <erbsland::text::U16String::isValidUtf16>` for UTF-16 strings, and
+:cpp:func:`isValidUtf32() <erbsland::text::U32String::isValidUtf32>` for UTF-32 strings.
 Validation has to inspect the complete stored range, so it is proportional to the length of the input.
 
 Most string algorithms in Erbsland Core handle invalid encoding data deterministically.
@@ -98,12 +98,12 @@ This makes ordinary processing robust, but it does not replace validation at tru
 
 For security-sensitive input, validate the encoding when text enters your application.
 Then validate the allowed character set with
-:cpp:func:`containsOnly() <erbsland::text::U8StringView::containsOnly>` before treating the text as an identifier,
+:cpp:func:`containsOnly() <erbsland::text::U8String::containsOnly>` before treating the text as an identifier,
 path component, protocol token, or command.
 
 .. erbsland-demo::
-    :source: text/StringView/BasicTests.cpp
-    :exec: text/string_view --demo BasicTests
+    :source: text/String/BasicTests.cpp
+    :exec: text/string --demo BasicTests
     :source-sha256: 33c9b69703ba4ffb03816392bb7b7c3bc26652068c697783fd667a87bcab0b84
 
 .. code-block:: cpp
@@ -112,14 +112,14 @@ path component, protocol token, or command.
     ///
     /// This is only for demonstrating error handling. Do not construct strings this
     /// way in application code.
-    auto createTextWithInvalidUtf8() -> el::StringView {
+    auto createTextWithInvalidUtf8() -> el::String {
         constexpr auto bytes = std::array<const char, 15>{
             'S', 'u', 'n', 'n', 'y', ' ', static_cast<char>(0x82U), ' ', 'W', 'e', 'a', 't', 'h', 'e', 'r'};
 
-        return el::U8String{std::string_view{bytes.data(), bytes.size()}};
+        return el::U8StringEditor{std::string_view{bytes.data(), bytes.size()}};
     }
 
-    /// This demo shows basic state checks for `StringView`.
+    /// This demo shows basic state checks for `String`.
     ///
     /// It demonstrates:
     /// - checking whether a string is empty,
@@ -129,8 +129,8 @@ path component, protocol token, or command.
     /// Invalid UTF-8 data is handled safely. Encoding errors are represented with
     /// the Unicode replacement character U+FFFD.
     void basicTests() {
-        const auto station = el::StringView{"🌦️ Station Süd: Nebel über dem Fjord"_el};
-        const auto empty = el::StringView{};
+        const auto station = el::String{"🌦️ Station Süd: Nebel über dem Fjord"_el};
+        const auto empty = el::String{};
         const auto invalidUtf8 = createTextWithInvalidUtf8();
 
         el::io::printLine("Input strings:"_el);
@@ -167,7 +167,7 @@ path component, protocol token, or command.
 Native Length and Code-Point Length
 ===================================
 
-:cpp:func:`length() <erbsland::text::U8StringView::length>` returns the native storage length.
+:cpp:func:`length() <erbsland::text::U8String::length>` returns the native storage length.
 For UTF-8 strings, this is a :cpp:type:`ByteLength <erbsland::unit::ByteLength>`.
 For UTF-16 strings, this is a :cpp:type:`U16DataLength <erbsland::unit::U16DataLength>`.
 For UTF-32 strings, this is a :cpp:type:`CpLength <erbsland::unit::CpLength>`, because one UTF-32 storage element is one
@@ -176,7 +176,7 @@ decoded code point.
 Native length is the right value for slicing, reserving storage, reporting byte sizes, and working with native indexes.
 It is stored with the string range and is therefore fast to query.
 
-:cpp:func:`characterLength() <erbsland::text::U8StringView::characterLength>` returns the number of decoded Unicode
+:cpp:func:`characterLength() <erbsland::text::U8String::characterLength>` returns the number of decoded Unicode
 code points as :cpp:type:`CpLength <erbsland::unit::CpLength>`.
 For UTF-8 and UTF-16 text this requires decoding the string because one character may use multiple storage units.
 For large strings, avoid calling it repeatedly inside loops.
@@ -184,8 +184,8 @@ If an algorithm needs to inspect each character anyway, count while iterating or
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
 
 .. erbsland-demo::
-    :source: text/StringView/LengthAttributes.cpp
-    :exec: text/string_view --demo LengthAttributes
+    :source: text/String/LengthAttributes.cpp
+    :exec: text/string --demo LengthAttributes
     :source-sha256: 32ade239042c1883832a8732d3d3481c24b2f5944019ce1f838b18b4b7210c60
 
 .. code-block:: cpp
@@ -198,10 +198,10 @@ If an algorithm needs to inspect each character anyway, count while iterating or
     /// length for storage ranges and indexes, and use the character length only when
     /// a user-visible code-point count is the actual question.
     void lengthAttributes() {
-        const auto u8Reading = el::StringView{"温度計📡: 21℃"_el};
-        const auto u16Reading = el::U16StringView{u"温度計📡: 21℃"_el};
-        const auto u32Reading = el::U32StringView{U"温度計📡: 21℃"_el};
-        const auto asciiLabel = el::StringView{"sensor-21"_el};
+        const auto u8Reading = el::String{"温度計📡: 21℃"_el};
+        const auto u16Reading = el::U16String{u"温度計📡: 21℃"_el};
+        const auto u32Reading = el::U32String{U"温度計📡: 21℃"_el};
+        const auto asciiLabel = el::String{"sensor-21"_el};
 
         el::io::printLine("Measurement label: "_el, u8Reading);
         el::io::printLine("UTF-8 native length ....: "_el, u8Reading.length());
@@ -238,11 +238,11 @@ This prevents accidental comparisons such as “byte length equals character len
 Hashing Decoded Text
 ====================
 
-Use :cpp:func:`toHash() <erbsland::text::U8StringView::toHash>` when a string is used as a key in hash-based containers.
+Use :cpp:func:`toHash() <erbsland::text::U8String::toHash>` when a string is used as a key in hash-based containers.
 The hash is calculated from decoded code points, not from raw storage bytes.
 UTF-8, UTF-16, and UTF-32 strings that contain the same decoded text therefore produce the same regular hash value.
 
-Use :cpp:func:`toHashCI() <erbsland::text::U8StringView::toHashCI>` when the matching rule is Unicode simple case-folded
+Use :cpp:func:`toHashCI() <erbsland::text::U8String::toHashCI>` when the matching rule is Unicode simple case-folded
 text.
 Pair it with a matching case-folded comparison rule.
 Do not mix case-insensitive hashes with exact comparisons because equal hash buckets alone do not define equality.
@@ -251,20 +251,20 @@ The library also provides ``std::hash`` specializations for the string and strin
 Those specializations call ``toHash()`` and therefore use exact decoded text.
 
 .. erbsland-demo::
-    :source: text/StringView/Hashing.cpp
-    :exec: text/string_view --demo Hashing
+    :source: text/String/Hashing.cpp
+    :exec: text/string --demo Hashing
     :source-sha256: 95f8df37f8e3c8ea03135cbdd3de4bde0796df80232efec7efcb879bbeea6c3b
 
 .. code-block:: cpp
 
-    /// This demo shows how to make use of `StringView`s hash functions.
+    /// This demo shows how to make use of `String`s hash functions.
     void hashing() {
-        // Here we create a set of different string views.
+        // Here we create a set of different read-only string values.
         // For real code use the literals directly, like `const auto x = "abc"_el;`
-        const auto titlecase = el::StringView{"Fichte"_el};
-        const auto lowercase = el::StringView{"fichte"_el};
-        const auto greek = el::StringView{"Σκιά"_el};
-        const auto greekLower = el::StringView{"σκιά"_el};
+        const auto titlecase = el::String{"Fichte"_el};
+        const auto lowercase = el::String{"fichte"_el};
+        const auto greek = el::String{"Σκιά"_el};
+        const auto greekLower = el::String{"σκιά"_el};
 
         el::io::printLine("titlecase ............: "_el, titlecase);
         el::io::printLine("lowercase ............: "_el, lowercase);
@@ -272,7 +272,7 @@ Those specializations call ``toHash()`` and therefore use exact decoded text.
         el::io::printLine("greekLower ...........: "_el, greekLower);
         el::io::printLine();
 
-        // String hashes let you use string views in sets and unordered maps.
+        // String hashes let you use read-only values in sets and unordered maps.
         el::io::printLine("\nRegular Hash Values:"_el);
         auto hash = titlecase.toHash();
         el::io::printLine("  titlecase.toHash()     → "_el, hashToString(hash));
@@ -320,7 +320,7 @@ Those specializations call ``toHash()`` and therefore use exact decoded text.
 Storage Identifiers
 ===================
 
-Use :cpp:func:`storageId() <erbsland::text::U8StringView::storageId>` only for low-level code that stores native indexes
+Use :cpp:func:`storageId() <erbsland::text::U8String::storageId>` only for low-level code that stores native indexes
 outside the string object.
 The returned :cpp:class:`StorageIdentifier <erbsland::mem::StorageIdentifier>` identifies the visible storage range of
 the string or view.
@@ -334,8 +334,8 @@ The same applies to :cpp:type:`U16DataIndex <erbsland::unit::U16DataIndex>` for 
 Store the storage identifier together with the native index when an index outlives the immediate operation:
 
 .. erbsland-demo::
-    :source: text/StringView/StorageIdentifier.cpp
-    :exec: text/string_view --demo StorageIdentifier
+    :source: text/String/StorageIdentifier.cpp
+    :exec: text/string --demo StorageIdentifier
     :source-sha256: db7ad310659cca32732d59a35d5df1dc884681ae0c0a21e9cad1c8b149e56dc1
 
 .. code-block:: cpp
@@ -353,13 +353,13 @@ Store the storage identifier together with the native index when an index outliv
             el::ByteLength length;
         };
 
-        const auto report = el::String{"温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%"_el};
-        const auto reportView = el::StringView{report};
-        const auto token = el::StringView{"気圧計"_el};
+        const auto report = el::StringEditor{"温度計A: 21℃; 気圧計B: 1012hPa; 湿度計C: 45%"_el};
+        const auto reportView = el::String{report};
+        const auto token = el::String{"気圧計"_el};
         const auto cachedToken = CachedRange{reportView.storageId(), reportView.find(token), token.length()};
         const auto booleanFormat = el::BooleanFormat::yesNo();
 
-        const auto tryUseCachedRange = [&](const el::StringView &label, const el::StringView &candidate) -> void {
+        const auto tryUseCachedRange = [&](const el::String &label, const el::String &candidate) -> void {
             const auto sameStorage = candidate.storageId() == cachedToken.storageId;
             el::io::printLine(label, ":"_el);
             el::io::printLine("  same visible storage range: "_el, booleanFormat, sameStorage);
@@ -373,7 +373,7 @@ Store the storage identifier together with the native index when an index outliv
         };
 
         const auto copiedReport = reportView.copy();
-        const auto copiedView = el::StringView{copiedReport};
+        const auto copiedView = el::String{copiedReport};
         const auto tailView = reportView.slice(el::ByteRange{reportView.find(token), el::ByteLength::infinite()});
 
         el::io::printLine("Report: "_el, reportView);

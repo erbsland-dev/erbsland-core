@@ -22,7 +22,7 @@ void staticConstruction() {
         Text{U";ok"},
     };
 
-    const auto probeLines = el::StringViewList{{
+    const auto probeLines = el::StringList{{
         "probe-A7b wert=0.42;ok"_el,
         "probe-a7b wert=0.42;ok"_el,
         "probe-A7b wert=0.42;prüfen"_el,

@@ -5,7 +5,7 @@
 #include "Char.hpp"
 #include "Literals.hpp"
 #include "String.hpp"
-#include "StringView.hpp"
+#include "StringEditor.hpp"
 
 #include "impl/ThrowHelper.hpp"
 
@@ -13,7 +13,7 @@ namespace erbsland::text {
 
 using namespace text::literals;
 
-auto EscapeAmount::toString() const -> StringView {
+auto EscapeAmount::toString() const -> String {
     switch (_value) {
     case Required:
         return "required"_el;
@@ -29,7 +29,7 @@ auto EscapeAmount::toString() const -> StringView {
     }
 }
 
-auto EscapeAmount::fromString(const StringView &text) noexcept -> std::optional<EscapeAmount> {
+auto EscapeAmount::fromString(const String &text) noexcept -> std::optional<EscapeAmount> {
     if (text == "nothing"_el) {
         return EscapeAmount{Nothing};
     }
@@ -48,7 +48,7 @@ auto EscapeAmount::fromString(const StringView &text) noexcept -> std::optional<
     return {};
 }
 
-auto EscapeAmount::fromStringOrThrow(const StringView &text) -> EscapeAmount {
+auto EscapeAmount::fromStringOrThrow(const String &text) -> EscapeAmount {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }

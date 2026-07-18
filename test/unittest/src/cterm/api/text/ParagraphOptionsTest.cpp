@@ -20,8 +20,8 @@ public:
     void testLineBreakMarksAcceptValidShortStrings() {
         auto options = ParagraphOptions{};
 
-        options.setLineBreakEndMark(BlockString{U"->"_el});
-        options.setLineBreakStartMark(BlockString{U"<-"_el});
+        options.setLineBreakEndMark(BlockStringEditor{U"->"_el});
+        options.setLineBreakStartMark(BlockStringEditor{U"<-"_el});
 
         REQUIRE_EQUAL(options.lineBreakEndMark().length(), BlockCount{2U});
         REQUIRE_EQUAL(options.lineBreakEndMark()[BlockIndex{0U}], U'-');
@@ -34,16 +34,16 @@ public:
     void testLineBreakEndMarkRejectsTooLongOrControlText() {
         auto options = ParagraphOptions{};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockString{U"abc"_el}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockString{U"\n"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockStringEditor{U"abc"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakEndMark(BlockStringEditor{U"\n"_el}));
     }
 
     void testLineBreakStartMarkAllowsLongTextButRejectsControlText() {
         auto options = ParagraphOptions{};
 
-        options.setLineBreakStartMark(BlockString{U"│ │        "_el});
+        options.setLineBreakStartMark(BlockStringEditor{U"│ │        "_el});
         REQUIRE_EQUAL(options.lineBreakStartMark().length(), BlockCount{11U});
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakStartMark(BlockString{U"\t"_el}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, options.setLineBreakStartMark(BlockStringEditor{U"\t"_el}));
     }
 
     void testIndentsAndMarginsCanBeConfiguredAsOneValueObject() {

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../mem/ByteBlockView.hpp"
+#include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
@@ -21,16 +21,6 @@
 #include <type_traits>
 
 namespace erbsland::text::impl::utf8 {
-
-/// Get the UTF-8 byte order mark length.
-[[nodiscard]] constexpr auto bomLength() noexcept -> std::size_t {
-    return 3U;
-}
-
-/// Test if the byte data starts with a UTF-8 byte order mark.
-[[nodiscard]] inline auto hasBom(const mem::ByteBlockView &data) noexcept -> bool {
-    return data.startsWith({0xEFU, 0xBBU, 0xBFU});
-}
 
 /// Get the UTF-8 sequence length of this code-point.
 /// Returns zero for invalid Unicode code-points.

@@ -7,7 +7,7 @@
 #include "../../err/ParameterError.hpp"
 #include "../../text/impl/UnsafeDecodeBufferAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <exception>
 #include <utility>
@@ -191,7 +191,7 @@ auto EncodedTextInputStream::read(const CpLength maximum) -> StreamReadResult<St
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, String{}};
+        return {StreamReadStatus::Timeout, {}};
     }
     cancelAggregateRead();
     auto replay = takeReplay(maximum);
@@ -207,7 +207,7 @@ auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResul
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, String{}};
+        return {StreamReadStatus::Timeout, {}};
     }
     selectAggregateRead(AggregateReadKind::Line, maximum);
     if (maximum.isZero()) {
@@ -216,17 +216,17 @@ auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResul
     const auto deadline = deadlineFromNow();
     while (!pendingLineIsComplete()) {
         if (!_pendingText.isEmpty() && !sourceIsReadyLocked()) {
-            return {StreamReadStatus::Timeout, String{}};
+            return {StreamReadStatus::Timeout, {}};
         }
         const auto result = readLineChunk(maximum - _pendingText.characterLength(), deadline);
         if (result == StreamReadStatus::Timeout) {
-            return {StreamReadStatus::Timeout, String{}};
+            return {StreamReadStatus::Timeout, {}};
         }
         if (result == StreamReadStatus::Finished) {
             if (_pendingText.isEmpty()) {
                 _aggregateKind = AggregateReadKind::None;
                 _aggregateTarget = {};
-                return {StreamReadStatus::Finished, String{}};
+                return {StreamReadStatus::Finished, {}};
             }
             return {StreamReadStatus::Data, takePending()};
         }
@@ -241,7 +241,7 @@ auto EncodedTextInputStream::readAll(const CpLength maximum) -> StreamReadResult
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, String{}};
+        return {StreamReadStatus::Timeout, {}};
     }
     selectAggregateRead(AggregateReadKind::All, maximum);
     if (maximum.isZero()) {
@@ -250,19 +250,19 @@ auto EncodedTextInputStream::readAll(const CpLength maximum) -> StreamReadResult
     const auto deadline = deadlineFromNow();
     while (_pendingText.characterLength() < maximum) {
         if (!_pendingText.isEmpty() && !sourceIsReadyLocked()) {
-            return {StreamReadStatus::Timeout, String{}};
+            return {StreamReadStatus::Timeout, {}};
         }
         auto replay = takeReplay(maximum - _pendingText.characterLength());
         auto result = replay.isEmpty() ? readDecodedText(maximum - _pendingText.characterLength(), deadline)
                                        : StreamReadResult<String>{StreamReadStatus::Data, std::move(replay)};
         if (result == StreamReadStatus::Timeout) {
-            return {StreamReadStatus::Timeout, String{}};
+            return {StreamReadStatus::Timeout, {}};
         }
         if (result == StreamReadStatus::Finished) {
             if (_pendingText.isEmpty()) {
                 _aggregateKind = AggregateReadKind::None;
                 _aggregateTarget = {};
-                return {StreamReadStatus::Finished, String{}};
+                return {StreamReadStatus::Finished, {}};
             }
             return {StreamReadStatus::Data, takePending()};
         }
@@ -282,14 +282,14 @@ auto EncodedTextInputStream::readLineChunk(const CpLength maximum, const ReadDea
         return {StreamReadStatus::Data, std::move(text)};
     }
     if (_byteInputFinished) {
-        return {StreamReadStatus::Finished, String{}};
+        return {StreamReadStatus::Finished, {}};
     }
     const auto status = fillDecodeBuffer(deadline);
     text = _decodeBuffer.takeStringLine(maximum);
     if (!text.isEmpty()) {
         return {StreamReadStatus::Data, std::move(text)};
     }
-    return {_byteInputFinished ? StreamReadStatus::Finished : status, String{}};
+    return {_byteInputFinished ? StreamReadStatus::Finished : status, {}};
 }
 
 auto EncodedTextInputStream::takeReplay(const CpLength maximum) -> String {
@@ -314,10 +314,7 @@ auto EncodedTextInputStream::takeReplayLine(const CpLength maximum) -> String {
     }
     auto [line, suffix] = candidate.splitAt(newlineIndex + newline.length());
     if (!suffix.isEmpty()) {
-        auto builder = StringBuilder{};
-        builder.append(suffix);
-        builder.append(_replayText);
-        _replayText = builder.takeString();
+        _replayText = String::fromJoined({suffix, _replayText});
     }
     return line;
 }
@@ -336,10 +333,7 @@ void EncodedTextInputStream::cancelAggregateRead() {
         return;
     }
     if (!_pendingText.isEmpty()) {
-        auto builder = StringBuilder{};
-        builder.append(_pendingText);
-        builder.append(_replayText);
-        _replayText = builder.takeString();
+        _replayText = String::fromJoined({_pendingText, _replayText});
     }
     _pendingText = {};
     _aggregateKind = AggregateReadKind::None;
@@ -422,8 +416,7 @@ auto EncodedTextInputStream::readDecodedText(const CpLength maximum, const ReadD
     -> StreamReadResult<String> {
     if (maximum.isZero()) {
         return {
-            _byteInputFinished && _decodeBuffer.isEmpty() ? StreamReadStatus::Finished : StreamReadStatus::Data,
-            String{}};
+            _byteInputFinished && _decodeBuffer.isEmpty() ? StreamReadStatus::Finished : StreamReadStatus::Data, {}};
     }
 
     auto text = _decodeBuffer.takeString(maximum);
@@ -431,14 +424,14 @@ auto EncodedTextInputStream::readDecodedText(const CpLength maximum, const ReadD
         return {StreamReadStatus::Data, std::move(text)};
     }
     if (_byteInputFinished) {
-        return {StreamReadStatus::Finished, String{}};
+        return {StreamReadStatus::Finished, {}};
     }
     const auto status = fillDecodeBuffer(deadline);
     text = _decodeBuffer.takeString(maximum);
     if (!text.isEmpty()) {
         return {StreamReadStatus::Data, std::move(text)};
     }
-    return {_byteInputFinished ? StreamReadStatus::Finished : status, String{}};
+    return {_byteInputFinished ? StreamReadStatus::Finished : status, {}};
 }
 
 }

@@ -58,8 +58,8 @@ public:
             "None",
         }));
         REQUIRE_EQUAL(engineData->captureGroupNames.size(), 2U);
-        REQUIRE_EQUAL(engineData->captureGroupNames[0], String{"first"_el});
-        REQUIRE_EQUAL(engineData->captureGroupNames[1], String{});
+        REQUIRE_EQUAL(engineData->captureGroupNames[0], StringEditor{"first"_el});
+        REQUIRE_EQUAL(engineData->captureGroupNames[1], StringEditor{});
     }
 
     void testInvalidCharactersAndLineLength() {
@@ -75,7 +75,7 @@ public:
     void testInvalidOperationName() {
         WITH_CONTEXT(requireCompilerError({"UNKNOWN"}), "Invalid operation name");
         auto tooLongOperation = std::string(101, 'A');
-        el::text::StringViewList lines{StringView{String{tooLongOperation}}};
+        el::text::StringList lines{String{StringEditor{tooLongOperation}}};
         WITH_CONTEXT(requireCompilerError(lines, "too long"));
     }
 

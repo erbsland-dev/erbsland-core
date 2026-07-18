@@ -48,7 +48,7 @@ auto StandardStreamProxy::write(const text::Char character) -> StreamWriteStatus
     return target()->write(character);
 }
 
-auto StandardStreamProxy::write(const text::StringView &text) -> StreamWriteStatus {
+auto StandardStreamProxy::write(const text::String &text) -> StreamWriteStatus {
     return target()->write(text);
 }
 
@@ -56,7 +56,7 @@ auto StandardStreamProxy::writeLine() -> StreamWriteStatus {
     return target()->writeLine();
 }
 
-auto StandardStreamProxy::writeLine(const text::StringView &text) -> StreamWriteStatus {
+auto StandardStreamProxy::writeLine(const text::String &text) -> StreamWriteStatus {
     return target()->writeLine(text);
 }
 

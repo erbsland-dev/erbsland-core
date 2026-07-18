@@ -11,6 +11,11 @@
 
 namespace erbsland::cterm {
 
+using bgeo::BlockCoordinate;
+using bgeo::BlockDirection;
+using bgeo::BlockPosition;
+using bgeo::BlockSize;
+
 void CursorBuffer::validateFillChar(const Block &fillChar) {
     if (fillChar.displayWidth() != 1) {
         throw err::ParameterError{"fillChar must be a single-width character.", "fillChar"};
@@ -33,11 +38,11 @@ void CursorBuffer::setBlockAttributes(const BlockAttributes attributes) noexcept
     _currentStyle.setAttributes(attributes.withBase(BlockAttributes::reset()));
 }
 
-auto CursorBuffer::maximumSize() const noexcept -> bgeo::BlockSize {
+auto CursorBuffer::maximumSize() const noexcept -> BlockSize {
     return _maximumSize;
 }
 
-void CursorBuffer::setMaximumSize(bgeo::BlockSize maximumSize) noexcept {
+void CursorBuffer::setMaximumSize(BlockSize maximumSize) noexcept {
     _maximumSize = maximumSize;
 }
 
@@ -76,12 +81,12 @@ auto CursorBuffer::supportedBlockAttributes() const noexcept -> BlockAttributes 
     return BlockAttributes::all();
 }
 
-void CursorBuffer::moveCursor(const bgeo::BlockPosition posOrDelta, const MoveMode mode) noexcept {
+void CursorBuffer::moveCursor(const BlockPosition posOrDelta, const MoveMode mode) noexcept {
     if (std::abs(posOrDelta.x().toRawValue()) > cMaximumSize.width().toRawValue() ||
         std::abs(posOrDelta.y().toRawValue()) > cMaximumSize.height().toRawValue()) {
         return; // ignore calls with extreme values.
     }
-    if (posOrDelta == bgeo::BlockPosition{0, 0}) {
+    if (posOrDelta == BlockPosition{0, 0}) {
         return;
     }
     _wrapOnNextChar = false;
@@ -98,7 +103,7 @@ void CursorBuffer::setAutoWrap(const bool enabled) noexcept {
 
 void CursorBuffer::clearScreen() noexcept {
     fill(_fillChar);
-    _cursorPosition = bgeo::BlockPosition{};
+    _cursorPosition = BlockPosition{};
     _wrapOnNextChar = false;
 }
 
@@ -114,7 +119,7 @@ void CursorBuffer::writeResolvedBlock(const Block &character) noexcept {
         if (_autoWrap) {
             writeLineBreak();
         } else {
-            _cursorPosition = bgeo::BlockPosition{width - 1, y};
+            _cursorPosition = BlockPosition{width - 1, y};
         }
         _wrapOnNextChar = false;
         x = _cursorPosition.x();
@@ -130,20 +135,20 @@ void CursorBuffer::writeResolvedBlock(const Block &character) noexcept {
             writeLineBreak();
             x = _cursorPosition.x();
             y = _cursorPosition.y();
-            set(bgeo::BlockPosition{x, y}, character);
-            _cursorPosition = bgeo::BlockPosition{x + displayWidth, y};
+            set(BlockPosition{x, y}, character);
+            _cursorPosition = BlockPosition{x + displayWidth, y};
         } else {
-            set(bgeo::BlockPosition{x, y}, character);
+            set(BlockPosition{x, y}, character);
             _wrapOnNextChar = _autoWrap;
         }
     } else {
-        set(bgeo::BlockPosition{x, y}, character);
+        set(BlockPosition{x, y}, character);
         x += displayWidth;
         if (x >= width) {
             x = width - 1;
             _wrapOnNextChar = _autoWrap;
         }
-        _cursorPosition = bgeo::BlockPosition{x, y};
+        _cursorPosition = BlockPosition{x, y};
     }
 }
 
@@ -151,7 +156,7 @@ void CursorBuffer::write(const Block &character) noexcept {
     writeResolvedBlock(character.withBase(_currentStyle));
 }
 
-void CursorBuffer::write(const BlockStringView &str) noexcept {
+void CursorBuffer::write(const BlockString &str) noexcept {
     for (const auto &character : str) {
         writeResolvedBlock(character.withBase(_currentStyle));
     }
@@ -161,16 +166,16 @@ void CursorBuffer::writeResolved(const Block &character) noexcept {
     writeResolvedBlock(character);
 }
 
-void CursorBuffer::writeResolved(const BlockStringView &str) noexcept {
+void CursorBuffer::writeResolved(const BlockString &str) noexcept {
     for (const auto &character : str) {
         writeResolvedBlock(character);
     }
 }
 
 void CursorBuffer::write(const ReadableBuffer &buffer) noexcept {
-    for (auto y = bgeo::BlockCoordinate{0}; y < buffer.size().height(); ++y) {
-        for (auto x = bgeo::BlockCoordinate{0}; x < buffer.size().width(); ++x) {
-            write(buffer.get(bgeo::BlockPosition{x, y}));
+    for (auto y = BlockCoordinate{0}; y < buffer.size().height(); ++y) {
+        for (auto x = BlockCoordinate{0}; x < buffer.size().width(); ++x) {
+            write(buffer.get(BlockPosition{x, y}));
         }
         writeLineBreak();
     }
@@ -179,43 +184,41 @@ void CursorBuffer::write(const ReadableBuffer &buffer) noexcept {
 void CursorBuffer::writeLineBreak() noexcept {
     _wrapOnNextChar = false;
     if (_cursorPosition.y() < _size.height() - 1) {
-        _cursorPosition = bgeo::BlockPosition{bgeo::BlockCoordinate{0}, _cursorPosition.y() + 1};
+        _cursorPosition = BlockPosition{BlockCoordinate{0}, _cursorPosition.y() + 1};
     } else {
         switch (_overflowMode) {
         case OverflowMode::Wrap:
-            _cursorPosition = bgeo::BlockPosition{0, 0};
+            _cursorPosition = BlockPosition{0, 0};
             break;
         case OverflowMode::Shift:
-            shift(bgeo::BlockDirection::North, _fillChar, 1);
-            _cursorPosition = bgeo::BlockPosition{bgeo::BlockCoordinate{0}, _size.height() - 1};
+            shift(BlockDirection::North, _fillChar, 1);
+            _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
             break;
         case OverflowMode::ExpandThenShift:
             if (_size.height() < _maximumSize.height()) {
-                resize(_size + bgeo::BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
+                resize(_size + BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
             } else {
-                shift(bgeo::BlockDirection::North, _fillChar, 1);
+                shift(BlockDirection::North, _fillChar, 1);
             }
-            _cursorPosition = bgeo::BlockPosition{bgeo::BlockCoordinate{0}, _size.height() - 1};
+            _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
             break;
         case OverflowMode::ExpandThenWrap:
             if (_size.height() < _maximumSize.height()) {
-                resize(_size + bgeo::BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
-                _cursorPosition = bgeo::BlockPosition{bgeo::BlockCoordinate{0}, _size.height() - 1};
+                resize(_size + BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
+                _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
             } else {
-                _cursorPosition = bgeo::BlockPosition{0, 0};
+                _cursorPosition = BlockPosition{0, 0};
             }
         }
     }
 }
 
-auto CursorBuffer::printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept
-    -> int {
+auto CursorBuffer::printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int {
     const auto margins = options.margins();
-    const auto x1 = std::max(margins.left(), bgeo::BlockCoordinate{0});
+    const auto x1 = std::max(margins.left(), BlockCoordinate{0});
     const auto width = std::max(
-        size().width() - std::max(margins.left(), bgeo::BlockCoordinate{0}) -
-            std::max(margins.right(), bgeo::BlockCoordinate{0}),
-        bgeo::BlockCoordinate{0});
+        size().width() - std::max(margins.left(), BlockCoordinate{0}) - std::max(margins.right(), BlockCoordinate{0}),
+        BlockCoordinate{0});
     const auto layout =
         impl::paragraph::Layout{
             paragraph, width.toRawValue(), options, impl::paragraph::LayoutNewlineMode::HardLineBreak}

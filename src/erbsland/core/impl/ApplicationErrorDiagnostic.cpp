@@ -14,11 +14,11 @@ ApplicationErrorDiagnostic::ApplicationErrorDiagnostic(ApplicationErrorContext c
     _context{std::move(context)} {
 }
 
-auto ApplicationErrorDiagnostic::sourceName() const noexcept -> text::StringView {
+auto ApplicationErrorDiagnostic::sourceName() const noexcept -> text::String {
     return _context.sourceName();
 }
 
-auto ApplicationErrorDiagnostic::sourcePath() const noexcept -> text::StringView {
+auto ApplicationErrorDiagnostic::sourcePath() const noexcept -> text::String {
     return _context.sourcePath();
 }
 

@@ -4,7 +4,7 @@
 #include <erbsland/stream/impl/PosixNativeStream.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <fcntl.h>
 #include <unistd.h>
@@ -212,7 +212,7 @@ public:
         const auto path = createTemporaryPath();
         const auto fileDescriptor = ::open(path.c_str(), O_CREAT | O_TRUNC | O_RDONLY, static_cast<mode_t>(0600));
         REQUIRE(fileDescriptor >= 0);
-        const auto pathText = el::text::String{std::string_view{path.string()}};
+        const auto pathText = el::text::StringEditor{std::string_view{path.string()}};
 
         {
             auto stream = el::stream::impl::PosixNativeStream{

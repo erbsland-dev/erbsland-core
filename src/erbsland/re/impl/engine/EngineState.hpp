@@ -13,6 +13,7 @@
 #include "../text/Category.hpp"
 
 #include "../../../text/Literals.hpp"
+#include "../../CharAndPosition.hpp"
 #include "../../Input.hpp"
 
 #include <chrono>
@@ -287,7 +288,7 @@ public: // threads
                 end,
                 [&](const auto &thread) -> bool {
                     const auto doPrune = std::ranges::any_of(
-                        referencesToPrune, [&](const auto &ref) { return thread.captureGroupSet == ref; });
+                        referencesToPrune, [&](const auto &ref) -> bool { return thread.captureGroupSet == ref; });
                     if (doPrune) {
                         endThreadWithoutMatch(thread);
                     }

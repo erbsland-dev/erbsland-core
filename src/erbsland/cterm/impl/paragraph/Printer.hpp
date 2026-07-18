@@ -20,7 +20,7 @@ public:
         const int width,
         const bgeo::Alignment alignment,
         const LayoutResult &layout,
-        const BlockStringView &sourceText,
+        const BlockString &sourceText,
         const ParagraphOptions &options,
         const ParagraphBackgroundMode backgroundMode) noexcept :
         RendererBase{alignment, layout, sourceText, options, backgroundMode},

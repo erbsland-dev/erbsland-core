@@ -112,7 +112,7 @@ inline auto readUnicodeProperty(ParserState &state) -> std::tuple<Category, bool
             text::StringFormat{"Expected '{{' after '\\{}'"}.build(text::String::fromCharacter(initialChar)));
     }
     state.readNext();
-    text::String propertyString;
+    text::StringEditor propertyString;
     propertyString.reserve(unit::ByteLength{Category::maximumNameLength});
     std::size_t totalReadCount = 0;
     std::size_t propertyStringLength = 0;

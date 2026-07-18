@@ -3,8 +3,8 @@
 #pragma once
 
 #include "../text/CharSet.hpp"
-#include "../text/StringView.hpp"
-#include "../text/StringViewList.hpp"
+#include "../text/String.hpp"
+#include "../text/StringList.hpp"
 #include "../text/TextNodeType.hpp"
 
 #include <initializer_list>
@@ -16,7 +16,7 @@ namespace erbsland::cterm {
 /// @tested{TerminalDocumentStyleTest}
 class TerminalDocumentStyleSelector final {
 public:
-    using TokenList = text::StringViewList; ///< The normalized token list.
+    using TokenList = text::StringList; ///< The normalized token list.
 
 public:
     /// Create a paragraph selector.
@@ -32,16 +32,13 @@ public:
     /// Create a selector with required style tokens.
     /// @param nodeType The node type to match.
     /// @param requiredStyleTokens Required style tokens parsed from `TextNode::style()`.
-    TerminalDocumentStyleSelector(
-        text::TextNodeType nodeType, std::initializer_list<text::StringView> requiredStyleTokens);
+    TerminalDocumentStyleSelector(text::TextNodeType nodeType, std::initializer_list<text::String> requiredStyleTokens);
     /// Create a selector with an optional level and required style tokens.
     /// @param nodeType The node type to match.
     /// @param level The optional heading or list nesting level.
     /// @param requiredStyleTokens Required style tokens parsed from `TextNode::style()`.
     TerminalDocumentStyleSelector(
-        text::TextNodeType nodeType,
-        std::optional<int> level,
-        std::initializer_list<text::StringView> requiredStyleTokens);
+        text::TextNodeType nodeType, std::optional<int> level, std::initializer_list<text::String> requiredStyleTokens);
     /// Create a selector with an optional ancestor constraint.
     /// @param nodeType The node type to match.
     /// @param level The optional heading or list nesting level.
@@ -50,7 +47,7 @@ public:
     TerminalDocumentStyleSelector(
         text::TextNodeType nodeType,
         std::optional<int> level,
-        std::initializer_list<text::StringView> requiredStyleTokens,
+        std::initializer_list<text::String> requiredStyleTokens,
         std::optional<text::TextNodeType> ancestorType);
 
     // defaults
@@ -180,7 +177,7 @@ public: // factories
     }
     /// Create a span selector with required style tokens.
     /// @param requiredStyleTokens Required style tokens.
-    [[nodiscard]] static auto span(std::initializer_list<text::StringView> requiredStyleTokens)
+    [[nodiscard]] static auto span(std::initializer_list<text::String> requiredStyleTokens)
         -> TerminalDocumentStyleSelector {
         return {text::TextNodeType::Span, requiredStyleTokens};
     }
@@ -207,7 +204,7 @@ public: // factories
     [[nodiscard]] static auto descendantOf(
         text::TextNodeType nodeType,
         text::TextNodeType ancestorType,
-        std::initializer_list<text::StringView> requiredStyleTokens = {}) -> TerminalDocumentStyleSelector {
+        std::initializer_list<text::String> requiredStyleTokens = {}) -> TerminalDocumentStyleSelector {
         return {nodeType, std::nullopt, requiredStyleTokens, ancestorType};
     }
 
@@ -218,7 +215,7 @@ public:
     /// Split and normalize a `TextNode::style()` value.
     /// @param value The raw style value.
     /// @return The normalized tokens.
-    [[nodiscard]] static auto splitStyleTokens(text::StringView value) -> TokenList;
+    [[nodiscard]] static auto splitStyleTokens(const text::String &value) -> TokenList;
 
 private:
     [[nodiscard]] static auto styleTokenSeparators() -> const text::CharSet &;

@@ -5,8 +5,8 @@
 
 namespace demo {
 
-auto prepareInstrument(const el::StringView &instrument) noexcept -> el::Result;
-void prepareInstrumentOrThrow(const el::StringView &instrument);
+auto prepareInstrument(const el::String &instrument) noexcept -> el::Result;
+void prepareInstrumentOrThrow(const el::String &instrument);
 
 /// Erbsland Core offers three complementary ways to report failure.
 /// Use `Result` for a small status returned to the immediate caller, `ExitCode` at a process boundary, and an
@@ -28,13 +28,13 @@ void choosingFailureMechanism() {
     throw el::ApplicationError{"The concert preparation could not be completed."_el, el::ExitCode{3}};
 }
 
-auto prepareInstrument(const el::StringView &instrument) noexcept -> el::Result {
+auto prepareInstrument(const el::String &instrument) noexcept -> el::Result {
     return instrument == "尺八"_el ? el::Result::Success : el::Result::Failure;
 }
 
-void prepareInstrumentOrThrow(const el::StringView &instrument) {
+void prepareInstrumentOrThrow(const el::String &instrument) {
     if (isFailure(prepareInstrument(instrument))) {
-        throw el::RuntimeError{el::String::fromJoined({"The instrument could not be prepared: "_el, instrument})};
+        throw el::RuntimeError{el::StringFormat{"The instrument could not be prepared: {}"_el}.build(instrument)};
     }
 }
 

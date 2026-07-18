@@ -28,10 +28,10 @@ public:
     void testNamedGroup_NameTooLong() {
         // Construct a name longer than limits::maximumGroupNameLength
         constexpr auto maxLen = impl::limits::maximumGroupNameLength;
-        auto patternU8 = String{"(?<"_el};
+        auto patternU8 = StringEditor{"(?<"_el};
         patternU8.append(el::text::Char{U'a'}, el::unit::CpLength{maxLen + 2U});
         patternU8.append(">x)"_el);
-        Parser p{StringView{patternU8}};
+        Parser p{String{patternU8}};
         REQUIRE_THROWS(node = p.parse());
     }
 

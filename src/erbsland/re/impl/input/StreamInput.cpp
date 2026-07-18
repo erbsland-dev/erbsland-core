@@ -10,6 +10,7 @@
 #include "../../../stream/StreamReadStatus.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../unit/ByteIndex.hpp"
+#include "../../CaptureRange.hpp"
 
 #include <vector>
 
@@ -55,7 +56,7 @@ void StreamInput::skip(const unit::CpLength characterCount) {
     }
 }
 
-auto StreamInput::createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList) -> MatchPtr {
+auto StreamInput::createMatch(CaptureGroupList captureGroupList) -> MatchPtr {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         !captureGroupList.empty(), "Capture group list must contain at least one element (the whole string)"_el);
     const auto restorePosition = _stream->position();
@@ -70,7 +71,7 @@ auto StreamInput::createMatch(ConstRegExPtr regEx, CaptureGroupList captureGroup
         throw;
     }
     setPosition(restorePosition);
-    return std::make_shared<StreamMatch>(std::move(regEx), std::move(captureGroupList), std::move(content));
+    return std::make_shared<StreamMatch>(std::move(captureGroupList), std::move(content));
 }
 
 auto StreamInput::readFromStream() -> CharAndPosition {
@@ -92,7 +93,7 @@ auto StreamInput::readCapture(const CaptureRange &range) -> text::String {
     const auto end = unit::ByteIndex::fromSizeT(range.end());
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(begin <= end, "Capture group begin index must not exceed end index"_el);
     setPosition(begin);
-    auto content = text::String{};
+    auto content = text::StringEditor{};
     while (_stream->position() < end) {
         const auto result = _stream->readChar();
         if (result.isTimeout()) {

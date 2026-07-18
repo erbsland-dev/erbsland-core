@@ -114,7 +114,10 @@ auto CharClass::matches(const text::Char character) const -> bool {
     if (!ranges.empty()) {
         // Find the first range whose first >= character
         const auto rangeIt = std::lower_bound(
-            ranges.begin(), ranges.end(), character, [](const CharRange &range, const text::Char &character) noexcept {
+            ranges.begin(),
+            ranges.end(),
+            character,
+            [](const CharRange &range, const text::Char &character) noexcept -> bool {
                 return range.first() < character;
             });
         if (rangeIt != ranges.end() && rangeIt->first() == character) {
@@ -130,7 +133,7 @@ auto CharClass::matches(const text::Char character) const -> bool {
 auto CharClass::toString() const -> text::String {
     const auto &data = *_data;
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.readyForUse, "CharClass::toString called before normalization"_el);
-    text::String result;
+    text::StringEditor result;
     for (const auto &range : *data.ranges) {
         result.append(range.toString());
     }

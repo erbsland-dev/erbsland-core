@@ -11,11 +11,15 @@ add_subdirectory(u32)
 add_subdirectory(u8)
 
 target_sources(erbsland-core PRIVATE
+        AnyString.cpp
         AnyString.hpp
         AnyString_fwd.hpp
-        AnyStringView.cpp
-        AnyStringView.hpp
-        AnyStringView_fwd.hpp
+        AnyStringBuilder.cpp
+        AnyStringBuilder.hpp
+        AnyStringBuilder_fwd.hpp
+        AnyStringBuilder_integer.tpp
+        AnyStringEditor.hpp
+        AnyStringEditor_fwd.hpp
         AsciiCategory.hpp
         BooleanFormat.cpp
         BooleanFormat.hpp
@@ -67,7 +71,6 @@ target_sources(erbsland-core PRIVATE
         IntegerParseOptions.hpp
         IntegerSignMode.hpp
         LetterCase.hpp
-        Literals.cpp
         Literals.hpp
         ParseNumberError.cpp
         ParseNumberError.hpp
@@ -83,15 +86,11 @@ target_sources(erbsland-core PRIVATE
         String.hpp
         String_fwd.hpp
         StringBomMode.hpp
-        StringBuilder.cpp
-        StringBuilder.hpp
-        StringBuilder_fwd.hpp
-        StringBuilder_integer.tpp
         StringCharReader.cpp
         StringCharReader.hpp
+        StringCharReader_fwd.hpp
         StringCharReader_integer.tpp
         StringCharReaderState.hpp
-        StringCharView.hpp
         StringCIHashMap.hpp
         StringCIHashMap_fwd.hpp
         StringCIHashSet.hpp
@@ -109,9 +108,14 @@ target_sources(erbsland-core PRIVATE
         StringDecoder.cpp
         StringDecoder.hpp
         StringDecoder_fwd.hpp
+        StringEditor.hpp
+        StringEditor_fwd.hpp
+        StringEditorList.hpp
+        StringEditorList_fwd.hpp
         StringEncoder.cpp
         StringEncoder.hpp
         StringEncoder_fwd.hpp
+        StringEncoding.cpp
         StringEncoding.hpp
         StringFormat.hpp
         StringHashMap.hpp
@@ -137,10 +141,6 @@ target_sources(erbsland-core PRIVATE
         StringTree.hpp
         StringTree.tpp
         StringTree_fwd.hpp
-        StringView.hpp
-        StringView_fwd.hpp
-        StringViewList.hpp
-        StringViewList_fwd.hpp
         TextDocument.cpp
         TextDocument.hpp
         TextDocument_fwd.hpp
@@ -153,8 +153,6 @@ target_sources(erbsland-core PRIVATE
         TextNodeData_fwd.hpp
         TextNodeType.cpp
         TextNodeType.hpp
-        TextRingBuffer.cpp
-        TextRingBuffer.hpp
         TextWalkResult.hpp
         TextWalkStatus.hpp
         ToString.cpp

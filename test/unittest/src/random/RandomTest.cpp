@@ -5,7 +5,8 @@
 #include <erbsland/random/Random.hpp>
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StringViewList.hpp>
+#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringList.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/ElementCount.hpp>
@@ -26,7 +27,8 @@ using el::math::IntegerRange;
 using el::math::orderMinimumMaximum;
 using el::random::Random;
 using el::text::CharSet;
-using el::text::StringViewList;
+using el::text::String;
+using el::text::StringList;
 using el::unit::ByteLength;
 using el::unit::CpLength;
 using el::unit::ElementCount;
@@ -108,7 +110,7 @@ public:
     void testStringAndBytes() {
         auto random = CountingRandom{};
 
-        const auto text = random.buildString(CpLength{3}, CharSet::fromPattern("A-C"_elv));
+        const auto text = random.buildString(CpLength{3}, CharSet::fromPattern("A-C"_el));
         REQUIRE(text == "ABC"_el);
 
         const auto block = random.buildByteBlock(ByteLength{4});
@@ -138,20 +140,20 @@ public:
     }
 
     void testDerivedListElementSelection() {
-        auto choices = StringViewList{"red"_el, "green"_el, "blue"_el};
+        auto choices = StringList{"red"_el, "green"_el, "blue"_el};
 
         auto random = CountingRandom{};
         REQUIRE(random.selectElement(choices) == "red"_el);
-        REQUIRE(random.selectElement(StringViewList{}, "white"_elv) == "white"_el);
+        REQUIRE(random.selectElement(StringList{}, String{"white"_el}) == "white"_el);
 
         auto listRandom = CountingRandom{};
         auto sample = listRandom.buildElementList(ElementCount{4}, choices);
-        static_assert(std::is_same_v<decltype(sample), StringViewList>);
+        static_assert(std::is_same_v<decltype(sample), StringList>);
         REQUIRE(sample.join("|"_el) == "red|green|blue|red"_el);
 
         auto uniqueRandom = CountingRandom{};
         auto unique = uniqueRandom.buildUniqueElementList(ElementCount{2}, choices);
-        static_assert(std::is_same_v<decltype(unique), StringViewList>);
+        static_assert(std::is_same_v<decltype(unique), StringList>);
         REQUIRE(unique.join("|"_el) == "blue|green"_el);
     }
 
@@ -168,7 +170,7 @@ public:
         random.shuffle(list);
         REQUIRE_EQUAL(list.sorted().toStdVector(), (std::vector<int>{1, 2, 3}));
 
-        auto palette = StringViewList{"red"_el, "green"_el, "blue"_el};
+        auto palette = StringList{"red"_el, "green"_el, "blue"_el};
         auto paletteRandom = CountingRandom{};
         paletteRandom.shuffle(palette);
         REQUIRE(palette.join("|"_el) == "blue|green|red"_el);

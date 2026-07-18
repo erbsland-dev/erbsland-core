@@ -14,7 +14,6 @@ erbsland_set_required_compiler_options(erbsland-core-demo-common)
 erbsland_enable_debug_warnings(erbsland-core-demo-common)
 set_target_properties(erbsland-core-demo-common PROPERTIES
         FOLDER "Demos"
-        UNITY_BUILD OFF
 )
 
 add_custom_target(erbsland-core-all-demos)
@@ -40,7 +39,6 @@ function(erbsland_core_add_demo target_name)
     set_target_properties(${target_name} PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/demo-apps/${_demoCategory}"
             FOLDER "Demos/${_demoCategory}"
-            UNITY_BUILD OFF
     )
     add_dependencies(erbsland-core-all-demos ${target_name})
 endfunction()

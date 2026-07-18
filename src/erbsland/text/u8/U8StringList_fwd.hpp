@@ -8,7 +8,7 @@
 
 namespace erbsland::text {
 
-/// A list of UTF-8 strings.
+/// A list of UTF-8 read-only strings.
 using U8StringList = impl::StringList<U8String>;
 
 }

@@ -5,7 +5,7 @@
 #include "../core/Definitions.hpp"
 #include "../text/EscapeFormat.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
+#include "../text/StringConverter.hpp"
 #include "../text/TextDocument.hpp"
 #include "../text/TextNode.hpp"
 #include "../text/TextNodeType.hpp"
@@ -20,7 +20,9 @@ namespace erbsland::system {
 
 using namespace text::literals;
 
-PosixErrorContext::PosixErrorContext(const ErrorCode errorCode, text::StringView errorMessage) noexcept :
+using namespace text;
+
+PosixErrorContext::PosixErrorContext(const ErrorCode errorCode, String errorMessage) noexcept :
     _errorCode{errorCode}, _errorMessage{std::move(errorMessage)} {
 }
 
@@ -33,11 +35,13 @@ auto PosixErrorContext::fromErrorCode(const ErrorCode errorCode) -> std::shared_
 #ifdef ERBSLAND_OS_WINDOWS
     auto buffer = std::array<char, 256U>{};
     if (::strerror_s(buffer.data(), buffer.size(), errorCode) == 0) {
-        return std::make_shared<const PosixErrorContext>(errorCode, text::String{std::string_view{buffer.data()}});
+        return std::make_shared<const PosixErrorContext>(
+            errorCode, StringConverter{std::string_view{buffer.data()}}.toString());
     }
     return std::make_shared<const PosixErrorContext>(errorCode);
 #else
-    return std::make_shared<const PosixErrorContext>(errorCode, text::String{std::strerror(errorCode)});
+    return std::make_shared<const PosixErrorContext>(
+        errorCode, StringConverter{std::string_view{std::strerror(errorCode)}}.toString());
 #endif
 }
 
@@ -87,22 +91,20 @@ auto PosixErrorContext::category() const noexcept -> PlatformErrorCategory {
     }
 }
 
-auto PosixErrorContext::toString() const noexcept -> text::StringView {
+auto PosixErrorContext::toString() const noexcept -> String {
     return _errorMessage;
 }
 
-auto PosixErrorContext::toTextDocument() const -> text::TextDocument {
-    auto document = text::TextDocument{};
-    auto list = document.add(text::TextNodeType::FieldList);
-    auto code = list->add(text::TextNodeType::FieldItem);
-    code->add(text::TextNodeType::FieldLabel)->addText("errno"_el);
-    auto codeText = text::StringBuilder{};
-    codeText.appendInteger(_errorCode);
-    code->add(text::TextNodeType::FieldContent)->addText(codeText.toString());
+auto PosixErrorContext::toTextDocument() const -> TextDocument {
+    auto document = TextDocument{};
+    auto list = document.add(TextNodeType::FieldList);
+    auto code = list->add(TextNodeType::FieldItem);
+    code->add(TextNodeType::FieldLabel)->addText("errno"_el);
+    code->add(TextNodeType::FieldContent)->addText(String::fromInteger(_errorCode));
     if (!_errorMessage.isEmpty()) {
-        auto message = list->add(text::TextNodeType::FieldItem);
-        message->add(text::TextNodeType::FieldLabel)->addText("message"_el);
-        message->add(text::TextNodeType::FieldContent)->addEscapedText(_errorMessage, text::EscapeFormat::Display);
+        auto message = list->add(TextNodeType::FieldItem);
+        message->add(TextNodeType::FieldLabel)->addText("message"_el);
+        message->add(TextNodeType::FieldContent)->addEscapedText(_errorMessage, EscapeFormat::Display);
     }
     return document;
 }

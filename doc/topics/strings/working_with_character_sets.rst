@@ -3,7 +3,7 @@
     single: CharSet
     single: Char
     single: Character Validation
-    single: StringView
+    single: String
     single: Unicode Categories
     single: Input Validation
 
@@ -25,10 +25,10 @@ You can use it to validate input, locate unwanted characters, trim configurable 
 or build lightweight text normalizers.
 
 This page explains how to create reusable character sets and how to use them with
-:cpp:type:`StringView <erbsland::text::StringView>`,
-:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
-:cpp:class:`U16StringView <erbsland::text::U16StringView>`, and
-:cpp:class:`U32StringView <erbsland::text::U32StringView>`.
+:cpp:type:`String <erbsland::text::String>`,
+:cpp:class:`U8String <erbsland::text::U8String>`,
+:cpp:class:`U16String <erbsland::text::U16String>`, and
+:cpp:class:`U32String <erbsland::text::U32String>`.
 
 Understand the Character Model
 ==============================
@@ -54,7 +54,7 @@ or simple cleanup passes,
 Validate Text at Encoding Boundaries
 ====================================
 
-String operations that decode text are tolerant by default.
+StringEditor operations that decode text are tolerant by default.
 For UTF-8 and UTF-16 input, malformed sequences are decoded as
 :cpp:func:`Char::replacement() <erbsland::text::Char::replacement>` in many
 inspection operations.
@@ -65,16 +65,16 @@ input.
 For security-sensitive or externally supplied input, validate the encoding before you apply character-level rules:
 
 - Check the storage encoding with
-  :cpp:func:`isValidUtf8() <erbsland::text::U8StringView::isValidUtf8>`,
-  :cpp:func:`isValidUtf16() <erbsland::text::U16StringView::isValidUtf16>`, or
-  :cpp:func:`isValidUtf32() <erbsland::text::U32StringView::isValidUtf32>`.
+  :cpp:func:`isValidUtf8() <erbsland::text::U8String::isValidUtf8>`,
+  :cpp:func:`isValidUtf16() <erbsland::text::U16String::isValidUtf16>`, or
+  :cpp:func:`isValidUtf32() <erbsland::text::U32String::isValidUtf32>`.
 - Check the length with
-  :cpp:func:`length() <erbsland::text::U8StringView::length>` or
-  :cpp:func:`characterLength() <erbsland::text::U8StringView::characterLength>`,
+  :cpp:func:`length() <erbsland::text::U8String::length>` or
+  :cpp:func:`characterLength() <erbsland::text::U8String::characterLength>`,
   depending on whether your limit applies to storage size or decoded characters.
 - Apply character policies with
-  :cpp:func:`containsOnly() <erbsland::text::U8StringView::containsOnly>` and
-  :cpp:func:`containsOneOf() <erbsland::text::U8StringView::containsOneOf>`.
+  :cpp:func:`containsOnly() <erbsland::text::U8String::containsOnly>` and
+  :cpp:func:`containsOneOf() <erbsland::text::U8String::containsOneOf>`.
 
 If tolerant processing is intentional, include
 :cpp:func:`Char::replacement() <erbsland::text::Char::replacement>` in the tested
@@ -93,8 +93,8 @@ using them.
 For validators, parsers, and repeated transformations, prefer static reusable sets:
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetReusable.cpp
-    :exec: text/string_view --demo CharacterSetReusable
+    :source: text/String/CharacterSetReusable.cpp
+    :exec: text/string --demo CharacterSetReusable
     :source-sha256: cc7e7133571a6489f2b4f8d55a89d6a539cd5f2165213595de54717e27b7be37
 
 .. code-block:: cpp
@@ -106,7 +106,7 @@ For validators, parsers, and repeated transformations, prefer static reusable se
     void characterSetReusable() {
         static const auto optionNameChars = el::CharSet::fromPattern("-_a-zA-Z0-9"_el);
 
-        const auto optionNames = el::StringViewList{
+        const auto optionNames = el::StringList{
             "orbite-07"_el,
             "antenne_nord"_el,
             "équipe-science"_el,
@@ -114,7 +114,7 @@ For validators, parsers, and repeated transformations, prefer static reusable se
         };
 
         const auto yesNo = el::BooleanFormat::yesNo();
-        optionNames.forEach([&](const el::StringView &optionName) -> void {
+        optionNames.forEach([&](const el::String &optionName) -> void {
             el::io::printLine(optionName, " -> "_el, yesNo, optionName.containsOnly(optionNameChars));
         });
     }
@@ -137,8 +137,8 @@ Empty Sets
 The default constructor creates an empty set:
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetEmpty.cpp
-    :exec: text/string_view --demo CharacterSetEmpty
+    :source: text/String/CharacterSetEmpty.cpp
+    :exec: text/string --demo CharacterSetEmpty
     :source-sha256: c26a9fbd0cc511ad59e9a65f75ba9b257b3cc85ec38b0d09c8c69a160c43593f
 
 .. code-block:: cpp
@@ -148,13 +148,13 @@ The default constructor creates an empty set:
     /// Empty sets are useful for disabled filters and for policies where no character is allowed.
     void characterSetEmpty() {
         auto disabledFilter = el::CharSet{};
-        const auto sample = el::StringView{"orbite"_el};
+        const auto sample = el::String{"orbite"_el};
 
         const auto yesNo = el::BooleanFormat::yesNo();
         el::io::printLine("Set is empty ................: "_el, yesNo, disabledFilter.isEmpty());
         el::io::printLine("Sample contains one of set ..: "_el, yesNo, sample.containsOneOf(disabledFilter));
         el::io::printLine("Sample contains only set ....: "_el, yesNo, sample.containsOnly(disabledFilter));
-        el::io::printLine("Empty text contains only set : "_el, yesNo, el::StringView{}.containsOnly(disabledFilter));
+        el::io::printLine("Empty text contains only set : "_el, yesNo, el::String{}.containsOnly(disabledFilter));
     }
 
 .. erbsland-ansi::
@@ -171,11 +171,11 @@ An empty set is useful when a configuration option disables filtering.
 It also provides a clear representation for policies where no characters are allowed.
 
 For non-empty strings,
-:cpp:func:`containsOnly() <erbsland::text::U8StringView::containsOnly>` returns
+:cpp:func:`containsOnly() <erbsland::text::U8String::containsOnly>` returns
 ``false`` when the allowed set is empty.
 For an empty string, it returns ``true`` because no character violates the rule.
 
-:cpp:func:`containsOneOf() <erbsland::text::U8StringView::containsOneOf>` always
+:cpp:func:`containsOneOf() <erbsland::text::U8String::containsOneOf>` always
 returns ``false`` for an empty set.
 
 Create Sets from Characters and Ranges
@@ -187,8 +187,8 @@ range and not two separate allowed characters.
 :cpp:class:`Char <erbsland::text::Char>` values make that intent explicit:
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetCharacters.cpp
-    :exec: text/string_view --demo CharacterSetCharacters
+    :source: text/String/CharacterSetCharacters.cpp
+    :exec: text/string --demo CharacterSetCharacters
     :source-sha256: 011e7fa61c3e1ddd4ade85fd876448f46ecb1e18f5b1d21f014efa5c153c4b4a
 
 .. code-block:: cpp
@@ -224,8 +224,8 @@ Create Sets from Text and Containers
 When you already know the exact characters, construct the set from text or from a container:
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetText.cpp
-    :exec: text/string_view --demo CharacterSetText
+    :source: text/String/CharacterSetText.cpp
+    :exec: text/string --demo CharacterSetText
     :source-sha256: 3fb6de7215ca05e5386ae0801c888655d43cc10cb9cbed458686442a2c85383e
 
 .. code-block:: cpp
@@ -237,7 +237,7 @@ When you already know the exact characters, construct the set from text or from 
         auto punctuation = el::CharSet{"!?.,;"_el};
         auto separators = el::CharSet{U',', U';', U':', U'/'};
 
-        const auto message = el::StringView{"statut: prêt; orbite stable."_el};
+        const auto message = el::String{"statut: prêt; orbite stable."_el};
         const auto yesNo = el::BooleanFormat::yesNo();
         el::io::printLine("Message contains punctuation : "_el, yesNo, message.containsOneOf(punctuation));
         el::io::printLine("Message contains separators .: "_el, yesNo, message.containsOneOf(separators));
@@ -267,8 +267,8 @@ The syntax resembles the contents of a regular-expression character class, but i
 inclusive ranges.
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetPatterns.cpp
-    :exec: text/string_view --demo CharacterSetPatterns
+    :source: text/String/CharacterSetPatterns.cpp
+    :exec: text/string --demo CharacterSetPatterns
     :source-sha256: 668b817607e2941221cf165b82d7f79dfae896272557df4c772d51405ccca0b3
 
 .. code-block:: cpp
@@ -281,9 +281,9 @@ inclusive ranges.
         auto identifierChars = el::CharSet::fromPattern("_a-zA-Z0-9"_el);
         auto optionNameChars = el::CharSet::fromPattern("-_a-zA-Z0-9"_el);
 
-        const auto stationId = el::StringView{"ORBIT_07"_el};
-        const auto optionName = el::StringView{"orbite-07"_el};
-        const auto spacedName = el::StringView{"orbite 07"_el};
+        const auto stationId = el::String{"ORBIT_07"_el};
+        const auto optionName = el::String{"orbite-07"_el};
+        const auto spacedName = el::String{"orbite 07"_el};
 
         const auto yesNo = el::BooleanFormat::yesNo();
         el::io::printLine("Identifier \"", stationId, "\" ....: "_el, yesNo, stationId.containsOnly(identifierChars));
@@ -321,8 +321,8 @@ Use
 when the allowed characters should follow Unicode metadata:
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterSetCategories.cpp
-    :exec: text/string_view --demo CharacterSetCategories
+    :source: text/String/CharacterSetCategories.cpp
+    :exec: text/string --demo CharacterSetCategories
     :source-sha256: 2a261f561c483c7259128c8d90f42c00b37075e3d6a65381c6ec20157e59bc23
 
 .. code-block:: cpp
@@ -375,8 +375,8 @@ Use the named methods when they make the policy easier to understand:
 Use the operators ``|``, ``&``, ``-``, and ``^`` when the resulting expression remains readable.
 
 .. erbsland-demo::
-    :source: text/StringView/CombineCharacterSets.cpp
-    :exec: text/string_view --demo CombineCharacterSets
+    :source: text/String/CombineCharacterSets.cpp
+    :exec: text/string --demo CombineCharacterSets
     :source-sha256: dd9bfa0836ff97b99e0c53b06eb6d99bc3af8fd232b86c2bb011a3c8803b659d
 
 .. code-block:: cpp
@@ -391,7 +391,7 @@ Use the operators ``|``, ``&``, ``-``, and ``^`` when the resulting expression r
         static const auto identifierStart = letters | el::CharSet{U'_'};
         static const auto identifierContinue = identifierStart | digits | el::CharSet{U'-'};
 
-        const auto identifier = el::StringView{"orbite-7"_el};
+        const auto identifier = el::String{"orbite-7"_el};
         const auto firstCharacterOk = identifierStart.contains(identifier.charAt(el::StringSide::Front));
         const auto fullIdentifierOk = identifier.containsOnly(identifierContinue);
 
@@ -417,16 +417,16 @@ Validate Strings Against Character Policies
 ===========================================
 
 Use
-:cpp:func:`containsOnly() <erbsland::text::U8StringView::containsOnly>`
+:cpp:func:`containsOnly() <erbsland::text::U8String::containsOnly>`
 when every character must belong to the allowed set.
 
 Use
-:cpp:func:`containsOneOf() <erbsland::text::U8StringView::containsOneOf>`
+:cpp:func:`containsOneOf() <erbsland::text::U8String::containsOneOf>`
 when you only need to know whether a string contains at least one character from a set.
 
 .. erbsland-demo::
-    :source: text/StringView/ValidateCharacterPolicy.cpp
-    :exec: text/string_view --demo ValidateCharacterPolicy
+    :source: text/String/ValidateCharacterPolicy.cpp
+    :exec: text/string --demo ValidateCharacterPolicy
     :source-sha256: 2105cb477b9276c46413dc3a553a28cabef866434b22c350f1f4fd0c2631506f
 
 .. code-block:: cpp
@@ -438,14 +438,14 @@ when you only need to know whether a string contains at least one character from
         static const auto userNameChars = el::CharSet::fromPattern("-_a-zA-Z0-9"_el);
         static const auto forbiddenChars = el::CharSet{" \t\r\n"_el};
 
-        const auto userNames = el::StringViewList{
+        const auto userNames = el::StringList{
             "orbite-07"_el,
             "module solaire"_el,
             "équipe-science"_el,
         };
 
         const auto yesNo = el::BooleanFormat::yesNo();
-        userNames.forEach([&](const el::StringView &userName) -> void {
+        userNames.forEach([&](const el::String &userName) -> void {
             const auto isAccepted =
                 userName.isValidUtf8() && userName.containsOnly(userNameChars) && !userName.containsOneOf(forbiddenChars);
             el::io::printLine(userName, " -> "_el, yesNo, isAccepted);
@@ -467,8 +467,8 @@ The method names intentionally express the validation strategy.
 ``containsOneOf(forbidden)`` describes a block-list or diagnostic check.
 
 .. erbsland-demo::
-    :source: text/StringView/TestForCharacters.cpp
-    :exec: text/string_view --demo TestForCharacters
+    :source: text/String/TestForCharacters.cpp
+    :exec: text/string --demo TestForCharacters
     :source-sha256: 3eebadfe406efe5db498d91fbade18c0b097e565f54f5e8bd9da9c1a49ecf842
 
 .. code-block:: cpp
@@ -476,11 +476,11 @@ The method names intentionally express the validation strategy.
     /// A validation error that can be thrown by the validation functions.
     class ValidationError : public el::Exception {
     public:
-        explicit ValidationError(const el::StringView &message) : Exception(message) {}
+        explicit ValidationError(const el::String &message) : Exception(message) {}
     };
 
     /// Validate if the given email address is valid.
-    void validateEmailAddress(const el::StringView &emailAddress) {
+    void validateEmailAddress(const el::String &emailAddress) {
         static const auto requiredAt = "@"_el;
         static const auto allowedDomainChars = el::CharSet::fromPattern("-a-zA-Z0-9."_el);
         static const auto allowedLocalChars = el::CharSet::fromPattern("-a-zA-Z0-9._+!#$%&'*=?^`{|}~"_el);
@@ -511,7 +511,7 @@ The method names intentionally express the validation strategy.
 
     /// This demo shows how text, character-set, and accepted-character tests can be used as an efficient input filter.
     void testForCharacters() {
-        auto emailAddressesToValidate = el::StringViewList{
+        auto emailAddressesToValidate = el::StringList{
             "tree🌲@forest.org"_el,
             "anna.wald@example.com"_el,
             "river@mountain!.org"_el,
@@ -540,7 +540,7 @@ The method names intentionally express the validation strategy.
         };
 
         el::io::printLine("Validating all "_el, emailAddressesToValidate.count(), " email addresses:"_el);
-        emailAddressesToValidate.forEach([](const el::StringView &email) {
+        emailAddressesToValidate.forEach([](const el::String &email) {
             el::io::print("- \"", email.toEscaped(el::EscapeFormat::Cpp), "\": "_el);
             try {
                 validateEmailAddress(email);
@@ -586,24 +586,24 @@ The method names intentionally express the validation strategy.
 Trim Characters from Strings
 ============================
 
-Use :cpp:func:`trimmed() <erbsland::text::U8StringView::trimmed>` to remove selected characters from the front, the
+Use :cpp:func:`trimmed() <erbsland::text::U8String::trimmed>` to remove selected characters from the front, the
 back, or both sides of a string.
 
 Without arguments, the function trims ASCII whitespace from both ends.
 With a custom :cpp:class:`CharSet <erbsland::text::CharSet>`, it trims exactly the characters you specify.
 
 .. erbsland-demo::
-    :source: text/StringView/TrimCharacterSet.cpp
-    :exec: text/string_view --demo TrimCharacterSet
+    :source: text/String/TrimCharacterSet.cpp
+    :exec: text/string --demo TrimCharacterSet
     :source-sha256: 8ff03b69afdbae4e5e98bb0c737f462fd7704b78aa1ef054a0fa2080aaa6375e
 
 .. code-block:: cpp
 
-    /// `StringView::trimmed()` returns a view with selected characters removed from the front, back, or both sides.
+    /// `String::trimmed()` returns a view with selected characters removed from the front, back, or both sides.
     ///
     /// With a custom `CharSet`, trimming is not limited to whitespace.
     void trimCharacterSet() {
-        const auto raw = el::StringView{"*** signal-orbite ;; "_el};
+        const auto raw = el::String{"*** signal-orbite ;; "_el};
         static const auto border = el::CharSet{" *;"_el};
 
         auto clean = raw.trimmed(border);
@@ -626,29 +626,29 @@ With a custom :cpp:class:`CharSet <erbsland::text::CharSet>`, it trims exactly t
 
 .. erbsland-demo-end::
 
-For string views, trimming returns a narrower view into the original storage.
+For read-only strings, trimming returns a narrower owning slice into the original storage.
 No new string allocation is required unless you later materialize the result.
 
 Remove Unwanted Characters
 ==========================
 
-Use :cpp:func:`removedAll() <erbsland::text::U8StringView::removedAll>` when unwanted characters may appear anywhere in
+Use :cpp:func:`removedAll() <erbsland::text::U8String::removedAll>` when unwanted characters may appear anywhere in
 the text:
 
 .. erbsland-demo::
-    :source: text/StringView/RemoveCharacters.cpp
-    :exec: text/string_view --demo RemoveCharacters
+    :source: text/String/RemoveCharacters.cpp
+    :exec: text/string --demo RemoveCharacters
     :source-sha256: 69d933884b4e86bc70b1d80d1cd63d1435825c601bb45013794c545367261be6
 
 .. code-block:: cpp
 
-    /// `StringView::removedAll()` removes every decoded character from a selected `CharSet`.
+    /// `String::removedAll()` removes every decoded character from a selected `CharSet`.
     ///
     /// This is useful for simple cleanup passes where unwanted characters may occur anywhere in the text.
     void removeCharacters() {
         static const auto controlChars = el::CharSet::from(el::AsciiCategory::Control);
 
-        const auto input = el::StringView{"rapport\torbite\nstable"_el};
+        const auto input = el::String{"rapport\torbite\nstable"_el};
         auto logLine = input.removedAll(controlChars);
 
         el::io::printLine("Original : "_el, input.toEscaped(el::EscapeFormat::Cpp));
@@ -672,7 +672,7 @@ copy.
 Transform Characters in a String
 ================================
 
-Use :cpp:func:`transformed() <erbsland::text::U8StringView::transformed>` when every decoded character should pass
+Use :cpp:func:`transformed() <erbsland::text::U8String::transformed>` when every decoded character should pass
 through a mapping function.
 
 For common transformations,
@@ -687,18 +687,18 @@ pointers:
 - :cpp:func:`Char::toIdentifierNormalized() <erbsland::text::Char::toIdentifierNormalized>`
 
 .. erbsland-demo::
-    :source: text/StringView/CanonicalStationName.cpp
-    :exec: text/string_view --demo CanonicalStationName
+    :source: text/String/CanonicalStationName.cpp
+    :exec: text/string --demo CanonicalStationName
     :source-sha256: 594e9c70e11a9e0fa43671c2f48fd71062f50ce3a18d711d54cef971b8d9c0cb
 
 .. code-block:: cpp
 
-    /// `StringView::transformed()` can create a canonical text form with a single character-mapping function.
+    /// `String::transformed()` can create a canonical text form with a single character-mapping function.
     ///
     /// ASCII-only mappings are useful for machine-readable identifiers because they leave non-ASCII characters untouched
     /// and avoid the Unicode database.
     void canonicalStationName() {
-        const auto displayName = el::StringView{"Module ORBITE-Äther 07"_el};
+        const auto displayName = el::String{"Module ORBITE-Äther 07"_el};
         auto canonicalName = displayName.transformed(el::Char::toAsciiLowercase);
 
         el::io::printLine("Display name ..: "_el, displayName);
@@ -723,17 +723,17 @@ Return the original character to keep it, another character to replace it, or
 :cpp:func:`Char::noCodePoint() <erbsland::text::Char::noCodePoint>` to remove it.
 
 .. erbsland-demo::
-    :source: text/StringView/CaseTransformation.cpp
-    :exec: text/string_view --demo CaseTransformation
+    :source: text/String/CaseTransformation.cpp
+    :exec: text/string --demo CaseTransformation
     :source-sha256: af995cf7365a4efb9a3d57676812926fbc1d45c629be62ac3f056cbcc4c2fb9d
 
 .. code-block:: cpp
 
-    /// `StringView::transformed()` maps decoded characters into a new string.
+    /// `String::transformed()` maps decoded characters into a new string.
     /// You can use Unicode-aware operations, ASCII-only operations, or a custom mapping function.
     /// The original storage can be reused when the transformation does not change the text.
     void caseTransformation() {
-        const auto title = el::StringView{"Forêt d'Été, Σκιερό Μονοπάτι"_el};
+        const auto title = el::String{"Forêt d'Été, Σκιερό Μονοπάτι"_el};
 
         // Normalize display text with Unicode-aware operations.
         el::io::printLine("Original ......: "_el, title);
@@ -742,12 +742,12 @@ Return the original character to keep it, another character to replace it, or
         el::io::printLine("Case folded ...: "_el, title.transformed(el::Char::caseFolded));
 
         // Using only ASCII methods can be faster and can avoid linking the Unicode database into the executable.
-        const auto sensorName = el::StringView{"TEMP-ÄSTHETIK-07"_el};
+        const auto sensorName = el::String{"TEMP-ÄSTHETIK-07"_el};
         el::io::printLine("\nSensor name ...: "_el, sensorName);
         el::io::printLine("ASCII lower ...:  "_el, sensorName.transformed(el::Char::toAsciiLowercase));
 
         // A custom transform can map individual decoded code points.
-        const auto quietLabel = el::StringView{"wind: leise, regen: sanft"_el};
+        const auto quietLabel = el::String{"wind: leise, regen: sanft"_el};
         const auto highlighted = quietLabel.transformed(
             [](const el::Char character) noexcept -> el::Char { return character == U':' ? U'→' : character; });
         el::io::printLine("\nCustom map ..:   "_el, highlighted);

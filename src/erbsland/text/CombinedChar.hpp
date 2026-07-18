@@ -5,10 +5,11 @@
 #include "Char.hpp"
 #include "EncodingErrorMode.hpp"
 #include "String.hpp"
+#include "StringEditor.hpp"
 
 #include "impl/UnicodeData.hpp"
 #include "u32/U32String.hpp"
-#include "u32/U32StringView.hpp"
+#include "u32/U32StringEditor.hpp"
 
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
@@ -36,13 +37,13 @@ public:
     /// Invalid UTF-8 bytes are replaced per byte, and unsupported text normalizes to `U+FFFD`.
     /// Empty input, control codes, and leading zero-width code points normalize to `U+FFFD`.
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
-    explicit CombinedChar(const StringView &text) noexcept;
+    explicit CombinedChar(const String &text) noexcept;
     /// Construct a character from UTF-32 text.
     /// @param text The UTF-32 text for exactly one terminal character.
     /// Invalid Unicode scalar values and unsupported text normalize to `U+FFFD`.
     /// Empty input, control codes, and leading zero-width code points normalize to `U+FFFD`.
     /// Later visible code points also collapse the result to `U+FFFD`, while a third combining mark is ignored.
-    explicit CombinedChar(const U32StringView &text) noexcept;
+    explicit CombinedChar(const U32String &text) noexcept;
 
     // defaults
     ~CombinedChar() = default;
@@ -121,18 +122,18 @@ public: // conversion
     /// Invalid or unsupported input normalizes to `U+FFFD`.
     /// @param text The UTF-8 text to parse.
     /// @return The parsed character.
-    [[nodiscard]] static auto fromString(const StringView &text) noexcept -> CombinedChar;
+    [[nodiscard]] static auto fromString(const String &text) noexcept -> CombinedChar;
     /// Parse exactly one visible text character from UTF-32 input.
     /// Invalid or unsupported input normalizes to `U+FFFD`.
     /// @param text The UTF-32 text to parse.
     /// @return The parsed character.
-    [[nodiscard]] static auto fromString(const U32StringView &text) noexcept -> CombinedChar;
+    [[nodiscard]] static auto fromString(const U32String &text) noexcept -> CombinedChar;
 
 private:
-    [[nodiscard]] static auto decodeUtf8(const StringView &text) noexcept -> Storage;
-    [[nodiscard]] static auto decodeUtf32(const U32StringView &text) noexcept -> Storage;
+    [[nodiscard]] static auto decodeUtf8(const String &text) noexcept -> Storage;
+    [[nodiscard]] static auto decodeUtf32(const U32String &text) noexcept -> Storage;
     [[nodiscard]] static auto normalizeTextCodePoint(Char codePoint) noexcept -> Char;
-    [[nodiscard]] static auto normalizeDecodedText(const U32StringView &text) noexcept -> Storage;
+    [[nodiscard]] static auto normalizeDecodedText(const U32String &text) noexcept -> Storage;
     [[nodiscard]] static auto replacementStorage() noexcept -> Storage;
     static void normalizeDecodedTextCodePoint(
         Storage &result,

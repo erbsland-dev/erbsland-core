@@ -205,7 +205,7 @@ auto dataForOperation(const Operation operation) noexcept -> const OperationData
     return operationData().back();
 }
 
-auto baseOperationForString(const text::StringView &baseName) -> Operation {
+auto baseOperationForString(const text::String &baseName) -> Operation {
     for (const auto &data : operationData()) {
         if (baseName.compare(data.baseName, text::Char::compareCaseFolded) == std::strong_ordering::equal) {
             return data.operation;
@@ -225,11 +225,11 @@ auto modifiedOperation(const Operation baseOperation, const std::set<OperationMo
     throw err::ParameterError{"Invalid operation modifiers."_el, "modifiers"_el};
 }
 
-auto toString(const Operation operation) noexcept -> text::StringView {
+auto toString(const Operation operation) noexcept -> text::String {
     return dataForOperation(operation).displayName;
 }
 
-auto toBaseName(const Operation operation) noexcept -> text::StringView {
+auto toBaseName(const Operation operation) noexcept -> text::String {
     return dataForOperation(operation).baseName;
 }
 

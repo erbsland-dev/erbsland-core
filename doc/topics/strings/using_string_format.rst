@@ -5,11 +5,11 @@
     single: U16Format
     single: U32Format
     single: FormatError
-    single: StringBuilder
+    single: AnyStringBuilder
     single: IntegerFormat
     single: FloatFormat
+    single: StringEditor
     single: String
-    single: StringView
     single: StringLiteral
     single: Char
     single: Pattern Format
@@ -24,7 +24,7 @@
     single: Format Specification Grammar
 
 ************************
-How to use String Format
+How to Use String Format
 ************************
 
 :cpp:type:`StringFormat <erbsland::text::StringFormat>` provides reusable
@@ -78,7 +78,7 @@ After a pattern has been constructed successfully, you can:
 
 - call ``build(...)`` to create a new formatted string,
 - call ``appendTo(...)`` to append formatted text to an existing
-  :cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
+  :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
 
 Formatting also validates the supplied arguments.
 A :cpp:class:`FormatError <erbsland::text::FormatError>` is thrown if the arguments do not satisfy the requirements of
@@ -103,7 +103,7 @@ Typical causes include:
     /// The pattern uses the same placeholder syntax as `std::format`.
     ///
     /// Use `build()` to create a new string from formatted values.
-    /// Use `appendTo()` to add formatted text to an existing `StringBuilder` without
+    /// Use `appendTo()` to add formatted text to an existing `AnyStringBuilder` without
     /// creating temporary strings.
     void formattingPatterns() {
         // Create a reusable pattern for ISO 8601 date-time values.
@@ -115,7 +115,7 @@ Typical causes include:
         // Create a pattern to for simple HTML tags.
         const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"_el};
 
-        el::StringBuilder htmlOutput;
+        el::AnyStringBuilder htmlOutput;
         htmlTag.appendTo(htmlOutput, "h1"_el, "Hello World"_el);
         htmlTag.appendTo(htmlOutput, "p"_el, "This paragraph was appended to a string builder."_el);
         htmlTag.appendTo(htmlOutput, "p"_el, "We add another <p> tag with \"useful\" text."_el);
@@ -466,8 +466,8 @@ Supported Argument Types
 The formatter accepts the following argument types:
 
 - Text types —
+  :cpp:type:`StringEditor <erbsland::text::StringEditor>`,
   :cpp:type:`String <erbsland::text::String>`,
-  :cpp:type:`StringView <erbsland::text::StringView>`,
   :cpp:type:`StringLiteral <erbsland::text::StringLiteral>`,
   and standard library string types such as ``std::string`` and
   ``std::string_view``.
@@ -475,7 +475,7 @@ The formatter accepts the following argument types:
 - Floating-point values such as ``float`` and ``double``.
 - Boolean values.
 - :cpp:class:`Char <erbsland::text::Char>`.
-- Types that provide ``toString() const -> String``.
+- Types that provide ``toString() const -> StringEditor``.
 - Types that provide ``toRawValue() const -> T`` where ``T`` is a
   supported formatting type.
 

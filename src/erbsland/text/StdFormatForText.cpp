@@ -4,17 +4,22 @@
 
 #include "StringConverter.hpp"
 
-#include "u32/U32String.hpp"
-#include "u8/U8String.hpp"
+#include "u32/U32StringEditor.hpp"
+#include "u8/U8StringEditor.hpp"
 
 using namespace erbsland::text;
+
+auto std::formatter<U8StringEditor, char>::format(const U8StringEditor &str, std::format_context &ctx) const
+    -> std::format_context::iterator {
+    return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
+}
 
 auto std::formatter<U8String, char>::format(const U8String &str, std::format_context &ctx) const
     -> std::format_context::iterator {
     return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
 }
 
-auto std::formatter<U8StringView, char>::format(const U8StringView &str, std::format_context &ctx) const
+auto std::formatter<U16StringEditor, char>::format(const U16StringEditor &str, std::format_context &ctx) const
     -> std::format_context::iterator {
     return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
 }
@@ -24,17 +29,12 @@ auto std::formatter<U16String, char>::format(const U16String &str, std::format_c
     return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
 }
 
-auto std::formatter<U16StringView, char>::format(const U16StringView &str, std::format_context &ctx) const
+auto std::formatter<U32StringEditor, char>::format(const U32StringEditor &str, std::format_context &ctx) const
     -> std::format_context::iterator {
     return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
 }
 
 auto std::formatter<U32String, char>::format(const U32String &str, std::format_context &ctx) const
-    -> std::format_context::iterator {
-    return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
-}
-
-auto std::formatter<U32StringView, char>::format(const U32StringView &str, std::format_context &ctx) const
     -> std::format_context::iterator {
     return std::formatter<std::string>::format(StringConverter{str}.toStdString(), ctx);
 }

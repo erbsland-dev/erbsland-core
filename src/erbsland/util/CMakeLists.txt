@@ -8,6 +8,7 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         CoAsyncGenerator.hpp
         CoGenerator.hpp
+        CoGenerator_fwd.hpp
         CoTask.hpp
         CoTask_fwd.hpp
         EnumFlags.hpp

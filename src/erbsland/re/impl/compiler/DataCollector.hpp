@@ -97,11 +97,7 @@ private:
                 // Overwrite the index in the node tree - this shouldn't change anything.
                 data.index = groupIndex;
                 // Add the group name or an empty string for each capture group in the pattern.
-                if (data.name.isEmpty()) {
-                    captureGroupNames.emplace_back();
-                } else {
-                    captureGroupNames.emplace_back(data.name);
-                }
+                captureGroupNames.emplace_back(data.name);
             }
             if (data.atomicGroupId != cNoAtomicGroupId) {
                 _data->hasAtomicGroups = true;

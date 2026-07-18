@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../AnyStringView.hpp"
+#include "../AnyString.hpp"
 #include "../TextDocument.hpp"
 
 #include <memory>
@@ -19,7 +19,7 @@ class HtmlParser final {
 public:
     /// Create a parser for the given HTML text.
     /// @param html The HTML fragment or document to parse.
-    explicit HtmlParser(AnyStringView html);
+    explicit HtmlParser(AnyString html);
 
     // defaults
     ~HtmlParser();

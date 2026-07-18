@@ -2,29 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Version.hpp"
 
-#include "../text/StringBuilder.hpp"
+#include "../text/String.hpp"
 
 namespace erbsland::unit {
 
-auto Version::toString(const VersionPart precision) const -> text::String {
-    auto builder = text::StringBuilder{};
-    builder.appendInteger(_major.toRawValue());
+using text::String;
+
+auto Version::toString(const VersionPart precision) const -> String {
+    const auto major = String::fromInteger(_major.toRawValue());
     if (precision == VersionPart::Major) {
-        return builder.toString();
+        return major;
     }
-    builder.append(U'.');
-    builder.appendInteger(_minor.toRawValue());
+    const auto minor = String::fromInteger(_minor.toRawValue());
     if (precision == VersionPart::Minor) {
-        return builder.toString();
+        return String::fromJoined({major, String{"."}, minor});
     }
-    builder.append(U'.');
-    builder.appendInteger(_revision.toRawValue());
+    const auto revision = String::fromInteger(_revision.toRawValue());
     if (precision == VersionPart::Revision) {
-        return builder.toString();
+        return String::fromJoined({major, String{"."}, minor, String{"."}, revision});
     }
-    builder.append(U'.');
-    builder.appendInteger(_build.toRawValue());
-    return builder.toString();
+    return String::fromJoined(
+        {major, String{"."}, minor, String{"."}, revision, String{"."}, String::fromInteger(_build.toRawValue())});
 }
 
 }

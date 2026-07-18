@@ -7,7 +7,7 @@
 #include "U32StringDataView.hpp"
 #include "U32StringSharedStorage.hpp"
 
-#include "../U32String_fwd.hpp"
+#include "../U32StringEditor_fwd.hpp"
 
 #include "../../../bgeo/Alignment.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -52,9 +52,10 @@ public: // escaping.
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U32String;
+    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
+        -> U32StringEditor;
     /// Create a bounded representation that is safe for logs and debug output.
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U32String;
+    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U32StringEditor;
 
 private:
     [[nodiscard]] auto dataView(unit::CpRange range) const -> U32StringDataView;

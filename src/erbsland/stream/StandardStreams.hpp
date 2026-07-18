@@ -56,16 +56,16 @@ namespace io {
 inline auto write(text::Char character) -> StreamWriteStatus {
     return stdOut()->write(character);
 }
-/// @copydoc TextOutputStream::write(const text::StringView&)
-inline auto write(const text::StringView &text) -> StreamWriteStatus {
+/// @copydoc TextOutputStream::write(const text::String&)
+inline auto write(const text::String &text) -> StreamWriteStatus {
     return stdOut()->write(text);
 }
 /// @copydoc TextOutputStream::writeLine()
 inline auto writeLine() -> StreamWriteStatus {
     return stdOut()->writeLine();
 }
-/// @copydoc TextOutputStream::writeLine(const text::StringView&)
-inline auto writeLine(const text::StringView &text) -> StreamWriteStatus {
+/// @copydoc TextOutputStream::writeLine(const text::String&)
+inline auto writeLine(const text::String &text) -> StreamWriteStatus {
     return stdOut()->writeLine(text);
 }
 /// @copydoc TextOutputStream::print()

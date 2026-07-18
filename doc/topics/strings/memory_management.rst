@@ -3,11 +3,11 @@
     SPDX-License-Identifier: Apache-2.0
 
 .. index::
-    !single: String Memory Management
-    single: String
-    single: U8String
-    single: U16String
-    single: U32String
+    !single: StringEditor Memory Management
+    single: StringEditor
+    single: U8StringEditor
+    single: U16StringEditor
+    single: U32StringEditor
     single: reserve
     single: shrinkToFit
     single: capacity
@@ -15,7 +15,7 @@
     single: detach
     single: storageId
     single: Copy on Write
-    single: String Debug View
+    single: StringEditor Debug View
 
 ************************************
 Managing Memory when Editing Strings
@@ -32,10 +32,10 @@ Use them when you already know the final native size of an editable string, when
 large source should be released, or when diagnostic code has to reason about shared backing storage.
 Most application code does not need to call these functions directly.
 
-The examples on this page use :cpp:type:`String <erbsland::text::String>`, the common UTF-8 editable string type.
-The same ideas apply to :cpp:class:`U8String <erbsland::text::U8String>`,
-:cpp:class:`U16String <erbsland::text::U16String>`, and
-:cpp:class:`U32String <erbsland::text::U32String>`.
+The examples on this page use :cpp:type:`StringEditor <erbsland::text::StringEditor>`, the common UTF-8 editable string type.
+The same ideas apply to :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`.
 Only the native capacity unit changes: UTF-8 reserves bytes, UTF-16 reserves UTF-16 data units, and UTF-32 reserves code
 points.
 
@@ -47,25 +47,25 @@ Choose the Right Construction Tool
 
 Before reaching for manual memory control, choose the construction API that matches the work you are doing.
 
-Use :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` when text is produced piece by piece, especially when the
+Use :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` when text is produced piece by piece, especially when the
 final size is unknown or fragments arrive from other code.
-Use :cpp:type:`String <erbsland::text::String>` when you edit an existing value, or when you can calculate the final
+Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` when you edit an existing value, or when you can calculate the final
 native size before appending.
 
 Manual reservation is most useful when you can follow this pattern:
 
 *   calculate the final native size once,
-*   call :cpp:func:`reserve() <erbsland::text::U8String::reserve>` once,
+*   call :cpp:func:`reserve() <erbsland::text::U8StringEditor::reserve>` once,
 *   append or edit the string without repeatedly growing it.
 
-Calling :cpp:func:`reserve() <erbsland::text::U8String::reserve>` before every append step is usually a performance
+Calling :cpp:func:`reserve() <erbsland::text::U8StringEditor::reserve>` before every append step is usually a performance
 smell.
 Each larger reservation may allocate new storage and copy the current text.
-When you cannot know the final size, let :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` manage growth for
+When you cannot know the final size, let :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` manage growth for
 you.
 
 .. erbsland-demo::
-    :source: text/String/ReserveForAppend.cpp
+    :source: text/StringEditor/ReserveForAppend.cpp
     :exec: text/string --demo ReserveForAppend
     :source-sha256: 10f72d2b6e37368d06ed470abaad2c2286b78ae7b82f43068578305255f3a244
 
@@ -76,7 +76,7 @@ you.
     /// Reserving before every append step can repeatedly materialize new storage.
     /// The better pattern is to calculate the final native size, reserve once, and
     /// then append the fragments. For unknown or streaming text, prefer
-    /// `StringBuilder` because it is designed for incremental construction.
+    /// `AnyStringBuilder` because it is designed for incremental construction.
     void reserveForAppend() {
         const auto fragments = std::array{
             "Aurora station: céu limpo"_el,
@@ -89,7 +89,7 @@ you.
             requiredBytes += fragment.length().toSizeT() + 1U;
         }
 
-        auto planned = el::String{};
+        auto planned = el::StringEditor{};
         planned.reserve(el::ByteLength::fromSizeT(requiredBytes));
 
         el::io::printLine("Planned reservation"_el);
@@ -104,7 +104,7 @@ you.
         el::io::printLine("  length after append : "_el, planned.length());
         el::io::printLine("  capacity after append : "_el, planned.capacity());
 
-        auto repeated = el::String{};
+        auto repeated = el::StringEditor{};
         el::io::printLine();
         el::io::printLine("Repeated exact reservations"_el);
         for (const auto &fragment : fragments) {
@@ -144,13 +144,13 @@ you.
 Understand Capacity and Memory Usage
 ====================================
 
-:cpp:func:`capacity() <erbsland::text::U8String::capacity>` reports how much native string data can be stored in the
+:cpp:func:`capacity() <erbsland::text::U8StringEditor::capacity>` reports how much native string data can be stored in the
 current visible string value without another reservation.
 For UTF-8, this is a byte count.
 For UTF-16, this is a count of UTF-16 data units.
 For UTF-32, this is a count of code points.
 
-:cpp:func:`memoryUsage() <erbsland::text::U8String::memoryUsage>` estimates the retained heap memory for the backing
+:cpp:func:`memoryUsage() <erbsland::text::U8StringEditor::memoryUsage>` estimates the retained heap memory for the backing
 storage, including internal management data.
 It is intended for monitoring, cache accounting, and diagnostics.
 It is not a promise about the exact number of bytes kept by the allocator.
@@ -163,7 +163,7 @@ For sliced strings, this difference matters: a small visible string can still ke
 Shrink Only at Lifetime Boundaries
 ==================================
 
-:cpp:func:`shrinkToFit() <erbsland::text::U8String::shrinkToFit>` materializes the visible string value into exact-sized
+:cpp:func:`shrinkToFit() <erbsland::text::U8StringEditor::shrinkToFit>` materializes the visible string value into exact-sized
 storage.
 This can be useful before storing a compact result in a long-lived object or cache.
 It is usually not useful after every edit, because the next edit may have to allocate again.
@@ -174,7 +174,7 @@ small part of a larger string that must survive.
 It should not be part of ordinary append, replace, or formatting loops.
 
 .. erbsland-demo::
-    :source: text/String/ShrinkSlices.cpp
+    :source: text/StringEditor/ShrinkSlices.cpp
     :exec: text/string --demo ShrinkSlices
     :source-sha256: ca426b720fbeb11b93e4b16752e2f8329a53ef4d7f8dd17746f579efac0461a4
 
@@ -188,7 +188,7 @@ It should not be part of ordinary append, replace, or formatting loops.
     /// not be used after every edit.
     void shrinkSlices() {
         auto archiveLine =
-            el::String{"Observatory log | Luzula sylvatica | vallée alpine | cielo sereno | 2026-06-07"_el};
+            el::StringEditor{"Observatory log | Luzula sylvatica | vallée alpine | cielo sereno | 2026-06-07"_el};
         archiveLine.reserve(el::ByteLength{180U});
 
         const auto marker = "Luzula sylvatica"_el;
@@ -238,12 +238,12 @@ Editable strings share storage after ordinary copies.
 This makes passing and returning strings cheap while keeping value semantics: when one copy is modified, it detaches
 from the shared storage and the other copies remain unchanged.
 
-In normal code, you do not have to call :cpp:func:`detach() <erbsland::text::U8String::detach>`.
+In normal code, you do not have to call :cpp:func:`detach() <erbsland::text::U8StringEditor::detach>`.
 Any mutating operation detaches automatically when needed.
 Manual detaching is useful only when you want to make that copy-on-write point explicit before a group of low-level
 operations, or when diagnostic output should show that two strings are independent before editing begins.
 
-The storage identifier returned by :cpp:func:`storageId() <erbsland::text::U8String::storageId>` describes the visible
+The storage identifier returned by :cpp:func:`storageId() <erbsland::text::U8StringEditor::storageId>` describes the visible
 storage range, not merely the decoded text.
 Two strings can contain the same text and still have different storage identifiers.
 Conversely, two copies can have the same identifier until one of them detaches.
@@ -253,7 +253,7 @@ They are not stable across edits, reservations, compaction, or view range change
 Do not serialize them and do not use them as content hashes.
 
 .. erbsland-demo::
-    :source: text/String/ManualDetach.cpp
+    :source: text/StringEditor/ManualDetach.cpp
     :exec: text/string --demo ManualDetach
     :source-sha256: 1872b059e4be14a11a1cd9dd5b0fff432380ae1fc37282e87f737ddc07c219b7
 
@@ -266,7 +266,7 @@ Do not serialize them and do not use them as content hashes.
     /// code wants to make exclusive storage visible before a group of edits, or
     /// when diagnostics need to show exactly where sharing ends.
     void manualDetach() {
-        auto fieldNote = el::String{"Fjord station: lichen sample 17, lumière froide"_el};
+        auto fieldNote = el::StringEditor{"Fjord station: lichen sample 17, lumière froide"_el};
         auto archiveCopy = fieldNote;
         const auto yesNo = el::BooleanFormat::yesNo();
 
@@ -306,13 +306,13 @@ Do not serialize them and do not use them as content hashes.
     Archive copy: Fjord station: lichen sample 17, lumière froide
 
     Debug view after editing:
-    U8String:
+    U8StringEditor:
         length: 59
         characterLength: 58
         backingStorageId: 0x2623570d46bcd942:0x1a0ad47fba52b667
         backingLength: 60
         selectedRange: index: 0 - 59 (length: 59)
-    U8String:
+    U8StringEditor:
         length: 48
         characterLength: 47
         backingStorageId: 0x2623570d473c9b42:0x1a0ad47fbbd2f412
@@ -338,5 +338,5 @@ It helps answer questions such as:
 *   Does a cached native index still belong to the same visible range?
 
 The debug output should not be parsed by application logic.
-For program logic, compare :cpp:func:`storageId() <erbsland::text::U8String::storageId>` directly and store native
+For program logic, compare :cpp:func:`storageId() <erbsland::text::U8StringEditor::storageId>` directly and store native
 indexes together with the matching identifier.

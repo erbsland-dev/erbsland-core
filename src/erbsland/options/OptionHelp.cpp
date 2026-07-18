@@ -4,7 +4,7 @@
 
 namespace erbsland::options {
 
-OptionHelp::OptionHelp(text::StringView description) : _description{std::move(description)} {
+OptionHelp::OptionHelp(text::String description) : _description{std::move(description)} {
 }
 
 }

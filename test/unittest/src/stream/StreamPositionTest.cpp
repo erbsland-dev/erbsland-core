@@ -7,13 +7,13 @@
 #include <erbsland/path/PathReadTextOptions.hpp>
 #include <erbsland/path/PathWriteDataOptions.hpp>
 #include <erbsland/path/PathWriteTextOptions.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
 #include <erbsland/stream/ByteInputStream.hpp>
 #include <erbsland/stream/ByteOutputStream.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/stream/StreamPositioning.hpp>
 #include <erbsland/stream/StreamPositionOrigin.hpp>
 #include <erbsland/stream/StreamPositionStatus.hpp>
-#include <erbsland/stream/StringBuilderStream.hpp>
 #include <erbsland/stream/TextInputStream.hpp>
 #include <erbsland/stream/TextOutputStream.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -77,7 +77,7 @@ public:
         REQUIRE(StreamPositionStatus::Success.isSuccessful());
         REQUIRE(StreamPositionStatus::Timeout.isFailure());
 
-        const auto stream = el::stream::StringBuilderStream::create();
+        const auto stream = el::stream::AnyStringBuilderStream::create();
         REQUIRE_FALSE(stream->supportsPositioning());
         REQUIRE_THROWS_AS(el::stream::StreamError, stream->position());
         REQUIRE_THROWS_AS(el::stream::StreamError, stream->setPosition(ByteIndex{}));

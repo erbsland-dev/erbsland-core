@@ -7,12 +7,12 @@
 
 namespace demo {
 
-[[nodiscard]] auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlockView &record) -> std::size_t;
+[[nodiscard]] auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlock &record) -> std::size_t;
 
 void retryAtomicWrite() {
     auto output = ScriptedByteOutputStream{1U};
     const auto observation = el::ByteBlock{std::vector<uint8_t>{0x17U, 0x04U, 0x2aU}};
-    const auto attempts = writeObservationRecord(output, el::ByteBlockView{observation});
+    const auto attempts = writeObservationRecord(output, observation);
     el::io::printLine("Attempts: "_el, attempts);
     el::io::printLine("Record accepted once: "_el, output.bytes().size() == observation.length().toSizeT());
 }
@@ -20,7 +20,7 @@ void retryAtomicWrite() {
 /// Retry one complete output request without changing it.
 /// A timed-out write accepted none of the record, so repeating the same call cannot duplicate a partial record.
 /// Limit retries, handle stream failures separately, and flush accepted output when native delivery matters.
-auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlockView &record) -> std::size_t {
+auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlock &record) -> std::size_t {
     constexpr auto cMaximumAttempts = 3U;
 
     try {

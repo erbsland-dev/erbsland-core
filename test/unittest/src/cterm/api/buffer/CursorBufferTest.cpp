@@ -69,7 +69,7 @@ public:
         underline.setUnderline(true);
         buffer.setStyle(BlockStyle{Color{fg::Red, bg::Blue}, underline});
 
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text += Block{U'A', Color{fg::Green, bg::Inherited}, BlockAttributes{}.withFlag(BlockAttributes::Bold, true)};
         text += Block{U'B'};
         buffer.write(text);
@@ -85,12 +85,12 @@ public:
         REQUIRE(buffer.get(bgeo::BlockPosition{1, 0}).attributes().isUnderline());
     }
 
-    void testWritingAStringViewUsesTheSameInheritedStyleResolution() {
+    void testWritingAStringUsesTheSameInheritedStyleResolution() {
         auto buffer = CursorBuffer{bgeo::BlockSize{2, 1}};
         buffer.setColor(Color{fg::Green, bg::Blue});
-        const auto source = BlockString{"AB"_el};
+        const auto source = BlockStringEditor{"AB"_el};
 
-        buffer.write(BlockStringView{source}.slice(BlockRange{BlockIndex{0U}, BlockCount{2U}}));
+        buffer.write(BlockString{source}.slice(BlockRange{BlockIndex{0U}, BlockCount{2U}}));
 
         REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 0}).color(), Color(fg::Green, bg::Blue));
         REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{1, 0}).color(), Color(fg::Green, bg::Blue));
@@ -145,7 +145,7 @@ public:
         const auto fillChar = Block{U'.', fg::BrightBlack, bg::Black};
 
         buffer.setFillChar(fillChar);
-        buffer.write(BlockString{"ABC"_el});
+        buffer.write(BlockStringEditor{"ABC"_el});
         buffer.writeLineBreak();
         buffer.write(Block{U'D'});
 
@@ -186,7 +186,7 @@ public:
     void testDeferredWrapMovesTheNextCharacterToTheFollowingLine() {
         auto buffer = CursorBuffer{bgeo::BlockSize{2, 2}};
 
-        buffer.write(BlockString{"AB"_el});
+        buffer.write(BlockStringEditor{"AB"_el});
         buffer.write(Block{U'C'});
 
         requireRowsEqual(buffer, {"AB", "C "});
@@ -195,7 +195,7 @@ public:
     void testExplicitLineBreakClearsDeferredWrap() {
         auto buffer = CursorBuffer{bgeo::BlockSize{3, 3}};
 
-        buffer.write(BlockString{"ABC"_el});
+        buffer.write(BlockStringEditor{"ABC"_el});
         buffer.writeLineBreak();
         buffer.write(Block{U'D'});
 
@@ -205,7 +205,7 @@ public:
     void testMovingTheCursorClearsDeferredWrap() {
         auto buffer = CursorBuffer{bgeo::BlockSize{3, 2}};
 
-        buffer.write(BlockString{"ABC"_el});
+        buffer.write(BlockStringEditor{"ABC"_el});
         buffer.moveTo(bgeo::BlockPosition{1, 1});
         buffer.write(Block{U'D'});
 
@@ -325,7 +325,7 @@ public:
     void testPrintParagraphWritesWrappedLinesAndReturnsTheRenderedLineCount() {
         auto buffer = CursorBuffer{bgeo::BlockSize{4, 4}};
 
-        const auto lineCount = buffer.printParagraph(BlockString{"AB CD"_el});
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"AB CD"_el});
 
         REQUIRE_EQUAL(lineCount, 2);
         requireRowsEqual(buffer, {"AB  ", "CD  ", "    ", "    "});
@@ -335,7 +335,7 @@ public:
         auto buffer = CursorBuffer{bgeo::BlockSize{4, 4}};
         fillBufferFromRows(buffer, {"1234", "5678", "ABCD", "EFGH"});
 
-        const auto lineCount = buffer.printParagraph(BlockString{"AB CD"_el});
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"AB CD"_el});
 
         REQUIRE_EQUAL(lineCount, 2);
         requireRowsEqual(buffer, {"AB34", "CD78", "ABCD", "EFGH"});
@@ -348,7 +348,7 @@ public:
         auto options = ParagraphOptions{};
         options.setBackgroundMode(ParagraphBackgroundMode::FullRight);
 
-        const auto lineCount = buffer.printParagraph(BlockString{"AB CD"_el}, options);
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"AB CD"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 2);
         requireRowsEqual(buffer, {"AB  ", "CD  ", "ABCD", "EFGH"});
@@ -361,13 +361,13 @@ public:
         buffer.setColor(Color{fg::BrightBlue, bg::Black});
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(4);
-        options.setLineBreakEndMark(BlockString{">"_el});
-        options.setLineBreakStartMark(BlockString{"< "_el});
+        options.setLineBreakEndMark(BlockStringEditor{">"_el});
+        options.setLineBreakStartMark(BlockStringEditor{"< "_el});
         options.setMaximumLineWraps(2);
-        options.setParagraphEllipsisMark(BlockString{"(...)"_el});
+        options.setParagraphEllipsisMark(BlockStringEditor{"(...)"_el});
 
         const auto lineCount =
-            buffer.printParagraph(BlockString{"alpha beta gamma delta epsilon zeta eta theta iota"_el}, options);
+            buffer.printParagraph(BlockStringEditor{"alpha beta gamma delta epsilon zeta eta theta iota"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 3);
         REQUIRE(buffer.get(bgeo::BlockPosition{17, 0}) == U'>');
@@ -389,7 +389,7 @@ public:
         options.setFirstLineIndent(4);
         options.setWrappedLineIndent(4);
 
-        const auto lineCount = buffer.printParagraph(BlockString{"detail line wraps here"_el}, options);
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"detail line wraps here"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 2);
         REQUIRE(buffer.get(bgeo::BlockPosition{4, 0}) == U'd');
@@ -405,7 +405,7 @@ public:
         auto options = ParagraphOptions{};
         options.setMargins(bgeo::BlockMargins{1, 0});
 
-        const auto lineCount = buffer.printParagraph(BlockString{"AB CD"_el}, options);
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"AB CD"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 2);
         requireRowsEqual(buffer, {" AB   ", " CD   ", "      ", "      "});
@@ -415,7 +415,7 @@ public:
         auto buffer = CursorBuffer{
             bgeo::BlockSize{4, 1}, CursorBuffer::OverflowMode::ExpandThenShift, bgeo::BlockSize{4, 4}, Block{U'.'}};
 
-        const auto lineCount = buffer.printParagraph(BlockString{"AB CD EF"_el});
+        const auto lineCount = buffer.printParagraph(BlockStringEditor{"AB CD EF"_el});
 
         REQUIRE_EQUAL(lineCount, 3);
         REQUIRE_EQUAL(buffer.size(), (bgeo::BlockSize{4, 4}));

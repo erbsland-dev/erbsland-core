@@ -9,7 +9,7 @@
 #include "../PathWindowsFormat.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../text/impl/UnsafeU16StringViewAccess.hpp"
+#include "../../text/impl/UnsafeU16StringAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 
@@ -77,7 +77,7 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path) const -> std:
 
 void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (profile != PathAccessProfile::Default) {
@@ -95,7 +95,7 @@ void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const Pat
 
 void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto attributes = GetFileAttributesW(pathAccess.dataAsWide());
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -115,8 +115,8 @@ void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
 void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU16StringViewAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU16StringViewAccess{destinationText};
+    const auto sourceAccess = text::impl::UnsafeU16StringAccess{sourceText};
+    const auto destinationAccess = text::impl::UnsafeU16StringAccess{destinationText};
     if (CopyFileW(sourceAccess.dataAsWide(), destinationAccess.dataAsWide(), TRUE) == 0) {
         throwSystemError(
             "File could not be copied"_el,
@@ -130,8 +130,8 @@ void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &de
 void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU16StringViewAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU16StringViewAccess{destinationText};
+    const auto sourceAccess = text::impl::UnsafeU16StringAccess{sourceText};
+    const auto destinationAccess = text::impl::UnsafeU16StringAccess{destinationText};
     if (MoveFileExW(sourceAccess.dataAsWide(), destinationAccess.dataAsWide(), MOVEFILE_WRITE_THROUGH) == 0) {
         throwSystemError(
             "Path could not be moved"_el,
@@ -144,7 +144,7 @@ void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destin
 
 auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathAccess.dataAsWide(),
         0,
@@ -226,8 +226,8 @@ void WindowsPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::UnsafeU16StringViewAccess{targetText};
-    const auto pathAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto targetAccess = text::impl::UnsafeU16StringAccess{targetText};
+    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
     auto flags = DWORD{SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE};
     if (targetIsDirectory) {
         flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;

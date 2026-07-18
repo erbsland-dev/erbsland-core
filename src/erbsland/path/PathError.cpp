@@ -9,7 +9,7 @@
 
 namespace erbsland::path {
 
-PathError::PathError(text::StringView title, std::exception_ptr cause) noexcept :
+PathError::PathError(text::String title, std::exception_ptr cause) noexcept :
     PathError{PathErrorContext{std::move(title)}, std::move(cause)} {
 }
 

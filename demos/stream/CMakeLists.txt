@@ -12,7 +12,7 @@ add_subdirectory(CustomStreams)
 add_subdirectory(Lifecycle)
 add_subdirectory(Positioning)
 add_subdirectory(ReadinessAndTimeouts)
-add_subdirectory(StringBuilderStream)
+add_subdirectory(AnyStringBuilderStream)
 add_subdirectory(StandardStreams)
 add_subdirectory(StreamErrors)
 add_subdirectory(TemporaryStreams)
@@ -27,7 +27,7 @@ foreach(_stream_demo_target IN ITEMS
         lifecycle
         positioning
         readiness_and_timeouts
-        string_builder_stream
+        any_string_builder_stream
         standard_streams
         stream_errors
         temporary_streams

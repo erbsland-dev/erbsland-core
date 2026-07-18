@@ -29,7 +29,7 @@ public:
     /// Store a parsed flag.
     [[nodiscard]] auto storeFlag(const OptionPtr &option, unit::ArgumentIndex index) -> bool;
     /// Store a parsed value according to the option type.
-    [[nodiscard]] auto storeValue(const OptionPtr &option, const text::StringView &value, unit::ArgumentIndex index)
+    [[nodiscard]] auto storeValue(const OptionPtr &option, const text::String &value, unit::ArgumentIndex index)
         -> bool;
     /// Apply defaults for all absent options.
     [[nodiscard]] auto applyDefaults(const std::vector<OptionSetPtr> &optionSets) -> bool;
@@ -52,14 +52,13 @@ private:
     [[nodiscard]] auto storeDefaultIntegerValue(const OptionPtr &option, OptionInteger value) -> bool;
     [[nodiscard]] auto storeDefaultTextValue(const OptionPtr &option, text::String value) -> bool;
 
-    auto makeError(OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index) -> bool;
+    auto makeError(OptionErrorReason reason, text::String description, unit::ArgumentIndex index) -> bool;
     auto makeError(
-        OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)
-        -> bool;
+        OptionErrorReason reason, text::String description, unit::ArgumentIndex index, const OptionPtr &option) -> bool;
     auto makeError(
         OptionErrorReason reason,
-        text::StringView title,
-        text::StringView description,
+        text::String title,
+        text::String description,
         unit::ArgumentIndex index,
         const OptionPtr &option) -> bool;
 

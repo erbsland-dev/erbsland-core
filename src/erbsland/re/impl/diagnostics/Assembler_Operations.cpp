@@ -17,7 +17,7 @@ void Assembler::processOperationLine() {
             operation = modifiedOperation(operation, _modifiers);
         } catch (const err::ParameterError &) {
             using namespace text::literals;
-            text::String modifierStr;
+            text::StringEditor modifierStr;
             for (const auto &modifier : _modifiers) {
                 if (!modifierStr.isEmpty()) {
                     modifierStr.append(", "_el);

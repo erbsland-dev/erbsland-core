@@ -13,6 +13,8 @@
 
 namespace erbsland::text::impl {
 
+using namespace unit;
+
 auto U16StringModifyTools::characterBytes(const Char character) noexcept -> std::array<char16_t, 2> {
     auto result = std::array<char16_t, 2>{};
     U16Writer writer{std::span<char16_t>{result}};
@@ -41,18 +43,16 @@ auto U16StringModifyTools::spansOverlap(const std::span<const T> first, const st
     return firstBegin < secondEnd && secondBegin < firstEnd;
 }
 
-auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const unit::U16DataRange range)
+auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const U16DataRange range)
     -> U16StringSharedStorage & {
     return replace(storage, range, {});
 }
 
-auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const unit::CpRange range)
-    -> U16StringSharedStorage & {
+auto U16StringModifyTools::remove(U16StringSharedStorage &storage, const CpRange range) -> U16StringSharedStorage & {
     return remove(storage, dataRangeForCharacterRange(storage.dataView(), range));
 }
 
-auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const unit::U16DataRange range)
-    -> U16StringSharedStorage & {
+auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const U16DataRange range) -> U16StringSharedStorage & {
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     if (data.empty()) {
@@ -62,7 +62,7 @@ auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const unit::U16
         storage.clear();
         return storage;
     }
-    const auto keepRange = range.clampedTo(unit::U16DataLength::fromSizeT(data.size()));
+    const auto keepRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
     if (keepRange.isEmpty()) {
         storage.clear();
         return storage;
@@ -80,37 +80,34 @@ auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const unit::U16
     return storage;
 }
 
-auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const unit::CpRange range)
-    -> U16StringSharedStorage & {
+auto U16StringModifyTools::keep(U16StringSharedStorage &storage, const CpRange range) -> U16StringSharedStorage & {
     return keep(storage, dataRangeForCharacterRange(storage.dataView(), range));
 }
 
 auto U16StringModifyTools::insert(
-    U16StringSharedStorage &storage, const unit::U16DataIndex index, const U16StringDataView &text)
+    U16StringSharedStorage &storage, const U16DataIndex index, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
-    const auto insertIndex =
-        unit::U16DataIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
-    return replace(storage, unit::U16DataRange::emptyAt(insertIndex), text);
+    const auto insertIndex = U16DataIndex::fromSizeT(std::min(index.toSizeT(), storage.dataView().dataSpan().size()));
+    return replace(storage, U16DataRange::emptyAt(insertIndex), text);
 }
 
-auto U16StringModifyTools::insert(
-    U16StringSharedStorage &storage, const unit::CpIndex index, const U16StringDataView &text)
+auto U16StringModifyTools::insert(U16StringSharedStorage &storage, const CpIndex index, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     if (index.isNoIndex()) {
         return storage;
     }
     auto dataIndex = dataIndexForCharacterIndex(storage.dataView(), index);
     if (dataIndex.isNoIndex()) {
-        dataIndex = unit::U16DataIndex::end(unit::U16DataLength::fromSizeT(storage.dataView().dataSpan().size()));
+        dataIndex = U16DataIndex::end(U16DataLength::fromSizeT(storage.dataView().dataSpan().size()));
     }
     return insert(storage, dataIndex, text);
 }
 
 auto U16StringModifyTools::replace(
-    U16StringSharedStorage &storage, const unit::U16DataRange range, const U16StringDataView &text)
+    U16StringSharedStorage &storage, const U16DataRange range, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     if (!range.isValid()) {
         return storage;
@@ -119,7 +116,7 @@ auto U16StringModifyTools::replace(
     const auto dataView = storage.dataView();
     const auto data = dataView.dataSpan();
     const auto replacement = text.dataSpan();
-    const auto replaceRange = range.clampedTo(unit::U16DataLength::fromSizeT(data.size()));
+    const auto replaceRange = range.clampedTo(U16DataLength::fromSizeT(data.size()));
     if (replaceRange.isEmpty() && replacement.empty()) {
         return storage;
     }
@@ -152,8 +149,7 @@ auto U16StringModifyTools::replace(
     return storage;
 }
 
-auto U16StringModifyTools::replace(
-    U16StringSharedStorage &storage, const unit::CpRange range, const U16StringDataView &text)
+auto U16StringModifyTools::replace(U16StringSharedStorage &storage, const CpRange range, const U16StringDataView &text)
     -> U16StringSharedStorage & {
     return replace(storage, dataRangeForCharacterRange(storage.dataView(), range), text);
 }

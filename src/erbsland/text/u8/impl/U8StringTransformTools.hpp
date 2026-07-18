@@ -8,7 +8,7 @@
 #include "U8StringDataView.hpp"
 #include "U8StringSharedStorage.hpp"
 
-#include "../U8String_fwd.hpp"
+#include "../U8StringEditor_fwd.hpp"
 
 #include "../../../bgeo/Alignment.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -52,9 +52,10 @@ public: // escaping.
     /// Escape this string according to the given format and amount.
     /// @param format The target format for the escaping.
     /// @param amount The amount of escaping to perform.
-    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const -> U8String;
+    [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
+        -> U8StringEditor;
     /// Create a bounded representation that is safe for logs and debug output.
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U8String;
+    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U8StringEditor;
 
 private:
     [[nodiscard]] auto dataView(unit::ByteRange range) const -> U8StringDataView;

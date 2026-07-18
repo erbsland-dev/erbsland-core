@@ -201,8 +201,8 @@ void TextGalleryApp::drawBitmapFontPage(const BlockRectangle contentRect) {
 
 void TextGalleryApp::drawPanel(
     const BlockRectangle rect,
-    const el::StringView title,
-    const el::StringView text,
+    const el::String title,
+    const el::String text,
     const Alignment alignment,
     const FrameStyle frameStyle,
     const Color fillColor,
@@ -239,7 +239,7 @@ void TextGalleryApp::drawFooter(const BlockRectangle rect) {
 }
 
 auto TextGalleryApp::buildFooterText() const -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     result.append(
         fg::BrightCyan,
         "[←][→]"_el,
@@ -264,7 +264,7 @@ auto TextGalleryApp::titleColors() -> ColorSequence {
     };
 }
 
-auto TextGalleryApp::titleForWidth(const BlockCoordinate width) -> el::StringView {
+auto TextGalleryApp::titleForWidth(const BlockCoordinate width) -> el::String {
     if (width >= 60) {
         return "-+[ COLOR TERM ]+-"_el;
     }

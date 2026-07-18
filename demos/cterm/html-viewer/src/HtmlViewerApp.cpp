@@ -12,7 +12,7 @@ void HtmlViewerApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setHelp("Render the HTML document once and write it to standard output."_el);
     options->addOption({"-s"_el, "--style"_el, "style"_el})
         .setChoices(el::OptionChoices::create({"plain"_el, "simple"_el, "styled"_el}))
-        .setDefaultValue(el::String{"styled"_el})
+        .setDefaultValue("styled"_el)
         .setHelp("Select the initial document style."_el);
     options->addOption("html-file"_el).setHelp("The HTML file to view. Uses a bundled demo document when omitted."_el);
 }
@@ -151,7 +151,7 @@ void HtmlViewerApp::drawFooter(const BlockRectangle rect) {
         Alignment::CenterLeft,
         Color{fg::BrightGreen, bg::BrightBlack});
 
-    auto help = BlockString{};
+    auto help = BlockStringEditor{};
     help.append(
         fg::BrightYellow,
         Key{Key::Up}.toDisplayText(),
@@ -220,12 +220,12 @@ auto HtmlViewerApp::locationText() const -> el::String {
     return el::StringFormat{"lines {}-{} / {}  ({}%)"_el}.build(topLine, bottomLine, totalLines, percent);
 }
 
-auto HtmlViewerApp::displayName() const -> el::StringView {
+auto HtmlViewerApp::displayName() const -> el::String {
     const auto name = _htmlFilePath.name();
     return name.isEmpty() ? _htmlFilePath.toString() : name;
 }
 
-auto HtmlViewerApp::documentStylePresetName() const noexcept -> el::StringView {
+auto HtmlViewerApp::documentStylePresetName() const noexcept -> el::String {
     switch (_documentStylePreset) {
     case DocumentStylePreset::Plain:
         return "plain"_el;
@@ -239,7 +239,7 @@ auto HtmlViewerApp::documentStylePresetName() const noexcept -> el::StringView {
     return "styled"_el;
 }
 
-auto HtmlViewerApp::parseDocumentStylePreset(const el::StringView value, DocumentStylePreset &preset) noexcept -> bool {
+auto HtmlViewerApp::parseDocumentStylePreset(const el::String value, DocumentStylePreset &preset) noexcept -> bool {
     if (value == "plain"_el || value == "default"_el) {
         preset = DocumentStylePreset::Plain;
         return true;

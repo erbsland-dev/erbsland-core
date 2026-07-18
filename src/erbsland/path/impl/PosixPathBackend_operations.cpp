@@ -5,10 +5,10 @@
 #include "../Path.hpp"
 #include "../PathError.hpp"
 
+#include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
-#include "../../text/impl/UnsafeU8StringViewAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <dirent.h>
@@ -41,7 +41,7 @@ struct DirectoryCloser final {
 
 auto PosixPathBackend::directoryEntriesOrThrow(const Path &path) const -> std::vector<Path> {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     auto *directory = ::opendir(pathAccess.data());
     if (directory == nullptr) {
         throwSystemError(
@@ -80,7 +80,7 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path) const -> std::v
 
 void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     if (::mkdir(pathAccess.data(), profileMode(profile, PathType::Directory)) != 0) {
         throwSystemError(
             "Directory could not be created"_el,
@@ -102,7 +102,7 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
 
 void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.data(), &info) != 0) {
         throwSystemError(
@@ -121,8 +121,8 @@ void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
 void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU8StringViewAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU8StringViewAccess{destinationText};
+    const auto sourceAccess = text::impl::UnsafeU8StringAccess{sourceText};
+    const auto destinationAccess = text::impl::UnsafeU8StringAccess{destinationText};
     const auto sourceDescriptor = ::open(sourceAccess.data(), O_RDONLY);
     if (sourceDescriptor < 0) {
         throwSystemError(
@@ -194,8 +194,8 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
 void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU8StringViewAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU8StringViewAccess{destinationText};
+    const auto sourceAccess = text::impl::UnsafeU8StringAccess{sourceText};
+    const auto destinationAccess = text::impl::UnsafeU8StringAccess{destinationText};
     if (::rename(sourceAccess.data(), destinationAccess.data()) != 0) {
         throwSystemError(
             "Path could not be moved"_el,
@@ -208,7 +208,7 @@ void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destinat
 
 auto PosixPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     auto bufferSize = std::size_t{256U};
     while (true) {
         auto buffer = text::impl::UnsafeU8StringBuffer{bufferSize};
@@ -231,8 +231,8 @@ void PosixPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, [[maybe_unused]] const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::UnsafeU8StringViewAccess{targetText};
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto targetAccess = text::impl::UnsafeU8StringAccess{targetText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     if (::symlink(targetAccess.data(), pathAccess.data()) != 0) {
         throwSystemError(
             "Symbolic link could not be created"_el,

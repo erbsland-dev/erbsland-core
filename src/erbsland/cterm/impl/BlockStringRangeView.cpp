@@ -10,6 +10,9 @@
 
 namespace erbsland::cterm::impl {
 
+using text::Char;
+using text::CharSet;
+
 auto BlockStringRangeView::storageIndex(const BlockIndex localIndex) const noexcept -> BlockIndex {
     return _range.index() + localIndex.offsetFromZero();
 }
@@ -85,10 +88,11 @@ auto BlockStringRangeView::count(const Block &character) const noexcept -> Block
             std::ranges::count_if(*this, [&](const Block &candidate) -> bool { return candidate == character; })));
 }
 
-auto BlockStringRangeView::count(const text::Char character) const noexcept -> BlockCount {
-    return BlockCount::fromSizeT(static_cast<std::size_t>(std::ranges::count_if(*this, [&](const Block &candidate) {
-        return candidate.singleOrNull() == character.toRawValue();
-    })));
+auto BlockStringRangeView::count(const Char character) const noexcept -> BlockCount {
+    return BlockCount::fromSizeT(
+        static_cast<std::size_t>(std::ranges::count_if(*this, [&](const Block &candidate) -> bool {
+            return candidate.singleOrNull() == character.toRawValue();
+        })));
 }
 
 auto BlockStringRangeView::indexOf(const Block &character, const BlockIndex startIndex) const noexcept -> BlockIndex {
@@ -103,8 +107,7 @@ auto BlockStringRangeView::indexOf(const Block &character, const BlockIndex star
     return BlockIndex::noIndex();
 }
 
-auto BlockStringRangeView::indexOf(const text::Char character, const BlockIndex startIndex) const noexcept
-    -> BlockIndex {
+auto BlockStringRangeView::indexOf(const Char character, const BlockIndex startIndex) const noexcept -> BlockIndex {
     if (!startIndex.isWithin(length())) {
         return BlockIndex::noIndex();
     }
@@ -116,26 +119,26 @@ auto BlockStringRangeView::indexOf(const text::Char character, const BlockIndex 
     return BlockIndex::noIndex();
 }
 
-auto BlockStringRangeView::indexOf(const text::CharSet &characterSet, const BlockIndex startIndex) const noexcept
+auto BlockStringRangeView::indexOf(const CharSet &characterSet, const BlockIndex startIndex) const noexcept
     -> BlockIndex {
     if (!startIndex.isWithin(length())) {
         return BlockIndex::noIndex();
     }
     for (auto index = startIndex.toSizeT(); index < rawSize(); ++index) {
-        if (characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
+        if (characterSet.contains(Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
             return BlockIndex::fromSizeT(index);
         }
     }
     return BlockIndex::noIndex();
 }
 
-auto BlockStringRangeView::indexNotOf(const text::CharSet &characterSet, const BlockIndex startIndex) const noexcept
+auto BlockStringRangeView::indexNotOf(const CharSet &characterSet, const BlockIndex startIndex) const noexcept
     -> BlockIndex {
     if (!startIndex.isWithin(length())) {
         return BlockIndex::noIndex();
     }
     for (auto index = startIndex.toSizeT(); index < rawSize(); ++index) {
-        if (!characterSet.contains(text::Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
+        if (!characterSet.contains(Char{characterAt(BlockIndex::fromSizeT(index)).singleOrNull()})) {
             return BlockIndex::fromSizeT(index);
         }
     }
@@ -190,7 +193,7 @@ auto BlockStringRangeView::croppedRange(
     return newBlockRange;
 }
 
-auto BlockStringRangeView::trimmedRange(const text::CharSet &characters) const noexcept -> BlockRange {
+auto BlockStringRangeView::trimmedRange(const CharSet &characters) const noexcept -> BlockRange {
     if (isEmpty()) {
         return {};
     }
@@ -198,12 +201,12 @@ auto BlockStringRangeView::trimmedRange(const text::CharSet &characters) const n
     auto endIndex = rawSize();
     while (
         startIndex < endIndex &&
-        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(startIndex)).singleOrNull()})) {
+        characters.contains(Char{characterAt(BlockIndex::fromSizeT(startIndex)).singleOrNull()})) {
         startIndex += 1;
     }
     while (
         endIndex > startIndex &&
-        characters.contains(text::Char{characterAt(BlockIndex::fromSizeT(endIndex - 1U)).singleOrNull()})) {
+        characters.contains(Char{characterAt(BlockIndex::fromSizeT(endIndex - 1U)).singleOrNull()})) {
         endIndex -= 1;
     }
     if (startIndex == endIndex) {
@@ -242,10 +245,10 @@ auto BlockStringRangeView::splitLineRanges() const noexcept -> std::vector<Block
         return {};
     }
     auto result = std::vector<BlockRange>{};
-    result.reserve(count(text::Char{U'\n'}).toSizeT() + 1U);
+    result.reserve(count(Char{U'\n'}).toSizeT() + 1U);
     auto lineStartIndex = std::size_t{0};
     while (lineStartIndex < rawSize()) {
-        const auto lineEndIndex = indexOf(text::Char{U'\n'}, BlockIndex::fromSizeT(lineStartIndex));
+        const auto lineEndIndex = indexOf(Char{U'\n'}, BlockIndex::fromSizeT(lineStartIndex));
         if (lineEndIndex.isNoIndex()) {
             result.emplace_back(subRange(BlockRange{BlockIndex::fromSizeT(lineStartIndex), BlockCount::infinite()}));
             break;
@@ -269,7 +272,7 @@ auto BlockStringRangeView::terminalLines(const int width) const noexcept -> int 
     auto renderedLines = 0;
     auto currentWidth = 0;
     for (const auto &character : *this) {
-        if (character == text::Char{U'\n'}) {
+        if (character == Char{U'\n'}) {
             renderedLines += 1;
             currentWidth = 0;
             continue;
@@ -293,7 +296,7 @@ auto BlockStringRangeView::naturalBlockTextSize() const noexcept -> bgeo::BlockS
     auto currentLineWidth = bgeo::BlockCoordinate{0};
     for (auto index = std::size_t{0}; index < rawSize(); ++index) {
         const auto character = characterAt(BlockIndex::fromSizeT(index));
-        if (character == text::Char{U'\n'}) {
+        if (character == Char{U'\n'}) {
             preferredWidth = std::max(preferredWidth, currentLineWidth);
             currentLineWidth = bgeo::BlockCoordinate{0};
             if (index + 1U < rawSize()) {

@@ -7,14 +7,14 @@
 
 namespace erbsland::text {
 
-CombinedChar::CombinedChar(const StringView &text) noexcept : _characters{decodeUtf8(text)} {
+CombinedChar::CombinedChar(const String &text) noexcept : _characters{decodeUtf8(text)} {
 }
 
-CombinedChar::CombinedChar(const U32StringView &text) noexcept : _characters{decodeUtf32(text)} {
+CombinedChar::CombinedChar(const U32String &text) noexcept : _characters{decodeUtf32(text)} {
 }
 
 auto CombinedChar::toString() const -> String {
-    auto result = String{};
+    auto result = StringEditor{};
     for (const auto codePoint : _characters) {
         if (codePoint.isNull()) {
             break;
@@ -25,7 +25,7 @@ auto CombinedChar::toString() const -> String {
 }
 
 auto CombinedChar::toU32String() const -> U32String {
-    auto result = U32String{};
+    auto result = U32StringEditor{};
     for (const auto codePoint : _characters) {
         if (codePoint.isNull()) {
             break;
@@ -89,19 +89,19 @@ auto CombinedChar::withCombining(const Char codePoint, const EncodingErrorMode e
     return result;
 }
 
-auto CombinedChar::fromString(const StringView &text) noexcept -> CombinedChar {
+auto CombinedChar::fromString(const String &text) noexcept -> CombinedChar {
     auto result = CombinedChar{};
     result._characters = decodeUtf8(text);
     return result;
 }
 
-auto CombinedChar::fromString(const U32StringView &text) noexcept -> CombinedChar {
+auto CombinedChar::fromString(const U32String &text) noexcept -> CombinedChar {
     auto result = CombinedChar{};
     result._characters = decodeUtf32(text);
     return result;
 }
 
-auto CombinedChar::decodeUtf8(const StringView &text) noexcept -> Storage {
+auto CombinedChar::decodeUtf8(const String &text) noexcept -> Storage {
     auto result = Storage{};
     auto combiningCount = std::size_t{0};
     auto hasBaseCodePoint = false;
@@ -116,7 +116,7 @@ auto CombinedChar::decodeUtf8(const StringView &text) noexcept -> Storage {
     return result;
 }
 
-auto CombinedChar::decodeUtf32(const U32StringView &text) noexcept -> Storage {
+auto CombinedChar::decodeUtf32(const U32String &text) noexcept -> Storage {
     return normalizeDecodedText(text);
 }
 
@@ -127,7 +127,7 @@ auto CombinedChar::normalizeTextCodePoint(const Char codePoint) noexcept -> Char
     return codePoint;
 }
 
-auto CombinedChar::normalizeDecodedText(const U32StringView &text) noexcept -> Storage {
+auto CombinedChar::normalizeDecodedText(const U32String &text) noexcept -> Storage {
     auto result = Storage{};
     auto combiningCount = std::size_t{0};
     auto hasBaseCodePoint = false;

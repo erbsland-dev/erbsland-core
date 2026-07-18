@@ -10,8 +10,8 @@ namespace demo {
 void captureMusicalVariation(const el::TextOutputStreamPtr &outer, const el::TextOutputStreamPtr &inner);
 
 void useNestedRedirects() {
-    const auto outer = el::StringBuilderStream::create();
-    const auto inner = el::StringBuilderStream::create();
+    const auto outer = el::AnyStringBuilderStream::create();
+    const auto inner = el::AnyStringBuilderStream::create();
     captureMusicalVariation(outer, inner);
     el::io::print("Outer:\n"_el, outer->takeString());
     el::io::print("Inner:\n"_el, inner->takeString());

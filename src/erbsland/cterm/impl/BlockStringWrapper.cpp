@@ -5,11 +5,11 @@
 namespace erbsland::cterm::impl {
 
 auto BlockStringWrapper::wrapIntoLines(const int width, const ParagraphSpacing paragraphSpacing) const noexcept
-    -> std::vector<BlockString> {
+    -> std::vector<BlockStringEditor> {
     if (width <= 0) {
         return {};
     }
-    auto lines = BlockStringLines{};
+    auto lines = BlockStringEditorLines{};
     auto isFirstParagraph = true;
     for (const auto &paragraph : splitLines()) {
         if (!isFirstParagraph && paragraphSpacing == ParagraphSpacing::DoubleLine) {
@@ -26,37 +26,37 @@ auto BlockStringWrapper::wrapIntoLines(const int width, const ParagraphSpacing p
     return lines;
 }
 
-auto BlockStringWrapper::splitLines() const noexcept -> std::vector<BlockString> {
+auto BlockStringWrapper::splitLines() const noexcept -> std::vector<BlockStringEditor> {
     if (_str.isEmpty()) {
         return {};
     }
-    auto result = std::vector<BlockString>{};
+    auto result = std::vector<BlockStringEditor>{};
     result.reserve((_str.count(text::Char{U'\n'}) + BlockCount::one()).toSizeT());
     auto lineStartIndex = BlockIndex{};
     while (lineStartIndex < BlockIndex::end(_str.length())) {
         const auto lineEndIndex = _str.indexOf(text::Char{U'\n'}, lineStartIndex);
         if (lineEndIndex.isNoIndex()) {
-            result.emplace_back(BlockString{_str.slice(BlockRange{lineStartIndex, BlockCount::infinite()})});
+            result.emplace_back(BlockStringEditor{_str.slice(BlockRange{lineStartIndex, BlockCount::infinite()})});
             break;
         }
         result.emplace_back(
-            BlockString{_str.slice(BlockRange{lineStartIndex, lineStartIndex.absoluteDistanceTo(lineEndIndex)})});
+            BlockStringEditor{_str.slice(BlockRange{lineStartIndex, lineStartIndex.absoluteDistanceTo(lineEndIndex)})});
         lineStartIndex = lineEndIndex + BlockCount::one();
     }
     return result;
 }
 
-void BlockStringWrapper::clearPendingSpacing(BlockString &pendingSpacing, int &pendingSpacingWidth) noexcept {
+void BlockStringWrapper::clearPendingSpacing(BlockStringEditor &pendingSpacing, int &pendingSpacingWidth) noexcept {
     pendingSpacing.clear();
     pendingSpacingWidth = 0;
 }
 
 void BlockStringWrapper::finishWrappedLine(
-    BlockString &line,
+    BlockStringEditor &line,
     int &lineWidth,
-    BlockString &pendingSpacing,
+    BlockStringEditor &pendingSpacing,
     int &pendingSpacingWidth,
-    std::vector<BlockString> &lines) noexcept {
+    std::vector<BlockStringEditor> &lines) noexcept {
     if (!line.isEmpty()) {
         lines.emplace_back(std::move(line));
         line.clear();
@@ -66,10 +66,10 @@ void BlockStringWrapper::finishWrappedLine(
 }
 
 void BlockStringWrapper::appendSpacingToken(
-    BlockString &spacing,
+    BlockStringEditor &spacing,
     const int spacingWidth,
-    const BlockString &line,
-    BlockString &pendingSpacing,
+    const BlockStringEditor &line,
+    BlockStringEditor &pendingSpacing,
     int &pendingSpacingWidth) noexcept {
     if (line.isEmpty()) {
         spacing.clear();
@@ -85,14 +85,14 @@ void BlockStringWrapper::appendSpacingToken(
 }
 
 void BlockStringWrapper::appendWordToken(
-    BlockString &word,
+    BlockStringEditor &word,
     const int wordWidth,
     const int width,
-    BlockString &line,
+    BlockStringEditor &line,
     int &lineWidth,
-    BlockString &pendingSpacing,
+    BlockStringEditor &pendingSpacing,
     int &pendingSpacingWidth,
-    std::vector<BlockString> &lines) noexcept {
+    std::vector<BlockStringEditor> &lines) noexcept {
     if (line.isEmpty()) {
         clearPendingSpacing(pendingSpacing, pendingSpacingWidth);
         startWrappedLine(word, wordWidth, width, line, lineWidth, lines);
@@ -110,12 +110,12 @@ void BlockStringWrapper::appendWordToken(
 }
 
 void BlockStringWrapper::startWrappedLine(
-    BlockString &word,
+    BlockStringEditor &word,
     const int wordWidth,
     const int width,
-    BlockString &line,
+    BlockStringEditor &line,
     int &lineWidth,
-    std::vector<BlockString> &lines) noexcept {
+    std::vector<BlockStringEditor> &lines) noexcept {
     if (wordWidth > width) {
         splitWordIntoWrappedLines(word, wordWidth, width, lines);
         line.clear();
@@ -129,7 +129,10 @@ void BlockStringWrapper::startWrappedLine(
 }
 
 void BlockStringWrapper::splitWordIntoWrappedLines(
-    const BlockString &word, const int wordWidth, const int width, std::vector<BlockString> &lines) noexcept {
+    const BlockStringEditor &word,
+    const int wordWidth,
+    const int width,
+    std::vector<BlockStringEditor> &lines) noexcept {
     const auto estimatedLineCount = static_cast<std::size_t>((wordWidth + width - 1) / width);
     lines.reserve(lines.size() + estimatedLineCount);
     auto startIndex = BlockIndex{};
@@ -141,7 +144,7 @@ void BlockStringWrapper::splitWordIntoWrappedLines(
 }
 
 auto BlockStringWrapper::findWrappedWordSplitIndex(
-    const BlockStringView &word, const BlockIndex startIndex, const int width) noexcept -> BlockIndex {
+    const BlockString &word, const BlockIndex startIndex, const int width) noexcept -> BlockIndex {
     auto lineWidth = 0;
     auto index = startIndex;
     while (index < BlockIndex::end(word.length())) {
@@ -158,16 +161,16 @@ auto BlockStringWrapper::findWrappedWordSplitIndex(
     return index;
 }
 
-auto BlockStringWrapper::wrapParagraphIntoLines(const int width) const noexcept -> std::vector<BlockString> {
+auto BlockStringWrapper::wrapParagraphIntoLines(const int width) const noexcept -> std::vector<BlockStringEditor> {
     if (width <= 0) {
         return {};
     }
-    auto lines = BlockStringLines{};
-    auto line = BlockString{};
+    auto lines = BlockStringEditorLines{};
+    auto line = BlockStringEditor{};
     auto lineWidth = 0;
-    auto pendingSpacing = BlockString{};
+    auto pendingSpacing = BlockStringEditor{};
     auto pendingSpacingWidth = 0;
-    auto token = BlockString{};
+    auto token = BlockStringEditor{};
     auto isSpacingToken = false;
     for (const auto &character : _str) {
         const auto currentIsSpacing = character.isSpacing();

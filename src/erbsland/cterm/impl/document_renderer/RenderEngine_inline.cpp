@@ -8,13 +8,17 @@
 
 namespace erbsland::cterm::impl::document_renderer {
 
-void RenderEngine::appendParagraphLikeNode(const text::TextNode &node, const RenderContext &context) {
+using text::Char;
+using text::TextNode;
+using text::TextNodeType;
+
+void RenderEngine::appendParagraphLikeNode(const TextNode &node, const RenderContext &context) {
     const auto rule = ruleFor(node);
     emitBlock(paragraph(node, rule, context));
 }
 
-auto RenderEngine::paragraph(
-    const text::TextNode &node, const TerminalDocumentStyleRule &rule, const RenderContext &context) -> RenderBlock {
+auto RenderEngine::paragraph(const TextNode &node, const TerminalDocumentStyleRule &rule, const RenderContext &context)
+    -> RenderBlock {
     const auto textStyle = context.resolvedTextStyle(_style.baseTextStyle(), rule);
     auto content = renderInlineText(node, textStyle, node.type().preserveWhitespace());
     return paragraph(std::move(content), rule, context);
@@ -43,7 +47,7 @@ auto RenderEngine::paragraph(InlineContent content, const TerminalDocumentStyleR
     return RenderBlock{BlockKind::Paragraph, std::move(result), context.resolvedIndents(rule)};
 }
 
-auto RenderEngine::heading(const text::TextNode &node, const RenderContext &context) -> RenderBlock {
+auto RenderEngine::heading(const TextNode &node, const RenderContext &context) -> RenderBlock {
     const auto rule = ruleFor(node);
     const auto headingTextStyle = context.resolvedTextStyle(_style.baseTextStyle(), rule);
     auto renderedText = renderInlineText(node, headingTextStyle, false);
@@ -68,14 +72,13 @@ auto RenderEngine::heading(const text::TextNode &node, const RenderContext &cont
 }
 
 auto RenderEngine::horizontalRule(const RenderContext &context) -> RenderBlock {
-    const auto rule = ruleFor(text::TextNodeType::HorizontalLine, std::nullopt, {});
+    const auto rule = ruleFor(TextNodeType::HorizontalLine, std::nullopt, {});
     const auto ruleTextStyle = context.resolvedTextStyle(_style.baseTextStyle(), rule);
     return RenderBlock{
         resolvedDecoration(_decorationBuilder, rule.prefix(), ruleTextStyle),
         resolvedDecoration(_decorationBuilder, rule.suffix(), ruleTextStyle),
         context.resolvedIndents(rule),
-        rule.lineFill().has_value() ? rule.lineFill()->withBase(ruleTextStyle)
-                                    : Block{text::Char{U'-'}, ruleTextStyle}};
+        rule.lineFill().has_value() ? rule.lineFill()->withBase(ruleTextStyle) : Block{Char{U'-'}, ruleTextStyle}};
 }
 
 auto RenderEngine::makeListItemLayout(
@@ -89,21 +92,21 @@ auto RenderEngine::makeListItemLayout(
         listItemRule.indents().wrappedLineIndent()};
 }
 
-auto RenderEngine::renderInlineText(const text::TextNode &node, const BlockStyle style, const bool preserveWhitespace)
+auto RenderEngine::renderInlineText(const TextNode &node, const BlockStyle style, const bool preserveWhitespace)
     -> InlineContent {
     _inlineTextBuilder.reset();
     appendInlineNode(node, style, preserveWhitespace);
     return _inlineTextBuilder.takeContent();
 }
 
-void RenderEngine::appendInlineNode(const text::TextNode &node, const BlockStyle style, const bool preserveWhitespace) {
+void RenderEngine::appendInlineNode(const TextNode &node, const BlockStyle style, const bool preserveWhitespace) {
     switch (node.type().raw()) {
-    case text::TextNodeType::Text:
-    case text::TextNodeType::Unsupported:
-    case text::TextNodeType::Error:
+    case TextNodeType::Text:
+    case TextNodeType::Unsupported:
+    case TextNodeType::Error:
         _inlineTextBuilder.appendText(node.text(), style, preserveWhitespace);
         return;
-    case text::TextNodeType::LineBreak:
+    case TextNodeType::LineBreak:
         _inlineTextBuilder.appendLineBreak(style);
         return;
     default:
@@ -123,9 +126,9 @@ void RenderEngine::appendInlineNode(const text::TextNode &node, const BlockStyle
         if (inlineRule.suffix().has_value()) {
             _inlineTextBuilder.appendDecoration(*inlineRule.suffix(), inlineStyle, preserveWhitespace);
         }
-        if (node.type() == text::TextNodeType::Separator) {
+        if (node.type() == TextNodeType::Separator) {
             _inlineTextBuilder.addSoftBreak();
-        } else if (node.type() == text::TextNodeType::EscapeSequence) {
+        } else if (node.type() == TextNodeType::EscapeSequence) {
             const auto indivisibleEnd = BlockIndex::end(_inlineTextBuilder.length());
             _inlineTextBuilder.addIndivisibleRange(
                 BlockRange{indivisibleStart, indivisibleStart.absoluteDistanceTo(indivisibleEnd)});
@@ -135,8 +138,7 @@ void RenderEngine::appendInlineNode(const text::TextNode &node, const BlockStyle
     appendInlineChildren(node, style, preserveWhitespace);
 }
 
-void RenderEngine::appendInlineChildren(
-    const text::TextNode &node, const BlockStyle style, const bool preserveWhitespace) {
+void RenderEngine::appendInlineChildren(const TextNode &node, const BlockStyle style, const bool preserveWhitespace) {
     for (const auto &child : node.children()) {
         appendInlineNode(*child, style, preserveWhitespace);
     }

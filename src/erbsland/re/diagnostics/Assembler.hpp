@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../RegEx.hpp"
+#include "Assembler_fwd.hpp"
 
-#include "../../text/StringViewList.hpp"
+#include "../RegEx_fwd.hpp"
+
+#include "../../text/StringList_fwd.hpp"
 
 namespace erbsland::re::diagnostics {
 
@@ -20,7 +22,7 @@ public:
     /// @param lines The lines of the assembler code to compile.
     /// @return The compiled regular expression object.
     /// @throws RegExError on any compilation error.
-    [[nodiscard]] auto compile(const text::StringViewList &lines) const -> RegExPtr;
+    [[nodiscard]] auto compile(const text::StringList &lines) const -> RegExPtr;
 };
 
 }

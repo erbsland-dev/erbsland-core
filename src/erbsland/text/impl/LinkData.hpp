@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../StringView.hpp"
+#include "../String.hpp"
 #include "../TextNodeData.hpp"
 
 #include <utility>
@@ -12,14 +12,14 @@ namespace erbsland::text::impl {
 /// URL metadata attached to a link node.
 class LinkData final : public TextNodeData {
 public:
-    explicit LinkData(StringView url) noexcept : _url{std::move(url)} {}
+    explicit LinkData(String url) noexcept : _url{std::move(url)} {}
 
 public:
-    [[nodiscard]] auto url() const noexcept -> StringView { return _url; }
-    [[nodiscard]] auto toString() const -> StringView override { return _url; }
+    [[nodiscard]] auto url() const noexcept -> String { return _url; }
+    [[nodiscard]] auto toString() const -> String override { return _url; }
 
 private:
-    StringView _url; ///< The link target URL.
+    String _url; ///< The link target URL.
 };
 
 }

@@ -50,18 +50,18 @@ public:
     };
 
     struct PositionalArgument {
-        text::StringView value;
+        text::String value;
         unit::ArgumentIndex index;
     };
 
 private:
     [[nodiscard]] auto prepareModuleParsing() -> bool;
     [[nodiscard]] auto parseActiveOptions() -> bool;
-    [[nodiscard]] auto parseLongOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
-    [[nodiscard]] auto parseShortOption(const text::StringView &argument, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto parseLongOption(const text::String &argument, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto parseShortOption(const text::String &argument, unit::ArgumentIndex index) -> bool;
     [[nodiscard]] auto consumeFollowingValue(
-        text::StringView &value, unit::ArgumentIndex optionIndex, const OptionPtr &option) -> bool;
-    [[nodiscard]] auto collectPositionalArgument(const text::StringView &value, unit::ArgumentIndex index) -> bool;
+        text::String &value, unit::ArgumentIndex optionIndex, const OptionPtr &option) -> bool;
+    [[nodiscard]] auto collectPositionalArgument(const text::String &value, unit::ArgumentIndex index) -> bool;
     [[nodiscard]] auto assignPositionals() -> bool;
     [[nodiscard]] auto positionalOptions() const -> std::vector<OptionPtr>;
     [[nodiscard]] auto requiredPositionalsAfter(const std::vector<OptionPtr> &options, std::size_t optionIndex) const
@@ -86,27 +86,25 @@ private:
     auto makeValidatorError(OptionErrorContext context, const OptionSetPtr &optionSet, const OptionPtr &option) -> bool;
 
     [[nodiscard]] auto collectActiveOptionSets() -> std::vector<OptionSetPtr>;
-    [[nodiscard]] auto findModule(const text::StringView &name) const -> OptionModulePtr;
-    [[nodiscard]] auto findLongOption(const text::StringView &name) const -> NameMatch;
+    [[nodiscard]] auto findModule(const text::String &name) const -> OptionModulePtr;
+    [[nodiscard]] auto findLongOption(const text::String &name) const -> NameMatch;
     [[nodiscard]] auto findShortOption(text::Char shortName) const -> NameMatch;
     [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status) const -> bool;
     [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) const -> bool;
     [[nodiscard]] auto validateOptionNames() -> bool;
 
     [[nodiscard]] auto isIndexInArgs(unit::ArgumentIndex index) const -> bool;
-    [[nodiscard]] auto getArgAt(unit::ArgumentIndex index) const -> text::StringView;
+    [[nodiscard]] auto getArgAt(unit::ArgumentIndex index) const -> text::String;
 
-    auto makeError(OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index) -> bool;
-    auto makeError(
-        OptionErrorReason reason, text::StringView title, text::StringView description, unit::ArgumentIndex index)
+    auto makeError(OptionErrorReason reason, text::String description, unit::ArgumentIndex index) -> bool;
+    auto makeError(OptionErrorReason reason, text::String title, text::String description, unit::ArgumentIndex index)
         -> bool;
     auto makeError(
-        OptionErrorReason reason, text::StringView description, unit::ArgumentIndex index, const OptionPtr &option)
-        -> bool;
+        OptionErrorReason reason, text::String description, unit::ArgumentIndex index, const OptionPtr &option) -> bool;
     auto makeError(
         OptionErrorReason reason,
-        text::StringView title,
-        text::StringView description,
+        text::String title,
+        text::String description,
         unit::ArgumentIndex index,
         const OptionPtr &option) -> bool;
     auto makeError(OptionErrorContext context) -> bool;
@@ -116,7 +114,7 @@ private:
     const core::CommandLineArguments &_args;      ///< The arguments to parse.
     i18n::DisplayTextMapConstPtr _displayText;    ///< The wording captured for diagnostics.
     OptionModulePtr _selectedModule;              ///< The selected module, if any.
-    text::StringView _moduleName;                 ///< The canonical selected module name.
+    text::String _moduleName;                     ///< The canonical selected module name.
     std::vector<OptionSetPtr> _activeOptionSets;  ///< The option sets active for parsing.
     OptionParserStorage _storage;                 ///< The parsed option values.
     OptionValuesPtr _values;                      ///< The final parsed values.

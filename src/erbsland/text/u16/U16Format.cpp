@@ -6,10 +6,10 @@
 
 namespace erbsland::text {
 
-U16Format::U16Format(const std::u16string_view pattern) : U16Format{U16StringView{U16String{pattern}}} {
+U16Format::U16Format(const std::u16string_view pattern) : U16Format{U16String{pattern}} {
 }
 
-U16Format::U16Format(const U16StringView &pattern) : _data{impl::compileFormat(pattern)} {
+U16Format::U16Format(const U16String &pattern) : _data{impl::compileFormat(pattern)} {
 }
 
 auto U16Format::fieldCount() const noexcept -> unit::ArgumentCount {

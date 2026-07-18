@@ -9,7 +9,7 @@ auto NoneEscapeFormatter::needsEscape(
     return false;
 }
 
-void NoneEscapeFormatter::escape(const Char character, StringBuilder &builder) const {
+void NoneEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
     builder.append(character);
 }
 

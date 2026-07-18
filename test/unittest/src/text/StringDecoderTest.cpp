@@ -8,6 +8,8 @@
 
 #include <cstdint>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using el::mem::ByteBlock;
@@ -16,6 +18,10 @@ using el::text::StringBomMode;
 using el::text::StringConverter;
 using el::text::StringDecoder;
 using el::text::StringEncoding;
+
+static_assert(std::is_same_v<decltype(std::declval<StringDecoder &>().decode(StringEncoding::Utf8)), el::text::String>);
+static_assert(
+    std::is_same_v<decltype(std::declval<StringDecoder &>().toU16String(StringEncoding::Utf16)), el::text::U16String>);
 
 TESTED_TARGETS(StringDecoder)
 class StringDecoderTest final : public el::UnitTest {

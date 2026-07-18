@@ -4,7 +4,7 @@
 
 #include "OptionEditor.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <initializer_list>
 
@@ -28,15 +28,15 @@ public:
     /// Add an option with one name.
     /// @param name The command-line name, lookup alias, or positional argument name.
     /// @return An editor for the newly created option.
-    virtual auto addOption(const text::StringView &name) -> OptionEditor;
+    virtual auto addOption(const text::String &name) -> OptionEditor;
     /// Add an option with one or more names.
     /// @param names Command-line names and lookup aliases.
     /// @return An editor for the newly created option.
-    virtual auto addOption(std::initializer_list<text::StringView> names) -> OptionEditor = 0;
+    virtual auto addOption(std::initializer_list<text::String> names) -> OptionEditor = 0;
     /// Edit an existing option by name.
     /// @param name Any configured name or lookup alias of the option to edit.
     /// @return An editor for the option, or an invalid editor if no option was found.
-    virtual auto editOption(const text::StringView &name) -> OptionEditor = 0;
+    virtual auto editOption(const text::String &name) -> OptionEditor = 0;
 };
 
 }

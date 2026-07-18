@@ -49,7 +49,7 @@ public:
     explicit WindowsNativeStream(
         WindowsNativeHandle handle,
         NativeStreamOwnership ownership,
-        text::StringView path = {},
+        text::String path = {},
         bool positioningAllowed = true);
 
     // defaults
@@ -63,7 +63,7 @@ public: // implement NativeOutputStream
     using StreamErrorSource::throwError;
 
     void writeBytes(std::span<const char> bytes) override;
-    void writeText(const text::StringView &text) override;
+    void writeText(const text::String &text) override;
     void flush() override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
@@ -88,15 +88,15 @@ public:
 
 private:
     [[noreturn]] void throwError(
-        text::StringView title, text::StringView description, system::WindowsErrorContext::ErrorCode errorCode) const;
-    [[noreturn]] void throwErrorFromLastError(text::StringView title, text::StringView description) const;
+        text::String title, text::String description, system::WindowsErrorContext::ErrorCode errorCode) const;
+    [[noreturn]] void throwErrorFromLastError(text::String title, text::String description) const;
     void writeWideText(std::wstring_view text);
     void finishOperation(WindowsNativeHandle threadHandle) const noexcept;
 
 private:
     std::atomic<WindowsNativeHandle> _handle{};                        ///< Wrapped native handle.
     NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Handle ownership mode.
-    text::StringView _path;                                            ///< Stream path, when available.
+    text::String _path;                                                ///< Stream path, when available.
     bool _isConsole{false};                                            ///< Whether the handle is a Windows console.
     bool _supportsPositioning{false};                                  ///< Whether this handle can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.

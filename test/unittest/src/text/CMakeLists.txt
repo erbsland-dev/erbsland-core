@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        AnyStringBuilderTest.cpp
         AnyStringTest.cpp
         ByteFormatTest.cpp
         CharRangeTest.cpp
@@ -16,13 +17,13 @@ target_sources(erbsland-core-unittest PRIVATE
         HtmlParserTest.cpp
         HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
-        StringBuilderTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp
         StringDecodeBufferTest.cpp
         StringDecoderTest.cpp
         StringDisplayWidthTest.cpp
         StringEncoderTest.cpp
+        StringEncodingTest.cpp
         StringEscapingTest.cpp
         StringListTest.cpp
         StringMapTest.cpp
@@ -31,7 +32,6 @@ target_sources(erbsland-core-unittest PRIVATE
         StringTransformTest.cpp
         StringTreeTest.cpp
         TextDocumentTest.cpp
-        TextRingBufferTest.cpp
         ToStringTest.cpp
         U16EncodingTest.cpp
         U16FormatTest.cpp
@@ -48,22 +48,21 @@ target_sources(erbsland-core-unittest PRIVATE
         U8EncodingTest.cpp
         U8FormatTest.cpp
         U8StringCharReadToolTest.cpp
-        U8StringCharViewTest.cpp
         U8StringConstIteratorTest.cpp
         U8StringDataTest.cpp
         U8StringDataViewTest.cpp
+        U8StringEditorTest.cpp
         U8StringEncodingTest.cpp
         U8StringLiteralStorageTest.cpp
         U8StringLiteralTest.cpp
         U8StringModifierTest.cpp
         U8StringReadToolsTest.cpp
         U8StringSharedStorageTest.cpp
+        U8StringStorageTest.cpp
         U8StringTest.cpp
         U8StringTrimTest.cpp
-        U8StringViewStorageTest.cpp
-        U8StringViewTest.cpp
         U8WriterTest.cpp
         UnicodeTest.cpp
-        UnsafeU16StringAccessTest.cpp
-        UnsafeU8StringAccessTest.cpp
+        UnsafeU16StringEditorAccessTest.cpp
+        UnsafeU8StringEditorAccessTest.cpp
 )

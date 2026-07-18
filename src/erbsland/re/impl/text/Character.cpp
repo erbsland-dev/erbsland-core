@@ -9,7 +9,7 @@
 
 namespace erbsland::re::impl {
 
-void appendAsHexEscape(text::String &str, const text::Char character) {
+void appendAsHexEscape(text::StringEditor &str, const text::Char character) {
     if (!character.isValidUnicode()) {
         return;
     }
@@ -21,7 +21,7 @@ void appendAsHexEscape(text::String &str, const text::Char character) {
     }
 }
 
-void appendToSafeString(text::String &str, const text::Char character) {
+void appendToSafeString(text::StringEditor &str, const text::Char character) {
     using namespace text::literals;
     if (character == U'"' || character == U'\\') {
         str.append("\\"_el);
@@ -33,7 +33,7 @@ void appendToSafeString(text::String &str, const text::Char character) {
     }
 }
 
-void appendToCharRangeString(text::String &str, const text::Char character) {
+void appendToCharRangeString(text::StringEditor &str, const text::Char character) {
     using namespace text::literals;
     if (!character.isValidUnicode()) {
         return;

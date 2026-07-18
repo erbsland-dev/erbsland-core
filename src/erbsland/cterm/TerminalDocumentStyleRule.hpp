@@ -4,14 +4,13 @@
 
 #include "Block.hpp"
 #include "BlockString.hpp"
-#include "BlockStringView.hpp"
 #include "BlockStyle.hpp"
 #include "ParagraphIndents.hpp"
 #include "TerminalDocumentStyleMarker.hpp"
 
 #include "../bgeo/BlockMargins.hpp"
-#include "../text/StringView.hpp"
-#include "../text/u32/U32StringView.hpp"
+#include "../text/String.hpp"
+#include "../text/u32/U32String.hpp"
 
 #include <optional>
 
@@ -39,11 +38,11 @@ public: // accessors
     /// Get the margins around the block.
     [[nodiscard]] auto margins() const noexcept -> const bgeo::BlockMargins & { return _indents.margins(); }
     /// Get the optional prefix.
-    [[nodiscard]] auto prefix() const noexcept -> std::optional<BlockStringView>;
+    [[nodiscard]] auto prefix() const noexcept -> std::optional<BlockString>;
     /// Get the optional suffix.
-    [[nodiscard]] auto suffix() const noexcept -> std::optional<BlockStringView>;
+    [[nodiscard]] auto suffix() const noexcept -> std::optional<BlockString>;
     /// Get the optional prefix applied to every content line of a container.
-    [[nodiscard]] auto linePrefix() const noexcept -> std::optional<BlockStringView>;
+    [[nodiscard]] auto linePrefix() const noexcept -> std::optional<BlockString>;
     /// Get the optional line fill character.
     [[nodiscard]] auto lineFill() const noexcept -> const std::optional<Block> & { return _lineFill; }
     /// Get the marker configuration.
@@ -100,43 +99,43 @@ public:
     /// Set the optional prefix.
     /// @param prefix The prefix text.
     /// @return Reference to this rule.
-    auto setPrefix(BlockStringView prefix) noexcept -> TerminalDocumentStyleRule &;
+    auto setPrefix(BlockString prefix) noexcept -> TerminalDocumentStyleRule &;
     /// Set the optional prefix.
     /// @param prefix The prefix text.
     /// @param style The prefix style.
     /// @return Reference to this rule.
-    auto setPrefix(const text::U32StringView &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setPrefix(const text::U32String &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Set the optional prefix.
     /// @param prefix The prefix text.
     /// @param style The prefix style.
     /// @return Reference to this rule.
-    auto setPrefix(text::StringView prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setPrefix(const text::String &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Remove the prefix.
     /// @return Reference to this rule.
     auto clearPrefix() noexcept -> TerminalDocumentStyleRule &;
     /// Set the optional suffix.
     /// @param suffix The suffix text.
     /// @return Reference to this rule.
-    auto setSuffix(BlockStringView suffix) noexcept -> TerminalDocumentStyleRule &;
+    auto setSuffix(BlockString suffix) noexcept -> TerminalDocumentStyleRule &;
     /// Set the optional suffix.
     /// @param suffix The suffix text.
     /// @param style The suffix style.
     /// @return Reference to this rule.
-    auto setSuffix(const text::U32StringView &suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setSuffix(const text::U32String &suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Set the optional suffix.
     /// @param suffix The suffix text.
     /// @param style The suffix style.
     /// @return Reference to this rule.
-    auto setSuffix(text::StringView suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setSuffix(const text::String &suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Remove the suffix.
     /// @return Reference to this rule.
     auto clearSuffix() noexcept -> TerminalDocumentStyleRule &;
     /// Set the prefix applied to every content line of a container.
-    auto setLinePrefix(BlockStringView prefix) noexcept -> TerminalDocumentStyleRule &;
+    auto setLinePrefix(BlockString prefix) noexcept -> TerminalDocumentStyleRule &;
     /// Set the styled prefix applied to every content line of a container.
-    auto setLinePrefix(const text::U32StringView &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setLinePrefix(const text::U32String &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Set the styled prefix applied to every content line of a container.
-    auto setLinePrefix(text::StringView prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setLinePrefix(const text::String &prefix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Remove the per-line prefix.
     auto clearLinePrefix() noexcept -> TerminalDocumentStyleRule &;
     /// Set the line fill character.
@@ -159,17 +158,17 @@ public:
     /// @param literal The marker text.
     /// @param style Optional marker style.
     /// @return Reference to this rule.
-    auto setLiteralMarker(BlockStringView literal, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setLiteralMarker(BlockString literal, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Configure a literal marker.
     /// @param literal The marker text.
     /// @param style Optional marker style.
     /// @return Reference to this rule.
-    auto setLiteralMarker(const text::U32StringView &literal, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setLiteralMarker(const text::U32String &literal, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Configure an ordered marker.
     /// @param suffix The marker suffix.
     /// @param style Optional marker style.
     /// @return Reference to this rule.
-    auto setOrderedMarker(BlockStringView suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
+    auto setOrderedMarker(BlockString suffix, BlockStyle style = {}) -> TerminalDocumentStyleRule &;
     /// Configure the default ordered marker.
     /// @return Reference to this rule.
     auto setOrderedMarker() -> TerminalDocumentStyleRule &;

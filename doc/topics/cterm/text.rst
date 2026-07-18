@@ -10,7 +10,7 @@ The string classes describe terminal text before it is rendered.
 They let you represent a single display character with color and character attributes, build styled text fragments,
 measure Unicode-aware width, and split or wrap text without interacting with a buffer.
 
-This page focuses on working with ``Block``, ``BlockStyle``, and ``BlockString`` as data types.
+This page focuses on working with ``Block``, ``BlockStyle``, ``BlockString`` and ``BlockStringEditor`` as data types.
 For rendering text blocks into rectangles with ``BlockText``, see :doc:`drawing-text`.
 
 Usage
@@ -132,11 +132,12 @@ Use ``BlockStyle`` when you want to bundle color and character attributes into o
 ``withOverlay()`` keeps inherited color components and unspecified attributes from the existing style, while
 ``withBase()`` resolves a style against an underlying base theme.
 
-Building Strings
-----------------
+Block Strings
+-------------
 
-``BlockString`` stores a sequence of ``Block`` values.
-It is the right type for status bars, prompts, labels, and any text where characters may use different colors.
+``BlockString`` is the primary owning read-only sequence of ``Block`` values. Use it for status bars, prompts, labels,
+stored options, drawing inputs and completed lines. ``BlockStringEditor`` is the mutable counterpart used while a
+sequence is actively assembled or changed.
 
 Building Colored BlockText Fragments ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -145,7 +146,7 @@ It keeps colors, attributes, and text in a single readable sequence.
 
 .. code-block:: cpp
 
-    auto footer = BlockString{};
+    auto footer = BlockStringEditor{};
     footer.append(
         bg::BrightBlack,
         fg::BrightYellow,
@@ -165,11 +166,10 @@ It keeps colors, attributes, and text in a single readable sequence.
         fg::BrightBlack,
         " shortcut");
 
-``append(...)`` accepts colors, ``BlockStyle``, ``Block`` values, ``BlockAttributes``, plain text, and other
-``BlockString`` instances.
+``append(...)`` accepts colors, ``BlockStyle``, ``Block`` values, ``BlockAttributes``, plain text and other block strings.
 Colors and attributes remain active for subsequent elements within the same call.
 
-You can also construct a ``BlockString`` directly from UTF-8 or UTF-32 text:
+Completed text can be constructed directly as a ``BlockString`` from UTF-8 or UTF-32 text:
 
 .. code-block:: cpp
 
@@ -178,10 +178,10 @@ You can also construct a ``BlockString`` directly from UTF-8 or UTF-32 text:
 
 Control codes are filtered out automatically, except for tab and newline, which are preserved for layout and splitting.
 
-Implicit Sharing, Views, and Ranges
------------------------------------
+Implicit Sharing and Ranges
+---------------------------
 
-``BlockString`` is implicitly shared.
+``BlockStringEditor`` is implicitly shared.
 Copying a string is cheap because the character storage is shared until one copy is modified through a mutable API.
 Once that happens, the modified instance detaches and continues with its own private copy of the visible character
 range.
@@ -190,7 +190,7 @@ This keeps normal value semantics:
 
 .. code-block:: cpp
 
-    auto original = BlockString{"alpha"};
+    auto original = BlockStringEditor{"alpha"};
     auto copy = original;   // shared storage
 
     copy[0] = Block{U'A'};   // detaches here
@@ -198,17 +198,15 @@ This keeps normal value semantics:
     // original is still "alpha"
     // copy is now "Alpha"
 
-Use ``BlockStringView`` when an API only needs read-only access.
-It references the same shared data as ``BlockString`` but exposes only non-mutating operations.
-A ``BlockString`` converts implicitly to ``BlockStringView`` so APIs can use ``BlockStringView`` ` to accepts both,
-``BlockString`` and ``BlockStringView``.
+``BlockString`` owns or shares its storage and exposes only non-mutating operations. A ``BlockStringEditor`` converts
+implicitly to ``BlockString``, so read-only APIs safely accept both categories.
 
 .. code-block:: cpp
 
-    void drawLabel(BlockStringView text);
+    void drawLabel(BlockString text);
 
-    auto title = BlockString{"Status: ready"};
-    drawLabel(title);  // implicit BlockString -> BlockStringView
+    auto title = BlockStringEditor{"Status: ready"};
+    drawLabel(title);  // implicit BlockStringEditor -> BlockString
 
 Handling Invalid UTF-8 Input
 ----------------------------

@@ -3,13 +3,13 @@
 #include "OptionType.hpp"
 
 #include "../text/Literals.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 namespace erbsland::options {
 
 using namespace text::literals;
 
-auto OptionType::toString() const -> text::StringView {
+auto OptionType::toString() const -> text::String {
     switch (_type) {
     case Flag:
         return "flag"_el;

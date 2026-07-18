@@ -3,12 +3,17 @@
 #include "DisplayTextMap.hpp"
 
 #include "../text/Literals.hpp"
-#include "../text/StringBuilder.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringSide.hpp"
 
 namespace erbsland::i18n {
 
 using namespace text::literals;
+
+using text::Char;
+using text::String;
+using text::StringFormat;
+using text::StringSide;
 
 DisplayTextMap::DisplayTextMap() {
     addDefaultTexts();
@@ -27,7 +32,7 @@ auto DisplayTextMap::clone() const -> DisplayTextMapPtr {
     return result;
 }
 
-auto DisplayTextMap::text(const text::StringView &key) const -> text::StringView {
+auto DisplayTextMap::text(const String &key) const -> String {
     auto lock = std::scoped_lock{_cacheMutex};
     if (const auto cached = _textCache.get(key); cached.has_value()) {
         return cached.value();
@@ -44,12 +49,12 @@ auto DisplayTextMap::text(const text::StringView &key) const -> text::StringView
     return result;
 }
 
-auto DisplayTextMap::format(const text::StringView &key) const -> text::StringFormat {
+auto DisplayTextMap::format(const String &key) const -> StringFormat {
     auto lock = std::scoped_lock{_cacheMutex};
     if (const auto cached = _formatCache.get(key); cached.has_value()) {
         return *cached.value();
     }
-    auto sourceText = text::StringView{};
+    auto sourceText = String{};
     if (const auto cachedText = _textCache.get(key); cachedText.has_value()) {
         sourceText = cachedText.value();
     } else {
@@ -63,18 +68,18 @@ auto DisplayTextMap::format(const text::StringView &key) const -> text::StringFo
         }
         _textCache.set(key, sourceText);
     }
-    auto result = text::StringFormat{sourceText};
-    _formatCache.set(key, std::make_shared<const text::StringFormat>(result));
+    auto result = StringFormat{sourceText};
+    _formatCache.set(key, std::make_shared<const StringFormat>(result));
     return result;
 }
 
-auto DisplayTextMap::set(text::StringView key, text::StringView sourceText) -> DisplayTextMap & {
+auto DisplayTextMap::set(const String &key, String sourceText) -> DisplayTextMap & {
     _sourceTexts.set(key, std::move(sourceText));
     clearCaches();
     return *this;
 }
 
-auto DisplayTextMap::remove(const text::StringView &key) -> DisplayTextMap & {
+auto DisplayTextMap::remove(const String &key) -> DisplayTextMap & {
     _sourceTexts.remove(key);
     clearCaches();
     return *this;
@@ -92,7 +97,7 @@ void DisplayTextMap::clearCaches() {
     _formatCache.clear();
 }
 
-auto DisplayTextMap::findSourceText(const text::StringView &key) const -> std::optional<text::StringView> {
+auto DisplayTextMap::findSourceText(const String &key) const -> std::optional<String> {
     if (const auto value = _sourceTexts.get(key); value.has_value()) {
         return value.value();
     }
@@ -111,7 +116,7 @@ auto DisplayTextMap::findSourceText(const text::StringView &key) const -> std::o
     return {};
 }
 
-auto DisplayTextMap::domainKey(const text::StringView &key) -> text::StringView {
+auto DisplayTextMap::domainKey(const String &key) -> String {
     const auto firstSeparator = key.find("."_el);
     if (firstSeparator.isNoIndex()) {
         return key;
@@ -122,20 +127,16 @@ auto DisplayTextMap::domainKey(const text::StringView &key) -> text::StringView 
         return key;
     }
     const auto lastPart = finalKey(key);
-    auto builder = text::StringBuilder{};
-    builder.append(key.slice(text::StringSide::Front, firstSeparator));
-    builder.append("."_el);
-    builder.append(lastPart);
-    return builder.toString();
+    return String::fromJoined({key.slice(StringSide::Front, firstSeparator), "."_el, lastPart});
 }
 
-auto DisplayTextMap::finalKey(const text::StringView &key) noexcept -> text::StringView {
-    auto separator = key.indexAt(text::StringSide::Back);
+auto DisplayTextMap::finalKey(const String &key) noexcept -> String {
+    auto separator = key.indexAt(StringSide::Back);
     while (key.retreat(separator)) {
-        if (key.charAt(separator) == text::Char{U'.'}) {
+        if (key.charAt(separator) == Char{U'.'}) {
             auto resultIndex = separator;
             key.advance(resultIndex);
-            return key.slice(text::StringSide::Back, resultIndex);
+            return key.slice(StringSide::Back, resultIndex);
         }
     }
     return key;

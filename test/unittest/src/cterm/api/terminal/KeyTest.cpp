@@ -22,7 +22,7 @@ public:
         REQUIRE_EQUAL(key.type(), Key::None);
         REQUIRE_EQUAL(key.character(), 0);
         REQUIRE_EQUAL(key.unicode(), 0);
-        REQUIRE_EQUAL(key.combined(), erbsland::text::U32String{});
+        REQUIRE_EQUAL(key.combined(), erbsland::text::U32StringEditor{});
         REQUIRE(!key.valid());
     }
 
@@ -95,7 +95,7 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() {
-                    const auto key = Key::fromConsoleInput(erbsland::text::String{std::string_view{entry.input}});
+                    const auto key = Key::fromConsoleInput(erbsland::text::StringEditor{std::string_view{entry.input}});
                     REQUIRE_EQUAL(key, entry.expected);
                     REQUIRE(key.valid());
                 },
@@ -128,7 +128,7 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() {
-                    const auto key = Key::fromConsoleInput(erbsland::text::String{entry.input});
+                    const auto key = Key::fromConsoleInput(erbsland::text::StringEditor{entry.input});
                     REQUIRE_EQUAL(key, entry.expected);
                     REQUIRE(key.valid());
                 },
@@ -158,13 +158,13 @@ public:
         using erbsland::cterm::impl::KeyDecoder;
         using erbsland::cterm::impl::KeyParseStatus;
 
-        auto result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("F0 9F")}}.parseConsoleInputPrefix();
+        auto result = KeyDecoder{erbsland::text::StringEditor{th::stdStringFromHex("F0 9F")}}.parseConsoleInputPrefix();
         REQUIRE_EQUAL(result.status(), KeyParseStatus::NeedMoreData);
 
-        result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("65 CC")}}.parseConsoleInputPrefix();
+        result = KeyDecoder{erbsland::text::StringEditor{th::stdStringFromHex("65 CC")}}.parseConsoleInputPrefix();
         REQUIRE_EQUAL(result.status(), KeyParseStatus::NeedMoreData);
 
-        result = KeyDecoder{erbsland::text::String{th::stdStringFromHex("65 CC 81")}}.parseConsoleInputPrefix();
+        result = KeyDecoder{erbsland::text::StringEditor{th::stdStringFromHex("65 CC 81")}}.parseConsoleInputPrefix();
         REQUIRE_EQUAL(result.status(), KeyParseStatus::Parsed);
         REQUIRE_EQUAL(result.key(), (Key{Key::Combined, U"e\u0301"_el}));
     }
@@ -198,9 +198,9 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() {
-                    const auto key = Key::fromString(erbsland::text::String{entry.input});
+                    const auto key = Key::fromString(erbsland::text::StringEditor{entry.input});
                     REQUIRE_EQUAL(key, entry.expected);
-                    REQUIRE_EQUAL(key.toString(), erbsland::text::String{entry.text});
+                    REQUIRE_EQUAL(key.toString(), erbsland::text::StringEditor{entry.text});
                 },
                 [&]() -> std::string { return std::format("index = {} / input = \"{}\"", index, entry.input); });
         }
@@ -252,8 +252,8 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() {
-                    REQUIRE_EQUAL(entry.key.toDisplayText(), erbsland::text::String{entry.withBrackets});
-                    REQUIRE_EQUAL(entry.key.toDisplayText(false), erbsland::text::String{entry.withoutBrackets});
+                    REQUIRE_EQUAL(entry.key.toDisplayText(), erbsland::text::StringEditor{entry.withBrackets});
+                    REQUIRE_EQUAL(entry.key.toDisplayText(false), erbsland::text::StringEditor{entry.withoutBrackets});
                 },
                 [&]() -> std::string {
                     return std::format(
@@ -269,7 +269,7 @@ public:
     }
 
     void testFromStringReplacesInvalidUtf8() {
-        const auto key = Key::fromString(erbsland::text::String{bytes({0xC3})});
+        const auto key = Key::fromString(erbsland::text::StringEditor{bytes({0xC3})});
 
         REQUIRE_EQUAL(key, (Key{Key::Character, U'\uFFFD'}));
         REQUIRE(key.valid());

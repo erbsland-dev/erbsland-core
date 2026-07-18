@@ -13,7 +13,7 @@ namespace demo {
 /// different byte sequences depending on the chosen byte order.
 void byteOrder() {
     // Encode a marine biology text in both UTF-16 byte orders.
-    const auto oceanText = el::StringView{u8"🐋 Meerjungfrau 🌊"_el};
+    const auto oceanText = el::String{u8"🐋 Meerjungfrau 🌊"_el};
     el::io::printLine("Marine text: \"", oceanText, "\"\n");
 
     // Encode as UTF-16 little-endian (least significant byte first).

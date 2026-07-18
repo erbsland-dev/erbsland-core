@@ -5,9 +5,9 @@
 #include "Char.hpp"
 #include "FormatArgumentKind.hpp"
 
-#include "u16/U16StringView.hpp"
-#include "u32/U32StringView.hpp"
-#include "u8/U8StringView.hpp"
+#include "u16/U16String.hpp"
+#include "u32/U32String.hpp"
+#include "u8/U8String.hpp"
 
 #include <cstdint>
 #include <utility>
@@ -19,8 +19,7 @@ namespace erbsland::text {
 /// @tested{U8FormatTest}
 class FormatArgument final {
     // The alternative order must match the values of `FormatArgumentKind`.
-    using Value =
-        std::variant<std::monostate, U8StringView, U16StringView, U32StringView, int64_t, uint64_t, double, bool, Char>;
+    using Value = std::variant<std::monostate, U8String, U16String, U32String, int64_t, uint64_t, double, bool, Char>;
 
 public:
     /// Create an empty format argument.
@@ -41,11 +40,11 @@ public: // accessors
     /// Get the argument kind.
     [[nodiscard]] auto kind() const noexcept -> FormatArgumentKind;
     /// Get the UTF-8 text argument.
-    [[nodiscard]] auto u8Text() const -> U8StringView;
+    [[nodiscard]] auto u8Text() const -> U8String;
     /// Get the UTF-16 text argument.
-    [[nodiscard]] auto u16Text() const -> U16StringView;
+    [[nodiscard]] auto u16Text() const -> U16String;
     /// Get the UTF-32 text argument.
-    [[nodiscard]] auto u32Text() const -> U32StringView;
+    [[nodiscard]] auto u32Text() const -> U32String;
     /// Get the signed integer argument.
     [[nodiscard]] auto signedInteger() const -> int64_t;
     /// Get the unsigned integer argument.

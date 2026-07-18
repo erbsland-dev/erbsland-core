@@ -7,7 +7,7 @@
 
 #include "../../text/CharSet.hpp"
 #include "../../text/String.hpp"
-#include "../../text/StringView.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <atomic>
 #include <cstddef>
@@ -44,7 +44,7 @@ public:
 
     /// Write the given text to the line buffer.
     /// This function scans each added text segment for a NL, and sets the newline flag.
-    void write(const text::StringView &text) noexcept;
+    void write(const text::String &text) noexcept;
 
     /// Append the given character to the line buffer (not the colors).
     void write(Block character) noexcept;
@@ -72,7 +72,7 @@ private:
 private:
     BackendPtr _backend{nullptr}; ///< The backend to emit to.
     bool _cachingEnabled{true};   ///< If line buffering is enabled.
-    text::String _buffer;         ///< The text buffer.
+    text::StringEditor _buffer;   ///< The text buffer.
     bool _hasNewLine{false};      ///< A flag if there is a NL in the line buffer.
     EmitLock _emitLock;           ///< The emit lock.
 };

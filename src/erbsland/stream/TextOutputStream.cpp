@@ -4,6 +4,8 @@
 
 #include "impl/PrintContextToWrite.hpp"
 
+#include <utility>
+
 namespace erbsland::stream {
 
 auto TextOutputStream::createPrintContext() -> TextPrintContextPtr {
@@ -13,8 +15,8 @@ auto TextOutputStream::createPrintContext() -> TextPrintContextPtr {
 auto TextOutputStream::coWrite(text::String text) -> util::CoTask<StreamWriteStatus> {
     auto self = std::static_pointer_cast<TextOutputStream>(sharedOutputStream());
     return util::CoTask<StreamWriteStatus>::run(
-        [self = std::move(self), text = std::move(text)]() -> StreamWriteStatus {
-            return self->write(text::StringView{text});
+        [self = std::move(self), text = std::move(text)]() mutable -> StreamWriteStatus {
+            return self->write(std::move(text));
         });
 }
 
@@ -27,8 +29,8 @@ auto TextOutputStream::coWriteLine() -> util::CoTask<StreamWriteStatus> {
 auto TextOutputStream::coWriteLine(text::String text) -> util::CoTask<StreamWriteStatus> {
     auto self = std::static_pointer_cast<TextOutputStream>(sharedOutputStream());
     return util::CoTask<StreamWriteStatus>::run(
-        [self = std::move(self), text = std::move(text)]() -> StreamWriteStatus {
-            return self->writeLine(text::StringView{text});
+        [self = std::move(self), text = std::move(text)]() mutable -> StreamWriteStatus {
+            return self->writeLine(std::move(text));
         });
 }
 

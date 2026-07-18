@@ -20,13 +20,13 @@ using impl::PatternNodePtr;
 /// Shared base class for parser tests.
 class ParserBase : public re_test::TestHelper {
 public:
-    Parser parser;                 ///< The last parser used.
-    PatternNodePtr node;           ///< The last root node from the parser.
-    el::text::StringViewList tree; ///< last parsed tree for diagnostics
-    String lastPattern;            ///< last parsed pattern for diagnostics
+    Parser parser;             ///< The last parser used.
+    PatternNodePtr node;       ///< The last root node from the parser.
+    el::text::StringList tree; ///< last parsed tree for diagnostics
+    String lastPattern;        ///< last parsed pattern for diagnostics
 
     struct TestCase {
-        StringView pattern;
+        String pattern;
         std::vector<std::string_view> expected;
     };
     using TestCases = std::vector<TestCase>;
@@ -54,16 +54,16 @@ public:
         parser = {};
         node = {};
         tree.clear();
-        lastPattern.clear();
+        lastPattern = {};
     }
 
     /// Parse and remember the resulting tree.
     /// @param pattern The tested pattern.
     /// @param flags Optional flags
     /// @param settings Optional settings
-    auto parseTree(const StringView pattern, const GroupFlags flags = {}, const Settings &settings = {}) {
+    auto parseTree(const String &pattern, const GroupFlags flags = {}, const Settings &settings = {}) {
 
-        lastPattern = String{pattern};
+        lastPattern = pattern;
         parser = Parser{pattern, flags, settings};
         REQUIRE_NOTHROW(node = parser.parse());
         tree = node->toTestTree();
@@ -75,7 +75,7 @@ public:
     /// @param flags Optional flags.
     /// @param settings Optional settings.
     void parseAndTest(
-        const StringView pattern,
+        const String &pattern,
         const std::vector<std::string_view> expected,
         const GroupFlags flags = {},
         const Settings &settings = {}) {
@@ -92,7 +92,7 @@ public:
     /// @param alternatives A number of alternatives.
     /// @param trail An optional trail that must match the end of the tree.
     void parseAndTest(
-        const StringView pattern,
+        const String &pattern,
         const std::vector<std::string_view> &prefix,
         const std::vector<std::string_view> &alternatives,
         const std::vector<std::string_view> &trail = {},
@@ -149,12 +149,12 @@ public:
     /// @param expectedIndex The expected character index of the error.
     /// @param settings Optional settings.
     void parseAndExpectError(
-        const StringView pattern,
+        const String &pattern,
         const std::string_view expectedError,
         const std::size_t expectedIndex,
         const Settings &settings = {}) {
 
-        lastPattern = String{pattern};
+        lastPattern = pattern;
         parser = Parser{pattern, {}, settings};
 
         try {

@@ -5,10 +5,9 @@
 #include "PathConstants.hpp"
 
 #include "../../err/ParseError.hpp"
-#include "../../text/AnyStringView.hpp"
+#include "../../text/AnyString.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 
 namespace erbsland::path::impl {
 
@@ -16,7 +15,7 @@ using namespace text::literals;
 using namespace text;
 using namespace unit;
 
-PathParser::PathParser(const StringView &path, const PathParseMode mode) : _mode{nativeMode(mode)}, _reader{path} {
+PathParser::PathParser(const String &path, const PathParseMode mode) : _mode{nativeMode(mode)}, _reader{path} {
 }
 
 auto PathParser::parse() -> PathDataPtr {
@@ -184,7 +183,7 @@ void PathParser::parseUncRoot() {
 }
 
 void PathParser::parseUncServerAndShare() {
-    auto server = StringBuilder{};
+    auto server = StringEditor{};
     if (!readRootSegment(server, SeparatorMode::SlashAndBackslash, true)) {
         throwParseError("UNC paths require a server name"_el);
     }
@@ -192,14 +191,14 @@ void PathParser::parseUncServerAndShare() {
         throwParseError("UNC paths require a share name"_el);
     }
 
-    auto share = StringBuilder{};
+    auto share = StringEditor{};
     if (!readRootSegment(share, SeparatorMode::SlashAndBackslash, false)) {
         throwParseError("UNC paths require a share name"_el);
     }
     const auto hasTrailingSeparator = consumeSeparator(SeparatorMode::SlashAndBackslash);
     (void)hasTrailingSeparator;
 
-    _root = StringView{String::fromJoined({cDoubleSlash, server.toString(), cSlash, share.toString(), cSlash})};
+    _root = String::fromJoined({cDoubleSlash, server, cSlash, share, cSlash});
     _format = PathFormat::Windows;
 }
 
@@ -238,7 +237,7 @@ auto PathParser::readCharacter() -> Char {
     return character;
 }
 
-auto PathParser::readNormalizedLiteral(const StringView &literal) -> bool {
+auto PathParser::readNormalizedLiteral(const String &literal) -> bool {
     auto literalReader = StringCharReader{literal};
     while (!literalReader.isAtEnd()) {
         const auto expected = literalReader.read();
@@ -250,7 +249,7 @@ auto PathParser::readNormalizedLiteral(const StringView &literal) -> bool {
     return true;
 }
 
-auto PathParser::readRootSegment(StringBuilder &builder, const SeparatorMode mode, const bool lowercase) -> bool {
+auto PathParser::readRootSegment(StringEditor &builder, const SeparatorMode mode, const bool lowercase) -> bool {
     auto hasText = false;
     while (!_reader.isAtEnd()) {
         const auto character = _reader.peek();
@@ -270,14 +269,14 @@ auto PathParser::consumeSeparator(const SeparatorMode mode) -> bool {
 }
 
 void PathParser::appendCapturedElement() {
-    auto element = _reader.takeCapture().toU8StringView();
+    auto element = _reader.takeCapture().toU8String();
     if (element.isEmpty()) {
         return;
     }
     appendElement(std::move(element));
 }
 
-void PathParser::appendElement(StringView element) {
+void PathParser::appendElement(String element) {
     auto publicElementCount = _elements.count();
     if (!_root.isEmpty()) {
         ++publicElementCount;
@@ -296,18 +295,18 @@ void PathParser::restore(const Checkpoint &checkpoint) noexcept {
     _reader.restore(checkpoint.readerState);
 }
 
-void PathParser::throwParseError(const StringView &reason) const {
+void PathParser::throwParseError(const String &reason) const {
     throw err::ParseError{reason, _reader.position()};
 }
 
-auto PathParser::startsWithNormalized(const StringView &prefix) -> bool {
+auto PathParser::startsWithNormalized(const String &prefix) -> bool {
     const auto checkpoint = save();
     const auto result = readNormalizedLiteral(prefix);
     restore(checkpoint);
     return result;
 }
 
-auto PathParser::equalsNormalized(const StringView &text) -> bool {
+auto PathParser::equalsNormalized(const String &text) -> bool {
     const auto checkpoint = save();
     const auto result = readNormalizedLiteral(text) && _reader.isAtEnd();
     restore(checkpoint);

@@ -3,7 +3,7 @@
 
 #include "StandardStreamsDemos.hpp"
 
-namespace demo {
+using namespace demo;
 
 auto main(const int argc, char *argv[]) -> int {
     auto app = DemoApplication{argc, argv};
@@ -13,10 +13,4 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("CaptureOutput"_el, captureOutput);
     app.registerDemo("UseNestedRedirects"_el, useNestedRedirects);
     return app.run();
-}
-
-}
-
-auto main(const int argc, char *argv[]) -> int {
-    return demo::main(argc, argv);
 }

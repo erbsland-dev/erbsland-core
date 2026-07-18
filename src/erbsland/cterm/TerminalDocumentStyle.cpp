@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TerminalDocumentStyle.hpp"
 
-#include "../text/u32/U32String.hpp"
+#include "../text/u32/U32StringEditor.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -186,10 +186,10 @@ void TerminalDocumentStyle::initializePlainDefaults() {
     edit(Selector::definitionDescription()).setLineIndent(4);
     edit(Selector{TextNodeType::BulletListItem}).setWrappedLineIndent(4);
     edit(Selector{TextNodeType::NumberedListItem}).setWrappedLineIndent(4).setOrderedMarker();
-    edit(Selector::bulletListItem(0)).setLiteralMarker(BlockString{U"•\t"_el});
-    edit(Selector::bulletListItem(1)).setLiteralMarker(BlockString{U"‣\t"_el});
-    edit(Selector::bulletListItem(2)).setLiteralMarker(BlockString{U"⁃\t"_el});
-    edit(Selector::bulletListItem(3)).setLiteralMarker(BlockString{U"◦\t"_el});
+    edit(Selector::bulletListItem(0)).setLiteralMarker(BlockStringEditor{U"•\t"_el});
+    edit(Selector::bulletListItem(1)).setLiteralMarker(BlockStringEditor{U"‣\t"_el});
+    edit(Selector::bulletListItem(2)).setLiteralMarker(BlockStringEditor{U"⁃\t"_el});
+    edit(Selector::bulletListItem(3)).setLiteralMarker(BlockStringEditor{U"◦\t"_el});
 }
 
 auto TerminalDocumentStyle::defaultRuleFor(const TextNodeType nodeType, const std::optional<int> &level) const noexcept
@@ -258,9 +258,9 @@ auto TerminalDocumentStyle::createStyledDefaultStyle() -> TerminalDocumentStyle 
     style.edit(Selector::bulletList(1)).setMargins(0);
     style.edit(Selector::bulletListItem(0))
         .setIndents(ParagraphIndents{0, 0, 3, bgeo::BlockMargins{0}})
-        .setLiteralMarker(BlockString{U"•\t"_el}, Style{fg::Yellow});
-    style.edit(Selector::bulletListItem(1)).setLiteralMarker(BlockString{U"⁃\t"_el}, Style{fg::Cyan});
-    style.edit(Selector::bulletListItem(2)).setLiteralMarker(BlockString{U"‣\t"_el}, Style{fg::Green});
+        .setLiteralMarker(BlockStringEditor{U"•\t"_el}, Style{fg::Yellow});
+    style.edit(Selector::bulletListItem(1)).setLiteralMarker(BlockStringEditor{U"⁃\t"_el}, Style{fg::Cyan});
+    style.edit(Selector::bulletListItem(2)).setLiteralMarker(BlockStringEditor{U"‣\t"_el}, Style{fg::Green});
     style.edit(Selector::horizontalLine())
         .setLineFill(U'─', fg::Magenta)
         .setMargins(2)

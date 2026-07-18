@@ -60,10 +60,10 @@ auto ElGrepApp::main() -> el::ExitCode {
 }
 
 auto ElGrepApp::searchFile(
-    const el::Path &path, const el::StringView &displayPath, const el::re::RegEx &expression) const -> FileResult {
-    auto result = FileResult{.displayPath = el::String{displayPath}};
+    const el::Path &path, const el::String &displayPath, const el::re::RegEx &expression) const -> FileResult {
+    auto result = FileResult{.displayPath = displayPath};
     const auto input = path.content().openTextInputStream();
-    const auto lineEndCharacters = el::CharSet{"\r\n"_elv};
+    const auto lineEndCharacters = el::CharSet{"\r\n"_el};
     auto lineNumber = std::size_t{1};
 
     while (true) {
@@ -139,7 +139,7 @@ void ElGrepApp::printMatchingLine(const MatchingLine &line) const {
     terminal()->writeLineBreak();
 }
 
-void ElGrepApp::printText(const el::StringView &text) const {
+void ElGrepApp::printText(const el::String &text) const {
     terminal()->print(text.toEscaped(el::EscapeFormat::Display));
 }
 

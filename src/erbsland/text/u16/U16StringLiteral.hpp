@@ -3,8 +3,8 @@
 #pragma once
 
 #include "U16String_fwd.hpp"
+#include "U16StringEditor_fwd.hpp"
 #include "U16StringLiteral_fwd.hpp"
-#include "U16StringView_fwd.hpp"
 
 #include "impl/U16StringCharReadTool.hpp"
 #include "impl/U16StringDataView.hpp"
@@ -27,8 +27,8 @@ namespace erbsland::text {
 /// It allows work with literals that are only copied if a modification is required.
 /// @tested{U16StringLiteralTest}
 class U16StringLiteral final {
+    friend class U16StringEditor;
     friend class U16String;
-    friend class U16StringView;
     friend constexpr auto impl::createU16StringLiteral(const char16_t *data, std::size_t size) noexcept
         -> U16StringLiteral;
     // format

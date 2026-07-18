@@ -9,6 +9,7 @@ target_sources(erbsland-core PRIVATE
         ByteBlockData.hpp
         ByteBlockData_fwd.hpp
         RingBufferStorageTraits.hpp
+        RingBufferWriter.hpp
         SharedArrayCapacity.hpp
         SharedArrayDataTraits.hpp
         SharedDataPointerTraits.hpp

@@ -13,11 +13,11 @@ namespace erbsland::re::impl {
 /// @tested{RegExStreamInputTest}
 class StreamMatch final : public Match {
 public:
-    StreamMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList, std::vector<text::String> content) :
-        Match{std::move(regEx), std::move(captureGroupList)}, _content{std::move(content)} {}
+    StreamMatch(CaptureGroupList captureGroupList, std::vector<text::String> content) :
+        Match{std::move(captureGroupList)}, _content{std::move(content)} {}
 
 protected:
-    [[nodiscard]] auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::StringView override;
+    [[nodiscard]] auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::String override;
 
 private:
     std::vector<text::String> _content; ///< Copied content by capture group index.

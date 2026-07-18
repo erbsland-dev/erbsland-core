@@ -2,20 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U8StringConstIterator.hpp"
 
-#include "U8StringView.hpp"
+#include "U8String.hpp"
 
 namespace erbsland::text {
 
 struct U8StringConstIterator::Private {
-    U8StringView view;     ///< The view accessed by this iterator
+    U8String string;       ///< The string accessed by this iterator
     unit::ByteIndex index; ///< The current byte index within the storage
 };
 
 U8StringConstIterator::U8StringConstIterator() : _p{nullptr} {
 }
 
-U8StringConstIterator::U8StringConstIterator(const U8StringView &view, unit::ByteIndex index) :
-    _p{std::make_unique<Private>(view, index)} {
+U8StringConstIterator::U8StringConstIterator(const U8String &string, unit::ByteIndex index) :
+    _p{std::make_unique<Private>(string, index)} {
 }
 
 U8StringConstIterator::U8StringConstIterator(const U8StringConstIterator &other) :
@@ -50,7 +50,7 @@ auto U8StringConstIterator::operator==(const U8StringConstIterator &other) const
     if (!isValid() || !other.isValid()) {
         return false;
     }
-    if (_p->view.storageId() != other._p->view.storageId()) {
+    if (_p->string.storageId() != other._p->string.storageId()) {
         return false;
     }
     return _p->index == other._p->index;
@@ -61,14 +61,14 @@ auto U8StringConstIterator::operator!=(const U8StringConstIterator &other) const
 }
 
 auto U8StringConstIterator::isValid() const noexcept -> bool {
-    return _p != nullptr && !_p->view.isEmpty() && !_p->index.isNoIndex();
+    return _p != nullptr && !_p->string.isEmpty() && !_p->index.isNoIndex();
 }
 
 auto U8StringConstIterator::operator*() const -> Char {
     if (!isValid()) {
         return Char::null();
     }
-    const auto character = _p->view.charAt(_p->index);
+    const auto character = _p->string.charAt(_p->index);
     return character.isSignal() ? Char::null() : character;
 }
 
@@ -76,7 +76,7 @@ auto U8StringConstIterator::operator++() -> U8StringConstIterator & {
     if (!isValid()) {
         return *this;
     }
-    _p->view.advance(_p->index);
+    _p->string.advance(_p->index);
     return *this;
 }
 
@@ -85,7 +85,7 @@ auto U8StringConstIterator::operator++(int) -> U8StringConstIterator {
         return *this;
     }
     const auto result = *this;
-    _p->view.advance(_p->index);
+    _p->string.advance(_p->index);
     return result;
 }
 

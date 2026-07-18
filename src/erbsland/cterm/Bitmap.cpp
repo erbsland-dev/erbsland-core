@@ -9,18 +9,20 @@
 
 namespace erbsland::cterm {
 
-auto Bitmap::fromPattern(const std::initializer_list<text::StringView> rows) -> Bitmap {
-    auto width = bgeo::BlockCoordinate{0};
+using namespace bgeo;
+
+auto Bitmap::fromPattern(const std::initializer_list<text::String> rows) -> Bitmap {
+    auto width = BlockCoordinate{0};
     for (const auto &row : rows) {
-        width = std::max(width, bgeo::BlockCoordinate{row.length().toSizeT()});
+        width = std::max(width, BlockCoordinate{row.length().toSizeT()});
     }
-    auto bitmap = Bitmap{bgeo::BlockSize{width, bgeo::BlockCoordinate{rows.size()}}};
-    auto y = bgeo::BlockCoordinate{0};
+    auto bitmap = Bitmap{BlockSize{width, BlockCoordinate{rows.size()}}};
+    auto y = BlockCoordinate{0};
     for (const auto &row : rows) {
-        for (auto x = bgeo::BlockCoordinate{0}; x < bgeo::BlockCoordinate{row.length().toSizeT()}; ++x) {
+        for (auto x = BlockCoordinate{0}; x < BlockCoordinate{row.length().toSizeT()}; ++x) {
             const auto character = row[unit::ByteIndex::fromSizeT(x.toSizeT())];
             if (character != U'.' && character != U' ') {
-                bitmap.setPixel(bgeo::BlockPosition{x, y}, true);
+                bitmap.setPixel(BlockPosition{x, y}, true);
             }
         }
         ++y;
@@ -29,31 +31,31 @@ auto Bitmap::fromPattern(const std::initializer_list<text::StringView> rows) -> 
 }
 
 auto Bitmap::toPattern() const -> text::String {
-    auto result = text::String{};
+    auto result = text::StringEditor{};
     result.reserve(unit::ByteLength::fromSizeT((_size.area() + _size.height()).toSizeT()));
-    for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
-        for (auto x = bgeo::BlockCoordinate{0}; x < _size.width(); ++x) {
-            result.append(pixel(bgeo::BlockPosition{x, y}) ? U'#' : U'.');
+    for (auto y = BlockCoordinate{0}; y < _size.height(); ++y) {
+        for (auto x = BlockCoordinate{0}; x < _size.width(); ++x) {
+            result.append(pixel(BlockPosition{x, y}) ? U'#' : U'.');
         }
         result.append(U'\n');
     }
     return result;
 }
 
-auto Bitmap::pixel(const bgeo::BlockPosition pos) const noexcept -> bool {
+auto Bitmap::pixel(const BlockPosition pos) const noexcept -> bool {
     if (!_size.contains(pos)) {
         return false;
     }
     return _data[_size.index(pos)];
 }
 
-auto Bitmap::pixelQuad(const bgeo::BlockPosition pos) const noexcept -> uint8_t {
-    const auto base = bgeo::BlockPosition{pos.x() * 2, pos.y() * 2};
-    constexpr auto positions = std::array<std::pair<bgeo::BlockPosition, uint8_t>, 4U>{
-        std::pair{bgeo::BlockPosition{0, 0}, static_cast<uint8_t>(0b0001U)},
-        std::pair{bgeo::BlockPosition{1, 0}, static_cast<uint8_t>(0b0010U)},
-        std::pair{bgeo::BlockPosition{0, 1}, static_cast<uint8_t>(0b0100U)},
-        std::pair{bgeo::BlockPosition{1, 1}, static_cast<uint8_t>(0b1000U)},
+auto Bitmap::pixelQuad(const BlockPosition pos) const noexcept -> uint8_t {
+    const auto base = BlockPosition{pos.x() * 2, pos.y() * 2};
+    constexpr auto positions = std::array<std::pair<BlockPosition, uint8_t>, 4U>{
+        std::pair{BlockPosition{0, 0}, static_cast<uint8_t>(0b0001U)},
+        std::pair{BlockPosition{1, 0}, static_cast<uint8_t>(0b0010U)},
+        std::pair{BlockPosition{0, 1}, static_cast<uint8_t>(0b0100U)},
+        std::pair{BlockPosition{1, 1}, static_cast<uint8_t>(0b1000U)},
     };
     uint8_t result = 0;
     for (const auto &[delta, mask] : positions) {
@@ -64,12 +66,12 @@ auto Bitmap::pixelQuad(const bgeo::BlockPosition pos) const noexcept -> uint8_t 
     return result;
 }
 
-auto Bitmap::pixelCardinal(bgeo::BlockPosition pos) const noexcept -> uint8_t {
-    constexpr auto positions = std::array<std::pair<bgeo::BlockPosition, uint8_t>, 4U>{
-        std::pair{bgeo::BlockPosition{1, 0}, static_cast<uint8_t>(0b0001U)},
-        std::pair{bgeo::BlockPosition{0, 1}, static_cast<uint8_t>(0b0010U)},
-        std::pair{bgeo::BlockPosition{-1, 0}, static_cast<uint8_t>(0b0100U)},
-        std::pair{bgeo::BlockPosition{0, -1}, static_cast<uint8_t>(0b1000U)},
+auto Bitmap::pixelCardinal(BlockPosition pos) const noexcept -> uint8_t {
+    constexpr auto positions = std::array<std::pair<BlockPosition, uint8_t>, 4U>{
+        std::pair{BlockPosition{1, 0}, static_cast<uint8_t>(0b0001U)},
+        std::pair{BlockPosition{0, 1}, static_cast<uint8_t>(0b0010U)},
+        std::pair{BlockPosition{-1, 0}, static_cast<uint8_t>(0b0100U)},
+        std::pair{BlockPosition{0, -1}, static_cast<uint8_t>(0b1000U)},
     };
     uint8_t result = 0;
     for (const auto &[delta, mask] : positions) {
@@ -80,16 +82,16 @@ auto Bitmap::pixelCardinal(bgeo::BlockPosition pos) const noexcept -> uint8_t {
     return result;
 }
 
-auto Bitmap::pixelRing(const bgeo::BlockPosition pos) const noexcept -> uint8_t {
-    constexpr auto positions = std::array<std::pair<bgeo::BlockPosition, uint8_t>, 8U>{
-        std::pair{bgeo::BlockPosition{1, 0}, static_cast<uint8_t>(0b00000001U)},
-        std::pair{bgeo::BlockPosition{1, 1}, static_cast<uint8_t>(0b00000010U)},
-        std::pair{bgeo::BlockPosition{0, 1}, static_cast<uint8_t>(0b00000100U)},
-        std::pair{bgeo::BlockPosition{-1, 1}, static_cast<uint8_t>(0b00001000U)},
-        std::pair{bgeo::BlockPosition{-1, 0}, static_cast<uint8_t>(0b00010000U)},
-        std::pair{bgeo::BlockPosition{-1, -1}, static_cast<uint8_t>(0b00100000U)},
-        std::pair{bgeo::BlockPosition{0, -1}, static_cast<uint8_t>(0b01000000U)},
-        std::pair{bgeo::BlockPosition{1, -1}, static_cast<uint8_t>(0b10000000U)},
+auto Bitmap::pixelRing(const BlockPosition pos) const noexcept -> uint8_t {
+    constexpr auto positions = std::array<std::pair<BlockPosition, uint8_t>, 8U>{
+        std::pair{BlockPosition{1, 0}, static_cast<uint8_t>(0b00000001U)},
+        std::pair{BlockPosition{1, 1}, static_cast<uint8_t>(0b00000010U)},
+        std::pair{BlockPosition{0, 1}, static_cast<uint8_t>(0b00000100U)},
+        std::pair{BlockPosition{-1, 1}, static_cast<uint8_t>(0b00001000U)},
+        std::pair{BlockPosition{-1, 0}, static_cast<uint8_t>(0b00010000U)},
+        std::pair{BlockPosition{-1, -1}, static_cast<uint8_t>(0b00100000U)},
+        std::pair{BlockPosition{0, -1}, static_cast<uint8_t>(0b01000000U)},
+        std::pair{BlockPosition{1, -1}, static_cast<uint8_t>(0b10000000U)},
     };
     uint8_t result = 0;
     for (const auto &[delta, mask] : positions) {
@@ -100,12 +102,12 @@ auto Bitmap::pixelRing(const bgeo::BlockPosition pos) const noexcept -> uint8_t 
     return result;
 }
 
-auto Bitmap::boundingRect(bool value) const noexcept -> bgeo::BlockRectangle {
-    const bgeo::BlockCoordinate w = _size.width();
-    const bgeo::BlockCoordinate h = _size.height();
+auto Bitmap::boundingRect(bool value) const noexcept -> BlockRectangle {
+    const BlockCoordinate w = _size.width();
+    const BlockCoordinate h = _size.height();
 
-    auto rowHasValue = [&](bgeo::BlockCoordinate y) noexcept -> bool {
-        for (auto x = bgeo::BlockCoordinate{0}; x < w; ++x) {
+    auto rowHasValue = [&](BlockCoordinate y) noexcept -> bool {
+        for (auto x = BlockCoordinate{0}; x < w; ++x) {
             if (pixel({x, y}) == value) {
                 return true;
             }
@@ -113,8 +115,8 @@ auto Bitmap::boundingRect(bool value) const noexcept -> bgeo::BlockRectangle {
         return false;
     };
 
-    auto colHasValue = [&](bgeo::BlockCoordinate x) noexcept -> bool {
-        for (auto y = bgeo::BlockCoordinate{0}; y < h; ++y) {
+    auto colHasValue = [&](BlockCoordinate x) noexcept -> bool {
+        for (auto y = BlockCoordinate{0}; y < h; ++y) {
             if (pixel({x, y}) == value) {
                 return true;
             }
@@ -122,12 +124,12 @@ auto Bitmap::boundingRect(bool value) const noexcept -> bgeo::BlockRectangle {
         return false;
     };
 
-    auto top = bgeo::BlockCoordinate{0};
+    auto top = BlockCoordinate{0};
     while (top < h && !rowHasValue(top)) {
         ++top;
     }
     if (top == h) {
-        return bgeo::BlockRectangle{};
+        return BlockRectangle{};
     }
 
     auto bottom = h - 1;
@@ -135,7 +137,7 @@ auto Bitmap::boundingRect(bool value) const noexcept -> bgeo::BlockRectangle {
         --bottom;
     }
 
-    auto left = bgeo::BlockCoordinate{0};
+    auto left = BlockCoordinate{0};
     while (left < w && !colHasValue(left)) {
         ++left;
     }
@@ -145,12 +147,12 @@ auto Bitmap::boundingRect(bool value) const noexcept -> bgeo::BlockRectangle {
         --right;
     }
 
-    return bgeo::BlockRectangle{left, top, right - left + 1, bottom - top + 1};
+    return BlockRectangle{left, top, right - left + 1, bottom - top + 1};
 }
 
 auto Bitmap::pixelCount(const bool value) const noexcept -> std::size_t {
     std::size_t result = 0;
-    _size.forEach([&](const bgeo::BlockPosition pos) -> void {
+    _size.forEach([&](const BlockPosition pos) -> void {
         if (pixel(pos) == value) {
             ++result;
         }
@@ -158,7 +160,7 @@ auto Bitmap::pixelCount(const bool value) const noexcept -> std::size_t {
     return result;
 }
 
-void Bitmap::setPixel(const bgeo::BlockPosition pos, const bool value) noexcept {
+void Bitmap::setPixel(const BlockPosition pos, const bool value) noexcept {
     if (!_size.contains(pos)) {
         return;
     }
@@ -166,10 +168,10 @@ void Bitmap::setPixel(const bgeo::BlockPosition pos, const bool value) noexcept 
 }
 
 void Bitmap::flipHorizontal() noexcept {
-    for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
-        for (auto x = bgeo::BlockCoordinate{0}; x < _size.width() / 2; ++x) {
-            const auto p1 = bgeo::BlockPosition{x, y};
-            const auto p2 = bgeo::BlockPosition{_size.width() - 1 - x, y};
+    for (auto y = BlockCoordinate{0}; y < _size.height(); ++y) {
+        for (auto x = BlockCoordinate{0}; x < _size.width() / 2; ++x) {
+            const auto p1 = BlockPosition{x, y};
+            const auto p2 = BlockPosition{_size.width() - 1 - x, y};
             if (p1 != p2) {
                 const auto pixel1 = static_cast<bool>(pixelRef(p1));
                 const auto pixel2 = static_cast<bool>(pixelRef(p2));
@@ -181,7 +183,7 @@ void Bitmap::flipHorizontal() noexcept {
 }
 
 void Bitmap::invert() noexcept {
-    _size.forEach([this](const bgeo::BlockPosition pos) -> void { pixelRef(pos) = !pixelRef(pos); });
+    _size.forEach([this](const BlockPosition pos) -> void { pixelRef(pos) = !pixelRef(pos); });
 }
 
 auto Bitmap::inverted() const noexcept -> Bitmap {
@@ -191,13 +193,11 @@ auto Bitmap::inverted() const noexcept -> Bitmap {
 }
 
 auto Bitmap::outlined() const noexcept -> Bitmap {
-    return fromFunction(
-        _size, [&](const bgeo::BlockPosition pos) -> bool { return !pixel(pos) && pixelRing(pos) != 0U; });
+    return fromFunction(_size, [&](const BlockPosition pos) -> bool { return !pixel(pos) && pixelRing(pos) != 0U; });
 }
 
-auto Bitmap::expanded(const bgeo::BlockMargins margins, const bool value) const noexcept -> Bitmap {
-    const auto newSize =
-        bgeo::BlockSize{_size.width() + margins.horizontalDelta(), _size.height() + margins.verticalDelta()};
+auto Bitmap::expanded(const BlockMargins margins, const bool value) const noexcept -> Bitmap {
+    const auto newSize = BlockSize{_size.width() + margins.horizontalDelta(), _size.height() + margins.verticalDelta()};
     if (newSize.width() <= 0 || newSize.height() <= 0) {
         return {};
     }
@@ -205,29 +205,28 @@ auto Bitmap::expanded(const bgeo::BlockMargins margins, const bool value) const 
     if (value) {
         result.fillRect(result.rect(), true);
     }
-    const auto sourceToTargetOffset = bgeo::BlockPosition{margins.left(), margins.top()};
-    const auto targetRectInSourceCoordinates = bgeo::BlockRectangle{
-        bgeo::BlockPosition{-sourceToTargetOffset.x(), -sourceToTargetOffset.y()},
+    const auto sourceToTargetOffset = BlockPosition{margins.left(), margins.top()};
+    const auto targetRectInSourceCoordinates = BlockRectangle{
+        BlockPosition{-sourceToTargetOffset.x(), -sourceToTargetOffset.y()},
         newSize,
     };
     const auto copyRect = targetRectInSourceCoordinates & rect();
-    copyRect.forEach(
-        [&](const bgeo::BlockPosition pos) -> void { result.setPixel(pos + sourceToTargetOffset, pixel(pos)); });
+    copyRect.forEach([&](const BlockPosition pos) -> void { result.setPixel(pos + sourceToTargetOffset, pixel(pos)); });
     return result;
 }
 
-void Bitmap::fillRect(const bgeo::BlockRectangle rect, const bool value) noexcept {
+void Bitmap::fillRect(const BlockRectangle rect, const bool value) noexcept {
     if (!this->rect().overlaps(rect)) {
         return;
     }
-    (this->rect() & rect).forEach([&](const bgeo::BlockPosition pos) -> void { pixelRef(pos) = value; });
+    (this->rect() & rect).forEach([&](const BlockPosition pos) -> void { pixelRef(pos) = value; });
 }
 
-void Bitmap::floodFill(const bgeo::BlockPosition pos, const bool value) noexcept {
+void Bitmap::floodFill(const BlockPosition pos, const bool value) noexcept {
     if (!_size.contains(pos) || pixelRef(pos) == value) {
         return;
     }
-    std::vector<bgeo::BlockPosition> queue;
+    std::vector<BlockPosition> queue;
     queue.reserve(100);
     queue.push_back(pos);
     while (!queue.empty()) {

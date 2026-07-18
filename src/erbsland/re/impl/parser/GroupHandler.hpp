@@ -132,7 +132,7 @@ inline void handleNamedGroup(ParserState &state) {
     if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
         state.throwParsingError("A group name must not start with a digit"_el);
     }
-    text::String name;
+    text::StringEditor name;
     while (state.currentChar().isAsciiWord()) {
         if (name.length().toSizeT() > limits::maximumGroupNameLength) {
             state.throwParsingError(
@@ -152,8 +152,7 @@ inline void handleNamedGroup(ParserState &state) {
     }
     state.readNext();         // consume the closing character ('>' or '\'')
     state.addGroupName(name); // Check for duplicates
-    state.pushGroup(
-        node_data::Group::createCapture(state.inheritGroupFlags(), state.nextCaptureGroupIndex(), std::move(name)));
+    state.pushGroup(node_data::Group::createCapture(state.inheritGroupFlags(), state.nextCaptureGroupIndex(), name));
 }
 
 inline void handleGroupOpen(ParserState &state) {

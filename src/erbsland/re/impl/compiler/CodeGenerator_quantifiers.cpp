@@ -7,7 +7,9 @@
 
 namespace erbsland::re::impl {
 
-void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data::Quantifier &data) {
+using node_data::Quantifier;
+
+void CodeGenerator::generateCodeForData(const PatternNode &node, const Quantifier &data) {
     auto &segment = createSegment(node);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         node.children().size() == 1, "Quantifiers can only be applied to single child node"_el);
@@ -22,7 +24,7 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         data.maximum >= data.minimum, "Maximum must be greater than or equal to minimum"_el);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.maximum > 0, "Maximum must be greater than zero"_el);
-    if (data.mode == node_data::Quantifier::Mode::Possessive) {
+    if (data.mode == Quantifier::Mode::Possessive) {
         writer.writeStartAtomic(data.atomicGroupId);
     }
     if (data.minimum == data.maximum) {
@@ -30,32 +32,31 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
     } else if (data.minimum == 0) {
         if (data.maximum == 1) {
             generateZeroOrOne(writer, data, childProgram);
-        } else if (data.maximum == node_data::Quantifier::infinitelyMany()) {
+        } else if (data.maximum == Quantifier::infinitelyMany()) {
             generateZeroOrMore(writer, data, childProgram);
         } else {
             generateZeroToMaximum(writer, data, childProgram); // using MAXIMUM
         }
     } else if (data.minimum == 1) {
-        if (data.maximum == node_data::Quantifier::infinitelyMany()) {
+        if (data.maximum == Quantifier::infinitelyMany()) {
             generateOneOrMore(writer, data, childProgram);
         } else {
             generateOneToMaximum(writer, data, childProgram);
         }
     } else {
-        if (data.maximum == node_data::Quantifier::infinitelyMany()) {
+        if (data.maximum == Quantifier::infinitelyMany()) {
             generateMinimumToMany(writer, data, childProgram);
         } else {
             generateMinimumMaximum(writer, data, childProgram); // using MAXIMUM/MINIMUM
         }
     }
-    if (data.mode == node_data::Quantifier::Mode::Possessive) {
+    if (data.mode == Quantifier::Mode::Possessive) {
         writer.writeStopAtomic(data.atomicGroupId);
     }
     _segments.erase(segmentId);
 }
 
-void CodeGenerator::generateFixedCount(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateFixedCount(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     // The parser should already resolve the special case 1-1.
     // A fixed count must have at least two repetitions and min==max.
@@ -73,12 +74,11 @@ void CodeGenerator::generateFixedCount(
     writer.writeJump(createDeltaJump(jumpDelta));
 }
 
-void CodeGenerator::generateZeroOrOne(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateZeroOrOne(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
-    constexpr RelativeJump childProgramDelta = 2;         // SPLIT = 2 ops
+    constexpr RelativeJump childProgramDelta = 2; // SPLIT = 2 ops
     const auto skipDelta = childProgramDelta + static_cast<RelativeJump>(childProgram.size());
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) {    // greedy and possessive
         //                  SPLIT %childProgram, %skip
         // childProgram:    ; ...
         //                  ; ...
@@ -94,13 +94,12 @@ void CodeGenerator::generateZeroOrOne(
     writer.writeProgram(childProgram);
 }
 
-void CodeGenerator::generateZeroOrMore(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateZeroOrMore(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     constexpr RelativeJump childProgramDelta = 2; // SPLIT = 2 ops
     const auto skipDelta = childProgramDelta + static_cast<RelativeJump>(childProgram.size()) + 1;
     const auto loopDelta = -(static_cast<RelativeJump>(childProgram.size()) + 2);
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         // loop:            SPLIT %childProgram, %skip
         // childProgram:    ; ...
         //                  ; ...
@@ -119,13 +118,12 @@ void CodeGenerator::generateZeroOrMore(
     writer.writeJump(createDeltaJump(loopDelta));
 }
 
-void CodeGenerator::generateOneOrMore(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateOneOrMore(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     const auto loopDelta = -static_cast<RelativeJump>(childProgram.size());
-    constexpr auto endDelta = 2;                          // SPLIT = 2 ops
+    constexpr auto endDelta = 2;               // SPLIT = 2 ops
     writer.writeProgram(childProgram);
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         // loop:            ; ... child program ...
         //                  ; ...
         //                  SPLIT %loop, %end
@@ -140,17 +138,16 @@ void CodeGenerator::generateOneOrMore(
     }
 }
 
-void CodeGenerator::generateZeroToMaximum(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateZeroToMaximum(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.minimum == 0, "Minimum must be zero"_el);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
-        data.maximum != node_data::Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
+        data.maximum != Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
 
     const auto loopDelta = -(static_cast<RelativeJump>(childProgram.size()) + 3);
     const auto endDelta = static_cast<RelativeJump>(childProgram.size()) + 4;
     const auto nextDelta = 2U;
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         // loop:            SPLIT %next, %end
         // next:            ; ... child program ...
         //                  ; ...
@@ -179,16 +176,15 @@ void CodeGenerator::generateZeroToMaximum(
     }
 }
 
-void CodeGenerator::generateOneToMaximum(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateOneToMaximum(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.minimum == 1, "Minimum must be one"_el);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
-        data.maximum != node_data::Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
+        data.maximum != Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
 
     const auto loopDelta = -(static_cast<RelativeJump>(childProgram.size()) + 1);
     const auto endDelta = 2U;
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         // loop:            ; ... child program ...
         //                  ; ...
         //                  MAXIMUM <counter>, <maximum>
@@ -213,14 +209,13 @@ void CodeGenerator::generateOneToMaximum(
     }
 }
 
-void CodeGenerator::generateMinimumMaximum(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateMinimumMaximum(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.minimum > 1, "Minimum must be greater than one"_el);
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
-        data.maximum != node_data::Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
+        data.maximum != Quantifier::infinitelyMany(), "Maximum must be less than infinity"_el);
 
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         const auto loopDelta = -(static_cast<RelativeJump>(childProgram.size()) + 1);
         constexpr auto endDelta = 2;
         // loop:            ; ... child program ...
@@ -249,16 +244,14 @@ void CodeGenerator::generateMinimumMaximum(
     writer.writeMinimum(data.counterIndex, data.minimum);
 }
 
-void CodeGenerator::generateMinimumToMany(
-    ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram) {
+void CodeGenerator::generateMinimumToMany(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {
 
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.minimum > 1, "Minimum must be greater than one"_el);
-    ERBSLAND_CORE_RE_REQUIRE_SAFETY(
-        data.maximum == node_data::Quantifier::infinitelyMany(), "Maximum must be infinity"_el);
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(data.maximum == Quantifier::infinitelyMany(), "Maximum must be infinity"_el);
 
     const auto loopDelta = -(static_cast<RelativeJump>(childProgram.size()) + 1);
     constexpr auto endDelta = 2;
-    if (data.mode != node_data::Quantifier::Mode::Lazy) { // greedy and possessive
+    if (data.mode != Quantifier::Mode::Lazy) { // greedy and possessive
         // loop:            ; ... child program ...
         //                  ; ...
         //                  ADD COUNTER <counter>, 1

@@ -12,8 +12,9 @@
 #include "u32/U32String.hpp"
 #include "u8/U8String.hpp"
 
+#include "../mem/ByteBlock.hpp"
 #include "../mem/ByteBlock_fwd.hpp"
-#include "../mem/ByteBlockView.hpp"
+#include "../mem/ByteBlockEditor_fwd.hpp"
 
 namespace erbsland::text {
 
@@ -21,10 +22,10 @@ namespace erbsland::text {
 /// @tested{StringDecoderTest}
 class StringDecoder final {
 public:
-    /// Create a decoder for a byte block.
+    /// Create a decoder sharing data from a byte block editor.
+    StringDecoder(const mem::ByteBlockEditor &data) noexcept; // NOLINT(*-explicit-constructor)
+    /// Create a decoder sharing data from a read-only byte block.
     StringDecoder(const mem::ByteBlock &data) noexcept; // NOLINT(*-explicit-constructor)
-    /// Create a decoder for a byte block view.
-    StringDecoder(const mem::ByteBlockView &data) noexcept; // NOLINT(*-explicit-constructor)
 
 public:
     /// Decode to the default UTF-8 string type.
@@ -49,7 +50,7 @@ public:
         EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> U32String;
 
 private:
-    mem::ByteBlockView _data;
+    mem::ByteBlock _data;
 };
 
 }

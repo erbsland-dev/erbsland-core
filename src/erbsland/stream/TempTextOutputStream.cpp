@@ -76,11 +76,11 @@ auto TempTextOutputStream::createErrorContext() const noexcept -> StreamErrorCon
 }
 
 void TempTextOutputStream::throwError(
-    const text::StringView title,
-    const text::StringView description,
-    system::PlatformErrorContextConstPtr platformContext) const {
+    text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const {
     auto context = createErrorContext();
-    context.setTitle(title).setDescription(description).setPlatformContext(std::move(platformContext));
+    context.setTitle(std::move(title))
+        .setDescription(std::move(description))
+        .setPlatformContext(std::move(platformContext));
     throw StreamError{std::move(context)};
 }
 
@@ -124,7 +124,7 @@ void TempTextOutputStream::abort() noexcept {
         auto path = _path;
         _path = {};
         _removeOnClose = false;
-        impl::IoService::submitIoWork([path = std::move(path)] {
+        impl::IoService::submitIoWork([path = std::move(path)]() -> void {
             try {
                 path.operations().removeOrThrow();
             } catch (...) {}
@@ -148,7 +148,7 @@ auto TempTextOutputStream::write(const text::Char character) -> StreamWriteStatu
     return _stream->write(character);
 }
 
-auto TempTextOutputStream::write(const text::StringView &text) -> StreamWriteStatus {
+auto TempTextOutputStream::write(const text::String &text) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary text output stream is not open."_el);
@@ -164,7 +164,7 @@ auto TempTextOutputStream::writeLine() -> StreamWriteStatus {
     return _stream->writeLine();
 }
 
-auto TempTextOutputStream::writeLine(const text::StringView &text) -> StreamWriteStatus {
+auto TempTextOutputStream::writeLine(const text::String &text) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary text output stream is not open."_el);

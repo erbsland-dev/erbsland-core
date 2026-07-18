@@ -120,7 +120,7 @@ Integer Format
 --------------
 
 :cpp:class:`IntegerFormat <erbsland::text::IntegerFormat>` describes how integers are written to Erbsland strings and
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
 The default format is decimal with no flags, lowercase letters, a zero field width, no precision, and negative-only sign
 output.
 
@@ -218,12 +218,12 @@ refer directly to the original literal storage.
     using namespace erbsland::text::literals;
 
     constexpr auto label = u8"Status"_el; // U8StringLiteral<char8_t>
-    auto labelView = u8"Status"_elv;      // U8StringView
-    auto labelText = u8"Status"_els;      // U8String
+    auto labelView = u8"Status"_el;      // U8String
+    auto labelText = u8"Status"_el;      // U8StringEditor
 
 Use ``"_el"`` when you want a constexpr-capable :cpp:class:`U8StringLiteral <erbsland::text::U8StringLiteral>`.
-Use ``"_elv"`` for APIs that inspect text through :cpp:class:`U8StringView <erbsland::text::U8StringView>`.
-Use ``"_els"`` for APIs that need an owning :cpp:class:`U8String <erbsland::text::U8String>`.
+Use ``"_el"`` for APIs that inspect text through :cpp:class:`U8String <erbsland::text::U8String>`.
+Use ``"_el"`` for APIs that need an owning :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`.
 
 Display Escaping
 ================

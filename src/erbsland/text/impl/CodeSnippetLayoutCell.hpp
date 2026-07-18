@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../StringView.hpp"
+#include "../String.hpp"
 
 #include "../../unit/ColumnIndex.hpp"
 #include "../../unit/ColumnRange.hpp"
@@ -14,7 +14,7 @@ namespace erbsland::text::impl {
 
 /// One terminal-displayable source cell in a laid-out code snippet row.
 struct CodeSnippetLayoutCell final {
-    StringView text;                   ///< The printable source slice or replacement text.
+    String text;                       ///< The printable source slice or replacement text.
     unit::ColumnRange range;           ///< Represented logical source columns.
     int width{1};                      ///< Terminal-cell width.
     std::optional<std::size_t> marker; ///< Last marker affecting this cell.

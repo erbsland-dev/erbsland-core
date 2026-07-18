@@ -15,8 +15,8 @@ using namespace el::text::literals;
 
 class TestDisplayTextTranslator final : public el::i18n::DisplayTextTranslator {
 public:
-    [[nodiscard]] auto translate(const el::text::StringView &key, const el::text::StringView &) const
-        -> el::text::StringView override {
+    [[nodiscard]] auto translate(const el::text::String &key, const el::text::String &) const
+        -> el::text::String override {
         ++callCount;
         if (key == "options.UsageLabel"_el) {
             return "Verwendung"_el;

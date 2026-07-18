@@ -48,8 +48,8 @@ public:
 public:
     /// Create a stable string used for validating node trees in tests.
     [[nodiscard]] auto toTestString() const -> text::String {
-        auto result = text::StringFormat{"Quantifier(min={},max={},mode={}"}.build(
-            strForCount(minimum), strForCount(maximum), nameForMode(mode));
+        auto result = text::StringEditor{text::StringFormat{"Quantifier(min={},max={},mode={}"}.build(
+            strForCount(minimum), strForCount(maximum), nameForMode(mode))};
         if (atomicGroupId != cNoAtomicGroupId) {
             result.append(text::StringFormat{",atomicGroupId={}"}.build(atomicGroupId));
         }
@@ -66,9 +66,9 @@ public:
     constexpr static auto infinitelyMany() noexcept -> Count { return std::numeric_limits<Count>::max(); }
     static auto strForCount(const Count count) -> text::String {
         using namespace text::literals;
-        return count == infinitelyMany() ? text::String{"*"_el} : text::String::fromInteger(count);
+        return count == infinitelyMany() ? "*"_el : text::String::fromInteger(count);
     }
-    static auto nameForMode(const Mode mode) -> text::StringView {
+    static auto nameForMode(const Mode mode) -> text::String {
         using namespace text::literals;
         switch (mode) {
         case Mode::Greedy:

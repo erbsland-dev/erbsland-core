@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../../text/String.hpp"
 #include "../../../text/StringCIHashMap.hpp"
-#include "../../../text/StringView.hpp"
 #include "../../CaptureGroupIndex.hpp"
 
 #include <vector>
@@ -11,7 +11,7 @@
 namespace erbsland::re::impl {
 
 /// The list with capture group names.
-using CaptureGroupNames = std::vector<text::StringView>;
+using CaptureGroupNames = std::vector<text::String>;
 
 /// Create a map from capture group names to their index.
 [[nodiscard]] inline auto createCaptureGroupNameToIndexMap(const CaptureGroupNames &names) noexcept

@@ -9,10 +9,10 @@
 #include "../PathAttribute.hpp"
 #include "../PathType.hpp"
 
-#include "../../text/impl/UnsafeU16StringAccess_fwd.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer_fwd.hpp"
-#include "../../text/StringViewList.hpp"
-#include "../../text/u16/U16String.hpp"
+#include "../../text/impl/UnsafeU16StringEditorAccess_fwd.hpp"
+#include "../../text/StringList.hpp"
+#include "../../text/u16/U16StringEditor.hpp"
 
 #include <cstdint>
 
@@ -62,19 +62,19 @@ private:
     [[nodiscard]] static auto pathAttributesFromWindowsAttributes(unsigned long attributes) noexcept -> PathAttributes;
     [[nodiscard]] static auto windowsAttributesFromPathAttributes(PathAttributes attributes) -> unsigned long;
     [[nodiscard]] static auto sidString(void *sid) -> text::String;
-    [[nodiscard]] static auto pathTextOrThrow(const Path &path) -> text::U16StringView;
+    [[nodiscard]] static auto pathTextOrThrow(const Path &path) -> text::U16String;
     static void createParentDirectoriesOrThrow(const Path &path);
     [[nodiscard]] static auto handleHasContentOrThrow(void *handle, const Path &path) -> bool;
     [[nodiscard]] static auto physicalPathOrThrow(const Path &path) -> Path;
     [[nodiscard]] static auto existingPath(const Path &path) -> bool;
     [[nodiscard]] static auto weakPathOrThrow(const Path &path) -> Path;
     [[nodiscard]] static auto physicalNoFinalSymlinkPathOrThrow(const Path &path) -> Path;
-    [[nodiscard]] static auto nonRootElements(const Path &path) -> text::StringViewList;
+    [[nodiscard]] static auto nonRootElements(const Path &path) -> text::StringList;
     [[noreturn]] static void throwSystemError(
-        const text::StringView &title, const text::StringView &description, const Path &path, unsigned long errorCode);
+        const text::String &title, const text::String &description, const Path &path, unsigned long errorCode);
     [[noreturn]] static void throwSystemError(
-        const text::StringView &title,
-        const text::StringView &description,
+        const text::String &title,
+        const text::String &description,
         const Path &source,
         const Path &destination,
         unsigned long errorCode);

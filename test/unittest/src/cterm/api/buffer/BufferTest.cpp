@@ -165,7 +165,7 @@ public:
 
     void testSetStringWritesMultipleLinesAndSkipsZeroWidthCharacters() {
         auto buffer = Buffer{bgeo::BlockSize{4, 2}, Block{U'.'}};
-        auto text = BlockString{};
+        auto text = BlockStringEditor{};
         text.append(Block{U'界', fg::Red, bg::Black});
         text.append(Block{});
         text.append(Block{U'A', fg::Green, bg::Black});
@@ -186,13 +186,13 @@ public:
     }
 
     void testFromLinesFactoriesBuildBuffersFromPlainAndWideText() {
-        const auto lines = BlockStringLines{BlockString{"ab"_el}, BlockString{}, BlockString{"c"_el}};
+        const auto lines = BlockStringLines{BlockStringEditor{"ab"_el}, BlockStringEditor{}, BlockStringEditor{"c"_el}};
         const auto fromLines = Buffer::fromLines(lines);
 
         REQUIRE_EQUAL(fromLines.size(), bgeo::BlockSize(2, 3));
         requireRowsEqual(fromLines, {"ab", "  ", "c "});
 
-        const auto sourceText = BlockString{"x界\nA!"_el};
+        const auto sourceText = BlockStringEditor{"x界\nA!"_el};
         const auto fromText = Buffer::fromLinesInString(sourceText.slice(BlockRange{BlockIndex{1U}, BlockCount{3U}}));
 
         REQUIRE_EQUAL(fromText.size(), bgeo::BlockSize(2, 2));
@@ -204,7 +204,7 @@ public:
 
     void testFromLinesFactoriesRejectEmptyInput() {
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLines(BlockStringLines{}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLinesInString(BlockStringView{}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, Buffer::fromLinesInString(BlockString{}));
     }
 
     void testCloneCreatesAnIndependentWritableCopy() {
@@ -729,7 +729,7 @@ public:
         bitmap.setPixel(bgeo::BlockPosition{0, 0}, true);
         auto options = BitmapDrawOptions{};
         options.setScaleMode(BitmapScaleMode::DoubleBlock);
-        options.setDoubleBlocks(BlockString{"[]"_el});
+        options.setDoubleBlocks(BlockStringEditor{"[]"_el});
         options.setColor(Color{fg::BrightCyan, bg::Black});
 
         buffer.drawBitmap(bitmap, bgeo::BlockPosition{0, 0}, options);

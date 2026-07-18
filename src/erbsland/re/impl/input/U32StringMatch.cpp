@@ -8,7 +8,7 @@
 
 namespace erbsland::re::impl {
 
-auto U32StringMatch::getContentForGroup(const CaptureGroup &group) const noexcept -> text::U32StringView {
+auto U32StringMatch::getContentForGroup(const CaptureGroup &group) const noexcept -> text::U32String {
     const auto beginIndex = unit::CpIndex::fromSizeT(group.begin());
     const auto endIndex = unit::CpIndex::fromSizeT(group.end());
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(beginIndex <= endIndex, "Capture group begin index must not exceed end index"_el);

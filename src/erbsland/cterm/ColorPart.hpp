@@ -7,7 +7,7 @@
 #include "impl/HashHelper.hpp"
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <array>
 #include <cstddef>
@@ -63,13 +63,13 @@ public: // operators
 
 public: // conversion
     /// Convert the color name to a string.
-    [[nodiscard]] auto toString() const -> text::StringView;
+    [[nodiscard]] auto toString() const -> text::String;
 
 protected:
     /// Create a color enum from the given string.
     /// @return The color enum.
     /// @throws err::ParameterError if the color does not exist.
-    [[nodiscard]] static auto enumFromString(const text::StringView &str) -> Value;
+    [[nodiscard]] static auto enumFromString(const text::String &str) -> Value;
     /// Create brighter enum
     [[nodiscard]] static auto brighterEnum(Value value) -> Value;
 
@@ -182,7 +182,7 @@ public: // tools
     /// @param str The color name.
     /// @return The parsed color.
     /// @throws err::ParameterError if the color does not exist.
-    [[nodiscard]] static auto fromString(const text::StringView &str) -> ColorPart {
+    [[nodiscard]] static auto fromString(const text::String &str) -> ColorPart {
         return ColorPart{Hue{enumFromString(str)}};
     }
     /// Create a color from the given index.

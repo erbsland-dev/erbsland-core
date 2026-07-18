@@ -11,7 +11,7 @@
 
 #include "../../../text/impl/CodeLineMarkerData.hpp"
 #include "../../../text/impl/CodeSnippetLayout.hpp"
-#include "../../../text/StringBuilder.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../text/TextNode.hpp"
 #include "../../TabOverflowBehavior.hpp"
 #include "../../TerminalDocumentStyle.hpp"
@@ -19,14 +19,16 @@
 #include <algorithm>
 #include <cstddef>
 #include <optional>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace erbsland::cterm::impl::document_renderer {
 
-void RenderEngine::appendList(
-    const text::TextNode &node, const text::TextNodeType itemType, const RenderContext &context) {
+using namespace text::literals;
+
+using namespace text;
+
+void RenderEngine::appendList(const TextNode &node, const TextNodeType itemType, const RenderContext &context) {
     const auto listContainerRule = ruleFor(node);
     openScope(listContainerRule.margins());
     const auto childContext = context.withContainer(listContainerRule);
@@ -44,15 +46,15 @@ void RenderEngine::appendList(
 }
 
 void RenderEngine::appendListItem(
-    const text::TextNode &node,
+    const TextNode &node,
     const TerminalDocumentStyleRule &listItemRule,
     ListItemLayout listItemLayout,
     const RenderContext &context) {
     openScope(listItemRule.margins(), std::move(listItemLayout));
     const auto childContext = context.withContainer(listItemRule);
-    auto inlineRun = std::vector<text::TextNodePtr>{};
+    auto inlineRun = std::vector<TextNodePtr>{};
     for (const auto &child : node.children()) {
-        if (child->type().renderClass() == text::TextNodeType::RenderClass::Inline) {
+        if (child->type().renderClass() == TextNodeType::RenderClass::Inline) {
             inlineRun.push_back(child);
             continue;
         }
@@ -66,10 +68,10 @@ void RenderEngine::appendListItem(
     closeScope();
 }
 
-void RenderEngine::appendListItemWithoutMarker(const text::TextNode &node, const RenderContext &context) {
-    auto inlineRun = std::vector<text::TextNodePtr>{};
+void RenderEngine::appendListItemWithoutMarker(const TextNode &node, const RenderContext &context) {
+    auto inlineRun = std::vector<TextNodePtr>{};
     for (const auto &child : node.children()) {
-        if (child->type().renderClass() == text::TextNodeType::RenderClass::Inline) {
+        if (child->type().renderClass() == TextNodeType::RenderClass::Inline) {
             inlineRun.push_back(child);
             continue;
         }
@@ -79,22 +81,22 @@ void RenderEngine::appendListItemWithoutMarker(const text::TextNode &node, const
     appendListItemInlineRun(inlineRun, context);
 }
 
-void RenderEngine::appendListItemChild(const text::TextNode &node, const RenderContext &context) {
-    if (node.type().isListContainer() || node.type() == text::TextNodeType::TermList) {
+void RenderEngine::appendListItemChild(const TextNode &node, const RenderContext &context) {
+    if (node.type().isListContainer() || node.type() == TextNodeType::TermList) {
         if (!currentListItemHasBlocks()) {
             emitBlock(paragraph(BlockString{}, listItemParagraphRule(), context));
         }
         appendNode(node, context);
         return;
     }
-    if (node.type() == text::TextNodeType::Paragraph) {
+    if (node.type() == TextNodeType::Paragraph) {
         emitBlock(paragraph(node, listItemParagraphRule(), context));
         return;
     }
     appendNode(node, context);
 }
 
-void RenderEngine::appendListItemInlineRun(std::vector<text::TextNodePtr> &nodes, const RenderContext &context) {
+void RenderEngine::appendListItemInlineRun(std::vector<TextNodePtr> &nodes, const RenderContext &context) {
     if (nodes.empty()) {
         return;
     }
@@ -108,12 +110,12 @@ void RenderEngine::appendListItemInlineRun(std::vector<text::TextNodePtr> &nodes
     nodes.clear();
 }
 
-void RenderEngine::appendTermList(const text::TextNode &node, const RenderContext &context) {
+void RenderEngine::appendTermList(const TextNode &node, const RenderContext &context) {
     const auto listRule = ruleFor(node);
     openScope(listRule.margins());
     const auto childContext = context.withContainer(listRule);
     auto items = collectTermItems(node, childContext);
-    const auto layout = termListLayout(items, node.type() == text::TextNodeType::FieldList);
+    const auto layout = termListLayout(items, node.type() == TextNodeType::FieldList);
     for (const auto &item : items) {
         appendNormalTermItem(item, layout);
         if (item.node != nullptr) {
@@ -126,27 +128,23 @@ void RenderEngine::appendTermList(const text::TextNode &node, const RenderContex
     closeScope();
 }
 
-auto RenderEngine::collectTermItems(const text::TextNode &node, const RenderContext &context)
+auto RenderEngine::collectTermItems(const TextNode &node, const RenderContext &context)
     -> std::vector<TermItemRenderData> {
     auto result = std::vector<TermItemRenderData>{};
     for (const auto &child : node.children()) {
-        if (child->type() != text::TextNodeType::TermItem && child->type() != text::TextNodeType::FieldItem) {
+        if (child->type() != TextNodeType::TermItem && child->type() != TextNodeType::FieldItem) {
             continue;
         }
-        auto nameNode = text::TextNodePtr{};
-        auto descriptionNode = text::TextNodePtr{};
-        auto nestedTermLists = std::vector<text::TextNodePtr>{};
+        auto nameNode = TextNodePtr{};
+        auto descriptionNode = TextNodePtr{};
+        auto nestedTermLists = std::vector<TextNodePtr>{};
         for (const auto &termChild : child->children()) {
-            if (termChild->type() == text::TextNodeType::TermName ||
-                termChild->type() == text::TextNodeType::FieldLabel) {
+            if (termChild->type() == TextNodeType::TermName || termChild->type() == TextNodeType::FieldLabel) {
                 nameNode = termChild;
             } else if (
-                termChild->type() == text::TextNodeType::TermDescription ||
-                termChild->type() == text::TextNodeType::FieldContent) {
+                termChild->type() == TextNodeType::TermDescription || termChild->type() == TextNodeType::FieldContent) {
                 descriptionNode = termChild;
-            } else if (
-                termChild->type() == text::TextNodeType::TermList ||
-                termChild->type() == text::TextNodeType::FieldList) {
+            } else if (termChild->type() == TextNodeType::TermList || termChild->type() == TextNodeType::FieldList) {
                 nestedTermLists.push_back(termChild);
             }
         }
@@ -234,7 +232,7 @@ void RenderEngine::appendNormalTermItem(const TermItemRenderData &item, const Te
     itemIndents.setWrappedLineIndent(localDescriptionColumn);
     auto content = InlineContent{};
     content.append(item.name);
-    content.append(BlockString{BlockCount::one(), Block{text::Char{U'\t'}}});
+    content.append(BlockStringEditor{BlockCount::one(), Block{Char{U'\t'}}});
     content.append(item.description);
     auto block = RenderBlock{BlockKind::Paragraph, std::move(content), std::move(itemIndents)};
     block.setSuppressWordBreakMark(layout.fieldList);
@@ -245,7 +243,7 @@ void RenderEngine::appendNormalTermItem(const TermItemRenderData &item, const Te
     emitBlock(std::move(block));
 }
 
-auto RenderEngine::renderTermName(const text::TextNode &node, const RenderContext &context) -> TermNameRenderData {
+auto RenderEngine::renderTermName(const TextNode &node, const RenderContext &context) -> TermNameRenderData {
     const auto rule = ruleFor(node);
     const auto baseStyle = context.resolvedTextStyle(_style.baseTextStyle(), rule);
     auto startsWithLongOnlyOption = false;
@@ -256,24 +254,24 @@ auto RenderEngine::renderTermName(const text::TextNode &node, const RenderContex
         _blockBuilder.appendWithBaseStyle(*rule.prefix(), baseStyle);
         content.append(_blockBuilder.toString());
     }
-    const auto usesOptionNames = node.contains(text::TextNodeType::OptionName);
-    const auto usesOptionMeta = node.contains(text::TextNodeType::OptionMeta);
+    const auto usesOptionNames = node.contains(TextNodeType::OptionName);
+    const auto usesOptionMeta = node.contains(TextNodeType::OptionMeta);
     auto firstOptionName = true;
     for (const auto &child : node.children()) {
-        if (usesOptionNames && child->type() == text::TextNodeType::OptionName) {
+        if (usesOptionNames && child->type() == TextNodeType::OptionName) {
             if (firstOptionName) {
-                startsWithShortOption = child->contains(text::TextNodeType::OptionShort);
+                startsWithShortOption = child->contains(TextNodeType::OptionShort);
                 startsWithLongOnlyOption = !startsWithShortOption;
             } else {
                 _blockBuilder.clear();
-                _blockBuilder.appendWithBaseStyle(BlockString{text::String{std::string_view{", "}}}, baseStyle);
+                _blockBuilder.appendWithBaseStyle(BlockStringEditor{", "_el}, baseStyle);
                 content.append(_blockBuilder.toString());
             }
             content.append(renderInlineText(*child, baseStyle, false));
             firstOptionName = false;
             continue;
         }
-        if (!usesOptionNames || child->type() != text::TextNodeType::OptionName) {
+        if (!usesOptionNames || child->type() != TextNodeType::OptionName) {
             content.append(renderInlineText(*child, baseStyle, true));
         }
     }
@@ -288,19 +286,18 @@ auto RenderEngine::renderTermName(const text::TextNode &node, const RenderContex
         startsWithShortOption || (startsWithLongOnlyOption && usesOptionMeta)};
 }
 
-auto RenderEngine::ruleFor(const text::TextNode &node) -> TerminalDocumentStyleRule {
+auto RenderEngine::ruleFor(const TextNode &node) -> TerminalDocumentStyleRule {
     const auto level = usesLevel(node.type()) ? std::optional<int>{node.level()} : std::nullopt;
     return ruleFor(node.type(), level, TerminalDocumentStyleSelector::splitStyleTokens(node.style()));
 }
 
-auto RenderEngine::ruleFor(const text::TextNode &node, const int level) -> TerminalDocumentStyleRule {
+auto RenderEngine::ruleFor(const TextNode &node, const int level) -> TerminalDocumentStyleRule {
     return ruleFor(node.type(), level, TerminalDocumentStyleSelector::splitStyleTokens(node.style()));
 }
 
 auto RenderEngine::ruleFor(
-    const text::TextNodeType nodeType,
-    const std::optional<int> level,
-    const TerminalDocumentStyleSelector::TokenList &tokens) -> TerminalDocumentStyleRule {
+    const TextNodeType nodeType, const std::optional<int> level, const TerminalDocumentStyleSelector::TokenList &tokens)
+    -> TerminalDocumentStyleRule {
     auto ancestors = _ancestors;
     if (!ancestors.empty()) {
         ancestors.pop_back();
@@ -315,7 +312,7 @@ void RenderEngine::emitBlock(RenderBlock block) {
         const auto leftMargin = positive(scope.margins.left());
         if (leftMargin > 0) {
             _blockBuilder.append(
-                BlockString{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block{text::Char{U' '}}});
+                BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block{Char{U' '}}});
         }
         if (scope.linePrefix.has_value()) {
             _blockBuilder.append(*scope.linePrefix);
@@ -386,9 +383,9 @@ void RenderEngine::flushPendingBlock() {
     }
 }
 
-auto RenderEngine::usesLevel(const text::TextNodeType nodeType) noexcept -> bool {
-    return nodeType == text::TextNodeType::Heading || nodeType == text::TextNodeType::BulletList ||
-        nodeType == text::TextNodeType::NumberedList || nodeType.isListItem();
+auto RenderEngine::usesLevel(const TextNodeType nodeType) noexcept -> bool {
+    return nodeType == TextNodeType::Heading || nodeType == TextNodeType::BulletList ||
+        nodeType == TextNodeType::NumberedList || nodeType.isListItem();
 }
 
 auto RenderEngine::positive(const bgeo::BlockCoordinate value) noexcept -> int {
@@ -406,7 +403,7 @@ auto RenderEngine::frameWidth() const noexcept -> int {
     return result;
 }
 
-void RenderEngine::appendNodeText(text::StringBuilder &builder, const text::TextNode &node) {
+void RenderEngine::appendNodeText(StringEditor &builder, const TextNode &node) {
     if (!node.text().isEmpty()) {
         builder.append(node.text());
     }
@@ -415,10 +412,10 @@ void RenderEngine::appendNodeText(text::StringBuilder &builder, const text::Text
     }
 }
 
-auto RenderEngine::nodeText(const text::TextNode &node) -> text::String {
-    auto builder = text::StringBuilder{};
+auto RenderEngine::nodeText(const TextNode &node) -> String {
+    auto builder = StringEditor{};
     appendNodeText(builder, node);
-    return builder.toString();
+    return builder;
 }
 
 }

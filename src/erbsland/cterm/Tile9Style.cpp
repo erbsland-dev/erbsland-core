@@ -25,11 +25,11 @@ Tile9Style::Tile9Style(const std::array<text::Char, 16> tiles, const BlockStyle 
     _hasExtendedTiles = true;
 }
 
-Tile9Style::Tile9Style(const text::StringView &tiles) :
-    Tile9Style(parseTiles(BlockString{tiles, text::EncodingErrorMode::Replace})) {
+Tile9Style::Tile9Style(const text::String &tiles) :
+    Tile9Style(parseTiles(BlockStringEditor{tiles, text::EncodingErrorMode::Replace})) {
 }
 
-Tile9Style::Tile9Style(const text::U32StringView &tiles) : Tile9Style(parseTiles(BlockString{tiles})) {
+Tile9Style::Tile9Style(const text::U32String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
 }
 
 auto Tile9Style::block(const bgeo::BlockRectangle rect, const bgeo::BlockPosition pos) const noexcept -> Block {
@@ -103,11 +103,11 @@ auto Tile9Style::block(const Element element) const noexcept -> Block {
     }
 }
 
-auto Tile9Style::create(const text::StringView &tiles) -> Tile9StylePtr {
+auto Tile9Style::create(const text::String &tiles) -> Tile9StylePtr {
     return std::make_shared<Tile9Style>(tiles);
 }
 
-auto Tile9Style::create(const text::U32StringView &tiles) -> Tile9StylePtr {
+auto Tile9Style::create(const text::U32String &tiles) -> Tile9StylePtr {
     return std::make_shared<Tile9Style>(tiles);
 }
 
@@ -136,7 +136,7 @@ Tile9Style::Tile9Style(const ParsedTiles &parsed) noexcept :
     _tiles{parsed.tiles}, _hasExtendedTiles{parsed.hasExtendedTiles} {
 }
 
-auto Tile9Style::parseTiles(const BlockStringView &tiles) -> ParsedTiles {
+auto Tile9Style::parseTiles(const BlockString &tiles) -> ParsedTiles {
     if (tiles.length() != BlockCount{9U} && tiles.length() != BlockCount{16U}) {
         throw err::ParameterError{"Tile9Style requires exactly 9 or 16 terminal characters.", "tiles"};
     }

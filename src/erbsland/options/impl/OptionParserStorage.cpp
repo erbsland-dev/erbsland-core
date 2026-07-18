@@ -23,41 +23,44 @@ namespace erbsland::options::impl {
 
 using namespace text::literals;
 
-auto OptionParserStorage::optionTitleForError(const OptionPtr &option) -> text::String {
+using text::EscapeFormat;
+using text::String;
+using text::StringFormat;
+using unit::ArgumentCount;
+using unit::ArgumentIndex;
+
+auto OptionParserStorage::optionTitleForError(const OptionPtr &option) -> String {
     return OptionDisplayModel::optionTitle(option);
 }
 
-auto OptionParserStorage::storeFlag(const OptionPtr &option, const unit::ArgumentIndex index) -> bool {
+auto OptionParserStorage::storeFlag(const OptionPtr &option, const ArgumentIndex index) -> bool {
     auto parsedValue = findParsedValue(option);
     if (parsedValue == nullptr) {
-        _parsedValues.emplace_back(
-            OptionParsedValue::create(option, true, unit::ArgumentCount::one(), std::vector{index}));
+        _parsedValues.emplace_back(OptionParsedValue::create(option, true, ArgumentCount::one(), std::vector{index}));
         return true;
     }
     if (!std::holds_alternative<bool>(parsedValue->storage)) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option processing failed"_el,
-            text::StringFormat{"The stored value for {} does not match its declared flag type."}.build(
+            StringFormat{"The stored value for {} does not match its declared flag type."}.build(
                 optionTitleForError(option)),
             index,
             option);
     }
     parsedValue->storage = true;
-    parsedValue->count = unit::ArgumentCount::one();
+    parsedValue->count = ArgumentCount::one();
     parsedValue->argumentIndexes.emplace_back(index);
     return true;
 }
 
-auto OptionParserStorage::storeValue(
-    const OptionPtr &option, const text::StringView &value, const unit::ArgumentIndex index) -> bool {
+auto OptionParserStorage::storeValue(const OptionPtr &option, const String &value, const ArgumentIndex index) -> bool {
     switch (option->type().type()) {
     case OptionType::Flag:
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Flag does not accept a value"_el,
-            text::StringFormat{"{} is a flag and must be specified without a value."}.build(
-                optionTitleForError(option)),
+            StringFormat{"{} is a flag and must be specified without a value."}.build(optionTitleForError(option)),
             index,
             option);
     case OptionType::Integer:
@@ -67,8 +70,8 @@ auto OptionParserStorage::storeValue(
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Invalid integer value"_el,
-                text::StringFormat{"\"{}\" is not a valid integer for {}."}.build(
-                    value.toEscaped(text::EscapeFormat::Display), optionTitleForError(option)),
+                StringFormat{"\"{}\" is not a valid integer for {}."}.build(
+                    value.toEscaped(EscapeFormat::Display), optionTitleForError(option)),
                 index,
                 option);
         }
@@ -81,8 +84,8 @@ auto OptionParserStorage::storeValue(
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Invalid choice"_el,
-            text::StringFormat{"\"{}\" is not accepted for {}. {}"}.build(
-                value.toEscaped(text::EscapeFormat::Display),
+            StringFormat{"\"{}\" is not accepted for {}. {}"}.build(
+                value.toEscaped(EscapeFormat::Display),
                 optionTitleForError(option),
                 OptionDisplayModel::optionDetails(option)),
             index,
@@ -91,7 +94,7 @@ auto OptionParserStorage::storeValue(
     return makeError(
         OptionErrorReason::UnexpectedValueType,
         "Unsupported option type"_el,
-        text::StringFormat{"{} uses an option type that this parser cannot store."}.build(optionTitleForError(option)),
+        StringFormat{"{} uses an option type that this parser cannot store."}.build(optionTitleForError(option)),
         index,
         option);
 }
@@ -120,8 +123,8 @@ auto OptionParserStorage::checkRequiredOptions(const std::vector<OptionSetPtr> &
                 return makeError(
                     OptionErrorReason::UnexpectedValueType,
                     "Required option is missing"_el,
-                    text::StringFormat{"Specify {} before running this command."}.build(optionTitleForError(option)),
-                    unit::ArgumentIndex::noIndex(),
+                    StringFormat{"Specify {} before running this command."}.build(optionTitleForError(option)),
+                    ArgumentIndex::noIndex(),
                     option);
             }
         }
@@ -160,19 +163,18 @@ auto OptionParserStorage::values() const -> OptionValuesPtr {
 }
 
 auto OptionParserStorage::storeIntegerValue(
-    const OptionPtr &option, const OptionInteger value, const unit::ArgumentIndex index) -> bool {
+    const OptionPtr &option, const OptionInteger value, const ArgumentIndex index) -> bool {
     auto parsedValue = findParsedValue(option);
     if (option->maximum().isZero()) {
         return makeError(
             OptionErrorReason::SyntaxError,
             "Too many option values"_el,
-            text::StringFormat{"{} does not accept any values."}.build(optionTitleForError(option)),
+            StringFormat{"{} does not accept any values."}.build(optionTitleForError(option)),
             index,
             option);
     }
     if (parsedValue == nullptr) {
-        _parsedValues.emplace_back(
-            OptionParsedValue::create(option, value, unit::ArgumentCount::one(), std::vector{index}));
+        _parsedValues.emplace_back(OptionParsedValue::create(option, value, ArgumentCount::one(), std::vector{index}));
         return true;
     }
     if (parsedValue->count >= option->maximum()) {
@@ -181,7 +183,7 @@ auto OptionParserStorage::storeIntegerValue(
         return makeError(
             reason,
             "Too many option values"_el,
-            text::StringFormat{"{} accepts at most {} value(s)."}.build(
+            StringFormat{"{} accepts at most {} value(s)."}.build(
                 optionTitleForError(option), option->maximum().toSizeT()),
             index,
             option);
@@ -194,7 +196,7 @@ auto OptionParserStorage::storeIntegerValue(
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option processing failed"_el,
-            text::StringFormat{"The stored value for {} does not match its declared integer type."}.build(
+            StringFormat{"The stored value for {} does not match its declared integer type."}.build(
                 optionTitleForError(option)),
             index,
             option);
@@ -204,20 +206,19 @@ auto OptionParserStorage::storeIntegerValue(
     return true;
 }
 
-auto OptionParserStorage::storeTextValue(const OptionPtr &option, text::String value, const unit::ArgumentIndex index)
-    -> bool {
+auto OptionParserStorage::storeTextValue(const OptionPtr &option, String value, const ArgumentIndex index) -> bool {
     auto parsedValue = findParsedValue(option);
     if (option->maximum().isZero()) {
         return makeError(
             OptionErrorReason::SyntaxError,
             "Too many option values"_el,
-            text::StringFormat{"{} does not accept any values."}.build(optionTitleForError(option)),
+            StringFormat{"{} does not accept any values."}.build(optionTitleForError(option)),
             index,
             option);
     }
     if (parsedValue == nullptr) {
         _parsedValues.emplace_back(
-            OptionParsedValue::create(option, std::move(value), unit::ArgumentCount::one(), std::vector{index}));
+            OptionParsedValue::create(option, std::move(value), ArgumentCount::one(), std::vector{index}));
         return true;
     }
     if (parsedValue->count >= option->maximum()) {
@@ -226,20 +227,20 @@ auto OptionParserStorage::storeTextValue(const OptionPtr &option, text::String v
         return makeError(
             reason,
             "Too many option values"_el,
-            text::StringFormat{"{} accepts at most {} value(s)."}.build(
+            StringFormat{"{} accepts at most {} value(s)."}.build(
                 optionTitleForError(option), option->maximum().toSizeT()),
             index,
             option);
     }
-    if (const auto text = std::get_if<text::String>(&parsedValue->storage)) {
-        parsedValue->storage = std::vector<text::String>{*text, std::move(value)};
-    } else if (auto textList = std::get_if<std::vector<text::String>>(&parsedValue->storage)) {
+    if (const auto text = std::get_if<String>(&parsedValue->storage)) {
+        parsedValue->storage = std::vector<String>{*text, std::move(value)};
+    } else if (auto textList = std::get_if<std::vector<String>>(&parsedValue->storage)) {
         textList->emplace_back(std::move(value));
     } else {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Option processing failed"_el,
-            text::StringFormat{"The stored value for {} does not match its declared text type."}.build(
+            StringFormat{"The stored value for {} does not match its declared text type."}.build(
                 optionTitleForError(option)),
             index,
             option);
@@ -257,7 +258,7 @@ auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
     switch (option->type().type()) {
     case OptionType::Flag:
         if (const auto flag = std::get_if<bool>(&defaultValue.value())) {
-            _parsedValues.emplace_back(OptionParsedValue::create(option, *flag, unit::ArgumentCount::one()));
+            _parsedValues.emplace_back(OptionParsedValue::create(option, *flag, ArgumentCount::one()));
             return true;
         }
         break;
@@ -266,36 +267,36 @@ auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
             return storeDefaultIntegerValue(option, *integer);
         }
         if (const auto integers = std::get_if<std::vector<OptionInteger>>(&defaultValue.value())) {
-            if (unit::ArgumentCount::fromSizeT(integers->size()) > option->maximum()) {
+            if (ArgumentCount::fromSizeT(integers->size()) > option->maximum()) {
                 break;
             }
             _parsedValues.emplace_back(
-                OptionParsedValue::create(option, *integers, unit::ArgumentCount::fromSizeT(integers->size())));
+                OptionParsedValue::create(option, *integers, ArgumentCount::fromSizeT(integers->size())));
             return true;
         }
         break;
     case OptionType::Text:
-        if (const auto text = std::get_if<text::String>(&defaultValue.value())) {
+        if (const auto text = std::get_if<String>(&defaultValue.value())) {
             return storeDefaultTextValue(option, *text);
         }
-        if (const auto textList = std::get_if<std::vector<text::String>>(&defaultValue.value())) {
-            if (unit::ArgumentCount::fromSizeT(textList->size()) > option->maximum()) {
+        if (const auto textList = std::get_if<std::vector<String>>(&defaultValue.value())) {
+            if (ArgumentCount::fromSizeT(textList->size()) > option->maximum()) {
                 break;
             }
             _parsedValues.emplace_back(
-                OptionParsedValue::create(option, *textList, unit::ArgumentCount::fromSizeT(textList->size())));
+                OptionParsedValue::create(option, *textList, ArgumentCount::fromSizeT(textList->size())));
             return true;
         }
         break;
     case OptionType::Choice:
-        if (const auto text = std::get_if<text::String>(&defaultValue.value())) {
+        if (const auto text = std::get_if<String>(&defaultValue.value())) {
             if (const auto choiceText = option->matchingChoiceText(*text)) {
                 return storeDefaultTextValue(option, choiceText.value().copy());
             }
             break;
         }
-        if (const auto textList = std::get_if<std::vector<text::String>>(&defaultValue.value())) {
-            auto canonicalValues = std::vector<text::String>{};
+        if (const auto textList = std::get_if<std::vector<String>>(&defaultValue.value())) {
+            auto canonicalValues = std::vector<String>{};
             canonicalValues.reserve(textList->size());
             for (const auto &text : *textList) {
                 const auto choiceText = option->matchingChoiceText(text);
@@ -305,10 +306,10 @@ auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
                 canonicalValues.emplace_back(choiceText.value().copy());
             }
             if (canonicalValues.size() == textList->size() &&
-                unit::ArgumentCount::fromSizeT(canonicalValues.size()) <= option->maximum()) {
+                ArgumentCount::fromSizeT(canonicalValues.size()) <= option->maximum()) {
                 _parsedValues.emplace_back(
                     OptionParsedValue::create(
-                        option, canonicalValues, unit::ArgumentCount::fromSizeT(canonicalValues.size())));
+                        option, canonicalValues, ArgumentCount::fromSizeT(canonicalValues.size())));
                 return true;
             }
         }
@@ -317,9 +318,9 @@ auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
     return makeError(
         OptionErrorReason::UnexpectedValueType,
         "Invalid default value"_el,
-        text::StringFormat{"The configured default value for {} does not match its definition."}.build(
+        StringFormat{"The configured default value for {} does not match its definition."}.build(
             optionTitleForError(option)),
-        unit::ArgumentIndex::noIndex(),
+        ArgumentIndex::noIndex(),
         option);
 }
 
@@ -328,38 +329,38 @@ auto OptionParserStorage::storeDefaultIntegerValue(const OptionPtr &option, cons
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Invalid default value"_el,
-            text::StringFormat{"{} does not accept a default value."}.build(optionTitleForError(option)),
-            unit::ArgumentIndex::noIndex(),
+            StringFormat{"{} does not accept a default value."}.build(optionTitleForError(option)),
+            ArgumentIndex::noIndex(),
             option);
     }
-    _parsedValues.emplace_back(OptionParsedValue::create(option, value, unit::ArgumentCount::one()));
+    _parsedValues.emplace_back(OptionParsedValue::create(option, value, ArgumentCount::one()));
     return true;
 }
 
-auto OptionParserStorage::storeDefaultTextValue(const OptionPtr &option, text::String value) -> bool {
+auto OptionParserStorage::storeDefaultTextValue(const OptionPtr &option, String value) -> bool {
     if (option->maximum().isZero()) {
         return makeError(
             OptionErrorReason::UnexpectedValueType,
             "Invalid default value"_el,
-            text::StringFormat{"{} does not accept a default value."}.build(optionTitleForError(option)),
-            unit::ArgumentIndex::noIndex(),
+            StringFormat{"{} does not accept a default value."}.build(optionTitleForError(option)),
+            ArgumentIndex::noIndex(),
             option);
     }
-    _parsedValues.emplace_back(OptionParsedValue::create(option, std::move(value), unit::ArgumentCount::one()));
+    _parsedValues.emplace_back(OptionParsedValue::create(option, std::move(value), ArgumentCount::one()));
     return true;
 }
 
-auto OptionParserStorage::makeError(
-    const OptionErrorReason reason, text::StringView description, const unit::ArgumentIndex index) -> bool {
+auto OptionParserStorage::makeError(const OptionErrorReason reason, String description, const ArgumentIndex index)
+    -> bool {
     _error = OptionErrorContext{}.setReason(reason).setTitle(std::move(description)).setArgumentIndex(index);
     return false;
 }
 
 auto OptionParserStorage::makeError(
     const OptionErrorReason reason,
-    text::StringView title,
-    text::StringView description,
-    const unit::ArgumentIndex index,
+    String title,
+    String description,
+    const ArgumentIndex index,
     const OptionPtr &option) -> bool {
     _error = OptionErrorContext{}
                  .setReason(reason)
@@ -371,10 +372,7 @@ auto OptionParserStorage::makeError(
 }
 
 auto OptionParserStorage::makeError(
-    const OptionErrorReason reason,
-    text::StringView description,
-    const unit::ArgumentIndex index,
-    const OptionPtr &option) -> bool {
+    const OptionErrorReason reason, String description, const ArgumentIndex index, const OptionPtr &option) -> bool {
     _error = OptionErrorContext{}
                  .setReason(reason)
                  .setTitle(std::move(description))

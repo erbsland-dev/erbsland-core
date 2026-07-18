@@ -7,7 +7,7 @@
 #include "../Options_fwd.hpp"
 
 #include "../../i18n/DisplayTextMap_fwd.hpp"
-#include "../../text/StringView.hpp"
+#include "../../text/String.hpp"
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode_fwd.hpp"
 #include "../../text/TextNodeType.hpp"
@@ -41,9 +41,9 @@ public:
 
 public:
     /// Build the help document for the selected module.
-    [[nodiscard]] auto helpDocument(text::StringView moduleName) const -> text::TextDocument;
+    [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build the application version document.
-    [[nodiscard]] auto versionDocument(text::StringView moduleName) const -> text::TextDocument;
+    [[nodiscard]] auto versionDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build an option error document.
     [[nodiscard]] auto errorDocument(const OptionErrorContext &errorContext) const -> text::TextDocument;
 
@@ -53,16 +53,13 @@ private:
 
     [[nodiscard]] static auto lineIndexFromArgumentIndex(unit::ArgumentIndex index) noexcept -> unit::LineIndex;
     [[nodiscard]] static auto elementIndexFromLineIndex(unit::LineIndex index) noexcept -> unit::ElementIndex;
-    [[nodiscard]] static auto markerLength(text::StringView text) noexcept -> unit::ColumnCount;
-    [[nodiscard]] auto defaultErrorTitle(OptionErrorReason reason) const -> text::StringView;
+    [[nodiscard]] static auto markerLength(const text::String &text) noexcept -> unit::ColumnCount;
+    [[nodiscard]] auto defaultErrorTitle(OptionErrorReason reason) const -> text::String;
 
-    void appendHeading(const text::TextNodePtr &parent, text::StringView title) const;
+    void appendHeading(const text::TextNodePtr &parent, text::String title) const;
     void appendUsage(const text::TextNodePtr &parent, const OptionDisplayModel &model) const;
     void appendPlaceholder(
-        const text::TextNodePtr &parent,
-        text::TextNodeType type,
-        text::StringView placeholder,
-        text::StringView style) const;
+        const text::TextNodePtr &parent, text::TextNodeType type, text::String placeholder, text::String style) const;
     void appendOptionName(const text::TextNodePtr &termName, const OptionPtr &option) const;
     void appendOptionValuePlaceholder(const text::TextNodePtr &termName, const OptionPtr &option) const;
     void appendUsageOption(const text::TextNodePtr &termName, const OptionPtr &option) const;

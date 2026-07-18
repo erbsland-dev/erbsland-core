@@ -96,15 +96,15 @@ public: // implement CursorWriter
     void setAutoWrap(bool enabled) noexcept override;
     void clearScreen() noexcept override;
     void write(const Block &character) noexcept override;
-    void write(const BlockStringView &str) noexcept override;
+    void write(const BlockString &str) noexcept override;
     void writeResolved(const Block &character) noexcept override;
-    void writeResolved(const BlockStringView &str) noexcept override;
+    void writeResolved(const BlockString &str) noexcept override;
     void write(const ReadableBuffer &buffer) noexcept override;
     void writeLineBreak() noexcept override;
 
 protected:
     /// Print a paragraph using the cursor-aware buffer output.
-    auto printParagraphImpl(const BlockStringView &paragraph, const ParagraphOptions &options) noexcept -> int override;
+    auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override;
 
 private:
     static void validateFillChar(const Block &fillChar);

@@ -10,7 +10,7 @@ class InputProbe final : public Input {
 public:
     [[nodiscard]] auto mode() const noexcept -> Mode override { return _mode; }
     void setMode(const Mode mode) override { _mode = mode; }
-    [[nodiscard]] auto readLine() -> erbsland::text::String override { return erbsland::text::String{_line}; }
+    [[nodiscard]] auto readLine() -> erbsland::text::String override { return erbsland::text::StringEditor{_line}; }
 
 protected:
     [[nodiscard]] auto readKeyImpl(const std::chrono::milliseconds timeout) const -> Key override {

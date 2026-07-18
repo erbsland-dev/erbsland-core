@@ -9,7 +9,7 @@
 
 namespace erbsland::text {
 
-/// A list of UTF-32 strings.
+/// A list of UTF-32 read-only strings.
 using U32StringList = impl::StringList<U32String>;
 
 }

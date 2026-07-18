@@ -31,8 +31,8 @@ Its only purpose is to recognize a small, well-defined string shape.
 Choose the simplest tool that describes your problem:
 
 - A fixed prefix or suffix belongs to
-  :cpp:func:`startsWith() <erbsland::text::U8StringView::startsWith>` or
-  :cpp:func:`endsWith() <erbsland::text::U8StringView::endsWith>`.
+  :cpp:func:`startsWith() <erbsland::text::U8String::startsWith>` or
+  :cpp:func:`endsWith() <erbsland::text::U8String::endsWith>`.
 - A boundary identified by a single delimiter belongs to
   ``find()``, ``findFirstOf()``, or ``splitAt()``.
 - A sequential grammar with optional branches, numbers, quoting, or rich
@@ -42,7 +42,7 @@ Choose the simplest tool that describes your problem:
   good fit for
   :cpp:class:`StringPattern <erbsland::text::StringPattern>`.
 
-The matcher works with UTF-8, UTF-16, and UTF-32 string views.
+The matcher works with UTF-8, UTF-16 and UTF-32 read-only strings.
 Internally it compares decoded Unicode characters, while methods that return positions preserve the native index type of
 the input string.
 
@@ -79,7 +79,7 @@ an equivalent sequence of typed elements.
         // A pattern can describe the small fixed shell around a laboratory record.
         const auto probeRecord = el::StringPattern{"probe-??[0-9]*"_el};
 
-        const auto probeLines = el::StringViewList{{
+        const auto probeLines = el::StringList{{
             "probe-AB7 temperatur=21.4C"_el,
             "probe-A7 temperatur=21.4C"_el,
         }};
@@ -201,7 +201,7 @@ explicit.
             Text{U";ok"},
         };
 
-        const auto probeLines = el::StringViewList{{
+        const auto probeLines = el::StringList{{
             "probe-A7b wert=0.42;ok"_el,
             "probe-a7b wert=0.42;ok"_el,
             "probe-A7b wert=0.42;prüfen"_el,
@@ -285,8 +285,8 @@ Use it whenever the surrounding code only needs a yes/no decision.
         const auto withUnit = el::StringPattern{"messung:*;C"_el};
         const auto finished = el::StringPattern{"*;fertig"_el};
 
-        const auto temperature = el::StringView{"messung:temperatur=21.4;C"_el};
-        const auto completed = el::StringView{"messung:leitwert=0.42;fertig"_el};
+        const auto temperature = el::String{"messung:temperatur=21.4;C"_el};
+        const auto completed = el::String{"messung:leitwert=0.42;fertig"_el};
 
         el::io::printLine("front only ..............: "_el, nameOnly.matches(temperature));
         el::io::printLine("front and back ..........: "_el, withUnit.matches(temperature));
@@ -317,7 +317,7 @@ Trim Matching Text
 
 ``trimmed()`` returns a view with the matching shell removed.
 
-``trim()`` performs the same operation in place on a mutable string or string view and reports whether the operation
+``trim()`` performs the same operation in place on a mutable string editor and reports whether the operation
 succeeded.
 
 For a prefix pattern, the prefix is removed.
@@ -339,17 +339,17 @@ This provides a compact way to unwrap small protocol-like envelopes.
     /// when a protocol-like string wraps the meaningful value in a predictable prefix and suffix.
     void trimAndTrimmed() {
         const auto envelope = el::StringPattern{"messung:*;ok"_el};
-        const auto original = el::StringView{"messung:temperatur=21.4C;ok"_el};
+        const auto original = el::String{"messung:temperatur=21.4C;ok"_el};
 
         el::io::printLine("original ................: "_el, original);
         el::io::printLine("trimmed .................: "_el, envelope.trimmed(original));
 
-        auto editable = el::String{"messung:ph=7.1;ok"_el};
+        auto editable = el::StringEditor{"messung:ph=7.1;ok"_el};
         if (envelope.trim(editable)) {
             el::io::printLine("mutable .................: "_el, editable);
         }
 
-        auto unchanged = el::String{"messung:ph=7.1;prüfen"_el};
+        auto unchanged = el::StringEditor{"messung:ph=7.1;prüfen"_el};
         el::io::printLine("changed .................: "_el, envelope.trim(unchanged));
         el::io::printLine("kept ....................: "_el, unchanged);
     }
@@ -396,7 +396,7 @@ A pattern such as ``probe-??`` may consume different numbers of bytes depending 
     /// with both a prefix and suffix, the suffix is validated and then dropped from the second result.
     void split() {
         const auto recordPattern = el::StringPattern{"probe-??*;ok"_el};
-        const auto record = el::StringView{"probe-A7 temperatur=21.4C;ok"_el};
+        const auto record = el::String{"probe-A7 temperatur=21.4C;ok"_el};
 
         const auto [recordId, valueText] = recordPattern.split(record);
         el::io::printLine("record id ...............: "_el, recordId);
@@ -453,13 +453,13 @@ For UTF-32 strings, they are code-point positions.
     /// entire grammar.
     void lengthAndIndex() {
         const auto microSensor = el::StringPattern{u8"µ?*"_el};
-        const auto u8Measurement = el::StringView{u8"µA=0.42"_el};
+        const auto u8Measurement = el::String{u8"µA=0.42"_el};
 
         el::io::printLine("UTF-8 split index .......: "_el, microSensor.index(u8Measurement));
         el::io::printLine("UTF-8 match bytes .......: "_el, microSensor.length(u8Measurement));
 
         const auto suffix = el::StringPattern{"*;ok"_el};
-        const auto accepted = el::StringView{"temperatur=21.4;ok"_el};
+        const auto accepted = el::String{"temperatur=21.4;ok"_el};
 
         el::io::printLine("suffix index ............: "_el, suffix.index(accepted));
         el::io::printLine("suffix length ...........: "_el, suffix.length(accepted));

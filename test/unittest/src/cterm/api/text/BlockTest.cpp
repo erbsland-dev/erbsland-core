@@ -17,7 +17,7 @@ public:
         const auto combiningText = bytes({0x65, 0xCC, 0x81});
         const auto asciiChar = Block{"A"_el, Color{}};
         const auto wideChar = Block{U'界', Color{}};
-        const auto combiningChar = Block{erbsland::text::String{combiningText}, Color{}};
+        const auto combiningChar = Block{erbsland::text::StringEditor{combiningText}, Color{}};
 
         REQUIRE_EQUAL(asciiChar.displayWidth(), 1);
         REQUIRE_EQUAL(wideChar.displayWidth(), 2);
@@ -25,7 +25,7 @@ public:
     }
 
     void testConstructorsDecodeUtf8Utf32AndCodePoints() {
-        const auto fromUtf8 = Block{erbsland::text::String{bytes({0x65, 0xCC, 0x81})}};
+        const auto fromUtf8 = Block{erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})}};
         const auto fromUtf32Text = Block{U"e\u0301"_el};
         constexpr auto fromCodePoint = Block{U'★'};
 
@@ -61,7 +61,7 @@ public:
         buffer += blockToStdString(character);
 
         REQUIRE_EQUAL(character.byteCount(), erbsland::unit::ByteLength{3});
-        REQUIRE_EQUAL(character.toString(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
+        REQUIRE_EQUAL(character.toString(), erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})});
         REQUIRE_EQUAL(buffer, std::string{"prefix:"} + bytes({0x65, 0xCC, 0x81}));
     }
 
@@ -70,7 +70,7 @@ public:
 
         REQUIRE_EQUAL(combined.characterCount(), erbsland::unit::CpLength{2});
         REQUIRE_EQUAL(combined.characters(), (std::array<erbsland::text::Char, 3>{U'e', U'\u0301', 0}));
-        REQUIRE_EQUAL(combined.toString(), erbsland::text::String{bytes({0x65, 0xCC, 0x81})});
+        REQUIRE_EQUAL(combined.toString(), erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})});
     }
 
     void testWithCombiningThrowRejectsInvalidCodePoints() {
@@ -305,7 +305,7 @@ public:
         const auto leadingCombining = Block{U"\u0301"_el};
         const auto laterVisibleCharacter = Block{U"ab\u0301\u0302"_el};
         const auto thirdCombiningMark =
-            Block{erbsland::text::String{bytes({0x61, 0xCC, 0x81, 0xCC, 0x82, 0xCC, 0x83})}};
+            Block{erbsland::text::StringEditor{bytes({0x61, 0xCC, 0x81, 0xCC, 0x82, 0xCC, 0x83})}};
         const auto controlCode = Block{"\n"_el};
 
         REQUIRE_EQUAL(emptyUtf8.first(), U'\uFFFD');
@@ -318,11 +318,11 @@ public:
     }
 
     void testUtf8ConstructorsReplaceEncodingErrorMode() {
-        const auto character = Block{erbsland::text::String{bytes({0xC3})}};
+        const auto character = Block{erbsland::text::StringEditor{bytes({0xC3})}};
 
         REQUIRE_EQUAL(character.characterCount(), erbsland::unit::CpLength{1});
         REQUIRE_EQUAL(character.first(), U'\uFFFD');
-        REQUIRE_EQUAL(character.toString(), erbsland::text::String{bytes({0xEF, 0xBF, 0xBD})});
+        REQUIRE_EQUAL(character.toString(), erbsland::text::StringEditor{bytes({0xEF, 0xBF, 0xBD})});
     }
 
     void testTextConstructorsPreserveStyleAfterNormalization() {
@@ -330,9 +330,9 @@ public:
 
         const auto style = BlockStyle{Color{fg::Yellow, bg::Blue}, BlockAttributes::reset()};
         const auto invalidUtf8 = bytes({0xC3, 0x42});
-        const auto character = Block{erbsland::text::String{std::string_view{invalidUtf8}}, style};
-        const auto utf32Character =
-            Block{erbsland::text::U32String{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}}, style};
+        const auto character = Block{erbsland::text::StringEditor{std::string_view{invalidUtf8}}, style};
+        const auto utf32Character = Block{
+            erbsland::text::U32StringEditor{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}}, style};
 
         REQUIRE_EQUAL(character.first(), U'\uFFFD');
         REQUIRE_EQUAL(character.style(), style);

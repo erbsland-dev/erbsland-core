@@ -26,13 +26,13 @@ public: // overrides
 
 public: // accessors
     /// Get the operation title.
-    [[nodiscard]] auto title() const noexcept -> const text::StringView & { return _context.title(); }
+    [[nodiscard]] auto title() const noexcept -> const text::String & { return _context.title(); }
     /// Get the operation description.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _context.description(); }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _context.description(); }
     /// Get explicit or category-derived help.
-    [[nodiscard]] auto help() const noexcept -> text::StringView { return _context.help(); }
+    [[nodiscard]] auto help() const noexcept -> text::String { return _context.help(); }
     /// Get the stream path, or an empty view.
-    [[nodiscard]] auto path() const noexcept -> const text::StringView & { return _context.path(); }
+    [[nodiscard]] auto path() const noexcept -> const text::String & { return _context.path(); }
     /// Get the immutable native failure context, if available.
     [[nodiscard]] auto platformContext() const noexcept -> const system::PlatformErrorContextConstPtr & {
         return _context.platformContext();

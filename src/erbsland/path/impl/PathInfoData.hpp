@@ -14,7 +14,7 @@
 #include "../../system/GroupName.hpp"
 #include "../../system/UserId.hpp"
 #include "../../system/UserName.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../time/DateTime.hpp"
 #include "../../time/TimePoint.hpp"
 #include "../../unit/ByteLength.hpp"

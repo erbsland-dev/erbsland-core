@@ -4,10 +4,8 @@
 
 #include "impl/BlockStringBuilder.hpp"
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
-
-#include <string>
 
 namespace erbsland::cterm {
 
@@ -24,7 +22,7 @@ auto TerminalDocumentStyleMarker::setStyle(const BlockStyle style) noexcept -> T
     return *this;
 }
 
-auto TerminalDocumentStyleMarker::setLiteral(const BlockStringView literal, const BlockStyle style) noexcept
+auto TerminalDocumentStyleMarker::setLiteral(const BlockString literal, const BlockStyle style) noexcept
     -> TerminalDocumentStyleMarker & {
     _kind = Kind::Literal;
     _literal = BlockString{literal};
@@ -32,21 +30,21 @@ auto TerminalDocumentStyleMarker::setLiteral(const BlockStringView literal, cons
     return *this;
 }
 
-auto TerminalDocumentStyleMarker::setLiteral(const text::U32StringView &literal, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setLiteral(const text::U32String &literal, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setLiteral(BlockString{literal}, style);
 }
 
-auto TerminalDocumentStyleMarker::setLiteral(const text::StringView literal, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setLiteral(const text::String &literal, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setLiteral(BlockString{literal}, style);
 }
 
 auto TerminalDocumentStyleMarker::setOrdered() -> TerminalDocumentStyleMarker & {
-    return setOrdered(BlockString{text::U32String{U".\t"}});
+    return setOrdered(BlockString{text::U32String{text::U32StringLiteral{U".\t"}}});
 }
 
-auto TerminalDocumentStyleMarker::setOrdered(const BlockStringView suffix, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setOrdered(const BlockString suffix, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     _kind = Kind::Ordered;
     _suffix = BlockString{suffix};
@@ -54,7 +52,7 @@ auto TerminalDocumentStyleMarker::setOrdered(const BlockStringView suffix, const
     return *this;
 }
 
-auto TerminalDocumentStyleMarker::setOrdered(const text::U32StringView &suffix, const BlockStyle style)
+auto TerminalDocumentStyleMarker::setOrdered(const text::U32String &suffix, const BlockStyle style)
     -> TerminalDocumentStyleMarker & {
     return setOrdered(BlockString{suffix}, style);
 }
@@ -69,8 +67,7 @@ auto TerminalDocumentStyleMarker::render(const std::size_t number, const BlockSt
     }
 
     auto builder = impl::BlockStringBuilder{};
-    const auto numberText = std::to_string(number);
-    builder.appendStyled(text::String{numberText}, effectiveStyle);
+    builder.appendStyled(text::String::fromInteger(number), effectiveStyle);
     builder.appendWithBaseStyle(_suffix, effectiveStyle);
     return builder.takeString();
 }

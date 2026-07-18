@@ -4,48 +4,50 @@
 
 #include "U32String_fwd.hpp"
 #include "U32StringConstIterator_fwd.hpp"
+#include "U32StringEditor_fwd.hpp"
+#include "U32StringEditorList_fwd.hpp"
 #include "U32StringList_fwd.hpp"
 #include "U32StringLiteral_fwd.hpp"
-#include "U32StringView_fwd.hpp"
-#include "U32StringViewList_fwd.hpp"
 
-#include "impl/U32StringEncodingTools_fwd.hpp"
-#include "impl/U32StringSharedStorage.hpp"
+#include "impl/U32StringAppendTools.hpp"
+#include "impl/U32StringReader_fwd.hpp"
+#include "impl/U32StringStorage.hpp"
 
 #include "../BooleanFormat.hpp"
+#include "../ByteFormat.hpp"
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
 #include "../CharSet.hpp"
-#include "../EncodingErrorMode.hpp"
 #include "../EscapeAmount.hpp"
 #include "../EscapeFormat.hpp"
 #include "../FloatFormat.hpp"
 #include "../FloatParseOptions.hpp"
 #include "../impl/FloatTraits.hpp"
+#include "../impl/IntegerAppend.hpp"
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
+#include "../impl/StringReaderBase_fwd.hpp"
+#include "../impl/UnsafeU32StringAccess_fwd.hpp"
 #include "../IntegerFormat.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
-#include "../StringBomMode.hpp"
-#include "../StringBuilder.hpp"
 #include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
 #include "../TruncateMode.hpp"
-#include "../u16/U16String_fwd.hpp"
-#include "../u8/U8String_fwd.hpp"
+#include "../u16/impl/U16StringBuilder_fwd.hpp"
+#include "../u16/U16StringEditor_fwd.hpp"
+#include "../u8/impl/U8StringBuilder_fwd.hpp"
+#include "../u8/U8StringEditor_fwd.hpp"
 
 #include "../../bgeo/Alignment.hpp"
 #include "../../debug/impl/StringDebugAccess_fwd.hpp"
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
-#include "../../mem/ByteBlockView_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
-#include "../../unit/ByteLength.hpp"
 #include "../../unit/CpIndex.hpp"
 #include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
@@ -64,36 +66,35 @@
 
 namespace erbsland::text {
 
-/// An owning UTF-32 string editor with copy-on-write semantics for random code-point access.
-/// Use it to build new and edit UTF-32 strings.
-/// Use `U32StringView` for storage and read-only access.
-/// Always creates a copy of the data when constructed from a view.
+/// An owning UTF-32 read-only string with copy-on-write semantics for random code-point access.
+/// Use it to store, read and pass string parameters.
+/// A `U32StringEditor` and `U32StringLiteral` are implicitly convertible to a `U32String`, no copy involved.
+/// Copy, move, slicing, trimming are fast and copy-free operations.
 /// Use `String` for most use cases and `U32String` only if you need random access to code points or require
 /// UTF-32 encoding.
-/// @seedoc{/reference/text/string_width_variants}
 /// @tested{U32StringTest StringEscapingTest}
-class U32String {
+class U32String final {
     friend class debug::impl::StringDebugAccess;
-    friend class U32StringView;
-    friend class impl::U32StringEncodingTools;
+    friend class U32StringEditor;
+    friend class U32StringConstIterator;
+    friend class impl::StringReaderBase;
     friend class impl::StringConversionTools;
+    friend class impl::UnsafeU32StringAccess;
+    friend class impl::U16StringBuilder;
+    friend class impl::U32StringReader;
+    friend class impl::U8StringBuilder;
+    template <typename>
+    friend class impl::StringList;
 
 public:
-    using View = U32StringView; ///< The matching view type for this string.
-    using Editable = U32String; ///< The matching editable string type.
-
-public:
-    /// Create a copy of the given UTF-32 string.
-    /// @param stdString The string to copy.
+    /// Create an owning read-only value by copying a UTF-32 string.
     explicit U32String(std::u32string_view stdString);
-    /// Create a copy of the given string literal.
-    /// @param literal The string literal to copy.
-    explicit U32String(const U32StringLiteral &literal);
-    /// Create a copy of the given view.
-    /// The copied data is not shared with the original view.
-    /// @param view The view to copy.
-    explicit U32String(const U32StringView &view);
+    /// Create an owning read-only value sharing data from a UTF-32 string.
+    U32String(const U32StringEditor &str) noexcept; // NOLINT(*-explicit-constructor)
+    /// Create an owning read-only value sharing a UTF-32 string literal.
+    U32String(const U32StringLiteral &str) noexcept; // NOLINT(*-explicit-constructor)
 
+    // defaults
     U32String() = default;
     ~U32String() = default;
     U32String(const U32String &) = default;
@@ -103,14 +104,17 @@ public:
 
 public: // operators
     /// Compare two strings by decoded code point.
-    [[nodiscard]] auto operator<=>(const U32StringView &other) const noexcept -> std::strong_ordering;
-    ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const U32StringView &other, other);
-    /// @copydoc erbsland::text::U32StringView::operator[](unit::CpIndex) const
+    [[nodiscard]] auto operator<=>(const U32String &other) const noexcept -> std::strong_ordering;
+    ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const U32String &other, other);
+    /// Access the character at the given code-point position.
+    /// Convenience call to `charAt(unit::CpIndex)`.
+    /// @param index The code-point index to access the character at.
+    /// @return The character at the given index, or a signal character if no character can be read there.
     [[nodiscard]] auto operator[](unit::CpIndex index) const noexcept -> Char;
 
 public: // comparison
     /// Compare two strings by decoded code point, replacing malformed UTF-32 with `Char::replacement()`.
-    [[nodiscard]] auto compare(const U32StringView &other, CharCompareFn compareFn = {}) const noexcept
+    [[nodiscard]] auto compare(const U32String &other, CharCompareFn compareFn = {}) const noexcept
         -> std::strong_ordering;
     /// Create a hash value from the decoded code points.
     [[nodiscard]] auto toHash() const noexcept -> std::size_t;
@@ -118,166 +122,207 @@ public: // comparison
     [[nodiscard]] auto toHashCI() const noexcept -> std::size_t;
 
 public: // tests
-    /// @copydoc erbsland::text::U32StringView::isEmpty() const
+    /// Test if this string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::isValidUtf32() const
+    /// Test if this string is valid UTF-32.
     [[nodiscard]] auto isValidUtf32() const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::startsWith(const U32StringView &, CharCompareFn) const
-    [[nodiscard]] auto startsWith(const U32StringView &other, CharCompareFn compareFn = {}) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::endsWith(const U32StringView &, CharCompareFn) const
-    [[nodiscard]] auto endsWith(const U32StringView &other, CharCompareFn compareFn = {}) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::contains(const U32StringView &, CharCompareFn) const
-    [[nodiscard]] auto contains(const U32StringView &other, CharCompareFn compareFn = {}) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::count(const U32StringView &, CharCompareFn) const
-    [[nodiscard]] auto count(const U32StringView &text, CharCompareFn compareFn = {}) const noexcept
-        -> unit::ElementCount;
-    /// @copydoc erbsland::text::U32StringView::containsOneOf(const CharSet &) const
+    /// Test if this string starts with another one.
+    [[nodiscard]] auto startsWith(const U32String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
+    /// Test if this string ends with another one.
+    [[nodiscard]] auto endsWith(const U32String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
+    /// Test if this string contains another one.
+    [[nodiscard]] auto contains(const U32String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
+    /// Count non-overlapping occurrences of another string.
+    /// Empty text counts as zero occurrences.
+    [[nodiscard]] auto count(const U32String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ElementCount;
+    /// Test if this string contains any character from the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @return `true` if at least one decoded character is contained in `characters`.
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::containsOnly(const CharSet &) const
+    /// Test if this string only contains characters from the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @return `true` all characters in the string are from the given set.
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
 
 public: // read
-    /// @copydoc erbsland::text::U32StringView::length() const
+    /// Create a compact copy of this string.
+    [[nodiscard]] auto copy() const -> U32String;
+    /// Get the UTF-32 code-unit length of this string.
     [[nodiscard]] auto length() const noexcept -> unit::CpLength;
-    /// @copydoc erbsland::text::U32StringView::characterLength() const
+    /// Get the UTF-32 code-unit length of this string.
+    /// This is an alias for `length()` to allow using `characterLength()` in templates.
     [[nodiscard]] auto characterLength() const noexcept -> unit::CpLength;
-    /// @copydoc erbsland::text::U32StringView::displayWidth() const
+    /// Get the approximate display width of this string.
+    /// This is a simple sum of decoded character display widths. Control characters, including line breaks, count as
+    /// zero. Complex shaping, grapheme clusters, bidi layout, and terminal-specific behavior are not modeled.
+    /// @usesunidb{Uses generated Unicode Character Database character metadata.}
     [[nodiscard]] auto displayWidth() const noexcept -> int;
-    /// @copydoc erbsland::text::U32StringView::indexAt(StringSide) const
+    /// Get the native data index for one side of the string.
     [[nodiscard]] auto indexAt(StringSide side) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::charAt(StringSide) const
+    /// Get the first or last character in this string.
     [[nodiscard]] auto charAt(StringSide side) const noexcept -> Char;
-    /// @copydoc erbsland::text::U32StringView::charAt(unit::CpIndex) const
+    /// Access the character at the given start code-unit position.
+    /// @seeref{u32-string-code-unit-based-reading}
+    /// @param startIndex The UTF-32 data index to access the character at.
+    /// @return The character at the given code-unit position, or a null character if no character can be read there.
     [[nodiscard]] auto charAt(unit::CpIndex startIndex) const noexcept -> Char;
-    /// @copydoc erbsland::text::U32StringView::readCharAndAdvance(unit::CpIndex &) const
+    /// Read the character at the given UTF-32 data index and advance the index.
+    /// @seeref{u32-string-indexed-sequential-read}
+    /// @param index The UTF-32 data index to read from. Updated to the position after the read character on success.
+    /// @return The character at the given index, or a signal character if no character can be read there.
     [[nodiscard]] auto readCharAndAdvance(unit::CpIndex &index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U32StringView::readCharAndRetreat(unit::CpIndex &) const
+    /// Read the character before the given UTF-32 data index and retreat the index.
+    /// @seeref{u32-string-indexed-sequential-read}
+    /// @param index The index after the character to read. Updated to the start of the read character on success.
+    /// @return The character before the given index, or a signal character if no character can be read there.
     [[nodiscard]] auto readCharAndRetreat(unit::CpIndex &index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U32StringView::advance(unit::CpIndex &, unit::CpLength) const
+    /// Advance the given UTF-32 data index to the start of the next character.
+    /// @seeref{u32-string-advance-retreat}
+    /// @param index The index to advance.
+    /// @param count The number of characters to advance.
+    /// @return `true` if the index was advanced, `false` if it wasn't advanced.
     auto advance(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
-    /// @copydoc erbsland::text::U32StringView::retreat(unit::CpIndex &, unit::CpLength) const
+    /// Retreat the given UTF-32 data index to the start of the previous character.
+    /// @seeref{u32-string-advance-retreat}
+    /// @param index The index to retreat.
+    /// @param count The number of characters to retreat.
+    /// @return `true` if the index was retreated, `false` if it was already at the start or was "no index".
     auto retreat(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
 
-public: // byte/char index conversion.
-    /// @copydoc erbsland::text::U32StringView::indexAt(unit::CpIndex) const
+public: // data/char index conversion.
+    /// Slow: Get the start UTF-32 data index of the character at a given code-point index.
+    /// Sequentially iterates over characters until the target char index is reached.
+    /// Seeking follows the tolerant UTF-32 index movement rule documented by `U32StringEditor`.
+    /// @param index The code-point index to get the UTF-32 data index for.
+    /// @return The start UTF-32 data index of the character at the given code-point index.
     [[nodiscard]] auto indexAt(unit::CpIndex index) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::toCharIndex(unit::CpIndex) const
+    /// Slow: Get the code-point index from a UTF-32 data index.
+    /// @seeref{u32-string-character-indexed-reading}
+    /// @param index The UTF-32 data index to get the code-point index for.
+    /// @return The code-point index at the given UTF-32 data index.
     [[nodiscard]] auto toCharIndex(unit::CpIndex index) const noexcept -> unit::CpIndex;
 
 public: // slice
-    /// @copydoc erbsland::text::U32StringView::slice(unit::CpRange) const
+    /// Return a slice of this string.
+    /// Returns a string with a UTF-32 code-unit-based slice of this string.
+    /// No UTF-32 validation is performed, if you slice in the middle of a character, the result contains
+    /// encoding errors at the start or end of the resulting string.
+    /// @param range The UTF-32 data range to slice.
+    ///     If you pass a zero-length, invalid or out-of-bounds range, an empty string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(unit::CpRange range) const noexcept -> U32String;
-    /// @copydoc erbsland::text::U32StringView::slice(StringSide, unit::CpLength) const
+    /// Get the initial or trailing UTF-32 data portion of this string.
+    /// @param side The side of the string to slice from.
+    /// @param length The number of UTF-32 data units to slice.
+    ///     If you pass a zero-length, an empty string is returned.
+    ///     If you pass an infinite-length, the entire string is returned.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpLength length) const noexcept -> U32String;
-    /// @copydoc erbsland::text::U32StringView::slice(StringSide, unit::CpIndex) const
+    /// Get the code-point-indexed portion before or after a split point.
+    /// `StringSide::Front` returns the text before the index, `StringSide::Back` returns the text from the index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full string for front and an empty string for
+    /// back.
+    /// @param side The side of the split point to keep.
+    /// @param index The code-point index where the back portion starts.
+    /// @return The sliced string.
     [[nodiscard]] auto slice(StringSide side, unit::CpIndex index) const noexcept -> U32String;
-    /// @copydoc erbsland::text::U32StringView::slice(StringSide) const
+    /// Slice one decoded character from the given side and return it with the remaining string.
+    /// @param side The side of the string to slice from.
+    /// @return The sliced character and the remaining string.
     [[nodiscard]] auto slice(StringSide side) const noexcept -> std::tuple<Char, U32String>;
-    /// @copydoc erbsland::text::U32StringView::splitAt(unit::CpIndex) const
+    /// Split this read-only string at a UTF-32 data/code-point index.
+    /// `CpIndex::noIndex()` and indexes at or beyond the end return the full string followed by an empty string.
+    /// @param index The index where the second returned string starts.
+    /// @return The two strings before and after the split point.
     [[nodiscard]] auto splitAt(unit::CpIndex index) const noexcept -> std::pair<U32String, U32String>;
 
 public: // trim
-    /// Remove leading and trailing ASCII whitespace or selected characters.
-    auto trim(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) -> U32String &;
-    /// Return a copy without leading and trailing ASCII whitespace or selected characters.
+    /// Return a string without leading and trailing ASCII whitespace or selected characters.
     [[nodiscard]] auto trimmed(const std::optional<CharSet> &characters = {}, std::optional<StringSide> side = {}) const
         -> U32String;
 
 public: // find
-    /// @copydoc erbsland::text::U32StringView::findFirstOf(const CharSet &) const
+    /// Find the first decoded character contained in the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @return The UTF-32 data index of the first match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findFirstOf(const CharSet &characters) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findFirstOf(const CharSet &, unit::CpIndex) const
+    /// Find the first decoded character contained in the given set at or after the given UTF-32 data index.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @param start The UTF-32 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
+    /// @return The UTF-32 data index of the first match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findFirstOf(const CharSet &characters, unit::CpIndex start) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findFirstNotOf(const CharSet &) const
+    /// Find the first decoded character not contained in the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to exclude.
+    /// @return The UTF-32 data index of the first non-matching character, or `CpIndex::noIndex()` if there is
+    /// none.
     [[nodiscard]] auto findFirstNotOf(const CharSet &characters) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findFirstNotOf(const CharSet &, unit::CpIndex) const
+    /// Find the first decoded character not contained in the given set at or after the given UTF-32 data index.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to exclude.
+    /// @param start The UTF-32 data index where the search starts.
+    ///     If `start` is no-index, this function returns no-index immediately.
+    /// @return The UTF-32 data index of the first non-matching character, or `CpIndex::noIndex()` if there is
+    /// none.
     [[nodiscard]] auto findFirstNotOf(const CharSet &characters, unit::CpIndex start) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findLastOf(const CharSet &) const
+    /// Find the last decoded character contained in the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @return The UTF-32 data index of the last match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findLastOf(const CharSet &characters) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findLastOf(const CharSet &, unit::CpIndex) const
+    /// Find the last decoded character contained in the given set before the given UTF-32 data index.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to match.
+    /// @param end The exclusive UTF-32 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
+    /// @return The UTF-32 data index of the last match, or `CpIndex::noIndex()` if there is no match.
     [[nodiscard]] auto findLastOf(const CharSet &characters, unit::CpIndex end) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findLastNotOf(const CharSet &) const
+    /// Find the last decoded character not contained in the given set.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to exclude.
+    /// @return The UTF-32 data index of the last non-matching character, or `CpIndex::noIndex()` if there is none.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters) const noexcept -> unit::CpIndex;
-    /// @copydoc erbsland::text::U32StringView::findLastNotOf(const CharSet &, unit::CpIndex) const
+    /// Find the last decoded character not contained in the given set before the given UTF-32 data index.
+    /// Malformed UTF-32 is decoded as `Char::replacement()`.
+    /// @param characters The character set to exclude.
+    /// @param end The exclusive UTF-32 data index where the reverse search starts.
+    ///     If `end` is no-index, this function returns no-index immediately.
+    /// @return The UTF-32 data index of the last non-matching character, or `CpIndex::noIndex()` if there is none.
     [[nodiscard]] auto findLastNotOf(const CharSet &characters, unit::CpIndex end) const noexcept -> unit::CpIndex;
-    /// Find text in this string.
+    /// Find text in this read-only string.
     /// @param text The text to find.
     /// @param compareFn Optional character comparison function.
     /// @return The code point index of the first match, or `CpIndex::noIndex()` if there is no match.
-    [[nodiscard]] auto find(const U32StringView &text, CharCompareFn compareFn = {}) const noexcept -> unit::CpIndex;
-    /// Find text in this string starting at a code point index.
+    [[nodiscard]] auto find(const U32String &text, CharCompareFn compareFn = {}) const noexcept -> unit::CpIndex;
+    /// Find text in this read-only string starting at a code point index.
     /// @param text The text to find.
     /// @param start The code point index where the search starts.
     ///     If `start` is no-index, this function returns no-index immediately.
     /// @param compareFn Optional character comparison function.
     /// @return The code point index of the first match, or `CpIndex::noIndex()` if there is no match.
-    [[nodiscard]] auto find(const U32StringView &text, unit::CpIndex start, CharCompareFn compareFn = {}) const noexcept
+    [[nodiscard]] auto find(const U32String &text, unit::CpIndex start, CharCompareFn compareFn = {}) const noexcept
         -> unit::CpIndex;
 
-public: // modifiers
-    /// Remove all characters from the string.
-    /// String capacity is not changed.
-    auto clear() noexcept -> U32String &;
-    /// Reset the string to its initial state, clearing all characters and resetting capacity to default.
-    void reset() noexcept;
-    /// Append a UTF-32 string view one or more times.
-    auto append(const U32StringView &text, unit::ElementCount count = unit::ElementCount::one()) -> U32String &;
-    /// Append one Unicode code point one or more times.
-    auto append(Char character, unit::CpLength count = unit::CpLength::one()) -> U32String &;
-    /// Remove a character-based range.
-    auto remove(unit::CpRange range) -> U32String &;
-    /// Remove all characters contained in the set.
-    auto removeAll(const CharSet &characters) -> U32String &;
-    /// Remove all occurrences of the given decoded UTF-32 text.
-    auto removeAll(const U32StringView &text, CharCompareFn compareFn = {}) -> U32String &;
-    /// Remove the first occurrence of the given decoded UTF-32 text.
-    auto removeFirst(const U32StringView &text, CharCompareFn compareFn = {}) -> U32String &;
-    /// Keep only a character-based range.
-    auto keep(unit::CpRange range) -> U32String &;
-    /// Insert text at a character index.
-    auto insert(unit::CpIndex index, const U32StringView &text) -> U32String &;
-    /// Replace a character-based range with text.
-    auto replace(unit::CpRange range, const U32StringView &text) -> U32String &;
-    /// Replace the first occurrence of decoded UTF-32 text.
-    auto replaceFirst(const U32StringView &text, const U32StringView &replacement, CharCompareFn compareFn = {})
-        -> U32String &;
-    /// Replace all characters contained in the set with one character.
-    auto replaceAll(const CharSet &characters, Char replacement) -> U32String &;
-    /// Replace all characters contained in the set with text.
-    auto replaceAll(const CharSet &characters, const U32StringView &replacement) -> U32String &;
-    /// Replace all occurrences of decoded UTF-32 text.
-    auto replaceAll(const U32StringView &text, const U32StringView &replacement, CharCompareFn compareFn = {})
-        -> U32String &;
-    /// Truncate this string to a maximum decoded code-point width.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) -> U32String &;
-    /// Truncate this string to a maximum decoded code-point width, inserting an optional ellipsis.
-    auto truncate(unit::CpLength maximumWidth, TruncateMode mode, const U32StringView &ellipsis) -> U32String &;
+public: // transform and copy-modify
     /// Return a copy with a character-based range removed.
     [[nodiscard]] auto removed(unit::CpRange range) const -> U32String;
     /// Return a copy with all characters from the set removed.
     [[nodiscard]] auto removedAll(const CharSet &characters) const -> U32String;
     /// Return a copy with all occurrences of decoded UTF-32 text removed.
-    [[nodiscard]] auto removedAll(const U32StringView &text, CharCompareFn compareFn = {}) const -> U32String;
+    [[nodiscard]] auto removedAll(const U32String &text, CharCompareFn compareFn = {}) const -> U32String;
     /// Return a copy with the first occurrence of decoded UTF-32 text removed.
-    [[nodiscard]] auto removedFirst(const U32StringView &text, CharCompareFn compareFn = {}) const -> U32String;
+    [[nodiscard]] auto removedFirst(const U32String &text, CharCompareFn compareFn = {}) const -> U32String;
     /// Return a copy keeping only a character-based range.
     [[nodiscard]] auto kept(unit::CpRange range) const -> U32String;
     /// Return a copy with text inserted at a character index.
-    [[nodiscard]] auto inserted(unit::CpIndex index, const U32StringView &text) const -> U32String;
+    [[nodiscard]] auto inserted(unit::CpIndex index, const U32String &text) const -> U32String;
     /// Return a copy with a character-based range replaced by text.
-    [[nodiscard]] auto replaced(unit::CpRange range, const U32StringView &text) const -> U32String;
-    /// Return a copy with the first occurrence of decoded UTF-32 text replaced.
-    [[nodiscard]] auto replacedFirst(
-        const U32StringView &text, const U32StringView &replacement, CharCompareFn compareFn = {}) const -> U32String;
-    /// Return a copy with all characters from the set replaced by one character.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U32String;
-    /// Return a copy with all characters from the set replaced by text.
-    [[nodiscard]] auto replacedAll(const CharSet &characters, const U32StringView &replacement) const -> U32String;
-    /// Return a copy with all occurrences of decoded UTF-32 text replaced.
-    [[nodiscard]] auto replacedAll(
-        const U32StringView &text, const U32StringView &replacement, CharCompareFn compareFn = {}) const -> U32String;
-
-public: // transform
+    [[nodiscard]] auto replaced(unit::CpRange range, const U32String &text) const -> U32String;
     /// Call a function for every decoded code point, stopping early if the function requests it.
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
     /// Return a string where every decoded code point is mapped through the given function.
@@ -285,13 +330,23 @@ public: // transform
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const -> U32String;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
-    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U32StringView &ellipsis) const
+    [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U32String &ellipsis) const
         -> U32String;
     /// Return a string padded to the requested decoded code-point length.
     [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill = U' ') const -> U32String;
     /// Return a bounded representation that is safe for logs and debug output.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U32String;
+    /// Return a copy with all characters from the set replaced by one character.
+    [[nodiscard]] auto replacedAll(const CharSet &characters, Char replacement) const -> U32String;
+    /// Return a copy with all characters from the set replaced by text.
+    [[nodiscard]] auto replacedAll(const CharSet &characters, const U32String &replacement) const -> U32String;
+    /// Return a copy with all occurrences of decoded UTF-32 text replaced.
+    [[nodiscard]] auto replacedAll(
+        const U32String &text, const U32String &replacement, CharCompareFn compareFn = {}) const -> U32String;
+    /// Return a copy with the first occurrence of decoded UTF-32 text replaced.
+    [[nodiscard]] auto replacedFirst(
+        const U32String &text, const U32String &replacement, CharCompareFn compareFn = {}) const -> U32String;
 
 public: // conversion
     /// Convert this string to an integer, or return the given default value on error.
@@ -318,9 +373,9 @@ public: // conversion
     /// Create a string from one Unicode code point repeated one or more times.
     [[nodiscard]] static auto fromCharacter(Char character, unit::CpLength count = unit::CpLength::one()) -> U32String;
     /// Create a string by joining all parts without a separator.
-    /// @param parts The UTF-32 string views to join.
+    /// @param parts The UTF-32 read-only strings to join.
     /// @return The joined string.
-    [[nodiscard]] static auto fromJoined(std::initializer_list<U32StringView> parts) -> U32String;
+    [[nodiscard]] static auto fromJoined(std::initializer_list<U32String> parts) -> U32String;
     /// Create a string from an integer using the given format.
     template <math::AnyIntegerType T>
     [[nodiscard]] static auto fromInteger(T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> U32String;
@@ -331,55 +386,39 @@ public: // conversion
         -> U32String;
     /// Create a hexadecimal string from a byte block using the given format.
     [[nodiscard]] static auto fromByteBlock(
-        const mem::ByteBlockView &bytes, ByteFormat format = ByteFormat::defaultFormat()) -> U32String;
+        const mem::ByteBlock &bytes, ByteFormat format = ByteFormat::defaultFormat()) -> U32String;
 
 public: // low-level management
     /// Get a unique identifier for the visible storage range.
-    /// The identifier changes when the string detaches, reallocates, or when a view selects a different range.
+    /// The identifier changes when the string detaches, reallocates, or when a string selects a different range.
     [[nodiscard]] auto storageId() const noexcept -> mem::StorageIdentifier;
-    /// Reserve capacity for this string.
-    /// @seeref{u32-string-storage-management}
-    void reserve(unit::CpLength capacity);
-    /// Try to free memory by shrinking the memory to the actual used size.
-    /// @seeref{u32-string-storage-management}
-    void shrinkToFit();
-    /// Get the current storage capacity in UTF-32 code units.
-    /// This function returns the reserved capacity available for the string data.
-    /// @return The reserved capacity in UTF-32 code units.
-    [[nodiscard]] auto capacity() const noexcept -> unit::CpLength;
-    /// Get the current memory usage in bytes.
-    /// This function returns an estimation of the actual memory usage, including required management data and
-    /// alignment. Use this function if you need to monitor memory usage (e.g. for caching). Be aware that
-    /// through fragmentation and other factors, the actual memory usage may be higher than reported.
-    /// @return The estimated memory usage in bytes.
-    [[nodiscard]] auto memoryUsage() const noexcept -> unit::ByteLength;
-    /// Detach the string data.
-    /// After a call of this method, you have exclusive access to the string data.
-    /// Detach is managed automatically, only use this method if you need manual control.
-    void detach();
 
 public: // minimal std-library compatibility
     /// The value returned by this string's const iterator.
     using value_type = Char;
     /// The const iterator type for decoded UTF-32 code points.
     using const_iterator = U32StringConstIterator;
-    /// @copydoc erbsland::text::U32StringView::begin() const
+    /// Get an iterator to the first decoded character.
     [[nodiscard]] auto begin() const noexcept -> const_iterator;
-    /// @copydoc erbsland::text::U32StringView::end() const
+    /// Get an iterator pointing after the last decoded character.
     [[nodiscard]] auto end() const noexcept -> const_iterator;
     /// Swap two strings.
     friend void swap(U32String &first, U32String &second) noexcept;
 
 private:
+    /// Test if this string covers the full backing storage range.
+    [[nodiscard]] auto isFullStorageRange() const noexcept -> bool;
+    /// Create a string for a transformation that did not change decoded text.
+    [[nodiscard]] auto stringForUnchangedTransform() const -> U32String;
     /// Create a string with the same storage and a different storage range.
     [[nodiscard]] auto withRange(unit::CpRange range) const noexcept -> U32String;
     /// Get the view to the string data.
     [[nodiscard]] auto dataView() const noexcept -> impl::U32StringDataView;
     /// Create a new string with the given storage.
-    explicit U32String(impl::U32StringSharedStorage storage) : _storage{std::move(storage)} {}
+    explicit U32String(impl::U32StringStorage storage) : _storage(std::move(storage)) {}
 
 private:
-    impl::U32StringSharedStorage _storage; ///< The string storage.
+    impl::U32StringStorage _storage; ///< Either literal or shared string data.
 };
 
 }

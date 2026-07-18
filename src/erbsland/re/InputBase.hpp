@@ -2,25 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "InputPosition.hpp"
+#include "CharAndPosition_fwd.hpp"
+#include "InputBase_fwd.hpp"
 
-#include "../text/Char.hpp"
 #include "../unit/CpLength.hpp"
 
 #include <memory>
 
 namespace erbsland::re {
-
-class InputBase;
-/// A shared pointer to an input instance.
-using InputBasePtr = std::shared_ptr<InputBase>;
-
-/// A read character and its start position.
-/// @tested{InputBaseTest}
-struct CharAndPosition {
-    text::Char character;   ///< The read character or the end-of-data signal.
-    InputPosition position; ///< The start position of the read character.
-};
 
 /// The abstract base class for inputs for regular expression matching.
 /// Exceptions raised by input operations propagate unchanged through the matching engine.

@@ -34,7 +34,7 @@ Choose the Text Operation That Matches the Task
 :cpp:class:`InputStream <erbsland::stream::InputStream>` contract.
 :cpp:class:`TextOutputStream <erbsland::stream::TextOutputStream>` performs the opposite transformation: callers write
 characters and strings, and the stream encodes complete requests for its byte destination.
-:cpp:class:`StringBuilderStream <erbsland::stream::StringBuilderStream>` implements the output interface without a byte
+:cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>` implements the output interface without a byte
 destination and collects the written text in memory.
 
 .. mermaid::
@@ -67,14 +67,14 @@ destination and collects the written text in memory.
             +print(values) StreamWriteStatus
             +printLine(values) StreamWriteStatus
         }
-        class StringBuilderStream {
+        class AnyStringBuilderStream {
             +toString() String
             +takeString() String
             +clear()
         }
         InputStream <|-- TextInputStream
         OutputStream <|-- TextOutputStream
-        TextOutputStream <|-- StringBuilderStream
+        TextOutputStream <|-- AnyStringBuilderStream
 
 Choose the input operation from the structure you expect, not merely from what is convenient at the call site:
 
@@ -344,7 +344,7 @@ native stream failure with report-specific context.
 Capture Reusable Text Output in Memory
 ======================================
 
-``StringBuilderStream`` is useful when an existing component writes to ``TextOutputStream`` but the caller needs the
+``AnyStringBuilderStream`` is useful when an existing component writes to ``TextOutputStream`` but the caller needs the
 result as a string.
 Typical uses include report generation, templates, unit tests, and scoped capture of standard output.
 The producer stays independent of whether its eventual destination is a file, terminal, redirected stream, or memory.
@@ -354,15 +354,15 @@ It is always ready, and its write operations do not time out.
 That makes it unnecessary to add a retry loop merely for the builder, but a reusable producer should still return or
 propagate the write status so another destination can apply its own policy.
 
-Use :cpp:func:`StringBuilderStream::toString() <erbsland::stream::StringBuilderStream::toString>` when the builder must
-retain its content and the caller needs a copy.
-Use :cpp:func:`StringBuilderStream::takeString() <erbsland::stream::StringBuilderStream::takeString>` when output is
-complete and ownership should move out efficiently.
+Use :cpp:func:`AnyStringBuilderStream::toString() <erbsland::stream::AnyStringBuilderStream::toString>` when the builder
+must retain its content and the caller needs a copy.
+Use :cpp:func:`AnyStringBuilderStream::takeString() <erbsland::stream::AnyStringBuilderStream::takeString>` when output
+is complete and ownership should move out efficiently.
 Taking the string resets the builder, so it can be reused for another capture without retaining the previous content.
 
 The demo separates production from capture.
 ``writePlantSummary()`` emits the whole two-line summary as one atomic request and returns its status.
-``buildPlantSummary()`` supplies a ``StringBuilderStream``, verifies the invariant that this local destination cannot
+``buildPlantSummary()`` supplies a ``AnyStringBuilderStream``, verifies the invariant that this local destination cannot
 time out, and moves the completed string to its caller.
 
 .. erbsland-demo::
@@ -380,10 +380,10 @@ time out, and moves the completed string to its caller.
     }
 
     /// Capture text-stream output in memory and move the completed string out of the builder.
-    /// `StringBuilderStream` is always ready and performs no external I/O, so this operation needs no timeout retry.
+    /// `AnyStringBuilderStream` is always ready and performs no external I/O, so this operation needs no timeout retry.
     /// The same stream-oriented writer can also target a file or terminal.
     auto buildPlantSummary() -> el::String {
-        const auto builder = el::StringBuilderStream::create();
+        const auto builder = el::AnyStringBuilderStream::create();
         if (writePlantSummary(*builder).isTimeout()) {
             throw el::LogicError{"An in-memory string builder unexpectedly timed out."};
         }
@@ -408,7 +408,7 @@ Choose it when the stream is opened through
 After opening, readers and writers continue to use the same Erbsland string and character types regardless of the byte
 representation below them.
 
-:cpp:enum:`StringEncoding <erbsland::text::StringEncoding>` supports UTF-8 plus UTF-16 and UTF-32 in generic or explicit
+:cpp:class:`StringEncoding <erbsland::text::StringEncoding>` supports UTF-8 plus UTF-16 and UTF-32 in generic or explicit
 byte order.
 Use UTF-8 for ordinary new formats unless an external specification requires something else.
 Use generic ``Utf16`` or ``Utf32`` when a BOM may determine the byte order at the start of a document.

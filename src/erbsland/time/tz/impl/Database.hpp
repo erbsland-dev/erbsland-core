@@ -10,8 +10,8 @@
 #include "ZoneName.hpp"
 
 #include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../text/StringList.hpp"
-#include "../../../text/StringView.hpp"
 #include "../../../unit/Version.hpp"
 
 #include <map>
@@ -33,11 +33,11 @@ public:
     /// Test if a zone name exists.
     /// @param zoneName The zone name to check.
     /// @return `true` if the zone is known.
-    [[nodiscard]] auto hasName(text::StringView zoneName) const noexcept -> bool;
+    [[nodiscard]] auto hasName(const text::String &zoneName) const noexcept -> bool;
     /// Look up a zone identifier by name.
     /// @param zoneName The zone name.
     /// @return The zone identifier, or `cZoneIdNotFound` if unknown.
-    [[nodiscard]] auto zoneIdFromName(text::StringView zoneName) const noexcept -> ZoneId;
+    [[nodiscard]] auto zoneIdFromName(const text::String &zoneName) const noexcept -> ZoneId;
     /// Look up a zone name by identifier.
     /// @param zoneId The zone identifier.
     /// @return The zone name.
@@ -67,7 +67,7 @@ public:
     /// Look up a text index by string.
     /// @param text The text string.
     /// @return The text index, or a sentinel value if not found.
-    [[nodiscard]] static auto indexFromText(text::StringView text) noexcept -> TextId;
+    [[nodiscard]] static auto indexFromText(const text::String &text) noexcept -> TextId;
 
 private:
     [[nodiscard]] static auto zoneNameToString(const ZoneName &zoneName) -> text::String;

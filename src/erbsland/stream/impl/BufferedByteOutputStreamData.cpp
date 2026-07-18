@@ -38,7 +38,7 @@ void BufferedByteOutputStreamData::scheduleWrite() {
     }
     workInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)] { self->performWrite(); });
+    IoService::submitIoWork([self = std::move(self)]() -> void { self->performWrite(); });
 }
 
 void BufferedByteOutputStreamData::refillFront() {
@@ -98,7 +98,7 @@ void BufferedByteOutputStreamData::scheduleClose() {
     }
     workInProgress = true;
     auto self = shared_from_this();
-    IoService::submitIoWork([self = std::move(self)] { self->performClose(); });
+    IoService::submitIoWork([self = std::move(self)]() -> void { self->performClose(); });
 }
 
 void BufferedByteOutputStreamData::performClose() {

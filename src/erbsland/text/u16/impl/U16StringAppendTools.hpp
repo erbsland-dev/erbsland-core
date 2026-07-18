@@ -16,7 +16,7 @@
 
 namespace erbsland::text::impl {
 
-/// Append algorithms for `U16String`.
+/// Append algorithms for `U16StringEditor`.
 /// @tested{U16StringTest}
 class U16StringAppendTools final {
 public:

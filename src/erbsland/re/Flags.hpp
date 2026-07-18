@@ -6,7 +6,7 @@
 
 #include "../text/Literals.hpp"
 #include "../text/StdFormatForText.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../util/EnumFlags.hpp"
 
 #include <array>
@@ -25,7 +25,7 @@ public: // diagnostics
     /// Create a diagnostic string for the flags.
     [[nodiscard]] auto toString() const -> text::String {
         using namespace text::literals;
-        text::String result;
+        text::StringEditor result;
         for (const auto flag : all()) {
             if (!isSet(flag)) {
                 continue;

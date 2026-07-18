@@ -5,6 +5,7 @@
 #include "U32Encoding.hpp"
 
 #include "../../../mem/ByteWriter.hpp"
+#include "../../../mem/impl/RingBufferWriter.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
 
@@ -60,10 +61,11 @@ private:
 
 /// A writer for UTF-32 encoded text into a byte writer.
 /// @tested{U32WriterTest}
-template <>
-class U32Writer<mem::ByteWriter> {
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+class U32Writer<tWriter> {
 public:
-    explicit constexpr U32Writer(mem::ByteWriter &writer) noexcept : _writer{writer} {}
+    explicit constexpr U32Writer(tWriter &writer) noexcept : _writer{writer} {}
 
 public:
     /// Get the current position in the destination buffer.
@@ -81,13 +83,15 @@ public:
     [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
 
 private:
-    mem::ByteWriter &_writer;
+    tWriter &_writer;
 };
 
 template <typename tChar32>
 U32Writer(std::span<tChar32>) -> U32Writer<std::span<tChar32>>;
 
-U32Writer(mem::ByteWriter &) -> U32Writer<mem::ByteWriter>;
+template <typename tWriter>
+    requires(std::is_same_v<tWriter, mem::ByteWriter> || std::is_same_v<tWriter, mem::impl::RingBufferWriter>)
+U32Writer(tWriter &) -> U32Writer<tWriter>;
 
 /// Create a UTF-32 encoded string from UTF-8 encoded data.
 /// @tested{U32WriterTest}

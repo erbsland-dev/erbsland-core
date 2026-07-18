@@ -10,7 +10,12 @@
 
 namespace erbsland::cterm {
 
-GridLayout::GridLayout(std::vector<bgeo::BlockCoordinate> columnWidths, std::vector<bgeo::BlockCoordinate> rowHeights) :
+using bgeo::BlockCoordinate;
+using bgeo::BlockPosition;
+using bgeo::BlockRectangle;
+using bgeo::BlockSize;
+
+GridLayout::GridLayout(std::vector<BlockCoordinate> columnWidths, std::vector<BlockCoordinate> rowHeights) :
     _columnWidths{std::move(columnWidths)}, _rowHeights{std::move(rowHeights)} {
 
     validateSizes(_columnWidths, "columnWidths");
@@ -18,9 +23,9 @@ GridLayout::GridLayout(std::vector<bgeo::BlockCoordinate> columnWidths, std::vec
 }
 
 GridLayout::GridLayout(
-    const std::initializer_list<bgeo::BlockCoordinate> columnWidths,
-    const std::initializer_list<bgeo::BlockCoordinate> rowHeights) :
-    GridLayout{std::vector<bgeo::BlockCoordinate>{columnWidths}, std::vector<bgeo::BlockCoordinate>{rowHeights}} {
+    const std::initializer_list<BlockCoordinate> columnWidths,
+    const std::initializer_list<BlockCoordinate> rowHeights) :
+    GridLayout{std::vector<BlockCoordinate>{columnWidths}, std::vector<BlockCoordinate>{rowHeights}} {
 }
 
 auto GridLayout::rowCount() const noexcept -> std::size_t {
@@ -31,36 +36,34 @@ auto GridLayout::columnCount() const noexcept -> std::size_t {
     return _columnWidths.size();
 }
 
-auto GridLayout::rowHeight(const std::size_t row) const -> bgeo::BlockCoordinate {
+auto GridLayout::rowHeight(const std::size_t row) const -> BlockCoordinate {
     if (row >= rowCount()) {
         throw err::OutOfRangeError{"GridLayout row index is out of range."};
     }
     return _rowHeights[row];
 }
 
-auto GridLayout::columnWidth(const std::size_t column) const -> bgeo::BlockCoordinate {
+auto GridLayout::columnWidth(const std::size_t column) const -> BlockCoordinate {
     if (column >= columnCount()) {
         throw err::OutOfRangeError{"GridLayout column index is out of range."};
     }
     return _columnWidths[column];
 }
 
-auto GridLayout::rowHeights() const noexcept -> const std::vector<bgeo::BlockCoordinate> & {
+auto GridLayout::rowHeights() const noexcept -> const std::vector<BlockCoordinate> & {
     return _rowHeights;
 }
 
-auto GridLayout::columnWidths() const noexcept -> const std::vector<bgeo::BlockCoordinate> & {
+auto GridLayout::columnWidths() const noexcept -> const std::vector<BlockCoordinate> & {
     return _columnWidths;
 }
 
-auto GridLayout::size(const FrameBorder &border) const noexcept -> bgeo::BlockSize {
-    const auto contentWidth = std::accumulate(_columnWidths.begin(), _columnWidths.end(), bgeo::BlockCoordinate{0});
-    const auto contentHeight = std::accumulate(_rowHeights.begin(), _rowHeights.end(), bgeo::BlockCoordinate{0});
-    const auto separatorWidth =
-        bgeo::BlockCoordinate{columnCount() - 1} * borderSize(border, FrameBorder::Element::VLine);
-    const auto separatorHeight =
-        bgeo::BlockCoordinate{rowCount() - 1} * borderSize(border, FrameBorder::Element::HLine);
-    return bgeo::BlockSize{
+auto GridLayout::size(const FrameBorder &border) const noexcept -> BlockSize {
+    const auto contentWidth = std::accumulate(_columnWidths.begin(), _columnWidths.end(), BlockCoordinate{0});
+    const auto contentHeight = std::accumulate(_rowHeights.begin(), _rowHeights.end(), BlockCoordinate{0});
+    const auto separatorWidth = BlockCoordinate{columnCount() - 1} * borderSize(border, FrameBorder::Element::VLine);
+    const auto separatorHeight = BlockCoordinate{rowCount() - 1} * borderSize(border, FrameBorder::Element::HLine);
+    return BlockSize{
         contentWidth + separatorWidth + borderSize(border, FrameBorder::Element::Left) +
             borderSize(border, FrameBorder::Element::Right),
         contentHeight + separatorHeight + borderSize(border, FrameBorder::Element::Top) +
@@ -68,8 +71,8 @@ auto GridLayout::size(const FrameBorder &border) const noexcept -> bgeo::BlockSi
 }
 
 auto GridLayout::cellRect(
-    const std::size_t row, const std::size_t column, const bgeo::BlockPosition origin, const FrameBorder &border) const
-    -> bgeo::BlockRectangle {
+    const std::size_t row, const std::size_t column, const BlockPosition origin, const FrameBorder &border) const
+    -> BlockRectangle {
 
     if (row >= rowCount() || column >= columnCount()) {
         throw err::OutOfRangeError{"GridLayout cell index is out of range."};
@@ -86,16 +89,15 @@ auto GridLayout::cellRect(
     for (std::size_t rowIndex = 0; rowIndex < row; ++rowIndex) {
         y += _rowHeights[rowIndex] + hLineSize;
     }
-    return bgeo::BlockRectangle{x, y, _columnWidths[column], _rowHeights[row]};
+    return BlockRectangle{x, y, _columnWidths[column], _rowHeights[row]};
 }
 
-auto GridLayout::borderSize(const FrameBorder &border, const FrameBorder::Element element) noexcept
-    -> bgeo::BlockCoordinate {
+auto GridLayout::borderSize(const FrameBorder &border, const FrameBorder::Element element) noexcept -> BlockCoordinate {
     const auto style = border.style(element);
-    return bgeo::BlockCoordinate{style != FrameStyle::None && FrameBorder::isLineStyle(style) ? 1 : 0};
+    return BlockCoordinate{style != FrameStyle::None && FrameBorder::isLineStyle(style) ? 1 : 0};
 }
 
-void GridLayout::validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, const std::string_view name) {
+void GridLayout::validateSizes(const std::vector<BlockCoordinate> &sizes, const std::string_view name) {
     if (sizes.empty()) {
         throw err::ParameterError{"The size list must not be empty.", name};
     }

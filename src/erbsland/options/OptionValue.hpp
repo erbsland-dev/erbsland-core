@@ -7,7 +7,7 @@
 #include "OptionValueStorage.hpp"
 #include "OptionValueType.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <utility>
@@ -117,12 +117,11 @@ public: // typed accessors
     /// Read a text value.
     /// @param defaultText Returned when this value is not text storage.
     /// @return The text or choice value.
-    [[nodiscard]] auto getText(const text::StringView &defaultText = {}) const -> text::StringView;
+    [[nodiscard]] auto getText(const text::String &defaultText = {}) const -> text::String;
     /// Read a text list value.
     /// @param defaultTextList Returned when this value is not text-list storage.
     /// @return The text values.
-    [[nodiscard]] auto getTextList(std::vector<text::StringView> defaultTextList = {}) const
-        -> std::vector<text::StringView>;
+    [[nodiscard]] auto getTextList(std::vector<text::String> defaultTextList = {}) const -> std::vector<text::String>;
     /// Read an integer list value.
     /// @param defaultIntegerList Returned when this value is not integer-list storage.
     /// @return The integer values.

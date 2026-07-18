@@ -26,14 +26,14 @@ auto DayOfWeek::daysToPrevious(DayOfWeek dayOfWeek) const noexcept -> Days {
     return -delta;
 }
 
-auto DayOfWeek::toString(const DayOfWeekFormat format) const -> text::StringView {
+auto DayOfWeek::toString(const DayOfWeekFormat format) const -> text::String {
     const auto index = toAmount().toValue().toSizeT();
     if (format == DayOfWeekFormat::Short) {
         static const auto names =
-            std::array<text::StringView, 7>{"Mon"_el, "Tue"_el, "Wed"_el, "Thu"_el, "Fri"_el, "Sat"_el, "Sun"_el};
+            std::array<text::String, 7>{"Mon"_el, "Tue"_el, "Wed"_el, "Thu"_el, "Fri"_el, "Sat"_el, "Sun"_el};
         return names[index];
     }
-    static const auto names = std::array<text::StringView, 7>{
+    static const auto names = std::array<text::String, 7>{
         "Monday"_el, "Tuesday"_el, "Wednesday"_el, "Thursday"_el, "Friday"_el, "Saturday"_el, "Sunday"_el};
     return names[index];
 }

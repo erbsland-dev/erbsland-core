@@ -5,13 +5,19 @@
 #include "Char_fwd.hpp"
 
 #include "u16/U16String_fwd.hpp"
-#include "u16/U16StringView_fwd.hpp"
+#include "u16/U16StringEditor_fwd.hpp"
 #include "u32/U32String_fwd.hpp"
-#include "u32/U32StringView_fwd.hpp"
+#include "u32/U32StringEditor_fwd.hpp"
 #include "u8/U8String_fwd.hpp"
-#include "u8/U8StringView_fwd.hpp"
+#include "u8/U8StringEditor_fwd.hpp"
 
 #include <format>
+
+template <>
+struct std::formatter<erbsland::text::U8StringEditor> : std::formatter<std::string> {
+    auto format(const erbsland::text::U8StringEditor &str, std::format_context &ctx) const
+        -> std::format_context::iterator;
+};
 
 template <>
 struct std::formatter<erbsland::text::U8String> : std::formatter<std::string> {
@@ -19,8 +25,8 @@ struct std::formatter<erbsland::text::U8String> : std::formatter<std::string> {
 };
 
 template <>
-struct std::formatter<erbsland::text::U8StringView> : std::formatter<std::string> {
-    auto format(const erbsland::text::U8StringView &str, std::format_context &ctx) const
+struct std::formatter<erbsland::text::U16StringEditor> : std::formatter<std::string> {
+    auto format(const erbsland::text::U16StringEditor &str, std::format_context &ctx) const
         -> std::format_context::iterator;
 };
 
@@ -30,20 +36,14 @@ struct std::formatter<erbsland::text::U16String> : std::formatter<std::string> {
 };
 
 template <>
-struct std::formatter<erbsland::text::U16StringView> : std::formatter<std::string> {
-    auto format(const erbsland::text::U16StringView &str, std::format_context &ctx) const
+struct std::formatter<erbsland::text::U32StringEditor> : std::formatter<std::string> {
+    auto format(const erbsland::text::U32StringEditor &str, std::format_context &ctx) const
         -> std::format_context::iterator;
 };
 
 template <>
 struct std::formatter<erbsland::text::U32String> : std::formatter<std::string> {
     auto format(const erbsland::text::U32String &str, std::format_context &ctx) const -> std::format_context::iterator;
-};
-
-template <>
-struct std::formatter<erbsland::text::U32StringView> : std::formatter<std::string> {
-    auto format(const erbsland::text::U32StringView &str, std::format_context &ctx) const
-        -> std::format_context::iterator;
 };
 
 template <>

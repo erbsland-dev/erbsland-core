@@ -6,8 +6,7 @@
 
 #include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
 
@@ -15,7 +14,10 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
-[[nodiscard]] auto suffixSearchStart(const text::StringView &name) noexcept -> unit::ByteIndex {
+using text::String;
+using text::StringSide;
+
+[[nodiscard]] auto suffixSearchStart(const String &name) noexcept -> unit::ByteIndex {
     if (name.isEmpty()) {
         return unit::ByteIndex::noIndex();
     }
@@ -32,13 +34,13 @@ using namespace text::literals;
     return result;
 }
 
-auto firstSuffixPosition(const text::StringView &name) noexcept -> unit::ByteIndex {
+auto firstSuffixPosition(const String &name) noexcept -> unit::ByteIndex {
     // `suffixSearchStart` never points to a dot - therefore, no special handling required.
     // if `suffixSearchStart` returns no-index, `findFirstOf` also returns no-index.
     return name.findFirstOf(dotCharacters(), suffixSearchStart(name));
 }
 
-auto lastSuffixPosition(const text::StringView &name) noexcept -> unit::ByteIndex {
+auto lastSuffixPosition(const String &name) noexcept -> unit::ByteIndex {
     // for reverse search, get the start first.
     const auto start = suffixSearchStart(name);
     if (start.isNoIndex()) { // only dots or empty.
@@ -51,29 +53,29 @@ auto lastSuffixPosition(const text::StringView &name) noexcept -> unit::ByteInde
     return position;
 }
 
-auto lastSuffix(const text::StringView &name) noexcept -> text::StringView {
+auto lastSuffix(const String &name) noexcept -> String {
     // if `lastSuffixPosition` returns no-index, `name.slice` also returns no-index.
     return name.slice({lastSuffixPosition(name), unit::ByteLength::infinite()});
 }
 
-auto suffixes(const text::StringView &name) noexcept -> text::StringView {
+auto suffixes(const String &name) noexcept -> String {
     // if `firstSuffixPosition` returns no-index, `name.slice` also returns no-index.
     return name.slice({firstSuffixPosition(name), unit::ByteLength::infinite()});
 }
 
-auto stem(const text::StringView &name) noexcept -> text::StringView {
+auto stem(const String &name) noexcept -> String {
     const auto position = firstSuffixPosition(name);
     if (position.isNoIndex()) {
         return name;
     }
-    return name.slice(text::StringSide::Front, position.distanceFromZero());
+    return name.slice(StringSide::Front, position.distanceFromZero());
 }
 
-auto normalizedSuffixReplacement(const text::StringView &replacement) -> text::StringView {
+auto normalizedSuffixReplacement(const String &replacement) -> String {
     if (replacement.isEmpty() || replacement.startsWith("."_el)) {
         return replacement;
     }
-    return "."_els.append(replacement);
+    return String::fromJoined({"."_el, replacement});
 }
 
 }

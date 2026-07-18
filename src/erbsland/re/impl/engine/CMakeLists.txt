@@ -16,6 +16,7 @@ target_sources(erbsland-core PRIVATE
         Counter.hpp
         Engine.cpp
         Engine.hpp
+        Engine_fwd.hpp
         EngineChar.cpp
         EngineCharacterState.hpp
         EngineData.hpp

@@ -6,9 +6,9 @@
 
 #include "../engine/CaptureGroupNames.hpp"
 
+#include "../../../text/String.hpp"
 #include "../../../text/StringCharReader.hpp"
 #include "../../../text/StringCIHashMap.hpp"
-#include "../../../text/StringView.hpp"
 #include "../../CaptureGroup.hpp"
 
 namespace erbsland::re::impl {
@@ -16,7 +16,7 @@ namespace erbsland::re::impl {
 /// A parser for replacement text.
 class ReplacementParser {
 public:
-    ReplacementParser(const text::StringView &expression, const CaptureGroupNames &groupNames);
+    ReplacementParser(const text::String &expression, const CaptureGroupNames &groupNames);
 
 public:
     [[nodiscard]] auto parse() -> Replacement;
@@ -27,14 +27,14 @@ private:
     void parseGroupIndex();
     void parseGroupName();
     void requireMoreContent();
-    [[noreturn]] void throwError(const text::StringView &description) const;
+    [[noreturn]] void throwError(const text::String &description) const;
 
 private:
     Replacement _replacement;
     text::StringCharReader _reader;
     text::Char _currentChar{text::Char::noCodePoint()};
     text::StringCIHashMap<CaptureGroupIndex> _nameMap;
-    text::String _staticText;
+    text::StringEditor _staticText;
 };
 
 }

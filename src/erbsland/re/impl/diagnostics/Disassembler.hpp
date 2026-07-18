@@ -9,7 +9,7 @@
 #include "../engine/EngineData.hpp"
 
 #include "../../../text/String.hpp"
-#include "../../../text/StringViewList.hpp"
+#include "../../../text/StringList.hpp"
 
 namespace erbsland::re::impl {
 
@@ -26,16 +26,16 @@ public:
 
     /// Disassemble the engine data into a human-readable listing.
     ///
-    [[nodiscard]] auto disassemble() -> text::StringViewList;
+    [[nodiscard]] auto disassemble() -> text::StringList;
 
     /// Disassemble the sequence into human-readable instructions.
-    [[nodiscard]] auto disassembleSequence() -> text::StringViewList;
+    [[nodiscard]] auto disassembleSequence() -> text::StringList;
 
     /// Disassemble the character classes into human-readable instructions.
-    [[nodiscard]] auto disassembleClasses() -> text::StringViewList;
+    [[nodiscard]] auto disassembleClasses() -> text::StringList;
 
     /// Disassemble the program into human-readable instructions.
-    [[nodiscard]] auto disassembleProgram() -> text::StringViewList;
+    [[nodiscard]] auto disassembleProgram() -> text::StringList;
 
 private:
     /// Write the lines for the sequence data.
@@ -48,14 +48,14 @@ private:
     void writeProgram();
 
     /// Write a title comment.
-    void writeTitle(const text::StringView &title);
+    void writeTitle(const text::String &title);
 
     /// Write a line with a given layout.
     void writeLineLayout(
-        const text::StringView &location,
-        const text::StringView &code,
-        const text::StringView &operation,
-        const text::StringView &comment);
+        const text::String &location,
+        const text::String &code,
+        const text::String &operation,
+        const text::String &comment);
 
     /// Get a string for a given target.
     /// @param target The target.
@@ -78,7 +78,7 @@ private:
     std::unordered_map<LabelTarget, text::String> _labels; ///< Labels to use in disassembly.
 
     // runtime
-    text::StringViewList _lines; ///< The disassembly lines.
+    text::StringList _lines; ///< The disassembly lines.
 };
 
 }

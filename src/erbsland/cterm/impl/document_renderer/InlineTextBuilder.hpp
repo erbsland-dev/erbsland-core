@@ -6,10 +6,10 @@
 
 #include "../BlockStringBuilder.hpp"
 
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 #include "../../Block.hpp"
 #include "../../BlockString.hpp"
-#include "../../BlockStringView.hpp"
+#include "../../BlockStringEditor.hpp"
 #include "../../BlockStyle.hpp"
 
 #include <vector>
@@ -26,12 +26,12 @@ public:
     /// @param text The text to append.
     /// @param style The style for appended characters.
     /// @param preserveWhitespace Preserve whitespace as-is when `true`.
-    void appendText(text::StringView text, BlockStyle style, bool preserveWhitespace);
+    void appendText(const text::String &text, BlockStyle style, bool preserveWhitespace);
     /// Append a terminal-string decoration.
     /// @param decoration The decoration to append.
     /// @param style The base style for decoration characters.
     /// @param preserveWhitespace Preserve whitespace as-is when `true`.
-    void appendDecoration(BlockStringView decoration, BlockStyle style, bool preserveWhitespace);
+    void appendDecoration(BlockString decoration, BlockStyle style, bool preserveWhitespace);
     /// Append an explicit line break.
     /// @param style The style used for the line-break character.
     void appendLineBreak(BlockStyle style);

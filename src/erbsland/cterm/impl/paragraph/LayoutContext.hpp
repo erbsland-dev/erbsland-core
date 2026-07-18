@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../BlockStringView.hpp"
+#include "../../BlockString.hpp"
 #include "../../ParagraphOptions.hpp"
 
 #include <algorithm>
@@ -19,8 +19,7 @@ public:
     /// @param options The paragraph options used for layout.
     /// @param leftAligned `true` if left-aligned paragraph behavior is active.
     LayoutContext(
-        const BlockStringView &text, const int width, const ParagraphOptions &options, const bool leftAligned) noexcept
-        :
+        const BlockString &text, const int width, const ParagraphOptions &options, const bool leftAligned) noexcept :
         _text{text},
         _width{width},
         _options{options},
@@ -40,7 +39,7 @@ public:
 public:
     /// Access the source text.
     /// @return The source text referenced by source-range fragments.
-    [[nodiscard]] auto blockString() const noexcept -> const BlockStringView & { return _text; }
+    [[nodiscard]] auto blockString() const noexcept -> const BlockString & { return _text; }
     /// Access the paragraph width.
     /// @return The available paragraph width.
     [[nodiscard]] auto width() const noexcept -> int { return _width; }
@@ -86,7 +85,7 @@ public:
     }
 
 private:
-    const BlockStringView &_text;
+    const BlockString &_text;
     int _width;
     const ParagraphOptions &_options;
     bool _leftAligned;

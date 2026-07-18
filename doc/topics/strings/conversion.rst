@@ -3,9 +3,9 @@
     single: StringConverter
     single: StringEncoder
     single: StringDecoder
+    single: AnyStringEditor
     single: AnyString
-    single: AnyStringView
-    single: StringBuilder
+    single: AnyStringBuilder
     single: TextInputStream
     single: TextOutputStream
     single: StringEncoding
@@ -50,9 +50,8 @@ Overview
    * - Read or write encoded text files and streams
      - :cpp:class:`TextInputStream <erbsland::stream::TextInputStream>` /
        :cpp:class:`TextOutputStream <erbsland::stream::TextOutputStream>`
-   * - Accept strings without committing to a specific encoding
-     - :cpp:class:`AnyString <erbsland::text::AnyString>` /
-       :cpp:class:`AnyStringView <erbsland::text::AnyStringView>`
+   * - Store a read-only string without committing to a specific encoding
+     - :cpp:class:`AnyString <erbsland::text::AnyString>`
 
 As a general guideline:
 
@@ -64,9 +63,8 @@ As a general guideline:
 - Use :cpp:class:`TextInputStream <erbsland::stream::TextInputStream>` and
   :cpp:class:`TextOutputStream <erbsland::stream::TextOutputStream>` when
   reading or writing encoded text through files or other byte streams.
-- Use :cpp:class:`AnyString <erbsland::text::AnyString>` or
-  :cpp:class:`AnyStringView <erbsland::text::AnyStringView>` when an API should
-  accept text regardless of its underlying encoding.
+- Use :cpp:class:`AnyString <erbsland::text::AnyString>` when an API should store completed text regardless of its
+  underlying encoding. Use :cpp:class:`AnyStringEditor <erbsland::text::AnyStringEditor>` only for active mutation.
 
 .. design-rationale::
 
@@ -88,7 +86,7 @@ Cross-Encoding Conversion with ``StringConverter``
 :cpp:class:`StringConverter <erbsland::text::StringConverter>` is the primary tool for converting between
 string encodings.
 
-It supports all library string types, string views, and the corresponding standard-library string types.
+It supports all library string and editor types and the corresponding standard-library string types.
 The converter validates the source text and produces a correctly encoded target string.
 
 To perform a conversion, construct a temporary converter from the source string and call one of the available ``to...``
@@ -99,7 +97,7 @@ methods:
     auto u16Text = el::StringConverter{u8Text}.toU16String();
     auto stdText = el::StringConverter{u16Text}.toStdString();
 
-String literals such as ``"text"`` are intentionally not accepted directly.
+Unmarked C++ literals such as ``"text"`` are intentionally not accepted directly.
 This avoids accidental interpretation of narrow string literals as UTF-8 text.
 
 If you want to use literals with Erbsland Core string APIs, use the ``"_el"`` literal suffix instead:
@@ -176,7 +174,7 @@ Encoding Strings into Byte Sequences using ``StringEncoder``
 In some cases, you want to encode strings into byte sequences.
 For this use case, the :cpp:class:`StringEncoder <erbsland::text::StringEncoder>` class exists.
 
-It allows you to encode all strings and string views from this library into UTF-8, UTF-16 and UTF-32 byte sequences.
+It allows you to encode all strings and editors from this library into UTF-8, UTF-16 and UTF-32 byte sequences.
 Additionally you can choose if the encoded strings shall be little or big-endian encoded.
 Also, you can put a BOM in front of the encoded byte sequence.
 
@@ -192,7 +190,7 @@ Also, you can put a BOM in front of the encoded byte sequence.
     /// explicit little-endian or big-endian byte order for encodings where this matters.
     void encodeStrings() {
         // Encode a short Unicode text into UTF-32 little-endian bytes with a BOM.
-        const auto observation = el::U8StringView{"Sternbild: Orion ✨"_el};
+        const auto observation = el::U8String{"Sternbild: Orion ✨"_el};
         const auto encodedObservation =
             el::StringEncoder{observation}.encode(el::StringEncoding::Utf32LittleEndian, el::StringBomMode::Require);
 
@@ -232,7 +230,7 @@ When encoding strings, ``Utf16`` and ``Utf32`` select the most common little-end
     /// different byte sequences depending on the chosen byte order.
     void byteOrder() {
         // Encode a marine biology text in both UTF-16 byte orders.
-        const auto oceanText = el::StringView{u8"🐋 Meerjungfrau 🌊"_el};
+        const auto oceanText = el::String{u8"🐋 Meerjungfrau 🌊"_el};
         el::io::printLine("Marine text: \"", oceanText, "\"\n");
 
         // Encode as UTF-16 little-endian (least significant byte first).
@@ -282,7 +280,7 @@ when encoding strings.
     /// convention, `Require` forces a BOM, and `Reject` forbids one entirely.
     void bomHandling() {
         // Encode a nature observation in multiple encodings, each with a different BOM strategy.
-        const auto observation = el::StringView{u8"🌲 Waldlichtung im Morgennebel 🌫️"_el};
+        const auto observation = el::String{u8"🌲 Waldlichtung im Morgennebel 🌫️"_el};
         el::io::printLine("Beobachtung: \"", observation, "\"\n"_el);
 
         // `Automatic` follows encoding conventions: no BOM for UTF-8, BOM for UTF-16 and UTF-32.
@@ -346,37 +344,37 @@ For example, a logging function, parser, formatter, or configuration API often d
 UTF-8, UTF-16, or UTF-32 text.
 Requiring an explicit conversion at every call site would create unnecessary overhead and clutter.
 
-:cpp:class:`AnyStringView <erbsland::text::AnyStringView>` solves this problem
+:cpp:class:`AnyString <erbsland::text::AnyString>` solves this problem
 by providing a lightweight view that can reference any supported string type.
 
-:cpp:class:`AnyString <erbsland::text::AnyString>` provides the owning variant
+:cpp:class:`AnyStringEditor <erbsland::text::AnyStringEditor>` provides the owning variant
 and stores text in any supported encoding while converting lazily when a specific representation is requested.
 
 .. erbsland-demo::
-    :source: text/AnyString/AcceptAny.cpp
+    :source: text/AnyStringEditor/AcceptAny.cpp
     :exec: text/any_string --demo AcceptAny
     :source-sha256: 781f8376eed4f04e82da4c276e2b283801ff69562697723276c1e9966b198613
 
 .. code-block:: cpp
 
-    /// `AnyStringView` accepts any string type — UTF-8, UTF-16, or UTF-32 — through a
+    /// `AnyString` accepts any string type — UTF-8, UTF-16, or UTF-32 — through a
     /// single unified interface. Use it to write functions that receive strings regardless
     /// of their underlying encoding, then inspect the kind, length, or convert to the
     /// format you need for further processing.
     void acceptAny() {
         // Prepare sound-wave labels in three different encodings.
-        const auto u8Label = el::U8StringView{"Vlnová frekvence 🌊"_el};
-        const auto u16Label = el::U16StringView{u"Hmotnostní spektrum 🎵"_el};
-        const auto u32Label = el::U32StringView{U"Amplituda vlnění 🎶"_el};
+        const auto u8Label = el::U8String{"Vlnová frekvence 🌊"_el};
+        const auto u16Label = el::U16String{u"Hmotnostní spektrum 🎵"_el};
+        const auto u32Label = el::U32String{U"Amplituda vlnění 🎶"_el};
 
-        // An empty AnyStringView carries no kind information.
+        // An empty AnyString carries no kind information.
         processAnyString({});
         processAnyString(u8Label);
         processAnyString(u16Label);
         processAnyString(u32Label);
     }
 
-    void processAnyString(const el::AnyStringView &str) {
+    void processAnyString(const el::AnyString &str) {
         el::io::printLine("Signal analysis:"_el);
 
         if (str.kind().has_value()) {
@@ -426,9 +424,9 @@ and stores text in any supported encoding while converting lazily when a specifi
 .. note::
 
     For creating strings in a generic way, create a function that takes a reference to a
-    :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` instead.
+    :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` instead.
     The caller can construct the builder with a fitting underlying string type, and the function builds the string.
-    This is more efficient that convert between string types using :cpp:class:`AnyString <erbsland::text::AnyString>`.
+    This is more efficient that convert between string types using :cpp:class:`AnyStringEditor <erbsland::text::AnyStringEditor>`.
 
 Choosing the Right Tool
 =======================
@@ -446,5 +444,5 @@ If you are reading or writing files, prefer
 perform encoding and decoding while data is streamed.
 
 If you are designing a public API and want to support all string encodings, consider
-:cpp:class:`AnyStringView <erbsland::text::AnyStringView>` for input parameters and
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>` for building output efficiently.
+:cpp:class:`AnyString <erbsland::text::AnyString>` for input parameters and
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` for building output efficiently.

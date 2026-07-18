@@ -3,13 +3,17 @@
 #include "Disassembler.hpp"
 
 #include "../impl/diagnostics/Disassembler.hpp"
+#include "../impl/engine/Engine.hpp"
+#include "../RegEx.hpp"
+
+#include "../../text/StringList.hpp"
 
 namespace erbsland::re::diagnostics {
 
 Disassembler::Disassembler(const ConstRegExPtr &regEx) : _regEx{regEx} {
 }
 
-auto Disassembler::disassemble() const -> text::StringViewList {
+auto Disassembler::disassemble() const -> text::StringList {
     impl::Disassembler disassembler{_regEx->engine()->data()};
     return disassembler.disassemble();
 }

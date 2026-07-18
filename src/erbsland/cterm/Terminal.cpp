@@ -12,7 +12,7 @@
 
 #include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <algorithm>
 #include <cassert>

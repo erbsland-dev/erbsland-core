@@ -5,15 +5,15 @@
 #include "AsciiCategory.hpp"
 #include "CharRange.hpp"
 #include "CharSet_fwd.hpp"
-#include "String_fwd.hpp"
+#include "StringEditor_fwd.hpp"
 #include "UnicodeCategory.hpp"
 
 #include "u16/U16String_fwd.hpp"
-#include "u16/U16StringView_fwd.hpp"
+#include "u16/U16StringEditor_fwd.hpp"
 #include "u32/U32String_fwd.hpp"
-#include "u32/U32StringView_fwd.hpp"
+#include "u32/U32StringEditor_fwd.hpp"
 #include "u8/U8String_fwd.hpp"
-#include "u8/U8StringView_fwd.hpp"
+#include "u8/U8StringEditor_fwd.hpp"
 
 #include "../mem/CowManualStorage.hpp"
 #include "../util/List.hpp"
@@ -46,7 +46,7 @@ public:
     /// Create a character set containing one character.
     explicit CharSet(Char character);
     /// Decode a UTF-8 view tolerantly into a character set.
-    explicit CharSet(const U8StringView &characters);
+    explicit CharSet(const U8String &characters);
     /// Create a character set from an ordered Erbsland set of characters.
     explicit CharSet(const util::Set<Char> &characters);
     /// Create a character set from an Erbsland list of characters.
@@ -176,11 +176,11 @@ public: // factory methods
     /// Example: `fromPattern("-a-f_0-9=/")` characters `-_=/` and ranges `a-f` and `0-9`.
     /// @param pattern The pattern string to parse.
     /// @throws err::ParseError For an invalid pattern syntax.
-    [[nodiscard]] static auto fromPattern(const U8StringView &pattern) -> CharSet;
+    [[nodiscard]] static auto fromPattern(const U8String &pattern) -> CharSet;
     /// @overload
-    [[nodiscard]] static auto fromPattern(const U16StringView &pattern) -> CharSet;
+    [[nodiscard]] static auto fromPattern(const U16String &pattern) -> CharSet;
     /// @overload
-    [[nodiscard]] static auto fromPattern(const U32StringView &pattern) -> CharSet;
+    [[nodiscard]] static auto fromPattern(const U32String &pattern) -> CharSet;
 
 private:
     template <typename>

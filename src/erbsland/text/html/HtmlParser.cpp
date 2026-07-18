@@ -15,7 +15,7 @@ namespace erbsland::text::html {
 
 using namespace literals;
 
-HtmlParser::HtmlParser(AnyStringView html) : _impl{std::make_unique<impl::HtmlParser>(std::move(html))} {
+HtmlParser::HtmlParser(AnyString html) : _impl{std::make_unique<impl::HtmlParser>(std::move(html))} {
 }
 
 HtmlParser::~HtmlParser() = default;

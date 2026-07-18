@@ -23,7 +23,7 @@ using el::core::CommandLineArguments;
 using el::options::OptionError;
 using el::text::String;
 using el::text::StringConverter;
-using el::text::StringView;
+using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
 using el::unit::ElementCount;
@@ -76,7 +76,7 @@ public:
         options->addOption("--color"_el)
             .setType(OptionType::Choice)
             .setChoices(OptionChoices::create({"auto"_el, "never"_el}))
-            .setDefaultValue(String{"AUTO"_el});
+            .setDefaultValue(StringEditor{"AUTO"_el});
 
         const auto result = parse(
             options,
@@ -124,7 +124,7 @@ public:
         auto options = Options::create();
         options->addOption("--include"_el).setType(OptionType::Text).setMaximum(ArgumentCount{3U});
         options->addOption("files"_el).setType(OptionType::Text).setMaximum(ArgumentCount{2U});
-        options->addOption("--mode"_el).setType(OptionType::Text).setDefaultValue(String{"auto"_el});
+        options->addOption("--mode"_el).setType(OptionType::Text).setDefaultValue(StringEditor{"auto"_el});
 
         const auto result =
             parse(options, {"tool"_el, "--include"_el, "src"_el, "--include=test"_el, "one"_el, "two"_el});
@@ -553,7 +553,7 @@ public:
     }
 
     void testCallbackOrder() {
-        auto calls = std::vector<String>{};
+        auto calls = std::vector<StringEditor>{};
         auto options = Options::create();
         options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
         const auto rootSet = options->optionSets().front();
@@ -612,7 +612,7 @@ public:
             });
         options->addOption("--mode"_el)
             .setType(OptionType::Text)
-            .setDefaultValue(String{"auto"_el})
+            .setDefaultValue(StringEditor{"auto"_el})
             .setValidateFn(
                 [&defaultValidatorCalled,
                     &defaultValidatorGotValue,
@@ -749,7 +749,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto makeArgs(std::initializer_list<StringView> args) -> CommandLineArguments {
+    [[nodiscard]] static auto makeArgs(std::initializer_list<String> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
         result.reserve(ElementCount{args.size()});
         for (const auto &arg : args) {
@@ -758,13 +758,12 @@ private:
         return result;
     }
 
-    [[nodiscard]] static auto parse(const OptionsPtr &options, std::initializer_list<StringView> args) -> OptionResult {
+    [[nodiscard]] static auto parse(const OptionsPtr &options, std::initializer_list<String> args) -> OptionResult {
         auto manager = OptionManager{options};
         return manager.parse(makeArgs(args));
     }
 
-    void assertError(
-        const OptionsPtr &options, std::initializer_list<StringView> args, const OptionErrorReason reason) {
+    void assertError(const OptionsPtr &options, std::initializer_list<String> args, const OptionErrorReason reason) {
         const auto result = parse(options, args);
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
@@ -825,7 +824,7 @@ private:
         return options;
     }
 
-    [[nodiscard]] static auto makeOptionsWithGlobalAndModuleOptions(StringView moduleName = "remove"_el) -> OptionsPtr {
+    [[nodiscard]] static auto makeOptionsWithGlobalAndModuleOptions(String moduleName = "remove"_el) -> OptionsPtr {
         auto options = Options::create();
         options->addOption({"-v"_el, "--verbose"_el}).setType(OptionType::Flag);
         auto module = OptionModule::create(moduleName);

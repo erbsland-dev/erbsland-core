@@ -12,7 +12,7 @@ auto LayoutSemantics::hasSoftBreak(const BlockIndex index) const noexcept -> boo
 
 auto LayoutSemantics::indivisibleRangeAt(const BlockIndex index) const noexcept -> std::optional<BlockRange> {
     const auto iterator = std::ranges::lower_bound(
-        indivisibleRanges, index, {}, [](const BlockRange &range) noexcept { return range.index(); });
+        indivisibleRanges, index, {}, [](const BlockRange &range) noexcept -> BlockIndex { return range.index(); });
     if (iterator == indivisibleRanges.end() || iterator->index() != index) {
         return std::nullopt;
     }

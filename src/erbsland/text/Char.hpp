@@ -8,6 +8,7 @@
 #include "CharSignal.hpp"
 #include "IntegerBase.hpp"
 #include "LetterCase.hpp"
+#include "StringEncoding.hpp"
 #include "StringKind.hpp"
 #include "UnicodeCategory.hpp"
 #include "UnicodeCategoryGroup.hpp"
@@ -223,6 +224,10 @@ public: // encoding information.
     /// @param stringKind The kind of string encoding to query the size for.
     /// @return The encoded size of the character in the specified string kind.
     [[nodiscard]] auto encodedSize(StringKind stringKind) const noexcept -> std::size_t;
+    /// Get the number of bytes required to encode this character.
+    /// Invalid Unicode values and character signals have an encoded length of zero.
+    /// @param encoding The target byte encoding.
+    [[nodiscard]] auto encodedBytes(StringEncoding encoding) const noexcept -> unit::ByteLength;
 
 public: // conversion
     /// Return the simple one-code-point case-folded form of this character.

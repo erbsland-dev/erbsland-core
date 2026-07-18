@@ -26,7 +26,7 @@ public:
 
     /// The demo entry.
     struct Demo {
-        el::StringView name;
+        el::String name;
         Mode mode;
         DemoFn demoFn;
     };
@@ -36,7 +36,7 @@ public:
     ~DemoApplication() override = default;
 
 public:
-    void registerDemo(const el::StringView &name, const DemoFn &demoFn, Mode mode = Mode::Procedural);
+    void registerDemo(const el::String &name, const DemoFn &demoFn, Mode mode = Mode::Procedural);
 
 protected: // override Application
     void registerCommandLineOptions(const el::OptionsPtr &options) override;

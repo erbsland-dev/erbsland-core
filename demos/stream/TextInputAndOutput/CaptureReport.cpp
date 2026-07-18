@@ -21,10 +21,10 @@ auto writePlantSummary(el::TextOutputStream &output) -> el::StreamWriteStatus {
 }
 
 /// Capture text-stream output in memory and move the completed string out of the builder.
-/// `StringBuilderStream` is always ready and performs no external I/O, so this operation needs no timeout retry.
+/// `AnyStringBuilderStream` is always ready and performs no external I/O, so this operation needs no timeout retry.
 /// The same stream-oriented writer can also target a file or terminal.
 auto buildPlantSummary() -> el::String {
-    const auto builder = el::StringBuilderStream::create();
+    const auto builder = el::AnyStringBuilderStream::create();
     if (writePlantSummary(*builder).isTimeout()) {
         throw el::LogicError{"An in-memory string builder unexpectedly timed out."};
     }

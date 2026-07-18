@@ -12,7 +12,7 @@ class OverflowError : public RuntimeError {
 public:
     /// Create an overflow error exception with a reason.
     /// @param reason The reason for the overflow error.
-    explicit OverflowError(text::StringView reason) noexcept : RuntimeError{std::move(reason)} {}
+    explicit OverflowError(text::String reason) noexcept : RuntimeError{std::move(reason)} {}
     /// @overload
     explicit OverflowError(const std::string_view reason) noexcept : RuntimeError{reason} {}
 

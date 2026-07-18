@@ -9,7 +9,7 @@ namespace erbsland::text::impl {
 class NoneEscapeFormatter final : public EscapeFormatter {
 public:
     [[nodiscard]] auto needsEscape(Char character, EscapeAmount amount) const noexcept -> bool override;
-    void escape(Char character, StringBuilder &builder) const override;
+    void escape(Char character, AnyStringBuilder &builder) const override;
     [[nodiscard]] auto escapeSize(Char character, StringKind stringKind) const noexcept -> std::size_t override;
 
 public:

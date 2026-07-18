@@ -5,7 +5,7 @@
 #include "ListItemLayout.hpp"
 
 #include "../../../bgeo/BlockMargins.hpp"
-#include "../../BlockString.hpp"
+#include "../../BlockStringEditor.hpp"
 
 #include <optional>
 

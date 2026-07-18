@@ -4,7 +4,7 @@
 
 #include "../../../text/Literals.hpp"
 #include "../../../text/StdFormatForText.hpp"
-#include "../../../text/StringView.hpp"
+#include "../../../text/String.hpp"
 
 #include <cstdint>
 #include <format>
@@ -18,7 +18,7 @@ enum class DataSection : uint8_t {
     Class,    ///< Character classes.
 };
 
-[[nodiscard]] inline auto toDataSection(const text::StringView &section) noexcept -> DataSection {
+[[nodiscard]] inline auto toDataSection(const text::String &section) noexcept -> DataSection {
     using namespace text::literals;
     if (section == "program"_el) {
         return DataSection::Program;
@@ -32,7 +32,7 @@ enum class DataSection : uint8_t {
     return DataSection::Program;
 }
 
-[[nodiscard]] inline auto toString(const DataSection section) noexcept -> text::StringView {
+[[nodiscard]] inline auto toString(const DataSection section) noexcept -> text::String {
     using namespace text::literals;
     switch (section) {
     case DataSection::Program:
@@ -50,8 +50,8 @@ enum class DataSection : uint8_t {
 }
 
 template <>
-struct std::formatter<erbsland::re::impl::DataSection> : std::formatter<erbsland::text::StringView> {
+struct std::formatter<erbsland::re::impl::DataSection> : std::formatter<erbsland::text::String> {
     auto format(const erbsland::re::impl::DataSection op, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::StringView>::format(erbsland::re::impl::toString(op), ctx);
+        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(op), ctx);
     }
 };

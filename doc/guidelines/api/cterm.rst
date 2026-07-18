@@ -16,7 +16,8 @@ Naming
 .. code-block:: text
 
     Block... // APIs that operate on terminal cells
-        BlockString[View] // styled terminal-cell strings
+        BlockString // owning read-only styled terminal-cell value
+        BlockStringEditor // mutable styled terminal-cell editor
         BlockText // renderable text descriptions
     Terminal... // APIs that make use of terminal input/output
 
@@ -34,8 +35,8 @@ Primary Types
 .. code-block:: text
 
     Block // one styled terminal cell
-    BlockString // an owning sequence of terminal blocks
-    BlockStringView // a shared read-only view into block string data
+    BlockString // an owning read-only sequence of terminal blocks
+    BlockStringEditor // a mutable sequence used while actively editing blocks
     BlockText // renderable block-string content plus rectangle and layout options
     BlockTextOptions // reusable options for rendering block text
     BlockStyle // color and attributes for a block
@@ -48,6 +49,9 @@ Primary Types
     TerminalDocumentStyleSelector // selector for document style rules
     TerminalDocumentStyleRule // text/layout/decorations for one document style rule
     TerminalDocumentStyleMarker // list marker definition for terminal documents
+
+Completed terminal lines, stored options and drawing inputs use ``BlockString``. Mutation-heavy layout code may use
+``BlockStringEditor`` internally and converts the completed result to ``BlockString`` at its boundary.
 
 TerminalDocument... Patterns
 ============================

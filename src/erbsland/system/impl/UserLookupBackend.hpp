@@ -8,7 +8,7 @@
 #include "../UserName.hpp"
 
 #include "../../text/String.hpp"
-#include "../../text/StringView.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <memory>
 

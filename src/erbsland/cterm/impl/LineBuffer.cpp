@@ -21,7 +21,7 @@ void LineBuffer::setCachingEnabled(const bool enabled) noexcept {
     }
 }
 
-void LineBuffer::write(const text::StringView &text) noexcept {
+void LineBuffer::write(const text::String &text) noexcept {
     _buffer.append(text);
     if (text.containsOneOf(newLineCharacters())) {
         _hasNewLine = true;

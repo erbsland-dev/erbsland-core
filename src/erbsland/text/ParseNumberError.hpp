@@ -21,7 +21,7 @@ public:
     /// @param status The reader status that caused the error.
     /// @param position The optional code-point position of the parse error.
     explicit ParseNumberError(
-        StringView reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept :
+        String reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept :
         err::ParseError{std::move(reason), position}, _status{status} {}
     /// @overload
     explicit ParseNumberError(

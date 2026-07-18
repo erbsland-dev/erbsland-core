@@ -5,7 +5,7 @@
 #include "U32StringReader_fwd.hpp"
 
 #include "../U32String.hpp"
-#include "../U32StringView.hpp"
+#include "../U32StringEditor.hpp"
 
 #include "../../../unit/CpIndex.hpp"
 #include "../../impl/StringReaderBase.hpp"
@@ -18,7 +18,7 @@ namespace erbsland::text::impl {
 /// @tested{StringReaderTest}
 class U32StringReader final : public StringReaderBase {
 public:
-    explicit U32StringReader(U32StringView text) noexcept;
+    explicit U32StringReader(U32String text) noexcept;
     U32StringReader(const U32StringReader &) = default;
     U32StringReader(U32StringReader &&) = default;
     auto operator=(const U32StringReader &) -> U32StringReader & = default;
@@ -51,15 +51,15 @@ public:
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
     void startCapture() noexcept override;
-    [[nodiscard]] auto takeCapture() noexcept -> AnyStringView override;
+    [[nodiscard]] auto takeCapture() noexcept -> AnyString override;
     void clearBuffer() noexcept override;
     [[nodiscard]] auto takeBuffer() -> AnyString override;
-    [[nodiscard]] auto bufferView() const noexcept -> AnyStringView override;
+    [[nodiscard]] auto bufferView() const noexcept -> AnyString override;
     [[nodiscard]] auto bufferCharacterLength() const noexcept -> unit::CpLength override;
     [[nodiscard]] auto isBufferEmpty() const noexcept -> bool override;
-    void setBuffer(const AnyStringView &text) override;
+    void setBuffer(const AnyString &text) override;
     void appendToBuffer(Char character) override;
-    void appendToBuffer(const AnyStringView &text) override;
+    void appendToBuffer(const AnyString &text) override;
     void appendCaptureToBuffer() override;
     [[nodiscard]] auto readToBuffer() -> Char override;
     [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
@@ -73,11 +73,11 @@ private:
     auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:
-    U32StringView _text;                                   ///< The string view to read.
+    U32String _text;                                       ///< The read-only string to read.
     unit::CpIndex _position{unit::CpIndex::zero()};        ///< The current UTF-32 data position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()};      ///< The current decoded code-point position.
     unit::CpIndex _captureStart{unit::CpIndex::noIndex()}; ///< The start position of the capture.
-    U32String _buffer;                                     ///< The reader buffer.
+    U32StringEditor _buffer;                               ///< The reader buffer.
 };
 
 }

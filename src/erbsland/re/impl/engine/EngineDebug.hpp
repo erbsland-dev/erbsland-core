@@ -30,7 +30,7 @@ enum class EDMType : uint8_t {
     All,       ///< All states
 };
 
-using EngineDebugMessages = std::list<std::pair<EDMType, text::String>>;
+using EngineDebugMessages = std::list<std::pair<EDMType, text::StringEditor>>;
 
 [[nodiscard]] inline auto engineDebugMessages() -> EngineDebugMessages & {
     static EngineDebugMessages messages;

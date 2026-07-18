@@ -6,7 +6,7 @@
 
 #include "../../i18n/DisplayTextMap.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringBuilder.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode.hpp"
 #include "../../text/TextNodeType.hpp"
@@ -18,17 +18,21 @@ namespace erbsland::err::impl {
 
 using namespace text::literals;
 
-ExceptionDiagnostic::ExceptionDiagnostic(
-    text::StringView message, const i18n::DisplayTextMapConstPtr &displayText) noexcept :
+using text::String;
+using text::StringEditor;
+using text::TextDocument;
+using text::TextNodeType;
+
+ExceptionDiagnostic::ExceptionDiagnostic(String message, const i18n::DisplayTextMapConstPtr &displayText) noexcept :
     _message{std::move(message)}, _displayText{displayText} {
 }
 
-auto ExceptionDiagnostic::setSourceName(text::StringView sourceName) noexcept -> ExceptionDiagnostic & {
+auto ExceptionDiagnostic::setSourceName(String sourceName) noexcept -> ExceptionDiagnostic & {
     _sourceName = std::move(sourceName);
     return *this;
 }
 
-auto ExceptionDiagnostic::setSourcePath(text::StringView sourcePath) noexcept -> ExceptionDiagnostic & {
+auto ExceptionDiagnostic::setSourcePath(String sourcePath) noexcept -> ExceptionDiagnostic & {
     _sourcePath = std::move(sourcePath);
     return *this;
 }
@@ -38,17 +42,16 @@ auto ExceptionDiagnostic::setLocation(unit::CodeLocation location) noexcept -> E
     return *this;
 }
 
-auto ExceptionDiagnostic::appendField(text::StringView label, text::StringView value, text::StringView style)
-    -> ExceptionDiagnostic & {
+auto ExceptionDiagnostic::appendField(String label, String value, String style) -> ExceptionDiagnostic & {
     _fields.append(Field{std::move(label), std::move(value), std::move(style)});
     return *this;
 }
 
-auto ExceptionDiagnostic::sourceName() const noexcept -> text::StringView {
+auto ExceptionDiagnostic::sourceName() const noexcept -> String {
     return _sourceName;
 }
 
-auto ExceptionDiagnostic::sourcePath() const noexcept -> text::StringView {
+auto ExceptionDiagnostic::sourcePath() const noexcept -> String {
     return _sourcePath;
 }
 
@@ -56,11 +59,11 @@ auto ExceptionDiagnostic::location() const noexcept -> unit::CodeLocation {
     return _location;
 }
 
-auto ExceptionDiagnostic::toString() const noexcept -> text::StringView {
+auto ExceptionDiagnostic::toString() const noexcept -> String {
     return _message;
 }
 
-auto ExceptionDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> text::TextDocument {
+auto ExceptionDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &displayText) const -> TextDocument {
     const auto resolvedDisplayText = displayText != nullptr
         ? displayText
         : (_displayText != nullptr ? _displayText : i18n::DisplayTextMap::defaultMap());
@@ -69,27 +72,27 @@ auto ExceptionDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &dis
         {},
         resolvedDisplayText};
     if (!_fields.isEmpty()) {
-        auto list = builder.root()->add(text::TextNodeType::FieldList);
+        auto list = builder.root()->add(TextNodeType::FieldList);
         for (const auto &field : _fields) {
-            auto item = list->add(text::TextNodeType::FieldItem);
-            item->add(text::TextNodeType::FieldLabel)->addText(field.label);
-            auto content = item->add(text::TextNodeType::FieldContent);
+            auto item = list->add(TextNodeType::FieldItem);
+            item->add(TextNodeType::FieldLabel)->addText(field.label);
+            auto content = item->add(TextNodeType::FieldContent);
             content->setStyle(field.style);
             if (field.style.contains("path"_el)) {
-                auto segment = text::StringBuilder{};
+                auto segment = StringEditor{};
                 for (const auto character : field.value) {
                     if (character == U'/') {
                         if (!segment.isEmpty()) {
-                            content->addText(segment.toString());
+                            content->addText(segment);
                             segment.clear();
                         }
-                        content->add(text::TextNodeType::Separator)->addText("/"_el);
+                        content->add(TextNodeType::Separator)->addText("/"_el);
                     } else {
                         segment.append(character);
                     }
                 }
                 if (!segment.isEmpty()) {
-                    content->addText(segment.toString());
+                    content->addText(segment);
                 }
             } else {
                 content->addText(field.value);

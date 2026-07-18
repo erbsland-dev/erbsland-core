@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../i18n/DisplayTextMap_fwd.hpp"
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 #include "../text/TextDocument.hpp"
 #include "../text/TextNode_fwd.hpp"
 #include "../unit/CodeLocation.hpp"
@@ -16,9 +16,7 @@ class ErrorDocumentBuilder final {
 public:
     /// Create a builder and add the initial title and optional description.
     explicit ErrorDocumentBuilder(
-        text::StringView title,
-        text::StringView description = {},
-        const i18n::DisplayTextMapConstPtr &displayText = {});
+        text::String title, text::String description = {}, const i18n::DisplayTextMapConstPtr &displayText = {});
 
     // defaults/deletions
     ~ErrorDocumentBuilder() = default;
@@ -29,9 +27,9 @@ public:
 
 public:
     /// Add a consistently styled diagnostic section heading.
-    auto addSection(text::StringView title) -> text::TextNodePtr;
+    auto addSection(text::String title) -> text::TextNodePtr;
     /// Add available source name, path, and location fields.
-    void addSource(const text::StringView &sourceName, const text::StringView &sourcePath, unit::CodeLocation location);
+    void addSource(const text::String &sourceName, const text::String &sourcePath, unit::CodeLocation location);
     /// Transfer the completed document out of this builder.
     [[nodiscard]] auto takeDocument() -> text::TextDocument;
 
@@ -42,7 +40,7 @@ public: // accessors
     [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
 
 private:
-    void addSourceField(const text::StringView &label, text::StringView value, const text::StringView &style);
+    void addSourceField(const text::String &label, text::String value, const text::String &style);
 
 private:
     text::TextDocument _document;

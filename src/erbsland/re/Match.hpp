@@ -2,19 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Match_fwd.hpp"
 #include "MatchBase.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String_fwd.hpp"
 #include "../util/CoGenerator.hpp"
 
-#include <memory>
-#include <vector>
-
 namespace erbsland::re {
-
-class Match;
-/// A shared pointer to a match result.
-using MatchPtr = std::shared_ptr<Match>;
 
 /// An owning match result.
 ///
@@ -28,25 +22,19 @@ public:
 
 public:
     /// Get the full content of the match.
-    [[nodiscard]] auto content() const -> text::StringView;
+    [[nodiscard]] auto content() const -> text::String;
     /// Get the content of the specified group.
     /// @throws err::ParameterError if the group index is invalid.
-    [[nodiscard]] auto content(CaptureGroupIndex groupIndex) const -> text::StringView;
+    [[nodiscard]] auto content(CaptureGroupIndex groupIndex) const -> text::String;
     /// Get the content of the specified group.
     /// @throws err::ParameterError if the group name is invalid.
-    [[nodiscard]] auto content(const text::StringView &groupName) const -> text::StringView;
+    [[nodiscard]] auto content(const text::String &groupName) const -> text::String;
 
 protected:
     /// Get a view to the contents of a given group.
     /// If the contents can't be resolved, throw an exception or return an empty view.
     /// @param group The capture group to retrieve the content for.
-    [[nodiscard]] virtual auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::StringView = 0;
+    [[nodiscard]] virtual auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::String = 0;
 };
-
-/// A generator returning matches.
-using MatchGenerator = util::CoGenerator<MatchPtr>;
-
-/// A list of matches.
-using MatchList = std::vector<MatchPtr>;
 
 }

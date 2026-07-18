@@ -411,7 +411,7 @@ It then enters a separate flush loop, so a flush timeout can never duplicate the
     /// Retry one complete output request without changing it.
     /// A timed-out write accepted none of the record, so repeating the same call cannot duplicate a partial record.
     /// Limit retries, handle stream failures separately, and flush accepted output when native delivery matters.
-    auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlockView &record) -> std::size_t {
+    auto writeObservationRecord(el::ByteOutputStream &output, const el::ByteBlock &record) -> std::size_t {
         constexpr auto cMaximumAttempts = 3U;
 
         try {

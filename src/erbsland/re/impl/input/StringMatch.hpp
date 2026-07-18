@@ -8,14 +8,14 @@ namespace erbsland::re::impl {
 
 class StringMatch final : public Match {
 public:
-    StringMatch(ConstRegExPtr regEx, CaptureGroupList captureGroupList, const text::StringView &text) :
-        Match{std::move(regEx), std::move(captureGroupList)}, _text{text} {}
+    StringMatch(CaptureGroupList captureGroupList, const text::String &text) :
+        Match{std::move(captureGroupList)}, _text{text} {}
 
 protected:
-    [[nodiscard]] auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::StringView override;
+    [[nodiscard]] auto getContentForGroup(const CaptureGroup &group) const noexcept -> text::String override;
 
 private:
-    text::StringView _text;
+    text::String _text;
 };
 
 }

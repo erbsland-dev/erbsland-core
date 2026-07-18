@@ -15,17 +15,17 @@ void DemoApplication::registerCommandLineOptions(const el::OptionsPtr &options) 
         .setHelp("Specify the name of the demo to run. If not specified, all demos will be run."_el);
 }
 
-void DemoApplication::registerDemo(const el::StringView &name, const DemoFn &demoFn, Mode mode) {
-    _demoFunctions.set(el::String{name}, Demo{name, mode, demoFn});
+void DemoApplication::registerDemo(const el::String &name, const DemoFn &demoFn, Mode mode) {
+    _demoFunctions.set(name, Demo{name, mode, demoFn});
 }
 
 auto DemoApplication::main() -> el::ExitCode {
     const auto demoName = optionValues()->getText("demo"_el);
     if (demoName.isEmpty()) {
-        _demoFunctions.forEach([&](const el::StringView &name, const Demo &demo) -> el::LoopStatus {
+        _demoFunctions.forEach([&](const el::String &name, const Demo &demo) -> el::LoopStatus {
             el::io::printLine();
             el::io::printLine("Running demo: "_el, name);
-            el::io::printLine(el::String{}.append(U'=', el::CpLength{78}));
+            el::io::printLine(el::String{el::String::fromCharacter(U'=', el::CpLength{78})});
             demo.demoFn();
             if (demo.mode == Mode::EventLoop) {
                 runDemoEventLoop();

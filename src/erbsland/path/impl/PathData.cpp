@@ -7,8 +7,8 @@
 #include "PathConstants.hpp"
 
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
 #include "../../text/StringCharReader.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../unit/CpIndex.hpp"
 
 #include <type_traits>
@@ -19,7 +19,7 @@ using namespace text::literals;
 using namespace text;
 using namespace unit;
 
-PathData::PathData(const PathFormat format, text::StringView root, text::StringViewList elements) :
+PathData::PathData(const PathFormat format, text::String root, text::StringList elements) :
     _format{format}, _root{std::move(root)}, _elements{std::move(elements)} {
 }
 
@@ -35,11 +35,11 @@ auto PathData::format() const noexcept -> PathFormat {
     return _format;
 }
 
-auto PathData::root() const noexcept -> text::StringView {
+auto PathData::root() const noexcept -> text::String {
     return _root;
 }
 
-auto PathData::elements() const noexcept -> text::StringViewList {
+auto PathData::elements() const noexcept -> text::StringList {
     return _elements;
 }
 
@@ -47,11 +47,11 @@ void PathData::setFormat(PathFormat format) noexcept {
     _format = format;
 }
 
-void PathData::setRoot(text::StringView root) noexcept {
+void PathData::setRoot(text::String root) noexcept {
     _root = std::move(root);
 }
 
-void PathData::setElements(text::StringViewList elements) noexcept {
+void PathData::setElements(text::StringList elements) noexcept {
     _elements = std::move(elements);
 }
 
@@ -63,8 +63,8 @@ auto PathData::publicElementCount() const noexcept -> unit::ElementCount {
     return result;
 }
 
-auto PathData::publicElements() const -> text::StringViewList {
-    auto result = StringViewList{};
+auto PathData::publicElements() const -> text::StringList {
+    auto result = StringList{};
     result.reserve(publicElementCount());
     if (!_root.isEmpty()) {
         result.append(_root);
@@ -73,7 +73,7 @@ auto PathData::publicElements() const -> text::StringViewList {
     return result;
 }
 
-auto PathData::toString() const -> StringView {
+auto PathData::toString() const -> String {
     auto length = _root.length();
     auto needsSeparator = !_root.isEmpty() && !_root.endsWith(cSlash);
     for (const auto &element : _elements) {
@@ -84,7 +84,7 @@ auto PathData::toString() const -> StringView {
         needsSeparator = true;
     }
 
-    auto result = String{};
+    auto result = StringEditor{};
     result.reserve(length);
     if (!_root.isEmpty()) {
         result.append(_root);
@@ -97,10 +97,10 @@ auto PathData::toString() const -> StringView {
         result.append(element);
         needsSeparator = true;
     }
-    return StringView{result};
+    return result;
 }
 
-auto PathData::toWindows(const PathWindowsFormat format) const -> StringView {
+auto PathData::toWindows(const PathWindowsFormat format) const -> String {
     if (_format == PathFormat::Posix && isAbsolute()) {
         return {};
     }
@@ -115,7 +115,7 @@ auto PathData::toWindows(const PathWindowsFormat format) const -> StringView {
         first = false;
     }
 
-    auto result = String{};
+    auto result = StringEditor{};
     result.reserve(length);
     appendWindowsRoot(result, format);
     first = true;
@@ -126,11 +126,11 @@ auto PathData::toWindows(const PathWindowsFormat format) const -> StringView {
         result.append(element);
         first = false;
     }
-    return StringView{result};
+    return result;
 }
 
 template <typename tData>
-auto PathData::create(const PathFormat format, const StringView &root, StringViewList elements) noexcept
+auto PathData::create(const PathFormat format, const String &root, StringList elements) noexcept
     -> mem::SharedDataPointer<tData> {
     static_assert(std::is_same_v<tData, PathData>);
 
@@ -163,12 +163,11 @@ auto PathData::create(const PathFormat format, const StringView &root, StringVie
     return PathDataPtr{new PathData{format, root, std::move(elements)}};
 }
 
-template auto PathData::create<PathData>(PathFormat, const StringView &, StringViewList) noexcept -> PathDataPtr;
+template auto PathData::create<PathData>(PathFormat, const String &, StringList) noexcept -> PathDataPtr;
 
-auto PathData::nonRootElementsFromPublicSlice(const StringViewList &elements, bool &sliceStartsWithRoot)
-    -> StringViewList {
+auto PathData::nonRootElementsFromPublicSlice(const StringList &elements, bool &sliceStartsWithRoot) -> StringList {
     sliceStartsWithRoot = false;
-    auto result = StringViewList{};
+    auto result = StringList{};
     result.reserve(elements.count());
     auto first = true;
     for (const auto &element : elements) {
@@ -202,7 +201,7 @@ auto PathData::windowsRootLength(const PathWindowsFormat format) const noexcept 
     return _root.length();
 }
 
-void PathData::appendWindowsRoot(String &result, const PathWindowsFormat format) const {
+void PathData::appendWindowsRoot(StringEditor &result, const PathWindowsFormat format) const {
     if (_root.isEmpty() || _root == cSlash) {
         return;
     }
@@ -224,7 +223,8 @@ void PathData::appendWindowsRoot(String &result, const PathWindowsFormat format)
     result.append(cWindowsSeparator);
 }
 
-void PathData::appendRootWithWindowsSeparators(String &result, const StringView &root, const bool skipFirstCharacter) {
+void PathData::appendRootWithWindowsSeparators(
+    StringEditor &result, const String &root, const bool skipFirstCharacter) {
     auto reader = StringCharReader{root};
     auto isFirstCharacter = true;
     while (!reader.isAtEnd()) {

@@ -177,8 +177,8 @@ Char Set
 
 :cpp:class:`CharSet <erbsland::text::CharSet>` stores a normalized set of Unicode scalar values.
 It is the reusable character-set type for APIs such as
-:cpp:func:`findFirstOf() <erbsland::text::U8StringView::findFirstOf>` and
-:cpp:func:`containsOneOf() <erbsland::text::U8StringView::containsOneOf>`.
+:cpp:func:`findFirstOf() <erbsland::text::U8String::findFirstOf>` and
+:cpp:func:`containsOneOf() <erbsland::text::U8String::containsOneOf>`.
 
 The set uses copy-on-write storage, so passing and copying sets is cheap until a copy is modified.
 Internally, adjacent and overlapping :cpp:class:`CharRange <erbsland::text::CharRange>` values are merged.

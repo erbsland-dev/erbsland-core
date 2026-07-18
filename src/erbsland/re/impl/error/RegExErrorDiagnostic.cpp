@@ -23,7 +23,7 @@ auto RegExErrorDiagnostic::location() const noexcept -> unit::CodeLocation {
     return _context.location();
 }
 
-auto RegExErrorDiagnostic::toString() const noexcept -> text::StringView {
+auto RegExErrorDiagnostic::toString() const noexcept -> text::String {
     try {
         return text::PlainTextRenderer{toTextDocument({})}.build();
     } catch (...) {

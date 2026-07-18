@@ -10,7 +10,7 @@ namespace demo {
 /// explicit little-endian or big-endian byte order for encodings where this matters.
 void encodeStrings() {
     // Encode a short Unicode text into UTF-32 little-endian bytes with a BOM.
-    const auto observation = el::U8StringView{"Sternbild: Orion ✨"_el};
+    const auto observation = el::U8String{"Sternbild: Orion ✨"_el};
     const auto encodedObservation =
         el::StringEncoder{observation}.encode(el::StringEncoding::Utf32LittleEndian, el::StringBomMode::Require);
 

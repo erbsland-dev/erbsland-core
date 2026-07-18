@@ -12,7 +12,7 @@
 
 #include "../err/RuntimeError.hpp"
 #include "../text/Literals.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <algorithm>
 #include <cassert>
@@ -21,6 +21,11 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
+
+using bgeo::Alignment;
+using bgeo::BlockCoordinate;
+using bgeo::BlockPosition;
+using bgeo::BlockSize;
 
 void Terminal::clearScreen() noexcept {
     if (_outputMode == OutputMode::BlockText) {
@@ -83,7 +88,7 @@ void Terminal::updateScreen(const ReadableBuffer &buffer, const UpdateSettings &
                 updateScreenWithoutBackBuffer(buffer, settings);
             }
         }
-        moveCursor(bgeo::BlockPosition{bgeo::BlockCoordinate{0}, _size.height() - 1}, MoveMode::Absolute);
+        moveCursor(BlockPosition{BlockCoordinate{0}, _size.height() - 1}, MoveMode::Absolute);
         setAutoWrap(true); // activate auto wrapping again.
     }
     flush();
@@ -94,14 +99,14 @@ void Terminal::moveHome() noexcept {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(bgeo::BlockPosition{0, 0}, MoveMode::Absolute);
+        _backend->moveCursor(BlockPosition{0, 0}, MoveMode::Absolute);
         return;
     }
     _lineBuffer.write("\x1b[H"_el);
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveCursor(const bgeo::BlockPosition posOrDelta, const MoveMode mode) noexcept {
+void Terminal::moveCursor(const BlockPosition posOrDelta, const MoveMode mode) noexcept {
     if (!_backend->supportsCursorCodes()) {
         _backend->moveCursor(posOrDelta, mode);
         return;
@@ -214,8 +219,8 @@ auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> 
         throw err::RuntimeError{"Back buffer is not initialized."};
     }
     impl::LineBuffer::EmitLockGuard guard(_lineBuffer);
-    auto lastWriteCursor = bgeo::BlockPosition{0, 0};
-    view.size().forEach([&](const bgeo::BlockPosition pos) -> void {
+    auto lastWriteCursor = BlockPosition{0, 0};
+    view.size().forEach([&](const BlockPosition pos) -> void {
         const auto &newCharacter = view.get(pos);
         const auto &oldCharacter = _backBuffer->get(pos);
         if (newCharacter == oldCharacter) {
@@ -227,16 +232,16 @@ auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> 
         }
         write(newCharacter);
         _backBuffer->set(pos, newCharacter);
-        lastWriteCursor += bgeo::BlockPosition{newCharacter.displayWidth(), 0};
+        lastWriteCursor += BlockPosition{newCharacter.displayWidth(), 0};
         if (newCharacter.displayWidth() == 2) {
             // if we have a 2-width character, copy the second position as well (it should be empty).
-            const auto secondPosition = pos + bgeo::BlockPosition{1, 0};
+            const auto secondPosition = pos + BlockPosition{1, 0};
             _backBuffer->set(secondPosition, view.get(secondPosition));
         }
     });
 }
 
-void Terminal::moveTo(const bgeo::BlockPosition pos) noexcept {
+void Terminal::moveTo(const BlockPosition pos) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
@@ -264,7 +269,7 @@ void Terminal::updateSizeTooSmallBuffer(const UpdateSettings &settings) noexcept
         _sizeTooSmallBuffer->fill(settings.minimumSizeBackground());
         if (!settings.minimumSizeMessage().isEmpty()) {
             _sizeTooSmallBuffer->drawBlockText(
-                settings.minimumSizeMessage(), _sizeTooSmallBuffer->rect(), bgeo::Alignment::Center);
+                settings.minimumSizeMessage(), _sizeTooSmallBuffer->rect(), Alignment::Center);
         }
     } else {
         _sizeTooSmallBuffer = {};
@@ -272,12 +277,12 @@ void Terminal::updateSizeTooSmallBuffer(const UpdateSettings &settings) noexcept
 }
 
 void Terminal::writeImpl(const ReadableBuffer &buffer, const bool withRowMove) noexcept {
-    for (auto y = bgeo::BlockCoordinate{0}; y < buffer.size().height(); ++y) {
+    for (auto y = BlockCoordinate{0}; y < buffer.size().height(); ++y) {
         if (withRowMove && y != 0) {
-            moveTo(bgeo::BlockPosition{bgeo::BlockCoordinate{0}, y});
+            moveTo(BlockPosition{BlockCoordinate{0}, y});
         }
-        for (auto x = bgeo::BlockCoordinate{0}; x < buffer.size().width(); ++x) {
-            auto &character = buffer.get(bgeo::BlockPosition{x, y});
+        for (auto x = BlockCoordinate{0}; x < buffer.size().width(); ++x) {
+            auto &character = buffer.get(BlockPosition{x, y});
             setStyle(character.style());
             _lineBuffer.write(character);
         }
@@ -289,11 +294,11 @@ void Terminal::writeImpl(const ReadableBuffer &buffer, const bool withRowMove) n
     }
 }
 
-auto Terminal::applySafeMargin(const bgeo::BlockSize terminalSize) const noexcept -> bgeo::BlockSize {
+auto Terminal::applySafeMargin(const BlockSize terminalSize) const noexcept -> BlockSize {
     if (!_safeMarginEnabled) {
         return terminalSize;
     }
-    return terminalSize - bgeo::BlockSize{1, 1};
+    return terminalSize - BlockSize{1, 1};
 }
 
 void Terminal::initializeScreen() noexcept {

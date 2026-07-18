@@ -83,7 +83,7 @@ Choose an input method according to the shape of the data you need:
     This is the low-level option for bounded processing loops.
 
 The output side deliberately has one simple rule: every ``write()`` accepts the complete byte, span, or
-:cpp:class:`ByteBlockView <erbsland::mem::ByteBlockView>`, or accepts nothing.
+:cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`, or accepts nothing.
 The integer helpers build on the same read and write contracts and add configurable byte order.
 
 Handle Every Read Result
@@ -323,7 +323,7 @@ length.
                 if (!output->isReady()) {
                     el::io::printLine("The output is still processing earlier data."_el);
                 }
-                if (output->write(el::ByteBlockView{record}).isSuccess()) {
+                if (output->write(el::ByteBlock{record}).isSuccess()) {
                     if (output->close().isTimeout()) {
                         output->abort();
                         throw el::RuntimeError{"Closing the geometry-record file timed out."_el};

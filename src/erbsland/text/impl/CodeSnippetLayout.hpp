@@ -5,7 +5,7 @@
 #include "CodeSnippetLayoutMarker.hpp"
 #include "CodeSnippetLayoutRow.hpp"
 
-#include "../StringView.hpp"
+#include "../String.hpp"
 
 #include <vector>
 
@@ -20,7 +20,8 @@ public:
     /// @param markers The markers attached to the line.
     /// @param width The available source width in terminal cells.
     /// @return The source rows after cropping or character-level wrapping.
-    [[nodiscard]] static auto build(StringView source, const std::vector<CodeSnippetLayoutMarker> &markers, int width)
+    [[nodiscard]] static auto build(
+        const String &source, const std::vector<CodeSnippetLayoutMarker> &markers, int width)
         -> std::vector<CodeSnippetLayoutRow>;
 
     /// Test whether a marker has visible content in a source row.
@@ -36,7 +37,7 @@ public:
     [[nodiscard]] static auto rowWidth(const CodeSnippetLayoutRow &row) noexcept -> int;
 
 private:
-    [[nodiscard]] static auto sourceCells(StringView source) -> std::vector<CodeSnippetLayoutCell>;
+    [[nodiscard]] static auto sourceCells(const String &source) -> std::vector<CodeSnippetLayoutCell>;
     static void applyMarkers(
         std::vector<CodeSnippetLayoutCell> &cells, const std::vector<CodeSnippetLayoutMarker> &markers);
     [[nodiscard]] static auto wrap(const std::vector<CodeSnippetLayoutCell> &cells, int width)

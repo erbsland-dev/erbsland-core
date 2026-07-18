@@ -4,10 +4,10 @@
 
 namespace erbsland::mem {
 
-ByteReader::ByteReader(const ByteBlock &block) noexcept : _view{block} {
+ByteReader::ByteReader(const ByteBlockEditor &editor) noexcept : _block{editor} {
 }
 
-ByteReader::ByteReader(const ByteBlockView &view) noexcept : _view{view} {
+ByteReader::ByteReader(const ByteBlock &block) noexcept : _block{block} {
 }
 
 void ByteReader::setPosition(const unit::ByteIndex position) noexcept {
@@ -22,7 +22,7 @@ auto ByteReader::readByte() noexcept -> Byte {
     if (!canRead(1U)) {
         return {};
     }
-    auto result = _view.get(_position);
+    auto result = _block.get(_position);
     advance(1U);
     return result;
 }
@@ -35,7 +35,7 @@ auto ByteReader::peekByte(const std::size_t offset, const Byte defaultValue) con
     if (_position.isNoIndex()) {
         return defaultValue;
     }
-    return _view.get(_position + unit::ByteLength::fromSizeT(offset), defaultValue);
+    return _block.get(_position + unit::ByteLength::fromSizeT(offset), defaultValue);
 }
 
 auto ByteReader::readByteOrThrow() -> Byte {
@@ -45,7 +45,7 @@ auto ByteReader::readByteOrThrow() -> Byte {
 }
 
 auto ByteReader::peekByteOrThrow() const -> Byte {
-    return _view.getOrThrow(_position);
+    return _block.getOrThrow(_position);
 }
 
 auto ByteReader::canRead(const std::size_t byteCount) const noexcept -> bool {

@@ -5,11 +5,11 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u16/U16StringView.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u32/U32StringView.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringView.hpp>
+#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/List.hpp>
 #include <erbsland/util/LoopResult.hpp>
@@ -23,7 +23,7 @@
 using el::text::AsciiCategory;
 using el::text::CharSet;
 using el::text::U8String;
-using el::text::U8StringView;
+using el::text::U8StringEditor;
 using el::text::UnicodeCategory;
 using el::util::LoopResult;
 using el::util::LoopStatus;
@@ -231,8 +231,8 @@ public:
         auto data = std::string{"A"};
         data.push_back(static_cast<char>(0xC0U));
         data.push_back('B');
-        const auto text = U8String{std::string_view{data}};
-        const auto set = CharSet{U8StringView{text}};
+        const auto text = U8StringEditor{std::string_view{data}};
+        const auto set = CharSet{U8String{text}};
 
         REQUIRE(set.contains(Char{U'A'}));
         REQUIRE(set.contains(Char::replacement()));

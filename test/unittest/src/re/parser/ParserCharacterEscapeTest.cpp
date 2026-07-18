@@ -8,7 +8,7 @@ TAGS(Parsing)
 class ParserCharacterEscapeTest final : public UNITTEST_SUBCLASS(ParserBase) {
 public:
     struct EscapeTestCase {
-        StringView pattern;
+        String pattern;
         std::string_view expected;
     };
     using EscapeTestCases = std::vector<EscapeTestCase>;
@@ -18,7 +18,7 @@ public:
         Settings settings;
         settings.enableFeature(Feature::AcceptNullInPattern);
         WITH_CONTEXT(parseAndTest(
-            StringView{rawNullPattern},
+            String{rawNullPattern},
             {
                 "Group(size=1)",
                 "  Sequence(size=1)",
@@ -39,11 +39,11 @@ public:
     }
 
     void requireUnchanged(
-        const StringView &pattern,
+        const String &pattern,
         const std::string_view expected,
         GroupFlags groupFlags = GroupFlags{},
         const Settings &settings = {}) {
-        auto enclosedPattern = String{"abc"_el};
+        auto enclosedPattern = StringEditor{"abc"_el};
         enclosedPattern.append(pattern);
         enclosedPattern.append("xyz"_el);
         parser = Parser{enclosedPattern, groupFlags, settings};

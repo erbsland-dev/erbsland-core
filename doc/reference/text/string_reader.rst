@@ -12,12 +12,12 @@ String Char Reader
 ------------------
 
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` is a sequential reader for decoded Unicode code points.
-It accepts :cpp:class:`U8String <erbsland::text::U8String>` /:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
-:cpp:class:`U16String <erbsland::text::U16String>` /:cpp:class:`U16StringView <erbsland::text::U16StringView>`, and
-:cpp:class:`U32String <erbsland::text::U32String>` /:cpp:class:`U32StringView <erbsland::text::U32StringView>` and
+It accepts :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /:cpp:class:`U8String <erbsland::text::U8String>`,
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>` /:cpp:class:`U16String <erbsland::text::U16String>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` /:cpp:class:`U32String <erbsland::text::U32String>` and
 exposes the same read API for all encodings.
 
-The reader keeps the source storage alive through the string view object stored in its backend.
+The reader keeps the source storage alive through the read-only string object stored in its backend.
 Copying a reader shares the immutable source data, but the cursor state is copied, so moving one reader forward does not
 move another copy.
 
@@ -51,7 +51,7 @@ integer type, and report failures as ``ParseNumberError``.
 Capture and Buffer
 ~~~~~~~~~~~~~~~~~~
 
-The capture API marks a source range and returns it as an inexpensive string view.
+The capture API marks a source range and returns it as an inexpensive owning read-only string slice.
 Use
 :cpp:func:`startCapture() <erbsland::text::StringCharReader::startCapture>` and
 :cpp:func:`takeCapture() <erbsland::text::StringCharReader::takeCapture>` when the parsed token can be represented as

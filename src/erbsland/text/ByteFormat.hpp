@@ -5,7 +5,7 @@
 #include "ByteFormat_fwd.hpp"
 #include "ByteFormatFlag.hpp"
 #include "LetterCase.hpp"
-#include "StringView_fwd.hpp"
+#include "String_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
@@ -62,21 +62,21 @@ public: // accessors
     /// Set the number of lines per group.
     auto setLineGroupSize(unit::ElementCount lineGroupSize) noexcept -> ByteFormat &;
     /// Get the byte or byte group separator.
-    [[nodiscard]] auto byteSeparator() const noexcept -> const StringView &;
+    [[nodiscard]] auto byteSeparator() const noexcept -> const String &;
     /// Set the byte or byte group separator.
-    auto setByteSeparator(const StringView &byteSeparator) noexcept -> ByteFormat &;
+    auto setByteSeparator(const String &byteSeparator) noexcept -> ByteFormat &;
     /// Get the separator between offsets and byte data.
-    [[nodiscard]] auto offsetSeparator() const noexcept -> const StringView &;
+    [[nodiscard]] auto offsetSeparator() const noexcept -> const String &;
     /// Set the separator between offsets and byte data.
-    auto setOffsetSeparator(const StringView &offsetSeparator) -> ByteFormat &;
+    auto setOffsetSeparator(const String &offsetSeparator) -> ByteFormat &;
     /// Get the prefix inserted before each byte-data line.
-    [[nodiscard]] auto linePrefix() const noexcept -> const StringView &;
+    [[nodiscard]] auto linePrefix() const noexcept -> const String &;
     /// Set the prefix inserted before each byte-data line.
-    auto setLinePrefix(const StringView &linePrefix) -> ByteFormat &;
+    auto setLinePrefix(const String &linePrefix) -> ByteFormat &;
     /// Get the suffix inserted after each byte-data line.
-    [[nodiscard]] auto lineSuffix() const noexcept -> const StringView &;
+    [[nodiscard]] auto lineSuffix() const noexcept -> const String &;
     /// Set the suffix inserted after each byte-data line.
-    auto setLineSuffix(const StringView &lineSuffix) -> ByteFormat &;
+    auto setLineSuffix(const String &lineSuffix) -> ByteFormat &;
     /// Get the starting byte offset.
     [[nodiscard]] auto startOffset() const noexcept -> unit::ByteIndex;
     /// Set the starting byte offset.

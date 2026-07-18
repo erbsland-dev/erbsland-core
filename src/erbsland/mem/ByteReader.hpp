@@ -4,7 +4,7 @@
 
 #include "Byte.hpp"
 #include "ByteBlock.hpp"
-#include "ByteBlockView.hpp"
+#include "ByteBlockEditor.hpp"
 #include "Endianness.hpp"
 
 #include "impl/Throw.hpp"
@@ -19,14 +19,14 @@
 
 namespace erbsland::mem {
 
-/// A sequential byte reader for `ByteBlock` data.
+/// A sequential byte reader for read-only or editable byte blocks.
 /// @tested{ByteReaderWriterTest}
 class ByteReader final {
 public:
-    /// Create a reader for a byte block.
+    /// Create a reader sharing the data from a byte block editor.
+    ByteReader(const ByteBlockEditor &editor) noexcept; // NOLINT(*-explicit-constructor)
+    /// Create a reader sharing the data from a read-only byte block.
     ByteReader(const ByteBlock &block) noexcept; // NOLINT(*-explicit-constructor)
-    /// Create a reader for a byte block view.
-    ByteReader(const ByteBlockView &view) noexcept; // NOLINT(*-explicit-constructor)
 
     ByteReader() = default;
     ~ByteReader() = default;
@@ -37,7 +37,7 @@ public:
 
 public: // accessors
     /// Get the readable byte length.
-    [[nodiscard]] auto length() const noexcept -> unit::ByteLength { return _view.length(); }
+    [[nodiscard]] auto length() const noexcept -> unit::ByteLength { return _block.length(); }
     /// Get the current read position.
     [[nodiscard]] auto position() const noexcept -> unit::ByteIndex { return _position; }
     /// Set the read position, clamped to `length()`.
@@ -150,7 +150,8 @@ private:
         using Unsigned = std::make_unsigned_t<T>;
         auto result = Unsigned{0};
         for (auto i = std::size_t{0}; i < sizeof(T); ++i) {
-            const auto byte = static_cast<Unsigned>(_view.get(_position + unit::ByteLength::fromSizeT(i)).toRawValue());
+            const auto byte =
+                static_cast<Unsigned>(_block.get(_position + unit::ByteLength::fromSizeT(i)).toRawValue());
             const auto shift = _endianness == Endianness::Little ? i * 8U : (sizeof(T) - 1U - i) * 8U;
             result |= static_cast<Unsigned>(byte) << shift;
         }
@@ -158,7 +159,7 @@ private:
     }
 
 private:
-    ByteBlockView _view;                        ///< The shared readable bytes.
+    ByteBlock _block;                           ///< The shared readable bytes.
     unit::ByteIndex _position{};                ///< Current read position.
     Endianness _endianness{Endianness::Little}; ///< Integer byte order.
 };

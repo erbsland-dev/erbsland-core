@@ -14,7 +14,7 @@ namespace erbsland::options::impl {
 
 using namespace text::literals;
 
-auto OptionParser::collectPositionalArgument(const text::StringView &value, const unit::ArgumentIndex index) -> bool {
+auto OptionParser::collectPositionalArgument(const text::String &value, const unit::ArgumentIndex index) -> bool {
     _positionals.emplace_back(PositionalArgument{value, index});
     return true;
 }

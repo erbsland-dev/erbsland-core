@@ -4,8 +4,8 @@
 
 #include "../WritableBuffer.hpp"
 
-#include "../../text/StringView.hpp"
-#include "../../text/u32/U32StringView.hpp"
+#include "../../text/String.hpp"
+#include "../../text/u32/U32String.hpp"
 
 namespace erbsland::cterm::impl {
 
@@ -21,27 +21,27 @@ public:
     auto operator=(BlockTextPainter &&) -> BlockTextPainter & = delete;
 
 public:
-    void drawBlockText(bgeo::BlockPosition pos, const BlockStringView &str);
+    void drawBlockText(bgeo::BlockPosition pos, const BlockString &str);
     void drawBlockText(const BlockText &text, std::size_t animationCycle = 0);
     void drawBlockText(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         const BlockTextOptions &options,
         std::size_t animationCycle = 0);
     void drawBlockText(
-        const text::StringView &text,
+        const text::String &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
         std::size_t animationCycle = 0);
     void drawBlockText(
-        const text::U32StringView &text,
+        const text::U32String &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
         std::size_t animationCycle = 0);
     void drawBlockText(
-        const BlockStringView &text,
+        const BlockString &text,
         bgeo::BlockRectangle rect,
         bgeo::Alignment alignment = bgeo::Alignment::TopLeft,
         BlockStyle style = {},
@@ -68,8 +68,8 @@ private: // helper
     [[nodiscard]] static auto contentRect(bgeo::BlockRectangle rect, const ParagraphOptions &options) noexcept
         -> bgeo::BlockRectangle;
     [[nodiscard]] auto buildSimpleBlockTextLines(
-        const BlockStringView &text, bgeo::BlockRectangle rect, ParagraphSpacing spacing) const -> BlockStringLines;
-    [[nodiscard]] auto buildFontBlockTextLines(const BlockTextOptions &options, const BlockStringView &paragraph) const
+        const BlockString &text, bgeo::BlockRectangle rect, ParagraphSpacing spacing) const -> BlockStringLines;
+    [[nodiscard]] auto buildFontBlockTextLines(const BlockTextOptions &options, const BlockString &paragraph) const
         -> BlockStringLines;
     void applyBlockTextLines(
         bgeo::BlockRectangle rect,

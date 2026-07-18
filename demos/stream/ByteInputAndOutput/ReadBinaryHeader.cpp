@@ -30,7 +30,8 @@ void inspectBinaryHeader(el::ByteInputStream &input) {
         }
 
         const auto &header = result.data();
-        el::io::printLine("Geometry-file marker: "_el, el::String::fromByteBlock(header, el::ByteFormat::separated()));
+        el::io::printLine(
+            "Geometry-file marker: "_el, el::String{el::String::fromByteBlock(header, el::ByteFormat::separated())});
     } catch (const el::StreamError &) {
         throw el::RuntimeError{"The geometry-file header could not be read."_el, std::current_exception()};
     }

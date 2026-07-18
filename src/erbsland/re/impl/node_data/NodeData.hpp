@@ -6,9 +6,9 @@
 
 #include "../../../text/Literals.hpp"
 #include "../../../text/String.hpp"
+#include "../../../text/StringEditor.hpp"
 #include "../../../text/StringFormat.hpp"
-#include "../../../text/StringView.hpp"
-#include "../../../text/StringViewList.hpp"
+#include "../../../text/StringList.hpp"
 
 #include <algorithm>
 #include <cassert>

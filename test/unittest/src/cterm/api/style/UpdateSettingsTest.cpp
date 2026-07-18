@@ -29,7 +29,7 @@ public:
 
         settings.setMinimumSize(expectedMinimumSize);
         settings.setMinimumSizeBackground(Block{U'.'});
-        settings.setMinimumSizeMessage(BlockString{"Terminal too small"_el});
+        settings.setMinimumSizeMessage(BlockStringEditor{"Terminal too small"_el});
         settings.setShowCropMarks(true);
         settings.setCropMarkRight(Block{U'>'});
         settings.setCropMarkBottomRight(Block{U'+'});

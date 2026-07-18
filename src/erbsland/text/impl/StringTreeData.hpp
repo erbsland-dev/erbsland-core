@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../StringView.hpp"
+#include "../String.hpp"
 
 #include <memory>
 #include <utility>
@@ -21,11 +21,11 @@ enum class StringTreeEntryKind {
 
 struct StringTreeEntry final {
     StringTreeEntryKind kind{StringTreeEntryKind::Text};
-    StringView label;
-    StringView value;
+    String label;
+    String value;
     StringTreeDataPtr treeData;
 
-    [[nodiscard]] static auto text(StringView value) -> StringTreeEntry {
+    [[nodiscard]] static auto text(String value) -> StringTreeEntry {
         return StringTreeEntry{
             .kind = StringTreeEntryKind::Text,
             .label = {},
@@ -34,7 +34,7 @@ struct StringTreeEntry final {
         };
     }
 
-    [[nodiscard]] static auto labeledValue(StringView label, StringView value) -> StringTreeEntry {
+    [[nodiscard]] static auto labeledValue(String label, String value) -> StringTreeEntry {
         return StringTreeEntry{
             .kind = StringTreeEntryKind::Value,
             .label = std::move(label),
@@ -43,7 +43,7 @@ struct StringTreeEntry final {
         };
     }
 
-    [[nodiscard]] static auto tree(StringView label, StringTreeDataPtr treeData) -> StringTreeEntry {
+    [[nodiscard]] static auto tree(String label, StringTreeDataPtr treeData) -> StringTreeEntry {
         return StringTreeEntry{
             .kind = StringTreeEntryKind::Tree,
             .label = std::move(label),
@@ -54,7 +54,7 @@ struct StringTreeEntry final {
 };
 
 struct StringTreeData final {
-    StringView title;
+    String title;
     std::vector<StringTreeEntry> entries;
 };
 

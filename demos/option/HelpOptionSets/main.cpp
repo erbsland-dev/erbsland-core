@@ -71,7 +71,7 @@ using namespace el::text::literals;
         .addChoice("json"_el)
         .addChoice("table"_el)
         .setValueName("format"_el)
-        .setDefaultValue(el::String{"text"_el})
+        .setDefaultValue("text"_el)
         .setHelpDescription("Report format."_el);
     set->addOption({"--theme"_el, "theme"_el})
         .addChoice("light"_el)
@@ -82,7 +82,7 @@ using namespace el::text::literals;
         .addChoice("es"_el)
         .addChoice("en"_el)
         .addChoice("de"_el)
-        .setDefaultValue(el::String{"en"_el})
+        .setDefaultValue("en"_el)
         .setHelpDescription("Natural language for labels."_el);
     set->addOption({"--title"_el, "title"_el})
         .setType(el::OptionType::Text)

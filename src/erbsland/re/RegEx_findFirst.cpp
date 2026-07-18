@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RegEx.hpp"
 
+#include "impl/engine/Engine.hpp"
 #include "impl/input/StreamInput.hpp"
 #include "impl/input/StringInput.hpp"
 #include "impl/input/U16StringInput.hpp"
@@ -14,15 +15,15 @@ namespace erbsland::re {
 
 using namespace text::literals;
 
-auto RegEx::findFirst(const text::StringView &text) const -> MatchPtr {
+auto RegEx::findFirst(const text::String &text) const -> MatchPtr {
     return findFirst(impl::StringInput::create(text));
 }
 
-auto RegEx::findFirst(const text::U16StringView &text) const -> Match16Ptr {
+auto RegEx::findFirst(const text::U16String &text) const -> Match16Ptr {
     return findFirst(impl::U16StringInput::create(text));
 }
 
-auto RegEx::findFirst(const text::U32StringView &text) const -> Match32Ptr {
+auto RegEx::findFirst(const text::U32String &text) const -> Match32Ptr {
     return findFirst(impl::U32StringInput::create(text));
 }
 
@@ -38,7 +39,7 @@ auto RegEx::findFirst(const InputPtr &input) const -> MatchPtr {
     if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(shared_from_this(), state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
 }
 
 auto RegEx::findFirst(const Input16Ptr &input) const -> Match16Ptr {
@@ -49,7 +50,7 @@ auto RegEx::findFirst(const Input16Ptr &input) const -> Match16Ptr {
     if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(shared_from_this(), state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
 }
 
 auto RegEx::findFirst(const Input32Ptr &input) const -> Match32Ptr {
@@ -60,7 +61,7 @@ auto RegEx::findFirst(const Input32Ptr &input) const -> Match32Ptr {
     if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(shared_from_this(), state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
 }
 
 }

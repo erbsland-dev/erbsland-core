@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <utility>
 
@@ -12,7 +12,7 @@ namespace erbsland::event {
 class EventIdInfo {
 public:
     /// Create new event identifier information.
-    EventIdInfo(text::StringView name, text::StringView description) :
+    EventIdInfo(text::String name, text::String description) :
         _name{std::move(name)}, _description{std::move(description)} {}
 
     // defaults
@@ -25,13 +25,13 @@ public:
 
 public:
     /// Get the reverse-DNS-style event name.
-    [[nodiscard]] auto name() const noexcept -> const text::StringView & { return _name; }
+    [[nodiscard]] auto name() const noexcept -> const text::String & { return _name; }
     /// Get the event description.
-    [[nodiscard]] auto description() const noexcept -> const text::StringView & { return _description; }
+    [[nodiscard]] auto description() const noexcept -> const text::String & { return _description; }
 
 private:
-    text::StringView _name;        ///< The reverse DNS style name of the event.
-    text::StringView _description; ///< A description of the event identifier.
+    text::String _name;        ///< The reverse DNS style name of the event.
+    text::String _description; ///< A description of the event identifier.
 };
 
 }

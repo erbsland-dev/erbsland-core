@@ -5,11 +5,11 @@
 #include "FormatData.hpp"
 #include "IndexMode.hpp"
 
+#include "../AnyStringBuilder.hpp"
 #include "../Char.hpp"
-#include "../StringBuilder.hpp"
 #include "../StringCharReader.hpp"
 #include "../StringLiteral.hpp"
-#include "../u8/U8StringView.hpp"
+#include "../u8/U8String.hpp"
 
 #include "../../unit/ArgumentUnit.hpp"
 
@@ -28,11 +28,11 @@ class FormatParser final {
 
 public:
     /// Create a parser for the given format pattern.
-    explicit FormatParser(const U8StringView &pattern);
+    explicit FormatParser(const U8String &pattern);
     /// Create a parser for the given format pattern.
-    explicit FormatParser(const U16StringView &pattern);
+    explicit FormatParser(const U16String &pattern);
     /// Create a parser for the given format pattern.
-    explicit FormatParser(const U32StringView &pattern);
+    explicit FormatParser(const U32String &pattern);
 
 public:
     /// Parse the pattern and return the newly allocated compiled data.
@@ -60,7 +60,7 @@ private:
 
 private:
     StringCharReader _reader;
-    StringBuilder _staticText;
+    AnyStringBuilder _staticText;
     FormatDataPtr _data;
     IndexMode _indexMode{IndexMode::None};
     unit::ArgumentIndex _nextAutomaticIndex{unit::ArgumentIndex::zero()};

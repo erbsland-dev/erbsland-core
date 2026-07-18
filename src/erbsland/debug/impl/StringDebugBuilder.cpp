@@ -7,8 +7,9 @@
 namespace erbsland::debug::impl {
 
 using namespace text::literals;
+using namespace text;
 
-auto storageKindText(const StringStorageKind kind) noexcept -> text::StringView {
+auto storageKindText(const StringStorageKind kind) noexcept -> String {
     switch (kind) {
     case StringStorageKind::Shared:
         return "shared"_el;
@@ -19,18 +20,14 @@ auto storageKindText(const StringStorageKind kind) noexcept -> text::StringView 
     }
 }
 
-auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> text::String {
+auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> String {
     if (storageId.isEmpty()) {
-        return text::String{"empty"_el};
+        return "empty"_el;
     }
     const auto values = storageId.toRawValues();
-    auto builder = text::StringBuilder{};
-    const auto format = text::IntegerFormat::hexadecimal().setFlags(
-        text::IntegerFormatFlag::BasePrefix | text::IntegerFormatFlag::ZeroFill);
-    builder.appendInteger(values[0], format);
-    builder.append(U':');
-    builder.appendInteger(values[1], format);
-    return builder.toU8String();
+    const auto format =
+        IntegerFormat::hexadecimal().setFlags(IntegerFormatFlag::BasePrefix | IntegerFormatFlag::ZeroFill);
+    return String::fromJoined({String::fromInteger(values[0], format), ":"_el, String::fromInteger(values[1], format)});
 }
 
 }

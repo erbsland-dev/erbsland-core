@@ -4,7 +4,7 @@
 
 #include "ColorPart.hpp"
 
-#include "../text/StringView.hpp"
+#include "../text/String.hpp"
 
 #include <functional>
 #include <string_view>
@@ -78,7 +78,7 @@ public: // conversion and tools
     /// @param str The textual color specification.
     /// @return The parsed color.
     /// @throws err::ParameterError if one of the colors does not exist.
-    [[nodiscard]] static auto fromString(const text::StringView &str) -> Color;
+    [[nodiscard]] static auto fromString(const text::String &str) -> Color;
     /// Converts two indexes into a color-pair.
     /// @see ColorPart::fromIndex16 for details.
     [[nodiscard]] static auto fromIndex16(const int fgIndex, const int bgIndex) -> Color {

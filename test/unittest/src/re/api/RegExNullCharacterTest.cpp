@@ -4,10 +4,14 @@
 #include "../StringHelper.hpp"
 #include "../TestHelper.hpp"
 
+#include <erbsland/re/Match.hpp>
+#include <erbsland/re/Match16.hpp>
+#include <erbsland/re/Match32.hpp>
 #include <erbsland/re/RegEx.hpp>
+#include <erbsland/re/RegExError.hpp>
 #include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/u16/U16String.hpp>
-#include <erbsland/text/u32/U32String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
+#include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;
@@ -68,9 +72,9 @@ private:
     }
 
     void requireFullMatchAllWidths(const RegExPtr &regEx) {
-        WITH_CONTEXT(requireFullMatch<String>(regEx));
-        WITH_CONTEXT(requireFullMatch<el::text::U16String>(regEx));
-        WITH_CONTEXT(requireFullMatch<el::text::U32String>(regEx));
+        WITH_CONTEXT(requireFullMatch<StringEditor>(regEx));
+        WITH_CONTEXT(requireFullMatch<el::text::U16StringEditor>(regEx));
+        WITH_CONTEXT(requireFullMatch<el::text::U32StringEditor>(regEx));
     }
 
     template <typename StringType>
@@ -83,7 +87,7 @@ private:
 public:
     void testNullPatternsAreRejectedByDefault() {
         const auto nullPattern = String::fromCharacter(el::text::Char{U'\0'});
-        REQUIRE_THROWS_AS(RegExError, RegEx::compile(StringView{nullPattern}));
+        REQUIRE_THROWS_AS(RegExError, RegEx::compile(String{nullPattern}));
         REQUIRE_THROWS_AS(RegExError, RegEx::compile("\\x00"_el));
         REQUIRE_THROWS_AS(RegExError, RegEx::compile("\\u0000"_el));
         REQUIRE_THROWS_AS(RegExError, RegEx::compile("[\\x{0}]"_el));
@@ -93,27 +97,27 @@ public:
         auto settings = Settings{};
         settings.enableFeature(Feature::AcceptNullInPattern);
         const auto nullPattern = String::fromCharacter(el::text::Char{U'\0'});
-        const auto raw = RegEx::compile(StringView{nullPattern}, {}, settings);
+        const auto raw = RegEx::compile(String{nullPattern}, {}, settings);
         const auto xEscape = RegEx::compile("\\x00"_el, {}, settings);
         const auto uEscape = RegEx::compile("\\u0000"_el, {}, settings);
-        WITH_CONTEXT(requireSingleNullFullMatch<String>(raw));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(raw));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(raw));
-        WITH_CONTEXT(requireSingleNullFullMatch<String>(xEscape));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(xEscape));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(xEscape));
-        WITH_CONTEXT(requireSingleNullFullMatch<String>(uEscape));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16String>(uEscape));
-        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32String>(uEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<StringEditor>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16StringEditor>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32StringEditor>(raw));
+        WITH_CONTEXT(requireSingleNullFullMatch<StringEditor>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16StringEditor>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32StringEditor>(xEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<StringEditor>(uEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U16StringEditor>(uEscape));
+        WITH_CONTEXT(requireSingleNullFullMatch<el::text::U32StringEditor>(uEscape));
     }
 
     void testMatchCaptureFullMatchFindAndEmptyInput() {
         auto settings = Settings{};
         settings.enableFeature(Feature::AcceptNullInPattern);
         const auto regEx = RegEx::compile("A(\\x00)B"_el, {}, settings);
-        WITH_CONTEXT(requireAllMatchingApis<String>(regEx));
-        WITH_CONTEXT(requireAllMatchingApis<el::text::U16String>(regEx));
-        WITH_CONTEXT(requireAllMatchingApis<el::text::U32String>(regEx));
+        WITH_CONTEXT(requireAllMatchingApis<StringEditor>(regEx));
+        WITH_CONTEXT(requireAllMatchingApis<el::text::U16StringEditor>(regEx));
+        WITH_CONTEXT(requireAllMatchingApis<el::text::U32StringEditor>(regEx));
     }
 
     void testDotClassCategoryAndAnchors() {
@@ -121,11 +125,11 @@ public:
         settings.enableFeature(Feature::AcceptNullInPattern);
         for (
             const auto pattern : {
-                StringView{"^A.B$"_el},
-                StringView{"^A[\\x00]B$"_el},
-                StringView{"^A\\WB$"_el},
-                StringView{"^A\\SB$"_el},
-                StringView{"^A\\DB$"_el},
+                String{"^A.B$"_el},
+                String{"^A[\\x00]B$"_el},
+                String{"^A\\WB$"_el},
+                String{"^A\\SB$"_el},
+                String{"^A\\DB$"_el},
             }) {
             WITH_CONTEXT(requireFullMatchAllWidths(RegEx::compile(pattern, {}, settings)));
         }

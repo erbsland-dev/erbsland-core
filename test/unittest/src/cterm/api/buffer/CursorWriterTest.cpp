@@ -81,15 +81,15 @@ public:
             BlockStyle{Color{fg::Inherited, bg::Magenta}, attributes},
             BlockAttributes{}.withFlag(BlockAttributes::Underline, true),
             Block{U'X'},
-            BlockString{"Y"_el},
-            BlockStringView{BlockString{"QR"_el}}.slice(BlockRange{BlockIndex{0U}, BlockCount{1U}}),
-            "Z"_els,
+            BlockStringEditor{"Y"_el},
+            BlockString{BlockStringEditor{"QR"_el}}.slice(BlockRange{BlockIndex{0U}, BlockCount{1U}}),
+            "Z"_el,
             U"Ω"_el,
             "!"_el,
             "?"_el);
-        const auto paragraphSource = BlockString{"xAA!"_el};
+        const auto paragraphSource = BlockStringEditor{"xAA!"_el};
         const auto lineCount = writer.printParagraph(
-            BlockStringView{paragraphSource}.slice(BlockRange{BlockIndex{1U}, BlockCount{2U}}),
+            BlockString{paragraphSource}.slice(BlockRange{BlockIndex{1U}, BlockCount{2U}}),
             ParagraphOptions{bgeo::Alignment::Right});
         writer.printLine("tail"_el);
 

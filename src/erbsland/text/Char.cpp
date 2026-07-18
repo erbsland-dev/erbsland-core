@@ -26,4 +26,24 @@ auto Char::encodedSize(const StringKind stringKind) const noexcept -> std::size_
     }
 }
 
+auto Char::encodedBytes(const StringEncoding encoding) const noexcept -> unit::ByteLength {
+    if (!isValidUnicode()) {
+        return unit::ByteLength::zero();
+    }
+    switch (encoding.effectiveEncoding().toRawValue()) {
+    case StringEncoding::Utf8:
+        return utf8Size();
+    case StringEncoding::Utf16LittleEndian:
+    case StringEncoding::Utf16BigEndian:
+        return unit::ByteLength{static_cast<unit::ByteLength::Value>(utf16Size().toRawValue() * 2U)};
+    case StringEncoding::Utf32LittleEndian:
+    case StringEncoding::Utf32BigEndian:
+        return unit::ByteLength{4U};
+    case StringEncoding::Utf16:
+    case StringEncoding::Utf32:
+        break;
+    }
+    return unit::ByteLength::zero();
+}
+
 }

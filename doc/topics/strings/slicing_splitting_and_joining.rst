@@ -3,9 +3,9 @@ https://erbsland.dev SPDX-License-Identifier: Apache-2.0
 
 .. index::
     !single: Slicing, Splitting, and Joining Strings
-    single: String Slicing
-    single: String Splitting
-    single: String Joining
+    single: StringEditor Slicing
+    single: StringEditor Splitting
+    single: StringEditor Joining
     single: slice
     single: kept
     single: fromSplit
@@ -13,21 +13,21 @@ https://erbsland.dev SPDX-License-Identifier: Apache-2.0
     single: ByteRange
     single: CpRange
     single: StringSide
+    single: StringEditorList
     single: StringList
-    single: StringViewList
 
 ***************************************
 Slicing, Splitting, and Joining Strings
 ***************************************
 
-String processing often starts with a simple task: take a useful part from a larger text.
+StringEditor processing often starts with a simple task: take a useful part from a larger text.
 You may want to extract a field, split a document into lines, keep a small fragment from a large buffer, or combine many
 strings into one result.
 
 Erbsland Core provides dedicated APIs for these common tasks:
 
-*   :cpp:func:`slice() <erbsland::text::U8StringView::slice>` selects a range without unnecessary work.
-*   :cpp:func:`kept() <erbsland::text::U8StringView::kept>` copies the selected range into independent storage.
+*   :cpp:func:`slice() <erbsland::text::U8String::slice>` selects a range without unnecessary work.
+*   :cpp:func:`kept() <erbsland::text::U8String::kept>` copies the selected range into independent storage.
 *   ``fromSplit()`` splits text into a list of parts.
 *   ``join()`` combines list entries into a single string.
 
@@ -53,28 +53,28 @@ Choose the operation that matches the information you already have and the stora
         - Preferred API
         - Notes
     *   - Slice between positions returned by search functions.
-        - :cpp:func:`slice(ByteRange) <erbsland::text::U8StringView::slice>`
-        - Fast and copy-free for string views.
+        - :cpp:func:`slice(ByteRange) <erbsland::text::U8String::slice>`
+        - Fast and copy-free for read-only strings.
     *   - Slice a small fixed-format label by decoded character positions.
-        - :cpp:func:`slice(CpRange) <erbsland::text::U8StringView::slice>`
+        - :cpp:func:`slice(CpRange) <erbsland::text::U8String::slice>`
         - Readable for short text, but UTF-8 and UTF-16 must be scanned.
     *   - Take a prefix or suffix.
-        - :cpp:func:`slice(StringSide, ByteLength) <erbsland::text::U8StringView::slice>` or
-          :cpp:func:`slice(StringSide, CpLength) <erbsland::text::U8StringView::slice>`
+        - :cpp:func:`slice(StringSide, ByteLength) <erbsland::text::U8String::slice>` or
+          :cpp:func:`slice(StringSide, CpLength) <erbsland::text::U8String::slice>`
         - The suffix code-point form scans backward from the end.
     *   - Keep a small part from a large editable string.
-        - :cpp:func:`kept() <erbsland::text::U8StringView::kept>`
+        - :cpp:func:`kept() <erbsland::text::U8String::kept>`
         - Copies the selected range so the large source can be released.
     *   - Split text into fields or lines.
-        - ``StringViewList::fromSplit()``
+        - ``StringList::fromSplit()``
         - Produces views into the original text.
     *   - Combine list entries into one text.
-        - ``StringList::join()``
+        - ``StringEditorList::join()``
         - Calculates the final size first, then copies once.
 
-The examples on this page use :cpp:type:`StringView <erbsland::text::StringView>`,
-:cpp:type:`String <erbsland::text::String>`, :cpp:type:`StringViewList <erbsland::text::StringViewList>`, and
-:cpp:type:`StringList <erbsland::text::StringList>`.
+The examples on this page use :cpp:type:`String <erbsland::text::String>`,
+:cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:type:`StringList <erbsland::text::StringList>`, and
+:cpp:type:`StringEditorList <erbsland::text::StringEditorList>`.
 The same usage patterns are available for the UTF-8, UTF-16, and UTF-32 width-specific types.
 
 Slicing Parts Manually
@@ -84,34 +84,34 @@ Byte Ranges
 -----------
 
 When you search inside a UTF-8 string, functions such as
-:cpp:func:`find() <erbsland::text::U8StringView::find>`,
-:cpp:func:`findFirstOf() <erbsland::text::U8StringView::findFirstOf>`, and
-:cpp:func:`findLastOf() <erbsland::text::U8StringView::findLastOf>` return byte indexes.
+:cpp:func:`find() <erbsland::text::U8String::find>`,
+:cpp:func:`findFirstOf() <erbsland::text::U8String::findFirstOf>`, and
+:cpp:func:`findLastOf() <erbsland::text::U8String::findLastOf>` return byte indexes.
 You can pass these indexes directly to :cpp:class:`ByteRange <erbsland::unit::IntegerUnitRange>` and
-:cpp:func:`slice(ByteRange) <erbsland::text::U8StringView::slice>`.
+:cpp:func:`slice(ByteRange) <erbsland::text::U8String::slice>`.
 
-For :cpp:type:`StringView <erbsland::text::StringView>`, byte-range slicing creates another view into the same backing
+For :cpp:type:`String <erbsland::text::String>`, byte-range slicing creates another view into the same backing
 text.
 No text bytes are copied.
 This makes byte ranges a good fit for parsing records, protocol fields, identifiers, and other text where separators
 were found by the string API.
 
 .. erbsland-demo::
-    :source: text/StringView/ByteRangeSlicing.cpp
-    :exec: text/string_view --demo ByteRangeSlicing
+    :source: text/String/ByteRangeSlicing.cpp
+    :exec: text/string --demo ByteRangeSlicing
     :source-sha256: cb4d8150296a80b753ef17448b611cbca6b77f8e8ac8dd6cb2892f011ed4b499
 
 .. code-block:: cpp
 
-    /// Byte-range slicing is the fast path for cutting `StringView` data into
+    /// Byte-range slicing is the fast path for cutting `String` data into
     /// smaller views.
     ///
     /// Search operations such as `find()` return byte indexes. You can use these
     /// indexes directly to build `ByteRange` values and pass them to `slice()`.
-    /// The resulting string views refer to the same backing text and do not copy
+    /// The resulting strings refer to the same backing text and do not copy
     /// the selected bytes.
     void byteRangeSlicing() {
-        const auto journal = el::StringView{"dag=12|plats=Norrpasset|väder=klar|signal=stjärna"_el};
+        const auto journal = el::String{"dag=12|plats=Norrpasset|väder=klar|signal=stjärna"_el};
 
         // Find separator positions once, then slice the fields between them.
         const auto firstSeparator = journal.find("|"_el);
@@ -146,8 +146,8 @@ were found by the string API.
 
 Keep byte indexes on character boundaries.
 The safest indexes are the ones returned by string operations, or indexes moved with
-:cpp:func:`advance() <erbsland::text::U8StringView::advance>` and
-:cpp:func:`retreat() <erbsland::text::U8StringView::retreat>`.
+:cpp:func:`advance() <erbsland::text::U8String::advance>` and
+:cpp:func:`retreat() <erbsland::text::U8String::retreat>`.
 
 Boundaries and Invalid UTF
 --------------------------
@@ -162,8 +162,8 @@ If you cut through a multi-byte sequence, the resulting view is still safe to st
 invalid UTF-8. When decoded, malformed sequences are represented with the Unicode replacement character.
 
 .. erbsland-demo::
-    :source: text/StringView/SliceBoundaries.cpp
-    :exec: text/string_view --demo SliceBoundaries
+    :source: text/String/SliceBoundaries.cpp
+    :exec: text/string --demo SliceBoundaries
     :source-sha256: 6a3f96ae3f612254a4dd6fca7931e1b51601a3c6e10721d62055f60a19143829
 
 .. code-block:: cpp
@@ -178,7 +178,7 @@ invalid UTF-8. When decoded, malformed sequences are represented with the Unicod
     /// using indexes returned by the string API, or by moving them with
     /// `advance()` and `retreat()`.
     void sliceBoundaries() {
-        const auto text = el::StringView{"AåB"_el};
+        const auto text = el::String{"AåB"_el};
 
         // Out-of-range slices are safe and simply produce an empty view.
         const auto outside = text.slice(el::ByteRange{el::ByteIndex{99U}, el::ByteLength{5U}});
@@ -210,19 +210,19 @@ invalid UTF-8. When decoded, malformed sequences are represented with the Unicod
 Code-Point Ranges
 -----------------
 
-:cpp:func:`slice(CpRange) <erbsland::text::U8StringView::slice>` selects text by decoded code-point positions.
+:cpp:func:`slice(CpRange) <erbsland::text::U8String::slice>` selects text by decoded code-point positions.
 This is useful when the text is short and the positions are naturally counted in user-visible characters, for example in
 small labels, fixed-format tokens, and tests.
 
 For UTF-8 and UTF-16 strings, a code-point index is not a native storage position.
 The string has to be scanned to find the matching byte or code-unit position.
 Avoid code-point range slicing inside loops over large text.
-When you already have byte indexes from :cpp:func:`find() <erbsland::text::U8StringView::find>` or related operations,
+When you already have byte indexes from :cpp:func:`find() <erbsland::text::U8String::find>` or related operations,
 use byte ranges instead.
 
 .. erbsland-demo::
-    :source: text/StringView/CodePointRangeSlicing.cpp
-    :exec: text/string_view --demo CodePointRangeSlicing
+    :source: text/String/CodePointRangeSlicing.cpp
+    :exec: text/string --demo CodePointRangeSlicing
     :source-sha256: 97ff97116df3ab62470737d882c8b75f39a3350b7d6204d4dd142fbf1ff6756b
 
 .. code-block:: cpp
@@ -235,7 +235,7 @@ use byte ranges instead.
     /// small identifiers and labels, not as an inner-loop strategy for large
     /// documents.
     void codePointRangeSlicing() {
-        const auto label = el::StringView{"Färd-Karta-07"_el};
+        const auto label = el::String{"Färd-Karta-07"_el};
 
         // The label is short and fixed-shape, so code-point positions are readable.
         const auto mapName = label.slice(el::CpRange{el::CpIndex{5U}, el::CpLength{5U}});
@@ -262,11 +262,11 @@ Slicing Front and Back Parts
 
 Use the side-based overloads when you need a prefix or suffix and do not want to spell out a full range.
 
-*   :cpp:func:`slice(StringSide::Front, ByteLength) <erbsland::text::U8StringView::slice>` takes an initial byte range.
-*   :cpp:func:`slice(StringSide::Back, ByteLength) <erbsland::text::U8StringView::slice>` takes a trailing byte range.
-*   :cpp:func:`slice(StringSide::Front, CpLength) <erbsland::text::U8StringView::slice>` takes an initial decoded
+*   :cpp:func:`slice(StringSide::Front, ByteLength) <erbsland::text::U8String::slice>` takes an initial byte range.
+*   :cpp:func:`slice(StringSide::Back, ByteLength) <erbsland::text::U8String::slice>` takes a trailing byte range.
+*   :cpp:func:`slice(StringSide::Front, CpLength) <erbsland::text::U8String::slice>` takes an initial decoded
     code-point range.
-*   :cpp:func:`slice(StringSide::Back, CpLength) <erbsland::text::U8StringView::slice>` takes a trailing decoded
+*   :cpp:func:`slice(StringSide::Back, CpLength) <erbsland::text::U8String::slice>` takes a trailing decoded
     code-point range.
 
 The code-point suffix form is especially useful for large strings because it scans backward from the end.
@@ -274,8 +274,8 @@ This avoids scanning from the beginning just to find a distant suffix start.
 After you have the suffix, you can subtract its native length from the original length to get the remaining prefix.
 
 .. erbsland-demo::
-    :source: text/StringView/FrontBackSlicing.cpp
-    :exec: text/string_view --demo FrontBackSlicing
+    :source: text/String/FrontBackSlicing.cpp
+    :exec: text/string --demo FrontBackSlicing
     :source-sha256: 768f43f9084249d6f7435c882896e635b87623b0f0a3a5ea592db5d642a5c7db
 
 .. code-block:: cpp
@@ -289,7 +289,7 @@ After you have the suffix, you can subtract its native length from the original 
     /// decoded characters. The byte length of that suffix can then be used to take
     /// the remaining prefix efficiently.
     void frontBackSlicing() {
-        const auto route = el::StringView{"Rutt: Åsleden -> Nordljus"_el};
+        const auto route = el::String{"Rutt: Åsleden -> Nordljus"_el};
 
         // A byte index from `find()` can become the prefix byte length.
         const auto separator = route.find(" -> "_el);
@@ -318,27 +318,27 @@ After you have the suffix, you can subtract its native length from the original 
 Slice or Kept
 =============
 
-:cpp:func:`slice() <erbsland::text::U8StringView::slice>` and
-:cpp:func:`kept() <erbsland::text::U8StringView::kept>` select the same text when called with the same range.
+:cpp:func:`slice() <erbsland::text::U8String::slice>` and
+:cpp:func:`kept() <erbsland::text::U8String::kept>` select the same text when called with the same range.
 The difference is ownership.
 
-For :cpp:type:`StringView <erbsland::text::StringView>`,
-:cpp:func:`slice() <erbsland::text::U8StringView::slice>` returns another view.
+For :cpp:type:`String <erbsland::text::String>`,
+:cpp:func:`slice() <erbsland::text::U8String::slice>` returns another view.
 It is copy-free and keeps the backing text alive.
-:cpp:func:`kept() <erbsland::text::U8StringView::kept>` returns an editable
-:cpp:type:`String <erbsland::text::String>` that contains a copy of the selected range.
+:cpp:func:`kept() <erbsland::text::U8String::kept>` returns an editable
+:cpp:type:`StringEditor <erbsland::text::StringEditor>` that contains a copy of the selected range.
 
-For :cpp:type:`String <erbsland::text::String>`, :cpp:func:`slice() <erbsland::text::U8StringView::slice>` narrows the
+For :cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:func:`slice() <erbsland::text::U8String::slice>` narrows the
 string to the selected range and can keep sharing the same backing store.
-:cpp:func:`kept() <erbsland::text::U8StringView::kept>` materializes the selected range into independent storage.
+:cpp:func:`kept() <erbsland::text::U8String::kept>` materializes the selected range into independent storage.
 
 This distinction matters when you load a large text and only need a small part of it.
 If you keep a slice, the large backing store may remain alive.
 If you keep a copy, the large source can be released after the call.
 
 .. erbsland-demo::
-    :source: text/StringView/SliceAndKept.cpp
-    :exec: text/string_view --demo SliceAndKept
+    :source: text/String/SliceAndKept.cpp
+    :exec: text/string --demo SliceAndKept
     :source-sha256: 8e9fdb406bc1e7a823c7982bec198ef3da9cddab1845c1ceea5a98c59518fd63
 
 .. code-block:: cpp
@@ -351,7 +351,7 @@ If you keep a copy, the large source can be released after the call.
     /// `kept()` materializes the selected range as an editable string, which lets a
     /// large source string be released after the interesting part has been copied.
     void sliceAndKept() {
-        auto journal = el::String{"rubrik=Norrpasset|väder=klar|anteckning=Stjärnklart över sjön"_el};
+        auto journal = el::StringEditor{"rubrik=Norrpasset|väder=klar|anteckning=Stjärnklart över sjön"_el};
         auto noteStart = journal.findLastOf(el::CharSet{U'|'});
         journal.advance(noteStart);
 
@@ -380,9 +380,9 @@ If you keep a copy, the large source can be released after the call.
 Splitting Strings
 =================
 
-Use ``StringViewList::fromSplit()`` to split text into parts.
-For the common UTF-8 aliases, :cpp:type:`StringViewList <erbsland::text::StringViewList>` stores views, while
-:cpp:type:`StringList <erbsland::text::StringList>` stores editable strings.
+Use ``StringList::fromSplit()`` to split text into parts.
+For the common UTF-8 aliases, :cpp:type:`StringList <erbsland::text::StringList>` stores views, while
+:cpp:type:`StringEditorList <erbsland::text::StringEditorList>` stores editable strings.
 
 The separator argument is a :cpp:class:`CharSet <erbsland::text::CharSet>`.
 Every character in the set is a split point.
@@ -396,36 +396,36 @@ element.
 A finite limit of ``n`` produces at most ``n + 1`` parts.
 
 .. erbsland-demo::
-    :source: text/StringView/SplittingText.cpp
-    :exec: text/string_view --demo SplittingText
+    :source: text/String/SplittingText.cpp
+    :exec: text/string --demo SplittingText
     :source-sha256: 94da9770e88894f9a73902f11bfae21ba40ae35df8d4d2d33cdeadd965beb7f3
 
 .. code-block:: cpp
 
-    /// `StringViewList::fromSplit()` splits text into a list of string views.
+    /// `StringList::fromSplit()` splits text into a list of read-only strings.
     ///
     /// The split parts refer to the original text and are therefore cheap to
     /// create. Empty parts are dropped by default; set `keepEmpty` to true when an
     /// empty field is meaningful. The split limit is the maximum number of split
     /// points to apply, so a limit of two produces at most three parts.
     void splittingText() {
-        const auto table = el::StringView{
+        const auto table = el::String{
             "dag;plats;väder\n"
             "12;Åsleden;klar\n"
             "13;;dimma\n"
             "14;Nordljus;stjärnklart"_el};
-        const auto rows = el::StringViewList::fromSplit(table, el::CharSet{"\n"_elv});
+        const auto rows = el::StringList::fromSplit(table, el::CharSet{"\n"_el});
 
         el::io::printLine("Rows: "_el, rows.count());
         for (const auto &row : rows) {
-            const auto fields = el::StringViewList::fromSplit(
-                row, el::CharSet{";"_elv}, el::ElementCount::infinite(), true);
+            const auto fields = el::StringList::fromSplit(
+                row, el::CharSet{";"_el}, el::ElementCount::infinite(), true);
             el::io::printLine("  "_el, fields.join(" | "_el));
         }
 
         // A split limit leaves the unsplit remainder in the last part.
-        const auto limited = el::StringViewList::fromSplit(
-            rows.last(), el::CharSet{";"_elv}, el::ElementCount{1U}, true);
+        const auto limited = el::StringList::fromSplit(
+            rows.last(), el::CharSet{";"_el}, el::ElementCount{1U}, true);
         el::io::printLine("Limited split: "_el, limited.join(" / "_el));
     }
 
@@ -456,8 +456,8 @@ This pattern works especially well for line-based documents.
 You can split a document into views, transform or sort the list, and join it back into a single text.
 
 .. erbsland-demo::
-    :source: text/StringView/JoiningText.cpp
-    :exec: text/string_view --demo JoiningText
+    :source: text/String/JoiningText.cpp
+    :exec: text/string --demo JoiningText
     :source-sha256: 53eebd6e083f404e6cf693f763b365d1ad769129468654da079aab1a99b78b07
 
 .. code-block:: cpp
@@ -468,10 +468,10 @@ You can split a document into views, transform or sort the list, and join it bac
     /// final size is calculated first, then the result storage is reserved once and
     /// filled from the list entries.
     void joiningText() {
-        const auto notes = el::StringList{
-            el::String{"14 Nordljus: stjärnklart"_el},
-            el::String{"12 Åsleden: klar sikt"_el},
-            el::String{"13 Norrpasset: dimma"_el},
+        const auto notes = el::StringEditorList{
+            el::StringEditor{"14 Nordljus: stjärnklart"_el},
+            el::StringEditor{"12 Åsleden: klar sikt"_el},
+            el::StringEditor{"13 Norrpasset: dimma"_el},
         };
 
         // Lists can be transformed first, then joined into the final document.

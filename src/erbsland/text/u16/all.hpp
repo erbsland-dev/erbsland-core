@@ -11,15 +11,14 @@
 #include "U16StringCIHashSet.hpp"
 #include "U16StringCIMap.hpp"
 #include "U16StringCISet.hpp"
-#include "U16StringCharView.hpp"
 #include "U16StringConstIterator.hpp"
+#include "U16StringEditor.hpp"
+#include "U16StringEditorList.hpp"
 #include "U16StringHashMap.hpp"
 #include "U16StringHashSet.hpp"
 #include "U16StringList.hpp"
 #include "U16StringLiteral.hpp"
 #include "U16StringMap.hpp"
 #include "U16StringSet.hpp"
-#include "U16StringView.hpp"
-#include "U16StringViewList.hpp"
 
 

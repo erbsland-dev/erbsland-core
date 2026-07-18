@@ -10,7 +10,7 @@ namespace demo {
 void writeGrowthReport(el::TextOutputStream &output);
 
 void writeGrowthReport() {
-    const auto output = el::StringBuilderStream::create();
+    const auto output = el::AnyStringBuilderStream::create();
     writeGrowthReport(*output);
     el::io::print(output->takeString());
 }

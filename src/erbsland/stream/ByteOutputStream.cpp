@@ -16,16 +16,14 @@ auto ByteOutputStream::write(const mem::Byte byte) -> StreamWriteStatus {
     return write(std::span<const mem::Byte>{&byte, 1U});
 }
 
-auto ByteOutputStream::write(const mem::ByteBlockView &bytes) -> StreamWriteStatus {
+auto ByteOutputStream::write(const mem::ByteBlock &bytes) -> StreamWriteStatus {
     return write(bytes.bytes());
 }
 
 auto ByteOutputStream::coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus> {
     auto self = std::static_pointer_cast<ByteOutputStream>(sharedOutputStream());
     return util::CoTask<StreamWriteStatus>::run(
-        [self = std::move(self), bytes = std::move(bytes)]() -> StreamWriteStatus {
-            return self->write(mem::ByteBlockView{bytes});
-        });
+        [self = std::move(self), bytes = std::move(bytes)]() -> StreamWriteStatus { return self->write(bytes); });
 }
 
 }

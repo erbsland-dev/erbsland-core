@@ -5,7 +5,7 @@
 #include "InlineContent.hpp"
 
 #include "../../Block.hpp"
-#include "../../BlockString.hpp"
+#include "../../BlockStringEditor.hpp"
 #include "../../ParagraphIndents.hpp"
 #include "../../TabOverflowBehavior.hpp"
 
@@ -44,7 +44,7 @@ public:
 public: // accessors
     [[nodiscard]] auto kind() const noexcept -> BlockKind { return _kind; }
     [[nodiscard]] auto content() const noexcept -> const InlineContent & { return _content; }
-    [[nodiscard]] auto text() const noexcept -> const BlockString & { return _content.text(); }
+    [[nodiscard]] auto text() const noexcept -> const BlockStringEditor & { return _content.text(); }
     [[nodiscard]] auto leadingText() const noexcept -> const std::optional<BlockString> & { return _leadingText; }
     [[nodiscard]] auto trailingText() const noexcept -> const std::optional<BlockString> & { return _trailingText; }
     [[nodiscard]] auto listPrefix() const noexcept -> const std::optional<BlockString> & { return _listPrefix; }

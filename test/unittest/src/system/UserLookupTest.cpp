@@ -19,28 +19,28 @@ class UserLookupTest final : public el::UnitTest {
     public:
         [[nodiscard]] auto userNameForId(const el::system::UserId &id) -> el::system::UserName override {
             ++userLookupCount;
-            auto result = el::text::String{"user-"_el};
+            auto result = el::text::StringEditor{"user-"_el};
             result.append(id.value());
             return el::system::UserName{result};
         }
 
         [[nodiscard]] auto groupNameForId(const el::system::GroupId &id) -> el::system::GroupName override {
             ++groupLookupCount;
-            auto result = el::text::String{"group-"_el};
+            auto result = el::text::StringEditor{"group-"_el};
             result.append(id.value());
             return el::system::GroupName{result};
         }
 
         [[nodiscard]] auto userIdForName(const el::system::UserName &name) -> el::system::UserId override {
             ++userReverseLookupCount;
-            auto result = el::text::String{"id-"_el};
+            auto result = el::text::StringEditor{"id-"_el};
             result.append(name.toString());
             return el::system::UserId{result};
         }
 
         [[nodiscard]] auto groupIdForName(const el::system::GroupName &name) -> el::system::GroupId override {
             ++groupReverseLookupCount;
-            auto result = el::text::String{"id-"_el};
+            auto result = el::text::StringEditor{"id-"_el};
             result.append(name.toString());
             return el::system::GroupId{result};
         }
@@ -57,28 +57,33 @@ public:
         auto *backendPtr = backend.get();
         auto lookup = el::system::UserLookup{std::move(backend)};
 
-        REQUIRE_EQUAL(lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::String{"user-42"_el});
-        REQUIRE_EQUAL(lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::String{"user-42"_el});
+        REQUIRE_EQUAL(
+            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
+        REQUIRE_EQUAL(
+            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
         REQUIRE_EQUAL(backendPtr->userLookupCount, 1);
 
-        REQUIRE_EQUAL(lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::String{"group-7"_el});
-        REQUIRE_EQUAL(lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::String{"group-7"_el});
+        REQUIRE_EQUAL(
+            lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::StringEditor{"group-7"_el});
+        REQUIRE_EQUAL(
+            lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::StringEditor{"group-7"_el});
         REQUIRE_EQUAL(backendPtr->groupLookupCount, 1);
 
         REQUIRE_EQUAL(
-            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::String{"id-seven"_el});
+            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::StringEditor{"id-seven"_el});
         REQUIRE_EQUAL(
-            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::String{"id-seven"_el});
+            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::StringEditor{"id-seven"_el});
         REQUIRE_EQUAL(backendPtr->userReverseLookupCount, 1);
 
         REQUIRE_EQUAL(
-            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::String{"id-staff"_el});
+            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::StringEditor{"id-staff"_el});
         REQUIRE_EQUAL(
-            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::String{"id-staff"_el});
+            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::StringEditor{"id-staff"_el});
         REQUIRE_EQUAL(backendPtr->groupReverseLookupCount, 1);
 
         lookup.clearCache();
-        REQUIRE_EQUAL(lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::String{"user-42"_el});
+        REQUIRE_EQUAL(
+            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
         REQUIRE_EQUAL(backendPtr->userLookupCount, 2);
     }
 
@@ -93,14 +98,14 @@ public:
 
     void testNameFormattingWithDomain() {
         const auto userName = el::system::UserName::fromString("DOMAIN\\ada"_el);
-        REQUIRE_EQUAL(userName.domain(), el::text::String{"DOMAIN"_el});
-        REQUIRE_EQUAL(userName.name(), el::text::String{"ada"_el});
-        REQUIRE_EQUAL(userName.toString(), el::text::String{"DOMAIN\\ada"_el});
+        REQUIRE_EQUAL(userName.domain(), el::text::StringEditor{"DOMAIN"_el});
+        REQUIRE_EQUAL(userName.name(), el::text::StringEditor{"ada"_el});
+        REQUIRE_EQUAL(userName.toString(), el::text::StringEditor{"DOMAIN\\ada"_el});
 
         const auto groupName = el::system::GroupName::fromString("DOMAIN\\staff"_el);
-        REQUIRE_EQUAL(groupName.domain(), el::text::String{"DOMAIN"_el});
-        REQUIRE_EQUAL(groupName.name(), el::text::String{"staff"_el});
-        REQUIRE_EQUAL(groupName.toString(), el::text::String{"DOMAIN\\staff"_el});
+        REQUIRE_EQUAL(groupName.domain(), el::text::StringEditor{"DOMAIN"_el});
+        REQUIRE_EQUAL(groupName.name(), el::text::StringEditor{"staff"_el});
+        REQUIRE_EQUAL(groupName.toString(), el::text::StringEditor{"DOMAIN\\staff"_el});
     }
 
     void testApplicationProvidesSharedUserLookup() {

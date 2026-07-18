@@ -4,34 +4,44 @@
 
 #include "../Char.hpp"
 #include "../u16/U16String_fwd.hpp"
-#include "../u16/U16StringView_fwd.hpp"
+#include "../u16/U16StringEditor_fwd.hpp"
 #include "../u32/U32String_fwd.hpp"
-#include "../u32/U32StringView_fwd.hpp"
+#include "../u32/U32StringEditor_fwd.hpp"
 #include "../u8/U8String_fwd.hpp"
-#include "../u8/U8StringView_fwd.hpp"
+#include "../u8/U8StringEditor_fwd.hpp"
 
 #include <compare>
+#include <concepts>
 #include <cstddef>
+#include <type_traits>
 
 namespace erbsland::text::impl {
 
+/// The read-only and editor types for one string width.
 template <typename tString>
-struct StringViewFor;
+struct StringTypes;
 
-template <>
-struct StringViewFor<U8String> {
-    using Type = U8StringView;
-};
+#define ERBSLAND_STRING_TYPES_SPECIALIZATION(readOnlyType, editorType)                                                 \
+    template <>                                                                                                        \
+    struct StringTypes<readOnlyType> {                                                                                 \
+        using ReadOnly = readOnlyType;                                                                                 \
+        using Editor = editorType;                                                                                     \
+    };                                                                                                                 \
+    template <>                                                                                                        \
+    struct StringTypes<editorType> : StringTypes<readOnlyType> {}
 
-template <>
-struct StringViewFor<U16String> {
-    using Type = U16StringView;
-};
+ERBSLAND_STRING_TYPES_SPECIALIZATION(U8String, U8StringEditor);
+ERBSLAND_STRING_TYPES_SPECIALIZATION(U16String, U16StringEditor);
+ERBSLAND_STRING_TYPES_SPECIALIZATION(U32String, U32StringEditor);
 
-template <>
-struct StringViewFor<U32String> {
-    using Type = U32StringView;
-};
+#undef ERBSLAND_STRING_TYPES_SPECIALIZATION
+
+template <typename tValue, typename tString>
+concept StringKeyCompatible = std::constructible_from<tString, const tValue &>;
+
+template <typename tString, typename tLeft, typename tRight>
+concept HeterogeneousStringKeyPair = StringKeyCompatible<tLeft, tString> && StringKeyCompatible<tRight, tString> &&
+    (!std::same_as<std::remove_cvref_t<tLeft>, tString> || !std::same_as<std::remove_cvref_t<tRight>, tString>);
 
 /// Case-sensitive string key ordering.
 /// @tested{StringMapTest StringSetTest}
@@ -39,23 +49,14 @@ template <typename tString>
 class StringCompare {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Test if the left string is ordered before the right string.
     [[nodiscard]] auto operator()(const tString &left, const tString &right) const noexcept -> bool {
         return left.compare(right) < 0;
     }
-    /// Test if the left string is ordered before the right string.
-    [[nodiscard]] auto operator()(const tString &left, const View &right) const noexcept -> bool {
-        return left.compare(right) < 0;
-    }
-    /// Test if the left string is ordered before the right string.
-    [[nodiscard]] auto operator()(const View &left, const tString &right) const noexcept -> bool {
-        return left.compare(right) < 0;
-    }
-    /// Test if the left string is ordered before the right string.
-    [[nodiscard]] auto operator()(const View &left, const View &right) const noexcept -> bool {
-        return left.compare(right) < 0;
+    template <typename tLeft, typename tRight>
+        requires HeterogeneousStringKeyPair<tString, tLeft, tRight>
+    [[nodiscard]] auto operator()(const tLeft &left, const tRight &right) const -> bool {
+        return tString{left}.compare(tString{right}) < 0;
     }
 };
 
@@ -65,23 +66,14 @@ template <typename tString>
 class StringCICompare {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Test if the left string is ordered before the right string using Unicode simple case folding.
     [[nodiscard]] auto operator()(const tString &left, const tString &right) const noexcept -> bool {
         return left.compare(right, Char::compareCaseFolded) < 0;
     }
-    /// Test if the left string is ordered before the right string using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const tString &left, const View &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) < 0;
-    }
-    /// Test if the left string is ordered before the right string using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const View &left, const tString &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) < 0;
-    }
-    /// Test if the left string is ordered before the right string using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const View &left, const View &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) < 0;
+    template <typename tLeft, typename tRight>
+        requires HeterogeneousStringKeyPair<tString, tLeft, tRight>
+    [[nodiscard]] auto operator()(const tLeft &left, const tRight &right) const -> bool {
+        return tString{left}.compare(tString{right}, Char::compareCaseFolded) < 0;
     }
 };
 
@@ -91,12 +83,13 @@ template <typename tString>
 class StringHash {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Hash the string key.
     [[nodiscard]] auto operator()(const tString &value) const noexcept -> std::size_t { return value.toHash(); }
-    /// Hash the string key.
-    [[nodiscard]] auto operator()(const View &value) const noexcept -> std::size_t { return value.toHash(); }
+    template <typename tValue>
+        requires StringKeyCompatible<tValue, tString> && (!std::same_as<std::remove_cvref_t<tValue>, tString>)
+    [[nodiscard]] auto operator()(const tValue &value) const -> std::size_t {
+        return tString{value}.toHash();
+    }
 };
 
 /// Case-insensitive string key hash.
@@ -105,12 +98,13 @@ template <typename tString>
 class StringCIHash {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Hash the string key using Unicode simple case folding.
     [[nodiscard]] auto operator()(const tString &value) const noexcept -> std::size_t { return value.toHashCI(); }
-    /// Hash the string key using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const View &value) const noexcept -> std::size_t { return value.toHashCI(); }
+    template <typename tValue>
+        requires StringKeyCompatible<tValue, tString> && (!std::same_as<std::remove_cvref_t<tValue>, tString>)
+    [[nodiscard]] auto operator()(const tValue &value) const -> std::size_t {
+        return tString{value}.toHashCI();
+    }
 };
 
 /// Case-sensitive string key equality.
@@ -119,22 +113,15 @@ template <typename tString>
 class StringEqual {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Test if the string keys are equal.
     [[nodiscard]] auto operator()(const tString &left, const tString &right) const noexcept -> bool {
         return left == right;
     }
-    /// Test if the string keys are equal.
-    [[nodiscard]] auto operator()(const tString &left, const View &right) const noexcept -> bool {
-        return left == right;
+    template <typename tLeft, typename tRight>
+        requires HeterogeneousStringKeyPair<tString, tLeft, tRight>
+    [[nodiscard]] auto operator()(const tLeft &left, const tRight &right) const -> bool {
+        return tString{left} == tString{right};
     }
-    /// Test if the string keys are equal.
-    [[nodiscard]] auto operator()(const View &left, const tString &right) const noexcept -> bool {
-        return left == right;
-    }
-    /// Test if the string keys are equal.
-    [[nodiscard]] auto operator()(const View &left, const View &right) const noexcept -> bool { return left == right; }
 };
 
 /// Case-insensitive string key equality.
@@ -143,23 +130,14 @@ template <typename tString>
 class StringCIEqual {
 public:
     using is_transparent = void;
-    using View = typename StringViewFor<tString>::Type;
 
-    /// Test if the string keys are equal using Unicode simple case folding.
     [[nodiscard]] auto operator()(const tString &left, const tString &right) const noexcept -> bool {
         return left.compare(right, Char::compareCaseFolded) == std::strong_ordering::equal;
     }
-    /// Test if the string keys are equal using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const tString &left, const View &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) == std::strong_ordering::equal;
-    }
-    /// Test if the string keys are equal using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const View &left, const tString &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) == std::strong_ordering::equal;
-    }
-    /// Test if the string keys are equal using Unicode simple case folding.
-    [[nodiscard]] auto operator()(const View &left, const View &right) const noexcept -> bool {
-        return left.compare(right, Char::compareCaseFolded) == std::strong_ordering::equal;
+    template <typename tLeft, typename tRight>
+        requires HeterogeneousStringKeyPair<tString, tLeft, tRight>
+    [[nodiscard]] auto operator()(const tLeft &left, const tRight &right) const -> bool {
+        return tString{left}.compare(tString{right}, Char::compareCaseFolded) == std::strong_ordering::equal;
     }
 };
 

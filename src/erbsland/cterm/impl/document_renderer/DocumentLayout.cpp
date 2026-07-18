@@ -12,7 +12,7 @@ namespace erbsland::cterm::impl::document_renderer {
 DocumentLayout::DocumentLayout(const int width) : _width{std::max(width, 1)} {
 }
 
-auto DocumentLayout::build(const std::vector<RenderBlock> &blocks) -> std::vector<BlockString> {
+auto DocumentLayout::build(const std::vector<RenderBlock> &blocks) -> BlockStringLines {
     _lines.clear();
     _previousFramePrefix = {};
     _previousBottomMargin = 0;
@@ -68,7 +68,7 @@ void DocumentLayout::appendParagraph(const RenderBlock &block) {
         return;
     }
     if (layout.empty()) {
-        appendContentLine(block, BlockStringView{});
+        appendContentLine(block, BlockString{});
         return;
     }
     auto materializationWidth = contentWidth;
@@ -89,16 +89,17 @@ void DocumentLayout::appendParagraph(const RenderBlock &block) {
 }
 
 void DocumentLayout::appendPreformatted(const RenderBlock &block) {
-    for (const auto &line : BlockStringView{block.text()}.splitLines()) {
+    for (const auto &line : BlockString{block.text()}.splitLines()) {
         appendContentLine(block, line);
     }
 }
 
 void DocumentLayout::appendFilledLine(const RenderBlock &block) {
     const auto contentWidth = availableContentWidth(block);
-    auto content = BlockString{};
+    auto content = BlockStringEditor{};
     if (contentWidth > 0 && block.fillCharacter().has_value()) {
-        content = BlockString{BlockCount::fromSizeT(static_cast<std::size_t>(contentWidth)), *block.fillCharacter()};
+        content =
+            BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(contentWidth)), *block.fillCharacter()};
         auto position = BlockIndex{};
         for (const auto &character : block.text()) {
             if (position >= BlockIndex::end(content.length())) {
@@ -113,7 +114,7 @@ void DocumentLayout::appendFilledLine(const RenderBlock &block) {
 
 void DocumentLayout::appendHorizontalRule(const RenderBlock &block) {
     const auto contentWidth = availableContentWidth(block);
-    auto content = BlockString{
+    auto content = BlockStringEditor{
         BlockCount::fromSizeT(static_cast<std::size_t>(contentWidth)),
         block.fillCharacter().value_or(Block{text::Char{U'-'}})};
     if (block.leadingText().has_value()) {
@@ -146,12 +147,12 @@ void DocumentLayout::appendGap(const int count, const BlockString &prefix) {
     }
 }
 
-void DocumentLayout::appendContentLine(const RenderBlock &block, const BlockStringView &content) {
+void DocumentLayout::appendContentLine(const RenderBlock &block, const BlockString &content) {
     _builder.clear();
     _builder.append(block.framePrefix());
     const auto leftMargin = positive(block.indents().margins().left());
     if (leftMargin > 0) {
-        _builder.append(BlockString{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block::space()});
+        _builder.append(BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block::space()});
     }
     _builder.append(content);
     _lines.push_back(_builder.toString());
@@ -179,7 +180,7 @@ auto DocumentLayout::availableContentWidth(const RenderBlock &block) const noexc
 }
 
 auto DocumentLayout::trimmedLine(const CursorBuffer &buffer, const int y) -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     auto lastContent = -1;
     for (auto x = 0; x < buffer.size().width().toRawValue(); ++x) {
         const auto &character = buffer.get(bgeo::BlockPosition{x, y});
@@ -192,7 +193,7 @@ auto DocumentLayout::trimmedLine(const CursorBuffer &buffer, const int y) -> Blo
         result =
             result.slice(BlockRange{BlockIndex{}, BlockCount::fromSizeT(static_cast<std::size_t>(lastContent + 1))});
     }
-    return result;
+    return BlockString{result};
 }
 
 auto DocumentLayout::positive(const bgeo::BlockCoordinate value) noexcept -> int {

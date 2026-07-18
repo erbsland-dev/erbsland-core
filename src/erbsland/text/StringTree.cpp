@@ -10,54 +10,59 @@ namespace erbsland::text {
 
 using namespace literals;
 
+using impl::StringTreeData;
+using impl::StringTreeDataPtr;
+using impl::StringTreeEntry;
+using impl::StringTreeEntryKind;
+
 StringTree::StringTree() : _data{createData()} {
 }
 
-StringTree::StringTree(StringView title) : _data{createData(std::move(title))} {
+StringTree::StringTree(String title) : _data{createData(std::move(title))} {
 }
 
-StringTree::StringTree(impl::StringTreeDataPtr data) : _data{std::move(data)} {
+StringTree::StringTree(StringTreeDataPtr data) : _data{std::move(data)} {
 }
 
 auto StringTree::isEmpty() const noexcept -> bool {
     return _data == nullptr || (_data->title.isEmpty() && _data->entries.empty());
 }
 
-auto StringTree::title() const noexcept -> StringView {
-    return _data == nullptr ? StringView{} : _data->title;
+auto StringTree::title() const noexcept -> String {
+    return _data == nullptr ? String{} : _data->title;
 }
 
-auto StringTree::setTitle(StringView title) -> StringTree & {
+auto StringTree::setTitle(String title) -> StringTree & {
     ensureUnique();
     _data->title = std::move(title);
     return *this;
 }
 
-auto StringTree::append(StringView text) -> StringTree & {
+auto StringTree::append(String text) -> StringTree & {
     ensureUnique();
-    _data->entries.push_back(impl::StringTreeEntry::text(std::move(text)));
+    _data->entries.push_back(StringTreeEntry::text(std::move(text)));
     return *this;
 }
 
-auto StringTree::append(StringView label, StringView value) -> StringTree & {
+auto StringTree::append(String label, String value) -> StringTree & {
     ensureUnique();
-    _data->entries.push_back(impl::StringTreeEntry::labeledValue(std::move(label), std::move(value)));
+    _data->entries.push_back(StringTreeEntry::labeledValue(std::move(label), std::move(value)));
     return *this;
 }
 
-auto StringTree::append(StringView label, const bool value) -> StringTree & {
+auto StringTree::append(String label, const bool value) -> StringTree & {
     return append(std::move(label), value ? "true"_el : "false"_el);
 }
 
-auto StringTree::append(StringView label, const StringTree &tree) -> StringTree & {
+auto StringTree::append(String label, const StringTree &tree) -> StringTree & {
     ensureUnique();
-    _data->entries.push_back(impl::StringTreeEntry::tree(std::move(label), tree._data));
+    _data->entries.push_back(StringTreeEntry::tree(std::move(label), tree._data));
     return *this;
 }
 
-auto StringTree::append(StringView label, StringTree &&tree) -> StringTree & {
+auto StringTree::append(String label, StringTree &&tree) -> StringTree & {
     ensureUnique();
-    _data->entries.push_back(impl::StringTreeEntry::tree(std::move(label), std::move(tree._data)));
+    _data->entries.push_back(StringTreeEntry::tree(std::move(label), std::move(tree._data)));
     tree._data = createData();
     return *this;
 }
@@ -69,78 +74,74 @@ auto StringTree::append(const StringTree &tree) -> StringTree & {
 }
 
 auto StringTree::toString(const unit::CpLength indentWidth, const unit::CpLength initialIndentWidth) const -> String {
-    auto builder = StringBuilder{};
+    auto result = StringEditor{};
     auto firstLine = true;
-    appendData(builder, *_data, indentWidth, initialIndentWidth, firstLine);
-    return builder.toU8String();
+    appendData(result, *_data, indentWidth, initialIndentWidth, firstLine);
+    return result;
 }
 
-auto StringTree::createData(StringView title) -> impl::StringTreeDataPtr {
-    auto result = std::make_shared<impl::StringTreeData>();
+auto StringTree::createData(String title) -> StringTreeDataPtr {
+    auto result = std::make_shared<StringTreeData>();
     result->title = std::move(title);
     return result;
 }
 
 void StringTree::appendData(
-    StringBuilder &builder,
-    const impl::StringTreeData &data,
+    StringEditor &result,
+    const StringTreeData &data,
     const unit::CpLength indentWidth,
     const unit::CpLength indent,
     bool &firstLine) {
     auto entryIndent = indent;
     if (!data.title.isEmpty()) {
-        appendLinePrefix(builder, indent, firstLine);
-        builder.append(data.title);
+        appendLinePrefix(result, indent, firstLine);
+        result.append(data.title);
         if (!data.entries.empty()) {
-            builder.append(U':');
+            result.append(U':');
             entryIndent += indentWidth;
         }
     }
     for (const auto &entry : data.entries) {
-        appendEntry(builder, entry, indentWidth, entryIndent, firstLine);
+        appendEntry(result, entry, indentWidth, entryIndent, firstLine);
     }
 }
 
 void StringTree::appendEntry(
-    StringBuilder &builder,
-    const impl::StringTreeEntry &entry,
+    StringEditor &result,
+    const StringTreeEntry &entry,
     const unit::CpLength indentWidth,
     const unit::CpLength indent,
     bool &firstLine) {
-    appendLinePrefix(builder, indent, firstLine);
-    if (entry.kind == impl::StringTreeEntryKind::Text) {
-        builder.append(entry.value);
+    appendLinePrefix(result, indent, firstLine);
+    if (entry.kind == StringTreeEntryKind::Text) {
+        result.append(entry.value);
         return;
     }
-    builder.append(entry.label);
-    builder.append(U':');
-    if (entry.kind == impl::StringTreeEntryKind::Value) {
-        builder.append(U' ');
-        builder.append(entry.value);
+    result.append(entry.label);
+    result.append(U':');
+    if (entry.kind == StringTreeEntryKind::Value) {
+        result.append(U' ');
+        result.append(entry.value);
         return;
     }
     if (entry.treeData == nullptr || entry.treeData->entries.empty()) {
-        builder.append(U' ');
-        builder.append("(empty)"_el);
+        result.append(U' ');
+        result.append("(empty)"_el);
         return;
     }
-    appendData(builder, *entry.treeData, indentWidth, indent + indentWidth, firstLine);
+    appendData(result, *entry.treeData, indentWidth, indent + indentWidth, firstLine);
 }
 
-void StringTree::appendLinePrefix(StringBuilder &builder, const unit::CpLength indent, bool &firstLine) {
+void StringTree::appendLinePrefix(StringEditor &result, const unit::CpLength indent, bool &firstLine) {
     if (!firstLine) {
-        builder.append(U'\n');
+        result.append(U'\n');
     }
     firstLine = false;
-    builder.append(U' ', indent);
+    result.append(U' ', indent);
 }
 
 auto StringTree::listIndexLabel(const std::size_t index) -> String {
-    auto builder = StringBuilder{};
-    builder.append(U'[');
-    builder.appendInteger(index);
-    builder.append(U']');
-    return builder.toU8String();
+    return String::fromJoined({"["_el, String::fromInteger(index), "]"_el});
 }
 
 void StringTree::ensureUnique() {
@@ -149,7 +150,7 @@ void StringTree::ensureUnique() {
         return;
     }
     if (_data.use_count() > 1) {
-        _data = std::make_shared<impl::StringTreeData>(*_data);
+        _data = std::make_shared<StringTreeData>(*_data);
     }
 }
 

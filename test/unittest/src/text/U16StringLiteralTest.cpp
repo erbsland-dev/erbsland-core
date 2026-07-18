@@ -5,8 +5,8 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
+#include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u16/U16StringLiteral.hpp>
-#include <erbsland/text/u16/U16StringView.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -18,16 +18,16 @@
 using el::mem::StorageIdentifier;
 using el::text::StringConverter;
 using el::text::U16String;
+using el::text::U16StringEditor;
 using el::text::U16StringLiteral;
-using el::text::U16StringView;
 
-TESTED_TARGETS(U16StringLiteral operator_el operator_elv operator_els)
+TESTED_TARGETS(U16StringLiteral operator_el operator_el operator_el)
 class U16StringLiteralTest final : public el::UnitTest {
 public:
     void testConstexprUtf16LiteralConstructor() {
         constexpr auto literal = U16StringLiteral{u"Hello"};
-        const auto view = U16StringView{literal};
-        const auto text = U16String{literal};
+        const auto view = U16String{literal};
+        const auto text = U16StringEditor{literal};
 
         static_assert(std::is_same_v<decltype(literal), const U16StringLiteral>);
         REQUIRE_FALSE(view.isEmpty());
@@ -40,8 +40,8 @@ public:
         static constexpr char16_t cLiteral[] = u"Literal";
         const auto literalStorageId = storageIdFor(cLiteral, std::size(cLiteral) - 1U);
         constexpr auto literal = U16StringLiteral{cLiteral};
-        const auto view = U16StringView{literal};
-        const auto text = U16String{literal};
+        const auto view = U16String{literal};
+        const auto text = U16StringEditor{literal};
 
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Literal"});
         REQUIRE_EQUAL(view.storageId(), literalStorageId);
@@ -53,14 +53,14 @@ public:
         using namespace el::text::literals;
 
         constexpr auto literal = u"Hello"_el;
-        const auto literalView = U16StringView{literal};
-        const auto literalText = U16String{literal};
-        const auto view = u"Hello"_elv;
-        const auto text = u"Hello"_els;
+        const auto literalView = U16String{literal};
+        const auto literalText = U16StringEditor{literal};
+        const auto view = U16String{u"Hello"_el};
+        const auto text = U16StringEditor{u"Hello"_el};
 
         static_assert(std::is_same_v<decltype(literal), const U16StringLiteral>);
-        static_assert(std::is_same_v<decltype(view), const U16StringView>);
-        static_assert(std::is_same_v<decltype(text), const U16String>);
+        static_assert(std::is_same_v<decltype(view), const U16String>);
+        static_assert(std::is_same_v<decltype(text), const U16StringEditor>);
         REQUIRE_EQUAL(StringConverter{literalView}.toStdString(), std::string{"Hello"});
         REQUIRE_EQUAL(StringConverter{view}.toStdString(), std::string{"Hello"});
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
@@ -68,11 +68,11 @@ public:
         REQUIRE_NOT_EQUAL(text.storageId(), view.storageId());
     }
 
-    void testViewsAreNotConstructibleFromPointersOrStringViews() {
-        static_assert(!std::is_constructible_v<U16StringView, const char16_t *>);
-        static_assert(!std::is_constructible_v<U16StringView, std::u16string_view>);
+    void testStringsAreConstructibleFromPointersAndStdStringViews() {
         static_assert(std::is_constructible_v<U16String, const char16_t *>);
         static_assert(std::is_constructible_v<U16String, std::u16string_view>);
+        static_assert(std::is_constructible_v<U16StringEditor, const char16_t *>);
+        static_assert(std::is_constructible_v<U16StringEditor, std::u16string_view>);
     }
 
     void testConstCharPointersCreateStringCopies() {
@@ -86,7 +86,7 @@ public:
         REQUIRE_NOT_EQUAL(text.storageId(), storageIdFor(pointer, 7U));
     }
 
-    void testStringViewInputsCreateStringCopies() {
+    void testStdStringViewInputsCreateStringCopies() {
         auto source = std::u16string{u"View"};
         const auto text = U16String{std::u16string_view{source}};
 

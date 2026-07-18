@@ -27,26 +27,48 @@ public:
     using Hash = std::conditional_t<tCaseInsensitive, StringCIHash<tString>, StringHash<tString>>;
     using Equal = std::conditional_t<tCaseInsensitive, StringCIEqual<tString>, StringEqual<tString>>;
     using Base = util::HashSet<tString, Hash, Equal, StringHashSet<tString, tCaseInsensitive>>;
-    using View = typename StringViewFor<tString>::Type;
+    using Key = tString;
+    using Raw = typename Base::Raw;
 
 public:
     using Base::Base;
     using Base::contains;
-    using Base::insert;
     using Base::remove;
     using Base::removed;
-    using Base::tryInsert;
     using Base::tryRemove;
     StringHashSet() = default;
+    explicit StringHashSet(std::initializer_list<Key> values) {
+        for (const auto &key : values) {
+            insert(key);
+        }
+    }
+    explicit StringHashSet(const Raw &raw) {
+        for (const auto &key : raw) {
+            insert(key);
+        }
+    }
+    explicit StringHashSet(Raw &&raw) {
+        for (const auto &key : raw) {
+            insert(key);
+        }
+    }
     ~StringHashSet() = default;
     StringHashSet(const StringHashSet &) noexcept = default;
     StringHashSet(StringHashSet &&) noexcept = default;
     auto operator=(const StringHashSet &) noexcept -> StringHashSet & = default;
     auto operator=(StringHashSet &&) noexcept -> StringHashSet & = default;
 
-public: // view key changes
-    /// Remove a string view key.
-    auto remove(const View &key) -> StringHashSet & {
+public: // key changes
+    /// Create a hash set from a list while compacting all keys.
+    [[nodiscard]] static auto fromList(const util::List<Key> &values) -> StringHashSet {
+        auto result = StringHashSet{};
+        for (const auto &key : values) {
+            result.insert(key);
+        }
+        return result;
+    }
+    /// Remove a string key.
+    auto remove(const Key &key) -> StringHashSet & {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator != data.end()) {
@@ -54,8 +76,8 @@ public: // view key changes
         }
         return *this;
     }
-    /// Try to remove a string view key.
-    [[nodiscard]] auto tryRemove(const View &key) -> bool {
+    /// Try to remove a string key.
+    [[nodiscard]] auto tryRemove(const Key &key) -> bool {
         auto &data = this->mutableRaw();
         const auto iterator = data.find(key);
         if (iterator == data.end()) {
@@ -64,30 +86,30 @@ public: // view key changes
         data.erase(iterator);
         return true;
     }
-    /// Return a set with a string view key removed.
-    [[nodiscard]] auto removed(const View &key) const -> StringHashSet {
+    /// Return a set with a string key removed.
+    [[nodiscard]] auto removed(const Key &key) const -> StringHashSet {
         auto result = *this;
         result.remove(key);
         return result;
     }
-    /// Insert a string view key.
-    auto insert(const View &key) -> StringHashSet & {
+    /// Insert a string key.
+    auto insert(const Key &key) -> StringHashSet & {
         static_cast<void>(tryInsert(key));
         return *this;
     }
-    /// Try to insert a string view key.
-    [[nodiscard]] auto tryInsert(const View &key) -> bool {
+    /// Try to insert a string key.
+    [[nodiscard]] auto tryInsert(const Key &key) -> bool {
         auto &data = this->mutableRaw();
         if (data.find(key) != data.end()) {
             return false;
         }
-        data.insert(tString{key});
+        data.insert(key.copy());
         return true;
     }
 
-public: // view key tests
-    /// Test if the set contains a string view key.
-    [[nodiscard]] auto contains(const View &key) const -> bool { return this->raw().find(key) != this->raw().end(); }
+public: // key tests
+    /// Test if the set contains a string key.
+    [[nodiscard]] auto contains(const Key &key) const -> bool { return this->raw().find(key) != this->raw().end(); }
 
 public:
     /// Compare this set with another set using Unicode simple case folding.

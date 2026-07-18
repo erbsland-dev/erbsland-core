@@ -1,21 +1,21 @@
 
 .. index::
     !single: Building Strings
-    single: StringBuilder
-    single: StringBuilderStream
+    single: AnyStringBuilder
+    single: AnyStringBuilderStream
     single: StringFormat
-    single: String
-    single: U8String
-    single: U16String
-    single: U32String
+    single: StringEditor
+    single: U8StringEditor
+    single: U16StringEditor
+    single: U32StringEditor
     single: TextOutputStream
-    single: String Construction
+    single: StringEditor Construction
     single: String Formatting
-    single: String Encoding
-    single: Incremental String Building
-    single: Stream String Capture
+    single: StringEditor Encoding
+    single: Incremental StringEditor Building
+    single: Stream StringEditor Capture
     single: Reusable Formatting Patterns
-    single: String Editing
+    single: StringEditor Editing
 
 ****************
 Building Strings
@@ -27,22 +27,22 @@ manipulation.
 
 This page introduces the four most common approaches:
 
-- :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` for efficient incremental string construction.
-- :cpp:class:`StringBuilderStream <erbsland::stream::StringBuilderStream>` when existing code writes to a text output stream.
+- :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` for efficient incremental string construction.
+- :cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>` when existing code writes to a text output stream.
 - :cpp:type:`StringFormat <erbsland::text::StringFormat>` for reusable formatting patterns.
-- :cpp:type:`String <erbsland::text::String>` when you want to directly modify an editable string.
+- :cpp:type:`StringEditor <erbsland::text::StringEditor>` when you want to directly modify an editable string.
 
 As a general guideline:
 
-- Use :cpp:class:`StringBuilder <erbsland::text::StringBuilder>` when you generate text piece by piece.
-- Use :cpp:class:`StringBuilderStream <erbsland::stream::StringBuilderStream>` when your code already works with output streams.
+- Use :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` when you generate text piece by piece.
+- Use :cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>` when your code already works with output streams.
 - Use :cpp:type:`StringFormat <erbsland::text::StringFormat>` for structured text with placeholders and formatting rules.
-- Use :cpp:type:`String <erbsland::text::String>` when you need to edit, insert, remove, or replace existing text.
+- Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` when you need to edit, insert, remove, or replace existing text.
 
-Create Any Kind of String with ``StringBuilder``
-================================================
+Create Any Kind of String with ``AnyStringBuilder``
+===================================================
 
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>` is the
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` is the
 fundamental tool for efficiently constructing strings.
 
 Use it when you generate text incrementally, append many fragments, or want to write helper functions that can build
@@ -57,13 +57,13 @@ creating the resulting string.
 This makes it efficient and easy to use in generic code.
 
 .. erbsland-demo::
-    :source: text/StringBuilder/FieldGuideCards.cpp
+    :source: text/AnyStringBuilder/FieldGuideCards.cpp
     :exec: text/string_builder --demo FieldGuideCards
     :source-sha256: 5ce260369447773c86d0fd125f166d4829e8fcf88b35863ec35d0ca032e30ca5
 
 .. code-block:: cpp
 
-    /// `StringBuilder` efficiently builds strings in memory.
+    /// `AnyStringBuilder` efficiently builds strings in memory.
     /// It can be reused, moved out with `takeString()`, and target UTF-8, UTF-16,
     /// or UTF-32 while generic helper functions keep the same signature.
     void fieldGuideCards() {
@@ -90,7 +90,7 @@ This makes it efficient and easy to use in generic code.
         };
 
         // Build a UTF-8 field guide page for display in the terminal.
-        auto builder = el::StringBuilder{};
+        auto builder = el::AnyStringBuilder{};
 
         appendFieldGuideCard(builder, fern);
         el::io::printLine("First card preview:"_el);
@@ -113,8 +113,8 @@ This makes it efficient and easy to use in generic code.
         el::io::print(builder.toString());
 
         // Use the same helper with builders that create UTF-16 and UTF-32 strings.
-        auto u16Builder = el::StringBuilder{el::StringKind::U16};
-        auto u32Builder = el::StringBuilder{el::StringKind::U32};
+        auto u16Builder = el::AnyStringBuilder{el::StringKind::U16};
+        auto u32Builder = el::AnyStringBuilder{el::StringKind::U32};
         appendFieldGuideCard(u16Builder, cypress);
         appendFieldGuideCard(u32Builder, cypress);
 
@@ -128,7 +128,7 @@ This makes it efficient and easy to use in generic code.
         el::io::printLine(u32Export);
     }
 
-    void appendFieldGuideCard(el::StringBuilder &builder, const Observation &observation) {
+    void appendFieldGuideCard(el::AnyStringBuilder &builder, const Observation &observation) {
         if (!builder.isEmpty()) {
             builder.append(U'\n');
         }
@@ -195,12 +195,12 @@ This makes it efficient and easy to use in generic code.
 
 .. erbsland-demo-end::
 
-Stream into a String Builder with ``StringBuilderStream``
-=========================================================
+Stream into an Any String Builder with ``AnyStringBuilderStream``
+=================================================================
 
-:cpp:class:`StringBuilderStream <erbsland::stream::StringBuilderStream>`
+:cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>`
 combines a text output stream with a
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
 
 Use it when text is already produced through stream-based APIs.
 Instead of writing to a file or terminal, the output is captured in memory and can later be retrieved as a string.
@@ -213,16 +213,16 @@ Internally, the class uses a string builder and therefore provides the same enco
 methods.
 
 .. erbsland-demo::
-    :source: stream/StringBuilderStream/CaptureOutput.cpp
+    :source: stream/AnyStringBuilderStream/CaptureOutput.cpp
     :exec: stream/string_builder_stream --demo CaptureOutput
     :source-sha256: a5cbb65482a3a9b067da5284dc39393358f6e3e07855ea7c9dcb6ff13bc5224b
 
 .. code-block:: cpp
 
-    /// `StringBuilderStream` combines a `TextOutputStream` and a `StringBuilder`.
+    /// `AnyStringBuilderStream` combines a `TextOutputStream` and a `AnyStringBuilder`.
     /// It lets a generic stream-writing function capture output in an in-memory string.
     void captureOutput() {
-        const auto stringBuilderStream = el::StringBuilderStream::create();
+        const auto stringBuilderStream = el::AnyStringBuilderStream::create();
         for (auto index = 0; index < 3; ++index) {
             printMagicSquare(stringBuilderStream);
         }
@@ -282,7 +282,7 @@ A format object stores a parsed formatting pattern that can be reused many times
 This avoids repeatedly parsing the same format string and keeps formatting logic separate from application code.
 
 You can either create a new string from formatted values or append the result directly to a
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>`.
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
 
 See :doc:`using_string_format` for a complete description of the format language and all supported formatting options.
 
@@ -297,7 +297,7 @@ See :doc:`using_string_format` for a complete description of the format language
     /// The pattern uses the same placeholder syntax as `std::format`.
     ///
     /// Use `build()` to create a new string from formatted values.
-    /// Use `appendTo()` to add formatted text to an existing `StringBuilder` without
+    /// Use `appendTo()` to add formatted text to an existing `AnyStringBuilder` without
     /// creating temporary strings.
     void formattingPatterns() {
         // Create a reusable pattern for ISO 8601 date-time values.
@@ -309,7 +309,7 @@ See :doc:`using_string_format` for a complete description of the format language
         // Create a pattern to for simple HTML tags.
         const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"_el};
 
-        el::StringBuilder htmlOutput;
+        el::AnyStringBuilder htmlOutput;
         htmlTag.appendTo(htmlOutput, "h1"_el, "Hello World"_el);
         htmlTag.appendTo(htmlOutput, "p"_el, "This paragraph was appended to a string builder."_el);
         htmlTag.appendTo(htmlOutput, "p"_el, "We add another <p> tag with \"useful\" text."_el);
@@ -329,39 +329,39 @@ See :doc:`using_string_format` for a complete description of the format language
 
 .. erbsland-demo-end::
 
-Build Strings Directly with ``String``
-======================================
+Build Strings Directly with ``StringEditor``
+============================================
 
 The simplest way to build or modify text is to use an editable
-:cpp:type:`String <erbsland::text::String>` (or
-:cpp:class:`U8String <erbsland::text::U8String>`,
-:cpp:class:`U16String <erbsland::text::U16String>`, and
-:cpp:class:`U32String <erbsland::text::U32String>`).
+:cpp:type:`StringEditor <erbsland::text::StringEditor>` (or
+:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`).
 
 These classes provide operations such as appending, inserting, removing, replacing, and transforming text.
 
 This approach is often the easiest to understand because you work directly with the resulting string.
 However, when constructing large strings from many fragments, a
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>` is usually
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` is usually
 more efficient because it is specifically designed for incremental construction.
 
 .. erbsland-demo::
-    :source: text/String/EditingText.cpp
+    :source: text/StringEditor/EditingText.cpp
     :exec: text/string --demo EditingText
     :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 
-    /// `String` is an owning, editable copy-on-write string type.
+    /// `StringEditor` is an owning, editable copy-on-write string type.
     /// Use it when you build text from scratch or modify existing text.
-    /// Use `StringView` for parameters and stored read-only text.
+    /// Use `String` for parameters and stored read-only text.
     void editingText() {
         // Create an editable string from a string literal.
-        auto story = el::String{"The frost lifts from the valley. A pale crocus opens beside the stone. "
+        auto story = el::StringEditor{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                 "Der Wind trägt Blätter durch die Luft."_el};
 
-        // Alternatively, create an editable string directly with the `""_els` literal.
-        auto intro = "A short alpine field note:"_els;
+        // Alternatively, create an editable string directly with the `""_el` literal.
+        auto intro = "A short alpine field note:"_el;
 
         // Find the insertion position after the first sentence.
         auto firstFullStopIndex = story.findFirstOf({U'.'});

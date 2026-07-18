@@ -80,7 +80,7 @@ This rule keeps parsing unambiguous and makes generated root help a clear comman
                 .addChoice("text"_el)
                 .addChoice("chart"_el)
                 .addChoice("data"_el)
-                .setDefaultValue(el::String{"text"_el})
+                .setDefaultValue("text"_el)
                 .setHelpDescription("Output format for the record."_el);
             render->addOption("instrument"_el).setRequired().setHelpDescription("Instrument to render."_el);
             render->setMainFn([](const el::OptionValuesPtr &values) -> el::ExitCode {

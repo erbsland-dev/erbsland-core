@@ -19,9 +19,9 @@
 #include "../../system/UserId.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
-#include "../../text/impl/UnsafeU8StringViewAccess.hpp"
+#include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
+#include "../../text/StringEditor.hpp"
 #include "../../time/impl/PosixTimeConverter.hpp"
 #include "../../unit/ByteLength.hpp"
 
@@ -51,7 +51,7 @@ using namespace text::literals;
 
 auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     errno = 0;
     auto resolved = std::unique_ptr<char, decltype(&std::free)>{::realpath(pathAccess.data(), nullptr), &std::free};
     if (resolved == nullptr) {
@@ -66,7 +66,7 @@ auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
 
 auto PosixPathBackend::existingPath(const Path &path) -> bool {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringViewAccess{pathText};
+    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     struct stat info{};
     if (::lstat(pathAccess.data(), &info) == 0) {
         return true;
@@ -111,15 +111,15 @@ auto PosixPathBackend::physicalNoFinalSymlinkPathOrThrow(const Path &path) -> Pa
 }
 
 void PosixPathBackend::throwSystemError(
-    const text::StringView &title, const text::StringView &description, const Path &path, const int errorCode) {
+    const text::String &title, const text::String &description, const Path &path, const int errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
             .setPlatformContext(system::PosixErrorContext::fromErrorCode(errorCode))};
 }
 
 void PosixPathBackend::throwSystemError(
-    const text::StringView &title,
-    const text::StringView &description,
+    const text::String &title,
+    const text::String &description,
     const Path &source,
     const Path &destination,
     const int errorCode) {

@@ -2,20 +2,19 @@
 .. index::
     !single: Character Access and Parsing of Strings
     single: StringCharReader
-    single: StringCharView
-    single: StringView
     single: String
+    single: StringEditor
     single: StringLiteral
-    single: U8StringView
     single: U8String
-    single: U16StringView
+    single: U8StringEditor
     single: U16String
-    single: U32StringView
+    single: U16StringEditor
     single: U32String
+    single: U32StringEditor
     single: Code-Point Access
     single: Byte Index
     single: Code-Point Index
-    single: Sequential String Parsing
+    single: Sequential StringEditor Parsing
 
 ***************************************
 Character Access and Parsing of Strings
@@ -23,15 +22,15 @@ Character Access and Parsing of Strings
 
 Most string-processing code should not care how text is encoded.
 
-Use :cpp:type:`StringView <erbsland::text::StringView>` for ordinary read-only text.
+Use :cpp:type:`String <erbsland::text::String>` for ordinary read-only text.
 It accepts UTF-8 strings through a single interface and allows callers to pass
-:cpp:type:`String <erbsland::text::String>` and
+:cpp:type:`StringEditor <erbsland::text::StringEditor>` and
 :cpp:type:`StringLiteral <erbsland::text::StringLiteral>` without
 copying.
 Reach for
-:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
-:cpp:class:`U16StringView <erbsland::text::U16StringView>`, or
-:cpp:class:`U32StringView <erbsland::text::U32StringView>` only when the
+:cpp:class:`U8String <erbsland::text::U8String>`,
+:cpp:class:`U16String <erbsland::text::U16String>`, or
+:cpp:class:`U32String <erbsland::text::U32String>` only when the
 storage encoding itself is relevant to the problem.
 
 This page explains how to work with decoded Unicode characters rather than raw storage units.
@@ -42,7 +41,7 @@ Three access patterns cover almost all string-processing tasks:
 
 - Use :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`
   for parsers and sequential readers.
-- Use :cpp:func:`forEach() <erbsland::text::U8StringView::forEach>` or
+- Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` or
   range-based iteration when you inspect every decoded character.
 - Use code-point indexed access only when an external API already provides an index,
   when you need direct access to the first or last character, or when working with small strings.
@@ -62,16 +61,14 @@ In practice:
 - Use :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` for parsers.
   It provides efficient sequential access, lookahead, recovery, and code-point positions for diagnostics.
   It also provides capturing of strings and low-level integer parsing.
-- Use :cpp:func:`forEach() <erbsland::text::U8StringView::forEach>` or a range-based ``for`` loop when
+- Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` or a range-based ``for`` loop when
   every decoded character is visited.
-- Use byte indexes together with :cpp:func:`find() <erbsland::text::U8StringView::find>` and similar functions,
-  and use :cpp:func:`advance() <erbsland::text::U8StringView::advance>` and
-  :cpp:func:`retreat() <erbsland::text::U8StringView::retreat>` to move the index.
+- Use byte indexes together with :cpp:func:`find() <erbsland::text::U8String::find>` and similar functions,
+  and use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
+  :cpp:func:`retreat() <erbsland::text::U8String::retreat>` to move the index.
   Do not manipulate UTF-8 byte positions manually.
 - Use code-point indexes when character positions are part of the problem domain,
   such as diagnostics or editor positions.
-- Use :cpp:type:`StringCharView <erbsland::text::StringCharView>` when your data model is naturally character-indexed,
-  the additional scanning cost is acceptable and conversion to UTF-32 adds to much complexity.
 
 Decoded Characters, Byte Indexes, and Code-Point Indexes
 ========================================================
@@ -93,12 +90,12 @@ Parse Text with ``StringCharReader``
 ====================================
 
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` accepts
-:cpp:class:`U8String <erbsland::text::U8String>` /
-:cpp:class:`U8StringView <erbsland::text::U8StringView>`,
-:cpp:class:`U16String <erbsland::text::U16String>` /
-:cpp:class:`U16StringView <erbsland::text::U16StringView>`, and
-:cpp:class:`U32String <erbsland::text::U32String>` /
-:cpp:class:`U32StringView <erbsland::text::U32StringView>`.
+:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /
+:cpp:class:`U8String <erbsland::text::U8String>`,
+:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>` /
+:cpp:class:`U16String <erbsland::text::U16String>`, and
+:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` /
+:cpp:class:`U32String <erbsland::text::U32String>`.
 Parser helpers can therefore work on all string widths without templates or overloads.
 
 Use the reader as a cursor:
@@ -148,20 +145,20 @@ It returns a decoded code-point index, which is the unit users expect when they 
     /// This demo parses a small Turkish study plan.
     /// Helper functions receive `StringCharReader` by reference when they consume input.
     void studyPlanParser() {
-        const auto utf8Plan = el::StringView{"matematik:45;fen:30;müzik"_el};
+        const auto utf8Plan = el::String{"matematik:45;fen:30;müzik"_el};
         printPlan("UTF-8 plan"_el, el::StringCharReader{utf8Plan});
 
-        const auto utf16Plan = el::U16StringView{u"geometri:25;şiir:15"_el};
+        const auto utf16Plan = el::U16String{u"geometri:25;şiir:15"_el};
         printPlan("UTF-16 plan"_el, el::StringCharReader{utf16Plan});
 
-        const auto utf32Plan = el::U32StringView{U"astronomi:40;çizim:20"_el};
+        const auto utf32Plan = el::U32String{U"astronomi:40;çizim:20"_el};
         printPlan("UTF-32 plan"_el, el::StringCharReader{utf32Plan});
 
-        const auto draftWithError = el::StringView{"tarih:25;kimya:x"_el};
+        const auto draftWithError = el::String{"tarih:25;kimya:x"_el};
         printPlan("plan with diagnostic"_el, el::StringCharReader{draftWithError});
     }
 
-    void printPlan(const el::StringView &label, el::StringCharReader reader) {
+    void printPlan(const el::String &label, el::StringCharReader reader) {
         el::io::printLine(label, ":"_el);
         while (!reader.isAtEnd()) {
             const auto lessonStart = reader.position();
@@ -189,7 +186,7 @@ It returns a decoded code-point index, which is the unit users expect when they 
         }
     }
 
-    auto readLessonName(el::StringCharReader &reader) -> el::String {
+    auto readLessonName(el::StringCharReader &reader) -> el::StringEditor {
         const static auto separatorChars = el::CharSet{U':', U';'};
         reader.startCapture();
         reader.readUntil({}, separatorChars);
@@ -229,34 +226,34 @@ Iterate Over Decoded Characters
 If your code only needs to visit decoded characters, use the iteration APIs instead of creating a parser.
 They are shorter, make the intent clearer, and avoid accidental byte-index mistakes.
 
-Use :cpp:func:`forEach() <erbsland::text::U8StringView::forEach>` as a convenience method, visiting every character in
+Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` as a convenience method, visiting every character in
 the string.
 If your callback returns ``LoopStatus::Stop``, the iteration stops early and returns ``LoopResult::Stopped``.
-Especially if you test for a condition, using :cpp:func:`forEach() <erbsland::text::U8StringView::forEach>` is often the
+Especially if you test for a condition, using :cpp:func:`forEach() <erbsland::text::U8String::forEach>` is often the
 most efficient way of implementation.
 
 A simple ``for (Char character : myString) { ... }`` loop is effective too, compared to the ``forEach`` call it works
 with iterators that need to do a bit of extra work in sake of safety.
 
 Both forms decode invalid UTF-8 as :cpp:func:`Char::replacement() <erbsland::text::Char::replacement>` for UTF-8
-``StringView`` operations.
+``String`` operations.
 Validate input first when malformed encoding should be rejected rather than tolerated.
 
 .. erbsland-demo::
-    :source: text/StringView/IteratingCharacters.cpp
-    :exec: text/string_view --demo IteratingCharacters
+    :source: text/String/IteratingCharacters.cpp
+    :exec: text/string --demo IteratingCharacters
     :source-sha256: d8bfa0a20835d7c2de1d48e3b262e17db979c735d2e876be2db93f74c9b37d16
 
 .. code-block:: cpp
 
-    /// `StringView::forEach()` and range-based `for` loops decode text as Unicode
+    /// `String::forEach()` and range-based `for` loops decode text as Unicode
     /// code points without exposing UTF-8 byte boundaries.
     ///
     /// Use `forEach()` when the callback may stop early with `LoopStatus::Stop`.
     /// Use a range-based `for` loop when all decoded characters should be visited
     /// and the loop body is clearer than a callback.
     void iteratingCharacters() {
-        const auto plan = el::StringView{"matematik:45;fen:30;müzik:20"_el};
+        const auto plan = el::String{"matematik:45;fen:30;müzik:20"_el};
 
         auto lettersBeforeBreak = el::CpLength::zero();
         auto digitsBeforeBreak = el::CpLength::zero();
@@ -278,11 +275,11 @@ Validate input first when malformed encoding should be rejected rather than tole
         el::io::printLine("  ASCII letters: "_el, lettersBeforeBreak);
         el::io::printLine("  ASCII digits: "_el, digitsBeforeBreak);
 
-        auto uppercased = el::String{};
+        auto uppercased = el::StringEditor{};
 
         // Range-based iteration is compact when every decoded character is needed.
-        // Note: Use `String::transformed` to uppercase/lowercase transformations in production code.
-        for (const auto character : el::StringView{"ödev: çizim"_el}) {
+        // Note: Use `StringEditor::transformed` to uppercase/lowercase transformations in production code.
+        for (const auto character : el::String{"ödev: çizim"_el}) {
             uppercased.append(character.toUppercase());
         }
 
@@ -309,20 +306,20 @@ require a scan.
 Fast Side Access
 ----------------
 
-Use :cpp:func:`charAt(StringSide) <erbsland::text::U8StringView::charAt>` when you need the first or last character.
+Use :cpp:func:`charAt(StringSide) <erbsland::text::U8String::charAt>` when you need the first or last character.
 This avoids spelling out the index and lets the string implementation choose the efficient path.
 
-Use :cpp:func:`indexAt(StringSide) <erbsland::text::U8StringView::indexAt>` to get the first byte index or the byte
+Use :cpp:func:`indexAt(StringSide) <erbsland::text::U8String::indexAt>` to get the first byte index or the byte
 index after the last byte.
 The back index is an end position, not the last character's start position.
 
 Byte-Index Access
 -----------------
 
-Use :cpp:func:`charAt(ByteIndex) <erbsland::text::U8StringView::charAt>` when the byte index came from another
-``StringView`` operation, from a saved byte position, or from
-:cpp:func:`advance() <erbsland::text::U8StringView::advance>` /
-:cpp:func:`retreat() <erbsland::text::U8StringView::retreat>`.
+Use :cpp:func:`charAt(ByteIndex) <erbsland::text::U8String::charAt>` when the byte index came from another
+``String`` operation, from a saved byte position, or from
+:cpp:func:`advance() <erbsland::text::U8String::advance>` /
+:cpp:func:`retreat() <erbsland::text::U8String::retreat>`.
 
 The operation is safe:
 
@@ -336,36 +333,36 @@ If you do no own length validation, always test signal characters before treatin
 Code-Point Index Access
 -----------------------
 
-Use :cpp:func:`charAt(CpIndex) <erbsland::text::U8StringView::charAt>` when the position is already a code-point
+Use :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` when the position is already a code-point
 position and the string is small enough that scanning is acceptable.
-The same guidance applies to :cpp:func:`indexAt(CpIndex) <erbsland::text::U8StringView::indexAt>` and
-:cpp:func:`toCharIndex(ByteIndex) <erbsland::text::U8StringView::toCharIndex>`.
+The same guidance applies to :cpp:func:`indexAt(CpIndex) <erbsland::text::U8String::indexAt>` and
+:cpp:func:`toCharIndex(ByteIndex) <erbsland::text::U8String::toCharIndex>`.
 
 Do not parse a UTF-8 string with a loop like "for each code-point index, call ``charAt(CpIndex)`` ".
 That repeats a scan for every character.
 Use :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`,
-:cpp:func:`forEach() <erbsland::text::U8StringView::forEach>`, or range-based iteration instead.
+:cpp:func:`forEach() <erbsland::text::U8String::forEach>`, or range-based iteration instead.
 
 Slicing and Moving Indexes
 --------------------------
 
-Use :cpp:func:`slice(StringSide) <erbsland::text::U8StringView::slice>` when you need to peel one decoded character from
+Use :cpp:func:`slice(StringSide) <erbsland::text::U8String::slice>` when you need to peel one decoded character from
 the front or back and continue with the remaining view.
 This is useful for rules such as "the first character has different requirements than the rest".
 
-Use :cpp:func:`advance() <erbsland::text::U8StringView::advance>` and
-:cpp:func:`retreat() <erbsland::text::U8StringView::retreat>` to move byte indexes by decoded characters.
+Use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
+:cpp:func:`retreat() <erbsland::text::U8String::retreat>` to move byte indexes by decoded characters.
 They keep index movement in the string API, where malformed encoding and boundary conditions can be handled
 consistently.
 
 .. erbsland-demo::
-    :source: text/StringView/CharacterAccess.cpp
-    :exec: text/string_view --demo CharacterAccess
+    :source: text/String/CharacterAccess.cpp
+    :exec: text/string --demo CharacterAccess
     :source-sha256: 0bd10d5e3e2893fc5b4956f21bafd1d20194462e042283ca04e0b4005c7b5837
 
 .. code-block:: cpp
 
-    /// `StringView` gives fast access to UTF-8 byte positions and explicit tools for
+    /// `String` gives fast access to UTF-8 byte positions and explicit tools for
     /// moving between decoded code points.
     ///
     /// Use `charAt(StringSide)` for the first or last character, use byte indexes
@@ -374,7 +371,7 @@ consistently.
     /// Code-point indexes are convenient but require scanning UTF-8 text; reserve
     /// them for small strings or specialized code.
     void characterAccess() {
-        const auto text = el::StringView{"ödev📚:matematik"_el};
+        const auto text = el::String{"ödev📚:matematik"_el};
 
         el::io::printLine("Text: "_el, text);
         el::io::printLine("First character: "_el, describeCharacter(text.charAt(el::StringSide::Front)));
@@ -408,9 +405,9 @@ consistently.
         el::io::printLine("Sliced front: "_el, describeCharacter(firstCharacter), " | rest: "_el, withoutFirst);
         el::io::printLine("Sliced back: "_el, describeCharacter(lastCharacter), " | rest: "_el, withoutLast);
 
-        // `StringCharView` exposes character-indexed helpers for specialized small-text work.
-        auto charView = text.toCharView();
-        el::io::printLine("Char view prefix: "_el, charView.slice(el::StringSide::Front, el::CpLength{4U}));
+        // Code-point ranges are available directly on the owning read-only string.
+        el::io::printLine(
+            "Code-point prefix: "_el, text.slice(el::StringSide::Front, el::CpLength{4U}));
     }
 
 .. erbsland-ansi::
@@ -430,37 +427,23 @@ consistently.
     Character at code-point index 5: ':'
     Sliced front: 'ö' | rest: dev📚:matematik
     Sliced back: 'k' | rest: ödev📚:matemati
-    Char view prefix: ödev
+    Code-point prefix: ödev
 
 .. erbsland-demo-end::
-
-Use ``StringCharView`` Only for Character-Position Models
-=========================================================
-
-:cpp:type:`StringCharView <erbsland::text::StringCharView>` is created with
-:cpp:func:`toCharView() <erbsland::text::U8StringView::toCharView>`.
-It exposes a character-indexed interface with code-point indexes and character-indexed find, slice, and transform
-helpers.
-
-Use it when your algorithm is naturally expressed in character positions, for example a small text grid, editor column,
-diagnostic marker, or fixed-width display calculation.
-Do not use it to make parsers look simpler.
-For UTF-8 and UTF-16, character-indexed access is still implemented by scanning from the start or from nearby known
-boundaries.
 
 Code-Point Access is Cheap for UTF-32 Strings
 =============================================
 
 UTF-32 makes code-point-index access cheap because one storage unit is one code point.
-That does not automatically make conversion to :cpp:class:`U32String <erbsland::text::U32String>` worthwhile.
+That does not automatically make conversion to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` worthwhile.
 Convert only when the data will be accessed by code-point index often enough to justify the extra memory, conversion
 cost, and API width change.
 
 Dos and Don'ts
 ==============
 
-Do accept :cpp:type:`StringView <erbsland::text::StringView>` for ordinary read-only text.
-It lets callers pass :cpp:type:`String <erbsland::text::String>`,
+Do accept :cpp:type:`String <erbsland::text::String>` for ordinary read-only text.
+It lets callers pass :cpp:type:`StringEditor <erbsland::text::StringEditor>`,
 :cpp:type:`StringLiteral <erbsland::text::StringLiteral>`, and UTF-8 literals without copying.
 
 Do write parsers around :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
@@ -469,16 +452,16 @@ Keep parser functions independent of UTF-8, UTF-16, and UTF-32 unless the gramma
 Do use :cpp:func:`position() <erbsland::text::StringCharReader::position>` for user-facing parse diagnostics, and keep
 byte indexes for internal string operations.
 
-Do use :cpp:func:`forEach() <erbsland::text::U8StringView::forEach>` or a range-based ``for`` loop for simple character
+Do use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` or a range-based ``for`` loop for simple character
 walks.
 
-Do use :cpp:func:`advance() <erbsland::text::U8StringView::advance>` and
-:cpp:func:`retreat() <erbsland::text::U8StringView::retreat>` to move byte indexes by decoded code points.
+Do use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
+:cpp:func:`retreat() <erbsland::text::U8String::retreat>` to move byte indexes by decoded code points.
 
 Don't increment a UTF-8 byte index and assume the next byte starts the next character.
 
-Don't use repeated :cpp:func:`charAt(CpIndex) <erbsland::text::U8StringView::charAt>` calls as a parser or scanner for
+Don't use repeated :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` calls as a parser or scanner for
 large UTF-8 text.
 
-Don't convert to :cpp:class:`U32String <erbsland::text::U32String>` just to make one or two character-indexed accesses.
+Don't convert to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` just to make one or two character-indexed accesses.
 Use UTF-32 when code-point indexing is central to the data structure.

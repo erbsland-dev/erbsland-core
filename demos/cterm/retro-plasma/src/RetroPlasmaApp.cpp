@@ -63,7 +63,7 @@ void RetroPlasmaApp::drawPrompt() noexcept {
 }
 
 auto RetroPlasmaApp::buildPrompt() const -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     result.append(
         bg::BrightBlack,
         fg::BrightWhite,

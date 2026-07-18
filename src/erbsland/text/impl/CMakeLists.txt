@@ -4,6 +4,10 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        AnyStringBuilderBase.hpp
+        AnyStringBuilderFactory.cpp
+        AnyStringBuilderFactory.hpp
+        ByteBlockFormatter.hpp
         CharSetFromPattern.hpp
         CodeBlockData.hpp
         CodeLineMarkerData.cpp
@@ -60,12 +64,10 @@ target_sources(erbsland-core PRIVATE
         SafeStringEscapeTools.hpp
         StaticStringPatternData.hpp
         StaticStringPatternData.tpp
-        StringBuilderBase.hpp
-        StringBuilderFactory.cpp
-        StringBuilderFactory.hpp
         StringConversionTools.cpp
         StringConversionTools.hpp
         StringConversionTools_fwd.hpp
+        StringEncodingWriter.hpp
         StringHashMap.hpp
         StringHashMap_fwd.hpp
         StringHashSet.hpp
@@ -99,16 +101,16 @@ target_sources(erbsland-core PRIVATE
         UnsafeU16StringBuffer.cpp
         UnsafeU16StringBuffer.hpp
         UnsafeU16StringBuffer_fwd.hpp
-        UnsafeU16StringViewAccess.hpp
-        UnsafeU16StringViewAccess_fwd.hpp
-        UnsafeU32StringViewAccess.hpp
-        UnsafeU32StringViewAccess_fwd.hpp
+        UnsafeU16StringEditorAccess.hpp
+        UnsafeU16StringEditorAccess_fwd.hpp
+        UnsafeU32StringAccess.hpp
+        UnsafeU32StringAccess_fwd.hpp
         UnsafeU8StringAccess.hpp
         UnsafeU8StringAccess_fwd.hpp
         UnsafeU8StringBuffer.hpp
         UnsafeU8StringBuffer_fwd.hpp
-        UnsafeU8StringViewAccess.hpp
-        UnsafeU8StringViewAccess_fwd.hpp
+        UnsafeU8StringEditorAccess.hpp
+        UnsafeU8StringEditorAccess_fwd.hpp
         XmlEscapeFormatter.cpp
         XmlEscapeFormatter.hpp
 )

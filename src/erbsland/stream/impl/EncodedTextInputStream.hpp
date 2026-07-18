@@ -95,7 +95,7 @@ private:
     bool _byteInputFinished{false};
     AggregateReadKind _aggregateKind{AggregateReadKind::None};
     unit::CpLength _aggregateTarget{};
-    text::String _pendingText;
+    text::StringEditor _pendingText;
     text::String _replayText;
     unit::ByteIndex _positionBase{}; ///< Byte position at the last decoder reset.
 };

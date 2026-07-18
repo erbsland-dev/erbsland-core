@@ -27,7 +27,7 @@ class CleanupRstTest(unittest.TestCase):
             """<?xml version='1.0' encoding='UTF-8'?>
 <doxygenindex>
   <compound kind="namespace"><name>erbsland::text</name>
-    <member kind="typedef"><name>String</name></member>
+    <member kind="typedef"><name>StringEditor</name></member>
     <member kind="enum"><name>StringEncoding</name></member>
     <member kind="function"><name>format</name></member>
     <member kind="function"><name>StringConverter</name></member>
@@ -37,7 +37,7 @@ class CleanupRstTest(unittest.TestCase):
   <compound kind="namespace"><name>erbsland::math</name>
     <member kind="enum"><name>Mode</name></member>
   </compound>
-  <compound kind="class"><name>erbsland::text::U8String</name>
+  <compound kind="class"><name>erbsland::text::U8StringEditor</name>
     <member kind="function"><name>append</name></member>
   </compound>
   <compound kind="class"><name>erbsland::text::StringConverter</name></compound>
@@ -70,8 +70,8 @@ class CleanupRstTest(unittest.TestCase):
         return self.cleaner.cleanup_text(self.project_dir / path, text)
 
     def test_doxygen_index_parsing_and_role_mapping(self) -> None:
-        self.assertEqual(("type", "erbsland::text::String"), self.symbol_tuple("String"))
-        self.assertEqual(("class", "erbsland::text::U8String"), self.symbol_tuple("U8String"))
+        self.assertEqual(("type", "erbsland::text::StringEditor"), self.symbol_tuple("StringEditor"))
+        self.assertEqual(("class", "erbsland::text::U8StringEditor"), self.symbol_tuple("U8StringEditor"))
         self.assertEqual(("struct", "erbsland::unit::ByteUnit"), self.symbol_tuple("ByteUnit"))
         self.assertEqual(("enum", "erbsland::text::StringEncoding"), self.symbol_tuple("StringEncoding"))
         self.assertEqual(("func", "erbsland::text::format"), self.symbol_tuple("format"))
@@ -100,25 +100,25 @@ class CleanupRstTest(unittest.TestCase):
         self.config = CleanupRstConfig(self.project_dir, 240, self.index_path)
         self.cleaner = RstCleaner(self.config, self.index, self.collect_warning)
         text = (
-            "Use `String`, :cpp:class:`U8String`, :cpp:any:`format <erbsland::text::format>`, "
-            "and :cpp:enum:`Text String <erbsland::text::String>`.\n"
+            "Use `StringEditor`, :cpp:class:`U8StringEditor`, :cpp:any:`format <erbsland::text::format>`, "
+            "and :cpp:enum:`Text StringEditor <erbsland::text::StringEditor>`.\n"
         )
 
         result = self.cleanup(text)
 
         self.assertEqual(
-            "Use :cpp:type:`String <erbsland::text::String>`, "
-            ":cpp:class:`U8String <erbsland::text::U8String>`, "
+            "Use :cpp:type:`StringEditor <erbsland::text::StringEditor>`, "
+            ":cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`, "
             ":cpp:func:`format <erbsland::text::format>`, and "
-            ":cpp:type:`Text String <erbsland::text::String>`.\n",
+            ":cpp:type:`Text StringEditor <erbsland::text::StringEditor>`.\n",
             result,
         )
 
     def test_member_suffix_links_are_resolved(self) -> None:
-        result = self.cleanup("Use :cpp:any:`U8String::append` for appending text.\n")
+        result = self.cleanup("Use :cpp:any:`U8StringEditor::append` for appending text.\n")
 
         self.assertEqual(
-            "Use :cpp:func:`U8String::append <erbsland::text::U8String::append>` for appending text.\n",
+            "Use :cpp:func:`U8StringEditor::append <erbsland::text::U8StringEditor::append>` for appending text.\n",
             result,
         )
 
@@ -134,14 +134,14 @@ class CleanupRstTest(unittest.TestCase):
         self.config = CleanupRstConfig(self.project_dir, 74, self.index_path)
         self.cleaner = RstCleaner(self.config, self.index, self.collect_warning)
         text = (
-            "This paragraph references `String` and ``std::string`` while it keeps words "
+            "This paragraph references `StringEditor` and ``std::string`` while it keeps words "
             "wrapped within the configured width. Another sentence follows with ordinary text.\n"
         )
 
         result = self.cleanup(text)
 
         self.assertEqual(
-            "This paragraph references :cpp:type:`String <erbsland::text::String>` and\n"
+            "This paragraph references :cpp:type:`StringEditor <erbsland::text::StringEditor>` and\n"
             "``std::string`` while it keeps words wrapped within the configured width.\n"
             "Another sentence follows with ordinary text.\n",
             result,
@@ -171,10 +171,10 @@ class CleanupRstTest(unittest.TestCase):
         self.config = CleanupRstConfig(self.project_dir, 30, self.index_path)
         self.cleaner = RstCleaner(self.config, self.index, self.collect_warning)
 
-        result = self.cleanup("Use `String` with a veryveryveryveryveryveryverylongword here.\n")
+        result = self.cleanup("Use `StringEditor` with a veryveryveryveryveryveryverylongword here.\n")
 
         self.assertEqual(
-            "Use :cpp:type:`String <erbsland::text::String>` with a veryveryveryveryveryveryverylongword here.\n",
+            "Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` with a veryveryveryveryveryveryverylongword here.\n",
             result,
         )
 
@@ -182,20 +182,20 @@ class CleanupRstTest(unittest.TestCase):
         text = (
             ".. code-block:: cpp\n"
             "\n"
-            "    auto value = `String`{};\n"
+            "    auto value = `StringEditor`{};\n"
             "\n"
-            "* Use `String` in a bullet that must not be joined with anything else.\n"
+            "* Use `StringEditor` in a bullet that must not be joined with anything else.\n"
             "\n"
             ".. list-table::\n"
             "\n"
-            "    * - :cpp:type:`String`\n"
+            "    * - :cpp:type:`StringEditor`\n"
         )
 
         result = self.cleanup(text)
 
-        self.assertIn("    auto value = `String`{};\n", result)
-        self.assertIn("* Use :cpp:type:`String <erbsland::text::String>` in a bullet", result)
-        self.assertIn("    * - :cpp:type:`String <erbsland::text::String>`\n", result)
+        self.assertIn("    auto value = `StringEditor`{};\n", result)
+        self.assertIn("* Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` in a bullet", result)
+        self.assertIn("    * - :cpp:type:`StringEditor <erbsland::text::StringEditor>`\n", result)
 
     def test_title_adornments_are_fixed(self) -> None:
         result = self.cleanup("*************\n" "Title Is Longer\n" "*************\n" "\n" "Small Title\n" "===\n")
@@ -211,8 +211,8 @@ class CleanupRstTest(unittest.TestCase):
         nested_dir.mkdir(parents=True)
         direct_file = doc_dir / "direct.rst"
         nested_file = nested_dir / "nested.rst"
-        direct_original = "Use `String` here.\n"
-        nested_original = "Use `String` there.\n"
+        direct_original = "Use `StringEditor` here.\n"
+        nested_original = "Use `StringEditor` there.\n"
         direct_file.write_text(direct_original, encoding="utf-8")
         nested_file.write_text(nested_original, encoding="utf-8")
         runner = CleanupRstRunner(self.config, dry_run=True, recursive=False)

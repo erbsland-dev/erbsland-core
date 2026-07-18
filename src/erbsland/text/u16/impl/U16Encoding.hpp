@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../mem/ByteBlockView.hpp"
+#include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteReader.hpp"
 #include "../../../unit/U16DataIndex.hpp"
 #include "../../../unit/U16DataLength.hpp"
@@ -20,27 +20,6 @@
 #include <type_traits>
 
 namespace erbsland::text::impl::utf16 {
-
-/// Test if the string encoding is a UTF-16 encoding.
-[[nodiscard]] constexpr auto isEncoding(const StringEncoding encoding) noexcept -> bool {
-    return encoding == StringEncoding::Utf16 || encoding == StringEncoding::Utf16LittleEndian ||
-        encoding == StringEncoding::Utf16BigEndian;
-}
-
-/// Get the UTF-16 byte order mark length.
-[[nodiscard]] constexpr auto bomLength() noexcept -> std::size_t {
-    return 2U;
-}
-
-/// Test if the byte data starts with a UTF-16 little-endian byte order mark.
-[[nodiscard]] inline auto hasLittleEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
-    return data.startsWith({0xFFU, 0xFEU});
-}
-
-/// Test if the byte data starts with a UTF-16 big-endian byte order mark.
-[[nodiscard]] inline auto hasBigEndianBom(const mem::ByteBlockView &data) noexcept -> bool {
-    return data.startsWith({0xFEU, 0xFFU});
-}
 
 /// Read one UTF-16 code unit from a byte reader.
 [[nodiscard]] inline auto readCodeUnit(mem::ByteReader &reader) noexcept -> char16_t {

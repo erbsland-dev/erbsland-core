@@ -20,7 +20,7 @@ auto collapsedVerticalMarginValue(const bgeo::BlockCoordinate first, const bgeo:
 }
 
 auto resolvedDecoration(
-    BlockStringBuilder &builder, const std::optional<BlockStringView> &decoration, const BlockStyle textStyle)
+    BlockStringBuilder &builder, const std::optional<BlockString> &decoration, const BlockStyle textStyle)
     -> std::optional<BlockString> {
     if (!decoration.has_value()) {
         return std::nullopt;

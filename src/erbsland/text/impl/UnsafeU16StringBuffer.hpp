@@ -5,7 +5,7 @@
 #include "UnsafeU16StringBuffer_fwd.hpp"
 
 #include "../u16/impl/U16StringData.hpp"
-#include "../u16/U16String.hpp"
+#include "../u16/U16StringEditor.hpp"
 
 #include "../../unit/U16DataLength.hpp"
 
@@ -18,7 +18,7 @@ namespace erbsland::text::impl {
 
 /// Owns uncommitted UTF-16 string storage for low-level native APIs.
 /// @warning Do not use this class in user code!
-/// @tested{UnsafeU16StringAccessTest}
+/// @tested{UnsafeU16StringEditorAccessTest}
 class UnsafeU16StringBuffer {
 public:
     /// Create a buffer with the given full data size, including the null code unit.
@@ -51,16 +51,16 @@ public:
     /// Create a UTF-16 string from the buffer and release the buffer.
     /// @param length The length of the string to create, excluding the null code unit.
     /// @return The created UTF-16 string.
-    [[nodiscard]] auto take(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U16String;
+    [[nodiscard]] auto take(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U16StringEditor;
     /// @overload
-    [[nodiscard]] auto take(std::size_t length) -> U16String;
+    [[nodiscard]] auto take(std::size_t length) -> U16StringEditor;
     /// Create a UTF-8 string from the buffer and release the buffer.
     /// This is a convenience overload of the take() function that converts the buffer from UTF-16 to UTF-8.
     /// @param length The length of the string to create, excluding the null code unit.
     /// @return The created UTF-16 string.
-    [[nodiscard]] auto takeAsUtf8(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U8String;
+    [[nodiscard]] auto takeAsUtf8(unit::U16DataLength length = unit::U16DataLength::infinite()) -> U8StringEditor;
     /// @overload
-    [[nodiscard]] auto takeAsUtf8(std::size_t length) -> U8String;
+    [[nodiscard]] auto takeAsUtf8(std::size_t length) -> U8StringEditor;
 
 private:
     /// Create exact buffer storage for a full data size, including the null code unit.

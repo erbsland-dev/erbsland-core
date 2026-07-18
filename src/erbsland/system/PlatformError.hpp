@@ -20,7 +20,7 @@ public:
     /// @param context The captured native diagnostic context.
     /// @param cause An optional independent cause.
     explicit PlatformError(
-        text::StringView reason, PlatformErrorContextConstPtr context = {}, std::exception_ptr cause = {}) noexcept;
+        text::String reason, PlatformErrorContextConstPtr context = {}, std::exception_ptr cause = {}) noexcept;
 
     // defaults
     ~PlatformError() override = default;

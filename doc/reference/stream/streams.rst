@@ -142,6 +142,8 @@ nested platform-error cause.
 Interface
 =========
 
+.. doxygenclass:: erbsland::stream::AnyStringBuilderStream
+    :members:
 .. doxygenclass:: erbsland::stream::ByteInputStream
     :members:
 .. doxygenclass:: erbsland::stream::ByteOutputStream
@@ -172,11 +174,11 @@ Interface
 
 .. doxygenfunction:: erbsland::stream::io::write(text::Char character) -> StreamWriteStatus
 
-.. doxygenfunction:: erbsland::stream::io::write(const text::StringView &text) -> StreamWriteStatus
+.. doxygenfunction:: erbsland::stream::io::write(const text::String &text) -> StreamWriteStatus
 
 .. doxygenfunction:: erbsland::stream::io::writeLine() -> StreamWriteStatus
 
-.. doxygenfunction:: erbsland::stream::io::writeLine(const text::StringView &text) -> StreamWriteStatus
+.. doxygenfunction:: erbsland::stream::io::writeLine(const text::String &text) -> StreamWriteStatus
 
 .. doxygenfunction:: erbsland::stream::io::print(const tArgs &...args) -> StreamWriteStatus
 
@@ -205,8 +207,6 @@ Interface
 .. doxygenclass:: erbsland::stream::StreamWaitStatus
     :members:
 .. doxygenclass:: erbsland::stream::StreamWriteStatus
-    :members:
-.. doxygenclass:: erbsland::stream::StringBuilderStream
     :members:
 .. doxygenclass:: erbsland::stream::TempByteOutputStream
     :members:

@@ -4,24 +4,21 @@
 
 .. index::
     !single: Strings
+    single: StringEditor
     single: String
-    single: StringView
     single: StringLiteral
-    single: StringBuilder
+    single: AnyStringBuilder
     single: Char
+    single: U8StringEditor
+    single: U16StringEditor
+    single: U32StringEditor
     single: U8String
     single: U16String
     single: U32String
-    single: U8StringView
-    single: U16StringView
-    single: U32StringView
     single: U8StringLiteral
     single: U16StringLiteral
     single: U32StringLiteral
-    single: U8StringCharView
-    single: U16StringCharView
     single: StringFormat
-    single: Character Views
     single: Copy on Write
     single: Thread Safety
     single: Unicode Support
@@ -84,7 +81,7 @@ Use UTF-16 when:
 * You need fixed-size code units for indexing while still supporting the full Unicode range.
 
 UTF-16 is larger than UTF-8 for ASCII content but smaller than UTF-32. Surrogate pairs complicate character indexing,
-which is why the library provides a dedicated character view type.
+so indexed code-point access may require scanning surrogate pairs.
 
 UTF-32
 ------
@@ -110,8 +107,8 @@ Library Default
 ---------------
 
 The library uses UTF-8 as its default encoding.
-The common aliases :cpp:type:`String <erbsland::text::String>`, :cpp:type:`StringView <erbsland::text::StringView>`,
-:cpp:type:`StringLiteral <erbsland::text::StringView>`, and :cpp:type:`StringFormat <erbsland::text::StringFormat>`
+The common aliases :cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:type:`String <erbsland::text::String>`,
+:cpp:type:`StringLiteral <erbsland::text::String>`, and :cpp:type:`StringFormat <erbsland::text::StringFormat>`
 are all UTF-8 types.
 For most applications, you only ever need these aliases.
 
@@ -120,8 +117,7 @@ For most applications, you only ever need these aliases.
 String Types
 ============
 
-This library provides four kinds of string types for each encoding: owning strings, views, character views, and
-literals.
+This library provides a read-only owning value, a mutable editor and a literal type for each encoding.
 The table below shows the full set.
 
 .. list-table::
@@ -132,72 +128,67 @@ The table below shows the full set.
         -   **UTF-8**
         -   **UTF-16**
         -   **UTF-32**
-    *   -   **Owning string view**
-        -   |   :cpp:type:`StringView <erbsland::text::StringView>`
-            |   (:cpp:class:`U8StringView <erbsland::text::U8StringView>`)
-        -   :cpp:class:`U16StringView <erbsland::text::U16StringView>`
-        -   :cpp:class:`U32StringView <erbsland::text::U32StringView>`
-    *   -   **Owning character view**
-        -   :cpp:class:`U8StringCharView <erbsland::text::U8StringCharView>`
-        -   :cpp:class:`U16StringCharView <erbsland::text::U16StringCharView>`
-        -   —
-    *   -   **Owning string editor**
+    *   -   **Read-only string**
         -   |   :cpp:type:`String <erbsland::text::String>`
             |   (:cpp:class:`U8String <erbsland::text::U8String>`)
         -   :cpp:class:`U16String <erbsland::text::U16String>`
         -   :cpp:class:`U32String <erbsland::text::U32String>`
+    *   -   **Owning string editor**
+        -   |   :cpp:type:`StringEditor <erbsland::text::StringEditor>`
+            |   (:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`)
+        -   :cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`
+        -   :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`
     *   -   **String literal**
         -   |   :cpp:type:`StringLiteral <erbsland::text::StringLiteral>`
             |   (:cpp:class:`U8StringLiteral <erbsland::text::U8StringLiteral>`)
         -   :cpp:class:`U16StringLiteral <erbsland::text::U16StringLiteral>`
         -   :cpp:class:`U32StringLiteral <erbsland::text::U32StringLiteral>`
 
-The aliases :cpp:type:`String <erbsland::text::String>`, :cpp:type:`StringView <erbsland::text::StringView>` and
-:cpp:type:`StringLiteral <erbsland::text::StringView>` refer to the UTF-8 types and are the ones you will use most often.
+The aliases :cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:type:`String <erbsland::text::String>` and
+:cpp:type:`StringLiteral <erbsland::text::String>` refer to the UTF-8 types and are the ones you will use most often.
 
-Owning String Views
--------------------
+Owning Read-only Strings
+------------------------
 
-String views are read-only, owning references to string data.
-They are the most efficient type for storing and passing strings because they never copy data when possible.
+Read-only strings are owning values that either share string data or refer to static literal storage.
+They are the primary type for storing, passing and returning completed text.
 
-A view internally stores either a reference to shared string data or a reference to the read-only memory of a string
-literal.
-Operations on views are fast because the underlying memory is never modified or copied.
+A string internally stores either shared string data or a reference to the read-only memory of a string literal.
+Slices safely share their source storage because the value keeps that storage alive.
 
 .. erbsland-demo::
-    :source: text/StringView/IdealFunctionParameter.cpp
-    :exec: text/string_view --demo IdealFunctionParameter
+    :source: text/String/IdealFunctionParameter.cpp
+    :exec: text/string --demo IdealFunctionParameter
     :source-sha256: 1174794885cf3e3869b50c12bebb9246f83997dd0f2fa21ee42a3be804f58d28
 
 .. code-block:: cpp
 
-    /// `StringView` is the preferred parameter type for functions that read text.
+    /// `String` is the preferred parameter type for functions that read text.
     ///
     /// It accepts common string inputs naturally:
     /// - string literals are used directly without copying,
-    /// - existing views share their backend,
-    /// - editable strings provide a read-only view to their contents.
+    /// - existing strings share their backend,
+    /// - editors provide a read-only value to their contents.
     ///
     /// From the caller's perspective, all variants behave the same.
     void idealFunctionParameter() {
         // A string literal can be passed directly.
         countEmojis("🌲🌲 Waldkonzert mit Fuchs 🦊 und Eule 🦉"_el);
 
-        // An existing view can be passed without copying.
-        const auto stringView = el::StringView{"Pluie douce sur les fleurs 🌧️🌷🌼"_el};
-        countEmojis(stringView);
+        // An existing string can be passed without copying.
+        const auto string = el::String{"Pluie douce sur les fleurs 🌧️🌷🌼"_el};
+        countEmojis(string);
 
         // An editable string is accepted as read-only input.
-        const auto stringEdit = el::String{"Bosque nocturno: luna 🌙, estrellas ✨ y grillos 🦗"_el};
+        const auto stringEdit = el::StringEditor{"Bosque nocturno: luna 🌙, estrellas ✨ y grillos 🦗"_el};
         countEmojis(stringEdit);
     }
 
     /// Count all emoji-like symbols in `text` and print the result.
     ///
     /// The function only needs read-only access to the text. It does not need to know
-    /// whether the caller passed a literal, a view, or an editable string.
-    void countEmojis(const el::StringView &text) {
+    /// whether the caller passed a literal, a string, or an editor.
+    void countEmojis(const el::String &text) {
         std::size_t emojiCount = 0;
         text.forEach([&](const el::Char character) mutable noexcept -> el::util::LoopStatus {
             if (character.isCategory(el::UnicodeCategory::OtherSymbol)) {
@@ -225,15 +216,14 @@ Operations on views are fast because the underlying memory is never modified or 
 
 .. erbsland-demo-end::
 
-Views are the preferred type for function parameters and return values in library APIs.
-They can be implicitly constructed from owning strings and literals, making them a natural drop-in replacement for
-``std::string_view`` in most contexts.
+Read-only strings are the preferred type for parameters, stored text and return values in library APIs.
+Unlike ``std::string_view``, they own or share the storage that guarantees their lifetime.
 
 String Literals
 ---------------
 
 String literals are wrappers around compile-time string literals, created with the ``""_el`` suffix.
-They are zero-cost references to read-only memory and can be converted to views without any allocation.
+They are zero-cost references to read-only memory and can be converted to strings without allocation.
 
 .. erbsland-demo::
     :source: text/StringLiteral/ZeroCost.cpp
@@ -292,9 +282,9 @@ They are zero-cost references to read-only memory and can be converted to views 
 
 .. erbsland-demo-end::
 
-Literals are primarily used as function arguments, constant expressions, and as the source for views.
+Literals are primarily used as function arguments, constant expressions and as the source for strings or editors.
 For most use cases, ``""_el`` is the recommended suffix.
-The suffixes ``""_elv`` and ``""_els`` exist for completeness and create a view or an owning string copy, respectively.
+Construct ``String{literal}`` or ``StringEditor{literal}`` explicitly when the literal type itself is insufficient.
 
 Editable Strings
 ----------------
@@ -303,22 +293,22 @@ Owning strings are mutable, copy-on-write containers that own their data.
 Use them when you need to modify, append, or store strings that outlive their source.
 
 .. erbsland-demo::
-    :source: text/String/EditingText.cpp
+    :source: text/StringEditor/EditingText.cpp
     :exec: text/string --demo EditingText
     :source-sha256: a07d080bec20b97c5a0d0da84850de1224168babb27b6c86c1b1861ee09c76b5
 
 .. code-block:: cpp
 
-    /// `String` is an owning, editable copy-on-write string type.
+    /// `StringEditor` is an owning, editable copy-on-write string type.
     /// Use it when you build text from scratch or modify existing text.
-    /// Use `StringView` for parameters and stored read-only text.
+    /// Use `String` for parameters and stored read-only text.
     void editingText() {
         // Create an editable string from a string literal.
-        auto story = el::String{"The frost lifts from the valley. A pale crocus opens beside the stone. "
+        auto story = el::StringEditor{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                 "Der Wind trägt Blätter durch die Luft."_el};
 
-        // Alternatively, create an editable string directly with the `""_els` literal.
-        auto intro = "A short alpine field note:"_els;
+        // Keep completed, unmodified text as a read-only value.
+        auto intro = el::String{"A short alpine field note:"_el};
 
         // Find the insertion position after the first sentence.
         auto firstFullStopIndex = story.findFirstOf({U'.'});
@@ -358,109 +348,19 @@ Use them when you need to modify, append, or store strings that outlive their so
 
 .. erbsland-demo-end::
 
-Creating an owning string from a view or literal always copies the data.
-While you *can* pass them around because of the copy-on-write feature, you should only use them when you need to edit
-text in place, or building strings from scratch.
-For text storage, passing parameters or just interpreting strings, use the more efficient
-:cpp:type:`StringView <erbsland::text::StringView>`.
+Creating an editor from a read-only string or literal creates editable copy-on-write storage.
+Use editors only when you need to change text in place or build it incrementally. For stored and completed text, use
+:cpp:type:`String <erbsland::text::String>`.
 
 If you need a more generic approach building strings, you may find the
-:cpp:class:`StringBuilder <erbsland::text::StringBuilder>` class useful.
+:cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>` class useful.
 It has one interface to build all three string types.
-
-Character Views
----------------
-
-Character views provide a specialized, character-index-based access to UTF-8 and UTF-16 data.
-Accessing index positions by code-points can be very slow, especially if you work with large texts and randomly
-accessing positions in this text.
-For that reason, the code-point views are a separate interface that can be accessed using the ``toCharView()`` method.
-It is only available for UTF-8 and UTF-16 strings.
-
-Character views are useful, if you work with short strings, and the cost for converting them into UTF-32 would be larger
-than the cost for scanning code-point positions.
-
-.. erbsland-demo::
-    :source: text/StringCharView/CharacterGrid.cpp
-    :exec: text/string_char_view --demo CharacterGrid
-    :source-sha256: 005674346673a841ca9e58bda504a51cddb0eef5e14385cc78ec9d0be77bc014
-
-.. code-block:: cpp
-
-    /// `StringCharView` is a specialized interface for code-point indexed access.
-    /// It is useful when text is organized by character positions, for example in
-    /// grids, terminal layouts, diagnostics, or editor columns.
-    /// Prefer byte indexes for general parsing, searching, and slicing UTF-8 text.
-    void characterGrid() {
-
-        const auto grid = el::StringView{"AΩBçDÉFGH×\n"
-                                         "IJKLMNÖPQR\n"
-                                         "STÜVWXYZ01\n"
-                                         "23456789ab\n"
-                                         "cdefghijkl\n"
-                                         "mnopqrstuv\n"
-                                         "wxyzäöüß+-\n"
-                                         "∑∏√∞≈≠≤≥÷·\n"
-                                         "ABCDEFGHIJ\n"
-                                         "UVWXYZ!?._\n"_el};
-
-        auto gridCV = grid.toCharView();
-
-        constexpr auto sourceWidth = el::CpLength{11};
-        constexpr auto targetWidth = el::CpLength{10};
-        constexpr auto height = el::CpLength{10};
-
-        // Rotate the 10x10 character grid clockwise.
-        auto rotatedGrid = el::String{};
-        for (auto y = el::CpIndex{0}; y.isWithin(height); ++y) {
-            for (auto x = el::CpIndex{0}; x.isWithin(targetWidth); ++x) {
-                const auto sourceIndex = el::CpIndex::fromGrid(y, x.flipped(targetWidth), sourceWidth, height);
-                rotatedGrid.append(gridCV.charAt(sourceIndex));
-            }
-            rotatedGrid.append(U'\n');
-        }
-
-        el::io::printLine("Original 10x10 character grid:"_el);
-        el::io::printLine(grid);
-
-        el::io::printLine("Rotated clockwise:"_el);
-        el::io::printLine(rotatedGrid);
-    }
-
-.. erbsland-ansi::
-    :escape-char: ␛
-
-    Original 10x10 character grid:
-    AΩBçDÉFGH×
-    IJKLMNÖPQR
-    STÜVWXYZ01
-    23456789ab
-    cdefghijkl
-    mnopqrstuv
-    wxyzäöüß+-
-    ∑∏√∞≈≠≤≥÷·
-    ABCDEFGHIJ
-    UVWXYZ!?._
-
-    Rotated clockwise:
-    UA∑wmc2SIA
-    VB∏xnd3TJΩ
-    WC√yoe4ÜKB
-    XD∞zpf5VLç
-    YE≈äqg6WMD
-    ZF≠örh7XNÉ
-    !G≤üsi8YÖF
-    ?H≥ßtj9ZPG
-    .I÷+uka0QH
-    _J·-vlb1R×
-
-.. erbsland-demo-end::
 
 Copy on Write
 =============
 
 All string types, except literals, use copy-on-write (COW) semantics.
-When you copy a string or a view, the new object shares the underlying data with the original.
+When you copy a string or an editor, the new object shares the underlying data with the original.
 The data is only copied when one of the objects is modified.
 
 This design means that a copy behaves exactly like an independent string, even though no actual copying has taken place
@@ -468,7 +368,7 @@ yet.
 You can pass strings around freely without worrying about performance.
 
 .. erbsland-demo::
-    :source: text/String/CopyOnWrite.cpp
+    :source: text/StringEditor/CopyOnWrite.cpp
     :exec: text/string --demo CopyOnWrite
     :source-sha256: be0c1ab709b406e5188d847f1ee31c8c782d4136f893fe0a0e00cc031cd79abf
 
@@ -487,7 +387,7 @@ You can pass strings around freely without worrying about performance.
     void copyOnWrite() {
 
         // Create the original string and two copies.
-        auto a = el::String{"The treasure is hidden under the old oak tree."_el};
+        auto a = el::StringEditor{"The treasure is hidden under the old oak tree."_el};
         auto b = a;
         auto c = b;
 
@@ -527,35 +427,35 @@ You can pass strings around freely without worrying about performance.
 
     After copying a -> b and b -> c
     a: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     b: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     c: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
     After modifying b
     a: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
     b: The secret is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9bc2:0x1a0ad47c5bd2f496
     c: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
     After modifying a
     a: The treasure is hidden under the old oak tree. Nobody has found it yet.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea6bdd942:0x1a0ad47c5a53b67b
     b: The secret is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9bc2:0x1a0ad47c5bd2f496
     c: The treasure is hidden under the old oak tree.
-    U8String:
+    U8StringEditor:
         backingStorageId: 0x2623570ea73c9b42:0x1a0ad47c5bd2f414
 
 .. erbsland-demo-end::
@@ -579,13 +479,13 @@ The reasons for this design choice are:
 
 * **Less boilerplate**: Common operations like trimming, list-based splitting,
   escaping, and case conversion are available as single method calls.
-* **More readable code**: A method call like ``trimmed()`` or ``StringList::fromSplit(...)`` communicates
+* **More readable code**: A method call like ``trimmed()`` or ``StringEditorList::fromSplit(...)`` communicates
   intent more clearly than a range of algorithm calls.
 * **Easier for junior developers**: A consistent, self-contained API reduces the cognitive load of learning the library.
 
 .. erbsland-demo::
-    :source: text/StringView/StdVsCoreSplitAndJoin.cpp
-    :exec: text/string_view --demo stdVsCoreSplitAndJoin
+    :source: text/String/StdVsCoreSplitAndJoin.cpp
+    :exec: text/string --demo stdVsCoreSplitAndJoin
     :source-sha256: 4aa65130bd09146bdd3332b670fc23bf80093c8f944551c424abb85f273ec3e6
 
 .. code-block:: cpp
@@ -600,7 +500,7 @@ The reasons for this design choice are:
         // Erbsland Core: Split by a character set and ignore empty noise.
         constexpr auto elWordsText = "a, b, d; e; f g h, i,, j"_el;
         const auto noiseCharSet = el::CharSet::fromPattern(" ,;"_el);
-        const auto coreWords = el::StringViewList::fromSplit(elWordsText, noiseCharSet);
+        const auto coreWords = el::StringList::fromSplit(elWordsText, noiseCharSet);
         el::io::printLine("Core: "_el, coreWords.join("|"_el));
 
         // Standard library: Express the same behavior manually.

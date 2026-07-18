@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../text/String.hpp"
-#include "../text/StringView.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <cstddef>
 
@@ -17,7 +17,7 @@ public:
     /// Create an empty user identifier.
     UserId() = default;
     /// Create a user identifier from its platform representation.
-    explicit UserId(const text::StringView &value) : _value{value} {}
+    explicit UserId(const text::String &value) : _value{value} {}
 
     // defaults
     ~UserId() = default;

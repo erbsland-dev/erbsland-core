@@ -31,7 +31,7 @@ public: // conversion
     /// Create a string with the usual flags representation
     /// This does not display the atomic flag.
     [[nodiscard]] auto toString() const -> text::String {
-        text::String result;
+        text::StringEditor result;
         for (
             const auto &flag :
             {GroupFlag::IgnoreCase, GroupFlag::Multiline, GroupFlag::DotAll, GroupFlag::Ascii, GroupFlag::Verbose}) {

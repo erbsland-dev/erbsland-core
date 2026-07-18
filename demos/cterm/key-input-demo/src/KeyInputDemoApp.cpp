@@ -78,7 +78,7 @@ void KeyInputDemoApp::stampKeyBlock(const Key &key) noexcept {
     }
     const auto colorIndex = static_cast<std::size_t>(
         std::uniform_int_distribution<int>{0, static_cast<int>(stampColors().size()) - 1}(_random));
-    auto block = BlockString{key.toDisplayText(), stampColors()[colorIndex]};
+    const auto block = BlockString{key.toDisplayText(), stampColors()[colorIndex]};
     const auto maximumX =
         std::min(BlockCoordinate{20}, std::max(BlockCoordinate{0}, fieldSize.width() - block.displayWidth()));
     const auto x = std::uniform_int_distribution<int>{0, maximumX.toRawValue()}(_random);
@@ -136,7 +136,7 @@ void KeyInputDemoApp::drawFooter(const BlockRectangle rect) {
 }
 
 auto KeyInputDemoApp::footerText() const -> BlockString {
-    auto result = BlockString{};
+    auto result = BlockStringEditor{};
     result.append(
         fg::BrightYellow,
         Key{Key::Escape}.toDisplayText(),

@@ -8,13 +8,13 @@ namespace erbsland::text {
 
 template <typename... Args>
 auto U16Format::build(Args &&...args) const -> U16String {
-    auto builder = StringBuilder{StringKind::U16};
+    auto builder = AnyStringBuilder{StringKind::U16};
     appendTo(builder, std::forward<Args>(args)...);
     return builder.takeU16String();
 }
 
 template <typename... Args>
-auto U16Format::appendTo(StringBuilder &builder, Args &&...args) const -> StringBuilder & {
+auto U16Format::appendTo(AnyStringBuilder &builder, Args &&...args) const -> AnyStringBuilder & {
     const auto arguments = impl::makeFormatArguments(std::forward<Args>(args)...);
     return impl::appendFormat(*_data, builder, std::span<const FormatArgument>{arguments});
 }

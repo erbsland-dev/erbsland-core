@@ -36,7 +36,7 @@ public:
 
     void testCounterIndex_AssignedByNestingLevel_NoConflicts() {
         struct TestCase {
-            StringView pattern;
+            String pattern;
         };
 
         const std::vector<TestCase> testCases = {

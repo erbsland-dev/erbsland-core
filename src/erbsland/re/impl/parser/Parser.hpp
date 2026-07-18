@@ -18,13 +18,13 @@ public:
     /// @param settings The initial settings.
     explicit Parser(text::StringCharReader reader, GroupFlags flags = {}, Settings settings = {});
     /// Create a new parser for a UTF-8 pattern.
-    explicit Parser(const text::StringView &pattern, GroupFlags flags = {}, Settings settings = {}) :
+    explicit Parser(const text::String &pattern, GroupFlags flags = {}, Settings settings = {}) :
         Parser{text::StringCharReader{pattern}, flags, std::move(settings)} {}
     /// Create a new parser for a UTF-16 pattern.
-    explicit Parser(const text::U16StringView &pattern, GroupFlags flags = {}, Settings settings = {}) :
+    explicit Parser(const text::U16String &pattern, GroupFlags flags = {}, Settings settings = {}) :
         Parser{text::StringCharReader{pattern}, flags, std::move(settings)} {}
     /// Create a new parser for a UTF-32 pattern.
-    explicit Parser(const text::U32StringView &pattern, GroupFlags flags = {}, Settings settings = {}) :
+    explicit Parser(const text::U32String &pattern, GroupFlags flags = {}, Settings settings = {}) :
         Parser{text::StringCharReader{pattern}, flags, std::move(settings)} {}
 
     /// Create an empty parser, just for compatibility and tests.

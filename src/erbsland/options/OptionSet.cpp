@@ -17,17 +17,17 @@ void OptionSet::addOption(OptionPtr option) {
     _options.emplace_back(std::move(option));
 }
 
-auto OptionSet::addOption(std::initializer_list<text::StringView> names) -> OptionEditor {
+auto OptionSet::addOption(std::initializer_list<text::String> names) -> OptionEditor {
     auto option = Option::create(names);
     addOption(option);
     return OptionEditor{option};
 }
 
-auto OptionSet::editOption(const text::StringView &name) -> OptionEditor {
+auto OptionSet::editOption(const text::String &name) -> OptionEditor {
     return OptionEditor{findOption(name)};
 }
 
-auto OptionSet::findOption(const text::StringView &name) const -> OptionPtr {
+auto OptionSet::findOption(const text::String &name) const -> OptionPtr {
     for (const auto &option : _options) {
         for (const auto &optionName : option->names()) {
             if (optionName == name) {

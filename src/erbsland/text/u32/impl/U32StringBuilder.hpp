@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../U32String.hpp"
+#include "../U32StringEditor.hpp"
 
-#include "../../impl/StringBuilderBase.hpp"
+#include "../../impl/AnyStringBuilderBase.hpp"
 
 namespace erbsland::text::impl {
 
 /// A string builder backend for UTF-32 strings.
-/// @tested{StringBuilderTest}
-class U32StringBuilder final : public StringBuilderBase {
+/// @tested{AnyStringBuilderTest}
+class U32StringBuilder final : public AnyStringBuilderBase {
 public:
     U32StringBuilder() = default;
     explicit U32StringBuilder(unit::CpLength capacity);
@@ -28,23 +28,24 @@ public:
     void clear() noexcept override;
     void append(Char character) override;
     void append(Char character, unit::CpLength count) override;
-    void append(const U8StringView &text) override;
-    void append(const U8StringView &text, unit::ElementCount count) override;
-    void append(const U16StringView &text) override;
-    void append(const U16StringView &text, unit::ElementCount count) override;
-    void append(const U32StringView &text) override;
-    void append(const U32StringView &text, unit::ElementCount count) override;
-    [[nodiscard]] auto toU8String() const -> U8String override;
-    [[nodiscard]] auto toU16String() const -> U16String override;
-    [[nodiscard]] auto toU32String() const -> U32String override;
-    [[nodiscard]] auto takeU8String() -> U8String override;
-    [[nodiscard]] auto takeU16String() -> U16String override;
-    [[nodiscard]] auto takeU32String() -> U32String override;
-    [[nodiscard]] auto toAnyString() const -> AnyString override;
-    [[nodiscard]] auto takeAnyString() -> AnyString override;
+    void append(const U8String &text) override;
+    void append(const U8String &text, unit::ElementCount count) override;
+    void append(const U16String &text) override;
+    void append(const U16String &text, unit::ElementCount count) override;
+    void append(const U32String &text) override;
+    void append(const U32String &text, unit::ElementCount count) override;
+    void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
+    [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;
+    [[nodiscard]] auto toU16StringEditor() const -> U16StringEditor override;
+    [[nodiscard]] auto toU32StringEditor() const -> U32StringEditor override;
+    [[nodiscard]] auto takeU8StringEditor() -> U8StringEditor override;
+    [[nodiscard]] auto takeU16StringEditor() -> U16StringEditor override;
+    [[nodiscard]] auto takeU32StringEditor() -> U32StringEditor override;
+    [[nodiscard]] auto toAnyStringEditor() const -> AnyStringEditor override;
+    [[nodiscard]] auto takeAnyStringEditor() -> AnyStringEditor override;
 
 private:
-    U32String _text; ///< The built string.
+    U32StringEditor _text; ///< The built string.
 };
 
 }

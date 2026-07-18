@@ -4,8 +4,8 @@
 
 #include "../../impl/LinkData.hpp"
 #include "../../Literals.hpp"
-#include "../../StringBuilder.hpp"
 #include "../../StringCharReader.hpp"
+#include "../../StringEditor.hpp"
 
 #include <memory>
 #include <utility>
@@ -14,7 +14,7 @@ namespace erbsland::text::html::impl {
 
 using namespace literals;
 
-void HtmlParser::applyAttributes(const TextNodePtr &node, const StringView &tagName, const Attributes &attributes) {
+void HtmlParser::applyAttributes(const TextNodePtr &node, const String &tagName, const Attributes &attributes) {
     if (!node) {
         return;
     }
@@ -33,7 +33,7 @@ void HtmlParser::applyAttributes(const TextNodePtr &node, const StringView &tagN
     }
 }
 
-auto HtmlParser::addNodeForTag(const StringView &tagName, const TextNode::Level listLevel) -> TextNodePtr {
+auto HtmlParser::addNodeForTag(const String &tagName, const TextNode::Level listLevel) -> TextNodePtr {
     if (const auto *tagInfo = findTagInfo(tagName)) {
         if (tagName == "ul"_el) {
             return _current->addBulletList(listLevel);
@@ -108,37 +108,37 @@ void HtmlParser::updateFrameStateForPop(const Frame &frame) noexcept {
     }
 }
 
-auto HtmlParser::normalizeWhitespace(StringView text, bool &whitespaceOnly) -> StringView {
+auto HtmlParser::normalizeWhitespace(const String &text, bool &whitespaceOnly) -> String {
     auto reader = StringCharReader{text};
-    auto builder = StringBuilder{};
+    auto result = StringEditor{};
     auto lastWasWhitespace = false;
     whitespaceOnly = true;
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
         if (character.isAsciiWhitespace()) {
             if (!lastWasWhitespace) {
-                builder.append(U' ');
+                result.append(U' ');
                 lastWasWhitespace = true;
             }
             continue;
         }
-        builder.append(character);
+        result.append(character);
         lastWasWhitespace = false;
         whitespaceOnly = false;
     }
-    return builder.takeString();
+    return result;
 }
 
-auto HtmlParser::toLowerAscii(StringView text) -> StringView {
+auto HtmlParser::toLowerAscii(const String &text) -> String {
     auto reader = StringCharReader{text};
-    auto builder = StringBuilder{};
+    auto result = StringEditor{};
     while (!reader.isAtEnd()) {
-        builder.append(reader.read().toAsciiLowercase());
+        result.append(reader.read().toAsciiLowercase());
     }
-    return builder.takeString();
+    return result;
 }
 
-auto HtmlParser::findTagInfo(const StringView &tagName) -> const TagInfo * {
+auto HtmlParser::findTagInfo(const String &tagName) -> const TagInfo * {
     for (const auto &[name, tagInfo] : tagInfoMap()) {
         if (name == tagName) {
             return &tagInfo;
@@ -154,86 +154,86 @@ auto HtmlParser::tagInfoMap() -> const TagInfoMap & {
     using TR = TagInfo::Transparency;
 
     static const auto cTagInfoMap = TagInfoMap{
-        {StringView{"section"_el}, TagInfo{TextNode::Type::Section, NB::Block}},
-        {StringView{"div"_el}, TagInfo{TextNode::Type::Section, NB::Block}},
-        {StringView{"blockquote"_el}, TagInfo{TextNode::Type::Blockquote, NB::Block}},
-        {StringView{"p"_el}, TagInfo{TextNode::Type::Paragraph, NB::Block}},
-        {StringView{"span"_el}, TagInfo{TextNode::Type::Span}},
-        {StringView{"br"_el}, TagInfo{TextNode::Type::LineBreak}},
-        {StringView{"hr"_el}, TagInfo{TextNode::Type::HorizontalLine, NB::Block}},
-        {StringView{"ul"_el}, TagInfo{TextNode::Type::BulletList, LM::UseListLevel, NB::Block}},
-        {StringView{"ol"_el}, TagInfo{TextNode::Type::NumberedList, LM::UseListLevel, NB::Block}},
-        {StringView{"li"_el}, TagInfo{TextNode::Type::None, NB::Block}},
-        {StringView{"a"_el}, TagInfo{TextNode::Type::Link}},
-        {StringView{"b"_el}, TagInfo{TextNode::Type::Strong}},
-        {StringView{"strong"_el}, TagInfo{TextNode::Type::Strong}},
-        {StringView{"i"_el}, TagInfo{TextNode::Type::Emphasis}},
-        {StringView{"em"_el}, TagInfo{TextNode::Type::Emphasis}},
-        {StringView{"u"_el}, TagInfo{TextNode::Type::Underline}},
-        {StringView{"code"_el}, TagInfo{TextNode::Type::Code}},
-        {StringView{"pre"_el}, TagInfo{TextNode::Type::CodeBlock, NB::Block}},
-        {StringView{"h1"_el}, TagInfo{TextNode::Type::Heading, 1, NB::Block}},
-        {StringView{"h2"_el}, TagInfo{TextNode::Type::Heading, 2, NB::Block}},
-        {StringView{"h3"_el}, TagInfo{TextNode::Type::Heading, 3, NB::Block}},
-        {StringView{"h4"_el}, TagInfo{TextNode::Type::Heading, 4, NB::Block}},
-        {StringView{"h5"_el}, TagInfo{TextNode::Type::Heading, 5, NB::Block}},
-        {StringView{"h6"_el}, TagInfo{TextNode::Type::Heading, 6, NB::Block}},
-        {StringView{"dl"_el}, TagInfo{TextNode::Type::DefinitionList, NB::Block}},
-        {StringView{"dt"_el}, TagInfo{TextNode::Type::DefinitionTerm, NB::Block}},
-        {StringView{"dd"_el}, TagInfo{TextNode::Type::DefinitionDescription, NB::Block}},
-        {StringView{"img"_el}, TagInfo{"image"_el}},
-        {StringView{"table"_el}, TagInfo{"table"_el, SB::Suppress}},
-        {StringView{"form"_el}, TagInfo{"form"_el, SB::Suppress}},
-        {StringView{"svg"_el}, TagInfo{"svg"_el, SB::Suppress}},
-        {StringView{"head"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"title"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"script"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"style"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"link"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"meta"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"base"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"noscript"_el}, TagInfo{TR::Transparent, SB::Suppress}},
-        {StringView{"html"_el}, TagInfo{TR::Transparent}},
-        {StringView{"body"_el}, TagInfo{TR::Transparent}},
-        {StringView{"tr"_el}, TagInfo{TR::Transparent}},
-        {StringView{"td"_el}, TagInfo{TR::Transparent}},
-        {StringView{"th"_el}, TagInfo{TR::Transparent}},
-        {StringView{"thead"_el}, TagInfo{TR::Transparent}},
-        {StringView{"tbody"_el}, TagInfo{TR::Transparent}},
-        {StringView{"tfoot"_el}, TagInfo{TR::Transparent}},
-        {StringView{"caption"_el}, TagInfo{TR::Transparent}},
-        {StringView{"col"_el}, TagInfo{TR::Transparent}},
-        {StringView{"colgroup"_el}, TagInfo{TR::Transparent}},
-        {StringView{"input"_el}, TagInfo{TR::Transparent}},
-        {StringView{"label"_el}, TagInfo{TR::Transparent}},
-        {StringView{"select"_el}, TagInfo{TR::Transparent}},
-        {StringView{"option"_el}, TagInfo{TR::Transparent}},
-        {StringView{"textarea"_el}, TagInfo{TR::Transparent}},
-        {StringView{"button"_el}, TagInfo{TR::Transparent}},
-        {StringView{"fieldset"_el}, TagInfo{TR::Transparent}},
-        {StringView{"legend"_el}, TagInfo{TR::Transparent}},
-        {StringView{"optgroup"_el}, TagInfo{TR::Transparent}},
-        {StringView{"details"_el}, TagInfo{TR::Transparent}},
-        {StringView{"summary"_el}, TagInfo{TR::Transparent}},
-        {StringView{"figure"_el}, TagInfo{TR::Transparent}},
-        {StringView{"figcaption"_el}, TagInfo{TR::Transparent}},
-        {StringView{"mark"_el}, TagInfo{TR::Transparent}},
-        {StringView{"ruby"_el}, TagInfo{TR::Transparent}},
-        {StringView{"rt"_el}, TagInfo{TR::Transparent}},
-        {StringView{"rp"_el}, TagInfo{TR::Transparent}},
-        {StringView{"time"_el}, TagInfo{TR::Transparent}},
-        {StringView{"meter"_el}, TagInfo{TR::Transparent}},
-        {StringView{"progress"_el}, TagInfo{TR::Transparent}},
-        {StringView{"canvas"_el}, TagInfo{TR::Transparent}},
-        {StringView{"math"_el}, TagInfo{TR::Transparent}},
-        {StringView{"iframe"_el}, TagInfo{TR::Transparent}},
-        {StringView{"embed"_el}, TagInfo{TR::Transparent}},
-        {StringView{"object"_el}, TagInfo{TR::Transparent}},
-        {StringView{"video"_el}, TagInfo{TR::Transparent}},
-        {StringView{"audio"_el}, TagInfo{TR::Transparent}},
-        {StringView{"source"_el}, TagInfo{TR::Transparent}},
-        {StringView{"track"_el}, TagInfo{TR::Transparent}},
-        {StringView{"doctype"_el}, TagInfo{TR::Transparent}},
+        {"section"_el, TagInfo{TextNode::Type::Section, NB::Block}},
+        {"div"_el, TagInfo{TextNode::Type::Section, NB::Block}},
+        {"blockquote"_el, TagInfo{TextNode::Type::Blockquote, NB::Block}},
+        {"p"_el, TagInfo{TextNode::Type::Paragraph, NB::Block}},
+        {"span"_el, TagInfo{TextNode::Type::Span}},
+        {"br"_el, TagInfo{TextNode::Type::LineBreak}},
+        {"hr"_el, TagInfo{TextNode::Type::HorizontalLine, NB::Block}},
+        {"ul"_el, TagInfo{TextNode::Type::BulletList, LM::UseListLevel, NB::Block}},
+        {"ol"_el, TagInfo{TextNode::Type::NumberedList, LM::UseListLevel, NB::Block}},
+        {"li"_el, TagInfo{TextNode::Type::None, NB::Block}},
+        {"a"_el, TagInfo{TextNode::Type::Link}},
+        {"b"_el, TagInfo{TextNode::Type::Strong}},
+        {"strong"_el, TagInfo{TextNode::Type::Strong}},
+        {"i"_el, TagInfo{TextNode::Type::Emphasis}},
+        {"em"_el, TagInfo{TextNode::Type::Emphasis}},
+        {"u"_el, TagInfo{TextNode::Type::Underline}},
+        {"code"_el, TagInfo{TextNode::Type::Code}},
+        {"pre"_el, TagInfo{TextNode::Type::CodeBlock, NB::Block}},
+        {"h1"_el, TagInfo{TextNode::Type::Heading, 1, NB::Block}},
+        {"h2"_el, TagInfo{TextNode::Type::Heading, 2, NB::Block}},
+        {"h3"_el, TagInfo{TextNode::Type::Heading, 3, NB::Block}},
+        {"h4"_el, TagInfo{TextNode::Type::Heading, 4, NB::Block}},
+        {"h5"_el, TagInfo{TextNode::Type::Heading, 5, NB::Block}},
+        {"h6"_el, TagInfo{TextNode::Type::Heading, 6, NB::Block}},
+        {"dl"_el, TagInfo{TextNode::Type::DefinitionList, NB::Block}},
+        {"dt"_el, TagInfo{TextNode::Type::DefinitionTerm, NB::Block}},
+        {"dd"_el, TagInfo{TextNode::Type::DefinitionDescription, NB::Block}},
+        {"img"_el, TagInfo{"image"_el}},
+        {"table"_el, TagInfo{"table"_el, SB::Suppress}},
+        {"form"_el, TagInfo{"form"_el, SB::Suppress}},
+        {"svg"_el, TagInfo{"svg"_el, SB::Suppress}},
+        {"head"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"title"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"script"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"style"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"link"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"meta"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"base"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"noscript"_el, TagInfo{TR::Transparent, SB::Suppress}},
+        {"html"_el, TagInfo{TR::Transparent}},
+        {"body"_el, TagInfo{TR::Transparent}},
+        {"tr"_el, TagInfo{TR::Transparent}},
+        {"td"_el, TagInfo{TR::Transparent}},
+        {"th"_el, TagInfo{TR::Transparent}},
+        {"thead"_el, TagInfo{TR::Transparent}},
+        {"tbody"_el, TagInfo{TR::Transparent}},
+        {"tfoot"_el, TagInfo{TR::Transparent}},
+        {"caption"_el, TagInfo{TR::Transparent}},
+        {"col"_el, TagInfo{TR::Transparent}},
+        {"colgroup"_el, TagInfo{TR::Transparent}},
+        {"input"_el, TagInfo{TR::Transparent}},
+        {"label"_el, TagInfo{TR::Transparent}},
+        {"select"_el, TagInfo{TR::Transparent}},
+        {"option"_el, TagInfo{TR::Transparent}},
+        {"textarea"_el, TagInfo{TR::Transparent}},
+        {"button"_el, TagInfo{TR::Transparent}},
+        {"fieldset"_el, TagInfo{TR::Transparent}},
+        {"legend"_el, TagInfo{TR::Transparent}},
+        {"optgroup"_el, TagInfo{TR::Transparent}},
+        {"details"_el, TagInfo{TR::Transparent}},
+        {"summary"_el, TagInfo{TR::Transparent}},
+        {"figure"_el, TagInfo{TR::Transparent}},
+        {"figcaption"_el, TagInfo{TR::Transparent}},
+        {"mark"_el, TagInfo{TR::Transparent}},
+        {"ruby"_el, TagInfo{TR::Transparent}},
+        {"rt"_el, TagInfo{TR::Transparent}},
+        {"rp"_el, TagInfo{TR::Transparent}},
+        {"time"_el, TagInfo{TR::Transparent}},
+        {"meter"_el, TagInfo{TR::Transparent}},
+        {"progress"_el, TagInfo{TR::Transparent}},
+        {"canvas"_el, TagInfo{TR::Transparent}},
+        {"math"_el, TagInfo{TR::Transparent}},
+        {"iframe"_el, TagInfo{TR::Transparent}},
+        {"embed"_el, TagInfo{TR::Transparent}},
+        {"object"_el, TagInfo{TR::Transparent}},
+        {"video"_el, TagInfo{TR::Transparent}},
+        {"audio"_el, TagInfo{TR::Transparent}},
+        {"source"_el, TagInfo{TR::Transparent}},
+        {"track"_el, TagInfo{TR::Transparent}},
+        {"doctype"_el, TagInfo{TR::Transparent}},
     };
     return cTagInfoMap;
 }

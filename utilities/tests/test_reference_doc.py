@@ -347,13 +347,13 @@ No interface here.
 
     def test_grouped_headers_share_reference_page(self) -> None:
         self.write_header(
-            "text/StringList.hpp",
+            "text/StringEditorList.hpp",
             """#pragma once
 
 namespace erbsland::text {
 
 /// A documented alias.
-using StringList = int;
+using StringEditorList = int;
 
 }
 """,
@@ -373,8 +373,8 @@ using StringMap = int;
         group = ReferenceGroup(
             page_path=self.reference_dir / "text" / "string_collections.rst",
             relative_page_path=Path("text/string_collections.rst"),
-            title="String Collections",
-            header_paths=(Path("text/StringList.hpp"), Path("text/StringMap.hpp")),
+            title="StringEditor Collections",
+            header_paths=(Path("text/StringEditorList.hpp"), Path("text/StringMap.hpp")),
         )
         config = ReferenceDocConfig(
             project_dir=self.project_dir,
@@ -394,20 +394,20 @@ using StringMap = int;
 
         page = self.reference_dir / "text" / "string_collections.rst"
         text = page.read_text(encoding="utf-8")
-        self.assertIn("String Collections", text)
-        self.assertIn(".. doxygentypedef:: erbsland::text::StringList", text)
+        self.assertIn("StringEditor Collections", text)
+        self.assertIn(".. doxygentypedef:: erbsland::text::StringEditorList", text)
         self.assertIn(".. doxygentypedef:: erbsland::text::StringMap", text)
         self.assertEqual({page}, {header.page_path for header in headers})
 
     def test_grouped_page_is_included_in_index_entries(self) -> None:
         self.write_header(
-            "text/StringList.hpp",
+            "text/StringEditorList.hpp",
             """#pragma once
 
 namespace erbsland::text {
 
 /// A documented alias.
-using StringList = int;
+using StringEditorList = int;
 
 }
 """,
@@ -415,8 +415,8 @@ using StringList = int;
         group = ReferenceGroup(
             page_path=self.reference_dir / "text" / "string_collections.rst",
             relative_page_path=Path("text/string_collections.rst"),
-            title="String Collections",
-            header_paths=(Path("text/StringList.hpp"),),
+            title="StringEditor Collections",
+            header_paths=(Path("text/StringEditorList.hpp"),),
         )
         config = ReferenceDocConfig(
             project_dir=self.project_dir,
@@ -515,7 +515,7 @@ Reference Directory: "doc/reference"
 
 *[Reference Groups]
 Page: "text/strings.rst"
-Header Globs: "text/String*.hpp"
+Header Globs: "text/StringEditor*.hpp"
 Excluded Header Globs: "text/*Excluded.hpp"
 """,
             encoding="utf-8",
@@ -529,13 +529,13 @@ Excluded Header Globs: "text/*Excluded.hpp"
 
     def test_duplicate_group_headers_fail_when_reading_config(self) -> None:
         self.write_header(
-            "text/StringList.hpp",
+            "text/StringEditorList.hpp",
             """#pragma once
 
 namespace erbsland::text {
 
 /// A documented alias.
-using StringList = int;
+using StringEditorList = int;
 
 }
 """,
@@ -549,11 +549,11 @@ Exclude Underscore Headers: Yes
 
 *[Reference Groups]
 Page: "text/one.rst"
-Headers: "text/StringList.hpp"
+Headers: "text/StringEditorList.hpp"
 
 *[Reference Groups]
 Page: "text/two.rst"
-Headers: "text/StringList.hpp"
+Headers: "text/StringEditorList.hpp"
 """,
             encoding="utf-8",
         )

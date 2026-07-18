@@ -63,7 +63,7 @@ After parsing, each component can read the values it owns in its own post-parsin
         reportSet->setHelpDescription("Options for the component that writes the report."_el);
         reportSet->addOption({"-t"_el, "--title"_el, "title"_el})
             .setType(el::OptionType::Text)
-            .setDefaultValue(el::String{"Calibration report"_el})
+            .setDefaultValue("Calibration report"_el)
             .setHelpDescription("Title of the generated report."_el);
         reportSet->addOption({"-s"_el, "--samples"_el, "samples"_el})
             .setType(el::OptionType::Integer)
@@ -163,7 +163,7 @@ Set visibility is inherited by options whose own visibility is ``Inherit``.
         set->setHelpDescription("Values used only by the reporting component."_el);
         set->addOption({"-n"_el, "--note"_el, "note"_el})
             .setType(el::OptionType::Text)
-            .setDefaultValue(el::String{"no observations"_el})
+            .setDefaultValue("no observations"_el)
             .setHelpDescription("Short text for the field report."_el);
         set->addOption({"-q"_el, "--quiet"_el, "quiet"_el}).setHelpDescription("Suppresses progress lines."_el);
         set->setPostParsingFn([](const el::OptionValuesPtr &values) -> void {

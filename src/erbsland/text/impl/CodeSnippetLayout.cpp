@@ -4,9 +4,8 @@
 
 #include "../Char.hpp"
 #include "../Literals.hpp"
-#include "../String.hpp"
-#include "../StringBuilder.hpp"
 #include "../StringCharReader.hpp"
+#include "../StringEditor.hpp"
 
 #include "../../unit/ColumnCount.hpp"
 #include "../../unit/ColumnIndex.hpp"
@@ -37,7 +36,7 @@ auto CodeSnippetLayoutCell::containsOrFollows(const unit::ColumnIndex point) con
 }
 
 auto CodeSnippetLayout::build(
-    const StringView source, const std::vector<CodeSnippetLayoutMarker> &markers, const int requestedWidth)
+    const String &source, const std::vector<CodeSnippetLayoutMarker> &markers, const int requestedWidth)
     -> std::vector<CodeSnippetLayoutRow> {
     const auto width = std::max(requestedWidth, 1);
     auto cells = sourceCells(source);
@@ -84,16 +83,16 @@ auto CodeSnippetLayout::markerIntersects(
         if (row.cells.empty()) {
             return marker.range.index().isZero();
         }
-        const auto first = std::ranges::find_if(row.cells, [](const auto &cell) { return !cell.isEllipsis; });
+        const auto first = std::ranges::find_if(row.cells, [](const auto &cell) -> bool { return !cell.isEllipsis; });
         const auto last = std::ranges::find_if(
-            row.cells.rbegin(), row.cells.rend(), [](const auto &cell) { return !cell.isEllipsis; });
+            row.cells.rbegin(), row.cells.rend(), [](const auto &cell) -> bool { return !cell.isEllipsis; });
         if (first == row.cells.end() || last == row.cells.rend()) {
             return false;
         }
         const auto point = marker.range.index();
         return point >= first->range.index() && point <= last->range.endIndex();
     }
-    return std::ranges::any_of(row.cells, [&marker](const auto &cell) { return cell.overlaps(marker.range); });
+    return std::ranges::any_of(row.cells, [&marker](const auto &cell) -> bool { return cell.overlaps(marker.range); });
 }
 
 auto CodeSnippetLayout::markerStart(const CodeSnippetLayoutRow &row, const CodeSnippetLayoutMarker &marker) noexcept
@@ -130,7 +129,7 @@ auto CodeSnippetLayout::rowWidth(const CodeSnippetLayoutRow &row) noexcept -> in
     return result;
 }
 
-auto CodeSnippetLayout::sourceCells(const StringView source) -> std::vector<CodeSnippetLayoutCell> {
+auto CodeSnippetLayout::sourceCells(const String &source) -> std::vector<CodeSnippetLayoutCell> {
     auto result = std::vector<CodeSnippetLayoutCell>{};
     auto reader = StringCharReader{source};
     auto logicalColumn = unit::ColumnIndex::zero();
@@ -138,12 +137,10 @@ auto CodeSnippetLayout::sourceCells(const StringView source) -> std::vector<Code
         const auto character = reader.read();
         const auto nextColumn = logicalColumn.advanced(unit::ColumnCount::one());
         if (!character.isControlOrFormat() && character.displayWidth() == 0 && !result.empty()) {
-            auto builder = StringBuilder::basedOn(result.back().text);
-            builder.append(character);
-            result.back().text = builder.toString();
+            result.back().text = String::fromJoined({result.back().text, String::fromCharacter(character)});
             result.back().range = unit::ColumnRange{result.back().range.index(), nextColumn};
         } else if (character.isControlOrFormat() || character.displayWidth() <= 0) {
-            result.push_back(CodeSnippetLayoutCell{String{"?"_el}, {logicalColumn, nextColumn}, 1, {}, false});
+            result.push_back(CodeSnippetLayoutCell{"?"_el, {logicalColumn, nextColumn}, 1, {}, false});
         } else {
             result.push_back(
                 CodeSnippetLayoutCell{

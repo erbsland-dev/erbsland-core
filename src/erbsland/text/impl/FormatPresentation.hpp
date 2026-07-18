@@ -9,7 +9,7 @@ namespace erbsland::text::impl {
 /// Presentation type for formatted fields.
 enum class FormatPresentation : uint8_t {
     Default,
-    String,
+    StringEditor,
     Decimal,
     Hex,
     Binary,

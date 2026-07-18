@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 
 #include <cstdint>
 
@@ -52,7 +52,7 @@ public: // accessors
 public: // conversion
     /// Convert the option type to a text representation.
     /// @return A stable lowercase name for diagnostics and generated help.
-    [[nodiscard]] auto toString() const -> text::StringView;
+    [[nodiscard]] auto toString() const -> text::String;
 
 private:
     Type _type{Flag}; ///< The raw option type.

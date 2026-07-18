@@ -25,7 +25,7 @@ private:
     void appendOneChar();
     void appendCharacter(Char character);
     void appendSet(const CharSet &charSet);
-    void appendSetPattern(const U32StringView &pattern);
+    void appendSetPattern(const U32String &pattern);
     void appendDivider();
     void appendEscapedCharacter(Char character);
     void validate() const;

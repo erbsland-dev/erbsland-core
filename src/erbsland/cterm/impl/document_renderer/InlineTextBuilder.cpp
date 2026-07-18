@@ -13,7 +13,7 @@ void InlineTextBuilder::reset() noexcept {
     _semantics = {};
 }
 
-void InlineTextBuilder::appendText(const text::StringView text, const BlockStyle style, const bool preserveWhitespace) {
+void InlineTextBuilder::appendText(const text::String &text, const BlockStyle style, const bool preserveWhitespace) {
     if (preserveWhitespace) {
         flushPendingWhitespace();
         _builder.appendStyled(text, style);
@@ -28,7 +28,7 @@ void InlineTextBuilder::appendText(const text::StringView text, const BlockStyle
 }
 
 void InlineTextBuilder::appendDecoration(
-    const BlockStringView decoration, const BlockStyle style, const bool preserveWhitespace) {
+    const BlockString decoration, const BlockStyle style, const bool preserveWhitespace) {
     if (preserveWhitespace) {
         flushPendingWhitespace();
         _builder.appendWithBaseStyle(decoration, style);
@@ -65,7 +65,7 @@ auto InlineTextBuilder::takeString() -> BlockString {
 auto InlineTextBuilder::takeContent() -> InlineContent {
     _pendingWhitespace.clear();
     _atLineStart = true;
-    auto result = InlineContent{_builder.takeString(), std::move(_semantics)};
+    auto result = InlineContent{_builder.takeStringEditor(), std::move(_semantics)};
     _semantics = {};
     return result;
 }

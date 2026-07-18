@@ -22,11 +22,11 @@
 #include "../../system/WindowsErrorContext.hpp"
 #include "../../text/impl/UnsafeU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
-#include "../../text/impl/UnsafeU16StringViewAccess.hpp"
+#include "../../text/impl/UnsafeU16StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/String.hpp"
 #include "../../text/StringConverter.hpp"
-#include "../../text/u16/U16String.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/u16/U16StringEditor.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
 #include "../../unit/U16DataLength.hpp"
 
@@ -114,7 +114,7 @@ auto WindowsPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts p
     result.resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathTextAccess.dataAsWide(),
         FILE_READ_ATTRIBUTES | READ_CONTROL,
@@ -230,7 +230,7 @@ auto WindowsPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts p
 auto WindowsPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
     -> stream::ByteInputStreamPtr {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto handle = CreateFileW(
         pathTextAccess.dataAsWide(),
         GENERIC_READ,
@@ -259,7 +259,7 @@ void WindowsPathBackend::setAccessProfileOrThrow(
     }
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     auto security = WindowsAccessProfileSecurity{resolvedPath, profile};
     const auto securityStatus = SetNamedSecurityInfoW(
         const_cast<LPWSTR>(pathTextAccess.dataAsWide()),
@@ -282,7 +282,7 @@ void WindowsPathBackend::addAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto currentAttributes = GetFileAttributesW(pathTextAccess.dataAsWide());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -305,7 +305,7 @@ void WindowsPathBackend::clearAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     const auto currentAttributes = GetFileAttributesW(pathTextAccess.dataAsWide());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
@@ -346,7 +346,7 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringViewAccess{pathText};
+    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (options.accessProfile() != PathAccessProfile::Default) {

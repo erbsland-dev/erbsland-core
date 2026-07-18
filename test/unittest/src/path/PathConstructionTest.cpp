@@ -22,7 +22,7 @@ class PathConstructionTest final : public el::UnitTest {
 public:
     void testGenericConstruction() {
         struct TestCase {
-            el::text::StringView input;
+            el::text::String input;
             std::string expected;
             bool absolute;
             PathFormat format;
@@ -88,23 +88,23 @@ public:
         auto nulText = std::string{"mapa"};
         nulText.push_back('\0');
         nulText += "oculto";
-        REQUIRE(Path{el::text::String{nulText}}.isEmpty());
+        REQUIRE(Path{el::text::StringEditor{nulText}}.isEmpty());
 
         const auto invalidUtf8 = th::stdStringFromHex("61 C0 80 62");
-        REQUIRE(Path{el::text::String{invalidUtf8}}.isEmpty());
+        REQUIRE(Path{el::text::StringEditor{invalidUtf8}}.isEmpty());
 
         auto nulElementText = std::string{"visivel"};
         nulElementText.push_back('\0');
         nulElementText += "oculto";
-        const auto nulElement = el::text::String{nulElementText};
-        REQUIRE(Path::fromElements(el::text::StringViewList{"arquivo"_el, nulElement}).isEmpty());
+        const auto nulElement = el::text::StringEditor{nulElementText};
+        REQUIRE(Path::fromElements(el::text::StringList{"arquivo"_el, nulElement}).isEmpty());
 
-        const auto invalidUtf8Element = el::text::String{th::stdStringFromHex("61 C0 80 62")};
-        REQUIRE(Path::fromElements(el::text::StringViewList{"arquivo"_el, invalidUtf8Element}).isEmpty());
+        const auto invalidUtf8Element = el::text::StringEditor{th::stdStringFromHex("61 C0 80 62")};
+        REQUIRE(Path::fromElements(el::text::StringList{"arquivo"_el, invalidUtf8Element}).isEmpty());
     }
 
     void testHardLimits() {
-        REQUIRE_FALSE(Path{el::text::String{std::string(8193U, 'a')}}.isValid());
+        REQUIRE_FALSE(Path{el::text::StringEditor{std::string(8193U, 'a')}}.isValid());
 
         auto tooManyElementsText = std::string{};
         for (auto index = 0; index < 1001; ++index) {
@@ -113,15 +113,15 @@ public:
             }
             tooManyElementsText += 'a';
         }
-        REQUIRE(Path{el::text::String{tooManyElementsText}}.isEmpty());
+        REQUIRE(Path{el::text::StringEditor{tooManyElementsText}}.isEmpty());
 
-        auto tooManyElements = el::text::StringViewList{};
+        auto tooManyElements = el::text::StringList{};
         for (auto index = 0; index < 1001; ++index) {
             tooManyElements.append("a"_el);
         }
         REQUIRE(Path::fromElements(tooManyElements).isEmpty());
 
-        const auto longElement = el::text::String{std::string(4096U, 'a')};
-        REQUIRE(Path::fromElements(el::text::StringViewList{longElement, longElement}).isEmpty());
+        const auto longElement = el::text::StringEditor{std::string(4096U, 'a')};
+        REQUIRE(Path::fromElements(el::text::StringList{longElement, longElement}).isEmpty());
     }
 };

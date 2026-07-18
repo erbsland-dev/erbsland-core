@@ -33,7 +33,7 @@ protected:
             .addChoice("fast"_el)
             .addChoice("precise"_el)
             .addChoice("night"_el)
-            .setDefaultValue(el::String{"precise"_el})
+            .setDefaultValue("precise"_el)
             .setHelpDescription("Acquisition mode for the optical bench."_el);
         options->addOption("sample"_el).setRequired().setHelpDescription("Sample placed in front of the prism."_el);
     }

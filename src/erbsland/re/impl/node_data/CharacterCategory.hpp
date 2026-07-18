@@ -26,7 +26,7 @@ public:
     /// Create a stable string used for validating node trees in tests.
     [[nodiscard]] auto toTestString() const -> text::String {
         using namespace text::literals;
-        text::String categoriesString;
+        text::StringEditor categoriesString;
         if (isNegated) {
             categoriesString.append(U'^');
         }

@@ -5,7 +5,7 @@
 #include "Key.hpp"
 
 #include "../text/Char.hpp"
-#include "../text/String.hpp"
+#include "../text/StringEditor.hpp"
 #include "../text/StringList.hpp"
 
 #include <cstddef>

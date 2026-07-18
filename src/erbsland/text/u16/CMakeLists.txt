@@ -12,16 +12,9 @@ target_sources(erbsland-core PRIVATE
         U16String.cpp
         U16String.hpp
         U16String_comparison.cpp
-        U16String_float.cpp
         U16String_fwd.hpp
         U16String_integer.tpp
-        U16String_modify.cpp
         U16String_trim.cpp
-        U16StringCharView.cpp
-        U16StringCharView.hpp
-        U16StringCharView_comparison.cpp
-        U16StringCharView_fwd.hpp
-        U16StringCharView_trim.cpp
         U16StringCIHashMap.hpp
         U16StringCIHashMap_fwd.hpp
         U16StringCIHashSet.hpp
@@ -33,6 +26,16 @@ target_sources(erbsland-core PRIVATE
         U16StringConstIterator.cpp
         U16StringConstIterator.hpp
         U16StringConstIterator_fwd.hpp
+        U16StringEditor.cpp
+        U16StringEditor.hpp
+        U16StringEditor_comparison.cpp
+        U16StringEditor_float.cpp
+        U16StringEditor_fwd.hpp
+        U16StringEditor_integer.tpp
+        U16StringEditor_modify.cpp
+        U16StringEditor_trim.cpp
+        U16StringEditorList.hpp
+        U16StringEditorList_fwd.hpp
         U16StringHashMap.hpp
         U16StringHashMap_fwd.hpp
         U16StringHashSet.hpp
@@ -45,12 +48,4 @@ target_sources(erbsland-core PRIVATE
         U16StringMap_fwd.hpp
         U16StringSet.hpp
         U16StringSet_fwd.hpp
-        U16StringView.cpp
-        U16StringView.hpp
-        U16StringView_comparison.cpp
-        U16StringView_fwd.hpp
-        U16StringView_integer.tpp
-        U16StringView_trim.cpp
-        U16StringViewList.hpp
-        U16StringViewList_fwd.hpp
 )

@@ -8,6 +8,7 @@
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/ElementCount.hpp"
 #include "../../Char.hpp"
+#include "../../impl/StringAppendTools.hpp"
 #include "../../u16/impl/U16StringDataView_fwd.hpp"
 #include "../../u32/impl/U32StringDataView_fwd.hpp"
 
@@ -18,11 +19,15 @@ namespace erbsland::text::impl {
 
 /// Append algorithms for `U8StringEditor`.
 /// @tested{U8StringModifierTest}
-class U8StringAppendTools final {
+class U8StringAppendTools final : public StringAppendTools {
 public:
     explicit U8StringAppendTools(U8StringSharedStorage &storage) noexcept : _storage{storage} {}
 
+    // defaults
+    ~U8StringAppendTools() override = default;
+
 public:
+    using StringAppendTools::append;
     /// Append UTF-8 bytes from a data view.
     auto append(const U8StringDataView &text) -> unit::CpLength;
     /// Append UTF-8 bytes from a data view multiple times.
@@ -36,9 +41,14 @@ public:
     /// Append UTF-32 text decoded with replacement multiple times.
     auto append(const U32StringDataView &text, unit::ElementCount count) -> unit::CpLength;
     /// Append one Unicode code point.
-    auto append(Char character) -> unit::CpLength;
+    auto append(Char character) -> unit::CpLength override;
     /// Append one Unicode code point multiple times.
     auto append(Char character, unit::CpLength count) -> unit::CpLength;
+
+public: // implement StringAppendTools
+    auto append(const U8String &text) -> unit::CpLength override;
+    auto append(const U16String &text) -> unit::CpLength override;
+    auto append(const U32String &text) -> unit::CpLength override;
 
 private:
     struct AppendSummary {
@@ -46,9 +56,6 @@ private:
         unit::CpLength characterCount{};
     };
 
-    [[nodiscard]] static auto countDecodedCharacters(std::span<const char> source) noexcept -> unit::CpLength;
-    [[nodiscard]] static auto repeatedCharacterCount(unit::CpLength characterCount, std::size_t countSize)
-        -> unit::CpLength;
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char16_t> source) -> AppendSummary;
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char32_t> source) -> AppendSummary;
 

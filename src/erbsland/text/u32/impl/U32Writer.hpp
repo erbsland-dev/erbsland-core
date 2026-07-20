@@ -42,7 +42,7 @@ public:
         writeChar32(static_cast<tChar32>(character.toRawValue()));
     }
     /// Write a UTF-32 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept { writeChar32(static_cast<tChar32>(0xFEFFU)); }
 
 private:
     /// Write a single UTF-32 code unit if there is space.
@@ -80,7 +80,7 @@ public:
         _writer.writeUInt32(character.toRawValue());
     }
     /// Write a UTF-32 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept { _writer.writeUInt32(0xFEFFU); }
 
 private:
     tWriter &_writer;

@@ -6,6 +6,9 @@
 
 #include "../../support/BufferTestHelper.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
+
 #include <algorithm>
 #include <array>
 #include <format>

@@ -9,6 +9,8 @@
 
 #include <string>
 
+using namespace el::text::literals;
+
 using el::debug::DebugViewDetail;
 using el::text::StringConverter;
 using el::text::StringEditor;
@@ -17,21 +19,15 @@ TESTED_TARGETS(StringDebugBuilder)
 class StringDebugBuilderTest final : public el::UnitTest {
 public:
     void testStorageKindText() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Empty), "empty"_el);
         REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Shared), "shared"_el);
         REQUIRE_EQUAL(el::debug::impl::storageKindText(el::debug::impl::StringStorageKind::Literal), "literal"_el);
     }
 
-    void testStorageIdentifierText() {
-        using namespace el::text::literals;
-
-        REQUIRE_EQUAL(el::debug::impl::storageIdentifierText({}), "empty"_el);
-    }
+    void testStorageIdentifierText() { REQUIRE_EQUAL(el::debug::impl::storageIdentifierText({}), "empty"_el); }
 
     void testMakeStringDebugTree() {
-        using namespace el::text::literals;
 
         const auto text = StringEditor{"A\nB"_el};
         const auto details = DebugViewDetail::ContentInTitle | DebugViewDetail::CoreDetails;

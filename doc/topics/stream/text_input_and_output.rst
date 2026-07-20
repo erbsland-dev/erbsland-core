@@ -430,6 +430,11 @@ from byte zero and no BOM can be inspected there.
     Rejects a BOM on input and never writes one on output.
     Use it when a protocol or embedded text field specifies the encoding out of band.
 
+These policies apply only at the initial byte boundary.
+Readers consume an accepted signature before producing text, and writers emit it through their dedicated BOM path.
+A repeated or embedded encoded ``U+FEFF`` is invalid content and follows the stream's encoding-error mode; no public
+string, reader, or iterator exposes an internal BOM signal.
+
 :cpp:func:`encoding() <erbsland::stream::TextOutputStream::encoding>` reports the configured value.
 :cpp:func:`effectiveEncoding() <erbsland::stream::TextOutputStream::effectiveEncoding>` reports the concrete encoding
 after the byte order has been resolved.

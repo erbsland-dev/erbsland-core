@@ -62,8 +62,8 @@ WindowsAccessProfileSecurity::~WindowsAccessProfileSecurity() {
 }
 
 void WindowsAccessProfileSecurity::throwProfileError(
-    const text::String &reason, const Path &path, const unsigned long errorCode) {
-    throw PathError{PathErrorContext{"File permissions could not be changed"_el, reason}
+    text::String reason, const Path &path, const unsigned long errorCode) {
+    throw PathError{PathErrorContext{"File permissions could not be changed"_el, std::move(reason)}
             .setSourcePath(path.toString())
             .setPlatformContext(system::WindowsErrorContext::fromErrorCode(errorCode))};
 }

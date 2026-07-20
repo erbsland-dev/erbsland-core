@@ -20,5 +20,6 @@
 #include "U8StringLiteral.hpp"
 #include "U8StringMap.hpp"
 #include "U8StringSet.hpp"
+#include "U8StringSplitter.hpp"
 
 

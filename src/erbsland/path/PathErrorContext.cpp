@@ -11,7 +11,6 @@
 namespace erbsland::path {
 
 using namespace text::literals;
-
 using system::PlatformErrorCategory;
 using system::PlatformErrorContextConstPtr;
 

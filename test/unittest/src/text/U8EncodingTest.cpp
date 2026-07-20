@@ -3,6 +3,7 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteReader.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -65,6 +66,7 @@ public:
         requireDecodeOrThrowFails({0xF5U, 0x80U, 0x80U, 0x80U}, 0U);
         requireDecodeOrThrowFails({0xEDU, 0xA0U, 0x80U}, 0U);
         requireDecodeOrThrowFails({0xF4U, 0x90U, 0x80U, 0x80U}, 0U);
+        requireDecodeOrThrowFails({0xEFU, 0xBBU, 0xBFU}, 0U);
     }
 
     void testDecodeCharOrThrowAllMalformedUtf8Categories() {
@@ -96,6 +98,7 @@ public:
         requireDecodeOrReplace({0xF0U, 0x80U, 0x80U, 0x80U}, 0xFFFDU, 1U);
         requireDecodeOrReplace({0xEDU, 0xA0U, 0x80U}, 0xFFFDU, 3U);
         requireDecodeOrReplace({0xF4U, 0x90U, 0x80U, 0x80U}, 0xFFFDU, 4U);
+        requireDecodeOrReplace({0xEFU, 0xBBU, 0xBFU}, 0xFFFDU, 3U);
     }
 
     void testDecodeCharOrReplaceAllMalformedUtf8Categories() {
@@ -117,6 +120,10 @@ public:
 
         REQUIRE_FALSE(el::text::impl::utf8::decodeCharOrIgnore(std::span<char>{empty}, position).has_value());
         REQUIRE(position.isZero());
+
+        auto bom = std::array<char, 3>{static_cast<char>(0xEFU), static_cast<char>(0xBBU), static_cast<char>(0xBFU)};
+        REQUIRE_FALSE(el::text::impl::utf8::decodeCharOrIgnore(std::span<char>{bom}, position).has_value());
+        REQUIRE_EQUAL(position.toSizeT(), std::size_t{3U});
 
         for (const auto error : th::allUtf8Errors) {
             WITH_CONTEXT(requireDecodeOrIgnoreMalformedUtf8(error));

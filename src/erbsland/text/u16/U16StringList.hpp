@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U16String.hpp"
+#include "U16StringEditor.hpp"
 #include "U16StringList_fwd.hpp"
 
 #include "../impl/StringList.hpp"

@@ -16,6 +16,7 @@ target_sources(erbsland-core PRIVATE
         ByteRange_fwd.hpp
         ByteUnit.hpp
         CodeContinuousRange.hpp
+        CodeLocation.cpp
         CodeLocation.hpp
         ColumnCount.hpp
         ColumnIndex.hpp
@@ -54,7 +55,6 @@ target_sources(erbsland-core PRIVATE
         LineOffset.hpp
         LineRange.hpp
         LineUnit.hpp
-        StdFormatForUnit.cpp
         StdFormatForUnit.hpp
         U16DataIndex.hpp
         U16DataLength.hpp

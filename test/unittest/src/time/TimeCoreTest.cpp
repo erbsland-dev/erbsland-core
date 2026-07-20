@@ -5,6 +5,7 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/time/all.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/time/tz/TimeOffset.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -13,6 +14,8 @@
 #include <format>
 #include <limits>
 #include <string>
+
+using namespace el::text::literals;
 
 using el::math::SatInt64;
 using el::text::StringConverter;
@@ -262,6 +265,21 @@ public:
         REQUIRE_EQUAL(TimeDelta{Minutes{-5}}.toSeconds(), Seconds{-300});
         REQUIRE_EQUAL(TimeDelta{Seconds{3}}.toDuration(), Duration{Seconds{3}});
     }
+
+    void testTimeDeltaWeekFactories() {
+        constexpr auto nanosecondsPerWeek = int64_t{604800000000000};
+        constexpr auto maximumExactWeeks = std::numeric_limits<int64_t>::max() / nanosecondsPerWeek;
+
+        REQUIRE_EQUAL(TimeDelta::weeks(2).toNanoseconds(), Nanoseconds{2 * nanosecondsPerWeek});
+        REQUIRE_EQUAL(
+            TimeDelta::weeksOrThrow(maximumExactWeeks).toNanoseconds(),
+            Nanoseconds{maximumExactWeeks * nanosecondsPerWeek});
+        REQUIRE_EQUAL(
+            TimeDelta::weeks(std::numeric_limits<int64_t>::max()).toNanoseconds(),
+            Nanoseconds{std::numeric_limits<int64_t>::max()});
+        REQUIRE_THROWS(TimeDelta::weeksOrThrow(maximumExactWeeks + 1));
+        REQUIRE_THROWS(TimeDelta::weeksOrThrow(std::numeric_limits<int64_t>::min()));
+    }
     void testConstructionAndEpoch() {
         _dateTime = {};
         REQUIRE_FALSE(_dateTime.isValid());
@@ -311,7 +329,6 @@ public:
     }
 
     void testIsoFormatAndParse() {
-        using namespace el::text::literals;
 
         _dateTime =
             DateTime{Date::fromYearMonthDay(2022, 10, 6), Time{Hour{12}, Minute{7}, Second{5}, Nanoseconds{2981029}}};
@@ -338,7 +355,6 @@ public:
     }
 
     void testTimeZoneBasics() {
-        using namespace el::text::literals;
 
         REQUIRE(TimeZone::utc().isUtc());
         REQUIRE(TimeZone::isValidName("UTC"_el));
@@ -357,7 +373,6 @@ public:
     }
 
     void testTimeZoneConversion() {
-        using namespace el::text::literals;
 
         const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         const auto summerUtc = DateTime{Date::fromYearMonthDay(2026, 7, 1), Time{Hour{12}, Minute{0}}};

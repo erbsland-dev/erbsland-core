@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IntegerAppend_fwd.hpp"
+#include "StringAppendTools.hpp"
 
 #include "../Char.hpp"
 #include "../IntegerFormat.hpp"
@@ -16,17 +17,18 @@
 namespace erbsland::text::impl {
 
 /// Append a grouped digit field to a decoded-character sink.
-template <typename tSink, typename tDigits>
-void appendDigitField(
-    tSink &sink,
+template <typename tDigits>
+auto appendDigitField(
+    StringAppendTools &sink,
     const tDigits &digits,
     const std::size_t digitCount,
     const std::size_t zeroPadCount,
-    const IntegerFormat &format) {
+    const IntegerFormat &format) -> unit::CpLength {
     const auto base = format.base();
     const auto useSeparator = format.hasFlag(IntegerFormatFlag::Separator);
     const auto groupSize = base.digitGroupSize();
     const auto paddedDigitCount = digitCount + zeroPadCount;
+    auto appendedLength = unit::CpLength::zero();
     auto firstGroupSize = paddedDigitCount % groupSize;
     if (firstGroupSize == 0U) {
         firstGroupSize = groupSize;
@@ -34,20 +36,21 @@ void appendDigitField(
 
     for (auto index = std::size_t{0U}; index < paddedDigitCount; ++index) {
         if (useSeparator && index > 0U && index >= firstGroupSize && ((index - firstGroupSize) % groupSize) == 0U) {
-            sink.append(Char{U'\''});
+            appendedLength += sink.append(Char{U'\''});
         }
         if (index < zeroPadCount) {
-            sink.append(Char{U'0'});
+            appendedLength += sink.append(Char{U'0'});
         } else {
             const auto digitIndex = digitCount - 1U - (index - zeroPadCount);
-            sink.append(Char{digits[digitIndex]});
+            appendedLength += sink.append(Char{digits[digitIndex]});
         }
     }
+    return appendedLength;
 }
 
 /// Append an integer to a decoded-character sink.
-template <typename tSink, math::AnyIntegerType T>
-void appendInteger(tSink &sink, T value, const IntegerFormat &format) {
+template <math::AnyIntegerType T>
+auto appendInteger(StringAppendTools &sink, T value, const IntegerFormat &format) -> unit::CpLength {
     using NativeValue = math::NativeIntegerOfT<T>;
     using Magnitude = math::SignedMagnitude<NativeValue>;
     using UnsignedValue = typename Magnitude::Unsigned;
@@ -75,25 +78,27 @@ void appendInteger(tSink &sink, T value, const IntegerFormat &format) {
     const auto fieldZeroPadCount = format.hasFlag(IntegerFormatFlag::ZeroFill) ? missingDigits : std::size_t{0U};
     const auto zeroPadCount = precisionZeroPadCount + fieldZeroPadCount;
     const auto spacePadCount = format.hasFlag(IntegerFormatFlag::ZeroFill) ? std::size_t{0U} : missingDigits;
+    auto appendedLength = unit::CpLength::zero();
 
     for (auto i = std::size_t{0U}; i < spacePadCount; ++i) {
-        sink.append(Char{U' '});
+        appendedLength += sink.append(Char{U' '});
     }
     if (negative) {
-        sink.append(Char{U'-'});
+        appendedLength += sink.append(Char{U'-'});
     } else if (format.signMode() == IntegerSignMode::Always) {
-        sink.append(Char{U'+'});
+        appendedLength += sink.append(Char{U'+'});
     } else if (format.signMode() == IntegerSignMode::Space) {
-        sink.append(Char{U' '});
+        appendedLength += sink.append(Char{U' '});
     }
     if (format.hasFlag(IntegerFormatFlag::BasePrefix)) {
         const auto prefix = format.base().prefixChar(format.letterCase());
         if (!prefix.isNull()) {
-            sink.append(Char{U'0'});
-            sink.append(prefix);
+            appendedLength += sink.append(Char{U'0'});
+            appendedLength += sink.append(prefix);
         }
     }
-    appendDigitField(sink, digits, digitCount, zeroPadCount, format);
+    appendedLength += appendDigitField(sink, digits, digitCount, zeroPadCount, format);
+    return appendedLength;
 }
 
 }

@@ -21,7 +21,6 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
-
 using text::Char;
 using text::String;
 using text::StringEncoding;

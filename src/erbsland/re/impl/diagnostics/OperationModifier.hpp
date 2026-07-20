@@ -3,11 +3,9 @@
 #pragma once
 
 #include "../../../text/Literals.hpp"
-#include "../../../text/StdFormatForText.hpp"
 #include "../../../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 
 namespace erbsland::re::impl {
 
@@ -35,10 +33,3 @@ enum class OperationModifier : uint8_t { Negated, Assert, CaseInsensitive, Skip,
 }
 
 }
-
-template <>
-struct std::formatter<erbsland::re::impl::OperationModifier> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::OperationModifier modifier, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(modifier), ctx);
-    }
-};

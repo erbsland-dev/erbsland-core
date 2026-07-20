@@ -64,6 +64,7 @@ class UpdateIncludesTest(unittest.TestCase):
         app.generated_include_header = "#pragma once\n// generated"
         app.exclude_dirs = []
         app.exclude_headers = set()
+        app.exclude_from_all_headers = set()
         app.create_all_base_dir = ""
         return app
 
@@ -249,6 +250,36 @@ class WindowsErrorContext {};
         self.assertNotIn("WindowsErrorContext.hpp", system_all_text)
         self.assertTrue((self.project_dir / "include" / "erbsland" / "system" / "PlatformError.hpp").is_file())
         self.assertFalse((self.project_dir / "include" / "erbsland" / "system" / "WindowsErrorContext.hpp").exists())
+
+    def test_header_can_be_published_but_excluded_from_all_headers(self) -> None:
+        self.write_header(
+            "text/String.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "text/StdFormatForText.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        app = self.create_manual_app()
+        app.fold_into_parent = {"text"}
+        app.exclude_from_all_headers = {Path("text/StdFormatForText.hpp")}
+
+        app.collect_header_files()
+        app._create_effective_parent_include_map()
+        app.generate_all_headers()
+        app.generate_includes()
+
+        text_all_text = (self.project_dir / "src" / "erbsland" / "text" / "all.hpp").read_text(encoding="utf-8")
+        root_all_text = (self.project_dir / "src" / "erbsland" / "all.hpp").read_text(encoding="utf-8")
+        self.assertIn('#include "String.hpp"', text_all_text)
+        self.assertNotIn("StdFormatForText.hpp", text_all_text)
+        self.assertIn('#include "text/String.hpp"', root_all_text)
+        self.assertNotIn("StdFormatForText.hpp", root_all_text)
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "StdFormatForText.hpp").is_file())
 
     def test_tpp_headers_are_not_published(self) -> None:
         self.write_header(

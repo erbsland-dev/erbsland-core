@@ -10,7 +10,6 @@
 #include "../CharSet.hpp"
 
 #include "../../unit/ElementCount.hpp"
-#include "../../unit/IntegerUnitRange.hpp"
 #include "../../util/List.hpp"
 
 #include <compare>
@@ -31,7 +30,6 @@ public:
     using Count = unit::ElementCount;
     using NativeIndex = decltype(std::declval<ReadOnly>().findFirstOf(std::declval<const CharSet &>()));
     using NativeLength = typename NativeIndex::Length;
-    using NativeRange = unit::IntegerUnitRange<typename NativeIndex::Unit>;
 
 public:
     /// Inherit the standard list constructors.

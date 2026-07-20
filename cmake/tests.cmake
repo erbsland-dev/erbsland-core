@@ -20,4 +20,11 @@ if(ERBSLAND_CORE_ENABLE_TESTS)
             NAME erbsland-core-unittest
             COMMAND $<TARGET_FILE:erbsland-core-unittest> --no-color
     )
+    add_test(
+            NAME conf-parser-profile-smoke
+            COMMAND $<TARGET_FILE:conf-parser-profile> --iterations 1
+    )
+    set_tests_properties(erbsland-core-unittest PROPERTIES
+            ENVIRONMENT "ERBSLAND_CORE_CONF_TEST_SUITE=${PROJECT_SOURCE_DIR}/test/erbsland-lang-config-tests"
+    )
 endif()

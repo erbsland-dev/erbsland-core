@@ -51,6 +51,13 @@ Use ``wouldAddSaturate()`` or ``wouldSubtractSaturate()`` to test for this condi
 variants to reject it with
 :cpp:class:`OverflowError <erbsland::err::OverflowError>`.
 
+A ``TimeWithZone`` combines a wall-clock
+:cpp:class:`Time <erbsland::time::Time>` with a :cpp:class:`TimeZone <erbsland::time::TimeZone>`.  It does not
+represent an instant until it is combined with a date.
+Named zones therefore render using their IANA name instead of inventing a numeric offset.
+Constructing a ``DateTime`` from a date and ``TimeWithZone`` resolves the exact offset for the civil date and time,
+converts the value to internally stored UTC, and retains the display zone.
+
 Time
 ----
 
@@ -74,6 +81,22 @@ Time Zone
 
 :cpp:class:`TimeZone <erbsland::time::TimeZone>` represents UTC, a fixed offset, or a supported named IANA zone.
 Lookup factories return ``std::optional`` for tolerant lookup and ``OrThrow`` variants for explicit failure.
+Fixed offsets are normalized only by complete 24-hour rotations, so offsets such as UTC+13 and UTC+14 retain their
+direction.
+
+``TimeZone::local()`` identifies and caches the operating system's base time zone for the process lifetime.
+POSIX systems use ``TZ`` and canonical zoneinfo paths; Windows names are mapped to IANA names using generated Unicode
+CLDR data.
+Resolution failures produce UTC with the local-origin marker set.
+Combining the zone with a civil date and time always resolves the bundled database again, retaining historical shifts,
+daylight-saving state, abbreviations, gaps, and folds.
+
+The local-origin marker records that the current display zone came from the system setting.
+Copies, arithmetic, and UTC normalization preserve it.
+Explicit zone conversion replaces it with the target zone's marker: conversion to UTC or an explicit zone clears it,
+while conversion to ``TimeZone::local()`` sets it.
+Default string formatting omits the zone for local-origin values.
+``DateTime::toIsoString()`` with ``IsoTimeFormat::TimeShift`` still forces the resolved numeric offset.
 
 Interface
 =========
@@ -124,6 +147,8 @@ Interface
 .. doxygenstruct:: erbsland::time::TimeWrapResult
     :members:
 .. doxygenenum:: erbsland::time::TimeOccurrenceInFold
+.. doxygenclass:: erbsland::time::TimeWithZone
+    :members:
 .. doxygenclass:: erbsland::time::TimeZone
     :members:
 .. doxygenclass:: erbsland::time::TimeZoneId

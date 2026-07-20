@@ -5,6 +5,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/impl/text/CharRange.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

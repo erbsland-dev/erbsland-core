@@ -32,8 +32,8 @@ void renderCodeSnippet() {
     el::TextDocument document;
     document.addHeading(1)->addText("Code Snippet"_el);
     document.addCodeSnippet(
-        cConfigurationLines.slice({el::ElementIndex{0}, el::ElementIndex{12}}),
-        el::LineIndex{0},
+        el::CodeSnippet{
+            cConfigurationLines.slice({el::ElementIndex{0}, el::ElementIndex{12}}), el::LineIndex{0}, "elcl"_el},
         el::CodeSnippetMarkerList{
             el::CodeSnippetMarker{
                 el::LineIndex{3},

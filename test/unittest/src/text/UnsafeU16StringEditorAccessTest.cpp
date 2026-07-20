@@ -3,6 +3,7 @@
 
 #include <erbsland/text/impl/UnsafeU16StringBuffer.hpp>
 #include <erbsland/text/impl/UnsafeU16StringEditorAccess.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/unit/U16DataLength.hpp>

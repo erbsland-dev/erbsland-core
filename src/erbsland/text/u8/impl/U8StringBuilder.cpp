@@ -43,32 +43,40 @@ void U8StringBuilder::clear() noexcept {
     _length = unit::CpLength::zero();
 }
 
-void U8StringBuilder::append(const Char character) {
-    _length += U8StringAppendTools{_text._storage}.append(character);
+auto U8StringBuilder::append(const Char character) -> unit::CpLength {
+    const auto appendedLength = U8StringAppendTools{_text._storage}.append(character);
+    _length += appendedLength;
+    return appendedLength;
 }
 
 void U8StringBuilder::append(const Char character, unit::CpLength count) {
     _length += U8StringAppendTools{_text._storage}.append(character, count);
 }
 
-void U8StringBuilder::append(const U8String &text) {
-    _length += U8StringAppendTools{_text._storage}.append(text.dataView());
+auto U8StringBuilder::append(const U8String &text) -> unit::CpLength {
+    const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
+    _length += appendedLength;
+    return appendedLength;
 }
 
 void U8StringBuilder::append(const U8String &text, const unit::ElementCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-void U8StringBuilder::append(const U16String &text) {
-    _length += U8StringAppendTools{_text._storage}.append(text.dataView());
+auto U8StringBuilder::append(const U16String &text) -> unit::CpLength {
+    const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
+    _length += appendedLength;
+    return appendedLength;
 }
 
 void U8StringBuilder::append(const U16String &text, const unit::ElementCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
-void U8StringBuilder::append(const U32String &text) {
-    _length += U8StringAppendTools{_text._storage}.append(text.dataView());
+auto U8StringBuilder::append(const U32String &text) -> unit::CpLength {
+    const auto appendedLength = U8StringAppendTools{_text._storage}.append(text.dataView());
+    _length += appendedLength;
+    return appendedLength;
 }
 
 void U8StringBuilder::append(const U32String &text, const unit::ElementCount count) {

@@ -16,6 +16,8 @@
 #include <string>
 #include <string_view>
 
+using namespace el::text::literals;
+
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
@@ -27,7 +29,6 @@ TESTED_TARGETS(U8StringEditor U8String U8StringTrimTools)
 class U8StringTrimTest final : public el::UnitTest {
 public:
     void testStringInPlaceTrim() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
         REQUIRE_EQUAL(text.trim(), "value"_el);
@@ -49,7 +50,6 @@ public:
     }
 
     void testStringCopyTrim() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"xxValueXX"}};
 
@@ -60,7 +60,6 @@ public:
     }
 
     void testViewTrim() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{" \tvalue\r\n"}};
         const auto view = U8String{text};
@@ -73,7 +72,6 @@ public:
     }
 
     void testCodePointTrim() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"***value**"}};
         const auto view = text;
@@ -85,7 +83,6 @@ public:
     }
 
     void testEmptyNoOpAndAllTrimmed() {
-        using namespace el::text::literals;
 
         const auto empty = U8StringEditor{};
         REQUIRE(empty.trimmed().isEmpty());
@@ -104,7 +101,6 @@ public:
     }
 
     void testNestedViewTrimKeepsCorrectOrigin() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"xx--value--yy"}};
         const auto first = U8String{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{11U}});
@@ -117,7 +113,6 @@ public:
     }
 
     void testMultibyteBoundaryCharacters() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"¢€data€¢"}};
         const auto characters = CharSet{u8"¢€"_el};
@@ -132,15 +127,12 @@ public:
         const auto text = U8StringEditor{std::string_view{bytes}};
         const auto characters = CharSet{Char::replacement()};
 
-        using namespace el::text::literals;
-
         REQUIRE_EQUAL(text.trimmed(characters), "A"_el);
         REQUIRE_EQUAL(U8String{text}.trimmed(characters), "A"_el);
         REQUIRE_EQUAL(StringConverter{text.trimmed(characters)}.toStdString(), "A");
     }
 
     void testCaseInsensitiveTrim() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::string_view{"XXvalueX"}};
         REQUIRE_EQUAL(text.trim(CharSet{"xX"_el}), "value"_el);

@@ -41,7 +41,7 @@ public:
         REQUIRE_EQUAL(toStdString(diagnostic->toTextDocument().toString()), std::string{"Error: Broken value"});
         REQUIRE(diagnostic->sourceName().isEmpty());
         REQUIRE(diagnostic->sourcePath().isEmpty());
-        REQUIRE(diagnostic->location().line.isNoIndex());
+        REQUIRE(diagnostic->location().line().isNoIndex());
     }
 
     void testParseErrorDiagnosticLocation() {
@@ -49,7 +49,7 @@ public:
         const auto diagnostic = error.diagnostic();
 
         REQUIRE(diagnostic != nullptr);
-        REQUIRE_EQUAL(diagnostic->location().position, el::unit::CpIndex{4U});
+        REQUIRE_EQUAL(diagnostic->location().position(), el::unit::CpIndex{4U});
         REQUIRE_EQUAL(toStdString(diagnostic->toString()), std::string{"Invalid integer at code point 4"});
     }
 
@@ -217,7 +217,7 @@ public:
 
         REQUIRE(document.root()->contains(el::text::TextNodeType::EscapeSequence));
         REQUIRE(text.find('\x1b') == std::string::npos);
-        REQUIRE(text.find("\\033") != std::string::npos);
+        REQUIRE(text.find("\\u{1b}") != std::string::npos);
         REQUIRE(text.find("bad\\nmessage") != std::string::npos);
     }
 
@@ -229,7 +229,7 @@ public:
         const auto text = toStdString(el::err::DiagnosticHelper{error}.toDocument().toString());
 
         REQUIRE(text.find('\x1b') == std::string::npos);
-        REQUIRE(text.find("foreign\\033message") != std::string::npos);
+        REQUIRE(text.find("foreign\\u{1b}message") != std::string::npos);
     }
 
     void testCauseHeadingUsesDisplayTextMap() {

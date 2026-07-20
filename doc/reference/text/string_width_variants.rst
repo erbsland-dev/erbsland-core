@@ -42,6 +42,15 @@ the decoded character.
 At the exact end position, it returns ``Char::endOfData()`` and leaves the index unchanged.
 For ``noIndex`` or a past-end index, it returns ``Char::noCodePoint()`` and leaves the index unchanged.
 
+For UTF-8 strings, ``readCharAndAdvanceOrThrow(index)`` provides the strict counterpart.
+It returns only a valid decoded character, throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` for
+malformed UTF-8, and throws :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` at or outside the end of the
+string.
+The index remains unchanged when either error is raised.
+This method is useful in UTF-8-only parser hot paths that already maintain a byte index and do not need the
+width-independent state, lookahead, or capture helpers of
+:cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
+
 ``readCharAndRetreat(index)`` treats the index as the position after the character to read.
 It reads the previous character and retreats the index to that character's start.
 This works with an index initialized from ``indexAt(StringSide::Back)`` to read backwards from the end of a string.
@@ -52,8 +61,8 @@ Unlike ``retreat(index)``, this method does not clamp a past-end index to the en
 Character-Indexed Slices
 ========================
 
-The UTF-8, UTF-16 and UTF-32 read-only and editor types support direct slicing by ``unit::CpRange`` and by ``StringSide``
-with ``unit::CpLength``.
+The UTF-8, UTF-16 and UTF-32 read-only and editor types support direct slicing by ``unit::CpRange`` and by
+``StringSide`` with ``unit::CpLength``.
 For UTF-8 and UTF-16, character-indexed slices return ranges aligned to decoded code-point boundaries, while the native
 ``ByteRange`` and ``U16DataRange`` overloads remain available for raw data-unit slices.
 Trailing character slices are found from the back of the native data, so requesting the last few code points does not
@@ -76,8 +85,8 @@ For text containing line breaks, the result is usually not the width of any rend
 Searching
 =========
 
-All string ``find...`` overloads that accept a start or end position treat a no-index position as
-invalid input and return the matching ``noIndex()`` value immediately.
+All string ``find...`` overloads that accept a start or end position treat a no-index position as invalid input and
+return the matching ``noIndex()`` value immediately.
 
 Interface
 =========

@@ -14,7 +14,7 @@ template <math::AnyIntegerType T>
 [[nodiscard]] auto parseInteger(StringCharReader reader, const IntegerParseOptions &options) -> T {
     const T value = reader.readIntegerOrThrow<T>(options);
     if (!options.hasFlag(IntegerParseFlag::IgnoreTrailingChars) && !reader.isAtEnd()) {
-        text::impl::throwParseError("Integer text has trailing characters");
+        throwParseError("Integer text has trailing characters");
     }
     return value;
 }

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockMargins.hpp>
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 TESTED_TARGETS(BlockMargins)

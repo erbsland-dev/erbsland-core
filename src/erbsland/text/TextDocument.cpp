@@ -51,9 +51,8 @@ auto TextDocument::addCodeBlock(String language) -> TextNodePtr {
     return _root->addCodeBlock(std::move(language));
 }
 
-auto TextDocument::addCodeSnippet(
-    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
-    return _root->addCodeSnippet(std::move(lines), startLine, std::move(markers), std::move(language));
+auto TextDocument::addCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList markers) -> TextNodePtr {
+    return _root->addCodeSnippet(std::move(snippet), std::move(markers));
 }
 
 auto TextDocument::addHorizontalLine() -> TextNodePtr {

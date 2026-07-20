@@ -41,10 +41,11 @@ auto RegEx::findAll(const InputPtr input) const -> MatchGenerator {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
     auto lastPosition = state->current.position;
-    while (_engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
-        auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
+    while (engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
+        auto captureGroups = state->createCaptureGroups(engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
         auto match = input->createMatch(std::move(captureGroups));
@@ -65,10 +66,11 @@ auto RegEx::findAll(const Input16Ptr input) const -> Match16Generator {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
     auto lastPosition = state->current.position;
-    while (_engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
-        auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
+    while (engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
+        auto captureGroups = state->createCaptureGroups(engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
         auto match = input->createMatch(std::move(captureGroups));
@@ -89,10 +91,11 @@ auto RegEx::findAll(const Input32Ptr input) const -> Match32Generator {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
     auto lastPosition = state->current.position;
-    while (_engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
-        auto captureGroups = state->createCaptureGroups(_engine->captureGroupNames());
+    while (engine->findFirst(*state) == impl::EngineHasMatch::Yes) {
+        auto captureGroups = state->createCaptureGroups(engine->captureGroupNames());
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!captureGroups.empty(), "Capture groups cannot be empty"_el);
         const auto captureRange = captureGroups.front().range();
         auto match = input->createMatch(std::move(captureGroups));

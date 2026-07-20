@@ -17,7 +17,6 @@
 namespace erbsland::err::impl {
 
 using namespace text::literals;
-
 using text::String;
 using text::StringEditor;
 using text::TextDocument;

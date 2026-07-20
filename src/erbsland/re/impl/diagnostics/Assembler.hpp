@@ -123,7 +123,7 @@ private:
             ErrorCategory::Assembler,
             "Failed to assemble regular expression"_el,
             std::move(description),
-            unit::CodeLocation{.line = _lineIndex, .column = column}};
+            unit::CodeLocation{_lineIndex, column}};
     }
 
 private:

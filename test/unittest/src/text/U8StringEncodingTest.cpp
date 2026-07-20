@@ -3,6 +3,7 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteReader.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
 #include <erbsland/text/StringEncoder.hpp>

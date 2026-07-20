@@ -35,33 +35,36 @@ auto RegEx::findFirst(const InputPtr &input) const -> MatchPtr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
-    if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
+    if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(engine->captureGroupNames()));
 }
 
 auto RegEx::findFirst(const Input16Ptr &input) const -> Match16Ptr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
-    if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
+    if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(engine->captureGroupNames()));
 }
 
 auto RegEx::findFirst(const Input32Ptr &input) const -> Match32Ptr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    auto state = _engine->createState(input);
-    if (_engine->findFirst(*state) == impl::EngineHasMatch::No) {
+    const auto engine = this->engine();
+    auto state = engine->createState(input);
+    if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
     }
-    return input->createMatch(state->createCaptureGroups(_engine->captureGroupNames()));
+    return input->createMatch(state->createCaptureGroups(engine->captureGroupNames()));
 }
 
 }

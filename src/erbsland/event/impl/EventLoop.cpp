@@ -16,7 +16,6 @@
 namespace erbsland::event::impl {
 
 using namespace text::literals;
-
 using time::TimeDelta;
 using time::TimePoint;
 

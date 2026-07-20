@@ -19,6 +19,7 @@
 #include "OptionInteger.hpp"
 #include "OptionManager.hpp"
 #include "OptionModule.hpp"
+#include "OptionParserFlag.hpp"
 #include "OptionResult.hpp"
 #include "OptionResultStatus.hpp"
 #include "OptionSet.hpp"

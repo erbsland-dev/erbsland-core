@@ -23,7 +23,7 @@ namespace erbsland::text::impl {
                 isFirstCharacter = false;
                 continue;
             }
-            text::impl::throwParseError("Unexpected hyphen in character set pattern");
+            throwParseError("Unexpected hyphen in character set pattern");
         }
 
         if (reader.advanceIf(Char{U'-'})) {
@@ -36,7 +36,7 @@ namespace erbsland::text::impl {
 
             const auto last = reader.read();
             if (character >= last) {
-                text::impl::throwParseError("Invalid character range in character set pattern");
+                throwParseError("Invalid character range in character set pattern");
             }
             result.add(CharRange{character, last});
             isFirstCharacter = false;

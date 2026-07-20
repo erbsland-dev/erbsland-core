@@ -4,9 +4,14 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/time/all.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <vector>
+
+using namespace el::time;
+
+using namespace el::text::literals;
 
 using el::text::StringConverter;
 using el::text::StringEditor;
@@ -17,8 +22,6 @@ TESTED_TARGETS(time TimeZone TimeZoneId)
 class TimeZoneTest final : public el::UnitTest {
 public:
     void testUtcAliasesAndInvalidNames() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         for (
             const auto name : {
@@ -45,8 +48,6 @@ public:
     }
 
     void testFixedOffsetParsing() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         struct ValidCase {
             StringEditor name;
@@ -68,6 +69,11 @@ public:
             {StringEditor{"uTc+01:30"}, Seconds{5400}},
             {StringEditor{"GmT-0330"}, Seconds{-12600}},
             {StringEditor{"gMt+01:02:03"}, Seconds{3723}},
+            {StringEditor{"+12:01"}, Seconds{12 * 3600 + 60}},
+            {StringEditor{"+13:00"}, Seconds{13 * 3600}},
+            {StringEditor{"+14:00"}, Seconds{14 * 3600}},
+            {StringEditor{"+23:59:59"}, Seconds{86'399}},
+            {StringEditor{"-23:59:59"}, Seconds{-86'399}},
         };
         for (const auto &testCase : validCases) {
             const auto zone = TimeZone::fromNameOrThrow(testCase.name);
@@ -95,9 +101,21 @@ public:
         }
     }
 
+    void testFullDayNormalization() {
+
+        REQUIRE_EQUAL(TimeZone{Hours{13}}.staticOffset(), Duration{Hours{13}});
+        REQUIRE_EQUAL(TimeZone{Hours{-13}}.staticOffset(), Duration{Hours{-13}});
+        REQUIRE_EQUAL(TimeZone{Hours{37}}.staticOffset(), Duration{Hours{23}});
+        REQUIRE_EQUAL(TimeZone{Hours{-37}}.staticOffset(), Duration{Hours{-23}});
+
+        const auto dateTime =
+            DateTime{Date::fromYearMonthDay(2026, 1, 1), Time{Hour{1}, Minute{0}}, TimeZone{Hours{14}}};
+        REQUIRE_EQUAL(dateTime.utcDate(), Date::fromYearMonthDay(2025, 12, 31));
+        REQUIRE_EQUAL(dateTime.utcTime(), (Time{Hour{11}, Minute{0}}));
+        REQUIRE_EQUAL(dateTime.timeOffset(), Duration{Hours{14}});
+    }
+
     void testGeneratedNamesAndDatabaseVersion() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         REQUIRE_EQUAL(TimeZone::databaseVersion(), (Version{1, 2026, 2}));
         const auto names = TimeZone::names();
@@ -119,8 +137,6 @@ public:
     }
 
     void testGeneratedEtcNamesTakePrecedence() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto generated = TimeZone::fromNameOrThrow("Etc/GMT+1"_el);
         const auto utc = DateTime{Date::fromYearMonthDay(2026, 1, 1), Time{Hour{12}, Minute{0}}};

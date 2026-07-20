@@ -3,6 +3,8 @@
 
 #include "ParserBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 using impl::limits::maximumQuantifierCount;
 
 TESTED_TARGETS(Parser)

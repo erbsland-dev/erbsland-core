@@ -1,0 +1,46 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "Minimum.hpp"
+
+#include "../../../impl/vr/MinMaxConstraint.hpp"
+
+#include <type_traits>
+
+namespace erbsland::conf::vr::builder {
+
+void Minimum::operator()(impl::Rule &rule) {
+    auto constraint = std::visit(
+        [&rule](const auto &value) -> impl::ConstraintPtr {
+            using T = std::decay_t<decltype(value)>;
+            if constexpr (std::is_same_v<T, Integer>) {
+                requireRuleTypeForConstraint(
+                    rule,
+                    "minimum"_el,
+                    {vr::RuleType::Integer,
+                        vr::RuleType::Text,
+                        vr::RuleType::Bytes,
+                        vr::RuleType::ValueList,
+                        vr::RuleType::Section,
+                        vr::RuleType::SectionList,
+                        vr::RuleType::SectionWithTexts});
+                return std::make_shared<impl::MinMaxIntegerConstraint>(impl::MinMaxConstraint::Min, value);
+            } else if constexpr (std::is_same_v<T, Float>) {
+                requireRuleTypeForConstraint(rule, "minimum"_el, {vr::RuleType::Float});
+                return std::make_shared<impl::MinMaxFloatConstraint>(impl::MinMaxConstraint::Min, value);
+            } else if constexpr (std::is_same_v<T, time::Date>) {
+                requireRuleTypeForConstraint(rule, "minimum"_el, {vr::RuleType::Date});
+                return std::make_shared<impl::MinMaxDateConstraint>(impl::MinMaxConstraint::Min, value);
+            } else if constexpr (std::is_same_v<T, time::DateTime>) {
+                requireRuleTypeForConstraint(rule, "minimum"_el, {vr::RuleType::DateTime});
+                return std::make_shared<impl::MinMaxDateTimeConstraint>(impl::MinMaxConstraint::Min, value);
+            } else {
+                requireRuleTypeForConstraint(rule, "minimum"_el, {vr::RuleType::ValueMatrix});
+                return std::make_shared<impl::MinMaxMatrixConstraint>(
+                    impl::MinMaxConstraint::Min, value.first, value.second);
+            }
+        },
+        _value);
+    _options.addToRule(rule, constraint, "minimum"_el);
+}
+
+}

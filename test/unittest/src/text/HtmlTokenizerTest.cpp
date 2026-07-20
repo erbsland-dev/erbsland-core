@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/html/impl/HtmlTokenizer.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -9,6 +10,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+using namespace el::text::literals;
 
 using el::text::String;
 using el::text::StringConverter;
@@ -33,7 +36,6 @@ public:
 
 public:
     void testTokenizeParsesPlainTextAndSimpleTags() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize("Hello <strong>world</strong>!"_el);
 
@@ -49,7 +51,6 @@ public:
     }
 
     void testTokenizeParsesAttributesAndSelfClosingTags() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize(R"(<img alt="A &amp; B" src=test disabled />)"_el);
 
@@ -70,7 +71,6 @@ public:
     }
 
     void testTokenizeParsesDocTypeCommentsAndEntities() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize("<!DOCTYPE html>Fish &amp; chips &#35; &#x41;<!-- note -->"_el);
 
@@ -84,7 +84,6 @@ public:
     }
 
     void testTokenizeParsesAttributesInOpeningTag() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize(R"(<A ID="main" class='Hero' href="/go">)"_el);
 
@@ -104,7 +103,6 @@ public:
     }
 
     void testTokenizeLeavesUnknownAndMalformedEntitiesAsLiteralText() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize("Text &bogus; &#x110000; &#x;"_el);
 
@@ -112,7 +110,6 @@ public:
     }
 
     void testTokenizeFallsBackToLiteralTextForMalformedOpenTags() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize(R"(prefix <strong title="broken suffix)"_el);
 
@@ -125,7 +122,6 @@ public:
     }
 
     void testTokenizeFallsBackToLiteralTextForMalformedCloseTagsAndDeclarations() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize("</><!not-html><!-- not closed"_el);
 
@@ -139,7 +135,6 @@ public:
     }
 
     void testTokenizeKeepsDecodedEntitiesInMalformedTagFallback() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize(R"(prefix <strong title="A &amp; B suffix)"_el);
 
@@ -152,7 +147,6 @@ public:
     }
 
     void testTokenizeLeavesInvalidEntitiesInAttributeValuesAsLiteralText() {
-        using namespace el::text::literals;
 
         const auto tokens = tokenize(R"(<a title="A &bogus; &#x110000; B">)"_el);
 
@@ -170,7 +164,6 @@ public:
     }
 
     void testTokenizeYieldsConstructsIncrementally() {
-        using namespace el::text::literals;
 
         auto tokenizer = HtmlTokenizer{String{"<p>one</p><broken title=\"x"_el}};
         auto generator = tokenizer.tokenize();

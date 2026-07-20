@@ -1,7 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/text/CharSet.hpp>
+#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
@@ -25,6 +27,8 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+
+using namespace el::text::literals;
 
 using namespace el::text;
 using namespace el::unit;
@@ -58,7 +62,6 @@ public:
     void testStringFromStdString() {
         static_assert(std::is_constructible_v<U8StringEditor, std::string_view>);
         static_assert(!std::is_convertible_v<std::string_view, U8StringEditor>);
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"Hello"}};
 
@@ -69,7 +72,6 @@ public:
     void testStringFromStdU8String() {
         static_assert(std::is_constructible_v<U8StringEditor, std::u8string_view>);
         static_assert(!std::is_convertible_v<std::u8string_view, U8StringEditor>);
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"Hello"}};
 
@@ -78,7 +80,6 @@ public:
     }
 
     void testStringCopiesLiteral() {
-        using namespace el::text::literals;
 
         const auto text = "Hello"_el;
 
@@ -87,7 +88,6 @@ public:
     }
 
     void testRepeatedAppend() {
-        using namespace el::text::literals;
 
         const auto source = U8StringEditor{std::u8string_view{u8"xA¢"}};
         const auto view = U8String{source}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
@@ -119,7 +119,6 @@ public:
     }
 
     void testBooleanConversion() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U8StringEditor::fromBoolean(true), "true"_el);
         REQUIRE_EQUAL(
@@ -270,8 +269,32 @@ public:
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
     }
 
+    void testStrictIndexedSequentialRead() {
+        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        auto index = ByteIndex::zero();
+
+        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index, ByteIndex{1U});
+        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index, ByteIndex{3U});
+        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u20AC');
+        REQUIRE_EQUAL(index, ByteIndex{6U});
+        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index, ByteIndex{10U});
+
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, text.readCharAndAdvanceOrThrow(index));
+        REQUIRE_EQUAL(index, ByteIndex{10U});
+        index = ByteIndex::noIndex();
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, text.readCharAndAdvanceOrThrow(index));
+        REQUIRE(index.isNoIndex());
+
+        const auto invalid = U8StringEditor{std::string_view{invalidUtf8Data()}};
+        index = ByteIndex{1U};
+        REQUIRE_THROWS_AS(EncodingError, invalid.readCharAndAdvanceOrThrow(index));
+        REQUIRE_EQUAL(index, ByteIndex{1U});
+    }
+
     void testCaseMapping() {
-        using namespace el::text::literals;
 
         const auto mixed = U8StringEditor{std::u8string_view{u8"AÄΣςK"}};
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::caseFolded)}.toStdU32String(), std::u32string{U"aäσσk"});
@@ -561,7 +584,6 @@ public:
     }
 
     void testPredicateChecks() {
-        using namespace el::text::literals;
 
         const auto text =
             U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
@@ -592,7 +614,6 @@ public:
     }
 
     void testComparisonChecks() {
-        using namespace el::text::literals;
 
         const auto first = U8StringEditor{std::u8string_view{u8"A¢"}};
         const auto same = U8StringEditor{std::u8string_view{u8"A¢"}};
@@ -623,7 +644,6 @@ public:
     }
 
     void testCaseInsensitiveComparisonChecks() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"ÄbcK"}};
         const auto view = U8String{text};
@@ -647,7 +667,6 @@ public:
     }
 
     void testInvalidUtf8PredicateChecks() {
-        using namespace el::text::literals;
 
         const auto data = invalidUtf8Data();
         const auto text = U8StringEditor{std::string_view{data}};
@@ -662,7 +681,6 @@ public:
     }
 
     void testForwardFind() {
-        using namespace el::text::literals;
 
         const auto text =
             U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
@@ -683,7 +701,6 @@ public:
     }
 
     void testReverseFind() {
-        using namespace el::text::literals;
 
         const auto text =
             U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});

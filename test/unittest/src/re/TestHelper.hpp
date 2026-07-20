@@ -4,6 +4,7 @@
 
 #include "StringHelper.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

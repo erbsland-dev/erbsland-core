@@ -51,7 +51,7 @@ public: // reading characters
             ErrorCategory::Parser,
             "Failed to parse regular expression"_el,
             std::move(description),
-            unit::CodeLocation{.position = currentCharPosition()}};
+            unit::CodeLocation{}.setPosition(currentCharPosition())};
     }
 
     /// Reject an unsupported character in the pattern at the current location.
@@ -257,7 +257,7 @@ private:
                 ErrorCategory::Parser,
                 "Failed to parse regular expression"_el,
                 "Null characters are disabled in regular expression patterns."_el,
-                unit::CodeLocation{.position = position}};
+                unit::CodeLocation{}.setPosition(position)};
         }
     }
 

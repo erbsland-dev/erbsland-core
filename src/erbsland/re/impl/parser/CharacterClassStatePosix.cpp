@@ -8,6 +8,8 @@
 
 namespace erbsland::re::impl::parser {
 
+using namespace text::literals;
+
 void CharClassHandlerState::handlePosixCharacterClass() {
     std::size_t classCount = 1;
     while (currentChar() == U'[') {
@@ -67,7 +69,6 @@ void CharClassHandlerState::handlePosixCharacterClass() {
 }
 
 void CharClassHandlerState::processPosixRangesFor(const text::String &name) {
-    using namespace text::literals;
     // The definitions of the character sets are commonly expected sets for engines like PCRE.
     // They do not follow any formal rule and are only provided for compatibility.
     struct PosixRangeDefinition {

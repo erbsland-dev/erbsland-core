@@ -12,6 +12,7 @@
 #include "../../u32/impl/U32Writer.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstring>
 #include <span>
 
@@ -123,7 +124,7 @@ auto U8StringReadTools::readAndRetreat(ByteIndex &index) const noexcept -> Char 
 auto U8StringReadTools::charAtOrThrow(const ByteIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     auto position = startIndex;
     return utf8::decodeCharOrThrow(data, position);
@@ -132,7 +133,7 @@ auto U8StringReadTools::charAtOrThrow(const ByteIndex startIndex) const -> Char 
 auto U8StringReadTools::readOrThrow(ByteIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     return Char{utf8::decodeCharOrThrow(data, index)};
 }
@@ -218,6 +219,18 @@ auto U8StringReadTools::findFirstOfCharacterSet(
     const auto data = _data.dataSpan();
     if (start.toSizeT() >= data.size()) {
         return ByteIndex::noIndex();
+    }
+
+    const auto &ranges = characters.ranges();
+    if (isMatching && ranges.size() == 1U && ranges.begin()->isSingleChar() &&
+        ranges.begin()->from().toRawValue() <= 0x7FU) {
+        const auto separator = static_cast<char>(ranges.begin()->from().toRawValue());
+        const auto match =
+            std::find(data.begin() + static_cast<std::ptrdiff_t>(start.toSizeT()), data.end(), separator);
+        if (match == data.end()) {
+            return ByteIndex::noIndex();
+        }
+        return ByteIndex::fromSizeT(static_cast<std::size_t>(std::distance(data.begin(), match)));
     }
 
     auto position = start;

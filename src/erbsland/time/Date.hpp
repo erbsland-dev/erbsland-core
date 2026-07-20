@@ -180,6 +180,10 @@ public: // manipulation
     [[nodiscard]] auto previous(DayOfWeek dayOfWeek) const noexcept -> Date;
 
 public: // conversion
+    /// Convert this date to its canonical human-readable representation.
+    /// Invalid dates return an empty string.
+    /// @return The date formatted as `YYYY-MM-DD`.
+    [[nodiscard]] auto toString() const -> text::String;
     /// Convert to days since epoch, or `-1` for invalid dates.
     [[nodiscard]] auto toDaysSinceEpoch() const noexcept -> Days { return Days{_days}; }
     /// Calculate the number of days to another date.
@@ -274,13 +278,5 @@ private:
 
 template <>
 struct erbsland::text::FormatAsText<erbsland::time::Date> : FormatAs<time::Date, String> {
-    [[nodiscard]] auto format(const time::Date &value) const -> String { return value.toIsoString(); }
-};
-
-template <>
-struct std::formatter<erbsland::time::Date> : std::formatter<std::string_view> {
-    auto format(const erbsland::time::Date value, std::format_context &ctx) const {
-        return std::formatter<std::string_view>::format(
-            erbsland::text::StringConverter{value.toIsoString()}.toStdString(), ctx);
-    }
+    [[nodiscard]] auto format(const time::Date &value) const -> String { return value.toString(); }
 };

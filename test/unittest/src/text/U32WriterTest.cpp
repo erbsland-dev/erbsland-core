@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteWriter.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u32/impl/U32Writer.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -23,6 +24,9 @@ public:
         auto byteWriter = ByteWriter{};
         auto writer = el::text::impl::U32Writer{byteWriter};
 
+        writer.write(Char{0xFEFFU});
+        writer.write(Char::endOfData());
+        writer.write(Char::byteOrderMark());
         writer.writeBom();
         writer.write(Char{U'A'});
         writer.write(Char{0x1F600U});

@@ -215,9 +215,6 @@ auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResul
     }
     const auto deadline = deadlineFromNow();
     while (!pendingLineIsComplete()) {
-        if (!_pendingText.isEmpty() && !sourceIsReadyLocked()) {
-            return {StreamReadStatus::Timeout, {}};
-        }
         const auto result = readLineChunk(maximum - _pendingText.characterLength(), deadline);
         if (result == StreamReadStatus::Timeout) {
             return {StreamReadStatus::Timeout, {}};
@@ -249,9 +246,6 @@ auto EncodedTextInputStream::readAll(const CpLength maximum) -> StreamReadResult
     }
     const auto deadline = deadlineFromNow();
     while (_pendingText.characterLength() < maximum) {
-        if (!_pendingText.isEmpty() && !sourceIsReadyLocked()) {
-            return {StreamReadStatus::Timeout, {}};
-        }
         auto replay = takeReplay(maximum - _pendingText.characterLength());
         auto result = replay.isEmpty() ? readDecodedText(maximum - _pendingText.characterLength(), deadline)
                                        : StreamReadResult<String>{StreamReadStatus::Data, std::move(replay)};

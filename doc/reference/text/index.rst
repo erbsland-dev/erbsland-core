@@ -18,6 +18,7 @@ Text Processing
     string_literals
     string_pattern
     string_reader
+    string_splitter
     string_tree
     string_types
     string_width_collections

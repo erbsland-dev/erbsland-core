@@ -67,6 +67,15 @@ Values can follow an option as the next argument or be attached with ``=``.
 Use the attached form for values that start with a dash, for example ``--count=-1``.
 The argument ``--`` stops option parsing; all later arguments are treated as positional values.
 The built-in ``-h``, ``--help``, and ``--version`` requests stop normal parsing before user callbacks are called.
+Applications that need one of these names for their own protocol can disable the help or version request individually
+with :cpp:enum:`OptionParserFlag <erbsland::options::OptionParserFlag>` and then register an ordinary option under the
+released name:
+
+.. code-block:: cpp
+
+    options->setParserFlag(el::OptionParserFlag::DisableVersion);
+    options->addOption({"--version"_el, "language-version"_el})
+        .setType(el::OptionType::Text);
 
 If modules are present, no ordinary options may appear before the module name.
 This makes module selection unambiguous:

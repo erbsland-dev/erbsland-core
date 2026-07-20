@@ -7,12 +7,10 @@
 #include "OperationModifier.hpp"
 
 #include "../../../text/Literals.hpp"
-#include "../../../text/StdFormatForText.hpp"
 #include "../../../text/StringFormat.hpp"
 #include "../../../unit/ColumnIndex.hpp"
 
 #include <cstdint>
-#include <format>
 #include <type_traits>
 #include <variant>
 #include <vector>
@@ -144,11 +142,3 @@ private:
 using AssemblerTokens = std::vector<AssemblerToken>;
 
 }
-
-template <>
-struct std::formatter<erbsland::re::impl::AssemblerToken> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::AssemblerToken &token, std::format_context &ctx) const {
-        // Use `toString()` here so the formatter stays consistent with test output.
-        return std::formatter<erbsland::text::String>::format(token.toString(), ctx);
-    }
-};

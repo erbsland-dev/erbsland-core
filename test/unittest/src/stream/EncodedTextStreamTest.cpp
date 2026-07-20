@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+using namespace el::text::literals;
+
 using el::mem::Byte;
 using el::mem::ByteBlock;
 using el::stream::ByteInputStream;
@@ -42,15 +44,21 @@ class EncodedTextStreamTest final : public el::UnitTest {
         explicit MemoryInputStream(
             const ByteBlock &bytes,
             const std::size_t maximumRead = std::numeric_limits<std::size_t>::max(),
-            const std::optional<std::size_t> timeoutCall = std::nullopt) :
-            _bytes{bytes.toByteVector()}, _maximumRead{maximumRead}, _timeoutCall{timeoutCall} {}
+            const std::optional<std::size_t> timeoutCall = std::nullopt,
+            const bool readyAtEnd = true) :
+            _bytes{bytes.toByteVector()},
+            _maximumRead{maximumRead},
+            _timeoutCall{timeoutCall},
+            _readyAtEnd{readyAtEnd} {}
 
     public: // implement ByteInputStream
         [[nodiscard]] auto inputSettings() const noexcept -> const el::stream::InputStreamSettings & override {
             return _settings;
         }
         [[nodiscard]] auto state() const noexcept -> el::stream::StreamState override { return _state; }
-        [[nodiscard]] auto isReady() const noexcept -> bool override { return true; }
+        [[nodiscard]] auto isReady() const noexcept -> bool override {
+            return _readyAtEnd || _position < _bytes.size();
+        }
         [[nodiscard]] auto waitForReady() -> el::stream::StreamWaitStatus override {
             return el::stream::StreamWaitStatus::Ready;
         }
@@ -89,6 +97,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
         std::optional<std::size_t> _timeoutCall;
         std::size_t _readCall{0U};
         std::size_t _position{0};
+        bool _readyAtEnd{true};
         el::stream::InputStreamSettings _settings;
         el::stream::StreamState _state{el::stream::StreamState::Open};
     };
@@ -224,6 +233,19 @@ public:
         REQUIRE_EQUAL(StringConverter{completed.data()}.toStdString(), std::string{"abcd"});
     }
 
+    void testAggregateReadsWaitForFinalStateAfterPartialData() {
+        const auto bytes = StringEncoder{StringEditor{std::string_view{"last"}}}.encode(StringEncoding::Utf8);
+        auto lineByteStream =
+            std::make_shared<MemoryInputStream>(bytes, std::numeric_limits<std::size_t>::max(), std::nullopt, false);
+        auto lineStream = el::stream::impl::EncodedTextInputStream{lineByteStream, StringEncoding::Utf8};
+        REQUIRE_EQUAL(StringConverter{lineStream.readLine(CpLength{8U}).data()}.toStdString(), std::string{"last"});
+
+        auto allByteStream =
+            std::make_shared<MemoryInputStream>(bytes, std::numeric_limits<std::size_t>::max(), std::nullopt, false);
+        auto allStream = el::stream::impl::EncodedTextInputStream{allByteStream, StringEncoding::Utf8};
+        REQUIRE_EQUAL(StringConverter{allStream.readAll(CpLength{8U}).data()}.toStdString(), std::string{"last"});
+    }
+
     void testLineReadUsesOneDeadlineForAllShortRefills() {
         auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
@@ -331,7 +353,6 @@ public:
     }
 
     void testOutputUtf8AndBomOnlyOnce() {
-        using namespace el::text::literals;
 
         const auto byteStream = std::make_shared<MemoryOutputStream>();
         auto stream = el::stream::impl::EncodedTextOutputStream{byteStream, StringEncoding::Utf16};
@@ -399,7 +420,6 @@ public:
     }
 
     void testOutputCanSuppressInitialBom() {
-        using namespace el::text::literals;
 
         const auto byteStream = std::make_shared<MemoryOutputStream>();
         auto stream = el::stream::impl::EncodedTextOutputStream{

@@ -5,6 +5,7 @@
 #include <erbsland/text/CharSignal.hpp>
 #include <erbsland/text/IntegerBase.hpp>
 #include <erbsland/text/LetterCase.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -50,6 +51,8 @@ public:
         static_assert(!Char{0xD800}.isValidUnicode());
         static_assert(!Char{0xDFFF}.isValidUnicode());
         static_assert(Char{0xE000}.isValidUnicode());
+        static_assert(!Char{0xFEFF}.isValidUnicode());
+        static_assert(Char{0x2060}.isValidUnicode());
 
         REQUIRE(Char::isHighSurrogate(0xD800U));
         REQUIRE_FALSE(Char::isHighSurrogate(0xDC00U));
@@ -60,6 +63,8 @@ public:
         REQUIRE_FALSE(Char{0xD800}.isValidUnicode());
         REQUIRE_FALSE(Char{0xDFFF}.isValidUnicode());
         REQUIRE(Char{0xE000}.isValidUnicode());
+        REQUIRE_FALSE(Char{0xFEFF}.isValidUnicode());
+        REQUIRE(Char{0x2060}.isValidUnicode());
     }
 
     void testSignals() {
@@ -68,50 +73,84 @@ public:
 
         constexpr auto endOfData = Char::endOfData();
         constexpr auto noCodePoint = Char::noCodePoint();
+        constexpr auto error = Char::error();
+        constexpr auto byteOrderMark = Char::byteOrderMark();
         constexpr auto lowestReservedSignal = Char{0xFFFFFF00U};
         constexpr auto belowReservedSignal = Char{0xFFFFFEFFU};
 
         static_assert(!Char{}.isSignal());
         static_assert(!Char{}.isEndOfData());
         static_assert(!Char{}.isNoCodePoint());
+        static_assert(!Char{}.isError());
+        static_assert(!Char{}.isByteOrderMark());
         static_assert(endOfData.toRawValue() == 0xFFFFFFFFU);
         static_assert(noCodePoint.toRawValue() == 0xFFFFFFFEU);
+        static_assert(error.toRawValue() == 0xFFFFFFFDU);
+        static_assert(byteOrderMark.toRawValue() == 0xFFFFFFFCU);
         static_assert(endOfData.isSignal());
         static_assert(noCodePoint.isSignal());
+        static_assert(error.isSignal());
+        static_assert(byteOrderMark.isSignal());
         static_assert(lowestReservedSignal.isSignal());
         static_assert(!belowReservedSignal.isSignal());
         static_assert(endOfData.isEndOfData());
         static_assert(!endOfData.isNoCodePoint());
         static_assert(noCodePoint.isNoCodePoint());
         static_assert(!noCodePoint.isEndOfData());
+        static_assert(error.isError());
+        static_assert(byteOrderMark.isByteOrderMark());
+        static_assert(!Char{0xFEFFU}.isByteOrderMark());
+        static_assert(!error.isEndOfData());
+        static_assert(!error.isNoCodePoint());
         static_assert(endOfData == CharSignal::EndOfData);
         static_assert(endOfData != CharSignal::NoCodePoint);
         static_assert(noCodePoint == CharSignal::NoCodePoint);
         static_assert(noCodePoint != CharSignal::EndOfData);
+        static_assert(error == CharSignal::Error);
+        static_assert(byteOrderMark == CharSignal::ByteOrderMark);
         static_assert(!endOfData.isValidUnicode());
         static_assert(!noCodePoint.isValidUnicode());
+        static_assert(!error.isValidUnicode());
+        static_assert(!byteOrderMark.isValidUnicode());
         static_assert(Char::fromSignal(CharSignal::EndOfData) == endOfData);
         static_assert(Char::fromSignal(CharSignal::NoCodePoint) == noCodePoint);
+        static_assert(Char::fromSignal(CharSignal::Error) == error);
+        static_assert(Char::fromSignal(CharSignal::ByteOrderMark) == byteOrderMark);
 
         REQUIRE_FALSE(Char{}.isSignal());
         REQUIRE_EQUAL(endOfData.toRawValue(), char32_t{0xFFFFFFFFU});
         REQUIRE_EQUAL(noCodePoint.toRawValue(), char32_t{0xFFFFFFFEU});
+        REQUIRE_EQUAL(error.toRawValue(), char32_t{0xFFFFFFFDU});
+        REQUIRE_EQUAL(byteOrderMark.toRawValue(), char32_t{0xFFFFFFFCU});
         REQUIRE(endOfData.isSignal());
         REQUIRE(noCodePoint.isSignal());
+        REQUIRE(error.isSignal());
+        REQUIRE(byteOrderMark.isSignal());
         REQUIRE(lowestReservedSignal.isSignal());
         REQUIRE_FALSE(belowReservedSignal.isSignal());
         REQUIRE(endOfData.isEndOfData());
         REQUIRE_FALSE(endOfData.isNoCodePoint());
         REQUIRE(noCodePoint.isNoCodePoint());
         REQUIRE_FALSE(noCodePoint.isEndOfData());
+        REQUIRE(error.isError());
+        REQUIRE(byteOrderMark.isByteOrderMark());
+        REQUIRE_FALSE(Char{0xFEFFU}.isByteOrderMark());
+        REQUIRE_FALSE(error.isEndOfData());
+        REQUIRE_FALSE(error.isNoCodePoint());
         REQUIRE(endOfData == CharSignal::EndOfData);
         REQUIRE(endOfData != CharSignal::NoCodePoint);
         REQUIRE(noCodePoint == CharSignal::NoCodePoint);
         REQUIRE(noCodePoint != CharSignal::EndOfData);
+        REQUIRE(error == CharSignal::Error);
+        REQUIRE(byteOrderMark == CharSignal::ByteOrderMark);
         REQUIRE_FALSE(endOfData.isValidUnicode());
         REQUIRE_FALSE(noCodePoint.isValidUnicode());
+        REQUIRE_FALSE(error.isValidUnicode());
+        REQUIRE_FALSE(byteOrderMark.isValidUnicode());
         REQUIRE_EQUAL(Char::fromSignal(CharSignal::EndOfData), endOfData);
         REQUIRE_EQUAL(Char::fromSignal(CharSignal::NoCodePoint), noCodePoint);
+        REQUIRE_EQUAL(Char::fromSignal(CharSignal::Error), error);
+        REQUIRE_EQUAL(Char::fromSignal(CharSignal::ByteOrderMark), byteOrderMark);
     }
 
     void testAsciiFastPath() {
@@ -158,6 +197,10 @@ public:
         static_assert(Char{U'a'}.digitValue().value() == 10U);
         static_assert(Char{U'F'}.digitValue().value() == 15U);
         static_assert(!Char{U'_'}.digitValue().has_value());
+        static_assert(Char{U'1'}.digitValue(IntegerBase::Binary).value() == 1U);
+        static_assert(!Char{U'2'}.digitValue(IntegerBase::Binary).has_value());
+        static_assert(Char{U'f'}.digitValue(IntegerBase::Hexadecimal).value() == 15U);
+        static_assert(!Char{U'g'}.digitValue(IntegerBase::Hexadecimal).has_value());
         static_assert(Char{U'1'}.isDigitValue(IntegerBase::Binary));
         static_assert(!Char{U'2'}.isDigitValue(IntegerBase::Binary));
         static_assert(Char{U'f'}.isDigitValue(IntegerBase::Hexadecimal));

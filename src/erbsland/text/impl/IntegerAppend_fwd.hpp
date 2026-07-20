@@ -5,11 +5,14 @@
 #include "../IntegerFormat_fwd.hpp"
 
 #include "../../math/IntegerTraits.hpp"
+#include "../../unit/CpLength_fwd.hpp"
 
 namespace erbsland::text::impl {
 
+class StringAppendTools;
+
 /// Append an integer to a decoded-character sink.
-template <typename tSink, math::AnyIntegerType T>
-void appendInteger(tSink &sink, T value, const IntegerFormat &format);
+template <math::AnyIntegerType T>
+auto appendInteger(StringAppendTools &sink, T value, const IntegerFormat &format) -> unit::CpLength;
 
 }

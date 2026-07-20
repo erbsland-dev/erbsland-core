@@ -14,7 +14,6 @@
 namespace erbsland::stream {
 
 using namespace text::literals;
-
 using mem::Byte;
 using mem::ByteBlock;
 using mem::Endianness;

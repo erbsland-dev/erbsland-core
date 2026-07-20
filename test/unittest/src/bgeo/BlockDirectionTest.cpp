@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockDirection.hpp>
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
+
+using namespace el::text::literals;
 
 TESTED_TARGETS(BlockDirection)
 class BlockDirectionTest final : public el::UnitTest {
@@ -42,7 +45,6 @@ public:
 
     void testStringConversion() {
         using el::bgeo::BlockDirection;
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(BlockDirection{BlockDirection::North}.toString(), "north"_el);
         REQUIRE_EQUAL(BlockDirection{BlockDirection::NorthEast}.toString(), "north_east"_el);
@@ -52,7 +54,6 @@ public:
 
     void testStringParsingUsesConfigurationIdentifierComparison() {
         using el::bgeo::BlockDirection;
-        using namespace el::text::literals;
 
         REQUIRE(BlockDirection::isValidString(""_el));
         REQUIRE(BlockDirection::isValidString("n"_el));
@@ -66,7 +67,6 @@ public:
 
     void testInvalidStringReturnsNone() {
         using el::bgeo::BlockDirection;
-        using namespace el::text::literals;
 
         REQUIRE_FALSE(BlockDirection::isValidString("sideways"_el));
         REQUIRE_EQUAL(BlockDirection::fromString("sideways"_el), BlockDirection::None);

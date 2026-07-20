@@ -22,6 +22,21 @@ Every overload returns :cpp:type:`RegExPtr <erbsland::re::RegExPtr>` and produce
 
 Invalid syntax and configured limits throw :cpp:class:`RegExError <erbsland::re::RegExError>`.
 Pattern length is measured in decoded code points, independently of the source encoding.
+The compiled object retains the normalized UTF-8 source text returned by
+:cpp:func:`pattern() <erbsland::re::RegEx::pattern>`.
+UTF-16 and UTF-32 patterns therefore produce the same stored representation as an equivalent UTF-8 pattern.
+
+Lazy Compilation
+================
+
+``RegEx::lazyCompile`` retains the pattern, flags and settings without parsing the pattern immediately.
+The first matching, replacement or diagnostic operation compiles the engine.
+Copies of a lazy expression share this state, and concurrent first use compiles one engine for all copies.
+
+Use ``isCompiled()`` to inspect the state without triggering compilation.
+Use ``compileNow()`` when an application needs to validate a lazy pattern before matching.
+Invalid lazy patterns throw :cpp:class:`RegExError <erbsland::re::RegExError>` at that point.
+A failed attempt leaves the expression uncompiled, and a later operation retries compilation.
 
 Matching Operations
 ===================

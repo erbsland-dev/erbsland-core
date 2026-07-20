@@ -2,20 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringDecodeBuffer.hpp"
 
-#include "StringDecoder.hpp"
-
 #include "impl/ThrowHelper.hpp"
-#include "impl/UnsafeU8StringAccess.hpp"
-#include "u16/impl/U16Encoding.hpp"
-#include "u32/impl/U32Encoding.hpp"
-#include "u8/impl/U8Encoding.hpp"
-
-#include "../err/ParameterError.hpp"
-#include "../mem/ByteBlock.hpp"
 
 #include <algorithm>
 #include <cstdint>
-#include <cstring>
 #include <optional>
 
 namespace erbsland::text {
@@ -42,7 +32,7 @@ auto StringDecodeBuffer::ensureBomResolved() -> bool {
             return false;
         }
         if (_bomMode == StringBomMode::Require) {
-            text::impl::throwEncodingError("Missing byte order mark");
+            impl::throwEncodingError("Missing byte order mark");
         }
         _effectiveEncoding = _encoding.effectiveEncoding();
         _bomResolved = true;
@@ -95,29 +85,29 @@ auto StringDecodeBuffer::ensureBomResolved() -> bool {
 
     if (!bomEncoding.has_value()) {
         if (_bomMode == StringBomMode::Require) {
-            text::impl::throwEncodingError("Missing byte order mark");
+            impl::throwEncodingError("Missing byte order mark");
         }
         _effectiveEncoding = _encoding.effectiveEncoding();
         _bomResolved = true;
         return true;
     }
     if (_bomMode == StringBomMode::Reject) {
-        text::impl::throwEncodingError("Unexpected byte order mark");
+        impl::throwEncodingError("Unexpected byte order mark");
     }
     if (*bomEncoding == StringEncoding::Utf8 && _encoding != StringEncoding::Utf8) {
-        text::impl::throwEncodingError("Unexpected UTF-8 byte order mark");
+        impl::throwEncodingError("Unexpected UTF-8 byte order mark");
     }
     if (bomEncoding->isUtf16() &&
         (!_encoding.isUtf16() ||
             (_encoding == StringEncoding::Utf16LittleEndian && *bomEncoding != StringEncoding::Utf16LittleEndian) ||
             (_encoding == StringEncoding::Utf16BigEndian && *bomEncoding != StringEncoding::Utf16BigEndian))) {
-        text::impl::throwEncodingError("Unexpected UTF-16 byte order mark");
+        impl::throwEncodingError("Unexpected UTF-16 byte order mark");
     }
     if (bomEncoding->isUtf32() &&
         (!_encoding.isUtf32() ||
             (_encoding == StringEncoding::Utf32LittleEndian && *bomEncoding != StringEncoding::Utf32LittleEndian) ||
             (_encoding == StringEncoding::Utf32BigEndian && *bomEncoding != StringEncoding::Utf32BigEndian))) {
-        text::impl::throwEncodingError("Unexpected UTF-32 byte order mark");
+        impl::throwEncodingError("Unexpected UTF-32 byte order mark");
     }
 
     _effectiveEncoding = *bomEncoding;
@@ -285,6 +275,9 @@ auto StringDecodeBuffer::scanUtf8(const ByteIndex index) const noexcept -> ScanR
     if (availableByteCount < requiredByteCount) {
         return ScanResult{CodePointStatus::NeedMoreData, availableByteCount};
     }
+    if (!decodeCharacter(index, requiredByteCount).isValidUnicode()) {
+        return ScanResult{CodePointStatus::Invalid, requiredByteCount};
+    }
     return ScanResult{CodePointStatus::Complete, requiredByteCount};
 }
 
@@ -301,7 +294,9 @@ auto StringDecodeBuffer::scanUtf16(const ByteIndex index) const noexcept -> Scan
         return ScanResult{CodePointStatus::Invalid, ByteLength{2U}};
     }
     if (!Char::isHighSurrogate(firstUnit)) {
-        return ScanResult{CodePointStatus::Complete, ByteLength{2U}};
+        return Char{static_cast<char32_t>(firstUnit)}.isValidUnicode()
+            ? ScanResult{CodePointStatus::Complete, ByteLength{2U}}
+            : ScanResult{CodePointStatus::Invalid, ByteLength{2U}};
     }
     if (availableByteCount < ByteLength{4U}) {
         return ScanResult{CodePointStatus::NeedMoreData, availableByteCount};

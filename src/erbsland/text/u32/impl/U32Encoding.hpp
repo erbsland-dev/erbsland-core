@@ -53,13 +53,13 @@ namespace erbsland::text::impl::utf32 {
 /// Decode one UTF-32 character and throw for invalid code points.
 [[nodiscard]] inline auto decodeCharOrThrow(const std::span<const char32_t> text, unit::CpIndex &position) -> Char {
     if (position.isNoIndex() || position.toSizeT() >= text.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     const auto start = position;
     const auto character = Char{text[position.toSizeT()]};
     ++position;
     if (!character.isValidUnicode()) {
-        text::impl::throwU32EncodingError("Invalid Unicode code point", start.toSizeT());
+        throwU32EncodingError("Invalid Unicode code point", start.toSizeT());
     }
     return character;
 }
@@ -93,7 +93,7 @@ void forEachValidatedCharacter(const std::u32string_view text, const EncodingErr
         }
         switch (errorMode) {
         case EncodingErrorMode::Throw:
-            text::impl::throwU32EncodingError("Invalid Unicode code point", index);
+            throwU32EncodingError("Invalid Unicode code point", index);
         case EncodingErrorMode::Ignore:
             break;
         case EncodingErrorMode::Replace:
@@ -122,7 +122,7 @@ auto forEachDecodedCharacter(const std::span<const char32_t> text, const Encodin
         }
         switch (errorMode) {
         case EncodingErrorMode::Throw:
-            text::impl::throwU32EncodingError("Invalid Unicode code point", position);
+            throwU32EncodingError("Invalid Unicode code point", position);
         case EncodingErrorMode::Ignore:
             break;
         case EncodingErrorMode::Replace:
@@ -147,7 +147,7 @@ auto forEachValidatedCharacter(mem::ByteReader &reader, Function function) -> bo
     while (!reader.isAtEnd()) {
         if (!reader.canRead(4U)) {
             if constexpr (errorMode == EncodingErrorMode::Throw) {
-                text::impl::throwEncodingError("Truncated UTF-32 data");
+                throwEncodingError("Truncated UTF-32 data");
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -178,7 +178,7 @@ auto forEachValidatedCharacter(mem::ByteReader &reader, Function function) -> bo
         }
         if constexpr (errorMode == EncodingErrorMode::Throw) {
             reader.setPosition(codePointPosition);
-            text::impl::throwU32EncodingError("Invalid Unicode code point", cpIndex);
+            throwU32EncodingError("Invalid Unicode code point", cpIndex);
         } else {
             if constexpr (errorMode == EncodingErrorMode::Replace) {
                 if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {

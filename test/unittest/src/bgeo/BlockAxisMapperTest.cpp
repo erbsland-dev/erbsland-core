@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockAxisMapper.hpp>
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+
+using namespace el::bgeo;
 
 using el::bgeo::BlockAxisMapper;
 using el::bgeo::BlockPosition;
@@ -18,7 +21,6 @@ TESTED_TARGETS(BlockAxisMapper)
 class BlockAxisMapperTest final : public el::UnitTest {
 public:
     void testHorizontalOrientationMapsMainAxisToWidthAndX() {
-        using namespace el::bgeo;
 
         const auto mapper = BlockAxisMapper{Orientation::Horizontal};
 
@@ -30,7 +32,6 @@ public:
     }
 
     void testVerticalOrientationMapsMainAxisToHeightAndY() {
-        using namespace el::bgeo;
 
         const auto mapper = BlockAxisMapper{Orientation::Vertical};
 

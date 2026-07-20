@@ -11,6 +11,7 @@ It is included by ``Definitions.hpp`` to provide forward declarations of every m
 The library organizes its API into the following namespaces:
 
 *   ``core`` – Platform detection, namespace forward declarations, and short namespace setup.
+*   ``cryptology`` – Cryptographic algorithms, selection metadata, and stateful operations.
 *   ``err`` – Exception types and error handling utilities.
 *   ``log`` –  Logging infrastructure.
 *   ``math`` – Integer math, saturating arithmetic, and type traits.

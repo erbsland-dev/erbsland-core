@@ -14,4 +14,5 @@ target_sources(erbsland-core-unittest PRIVATE
         BlockRectTest.cpp
         BlockSizeTest.cpp
         OrientationTest.cpp
+        StdFormatForBlockTest.cpp
 )

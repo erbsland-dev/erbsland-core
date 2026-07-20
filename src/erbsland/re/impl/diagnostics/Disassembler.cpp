@@ -11,9 +11,9 @@
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
 
-#include <format>
-
 namespace erbsland::re::impl {
+
+using namespace text::literals;
 
 using namespace text;
 
@@ -67,7 +67,6 @@ void Disassembler::writeSequence() {
             reader.skipOperation(programCounter);
         }
     }
-    using namespace text::literals;
     writeTitle("Sequence"_el);
     _lines.append(".section &sequence"_el);
     SequenceIndex sequenceIndex = 0U;
@@ -109,7 +108,6 @@ void Disassembler::writeClasses() {
     if (_data == nullptr || _data->charClassData.empty()) {
         return;
     }
-    using namespace text::literals;
     writeTitle("Character classes"_el);
     _lines.append(".section &class"_el);
     CharClassIndex index = 0U;
@@ -137,7 +135,6 @@ void Disassembler::writeProgram() {
     // long_label_name1: 000000000 000000000   CAPTURE START, 1
     const GenericProgramReader reader{_data->program};
     ProgramCounter programCounter = 0;
-    using namespace text::literals;
     writeTitle("Program"_el);
     if (!_data->charClassData.empty() || !_data->sequenceData.empty()) {
         _lines.append(".section &program"_el);
@@ -182,7 +179,6 @@ void Disassembler::writeTitle(const String &title) {
     if (_flags.isSet(DisassemblerFlag::TestOutput)) {
         return;
     }
-    using namespace text::literals;
     _lines.append(StringFormat{"; {}"}.build(title));
     _lines.append(String::fromJoined({"; "_el, String::fromCharacter(U'=', unit::CpLength{76U})}));
 }
@@ -195,7 +191,6 @@ void Disassembler::writeLineLayout(
         return;
     }
     using bgeo::Alignment;
-    using namespace text::literals;
     const auto prefix = String::fromJoined(
         {location.aligned(unit::CpLength{17U}, Alignment::Left),
             " "_el,

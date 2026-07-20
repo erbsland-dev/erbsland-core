@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockAnchor.hpp>
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

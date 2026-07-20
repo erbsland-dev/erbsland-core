@@ -14,7 +14,7 @@ void renderDiagnosticDocument() {
         "The tempo-marking value is out of range."_el,
     };
     context.setSourcePath("scores/朝の合奏.music"_el)
-        .setCodeLocation(el::CodeLocation{.line = el::LineIndex{6}, .column = el::ColumnIndex{14}});
+        .setCodeLocation(el::CodeLocation{el::LineIndex{6}, el::ColumnIndex{14}});
     const auto error = el::ApplicationError{std::move(context), {}};
     const auto document = el::DiagnosticHelper{error}.toDocument();
 

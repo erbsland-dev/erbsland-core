@@ -89,6 +89,8 @@ private:
     [[nodiscard]] auto findModule(const text::String &name) const -> OptionModulePtr;
     [[nodiscard]] auto findLongOption(const text::String &name) const -> NameMatch;
     [[nodiscard]] auto findShortOption(text::Char shortName) const -> NameMatch;
+    [[nodiscard]] auto isEnabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const -> bool;
+    [[nodiscard]] auto isEnabledBuiltInFlag(const text::String &name) const -> bool;
     [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status) const -> bool;
     [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) const -> bool;
     [[nodiscard]] auto validateOptionNames() -> bool;

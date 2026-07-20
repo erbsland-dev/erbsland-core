@@ -1,8 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/CharSet.hpp>
+#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -27,6 +29,8 @@
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+using namespace el::text::literals;
 
 using namespace el::text;
 using namespace el::unit;
@@ -59,7 +63,6 @@ public:
         static_assert(std::is_constructible_v<U8String, std::u8string_view>);
         static_assert(!std::is_convertible_v<std::string_view, U8String>);
         static_assert(!std::is_convertible_v<std::u8string_view, U8String>);
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U8String{std::string_view{"narrow"}}, "narrow"_el);
         REQUIRE_EQUAL(U8String{std::u8string_view{u8"utf-8"}}, u8"utf-8"_el);
@@ -92,7 +95,6 @@ public:
     }
 
     void testViewFromLiteral() {
-        using namespace el::text::literals;
 
         const auto string = "Hello"_el;
 
@@ -101,7 +103,6 @@ public:
     }
 
     void testViewFromU8Literal() {
-        using namespace el::text::literals;
 
         const auto string = u8"Hello"_el;
 
@@ -120,7 +121,6 @@ public:
     }
 
     void testCopyMaterializesString() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"xHellox"}};
         const auto string = U8String{text}.slice(ByteRange{ByteIndex{1U}, ByteLength{5U}});
@@ -208,6 +208,31 @@ public:
         index = ByteIndex::zero();
         REQUIRE(string.advance(index, CpLength::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{10});
+    }
+
+    void testStrictIndexedSequentialRead() {
+        const auto string = U8String{U8StringEditor{std::u8string_view{u8"A¢€😀"}}};
+        auto index = ByteIndex::zero();
+
+        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'A');
+        REQUIRE_EQUAL(index, ByteIndex{1U});
+        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(index, ByteIndex{3U});
+        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u20AC');
+        REQUIRE_EQUAL(index, ByteIndex{6U});
+        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\U0001F600');
+        REQUIRE_EQUAL(index, ByteIndex{10U});
+
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, string.readCharAndAdvanceOrThrow(index));
+        REQUIRE_EQUAL(index, ByteIndex{10U});
+        index = ByteIndex::noIndex();
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, string.readCharAndAdvanceOrThrow(index));
+        REQUIRE(index.isNoIndex());
+
+        const auto invalid = U8String{U8StringEditor{std::string_view{invalidUtf8Data()}}};
+        index = ByteIndex{1U};
+        REQUIRE_THROWS_AS(EncodingError, invalid.readCharAndAdvanceOrThrow(index));
+        REQUIRE_EQUAL(index, ByteIndex{1U});
     }
 
     void testRetreat() {
@@ -406,7 +431,6 @@ public:
     }
 
     void testLiteralSlice() {
-        using namespace el::text::literals;
 
         const auto string = U8String{"abcdef"_el};
         const auto slice = string.slice(ByteRange{ByteIndex{2}, ByteLength{3}});
@@ -426,7 +450,6 @@ public:
     }
 
     void testPredicateChecks() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}};
         const auto string = U8String{text}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
@@ -456,7 +479,6 @@ public:
     }
 
     void testInvalidUtf8PredicateChecks() {
-        using namespace el::text::literals;
 
         const auto data = invalidUtf8Data();
         const auto text = U8StringEditor{std::string_view{data}};
@@ -472,7 +494,6 @@ public:
     }
 
     void testForwardFind() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}};
         const auto string = U8String{text}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
@@ -493,7 +514,6 @@ public:
     }
 
     void testReverseFind() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}};
         const auto string = U8String{text}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
@@ -542,7 +562,6 @@ public:
     }
 
     void testStdConversionsFromLiteralView() {
-        using namespace el::text::literals;
 
         const auto string = u8"A¢€😀"_el;
 

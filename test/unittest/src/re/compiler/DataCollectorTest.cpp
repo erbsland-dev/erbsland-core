@@ -6,6 +6,7 @@
 #include <erbsland/re/impl/compiler/DataCollector.hpp>
 #include <erbsland/re/impl/Limits.hpp>
 #include <erbsland/re/impl/parser/PatternNode.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 
 using namespace el::re;
 using el::text::Char;

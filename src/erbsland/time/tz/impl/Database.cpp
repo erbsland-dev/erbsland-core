@@ -16,7 +16,6 @@
 namespace erbsland::time::tz::impl {
 
 using namespace text::literals;
-
 using namespace text;
 
 auto Database::zoneNameToString(const ZoneName &zoneName) -> String {
@@ -45,10 +44,11 @@ auto Database::hasName(const String &zoneName) const noexcept -> bool {
 }
 
 auto Database::zoneIdFromName(const String &zoneName) const noexcept -> ZoneId {
+    static const auto separatorCharacters = CharSet{U'/'};
     if (zoneName.isEmpty()) {
         return cZoneIdNotFound;
     }
-    const auto parts = StringList::fromSplit(zoneName, CharSet{U'/'}, unit::ElementCount{3U}, true);
+    const auto parts = StringList::fromSplit(zoneName, separatorCharacters, unit::ElementCount{3U}, true);
     if (parts.isEmpty() || parts.count() > unit::ElementCount{3U}) {
         return cZoneIdNotFound;
     }

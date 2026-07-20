@@ -6,6 +6,7 @@
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/html/HtmlParser.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
@@ -20,6 +21,8 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+using namespace el::text::literals;
 
 using el::text::AnyString;
 using el::text::AnyStringBuilder;
@@ -37,7 +40,6 @@ TESTED_TARGETS(HtmlParser TextDocument TextNode)
 class HtmlParserTest final : public el::UnitTest {
 public:
     void testParseBuildsInlineStructureForFragments() {
-        using namespace el::text::literals;
 
         const auto document =
             parse(R"(This is a <strong>text</strong> with <span class="hl"><em>highlights</em></span>.)"_el);
@@ -59,7 +61,6 @@ public:
     }
 
     void testParseDropsIgnoredDocumentBoilerplateAndKeepsBodyContent() {
-        using namespace el::text::literals;
 
         const auto document = parse(
             "<!doctype html><html lang=en><head><title>Ignored</title><script>hidden()</script></head>"
@@ -79,7 +80,6 @@ public:
     }
 
     void testParseRecoversMissingListItemEndTags() {
-        using namespace el::text::literals;
 
         const auto document = parse("A test with a list.<ul><li>Entry<li>Another entry</li></ul>"_el);
 
@@ -98,7 +98,6 @@ public:
     }
 
     void testParseCreatesNumberedListItems() {
-        using namespace el::text::literals;
 
         const auto document = parse("<ol><li>One<li>Two</ol>"_el);
 
@@ -115,7 +114,6 @@ public:
     }
 
     void testParseClosesNestedChildrenWhenAParentEndTagAppears() {
-        using namespace el::text::literals;
 
         const auto document = parse("<p><strong>bold</p>tail"_el);
 
@@ -132,7 +130,6 @@ public:
     }
 
     void testParseCreatesUnsupportedPlaceholdersOncePerUnsupportedElement() {
-        using namespace el::text::literals;
 
         const auto document = parse(
             R"(<img class="hero"/><table><tr><td>hidden</td></tr></table><form><input>ignored</form><svg><text>ignored</text></svg>)"_el);
@@ -149,7 +146,6 @@ public:
     }
 
     void testParsePreservesWhitespaceInsidePreformattedBlocks() {
-        using namespace el::text::literals;
 
         const auto document = parse("<pre>  a\n  b</pre>"_el);
 
@@ -163,7 +159,6 @@ public:
     }
 
     void testParseMapsAttributesToCreatedNodes() {
-        using namespace el::text::literals;
 
         const auto document =
             parse(R"(<a id="link-id" class="cta" href="/target">Go</a><hr id="rule" class="sep">)"_el);
@@ -182,7 +177,6 @@ public:
     }
 
     void testParseHandlesSelfClosingInlineTags() {
-        using namespace el::text::literals;
 
         const auto document = parse(R"(before<br/>after <span class="x"/>tail)"_el);
 
@@ -200,7 +194,6 @@ public:
     }
 
     void testPublicFacadeAndEncodings() {
-        using namespace el::text::literals;
 
         auto parser = HtmlParser{String{"<p>Hello <em>world</em></p>"_el}};
         requirePlainText(parser.parse(), "Hello world");
@@ -218,7 +211,6 @@ public:
     }
 
     void testMalformedHtmlIsRecoveredByBothParseMethods() {
-        using namespace el::text::literals;
 
         auto parser = HtmlParser{String{R"(prefix <strong title="A &amp; B suffix)"_el}};
         requirePlainText(parser.parse(), R"(prefix <strong title="A & B suffix)");

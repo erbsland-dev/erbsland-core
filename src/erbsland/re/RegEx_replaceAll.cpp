@@ -19,7 +19,8 @@ auto RegEx::replaceAll(const text::String &subject, const text::String &replacem
     if (subject.isEmpty() && replacementExpression.isEmpty()) {
         return {};
     }
-    const auto replacement = impl::Replacement::create(replacementExpression, _engine->captureGroupNames());
+    const auto engine = this->engine();
+    const auto replacement = impl::Replacement::create(replacementExpression, engine->captureGroupNames());
     text::StringEditor result;
     auto lastEnd = ByteIndex::zero();
     for (const auto &match : findAll(subject)) {

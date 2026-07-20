@@ -3,6 +3,8 @@
 
 #include "../../support/TestHelper.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

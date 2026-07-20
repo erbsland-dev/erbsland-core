@@ -3,6 +3,7 @@
 
 #include <erbsland/mem/StorageIdentifier.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>
@@ -14,6 +15,8 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+
+using namespace el::text::literals;
 
 using el::mem::StorageIdentifier;
 using el::text::StringConverter;
@@ -81,7 +84,6 @@ public:
     }
 
     void testNarrowLiteralOperatorCreatesLiteral() {
-        using namespace el::text::literals;
 
         constexpr auto literal = "Hello"_el;
         const auto view = U8String{literal};
@@ -93,7 +95,6 @@ public:
     }
 
     void testUtf8LiteralOperatorCreatesLiteral() {
-        using namespace el::text::literals;
 
         constexpr auto literal = u8"Hello"_el;
         const auto view = U8String{literal};
@@ -105,7 +106,6 @@ public:
     }
 
     void testNarrowLiteralCreatesReadOnlyStringExplicitly() {
-        using namespace el::text::literals;
 
         const auto view = U8String{"Hello"_el};
 
@@ -114,7 +114,6 @@ public:
     }
 
     void testUtf8LiteralCreatesReadOnlyStringExplicitly() {
-        using namespace el::text::literals;
 
         const auto view = U8String{u8"Hello"_el};
 
@@ -123,7 +122,6 @@ public:
     }
 
     void testNarrowLiteralCreatesEditorExplicitly() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{"Hello"_el};
         const auto view = U8String{"Hello"_el};
@@ -134,7 +132,6 @@ public:
     }
 
     void testUtf8LiteralCreatesEditorExplicitly() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{u8"Hello"_el};
         const auto view = U8String{u8"Hello"_el};

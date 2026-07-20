@@ -15,7 +15,6 @@
 namespace erbsland::options::impl {
 
 using namespace text::literals;
-
 using text::EscapeFormat;
 using text::String;
 using text::StringFormat;
@@ -36,7 +35,8 @@ auto OptionParser::prepareModuleParsing() -> bool {
     }
 
     const auto &argument = getArgAt(_argumentIndex);
-    if (argument == "-h"_el || argument == "--help"_el || argument == "--version"_el) {
+    if (((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) ||
+        (argument == "--version"_el && isEnabledBuiltInFlag(argument))) {
         return true;
     }
     if (argument.startsWith("-"_el)) {
@@ -83,10 +83,8 @@ auto OptionParser::parseActiveOptions() -> bool {
             }
             return true;
         }
-        if (argument == "-h"_el) {
-            return true;
-        }
-        if (argument == "--help"_el || argument == "--version"_el) {
+        if (((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) ||
+            (argument == "--version"_el && isEnabledBuiltInFlag(argument))) {
             return true;
         }
         if (argument.startsWith("--"_el)) {

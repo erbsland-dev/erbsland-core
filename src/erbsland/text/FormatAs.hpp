@@ -63,4 +63,9 @@ struct FormatAsU16Text;
 template <typename T>
 struct FormatAsU32Text;
 
+/// Adapt a value to a byte-block format argument.
+/// @tested{FormatAsTest}
+template <typename T>
+struct FormatAsBytes;
+
 }

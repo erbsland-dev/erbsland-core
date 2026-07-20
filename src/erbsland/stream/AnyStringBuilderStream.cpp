@@ -11,7 +11,6 @@
 namespace erbsland::stream {
 
 using namespace text::literals;
-
 using namespace text;
 
 AnyStringBuilderStream::AnyStringBuilderStream(StringKind stringKind, ConstructionToken) : _builder{stringKind} {

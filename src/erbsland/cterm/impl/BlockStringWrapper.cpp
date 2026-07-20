@@ -33,7 +33,7 @@ auto BlockStringWrapper::splitLines() const noexcept -> std::vector<BlockStringE
     auto result = std::vector<BlockStringEditor>{};
     result.reserve((_str.count(text::Char{U'\n'}) + BlockCount::one()).toSizeT());
     auto lineStartIndex = BlockIndex{};
-    while (lineStartIndex < BlockIndex::end(_str.length())) {
+    while (lineStartIndex.isWithin(_str.length())) {
         const auto lineEndIndex = _str.indexOf(text::Char{U'\n'}, lineStartIndex);
         if (lineEndIndex.isNoIndex()) {
             result.emplace_back(BlockStringEditor{_str.slice(BlockRange{lineStartIndex, BlockCount::infinite()})});
@@ -136,7 +136,7 @@ void BlockStringWrapper::splitWordIntoWrappedLines(
     const auto estimatedLineCount = static_cast<std::size_t>((wordWidth + width - 1) / width);
     lines.reserve(lines.size() + estimatedLineCount);
     auto startIndex = BlockIndex{};
-    while (startIndex < BlockIndex::end(word.length())) {
+    while (startIndex.isWithin(word.length())) {
         const auto endIndex = findWrappedWordSplitIndex(word, startIndex, width);
         lines.emplace_back(word.slice(BlockRange{startIndex, startIndex.absoluteDistanceTo(endIndex)}));
         startIndex = endIndex;
@@ -147,7 +147,7 @@ auto BlockStringWrapper::findWrappedWordSplitIndex(
     const BlockString &word, const BlockIndex startIndex, const int width) noexcept -> BlockIndex {
     auto lineWidth = 0;
     auto index = startIndex;
-    while (index < BlockIndex::end(word.length())) {
+    while (index.isWithin(word.length())) {
         const auto characterWidth = word.at(index).displayWidth();
         if (lineWidth > 0 && lineWidth + characterWidth > width) {
             break;

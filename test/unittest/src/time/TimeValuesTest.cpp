@@ -3,12 +3,14 @@
 
 #include "TimeDataTestBase.hpp"
 
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 
 #include <format>
 #include <string>
 
 namespace fh = erbsland::unittest::fh;
+using namespace el::text::literals;
 using namespace el::time;
 
 TESTED_TARGETS(Time)
@@ -48,6 +50,11 @@ public:
             values.emplace_back(timeFromFields(parseTimeFields(fields, 0)), parseInt(fields[4]));
         }
         requireComparisonRows(values, _context, "Time");
+    }
+
+    void testStringConversion() {
+        REQUIRE_EQUAL(Time{}.toString(), "00:00:00"_el);
+        REQUIRE_EQUAL((Time{Hour{7}, Minute{4}, Second{3}, Nanoseconds{120'340'000}}.toString()), "07:04:03.12034"_el);
     }
 
 private:

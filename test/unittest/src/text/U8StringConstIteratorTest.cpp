@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>
@@ -11,6 +12,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+
+using namespace el::text::literals;
 
 using el::text::U8String;
 using el::text::U8StringConstIterator;
@@ -49,7 +52,6 @@ public:
     }
 
     void testLiteralViewIteratorComparison() {
-        using namespace el::text::literals;
 
         const auto view = U8String{"Hello"_el};
 

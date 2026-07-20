@@ -21,7 +21,6 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
-
 using namespace stream;
 using text::Char;
 using text::String;

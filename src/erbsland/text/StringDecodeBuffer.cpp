@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringDecodeBuffer.hpp"
 
-#include "StringDecoder.hpp"
-
 #include "impl/ThrowHelper.hpp"
 #include "impl/UnsafeU8StringAccess.hpp"
-#include "u16/impl/U16Encoding.hpp"
-#include "u32/impl/U32Encoding.hpp"
-#include "u8/impl/U8Encoding.hpp"
+#include "u16/impl/U16StringEncodingTools.hpp"
+#include "u32/impl/U32StringEncodingTools.hpp"
+#include "u8/impl/U8StringEncodingTools.hpp"
 
 #include "../err/ParameterError.hpp"
 #include "../mem/ByteBlock.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
 #include <cstring>
 #include <optional>
@@ -163,7 +160,7 @@ auto StringDecodeBuffer::peekU8String(const CpLength maximum) -> U8String {
     if (length.isZero()) {
         return {};
     }
-    return StringDecoder{materialize(length)}.toU8String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    return decodeContentToU8(materialize(length));
 }
 
 auto StringDecodeBuffer::peekU16String(const CpLength maximum) -> U16String {
@@ -171,7 +168,7 @@ auto StringDecodeBuffer::peekU16String(const CpLength maximum) -> U16String {
     if (length.isZero()) {
         return {};
     }
-    return StringDecoder{materialize(length)}.toU16String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    return decodeContentToU16(materialize(length));
 }
 
 auto StringDecodeBuffer::peekU32String(const CpLength maximum) -> U32String {
@@ -179,7 +176,7 @@ auto StringDecodeBuffer::peekU32String(const CpLength maximum) -> U32String {
     if (length.isZero()) {
         return {};
     }
-    return StringDecoder{materialize(length)}.toU32String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    return decodeContentToU32(materialize(length));
 }
 
 auto StringDecodeBuffer::takeAnyString(const CpLength maximum) -> AnyString {
@@ -213,7 +210,7 @@ auto StringDecodeBuffer::readChar() -> std::optional<Char> {
 
         const auto errorLength = result.byteLength.isZero() ? _byteLength : std::min(result.byteLength, _byteLength);
         if (_errorMode == EncodingErrorMode::Throw) {
-            text::impl::throwEncodingError("Invalid encoded character");
+            impl::throwEncodingError("Invalid encoded character");
         }
         consume(errorLength);
         if (_errorMode == EncodingErrorMode::Replace) {
@@ -228,7 +225,7 @@ auto StringDecodeBuffer::takeStringLine(const CpLength maximum) -> String {
     if (length.isZero()) {
         return {};
     }
-    auto result = StringDecoder{materialize(length)}.toU8String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    auto result = decodeContentToU8(materialize(length));
     consume(length);
     return result;
 }
@@ -238,7 +235,7 @@ auto StringDecodeBuffer::takeU8String(const CpLength maximum) -> U8String {
     if (length.isZero()) {
         return {};
     }
-    auto result = StringDecoder{materialize(length)}.toU8String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    auto result = decodeContentToU8(materialize(length));
     consume(length);
     return result;
 }
@@ -248,7 +245,7 @@ auto StringDecodeBuffer::takeU16String(const CpLength maximum) -> U16String {
     if (length.isZero()) {
         return {};
     }
-    auto result = StringDecoder{materialize(length)}.toU16String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    auto result = decodeContentToU16(materialize(length));
     consume(length);
     return result;
 }
@@ -258,7 +255,7 @@ auto StringDecodeBuffer::takeU32String(const CpLength maximum) -> U32String {
     if (length.isZero()) {
         return {};
     }
-    auto result = StringDecoder{materialize(length)}.toU32String(_effectiveEncoding, StringBomMode::Reject, _errorMode);
+    auto result = decodeContentToU32(materialize(length));
     consume(length);
     return result;
 }
@@ -339,6 +336,42 @@ auto StringDecodeBuffer::materialize(const ByteLength length) const -> ByteBlock
         bytes.push_back(byteAt(index));
     }
     return ByteBlock{bytes};
+}
+
+auto StringDecodeBuffer::decodeContentToU8(const ByteBlock &data) const -> U8String {
+    using Tools = impl::U8StringEncodingTools;
+    const auto layout = Tools::DecodeLayout{.endianness = _effectiveEncoding.endianness(), .start = 0U};
+    if (_effectiveEncoding.isUtf16()) {
+        return U8String{Tools::decodeUtf16(data, layout, _errorMode)};
+    }
+    if (_effectiveEncoding.isUtf32()) {
+        return U8String{Tools::decodeUtf32(data, layout, _errorMode)};
+    }
+    return U8String{Tools::decodeUtf8(data, layout, _errorMode)};
+}
+
+auto StringDecodeBuffer::decodeContentToU16(const ByteBlock &data) const -> U16String {
+    using Tools = impl::U16StringEncodingTools;
+    const auto layout = Tools::DecodeLayout{.endianness = _effectiveEncoding.endianness(), .start = 0U};
+    if (_effectiveEncoding.isUtf16()) {
+        return U16String{Tools::decodeUtf16(data, layout, _errorMode)};
+    }
+    if (_effectiveEncoding.isUtf32()) {
+        return U16String{Tools::decodeUtf32(data, layout, _errorMode)};
+    }
+    return U16String{Tools::decodeUtf8(data, layout, _errorMode)};
+}
+
+auto StringDecodeBuffer::decodeContentToU32(const ByteBlock &data) const -> U32String {
+    using Tools = impl::U32StringEncodingTools;
+    const auto layout = Tools::DecodeLayout{.endianness = _effectiveEncoding.endianness(), .start = 0U};
+    if (_effectiveEncoding.isUtf16()) {
+        return U32String{Tools::decodeUtf16(data, layout, _errorMode)};
+    }
+    if (_effectiveEncoding.isUtf32()) {
+        return U32String{Tools::decodeUtf32(data, layout, _errorMode)};
+    }
+    return U32String{Tools::decodeUtf8(data, layout, _errorMode)};
 }
 
 void StringDecodeBuffer::consume(const ByteLength length) noexcept {

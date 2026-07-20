@@ -3,6 +3,7 @@
 #include "TimeZone.hpp"
 
 #include "tz/impl/Database.hpp"
+#include "tz/impl/LocalTimeZoneBackend.hpp"
 
 #include "../err/ParseError.hpp"
 #include "../text/Char.hpp"
@@ -19,19 +20,12 @@
 namespace erbsland::time {
 
 using namespace text::literals;
-
 using namespace text;
 using unit::CpLength;
 using unit::Version;
 
-auto TimeZone::normalizeOffset(Seconds seconds) noexcept -> Seconds {
-    auto secondsValue = seconds % 86400;
-    if (secondsValue > Seconds{43200}) {
-        secondsValue -= Seconds{86400};
-    } else if (secondsValue < Seconds{-43199}) {
-        secondsValue += Seconds{86400};
-    }
-    return Seconds{secondsValue};
+auto TimeZone::normalizeOffset(const Seconds seconds) noexcept -> Seconds {
+    return seconds % 86400;
 }
 
 auto TimeZone::database() noexcept -> const tz::impl::Database & {
@@ -126,8 +120,10 @@ auto TimeZone::specialTimeZoneFromName(const String &name) noexcept -> std::opti
     return std::nullopt;
 }
 
-TimeZone::TimeZone(Hours hours, Minutes minutes, Seconds seconds) noexcept :
-    TimeZone{Duration{hours.converted<Seconds>() + minutes.converted<Seconds>() + seconds}} {
+TimeZone::TimeZone(const Hours hours, const Minutes minutes, const Seconds seconds) noexcept :
+    TimeZone{Duration{
+        hours.clamped(Hours{-23}, Hours{23}).converted<Seconds>() +
+        minutes.clamped(Minutes{-59}, Minutes{59}).converted<Seconds>() + seconds.clamped(Seconds{-59}, Seconds{59})}} {
 }
 
 TimeZone::TimeZone(Duration offset) noexcept {
@@ -195,6 +191,11 @@ auto TimeZone::fromNameOrThrow(const String &name) -> TimeZone {
     throw err::ParseError{"Unknown time zone name"};
 }
 
+auto TimeZone::local() noexcept -> TimeZone {
+    static const auto instance = tz::impl::localTimeZoneFromSystem();
+    return instance;
+}
+
 auto TimeZone::names() -> StringList {
     return database().names();
 }
@@ -213,30 +214,30 @@ auto TimeZone::abbreviation(const tz::TimeOffset offset) -> String {
 auto TimeZone::timeOffsetAtLocal(const Date date, const Time time, const TimeOccurrenceInFold occurrence) const noexcept
     -> tz::TimeOffset {
     if (const auto *fixed = std::get_if<FixedOffset>(&_storage)) {
-        return tz::TimeOffset{fixed->offset};
+        return tz::TimeOffset{fixed->offset, _isLocalTime};
     }
     if (const auto *named = std::get_if<NamedZone>(&_storage)) {
         if (const auto zoneInfo = database().info(named->id.toRawValue())) {
             const auto seconds = date.toDaysSinceEpoch().converted<Seconds>() + time.toSecondsSinceMidnight();
             const auto details = zoneInfo->detailsForLocal(seconds, occurrence);
-            return tz::TimeOffset{details.total, !details.dst.isZero(), named->id, details.abbreviation};
+            return tz::TimeOffset{details.total, !details.dst.isZero(), named->id, details.abbreviation, _isLocalTime};
         }
     }
-    return {};
+    return tz::TimeOffset{Seconds{}, _isLocalTime};
 }
 
 auto TimeZone::timeOffsetAtUtc(Date date, Time time) const noexcept -> tz::TimeOffset {
     if (const auto *fixed = std::get_if<FixedOffset>(&_storage)) {
-        return tz::TimeOffset{fixed->offset};
+        return tz::TimeOffset{fixed->offset, _isLocalTime};
     }
     if (const auto *named = std::get_if<NamedZone>(&_storage)) {
         if (const auto zoneInfo = database().info(named->id.toRawValue())) {
             const auto seconds = date.toDaysSinceEpoch().converted<Seconds>() + time.toSecondsSinceMidnight();
             const auto details = zoneInfo->details(seconds, tz::impl::TimeReference::Utc);
-            return tz::TimeOffset{details.total, !details.dst.isZero(), named->id, details.abbreviation};
+            return tz::TimeOffset{details.total, !details.dst.isZero(), named->id, details.abbreviation, _isLocalTime};
         }
     }
-    return {};
+    return tz::TimeOffset{Seconds{}, _isLocalTime};
 }
 
 }

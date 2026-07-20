@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/re/impl/engine/Operation.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

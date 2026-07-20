@@ -39,12 +39,13 @@ using OptionManagerPtr = std::shared_ptr<OptionManager>;
 /// # The argument index(es) is stored for every value, allowing advanced apps to reconstruct the order if required.
 /// # Modules ("actions"):
 /// # - If the option definition contains one or more modules, the command line must start with the module name.
-/// # - **no flags and values are allowed before the module name**, except `--help` and `--version`.
+/// # - **no flags and values are allowed before the module name**, except enabled built-in display requests.
 /// #   (that's the main difference to common standards, but makes implementation much simpler and safer).
 /// cmd module-name -a --long [value] arg1 arg2
 /// # Help and Version:
-/// # The special flags `-h`, `--help` and `--version` are always allowed and cannot be overwritten by the
-/// # application.
+/// # The special flags `-h`, `--help` and `--version` are enabled by default.
+/// # Applications can disable the help and version requests individually with `OptionParserFlag` and then reuse their
+/// # names for ordinary options.
 /// # If one of these flags is encountered, the parsing is stopped and the corresponding action is performed.
 /// # Any other, even invalid or unknown options are silently ignored.
 /// # No callbacks are made for these flags.

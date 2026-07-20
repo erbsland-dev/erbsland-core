@@ -8,6 +8,7 @@ namespace erbsland {
 namespace bgeo {}
 namespace conf {}
 namespace core {}
+namespace cryptology {}
 namespace cterm::theme {}
 namespace debug {}
 namespace err {}

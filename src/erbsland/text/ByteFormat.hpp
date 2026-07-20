@@ -6,6 +6,7 @@
 #include "ByteFormatFlag.hpp"
 #include "LetterCase.hpp"
 #include "String_fwd.hpp"
+#include "TruncateMode.hpp"
 
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
@@ -81,6 +82,18 @@ public: // accessors
     [[nodiscard]] auto startOffset() const noexcept -> unit::ByteIndex;
     /// Set the starting byte offset.
     auto setStartOffset(unit::ByteIndex startOffset) noexcept -> ByteFormat &;
+    /// Get the maximum number of byte-like output items.
+    [[nodiscard]] auto maximum() const noexcept -> unit::ByteLength;
+    /// Set the maximum number of byte-like output items.
+    auto setMaximum(unit::ByteLength maximum) noexcept -> ByteFormat &;
+    /// Get the truncation mode.
+    [[nodiscard]] auto truncateMode() const noexcept -> TruncateMode;
+    /// Set the truncation mode.
+    auto setTruncateMode(TruncateMode truncateMode) noexcept -> ByteFormat &;
+    /// Get the ellipsis inserted when bytes are truncated.
+    [[nodiscard]] auto ellipsis() const noexcept -> const String &;
+    /// Set the ellipsis inserted when bytes are truncated.
+    auto setEllipsis(const String &ellipsis) -> ByteFormat &;
 
 public: // factories
     /// Create the default compact format.
@@ -91,6 +104,8 @@ public: // factories
     [[nodiscard]] static auto separated() -> ByteFormat;
     /// Create a multi-line memory dump format with offsets and byte groups.
     [[nodiscard]] static auto memoryDump() -> ByteFormat;
+    /// Create a compact diagnostic format limited to sixteen output items.
+    [[nodiscard]] static auto forDiagnostic() -> ByteFormat;
 
 private:
     [[nodiscard]] static auto atLeastOne(unit::ByteLength value) noexcept -> unit::ByteLength;

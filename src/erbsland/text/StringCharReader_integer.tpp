@@ -19,18 +19,18 @@ auto StringCharReader::readIntegerOrThrow(const IntegerParseOptions &options) ->
         const auto magnitude = math::SignedMagnitude<int64_t>{result.isNegative, result.value};
         if (magnitude.wouldSaturate(std::numeric_limits<T>::min(), std::numeric_limits<T>::max())) {
             restore(startState);
-            text::impl::throwOverflow("Integer number exceeds the supported range");
+            impl::throwOverflow("Integer number exceeds the supported range");
         }
         return static_cast<T>(
             magnitude.toSaturatingValue(std::numeric_limits<T>::min(), std::numeric_limits<T>::max()));
     } else {
         if (result.isNegative) {
             restore(startState);
-            text::impl::throwOverflow("Integer number exceeds the supported range");
+            impl::throwOverflow("Integer number exceeds the supported range");
         }
         if (math::willCastOverflow<T>(result.value)) {
             restore(startState);
-            text::impl::throwOverflow("Integer number exceeds the supported range");
+            impl::throwOverflow("Integer number exceeds the supported range");
         }
         return math::saturatingCast<T>(result.value);
     }

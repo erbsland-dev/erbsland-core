@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringEditorList.hpp>
 #include <erbsland/text/StringList.hpp>
@@ -18,6 +19,8 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+
+using namespace el::text::literals;
 
 using el::unit::ElementCount;
 using el::unit::ElementIndex;
@@ -72,7 +75,6 @@ public:
     }
 
     void testU8StringListJoinKeepsStorageAlive() {
-        using namespace el::text::literals;
 
         const auto parts =
             StringList::fromSplit("A,,b"_el, CharSet{","_el}, ElementCount::infinite(), true).removedEmpty();
@@ -82,7 +84,6 @@ public:
     }
 
     void testFromSplitOptions() {
-        using namespace el::text::literals;
 
         const auto parts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el});
         const auto keptParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ElementCount::infinite(), true);
@@ -109,7 +110,6 @@ public:
     }
 
     void testAliasesAndWideStringLists() {
-        using namespace el::text::literals;
 
         const auto common = StringEditorList{StringEditor{std::string_view{"a"}}};
         const auto commonView = StringList::fromSplit("a,b"_el, CharSet{","_el});

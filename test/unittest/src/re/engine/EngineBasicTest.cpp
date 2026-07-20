@@ -3,6 +3,8 @@
 
 #include "EngineBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 TESTED_TARGETS(Engine)
 TAGS(Matching)
 class EngineBasicTest final : public UNITTEST_SUBCLASS(EngineBase) {

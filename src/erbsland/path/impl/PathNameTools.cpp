@@ -13,7 +13,6 @@
 namespace erbsland::path::impl {
 
 using namespace text::literals;
-
 using text::String;
 using text::StringSide;
 

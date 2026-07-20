@@ -1,8 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/FormatAs.hpp>
 #include <erbsland/text/impl/FormatMakeArguments.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8Format.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>
@@ -15,6 +17,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using el::text::StringConverter;
 using el::text::U8Format;
@@ -102,5 +105,15 @@ public:
 
     void testAmbiguousFormatAsMatchCount() {
         REQUIRE_EQUAL(el::text::impl::formatAsMatchCount<AmbiguousValue>(), std::size_t{2U});
+    }
+
+    void testByteBlockFormatArgument() {
+        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0x01U, 0xabU}};
+        const auto argument = el::text::impl::makeFormatArgument(bytes);
+
+        REQUIRE_EQUAL(argument.kind(), el::text::FormatArgumentKind::Bytes);
+        REQUIRE(argument.bytes() == bytes);
+        REQUIRE_EQUAL(el::text::impl::formatAsMatchCount<el::mem::ByteBlock>(), std::size_t{1U});
+        REQUIRE_EQUAL(StringConverter{U8Format{"{}"}.build(bytes)}.toStdString(), std::string{"01ab"});
     }
 };

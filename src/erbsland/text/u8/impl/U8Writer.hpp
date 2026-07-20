@@ -56,7 +56,11 @@ public:
         }
     }
     /// Write a UTF-8 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept {
+        writeChar8(static_cast<tChar8>(0xEFU));
+        writeChar8(static_cast<tChar8>(0xBBU));
+        writeChar8(static_cast<tChar8>(0xBFU));
+    }
 
 private:
     /// Write a single byte to the buffer if there is space.
@@ -109,7 +113,11 @@ public:
         }
     }
     /// Write a UTF-8 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept {
+        writeChar8(0xEFU);
+        writeChar8(0xBBU);
+        writeChar8(0xBFU);
+    }
 
 private:
     /// Write a single byte.

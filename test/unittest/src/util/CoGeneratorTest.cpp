@@ -137,6 +137,16 @@ public:
         REQUIRE_EQUAL(values, (std::vector<int>{1, 2}));
     }
 
+    void testExceptionPropagationWithIteratorAdvance() {
+        auto generator = valuesBeforeFailure();
+        auto iterator = generator.begin();
+
+        REQUIRE_EQUAL(*iterator, 1);
+        REQUIRE_NOTHROW(++iterator);
+        REQUIRE_EQUAL(*iterator, 2);
+        REQUIRE_THROWS(++iterator);
+    }
+
     void testCopiedIteratorAfterCompletion() {
         auto generator = numbers(1);
         auto iterator = generator.begin();

@@ -15,6 +15,8 @@
 #include <span>
 #include <string>
 
+using namespace el::text::literals;
+
 using el::stream::StreamError;
 using el::stream::TextOutputStream;
 using el::unit::ElementCount;
@@ -30,11 +32,7 @@ public:
 
 class PrintReadOnlyStringType final {
 public:
-    [[nodiscard]] auto toString() const -> String {
-        using namespace el::text::literals;
-
-        return "view"_el;
-    }
+    [[nodiscard]] auto toString() const -> String { return "view"_el; }
 };
 
 class PrintRawValueType final {
@@ -108,7 +106,6 @@ class StandardTextOutputStreamTest final : public el::UnitTest {
 
 public:
     void testWriteMethods() {
-        using namespace el::text::literals;
 
         const auto fake = std::make_shared<FakeNativeOutputStream>();
         auto stream = el::stream::impl::StandardTextOutputStream{fake};

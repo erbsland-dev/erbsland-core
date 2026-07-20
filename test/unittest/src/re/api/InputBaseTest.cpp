@@ -1,10 +1,12 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/re/CaptureGroup.hpp>
 #include <erbsland/re/CharAndPosition.hpp>
 #include <erbsland/re/Input.hpp>
 #include <erbsland/re/InputBase.hpp>
 #include <erbsland/re/RegEx.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/text/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

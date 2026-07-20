@@ -40,6 +40,7 @@ class UpdateIncludesApp(UtilityApp):
         self.generated_include_header = ""  # The compact generated include wrapper header text.
         self.exclude_dirs: list[str] = []  # Parent directories to include.
         self.exclude_headers: set[Path] = set()  # Source-relative headers to skip.
+        self.exclude_from_all_headers: set[Path] = set()  # Public headers to omit from generated all headers.
         self.create_global_includes: bool = False  # If includes of submodules shall also copy into global space.
         self.fold_into_parent: set[str] = set()  # Directory basenames to fold.
         self.create_all_base_dir = ""  # The base dir from where `all.hpp` header shall be created.
@@ -280,8 +281,16 @@ class UpdateIncludesApp(UtilityApp):
         for header_dir in all_header_dirs:
             if not self._create_all_header_for_dir(header_dir):
                 continue
-            header_files = list(self.dir_map.get(header_dir, []))
-            header_files.extend(relative_include for relative_include, _ in self.folded_include_map.get(header_dir, []))
+            header_files = [
+                header_file
+                for header_file in self.dir_map.get(header_dir, [])
+                if Path(header_dir, header_file) not in self.exclude_from_all_headers
+            ]
+            header_files.extend(
+                relative_include
+                for relative_include, source_path in self.folded_include_map.get(header_dir, [])
+                if source_path.relative_to(self.src_dir) not in self.exclude_from_all_headers
+            )
             header_files.sort()
             self.write_all_header(header_dir, header_files)
 
@@ -364,6 +373,9 @@ class UpdateIncludesApp(UtilityApp):
         self.generated_include_header = header_config.source_header("include", tool="update_includes.py")
         self.exclude_dirs = main_config.get_list("excluded_directories", str, default=[])
         self.exclude_headers = {Path(path_text) for path_text in main_config.get_list("excluded_headers", str, default=[])}
+        self.exclude_from_all_headers = {
+            Path(path_text) for path_text in main_config.get_list("excluded_from_all_headers", str, default=[])
+        }
         self.create_global_includes = main_config.get_bool("create_global_includes", default=False)
         self.fold_into_parent = set(main_config.get_list("fold_into_parent", str, default=[]))
         self.create_all_base_dir = main_config.get_text("create_all_base_dir", default="")
@@ -374,6 +386,8 @@ class UpdateIncludesApp(UtilityApp):
         validate_local_names(self.exclude_dirs, "Excluded Directories")
         for header in self.exclude_headers:
             validate_source_relative_path(header.as_posix(), "Excluded Headers")
+        for header in self.exclude_from_all_headers:
+            validate_source_relative_path(header.as_posix(), "Excluded From All Headers")
         validate_local_names(self.fold_into_parent, "Fold into Parent")
         validate_source_relative_path(self.create_all_base_dir, "Create All Base Dir")
 

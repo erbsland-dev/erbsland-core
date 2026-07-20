@@ -14,6 +14,9 @@ target_sources(erbsland-core PRIVATE
         DayRule.hpp
         Info.cpp
         Info.hpp
+        LocalTimeZoneBackend.cpp
+        LocalTimeZoneBackend.hpp
+        LocalTimeZoneBackend_fwd.hpp
         RegionAfrica.cpp
         RegionAfrica.hpp
         RegionAntarctica.cpp
@@ -46,3 +49,17 @@ target_sources(erbsland-core PRIVATE
         Zones.cpp
         Zones.hpp
 )
+
+if (WIN32)
+    target_sources(erbsland-core PRIVATE
+            WindowsLocalTimeZoneBackend.cpp
+            WindowsLocalTimeZoneBackend.hpp
+            WindowsTimeZoneMap.cpp
+            WindowsTimeZoneMap.hpp
+    )
+else ()
+    target_sources(erbsland-core PRIVATE
+            PosixLocalTimeZoneBackend.cpp
+            PosixLocalTimeZoneBackend.hpp
+    )
+endif ()

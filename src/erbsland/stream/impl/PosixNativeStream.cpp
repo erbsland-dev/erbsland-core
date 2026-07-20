@@ -25,7 +25,6 @@ namespace erbsland::stream::impl {
 
 using ErrorContext = system::PosixErrorContext;
 using namespace text::literals;
-
 using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;

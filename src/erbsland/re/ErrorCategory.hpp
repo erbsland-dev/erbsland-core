@@ -3,11 +3,9 @@
 #pragma once
 
 #include "../text/Literals.hpp"
-#include "../text/StdFormatForText.hpp"
 #include "../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 
 namespace erbsland::re {
 
@@ -47,10 +45,3 @@ enum class ErrorCategory : uint8_t {
 }
 
 }
-
-template <>
-struct std::formatter<erbsland::re::ErrorCategory> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::ErrorCategory category, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(category), ctx);
-    }
-};

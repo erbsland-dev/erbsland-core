@@ -4,12 +4,10 @@
 
 #include "../text/Character.hpp"
 
-#include "../../../text/StdFormatForText.hpp"
 #include "../../../text/String.hpp"
 #include "../../../text/StringEditor.hpp"
 
 #include <cstdint>
-#include <format>
 #include <variant>
 #include <vector>
 
@@ -57,17 +55,3 @@ using Arguments = std::vector<ArgumentValue>;
 [[nodiscard]] auto argumentTypeFromValue(const ArgumentValue &value) noexcept -> ArgumentType;
 
 }
-
-template <>
-struct std::formatter<erbsland::re::impl::ArgumentKind> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::ArgumentKind argumentKind, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(argumentKind), ctx);
-    }
-};
-
-template <>
-struct std::formatter<erbsland::re::impl::ArgumentType> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::ArgumentType argumentType, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(argumentType), ctx);
-    }
-};

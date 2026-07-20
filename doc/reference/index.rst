@@ -6,7 +6,9 @@ Reference
     :maxdepth: 1
 
     bgeo/index
+    conf/index
     core/index
+    cryptology/index
     cterm/index
     debug/index
     err/index

@@ -53,6 +53,12 @@ Comparison Functions
 Text comparison, search and count methods take an optional :cpp:type:`CharCompareFn <erbsland::text::CharCompareFn>`.
 An empty function uses decoded code-point comparison, there are predefined methods in ``Char`` for ASCII and Unicode
 case-folded comparison.
+``CaseSensitivity`` selects exact or case-folded comparison and provides callbacks for Unicode or ASCII-only folding.
+
+``AnyString`` compares read-only strings across UTF-8, UTF-16 and UTF-32 without converting their storage.
+Its comparison operators accept all values that implicitly convert to ``AnyString``, including width-specific strings,
+editors and literals.
+``AnyStringEditor`` does not provide comparison operators of its own.
 
 Primary Types
 =============
@@ -66,6 +72,7 @@ Primary Types
     AnyStringBuilder  // width-agnostic incremental string builder
     StringLiteral  // thin UTF-8 wrapper around ``""_el`` literals
     StringCharReader  // width-agnostic sequential decoded-character reader
+    StringSplitter  // sequential zero-copy UTF-8 splitter
     StringConverter  // explicit Erbsland/standard string conversion entry point
     StringDecodeBuffer  // bounded incremental byte-to-text decoder
     StringDecoder  // explicit byte-block-to-string decoder
@@ -85,6 +92,7 @@ Secondary Types
     U8StringEditor, U16StringEditor, U32StringEditor
     U8StringLiteral, U16StringLiteral, U32StringLiteral
     U8StringList, U16StringList, U32StringList
+    U8StringSplitter, U16StringSplitter, U32StringSplitter
     U8StringEditorList, U16StringEditorList, U32StringEditorList
     U8StringMap, U16StringMap, U32StringMap
     U8StringHashMap, U16StringHashMap, U32StringHashMap
@@ -98,11 +106,29 @@ Options and Formats
 .. code-block:: text
 
     ByteFormat // options how to format byte blocks as hexadecimal text
+    CaseSensitivity // options how to compare case in text APIs
     FloatFormat // options how to format floating-point values
     FloatParseOptions // options how to parse floating-point values
     IntegerBase // base 2,7,10,16 and related methods for representing integers
     StringEncoding // UTF family, byte order and BOM behavior
     TextNodeType // semantic type of a text document node
+
+Typed String Format Specifications
+==================================
+
+Typed ``StringFormat`` fields use ``{[index]:selector:options}``.
+The trailing colon after the selector is mandatory, including when no options are specified.
+Selectors are domain names such as ``text``, ``number``, ``bool``, and ``bytes`` and lock the field to the matching
+runtime argument type.
+
+Typed specifications use named, comma-separated options.
+Every public option has one globally unique and stable short alias.
+A short alias must not be reused by an option in another domain.
+Enum-value aliases only need to be unique within their option because they are interpreted after the option name.
+
+Option names, option aliases, enum values, and value aliases use ASCII identifiers and are matched case-insensitively.
+New typed domains must use the shared named-option parser and keep selector dispatch extensible for future domains such
+as date, datetime, and time.
 
 Utilities
 =========
@@ -110,6 +136,8 @@ Utilities
 .. code-block:: text
 
     StringPattern // lightweight decoded-character pattern matcher
+    StringSplitMode // discard or keep the separator in returned slices
+    CodeSnippet // line-oriented source excerpt with its first line index and optional language
     CodeSnippetMarker // marker range for a line-oriented code snippet
     html::HtmlParser // tolerant HTML to TextDocument parser
 
@@ -147,6 +175,17 @@ String API Patterns
     o.toSafeString(maximumWidth, flags) -> TString  // create bounded diagnostic text
     o.transformed(function) -> TString  // transform decoded code points
     o.trimmed([characters][, side]) -> TString  // create trimmed text
+
+String Splitter API Patterns
+============================
+
+.. code-block:: text
+
+    TStringSplitter{text, character/set[, mode]}  // create an owning sequential splitter
+    o.isAtEnd() -> bool  // test if all parts were read
+    o.next() -> TString  // read the next shared slice
+    o.remaining() -> TString  // access the unread suffix
+    o.reset() -> void  // restart at the beginning
 
 StringEditor API Patterns
 =========================
@@ -215,3 +254,4 @@ Header Files
     StringDecoder.hpp  // decode binary text
     StringEncoder.hpp  // encode Erbsland strings
     StringEncoding.hpp  // select UTF family, byte order and BOM behavior
+    StringSplitter.hpp  // sequentially split UTF-8 strings into shared slices

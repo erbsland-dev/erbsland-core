@@ -4,6 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/ByteFormat.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -23,6 +24,7 @@ using el::unit::ByteLength;
 using el::unit::CpLength;
 using el::unit::ElementCount;
 using namespace el::text;
+using namespace el::text::literals;
 
 TESTED_TARGETS(ByteFormatFlag ByteFormat AnyStringBuilder U8String U16String U32String)
 class ByteFormatTest final : public el::UnitTest {
@@ -97,6 +99,7 @@ public:
         REQUIRE_EQUAL(StringConverter{U16String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
         REQUIRE_EQUAL(StringConverter{U32String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
 
+        const auto truncated = ByteFormat::compact().setMaximum(ByteLength{1U}).setEllipsis("…"_el);
         for (const auto kind : {StringKind::U8, StringKind::U16, StringKind::U32}) {
             auto builder = AnyStringBuilder{kind};
             builder.append(U'[').appendByteBlock(block).append(U']');
@@ -104,6 +107,11 @@ public:
             REQUIRE_EQUAL(builder.kind(), kind);
             REQUIRE_EQUAL(builder.length(), CpLength{6U});
             REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"[1234]"});
+
+            builder.clear();
+            builder.append(U'[').appendByteBlock(block, truncated).append(U']');
+            REQUIRE_EQUAL(builder.length(), CpLength{3U});
+            REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdString(), std::string{"[…]"});
         }
     }
 
@@ -119,6 +127,74 @@ public:
         REQUIRE_FALSE(dump.hasFlag(ByteFormatFlag::LineGroups));
         REQUIRE_EQUAL(dump.bytesPerLine(), ByteLength{32U});
         REQUIRE_EQUAL(dump.byteGroupSize(), ByteLength{4U});
+    }
+
+    void testTruncationDefaultsAndAccessors() {
+        auto format = ByteFormat{};
+        REQUIRE(format.maximum().isInfinite());
+        REQUIRE_EQUAL(format.truncateMode(), TruncateMode::End);
+        REQUIRE(format.ellipsis().isEmpty());
+
+        format.setMaximum(ByteLength{7U}).setTruncateMode(TruncateMode::Begin).setEllipsis("..."_el);
+        const auto copy = format;
+
+        REQUIRE_EQUAL(copy.maximum(), ByteLength{7U});
+        REQUIRE_EQUAL(copy.truncateMode(), TruncateMode::Begin);
+        REQUIRE_EQUAL(copy.ellipsis(), "..."_el);
+    }
+
+    void testTruncateModesAndEllipsisSlots() {
+        const auto block = makeBlock({0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U});
+
+        auto format = ByteFormat::compact().setMaximum(ByteLength{5U}).setEllipsis("..."_el);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"00010203..."});
+
+        format.setTruncateMode(TruncateMode::Middle);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"0001...0809"});
+
+        format.setTruncateMode(TruncateMode::Begin);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"...06070809"});
+
+        format.addFlags(ByteFormatFlag::Separator).setTruncateMode(TruncateMode::Middle);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"00 01 ... 08 09"});
+    }
+
+    void testTruncationBoundariesAndEmptyEllipsis() {
+        const auto block = makeBlock({0U, 1U, 2U, 3U, 4U, 5U});
+        auto format = ByteFormat::compact().setEllipsis("..."_el);
+
+        format.setMaximum(ByteLength::zero());
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{});
+
+        format.setMaximum(ByteLength::one());
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"..."});
+
+        format.setMaximum(ByteLength{6U});
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"000102030405"});
+
+        format.setMaximum(ByteLength{7U});
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"000102030405"});
+
+        format.setMaximum(ByteLength{5U}).setEllipsis({});
+        REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"0001020304"});
+    }
+
+    void testDiagnosticFactoryAndLayoutFallback() {
+        const auto block =
+            makeBlock({0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U, 10U, 11U, 12U, 13U, 14U, 15U, 16U, 17U, 18U, 19U});
+        const auto diagnostic = ByteFormat::forDiagnostic();
+
+        REQUIRE_EQUAL(diagnostic.maximum(), ByteLength{16U});
+        REQUIRE_EQUAL(diagnostic.truncateMode(), TruncateMode::Middle);
+        REQUIRE_EQUAL(diagnostic.ellipsis(), "..."_el);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, diagnostic), std::string{"0001020304050607...0d0e0f10111213"});
+
+        auto lines = ByteFormat{ByteFormatFlag::Lines}
+                         .setBytesPerLine(ByteLength{3U})
+                         .setMaximum(ByteLength{5U})
+                         .setTruncateMode(TruncateMode::Middle)
+                         .setEllipsis("..."_el);
+        REQUIRE_EQUAL(ByteFormatTest::format(block, lines), std::string{"000102\n03...\n"});
     }
 
 private:

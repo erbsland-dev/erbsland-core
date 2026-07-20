@@ -4,6 +4,7 @@
 #include "../util/MoveAwareTestValue.hpp"
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringCIHashMap.hpp>
 #include <erbsland/text/StringCIMap.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -30,6 +31,8 @@
 #include <type_traits>
 #include <utility>
 
+using namespace el::text::literals;
+
 using namespace el::text;
 
 static_assert(std::is_same_v<StringMap<int>::Key, String>);
@@ -47,7 +50,6 @@ public:
 
 public:
     void testSlicedKeysAreStoredCompactly() {
-        using namespace el::text::literals;
 
         auto backing = StringEditor::fromCharacter(U'x', el::unit::CpLength{1024U});
         backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}}, "key"_el);
@@ -69,7 +71,6 @@ public:
     }
 
     void testAliasesAndKeyStringLists() {
-        using namespace el::text::literals;
 
         const auto common = StringMap<int>{{{"beta"_el, 2}, {"alpha"_el, 1}}};
         REQUIRE_EQUAL(StringConverter{common.first().first}.toStdString(), std::string{"alpha"});
@@ -95,7 +96,6 @@ public:
     }
 
     void testCaseInsensitiveOrderedMapReplacesVisibleKey() {
-        using namespace el::text::literals;
 
         auto map = StringCIMap<int>{};
         map.set(u8"ÄbcK"_el, 1);
@@ -116,7 +116,6 @@ public:
     }
 
     void testCaseInsensitiveHashMapReplacesVisibleKey() {
-        using namespace el::text::literals;
 
         auto map = StringCIHashMap<int>{};
         map.set(u8"ÄbcK"_el, 1);
@@ -139,7 +138,6 @@ public:
     }
 
     void testOrderedMapViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto map = StringMap<int>{{{"alpha"_el, 1}, {"beta"_el, 2}}};
 
@@ -178,7 +176,6 @@ public:
     }
 
     void testHashMapViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto map = StringHashMap<int>{{{"alpha"_el, 1}, {"beta"_el, 2}}};
 
@@ -217,7 +214,6 @@ public:
     }
 
     void testViewKeyOperationsMoveValues() {
-        using namespace el::text::literals;
 
         auto ordered = StringMap<MoveValue>{};
         auto orderedSetValue = MoveValue{1};
@@ -255,7 +251,6 @@ public:
     }
 
     void testCaseInsensitiveMapViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto ordered = StringCIMap<int>{};
         ordered.set(u8"ÄbcK"_el, 1);
@@ -279,7 +274,6 @@ public:
     }
 
     void testStringHashes() {
-        using namespace el::text::literals;
 
         const auto u8 = U8String{u8"ÄbcK"_el};
         const auto u16 = U16String{u"ÄbcK"_el};

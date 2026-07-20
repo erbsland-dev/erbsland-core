@@ -85,17 +85,17 @@ auto U32StringEncodingTools::resolveBomLayout(
     const auto hasBom = hasUtf32LeBom || hasUtf32BeBom || hasUtf8Bom || hasUtf16LeBom || hasUtf16BeBom;
     if (!hasBom) {
         if (bomMode == StringBomMode::Require) {
-            text::impl::throwEncodingError("Missing byte order mark");
+            throwEncodingError("Missing byte order mark");
         }
         return DecodeLayout{.endianness = encoding.endianness(), .start = 0U};
     }
     if (bomMode == StringBomMode::Reject) {
-        text::impl::throwEncodingError("Unexpected byte order mark");
+        throwEncodingError("Unexpected byte order mark");
     }
 
     if (hasUtf8Bom) {
         if (encoding != StringEncoding::Utf8) {
-            text::impl::throwEncodingError("Unexpected UTF-8 byte order mark");
+            throwEncodingError("Unexpected UTF-8 byte order mark");
         }
         return DecodeLayout{
             .endianness = Endianness::Little,
@@ -103,7 +103,7 @@ auto U32StringEncodingTools::resolveBomLayout(
     }
     if (hasUtf16LeBom) {
         if (!encoding.isUtf16() || encoding == StringEncoding::Utf16BigEndian) {
-            text::impl::throwEncodingError("Unexpected UTF-16 little endian byte order mark");
+            throwEncodingError("Unexpected UTF-16 little endian byte order mark");
         }
         return DecodeLayout{
             .endianness = Endianness::Little,
@@ -111,7 +111,7 @@ auto U32StringEncodingTools::resolveBomLayout(
     }
     if (hasUtf16BeBom) {
         if (!encoding.isUtf16() || encoding == StringEncoding::Utf16LittleEndian) {
-            text::impl::throwEncodingError("Unexpected UTF-16 big endian byte order mark");
+            throwEncodingError("Unexpected UTF-16 big endian byte order mark");
         }
         return DecodeLayout{
             .endianness = Endianness::Big,
@@ -119,7 +119,7 @@ auto U32StringEncodingTools::resolveBomLayout(
     }
     if (hasUtf32LeBom) {
         if (!encoding.isUtf32() || encoding == StringEncoding::Utf32BigEndian) {
-            text::impl::throwEncodingError("Unexpected UTF-32 little endian byte order mark");
+            throwEncodingError("Unexpected UTF-32 little endian byte order mark");
         }
         return DecodeLayout{
             .endianness = Endianness::Little,
@@ -127,7 +127,7 @@ auto U32StringEncodingTools::resolveBomLayout(
     }
     if (hasUtf32BeBom) {
         if (!encoding.isUtf32() || encoding == StringEncoding::Utf32LittleEndian) {
-            text::impl::throwEncodingError("Unexpected UTF-32 big endian byte order mark");
+            throwEncodingError("Unexpected UTF-32 big endian byte order mark");
         }
         return DecodeLayout{
             .endianness = Endianness::Big,

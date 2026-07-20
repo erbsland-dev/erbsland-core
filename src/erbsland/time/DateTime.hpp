@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CalendarDelta.hpp"
 #include "Date.hpp"
 #include "Duration.hpp"
 #include "Time.hpp"
 #include "TimeOccurrenceInFold.hpp"
+#include "TimeWithZone.hpp"
 #include "TimeZone.hpp"
 
 #include "tz/TimeOffset.hpp"
@@ -62,6 +64,13 @@ public:
     /// @param offset The UTC offset.
     DateTime(const Date localDate, const Time localTime, const Duration offset) noexcept :
         DateTime{localDate, localTime, offset.toSeconds()} {}
+    /// Create a local date/time from a time with a time zone.
+    /// Invalid local dates result in an invalid date/time.
+    /// @param localDate The local date.
+    /// @param localTime The local time and its time zone.
+    /// @param occurrence Which occurrence to use during fold periods.
+    DateTime(
+        Date localDate, TimeWithZone localTime, TimeOccurrenceInFold occurrence = TimeOccurrenceInFold::First) noexcept;
     /// Create a named-zone local date/time.
     /// Invalid local dates result in an invalid date/time. During folds, `occurrence` selects the first or second
     /// possible instant; local times in gaps are resolved using the zone database transition rule.
@@ -99,12 +108,24 @@ public: // operators
     /// @param other The other date/time.
     /// @return The duration from `other` to this.
     [[nodiscard]] auto operator-(const DateTime &other) const noexcept -> Duration { return other.durationTo(*this); }
+    [[nodiscard]] auto operator+(const CalendarDelta &delta) const noexcept -> DateTime { return added(delta); }
+    auto operator+=(const CalendarDelta &delta) noexcept -> DateTime & {
+        add(delta);
+        return *this;
+    }
+    [[nodiscard]] auto operator-(const CalendarDelta &delta) const noexcept -> DateTime { return subtracted(delta); }
+    auto operator-=(const CalendarDelta &delta) noexcept -> DateTime & {
+        subtract(delta);
+        return *this;
+    }
 
 public: // tests
     /// Test if this date/time represents a valid instant.
     [[nodiscard]] constexpr auto isValid() const noexcept -> bool { return _date.isValid(); }
     /// Test if this date/time is displayed in UTC.
     [[nodiscard]] constexpr auto isUtc() const noexcept -> bool { return _offset.isUtc(); }
+    /// Test if the display zone originated from the system-local setting.
+    [[nodiscard]] constexpr auto isLocalTime() const noexcept -> bool { return _offset.isLocalTime(); }
 
 public: // accessors
     /// Return the stored UTC date, or an invalid date for invalid date/times.
@@ -141,11 +162,36 @@ public: // accessors
     /// Return the display offset from UTC.
     [[nodiscard]] auto timeOffset() const noexcept -> Duration { return Duration{_offset.offset()}; }
     /// Return the display time zone, or UTC for invalid date/times and fixed offsets.
-    [[nodiscard]] auto timeZone() const noexcept -> TimeZone { return TimeZone{_offset.zoneId()}; }
+    [[nodiscard]] auto timeZone() const noexcept -> TimeZone;
     /// Return the display time-zone abbreviation, or an empty string when none is available.
     [[nodiscard]] auto timeZoneAbbreviation() const -> text::String;
 
 public: // manipulation
+    /// Test if applying a calendar delta would saturate the supported range.
+    [[nodiscard]] auto wouldAddSaturate(const CalendarDelta &delta) const noexcept -> bool;
+    /// Test if subtracting a calendar delta would saturate the supported range.
+    [[nodiscard]] auto wouldSubtractSaturate(const CalendarDelta &delta) const noexcept -> bool;
+    /// Apply a calendar delta in ascending unit order and clamp at supported bounds.
+    [[nodiscard]] auto added(const CalendarDelta &delta) const noexcept -> DateTime;
+    /// Apply a calendar delta in ascending unit order.
+    /// @throws err::OverflowError if an intermediate result exceeds supported bounds.
+    [[nodiscard]] auto addedOrThrow(const CalendarDelta &delta) const -> DateTime;
+    /// Apply a calendar delta in place and clamp at supported bounds.
+    void add(const CalendarDelta &delta) noexcept { *this = added(delta); }
+    /// Apply a calendar delta in place.
+    /// @throws err::OverflowError if an intermediate result exceeds supported bounds.
+    void addOrThrow(const CalendarDelta &delta) { *this = addedOrThrow(delta); }
+    /// Subtract a calendar delta in ascending unit order and clamp at supported bounds.
+    [[nodiscard]] auto subtracted(const CalendarDelta &delta) const noexcept -> DateTime { return added(-delta); }
+    /// Subtract a calendar delta in ascending unit order.
+    /// @throws err::OverflowError if an intermediate result exceeds supported bounds.
+    [[nodiscard]] auto subtractedOrThrow(const CalendarDelta &delta) const -> DateTime { return addedOrThrow(-delta); }
+    /// Subtract a calendar delta in place and clamp at supported bounds.
+    void subtract(const CalendarDelta &delta) noexcept { *this = subtracted(delta); }
+    /// Subtract a calendar delta in place.
+    /// @throws err::OverflowError if an intermediate result exceeds supported bounds.
+    void subtractOrThrow(const CalendarDelta &delta) { *this = subtractedOrThrow(delta); }
+
     /// Test if adding a duration would saturate to the first or last supported date/time.
     /// Returns `false` for invalid date/times.
     /// @param duration The duration to add.
@@ -200,6 +246,10 @@ public: // manipulation
     [[nodiscard]] auto timeDeltaTo(const DateTime &other) const noexcept -> TimeDelta;
 
 public: // conversion
+    /// Convert this date/time to a compact human-readable representation.
+    /// Invalid date/times return an empty string.
+    /// @return The displayed date/time followed by its resolved offset.
+    [[nodiscard]] auto toString() const -> text::String;
     /// Convert to UTC, or return an invalid date/time if this date/time is invalid.
     [[nodiscard]] auto toUtc() const noexcept -> DateTime;
     /// Convert the display time zone, or return an invalid date/time if this date/time is invalid.
@@ -302,13 +352,5 @@ private:
 
 template <>
 struct erbsland::text::FormatAsText<erbsland::time::DateTime> : FormatAs<time::DateTime, String> {
-    [[nodiscard]] auto format(const time::DateTime &value) const -> String { return value.toIsoString(); }
-};
-
-template <>
-struct std::formatter<erbsland::time::DateTime> : std::formatter<std::string_view> {
-    auto format(const erbsland::time::DateTime value, std::format_context &ctx) const {
-        return std::formatter<std::string_view>::format(
-            erbsland::text::StringConverter{value.toIsoString()}.toStdString(), ctx);
-    }
+    [[nodiscard]] auto format(const time::DateTime &value) const -> String { return value.toString(); }
 };

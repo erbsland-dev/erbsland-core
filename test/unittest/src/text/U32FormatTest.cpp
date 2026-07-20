@@ -3,6 +3,7 @@
 
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FormatError.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u32/U32Format.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
@@ -49,6 +50,12 @@ public:
         REQUIRE_EQUAL(
             StringConverter{format.build("cat", 42, 1.25, "<")}.toStdU32String(),
             std::u32string{U"  cat  |+42|1.25|&lt;"});
+    }
+
+    void testNamedFormatWithUnicodeFill() {
+        const auto format = U32Format{U"{:text:max3,w5,al=c,fl=·}"};
+
+        REQUIRE_EQUAL(StringConverter{format.build(U"abcdef")}.toStdU32String(), std::u32string{U"·abc·"});
     }
 
     void testInvalidPatternSyntax() {

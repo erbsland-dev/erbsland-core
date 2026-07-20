@@ -46,6 +46,9 @@ String Decoder
 The decoder accepts :cpp:class:`StringEncoding <erbsland::text::StringEncoding>`,
 :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>`, and
 :cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>` for all target string widths.
+Only an encoded ``U+FEFF`` signature at the start of the byte input is interpreted as a BOM.
+A repeated or embedded ``U+FEFF`` is invalid content and follows ``EncodingErrorMode``; it is never returned as a
+character in the decoded string.
 
 String Encoder
 --------------
@@ -67,6 +70,9 @@ The encoder is intentionally limited to Erbsland text sources.
 Each standalone ``encode()`` or ``encodeTo()`` call applies its requested BOM policy independently, including calls for
 empty text that produce only a BOM.
 Stateful output streams suppress the BOM after their first successful write.
+Explicit BOM output is generated as an encoding signature.
+An ordinary ``Char{0xFEFF}`` in source content is invalid and follows ``EncodingErrorMode`` instead of emitting a
+signature.
 
 Extension libraries can support additional Erbsland-compatible source types by specializing
 :cpp:struct:`StringEncoderTraits <erbsland::text::StringEncoderTraits>`.
@@ -92,6 +98,27 @@ encoding.
     auto utf8 = el::AnyStringBuilder{el::StringKind::U8};
     auto utf16 = el::AnyStringBuilder{el::StringKind::U16};
     auto utf32 = el::AnyStringBuilder{el::StringKind::U32};
+
+Any-Width String Values
+-----------------------
+
+:cpp:class:`AnyString <erbsland::text::AnyString>` stores a read-only UTF-8, UTF-16 or UTF-32 string without changing
+its width.
+It can be compared directly with another ``AnyString``, a width-specific Core string or editor, or any ``_el`` string
+literal.
+Comparisons are lexicographical by decoded code point and do not create converted strings.
+Malformed encoded units are compared as :cpp:func:`Char::replacement() <erbsland::text::Char::replacement>`.
+
+.. code-block:: cpp
+
+    auto pattern = el::AnyString{u"[a-z]+"_el};
+
+    if (pattern == "[a-z]+"_el) {
+        // The UTF-16 pattern is compared directly with the UTF-8 literal.
+    }
+
+An empty ``AnyString`` has no selected width.
+It compares equal to empty strings of every width and sorts before any non-empty string.
 
 Standalone Conversion Helpers
 -----------------------------

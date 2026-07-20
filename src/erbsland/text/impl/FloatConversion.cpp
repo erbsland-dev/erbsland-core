@@ -253,11 +253,11 @@ auto parseDoubleOrThrow(StringCharReader reader, const FloatParseOptions &option
     case FloatParseStatus::Success:
         return result.value;
     case FloatParseStatus::ParseError:
-        text::impl::throwParseError(result.message);
+        throwParseError(result.message);
     case FloatParseStatus::Overflow:
-        text::impl::throwOverflow(result.message);
+        throwOverflow(result.message);
     }
-    text::impl::throwParseError("Floating point text could not be parsed");
+    throwParseError("Floating point text could not be parsed");
 }
 
 [[nodiscard]] auto isFloatRepresentable(const double value) noexcept -> bool {
@@ -285,7 +285,7 @@ auto parseFloatOrDefault(StringCharReader reader, const float defaultValue, cons
 auto parseFloatOrThrow(StringCharReader reader, const FloatParseOptions &options) -> float {
     const auto value = parseDoubleOrThrow(std::move(reader), options);
     if (!isFloatRepresentable(value)) {
-        text::impl::throwOverflow("Floating point text exceeds the requested type");
+        throwOverflow("Floating point text exceeds the requested type");
     }
     return static_cast<float>(value);
 }

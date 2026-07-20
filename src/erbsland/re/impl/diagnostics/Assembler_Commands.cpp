@@ -10,8 +10,9 @@
 
 namespace erbsland::re::impl {
 
+using namespace text::literals;
+
 void Assembler::processCommandLine() {
-    using namespace text::literals;
     const auto &command = currentToken().getText();
     nextToken();
     if (command == "section"_el) {
@@ -30,7 +31,6 @@ void Assembler::processCommandLine() {
 }
 
 void Assembler::processSectionCommand() {
-    using namespace text::literals;
     // Switches the current section.
     // .section &program
     if (!hasCurrentToken() || !currentToken().isIdentifier()) {

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EscapeFormatter.hpp"
 
+#include "ConfigEscapeFormatter.hpp"
 #include "CppEscapeFormatter.hpp"
 #include "DisplayEscapeFormatter.hpp"
 #include "HtmlEscapeFormatter.hpp"
@@ -45,6 +46,8 @@ auto EscapeFormatter::forFormat(const EscapeFormat format) noexcept -> const Esc
         FormatterEntry{EscapeFormat::Xml, &XmlEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::RegEx, &RegExEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Display, &DisplayEscapeFormatter::instance},
+        FormatterEntry{EscapeFormat::Config, &ConfigEscapeFormatter::regularInstance},
+        FormatterEntry{EscapeFormat::ConfigTest, &ConfigEscapeFormatter::testInstance},
         FormatterEntry{EscapeFormat::None, &NoneEscapeFormatter::instance},
     };
 

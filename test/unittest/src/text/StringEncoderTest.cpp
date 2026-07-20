@@ -3,6 +3,7 @@
 
 #include <erbsland/mem/RingBuffer.hpp>
 #include <erbsland/text/EncodingError.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -181,6 +182,20 @@ public:
         REQUIRE_EQUAL(buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(), std::vector<uint8_t>({0xaaU}));
     }
 
+    void testRawBomCodePointIsInvalidContent() {
+        const auto text = U32StringEditor{std::u32string{U'A', char32_t{0xFEFFU}, U'B'}};
+        const auto encoder = StringEncoder{text};
+
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Replace).toUInt8Vector(),
+            std::vector<uint8_t>({0x41U, 0xEFU, 0xBFU, 0xBDU, 0x42U}));
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Ignore).toUInt8Vector(),
+            std::vector<uint8_t>({0x41U, 0x42U}));
+        REQUIRE_THROWS_AS(
+            EncodingError, encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Throw));
+    }
+
     void testStandaloneCallsApplyBomIndependently() {
         const auto text = U8StringEditor{std::u8string_view{u8"A"}};
         const auto encoder = StringEncoder{text};
@@ -206,5 +221,24 @@ public:
         REQUIRE_EQUAL(
             buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(), std::vector<uint8_t>({0xfeU, 0xffU}));
         REQUIRE(encoder.encode(StringEncoding::Utf8, StringBomMode::Automatic).isEmpty());
+    }
+
+    void testExplicitBomSignaturesForEveryEncoding() {
+        const auto encoder = StringEncoder{U8StringEditor{}};
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf8, StringBomMode::Require).toUInt8Vector(),
+            std::vector<uint8_t>({0xEFU, 0xBBU, 0xBFU}));
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf16LittleEndian, StringBomMode::Require).toUInt8Vector(),
+            std::vector<uint8_t>({0xFFU, 0xFEU}));
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf16BigEndian, StringBomMode::Require).toUInt8Vector(),
+            std::vector<uint8_t>({0xFEU, 0xFFU}));
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf32LittleEndian, StringBomMode::Require).toUInt8Vector(),
+            std::vector<uint8_t>({0xFFU, 0xFEU, 0x00U, 0x00U}));
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf32BigEndian, StringBomMode::Require).toUInt8Vector(),
+            std::vector<uint8_t>({0x00U, 0x00U, 0xFEU, 0xFFU}));
     }
 };

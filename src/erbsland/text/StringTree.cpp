@@ -9,7 +9,6 @@
 namespace erbsland::text {
 
 using namespace literals;
-
 using impl::StringTreeData;
 using impl::StringTreeDataPtr;
 using impl::StringTreeEntry;

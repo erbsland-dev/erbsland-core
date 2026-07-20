@@ -66,7 +66,7 @@ private:
     void appendElement(text::String element);
     [[nodiscard]] auto save() const noexcept -> Checkpoint;
     void restore(const Checkpoint &checkpoint) noexcept;
-    [[noreturn]] void throwParseError(const text::String &reason) const;
+    [[noreturn]] void throwParseError(text::String reason) const;
     [[nodiscard]] auto startsWithNormalized(const text::String &prefix) -> bool;
     [[nodiscard]] auto equalsNormalized(const text::String &text) -> bool;
     [[nodiscard]] auto startsWithWindowsDriveRoot() -> bool;

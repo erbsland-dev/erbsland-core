@@ -8,6 +8,24 @@ Char Range
 Introduction
 ============
 
+Case Sensitivity
+----------------
+
+``CaseSensitivity`` selects exact or case-insensitive character-wise comparison for string comparison, search, and
+replacement APIs.
+Use ``comparisonFn()`` for Unicode simple case folding.
+Use ``asciiComparisonFn()`` when a format or protocol explicitly restricts case-insensitive matching to ASCII letters.
+
+Both methods return an empty comparison callback for case-sensitive mode.
+String APIs interpret an empty callback as exact Unicode code-point comparison.
+
+.. code-block:: cpp
+
+    auto mode = el::CaseSensitivity{el::CaseSensitivity::CaseInsensitive};
+    if (left.compare(right, mode.comparisonFn()) == std::strong_ordering::equal) {
+        // The strings match using Unicode simple case folding.
+    }
+
 Char
 ----
 
@@ -61,6 +79,8 @@ Integer Digit Helpers
 
 :cpp:func:`digitValue() <erbsland::text::Char::digitValue>` converts ASCII decimal and Latin letter digits into a
 numeric value.
+The overload accepting :cpp:class:`IntegerBase <erbsland::text::IntegerBase>` returns a value only if the character is a
+valid digit for that base.
 :cpp:func:`isDigitValue() <erbsland::text::Char::isDigitValue>` combines that conversion with an
 :cpp:class:`IntegerBase <erbsland::text::IntegerBase>` check.
 Use :cpp:func:`fromDigitValue() <erbsland::text::Char::fromDigitValue>` when emitting integer digits with a selected
@@ -126,18 +146,27 @@ Signals
 
 Some text APIs use reserved invalid :cpp:class:`Char <erbsland::text::Char>` values as non-character signals.
 The reserved signal range is ``0xFFFFFF00`` through ``0xFFFFFFFF``.
-Current signals are ``endOfData()`` with raw value ``0xFFFFFFFF`` and ``noCodePoint()`` with raw value ``0xFFFFFFFE``.
+Current signals are ``endOfData()`` with raw value ``0xFFFFFFFF``, ``noCodePoint()`` with raw value ``0xFFFFFFFE``, and
+``error()`` with raw value ``0xFFFFFFFD``.
+The ``byteOrderMark()`` signal has raw value ``0xFFFFFFFC`` and represents an encoding-independent BOM at a byte
+encoding boundary.
 
-Use ``isSignal()``, ``isEndOfData()``, and ``isNoCodePoint()`` when a reader or character-access API can report these
-states.
-Signals are not valid Unicode code points, and text-output APIs must not encode them as Unicode characters.
+Use ``isSignal()``, ``isEndOfData()``, ``isNoCodePoint()``, ``isError()``, and ``isByteOrderMark()`` when an internal
+reader, writer, or character-processing algorithm can report these states.
+The error signal is reserved for internal algorithms and is never returned by public Erbsland Core text APIs.
+The BOM signal is similarly restricted to encoded-data boundaries.
+Ordinary string readers, iterators, conversions, and content writers never expose or encode it.
+Signals are not valid Unicode code points.
 
 Validation
 ~~~~~~~~~~
 
 :cpp:func:`isValidUnicode() <erbsland::text::Char::isValidUnicode>` checks whether the value is a valid Unicode code
 point.
-It rejects values above ``U+10FFFF`` and surrogate code points.
+It rejects values above ``U+10FFFF``, surrogate code points, and ``U+FEFF``.
+Erbsland Core intentionally reserves ``U+FEFF`` for an initial encoded byte-order signature.
+Consequently, ``Char{0xFEFF}`` is invalid text content and is distinct from the ``byteOrderMark()`` signal.
+``U+2060 WORD JOINER`` remains valid content.
 
 When a decoder encounters invalid input in a tolerant API, it can return
 :cpp:func:`replacement() <erbsland::text::Char::replacement>`.
@@ -256,6 +285,8 @@ or absent position.
 
 ``EndOfData`` marks the exact position just after the last available character.
 ``NoCodePoint`` marks an invalid, no-index, or out-of-range position.
+``Error`` is reserved for failures propagated inside character-processing algorithms; public Erbsland Core text APIs
+never return it.
 
 Unicode Category
 ----------------
@@ -294,6 +325,8 @@ Interface
 =========
 
 .. doxygenenum:: erbsland::text::AsciiCategory
+.. doxygenclass:: erbsland::text::CaseSensitivity
+    :members:
 .. doxygenclass:: erbsland::text::Char
     :members:
 .. doxygentypedef:: erbsland::text::CharCompareFn

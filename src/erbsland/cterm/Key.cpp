@@ -14,7 +14,6 @@
 namespace erbsland::cterm {
 
 using namespace erbsland::text::literals;
-
 using namespace text;
 
 auto Key::keyTextDefinitions() noexcept -> const std::array<KeyTextDefinition, 28> & {
@@ -123,9 +122,10 @@ auto Key::parseModifierText(const String &text) noexcept -> std::optional<KeyMod
 }
 
 auto Key::parseModifiers(String &text) noexcept -> KeyModifiers {
+    static const auto separatorCharacters = CharSet{U'+'};
     auto modifiers = KeyModifiers{};
     while (true) {
-        const auto separator = text.findFirstOf(CharSet{Char{U'+'}});
+        const auto separator = text.findFirstOf(separatorCharacters);
         if (separator.isNoIndex()) {
             return modifiers;
         }

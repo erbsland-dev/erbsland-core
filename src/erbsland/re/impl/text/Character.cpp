@@ -9,20 +9,23 @@
 
 namespace erbsland::re::impl {
 
+using namespace text::literals;
+
 void appendAsHexEscape(text::StringEditor &str, const text::Char character) {
+    static const auto shortEscapeFormat = text::StringFormat{"\\u{:04X}"};
+    static const auto longEscapeFormat = text::StringFormat{"\\u{{{:X}}}"};
     if (!character.isValidUnicode()) {
         return;
     }
     const auto value = character.toRawValue();
     if (value <= 0xFFFFU) {
-        str.append(text::StringFormat{"\\u{:04X}"}.build(static_cast<std::uint32_t>(value)));
+        str.append(shortEscapeFormat.build(static_cast<std::uint32_t>(value)));
     } else {
-        str.append(text::StringFormat{"\\u{{{:X}}}"}.build(static_cast<std::uint32_t>(value)));
+        str.append(longEscapeFormat.build(static_cast<std::uint32_t>(value)));
     }
 }
 
 void appendToSafeString(text::StringEditor &str, const text::Char character) {
-    using namespace text::literals;
     if (character == U'"' || character == U'\\') {
         str.append("\\"_el);
         str.append(character);
@@ -34,7 +37,6 @@ void appendToSafeString(text::StringEditor &str, const text::Char character) {
 }
 
 void appendToCharRangeString(text::StringEditor &str, const text::Char character) {
-    using namespace text::literals;
     if (!character.isValidUnicode()) {
         return;
     }

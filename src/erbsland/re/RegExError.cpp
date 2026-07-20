@@ -47,7 +47,7 @@ auto RegExError::diagnostic() const -> err::DiagnosticConstPtr {
 auto RegExError::withLineNumber(const unit::LineIndex lineNumber) const noexcept -> RegExError {
     auto context = _context;
     auto location = context.location();
-    location.line = lineNumber;
+    location.setLine(lineNumber);
     context.setLocation(location);
     return RegExError{std::move(context)};
 }

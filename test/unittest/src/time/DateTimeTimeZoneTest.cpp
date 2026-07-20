@@ -4,7 +4,12 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/time/all.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+
+using namespace el::time;
+
+using namespace el::text::literals;
 
 using el::text::StringConverter;
 
@@ -12,8 +17,6 @@ TESTED_TARGETS(time DateTime TimeZone)
 class DateTimeTimeZoneTest final : public el::UnitTest {
 public:
     void testUtcConversionAndAbbreviationLookup() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         const auto utc = DateTime{Date::fromYearMonthDay(2026, 7, 1), Time{Hour{12}, Minute{0}}};
@@ -25,8 +28,6 @@ public:
     }
 
     void testNamedLocalConstructionGapAndFold() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         const auto gap = DateTime{Date::fromYearMonthDay(2026, 3, 29), Time{Hour{2}, Minute{30}}, zurich};
@@ -45,8 +46,6 @@ public:
     }
 
     void testIsoParsingWithOffsetsAndNamedLocalZone() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto offset = DateTime::fromIsoString("2026-07-01T14:00:00+02:00"_el);
         REQUIRE(offset.isValid());
@@ -64,7 +63,6 @@ public:
     }
 
     void testDateTimeOperatorSubtractionSign() {
-        using namespace el::time;
 
         const auto earlier = DateTime{Date::fromYearMonthDay(2026, 5, 20), Time{Hour{12}, Minute{0}}};
         const auto later = DateTime{Date::fromYearMonthDay(2026, 5, 20), Time{Hour{12}, Minute{1}, Second{30}}};
@@ -74,8 +72,6 @@ public:
     }
 
     void testStrictIsoParsing() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         REQUIRE_FALSE(DateTime::fromIsoString("2026-"_el, DateTimePrecision::Year).isValid());
         REQUIRE_FALSE(DateTime::fromIsoString("2026-05-"_el, DateTimePrecision::Month).isValid());
@@ -99,7 +95,6 @@ public:
     }
 
     void testIsoTimeShiftFormattingOptions() {
-        using namespace el::time;
 
         const auto dateTime =
             DateTime{Date::fromYearMonthDay(2026, 5, 20), Time{Hour{12}, Minute{30}, Second{0}}, Seconds{3723}};
@@ -113,5 +108,31 @@ public:
                                 IsoTimeFormat::TimeShiftAlwaysComplete)}
                 .toStdString(),
             "1970-01-01 00:00:00+00:00");
+    }
+
+    void testLocalMarkerLifecycle() {
+
+        const auto date = Date::fromYearMonthDay(2026, 7, 1);
+        const auto time = Time{Hour{12}, Minute{30}};
+        const auto localZone = TimeZone::local();
+        const auto local = DateTime{date, TimeWithZone{time, localZone}};
+        REQUIRE(local.isLocalTime());
+        REQUIRE(local.timeZone().isLocalTime());
+        REQUIRE_EQUAL(local.toString(), "2026-07-01 12:30:00"_el);
+
+        const auto copy = local;
+        REQUIRE(copy.isLocalTime());
+        REQUIRE(local.added(Duration{Minutes{15}}).isLocalTime());
+        REQUIRE(local.added(CalendarDelta{Days{1}}).isLocalTime());
+
+        const auto utc = local.toUtc();
+        REQUIRE_FALSE(utc.isLocalTime());
+        REQUIRE(utc.timeZone().isUtc());
+        const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
+        REQUIRE_FALSE(local.toTimeZone(zurich).isLocalTime());
+        REQUIRE(utc.toTimeZone(localZone).isLocalTime());
+
+        const auto forcedFlags = IsoTimeFormatFlags{IsoTimeFormat::Extended} | IsoTimeFormat::TimeShift;
+        REQUIRE_FALSE(local.toIsoString(forcedFlags) == "2026-07-01 12:30:00"_el);
     }
 };

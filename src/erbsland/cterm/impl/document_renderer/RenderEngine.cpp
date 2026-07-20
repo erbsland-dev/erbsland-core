@@ -26,7 +26,6 @@
 namespace erbsland::cterm::impl::document_renderer {
 
 using namespace text::literals;
-
 using namespace text;
 
 RenderEngine::RenderEngine(const TerminalDocumentStyle &style, const int width) noexcept :

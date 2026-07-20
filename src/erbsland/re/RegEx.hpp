@@ -26,15 +26,19 @@
 
 namespace erbsland::re {
 
-/// A compiled regular expression.
+/// A regular expression that is compiled eagerly or on its first use.
 ///
-/// The instance is immutable after compilation and can safely be shared between threads.
+/// The instance is immutable and can safely be shared between threads. A lazy expression compiles its engine exactly
+/// once on first use. If compilation fails, the matching operation throws `RegExError`; a later operation retries
+/// compilation.
 /// All Core-string overloads decode malformed units as replacement characters. Exceptions from custom inputs propagate
 /// unchanged.
-/// @tested{RegExAlternativePrioritiesTest RegExCaptureGroupTest RegExUtf16Utf32Test}
+/// @tested{RegExAlternativePrioritiesTest RegExCaptureGroupTest RegExLazyCompileTest RegExUtf16Utf32Test}
 class RegEx final {
     friend class diagnostics::Disassembler;
     friend class diagnostics::Assembler;
+
+    struct LazyState;
 
 public:
     /// A callback that creates replacement text for one match.
@@ -47,23 +51,15 @@ public:
     /// @param settings The settings for the parser and resulting engine.
     /// @return A shared pointer to the compiled regular expression.
     /// @throws RegExError If the pattern is invalid.
-    [[nodiscard]] static auto compile(const text::String &pattern, Flags flags = {}, Settings settings = {})
+    [[nodiscard]] static auto compile(text::AnyString pattern, Flags flags = {}, const Settings &settings = {})
         -> RegExPtr;
-    /// Compile a regular expression from a UTF-16 pattern.
+    /// Create a regular expression whose engine is compiled on first use.
+    /// The pattern is retained without validation. Call `compileNow()` to explicitly trigger compilation.
     /// @param pattern The regular expression pattern.
     /// @param flags The initial flags for the regular expression.
     /// @param settings The settings for the parser and resulting engine.
-    /// @return A shared pointer to the compiled regular expression.
-    /// @throws RegExError If the pattern is invalid.
-    [[nodiscard]] static auto compile(const text::U16String &pattern, Flags flags = {}, Settings settings = {})
-        -> RegExPtr;
-    /// Compile a regular expression from a UTF-32 pattern.
-    /// @param pattern The regular expression pattern.
-    /// @param flags The initial flags for the regular expression.
-    /// @param settings The settings for the parser and resulting engine.
-    /// @return A shared pointer to the compiled regular expression.
-    /// @throws RegExError If the pattern is invalid.
-    [[nodiscard]] static auto compile(const text::U32String &pattern, Flags flags = {}, Settings settings = {})
+    /// @return A shared pointer to the lazy regular expression.
+    [[nodiscard]] static auto lazyCompile(text::AnyString pattern, Flags flags = {}, const Settings &settings = {})
         -> RegExPtr;
 
     // defaults
@@ -72,6 +68,17 @@ public:
     RegEx(RegEx &&) = default;
     auto operator=(const RegEx &) -> RegEx & = default;
     auto operator=(RegEx &&) -> RegEx & = default;
+
+public: // compilation
+    /// Return the source pattern used to compile this regular expression.
+    /// @return The preserved source pattern.
+    [[nodiscard]] auto pattern() const noexcept -> const text::AnyString & { return _pattern; }
+    /// Test if the engine was successfully compiled.
+    /// Eager expressions always return `true`. This method does not trigger lazy compilation.
+    [[nodiscard]] auto isCompiled() const noexcept -> bool;
+    /// Compile a lazy expression now, or do nothing if its engine is already available.
+    /// @throws RegExError If the pattern is invalid.
+    void compileNow() const;
 
 public: // match
     /// Try to match this expression at the start of UTF-8 text.
@@ -171,16 +178,26 @@ public: // replacement
     [[nodiscard]] auto replaceAll(const text::String &text, const ReplaceFn &replaceFn) const -> text::String;
 
 private: // internal API
-    struct PrivateTag {};
-    [[nodiscard]] static auto compileReader(text::StringCharReader reader, Flags flags, Settings settings) -> RegExPtr;
-    [[nodiscard]] auto engine() const noexcept -> const impl::ConstEnginePtr &;
+    [[nodiscard]] static auto buildEngine(const text::AnyString &pattern, Flags flags, const Settings &settings)
+        -> impl::ConstEnginePtr;
+    [[nodiscard]] auto engine() const -> impl::ConstEnginePtr;
 
 public:
+    struct PrivateTag {};
     /// @internal Create an instance from a compiled engine.
-    explicit RegEx(impl::ConstEnginePtr engine, PrivateTag) noexcept;
+    /// @param engine The pattern engine.
+    /// @param pattern The source pattern.
+    explicit RegEx(impl::ConstEnginePtr engine, text::AnyString pattern, PrivateTag) noexcept;
+    /// @internal Create a lazy instance from a pattern and compiler options.
+    /// @param pattern The source pattern.
+    /// @param flags The initial pattern flags.
+    /// @param settings The parser and engine settings.
+    explicit RegEx(text::AnyString pattern, Flags flags, Settings settings, PrivateTag);
 
 private:
-    impl::ConstEnginePtr _engine; ///< The compiled regular expression engine.
+    impl::ConstEnginePtr _engine;          ///< The eagerly compiled regular expression engine.
+    text::AnyString _pattern;              ///< The source pattern.
+    std::shared_ptr<LazyState> _lazyState; ///< Shared state for a lazily compiled engine.
 };
 
 }

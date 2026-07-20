@@ -6,8 +6,9 @@
 
 namespace erbsland::re::impl {
 
+using namespace text::literals;
+
 auto toString(ArgumentKind argumentKind) noexcept -> text::String {
-    using namespace text::literals;
     switch (argumentKind) {
     case ArgumentKind::Unknown:
         return "Unknown"_el;
@@ -38,7 +39,6 @@ auto toString(ArgumentKind argumentKind) noexcept -> text::String {
 }
 
 auto toString(ArgumentType argumentType) noexcept -> text::String {
-    using namespace text::literals;
     switch (argumentType) {
     case ArgumentType::Text:
         return "Text"_el;

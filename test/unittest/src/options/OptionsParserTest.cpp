@@ -31,7 +31,7 @@ using el::unit::ExitCode;
 using namespace el::options;
 using namespace el::text::literals;
 
-TESTED_TARGETS(OptionManager OptionParser)
+TESTED_TARGETS(OptionManager OptionParser OptionParserFlag)
 class OptionsParserTest final : public el::UnitTest {
 public:
     void testRootOptionSuccess() {
@@ -201,6 +201,26 @@ public:
         options->addOption("--help"_el).setType(OptionType::Flag);
 
         assertError(options, {"tool"_el}, OptionErrorReason::SyntaxError);
+    }
+
+    void testBuiltInOptionsCanBeDisabledIndividually() {
+        auto options = Options::create();
+        options->setParserFlag(OptionParserFlag::DisableVersion);
+        options->addOption({"--version"_el, "language-version"_el}).setType(OptionType::Text);
+
+        auto result = parse(options, {"tool"_el, "--version"_el, "1.0"_el});
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE(result.values()->getText("language-version"_el) == "1.0"_el);
+        REQUIRE(parse(options, {"tool"_el, "--help"_el}).status() == OptionResultStatus::DisplayHelp);
+
+        options->setParserFlag(OptionParserFlag::DisableHelp);
+        options->addOption({"--help"_el, "custom-help"_el}).setType(OptionType::Flag);
+        result = parse(options, {"tool"_el, "--help"_el});
+        REQUIRE(result.status() == OptionResultStatus::Success);
+        REQUIRE(result.values()->getFlag("custom-help"_el));
+
+        options->clearParserFlag(OptionParserFlag::DisableVersion);
+        REQUIRE(parse(options, {"tool"_el, "--version"_el}).status() == OptionResultStatus::DisplayVersion);
     }
 
     void testParseOrThrow() {

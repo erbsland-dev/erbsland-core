@@ -4,6 +4,7 @@
 #include <erbsland/text/CombinedChar.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>

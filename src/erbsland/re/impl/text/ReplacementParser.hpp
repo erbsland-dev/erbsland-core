@@ -27,7 +27,7 @@ private:
     void parseGroupIndex();
     void parseGroupName();
     void requireMoreContent();
-    [[noreturn]] void throwError(const text::String &description) const;
+    [[noreturn]] void throwError(text::String description) const;
 
 private:
     Replacement _replacement;

@@ -38,6 +38,8 @@ project.
     api_guidelines
     api/common
     api/bgeo
+    api/conf
+    api/cryptology
     api/cterm
     api/err
     api/event

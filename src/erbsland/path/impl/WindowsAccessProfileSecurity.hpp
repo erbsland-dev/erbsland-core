@@ -29,7 +29,7 @@ public:
     [[nodiscard]] auto acl() const noexcept -> ACL * { return _acl; }
 
 private:
-    [[noreturn]] static void throwProfileError(const text::String &reason, const Path &path, unsigned long errorCode);
+    [[noreturn]] static void throwProfileError(text::String reason, const Path &path, unsigned long errorCode);
     [[nodiscard]] static auto portableAccessMask() noexcept -> ACCESS_MASK;
     [[nodiscard]] static auto tokenInformationOrThrow(
         void *token, TOKEN_INFORMATION_CLASS informationClass, const Path &path) -> std::vector<BYTE>;

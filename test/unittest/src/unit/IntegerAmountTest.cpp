@@ -3,6 +3,7 @@
 
 #include <erbsland/math/SaturatingInteger.hpp>
 #include <erbsland/unit/all.hpp>
+#include <erbsland/unit/StdFormatForUnit.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

@@ -19,7 +19,7 @@ One Exception, One Diagnostic
 =============================
 
 :cpp:class:`Diagnostic <erbsland::err::Diagnostic>` describes one error. It can expose a source name, source path, and
-:cpp:struct:`CodeLocation <erbsland::unit::CodeLocation>`, and it converts its domain-specific details into a neutral
+:cpp:class:`CodeLocation <erbsland::unit::CodeLocation>`, and it converts its domain-specific details into a neutral
 :cpp:class:`TextDocument <erbsland::text::TextDocument>`.
 
 Call :cpp:func:`Exception::diagnostic() <erbsland::err::Exception::diagnostic>` when you need the diagnostic for the
@@ -40,14 +40,14 @@ structured fields.
         auto context = el::ApplicationErrorContext{"The score could not be read."_el};
         context.setSourceName("夜の演奏"_el)
             .setSourcePath("scores/夜の演奏.music"_el)
-            .setCodeLocation(el::CodeLocation{.line = el::LineIndex{3}, .column = el::ColumnIndex{5}});
+            .setCodeLocation(el::CodeLocation{el::LineIndex{3}, el::ColumnIndex{5}});
         const auto diagnostic = el::ApplicationError{std::move(context), {}}.diagnostic();
         const auto location = diagnostic->location();
 
         el::io::printLine("Source: "_el, diagnostic->sourceName());
         el::io::printLine("Path: "_el, diagnostic->sourcePath());
         el::io::printLine(
-            "Location: "_el, location.line.toSizeT() + 1, ":"_el, location.column.toSizeT() + 1);
+            "Location: "_el, location.line().toSizeT() + 1, ":"_el, location.column().toSizeT() + 1);
     }
 
 .. erbsland-ansi::
@@ -144,7 +144,7 @@ does not use ``Application``.
             "The tempo-marking value is out of range."_el,
         };
         context.setSourcePath("scores/朝の合奏.music"_el)
-            .setCodeLocation(el::CodeLocation{.line = el::LineIndex{6}, .column = el::ColumnIndex{14}});
+            .setCodeLocation(el::CodeLocation{el::LineIndex{6}, el::ColumnIndex{14}});
         const auto error = el::ApplicationError{std::move(context), {}};
         const auto document = el::DiagnosticHelper{error}.toDocument();
 

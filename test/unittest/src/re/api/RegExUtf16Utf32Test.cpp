@@ -8,6 +8,7 @@
 #include <erbsland/re/Match16.hpp>
 #include <erbsland/re/Match32.hpp>
 #include <erbsland/re/RegEx.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -22,14 +23,17 @@ class RegExUtf16Utf32Test final : public UNITTEST_SUBCLASS(re_test::TestHelper) 
 public:
     void testCompilePatternsInAllStringWidths() {
         const auto regex8 = RegEx::compile("(A)(😀)(B)"_el);
-        const auto regex16 = RegEx::compile(el::text::U16String{u"(A)(😀)(B)"_el});
-        const auto regex32 = RegEx::compile(el::text::U32String{U"(A)(😀)(B)"_el});
+        const auto regex16 = RegEx::compile(u"(A)(😀)(B)"_el);
+        const auto regex32 = RegEx::compile(U"(A)(😀)(B)"_el);
 
         REQUIRE(regex8->fullMatch("A😀B"_el) != nullptr);
         REQUIRE(regex16->fullMatch("A😀B"_el) != nullptr);
         REQUIRE(regex32->fullMatch("A😀B"_el) != nullptr);
         REQUIRE_EQUAL(regex16->fullMatch("A😀B"_el)->content(2), "😀"_el);
         REQUIRE_EQUAL(regex32->fullMatch("A😀B"_el)->content(2), "😀"_el);
+        REQUIRE_EQUAL(regex8->pattern().toString(), "(A)(😀)(B)"_el);
+        REQUIRE_EQUAL(regex16->pattern().toString(), "(A)(😀)(B)"_el);
+        REQUIRE_EQUAL(regex32->pattern().toString(), "(A)(😀)(B)"_el);
     }
 
     void testAllMatchingOperationsUtf16() {
@@ -168,6 +172,7 @@ public:
         const auto malformed = re_test::string_helper::bytesToString({'a', 0xFFU});
         const auto re = RegEx::compile(String{malformed});
         REQUIRE(re->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
+        REQUIRE_EQUAL(re->pattern(), "a�"_el);
     }
 
     void testMalformedUtf16AndUtf32PatternsBecomeReplacement() {
@@ -176,5 +181,7 @@ public:
 
         REQUIRE(regex16->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
         REQUIRE(regex32->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
+        REQUIRE_EQUAL(regex16->pattern(), "a�"_el);
+        REQUIRE_EQUAL(regex32->pattern(), "a�"_el);
     }
 };

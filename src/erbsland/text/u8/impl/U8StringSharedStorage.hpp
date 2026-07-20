@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U8StringData_fwd.hpp"
+#include "U8StringData.hpp"
 #include "U8StringDataView.hpp"
 #include "U8StringLiteralStorage.hpp"
 
@@ -36,11 +36,11 @@ public:
     explicit U8StringSharedStorage(unit::ByteRange range) noexcept;
 
 public: // defaults
-    ~U8StringSharedStorage();
-    U8StringSharedStorage(const U8StringSharedStorage &);
-    U8StringSharedStorage(U8StringSharedStorage &&) noexcept;
-    auto operator=(const U8StringSharedStorage &) -> U8StringSharedStorage &;
-    auto operator=(U8StringSharedStorage &&) noexcept -> U8StringSharedStorage &;
+    ~U8StringSharedStorage() = default;
+    U8StringSharedStorage(const U8StringSharedStorage &) = default;
+    U8StringSharedStorage(U8StringSharedStorage &&) noexcept = default;
+    auto operator=(const U8StringSharedStorage &) -> U8StringSharedStorage & = default;
+    auto operator=(U8StringSharedStorage &&) noexcept -> U8StringSharedStorage & = default;
 
 public: // tests
     /// Test if the storage is empty.

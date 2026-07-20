@@ -20,8 +20,7 @@ public: // implement UserLookupBackend
     [[nodiscard]] auto groupIdForName(const GroupName &name) -> GroupId override;
 
 private:
-    [[noreturn]] static void throwLookupError(
-        const text::String &reason, system::WindowsErrorContext::ErrorCode errorCode);
+    [[noreturn]] static void throwLookupError(text::String reason, system::WindowsErrorContext::ErrorCode errorCode);
     [[nodiscard]] static auto accountNameForSidString(const text::String &sid) -> text::String;
     [[nodiscard]] static auto sidStringForAccountName(const text::String &name) -> text::String;
 };

@@ -17,7 +17,6 @@
 namespace erbsland::path {
 
 using namespace text::literals;
-
 using namespace system;
 using time::DateTime;
 using time::TimeDelta;

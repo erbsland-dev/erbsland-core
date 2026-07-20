@@ -26,6 +26,8 @@
 #include <string_view>
 #include <vector>
 
+using namespace el::text::literals;
+
 using el::bgeo::Alignment;
 using namespace el::text;
 using namespace el::unit;
@@ -39,7 +41,6 @@ TESTED_TARGETS(
 class U8StringModifierTest final : public el::UnitTest {
 public:
     void testAppendReusesCapacityAndKeepsNullTerminator() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::string_view{"Hi"}};
         text.reserve(ByteLength{16U});
@@ -54,7 +55,6 @@ public:
     }
 
     void testAppendMaterializesSharedAndSlicedStorage() {
-        using namespace el::text::literals;
 
         auto base = U8StringEditor{std::string_view{"abcdef"}};
         auto text = base.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
@@ -71,7 +71,6 @@ public:
     }
 
     void testRemoveKeepAndCopyVariants() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
 
@@ -100,7 +99,6 @@ public:
     }
 
     void testInPlaceRemoveKeepReuseUniqueFullRangeStorage() {
-        using namespace el::text::literals;
 
         auto rangeText = U8StringEditor{std::string_view{"abcdef"}};
         rangeText.reserve(ByteLength{16U});
@@ -145,7 +143,6 @@ public:
     }
 
     void testInsertReplaceAndFirstModifiers() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::string_view{"abef"}};
         text.reserve(ByteLength{16U});
@@ -182,7 +179,6 @@ public:
     }
 
     void testAliasingSlicedAndMalformedNativeEditing() {
-        using namespace el::text::literals;
 
         auto insertAlias = U8StringEditor{std::string_view{"abcdef"}};
         insertAlias.reserve(ByteLength{16U});
@@ -213,7 +209,6 @@ public:
     }
 
     void testRemoveAndReplaceCharacterSets() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::u8string_view{u8"axbxcx"}};
 
@@ -227,7 +222,6 @@ public:
     }
 
     void testRemoveAndReplaceTextNeedles() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"aaaa"}};
 
@@ -237,7 +231,6 @@ public:
     }
 
     void testCaseInsensitiveModifiers() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::u8string_view{u8"ÄxxK"}};
 
@@ -248,7 +241,6 @@ public:
     }
 
     void testViewAndCodePointCopyModifiers() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{"--alpha--"}};
         const auto view = U8String{text}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}});
@@ -272,7 +264,6 @@ public:
     }
 
     void testSplitAndJoin() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{",a,,b,"}};
         const auto parts = U8StringList::fromSplit(text, CharSet{","_el});
@@ -289,7 +280,6 @@ public:
     }
 
     void testForEachTransformAndJustify() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::u8string_view{u8"Ab¢"}};
         _seenCharacters.clear();
@@ -307,8 +297,20 @@ public:
         REQUIRE_EQUAL(text.aligned(CpLength{5U}, Alignment::Right, Char{U'.'}), u8"..Ab¢"_el);
     }
 
+    void testUnchangedImmutableTransformKeepsStorage() {
+        const auto source = U8String{std::string_view{"xabcx"}};
+        const auto text = source.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+
+        const auto unchanged = text.transformed(Char::toAsciiLowercase);
+        const auto changed = text.transformed(Char::toAsciiUppercase);
+
+        REQUIRE_EQUAL(unchanged, "abc"_el);
+        REQUIRE_EQUAL(unchanged.storageId(), text.storageId());
+        REQUIRE_EQUAL(changed, "ABC"_el);
+        REQUIRE_NOT_EQUAL(changed.storageId(), text.storageId());
+    }
+
     void testInvalidUtf8ModifierBehavior() {
-        using namespace el::text::literals;
 
         const auto text = U8StringEditor{std::string_view{invalidUtf8Data()}};
 

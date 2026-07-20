@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "DisplayEscapeFormatter.hpp"
 
-#include "CppEscapeFormatter.hpp"
+#include "ConfigEscapeFormatter.hpp"
 
 #include <memory>
 
@@ -13,12 +13,12 @@ auto DisplayEscapeFormatter::needsEscape(const Char character, const EscapeAmoun
 }
 
 void DisplayEscapeFormatter::escape(const Char character, AnyStringBuilder &builder) const {
-    CppEscapeFormatter::instance()->escape(character, builder);
+    ConfigEscapeFormatter::regularInstance()->escape(character, builder);
 }
 
 auto DisplayEscapeFormatter::escapeSize(const Char character, const StringKind stringKind) const noexcept
     -> std::size_t {
-    return CppEscapeFormatter::instance()->escapeSize(character, stringKind);
+    return ConfigEscapeFormatter::regularInstance()->escapeSize(character, stringKind);
 }
 
 auto DisplayEscapeFormatter::instance() noexcept -> const EscapeFormatterPtr & {

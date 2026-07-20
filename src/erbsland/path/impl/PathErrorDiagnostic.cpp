@@ -18,7 +18,6 @@
 namespace erbsland::path::impl {
 
 using namespace text::literals;
-
 using namespace text;
 
 PathErrorDiagnostic::PathErrorDiagnostic(PathErrorContext context) noexcept : _context{std::move(context)} {

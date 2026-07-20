@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u32/impl/U32Encoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -27,13 +28,13 @@ public:
     }
 
     void testReplaceModeHandlesInvalidCodePoints() {
-        const auto input = std::u32string{U'A', char32_t{0xD800U}, char32_t{0x110000U}, U'B'};
+        const auto input = std::u32string{U'A', char32_t{0xD800U}, char32_t{0xFEFFU}, char32_t{0x110000U}, U'B'};
 
-        REQUIRE_EQUAL(collectCharacters(input, EncodingErrorMode::Replace), std::u32string{U"A\uFFFD\uFFFDB"});
+        REQUIRE_EQUAL(collectCharacters(input, EncodingErrorMode::Replace), std::u32string{U"A\uFFFD\uFFFD\uFFFDB"});
     }
 
     void testIgnoreModeHandlesInvalidCodePoints() {
-        const auto input = std::u32string{U'A', char32_t{0xD800U}, char32_t{0x110000U}, U'B'};
+        const auto input = std::u32string{U'A', char32_t{0xD800U}, char32_t{0xFEFFU}, char32_t{0x110000U}, U'B'};
 
         REQUIRE_EQUAL(collectCharacters(input, EncodingErrorMode::Ignore), std::u32string{U"AB"});
     }
@@ -45,6 +46,9 @@ public:
         REQUIRE_THROWS(
             el::text::impl::utf32::forEachValidatedCharacter(
                 std::u32string{char32_t{0x110000U}}, EncodingErrorMode::Throw, [&](const Char) -> void {}));
+        REQUIRE_THROWS(
+            el::text::impl::utf32::forEachValidatedCharacter(
+                std::u32string{char32_t{0xFEFFU}}, EncodingErrorMode::Throw, [&](const Char) -> void {}));
     }
 
 private:

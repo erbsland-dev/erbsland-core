@@ -3,6 +3,7 @@
 
 #include <erbsland/mem/StorageIdentifier.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
@@ -14,6 +15,8 @@
 #include <string>
 #include <string_view>
 #include <type_traits>
+
+using namespace el::text::literals;
 
 using el::mem::StorageIdentifier;
 using el::text::StringConverter;
@@ -50,7 +53,6 @@ public:
     }
 
     void testUtf32LiteralOperatorCreatesLiteralViewAndString() {
-        using namespace el::text::literals;
 
         constexpr auto literal = U"Hello"_el;
         const auto literalView = U32String{literal};

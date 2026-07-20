@@ -7,11 +7,9 @@
 
 #include "../engine/Operation.hpp"
 
-#include "../../../text/StdFormatForText.hpp"
 #include "../../../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 #include <set>
 
 namespace erbsland::re::impl {
@@ -68,10 +66,3 @@ struct OperationData {
 [[nodiscard]] auto toBaseName(Operation operation) noexcept -> text::String;
 
 }
-
-template <>
-struct std::formatter<erbsland::re::impl::Operation> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::Operation op, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(op), ctx);
-    }
-};

@@ -3,12 +3,14 @@
 
 #include "TimeDataTestBase.hpp"
 
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
 
 #include <format>
 #include <string>
 
 namespace fh = erbsland::unittest::fh;
+using namespace el::text::literals;
 using namespace el::time;
 
 TESTED_TARGETS(Date)
@@ -123,6 +125,11 @@ public:
             values.emplace_back(date, parseInt(fields[4]));
         }
         requireComparisonRows(values, _context, "Date");
+    }
+
+    void testStringConversion() {
+        REQUIRE_EQUAL(Date::fromYearMonthDay(2026, 7, 4).toString(), "2026-07-04"_el);
+        REQUIRE(Date{}.toString().isEmpty());
     }
 
 private:

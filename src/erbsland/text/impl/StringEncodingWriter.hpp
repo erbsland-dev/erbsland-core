@@ -21,8 +21,12 @@ public:
     }
 
 public:
-    /// Write one valid Unicode character in the selected encoding.
+    /// Write one valid Unicode character or an encoding-boundary signal in the selected encoding.
     void write(const Char character) {
+        if (character.isByteOrderMark()) {
+            writeBomSignal();
+            return;
+        }
         switch (_encoding.effectiveEncoding().toRawValue()) {
         case StringEncoding::Utf8:
             U8Writer{_writer}.write(character);
@@ -41,7 +45,27 @@ public:
         }
     }
     /// Write the byte order mark for the selected encoding.
-    void writeBom() { write(Char{0xfeffU}); }
+    void writeBom() { write(Char::byteOrderMark()); }
+
+private:
+    void writeBomSignal() {
+        switch (_encoding.effectiveEncoding().toRawValue()) {
+        case StringEncoding::Utf8:
+            U8Writer{_writer}.writeBom();
+            return;
+        case StringEncoding::Utf16LittleEndian:
+        case StringEncoding::Utf16BigEndian:
+            U16Writer{_writer}.writeBom();
+            return;
+        case StringEncoding::Utf32LittleEndian:
+        case StringEncoding::Utf32BigEndian:
+            U32Writer{_writer}.writeBom();
+            return;
+        case StringEncoding::Utf16:
+        case StringEncoding::Utf32:
+            break;
+        }
+    }
 
 private:
     tWriter &_writer;

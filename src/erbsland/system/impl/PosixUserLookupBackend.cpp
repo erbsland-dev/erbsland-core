@@ -26,8 +26,8 @@ namespace erbsland::system::impl {
 
 using namespace text::literals;
 
-void PosixUserLookupBackend::throwLookupError(const text::String &reason, const int status) {
-    throw system::PlatformError{reason, system::PosixErrorContext::fromErrorCode(status)};
+void PosixUserLookupBackend::throwLookupError(text::String reason, const int status) {
+    throw system::PlatformError{std::move(reason), system::PosixErrorContext::fromErrorCode(status)};
 }
 
 auto PosixUserLookupBackend::userNameForId(const UserId &id) -> UserName {

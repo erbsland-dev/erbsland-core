@@ -4,6 +4,8 @@
 
 #include "Duration.hpp"
 
+#include "impl/TimeDeltaFormatter.hpp"
+
 #include "../err/OverflowError.hpp"
 
 namespace erbsland::time {
@@ -47,6 +49,10 @@ auto TimeDelta::operator-() const noexcept -> TimeDelta {
 
 auto TimeDelta::toSeconds() const noexcept -> Seconds {
     return _nanoseconds.converted<Seconds>();
+}
+
+auto TimeDelta::toString(const TimeDeltaFormat &format) const -> text::String {
+    return impl::formatTimeDelta(_nanoseconds, format);
 }
 
 auto TimeDelta::toSecondsWithFractions() const noexcept -> double {
@@ -93,6 +99,10 @@ auto TimeDelta::days(const int64_t ticks) noexcept -> TimeDelta {
     return TimeDelta{Days{ticks}};
 }
 
+auto TimeDelta::weeks(const int64_t ticks) noexcept -> TimeDelta {
+    return TimeDelta{Weeks{ticks}};
+}
+
 auto TimeDelta::microsecondsOrThrow(const int64_t ticks) -> TimeDelta {
     return createOrThrow(Microseconds{ticks});
 }
@@ -115,6 +125,10 @@ auto TimeDelta::hoursOrThrow(const int64_t ticks) -> TimeDelta {
 
 auto TimeDelta::daysOrThrow(const int64_t ticks) -> TimeDelta {
     return createOrThrow(Days{ticks});
+}
+
+auto TimeDelta::weeksOrThrow(const int64_t ticks) -> TimeDelta {
+    return createOrThrow(Weeks{ticks});
 }
 
 }

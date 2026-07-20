@@ -5,6 +5,7 @@
 
 #include <erbsland/err/RuntimeError.hpp>
 #include <erbsland/re/RegExError.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -39,22 +40,22 @@ public:
     }
 
     void testCompleteContextAndConvenienceAccessors() {
-        const auto location = el::unit::CodeLocation{
-            .line = el::unit::LineIndex{2U}, .column = el::unit::ColumnIndex{4U}, .position = el::unit::CpIndex{8U}};
+        const auto location =
+            el::unit::CodeLocation{el::unit::LineIndex{2U}, el::unit::ColumnIndex{4U}, el::unit::CpIndex{8U}};
         const auto error = RegExError{RegExErrorContext{
             ErrorCategory::Assembler, "Instruction is invalid"_el, "The operation name is not defined."_el, location}};
 
         REQUIRE_EQUAL(error.context().category(), ErrorCategory::Assembler);
         REQUIRE_EQUAL(error.description(), "The operation name is not defined."_el);
-        REQUIRE_EQUAL(error.location().line, location.line);
-        REQUIRE_EQUAL(error.line(), location.line);
-        REQUIRE_EQUAL(error.column(), location.column);
-        REQUIRE_EQUAL(error.position(), location.position);
+        REQUIRE_EQUAL(error.location().line(), location.line());
+        REQUIRE_EQUAL(error.line(), location.line());
+        REQUIRE_EQUAL(error.column(), location.column());
+        REQUIRE_EQUAL(error.position(), location.position());
 
         const auto updated = error.withLineNumber(el::unit::LineIndex{7U});
         REQUIRE_EQUAL(updated.line(), el::unit::LineIndex{7U});
-        REQUIRE_EQUAL(updated.column(), location.column);
-        REQUIRE_EQUAL(error.line(), location.line);
+        REQUIRE_EQUAL(updated.column(), location.column());
+        REQUIRE_EQUAL(error.line(), location.line());
     }
 
     void testDiagnosticContainsAllDetails() {
@@ -62,11 +63,11 @@ public:
             ErrorCategory::Format,
             "Replacement expression is invalid"_el,
             "A closing brace has no matching opening brace."_el,
-            {.line = el::unit::LineIndex{1U}, .column = el::unit::ColumnIndex{2U}, .position = el::unit::CpIndex{3U}}};
+            {el::unit::LineIndex{1U}, el::unit::ColumnIndex{2U}, el::unit::CpIndex{3U}}};
         const auto diagnostic = error.diagnostic();
 
         REQUIRE(diagnostic != nullptr);
-        REQUIRE_EQUAL(diagnostic->location().position, el::unit::CpIndex{3U});
+        REQUIRE_EQUAL(diagnostic->location().position(), el::unit::CpIndex{3U});
         WITH_CONTEXT(requireContains(diagnostic->toString(), "Replacement expression is invalid"));
         WITH_CONTEXT(requireContains(diagnostic->toString(), "A closing brace has no matching opening brace."));
         WITH_CONTEXT(requireContains(diagnostic->toString(), "category"));

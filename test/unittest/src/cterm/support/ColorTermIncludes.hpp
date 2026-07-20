@@ -13,5 +13,5 @@ using namespace erbsland::cterm;
 
 // Aliases
 namespace bgeo = erbsland::bgeo;
-namespace paragraph = impl::paragraph;
-namespace termimpl = impl;
+namespace paragraph = erbsland::cterm::impl::paragraph;
+namespace termimpl = erbsland::cterm::impl;

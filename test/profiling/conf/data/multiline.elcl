@@ -1,0 +1,1048 @@
+@version: "1.0"
+@features: "all"
+# Multiline text, code, regular expressions and byte data.
+
+[multiline batch 000]
+description: """
+    Observation batch 000 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 0
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-000-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    00 01 02 03 04 05 06 07
+    >>>
+
+[multiline batch 001]
+description: """
+    Observation batch 001 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 1
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-001-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    01 02 03 04 05 06 07 08
+    >>>
+
+[multiline batch 002]
+description: """
+    Observation batch 002 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 2
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-002-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    02 03 04 05 06 07 08 09
+    >>>
+
+[multiline batch 003]
+description: """
+    Observation batch 003 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 3
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-003-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    03 04 05 06 07 08 09 0a
+    >>>
+
+[multiline batch 004]
+description: """
+    Observation batch 004 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 4
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-004-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    04 05 06 07 08 09 0a 0b
+    >>>
+
+[multiline batch 005]
+description: """
+    Observation batch 005 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 5
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-005-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    05 06 07 08 09 0a 0b 0c
+    >>>
+
+[multiline batch 006]
+description: """
+    Observation batch 006 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 6
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-006-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    06 07 08 09 0a 0b 0c 0d
+    >>>
+
+[multiline batch 007]
+description: """
+    Observation batch 007 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 7
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-007-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    07 08 09 0a 0b 0c 0d 0e
+    >>>
+
+[multiline batch 008]
+description: """
+    Observation batch 008 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 8
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-008-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    08 09 0a 0b 0c 0d 0e 0f
+    >>>
+
+[multiline batch 009]
+description: """
+    Observation batch 009 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 9
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-009-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    09 0a 0b 0c 0d 0e 0f 10
+    >>>
+
+[multiline batch 010]
+description: """
+    Observation batch 010 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 10
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-010-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0a 0b 0c 0d 0e 0f 10 11
+    >>>
+
+[multiline batch 011]
+description: """
+    Observation batch 011 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 11
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-011-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0b 0c 0d 0e 0f 10 11 12
+    >>>
+
+[multiline batch 012]
+description: """
+    Observation batch 012 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 12
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-012-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0c 0d 0e 0f 10 11 12 13
+    >>>
+
+[multiline batch 013]
+description: """
+    Observation batch 013 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 13
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-013-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0d 0e 0f 10 11 12 13 14
+    >>>
+
+[multiline batch 014]
+description: """
+    Observation batch 014 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 14
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-014-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0e 0f 10 11 12 13 14 15
+    >>>
+
+[multiline batch 015]
+description: """
+    Observation batch 015 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 15
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-015-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    0f 10 11 12 13 14 15 16
+    >>>
+
+[multiline batch 016]
+description: """
+    Observation batch 016 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 16
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-016-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    10 11 12 13 14 15 16 17
+    >>>
+
+[multiline batch 017]
+description: """
+    Observation batch 017 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 17
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-017-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    11 12 13 14 15 16 17 18
+    >>>
+
+[multiline batch 018]
+description: """
+    Observation batch 018 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 18
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-018-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    12 13 14 15 16 17 18 19
+    >>>
+
+[multiline batch 019]
+description: """
+    Observation batch 019 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 19
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-019-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    13 14 15 16 17 18 19 1a
+    >>>
+
+[multiline batch 020]
+description: """
+    Observation batch 020 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 20
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-020-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    14 15 16 17 18 19 1a 1b
+    >>>
+
+[multiline batch 021]
+description: """
+    Observation batch 021 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 21
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-021-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    15 16 17 18 19 1a 1b 1c
+    >>>
+
+[multiline batch 022]
+description: """
+    Observation batch 022 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 22
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-022-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    16 17 18 19 1a 1b 1c 1d
+    >>>
+
+[multiline batch 023]
+description: """
+    Observation batch 023 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 23
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-023-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    17 18 19 1a 1b 1c 1d 1e
+    >>>
+
+[multiline batch 024]
+description: """
+    Observation batch 024 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 24
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-024-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    18 19 1a 1b 1c 1d 1e 1f
+    >>>
+
+[multiline batch 025]
+description: """
+    Observation batch 025 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 25
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-025-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    19 1a 1b 1c 1d 1e 1f 20
+    >>>
+
+[multiline batch 026]
+description: """
+    Observation batch 026 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 26
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-026-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1a 1b 1c 1d 1e 1f 20 21
+    >>>
+
+[multiline batch 027]
+description: """
+    Observation batch 027 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 27
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-027-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1b 1c 1d 1e 1f 20 21 22
+    >>>
+
+[multiline batch 028]
+description: """
+    Observation batch 028 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 28
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-028-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1c 1d 1e 1f 20 21 22 23
+    >>>
+
+[multiline batch 029]
+description: """
+    Observation batch 029 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 29
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-029-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1d 1e 1f 20 21 22 23 24
+    >>>
+
+[multiline batch 030]
+description: """
+    Observation batch 030 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 30
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-030-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1e 1f 20 21 22 23 24 25
+    >>>
+
+[multiline batch 031]
+description: """
+    Observation batch 031 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 31
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-031-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    1f 20 21 22 23 24 25 26
+    >>>
+
+[multiline batch 032]
+description: """
+    Observation batch 032 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 32
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-032-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    20 21 22 23 24 25 26 27
+    >>>
+
+[multiline batch 033]
+description: """
+    Observation batch 033 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 33
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-033-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    21 22 23 24 25 26 27 28
+    >>>
+
+[multiline batch 034]
+description: """
+    Observation batch 034 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 34
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-034-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    22 23 24 25 26 27 28 29
+    >>>
+
+[multiline batch 035]
+description: """
+    Observation batch 035 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 35
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-035-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    23 24 25 26 27 28 29 2a
+    >>>
+
+[multiline batch 036]
+description: """
+    Observation batch 036 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 36
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-036-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    24 25 26 27 28 29 2a 2b
+    >>>
+
+[multiline batch 037]
+description: """
+    Observation batch 037 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 37
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-037-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    25 26 27 28 29 2a 2b 2c
+    >>>
+
+[multiline batch 038]
+description: """
+    Observation batch 038 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 38
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-038-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    26 27 28 29 2a 2b 2c 2d
+    >>>
+
+[multiline batch 039]
+description: """
+    Observation batch 039 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 39
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-039-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    27 28 29 2a 2b 2c 2d 2e
+    >>>
+
+[multiline batch 040]
+description: """
+    Observation batch 040 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 40
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-040-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    28 29 2a 2b 2c 2d 2e 2f
+    >>>
+
+[multiline batch 041]
+description: """
+    Observation batch 041 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 41
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-041-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    29 2a 2b 2c 2d 2e 2f 30
+    >>>
+
+[multiline batch 042]
+description: """
+    Observation batch 042 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 42
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-042-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2a 2b 2c 2d 2e 2f 30 31
+    >>>
+
+[multiline batch 043]
+description: """
+    Observation batch 043 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 43
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-043-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2b 2c 2d 2e 2f 30 31 32
+    >>>
+
+[multiline batch 044]
+description: """
+    Observation batch 044 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 44
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-044-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2c 2d 2e 2f 30 31 32 33
+    >>>
+
+[multiline batch 045]
+description: """
+    Observation batch 045 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 45
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-045-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2d 2e 2f 30 31 32 33 34
+    >>>
+
+[multiline batch 046]
+description: """
+    Observation batch 046 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 46
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-046-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2e 2f 30 31 32 33 34 35
+    >>>
+
+[multiline batch 047]
+description: """
+    Observation batch 047 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 47
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-047-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    2f 30 31 32 33 34 35 36
+    >>>
+
+[multiline batch 048]
+description: """
+    Observation batch 048 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 48
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-048-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    30 31 32 33 34 35 36 37
+    >>>
+
+[multiline batch 049]
+description: """
+    Observation batch 049 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 49
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-049-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    31 32 33 34 35 36 37 38
+    >>>
+
+[multiline batch 050]
+description: """
+    Observation batch 050 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 50
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-050-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    32 33 34 35 36 37 38 39
+    >>>
+
+[multiline batch 051]
+description: """
+    Observation batch 051 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 51
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-051-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    33 34 35 36 37 38 39 3a
+    >>>
+
+[multiline batch 052]
+description: """
+    Observation batch 052 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 52
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-052-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    34 35 36 37 38 39 3a 3b
+    >>>
+
+[multiline batch 053]
+description: """
+    Observation batch 053 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 53
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-053-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    35 36 37 38 39 3a 3b 3c
+    >>>
+
+[multiline batch 054]
+description: """
+    Observation batch 054 contains a deliberately substantial text payload.
+    It covers indentation, Unicode symbols Δ λ 中, punctuation, and repeated parser lines.
+    The quick brown fox jumps over the lazy dog while the telemetry clock advances.
+    """
+program: ```python
+    batch = 54
+    for sensor in range(8):
+        print(f"{batch}:{sensor}:ready")
+    ```
+pattern: ///
+    ^batch-054-\w+\.[Ee][Ll][Cc][Ll]$
+    ///
+payload: <<<hex
+    00 11 22 33 44 55 66 77 88 99 aa bb cc dd ee ff
+    36 37 38 39 3a 3b 3c 3d
+    >>>

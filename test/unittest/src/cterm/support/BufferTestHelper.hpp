@@ -4,6 +4,9 @@
 
 #include "BlockStringTestHelper.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
+
 #include <format>
 #include <memory>
 #include <string>

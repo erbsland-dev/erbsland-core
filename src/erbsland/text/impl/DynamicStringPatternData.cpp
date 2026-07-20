@@ -17,7 +17,7 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
         const auto character = reader.read();
         if (character == Char{U'\\'}) {
             if (reader.isAtEnd()) {
-                text::impl::throwParseError("String pattern escape is missing a character");
+                throwParseError("String pattern escape is missing a character");
             }
             data->appendEscapedCharacter(reader.read());
             continue;
@@ -38,7 +38,7 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
                 const auto setCharacter = reader.read();
                 if (setCharacter == Char{U']'}) {
                     if (!hasContent) {
-                        text::impl::throwParseError("String pattern character set must not be empty");
+                        throwParseError("String pattern character set must not be empty");
                     }
                     data->appendSetPattern(builder);
                     hasContent = false;
@@ -47,13 +47,13 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
                 }
                 if (setCharacter == Char{U'\\'}) {
                     if (reader.isAtEnd()) {
-                        text::impl::throwParseError("String pattern escape is missing a character");
+                        throwParseError("String pattern escape is missing a character");
                     }
                     const auto escapedCharacter = reader.read();
                     if (escapedCharacter != Char{U'?'} && escapedCharacter != Char{U'*'} &&
                         escapedCharacter != Char{U'['} && escapedCharacter != Char{U']'} &&
                         escapedCharacter != Char{U'\\'}) {
-                        text::impl::throwParseError("String pattern contains an unsupported escape");
+                        throwParseError("String pattern contains an unsupported escape");
                     }
                     builder.append(escapedCharacter);
                     hasContent = true;
@@ -63,12 +63,12 @@ auto DynamicStringPatternData::parse(StringCharReader &reader) -> StringPatternD
                 hasContent = true;
             }
             if (!isClosed) {
-                text::impl::throwParseError("String pattern character set is missing a closing bracket");
+                throwParseError("String pattern character set is missing a closing bracket");
             }
             continue;
         }
         if (character == Char{U']'}) {
-            text::impl::throwParseError("String pattern contains an unexpected closing bracket");
+            throwParseError("String pattern contains an unexpected closing bracket");
         }
         data->appendCharacter(character);
     }
@@ -86,7 +86,7 @@ void DynamicStringPatternData::appendOneChar() {
 
 void DynamicStringPatternData::appendCharacter(const Char character) {
     if (!character.isValidUnicode()) {
-        text::impl::throwParseError("String pattern contains an invalid character");
+        throwParseError("String pattern contains an invalid character");
     }
     _elements.push_back(
         StringPatternElement{
@@ -95,10 +95,10 @@ void DynamicStringPatternData::appendCharacter(const Char character) {
 
 void DynamicStringPatternData::appendSet(const CharSet &charSet) {
     if (charSet.isEmpty()) {
-        text::impl::throwParseError("String pattern character set must not be empty");
+        throwParseError("String pattern character set must not be empty");
     }
     if (_ranges.size() + charSet.ranges().size() > std::numeric_limits<std::uint16_t>::max()) {
-        text::impl::throwParseError("String pattern has too many ranges");
+        throwParseError("String pattern has too many ranges");
     }
     const auto rangeOffset = checkedRangeCount(_ranges.size());
     const auto rangeCount = checkedRangeCount(charSet.ranges().size());
@@ -119,7 +119,7 @@ void DynamicStringPatternData::appendSetPattern(const U32String &pattern) {
 
 void DynamicStringPatternData::appendDivider() {
     if (_divider != cNoStringPatternDivider) {
-        text::impl::throwParseError("String pattern contains more than one asterisk");
+        throwParseError("String pattern contains more than one asterisk");
     }
     _divider = _elements.size();
 }
@@ -127,20 +127,20 @@ void DynamicStringPatternData::appendDivider() {
 void DynamicStringPatternData::appendEscapedCharacter(const Char character) {
     if (character != Char{U'?'} && character != Char{U'*'} && character != Char{U'['} && character != Char{U']'} &&
         character != Char{U'\\'}) {
-        text::impl::throwParseError("String pattern contains an unsupported escape");
+        throwParseError("String pattern contains an unsupported escape");
     }
     appendCharacter(character);
 }
 
 void DynamicStringPatternData::validate() const {
     if (_divider == 0U && _elements.empty()) {
-        text::impl::throwParseError("String pattern asterisk must not stand alone");
+        throwParseError("String pattern asterisk must not stand alone");
     }
 }
 
 auto DynamicStringPatternData::checkedRangeCount(const std::size_t count) const -> std::uint16_t {
     if (count > std::numeric_limits<std::uint16_t>::max()) {
-        text::impl::throwParseError("String pattern has too many ranges");
+        throwParseError("String pattern has too many ranges");
     }
     return static_cast<std::uint16_t>(count);
 }

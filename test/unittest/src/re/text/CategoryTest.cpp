@@ -3,6 +3,7 @@
 
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/re/impl/text/Category.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

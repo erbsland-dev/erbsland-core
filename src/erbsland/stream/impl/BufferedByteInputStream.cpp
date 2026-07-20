@@ -13,7 +13,6 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
-
 using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;

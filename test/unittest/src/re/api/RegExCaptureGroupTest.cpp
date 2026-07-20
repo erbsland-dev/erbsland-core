@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 #include <memory>
 
 using namespace el::re;

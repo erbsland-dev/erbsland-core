@@ -46,6 +46,34 @@ Use a ``ByteFormat`` object in a print argument list to change the format for fo
     el::io::printLine("hash: "_el, data);
     el::io::print(el::ByteFormat::memoryDump(), data);
 
+Bounded Output and Truncation
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use ``setMaximum()`` to limit the number of byte-like output items.
+The default is ``ByteLength::infinite()``.
+If the byte block exceeds this maximum, ``setTruncateMode()`` selects which source bytes are retained and
+``setEllipsis()`` provides the inserted truncation marker.
+
+A non-empty ellipsis occupies one output item, just like one formatted byte.
+Therefore, a maximum of 16 emits at most 15 source bytes and one ellipsis.
+A maximum of zero always emits nothing, while a maximum of one emits only a non-empty ellipsis when truncation is
+required.
+An empty ellipsis does not occupy an item.
+Middle truncation assigns an odd extra retained byte to the prefix.
+
+The ellipsis participates in separator, byte-group, and line layout as one byte would.
+Source offsets still count only actual source bytes.
+Beginning and middle truncation are available only for single-line formats whose flags contain no bits other than
+``Separator``.
+Other layouts use end truncation.
+
+``forDiagnostic()`` creates a compact lowercase format with a maximum of 16 items, middle truncation, and the ASCII
+ellipsis ``...``:
+
+.. code-block:: cpp
+
+    auto diagnostic = el::String::fromByteBlock(data, el::ByteFormat::forDiagnostic());
+
 Byte Format Flag
 ----------------
 

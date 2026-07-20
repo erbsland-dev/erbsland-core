@@ -27,7 +27,6 @@
 namespace erbsland::path {
 
 using namespace text::literals;
-
 using err::Exception;
 using util::Result;
 
@@ -189,7 +188,7 @@ auto PathOperations::createTempDirectoryOrThrow(PathTempDirectoryOptions options
     }
     try {
         auto &random = core::application().secureRandom();
-        const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
@@ -240,7 +239,7 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
     }
     try {
         auto &random = core::application().secureRandom();
-        const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
@@ -296,7 +295,7 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
     }
     try {
         auto &random = core::application().secureRandom();
-        const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
+        static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
         for (auto attempt = unit::ElementCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {temporaryOptions.prefix(),

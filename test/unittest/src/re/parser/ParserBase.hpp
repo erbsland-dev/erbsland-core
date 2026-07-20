@@ -6,6 +6,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/impl/parser/Parser.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <regex>

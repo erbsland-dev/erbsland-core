@@ -29,7 +29,6 @@ namespace erbsland::options::impl {
 using namespace text;
 using namespace literals;
 using NodeType = TextNodeType;
-
 using namespace unit;
 
 auto OptionDocumentBuilder::lineIndexFromArgumentIndex(const ArgumentIndex index) noexcept -> LineIndex {
@@ -120,7 +119,7 @@ void OptionDocumentBuilder::appendCommandLineSnippet(TextDocument &document, con
     auto heading = document.addHeading(2);
     heading->setStyle("diagnostic-section"_el);
     heading->addText(_displayText->text("options.CommandLineArgumentsHeading"_el));
-    document.addCodeSnippet(std::move(lines), firstLine, std::move(markers), "command-line"_el);
+    document.addCodeSnippet(CodeSnippet{std::move(lines), firstLine, "command-line"_el}, std::move(markers));
 }
 
 auto OptionDocumentBuilder::appendContextHelp(TextDocument &document, const OptionErrorContext &context) const -> bool {

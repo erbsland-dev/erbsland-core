@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringPattern.hpp>
 #include <erbsland/text/u16/U16String.hpp>
@@ -20,6 +21,8 @@
 
 #include <string>
 #include <utility>
+
+using namespace el::text::pattern;
 
 using namespace el::text;
 using namespace el::text::literals;
@@ -66,7 +69,6 @@ public:
     }
 
     void testStaticConstruction() {
-        using namespace el::text::pattern;
 
         const auto prefix = StringPattern{Text{U"te"}, OneChar{}, Range{U'a', U'z'}, Divider{}};
         const auto setPattern = StringPattern{Text{U"ID"}, Set{{U'a', U'z'}, {U'A', U'Z'}}, OneChar{}};
@@ -83,7 +85,6 @@ public:
     }
 
     void testStaticConstructionLimits() {
-        using namespace el::text::pattern;
 
         const auto maximumElements = StringPattern{Text{U"abcdefghijklmnop"}};
         REQUIRE(maximumElements.matches("abcdefghijklmnop-tail"_el));
@@ -129,7 +130,6 @@ public:
         REQUIRE(parsedCopy.matches("ab-middle-xy"_el));
         REQUIRE(parsedMoved.matches("ab-middle-xy"_el));
 
-        using namespace el::text::pattern;
         auto typedOriginal = StringPattern{Text{U"ID"}, Range{U'0', U'9'}, Divider{}};
         const auto typedCopy = typedOriginal;
         const auto typedMoved = StringPattern{std::move(typedOriginal)};

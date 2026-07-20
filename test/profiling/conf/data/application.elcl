@@ -1,0 +1,1503 @@
+@version: "1.0"
+@features: "all"
+# Realistic mixed service configuration.
+
+[service_000.database.observability]
+enabled: no
+display name: "Ingestion Service 000 – Zürich"
+endpoint: "https://service-000.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-01 00:00:00z
+storage limit: 64 MiB
+host: "db-00.internal.example"
+port: 5400
+pool size: 8
+statement timeout: 1 seconds
+sample rate: 0.10
+labels: "region-0", "tier-0", "owner-0"
+health pattern: /^service-000:(ready|degraded)$/
+
+[service_001.database.observability]
+enabled: yes
+display name: "Ingestion Service 001 – Zürich"
+endpoint: "https://service-001.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-02 01:11:00z
+storage limit: 65 MiB
+host: "db-01.internal.example"
+port: 5401
+pool size: 9
+statement timeout: 2 seconds
+sample rate: 0.11
+labels: "region-1", "tier-1", "owner-1"
+health pattern: /^service-001:(ready|degraded)$/
+
+[service_002.database.observability]
+enabled: yes
+display name: "Ingestion Service 002 – Zürich"
+endpoint: "https://service-002.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-03 02:22:00z
+storage limit: 66 MiB
+host: "db-02.internal.example"
+port: 5402
+pool size: 10
+statement timeout: 3 seconds
+sample rate: 0.12
+labels: "region-2", "tier-2", "owner-2"
+health pattern: /^service-002:(ready|degraded)$/
+
+[service_003.database.observability]
+enabled: no
+display name: "Ingestion Service 003 – Zürich"
+endpoint: "https://service-003.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-04 03:33:00z
+storage limit: 67 MiB
+host: "db-03.internal.example"
+port: 5403
+pool size: 11
+statement timeout: 4 seconds
+sample rate: 0.13
+labels: "region-3", "tier-3", "owner-3"
+health pattern: /^service-003:(ready|degraded)$/
+
+[service_004.database.observability]
+enabled: yes
+display name: "Ingestion Service 004 – Zürich"
+endpoint: "https://service-004.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-05 04:44:00z
+storage limit: 68 MiB
+host: "db-04.internal.example"
+port: 5404
+pool size: 12
+statement timeout: 5 seconds
+sample rate: 0.14
+labels: "region-4", "tier-0", "owner-4"
+health pattern: /^service-004:(ready|degraded)$/
+
+[service_005.database.observability]
+enabled: yes
+display name: "Ingestion Service 005 – Zürich"
+endpoint: "https://service-005.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-06 05:55:00z
+storage limit: 69 MiB
+host: "db-05.internal.example"
+port: 5405
+pool size: 13
+statement timeout: 6 seconds
+sample rate: 0.15
+labels: "region-5", "tier-1", "owner-5"
+health pattern: /^service-005:(ready|degraded)$/
+
+[service_006.database.observability]
+enabled: no
+display name: "Ingestion Service 006 – Zürich"
+endpoint: "https://service-006.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-07 06:06:00z
+storage limit: 70 MiB
+host: "db-06.internal.example"
+port: 5406
+pool size: 14
+statement timeout: 7 seconds
+sample rate: 0.16
+labels: "region-6", "tier-2", "owner-6"
+health pattern: /^service-006:(ready|degraded)$/
+
+[service_007.database.observability]
+enabled: yes
+display name: "Ingestion Service 007 – Zürich"
+endpoint: "https://service-007.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-08 07:17:00z
+storage limit: 71 MiB
+host: "db-07.internal.example"
+port: 5407
+pool size: 15
+statement timeout: 8 seconds
+sample rate: 0.17
+labels: "region-0", "tier-3", "owner-7"
+health pattern: /^service-007:(ready|degraded)$/
+
+[service_008.database.observability]
+enabled: yes
+display name: "Ingestion Service 008 – Zürich"
+endpoint: "https://service-008.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-09 08:28:00z
+storage limit: 72 MiB
+host: "db-08.internal.example"
+port: 5408
+pool size: 16
+statement timeout: 9 seconds
+sample rate: 0.18
+labels: "region-1", "tier-0", "owner-8"
+health pattern: /^service-008:(ready|degraded)$/
+
+[service_009.database.observability]
+enabled: no
+display name: "Ingestion Service 009 – Zürich"
+endpoint: "https://service-009.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-10 09:39:00z
+storage limit: 73 MiB
+host: "db-09.internal.example"
+port: 5409
+pool size: 17
+statement timeout: 10 seconds
+sample rate: 0.19
+labels: "region-2", "tier-1", "owner-9"
+health pattern: /^service-009:(ready|degraded)$/
+
+[service_010.database.observability]
+enabled: yes
+display name: "Ingestion Service 010 – Zürich"
+endpoint: "https://service-010.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-11 10:50:00z
+storage limit: 74 MiB
+host: "db-10.internal.example"
+port: 5410
+pool size: 18
+statement timeout: 11 seconds
+sample rate: 0.20
+labels: "region-3", "tier-2", "owner-10"
+health pattern: /^service-010:(ready|degraded)$/
+
+[service_011.database.observability]
+enabled: yes
+display name: "Ingestion Service 011 – Zürich"
+endpoint: "https://service-011.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-12 11:01:00z
+storage limit: 75 MiB
+host: "db-11.internal.example"
+port: 5411
+pool size: 19
+statement timeout: 12 seconds
+sample rate: 0.21
+labels: "region-4", "tier-3", "owner-11"
+health pattern: /^service-011:(ready|degraded)$/
+
+[service_012.database.observability]
+enabled: no
+display name: "Ingestion Service 012 – Zürich"
+endpoint: "https://service-012.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-13 12:12:00z
+storage limit: 76 MiB
+host: "db-00.internal.example"
+port: 5412
+pool size: 20
+statement timeout: 13 seconds
+sample rate: 0.22
+labels: "region-5", "tier-0", "owner-12"
+health pattern: /^service-012:(ready|degraded)$/
+
+[service_013.database.observability]
+enabled: yes
+display name: "Ingestion Service 013 – Zürich"
+endpoint: "https://service-013.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-14 13:23:00z
+storage limit: 77 MiB
+host: "db-01.internal.example"
+port: 5413
+pool size: 21
+statement timeout: 14 seconds
+sample rate: 0.23
+labels: "region-6", "tier-1", "owner-0"
+health pattern: /^service-013:(ready|degraded)$/
+
+[service_014.database.observability]
+enabled: yes
+display name: "Ingestion Service 014 – Zürich"
+endpoint: "https://service-014.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-15 14:34:00z
+storage limit: 78 MiB
+host: "db-02.internal.example"
+port: 5414
+pool size: 22
+statement timeout: 15 seconds
+sample rate: 0.24
+labels: "region-0", "tier-2", "owner-1"
+health pattern: /^service-014:(ready|degraded)$/
+
+[service_015.database.observability]
+enabled: no
+display name: "Ingestion Service 015 – Zürich"
+endpoint: "https://service-015.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-16 15:45:00z
+storage limit: 79 MiB
+host: "db-03.internal.example"
+port: 5415
+pool size: 23
+statement timeout: 16 seconds
+sample rate: 0.25
+labels: "region-1", "tier-3", "owner-2"
+health pattern: /^service-015:(ready|degraded)$/
+
+[service_016.database.observability]
+enabled: yes
+display name: "Ingestion Service 016 – Zürich"
+endpoint: "https://service-016.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-17 16:56:00z
+storage limit: 80 MiB
+host: "db-04.internal.example"
+port: 5416
+pool size: 24
+statement timeout: 17 seconds
+sample rate: 0.26
+labels: "region-2", "tier-0", "owner-3"
+health pattern: /^service-016:(ready|degraded)$/
+
+[service_017.database.observability]
+enabled: yes
+display name: "Ingestion Service 017 – Zürich"
+endpoint: "https://service-017.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-18 17:07:00z
+storage limit: 81 MiB
+host: "db-05.internal.example"
+port: 5417
+pool size: 25
+statement timeout: 18 seconds
+sample rate: 0.27
+labels: "region-3", "tier-1", "owner-4"
+health pattern: /^service-017:(ready|degraded)$/
+
+[service_018.database.observability]
+enabled: no
+display name: "Ingestion Service 018 – Zürich"
+endpoint: "https://service-018.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-19 18:18:00z
+storage limit: 82 MiB
+host: "db-06.internal.example"
+port: 5418
+pool size: 26
+statement timeout: 19 seconds
+sample rate: 0.28
+labels: "region-4", "tier-2", "owner-5"
+health pattern: /^service-018:(ready|degraded)$/
+
+[service_019.database.observability]
+enabled: yes
+display name: "Ingestion Service 019 – Zürich"
+endpoint: "https://service-019.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-20 19:29:00z
+storage limit: 83 MiB
+host: "db-07.internal.example"
+port: 5419
+pool size: 27
+statement timeout: 20 seconds
+sample rate: 0.29
+labels: "region-5", "tier-3", "owner-6"
+health pattern: /^service-019:(ready|degraded)$/
+
+[service_020.database.observability]
+enabled: yes
+display name: "Ingestion Service 020 – Zürich"
+endpoint: "https://service-020.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-21 20:40:00z
+storage limit: 84 MiB
+host: "db-08.internal.example"
+port: 5400
+pool size: 28
+statement timeout: 1 seconds
+sample rate: 0.30
+labels: "region-6", "tier-0", "owner-7"
+health pattern: /^service-020:(ready|degraded)$/
+
+[service_021.database.observability]
+enabled: no
+display name: "Ingestion Service 021 – Zürich"
+endpoint: "https://service-021.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-22 21:51:00z
+storage limit: 85 MiB
+host: "db-09.internal.example"
+port: 5401
+pool size: 29
+statement timeout: 2 seconds
+sample rate: 0.31
+labels: "region-0", "tier-1", "owner-8"
+health pattern: /^service-021:(ready|degraded)$/
+
+[service_022.database.observability]
+enabled: yes
+display name: "Ingestion Service 022 – Zürich"
+endpoint: "https://service-022.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-23 22:02:00z
+storage limit: 86 MiB
+host: "db-10.internal.example"
+port: 5402
+pool size: 30
+statement timeout: 3 seconds
+sample rate: 0.32
+labels: "region-1", "tier-2", "owner-9"
+health pattern: /^service-022:(ready|degraded)$/
+
+[service_023.database.observability]
+enabled: yes
+display name: "Ingestion Service 023 – Zürich"
+endpoint: "https://service-023.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-24 23:13:00z
+storage limit: 87 MiB
+host: "db-11.internal.example"
+port: 5403
+pool size: 31
+statement timeout: 4 seconds
+sample rate: 0.33
+labels: "region-2", "tier-3", "owner-10"
+health pattern: /^service-023:(ready|degraded)$/
+
+[service_024.database.observability]
+enabled: no
+display name: "Ingestion Service 024 – Zürich"
+endpoint: "https://service-024.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-25 00:24:00z
+storage limit: 88 MiB
+host: "db-00.internal.example"
+port: 5404
+pool size: 32
+statement timeout: 5 seconds
+sample rate: 0.34
+labels: "region-3", "tier-0", "owner-11"
+health pattern: /^service-024:(ready|degraded)$/
+
+[service_025.database.observability]
+enabled: yes
+display name: "Ingestion Service 025 – Zürich"
+endpoint: "https://service-025.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-26 01:35:00z
+storage limit: 89 MiB
+host: "db-01.internal.example"
+port: 5405
+pool size: 33
+statement timeout: 6 seconds
+sample rate: 0.35
+labels: "region-4", "tier-1", "owner-12"
+health pattern: /^service-025:(ready|degraded)$/
+
+[service_026.database.observability]
+enabled: yes
+display name: "Ingestion Service 026 – Zürich"
+endpoint: "https://service-026.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-27 02:46:00z
+storage limit: 90 MiB
+host: "db-02.internal.example"
+port: 5406
+pool size: 34
+statement timeout: 7 seconds
+sample rate: 0.36
+labels: "region-5", "tier-2", "owner-0"
+health pattern: /^service-026:(ready|degraded)$/
+
+[service_027.database.observability]
+enabled: no
+display name: "Ingestion Service 027 – Zürich"
+endpoint: "https://service-027.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-01 03:57:00z
+storage limit: 91 MiB
+host: "db-03.internal.example"
+port: 5407
+pool size: 35
+statement timeout: 8 seconds
+sample rate: 0.37
+labels: "region-6", "tier-3", "owner-1"
+health pattern: /^service-027:(ready|degraded)$/
+
+[service_028.database.observability]
+enabled: yes
+display name: "Ingestion Service 028 – Zürich"
+endpoint: "https://service-028.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-02 04:08:00z
+storage limit: 92 MiB
+host: "db-04.internal.example"
+port: 5408
+pool size: 36
+statement timeout: 9 seconds
+sample rate: 0.38
+labels: "region-0", "tier-0", "owner-2"
+health pattern: /^service-028:(ready|degraded)$/
+
+[service_029.database.observability]
+enabled: yes
+display name: "Ingestion Service 029 – Zürich"
+endpoint: "https://service-029.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-03 05:19:00z
+storage limit: 93 MiB
+host: "db-05.internal.example"
+port: 5409
+pool size: 37
+statement timeout: 10 seconds
+sample rate: 0.39
+labels: "region-1", "tier-1", "owner-3"
+health pattern: /^service-029:(ready|degraded)$/
+
+[service_030.database.observability]
+enabled: no
+display name: "Ingestion Service 030 – Zürich"
+endpoint: "https://service-030.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-04 06:30:00z
+storage limit: 94 MiB
+host: "db-06.internal.example"
+port: 5410
+pool size: 38
+statement timeout: 11 seconds
+sample rate: 0.40
+labels: "region-2", "tier-2", "owner-4"
+health pattern: /^service-030:(ready|degraded)$/
+
+[service_031.database.observability]
+enabled: yes
+display name: "Ingestion Service 031 – Zürich"
+endpoint: "https://service-031.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-05 07:41:00z
+storage limit: 95 MiB
+host: "db-07.internal.example"
+port: 5411
+pool size: 39
+statement timeout: 12 seconds
+sample rate: 0.41
+labels: "region-3", "tier-3", "owner-5"
+health pattern: /^service-031:(ready|degraded)$/
+
+[service_032.database.observability]
+enabled: yes
+display name: "Ingestion Service 032 – Zürich"
+endpoint: "https://service-032.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-06 08:52:00z
+storage limit: 96 MiB
+host: "db-08.internal.example"
+port: 5412
+pool size: 8
+statement timeout: 13 seconds
+sample rate: 0.42
+labels: "region-4", "tier-0", "owner-6"
+health pattern: /^service-032:(ready|degraded)$/
+
+[service_033.database.observability]
+enabled: no
+display name: "Ingestion Service 033 – Zürich"
+endpoint: "https://service-033.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-07 09:03:00z
+storage limit: 97 MiB
+host: "db-09.internal.example"
+port: 5413
+pool size: 9
+statement timeout: 14 seconds
+sample rate: 0.43
+labels: "region-5", "tier-1", "owner-7"
+health pattern: /^service-033:(ready|degraded)$/
+
+[service_034.database.observability]
+enabled: yes
+display name: "Ingestion Service 034 – Zürich"
+endpoint: "https://service-034.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-08 10:14:00z
+storage limit: 98 MiB
+host: "db-10.internal.example"
+port: 5414
+pool size: 10
+statement timeout: 15 seconds
+sample rate: 0.44
+labels: "region-6", "tier-2", "owner-8"
+health pattern: /^service-034:(ready|degraded)$/
+
+[service_035.database.observability]
+enabled: yes
+display name: "Ingestion Service 035 – Zürich"
+endpoint: "https://service-035.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-09 11:25:00z
+storage limit: 99 MiB
+host: "db-11.internal.example"
+port: 5415
+pool size: 11
+statement timeout: 16 seconds
+sample rate: 0.45
+labels: "region-0", "tier-3", "owner-9"
+health pattern: /^service-035:(ready|degraded)$/
+
+[service_036.database.observability]
+enabled: no
+display name: "Ingestion Service 036 – Zürich"
+endpoint: "https://service-036.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-10 12:36:00z
+storage limit: 100 MiB
+host: "db-00.internal.example"
+port: 5416
+pool size: 12
+statement timeout: 17 seconds
+sample rate: 0.46
+labels: "region-1", "tier-0", "owner-10"
+health pattern: /^service-036:(ready|degraded)$/
+
+[service_037.database.observability]
+enabled: yes
+display name: "Ingestion Service 037 – Zürich"
+endpoint: "https://service-037.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-11 13:47:00z
+storage limit: 101 MiB
+host: "db-01.internal.example"
+port: 5417
+pool size: 13
+statement timeout: 18 seconds
+sample rate: 0.47
+labels: "region-2", "tier-1", "owner-11"
+health pattern: /^service-037:(ready|degraded)$/
+
+[service_038.database.observability]
+enabled: yes
+display name: "Ingestion Service 038 – Zürich"
+endpoint: "https://service-038.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-12 14:58:00z
+storage limit: 102 MiB
+host: "db-02.internal.example"
+port: 5418
+pool size: 14
+statement timeout: 19 seconds
+sample rate: 0.48
+labels: "region-3", "tier-2", "owner-12"
+health pattern: /^service-038:(ready|degraded)$/
+
+[service_039.database.observability]
+enabled: no
+display name: "Ingestion Service 039 – Zürich"
+endpoint: "https://service-039.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-13 15:09:00z
+storage limit: 103 MiB
+host: "db-03.internal.example"
+port: 5419
+pool size: 15
+statement timeout: 20 seconds
+sample rate: 0.49
+labels: "region-4", "tier-3", "owner-0"
+health pattern: /^service-039:(ready|degraded)$/
+
+[service_040.database.observability]
+enabled: yes
+display name: "Ingestion Service 040 – Zürich"
+endpoint: "https://service-040.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-14 16:20:00z
+storage limit: 104 MiB
+host: "db-04.internal.example"
+port: 5400
+pool size: 16
+statement timeout: 1 seconds
+sample rate: 0.50
+labels: "region-5", "tier-0", "owner-1"
+health pattern: /^service-040:(ready|degraded)$/
+
+[service_041.database.observability]
+enabled: yes
+display name: "Ingestion Service 041 – Zürich"
+endpoint: "https://service-041.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-15 17:31:00z
+storage limit: 105 MiB
+host: "db-05.internal.example"
+port: 5401
+pool size: 17
+statement timeout: 2 seconds
+sample rate: 0.51
+labels: "region-6", "tier-1", "owner-2"
+health pattern: /^service-041:(ready|degraded)$/
+
+[service_042.database.observability]
+enabled: no
+display name: "Ingestion Service 042 – Zürich"
+endpoint: "https://service-042.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-16 18:42:00z
+storage limit: 106 MiB
+host: "db-06.internal.example"
+port: 5402
+pool size: 18
+statement timeout: 3 seconds
+sample rate: 0.52
+labels: "region-0", "tier-2", "owner-3"
+health pattern: /^service-042:(ready|degraded)$/
+
+[service_043.database.observability]
+enabled: yes
+display name: "Ingestion Service 043 – Zürich"
+endpoint: "https://service-043.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-17 19:53:00z
+storage limit: 107 MiB
+host: "db-07.internal.example"
+port: 5403
+pool size: 19
+statement timeout: 4 seconds
+sample rate: 0.53
+labels: "region-1", "tier-3", "owner-4"
+health pattern: /^service-043:(ready|degraded)$/
+
+[service_044.database.observability]
+enabled: yes
+display name: "Ingestion Service 044 – Zürich"
+endpoint: "https://service-044.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-18 20:04:00z
+storage limit: 108 MiB
+host: "db-08.internal.example"
+port: 5404
+pool size: 20
+statement timeout: 5 seconds
+sample rate: 0.54
+labels: "region-2", "tier-0", "owner-5"
+health pattern: /^service-044:(ready|degraded)$/
+
+[service_045.database.observability]
+enabled: no
+display name: "Ingestion Service 045 – Zürich"
+endpoint: "https://service-045.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-19 21:15:00z
+storage limit: 109 MiB
+host: "db-09.internal.example"
+port: 5405
+pool size: 21
+statement timeout: 6 seconds
+sample rate: 0.55
+labels: "region-3", "tier-1", "owner-6"
+health pattern: /^service-045:(ready|degraded)$/
+
+[service_046.database.observability]
+enabled: yes
+display name: "Ingestion Service 046 – Zürich"
+endpoint: "https://service-046.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-20 22:26:00z
+storage limit: 110 MiB
+host: "db-10.internal.example"
+port: 5406
+pool size: 22
+statement timeout: 7 seconds
+sample rate: 0.56
+labels: "region-4", "tier-2", "owner-7"
+health pattern: /^service-046:(ready|degraded)$/
+
+[service_047.database.observability]
+enabled: yes
+display name: "Ingestion Service 047 – Zürich"
+endpoint: "https://service-047.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-21 23:37:00z
+storage limit: 111 MiB
+host: "db-11.internal.example"
+port: 5407
+pool size: 23
+statement timeout: 8 seconds
+sample rate: 0.57
+labels: "region-5", "tier-3", "owner-8"
+health pattern: /^service-047:(ready|degraded)$/
+
+[service_048.database.observability]
+enabled: no
+display name: "Ingestion Service 048 – Zürich"
+endpoint: "https://service-048.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-22 00:48:00z
+storage limit: 112 MiB
+host: "db-00.internal.example"
+port: 5408
+pool size: 24
+statement timeout: 9 seconds
+sample rate: 0.58
+labels: "region-6", "tier-0", "owner-9"
+health pattern: /^service-048:(ready|degraded)$/
+
+[service_049.database.observability]
+enabled: yes
+display name: "Ingestion Service 049 – Zürich"
+endpoint: "https://service-049.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-23 01:59:00z
+storage limit: 113 MiB
+host: "db-01.internal.example"
+port: 5409
+pool size: 25
+statement timeout: 10 seconds
+sample rate: 0.59
+labels: "region-0", "tier-1", "owner-10"
+health pattern: /^service-049:(ready|degraded)$/
+
+[service_050.database.observability]
+enabled: yes
+display name: "Ingestion Service 050 – Zürich"
+endpoint: "https://service-050.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-24 02:10:00z
+storage limit: 114 MiB
+host: "db-02.internal.example"
+port: 5410
+pool size: 26
+statement timeout: 11 seconds
+sample rate: 0.60
+labels: "region-1", "tier-2", "owner-11"
+health pattern: /^service-050:(ready|degraded)$/
+
+[service_051.database.observability]
+enabled: no
+display name: "Ingestion Service 051 – Zürich"
+endpoint: "https://service-051.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-25 03:21:00z
+storage limit: 115 MiB
+host: "db-03.internal.example"
+port: 5411
+pool size: 27
+statement timeout: 12 seconds
+sample rate: 0.61
+labels: "region-2", "tier-3", "owner-12"
+health pattern: /^service-051:(ready|degraded)$/
+
+[service_052.database.observability]
+enabled: yes
+display name: "Ingestion Service 052 – Zürich"
+endpoint: "https://service-052.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-26 04:32:00z
+storage limit: 116 MiB
+host: "db-04.internal.example"
+port: 5412
+pool size: 28
+statement timeout: 13 seconds
+sample rate: 0.62
+labels: "region-3", "tier-0", "owner-0"
+health pattern: /^service-052:(ready|degraded)$/
+
+[service_053.database.observability]
+enabled: yes
+display name: "Ingestion Service 053 – Zürich"
+endpoint: "https://service-053.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-27 05:43:00z
+storage limit: 117 MiB
+host: "db-05.internal.example"
+port: 5413
+pool size: 29
+statement timeout: 14 seconds
+sample rate: 0.63
+labels: "region-4", "tier-1", "owner-1"
+health pattern: /^service-053:(ready|degraded)$/
+
+[service_054.database.observability]
+enabled: no
+display name: "Ingestion Service 054 – Zürich"
+endpoint: "https://service-054.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-01 06:54:00z
+storage limit: 118 MiB
+host: "db-06.internal.example"
+port: 5414
+pool size: 30
+statement timeout: 15 seconds
+sample rate: 0.64
+labels: "region-5", "tier-2", "owner-2"
+health pattern: /^service-054:(ready|degraded)$/
+
+[service_055.database.observability]
+enabled: yes
+display name: "Ingestion Service 055 – Zürich"
+endpoint: "https://service-055.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-02 07:05:00z
+storage limit: 119 MiB
+host: "db-07.internal.example"
+port: 5415
+pool size: 31
+statement timeout: 16 seconds
+sample rate: 0.65
+labels: "region-6", "tier-3", "owner-3"
+health pattern: /^service-055:(ready|degraded)$/
+
+[service_056.database.observability]
+enabled: yes
+display name: "Ingestion Service 056 – Zürich"
+endpoint: "https://service-056.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-03 08:16:00z
+storage limit: 120 MiB
+host: "db-08.internal.example"
+port: 5416
+pool size: 32
+statement timeout: 17 seconds
+sample rate: 0.66
+labels: "region-0", "tier-0", "owner-4"
+health pattern: /^service-056:(ready|degraded)$/
+
+[service_057.database.observability]
+enabled: no
+display name: "Ingestion Service 057 – Zürich"
+endpoint: "https://service-057.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-04 09:27:00z
+storage limit: 121 MiB
+host: "db-09.internal.example"
+port: 5417
+pool size: 33
+statement timeout: 18 seconds
+sample rate: 0.67
+labels: "region-1", "tier-1", "owner-5"
+health pattern: /^service-057:(ready|degraded)$/
+
+[service_058.database.observability]
+enabled: yes
+display name: "Ingestion Service 058 – Zürich"
+endpoint: "https://service-058.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-05 10:38:00z
+storage limit: 122 MiB
+host: "db-10.internal.example"
+port: 5418
+pool size: 34
+statement timeout: 19 seconds
+sample rate: 0.68
+labels: "region-2", "tier-2", "owner-6"
+health pattern: /^service-058:(ready|degraded)$/
+
+[service_059.database.observability]
+enabled: yes
+display name: "Ingestion Service 059 – Zürich"
+endpoint: "https://service-059.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-06 11:49:00z
+storage limit: 123 MiB
+host: "db-11.internal.example"
+port: 5419
+pool size: 35
+statement timeout: 20 seconds
+sample rate: 0.69
+labels: "region-3", "tier-3", "owner-7"
+health pattern: /^service-059:(ready|degraded)$/
+
+[service_060.database.observability]
+enabled: no
+display name: "Ingestion Service 060 – Zürich"
+endpoint: "https://service-060.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-07 12:00:00z
+storage limit: 124 MiB
+host: "db-00.internal.example"
+port: 5400
+pool size: 36
+statement timeout: 1 seconds
+sample rate: 0.70
+labels: "region-4", "tier-0", "owner-8"
+health pattern: /^service-060:(ready|degraded)$/
+
+[service_061.database.observability]
+enabled: yes
+display name: "Ingestion Service 061 – Zürich"
+endpoint: "https://service-061.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-08 13:11:00z
+storage limit: 125 MiB
+host: "db-01.internal.example"
+port: 5401
+pool size: 37
+statement timeout: 2 seconds
+sample rate: 0.71
+labels: "region-5", "tier-1", "owner-9"
+health pattern: /^service-061:(ready|degraded)$/
+
+[service_062.database.observability]
+enabled: yes
+display name: "Ingestion Service 062 – Zürich"
+endpoint: "https://service-062.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-09 14:22:00z
+storage limit: 126 MiB
+host: "db-02.internal.example"
+port: 5402
+pool size: 38
+statement timeout: 3 seconds
+sample rate: 0.72
+labels: "region-6", "tier-2", "owner-10"
+health pattern: /^service-062:(ready|degraded)$/
+
+[service_063.database.observability]
+enabled: no
+display name: "Ingestion Service 063 – Zürich"
+endpoint: "https://service-063.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-10 15:33:00z
+storage limit: 127 MiB
+host: "db-03.internal.example"
+port: 5403
+pool size: 39
+statement timeout: 4 seconds
+sample rate: 0.73
+labels: "region-0", "tier-3", "owner-11"
+health pattern: /^service-063:(ready|degraded)$/
+
+[service_064.database.observability]
+enabled: yes
+display name: "Ingestion Service 064 – Zürich"
+endpoint: "https://service-064.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-11 16:44:00z
+storage limit: 128 MiB
+host: "db-04.internal.example"
+port: 5404
+pool size: 8
+statement timeout: 5 seconds
+sample rate: 0.74
+labels: "region-1", "tier-0", "owner-12"
+health pattern: /^service-064:(ready|degraded)$/
+
+[service_065.database.observability]
+enabled: yes
+display name: "Ingestion Service 065 – Zürich"
+endpoint: "https://service-065.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-12 17:55:00z
+storage limit: 129 MiB
+host: "db-05.internal.example"
+port: 5405
+pool size: 9
+statement timeout: 6 seconds
+sample rate: 0.75
+labels: "region-2", "tier-1", "owner-0"
+health pattern: /^service-065:(ready|degraded)$/
+
+[service_066.database.observability]
+enabled: no
+display name: "Ingestion Service 066 – Zürich"
+endpoint: "https://service-066.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-13 18:06:00z
+storage limit: 130 MiB
+host: "db-06.internal.example"
+port: 5406
+pool size: 10
+statement timeout: 7 seconds
+sample rate: 0.76
+labels: "region-3", "tier-2", "owner-1"
+health pattern: /^service-066:(ready|degraded)$/
+
+[service_067.database.observability]
+enabled: yes
+display name: "Ingestion Service 067 – Zürich"
+endpoint: "https://service-067.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-14 19:17:00z
+storage limit: 131 MiB
+host: "db-07.internal.example"
+port: 5407
+pool size: 11
+statement timeout: 8 seconds
+sample rate: 0.77
+labels: "region-4", "tier-3", "owner-2"
+health pattern: /^service-067:(ready|degraded)$/
+
+[service_068.database.observability]
+enabled: yes
+display name: "Ingestion Service 068 – Zürich"
+endpoint: "https://service-068.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-15 20:28:00z
+storage limit: 132 MiB
+host: "db-08.internal.example"
+port: 5408
+pool size: 12
+statement timeout: 9 seconds
+sample rate: 0.78
+labels: "region-5", "tier-0", "owner-3"
+health pattern: /^service-068:(ready|degraded)$/
+
+[service_069.database.observability]
+enabled: no
+display name: "Ingestion Service 069 – Zürich"
+endpoint: "https://service-069.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-16 21:39:00z
+storage limit: 133 MiB
+host: "db-09.internal.example"
+port: 5409
+pool size: 13
+statement timeout: 10 seconds
+sample rate: 0.79
+labels: "region-6", "tier-1", "owner-4"
+health pattern: /^service-069:(ready|degraded)$/
+
+[service_070.database.observability]
+enabled: yes
+display name: "Ingestion Service 070 – Zürich"
+endpoint: "https://service-070.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-17 22:50:00z
+storage limit: 134 MiB
+host: "db-10.internal.example"
+port: 5410
+pool size: 14
+statement timeout: 11 seconds
+sample rate: 0.80
+labels: "region-0", "tier-2", "owner-5"
+health pattern: /^service-070:(ready|degraded)$/
+
+[service_071.database.observability]
+enabled: yes
+display name: "Ingestion Service 071 – Zürich"
+endpoint: "https://service-071.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-18 23:01:00z
+storage limit: 135 MiB
+host: "db-11.internal.example"
+port: 5411
+pool size: 15
+statement timeout: 12 seconds
+sample rate: 0.81
+labels: "region-1", "tier-3", "owner-6"
+health pattern: /^service-071:(ready|degraded)$/
+
+[service_072.database.observability]
+enabled: no
+display name: "Ingestion Service 072 – Zürich"
+endpoint: "https://service-072.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-19 00:12:00z
+storage limit: 136 MiB
+host: "db-00.internal.example"
+port: 5412
+pool size: 16
+statement timeout: 13 seconds
+sample rate: 0.82
+labels: "region-2", "tier-0", "owner-7"
+health pattern: /^service-072:(ready|degraded)$/
+
+[service_073.database.observability]
+enabled: yes
+display name: "Ingestion Service 073 – Zürich"
+endpoint: "https://service-073.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-20 01:23:00z
+storage limit: 137 MiB
+host: "db-01.internal.example"
+port: 5413
+pool size: 17
+statement timeout: 14 seconds
+sample rate: 0.83
+labels: "region-3", "tier-1", "owner-8"
+health pattern: /^service-073:(ready|degraded)$/
+
+[service_074.database.observability]
+enabled: yes
+display name: "Ingestion Service 074 – Zürich"
+endpoint: "https://service-074.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-21 02:34:00z
+storage limit: 138 MiB
+host: "db-02.internal.example"
+port: 5414
+pool size: 18
+statement timeout: 15 seconds
+sample rate: 0.84
+labels: "region-4", "tier-2", "owner-9"
+health pattern: /^service-074:(ready|degraded)$/
+
+[service_075.database.observability]
+enabled: no
+display name: "Ingestion Service 075 – Zürich"
+endpoint: "https://service-075.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-22 03:45:00z
+storage limit: 139 MiB
+host: "db-03.internal.example"
+port: 5415
+pool size: 19
+statement timeout: 16 seconds
+sample rate: 0.85
+labels: "region-5", "tier-3", "owner-10"
+health pattern: /^service-075:(ready|degraded)$/
+
+[service_076.database.observability]
+enabled: yes
+display name: "Ingestion Service 076 – Zürich"
+endpoint: "https://service-076.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-23 04:56:00z
+storage limit: 140 MiB
+host: "db-04.internal.example"
+port: 5416
+pool size: 20
+statement timeout: 17 seconds
+sample rate: 0.86
+labels: "region-6", "tier-0", "owner-11"
+health pattern: /^service-076:(ready|degraded)$/
+
+[service_077.database.observability]
+enabled: yes
+display name: "Ingestion Service 077 – Zürich"
+endpoint: "https://service-077.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-24 05:07:00z
+storage limit: 141 MiB
+host: "db-05.internal.example"
+port: 5417
+pool size: 21
+statement timeout: 18 seconds
+sample rate: 0.87
+labels: "region-0", "tier-1", "owner-12"
+health pattern: /^service-077:(ready|degraded)$/
+
+[service_078.database.observability]
+enabled: no
+display name: "Ingestion Service 078 – Zürich"
+endpoint: "https://service-078.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-25 06:18:00z
+storage limit: 142 MiB
+host: "db-06.internal.example"
+port: 5418
+pool size: 22
+statement timeout: 19 seconds
+sample rate: 0.88
+labels: "region-1", "tier-2", "owner-0"
+health pattern: /^service-078:(ready|degraded)$/
+
+[service_079.database.observability]
+enabled: yes
+display name: "Ingestion Service 079 – Zürich"
+endpoint: "https://service-079.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-26 07:29:00z
+storage limit: 143 MiB
+host: "db-07.internal.example"
+port: 5419
+pool size: 23
+statement timeout: 20 seconds
+sample rate: 0.89
+labels: "region-2", "tier-3", "owner-1"
+health pattern: /^service-079:(ready|degraded)$/
+
+[service_080.database.observability]
+enabled: yes
+display name: "Ingestion Service 080 – Zürich"
+endpoint: "https://service-080.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-27 08:40:00z
+storage limit: 144 MiB
+host: "db-08.internal.example"
+port: 5400
+pool size: 24
+statement timeout: 1 seconds
+sample rate: 0.90
+labels: "region-3", "tier-0", "owner-2"
+health pattern: /^service-080:(ready|degraded)$/
+
+[service_081.database.observability]
+enabled: no
+display name: "Ingestion Service 081 – Zürich"
+endpoint: "https://service-081.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-01 09:51:00z
+storage limit: 145 MiB
+host: "db-09.internal.example"
+port: 5401
+pool size: 25
+statement timeout: 2 seconds
+sample rate: 0.91
+labels: "region-4", "tier-1", "owner-3"
+health pattern: /^service-081:(ready|degraded)$/
+
+[service_082.database.observability]
+enabled: yes
+display name: "Ingestion Service 082 – Zürich"
+endpoint: "https://service-082.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-02 10:02:00z
+storage limit: 146 MiB
+host: "db-10.internal.example"
+port: 5402
+pool size: 26
+statement timeout: 3 seconds
+sample rate: 0.92
+labels: "region-5", "tier-2", "owner-4"
+health pattern: /^service-082:(ready|degraded)$/
+
+[service_083.database.observability]
+enabled: yes
+display name: "Ingestion Service 083 – Zürich"
+endpoint: "https://service-083.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-03 11:13:00z
+storage limit: 147 MiB
+host: "db-11.internal.example"
+port: 5403
+pool size: 27
+statement timeout: 4 seconds
+sample rate: 0.93
+labels: "region-6", "tier-3", "owner-5"
+health pattern: /^service-083:(ready|degraded)$/
+
+[service_084.database.observability]
+enabled: no
+display name: "Ingestion Service 084 – Zürich"
+endpoint: "https://service-084.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-04 12:24:00z
+storage limit: 148 MiB
+host: "db-00.internal.example"
+port: 5404
+pool size: 28
+statement timeout: 5 seconds
+sample rate: 0.94
+labels: "region-0", "tier-0", "owner-6"
+health pattern: /^service-084:(ready|degraded)$/
+
+[service_085.database.observability]
+enabled: yes
+display name: "Ingestion Service 085 – Zürich"
+endpoint: "https://service-085.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-05 13:35:00z
+storage limit: 149 MiB
+host: "db-01.internal.example"
+port: 5405
+pool size: 29
+statement timeout: 6 seconds
+sample rate: 0.95
+labels: "region-1", "tier-1", "owner-7"
+health pattern: /^service-085:(ready|degraded)$/
+
+[service_086.database.observability]
+enabled: yes
+display name: "Ingestion Service 086 – Zürich"
+endpoint: "https://service-086.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-06 14:46:00z
+storage limit: 150 MiB
+host: "db-02.internal.example"
+port: 5406
+pool size: 30
+statement timeout: 7 seconds
+sample rate: 0.96
+labels: "region-2", "tier-2", "owner-8"
+health pattern: /^service-086:(ready|degraded)$/
+
+[service_087.database.observability]
+enabled: no
+display name: "Ingestion Service 087 – Zürich"
+endpoint: "https://service-087.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-07 15:57:00z
+storage limit: 151 MiB
+host: "db-03.internal.example"
+port: 5407
+pool size: 31
+statement timeout: 8 seconds
+sample rate: 0.97
+labels: "region-3", "tier-3", "owner-9"
+health pattern: /^service-087:(ready|degraded)$/
+
+[service_088.database.observability]
+enabled: yes
+display name: "Ingestion Service 088 – Zürich"
+endpoint: "https://service-088.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-05-08 16:08:00z
+storage limit: 152 MiB
+host: "db-04.internal.example"
+port: 5408
+pool size: 32
+statement timeout: 9 seconds
+sample rate: 0.98
+labels: "region-4", "tier-0", "owner-10"
+health pattern: /^service-088:(ready|degraded)$/
+
+[service_089.database.observability]
+enabled: yes
+display name: "Ingestion Service 089 – Zürich"
+endpoint: "https://service-089.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-06-09 17:19:00z
+storage limit: 153 MiB
+host: "db-05.internal.example"
+port: 5409
+pool size: 33
+statement timeout: 10 seconds
+sample rate: 0.99
+labels: "region-5", "tier-1", "owner-11"
+health pattern: /^service-089:(ready|degraded)$/
+
+[service_090.database.observability]
+enabled: no
+display name: "Ingestion Service 090 – Zürich"
+endpoint: "https://service-090.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-07-10 18:30:00z
+storage limit: 154 MiB
+host: "db-06.internal.example"
+port: 5410
+pool size: 34
+statement timeout: 11 seconds
+sample rate: 0.10
+labels: "region-6", "tier-2", "owner-12"
+health pattern: /^service-090:(ready|degraded)$/
+
+[service_091.database.observability]
+enabled: yes
+display name: "Ingestion Service 091 – Zürich"
+endpoint: "https://service-091.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-08-11 19:41:00z
+storage limit: 155 MiB
+host: "db-07.internal.example"
+port: 5411
+pool size: 35
+statement timeout: 12 seconds
+sample rate: 0.11
+labels: "region-0", "tier-3", "owner-0"
+health pattern: /^service-091:(ready|degraded)$/
+
+[service_092.database.observability]
+enabled: yes
+display name: "Ingestion Service 092 – Zürich"
+endpoint: "https://service-092.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-09-12 20:52:00z
+storage limit: 156 MiB
+host: "db-08.internal.example"
+port: 5412
+pool size: 36
+statement timeout: 13 seconds
+sample rate: 0.12
+labels: "region-1", "tier-0", "owner-1"
+health pattern: /^service-092:(ready|degraded)$/
+
+[service_093.database.observability]
+enabled: no
+display name: "Ingestion Service 093 – Zürich"
+endpoint: "https://service-093.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-10-13 21:03:00z
+storage limit: 157 MiB
+host: "db-09.internal.example"
+port: 5413
+pool size: 37
+statement timeout: 14 seconds
+sample rate: 0.13
+labels: "region-2", "tier-1", "owner-2"
+health pattern: /^service-093:(ready|degraded)$/
+
+[service_094.database.observability]
+enabled: yes
+display name: "Ingestion Service 094 – Zürich"
+endpoint: "https://service-094.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-11-14 22:14:00z
+storage limit: 158 MiB
+host: "db-10.internal.example"
+port: 5414
+pool size: 38
+statement timeout: 15 seconds
+sample rate: 0.14
+labels: "region-3", "tier-2", "owner-3"
+health pattern: /^service-094:(ready|degraded)$/
+
+[service_095.database.observability]
+enabled: yes
+display name: "Ingestion Service 095 – Zürich"
+endpoint: "https://service-095.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-12-15 23:25:00z
+storage limit: 159 MiB
+host: "db-11.internal.example"
+port: 5415
+pool size: 39
+statement timeout: 16 seconds
+sample rate: 0.15
+labels: "region-4", "tier-3", "owner-4"
+health pattern: /^service-095:(ready|degraded)$/
+
+[service_096.database.observability]
+enabled: no
+display name: "Ingestion Service 096 – Zürich"
+endpoint: "https://service-096.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-01-16 00:36:00z
+storage limit: 160 MiB
+host: "db-00.internal.example"
+port: 5416
+pool size: 8
+statement timeout: 17 seconds
+sample rate: 0.16
+labels: "region-5", "tier-0", "owner-5"
+health pattern: /^service-096:(ready|degraded)$/
+
+[service_097.database.observability]
+enabled: yes
+display name: "Ingestion Service 097 – Zürich"
+endpoint: "https://service-097.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-02-17 01:47:00z
+storage limit: 161 MiB
+host: "db-01.internal.example"
+port: 5417
+pool size: 9
+statement timeout: 18 seconds
+sample rate: 0.17
+labels: "region-6", "tier-1", "owner-6"
+health pattern: /^service-097:(ready|degraded)$/
+
+[service_098.database.observability]
+enabled: yes
+display name: "Ingestion Service 098 – Zürich"
+endpoint: "https://service-098.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-03-18 02:58:00z
+storage limit: 162 MiB
+host: "db-02.internal.example"
+port: 5418
+pool size: 10
+statement timeout: 19 seconds
+sample rate: 0.18
+labels: "region-0", "tier-2", "owner-7"
+health pattern: /^service-098:(ready|degraded)$/
+
+[service_099.database.observability]
+enabled: no
+display name: "Ingestion Service 099 – Zürich"
+endpoint: "https://service-099.example.invalid/api/v1/events"
+retry delays: 1, 2, 5, 10, 30, 60
+started: 2026-04-19 03:09:00z
+storage limit: 163 MiB
+host: "db-03.internal.example"
+port: 5419
+pool size: 11
+statement timeout: 20 seconds
+sample rate: 0.19
+labels: "region-1", "tier-3", "owner-8"
+health pattern: /^service-099:(ready|degraded)$/

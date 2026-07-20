@@ -8,7 +8,6 @@
 namespace erbsland::text {
 
 using namespace literals;
-
 using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ElementCount;
@@ -26,6 +25,9 @@ struct ByteFormat::Private {
     String linePrefix;                            ///< The prefix inserted before each byte-data line.
     String lineSuffix;                            ///< The suffix inserted after each byte-data line.
     ByteIndex startOffset{ByteIndex::zero()};     ///< The start offset for the dump.
+    ByteLength maximum{ByteLength::infinite()};   ///< The maximum byte-like output item count.
+    TruncateMode truncateMode{TruncateMode::End}; ///< The truncation mode.
+    String ellipsis;                              ///< The text inserted for omitted bytes.
 };
 
 ByteFormat::ByteFormat() : _p{std::make_unique<Private>()} {
@@ -111,6 +113,33 @@ auto ByteFormat::setStartOffset(ByteIndex startOffset) noexcept -> ByteFormat & 
     return *this;
 }
 
+auto ByteFormat::maximum() const noexcept -> ByteLength {
+    return _p->maximum;
+}
+
+auto ByteFormat::setMaximum(const ByteLength maximum) noexcept -> ByteFormat & {
+    _p->maximum = maximum;
+    return *this;
+}
+
+auto ByteFormat::truncateMode() const noexcept -> TruncateMode {
+    return _p->truncateMode;
+}
+
+auto ByteFormat::setTruncateMode(const TruncateMode truncateMode) noexcept -> ByteFormat & {
+    _p->truncateMode = truncateMode;
+    return *this;
+}
+
+auto ByteFormat::ellipsis() const noexcept -> const String & {
+    return _p->ellipsis;
+}
+
+auto ByteFormat::setEllipsis(const String &ellipsis) -> ByteFormat & {
+    _p->ellipsis = ellipsis;
+    return *this;
+}
+
 auto ByteFormat::setBytesPerLine(const ByteLength bytesPerLine) noexcept -> ByteFormat & {
     _p->bytesPerLine = atLeastOne(bytesPerLine);
     return *this;
@@ -168,6 +197,13 @@ auto ByteFormat::separated() -> ByteFormat {
 auto ByteFormat::memoryDump() -> ByteFormat {
     return ByteFormat{
         ByteFormatFlag::Separator | ByteFormatFlag::ByteGroups | ByteFormatFlag::Lines | ByteFormatFlag::Offset};
+}
+
+auto ByteFormat::forDiagnostic() -> ByteFormat {
+    return ByteFormat::compact()
+        .setMaximum(ByteLength{16U})
+        .setTruncateMode(TruncateMode::Middle)
+        .setEllipsis("..."_el);
 }
 
 auto ByteFormat::atLeastOne(const ByteLength value) noexcept -> ByteLength {

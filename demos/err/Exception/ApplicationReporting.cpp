@@ -15,7 +15,7 @@ void applicationReporting() {
     };
     context.setSourceName("春の合奏"_el)
         .setSourcePath("scores/春の合奏.music"_el)
-        .setCodeLocation(el::CodeLocation{.line = el::LineIndex{11}, .column = el::ColumnIndex{8}});
+        .setCodeLocation(el::CodeLocation{el::LineIndex{11}, el::ColumnIndex{8}});
     throw el::ApplicationError{std::move(context), {}};
 }
 

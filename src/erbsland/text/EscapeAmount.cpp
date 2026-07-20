@@ -52,7 +52,7 @@ auto EscapeAmount::fromStringOrThrow(const String &text) -> EscapeAmount {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }
-    text::impl::throwParseError("Unsupported escape amount");
+    impl::throwParseError("Unsupported escape amount");
 }
 
 auto EscapeAmount::fromSuffix(const Char character) noexcept -> std::optional<EscapeAmount> {

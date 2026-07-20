@@ -3,12 +3,15 @@
 
 #include <erbsland/text/IntegerFormatFlag.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringTree.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 #include <vector>
+
+using namespace el::text::literals;
 
 using el::text::IntegerFormat;
 using el::text::IntegerFormatFlag;
@@ -20,7 +23,6 @@ TESTED_TARGETS(StringTree)
 class StringTreeTest final : public el::UnitTest {
 public:
     void testBasicRendering() {
-        using namespace el::text::literals;
 
         auto tree = StringTree{"Root"_el};
         tree.append("plain line"_el);
@@ -38,7 +40,6 @@ public:
     }
 
     void testSubtreesAndEmptySubtree() {
-        using namespace el::text::literals;
 
         auto child = StringTree{"Child"_el};
         child.append("answer"_el, 42);
@@ -57,7 +58,6 @@ public:
     }
 
     void testIntegerFormattingAndLists() {
-        using namespace el::text::literals;
 
         auto format = IntegerFormat::hexadecimal();
         format.setFlags(IntegerFormatFlag::BasePrefix);

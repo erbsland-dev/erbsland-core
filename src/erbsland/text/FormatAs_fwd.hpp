@@ -34,4 +34,7 @@ struct FormatAsU16Text;
 template <typename T>
 struct FormatAsU32Text;
 
+template <typename T>
+struct FormatAsBytes;
+
 }

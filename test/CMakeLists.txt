@@ -6,4 +6,6 @@ if (NOT TARGET erbsland-unittest)
     add_subdirectory(erbsland-unittest EXCLUDE_FROM_ALL)
 endif ()
 
+add_subdirectory(adapter)
+add_subdirectory(profiling)
 add_subdirectory(unittest)

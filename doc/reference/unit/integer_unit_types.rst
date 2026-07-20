@@ -38,7 +38,7 @@ Interface
     :members:
 .. doxygenstruct:: erbsland::unit::CodeContinuousRange
     :members:
-.. doxygenstruct:: erbsland::unit::CodeLocation
+.. doxygenclass:: erbsland::unit::CodeLocation
     :members:
 .. doxygentypedef:: erbsland::unit::ColumnCount
 .. doxygentypedef:: erbsland::unit::ColumnIndex

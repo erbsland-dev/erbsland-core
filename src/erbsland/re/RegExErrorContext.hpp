@@ -64,11 +64,11 @@ public: // accessors
         return *this;
     }
     /// Get the source line index.
-    [[nodiscard]] auto line() const noexcept -> unit::LineIndex { return _location.line; }
+    [[nodiscard]] auto line() const noexcept -> unit::LineIndex { return _location.line(); }
     /// Get the source column index.
-    [[nodiscard]] auto column() const noexcept -> unit::ColumnIndex { return _location.column; }
+    [[nodiscard]] auto column() const noexcept -> unit::ColumnIndex { return _location.column(); }
     /// Get the source code-point position.
-    [[nodiscard]] auto position() const noexcept -> unit::CpIndex { return _location.position; }
+    [[nodiscard]] auto position() const noexcept -> unit::CpIndex { return _location.position(); }
 
 private:
     ErrorCategory _category{ErrorCategory::Internal}; ///< The error category.

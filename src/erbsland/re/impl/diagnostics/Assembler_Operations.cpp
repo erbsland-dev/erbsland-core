@@ -9,6 +9,8 @@
 
 namespace erbsland::re::impl {
 
+using namespace text::literals;
+
 void Assembler::processOperationLine() {
     auto operation = currentToken().getOperation();
     const auto baseOperation = operation;
@@ -16,7 +18,6 @@ void Assembler::processOperationLine() {
         try {
             operation = modifiedOperation(operation, _modifiers);
         } catch (const err::ParameterError &) {
-            using namespace text::literals;
             text::StringEditor modifierStr;
             for (const auto &modifier : _modifiers) {
                 if (!modifierStr.isEmpty()) {

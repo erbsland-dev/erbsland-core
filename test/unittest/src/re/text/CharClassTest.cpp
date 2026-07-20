@@ -5,6 +5,7 @@
 
 #include <erbsland/re/impl/text/CharClass.hpp>
 #include <erbsland/re/RegExError.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

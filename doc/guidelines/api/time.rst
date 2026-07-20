@@ -30,8 +30,10 @@ Time and Duration Vocabulary
 
     Duration // signed span with second resolution
     TimeDelta // signed span with nanosecond resolution
+    CalendarDelta // independent signed calendar and fixed-unit components
     TimePoint // monotonic steady-clock point for elapsed-time measurement
     Time // wall-clock time within one day
+    TimeWithZone // wall-clock time with a zone, but no instant without a date
     DateTime // UTC instant plus display offset or named time-zone metadata
     TimeZone // UTC, fixed offset, or supported named IANA time zone
 
@@ -42,9 +44,11 @@ Primary Types
 
     Date // civil date with invalid state
     Time // wall-clock time of day with nanosecond precision
+    TimeWithZone // time of day plus TimeZone
     DateTime // instant stored as UTC date/time with display offset information
     Duration // signed second-resolution duration
     TimeDelta // signed nanosecond-resolution duration
+    CalendarDelta // non-normalized delta from nanoseconds through years
     TimePoint // monotonic steady-clock point
     ElapsedTimer // restartable elapsed-time helper
     TimeZone // UTC, fixed offset, or named IANA time zone
@@ -84,6 +88,7 @@ Supporting Types
     Duration::Parts, Duration::DaysAndNanoseconds // duration decomposition results
     TimeWrapResult // time-of-day addition result plus day crossings
     tz::TimeOffset // UTC offset, zone id, abbreviation id and DST flag for an instant
+    TimeDeltaFormat // human-readable and ELCL delta formatting options
 
 Enumerations and Flags
 ======================
@@ -95,6 +100,7 @@ Enumerations and Flags
     DurationPart // largest part used when splitting Duration
     IsoTimeFormat, IsoTimeFormatFlags // ISO date/time formatting flags
     TimeOccurrenceInFold // first or second local occurrence during a DST fold
+    TimeDeltaUnit // smallest fixed unit used for delta formatting
     SecondsUnitTag, MonthsUnitTag, YearsUnitTag // unit tags for time amounts
 
 Part Patterns
@@ -181,6 +187,11 @@ Time Patterns
     T::fromDurationSinceMidnight(delta-or-duration) -> Time // wrap duration into one day
     T::first()/last() -> Time // first and last time of day
 
+    TimeWithZone() // create midnight UTC
+    TimeWithZone(time[, zone]) // compose a wall-clock time and zone
+    o.time()/timeZone() -> Time/TimeZone // access composed values
+    o.toString() -> text::String // human-readable time and zone
+
 Duration and Delta Patterns
 ===========================
 
@@ -199,6 +210,14 @@ Duration and Delta Patterns
     o.toTimeDelta() -> TimeDelta // saturating duration to delta conversion
     o.toTimeDeltaOrThrow() -> TimeDelta // duration to delta conversion or throw err::OverflowError
     o.toDuration() -> Duration // delta to second-resolution duration, truncating toward zero
+    TimeDelta::❮unit❯(ticks) -> TimeDelta // saturating factory, nanoseconds through weeks
+    TimeDelta::❮unit❯OrThrow(ticks) -> TimeDelta // exact factory or err::OverflowError
+    CalendarDelta(amount-or-parts) // create independent fixed/calendar parts
+    o.isValidTimeDelta() -> bool // test exact fixed conversion
+    o.toTimeDelta() -> optional<TimeDelta> // exact fixed conversion or empty optional
+    o.toTimeDeltaOrThrow() -> TimeDelta // exact fixed conversion or err::OverflowError
+    o.toString(format) -> text::String // normalized display without changing stored parts
+    TimeDeltaFormat::shortUnits()/longUnits()/elcl() -> TimeDeltaFormat // useful format factories
     T::zero() -> T // zero duration or delta
 
 DateTime Patterns
@@ -208,6 +227,7 @@ DateTime Patterns
 
     DateTime() // create invalid date/time
     DateTime(date, time) // create UTC date/time
+    DateTime(date, timeWithOffset) // resolve a civil date/time through its numeric offset
     DateTime(date, time, offset-or-zone[, occurrence]) // create local date/time
     o.isValid()/isUtc() -> bool // date/time state tests
     o.utcDate()/utcTime() -> Date/Time // stored UTC values
@@ -215,11 +235,11 @@ DateTime Patterns
     o.timeOffset() -> Duration // display UTC offset
     o.timeZone() -> TimeZone // display time zone or UTC
     o.timeZoneAbbreviation() -> text::StringEditor // zone abbreviation or empty string
-    o.wouldAddSaturate/wouldSubtractSaturate(duration) -> bool // arithmetic saturation tests
-    o.added/subtracted(duration) -> DateTime // saturated instant arithmetic
-    o.addedOrThrow/subtractedOrThrow(duration) -> DateTime // instant arithmetic or throw err::OverflowError
-    o.add/subtract(duration) -> void // saturated in-place instant arithmetic
-    o.addOrThrow/subtractOrThrow(duration) -> void // in-place instant arithmetic or throw err::OverflowError
+    o.wouldAddSaturate/wouldSubtractSaturate(duration-or-calendar-delta) -> bool // arithmetic saturation tests
+    o.added/subtracted(duration-or-calendar-delta) -> DateTime // saturated instant/calendar arithmetic
+    o.addedOrThrow/subtractedOrThrow(duration-or-calendar-delta) -> DateTime // arithmetic or err::OverflowError
+    o.add/subtract(duration-or-calendar-delta) -> void // saturated in-place arithmetic
+    o.addOrThrow/subtractOrThrow(duration-or-calendar-delta) -> void // in-place arithmetic or err::OverflowError
     o.durationTo(dateTime) -> Duration // signed second-resolution distance
     o.timeDeltaTo(dateTime) -> TimeDelta // signed nanosecond-resolution distance
     o.toUtc() -> DateTime // convert display zone to UTC
@@ -254,6 +274,9 @@ Time Zone Patterns
     T::databaseVersion() -> unit::Version // bundled IANA database version
     T::utc() -> TimeZone // UTC zone
     o.isDst() -> bool // test daylight-saving state on tz::TimeOffset
+    T::local() -> TimeZone // process-cached system zone, local-marked UTC on failure
+    o.isLocalTime() -> bool // zone originated from the system-local setting
+    o.isDst()/isLocalTime() -> bool // resolved-offset state on tz::TimeOffset
 
 Elapsed-Time Patterns
 =====================

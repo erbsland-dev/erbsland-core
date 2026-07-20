@@ -7,6 +7,8 @@ target_sources(erbsland-core PRIVATE
         AnyStringBuilderBase.hpp
         AnyStringBuilderFactory.cpp
         AnyStringBuilderFactory.hpp
+        AnyStringComparison.hpp
+        ByteBlockFormatter.cpp
         ByteBlockFormatter.hpp
         CharSetFromPattern.hpp
         CodeBlockData.hpp
@@ -18,6 +20,8 @@ target_sources(erbsland-core PRIVATE
         CodeSnippetLayoutCell.hpp
         CodeSnippetLayoutMarker.hpp
         CodeSnippetLayoutRow.hpp
+        ConfigEscapeFormatter.cpp
+        ConfigEscapeFormatter.hpp
         CppEscapeFormatter.cpp
         CppEscapeFormatter.hpp
         DisplayEscapeFormatter.cpp
@@ -52,6 +56,9 @@ target_sources(erbsland-core PRIVATE
         JsonEscapeFormatter.cpp
         JsonEscapeFormatter.hpp
         LinkData.hpp
+        NamedFormatDomain.hpp
+        NamedFormatParser.cpp
+        NamedFormatParser.hpp
         NoneEscapeFormatter.cpp
         NoneEscapeFormatter.hpp
         PlainTextRenderer.cpp
@@ -64,6 +71,8 @@ target_sources(erbsland-core PRIVATE
         SafeStringEscapeTools.hpp
         StaticStringPatternData.hpp
         StaticStringPatternData.tpp
+        StringAppendTools.cpp
+        StringAppendTools.hpp
         StringConversionTools.cpp
         StringConversionTools.hpp
         StringConversionTools_fwd.hpp
@@ -89,6 +98,9 @@ target_sources(erbsland-core PRIVATE
         StringReaderBase_fwd.hpp
         StringSet.hpp
         StringSet_fwd.hpp
+        StringSplitter.hpp
+        StringSplitter.tpp
+        StringSplitter_fwd.hpp
         StringTreeData.hpp
         ThrowHelper.cpp
         ThrowHelper.hpp

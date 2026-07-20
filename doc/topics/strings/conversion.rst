@@ -177,6 +177,9 @@ For this use case, the :cpp:class:`StringEncoder <erbsland::text::StringEncoder>
 It allows you to encode all strings and editors from this library into UTF-8, UTF-16 and UTF-32 byte sequences.
 Additionally you can choose if the encoded strings shall be little or big-endian encoded.
 Also, you can put a BOM in front of the encoded byte sequence.
+The BOM is encoding infrastructure at the byte boundary, not string content.
+Erbsland Core reserves ``U+FEFF`` for this purpose: a raw ``U+FEFF`` encountered in text is invalid and follows the
+selected encoding-error mode.
 
 .. erbsland-demo::
     :source: text/StringEncoder/EncodeStrings.cpp
@@ -263,6 +266,9 @@ The ``StringBomMode`` for Encoding Strings
 The enum values in :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>` are not that straightforward to understand
 when encoding strings.
 ``Automatic`` will choose adding a BOM depending on the encoding.
+On decoding, these modes apply only to an initial encoded signature.
+A second or embedded BOM sequence is invalid content and is thrown, replaced with ``U+FFFD``, or ignored according to
+:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>`.
 
 .. erbsland-demo::
     :source: text/StringEncoder/BomHandling.cpp

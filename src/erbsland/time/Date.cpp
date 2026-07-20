@@ -14,7 +14,6 @@
 namespace erbsland::time {
 
 using namespace text::literals;
-
 using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
@@ -213,6 +212,10 @@ auto Date::previous(DayOfWeek dayOfWeek) const noexcept -> Date {
 
 auto Date::daysTo(Date other) const noexcept -> Days {
     return isValid() && other.isValid() ? Days{other._days - _days} : Days{};
+}
+
+auto Date::toString() const -> String {
+    return toIsoString();
 }
 
 auto Date::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> String {

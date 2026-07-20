@@ -10,7 +10,6 @@
 namespace erbsland::err {
 
 using namespace text::literals;
-
 using text::String;
 using text::TextDocument;
 using text::TextNodePtr;
@@ -37,8 +36,8 @@ auto ErrorDocumentBuilder::addSection(String title) -> TextNodePtr {
 
 void ErrorDocumentBuilder::addSource(
     const String &sourceName, const String &sourcePath, const unit::CodeLocation location) {
-    if (sourceName.isEmpty() && sourcePath.isEmpty() && location.line.isNoIndex() && location.column.isNoIndex() &&
-        location.position.isNoIndex()) {
+    if (sourceName.isEmpty() && sourcePath.isEmpty() && location.line().isNoIndex() && location.column().isNoIndex() &&
+        location.position().isNoIndex()) {
         return;
     }
     addSection(_displayText->text("ErrorSourceHeading"_el));
@@ -55,22 +54,22 @@ void ErrorDocumentBuilder::addSource(
     if (!sourcePath.isEmpty()) {
         addField(_displayText->text("SourcePathLabel"_el), sourcePath, "diagnostic-source-name"_el);
     }
-    if (!location.line.isNoIndex()) {
+    if (!location.line().isNoIndex()) {
         addField(
             _displayText->text("LineLabel"_el),
-            String::fromInteger(location.line.toSizeT() + 1U),
+            String::fromInteger(location.line().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
-    if (!location.column.isNoIndex()) {
+    if (!location.column().isNoIndex()) {
         addField(
             _displayText->text("ColumnLabel"_el),
-            String::fromInteger(location.column.toSizeT() + 1U),
+            String::fromInteger(location.column().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
-    if (!location.position.isNoIndex()) {
+    if (!location.position().isNoIndex()) {
         addField(
             _displayText->text("PositionLabel"_el),
-            String::fromInteger(location.position.toSizeT() + 1U),
+            String::fromInteger(location.position().toSizeT() + 1U),
             "diagnostic-source-location"_el);
     }
 }

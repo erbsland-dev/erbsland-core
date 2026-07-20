@@ -4,64 +4,53 @@
 
 #include "Literals.hpp"
 #include "String.hpp"
-#include "StringEditor.hpp"
 
 #include "impl/ThrowHelper.hpp"
+
+#include <algorithm>
+#include <ranges>
 
 namespace erbsland::text {
 
 using namespace text::literals;
 
+const EscapeFormat::ValueToTextArray EscapeFormat::_valueToTextMap = {
+    {
+        {None, "none"_el},
+        {Html, "html"_el},
+        {Json, "json"_el},
+        {Cpp, "cpp"_el},
+        {Xml, "xml"_el},
+        {RegEx, "regex"_el},
+        {Display, "display"_el},
+        {Config, "config"_el},
+        {ConfigTest, "config_test"_el},
+    },
+};
+
 auto EscapeFormat::toString() const -> String {
-    switch (_value) {
-    case Html:
-        return "html"_el;
-    case Json:
-        return "json"_el;
-    case Cpp:
-        return "cpp"_el;
-    case Xml:
-        return "xml"_el;
-    case RegEx:
-        return "regex"_el;
-    case Display:
-        return "display"_el;
-    case None:
-    default:
-        return "none"_el;
+    const auto it =
+        std::ranges::find_if(_valueToTextMap, [this](const auto &pair) -> bool { return pair.first == _value; });
+    if (it != _valueToTextMap.end()) {
+        return it->second;
     }
+    return "none"_el;
 }
 
 auto EscapeFormat::fromString(const String &text) noexcept -> std::optional<EscapeFormat> {
-    if (text == "none"_el) {
-        return EscapeFormat{None};
+    const auto it =
+        std::ranges::find_if(_valueToTextMap, [&](const auto &pair) -> bool { return text == pair.second; });
+    if (it != _valueToTextMap.end()) {
+        return it->first;
     }
-    if (text == "html"_el) {
-        return EscapeFormat{Html};
-    }
-    if (text == "json"_el) {
-        return EscapeFormat{Json};
-    }
-    if (text == "cpp"_el) {
-        return EscapeFormat{Cpp};
-    }
-    if (text == "xml"_el) {
-        return EscapeFormat{Xml};
-    }
-    if (text == "regex"_el) {
-        return EscapeFormat{RegEx};
-    }
-    if (text == "display"_el) {
-        return EscapeFormat{Display};
-    }
-    return {};
+    return std::nullopt;
 }
 
 auto EscapeFormat::fromStringOrThrow(const String &text) -> EscapeFormat {
     if (const auto result = fromString(text); result.has_value()) {
         return result.value();
     }
-    text::impl::throwParseError("Unsupported escape format");
+    impl::throwParseError("Unsupported escape format");
 }
 
 }

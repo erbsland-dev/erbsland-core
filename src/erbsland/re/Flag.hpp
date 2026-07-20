@@ -3,11 +3,9 @@
 #pragma once
 
 #include "../text/Literals.hpp"
-#include "../text/StdFormatForText.hpp"
 #include "../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 
 namespace erbsland::re {
 
@@ -51,10 +49,3 @@ enum class Flag : uint8_t {
 }
 
 }
-
-template <>
-struct std::formatter<erbsland::re::Flag> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::Flag flag, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(flag), ctx);
-    }
-};

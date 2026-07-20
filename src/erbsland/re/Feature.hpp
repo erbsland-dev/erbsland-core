@@ -3,11 +3,9 @@
 #pragma once
 
 #include "../text/Literals.hpp"
-#include "../text/StdFormatForText.hpp"
 #include "../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 
 namespace erbsland::re {
 
@@ -82,10 +80,3 @@ enum class Feature : uint16_t {
 }
 
 }
-
-template <>
-struct std::formatter<erbsland::re::Feature> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::Feature feature, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::toString(feature), ctx);
-    }
-};

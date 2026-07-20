@@ -12,6 +12,8 @@
 #include <string>
 #include <string_view>
 
+using namespace el::text::literals;
+
 using el::debug::DebugViewDetail;
 using el::debug::toDebugString;
 using el::text::String;
@@ -38,7 +40,6 @@ public:
     }
 
     void testMemoryDetailsForLiteralViewAndSlice() {
-        using namespace el::text::literals;
 
         const auto text = String{"abcdef"_el};
         const auto slice = text.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});

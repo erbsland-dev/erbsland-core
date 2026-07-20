@@ -25,7 +25,6 @@
 namespace erbsland::cterm::impl::document_renderer {
 
 using namespace text::literals;
-
 using namespace text;
 
 void RenderEngine::appendList(const TextNode &node, const TextNodeType itemType, const RenderContext &context) {

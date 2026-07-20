@@ -4,6 +4,7 @@
 #include <erbsland/text/EscapeAmount.hpp>
 #include <erbsland/text/EscapeFormat.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -19,6 +20,8 @@
 #include <string>
 #include <string_view>
 
+using namespace el::text::literals;
+
 using el::unit::CpIndex;
 using el::unit::U16DataIndex;
 using namespace el::text;
@@ -29,7 +32,6 @@ TESTED_TARGETS(EscapeFormat EscapeAmount U8StringEditor U8String U16StringEditor
 class StringEscapingTest final : public el::UnitTest {
 public:
     void testEscapeFormatConversion() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::None), 0U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Html), 1U);
@@ -38,6 +40,7 @@ public:
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Xml), 4U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::RegEx), 5U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Display), 6U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Config), 7U);
 
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::None}.toString(), "none"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Html}.toString(), "html"_el);
@@ -46,18 +49,19 @@ public:
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Xml}.toString(), "xml"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::RegEx}.toString(), "regex"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Display}.toString(), "display"_el);
+        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Config}.toString(), "config"_el);
 
         REQUIRE_EQUAL(EscapeFormat::fromString("html"_el).value(), EscapeFormat::Html);
         REQUIRE_EQUAL(EscapeFormat::fromString("json"_el).value(), EscapeFormat::Json);
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("regex"_el), EscapeFormat::RegEx);
         REQUIRE_FALSE(EscapeFormat::fromString("pcre"_el).has_value());
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("display"_el), EscapeFormat::Display);
+        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("config"_el), EscapeFormat::Config);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
         REQUIRE_THROWS(EscapeFormat::fromStringOrThrow("unknown"_el));
     }
 
     void testEscapeAmountConversion() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeAmount::Nothing), 0U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeAmount::Required), 1U);
@@ -85,11 +89,10 @@ public:
     }
 
     void testDisplayEscapingPreservesPunctuationAndEscapesControls() {
-        using namespace el::text::literals;
 
         auto text = el::text::StringEditor{"\"quoted\" \\ path"_el};
         text.append(U'\x1b').append(U'\n');
-        REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Display), "\"quoted\" \\ path\\033\\n"_el);
+        REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Display), "\"quoted\" \\ path\\u{1b}\\n"_el);
     }
 
     void testHtmlAndXmlTargets() {
@@ -128,6 +131,23 @@ public:
         const auto regExEscaped = regExText.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{regExEscaped}.toStdString(), std::string{"a\\+b\\*\\(c\\)"});
         REQUIRE_EQUAL(regExEscaped.length(), regExText.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
+    }
+
+    void testConfigTarget() {
+        const auto u8Text = U8StringEditor{std::u8string_view{u8"A\\\"$\n\r\t\u0001é"}};
+        const auto u8Escaped = u8Text.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{u8Escaped}.toStdString(), std::string{"A\\\\\\\"\\$\\n\\r\\t\\u{1}é"});
+        REQUIRE_EQUAL(u8Escaped.length(), u8Text.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
+
+        const auto u16Text = U16StringEditor{std::u16string_view{u"A\\\"$\n\r\t\u0001é"}};
+        const auto u16Escaped = u16Text.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{u16Escaped}.toStdU16String(), std::u16string{u"A\\\\\\\"\\$\\n\\r\\t\\u{1}é"});
+        REQUIRE_EQUAL(u16Escaped.length(), u16Text.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
+
+        const auto u32Text = U32StringEditor{std::u32string_view{U"A\\\"$\n\r\t\u0001é"}};
+        const auto u32Escaped = u32Text.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{u32Escaped}.toStdU32String(), std::u32string{U"A\\\\\\\"\\$\\n\\r\\t\\u{1}é"});
+        REQUIRE_EQUAL(u32Escaped.length(), u32Text.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
     }
 
     void testEscapeAmounts() {
@@ -195,6 +215,16 @@ public:
         const auto invalidUtf32 = U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}};
         const auto escapedUtf32 = invalidUtf32.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{escapedUtf32}.toStdU32String(), std::u32string{U"A\\uFFFDB"});
+
+        const auto configUtf8 = invalidUtf8.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{configUtf8}.toStdString(), std::string{"A\\u{fffd}B"});
+        REQUIRE_EQUAL(configUtf8.length(), invalidUtf8.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
+        const auto configUtf16 = invalidUtf16.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{configUtf16}.toStdU16String(), std::u16string{u"A\\u{fffd}B"});
+        REQUIRE_EQUAL(configUtf16.length(), invalidUtf16.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
+        const auto configUtf32 = invalidUtf32.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
+        REQUIRE_EQUAL(StringConverter{configUtf32}.toStdU32String(), std::u32string{U"A\\u{fffd}B"});
+        REQUIRE_EQUAL(configUtf32.length(), invalidUtf32.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
     }
 
     void testNoEscapePreservesNativeInvalidData() {

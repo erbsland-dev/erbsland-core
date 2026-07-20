@@ -2,10 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U32StringBuilder.hpp"
 
+#include "U32StringAppendTools.hpp"
+
 #include "../U32String.hpp"
 
 #include "../../AnyStringEditor.hpp"
 #include "../../impl/ByteBlockFormatter.hpp"
+#include "../../impl/UnsafeU16StringAccess.hpp"
+#include "../../impl/UnsafeU32StringAccess.hpp"
+#include "../../impl/UnsafeU8StringAccess.hpp"
 #include "../../StringConverter.hpp"
 #include "../../u16/U16String.hpp"
 #include "../../u16/U16StringConstIterator.hpp"
@@ -42,42 +47,36 @@ void U32StringBuilder::clear() noexcept {
     _text.clear();
 }
 
-void U32StringBuilder::append(const Char character) {
-    _text.append(character);
+auto U32StringBuilder::append(const Char character) -> unit::CpLength {
+    return U32StringAppendTools{_text._storage}.append(character);
 }
 
 void U32StringBuilder::append(const Char character, unit::CpLength count) {
-    _text.append(character, count);
+    U32StringAppendTools{_text._storage}.append(character, count);
 }
 
-void U32StringBuilder::append(const U8String &text) {
-    for (const auto character : text) {
-        append(character);
-    }
+auto U32StringBuilder::append(const U8String &text) -> unit::CpLength {
+    return U32StringAppendTools{_text._storage}.append(text);
 }
 
 void U32StringBuilder::append(const U8String &text, const unit::ElementCount count) {
-    const auto convertedText = StringConverter{text}.toU32String();
-    _text.append(U32String{convertedText}, count);
+    U32StringAppendTools{_text._storage}.append(UnsafeU8StringAccess{text}.dataView(), count);
 }
 
-void U32StringBuilder::append(const U16String &text) {
-    for (const auto character : text) {
-        append(character);
-    }
+auto U32StringBuilder::append(const U16String &text) -> unit::CpLength {
+    return U32StringAppendTools{_text._storage}.append(text);
 }
 
 void U32StringBuilder::append(const U16String &text, const unit::ElementCount count) {
-    const auto convertedText = StringConverter{text}.toU32String();
-    _text.append(U32String{convertedText}, count);
+    U32StringAppendTools{_text._storage}.append(UnsafeU16StringAccess{text}.dataView(), count);
 }
 
-void U32StringBuilder::append(const U32String &text) {
-    _text.append(text);
+auto U32StringBuilder::append(const U32String &text) -> unit::CpLength {
+    return U32StringAppendTools{_text._storage}.append(text);
 }
 
 void U32StringBuilder::append(const U32String &text, const unit::ElementCount count) {
-    _text.append(text, count);
+    U32StringAppendTools{_text._storage}.append(UnsafeU32StringAccess{text}.dataView(), count);
 }
 
 void U32StringBuilder::appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) {

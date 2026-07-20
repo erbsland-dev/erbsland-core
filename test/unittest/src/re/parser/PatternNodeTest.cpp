@@ -5,6 +5,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/impl/parser/PatternNode.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

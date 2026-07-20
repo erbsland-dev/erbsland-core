@@ -18,16 +18,6 @@ namespace erbsland::text::impl {
 using unit::ByteLength;
 using unit::ByteRange;
 
-U8StringSharedStorage::~U8StringSharedStorage() = default;
-
-U8StringSharedStorage::U8StringSharedStorage(const U8StringSharedStorage &) = default;
-
-U8StringSharedStorage::U8StringSharedStorage(U8StringSharedStorage &&) noexcept = default;
-
-auto U8StringSharedStorage::operator=(const U8StringSharedStorage &) -> U8StringSharedStorage & = default;
-
-auto U8StringSharedStorage::operator=(U8StringSharedStorage &&) noexcept -> U8StringSharedStorage & = default;
-
 auto U8StringSharedStorage::isEmpty() const noexcept -> bool {
     return _range.isEmpty() || _data.isNull();
 }
@@ -113,7 +103,7 @@ void U8StringSharedStorage::validateSize(const std::size_t size) {
 auto U8StringSharedStorage::checkedAddSize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willAddOverflow(first, second)) {
-        text::impl::throwOverflow(reason);
+        throwOverflow(reason);
     }
     const auto result = math::saturatingAdd(first, second);
     validateSize(result);
@@ -123,7 +113,7 @@ auto U8StringSharedStorage::checkedAddSize(
 auto U8StringSharedStorage::checkedMultiplySize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willMultiplyOverflow(first, second)) {
-        text::impl::throwOverflow(reason);
+        throwOverflow(reason);
     }
     const auto result = math::saturatingMultiply(first, second);
     validateSize(result);

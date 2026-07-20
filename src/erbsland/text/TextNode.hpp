@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CodeSnippet.hpp"
 #include "CodeSnippetMarker.hpp"
 #include "EscapeAmount.hpp"
 #include "EscapeFormat.hpp"
@@ -78,15 +79,9 @@ public:
     /// @param language The optional language identifier.
     [[nodiscard]] static auto createCodeBlock(String language = {}) -> TextNodePtr;
     /// Create a line-oriented code snippet node.
-    /// @param lines The source lines to include.
-    /// @param startLine The original zero-based line index of the first line, or no-index for no line numbers.
+    /// @param snippet The source excerpt to include.
     /// @param markers Optional marker ranges.
-    /// @param language The optional language identifier.
-    [[nodiscard]] static auto createCodeSnippet(
-        StringList lines,
-        unit::LineIndex startLine = unit::LineIndex::zero(),
-        CodeSnippetMarkerList markers = {},
-        String language = {}) -> TextNodePtr;
+    [[nodiscard]] static auto createCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList markers = {}) -> TextNodePtr;
     /// Create a horizontal-line node.
     [[nodiscard]] static auto createHorizontalLine() -> TextNodePtr;
     /// Create a plain text node.
@@ -154,15 +149,9 @@ public: // modifiers
     /// @param language The optional language identifier.
     auto addCodeBlock(String language = {}) -> TextNodePtr;
     /// Add a line-oriented code snippet child.
-    /// @param lines The source lines to include.
-    /// @param startLine The original zero-based line index of the first line, or no-index for no line numbers.
+    /// @param snippet The source excerpt to include.
     /// @param markers Optional marker ranges.
-    /// @param language The optional language identifier.
-    auto addCodeSnippet(
-        StringList lines,
-        unit::LineIndex startLine = unit::LineIndex::zero(),
-        CodeSnippetMarkerList markers = {},
-        String language = {}) -> TextNodePtr;
+    auto addCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList markers = {}) -> TextNodePtr;
     /// Add a horizontal-line child.
     auto addHorizontalLine() -> TextNodePtr;
     /// Add a plain-text child.

@@ -9,6 +9,7 @@ target_sources(erbsland-core PRIVATE
         U32StringAppendTools.hpp
         U32StringBuilder.cpp
         U32StringBuilder.hpp
+        U32StringBuilder_fwd.hpp
         U32StringComparisonTools.cpp
         U32StringComparisonTools.hpp
         U32StringData.cpp

@@ -12,7 +12,6 @@
 namespace erbsland::re::impl {
 
 using namespace text::literals;
-
 using namespace text;
 
 auto Category::includes(const Category &other) const noexcept -> bool {

@@ -12,6 +12,8 @@
 #include <limits>
 #include <type_traits>
 
+using namespace el::unit;
+
 using namespace el::text::literals;
 
 TESTED_TARGETS(
@@ -20,7 +22,6 @@ TESTED_TARGETS(
 class VersionTest final : public el::UnitTest {
 public:
     void testCompileTimeContracts() {
-        using namespace el::unit;
 
         static_assert(std::derived_from<VersionUnit, IntegerUnit>);
         static_assert(std::derived_from<MajorUnit, VersionUnit>);
@@ -88,7 +89,6 @@ public:
     }
 
     void testVersionUnitRuntimeBehavior() {
-        using namespace el::unit;
 
         auto major = Major{7};
         REQUIRE(major == Major{7});
@@ -109,7 +109,6 @@ public:
     }
 
     void testVersionRuntimeBehavior() {
-        using namespace el::unit;
 
         auto version = Version{1, 2, 3, 4};
         REQUIRE(version.major() == Major{1});
@@ -129,7 +128,6 @@ public:
     }
 
     void testVersionToString() {
-        using namespace el::unit;
 
         const auto version = Version{1, 2, 3, 4};
 
@@ -142,7 +140,6 @@ public:
     }
 
     void testVersionRangeRuntimeBehavior() {
-        using namespace el::unit;
 
         const auto all = VersionRange::all();
         REQUIRE_FALSE(all.hasMinimum());
@@ -183,7 +180,6 @@ public:
     }
 
     void testHashSupport() {
-        using namespace el::unit;
 
         REQUIRE(std::hash<Major>{}(Major{7}) == std::hash<Major>{}(Major{7}));
         REQUIRE(std::hash<Version>{}(Version{1, 2, 3, 4}) == std::hash<Version>{}(Version{1, 2, 3, 4}));

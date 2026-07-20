@@ -15,6 +15,7 @@
 #include <erbsland/unit/LineOffset.hpp>
 #include <erbsland/unit/LineRange.hpp>
 #include <erbsland/unit/LineUnit.hpp>
+#include <erbsland/unit/StdFormatForUnit.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -24,13 +25,14 @@
 #include <limits>
 #include <type_traits>
 
+using namespace el::unit;
+
 TESTED_TARGETS(
     IntegerUnit ByteUnit U16DataUnit CharUnit LineUnit ColumnUnit CodeLocation CodeContinuousRange IntegerUnitIndex
         IntegerUnitAmount IntegerUnitOffset IntegerUnitRange)
 class IntegerUnitTest final : public el::UnitTest {
 public:
     void testCompileTimeContracts() {
-        using namespace el::unit;
 
         static_assert(std::same_as<ByteIndex, IntegerUnitIndex<ByteUnit>>);
         static_assert(std::same_as<ByteLength, IntegerUnitAmount<ByteUnit>>);
@@ -66,11 +68,11 @@ public:
         static_assert(ColumnIndex::noIndex().isNoIndex());
         static_assert(LineRange{LineIndex{3U}, LineCount{2U}}.endIndex() == LineIndex{5U});
         static_assert(ColumnRange{ColumnIndex{4U}, ColumnCount{3U}}.endIndex() == ColumnIndex{7U});
-        static_assert(CodeLocation{}.line.isNoIndex());
-        static_assert(CodeLocation{}.column.isNoIndex());
-        static_assert(CodeLocation{}.position.isNoIndex());
+        static_assert(CodeLocation{}.line().isNoIndex());
+        static_assert(CodeLocation{}.column().isNoIndex());
+        static_assert(CodeLocation{}.position().isNoIndex());
         static_assert(
-            CodeContinuousRange{.begin = {.line = LineIndex{1U}}, .end = {.line = LineIndex{2U}}}.end.line ==
+            CodeContinuousRange{.begin = CodeLocation{LineIndex{1U}}, .end = CodeLocation{LineIndex{2U}}}.end.line() ==
             LineIndex{2U});
 
         static_assert(ByteLength::zero().isZero());
@@ -150,7 +152,6 @@ public:
     }
 
     void testLengthOperators() {
-        using namespace el::unit;
 
         auto length = ByteLength{2};
         length += ByteLength{3};
@@ -164,7 +165,6 @@ public:
     }
 
     void testLengthScalarOperators() {
-        using namespace el::unit;
         using el::math::SaturatingInteger;
 
         auto length = ByteLength{10};
@@ -190,7 +190,6 @@ public:
     }
 
     void testLengthThrowingVariants() {
-        using namespace el::unit;
 
         auto length = ByteLength{2};
         length.addOrThrow(ByteLength{3});
@@ -201,7 +200,6 @@ public:
     }
 
     void testOffsetOperatorsAndThrowingVariants() {
-        using namespace el::unit;
 
         auto offset = ByteOffset{2};
         offset += ByteOffset{3};
@@ -220,7 +218,6 @@ public:
     }
 
     void testOffsetScalarOperators() {
-        using namespace el::unit;
         using el::math::SaturatingInteger;
 
         auto offset = ByteOffset{-10};
@@ -246,7 +243,6 @@ public:
     }
 
     void testIndexThrowingVariants() {
-        using namespace el::unit;
 
         auto index = ByteIndex{5};
         index.advanceOrThrow(ByteLength{3});
@@ -267,7 +263,6 @@ public:
     }
 
     void testIndexOffsetConversions() {
-        using namespace el::unit;
 
         static constexpr auto cInt64Max = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
         REQUIRE(!ByteIndex{cInt64Max}.wouldOffsetFromZeroSaturate());
@@ -286,7 +281,6 @@ public:
     }
 
     void testRangeRuntimeBehavior() {
-        using namespace el::unit;
 
         auto range = ByteRange{ByteIndex{4}, ByteLength{3}};
         REQUIRE(range.contains(ByteIndex{4}));

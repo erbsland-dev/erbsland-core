@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u8/impl/U8StringCharReadTool.hpp>
 #include <erbsland/text/u8/impl/U8StringDataView.hpp>
 #include <erbsland/unit/ByteIndex.hpp>

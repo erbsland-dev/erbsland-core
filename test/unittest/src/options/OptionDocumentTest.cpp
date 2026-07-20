@@ -39,7 +39,7 @@ using namespace el::options;
 using namespace el::text::literals;
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(ApplicationInfo DisplayTextMap OptionDocumentBuilder OptionManager TextDocument)
+TESTED_TARGETS(ApplicationInfo DisplayTextMap OptionDocumentBuilder OptionManager OptionParserFlag TextDocument)
 class OptionDocumentTest final : public el::UnitTest {
 public:
     void testRootHelp() {
@@ -91,6 +91,21 @@ public:
         requireContains(text, "Author:     Tobias Erbsland\n");
         requireContains(text, "Copyright 2026");
         requireContains(text, "License:    Apache-2.0\n");
+    }
+
+    void testDisabledBuiltInOptionsAreHidden() {
+        auto options = makeOptions();
+        options->setParserFlag(OptionParserFlag::DisableVersion);
+        auto manager = OptionManager{options};
+
+        auto text = toStdString(manager.helpDocument({}).toString());
+        requireContains(text, "-h, --help");
+        requireMissing(text, "--version");
+
+        options->setParserFlags(OptionParserFlag::DisableHelp | OptionParserFlag::DisableVersion);
+        text = toStdString(manager.helpDocument({}).toString());
+        requireMissing(text, "-h, --help");
+        requireMissing(text, "--version");
     }
 
     void testCustomDisplayText() {
@@ -203,8 +218,8 @@ public:
         requireMissing(text, "option: --name\n");
         requireMissing(text, "argument index:");
         requireMissing(text, "--> command line\n");
-        requireContains(text, "0 │ demo-tool\n");
-        requireContains(text, "1 │ --name\n");
+        requireContains(text, "1 │ demo-tool\n");
+        requireContains(text, "2 │ --name\n");
         requireContains(text, "  │ \u2594\u2594\u2594\u2594\u2594\u2594\n");
         requireContains(text, "Usage:\n");
         requireContains(text, "demo-tool [options]\n");
@@ -225,9 +240,9 @@ public:
         REQUIRE(result.errorContext().has_value());
 
         const auto text = toStdString(manager.errorDocument(result.errorContext().value()).toString());
-        requireContains(text, "\"--test\\033\" is not a valid long option.");
-        requireContains(text, "1 │ --test\\033\n");
-        requireContains(text, "  │ ▔▔▔▔▔▔▔▔▔▔\n");
+        requireContains(text, "\"--test\\u{1b}\" is not a valid long option.");
+        requireContains(text, "2 │ --test\\u{1b}\n");
+        requireContains(text, "  │ ▔▔▔▔▔▔▔▔▔▔▔▔\n");
         requireMissing(text, th::stdStringFromHex("1B"));
     }
 
@@ -238,7 +253,7 @@ public:
         auto manager = OptionManager{options};
 
         const auto text = toStdString(manager.helpDocument({}).toString());
-        requireContains(text, "tool\\033 [options]");
+        requireContains(text, "tool\\u{1b} [options]");
         requireMissing(text, th::stdStringFromHex("1B"));
     }
 
@@ -269,10 +284,10 @@ public:
         auto document = manager.errorDocument(context);
         const auto text = toStdString(document.toString());
         requireMissing(text, "0 | tool\n");
-        requireContains(text, " 3 │ a3\n");
-        requireContains(text, "13 │ --bad\n");
+        requireContains(text, " 4 │ a3\n");
+        requireContains(text, "14 │ --bad\n");
         requireContains(text, "   │ \u2594\u2594\u2594\u2594\u2594\n");
-        requireContains(text, "14 │ tail\n");
+        requireContains(text, "15 │ tail\n");
         requireContainsNode(document, el::text::TextNodeType::CodeSnippet, {}, "command-line"_el);
         requireContainsNode(document, el::text::TextNodeType::CodeLineMarker, "error"_el);
     }
@@ -344,7 +359,7 @@ public:
         requireContains(text, "Option Help:\n");
         requireContains(text, "View Full Module Help:\n");
         requireContains(text, "tool run --help");
-        requireContains(text, "3 │ wrong\n");
+        requireContains(text, "4 │ wrong\n");
         requireContains(text, "   │ \u2594\u2594\u2594\u2594\u2594\n");
     }
 

@@ -48,7 +48,7 @@ public:
         writeChar16(static_cast<tChar16>(0xDC00U + (shifted & 0x03FFU)));
     }
     /// Write a UTF-16 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept { writeChar16(static_cast<tChar16>(0xFEFFU)); }
 
 private:
     /// Write a single char16_t to the buffer if there is space.
@@ -93,7 +93,7 @@ public:
         writeChar16(static_cast<uint16_t>(0xDC00U + (shifted & 0x03FFU)));
     }
     /// Write a UTF-16 byte order mark.
-    [[nodiscard]] auto writeBom() noexcept { write(Char{0xFEFFU}); }
+    void writeBom() noexcept { writeChar16(0xFEFFU); }
 
 private:
     /// Write a single UTF-16 code unit.

@@ -33,7 +33,7 @@ public:
         builder.addSource(
             "configuration"_el,
             "/tmp/app.conf"_el,
-            {.line = el::unit::LineIndex{1U}, .column = el::unit::ColumnIndex{2U}, .position = el::unit::CpIndex{3U}});
+            {el::unit::LineIndex{1U}, el::unit::ColumnIndex{2U}, el::unit::CpIndex{3U}});
         const auto text = builder.takeDocument().toString();
 
         REQUIRE(text.contains("Unspecified Failure"_el));

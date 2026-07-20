@@ -6,6 +6,7 @@
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FloatParseOptions.hpp>
 #include <erbsland/text/impl/FloatConversion.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>

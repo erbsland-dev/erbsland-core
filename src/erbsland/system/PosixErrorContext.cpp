@@ -19,7 +19,6 @@
 namespace erbsland::system {
 
 using namespace text::literals;
-
 using namespace text;
 
 PosixErrorContext::PosixErrorContext(const ErrorCode errorCode, String errorMessage) noexcept :

@@ -20,10 +20,34 @@ Use ``wouldConvertToTimeDeltaSaturate()`` or ``toTimeDeltaOrThrow()`` when satur
 :cpp:class:`Duration <erbsland::time::Duration>` truncates sub-second nanoseconds toward zero.
 ``toSecondsWithFractions()`` and ``toDaysWithFractions()`` return approximate floating-point values and do not treat
 rounding as an error.
+The unit factories from ``nanoseconds()`` through ``weeks()`` saturate when conversion exceeds the stored nanosecond
+range.
+Use the corresponding ``...OrThrow()`` factory, including ``weeksOrThrow()``, when overflow must be rejected.
+
+:cpp:class:`CalendarDelta <erbsland::time::CalendarDelta>` stores nanoseconds through years as independent signed
+components.
+It deliberately does not normalize its stored parts: one month remains one month, and mixed positive and negative
+components remain visible through the typed accessors.
+Conversion to ``TimeDelta`` is available only when the month and year components are zero and the exact fixed-unit sum
+fits the nanosecond range.
+
+Applying a ``CalendarDelta`` to a ``DateTime`` processes nanoseconds, microseconds, milliseconds, seconds, minutes,
+hours, days, weeks, months, and years in that order.
+Month and year steps use the same end-of-month clamping semantics as ``Date``.
+Arithmetic is performed on the UTC representation; fixed display offsets are retained and named-zone metadata is
+refreshed for the final instant.
+
+:cpp:class:`TimeDeltaFormat <erbsland::time::TimeDeltaFormat>` controls short or long names, separators, the smallest
+fixed unit, and fractional output.
+``TimeDeltaFormat::elcl()`` selects the aliases and separators required for ELCL serialization.
+Calendar-delta formatting always emits non-zero years and months independently and uses exact signed normalization for
+the fixed units without first forcing the total into ``TimeDelta``.
 
 Interface
 =========
 
+.. doxygenclass:: erbsland::time::CalendarDelta
+    :members:
 .. doxygenclass:: erbsland::time::Duration
     :members:
 .. doxygenenum:: erbsland::time::DurationPart
@@ -62,6 +86,9 @@ Interface
 .. doxygenfunction:: erbsland::time::literals::operator_h(const int64_t value) -> Hours
 .. doxygenclass:: erbsland::time::TimeDelta
     :members:
+.. doxygenclass:: erbsland::time::TimeDeltaFormat
+    :members:
+.. doxygenenum:: erbsland::time::TimeDeltaUnit
 .. doxygenclass:: erbsland::time::TimePoint
     :members:
 .. doxygenstruct:: erbsland::time::SecondsUnitTag

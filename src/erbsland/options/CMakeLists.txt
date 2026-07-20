@@ -33,6 +33,7 @@ target_sources(erbsland-core PRIVATE
         OptionModule.cpp
         OptionModule.hpp
         OptionModule_fwd.hpp
+        OptionParserFlag.hpp
         OptionResult.hpp
         OptionResult_fwd.hpp
         OptionResultStatus.hpp

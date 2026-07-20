@@ -17,6 +17,7 @@ enum class FormatArgumentKind : uint8_t {
     FloatingPoint = 6,
     Boolean = 7,
     Character = 8,
+    Bytes = 9,
 };
 
 }

@@ -25,6 +25,8 @@
 #include <type_traits>
 #include <vector>
 
+using namespace el::text::literals;
+
 using el::unit::CpIndex;
 using el::unit::CpLength;
 using el::unit::CpRange;
@@ -61,7 +63,6 @@ public:
     void testReadOnlyConstructionFactoriesAndSwap() {
         static_assert(std::is_constructible_v<U32String, std::u32string_view>);
         static_assert(!std::is_convertible_v<std::u32string_view, U32String>);
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U32String{std::u32string_view{U"utf-32"}}, U"utf-32"_el);
         REQUIRE_EQUAL(U32String::fromCharacter(Char{U'\U0001F600'}, CpLength{2U}), U"\U0001F600\U0001F600"_el);
@@ -81,7 +82,6 @@ public:
     }
 
     void testRepeatedAppend() {
-        using namespace el::text::literals;
 
         const auto source = U32StringEditor{std::u32string_view{U"xA\U0001F600"}};
         const auto view = U32String{source}.slice(CpRange{CpIndex{1U}, CpLength{2U}});
@@ -119,7 +119,6 @@ public:
     }
 
     void testBooleanConversion() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U32StringEditor::fromBoolean(true), U"true"_el);
         REQUIRE_EQUAL(
@@ -136,7 +135,6 @@ public:
     void testStringFromStdU32StringViewAndStringCopy() {
         static_assert(std::is_constructible_v<U32StringEditor, std::u32string_view>);
         static_assert(!std::is_convertible_v<std::u32string_view, U32StringEditor>);
-        using namespace el::text::literals;
 
         const auto text = U32StringEditor{std::u32string_view{U"xA\U0001F600x"}};
         const auto view = U32String{text}.slice(CpRange{CpIndex{1U}, CpLength{2U}});
@@ -279,7 +277,6 @@ public:
     }
 
     void testNoIndexFindPositions() {
-        using namespace el::text::literals;
 
         const auto text = U32StringEditor{std::u32string_view{U"A\u00A2\u20AC\U0001F600"}};
         const auto view = U32String{text};
@@ -299,7 +296,6 @@ public:
     }
 
     void testCaseMapping() {
-        using namespace el::text::literals;
 
         const auto mixed = U32StringEditor{std::u32string_view{U"A\u00C4\u03A3\u03C2K"}};
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::caseFolded)}.toStdU32String(), std::u32string{U"aäσσk"});
@@ -351,7 +347,6 @@ public:
     }
 
     void testSliceTrimFindSplitAndJoin() {
-        using namespace el::text::literals;
 
         const auto text = U32StringEditor{std::u32string_view{U"  Alpha,Beta,Gamma  "}};
         const auto trimmed = text.trimmed();
@@ -451,7 +446,6 @@ public:
     }
 
     void testModificationComparisonAndTransform() {
-        using namespace el::text::literals;
 
         auto text = U32StringEditor{std::u32string_view{U"Stra\u00DFe"}};
         text.replaceAll(CharSet{Char{U'S'}, Char{U's'}}, Char{U'X'});
@@ -478,7 +472,6 @@ public:
     }
 
     void testRangeInsertReplaceAndFirstModifiers() {
-        using namespace el::text::literals;
 
         const auto source = U32StringEditor{std::u32string_view{U"A\U0001F600BC"}};
 
@@ -522,7 +515,6 @@ public:
     }
 
     void testViewAliasingAndMalformedModifiers() {
-        using namespace el::text::literals;
 
         const auto source = U32StringEditor{std::u32string_view{U"--alpha--"}};
         const auto view = U32String{source}.slice(CpRange{CpIndex{2U}, CpLength{5U}});
@@ -562,7 +554,6 @@ public:
     }
 
     void testPredicateChecks() {
-        using namespace el::text::literals;
 
         const auto text = U32StringEditor{std::u32string_view{U"A\u00A2\U0001F600"}};
         const auto view = U32String{text};

@@ -8,6 +8,7 @@
 #include "../OptionChoices.hpp"
 #include "../OptionFlag.hpp"
 #include "../OptionModule.hpp"
+#include "../OptionParserFlag.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
@@ -62,6 +63,9 @@ auto OptionParser::findLongOption(const text::String &name) const -> NameMatch {
     auto result = NameMatch{};
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
+            if (!isEnabledBuiltInOption(optionSet, option)) {
+                continue;
+            }
             if (option->hasLongName(name)) {
                 if (option->isDisabled()) {
                     result.disabled = true;
@@ -79,6 +83,9 @@ auto OptionParser::findShortOption(const text::Char shortName) const -> NameMatc
     auto result = NameMatch{};
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
+            if (!isEnabledBuiltInOption(optionSet, option)) {
+                continue;
+            }
             if (option->hasShortName(shortName)) {
                 if (option->isDisabled()) {
                     result.disabled = true;
@@ -90,6 +97,43 @@ auto OptionParser::findShortOption(const text::Char shortName) const -> NameMatc
         }
     }
     return result;
+}
+
+auto OptionParser::isEnabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const -> bool {
+    if (_options == nullptr || optionSet != _options->builtInOptionSet()) {
+        return true;
+    }
+    if (option == nullptr || option->isDisabled()) {
+        return false;
+    }
+    if (option->hasLongName("--help"_el)) {
+        return !_options->parserFlags().isSet(OptionParserFlag::DisableHelp);
+    }
+    if (option->hasLongName("--version"_el)) {
+        return !_options->parserFlags().isSet(OptionParserFlag::DisableVersion);
+    }
+    return true;
+}
+
+auto OptionParser::isEnabledBuiltInFlag(const text::String &name) const -> bool {
+    if (_options == nullptr) {
+        return false;
+    }
+    const auto &optionSet = _options->builtInOptionSet();
+    if (optionSet == nullptr || optionSet->flags().isSet(OptionFlag::Disabled)) {
+        return false;
+    }
+    for (const auto &option : optionSet->options()) {
+        if (!isEnabledBuiltInOption(optionSet, option) || option->type() != OptionType::Flag) {
+            continue;
+        }
+        for (const auto &optionName : option->names()) {
+            if (optionName == name) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) const -> bool {
@@ -104,11 +148,11 @@ auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit
         if (argument == "--"_el) {
             return false;
         }
-        if (argument == "-h"_el || argument == "--help"_el) {
+        if ((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) {
             status = OptionResultStatus::DisplayHelp;
             return true;
         }
-        if (argument == "--version"_el) {
+        if (argument == "--version"_el && isEnabledBuiltInFlag(argument)) {
             status = OptionResultStatus::DisplayVersion;
             return true;
         }
@@ -120,7 +164,7 @@ auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit
 auto OptionParser::validateOptionNames() -> bool {
     for (const auto &optionSet : _activeOptionSets) {
         for (const auto &option : optionSet->options()) {
-            if (option->isDisabled()) {
+            if (option->isDisabled() || !isEnabledBuiltInOption(optionSet, option)) {
                 continue;
             }
             if (!option->hasValidOptionNames()) {
@@ -162,7 +206,8 @@ auto OptionParser::validateOptionNames() -> bool {
             }
             for (const auto &otherSet : _activeOptionSets) {
                 for (const auto &otherOption : otherSet->options()) {
-                    if (otherOption == option || otherOption->isDisabled()) {
+                    if (otherOption == option || otherOption->isDisabled() ||
+                        !isEnabledBuiltInOption(otherSet, otherOption)) {
                         continue;
                     }
                     if (option->hasConflictingOptionName(*otherOption)) {

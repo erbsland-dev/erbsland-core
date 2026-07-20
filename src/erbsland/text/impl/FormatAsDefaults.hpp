@@ -14,6 +14,7 @@
 #include "../u8/U8StringEditor.hpp"
 #include "../u8/U8StringLiteral.hpp"
 
+#include "../../mem/ByteBlock.hpp"
 #include "../../unit/ExitCode.hpp"
 #include "../../unit/IntegerUnitAmount.hpp"
 #include "../../unit/IntegerUnitIndex.hpp"
@@ -214,6 +215,11 @@ struct FormatAsU32Text<std::u32string> : FormatAs<std::u32string, U32StringEdito
 template <std::size_t N>
 struct FormatAsU32Text<char32_t[N]> : FormatAs<char32_t[N], U32String> {
     [[nodiscard]] auto format(const char32_t (&value)[N]) const -> U32String { return U32StringLiteral{value, N - 1U}; }
+};
+
+template <>
+struct FormatAsBytes<mem::ByteBlock> : FormatAs<mem::ByteBlock, mem::ByteBlock> {
+    [[nodiscard]] auto format(const mem::ByteBlock &value) const -> mem::ByteBlock { return value; }
 };
 
 }

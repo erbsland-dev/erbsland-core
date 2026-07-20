@@ -16,7 +16,6 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
-
 using namespace text;
 
 EncodedTextOutputStream::EncodedTextOutputStream(

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringSplitter.hpp"
+
 #include "../AnyStringBuilder.hpp"
 
 #include <algorithm>
@@ -114,25 +116,20 @@ auto StringList<tString>::fromSplit(
         return StringList{std::move(result)};
     }
 
-    const auto textEnd = NativeIndex::end(text.length());
-    auto partStart = NativeIndex::zero();
-    auto searchPosition = NativeIndex::zero();
+    auto splitter = StringSplitter<ReadOnly>{text, separators};
     auto splitCount = Count::zero();
-    while (maximumSplits.isInfinite() || splitCount < maximumSplits) {
-        const auto splitPosition = text.findFirstOf(separators, searchPosition);
-        if (splitPosition.isNoIndex()) {
-            break;
+    while (!splitter.isAtEnd() && (maximumSplits.isInfinite() || splitCount < maximumSplits)) {
+        auto part = splitter.next();
+        if (keepEmpty || !part.isEmpty()) {
+            result.emplace_back(std::move(part));
         }
-        if (keepEmpty || splitPosition > partStart) {
-            result.emplace_back(text.slice(NativeRange{partStart, splitPosition}));
-        }
-        searchPosition = splitPosition;
-        text.advance(searchPosition);
-        partStart = searchPosition;
         ++splitCount;
     }
-    if (keepEmpty || partStart < textEnd) {
-        result.emplace_back(text.slice(NativeRange{partStart, textEnd}));
+    if (!splitter.isAtEnd()) {
+        auto part = splitter.remaining();
+        if (keepEmpty || !part.isEmpty()) {
+            result.emplace_back(std::move(part));
+        }
     }
     return StringList{std::move(result)};
 }

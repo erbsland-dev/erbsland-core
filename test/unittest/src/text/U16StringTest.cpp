@@ -27,6 +27,8 @@
 #include <type_traits>
 #include <vector>
 
+using namespace el::text::literals;
+
 using namespace el::text;
 using namespace el::unit;
 
@@ -65,7 +67,6 @@ public:
     void testReadOnlyConstructionFactoriesAndSwap() {
         static_assert(std::is_constructible_v<U16String, std::u16string_view>);
         static_assert(!std::is_convertible_v<std::u16string_view, U16String>);
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U16String{std::u16string_view{u"utf-16"}}, u"utf-16"_el);
         REQUIRE_EQUAL(U16String::fromCharacter(Char{U'\U0001F600'}, CpLength{2U}), u"😀😀"_el);
@@ -85,7 +86,6 @@ public:
     }
 
     void testRepeatedAppend() {
-        using namespace el::text::literals;
 
         const auto source = U16StringEditor{std::u16string_view{u"xA\U0001F600"}};
         const auto view = U16String{source}.slice(U16DataRange{U16DataIndex{1U}, U16DataLength{3U}});
@@ -125,7 +125,6 @@ public:
     }
 
     void testBooleanConversion() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(U16StringEditor::fromBoolean(true), u"true"_el);
         REQUIRE_EQUAL(
@@ -141,7 +140,6 @@ public:
     void testStringFromStdU16StringViewAndStringCopy() {
         static_assert(std::is_constructible_v<U16StringEditor, std::u16string_view>);
         static_assert(!std::is_convertible_v<std::u16string_view, U16StringEditor>);
-        using namespace el::text::literals;
 
         const auto text = U16StringEditor{std::u16string_view{u"xA\U0001F600x"}};
         const auto view = U16String{text}.slice(U16DataRange{U16DataIndex{1U}, U16DataLength{3U}});
@@ -289,7 +287,6 @@ public:
     }
 
     void testMalformedSurrogatesAreTolerated() {
-        using namespace el::text::literals;
 
         const auto invalid = std::u16string{u'A', static_cast<char16_t>(0xD800U), u'B'};
         const auto text = U16StringEditor{std::u16string_view{invalid}};
@@ -315,7 +312,6 @@ public:
     }
 
     void testNoIndexFindPositions() {
-        using namespace el::text::literals;
 
         const auto text = U16StringEditor{std::u16string_view{u"A\u00A2\u20AC\U0001F600"}};
         const auto view = U16String{text};
@@ -335,7 +331,6 @@ public:
     }
 
     void testCaseMapping() {
-        using namespace el::text::literals;
 
         const auto mixed = U16StringEditor{std::u16string_view{u"A\u00C4\u03A3\u03C2K"}};
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::caseFolded)}.toStdU32String(), std::u32string{U"aäσσk"});
@@ -550,7 +545,6 @@ public:
     }
 
     void testPredicateChecks() {
-        using namespace el::text::literals;
 
         const auto text = U16StringEditor{std::u16string_view{u"A\u00A2\U0001F600"}};
         const auto view = U16String{text};
@@ -580,7 +574,6 @@ public:
     }
 
     void testCustomComparisonChecks() {
-        using namespace el::text::literals;
 
         const auto asciiFoldedCompare =
             CharCompareFn{[](const Char left, const Char right) noexcept -> std::strong_ordering {
@@ -597,7 +590,6 @@ public:
     }
 
     void testModificationAndConversion() {
-        using namespace el::text::literals;
 
         auto text = U16StringEditor{std::u16string_view{u"Hello"}};
         text.append(Char{U'!'});
@@ -620,7 +612,6 @@ public:
     }
 
     void testRangeInsertReplaceAndFirstModifiers() {
-        using namespace el::text::literals;
 
         const auto source = U16StringEditor{std::u16string_view{u"A\U0001F600BC"}};
 
@@ -672,7 +663,6 @@ public:
     }
 
     void testViewCodePointAliasingAndMalformedModifiers() {
-        using namespace el::text::literals;
 
         const auto source = U16StringEditor{std::u16string_view{u"--alpha--"}};
         const auto view = U16String{source}.slice(U16DataRange{U16DataIndex{2U}, U16DataLength{5U}});

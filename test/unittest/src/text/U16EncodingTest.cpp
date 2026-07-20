@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/impl/U16Encoding.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
@@ -39,14 +40,14 @@ public:
     }
 
     void testUtf16ReplaceModeHandlesInvalidSequences() {
-        const auto text = th::stdU16StringFromHex("D800 0041 DC00 D800 D83D DE00");
+        const auto text = th::stdU16StringFromHex("D800 0041 FEFF DC00 D800 D83D DE00");
 
         REQUIRE_EQUAL(
-            collectDecodedCharacters(text, EncodingErrorMode::Replace), std::u32string{U"\uFFFDA\uFFFD\uFFFD😀"});
+            collectDecodedCharacters(text, EncodingErrorMode::Replace), std::u32string{U"\uFFFDA\uFFFD\uFFFD\uFFFD😀"});
     }
 
     void testUtf16IgnoreModeHandlesInvalidSequences() {
-        const auto text = th::stdU16StringFromHex("D800 0041 DC00 D800 D83D DE00");
+        const auto text = th::stdU16StringFromHex("D800 0041 FEFF DC00 D800 D83D DE00");
 
         REQUIRE_EQUAL(collectDecodedCharacters(text, EncodingErrorMode::Ignore), std::u32string{U"A😀"});
     }
@@ -64,6 +65,9 @@ public:
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
                 th::stdU16StringFromHex("0041 D800"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+        REQUIRE_THROWS(
+            el::text::impl::utf16::forEachDecodedCharacter(
+                th::stdU16StringFromHex("FEFF"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
     }
 
     void testToUtf16StringFromUtf8OverAllMalformedCategories() {

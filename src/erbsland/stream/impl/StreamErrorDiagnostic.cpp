@@ -18,7 +18,6 @@
 namespace erbsland::stream::impl {
 
 using namespace text::literals;
-
 using namespace text;
 
 StreamErrorDiagnostic::StreamErrorDiagnostic(StreamErrorContext context) noexcept : _context{std::move(context)} {

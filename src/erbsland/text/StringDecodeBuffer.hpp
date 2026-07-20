@@ -161,6 +161,9 @@ private:
     [[nodiscard]] auto byteMatches(std::span<const mem::Byte> prefix) const noexcept -> bool;
     [[nodiscard]] auto byteMatchesAvailable(std::span<const mem::Byte> prefix) const noexcept -> bool;
     [[nodiscard]] auto materialize(unit::ByteLength length) const -> mem::ByteBlock;
+    [[nodiscard]] auto decodeContentToU8(const mem::ByteBlock &data) const -> U8String;
+    [[nodiscard]] auto decodeContentToU16(const mem::ByteBlock &data) const -> U16String;
+    [[nodiscard]] auto decodeContentToU32(const mem::ByteBlock &data) const -> U32String;
     void consume(unit::ByteLength length) noexcept;
     [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength;
     [[nodiscard]] auto isBomResolved() const noexcept -> bool;

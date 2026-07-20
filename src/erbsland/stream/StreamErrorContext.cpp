@@ -11,7 +11,6 @@
 namespace erbsland::stream {
 
 using namespace text::literals;
-
 using system::PlatformErrorCategory;
 using system::PlatformErrorContextConstPtr;
 

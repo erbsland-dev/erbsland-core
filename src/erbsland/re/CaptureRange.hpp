@@ -5,10 +5,7 @@
 #include "CaptureRange_fwd.hpp"
 #include "InputPosition.hpp"
 
-#include "../text/StdFormatForText.hpp"
 #include "../text/StringFormat.hpp"
-
-#include <format>
 
 namespace erbsland::re {
 
@@ -57,7 +54,10 @@ public: // modifiers
 public:
     /// Convert the range into a short, human-readable string.
     /// @return The formatted range as `"begin-end"`.
-    [[nodiscard]] auto toString() const -> text::String { return text::StringFormat{"{}-{}"}.build(_begin, _end); }
+    [[nodiscard]] auto toString() const -> text::String {
+        static const auto format = text::StringFormat{"{}-{}"};
+        return format.build(_begin, _end);
+    }
 
 private:
     InputPosition _begin;
@@ -65,10 +65,3 @@ private:
 };
 
 }
-
-template <>
-struct std::formatter<erbsland::re::CaptureRange> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::CaptureRange &range, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(range.toString(), ctx);
-    }
-};

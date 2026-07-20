@@ -4,6 +4,8 @@
 
 #include "TestHelper.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 
 #include <format>

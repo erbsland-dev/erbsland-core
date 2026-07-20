@@ -7,6 +7,9 @@
 
 #include "../../impl/RepeatCount.hpp"
 #include "../../impl/ThrowHelper.hpp"
+#include "../../impl/UnsafeU16StringAccess.hpp"
+#include "../../impl/UnsafeU32StringAccess.hpp"
+#include "../../impl/UnsafeU8StringAccess.hpp"
 #include "../../u32/impl/U32Encoding.hpp"
 #include "../../u32/impl/U32StringDataView.hpp"
 #include "../../u8/impl/U8Encoding.hpp"
@@ -18,23 +21,6 @@
 namespace erbsland::text::impl {
 
 using namespace unit;
-
-auto U16StringAppendTools::repeatedCharacterCount(const CpLength characterCount, const std::size_t countSize)
-    -> CpLength {
-    const auto totalCharacterCount = U16StringSharedStorage::checkedMultiplySize(
-        characterCount.toSizeTOrThrow(), countSize, "Repeated string exceeds character length bounds");
-    return CpLength::fromSizeTOrThrow(totalCharacterCount);
-}
-
-auto U16StringAppendTools::countDecodedCharacters(const std::span<const char16_t> source) noexcept -> CpLength {
-    auto position = U16DataIndex::zero();
-    auto result = CpLength::zero();
-    while (position.toSizeT() < source.size()) {
-        utf16::fastAdvanceChar(source, position);
-        ++result;
-    }
-    return result;
-}
 
 auto U16StringAppendTools::summarizeForUtf16(const std::span<const char> source) -> AppendSummary {
     auto result = AppendSummary{};
@@ -232,6 +218,18 @@ auto U16StringAppendTools::append(const Char character, CpLength count) -> CpLen
     }
     _storage.resize(newSize);
     return CpLength::fromSizeTOrThrow(countSize);
+}
+
+auto U16StringAppendTools::append(const U8String &text) -> unit::CpLength {
+    return append(UnsafeU8StringAccess{text}.dataView());
+}
+
+auto U16StringAppendTools::append(const U16String &text) -> unit::CpLength {
+    return append(UnsafeU16StringAccess{text}.dataView());
+}
+
+auto U16StringAppendTools::append(const U32String &text) -> unit::CpLength {
+    return append(UnsafeU32StringAccess{text}.dataView());
 }
 
 }

@@ -68,6 +68,18 @@ auto Time::toNanosecondsSinceMidnight() const noexcept -> Nanoseconds {
     return Nanoseconds{_nanoseconds};
 }
 
+auto Time::toString() const -> String {
+    static const auto zeroCharacters = text::CharSet{U'0'};
+    static const auto dotCharacters = text::CharSet{U'.'};
+    auto result = text::StringEditor{toIsoString(
+        IsoTimeFormatFlags{IsoTimeFormat::Extended, IsoTimeFormat::UseDotFraction}, DateTimePrecision::Nanosecond)};
+    result.trim(zeroCharacters, text::StringSide::Back);
+    if (result.endsWith("."_el)) {
+        result.trim(dotCharacters, text::StringSide::Back);
+    }
+    return result;
+}
+
 auto Time::toIsoString(const IsoTimeFormatFlags flags, const DateTimePrecision precision) const -> String {
     const auto extended = flags.isSet(IsoTimeFormat::Extended);
     const auto separator = flags.isSet(IsoTimeFormat::UseDotFraction) ? U'.' : U',';

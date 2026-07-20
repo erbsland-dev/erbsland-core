@@ -60,7 +60,6 @@ Headers     :
     * "bgeo/BlockAlignedSource.hpp"
     * "bgeo/BlockRectangleList.hpp"
     * "bgeo/BlockPositionList.hpp"
-    * "bgeo/StdFormatForBlock.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "core/application.rst"
@@ -178,6 +177,7 @@ Headers     :
     * "options/OptionHelpVisibility.hpp"
     * "options/OptionInteger.hpp"
     * "options/OptionModule.hpp"
+    * "options/OptionParserFlag.hpp"
     * "options/OptionResult.hpp"
     * "options/OptionResultStatus.hpp"
     * "options/OptionSet.hpp"
@@ -233,6 +233,17 @@ Headers     :
     * "path/PathWriteDataOptions.hpp"
     * "path/PathWriteTextOptions.hpp"
     * "path/TempDirectory.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/hashing.rst"
+Title       : "Cryptographic Hashing"
+Headers     :
+    * "cryptology/CryptographicSecurity.hpp"
+    * "cryptology/CryptographicStatus.hpp"
+    * "cryptology/HashAlgorithm.hpp"
+    * "cryptology/Hasher.hpp"
+    * "cryptology/HashRequirements.hpp"
+    * "cryptology/HashThroughput.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "random/random.rst"
@@ -348,6 +359,7 @@ Headers     :
 Page        : "text/char_range.rst"
 Title       : "Character Types, Utilities and Unicode Handling"
 Headers     :
+    * "text/CaseSensitivity.hpp"
     * "text/Char.hpp"
     * "text/CharCompareFn.hpp"
     * "text/CharSignal.hpp"
@@ -376,7 +388,13 @@ Headers     :
 Page        : "text/std_compatibility.rst"
 Title       : "Standard Library Compatibility"
 Headers     :
+    * "bgeo/StdFormatForBlock.hpp"
+    * "conf/StdFormatForConf.hpp"
+    * "cryptology/StdFormatForCryptology.hpp"
+    * "re/StdFormatForRegEx.hpp"
     * "text/StdFormatForText.hpp"
+    * "time/StdFormatForTime.hpp"
+    * "unit/StdFormatForUnit.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/format_definitions.rst"
@@ -496,6 +514,16 @@ Headers     :
     * "text/html/HtmlParser.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "text/string_splitter.rst"
+Title       : "String Splitters"
+Headers     :
+    * "text/StringSplitMode.hpp"
+    * "text/StringSplitter.hpp"
+    * "text/u8/U8StringSplitter.hpp"
+    * "text/u16/U16StringSplitter.hpp"
+    * "text/u32/U32StringSplitter.hpp"
+
+------------*[ Reference Groups ]
 Page        : "text/string_tree.rst"
 Title       : "StringEditor Tree"
 Headers     :
@@ -505,6 +533,7 @@ Headers     :
 Page        : "text/text_document.rst"
 Title       : "Text Document"
 Headers     :
+    * "text/CodeSnippet.hpp"
     * "text/CodeSnippetMarker.hpp"
     * "text/PlainTextRenderer.hpp"
     * "text/TextDocument.hpp"
@@ -576,6 +605,7 @@ Headers     :
     * "time/Date.hpp"
     * "time/DateTime.hpp"
     * "time/Time.hpp"
+    * "time/TimeWithZone.hpp"
     * "time/CalendarParts.hpp"
     * "time/Second.hpp"
     * "time/Minute.hpp"
@@ -600,8 +630,11 @@ Headers     :
     * "time/Duration.hpp"
     * "time/DurationPart.hpp"
     * "time/ElapsedTimer.hpp"
+    * "time/CalendarDelta.hpp"
     * "time/TimeAmounts.hpp"
     * "time/TimeDelta.hpp"
+    * "time/TimeDeltaFormat.hpp"
+    * "time/TimeDeltaUnit.hpp"
     * "time/TimeUnitTags.hpp"
     * "time/TimePoint.hpp"
 
@@ -612,6 +645,7 @@ Header Globs:
     * "unit/*.hpp"
 Excluded Header Globs:
     * "unit/ExitCode.hpp"
+    * "unit/StdFormatForUnit.hpp"
     * "unit/Version*.hpp"
 
 ------------*[ Reference Groups ]
@@ -694,3 +728,106 @@ Headers     :
     * "event/EventThread.hpp"
     * "event/ManagedEventThread.hpp"
     * "event/UnmanagedEventThread.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/parser.rst"
+Title       : "Configuration Parsing"
+Headers     :
+    * "conf/Parser.hpp"
+    * "conf/TestFormat.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/values.rst"
+Title       : "Configuration Values"
+Headers     :
+    * "conf/Value.hpp"
+    * "conf/ValueIterator.hpp"
+    * "conf/ValueList.hpp"
+    * "conf/ValueMatrix.hpp"
+    * "conf/ValueType.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/document.rst"
+Title       : "Configuration Documents"
+Headers     :
+    * "conf/Document.hpp"
+    * "conf/DocumentBuilder.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/source.rst"
+Title       : "Configuration Sources"
+Headers     :
+    * "conf/Source.hpp"
+    * "conf/SourceIdentifier.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/names.rst"
+Title       : "Configuration Names"
+Headers     :
+    * "conf/Name.hpp"
+    * "conf/NamePath.hpp"
+    * "conf/NameType.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/errors.rst"
+Title       : "Configuration Errors"
+Headers     :
+    * "conf/ConfError.hpp"
+    * "conf/ConfErrorCategory.hpp"
+    * "conf/ConfErrorContext.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/locations.rst"
+Title       : "Configuration Locations"
+Headers     :
+    * "conf/Location.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/access_control.rst"
+Title       : "Configuration Access Control"
+Headers     :
+    * "conf/AccessCheck.hpp"
+    * "conf/AccessCheckResult.hpp"
+    * "conf/AccessSources.hpp"
+    * "conf/FileAccessCheck.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/source_resolution.rst"
+Title       : "Configuration Source Resolution"
+Headers     :
+    * "conf/FileSourceResolver.hpp"
+    * "conf/SourceResolver.hpp"
+    * "conf/SourceResolverContext.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/signing.rst"
+Title       : "Configuration Signing"
+Headers     :
+    * "conf/Signer.hpp"
+    * "conf/SignatureSigner.hpp"
+    * "conf/SignatureSignerData.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/signature_validation.rst"
+Title       : "Configuration Signature Validation"
+Headers     :
+    * "conf/SignatureValidator.hpp"
+    * "conf/SignatureValidatorData.hpp"
+    * "conf/SignatureValidatorResult.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/data.rst"
+Title       : "Configuration Scalar Data"
+Headers     :
+    * "conf/Float.hpp"
+    * "conf/Integer.hpp"
+    * "conf/Matrix.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/validation_rules.rst"
+Title       : "Configuration Validation Rules"
+Header Globs:
+    * "conf/vr/*.hpp"
+    * "conf/vr/builder/*.hpp"
+    * "conf/vr/builder/attribute/*.hpp"
+    * "conf/vr/builder/constraint/*.hpp"

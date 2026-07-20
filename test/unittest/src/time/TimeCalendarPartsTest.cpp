@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/time/DateTime.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <concepts>

@@ -53,6 +53,9 @@ template <typename T>
     if constexpr (HasFormatAs<FormatAsU32Text, T>) {
         result += 1U;
     }
+    if constexpr (HasFormatAs<FormatAsBytes, T>) {
+        result += 1U;
+    }
     return result;
 }
 
@@ -84,6 +87,8 @@ template <typename T>
         return FormatArgument{FormatAsU16Text<Value>{}.format(value)};
     } else if constexpr (HasFormatAs<FormatAsU32Text, Value>) {
         return FormatArgument{FormatAsU32Text<Value>{}.format(value)};
+    } else if constexpr (HasFormatAs<FormatAsBytes, Value>) {
+        return FormatArgument{FormatAsBytes<Value>{}.format(value)};
     }
 }
 

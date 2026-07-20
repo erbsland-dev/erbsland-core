@@ -38,7 +38,7 @@ inline auto readCharNumber(ParserState &state, const text::IntegerBase base, con
                 text::StringFormat{"Too many {} digits. Expected {} digits"}.build(base.toString(), fixedDigits));
         }
         result <<= (base == text::IntegerBase::Hexadecimal ? 4U : 3U);
-        result |= state.currentChar().digitValue().value();
+        result |= state.currentChar().digitValue(base).value();
         digitCount += 1;
         state.readNext();
     }

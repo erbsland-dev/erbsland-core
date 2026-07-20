@@ -4,9 +4,14 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/time/all.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
+
+using namespace el::time;
+
+using namespace el::text::literals;
 
 using el::text::String;
 using el::text::StringConverter;
@@ -26,8 +31,6 @@ class TimeZoneTransitionTest final : public el::UnitTest {
 
 public:
     void testRepresentativeZones2026() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto cases = std::array{
             Case{"Europe/Zurich"_el, 1, 1, 13, 0, Seconds{3600}, "CET"},
@@ -55,8 +58,6 @@ public:
     }
 
     void testHistoricalZurichTransition() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto zurich = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         const auto before = DateTime{Date::fromYearMonthDay(1981, 3, 29), Time{Hour{0}, Minute{59}}}.toTimeZone(zurich);

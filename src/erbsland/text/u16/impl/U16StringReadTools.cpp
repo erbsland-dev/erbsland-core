@@ -125,7 +125,7 @@ auto U16StringReadTools::readAndRetreat(U16DataIndex &index) const noexcept -> C
 auto U16StringReadTools::charAtOrThrow(const U16DataIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     auto position = startIndex;
     return utf16::decodeCharOrThrow(data, position);
@@ -134,7 +134,7 @@ auto U16StringReadTools::charAtOrThrow(const U16DataIndex startIndex) const -> C
 auto U16StringReadTools::readOrThrow(U16DataIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     return Char{utf16::decodeCharOrThrow(data, index)};
 }

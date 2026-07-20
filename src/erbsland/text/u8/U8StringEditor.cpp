@@ -137,6 +137,10 @@ auto U8StringEditor::readCharAndAdvance(ByteIndex &index) const noexcept -> Char
     return U8StringReadTools{dataView()}.read(index);
 }
 
+auto U8StringEditor::readCharAndAdvanceOrThrow(ByteIndex &index) const -> Char {
+    return U8StringReadTools{dataView()}.readOrThrow(index);
+}
+
 auto U8StringEditor::readCharAndRetreat(ByteIndex &index) const noexcept -> Char {
     return U8StringReadTools{dataView()}.readAndRetreat(index);
 }

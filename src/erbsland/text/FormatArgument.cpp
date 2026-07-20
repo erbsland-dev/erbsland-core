@@ -40,4 +40,8 @@ auto FormatArgument::character() const -> Char {
     return std::get<Char>(_value);
 }
 
+auto FormatArgument::bytes() const -> mem::ByteBlock {
+    return std::get<mem::ByteBlock>(_value);
+}
+
 }

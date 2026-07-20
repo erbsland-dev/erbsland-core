@@ -25,7 +25,7 @@ public:
         auto context = el::core::ApplicationErrorContext{"Invalid configuration"_el, "Correct the marked value."_el};
         context.setSourceName("application settings"_el)
             .setSourcePath("/tmp/app.conf"_el)
-            .setCodeLocation({.line = el::unit::LineIndex{4U}, .column = el::unit::ColumnIndex{6U}});
+            .setCodeLocation({el::unit::LineIndex{4U}, el::unit::ColumnIndex{6U}});
         const auto error = el::core::ApplicationError{context, {}};
         const auto text = error.diagnostic()->toTextDocument().toString();
 

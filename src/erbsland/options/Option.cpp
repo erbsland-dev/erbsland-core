@@ -14,7 +14,6 @@
 namespace erbsland::options {
 
 using namespace text::literals;
-
 using text::Char;
 using text::String;
 using text::StringSide;

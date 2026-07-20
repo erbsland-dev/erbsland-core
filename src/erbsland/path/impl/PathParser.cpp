@@ -9,6 +9,8 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 
+#include <utility>
+
 namespace erbsland::path::impl {
 
 using namespace text::literals;
@@ -295,8 +297,8 @@ void PathParser::restore(const Checkpoint &checkpoint) noexcept {
     _reader.restore(checkpoint.readerState);
 }
 
-void PathParser::throwParseError(const String &reason) const {
-    throw err::ParseError{reason, _reader.position()};
+void PathParser::throwParseError(String reason) const {
+    throw err::ParseError{std::move(reason), _reader.position()};
 }
 
 auto PathParser::startsWithNormalized(const String &prefix) -> bool {

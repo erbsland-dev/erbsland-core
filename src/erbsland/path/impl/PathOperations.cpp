@@ -15,7 +15,6 @@
 namespace erbsland::path::impl {
 
 using namespace text::literals;
-
 using unit::ElementCount;
 
 void PathOperations::removeOrThrow(const PathRemoveOptions options, const PathProgressFn &progressFn) {

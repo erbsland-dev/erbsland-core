@@ -3,6 +3,8 @@
 
 #include "RegExBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 using namespace el::re;
 
 TESTED_TARGETS(RegEx)

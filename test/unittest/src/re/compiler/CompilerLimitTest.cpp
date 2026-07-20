@@ -3,6 +3,8 @@
 
 #include "CompilerBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 TESTED_TARGETS(Compiler)
 TAGS(Compilation)
 class CompilerLimitTest final : public UNITTEST_SUBCLASS(CompilerBase) {

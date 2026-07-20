@@ -7,9 +7,9 @@
 namespace erbsland::re {
 
 class RegEx;
-/// A shared pointer to a compiled regular expression.
+/// A shared pointer to a regular expression.
 using RegExPtr = std::shared_ptr<RegEx>;
-/// A shared pointer to an immutable compiled regular expression.
+/// A shared pointer to an immutable regular expression.
 using ConstRegExPtr = std::shared_ptr<const RegEx>;
 
 }

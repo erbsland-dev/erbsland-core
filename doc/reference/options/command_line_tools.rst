@@ -50,6 +50,21 @@ internal name.
 Here, ``-n`` and ``--name`` are accepted on the command line.
 The alias ``name`` is only used in user code.
 
+Built-in Requests
+~~~~~~~~~~~~~~~~~
+
+The parser provides ``-h`` and ``--help`` for help output and ``--version`` for version output by default.
+Use :cpp:enumerator:`OptionParserFlag::DisableHelp <erbsland::options::OptionParserFlag::DisableHelp>` or
+:cpp:enumerator:`OptionParserFlag::DisableVersion <erbsland::options::OptionParserFlag::DisableVersion>` when an
+application protocol needs to use one of these names as an ordinary option.
+Disabling a built-in request also removes it from generated help and releases its names for application definitions.
+
+.. code-block:: cpp
+
+    options->setParserFlag(el::OptionParserFlag::DisableVersion);
+    options->addOption({"--version"_el, "language-version"_el})
+        .setType(el::OptionType::Text);
+
 Positional Arguments
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -175,6 +190,9 @@ Interface
     :members:
 .. doxygenclass:: erbsland::options::OptionModule
     :members:
+.. doxygenenum:: erbsland::options::OptionParserFlag
+
+.. doxygentypedef:: erbsland::options::OptionParserFlags
 .. doxygenclass:: erbsland::options::OptionResult
     :members:
 .. doxygenenum:: erbsland::options::OptionResultStatus

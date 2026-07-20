@@ -107,7 +107,7 @@ REGISTERED_UTILITIES = {
         "Generate Time Zone Data",
         "dev.generate_time_zone_data",
         "GenerateTimeZoneDataApp",
-        help="Generate compact time-zone metadata from the vendored IANA tz database.",
+        help="Generate compact time-zone metadata from IANA tzdb and Unicode CLDR.",
     ),
     "generate_common_box_frame_style": RegisteredUtility(
         "Generate Common Box Frame Style",

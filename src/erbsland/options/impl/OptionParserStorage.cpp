@@ -22,7 +22,6 @@
 namespace erbsland::options::impl {
 
 using namespace text::literals;
-
 using text::EscapeFormat;
 using text::String;
 using text::StringFormat;

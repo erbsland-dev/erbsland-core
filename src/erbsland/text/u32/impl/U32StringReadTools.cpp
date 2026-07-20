@@ -124,7 +124,7 @@ auto U32StringReadTools::readAndRetreat(CpIndex &index) const noexcept -> Char {
 auto U32StringReadTools::charAtOrThrow(const CpIndex startIndex) const -> Char {
     const auto data = _data.dataSpan();
     if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     auto position = startIndex;
     return utf32::decodeCharOrThrow(data, position);
@@ -133,7 +133,7 @@ auto U32StringReadTools::charAtOrThrow(const CpIndex startIndex) const -> Char {
 auto U32StringReadTools::readOrThrow(CpIndex &index) const -> Char {
     const auto data = _data.dataSpan();
     if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     return Char{utf32::decodeCharOrThrow(data, index)};
 }

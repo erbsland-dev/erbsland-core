@@ -25,7 +25,6 @@
 namespace erbsland::text {
 
 using namespace literals;
-
 using unit::CpIndex;
 using unit::CpLength;
 
@@ -348,7 +347,7 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options, const boo
             return fail(ReadNumberStatus::TooManyDigits);
         }
 
-        const auto digit = static_cast<std::uint64_t>(next.digitValue().value());
+        const auto digit = static_cast<std::uint64_t>(next.digitValue(base).value());
         if (math::willMultiplyOverflow(result, baseValue)) {
             return fail(ReadNumberStatus::Overflow);
         }

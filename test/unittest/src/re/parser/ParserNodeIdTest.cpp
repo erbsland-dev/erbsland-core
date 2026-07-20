@@ -3,6 +3,8 @@
 
 #include "ParserBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 #include <unordered_map>
 #include <unordered_set>
 

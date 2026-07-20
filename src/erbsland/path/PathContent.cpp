@@ -27,7 +27,6 @@
 namespace erbsland::path {
 
 using namespace text::literals;
-
 using namespace stream;
 
 PathContent::PathContent() = default;

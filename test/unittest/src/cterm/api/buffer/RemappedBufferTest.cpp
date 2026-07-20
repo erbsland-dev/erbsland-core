@@ -3,7 +3,9 @@
 
 #include "RemappedBufferTestSupport.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/cterm/RemappedBuffer.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>

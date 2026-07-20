@@ -38,7 +38,7 @@ Name Forms
     --long=value // value attached with equals, allowing values starting with dash
     positional // dashless option name or parsed positional value
     module-name // module selector, same text rules as long names
-    -h, --help, --version // reserved built-in display requests
+    -h, --help, --version // built-in display requests, unless disabled with parser flags
 
 Primary Types
 =============
@@ -87,6 +87,7 @@ Enumerations and Flags
 
     OptionType // declared option value type: Flag, Integer, Text, Choice
     OptionFlag, OptionFlags // Disabled, Required and Greedy definition flags
+    OptionParserFlag, OptionParserFlags // DisableHelp and DisableVersion parser flags
     OptionHelpVisibility // Inherit, Hidden, Normal, Overview and Usage help levels
     OptionValueType // concrete parsed storage type
     OptionResultStatus // Success, DisplayVersion, DisplayHelp or Error

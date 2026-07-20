@@ -8,6 +8,7 @@
 #include "../../RegExError.hpp"
 
 #include <limits>
+#include <utility>
 
 namespace erbsland::re::impl {
 
@@ -84,7 +85,7 @@ void ReplacementParser::parseExpression() {
 void ReplacementParser::parseGroupIndex() {
     auto groupIndex = std::uint32_t{};
     while (_currentChar.isDigitValue(text::IntegerBase::Decimal)) {
-        groupIndex = (groupIndex * 10U) + _currentChar.digitValue().value();
+        groupIndex = (groupIndex * 10U) + _currentChar.digitValue(text::IntegerBase::Decimal).value();
         if (groupIndex > std::numeric_limits<CaptureGroupIndex>::max()) {
             throwError("Capture group index is out of range"_el);
         }
@@ -122,7 +123,7 @@ void ReplacementParser::requireMoreContent() {
     }
 }
 
-void ReplacementParser::throwError(const text::String &description) const {
+void ReplacementParser::throwError(text::String description) const {
     auto position = _reader.position();
     if (!_currentChar.isSignal()) {
         position -= unit::CpLength::one();
@@ -130,8 +131,8 @@ void ReplacementParser::throwError(const text::String &description) const {
     throw RegExError{
         ErrorCategory::Format,
         "Failed to parse replacement expression"_el,
-        description,
-        unit::CodeLocation{.position = position}};
+        std::move(description),
+        unit::CodeLocation{}.setPosition(position)};
 }
 
 }

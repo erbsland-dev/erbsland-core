@@ -19,7 +19,6 @@
 #include "BlockRectangleList.hpp"
 #include "BlockSize.hpp"
 #include "Orientation.hpp"
-#include "StdFormatForBlock.hpp"
 #include "Symmetry.hpp"
 
 

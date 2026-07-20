@@ -14,7 +14,6 @@
 namespace erbsland::system {
 
 using namespace text::literals;
-
 using namespace text;
 
 WindowsErrorContext::WindowsErrorContext(const ErrorCode errorCode, String errorMessage) noexcept :

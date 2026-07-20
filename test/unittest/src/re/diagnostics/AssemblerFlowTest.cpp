@@ -3,6 +3,8 @@
 
 #include "AssemblerBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 TESTED_TARGETS(Assembler)
 TAGS(Diagnostics)
 class AssemblerFlowTest final : public UNITTEST_SUBCLASS(AssemblerBase) {

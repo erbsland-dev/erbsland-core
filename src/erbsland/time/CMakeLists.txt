@@ -8,11 +8,14 @@ add_subdirectory(tz)
 
 target_sources(erbsland-core PRIVATE
         all.hpp
+        CalendarDelta.cpp
+        CalendarDelta.hpp
         CalendarParts.hpp
         Date.cpp
         Date.hpp
         DateTime.cpp
         DateTime.hpp
+        DateTime_calendar.cpp
         DateTimePrecision.hpp
         Day.cpp
         Day.hpp
@@ -34,14 +37,20 @@ target_sources(erbsland-core PRIVATE
         Month.hpp
         Month_fwd.hpp
         Second.hpp
+        StdFormatForTime.hpp
         Time.cpp
         Time.hpp
         TimeAmounts.hpp
         TimeDelta.cpp
         TimeDelta.hpp
+        TimeDeltaFormat.cpp
+        TimeDeltaFormat.hpp
+        TimeDeltaUnit.hpp
         TimeOccurrenceInFold.hpp
         TimePoint.hpp
         TimeUnitTags.hpp
+        TimeWithZone.cpp
+        TimeWithZone.hpp
         TimeZone.cpp
         TimeZone.hpp
         TimeZoneId.hpp

@@ -390,13 +390,14 @@ public:
         markers.append(
             text::CodeSnippetMarker{
                 el::unit::LineIndex{12U}, el::unit::ColumnIndex{2U}, el::unit::ColumnCount{6U}, {}, "error"_el});
-        document.addCodeSnippet(std::move(lines), el::unit::LineIndex{12U}, std::move(markers), "demo"_el);
+        document.addCodeSnippet(
+            el::text::CodeSnippet{std::move(lines), el::unit::LineIndex{12U}, "demo"_el}, std::move(markers));
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         const auto rendered = renderDocument(renderer, document);
-        REQUIRE(rendered.find("  12 \u2502   padded value") != std::string::npos);
+        REQUIRE(rendered.find("  13 \u2502   padded value") != std::string::npos);
         REQUIRE(rendered.find("     \u2502   \u2594\u2594\u2594\u2594\u2594\u2594") != std::string::npos);
-        REQUIRE(rendered.find("  13 \u2502 next") != std::string::npos);
+        REQUIRE(rendered.find("  14 \u2502 next") != std::string::npos);
 
         auto buffer = CursorBuffer{bgeo::BlockSize{40, 6}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
@@ -429,7 +430,8 @@ public:
         markers.append(
             text::CodeSnippetMarker{
                 el::unit::LineIndex{1U}, el::unit::ColumnIndex{1U}, el::unit::ColumnCount{1U}, {}, "warning"_el});
-        document.addCodeSnippet(std::move(lines), el::unit::LineIndex::zero(), std::move(markers));
+        document.addCodeSnippet(
+            el::text::CodeSnippet{std::move(lines), el::unit::LineIndex::zero(), {}}, std::move(markers));
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         const auto rendered = renderDocument(renderer, document);

@@ -9,7 +9,6 @@
 namespace erbsland::i18n {
 
 using namespace text::literals;
-
 using text::Char;
 using text::String;
 using text::StringFormat;

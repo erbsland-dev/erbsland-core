@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+using namespace el::text::literals;
+
 using el::text::AsciiCategory;
 using el::text::CharSet;
 using el::text::U8String;
@@ -36,7 +38,6 @@ public:
         using Char = el::text::Char;
         using CharRange = el::text::CharRange;
         using CharSet = el::text::CharSet;
-        using namespace el::text::literals;
 
         const auto empty = CharSet{};
         const auto single = CharSet{Char{U'A'}};
@@ -137,7 +138,6 @@ public:
     void testFactoryMethods() {
         using Char = el::text::Char;
         using CharSet = el::text::CharSet;
-        using namespace el::text::literals;
 
         const auto asciiHex = CharSet::from(AsciiCategory::HexDigit);
         REQUIRE(asciiHex.contains(Char{U'0'}));

@@ -13,6 +13,8 @@ Byte Block
 
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` is the owning read-only type for arbitrary byte sequences.
 It shares copy-on-write storage, and its slices retain the same storage while exposing a smaller byte range.
+It is also the scalar byte-storage type used by configuration values, hashes, signatures, and other Core APIs, so these
+subsystems can exchange immutable byte data without adapter wrappers.
 
 Basic Usage
 ~~~~~~~~~~~

@@ -6,8 +6,6 @@
 
 #include "../err/RuntimeError.hpp"
 
-#include <format>
-
 namespace erbsland::re {
 
 /// An error raised by regular-expression parsing, compilation, diagnostics, or matching.
@@ -68,10 +66,3 @@ private:
 };
 
 }
-
-template <>
-struct std::formatter<erbsland::re::RegExError> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::RegExError &error, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(error.toString(), ctx);
-    }
-};

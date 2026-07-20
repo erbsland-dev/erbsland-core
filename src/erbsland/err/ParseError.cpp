@@ -28,7 +28,7 @@ auto ParseError::diagnostic() const -> DiagnosticConstPtr {
     auto result = std::make_shared<impl::ExceptionDiagnostic>(toString());
     if (hasPosition()) {
         auto location = unit::CodeLocation{};
-        location.position = _position;
+        location.setPosition(_position);
         result->setLocation(location);
     }
     return result;

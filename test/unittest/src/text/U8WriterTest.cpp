@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteWriter.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/u8/impl/U8Writer.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -29,6 +30,9 @@ public:
         writer.write(Char{0x20ACU});
         writer.write(Char{0x1F600U});
         writer.write(Char{0xD800U});
+        writer.write(Char{0xFEFFU});
+        writer.write(Char::endOfData());
+        writer.write(Char::byteOrderMark());
 
         const auto written = std::string{data.data(), data.size()};
 

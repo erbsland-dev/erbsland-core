@@ -45,12 +45,12 @@ inline auto encodedLength(const Char character) noexcept -> unit::U16DataLength 
 inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16DataIndex &position) -> Char {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     const auto unit = buffer[index];
     if (Char::isHighSurrogate(unit)) {
         if (index + 1U >= buffer.size() || !Char::isLowSurrogate(buffer[index + 1U])) {
-            text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
+            throwU16EncodingError("Invalid UTF-16 high surrogate", index);
         }
         const char32_t codePoint = char32_t{0x10000U} + (static_cast<char32_t>(unit - 0xD800U) << 10U) +
             static_cast<char32_t>(buffer[index + 1U] - 0xDC00U);
@@ -58,10 +58,14 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         return Char{codePoint};
     }
     if (Char::isLowSurrogate(unit)) {
-        text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
+        throwU16EncodingError("Invalid UTF-16 low surrogate", index);
+    }
+    const auto character = Char{static_cast<char32_t>(unit)};
+    if (!character.isValidUnicode()) {
+        throwU16EncodingError("Invalid Unicode code point in UTF-16 data", index);
     }
     position.advance(unit::U16DataLength::one());
-    return Char{static_cast<char32_t>(unit)};
+    return character;
 }
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
@@ -88,7 +92,8 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         return Char::replacement();
     }
     position.increment();
-    return Char{static_cast<char32_t>(unit)};
+    const auto character = Char{static_cast<char32_t>(unit)};
+    return character.isValidUnicode() ? character : Char::replacement();
 }
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
@@ -115,7 +120,8 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
         return std::nullopt;
     }
     position.increment();
-    return Char{static_cast<char32_t>(unit)};
+    const auto character = Char{static_cast<char32_t>(unit)};
+    return character.isValidUnicode() ? std::optional<Char>{character} : std::nullopt;
 }
 
 /// Fast advancing the position index in the given UTF-16 buffer.
@@ -163,7 +169,7 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
             }
             switch (errorMode) {
             case EncodingErrorMode::Throw:
-                text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", index);
+                throwU16EncodingError("Invalid UTF-16 high surrogate", index);
             case EncodingErrorMode::Ignore:
                 break;
             case EncodingErrorMode::Replace:
@@ -175,7 +181,7 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
         if (Char::isLowSurrogate(unit)) {
             switch (errorMode) {
             case EncodingErrorMode::Throw:
-                text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", index);
+                throwU16EncodingError("Invalid UTF-16 low surrogate", index);
             case EncodingErrorMode::Ignore:
                 break;
             case EncodingErrorMode::Replace:
@@ -184,7 +190,20 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
             }
             continue;
         }
-        function(Char{static_cast<char32_t>(unit)});
+        const auto character = Char{static_cast<char32_t>(unit)};
+        if (character.isValidUnicode()) {
+            function(character);
+            continue;
+        }
+        switch (errorMode) {
+        case EncodingErrorMode::Throw:
+            throwU16EncodingError("Invalid Unicode code point in UTF-16 data", index);
+        case EncodingErrorMode::Ignore:
+            break;
+        case EncodingErrorMode::Replace:
+            function(Char::replacement());
+            break;
+        }
     }
 }
 
@@ -260,7 +279,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
     while (!reader.isAtEnd()) {
         if (!reader.canRead(2U)) {
             if constexpr (errorMode == EncodingErrorMode::Throw) {
-                text::impl::throwEncodingError("Truncated UTF-16 data");
+                throwEncodingError("Truncated UTF-16 data");
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -299,7 +318,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
             }
             if constexpr (errorMode == EncodingErrorMode::Throw) {
                 reader.setPosition(unitPosition);
-                text::impl::throwU16EncodingError("Invalid UTF-16 high surrogate", unitIndex);
+                throwU16EncodingError("Invalid UTF-16 high surrogate", unitIndex);
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -317,7 +336,26 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
         if (Char::isLowSurrogate(unit)) {
             if constexpr (errorMode == EncodingErrorMode::Throw) {
                 reader.setPosition(unitPosition);
-                text::impl::throwU16EncodingError("Invalid UTF-16 low surrogate", unitIndex);
+                throwU16EncodingError("Invalid UTF-16 low surrogate", unitIndex);
+            } else {
+                if constexpr (errorMode == EncodingErrorMode::Replace) {
+                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                        if (!function(Char::replacement())) {
+                            return false;
+                        }
+                    } else {
+                        function(Char::replacement());
+                    }
+                }
+                unitIndex += 1U;
+                continue;
+            }
+        }
+        const auto character = Char{static_cast<char32_t>(unit)};
+        if (!character.isValidUnicode()) {
+            if constexpr (errorMode == EncodingErrorMode::Throw) {
+                reader.setPosition(unitPosition);
+                throwU16EncodingError("Invalid Unicode code point in UTF-16 data", unitIndex);
             } else {
                 if constexpr (errorMode == EncodingErrorMode::Replace) {
                     if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
@@ -333,11 +371,11 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
             }
         }
         if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-            if (!function(Char{static_cast<char32_t>(unit)})) {
+            if (!function(character)) {
                 return false;
             }
         } else {
-            function(Char{static_cast<char32_t>(unit)});
+            function(character);
         }
         unitIndex += 1U;
     }

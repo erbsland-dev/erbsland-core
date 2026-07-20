@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "U32StringBuilder_fwd.hpp"
+
 #include "../U32StringEditor.hpp"
 
 #include "../../impl/AnyStringBuilderBase.hpp"
@@ -26,13 +28,13 @@ public:
     [[nodiscard]] auto length() const noexcept -> unit::CpLength override;
     [[nodiscard]] auto isEmpty() const noexcept -> bool override;
     void clear() noexcept override;
-    void append(Char character) override;
+    auto append(Char character) -> unit::CpLength override;
     void append(Char character, unit::CpLength count) override;
-    void append(const U8String &text) override;
+    auto append(const U8String &text) -> unit::CpLength override;
     void append(const U8String &text, unit::ElementCount count) override;
-    void append(const U16String &text) override;
+    auto append(const U16String &text) -> unit::CpLength override;
     void append(const U16String &text, unit::ElementCount count) override;
-    void append(const U32String &text) override;
+    auto append(const U32String &text) -> unit::CpLength override;
     void append(const U32String &text, unit::ElementCount count) override;
     void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
     [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;

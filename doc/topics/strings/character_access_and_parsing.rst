@@ -61,6 +61,9 @@ In practice:
 - Use :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` for parsers.
   It provides efficient sequential access, lookahead, recovery, and code-point positions for diagnostics.
   It also provides capturing of strings and low-level integer parsing.
+- For a UTF-8-only hot path that already stores a ``ByteIndex`` and does not need reader state, use
+  :cpp:func:`readCharAndAdvanceOrThrow()
+  <erbsland::text::U8String::readCharAndAdvanceOrThrow>` for strict decoding without constructing a reader.
 - Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` or a range-based ``for`` loop when
   every decoded character is visited.
 - Use byte indexes together with :cpp:func:`find() <erbsland::text::U8String::find>` and similar functions,
@@ -226,8 +229,8 @@ Iterate Over Decoded Characters
 If your code only needs to visit decoded characters, use the iteration APIs instead of creating a parser.
 They are shorter, make the intent clearer, and avoid accidental byte-index mistakes.
 
-Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` as a convenience method, visiting every character in
-the string.
+Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` as a convenience method, visiting every character in the
+string.
 If your callback returns ``LoopStatus::Stop``, the iteration stops early and returns ``LoopResult::Stopped``.
 Especially if you test for a condition, using :cpp:func:`forEach() <erbsland::text::U8String::forEach>` is often the
 most efficient way of implementation.
@@ -309,15 +312,15 @@ Fast Side Access
 Use :cpp:func:`charAt(StringSide) <erbsland::text::U8String::charAt>` when you need the first or last character.
 This avoids spelling out the index and lets the string implementation choose the efficient path.
 
-Use :cpp:func:`indexAt(StringSide) <erbsland::text::U8String::indexAt>` to get the first byte index or the byte
-index after the last byte.
+Use :cpp:func:`indexAt(StringSide) <erbsland::text::U8String::indexAt>` to get the first byte index or the byte index
+after the last byte.
 The back index is an end position, not the last character's start position.
 
 Byte-Index Access
 -----------------
 
-Use :cpp:func:`charAt(ByteIndex) <erbsland::text::U8String::charAt>` when the byte index came from another
-``String`` operation, from a saved byte position, or from
+Use :cpp:func:`charAt(ByteIndex) <erbsland::text::U8String::charAt>` when the byte index came from another ``String``
+operation, from a saved byte position, or from
 :cpp:func:`advance() <erbsland::text::U8String::advance>` /
 :cpp:func:`retreat() <erbsland::text::U8String::retreat>`.
 
@@ -333,8 +336,8 @@ If you do no own length validation, always test signal characters before treatin
 Code-Point Index Access
 -----------------------
 
-Use :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` when the position is already a code-point
-position and the string is small enough that scanning is acceptable.
+Use :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` when the position is already a code-point position
+and the string is small enough that scanning is acceptable.
 The same guidance applies to :cpp:func:`indexAt(CpIndex) <erbsland::text::U8String::indexAt>` and
 :cpp:func:`toCharIndex(ByteIndex) <erbsland::text::U8String::toCharIndex>`.
 
@@ -346,8 +349,8 @@ Use :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`,
 Slicing and Moving Indexes
 --------------------------
 
-Use :cpp:func:`slice(StringSide) <erbsland::text::U8String::slice>` when you need to peel one decoded character from
-the front or back and continue with the remaining view.
+Use :cpp:func:`slice(StringSide) <erbsland::text::U8String::slice>` when you need to peel one decoded character from the
+front or back and continue with the remaining view.
 This is useful for rules such as "the first character has different requirements than the rest".
 
 Use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
@@ -435,7 +438,8 @@ Code-Point Access is Cheap for UTF-32 Strings
 =============================================
 
 UTF-32 makes code-point-index access cheap because one storage unit is one code point.
-That does not automatically make conversion to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` worthwhile.
+That does not automatically make conversion to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`
+worthwhile.
 Convert only when the data will be accessed by code-point index often enough to justify the extra memory, conversion
 cost, and API width change.
 
@@ -460,8 +464,9 @@ Do use :cpp:func:`advance() <erbsland::text::U8String::advance>` and
 
 Don't increment a UTF-8 byte index and assume the next byte starts the next character.
 
-Don't use repeated :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` calls as a parser or scanner for
-large UTF-8 text.
+Don't use repeated :cpp:func:`charAt(CpIndex) <erbsland::text::U8String::charAt>` calls as a parser or scanner for large
+UTF-8 text.
 
-Don't convert to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` just to make one or two character-indexed accesses.
+Don't convert to :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` just to make one or two
+character-indexed accesses.
 Use UTF-32 when code-point indexing is central to the data structure.

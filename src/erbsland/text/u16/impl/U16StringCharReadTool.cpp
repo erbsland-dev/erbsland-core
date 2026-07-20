@@ -42,7 +42,7 @@ auto U16StringCharReadTool::charAt(const CpIndex index) const noexcept -> Char {
 
 auto U16StringCharReadTool::charAtOrThrow(const CpIndex index) const -> Char {
     if (index.isNoIndex()) {
-        text::impl::throwOutOfRange("Read position out of range");
+        throwOutOfRange("Read position out of range");
     }
     const auto data = _data.dataSpan();
     auto position = U16DataIndex::zero();
@@ -54,7 +54,7 @@ auto U16StringCharReadTool::charAtOrThrow(const CpIndex index) const -> Char {
         utf16::fastAdvanceChar(data, position);
         ++currentIndex;
     }
-    text::impl::throwOutOfRange("Read position out of range");
+    throwOutOfRange("Read position out of range");
 }
 
 auto U16StringCharReadTool::byteIndexAt(const CpIndex index) const noexcept -> U16DataIndex {

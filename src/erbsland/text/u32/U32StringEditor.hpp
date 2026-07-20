@@ -9,6 +9,7 @@
 #include "U32StringList_fwd.hpp"
 #include "U32StringLiteral_fwd.hpp"
 
+#include "impl/U32StringBuilder_fwd.hpp"
 #include "impl/U32StringEncodingTools_fwd.hpp"
 #include "impl/U32StringSharedStorage.hpp"
 
@@ -74,6 +75,7 @@ namespace erbsland::text {
 class U32StringEditor {
     friend class debug::impl::StringDebugAccess;
     friend class U32String;
+    friend class impl::U32StringBuilder;
     friend class impl::U32StringEncodingTools;
     friend class impl::StringConversionTools;
 

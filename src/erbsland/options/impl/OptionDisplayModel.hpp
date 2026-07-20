@@ -99,6 +99,8 @@ private:
     [[nodiscard]] auto visibleOptionSet(const OptionSetPtr &optionSet) const noexcept -> bool;
     [[nodiscard]] auto visibleOption(
         const OptionPtr &option, OptionHelpVisibility setVisibility, bool forUsage = false) const noexcept -> bool;
+    [[nodiscard]] auto enabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const noexcept
+        -> bool;
     [[nodiscard]] auto visibleChoice(const OptionHelp &help, OptionHelpVisibility optionVisibility) const noexcept
         -> bool;
     [[nodiscard]] auto visibleModule(const OptionHelp &help) const noexcept -> bool;

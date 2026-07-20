@@ -108,20 +108,19 @@ auto TextNode::createCodeBlock(String language) -> TextNodePtr {
     return createNode(Type::CodeBlock, {}, {}, {}, std::move(data));
 }
 
-auto TextNode::createCodeSnippet(
-    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
+auto TextNode::createCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList markers) -> TextNodePtr {
     auto data = TextNodeDataPtr{};
-    if (!language.isEmpty()) {
-        data = std::make_shared<impl::CodeSnippetData>(std::move(language));
+    if (!snippet.language.isEmpty()) {
+        data = std::make_shared<impl::CodeSnippetData>(std::move(snippet.language));
     }
     auto result = createNode(Type::CodeSnippet, {}, {}, {}, std::move(data));
-    for (auto localIndex = std::size_t{0U}; localIndex < lines.count().toSizeT(); ++localIndex) {
-        const auto lineIndex = codeSnippetLineIndex(startLine, localIndex);
+    for (auto localIndex = std::size_t{0U}; localIndex < snippet.lines.count().toSizeT(); ++localIndex) {
+        const auto lineIndex = codeSnippetLineIndex(snippet.startLine, localIndex);
         auto line = result->add(Type::CodeLine);
-        if (!startLine.isNoIndex()) {
-            line->add(Type::CodeLineNumber)->addText(String::fromInteger(lineIndex.toSizeT()));
+        if (!snippet.startLine.isNoIndex()) {
+            line->add(Type::CodeLineNumber)->addText(String::fromInteger(lineIndex.toSizeT() + 1U));
         }
-        line->add(Type::CodeLineText)->addText(lines.get(unit::ElementIndex::fromSizeT(localIndex)));
+        line->add(Type::CodeLineText)->addText(snippet.lines.get(unit::ElementIndex::fromSizeT(localIndex)));
         for (const auto &marker : markers) {
             if (marker.line() == lineIndex && !marker.column().isNoIndex()) {
                 line->add(Type::CodeLineMarker)
@@ -248,9 +247,8 @@ auto TextNode::addCodeBlock(String language) -> TextNodePtr {
     return appendChild(createCodeBlock(std::move(language)));
 }
 
-auto TextNode::addCodeSnippet(
-    StringList lines, unit::LineIndex startLine, CodeSnippetMarkerList markers, String language) -> TextNodePtr {
-    return appendChild(createCodeSnippet(std::move(lines), startLine, std::move(markers), std::move(language)));
+auto TextNode::addCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList markers) -> TextNodePtr {
+    return appendChild(createCodeSnippet(std::move(snippet), std::move(markers)));
 }
 
 auto TextNode::addHorizontalLine() -> TextNodePtr {

@@ -14,7 +14,7 @@ auto Assembler::compile(const text::StringList &lines) const -> RegExPtr {
     impl::Assembler assembler{};
     auto engineData = assembler.compile(lines);
     auto engine = impl::Engine::create(std::move(engineData));
-    return std::make_shared<RegEx>(std::move(engine), RegEx::PrivateTag{});
+    return std::make_shared<RegEx>(std::move(engine), text::AnyString{}, RegEx::PrivateTag{});
 }
 
 }

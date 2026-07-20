@@ -29,8 +29,8 @@ If the implementation for a class exceeds 500 lines, it should be split into mul
 Forward Declarations
 ====================
 
-If forward declarations to a nontrivial declared class or template are used from multiple files, put them
-into a special header ``Class_fwd.hpp``, that only contains the fwd implementation and all required includes.
+If forward declarations to a nontrivial declared class or template are used from multiple files, put them into a special
+header ``Class_fwd.hpp``, that only contains the fwd implementation and all required includes.
 
 The forward header is the authoritative declaration location:
 
@@ -48,20 +48,37 @@ The forward header is the authoritative declaration location:
 Out-of-Line Implementations
 ===========================
 
-Keep headers focused on declarations and code that must be visible to callers. Move non-template, non-``constexpr``
-implementations to the matching ``cpp`` file when they contain more than a defaulted special member or one simple
-member expression. Move dependencies used only by the extracted body to the ``cpp`` file as well.
+Keep headers focused on declarations and code that must be visible to callers.
+Move non-template, non-``constexpr`` implementations to the matching ``cpp`` file when they contain more than a
+defaulted special member or one simple member expression.
+Move dependencies used only by the extracted body to the ``cpp`` file as well.
 
-Templates stay in the owning ``tpp`` file and are included through that header. Do not add a heap-backed PImpl only
-to reduce compile time. Representation splitting is appropriate only when an existing heap or shared-storage design
-allows it without another allocation or a semantic or runtime regression.
+Templates stay in the owning ``tpp`` file and are included through that header.
+Do not add a heap-backed PImpl only to reduce compile time.
+Representation splitting is appropriate only when an existing heap or shared-storage design allows it without another
+allocation or a semantic or runtime regression.
 
 Include Ownership
 =================
 
-Each header and source file directly includes the declarations it uses. After moving an implementation out of a
-header, remove dependencies that were used only by that implementation. Source files are reviewed independently for
-stale includes and direct dependency completeness; they must not rely on unrelated transitive includes.
+Each header and source file directly includes the declarations it uses.
+After moving an implementation out of a header, remove dependencies that were used only by that implementation.
+Source files are reviewed independently for stale includes and direct dependency completeness; they must not rely on
+unrelated transitive includes.
+
+Optional Standard-Library Formatters
+====================================
+
+The production API uses the Erbsland ``StringFormat`` system.
+Optional ``std::formatter`` specializations exist only to improve diagnostics in unit tests and other explicit
+standard-library interoperability code.
+
+1.  Keep all specializations for a domain in ``StdFormatFor<Domain>.hpp``.
+2.  Do not include these headers from regular domain headers or generated ``all.hpp`` headers.
+3.  Include the matching formatter header explicitly in a unit test that compares domain values with
+    ``REQUIRE_*`` or ``CHECK_*`` macros.
+4.  A formatter based on :cpp:type:`erbsland::text::String <erbsland::text::String>` includes ``StdFormatForText.hpp`` and derives from the
+    matching ``std::formatter`` base.
 
 Directories and Namespaces
 ==========================

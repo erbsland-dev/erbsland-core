@@ -4,6 +4,7 @@
 
 #include "AnyString_fwd.hpp"
 #include "AnyStringEditor_fwd.hpp"
+#include "CharCompareFn.hpp"
 #include "StringConverter.hpp"
 #include "StringKind.hpp"
 
@@ -15,7 +16,9 @@
 #include "u8/U8StringEditor.hpp"
 
 #include "../unit/CpLength.hpp"
+#include "../util/impl/ComparisonHelper.hpp"
 
+#include <compare>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -39,6 +42,18 @@ public:
     template <AnyStringType tString>
     AnyString(tString str) noexcept : // NOLINT(*-explicit-constructor)
         _value(str.isEmpty() ? Value{} : std::move(str)) {}
+    /// Create a read-only string sharing a narrow UTF-8 literal.
+    AnyString(const U8StringLiteral<char> &str) noexcept : // NOLINT(*-explicit-constructor)
+        AnyString{U8String{str}} {}
+    /// Create a read-only string sharing a UTF-8 literal.
+    AnyString(const U8StringLiteral<char8_t> &str) noexcept : // NOLINT(*-explicit-constructor)
+        AnyString{U8String{str}} {}
+    /// Create a read-only string sharing a UTF-16 literal.
+    AnyString(const U16StringLiteral &str) noexcept : // NOLINT(*-explicit-constructor)
+        AnyString{U16String{str}} {}
+    /// Create a read-only string sharing a UTF-32 literal.
+    AnyString(const U32StringLiteral &str) noexcept : // NOLINT(*-explicit-constructor)
+        AnyString{U32String{str}} {}
     /// Create a read-only string from a UTF-8 editor.
     AnyString(const U8StringEditor &str) noexcept : // NOLINT(*-explicit-constructor)
         AnyString{U8String{str}} {}
@@ -59,6 +74,9 @@ public:
     auto operator=(AnyString &&) -> AnyString & = default;
 
 public: // operators
+    /// Compare two strings by decoded code point.
+    [[nodiscard]] auto operator<=>(const AnyString &other) const noexcept -> std::strong_ordering;
+    ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const AnyString &other, other);
     auto operator=(const U8String &str) -> AnyString & {
         _value = str;
         return *this;
@@ -83,6 +101,15 @@ public: // operators
         _value = std::move(str);
         return *this;
     }
+
+public: // comparison
+    /// Compare two strings by decoded code point, replacing malformed encoding with `Char::replacement()`.
+    /// The original string widths are preserved and no converted strings are created.
+    /// @param other The string to compare with.
+    /// @param compareFn The optional character comparison function.
+    /// @return A three-way comparison result.
+    [[nodiscard]] auto compare(const AnyString &other, CharCompareFn compareFn = {}) const noexcept
+        -> std::strong_ordering;
 
 public: // accessors
     /// Test if this read-only string is empty.
@@ -160,6 +187,8 @@ public: // conversion
             },
             _value);
     }
+    /// @overload
+    [[nodiscard]] auto toString() const -> String { return toU8String(); }
     /// Get or convert this read-only string in U16 format.
     [[nodiscard]] auto toU16String() const -> U16String {
         return std::visit(

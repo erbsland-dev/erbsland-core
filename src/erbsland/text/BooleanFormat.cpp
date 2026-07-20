@@ -6,8 +6,9 @@
 
 namespace erbsland::text {
 
+using namespace literals;
+
 auto BooleanFormat::text(const bool value) const noexcept -> StringLiteral {
-    using namespace literals;
 
     switch (_style) {
     case Style::YesNo:

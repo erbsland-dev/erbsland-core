@@ -110,7 +110,7 @@ void U16StringSharedStorage::validateSize(const std::size_t size) {
 auto U16StringSharedStorage::checkedAddSize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willAddOverflow(first, second)) {
-        text::impl::throwOverflow(reason);
+        throwOverflow(reason);
     }
     const auto result = math::saturatingAdd(first, second);
     validateSize(result);
@@ -120,7 +120,7 @@ auto U16StringSharedStorage::checkedAddSize(
 auto U16StringSharedStorage::checkedMultiplySize(
     const std::size_t first, const std::size_t second, const std::string_view reason) -> std::size_t {
     if (math::willMultiplyOverflow(first, second)) {
-        text::impl::throwOverflow(reason);
+        throwOverflow(reason);
     }
     const auto result = math::saturatingMultiply(first, second);
     validateSize(result);

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StringAppendTools.hpp"
+
 #include "../AnyStringEditor_fwd.hpp"
 #include "../ByteFormat_fwd.hpp"
 #include "../Char.hpp"
@@ -25,7 +27,7 @@ namespace erbsland::text::impl {
 
 /// Abstract base class for string builder backends.
 /// @tested{AnyStringBuilderTest}
-class AnyStringBuilderBase : public mem::SharedVirtualData {
+class AnyStringBuilderBase : public mem::SharedVirtualData, public StringAppendTools {
 public:
     AnyStringBuilderBase() = default;
     AnyStringBuilderBase(const AnyStringBuilderBase &) = default;
@@ -46,19 +48,23 @@ public:
     /// Clear the builder.
     virtual void clear() noexcept = 0;
     /// Append one Unicode code point.
-    virtual void append(Char character) = 0;
+    /// @return The number of code points appended.
+    auto append(Char character) -> unit::CpLength override = 0;
     /// Append one Unicode code point multiple times.
     virtual void append(Char character, unit::CpLength count) = 0;
     /// Append a UTF-8 read-only string.
-    virtual void append(const U8String &text) = 0;
+    /// @return The number of code points appended.
+    auto append(const U8String &text) -> unit::CpLength override = 0;
     /// Append a UTF-8 read-only string multiple times.
     virtual void append(const U8String &text, unit::ElementCount count) = 0;
     /// Append a UTF-16 read-only string.
-    virtual void append(const U16String &text) = 0;
+    /// @return The number of code points appended.
+    auto append(const U16String &text) -> unit::CpLength override = 0;
     /// Append a UTF-16 read-only string multiple times.
     virtual void append(const U16String &text, unit::ElementCount count) = 0;
     /// Append a UTF-32 read-only string.
-    virtual void append(const U32String &text) = 0;
+    /// @return The number of code points appended.
+    auto append(const U32String &text) -> unit::CpLength override = 0;
     /// Append a UTF-32 read-only string multiple times.
     virtual void append(const U32String &text, unit::ElementCount count) = 0;
     /// Append a byte block as formatted hexadecimal text.

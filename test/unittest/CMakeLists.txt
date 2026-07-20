@@ -11,6 +11,14 @@ target_include_directories(erbsland-core-unittest PRIVATE
         src
 )
 
+target_compile_definitions(erbsland-core PRIVATE
+        ERBSLAND_UNITTEST_BUILD=1
+        ERBSLAND_CORE_CONF_INTERNAL_VIEWS=1
+)
+target_compile_definitions(erbsland-core-unittest PRIVATE
+        ERBSLAND_UNITTEST_BUILD=1
+        ERBSLAND_CORE_CONF_INTERNAL_VIEWS=1
+)
 add_subdirectory(src)
 
 erbsland_core_configure_unittest(erbsland-core-unittest

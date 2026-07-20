@@ -4,13 +4,27 @@
 --[ Main ]------------------------------------------------------------------------------------------------------------
 # Directory basenames to skip while scanning "src/erbsland".
 # A header is ignored if one of its parent directories has a matching name.
-Excluded Directories    : "impl"
+Excluded Directories    :
+    * "impl"             # Implementtation files
+    * "attribute"        # conf/vf/builder/attribute files are included via `Attributes.hpp`
+    * "constraint"       # conf/vf/builder/constraint files are included via `Constraint.hpp`
 
 # Source-relative public headers to skip while scanning "src/erbsland".
 # Use this for platform-specific public headers that are added through
 # conditional CMake target_sources blocks.
 Excluded Headers        :
     * "system/WindowsErrorContext.hpp"
+
+# Source-relative public headers that get an individual include wrapper but are
+# omitted from generated all.hpp headers. Keep opt-in interoperability adapters
+# out of regular builds and include them explicitly where they are needed.
+Excluded From All Headers :
+    * "bgeo/StdFormatForBlock.hpp"
+    * "conf/StdFormatForConf.hpp"
+    * "re/StdFormatForRegEx.hpp"
+    * "text/StdFormatForText.hpp"
+    * "time/StdFormatForTime.hpp"
+    * "unit/StdFormatForUnit.hpp"
 
 # When enabled, every scanned source header also gets a wrapper directly below
 # "include/erbsland" using only its file name, in addition to the wrapper that

@@ -15,7 +15,7 @@ Primary Types
 
 .. code-block:: text
 
-    RegEx // immutable compiled regular expression
+    RegEx // immutable eager or lazy regular expression
     Match, Match16, Match32 // UTF-8, UTF-16 and UTF-32 results
     Input, Input16, Input32 // custom-source extension points for each result family
     RegExError, RegExErrorContext // structured RE failures and diagnostic context
@@ -30,11 +30,19 @@ Compilation Patterns
     RegEx.compile(text::String) -> RegExPtr
     RegEx.compile(text::U16String) -> RegExPtr
     RegEx.compile(text::U32String) -> RegExPtr
+    RegEx.lazyCompile(text::AnyString) -> RegExPtr
+    o.pattern() -> text::String // normalized UTF-8 source pattern
+    o.isCompiled() -> bool
+    o.compileNow() -> void
 
 All pattern overloads share the same reader-based compilation path.
 Pattern limits are code-point based.
 All APIs that receive Core strings use tolerant decoding and treat malformed units as U+FFFD.
+Compiled expressions retain that normalized UTF-8 source pattern independently of the input string width.
 Custom inputs are exception-transparent and may provide strict decoding instead.
+Lazy expressions retain their pattern, flags and settings without validation.
+Their first matching, replacement or diagnostic operation compiles a shared engine exactly once.
+Explicit validation uses ``compileNow()`` and preserves ``RegExError`` diagnostics.
 
 Error Message Patterns
 ======================

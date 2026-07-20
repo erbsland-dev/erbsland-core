@@ -5,7 +5,6 @@
 #include "Flag.hpp"
 
 #include "../text/Literals.hpp"
-#include "../text/StdFormatForText.hpp"
 #include "../text/StringEditor.hpp"
 #include "../util/EnumFlags.hpp"
 
@@ -46,10 +45,3 @@ public: // helpers
 };
 
 }
-
-template <>
-struct std::formatter<erbsland::re::Flags> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::Flags flags, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(flags.toString(), ctx);
-    }
-};

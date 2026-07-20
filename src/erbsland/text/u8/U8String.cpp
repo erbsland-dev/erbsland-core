@@ -160,6 +160,10 @@ auto U8String::readCharAndAdvance(ByteIndex &index) const noexcept -> Char {
     return U8StringReadTools{dataView()}.read(index);
 }
 
+auto U8String::readCharAndAdvanceOrThrow(ByteIndex &index) const -> Char {
+    return U8StringReadTools{dataView()}.readOrThrow(index);
+}
+
 auto U8String::readCharAndRetreat(ByteIndex &index) const noexcept -> Char {
     return U8StringReadTools{dataView()}.readAndRetreat(index);
 }
@@ -401,7 +405,7 @@ auto U8String::transformed(const TransformCharacterFn function) const -> U8Strin
     if (auto result = U8StringTransformTools{dataView()}.transformedIfChanged(function)) {
         return U8StringEditor{std::move(*result)};
     }
-    return U8StringEditor{U8StringSharedStorage{dataView()}};
+    return *this;
 }
 
 auto U8String::begin() const noexcept -> const_iterator {

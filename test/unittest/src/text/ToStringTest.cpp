@@ -17,6 +17,8 @@
 #include <type_traits>
 #include <utility>
 
+using namespace el::text::literals;
+
 using namespace el::text;
 
 static_assert(std::is_same_v<decltype(toString(std::declval<const String &>())), String>);
@@ -27,7 +29,6 @@ TESTED_TARGETS(toString BooleanFormat Capitalization U8StringEditor)
 class ToStringTest final : public el::UnitTest {
 public:
     void testStringsAndBooleans() {
-        using namespace el::text::literals;
 
         const auto string = StringEditor{"hello"_el};
         const auto view = String{"world"_el};
@@ -47,7 +48,6 @@ public:
     }
 
     void testBooleanFormats() {
-        using namespace el::text::literals;
 
         auto format = BooleanFormat{};
         REQUIRE_EQUAL(format.style(), BooleanFormat::Style::TrueFalse);
@@ -75,7 +75,6 @@ public:
     }
 
     void testStrongOrdering() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(toString(std::strong_ordering::less), "less"_el);
         REQUIRE_EQUAL(toString(std::strong_ordering::equal), "equal"_el);
@@ -84,7 +83,6 @@ public:
     }
 
     void testIntegerValues() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(toString(std::int32_t{-17}), "-17"_el);
 

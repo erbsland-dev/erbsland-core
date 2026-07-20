@@ -6,35 +6,70 @@
 #include "impl/engine/Engine.hpp"
 
 #include "../text/StringCharReader.hpp"
+#include "../text/StringConverter.hpp"
+
+#include <atomic>
+#include <mutex>
 
 namespace erbsland::re {
 
-auto RegEx::compile(const text::String &pattern, const Flags flags, Settings settings) -> RegExPtr {
-    return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
+struct RegEx::LazyState final {
+    explicit LazyState(const Flags sourceFlags, Settings sourceSettings) noexcept :
+        flags{sourceFlags}, settings{std::move(sourceSettings)} {}
+
+    Flags flags;
+    Settings settings;
+    impl::ConstEnginePtr engine;
+    std::once_flag compileOnce;
+    std::atomic_bool isCompiled{false};
+};
+
+auto RegEx::compile(text::AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
+    auto engine = buildEngine(pattern, flags, settings);
+    return std::make_shared<RegEx>(std::move(engine), std::move(pattern), PrivateTag{});
 }
 
-auto RegEx::compile(const text::U16String &pattern, const Flags flags, Settings settings) -> RegExPtr {
-    return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
+auto RegEx::lazyCompile(text::AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
+    return std::make_shared<RegEx>(std::move(pattern), flags, settings, PrivateTag{});
 }
 
-auto RegEx::compile(const text::U32String &pattern, const Flags flags, Settings settings) -> RegExPtr {
-    return compileReader(text::StringCharReader{pattern}, flags, std::move(settings));
-}
-
-auto RegEx::compileReader(text::StringCharReader reader, const Flags flags, Settings settings) -> RegExPtr {
-    impl::Compiler compiler{std::move(reader), impl::GroupFlags::fromPatternFlags(flags), std::move(settings)};
+auto RegEx::buildEngine(const text::AnyString &pattern, const Flags flags, const Settings &settings)
+    -> impl::ConstEnginePtr {
+    auto reader = text::StringCharReader{pattern};
+    impl::Compiler compiler{std::move(reader), impl::GroupFlags::fromPatternFlags(flags), settings};
     auto engine = compiler.buildEngine();
     if (flags.isSet(Flag::CRLF)) {
         engine->setInitialFlag(impl::EngineFlag::FoldCRLF);
     }
-    return std::make_shared<RegEx>(engine, PrivateTag{});
+    return engine;
 }
 
-auto RegEx::engine() const noexcept -> const impl::ConstEnginePtr & {
+void RegEx::compileNow() const {
+    static_cast<void>(engine());
+}
+
+auto RegEx::isCompiled() const noexcept -> bool {
+    return _lazyState == nullptr || _lazyState->isCompiled.load(std::memory_order_acquire);
+}
+
+auto RegEx::engine() const -> impl::ConstEnginePtr {
+    if (_lazyState != nullptr) {
+        const auto state = _lazyState;
+        std::call_once(state->compileOnce, [this, &state]() -> void {
+            state->engine = buildEngine(_pattern, state->flags, state->settings);
+            state->isCompiled.store(true, std::memory_order_release);
+        });
+        return state->engine;
+    }
     return _engine;
 }
 
-RegEx::RegEx(impl::ConstEnginePtr engine, PrivateTag) noexcept : _engine{std::move(engine)} {
+RegEx::RegEx(impl::ConstEnginePtr engine, text::AnyString pattern, PrivateTag) noexcept :
+    _engine{std::move(engine)}, _pattern{std::move(pattern)} {
+}
+
+RegEx::RegEx(text::AnyString pattern, const Flags flags, Settings settings, PrivateTag) :
+    _pattern{std::move(pattern)}, _lazyState{std::make_shared<LazyState>(flags, std::move(settings))} {
 }
 
 }

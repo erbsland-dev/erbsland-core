@@ -7,7 +7,6 @@
 namespace erbsland::debug {
 
 using namespace text::literals;
-
 using namespace text;
 
 auto toDebugTree(const U8StringEditor &value, const DebugViewDetails details) -> StringTree {

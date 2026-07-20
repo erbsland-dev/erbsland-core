@@ -8,6 +8,7 @@
 #include "../OptionFlag.hpp"
 #include "../OptionHelpVisibility.hpp"
 #include "../OptionModule.hpp"
+#include "../OptionParserFlag.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
@@ -132,7 +133,7 @@ auto OptionDisplayModel::optionGroups() const -> std::vector<OptionDisplayGroup>
             groupIterator = std::prev(groups.end());
         }
         for (const auto &option : optionSet->options()) {
-            if (!visibleOption(option, setVisibility)) {
+            if (!enabledBuiltInOption(optionSet, option) || !visibleOption(option, setVisibility)) {
                 continue;
             }
             groupIterator->rows.emplace_back(
@@ -179,7 +180,7 @@ auto OptionDisplayModel::usageOptions() const -> std::vector<OptionPtr> {
     for (const auto &optionSet : visibleOptionSets()) {
         const auto setVisibility = resolvedVisibility(optionSet->help());
         for (const auto &option : optionSet->options()) {
-            if (visibleOption(option, setVisibility, true)) {
+            if (enabledBuiltInOption(optionSet, option) && visibleOption(option, setVisibility, true)) {
                 result.emplace_back(option);
             }
         }
@@ -198,7 +199,8 @@ auto OptionDisplayModel::usagePositionalOptions() const -> std::vector<OptionPtr
     for (const auto &optionSet : visibleOptionSets()) {
         const auto setVisibility = resolvedVisibility(optionSet->help());
         for (const auto &option : optionSet->options()) {
-            if (option != nullptr && option->isPositionalArgument() && visibleOption(option, setVisibility)) {
+            if (enabledBuiltInOption(optionSet, option) && option != nullptr && option->isPositionalArgument() &&
+                visibleOption(option, setVisibility)) {
                 result.emplace_back(option);
             }
         }
@@ -326,11 +328,11 @@ auto OptionDisplayModel::visibleHelp(const OptionHelp &help) noexcept -> bool {
 }
 
 auto OptionDisplayModel::isHelpOption(const OptionPtr &option) -> bool {
-    return option != nullptr && option->hasLongName("--help"_el);
+    return option != nullptr && option->type() == OptionType::Flag && option->hasLongName("--help"_el);
 }
 
 auto OptionDisplayModel::isVersionOption(const OptionPtr &option) -> bool {
-    return option != nullptr && option->hasLongName("--version"_el);
+    return option != nullptr && option->type() == OptionType::Flag && option->hasLongName("--version"_el);
 }
 
 auto OptionDisplayModel::findModule(const String &moduleName) const -> OptionModulePtr {
@@ -368,6 +370,23 @@ auto OptionDisplayModel::visibleOption(
     }
     if (_module == nullptr && hasModules()) {
         return visibility == OptionHelpVisibility::Overview || visibility == OptionHelpVisibility::Usage;
+    }
+    return true;
+}
+
+auto OptionDisplayModel::enabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const noexcept
+    -> bool {
+    if (_options == nullptr || optionSet != _options->builtInOptionSet()) {
+        return true;
+    }
+    if (option == nullptr || option->isDisabled()) {
+        return false;
+    }
+    if (option->hasLongName("--help"_el)) {
+        return !_options->parserFlags().isSet(OptionParserFlag::DisableHelp);
+    }
+    if (option->hasLongName("--version"_el)) {
+        return !_options->parserFlags().isSet(OptionParserFlag::DisableVersion);
     }
     return true;
 }

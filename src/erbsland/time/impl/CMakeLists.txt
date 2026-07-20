@@ -9,6 +9,8 @@ target_sources(erbsland-core PRIVATE
         ParsedIsoDateTime.hpp
         PosixTimeConverter.cpp
         PosixTimeConverter.hpp
+        TimeDeltaFormatter.cpp
+        TimeDeltaFormatter.hpp
         TimePart.hpp
         TimePartBases.hpp
         TimePartWithAmount.hpp

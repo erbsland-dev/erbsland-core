@@ -21,7 +21,6 @@
 
 namespace erbsland::path {
 using namespace text::literals;
-
 using impl::PathData;
 using impl::PathDataPtr;
 using impl::PathParseMode;

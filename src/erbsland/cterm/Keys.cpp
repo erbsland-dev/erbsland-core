@@ -102,11 +102,12 @@ auto Keys::contains(const Key &key) const noexcept -> bool {
 }
 
 void Keys::validateKey(const Key &key) {
+    static const auto nullCharacters = text::CharSet{text::Char{}};
     if (!key.valid()) {
         throw err::ParameterError{"Key binding must be a displayable key.", "key"};
     }
     const auto displayText = key.toDisplayText(false);
-    if (displayText.isEmpty() || displayText.containsOneOf(text::CharSet{text::Char{}})) {
+    if (displayText.isEmpty() || displayText.containsOneOf(nullCharacters)) {
         throw err::ParameterError{"Key binding must be a displayable key.", "key"};
     }
 }

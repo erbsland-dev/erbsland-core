@@ -33,7 +33,6 @@
 namespace erbsland::core {
 
 using namespace text::literals;
-
 using namespace event;
 
 Application::Application() {

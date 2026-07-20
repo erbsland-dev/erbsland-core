@@ -21,14 +21,18 @@ public:
     TimeOffset() noexcept = default;
     /// Create a fixed offset.
     /// @param offset The UTC offset.
-    explicit TimeOffset(Seconds offset) noexcept : _offset{offset} {}
+    /// @param isLocalTime Whether the offset originated from the system-local zone.
+    explicit TimeOffset(Seconds offset, bool isLocalTime = false) noexcept :
+        _offset{offset}, _isLocalTime{isLocalTime} {}
     /// Create a named-zone offset.
     /// @param offset The UTC offset.
     /// @param isDst Whether daylight saving time is active.
     /// @param zoneId The time zone identifier.
     /// @param abbreviationId The abbreviation index.
-    TimeOffset(Seconds offset, bool isDst, TimeZoneId zoneId, uint8_t abbreviationId) noexcept :
-        _offset{offset}, _zoneId{zoneId}, _abbreviationId{abbreviationId}, _isDst{isDst} {}
+    /// @param isLocalTime Whether the offset originated from the system-local zone.
+    TimeOffset(Seconds offset, bool isDst, TimeZoneId zoneId, uint8_t abbreviationId, bool isLocalTime = false) noexcept
+        :
+        _offset{offset}, _zoneId{zoneId}, _abbreviationId{abbreviationId}, _isDst{isDst}, _isLocalTime{isLocalTime} {}
 
     // defaults
     ~TimeOffset() = default;
@@ -49,6 +53,8 @@ public: // tests
     [[nodiscard]] constexpr auto isZone() const noexcept -> bool { return !_zoneId.isUtc(); }
     /// Test if daylight saving time is active for this offset.
     [[nodiscard]] constexpr auto isDst() const noexcept -> bool { return _isDst; }
+    /// Test if this offset originated from the system-local zone.
+    [[nodiscard]] constexpr auto isLocalTime() const noexcept -> bool { return _isLocalTime; }
 
 public: // accessors
     /// Return the UTC offset in seconds.
@@ -63,6 +69,7 @@ private:
     TimeZoneId _zoneId;
     uint8_t _abbreviationId{0};
     bool _isDst{false};
+    bool _isLocalTime{false};
 };
 
 }

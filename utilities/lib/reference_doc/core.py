@@ -30,6 +30,7 @@ class ApiEntryKind(Enum):
     STRUCT = "struct"
     ENUM_CLASS = "enum_class"
     TYPEDEF = "typedef"
+    CONCEPT = "concept"
     FUNCTION = "function"
 
 
@@ -295,6 +296,7 @@ class HeaderScanner:
     RE_CLASS_OR_STRUCT = re.compile(r"^(?P<kind>class|struct)\s+(?P<name>[A-Za-z_]\w*)\b")
     RE_ENUM_CLASS = re.compile(r"^enum\s+class\s+(?P<name>[A-Za-z_]\w*)\b")
     RE_USING = re.compile(r"^using\s+(?P<name>[A-Za-z_]\w*)\s*=")
+    RE_CONCEPT = re.compile(r"^concept\s+(?P<name>[A-Za-z_]\w*)\b")
     RE_UNSUPPORTED_DOCUMENTED_TYPE = re.compile(r"^(union|concept|typedef)\b")
     RE_FUNCTION = re.compile(
         r"^(?:\[\[[^\]]+\]\]\s*)*(?:(?:inline|constexpr)\s+)*(?:auto|void)\s+"
@@ -439,6 +441,9 @@ class HeaderScanner:
         match = self.RE_USING.match(line)
         if match is not None:
             return self.create_entry(ApiEntryKind.TYPEDEF, match.group("name"), namespace, path, line_number)
+        match = self.RE_CONCEPT.match(line)
+        if match is not None:
+            return self.create_entry(ApiEntryKind.CONCEPT, match.group("name"), namespace, path, line_number)
         match = self.RE_FUNCTION.match(line)
         if match is not None:
             return self.create_function_entry(
@@ -634,6 +639,8 @@ class ReferenceDocGenerator:
             return f".. doxygenenum:: {entry.full_name}\n"
         if entry.kind == ApiEntryKind.TYPEDEF:
             return f".. doxygentypedef:: {entry.full_name}\n"
+        if entry.kind == ApiEntryKind.CONCEPT:
+            return f".. doxygenconcept:: {entry.full_name}\n"
         if entry.kind == ApiEntryKind.FUNCTION:
             return f".. doxygenfunction:: {entry.full_name}\n"
         raise UtilityError(f"Unsupported API entry kind: {entry.kind}")

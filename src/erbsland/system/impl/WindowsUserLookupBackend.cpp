@@ -17,6 +17,7 @@
 #include <sddl.h>
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace erbsland::system::impl {
@@ -24,8 +25,8 @@ namespace erbsland::system::impl {
 using namespace text::literals;
 
 void WindowsUserLookupBackend::throwLookupError(
-    const text::String &reason, const system::WindowsErrorContext::ErrorCode errorCode) {
-    throw system::PlatformError{reason, system::WindowsErrorContext::fromErrorCode(errorCode)};
+    text::String reason, const system::WindowsErrorContext::ErrorCode errorCode) {
+    throw system::PlatformError{std::move(reason), system::WindowsErrorContext::fromErrorCode(errorCode)};
 }
 
 auto WindowsUserLookupBackend::userNameForId(const UserId &id) -> UserName {

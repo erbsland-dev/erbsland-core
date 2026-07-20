@@ -4,6 +4,7 @@
 
 #include "OptionHelp.hpp"
 #include "OptionModule_fwd.hpp"
+#include "OptionParserFlag.hpp"
 #include "Options_fwd.hpp"
 #include "OptionSet_fwd.hpp"
 #include "OptionSetManager.hpp"
@@ -79,6 +80,17 @@ public: // accessors
     [[nodiscard]] auto builtInOptionSet() const noexcept -> const OptionSetPtr & { return _builtInOptionSet; }
     /// Get all main option sets.
     [[nodiscard]] auto optionSets() const noexcept -> const std::vector<OptionSetPtr> & { return _optionSets; }
+    /// Get the command-line parser flags.
+    [[nodiscard]] auto parserFlags() const noexcept -> OptionParserFlags { return _parserFlags; }
+    /// Replace the command-line parser flags.
+    /// @param flags The new parser flags.
+    void setParserFlags(OptionParserFlags flags) noexcept { _parserFlags = flags; }
+    /// Enable one command-line parser flag.
+    /// @param flag The flag to enable.
+    void setParserFlag(OptionParserFlag flag) noexcept { _parserFlags.set(flag); }
+    /// Disable one command-line parser flag.
+    /// @param flag The flag to disable.
+    void clearParserFlag(OptionParserFlag flag) noexcept { _parserFlags.clear(flag); }
 
 private:
     [[nodiscard]] auto defaultOptionSet() -> OptionSetPtr;
@@ -92,6 +104,7 @@ private:
     std::vector<OptionModulePtr> _optionModules; ///< The available option modules.
     OptionSetPtr _builtInOptionSet;              ///< The built-in option set.
     std::vector<OptionSetPtr> _optionSets;       ///< The main option sets.
+    OptionParserFlags _parserFlags;              ///< Customizations for the command-line parser.
 };
 
 }

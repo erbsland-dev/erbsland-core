@@ -22,7 +22,6 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
-
 using bgeo::BlockCoordinate;
 using bgeo::BlockPosition;
 

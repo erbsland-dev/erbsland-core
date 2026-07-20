@@ -3,11 +3,13 @@
 
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/text/AnyStringBuilder.hpp>
+#include <erbsland/text/CodeSnippet.hpp>
 #include <erbsland/text/impl/CodeBlockData.hpp>
 #include <erbsland/text/impl/CodeSnippetData.hpp>
 #include <erbsland/text/impl/LinkData.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/PlainTextRenderer.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>
@@ -26,6 +28,8 @@
 #include <string>
 #include <type_traits>
 #include <utility>
+
+using namespace el::text::literals;
 
 namespace {
 
@@ -71,7 +75,6 @@ public:
     }
 
     void testNodeFactoriesAndMetadata() {
-        using namespace el::text::literals;
 
         auto heading = TextNode::createHeading(2);
         heading->setIdentifier("intro"_el).setStyle("lead"_el).setData(std::make_shared<TestNodeData>("chapter"_el));
@@ -106,7 +109,6 @@ public:
     }
 
     void testTraversal() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         document.addHeading(1)->addText("Title"_el);
@@ -132,7 +134,6 @@ public:
     }
 
     void testClone() {
-        using namespace el::text::literals;
 
         auto heading = TextNode::createHeading(2);
         heading->setIdentifier("intro"_el).setStyle("lead"_el).setData(std::make_shared<TestNodeData>("chapter"_el));
@@ -161,7 +162,6 @@ public:
     }
 
     void testEscapedTextCreatesSemanticNodesAndToleratesMalformedUtf8() {
-        using namespace el::text::literals;
 
         auto paragraph = TextNode::createParagraph();
         const auto unsafe =
@@ -171,7 +171,7 @@ public:
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{0U}]->type(), TextNodeType::Text);
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{0U}]->text(), "a\"\\"_el);
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{1U}]->type(), TextNodeType::EscapeSequence);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{1U}]->text(), "\\033"_el);
+        REQUIRE_EQUAL(paragraph->children()[ElementIndex{1U}]->text(), "\\u{1b}"_el);
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{2U}]->text(), "b"_el);
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{3U}]->type(), TextNodeType::EscapeSequence);
         REQUIRE_EQUAL(paragraph->children()[ElementIndex{3U}]->text(), "\\n"_el);
@@ -183,7 +183,6 @@ public:
     }
 
     void testNodeTypeNamesAndClasses() {
-        using namespace el::text::literals;
 
         REQUIRE_EQUAL(TextNodeType{TextNodeType::Document}.toString(), "Document"_el);
         REQUIRE_EQUAL(TextNodeType{TextNodeType::Paragraph}.renderClass(), TextNodeType::RenderClass::Block);
@@ -238,7 +237,6 @@ public:
     }
 
     void testDiagnosticTree() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         auto heading = document.addHeading(1);
@@ -260,7 +258,6 @@ public:
     }
 
     void testPlainRendering() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         document.addHeading(1)->addText("Overview"_el);
@@ -303,7 +300,6 @@ public:
     }
 
     void testPlainTermListRendering() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         auto list = document.add(TextNodeType::TermList);
@@ -338,7 +334,6 @@ public:
     }
 
     void testPlainCodeSnippetRendering() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         auto lines = el::text::StringList{};
@@ -349,7 +344,8 @@ public:
         markers.append(
             el::text::CodeSnippetMarker{
                 el::unit::LineIndex{8U}, el::unit::ColumnIndex::zero(), el::unit::ColumnCount{5U}, {}, "error"_el});
-        auto snippet = document.addCodeSnippet(std::move(lines), el::unit::LineIndex{7U}, std::move(markers), "cli"_el);
+        auto snippet = document.addCodeSnippet(
+            el::text::CodeSnippet{std::move(lines), el::unit::LineIndex{7U}, "cli"_el}, std::move(markers));
 
         REQUIRE_EQUAL(snippet->type(), TextNodeType::CodeSnippet);
         REQUIRE(snippet->data() != nullptr);
@@ -367,38 +363,41 @@ public:
         REQUIRE_EQUAL(marker->data()->toString(), "0:5"_el);
         REQUIRE_EQUAL(marker->style(), "error"_el);
 
-        const auto expected = std::string{"   7 │ alpha\n"
-                                          "   8 │ --bad\n"
+        const auto expected = std::string{"   8 │ alpha\n"
+                                          "   9 │ --bad\n"
                                           "     │ \u2594\u2594\u2594\u2594\u2594\n"
-                                          "   9 │ omega"};
+                                          "  10 │ omega"};
 
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), expected);
     }
 
     void testPlainCodeSnippetWithoutLineNumbers() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         auto lines = el::text::StringList{};
         lines.append("return 0;"_el);
-        document.addCodeSnippet(std::move(lines), el::unit::LineIndex::noIndex());
+        document.addCodeSnippet(el::text::CodeSnippet{std::move(lines), el::unit::LineIndex::noIndex(), {}});
 
         REQUIRE_EQUAL(StringConverter{document.toString()}.toStdString(), std::string{"return 0;"});
     }
 
     void testPlainCodeSnippetUsesFixedWidthAndSafeControls() {
-        using namespace el::text::literals;
 
         auto document = TextDocument{};
         auto lines = el::text::StringList{};
         lines.append(el::text::StringEditor{std::string(100, 'x')});
         lines.append("a\tb"_el);
-        document.addCodeSnippet(std::move(lines));
+        auto markers = el::text::CodeSnippetMarkerList{};
+        markers.append(
+            el::text::CodeSnippetMarker{
+                el::unit::LineIndex::one(), el::unit::ColumnIndex{2U}, el::unit::ColumnCount::one(), {}, "error"_el});
+        document.addCodeSnippet(el::text::CodeSnippet{std::move(lines)}, std::move(markers));
 
         const auto rendered = StringConverter{document.toString()}.toStdString();
-        REQUIRE(rendered.starts_with("   0 │ "));
+        REQUIRE(rendered.starts_with("   1 │ "));
         REQUIRE(rendered.find("\u2026") != std::string::npos);
-        REQUIRE(rendered.find("   1 │ a?b") != std::string::npos);
+        REQUIRE(rendered.find("   2 │ a?b") != std::string::npos);
+        REQUIRE(rendered.find("     │   ▔") != std::string::npos);
     }
 
     void testEmptyRendering() {

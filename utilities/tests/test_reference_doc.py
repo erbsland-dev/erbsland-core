@@ -157,6 +157,31 @@ class Undocumented {};
             self.generator.interface_for_header(header),
         )
 
+    def test_extracts_documented_concepts(self) -> None:
+        path = self.write_header(
+            "text/StringConvertible.hpp",
+            """#pragma once
+
+namespace erbsland::text {
+
+/// A documented concept.
+template <typename T>
+concept StringConvertible = true;
+
+}
+""",
+        )
+        header = HeaderScanner(self.config).scan(path)
+
+        self.assertEqual(
+            [(ApiEntryKind.CONCEPT, "erbsland::text::StringConvertible")],
+            [(entry.kind, entry.full_name) for entry in header.entries],
+        )
+        self.assertEqual(
+            ".. doxygenconcept:: erbsland::text::StringConvertible\n",
+            self.generator.interface_for_header(header),
+        )
+
     def test_extracts_documented_functions_with_attributes_and_split_return(self) -> None:
         path = self.write_header(
             "text/ThrowingFunctions.hpp",
@@ -504,8 +529,8 @@ using Example = int;
         self.assertFalse((self.reference_dir / "math" / "example.rst").exists())
 
     def test_group_globs_expand_and_apply_exclusions(self) -> None:
-        self.write_header("text/StringOne.hpp", "#pragma once\n")
-        self.write_header("text/StringTwo.hpp", "#pragma once\n")
+        self.write_header("text/StringEditorOne.hpp", "#pragma once\n")
+        self.write_header("text/StringEditorTwo.hpp", "#pragma once\n")
         self.write_header("text/StringExcluded.hpp", "#pragma once\n")
         config_path = self.project_dir / "reference_doc.elcl"
         config_path.write_text(
@@ -523,7 +548,7 @@ Excluded Header Globs: "text/*Excluded.hpp"
 
         config = ReferenceDocConfig.read(self.project_dir, config_path)
         self.assertEqual(
-            (Path("text/StringOne.hpp"), Path("text/StringTwo.hpp")),
+            (Path("text/StringEditorOne.hpp"), Path("text/StringEditorTwo.hpp")),
             config.reference_groups[0].header_paths,
         )
 

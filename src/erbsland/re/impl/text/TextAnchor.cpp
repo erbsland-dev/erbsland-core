@@ -9,6 +9,8 @@ namespace erbsland::re::impl {
 
 using namespace text::literals;
 
+using namespace text::literals;
+
 auto TextAnchor::toString() const -> text::String {
     for (const auto &[value, name] : valueToNameList()) {
         if (value == _value) {
@@ -28,7 +30,6 @@ auto TextAnchor::fromString(const text::String &str) -> TextAnchor {
 }
 
 auto TextAnchor::valueToNameList() noexcept -> const ValueToNameList & {
-    using namespace text::literals;
     static const ValueToNameList list = {
         {Start, "Start"_el},
         {End, "End"_el},

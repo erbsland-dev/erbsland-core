@@ -26,7 +26,6 @@ using el::unit::ArgumentIndex;
 using el::unit::ElementIndex;
 using el::unit::ExitCode;
 using namespace el::options;
-
 using namespace el::text::literals;
 
 TESTED_TARGETS(

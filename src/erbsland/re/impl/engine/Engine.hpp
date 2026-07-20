@@ -194,7 +194,7 @@ private:
     void handleStopAtomic(EngineState &state, EngineThread &thread, size_t threadIndex) const;
 
     /// Throw an engine error.
-    [[noreturn]] static void throwError(const text::String &message);
+    [[noreturn]] static void throwError(text::String message);
 
 public:
     ConstEngineDataPtr _data;      ///< The data for the engine.

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringCIHashSet.hpp>
 #include <erbsland/text/StringCISet.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -26,6 +27,8 @@
 #include <string>
 #include <type_traits>
 
+using namespace el::text::literals;
+
 using namespace el::text;
 
 static_assert(std::is_same_v<StringSet::Key, String>);
@@ -40,7 +43,6 @@ TESTED_TARGETS(
 class StringSetTest final : public el::UnitTest {
 public:
     void testSlicedKeysAreStoredCompactly() {
-        using namespace el::text::literals;
 
         auto backing = StringEditor::fromCharacter(U'x', el::unit::CpLength{1024U});
         backing.replace(el::unit::ByteRange{el::unit::ByteIndex{500U}, el::unit::ByteLength{3U}}, "key"_el);
@@ -62,7 +64,6 @@ public:
     }
 
     void testAliasesAndStringLists() {
-        using namespace el::text::literals;
 
         const auto common = StringSet{"beta"_el, "alpha"_el, "alpha"_el};
         REQUIRE_EQUAL(StringConverter{common.toStringList().join("|"_el)}.toStdString(), std::string{"alpha|beta"});
@@ -83,7 +84,6 @@ public:
     }
 
     void testCaseInsensitiveOrderedSet() {
-        using namespace el::text::literals;
 
         auto set = StringCISet{};
         set.insert(u8"ÄbcK"_el);
@@ -104,7 +104,6 @@ public:
     }
 
     void testCaseInsensitiveHashSet() {
-        using namespace el::text::literals;
 
         auto set = StringCIHashSet{};
         set.insert(u8"ÄbcK"_el);
@@ -125,7 +124,6 @@ public:
     }
 
     void testOrderedSetViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto set = StringSet{"alpha"_el, "beta"_el};
 
@@ -155,7 +153,6 @@ public:
     }
 
     void testHashSetViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto set = StringHashSet{"alpha"_el, "beta"_el};
 
@@ -185,7 +182,6 @@ public:
     }
 
     void testCaseInsensitiveSetViewKeyOperations() {
-        using namespace el::text::literals;
 
         auto ordered = StringCISet{};
         ordered.insert(u8"ÄbcK"_el);

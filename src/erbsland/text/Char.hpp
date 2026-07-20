@@ -101,10 +101,17 @@ public: // tests
         }
         return {};
     }
+    /// Get the ASCII digit value if it is valid for the given integer base.
+    [[nodiscard]] constexpr auto digitValue(const IntegerBase base) const noexcept -> std::optional<unsigned int> {
+        const auto value = digitValue();
+        if (value.has_value() && value.value() < base.baseFactor()) {
+            return value;
+        }
+        return {};
+    }
     /// Test if this character is a valid digit in the given integer base.
     [[nodiscard]] constexpr auto isDigitValue(const IntegerBase base) const noexcept -> bool {
-        const auto value = digitValue();
-        return value.has_value() && value.value() < base.baseFactor();
+        return digitValue(base).has_value();
     }
     /// Test if the Char is an ASCII whitespace character.
     [[nodiscard]] constexpr auto isAsciiWhitespace() const noexcept -> bool {
@@ -169,9 +176,14 @@ public: // tests
     [[nodiscard]] constexpr auto isEndOfData() const noexcept -> bool { return *this == CharSignal::EndOfData; }
     /// Test if the Char represents the absence of a code point.
     [[nodiscard]] constexpr auto isNoCodePoint() const noexcept -> bool { return *this == CharSignal::NoCodePoint; }
+    /// Test if the Char represents an internal character-processing failure.
+    [[nodiscard]] constexpr auto isError() const noexcept -> bool { return *this == CharSignal::Error; }
+    /// Test if the Char represents the encoding-boundary byte-order-mark signal.
+    [[nodiscard]] constexpr auto isByteOrderMark() const noexcept -> bool { return *this == CharSignal::ByteOrderMark; }
     /// Test if the Char represents a valid Unicode code-point.
+    /// Erbsland Core reserves U+FEFF for encoded-data boundaries and rejects it as text content.
     [[nodiscard]] constexpr auto isValidUnicode() const noexcept -> bool {
-        return _codePoint <= 0x10FFFF && (_codePoint < 0xD800 || _codePoint > 0xDFFF);
+        return _codePoint <= 0x10FFFF && _codePoint != 0xFEFFU && (_codePoint < 0xD800 || _codePoint > 0xDFFF);
     }
     /// Test if the Char can be displayed directly in diagnostics and other safe strings.
     /// This rejects invalid values, controls, invisible formatting characters, and reserved display ranges.
@@ -316,6 +328,14 @@ public: // factory methods
     [[nodiscard]] constexpr static auto endOfData() noexcept -> Char { return fromSignal(CharSignal::EndOfData); }
     /// Get the no-code-point signal.
     [[nodiscard]] constexpr static auto noCodePoint() noexcept -> Char { return fromSignal(CharSignal::NoCodePoint); }
+    /// Get the internal character-processing error signal.
+    /// This signal is reserved for internal algorithms and is never returned by public Erbsland Core text APIs.
+    [[nodiscard]] constexpr static auto error() noexcept -> Char { return fromSignal(CharSignal::Error); }
+    /// Get the encoding-independent byte-order-mark signal.
+    /// This signal is reserved for encoded-data boundaries and is never exposed as text content.
+    [[nodiscard]] constexpr static auto byteOrderMark() noexcept -> Char {
+        return fromSignal(CharSignal::ByteOrderMark);
+    }
     /// Create an ASCII digit character from a value.
     [[nodiscard]] constexpr static auto fromDigitValue(
         const unsigned int digit, const LetterCase letterCase = LetterCase::Lowercase) noexcept -> Char {

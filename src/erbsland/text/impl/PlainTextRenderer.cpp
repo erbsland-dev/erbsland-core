@@ -19,7 +19,6 @@
 namespace erbsland::text::impl {
 
 using namespace literals;
-
 using unit::CpLength;
 
 PlainTextRenderer::PlainTextRenderer(const TextDocument &document) noexcept : _document{document} {

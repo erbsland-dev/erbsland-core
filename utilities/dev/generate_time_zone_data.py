@@ -13,9 +13,9 @@ from lib.utility import UtilityApp
 
 
 class GenerateTimeZoneDataApp(UtilityApp):
-    """Generate the compact generated IANA time-zone database used by the time module."""
+    """Generate the compact IANA database and Windows-to-IANA mapping used by the time module."""
 
-    description = "Generate compact time-zone data from the vendored IANA tz database."
+    description = "Generate compact time-zone data from IANA tzdb and Unicode CLDR."
 
     def __init__(self) -> None:
         super().__init__()

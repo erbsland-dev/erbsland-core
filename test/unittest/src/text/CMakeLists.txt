@@ -7,6 +7,7 @@ target_sources(erbsland-core-unittest PRIVATE
         AnyStringBuilderTest.cpp
         AnyStringTest.cpp
         ByteFormatTest.cpp
+        CaseSensitivityTest.cpp
         CharRangeTest.cpp
         CharSetTest.cpp
         CharTest.cpp
@@ -17,6 +18,7 @@ target_sources(erbsland-core-unittest PRIVATE
         HtmlParserTest.cpp
         HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
+        StdFormatForTextTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp
         StringDecodeBufferTest.cpp
@@ -29,6 +31,7 @@ target_sources(erbsland-core-unittest PRIVATE
         StringMapTest.cpp
         StringPatternTest.cpp
         StringSetTest.cpp
+        StringSplitterTest.cpp
         StringTransformTest.cpp
         StringTreeTest.cpp
         TextDocumentTest.cpp

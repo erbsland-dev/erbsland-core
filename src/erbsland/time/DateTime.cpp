@@ -33,6 +33,13 @@ DateTime::DateTime(const Date localDate, const Time localTime, const Seconds off
     subtractOffset();
 }
 
+DateTime::DateTime(const Date localDate, const TimeWithZone localTime, const TimeOccurrenceInFold occurrence) noexcept :
+    _date{localDate},
+    _time{localTime.time()},
+    _offset{localTime.timeZone().timeOffsetAtLocal(localDate, localTime.time(), occurrence)} {
+    subtractOffset();
+}
+
 DateTime::DateTime(
     const Date localDate, const Time localTime, const TimeZone timeZone, const TimeOccurrenceInFold occurrence) noexcept
     :
@@ -64,6 +71,15 @@ auto DateTime::timeZoneAbbreviation() const -> String {
     return TimeZone::abbreviation(_offset);
 }
 
+auto DateTime::timeZone() const noexcept -> TimeZone {
+    auto result = TimeZone{_offset.zoneId()};
+    if (_offset.isStaticOffset()) {
+        result = TimeZone{Duration{_offset.offset()}};
+    }
+    result._isLocalTime = _offset.isLocalTime();
+    return result;
+}
+
 auto DateTime::wouldAddSaturate(const Duration duration) const noexcept -> bool {
     if (!isValid()) {
         return false;
@@ -84,14 +100,19 @@ auto DateTime::added(const Duration duration) const noexcept -> DateTime {
     auto newTime = _time;
     const auto days = newTime.addWithWrap(duration);
     if (_date.wouldAddSaturate(days)) {
-        return days.isNegative() ? first() : last();
+        auto result = days.isNegative() ? first() : last();
+        if (_offset.isZone()) {
+            return result.toTimeZone(timeZone());
+        }
+        result._offset = _offset;
+        return result;
     }
     const auto newDate = _date.added(days);
     auto result = DateTime{newDate, newTime};
     if (_offset.isZone()) {
         return result.toTimeZone(timeZone());
     }
-    if (_offset.isStaticOffset()) {
+    if (_offset.isStaticOffset() || _offset.isLocalTime()) {
         result._offset = _offset;
     }
     return result;
@@ -121,6 +142,21 @@ auto DateTime::timeDeltaTo(const DateTime &other) const noexcept -> TimeDelta {
 
 auto DateTime::toUtc() const noexcept -> DateTime {
     return isValid() ? DateTime{_date, _time} : DateTime{};
+}
+
+auto DateTime::toString() const -> String {
+    if (!isValid()) {
+        return {};
+    }
+    return String::fromJoined(
+        {date().toString(),
+            " "_el,
+            time().toString(),
+            _offset.isLocalTime()
+                ? String{}
+                : isoTimeShiftString(
+                      _offset.offset(),
+                      IsoTimeFormatFlags{IsoTimeFormat::Extended, IsoTimeFormat::TimeShiftUpToSeconds})});
 }
 
 auto DateTime::toTimeZone(TimeZone timeZone) const noexcept -> DateTime {

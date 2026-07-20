@@ -187,6 +187,14 @@ public: // read
     /// @param index The byte index to read from. Updated to the position after the read character on success.
     /// @return The character at the given index, or a signal character if no character can be read there.
     [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
+    /// Strictly read the character at the given byte index and advance the index.
+    /// The index remains unchanged if reading fails.
+    /// @seeref{u8-string-indexed-sequential-read}
+    /// @param index The byte index to read from. Updated to the position after the read character on success.
+    /// @return The valid character at the given index.
+    /// @throws EncodingError if the bytes at the index do not form a valid UTF-8 sequence.
+    /// @throws err::OutOfRangeError if the index is outside of the string.
+    [[nodiscard]] auto readCharAndAdvanceOrThrow(unit::ByteIndex &index) const -> Char;
     /// Read the character before the given byte index and retreat the index.
     /// @seeref{u8-string-indexed-sequential-read}
     /// @param index The byte index after the character to read. Updated to the start of the read character on success.

@@ -27,6 +27,7 @@ target_sources(erbsland-core-unittest PRIVATE
         RegExGreedyQuestionQuantifierTest.cpp
         RegExGreedyRangeQuantifierTest.cpp
         RegExGreedyStarQuantifierTest.cpp
+        RegExLazyCompileTest.cpp
         RegExLazyMinimumQuantifierTest.cpp
         RegExLazyPlusQuantifierTest.cpp
         RegExLazyQuestionQuantifierTest.cpp

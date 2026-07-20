@@ -18,7 +18,8 @@ auto Color::overlayWith(const Color &overlay) const -> Color {
 }
 
 auto Color::fromString(const text::String &str) -> Color {
-    if (const auto splitPos = str.findFirstOf(text::CharSet{text::Char{U':'}}); !splitPos.isNoIndex()) {
+    static const auto separatorCharacters = text::CharSet{U':'};
+    if (const auto splitPos = str.findFirstOf(separatorCharacters); !splitPos.isNoIndex()) {
         const auto fgStr = str.slice(unit::ByteRange{unit::ByteIndex::zero(), splitPos});
         const auto bgStr = str.slice(unit::ByteRange{splitPos + unit::ByteLength::one(), unit::ByteLength::infinite()});
         return {Foreground::fromString(fgStr), Background::fromString(bgStr)};

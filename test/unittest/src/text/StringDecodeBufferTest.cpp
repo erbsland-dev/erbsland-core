@@ -3,6 +3,7 @@
 
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/impl/UnsafeDecodeBufferAccess.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecodeBuffer.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -105,6 +106,52 @@ public:
 
         REQUIRE_EQUAL(buffer.effectiveEncoding(), StringEncoding::Utf16LittleEndian);
         REQUIRE_EQUAL(toStdString(buffer.takeString()), std::string{"A"});
+    }
+
+    void testRepeatedBomSplitAcrossWritesForEveryEncoding() {
+        struct TestCase final {
+            StringEncoding encoding;
+            std::vector<uint8_t> bom;
+            std::vector<uint8_t> letterA;
+        };
+        const auto testCases = std::vector<TestCase>{
+            {StringEncoding::Utf8, {0xEFU, 0xBBU, 0xBFU}, {0x41U}},
+            {StringEncoding::Utf16LittleEndian, {0xFFU, 0xFEU}, {0x41U, 0x00U}},
+            {StringEncoding::Utf16BigEndian, {0xFEU, 0xFFU}, {0x00U, 0x41U}},
+            {StringEncoding::Utf32LittleEndian, {0xFFU, 0xFEU, 0x00U, 0x00U}, {0x41U, 0x00U, 0x00U, 0x00U}},
+            {StringEncoding::Utf32BigEndian, {0x00U, 0x00U, 0xFEU, 0xFFU}, {0x00U, 0x00U, 0x00U, 0x41U}},
+        };
+
+        for (const auto &testCase : testCases) {
+            for (const auto errorMode : {EncodingErrorMode::Replace, EncodingErrorMode::Ignore}) {
+                auto buffer =
+                    StringDecodeBuffer{ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, errorMode};
+                for (const auto byte : testCase.bom) {
+                    buffer.write(std::vector<uint8_t>{byte});
+                }
+                REQUIRE(buffer.takeString().isEmpty());
+                for (const auto byte : testCase.bom) {
+                    buffer.write(std::vector<uint8_t>{byte});
+                }
+                buffer.write(testCase.letterA);
+                buffer.finish();
+                const auto expected =
+                    errorMode == EncodingErrorMode::Replace ? std::u32string{U"\uFFFDA"} : std::u32string{U"A"};
+                REQUIRE_EQUAL(StringConverter{buffer.takeString()}.toStdU32String(), expected);
+                REQUIRE_FALSE(buffer.readChar().has_value());
+            }
+
+            auto throwBuffer = StringDecodeBuffer{
+                ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Throw};
+            for (const auto byte : testCase.bom) {
+                throwBuffer.write(std::vector<uint8_t>{byte});
+            }
+            REQUIRE(throwBuffer.takeString().isEmpty());
+            for (const auto byte : testCase.bom) {
+                throwBuffer.write(std::vector<uint8_t>{byte});
+            }
+            REQUIRE_THROWS_AS(EncodingError, throwBuffer.readChar());
+        }
     }
 
     void testFinalIncompleteSequenceErrorModes() {

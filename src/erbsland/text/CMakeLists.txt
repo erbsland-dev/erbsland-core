@@ -29,6 +29,8 @@ target_sources(erbsland-core PRIVATE
         ByteFormat_fwd.hpp
         ByteFormatFlag.hpp
         Capitalization.hpp
+        CaseSensitivity.cpp
+        CaseSensitivity.hpp
         Char.cpp
         Char.hpp
         Char_fwd.hpp
@@ -42,6 +44,7 @@ target_sources(erbsland-core PRIVATE
         CharSet_fwd.hpp
         CharSet_unicode.cpp
         CharSignal.hpp
+        CodeSnippet.hpp
         CodeSnippetMarker.hpp
         CombinedChar.cpp
         CombinedChar.hpp
@@ -81,7 +84,6 @@ target_sources(erbsland-core PRIVATE
         ReadIntegerResult.hpp
         ReadNumberStatus.hpp
         SafeStringFlag.hpp
-        StdFormatForText.cpp
         StdFormatForText.hpp
         String.hpp
         String_fwd.hpp
@@ -137,6 +139,9 @@ target_sources(erbsland-core PRIVATE
         StringSet.hpp
         StringSet_fwd.hpp
         StringSide.hpp
+        StringSplitMode.hpp
+        StringSplitter.hpp
+        StringSplitter_fwd.hpp
         StringTree.cpp
         StringTree.hpp
         StringTree.tpp

@@ -10,7 +10,6 @@
 namespace erbsland::event {
 
 using namespace text::literals;
-
 using text::CharSet;
 using text::String;
 

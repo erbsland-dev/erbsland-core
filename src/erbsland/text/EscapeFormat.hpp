@@ -6,6 +6,7 @@
 
 #include "../util/impl/ComparisonHelper.hpp"
 
+#include <array>
 #include <cstdint>
 #include <optional>
 
@@ -17,14 +18,21 @@ class EscapeFormat final {
 public:
     /// The escape format value.
     enum Value : uint8_t {
-        None = 0,    ///< Do not escape any characters.
-        Html = 1,    ///< Escape for HTML text.
-        Json = 2,    ///< Escape for JSON text.
-        Cpp = 3,     ///< Escape for C++ literals.
-        Xml = 4,     ///< Escape for XML text.
-        RegEx = 5,   ///< Escape for regular expression literal patterns.
-        Display = 6, ///< Escape unsafe characters for human-readable display text.
+        None,        ///< Do not escape any characters.
+        Html,        ///< Escape for HTML text.
+        Json,        ///< Escape for JSON text.
+        Cpp,         ///< Escape for C++ literals.
+        Xml,         ///< Escape for XML text.
+        RegEx,       ///< Escape for regular expression literal patterns.
+        Display,     ///< Escape unsafe characters for human-readable display text (equals Config).
+        Config,      ///< Escape for Erbsland Configuration Language text literals.
+        ConfigTest,  ///< Escape for Erbsland Configuration Language test strings.
+
+        _valueCount, ///< Number of escape formats.
     };
+
+private:
+    using ValueToTextArray = std::array<std::pair<Value, StringLiteral>, _valueCount>;
 
 public:
     /// Create an escape format from a value.
@@ -57,7 +65,8 @@ public: // conversion
     [[nodiscard]] static auto fromStringOrThrow(const String &text) -> EscapeFormat;
 
 private:
-    Value _value{None}; ///< The escape format value.
+    static const ValueToTextArray _valueToTextMap; ///< The value to text map.
+    Value _value{None};                            ///< The escape format value.
 };
 
 }

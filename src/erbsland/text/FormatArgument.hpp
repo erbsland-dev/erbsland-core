@@ -9,6 +9,8 @@
 #include "u32/U32String.hpp"
 #include "u8/U8String.hpp"
 
+#include "../mem/ByteBlock.hpp"
+
 #include <cstdint>
 #include <utility>
 #include <variant>
@@ -19,7 +21,8 @@ namespace erbsland::text {
 /// @tested{U8FormatTest}
 class FormatArgument final {
     // The alternative order must match the values of `FormatArgumentKind`.
-    using Value = std::variant<std::monostate, U8String, U16String, U32String, int64_t, uint64_t, double, bool, Char>;
+    using Value = std::
+        variant<std::monostate, U8String, U16String, U32String, int64_t, uint64_t, double, bool, Char, mem::ByteBlock>;
 
 public:
     /// Create an empty format argument.
@@ -55,6 +58,8 @@ public: // accessors
     [[nodiscard]] auto boolean() const -> bool;
     /// Get the character argument.
     [[nodiscard]] auto character() const -> Char;
+    /// Get the byte-block argument.
+    [[nodiscard]] auto bytes() const -> mem::ByteBlock;
 
 private:
     Value _value; ///< The stored argument value.

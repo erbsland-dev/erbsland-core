@@ -18,6 +18,8 @@ This preserves wrapping and styling semantics while preventing raw control seque
 Interface
 =========
 
+.. doxygenstruct:: erbsland::text::CodeSnippet
+    :members:
 .. doxygenclass:: erbsland::text::CodeSnippetMarker
     :members:
 

@@ -9,6 +9,7 @@
 #include <erbsland/re/impl/diagnostics/Assembler.hpp>
 #include <erbsland/re/impl/diagnostics/Disassembler.hpp>
 #include <erbsland/re/RegExError.hpp>
+#include <erbsland/re/StdFormatForRegEx.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

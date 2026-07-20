@@ -9,6 +9,7 @@
 #include "TimeZoneId.hpp"
 
 #include "tz/impl/Database_fwd.hpp"
+#include "tz/impl/LocalTimeZoneBackend_fwd.hpp"
 #include "tz/TimeOffset.hpp"
 
 #include "../text/String.hpp"
@@ -38,13 +39,13 @@ public:
     /// Create UTC.
     TimeZone() noexcept = default;
     /// Create a fixed offset from parts.
-    /// The resulting offset is normalized into the range `-11:59:59..+12:00:00`. A zero offset creates UTC.
-    /// @param hours The offset hours.
-    /// @param minutes The offset minutes.
-    /// @param seconds The offset seconds.
+    /// The resulting offset is clamped into the range `-23:59:59..+23:59:59`. A zero offset creates UTC.
+    /// @param hours The offset hours. Clamped into the range `-23..+23`.
+    /// @param minutes The offset minutes. Clamped into the range `-59..+59`.
+    /// @param seconds The offset seconds. Clamped into the range `-59..+59`.
     explicit TimeZone(Hours hours, Minutes minutes = Minutes{}, Seconds seconds = Seconds{}) noexcept;
     /// Create a fixed offset.
-    /// The offset is normalized into the range `-11:59:59..+12:00:00`. A zero offset creates UTC.
+    /// The offset is normalized into the range `-23:59:59..+23:59:59`. A zero offset creates UTC.
     /// @param offset The total offset duration.
     explicit TimeZone(Duration offset) noexcept;
     /// Create a named time zone from a transient id.
@@ -73,6 +74,9 @@ public: // tests
     /// Test if this zone is a named IANA time zone.
     /// @return `true` if this is a named zone.
     [[nodiscard]] auto isNamed() const noexcept -> bool;
+    /// Test if this zone originated from the system-local setting.
+    /// @return `true` if this is the system-local zone.
+    [[nodiscard]] constexpr auto isLocalTime() const noexcept -> bool { return _isLocalTime; }
 
 public: // accessors
     /// Return the fixed offset, or zero for UTC and named zones.
@@ -109,9 +113,14 @@ public:
     [[nodiscard]] static auto databaseVersion() noexcept -> unit::Version;
     /// Return UTC.
     [[nodiscard]] static auto utc() noexcept -> TimeZone { return {}; }
+    /// Return the process-cached system-local base time zone.
+    /// Unknown or unavailable platform settings produce local-marked UTC.
+    /// @return The system-local zone.
+    [[nodiscard]] static auto local() noexcept -> TimeZone;
 
 private:
     friend class DateTime;
+    friend class tz::impl::LocalTimeZoneResolver;
     [[nodiscard]] static auto abbreviation(tz::TimeOffset offset) -> text::String;
     [[nodiscard]] static auto database() noexcept -> const tz::impl::Database &;
     [[nodiscard]] static auto normalizeOffset(Seconds seconds) noexcept -> Seconds;
@@ -123,6 +132,7 @@ private:
 
 private:
     std::variant<std::monostate, FixedOffset, NamedZone> _storage;
+    bool _isLocalTime{false}; ///< Whether this zone originated from the system setting.
 };
 
 }

@@ -4,7 +4,11 @@
 
 #include "Duration_fwd.hpp"
 #include "TimeAmounts.hpp"
+#include "TimeDeltaFormat.hpp"
 
+#include "../text/FormatAs.hpp"
+#include "../text/String.hpp"
+#include "../text/StringConverter.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <chrono>
@@ -16,7 +20,7 @@ namespace erbsland::time {
 ///
 /// Represents a duration between two points in time with full nanosecond precision.
 /// Arithmetic uses the saturating behavior of the underlying nanosecond amount.
-/// @tested{TimeDeltaTest}
+/// @tested{TimeCoreTest}
 class TimeDelta final {
 public:
     /// Create a zero delta.
@@ -64,6 +68,8 @@ public: // tests
     [[nodiscard]] constexpr auto isNegative() const noexcept -> bool { return _nanoseconds.isNegative(); }
 
 public: // conversion
+    /// Convert this delta to a human-readable string.
+    [[nodiscard]] auto toString(const TimeDeltaFormat &format = {}) const -> text::String;
     /// Return the total nanoseconds.
     [[nodiscard]] constexpr auto toNanoseconds() const noexcept -> Nanoseconds { return _nanoseconds; }
     /// Return the total seconds, truncating sub-second nanoseconds toward zero.
@@ -100,6 +106,9 @@ public: // factory methods
     /// Return a time delta in days.
     /// If the value exceeds the maximum representable value, it saturates to the maximum.
     [[nodiscard]] static auto days(int64_t ticks) noexcept -> TimeDelta;
+    /// Return a time delta in weeks.
+    /// If the value exceeds the maximum representable value, it saturates to the maximum.
+    [[nodiscard]] static auto weeks(int64_t ticks) noexcept -> TimeDelta;
     /// Return a time delta in microseconds.
     /// @throws err::OverflowError If the value exceeds the maximum representable value.
     [[nodiscard]] static auto microsecondsOrThrow(int64_t ticks) -> TimeDelta;
@@ -118,6 +127,9 @@ public: // factory methods
     /// Return a time delta in days.
     /// @throws err::OverflowError If the value exceeds the maximum representable value.
     [[nodiscard]] static auto daysOrThrow(int64_t ticks) -> TimeDelta;
+    /// Return a time delta in weeks.
+    /// @throws err::OverflowError If the value exceeds the maximum representable value.
+    [[nodiscard]] static auto weeksOrThrow(int64_t ticks) -> TimeDelta;
 
 private:
     template <typename tTimeUnit>
@@ -127,3 +139,8 @@ private:
 };
 
 }
+
+template <>
+struct erbsland::text::FormatAsText<erbsland::time::TimeDelta> : FormatAs<time::TimeDelta, String> {
+    [[nodiscard]] auto format(const time::TimeDelta &value) const -> String { return value.toString(); }
+};

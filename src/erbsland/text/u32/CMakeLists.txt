@@ -47,4 +47,6 @@ target_sources(erbsland-core PRIVATE
         U32StringMap_fwd.hpp
         U32StringSet.hpp
         U32StringSet_fwd.hpp
+        U32StringSplitter.hpp
+        U32StringSplitter_fwd.hpp
 )

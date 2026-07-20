@@ -94,6 +94,11 @@ public: // accessors
     [[nodiscard]] auto timeDeltaSinceMidnight() const noexcept -> TimeDelta;
 
 public: // conversion
+    /// Convert this time to a compact human-readable string.
+    /// The result always contains hours, minutes and seconds. A non-zero nanosecond fraction is appended without
+    /// trailing zeroes.
+    /// @return The formatted time.
+    [[nodiscard]] auto toString() const -> text::String;
     /// Return the total seconds since midnight.
     /// @return The seconds since midnight.
     [[nodiscard]] auto toSecondsSinceMidnight() const noexcept -> Seconds;
@@ -165,13 +170,5 @@ struct TimeWrapResult {
 
 template <>
 struct erbsland::text::FormatAsText<erbsland::time::Time> : FormatAs<time::Time, String> {
-    [[nodiscard]] auto format(const time::Time &value) const -> String { return value.toIsoString(); }
-};
-
-template <>
-struct std::formatter<erbsland::time::Time> : std::formatter<std::string_view> {
-    auto format(const erbsland::time::Time value, std::format_context &ctx) const {
-        return std::formatter<std::string_view>::format(
-            erbsland::text::StringConverter{value.toIsoString()}.toStdString(), ctx);
-    }
+    [[nodiscard]] auto format(const time::Time &value) const -> String { return value.toString(); }
 };

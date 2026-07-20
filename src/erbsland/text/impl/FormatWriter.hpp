@@ -33,32 +33,47 @@ public:
 
 private:
     template <math::AnyIntegerType T>
-    [[nodiscard]] auto integerFieldText(T value, const FormatSpec &spec) -> U8StringEditor;
-    [[nodiscard]] auto defaultFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
-    [[nodiscard]] auto textFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
-    [[nodiscard]] auto integerFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
-    [[nodiscard]] auto floatFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
-    [[nodiscard]] auto escapedFieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto integerFieldText(T value, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto fieldText(const FormatArgument &argument, const FormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto defaultFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto textFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto integerFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto floatFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto escapedFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor;
+    [[nodiscard]] auto namedTextFieldText(const FormatArgument &argument, const NamedTextFormatSpec &spec)
+        -> U8StringEditor;
+    [[nodiscard]] auto namedNumberFieldText(const FormatArgument &argument, const NamedNumberFormatSpec &spec)
+        -> U8StringEditor;
+    [[nodiscard]] auto namedBooleanFieldText(const FormatArgument &argument, const NamedBooleanFormatSpec &spec)
+        -> U8StringEditor;
+    [[nodiscard]] auto namedBytesFieldText(const FormatArgument &argument, const NamedBytesFormatSpec &spec)
+        -> U8StringEditor;
     [[nodiscard]] auto characterText(Char character) -> U8StringEditor;
     [[nodiscard]] static auto isIntegerPresentation(FormatPresentation presentation) noexcept -> bool;
     [[nodiscard]] static auto isFloatPresentation(FormatPresentation presentation) noexcept -> bool;
     [[nodiscard]] static auto isTextPresentation(FormatPresentation presentation) noexcept -> bool;
-    [[nodiscard]] static auto integerFormat(const FormatSpec &spec) -> IntegerFormat;
-    [[nodiscard]] static auto floatFormat(const FormatSpec &spec) -> FloatFormat;
-    [[nodiscard]] static auto formattedAlignment(const FormatSpec &spec, bgeo::AlignmentFlag defaultAlignment)
+    [[nodiscard]] static auto integerFormat(const LegacyFormatSpec &spec) -> IntegerFormat;
+    [[nodiscard]] static auto floatFormat(const LegacyFormatSpec &spec) -> FloatFormat;
+    [[nodiscard]] static auto formattedAlignment(const LegacyFormatSpec &spec, bgeo::AlignmentFlag defaultAlignment)
+        -> bgeo::Alignment;
+    [[nodiscard]] static auto formattedAlignment(const NamedLayoutSpec &spec, bgeo::AlignmentFlag defaultAlignment)
         -> bgeo::Alignment;
     [[nodiscard]] static auto zeroPaddedNumericText(const String &text, unit::CpLength width) -> U8StringEditor;
-    [[nodiscard]] static auto applyPrecision(const String &text, const FormatSpec &spec) -> StringEditor;
+    [[nodiscard]] static auto applyPrecision(const String &text, const LegacyFormatSpec &spec) -> StringEditor;
     [[nodiscard]] static auto applyLayout(
-        U8StringEditor text, const FormatSpec &spec, bgeo::AlignmentFlag defaultAlignment) -> StringEditor;
-    static void requireTextCompatibleSpec(const FormatSpec &spec);
+        U8StringEditor text, const LegacyFormatSpec &spec, bgeo::AlignmentFlag defaultAlignment) -> StringEditor;
+    [[nodiscard]] static auto applyLayout(
+        U8StringEditor text, const NamedLayoutSpec &spec, bgeo::AlignmentFlag defaultAlignment, bool zeroFill = false)
+        -> U8StringEditor;
+    static void requireTextCompatibleSpec(const LegacyFormatSpec &spec);
+    static void requireDefaultByteSpec(const LegacyFormatSpec &spec);
 
 private:
     AnyStringBuilder &_builder;
 };
 
 template <math::AnyIntegerType T>
-auto FormatWriter::integerFieldText(T value, const FormatSpec &spec) -> U8StringEditor {
+auto FormatWriter::integerFieldText(T value, const LegacyFormatSpec &spec) -> U8StringEditor {
     return U8StringEditor{String::fromInteger(value, integerFormat(spec))};
 }
 

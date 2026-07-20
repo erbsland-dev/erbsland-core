@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -13,6 +14,8 @@
 
 #include <string>
 #include <string_view>
+
+using namespace el::text::literals;
 
 using namespace el::text;
 
@@ -57,7 +60,6 @@ public:
     }
 
     void testCrossWidthConversions() {
-        using namespace el::text::literals;
 
         const auto u16Text = StringConverter{u8"A¢€😀"_el}.toU16String();
         const auto u32Text = StringConverter{u16Text}.toU32String();

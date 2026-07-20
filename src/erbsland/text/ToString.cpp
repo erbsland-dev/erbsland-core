@@ -7,6 +7,8 @@
 
 namespace erbsland::text {
 
+using namespace literals;
+
 auto toString(const String &value) -> String {
     return value;
 }
@@ -16,7 +18,6 @@ auto toString(const bool value, const BooleanFormat format) -> String {
 }
 
 auto toString(const std::strong_ordering value) -> String {
-    using namespace literals;
 
     if (value == std::strong_ordering::less) {
         return "less"_el;

@@ -30,7 +30,7 @@ auto OptionErrorDiagnostic::sourceName() const noexcept -> text::String {
 auto OptionErrorDiagnostic::location() const noexcept -> unit::CodeLocation {
     auto result = unit::CodeLocation{};
     if (!_context.argumentIndex().isNoIndex()) {
-        result.line = unit::LineIndex::fromSizeT(_context.argumentIndex().toSizeT());
+        result.setLine(unit::LineIndex::fromSizeT(_context.argumentIndex().toSizeT()));
     }
     return result;
 }

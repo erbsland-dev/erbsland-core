@@ -17,6 +17,7 @@
 #include "../../../unit/ColumnCount.hpp"
 
 #include <set>
+#include <utility>
 
 namespace erbsland::re::impl {
 
@@ -89,12 +90,12 @@ private: // char-level
         return unit::ColumnIndex::fromSizeT(_reader.position().toSizeT()) - unit::ColumnCount::one();
     }
 
-    [[noreturn]] void throwError(const text::String &description) const {
+    [[noreturn]] void throwError(text::String description) const {
         throw RegExError{
             ErrorCategory::Assembler,
             "Failed to assemble regular expression"_el,
-            description,
-            unit::CodeLocation{.column = currentColumn()}};
+            std::move(description),
+            unit::CodeLocation{}.setColumn(currentColumn())};
     }
 
 private: // token-level

@@ -159,6 +159,8 @@ public: // read
     [[nodiscard]] auto charAt(unit::ByteIndex startIndex) const noexcept -> Char;
     /// @copydoc erbsland::text::U8String::readCharAndAdvance(unit::ByteIndex &) const
     [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
+    /// @copydoc erbsland::text::U8String::readCharAndAdvanceOrThrow(unit::ByteIndex &) const
+    [[nodiscard]] auto readCharAndAdvanceOrThrow(unit::ByteIndex &index) const -> Char;
     /// @copydoc erbsland::text::U8String::readCharAndRetreat(unit::ByteIndex &) const
     [[nodiscard]] auto readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U8String::charAt(unit::CpIndex) const

@@ -6,7 +6,6 @@
 
 #include "impl/Limits.hpp"
 
-#include "../text/StdFormatForText.hpp"
 #include "../text/StringFormat.hpp"
 #include "../unit/CpLength.hpp"
 
@@ -138,18 +137,18 @@ public: // features
 public: // diagnostics
     /// Create a string representation for this settings object.
     [[nodiscard]] auto toString() const -> text::String {
-        return text::StringFormat{
+        static const auto format = text::StringFormat{
             "Settings(patternLength={}, groupDepth={}, captureGroupCount={}, sequenceLength={}, alternativeCount={}, "
-            "quantifierCount={}, timeout={} ms, features=[{}])"}
-            .build(
-                _maximumPatternLength,
-                _maximumGroupNestingDepth,
-                _maximumCaptureGroupCount,
-                _maximumSequenceLength,
-                _maximumAlternativeCount,
-                _maximumQuantifierCount,
-                _timeout.count(),
-                _features.toString());
+            "quantifierCount={}, timeout={} ms, features=[{}])"};
+        return format.build(
+            _maximumPatternLength,
+            _maximumGroupNestingDepth,
+            _maximumCaptureGroupCount,
+            _maximumSequenceLength,
+            _maximumAlternativeCount,
+            _maximumQuantifierCount,
+            _timeout.count(),
+            _features.toString());
     }
 
 private:
@@ -164,10 +163,3 @@ private:
 };
 
 }
-
-template <>
-struct std::formatter<erbsland::re::Settings> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::Settings &settings, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(settings.toString(), ctx);
-    }
-};

@@ -138,7 +138,8 @@ public: // conversion
             },
             _value);
     }
-
+    /// @overload
+    [[nodiscard]] auto toString() const -> String { return toU8String(); }
     /// Get or convert this string in U16 format.
     [[nodiscard]] auto toU16String() const -> U16String {
         return std::visit(

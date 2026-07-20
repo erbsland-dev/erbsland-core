@@ -13,7 +13,6 @@ namespace erbsland::cterm {
 
 using namespace text;
 using namespace text::literals;
-
 using Selector = TerminalDocumentStyleSelector;
 using Attributes = BlockAttributes;
 using Style = BlockStyle;

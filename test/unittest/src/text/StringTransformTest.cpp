@@ -4,6 +4,7 @@
 #include <erbsland/bgeo/Alignment.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/SafeStringFlag.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TruncateMode.hpp>
 #include <erbsland/text/u16/U16String.hpp>
@@ -19,6 +20,8 @@
 #include <string>
 #include <string_view>
 
+using namespace el::text::literals;
+
 using el::bgeo::Alignment;
 using el::unit::CpLength;
 using namespace el::text;
@@ -31,7 +34,6 @@ TESTED_TARGETS(
 class StringTransformTest final : public el::UnitTest {
 public:
     void testU8TruncationModes() {
-        using namespace el::text::literals;
 
         auto text = U8StringEditor{std::u8string_view{u8"A¢€😀Z"}};
 
@@ -58,7 +60,6 @@ public:
     }
 
     void testNativeTruncationApis() {
-        using namespace el::text::literals;
 
         const auto u8Text = U8StringEditor{std::u8string_view{u8"A¢€😀Z"}};
         REQUIRE_EQUAL(

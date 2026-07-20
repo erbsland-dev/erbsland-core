@@ -20,5 +20,6 @@
 #include "U16StringLiteral.hpp"
 #include "U16StringMap.hpp"
 #include "U16StringSet.hpp"
+#include "U16StringSplitter.hpp"
 
 

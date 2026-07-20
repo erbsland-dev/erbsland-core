@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import re
 import subprocess
+import xml.etree.ElementTree as et
 from pathlib import Path
 
 from lib.copyright import HeaderConfig
@@ -29,6 +30,7 @@ class TimeZoneGenerator:
         "etcetera",
         "backward",
     ]
+    CLDR_WINDOWS_ZONES_FILE = "windowsZones.xml"
 
     def __init__(
         self,
@@ -60,7 +62,85 @@ class TimeZoneGenerator:
         self.write_rule_files()
         self.write_zone_files()
         self.write_database_version()
+        self.write_windows_time_zone_map()
         return self.generated_files
+
+    def write_windows_time_zone_map(self) -> None:
+        """Generate the Windows key to canonical world-territory IANA mapping from Unicode CLDR."""
+        try:
+            source_path = self.project_dir / "utilities" / "data" / self.CLDR_WINDOWS_ZONES_FILE
+            root = et.fromstring(read_safe_text(source_path, "Unicode CLDR Windows time-zone data"))
+        except et.ParseError as error:
+            raise UtilityError(f"Failed to parse Unicode CLDR Windows time-zone data: {error}") from error
+        mappings = sorted(
+            (
+                node.attrib["other"],
+                node.attrib["type"].split()[0],
+            )
+            for node in root.findall(".//mapZone")
+            if node.attrib.get("territory") == "001"
+        )
+        entries = []
+        for windows_name, iana_name in mappings:
+            target_name = self.links.get(iana_name, iana_name)
+            if target_name not in self.zones:
+                raise UtilityError(f'CLDR time-zone name "{iana_name}" is not present in the bundled IANA database.')
+            entries.append(
+                f'        Mapping{{L"{windows_name}", TimeZoneId{{0x{self.zones[target_name].id:04x}U}}}},'
+                f" // {iana_name}"
+            )
+        self.write(
+            "WindowsTimeZoneMap.hpp",
+            f'''{self.header(pragma_once=True)}
+
+#include "../../TimeZoneId.hpp"
+
+#include <optional>
+#include <string_view>
+
+namespace erbsland::time::tz::impl {{
+
+/// Map a Windows time-zone key to the canonical CLDR world-territory IANA zone identifier.
+/// @param windowsName The Windows time-zone key.
+/// @return The time-zone identifier, or no value for an unknown key.
+[[nodiscard]] auto timeZoneIdFromWindowsName(std::wstring_view windowsName) noexcept -> std::optional<TimeZoneId>;
+
+}}
+''',
+        )
+        self.write(
+            "WindowsTimeZoneMap.cpp",
+            f'''{self.header()}
+#include "WindowsTimeZoneMap.hpp"
+
+#include <array>
+
+namespace erbsland::time::tz::impl {{
+
+namespace {{
+struct Mapping {{
+    std::wstring_view windowsName;
+    TimeZoneId timeZoneId;
+}};
+
+// Generated from Unicode CLDR windowsZones.xml entries for territory "001".
+constexpr auto cMappings = std::to_array<Mapping>({{
+{chr(10).join(entries)}
+}});
+}}
+
+auto timeZoneIdFromWindowsName(const std::wstring_view windowsName) noexcept -> std::optional<TimeZoneId> {{
+    for (const auto &mapping : cMappings) {{
+        if (mapping.windowsName == windowsName) {{
+            return mapping.timeZoneId;
+        }}
+    }}
+    return {{}};
+}}
+
+}}
+''',
+        )
 
     def read_database(self) -> None:
         self.parse_version()

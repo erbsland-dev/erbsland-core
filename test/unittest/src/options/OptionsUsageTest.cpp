@@ -262,7 +262,7 @@ public:
         const auto text =
             StringConverter{manager.errorDocument(result.errorContext().value()).toString()}.toStdString();
         REQUIRE(text.find("Usage:\n  tool [options]\n") != std::string::npos);
-        REQUIRE(text.find("2 │ abc\n") != std::string::npos);
+        REQUIRE(text.find("3 │ abc\n") != std::string::npos);
         REQUIRE(text.find("View Full Help:\n  tool --help") != std::string::npos);
 
         options = Options::create();

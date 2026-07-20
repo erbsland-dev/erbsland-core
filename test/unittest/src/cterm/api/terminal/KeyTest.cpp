@@ -3,7 +3,9 @@
 
 #include "../../support/TestHelper.hpp"
 
+#include <erbsland/bgeo/StdFormatForBlock.hpp>
 #include <erbsland/cterm/impl/KeyDecoder.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

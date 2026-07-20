@@ -3,11 +3,9 @@
 #pragma once
 
 #include "../../../text/Literals.hpp"
-#include "../../../text/StdFormatForText.hpp"
 #include "../../../text/String.hpp"
 
 #include <cstdint>
-#include <format>
 
 namespace erbsland::re::impl {
 
@@ -48,10 +46,3 @@ enum class DataSection : uint8_t {
 }
 
 }
-
-template <>
-struct std::formatter<erbsland::re::impl::DataSection> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::impl::DataSection op, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(erbsland::re::impl::toString(op), ctx);
-    }
-};

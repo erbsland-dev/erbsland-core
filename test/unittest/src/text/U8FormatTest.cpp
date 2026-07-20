@@ -1,8 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FormatError.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -11,8 +13,10 @@
 #include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <cstdint>
 #include <string>
 #include <string_view>
+#include <vector>
 
 using el::unit::ArgumentCount;
 using namespace el::text;
@@ -142,5 +146,79 @@ public:
         REQUIRE_THROWS(U8Format{"{:/json--}"});
         REQUIRE_THROWS(U8Format{"{:q}"});
         REQUIRE_THROWS(U8Format{"{:é}"});
+    }
+
+    void testNamedTextFormatting() {
+        const auto layout = U8Format{"{:text:maximum=3,width=7,alignment=center,fill=·}"};
+        REQUIRE_EQUAL(StringConverter{layout.build("abcdef")}.toStdString(), std::string{"··abc··"});
+
+        const auto aliases = U8Format{"{:TEXT:max3,w5,al=r,fl=0}"};
+        REQUIRE_EQUAL(StringConverter{aliases.build("abcdef")}.toStdString(), std::string{"00abc"});
+
+        const auto escaped = U8Format{"{:text:escape=json,escape-amount=required}"};
+        REQUIRE_EQUAL(
+            StringConverter{escaped.build(U8StringEditor{std::u8string_view{u8"A\né"}})}.toStdString(),
+            std::string{"A\\né"});
+        REQUIRE_EQUAL(StringConverter{U8Format{"{:text:}"}.build(Char{U'✓'})}.toStdString(), std::string{"✓"});
+    }
+
+    void testNamedNumberFormatting() {
+        const auto integer = U8Format{"{:number:base=hexadecimal,alternate,letter-case=uppercase,width=8,zero-fill}"};
+        REQUIRE_EQUAL(StringConverter{integer.build(42)}.toStdString(), std::string{"0X00002A"});
+
+        const auto aliases = U8Format{"{:NUMBER:bs=b,pr8}"};
+        REQUIRE_EQUAL(StringConverter{aliases.build(5)}.toStdString(), std::string{"00000101"});
+
+        const auto floating = U8Format{"{:number:notation=fixed,precision=2,sign=always}"};
+        REQUIRE_EQUAL(StringConverter{floating.build(12.345)}.toStdString(), std::string{"+12.35"});
+    }
+
+    void testNamedBooleanFormatting() {
+        const auto format = U8Format{"{:bool:style=yes,capitalization=uppercase,width=5,alignment=right,fill=·}"};
+
+        REQUIRE_EQUAL(StringConverter{format.build(true)}.toStdString(), std::string{"··YES"});
+        REQUIRE_EQUAL(StringConverter{U8Format{"{:bool:sty=o,cap=t}"}.build(false)}.toStdString(), std::string{"Off"});
+    }
+
+    void testNamedByteFormatting() {
+        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U}};
+
+        REQUIRE_EQUAL(StringConverter{U8Format{"{}"}.build(bytes)}.toStdString(), std::string{"00010203040506070809"});
+        REQUIRE_EQUAL(
+            StringConverter{U8Format{"{:bytes:maximum=5,truncate=middle}"}.build(bytes)}.toStdString(),
+            std::string{"0001…0809"});
+        REQUIRE_EQUAL(
+            StringConverter{U8Format{"{:ByTeS:SEP,MAX5,TR=M}"}.build(bytes)}.toStdString(),
+            std::string{"00 01 … 08 09"});
+    }
+
+    void testNamedTypeLocking() {
+        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{1U, 2U}};
+
+        REQUIRE_THROWS(U8Format{"{:text:}"}.build(true));
+        REQUIRE_THROWS(U8Format{"{:number:}"}.build("12"));
+        REQUIRE_THROWS(U8Format{"{:bool:}"}.build(1));
+        REQUIRE_THROWS(U8Format{"{:bytes:}"}.build("0102"));
+        REQUIRE_THROWS(U8Format{"{:x}"}.build(bytes));
+        REQUIRE_THROWS(U8Format{"{:number:base=x}"}.build(1.5));
+        REQUIRE_THROWS(U8Format{"{:number:notation=fixed}"}.build(12));
+    }
+
+    void testInvalidNamedPatternSyntax() {
+        REQUIRE_THROWS(U8Format{"{:bytes}"});
+        REQUIRE_THROWS(U8Format{"{:bytes: maximum=1}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:maximum=1,maximum=2}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:max=1,max2}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:unknown}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:,maximum=1}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:maximum=1,}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:maximum=}"});
+        REQUIRE_THROWS(U8Format{"{:text:fill=ab}"});
+        REQUIRE_THROWS(U8Format{"{:text:fill=\n}"});
+        REQUIRE_THROWS(U8Format{"{:text:widté=3}"});
+        REQUIRE_THROWS(U8Format{"{:text:escape-amount=balanced}"});
+        REQUIRE_THROWS(U8Format{"{:number:base=decimal,notation=fixed}"});
+        REQUIRE_THROWS(U8Format{"{:number:zero-fill,fill=·}"});
+        REQUIRE_THROWS(U8Format{"{:number:#08x}"});
     }
 };

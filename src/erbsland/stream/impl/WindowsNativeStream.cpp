@@ -20,7 +20,6 @@ namespace erbsland::stream::impl {
 
 using ErrorContext = system::WindowsErrorContext;
 using namespace text::literals;
-
 using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;

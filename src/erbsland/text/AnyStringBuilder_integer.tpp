@@ -8,7 +8,7 @@ namespace erbsland::text {
 
 template <math::AnyIntegerType T>
 auto AnyStringBuilder::appendInteger(T value, IntegerFormat format) -> AnyStringBuilder & {
-    impl::appendInteger(*this, value, format);
+    impl::appendInteger(*_builder, value, format);
     return *this;
 }
 

@@ -5,12 +5,10 @@
 #include "Feature.hpp"
 
 #include "../text/Literals.hpp"
-#include "../text/StdFormatForText.hpp"
 #include "../text/StringEditor.hpp"
 #include "../util/EnumFlags.hpp"
 
 #include <array>
-#include <format>
 
 namespace erbsland::re {
 
@@ -63,10 +61,3 @@ public: // helpers
 };
 
 }
-
-template <>
-struct std::formatter<erbsland::re::Features> : std::formatter<erbsland::text::String> {
-    auto format(const erbsland::re::Features features, std::format_context &ctx) const {
-        return std::formatter<erbsland::text::String>::format(features.toString(), ctx);
-    }
-};

@@ -4,7 +4,12 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/time/all.hpp>
+#include <erbsland/time/StdFormatForTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+
+using namespace el::time;
+
+using namespace el::text::literals;
 
 using el::text::StringConverter;
 using el::unit::Version;
@@ -16,7 +21,6 @@ TESTED_TARGETS(
 class TimeModuleTest final : public el::UnitTest {
 public:
     void testDateEpochAndCalendarConversions() {
-        using namespace el::time;
 
         const auto epoch = Date::epoch();
         REQUIRE(epoch.isValid());
@@ -41,7 +45,6 @@ public:
     }
 
     void testTimeAndAmounts() {
-        using namespace el::time;
 
         REQUIRE_EQUAL(Hours{1}.converted<Seconds>(), Seconds{3600});
         REQUIRE_EQUAL(Weeks{1}.converted<Days>(), Days{7});
@@ -65,8 +68,6 @@ public:
     }
 
     void testDateTimeIsoParsingAndFormatting() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         const auto posixEpoch = DateTime::posixEpoch();
         REQUIRE_EQUAL(posixEpoch.toSecondsSinceEpoch(), Days{719528}.converted<Seconds>());
@@ -92,8 +93,6 @@ public:
     }
 
     void testTimeZones() {
-        using namespace el::text::literals;
-        using namespace el::time;
 
         REQUIRE(TimeZone::utc().isUtc());
         REQUIRE(TimeZone::isValidName("UTC"_el));

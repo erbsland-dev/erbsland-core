@@ -19,6 +19,8 @@
 #include <utility>
 #include <vector>
 
+using namespace el::text::literals;
+
 using el::unit::CpLength;
 using namespace el::text;
 
@@ -50,7 +52,6 @@ public:
     }
 
     void testWriteMethodsAndClear() {
-        using namespace el::text::literals;
 
         auto stream = el::stream::AnyStringBuilderStream::create(StringKind::U16);
 

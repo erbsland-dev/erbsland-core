@@ -3,6 +3,8 @@
 
 #include "ParserBase.hpp"
 
+#include <erbsland/re/StdFormatForRegEx.hpp>
+
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
 class ParserCharacterEscapeTest final : public UNITTEST_SUBCLASS(ParserBase) {

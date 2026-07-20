@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/AnyStringBuilder.hpp>
+#include <erbsland/text/StdFormatForText.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -160,12 +161,16 @@ public:
             builder.append(U32String{u32Text});
             builder.append(U8String{u8Text}, ElementCount{2U});
             builder.append(U16String{u16Text}, ElementCount::zero());
+            builder.append(U16String{u16Text}, ElementCount{2U});
             builder.append(U32String{u32Text}, ElementCount{2U});
 
-            REQUIRE_EQUAL(builder.length(), CpLength{11U});
-            REQUIRE_EQUAL(StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAé中中"});
-            REQUIRE_EQUAL(StringConverter{builder.toU8String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAé中中"});
-            REQUIRE_EQUAL(StringConverter{builder.toU16String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAé中中"});
+            REQUIRE_EQUAL(builder.length(), CpLength{15U});
+            REQUIRE_EQUAL(
+                StringConverter{builder.toU32String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAéβ😀β😀中中"});
+            REQUIRE_EQUAL(
+                StringConverter{builder.toU8String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAéβ😀β😀中中"});
+            REQUIRE_EQUAL(
+                StringConverter{builder.toU16String()}.toStdU32String(), std::u32string{U"Aéβ😀中AéAéβ😀β😀中中"});
         }
     }
 

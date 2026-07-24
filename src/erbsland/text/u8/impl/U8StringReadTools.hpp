@@ -73,11 +73,6 @@ public: // read
     /// Read the character before the given index and retreat the index.
     /// If the index is out of bounds, returns a signal character and does not retreat the index.
     [[nodiscard]] auto readAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
-    /// Access the character at the given start byte position or throw if no valid character is found.
-    [[nodiscard]] auto charAtOrThrow(unit::ByteIndex startIndex) const -> Char;
-    /// Read the character at the given index and advance the index.
-    /// Throw on encoding errors or out-of-bound reads.
-    [[nodiscard]] auto readOrThrow(unit::ByteIndex &index) const -> Char;
     /// Advance the given byte index to the start of the next character.
     auto advance(unit::ByteIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
     /// Retreat the given byte index to the start of the previous character.

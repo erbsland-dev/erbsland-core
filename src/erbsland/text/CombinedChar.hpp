@@ -3,7 +3,6 @@
 #pragma once
 
 #include "Char.hpp"
-#include "EncodingErrorMode.hpp"
 #include "String.hpp"
 #include "StringEditor.hpp"
 
@@ -90,14 +89,9 @@ public: // accessors
 public: // modifiers
     /// Create a copy with one additional combining code point.
     /// @param codePoint The combining code point to append.
-    /// @param encodingErrors How invalid combining code points are handled.
     /// @return The updated character.
-    /// `EncodingErrorMode::Replace` and `EncodingErrorMode::Ignore` keep the original character unchanged for invalid
-    /// combining code points or when the storage is already full.
-    /// @throws text::EncodingError If `encodingErrors` is `EncodingErrorMode::Throw` and the code point is
-    /// unsupported.
-    [[nodiscard]] auto withCombining(
-        Char codePoint, EncodingErrorMode encodingErrors = EncodingErrorMode::Replace) const -> CombinedChar;
+    /// Invalid combining code points and additions beyond the fixed storage are ignored.
+    [[nodiscard]] auto withCombining(Char codePoint) const noexcept -> CombinedChar;
 
 public: // tests
     /// Test if the character is empty.

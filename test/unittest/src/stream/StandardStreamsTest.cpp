@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 
 using el::stream::stdErr;
@@ -24,6 +25,10 @@ static_assert(requires { standard_streams_io::print("value=", 1, true); });
 static_assert(requires { standard_streams_io::printLine("value=", 1, true); });
 static_assert(requires { standard_streams_io::printError("value=", 1, true); });
 static_assert(requires { standard_streams_io::printErrorLine("value=", 1, true); });
+static_assert(!std::is_copy_constructible_v<standard_streams_io::SensitiveInputToken>);
+static_assert(std::is_move_constructible_v<standard_streams_io::SensitiveInputToken>);
+static_assert(!std::is_copy_constructible_v<standard_streams_io::SensitiveInputScope>);
+static_assert(std::is_move_constructible_v<standard_streams_io::SensitiveInputScope>);
 
 TESTED_TARGETS(stdIn stdOut stdErr)
 class StandardStreamsTest final : public el::UnitTest {
@@ -191,6 +196,63 @@ public:
 
         REQUIRE_EQUAL(toStdString(output), std::string{"output\n"});
         REQUIRE_EQUAL(toStdString(error), std::string{"error\n"});
+    }
+
+    void testSensitiveInputTokensMayStopOutOfOrder() {
+        auto first = standard_streams_io::startSensitiveInput();
+        auto second = standard_streams_io::startSensitiveInput();
+        const auto movedFirstId = first.id();
+        auto movedFirst = std::move(first);
+
+        REQUIRE_FALSE(first.isValid());
+        REQUIRE(movedFirst.isValid());
+        REQUIRE_EQUAL(movedFirst.id(), movedFirstId);
+        REQUIRE(stdIn()->inputSettings().isSensitive());
+
+        standard_streams_io::stopSensitiveInput(std::move(movedFirst));
+        REQUIRE(stdIn()->inputSettings().isSensitive());
+        standard_streams_io::stopSensitiveInput(std::move(second));
+        REQUIRE_FALSE(stdIn()->inputSettings().isSensitive());
+        REQUIRE_THROWS(standard_streams_io::stopSensitiveInput(std::move(first)));
+    }
+
+    void testSensitiveInputTokenMoveAssignmentStopsPreviousRequest() {
+        auto first = standard_streams_io::startSensitiveInput();
+        auto second = standard_streams_io::startSensitiveInput();
+        const auto secondId = second.id();
+
+        first = std::move(second);
+
+        REQUIRE_FALSE(second.isValid());
+        REQUIRE_EQUAL(first.id(), secondId);
+        REQUIRE(stdIn()->inputSettings().isSensitive());
+        standard_streams_io::stopSensitiveInput(std::move(first));
+        REQUIRE_FALSE(stdIn()->inputSettings().isSensitive());
+    }
+
+    void testSensitiveInputScopeMoveAndReset() {
+        auto first = standard_streams_io::SensitiveInputScope{};
+        REQUIRE(first.isActive());
+        REQUIRE(stdIn()->inputSettings().isSensitive());
+
+        auto second = std::move(first);
+        REQUIRE_FALSE(first.isActive());
+        REQUIRE(second.isActive());
+        second.reset();
+        REQUIRE_FALSE(second.isActive());
+        REQUIRE_FALSE(stdIn()->inputSettings().isSensitive());
+        second.reset();
+    }
+
+    void testSensitiveInputDoesNotModifyRedirectedTargets() {
+        const auto replacement = std::make_shared<MemoryTextInputStream>("redirected");
+        auto redirect = el::stream::redirectStdIn(replacement);
+        {
+            const auto sensitiveInput = standard_streams_io::SensitiveInputScope{};
+            REQUIRE_FALSE(replacement->inputSettings().isSensitive());
+            REQUIRE_FALSE(stdIn()->inputSettings().isSensitive());
+        }
+        REQUIRE_FALSE(replacement->inputSettings().isSensitive());
     }
 
 private:

@@ -8,7 +8,6 @@
 
 #include "../../mem/SharedData.hpp"
 #include "../../mem/SharedDataPointer.hpp"
-#include "../../text/EncodingErrorMode.hpp"
 #include "../../text/String.hpp"
 #include "../../text/u32/U32String.hpp"
 
@@ -82,17 +81,13 @@ public:
     /// @param text The source text.
     /// @param color The base color for newly appended characters.
     /// @param attributes The base attributes for newly appended characters.
-    /// @param encodingErrorMode How malformed UTF-8 is handled.
-    void appendCharacters(
-        const text::String &text, Color color, BlockAttributes attributes, text::EncodingErrorMode encodingErrorMode);
+    void appendCharacters(const text::String &text, Color color, BlockAttributes attributes);
 
 public:
     /// Measure the terminal display width produced by UTF-8 text.
     /// @param text The source text.
-    /// @param encodingErrorMode How malformed UTF-8 is handled.
     /// @return The display width of the accepted terminal characters.
-    [[nodiscard]] static auto measureDisplayWidth(
-        const text::String &text, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace) -> int;
+    [[nodiscard]] static auto measureDisplayWidth(const text::String &text) -> int;
     /// Measure the terminal display width produced by text.
     /// @param text The source text.
     /// @return The display width of the accepted terminal characters.

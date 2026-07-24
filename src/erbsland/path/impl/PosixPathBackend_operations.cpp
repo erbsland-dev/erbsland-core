@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixPathBackend.hpp"
 
+#include "PathInfoData.hpp"
+
 #include "../Path.hpp"
 #include "../PathError.hpp"
 
@@ -39,8 +41,8 @@ struct DirectoryCloser final {
 
 }
 
-auto PosixPathBackend::directoryEntriesOrThrow(const Path &path) const -> std::vector<Path> {
-    const auto pathText = pathTextOrThrow(path);
+auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const -> std::vector<Path> {
+    const auto pathText = pathTextOrThrow(resolvedPath);
     const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
     auto *directory = ::opendir(pathAccess.data());
     if (directory == nullptr) {
@@ -52,11 +54,31 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path) const -> std::v
     }
     auto closeDirectory = std::unique_ptr<DIR, DirectoryCloser>{directory};
     auto result = std::vector<Path>{};
+    const auto refreshTime = time::TimePoint::now();
+    const auto logicalPathIsResolved = path == resolvedPath;
     errno = 0;
     while (auto *entry = ::readdir(directory)) {
         const auto name = std::string_view{entry->d_name};
         if (name != "." && name != "..") {
-            result.emplace_back(path / text::String{name});
+            const auto pathName = text::String{name};
+            auto child = directoryEntryPath(path, pathName);
+            if (child.isEmpty()) {
+                throw PathError{PathErrorContext{
+                    "Directory entry is invalid"_el,
+                    "The operating system returned a directory-entry name that cannot be represented as a path."_el}
+                        .setSourcePath(path.toString())};
+            }
+            auto info = PathInfoData{};
+            info.resolvedPath =
+                logicalPathIsResolved ? pathWithoutInfo(child) : directoryEntryPath(resolvedPath, pathName);
+            info.lastRefresh = refreshTime;
+            info.type = typeFromDirectoryEntry(entry->d_type);
+            if (info.type != PathType::Unknown) {
+                info.exists = true;
+                info.loadedParts.set(PathInfoPart::Type);
+            }
+            preloadInfo(child, std::move(info));
+            result.emplace_back(std::move(child));
         }
         errno = 0;
     }
@@ -98,6 +120,7 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
             path,
             error);
     }
+    invalidateInfo(path);
 }
 
 void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
@@ -116,6 +139,7 @@ void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
         throwSystemError(
             "Path could not be removed"_el, "The operating system could not remove the path."_el, path, errno);
     }
+    invalidateInfo(path);
 }
 
 void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
@@ -189,6 +213,7 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
             destination,
             error);
     }
+    invalidateInfo(destination);
 }
 
 void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
@@ -204,6 +229,8 @@ void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destinat
             destination,
             errno);
     }
+    invalidateInfo(source);
+    invalidateInfo(destination);
 }
 
 auto PosixPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
@@ -241,6 +268,7 @@ void PosixPathBackend::createSymlinkOrThrow(
             path,
             errno);
     }
+    invalidateInfo(path);
 }
 
 }

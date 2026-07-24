@@ -4,7 +4,7 @@
 #include <erbsland/conf/ConfErrorCategory.hpp>
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/impl/lexer/NameLexer.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

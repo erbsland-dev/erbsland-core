@@ -2,18 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StreamBuffering.hpp"
+
 #include "../time/TimeDelta.hpp"
-#include "../unit/ByteLength.hpp"
 
 namespace erbsland::stream {
 
 /// Settings fixed when an input stream is created.
 /// @tested{StreamSettingsTest}
 class InputStreamSettings final {
-public:
-    /// The default capacity of each input ring.
-    static constexpr auto cDefaultBufferCapacity = unit::ByteLength{64U * 1024U};
-
 public: // accessors
     /// Get the maximum wait for one public operation.
     [[nodiscard]] auto timeout() const noexcept -> time::TimeDelta { return _timeout; }
@@ -22,17 +19,25 @@ public: // accessors
         _timeout = value;
         return *this;
     }
-    /// Get the capacity of each input ring.
-    [[nodiscard]] auto bufferCapacity() const noexcept -> unit::ByteLength { return _bufferCapacity; }
-    /// Set the capacity of each input ring.
-    auto setBufferCapacity(unit::ByteLength value) noexcept -> InputStreamSettings & {
-        _bufferCapacity = value;
+    /// Get the intended balance between memory use and throughput.
+    [[nodiscard]] auto buffering() const noexcept -> StreamBuffering { return _buffering; }
+    /// Set the intended balance between memory use and throughput.
+    auto setBuffering(StreamBuffering value) noexcept -> InputStreamSettings & {
+        _buffering = value;
+        return *this;
+    }
+    /// Test if library-owned input buffers use secure erasure.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool { return _sensitive; }
+    /// Enable or disable secure erasure for library-owned input buffers.
+    auto setSensitive(bool value) noexcept -> InputStreamSettings & {
+        _sensitive = value;
         return *this;
     }
 
 private:
     time::TimeDelta _timeout{time::TimeDelta::milliseconds(1000)};
-    unit::ByteLength _bufferCapacity{cDefaultBufferCapacity};
+    StreamBuffering _buffering{StreamBuffering::Balanced};
+    bool _sensitive{false};
 };
 
 }

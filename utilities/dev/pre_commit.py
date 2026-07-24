@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 
+from dev.api_guidelines import ApiGuidelinesApp
 from dev.cleanup import CleanupApp
 from dev.fix_include_paths import FixIncludePathsApp
 from dev.reference_doc import ReferenceDocApp
@@ -292,6 +293,7 @@ class PreCommitApp(UtilityApp):
             self.run_app(UpdateIncludesApp(), "update_includes")
             self.run_app(FixIncludePathsApp(), "fix_include_paths")
             self.run_app(CleanupApp(), "cleanup")
+            self.run_app(ApiGuidelinesApp(), "api_guidelines")
             self.run_app(TestStatusApp(), "test_status")
             self.run_app(ReferenceDocApp(), "reference_doc")
             self.run_app(SecurityHashesApp(), "security_hashes")

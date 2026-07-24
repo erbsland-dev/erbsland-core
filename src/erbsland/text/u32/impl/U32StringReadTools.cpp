@@ -7,7 +7,6 @@
 
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/U16DataLength.hpp"
-#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u8/impl/U8Writer.hpp"
@@ -121,23 +120,6 @@ auto U32StringReadTools::readAndRetreat(CpIndex &index) const noexcept -> Char {
     return result;
 }
 
-auto U32StringReadTools::charAtOrThrow(const CpIndex startIndex) const -> Char {
-    const auto data = _data.dataSpan();
-    if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        throwOutOfRange("Read position out of range");
-    }
-    auto position = startIndex;
-    return utf32::decodeCharOrThrow(data, position);
-}
-
-auto U32StringReadTools::readOrThrow(CpIndex &index) const -> Char {
-    const auto data = _data.dataSpan();
-    if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        throwOutOfRange("Read position out of range");
-    }
-    return Char{utf32::decodeCharOrThrow(data, index)};
-}
-
 auto U32StringReadTools::advance(CpIndex &index, CpLength count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero()) {
         return false;
@@ -197,14 +179,14 @@ auto U32StringReadTools::toStdU8String() const noexcept -> std::u8string {
 auto U32StringReadTools::toStdU16String() const noexcept -> std::u16string {
     const auto data = _data.dataSpan();
     auto reservedSize = U16DataLength::zero();
-    utf32::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf16::encodedLength(character);
     });
     auto result = std::u16string{};
     result.resize(reservedSize.toSizeT());
     auto writer = U16Writer{std::span{result.data(), result.size()}};
     utf32::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { writer.write(character); });
+        data, EncodingMode::Tolerant, [&](const Char character) -> void { writer.write(character); });
     return result;
 }
 

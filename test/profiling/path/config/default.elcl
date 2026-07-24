@@ -1,0 +1,15 @@
+@version: "1.0"
+
+# Compare PathWalker traversal with the standard-library recursive iterator.
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 30s
+Threads             : 1
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 1
+Samples             : 7
+Minimum Sample Time : 20ms
+Memory Limit        : 16 MiB
+Progress Interval   : 5s

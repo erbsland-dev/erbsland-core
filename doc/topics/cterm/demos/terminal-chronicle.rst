@@ -51,6 +51,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/terminal-chronicle/src/StoryDemo.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/TerminalChronicle/src/StoryDemo.cpp`.
 
 This file contains the complete sequence and shows how expressive terminal output can stay compact and readable.

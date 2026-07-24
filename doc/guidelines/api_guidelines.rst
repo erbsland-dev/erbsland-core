@@ -9,7 +9,8 @@ API guidelines enforce a consistent vocabulary across the large API surface of t
 All guidelines are based on the core principles described in :doc:`api/common`.
 Each guideline describes the API of a specific domain in its most compact and condensed form.
 
-When the API is extended, these guidelines provide an immediate overview of the domain and help prevent the API from diverging.
+When the API is extended, these guidelines provide an immediate overview of the domain and help prevent the API from
+diverging.
 For example, they avoid situations where one class uses ``erase`` and another uses ``remove`` for the same operation.
 
 Common Principles
@@ -24,7 +25,9 @@ Main Page Structure
 ===================
 
 We use ``❮placeholder❯`` here and throughout our guidelines to avoid confusion with template parameters such as ``<T>``.
-The following structure also uses ``❮...❯`` for notes and explanations. This notation is only used in this template and must not appear in an actual guideline page.
+The following structure also uses ``❮...❯`` for notes and explanations.
+This notation is only used in this template and must not appear in an actual guideline page.
+The page title uses matching ``*`` adornments above and below it.
 
 .. code-block:: rst
 
@@ -32,11 +35,8 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
     ❮Domain❯ Domain API Guidelines
     ******************************
 
-    These guidelines extend the Common API Guidelines for ❮...❯.
-
-    The purpose of this document is to define a base naming vocabulary for ❮domain❯ APIs.
-    It is intentionally plain, technical, and list-based to provide a quick overview of method names and their usage patterns.
-    If new vocabulary is introduced, update this page to provide a reference for future extensions.
+    These guidelines extend the Common API Guidelines for public APIs in the ``❮...❯`` namespace.
+    If you introduce new API, update this page to provide a good reference for future extensions.
 
     Core Semantics
     ==============
@@ -76,8 +76,9 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
     ❮... additional pattern blocks if necessary ...❯
     ❮... end of document ...❯
 
-* **Core Semantics:** This *optional* initial section defines the fundamental principles of the domain in an extremely compact and technical form.
-  These principles are organized into subsections with descriptive names that support quick skimming.
+* **Core Semantics:** This *optional* initial section defines the fundamental principles of the domain in an extremely
+  compact and technical form.
+  It has at most 60 content lines and may contain at most four subsections using the ``-`` adornment.
   Less is better. Useful subsections include:
 
   - **Vocabulary:** A compact definition list.
@@ -95,12 +96,19 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
   - **Important Behavior:** Used when behavior cannot be fully derived from naming and common expectations.
     For example, whether a begin-end range includes or excludes the last element, if that behavior differs from what developers would typically expect.
 
-* **Primary Types:** This mandatory section contains the primary types of the domain.
-  These are the types users should know first and that best represent the domain.
+* **Type Sections:** One or more sections list the types in the domain.
+  The first section is always named **Primary Types**.
+  If there are exactly two type sections, the second is named **Secondary Types**.
+  With three or more type sections, every additional section uses a descriptive title ending in **Types**.
+
+  **Primary Types** contains only the types that define the domain and its main user-facing abstractions.
+  A type is primary when removing it from the overview would hide a fundamental capability or value model of the domain.
+  Options, settings, result records, status values, callbacks, editors, implementation interfaces, and other types that
+  merely configure or support a primary type are not primary types.
 
   The section consists of a single ``.. code-block:: text`` without surrounding prose.
-  Each line contains one or more type names, followed by two spaces and ``//``, and then a short description.
-  Descriptions should remain concise and generally stay below 120 columns.
+  Each line contains one or more comma-separated type names, followed by whitespace, ``//``, and a short description.
+  Lines must not exceed 120 characters, and descriptions do not end with a period.
 
   .. code-block:: text
 
@@ -114,19 +122,21 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
 
   No more than five types should be grouped together.
 
-  Groups may be introduced by an empty line followed by a group title:
-
-  .. code-block:: text
-
-      // ❮group title❯
-
-* **Secondary Types:** This *optional* section contains the remaining types of the domain.
+  **Secondary Types** contains the remaining types of the domain.
 
   The section consists of a single ``.. code-block:: text`` without surrounding prose.
   For larger domains, multiple sections may be used instead of a single **Secondary Types** section.
   In that case, replace the word *Secondary* with a more meaningful group name.
 
-* **Pattern Blocks:** The remainder of the document consists of one or more pattern blocks.
+* **Pattern Definitions:** This *optional* section defines one- or two-character uppercase shortcuts used in pattern
+  blocks.
+  It follows all type sections and consists of one ``.. code-block:: text`` without surrounding prose.
+
+  .. code-block:: text
+
+      V, Vp = Value/Value❮Kind❯  // value or kind-specific value
+
+* **Pattern Blocks:** The remainder of the document consists of zero or more pattern blocks.
 
   Each pattern block describes the API patterns used within the domain.
   Pattern blocks illustrate naming and behavior conventions rather than providing an exhaustive API reference.
@@ -135,24 +145,46 @@ The following structure also uses ``❮...❯`` for notes and explanations. This
 
   .. code-block:: text
 
-      o.remove(range) -> T&  // remove a character-based range in-place.
-      o.append(character/text[, count]) -> T&  // append code point(s) or text.
-      o.allOf/anyOf/noneOf(function) -> bool  // predicate tests over all elements.
-      o.write(character/text)  // write text without adding a line ending.
-      T::zero() -> T  // the zero value.
-      T::fromInteger(v, format) -> T  // create from an integer.
+      o.remove(range) -> T&  // remove a character-based range in-place
+      o.append(character/text[, count]) -> T&  // append code point(s) or text
+      o.allOf/anyOf/noneOf(function) -> bool  // predicate tests over all elements
+      o.write(character/text)  // write text without adding a line ending
+      T::zero() -> T  // the zero value
+      T::fromInteger(v, format) -> T  // create from an integer
 
   Patterns are usually built around an object instance (``o.call()``) or a static type (``T::call()``), where
   ``o`` and ``T`` always represent the object and type being described.
 
   The arrow ``->`` indicates a return value.
 
-  Each pattern should fit on a single line and end with two spaces followed by ``//`` and a concise description.
+  Each pattern fits on a line of at most 120 characters and ends with whitespace, ``//``, and a concise description
+  without a final period.
   The description should answer the question:
 
   "If I add a method that matches this pattern, what behavior will users expect from it?"
 
   Variants can be compacted using ``/``, ``[Optional]``, and placeholders to keep pattern blocks concise and readable.
+
+  Prefer concept-oriented blocks shared by several types, such as **Read Patterns**, **Write Patterns**, or
+  **Value Object Patterns**. Do not repeat functionally equivalent getter, setter, construction, conversion, or
+  lifecycle patterns for every participating type. One representative pattern is enough to establish the convention.
+
+  Each pattern is a constructor on ``T``, a static method on ``T``, an object method on ``o``, or a free function.
+  A single optional return type follows ``->`` with surrounding spaces.
+
+  .. code-block:: text
+
+      T(...)  // construct the section type
+      T::create(...) -> T  // create the section type
+      o.value() -> V  // access a value
+      createValue(...) -> V  // create a value
+
+Structural Validation
+=====================
+
+Run ``.venv/bin/python3 utilities/run.py api_guidelines`` to validate all domain-specific pages.
+The same check runs as part of ``pre_commit``.
+Each domain-specific page is limited to 500 lines so it remains an at-a-glance overview rather than an API reference.
 
 Anti-Patterns
 =============
@@ -163,6 +195,10 @@ Anti-Patterns
 * **Exhaustive Lists:** The goal is not to document every API member.
   Capture the patterns that define the domain.
   Minor exceptions and isolated cases can be omitted.
+
+* **Non-semantic Core Content:** Do not place type inventories, member patterns, naming examples, or API summaries in
+  **Core Semantics**. Keep them in type and pattern sections. The only exception is a compact **Special Naming Rules**
+  subsection when the relationship between public names cannot be expressed clearly by the later patterns.
 
 * **Instructions:** Avoid sentences such as "Use ...", "Don't ...", or "Avoid ...".
 

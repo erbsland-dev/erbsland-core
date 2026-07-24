@@ -1,0 +1,57 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 60s
+Threads             : 1
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 50us
+Memory Limit        : 16 MiB
+Progress Interval   : 5s
+Sensitive Mode      : "normal"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "coverage-valid"
+Widths              : "all"
+Types               : "all"
+Use Cases           : "all"
+Variants            : "all"
+Content Profiles    : "mixed"
+Size Modes          : "fixed"
+Size Min            : 32
+Size Max            : 32
+Operand Size Min    : 4
+Operand Size Max    : 4
+Sensitive Modes     : "normal"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "coverage-malformed"
+Widths              : "all"
+Types               : "string"
+Use Cases           : "inspect", "traverse", "search", "transform", "width-convert"
+Variants            : "all"
+Content Profiles    : "malformed-sparse", "malformed-dense"
+Size Modes          : "fixed"
+Size Min            : 32
+Size Max            : 32
+Operand Size Min    : 4
+Operand Size Max    : 4
+Sensitive Modes     : "normal"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "coverage-sensitive"
+Widths              : "u8"
+Types               : "all"
+Use Cases           : "sensitive-storage"
+Variants            : "all"
+Content Profiles    : "mixed"
+Size Modes          : "fixed"
+Size Min            : 32
+Size Max            : 32
+Operand Size Min    : 4
+Operand Size Max    : 4
+Sensitive Modes     : "sensitive"
+Weight              : 1

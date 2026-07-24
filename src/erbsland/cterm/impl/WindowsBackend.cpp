@@ -41,6 +41,7 @@ WindowsBackend::WindowsBackend(const TerminalFlags terminalFlags) :
 }
 
 WindowsBackend::~WindowsBackend() {
+    purgePendingInput();
     _p->_signalHandler.reset();
     std::scoped_lock lock{_instanceMutex};
     if (_instance != nullptr) {

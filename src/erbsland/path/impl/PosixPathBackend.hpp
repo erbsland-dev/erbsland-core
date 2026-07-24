@@ -23,10 +23,14 @@ public:
 
 public: // implement PathBackend
     [[nodiscard]] auto currentDirectoryOrThrow() const -> Path override;
+    [[nodiscard]] auto userHomeDirectoryOrThrow() const -> Path override;
     [[nodiscard]] auto systemTempDirectoryOrThrow() const -> Path override;
     [[nodiscard]] auto resolveOrThrow(const Path &path, PathResolveOptions options) const -> Path override;
     [[nodiscard]] auto loadInfoOrThrow(const Path &path, PathInfoParts parts) const -> PathInfoData override;
-    [[nodiscard]] auto directoryEntriesOrThrow(const Path &path) const -> std::vector<Path> override;
+    [[nodiscard]] auto loadResolvedInfoOrThrow(const Path &path, const Path &resolvedPath, PathInfoParts parts) const
+        -> PathInfoData override;
+    [[nodiscard]] auto directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const
+        -> std::vector<Path> override;
     void createDirectoryEntryOrThrow(const Path &path, PathAccessProfile profile) const override;
     void removeEntryOrThrow(const Path &path) const override;
     void copyFileEntryOrThrow(const Path &source, const Path &destination) const override;
@@ -44,6 +48,7 @@ private:
     static void createParentDirectoriesOrThrow(const Path &path);
     [[nodiscard]] static auto fileDescriptorHasContentOrThrow(int fileDescriptor, const Path &path) -> bool;
     [[nodiscard]] static auto typeFromMode(mode_t mode) noexcept -> PathType;
+    [[nodiscard]] static auto typeFromDirectoryEntry(unsigned char type) noexcept -> PathType;
     [[nodiscard]] static auto accessInfoFromStatus(const struct stat &info, PathType type) -> PathAccessInfo;
     [[nodiscard]] static auto rightsFromMode(mode_t mode, unsigned int shift) noexcept -> PathAccessRights;
     [[nodiscard]] static auto profileMode(PathAccessProfile profile, PathType type) noexcept -> mode_t;

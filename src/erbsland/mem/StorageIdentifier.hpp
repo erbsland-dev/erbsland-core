@@ -4,6 +4,8 @@
 
 #include "impl/StorageIdentifierImpl.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <array>
 #include <compare>
 #include <cstdint>

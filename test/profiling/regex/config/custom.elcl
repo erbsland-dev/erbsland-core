@@ -1,0 +1,43 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 20s
+Threads             : 1
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 100us
+Memory Limit        : 8 MiB
+Progress Interval   : 1s
+Regex Timeout       : 5s
+Workspace           : ""
+Keep Files          : no
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-inline"
+Use Cases           : "match", "full-match", "find-first", "find-all", "collect-all", "replace-all"
+Inputs              : "string-utf8"
+Pattern             : /(?<word>[a-z]+)/
+Subject             : "alpha beta"
+Replacement Modes   : "expression", "callback"
+Replacement         : "<{word}>"
+Repeat              : 2
+Timeout             : 2s
+Weight              : 2
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-files"
+Use Cases           : "find-first"
+Inputs              : "file"
+File Encodings      : "utf8", "utf16", "utf32"
+Pattern Name        : "word"
+Corpus              : "unicode-4k"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-external-source"
+Use Cases           : "find-first"
+Inputs              : "string-utf8"
+Pattern Name        : "email"
+Source File         : "../../../unittest/data/re/shakespeare.txt"
+Weight              : 1

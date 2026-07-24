@@ -143,7 +143,7 @@ void TempByteOutputStream::setEndianness(const mem::Endianness endianness) noexc
     ByteOutputStream::setEndianness(endianness);
 }
 
-auto TempByteOutputStream::write(const std::span<const mem::Byte> bytes) -> StreamWriteStatus {
+auto TempByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWriteStatus {
     if (_stream == nullptr) {
         throwError(
             "Failed to write to the temporary output stream."_el, "The temporary byte output stream is not open."_el);

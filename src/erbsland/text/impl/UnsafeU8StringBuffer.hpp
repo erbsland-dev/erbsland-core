@@ -10,6 +10,7 @@
 #include "../../unit/ByteLength.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <exception>
 #include <limits>
 #include <utility>
@@ -22,9 +23,11 @@ namespace erbsland::text::impl {
 class UnsafeU8StringBuffer {
 public:
     /// Create a buffer with the given full data size, including the null byte.
-    explicit UnsafeU8StringBuffer(std::size_t dataSize) : _data{createDataForDataSize(dataSize)} {}
+    explicit UnsafeU8StringBuffer(const std::size_t dataSize, const bool sensitive = false) :
+        _data{createDataForDataSize(dataSize, sensitive)} {}
     /// Create a buffer with the given usable capacity, excluding the null byte.
-    explicit UnsafeU8StringBuffer(unit::ByteLength capacity) : UnsafeU8StringBuffer{dataSizeForCapacity(capacity)} {}
+    explicit UnsafeU8StringBuffer(const unit::ByteLength capacity, const bool sensitive = false) :
+        UnsafeU8StringBuffer{dataSizeForCapacity(capacity), sensitive} {}
 
     // defaults
     ~UnsafeU8StringBuffer() = default;
@@ -34,6 +37,16 @@ public:
     auto operator=(UnsafeU8StringBuffer &&) noexcept -> UnsafeU8StringBuffer & = default;
 
 public:
+    /// Test if the uncommitted allocation is marked as sensitive.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool {
+        return !_data.isNull() && _data.constGet()->isSensitive();
+    }
+    /// Mark the uncommitted allocation as sensitive.
+    void markAsSensitive() noexcept {
+        if (!_data.isNull()) {
+            _data.get()->setSensitive();
+        }
+    }
     /// Access the writable buffer data.
     [[nodiscard]] auto data() noexcept -> mem::UnsafeCharPtr {
         if (_data.isNull()) {
@@ -79,7 +92,8 @@ public:
 
 private:
     /// Create exact buffer storage for a full data size, including the null byte.
-    [[nodiscard]] static auto createDataForDataSize(std::size_t dataSize) -> U8StringDataPtr {
+    [[nodiscard]] static auto createDataForDataSize(const std::size_t dataSize, const bool sensitive)
+        -> U8StringDataPtr {
         if (dataSize == 0U) {
             return {};
         }
@@ -87,7 +101,8 @@ private:
             std::terminate();
         }
         const auto size = static_cast<U8StringData::SizeType>(dataSize);
-        auto *data = U8StringData::create(size, size);
+        const auto flags = sensitive ? U8StringData::cSensitiveFlag : std::uint8_t{};
+        auto *data = U8StringData::create(size, size, flags);
         data->data()[dataSize - 1U] = '\0';
         return U8StringDataPtr{data};
     }

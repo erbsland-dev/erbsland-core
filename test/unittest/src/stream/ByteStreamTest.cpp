@@ -30,8 +30,10 @@ class ByteStreamTest final : public el::UnitTest {
         explicit MemoryInputStream(
             std::vector<uint8_t> bytes,
             const std::size_t maximumRead = std::numeric_limits<std::size_t>::max(),
-            const std::optional<std::size_t> timeoutCall = std::nullopt) :
+            const std::optional<std::size_t> timeoutCall = std::nullopt,
+            const bool sensitive = false) :
             _maximumRead{maximumRead}, _timeoutCall{timeoutCall} {
+            _settings.setSensitive(sensitive);
             _bytes.reserve(bytes.size());
             for (const auto byte : bytes) {
                 _bytes.push_back(Byte{byte});
@@ -54,7 +56,7 @@ class ByteStreamTest final : public el::UnitTest {
         void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
     protected:
-        [[nodiscard]] auto readFromSource(std::span<Byte> destination, const ReadDeadline deadline)
+        [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, const ReadDeadline deadline)
             -> el::stream::StreamReadResult<ByteLength> override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
@@ -105,7 +107,7 @@ class ByteStreamTest final : public el::UnitTest {
         }
         void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
-        auto write(std::span<const Byte> bytes) -> el::stream::StreamWriteStatus override {
+        auto write(el::mem::ConstByteSpan bytes) -> el::stream::StreamWriteStatus override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
                     "Failed to write to the test stream."_el, "The test output stream is closed."_el}};
@@ -219,6 +221,38 @@ public:
         REQUIRE_THROWS_AS(el::err::ParameterError, stream.read(ByteLength::infinite()));
         REQUIRE_THROWS_AS(el::err::ParameterError, stream.readExact(ByteLength::infinite()));
         REQUIRE_THROWS_AS(el::err::ParameterError, stream.readAll(ByteLength::infinite()));
+    }
+
+    void testOrdinaryOwnedReadsAndTimeoutContinuation() {
+        auto stream = MemoryInputStream{{1U, 2U, 3U}, 1U, 2U};
+
+        REQUIRE(stream.readExact(ByteLength{2U}).isTimeout());
+        const auto exact = stream.readExact(ByteLength{2U});
+        REQUIRE(exact.hasData());
+        REQUIRE(exact.data() == el::mem::ByteBlock({1U, 2U}));
+        REQUIRE_FALSE(exact.data().isSensitive());
+
+        const auto all = stream.readAll();
+        REQUIRE(all.hasData());
+        REQUIRE(all.data() == el::mem::ByteBlock({3U}));
+        REQUIRE_FALSE(all.data().isSensitive());
+        REQUIRE_FALSE(stream.read(ByteLength::zero()).data().isSensitive());
+    }
+
+    void testSensitivePolicyMarksAllOwnedResultsAndOperationSwitches() {
+        auto stream = MemoryInputStream{{1U, 2U, 3U, 4U}, 1U, 2U, true};
+
+        REQUIRE(stream.readExact(ByteLength{2U}).isTimeout());
+        REQUIRE(stream.inputSettings().isSensitive());
+        const auto protectedPrefix = stream.read(ByteLength{1U});
+        REQUIRE(protectedPrefix.data() == el::mem::ByteBlock({1U}));
+        REQUIRE(protectedPrefix.data().isSensitive());
+        const auto middle = stream.read(ByteLength{2U});
+        REQUIRE_EQUAL(middle.data().toUInt8Vector(), std::vector<uint8_t>({2U}));
+        REQUIRE(middle.data().isSensitive());
+        const auto protectedSuffix = stream.readAll();
+        REQUIRE(protectedSuffix.data() == el::mem::ByteBlock({3U, 4U}));
+        REQUIRE(protectedSuffix.data().isSensitive());
     }
 
     void testOutputConvenienceMethods() {

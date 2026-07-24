@@ -2,20 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "StreamBuffering.hpp"
+
 #include "../time/TimeDelta.hpp"
 #include "../unit/ByteLength.hpp"
+
+#include <optional>
 
 namespace erbsland::stream {
 
 /// Settings fixed when an output stream is created.
 /// @tested{StreamSettingsTest}
 class OutputStreamSettings final {
-public:
-    /// The default capacity of the fixed front ring.
-    static constexpr auto cDefaultBufferCapacity = unit::ByteLength{64U * 1024U};
-    /// The default hard limit of the growing back ring.
-    static constexpr auto cDefaultBackBufferLimit = unit::ByteLength{10'000'000U};
-
 public: // accessors
     /// Get the maximum wait for one public operation.
     [[nodiscard]] auto timeout() const noexcept -> time::TimeDelta { return _timeout; }
@@ -24,25 +22,30 @@ public: // accessors
         _timeout = value;
         return *this;
     }
-    /// Get the fixed front-ring capacity.
-    [[nodiscard]] auto bufferCapacity() const noexcept -> unit::ByteLength { return _bufferCapacity; }
-    /// Set the fixed front-ring capacity.
-    auto setBufferCapacity(unit::ByteLength value) noexcept -> OutputStreamSettings & {
-        _bufferCapacity = value;
+    /// Get the intended balance between memory use and throughput.
+    [[nodiscard]] auto buffering() const noexcept -> StreamBuffering { return _buffering; }
+    /// Set the intended balance between memory use and throughput.
+    auto setBuffering(StreamBuffering value) noexcept -> OutputStreamSettings & {
+        _buffering = value;
         return *this;
     }
-    /// Get the hard back-ring limit.
-    [[nodiscard]] auto backBufferLimit() const noexcept -> unit::ByteLength { return _backBufferLimit; }
+    /// Get the effective hard back-ring limit.
+    [[nodiscard]] auto backBufferLimit() const noexcept -> unit::ByteLength;
     /// Set the hard back-ring limit.
     auto setBackBufferLimit(unit::ByteLength value) noexcept -> OutputStreamSettings & {
         _backBufferLimit = value;
         return *this;
     }
+    /// Clear the explicit hard back-ring limit and use the selected buffering preset.
+    auto clearBackBufferLimit() noexcept -> OutputStreamSettings & {
+        _backBufferLimit.reset();
+        return *this;
+    }
 
 private:
     time::TimeDelta _timeout{time::TimeDelta::milliseconds(1000)};
-    unit::ByteLength _bufferCapacity{cDefaultBufferCapacity};
-    unit::ByteLength _backBufferLimit{cDefaultBackBufferLimit};
+    StreamBuffering _buffering{StreamBuffering::Balanced};
+    std::optional<unit::ByteLength> _backBufferLimit;
 };
 
 }

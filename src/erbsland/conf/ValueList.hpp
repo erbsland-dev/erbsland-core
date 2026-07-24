@@ -4,6 +4,8 @@
 
 #include "Value_fwd.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <vector>
 
 namespace erbsland::conf {

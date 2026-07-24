@@ -5,6 +5,7 @@
 #include "Key.hpp"
 
 #include "../text/StringEditor.hpp"
+#include "../time/TimeAmounts.hpp"
 
 #include <chrono>
 #include <cstdint>
@@ -48,20 +49,18 @@ public:
         }
         return readKeyImpl(timeout);
     }
+    /// @overload
+    [[nodiscard]] auto readKey(const time::Milliseconds timeout = {}) const -> Key {
+        return readKeyImpl(std::chrono::milliseconds{timeout.toValue().toRawValue()});
+    }
     /// Wait until one key event is available.
     /// In `Mode::ReadLine`, this call blocks until one line was entered and returns the converted key.
     /// @return The parsed key event.
     [[nodiscard]] auto waitForKey() const -> Key { return waitForKeyImpl(); }
-    /// Deprecated wrapper for `readKey()`.
-    /// In `Mode::Key`, any timeout less than or equal to zero performs a blocking call.
-    /// @param timeout Maximum wait time in `Mode::Key`.
-    /// @return The parsed key event, or an invalid key if no supported input was read before the timeout expired.
-    [[deprecated("Use readKey(timeout) for polling or waitForKey() for blocking input.")]] [[nodiscard]] auto read(
-        const std::chrono::milliseconds timeout = {}) const -> Key {
-        return timeout <= std::chrono::milliseconds::zero() ? waitForKey() : readKey(timeout);
-    }
     /// Read a line of text from the terminal.
     [[nodiscard]] virtual auto readLine() -> text::String = 0;
+    /// Securely discard input retained by the terminal backend.
+    virtual void purgePendingInput() noexcept {}
 
 protected:
     /// Implement `readKey()`.

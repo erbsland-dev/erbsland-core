@@ -3,7 +3,7 @@
 
 #include <erbsland/mem/StorageIdentifier.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>

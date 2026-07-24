@@ -47,26 +47,30 @@ void OptionManager::setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText) 
 }
 
 auto OptionManager::parse(const int argc, char *argv[]) -> OptionResult {
-    return parse(convertCommandLineArguments(argc, argv));
+    auto arguments = convertCommandLineArguments(argc, argv);
+    return parse(arguments);
 }
 
 auto OptionManager::parse(const int argc, wchar_t *argv[]) -> OptionResult {
-    return parse(convertCommandLineArguments(argc, argv));
+    auto arguments = convertCommandLineArguments(argc, argv);
+    return parse(arguments);
 }
 
-auto OptionManager::parse(const core::CommandLineArguments &args) -> OptionResult {
+auto OptionManager::parse(core::CommandLineArguments &args) -> OptionResult {
     return impl::OptionParser{_options, args, _displayText}.parse();
 }
 
 auto OptionManager::parseOrThrow(const int argc, char *argv[]) -> OptionValuesPtr {
-    return parseOrThrow(convertCommandLineArguments(argc, argv));
+    auto arguments = convertCommandLineArguments(argc, argv);
+    return parseOrThrow(arguments);
 }
 
 auto OptionManager::parseOrThrow(const int argc, wchar_t *argv[]) -> OptionValuesPtr {
-    return parseOrThrow(convertCommandLineArguments(argc, argv));
+    auto arguments = convertCommandLineArguments(argc, argv);
+    return parseOrThrow(arguments);
 }
 
-auto OptionManager::parseOrThrow(const core::CommandLineArguments &args) -> OptionValuesPtr {
+auto OptionManager::parseOrThrow(core::CommandLineArguments &args) -> OptionValuesPtr {
     auto result = parse(args);
     const auto &values = result.values();
     if (result.status() == OptionResultStatus::Success) {

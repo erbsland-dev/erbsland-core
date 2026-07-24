@@ -24,6 +24,10 @@ auto InputBackend::readLine() -> text::String {
     return _backend->readLine();
 }
 
+void InputBackend::purgePendingInput() noexcept {
+    _backend->purgePendingInput();
+}
+
 void InputBackend::setBackend(BackendPtr backend) noexcept {
     _backend = std::move(backend);
 }

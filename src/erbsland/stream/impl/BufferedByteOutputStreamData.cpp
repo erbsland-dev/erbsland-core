@@ -3,11 +3,13 @@
 #include "BufferedByteOutputStreamData.hpp"
 
 #include "IoService.hpp"
+#include "StreamBufferSizes.hpp"
 
 #include "../../mem/impl/UnsafeRingBufferAccess.hpp"
 
 #include <algorithm>
-#include <array>
+#include <cstring>
+#include <optional>
 #include <utility>
 
 namespace erbsland::stream::impl {
@@ -16,8 +18,10 @@ BufferedByteOutputStreamData::BufferedByteOutputStreamData(
     NativeByteStreamPtr nativeStream, OutputStreamSettings streamSettings) :
     native{std::move(nativeStream)},
     settings{streamSettings},
-    front{settings.bufferCapacity()},
-    back{unit::ByteLength{1U}, settings.backBufferLimit()} {
+    front{streamBufferSizes(settings.buffering()).ioRing},
+    back{
+        std::min(streamBufferSizes(settings.buffering()).outputRetainedInitial, settings.backBufferLimit()),
+        settings.backBufferLimit()} {
     if (native->supportsPositioning()) {
         logicalPosition.store(native->position().toRawValue());
     }
@@ -42,12 +46,17 @@ void BufferedByteOutputStreamData::scheduleWrite() {
 }
 
 void BufferedByteOutputStreamData::refillFront() {
-    constexpr auto cTransferSize = std::size_t{16U * 1024U};
-    auto transfer = std::array<mem::Byte, cTransferSize>{};
-    while (!front.isFull() && !back.isEmpty()) {
-        const auto maximum = std::min(transfer.size(), front.available().toSizeT());
-        const auto count = back.read(std::span<mem::Byte>{transfer.data(), maximum});
-        static_cast<void>(front.write(std::span<const mem::Byte>{transfer.data(), count.toSizeT()}));
+    {
+        auto frontAccess = mem::impl::UnsafeRingBufferAccess{front};
+        auto backAccess = mem::impl::UnsafeRingBufferAccess{back};
+        while (!front.isFull() && !back.isEmpty()) {
+            const auto source = backAccess.readableSpans()[0];
+            const auto destination = frontAccess.writableSpans()[0];
+            const auto count = std::min(source.size(), destination.size());
+            std::memcpy(destination.data(), source.data(), count * sizeof(mem::Byte));
+            frontAccess.commitWritten(unit::ByteLength::fromSizeT(count));
+            backAccess.consumeRead(unit::ByteLength::fromSizeT(count));
+        }
     }
     if (back.isEmpty()) {
         back.shrinkToInitial();
@@ -55,8 +64,8 @@ void BufferedByteOutputStreamData::refillFront() {
 }
 
 void BufferedByteOutputStreamData::performWrite() {
-    auto access = std::unique_ptr<mem::impl::UnsafeRingBufferAccess>{};
-    auto source = std::span<const mem::Byte>{};
+    auto access = std::optional<mem::impl::UnsafeRingBufferAccess>{};
+    auto source = mem::ConstByteSpan{};
     {
         const auto lock = std::scoped_lock{mutex};
         if (aborted.load()) {
@@ -64,7 +73,7 @@ void BufferedByteOutputStreamData::performWrite() {
             condition.notify_all();
             return;
         }
-        access = std::make_unique<mem::impl::UnsafeRingBufferAccess>(front);
+        access.emplace(front);
         source = access->readableSpans()[0];
     }
 

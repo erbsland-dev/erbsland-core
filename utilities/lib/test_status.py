@@ -13,8 +13,10 @@ MARKER_NAMES = ("tested", "notest", "needtest")
 MARKER_START = re.compile(r"^(?P<indent>\s*)///\s*@(?P<name>tested|notest|needtest)(?P<value>.*)$")
 COMMENT_LINE = re.compile(r"^\s*///\s?(?P<text>.*)$")
 TESTED_VALUE = re.compile(r"^[A-Za-z_]\w*Test(?: [A-Za-z_]\w*Test)*$")
-TYPE_DECLARATION = re.compile(r"^(?:template\b|requires\b|class\b|struct\b)")
-FREE_FUNCTION_DECLARATION = re.compile(r"^(?:\[\[|(?:inline|constexpr)\s+)*(?:auto|void)\b")
+TYPE_DECLARATION = re.compile(r"^(?:template\b|requires\b|class\b|struct\b|using\b)")
+FREE_FUNCTION_DECLARATION = re.compile(
+    r"^(?:(?:\[\[[^\]]+\]\]|inline|constexpr)\s+)*(?:auto|void)\b"
+)
 
 
 @dataclass(frozen=True)

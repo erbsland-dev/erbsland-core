@@ -17,6 +17,7 @@
 #include "impl/U32StringReadTools.hpp"
 #include "impl/U32StringTransformTools.hpp"
 
+#include "../EncodingMode.hpp"
 #include "../impl/ByteBlockFormatter.hpp"
 #include "../impl/FloatConversion.hpp"
 #include "../StringConverter.hpp"
@@ -46,7 +47,7 @@ U32String::U32String(const U32StringLiteral &str) noexcept :
 }
 
 auto U32String::copy() const -> U32String {
-    return U32String{U32StringEditor{*this}};
+    return U32String{U32StringSharedStorage{dataView()}};
 }
 
 auto U32String::isEmpty() const noexcept -> bool {
@@ -60,7 +61,7 @@ auto U32String::isValidUtf32() const noexcept -> bool {
 auto U32String::toHash() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf32::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.toRawValue());
             return true;
         });
@@ -70,7 +71,7 @@ auto U32String::toHash() const noexcept -> std::size_t {
 auto U32String::toHashCI() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf32::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.caseFolded().toRawValue());
             return true;
         });
@@ -224,50 +225,49 @@ auto U32String::splitAt(const CpIndex index) const noexcept -> std::pair<U32Stri
 }
 
 auto U32String::removed(const CpRange range) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removed(range)};
+    return U32String{U32StringModifyTools{dataView()}.removed(range)};
 }
 
 auto U32String::removedAll(const CharSet &characters) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removedAll(characters)};
+    return U32String{U32StringModifyTools{dataView()}.removedAll(characters)};
 }
 
 auto U32String::removedAll(const U32String &text, const CharCompareFn compareFn) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
+    return U32String{U32StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
 }
 
 auto U32String::removedFirst(const U32String &text, const CharCompareFn compareFn) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
+    return U32String{U32StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
 }
 
 auto U32String::kept(const CpRange range) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.kept(range)};
+    return U32String{U32StringModifyTools{dataView()}.kept(range)};
 }
 
 auto U32String::inserted(const CpIndex index, const U32String &text) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U32String{U32StringModifyTools{dataView()}.inserted(index, text.dataView())};
 }
 
 auto U32String::replaced(const CpRange range, const U32String &text) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U32String{U32StringModifyTools{dataView()}.replaced(range, text.dataView())};
 }
 
 auto U32String::replacedAll(const CharSet &characters, const Char replacement) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replacedAll(characters, replacement)};
+    return U32String{U32StringModifyTools{dataView()}.replacedAll(characters, replacement)};
 }
 
 auto U32String::replacedAll(const CharSet &characters, const U32String &replacement) const -> U32String {
-    return U32StringEditor{U32StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
+    return U32String{U32StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
 }
 
 auto U32String::replacedAll(const U32String &text, const U32String &replacement, const CharCompareFn compareFn) const
     -> U32String {
-    return U32StringEditor{
-        U32StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
+    return U32String{U32StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U32String::replacedFirst(const U32String &text, const U32String &replacement, const CharCompareFn compareFn) const
     -> U32String {
-    return U32StringEditor{
+    return U32String{
         U32StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
 }
 
@@ -277,11 +277,11 @@ auto U32String::truncated(const CpLength maximumWidth, const TruncateMode mode) 
 
 auto U32String::truncated(const CpLength maximumWidth, const TruncateMode mode, const U32String &ellipsis) const
     -> U32String {
-    return U32StringEditor{U32StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    return U32String{U32StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
 auto U32String::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U32String {
-    return U32StringEditor{U32StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+    return U32String{U32StringTransformTools{dataView()}.aligned(length, alignment, fill)};
 }
 
 auto U32String::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U32String {
@@ -299,7 +299,7 @@ auto U32String::toEscaped(const EscapeFormat format, const EscapeAmount amount) 
 auto U32String::fromCharacter(const Char character, const CpLength count) -> U32String {
     auto storage = U32StringSharedStorage{};
     U32StringAppendTools{storage}.append(character, count);
-    return U32String{U32StringStorage{std::move(storage)}};
+    return U32String{std::move(storage)};
 }
 
 auto U32String::fromJoined(const std::initializer_list<U32String> parts) -> U32String {
@@ -323,7 +323,7 @@ auto U32String::fromJoined(const std::initializer_list<U32String> parts) -> U32S
         writePosition = U32StringSharedStorage::checkedAddSize(
             writePosition, data.size(), "Joined string write exceeds size bounds");
     }
-    return U32String{U32StringStorage{std::move(storage)}};
+    return U32String{std::move(storage)};
 }
 
 auto U32String::fromFloat(const double value, const FloatFormat format) -> U32String {
@@ -338,7 +338,7 @@ auto U32String::fromByteBlock(const mem::ByteBlock &bytes, const ByteFormat form
     auto storage = U32StringSharedStorage{};
     auto appendTools = U32StringAppendTools{storage};
     impl::formatByteBlock(appendTools, bytes, format);
-    return U32String{U32StringStorage{std::move(storage)}};
+    return U32String{std::move(storage)};
 }
 
 auto U32String::forEach(const ProcessCharacterFn &function) const -> util::LoopResult {
@@ -347,9 +347,9 @@ auto U32String::forEach(const ProcessCharacterFn &function) const -> util::LoopR
 
 auto U32String::transformed(const TransformCharacterFn function) const -> U32String {
     if (auto result = U32StringTransformTools{dataView()}.transformedIfChanged(function)) {
-        return U32StringEditor{std::move(*result)};
+        return U32String{std::move(*result)};
     }
-    return U32StringEditor{U32StringSharedStorage{dataView()}};
+    return *this;
 }
 
 auto U32String::begin() const noexcept -> const_iterator {
@@ -373,27 +373,6 @@ auto U32String::storageId() const noexcept -> mem::StorageIdentifier {
         return literal->storageId();
     }
     return {};
-}
-
-auto U32String::isFullStorageRange() const noexcept -> bool {
-    if (const auto *shared = std::get_if<U32StringSharedStorage>(&_storage)) {
-        return shared->range().index().isZero() && shared->range().length().toSizeT() == shared->dataSize();
-    }
-    if (const auto *literal = std::get_if<U32StringLiteralStorage>(&_storage)) {
-        return literal->range().index().isZero() && literal->range().length().toSizeT() == literal->size();
-    }
-    return false;
-}
-
-auto U32String::stringForUnchangedTransform() const -> U32String {
-    if (isFullStorageRange()) {
-        return *this;
-    }
-    const auto view = dataView();
-    if (view.dataSpan().empty()) {
-        return {};
-    }
-    return U32String{U32StringStorage{U32StringSharedStorage{view}}};
 }
 
 auto U32String::withRange(const CpRange range) const noexcept -> U32String {

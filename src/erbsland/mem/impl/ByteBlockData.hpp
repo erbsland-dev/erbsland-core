@@ -3,6 +3,5 @@
 #pragma once
 
 #include "ByteBlockData_fwd.hpp"
-
-#include "../SharedArrayData.hpp"
+#include "SharedByteDataWithFlag.hpp"
 

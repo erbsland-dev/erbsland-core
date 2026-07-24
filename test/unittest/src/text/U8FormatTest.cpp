@@ -4,7 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FormatError.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -154,6 +154,7 @@ public:
 
         const auto aliases = U8Format{"{:TEXT:max3,w5,al=r,fl=0}"};
         REQUIRE_EQUAL(StringConverter{aliases.build("abcdef")}.toStdString(), std::string{"00abc"});
+        REQUIRE_EQUAL(StringConverter{U8Format{"{:text:fill==,width=3}"}.build("x")}.toStdString(), std::string{"x=="});
 
         const auto escaped = U8Format{"{:text:escape=json,escape-amount=required}"};
         REQUIRE_EQUAL(
@@ -181,7 +182,7 @@ public:
     }
 
     void testNamedByteFormatting() {
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0U, 1U, 2U, 3U, 4U, 5U, 6U, 7U, 8U, 9U});
 
         REQUIRE_EQUAL(StringConverter{U8Format{"{}"}.build(bytes)}.toStdString(), std::string{"00010203040506070809"});
         REQUIRE_EQUAL(
@@ -193,7 +194,7 @@ public:
     }
 
     void testNamedTypeLocking() {
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{1U, 2U}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U});
 
         REQUIRE_THROWS(U8Format{"{:text:}"}.build(true));
         REQUIRE_THROWS(U8Format{"{:number:}"}.build("12"));
@@ -219,6 +220,8 @@ public:
         REQUIRE_THROWS(U8Format{"{:text:escape-amount=balanced}"});
         REQUIRE_THROWS(U8Format{"{:number:base=decimal,notation=fixed}"});
         REQUIRE_THROWS(U8Format{"{:number:zero-fill,fill=·}"});
+        REQUIRE_THROWS(U8Format{"{:number:alternate=true}"});
+        REQUIRE_THROWS(U8Format{"{:bytes:separator=yes}"});
         REQUIRE_THROWS(U8Format{"{:number:#08x}"});
     }
 };

@@ -62,7 +62,7 @@ auto createDefinitionOptions() -> el::OptionsPtr {
 
 auto definingOptions() -> el::ExitCode {
     auto manager = el::OptionManager{createDefinitionOptions()};
-    const auto args = makeArgs(
+    auto args = makeArgs(
         {"optica"_el,
             "--instrument"_el,
             "Prisma-7"_el,

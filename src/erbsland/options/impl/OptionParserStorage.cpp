@@ -32,10 +32,12 @@ auto OptionParserStorage::optionTitleForError(const OptionPtr &option) -> String
     return OptionDisplayModel::optionTitle(option);
 }
 
-auto OptionParserStorage::storeFlag(const OptionPtr &option, const ArgumentIndex index) -> bool {
+auto OptionParserStorage::storeFlag(
+    const OptionPtr &option, const ArgumentIndex index, const bool value, const bool explicitValue) -> bool {
     auto parsedValue = findParsedValue(option);
     if (parsedValue == nullptr) {
-        _parsedValues.emplace_back(OptionParsedValue::create(option, true, ArgumentCount::one(), std::vector{index}));
+        _parsedValues.emplace_back(
+            OptionParsedValue::create(option, value, ArgumentCount::one(), std::vector{index}, explicitValue));
         return true;
     }
     if (!std::holds_alternative<bool>(parsedValue->storage)) {
@@ -47,13 +49,22 @@ auto OptionParserStorage::storeFlag(const OptionPtr &option, const ArgumentIndex
             index,
             option);
     }
+    if (explicitValue || parsedValue->explicitFlagValue) {
+        return makeError(
+            OptionErrorReason::SyntaxError,
+            "Explicit flag value cannot be repeated"_el,
+            StringFormat{"{} uses an explicit boolean value and must occur exactly once."}.build(
+                optionTitleForError(option)),
+            index,
+            option);
+    }
     parsedValue->storage = true;
     parsedValue->count = ArgumentCount::one();
     parsedValue->argumentIndexes.emplace_back(index);
     return true;
 }
 
-auto OptionParserStorage::storeValue(const OptionPtr &option, const String &value, const ArgumentIndex index) -> bool {
+auto OptionParserStorage::storeValue(const OptionPtr &option, String value, const ArgumentIndex index) -> bool {
     switch (option->type().type()) {
     case OptionType::Flag:
         return makeError(
@@ -76,6 +87,10 @@ auto OptionParserStorage::storeValue(const OptionPtr &option, const String &valu
         }
     case OptionType::Text:
         return storeTextValue(option, value.copy(), index);
+    case OptionType::SensitiveText: {
+        value.markAsSensitive();
+        return storeSensitiveTextValue(option, value.copy(), index);
+    }
     case OptionType::Choice:
         if (const auto choiceText = option->matchingChoiceText(value)) {
             return storeTextValue(option, choiceText.value().copy(), index);
@@ -249,6 +264,21 @@ auto OptionParserStorage::storeTextValue(const OptionPtr &option, String value, 
     return true;
 }
 
+auto OptionParserStorage::storeSensitiveTextValue(
+    const OptionPtr &option, text::String value, const ArgumentIndex index) -> bool {
+    if (findParsedValue(option) != nullptr) {
+        return makeError(
+            OptionErrorReason::UnexpectedValueType,
+            "Sensitive option cannot be repeated"_el,
+            StringFormat{"{} accepts exactly one sensitive value."}.build(optionTitleForError(option)),
+            index,
+            option);
+    }
+    _parsedValues.emplace_back(
+        OptionParsedValue::create(option, std::move(value), ArgumentCount::one(), std::vector{index}));
+    return true;
+}
+
 auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
     const auto &defaultValue = option->defaultValue();
     if (!defaultValue.has_value()) {
@@ -286,6 +316,8 @@ auto OptionParserStorage::storeDefaultValue(const OptionPtr &option) -> bool {
                 OptionParsedValue::create(option, *textList, ArgumentCount::fromSizeT(textList->size())));
             return true;
         }
+        break;
+    case OptionType::SensitiveText:
         break;
     case OptionType::Choice:
         if (const auto text = std::get_if<String>(&defaultValue.value())) {

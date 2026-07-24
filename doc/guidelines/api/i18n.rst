@@ -2,18 +2,16 @@
 Internationalization API Guidelines
 ***********************************
 
-These guidelines extend the Common and Text API Guidelines for reusable system display text.
-
 Core Semantics
 ==============
 
 .. code-block:: text
 
-    source text  // built-in English text or format pattern
-    display text  // source text after optional translation
-    key  // dot-separated domain, optional subdomain, and final text name
-    lookup  // exact key, domain plus final name, then final name
-    published map  // immutable shared map used concurrently by renderers
+    source text = built-in English text or format pattern
+    display text = source text after optional translation
+    key = dot-separated domain, optional subdomain, and final text name
+    lookup = exact key, domain plus final name, then final name
+    published map = immutable shared map used concurrently by renderers
 
 Primary Types
 =============
@@ -23,20 +21,20 @@ Primary Types
     DisplayTextMap  // keyed source texts, translated results, and compiled-format caches
     DisplayTextTranslator  // translation interface for resolved English source text
 
-Shared Pointer Types
-====================
+Secondary Types
+===============
 
 .. code-block:: text
 
-    DisplayTextMapPtr, DisplayTextMapConstPtr
-    DisplayTextTranslatorPtr, DisplayTextTranslatorConstPtr
+    DisplayTextMapPtr, DisplayTextMapConstPtr // mutable and immutable shared display-text maps
+    DisplayTextTranslatorPtr, DisplayTextTranslatorConstPtr // mutable and immutable shared translators
 
 Map Patterns
 ============
 
 .. code-block:: text
 
-    DisplayTextMap()  // create a mutable map populated with built-in English text
+    T()  // create a mutable map populated with built-in English text
     T::defaultMap() -> const DisplayTextMapConstPtr&  // immutable process-wide English defaults
     o.clone() -> DisplayTextMapPtr  // copy sources and translator without cached results
     o.text(key) -> String  // resolve and translate text; return key if it is missing

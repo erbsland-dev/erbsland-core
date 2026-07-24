@@ -4,13 +4,13 @@
 
 #include "FormatSpec.hpp"
 #include "NamedFormatDomain.hpp"
+#include "NamedKeyEntry.hpp"
+#include "NamedKeyFormat.hpp"
 
 #include "../StringCharReader.hpp"
 
 #include <cstdint>
 #include <optional>
-#include <string>
-#include <string_view>
 
 namespace erbsland::text::impl {
 
@@ -48,20 +48,14 @@ public:
     [[nodiscard]] auto parse() -> FormatSpec;
 
 private:
-    [[nodiscard]] static auto asciiLower(Char character) noexcept -> char;
-    [[nodiscard]] static auto isOptionNameChar(Char character) noexcept -> bool;
-    [[nodiscard]] static auto isIdentifierChar(Char character) noexcept -> bool;
-    [[nodiscard]] static auto domainFromName(const std::string &name) -> std::optional<NamedFormatDomain>;
-    [[nodiscard]] static auto optionFromName(const std::string &name) -> std::optional<Option>;
+    [[nodiscard]] static auto namedKeyFormat() -> const NamedKeyFormat &;
+    [[nodiscard]] static auto domainFromName(const String &name) -> std::optional<NamedFormatDomain>;
     [[nodiscard]] static auto isAllowed(Option option, NamedFormatDomain domain) noexcept -> bool;
-    [[nodiscard]] auto currentChar() const noexcept -> Char;
-    auto consumeSafeChar() -> Char;
-    void consumeExpected(Char expected, std::string_view message);
-    [[nodiscard]] auto readOptionName() -> std::string;
-    [[nodiscard]] auto readIdentifier() -> std::string;
+    [[nodiscard]] auto readIdentifier() const -> String;
     [[nodiscard]] auto readNumber() -> unit::CpLength;
-    [[nodiscard]] auto readFill() -> Char;
-    void parseOption(Option option);
+    [[nodiscard]] auto readFill() const -> Char;
+    void parseOption(Option option, const NamedKeyEntry &entry);
+    void requireKeyWithoutValue() const;
     void parseWidth();
     void parseAlignment();
     void parseFill();
@@ -81,13 +75,12 @@ private:
     void parseTruncate();
     [[nodiscard]] auto layout() -> NamedLayoutSpec &;
     void validate() const;
-    void markSeen(Option option);
 
 private:
     StringCharReader &_reader;
     NamedFormatDomain _domain;
     FormatSpec _spec;
-    uint32_t _seenOptions{};
+    const NamedKeyEntry *_entry{};
 };
 
 }

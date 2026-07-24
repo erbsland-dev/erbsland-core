@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/AnyStringBuilder.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>

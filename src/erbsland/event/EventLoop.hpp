@@ -6,6 +6,7 @@
 #include "EventBackend_fwd.hpp"
 #include "EventCallback.hpp"
 #include "EventLoop_fwd.hpp"
+#include "EventLoopDriver_fwd.hpp"
 #include "EventLoopErrorHandler.hpp"
 #include "Events.hpp"
 
@@ -30,6 +31,10 @@ public: // factory methods
     /// @param backend The backend to register.
     /// @return The new event loop.
     [[nodiscard]] static auto create(EventBackendPtr backend) -> EventLoopPtr;
+    /// Create an event loop with a custom native driver.
+    /// @param driver The non-null driver to use.
+    /// @return The new event loop.
+    [[nodiscard]] static auto create(EventLoopDriverPtr driver) -> EventLoopPtr;
 
 public:
     /// Run this event loop until stopped.

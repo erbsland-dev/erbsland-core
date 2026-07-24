@@ -65,6 +65,12 @@ Short flags may be grouped, so ``-abc`` is equivalent to ``-a -b -c`` when all t
 
 Values can follow an option as the next argument or be attached with ``=``.
 Use the attached form for values that start with a dash, for example ``--count=-1``.
+Flags are false when absent and true when written without a value.
+They also accept the ASCII-case-insensitive ELCL literals ``true``, ``on``, ``yes``, ``enabled``, ``false``, ``off``,
+``no``, and ``disabled``.
+Use either an attached value such as ``--cleanup=false`` or a separate recognized value such as ``--cleanup false``.
+A separate argument is consumed only if it is one of these literals; other text remains available to positional
+arguments.
 The argument ``--`` stops option parsing; all later arguments are treated as positional values.
 The built-in ``-h``, ``--help``, and ``--version`` requests stop normal parsing before user callbacks are called.
 Applications that need one of these names for their own protocol can disable the help or version request individually
@@ -76,6 +82,15 @@ released name:
     options->setParserFlag(el::OptionParserFlag::DisableVersion);
     options->addOption({"--version"_el, "language-version"_el})
         .setType(el::OptionType::Text);
+
+Applications whose positional grammar may use boolean-looking words can restore valueless flag behavior for the complete
+options tree:
+
+.. code-block:: cpp
+
+    options->setParserFlag(el::OptionParserFlag::DisableBooleanValues);
+
+This compatibility flag applies to ordinary flags, modules, option sets, and built-in help/version requests.
 
 If modules are present, no ordinary options may appear before the module name.
 This makes module selection unambiguous:
@@ -214,6 +229,10 @@ Call :cpp:func:`parseOrThrow() <erbsland::options::OptionManager::parseOrThrow>`
 :cpp:class:`OptionError <erbsland::options::OptionError>` exceptions.
 Both methods can parse already converted :cpp:type:`CommandLineArguments <erbsland::core::CommandLineArguments>` or raw
 ``argc`` /``argv`` pairs.
+The converted-list overloads require mutable lvalues because sensitive option values are replaced with five stars before
+parsing returns.
+When :cpp:class:`Application <erbsland::core::Application>` owns parsing, it also masks the borrowed native ``argv``
+buffers in place without changing their length.
 
 .. erbsland-demo::
     :source: option/ManualParsing/main.cpp
@@ -249,7 +268,7 @@ Both methods can parse already converted :cpp:type:`CommandLineArguments <erbsla
 
     auto manualParsing() -> el::ExitCode {
         auto manager = el::OptionManager{createManualOptions()};
-        const auto args = makeArgs({"fotometria"_el, "--note"_el, "Lectura estable en lámpara azul"_el, "--repeat=2"_el});
+        auto args = makeArgs({"fotometria"_el, "--note"_el, "Lectura estable en lámpara azul"_el, "--repeat=2"_el});
         const auto result = manager.parse(args);
 
         if (result.status() != el::OptionResultStatus::Success) {

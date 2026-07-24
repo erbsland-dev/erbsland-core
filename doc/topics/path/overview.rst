@@ -79,6 +79,14 @@ is the infinite ``ElementCount`` value, which represents an unknown count.
 Temporary Resources
 ===================
 
+:cpp:func:`Path::userHomeDirectory() <erbsland::path::Path::userHomeDirectory>` returns the effective user's home
+directory as an absolute native path.
+It queries the operating-system account or profile database and deliberately ignores environment variables such as
+``HOME``.
+The lookup does not create the directory and does not require it to exist.
+Use :cpp:func:`Path::userHomeDirectoryOrThrow() <erbsland::path::Path::userHomeDirectoryOrThrow>` when failure needs a
+structured :cpp:class:`PathError <erbsland::path::PathError>`; the non-throwing form returns an empty path.
+
 :cpp:func:`Path::systemTempDirectory() <erbsland::path::Path::systemTempDirectory>` returns the platform temporary
 directory.
 On POSIX systems ``TMPDIR`` is used when it names a usable directory, with ``/tmp`` as fallback.

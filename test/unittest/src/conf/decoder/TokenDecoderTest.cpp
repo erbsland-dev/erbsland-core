@@ -8,7 +8,7 @@
 #include <erbsland/conf/impl/decoder/TokenDecoder.hpp>
 #include <erbsland/conf/impl/source/FileSource.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 #include <sstream>
 

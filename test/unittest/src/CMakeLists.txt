@@ -14,6 +14,7 @@ add_subdirectory(event)
 add_subdirectory(i18n)
 add_subdirectory(math)
 add_subdirectory(mem)
+add_subdirectory(network)
 add_subdirectory(options)
 add_subdirectory(path)
 add_subdirectory(random)
@@ -27,4 +28,5 @@ add_subdirectory(util)
 
 target_sources(erbsland-core-unittest PRIVATE
         main.cpp
+        MergedIncludeHeadersTest.cpp
 )

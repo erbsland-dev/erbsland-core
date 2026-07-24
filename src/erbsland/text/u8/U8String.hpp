@@ -75,7 +75,7 @@ namespace erbsland::text {
 /// Use the `String` alias in user code and only `U8String` if UTF-8 encoding matters.
 /// A `StringEditor` and `StringLiteral` are implicitly convertible to a `String`, no copy involved.
 /// Copy, move, slicing, trimming are fast and copy-free operations.
-/// @tested{U8StringTest}
+/// @tested{U8StringTest BooleanConversionTest}
 class U8String final {
     friend class debug::impl::StringDebugAccess;
     friend class U8StringEditor;
@@ -137,6 +137,11 @@ public: // comparison
 public: // tests
     /// Test if this string is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
+    /// Test if this string's shared UTF-8 allocation is marked as sensitive.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool;
+    /// Mark this string's complete shared UTF-8 allocation as sensitive.
+    /// This mark is one-way and is observed by every string sharing the allocation.
+    void markAsSensitive() noexcept;
     /// Test if this string is valid UTF-8.
     [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
     /// Test if this string starts with another one.
@@ -187,14 +192,6 @@ public: // read
     /// @param index The byte index to read from. Updated to the position after the read character on success.
     /// @return The character at the given index, or a signal character if no character can be read there.
     [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
-    /// Strictly read the character at the given byte index and advance the index.
-    /// The index remains unchanged if reading fails.
-    /// @seeref{u8-string-indexed-sequential-read}
-    /// @param index The byte index to read from. Updated to the position after the read character on success.
-    /// @return The valid character at the given index.
-    /// @throws EncodingError if the bytes at the index do not form a valid UTF-8 sequence.
-    /// @throws err::OutOfRangeError if the index is outside of the string.
-    [[nodiscard]] auto readCharAndAdvanceOrThrow(unit::ByteIndex &index) const -> Char;
     /// Read the character before the given byte index and retreat the index.
     /// @seeref{u8-string-indexed-sequential-read}
     /// @param index The byte index after the character to read. Updated to the start of the read character on success.
@@ -411,6 +408,14 @@ public: // transform and copy-modify
         const U8String &text, const U8String &replacement, CharCompareFn compareFn = {}) const -> U8String;
 
 public: // conversion
+    /// Convert an ASCII-case-insensitive ELCL boolean literal, or return a default for unsupported text.
+    /// @param defaultValue The value returned for invalid, incomplete, padded, or empty text.
+    /// @return The recognized boolean value, or `defaultValue`.
+    [[nodiscard]] auto toBoolean(bool defaultValue = {}) const noexcept -> bool;
+    /// Convert an ASCII-case-insensitive ELCL boolean literal.
+    /// @return The recognized boolean value.
+    /// @throws err::ParseError if the complete text is not a supported literal.
+    [[nodiscard]] auto toBooleanOrThrow() const -> bool;
     /// Convert this string to an integer, or return the given default value on error.
     template <math::AnyIntegerType T>
     [[nodiscard]] auto toInteger(
@@ -468,10 +473,6 @@ public: // minimal std-library compatibility
     friend void swap(U8String &first, U8String &second) noexcept;
 
 private:
-    /// Test if this string covers the full backing storage range.
-    [[nodiscard]] auto isFullStorageRange() const noexcept -> bool;
-    /// Create a string for a transformation that did not change decoded text.
-    [[nodiscard]] auto stringForUnchangedTransform() const -> U8String;
     /// Create a string with the same storage and a different storage range.
     [[nodiscard]] auto withRange(unit::ByteRange range) const noexcept -> U8String;
     /// Get the view to the string data.

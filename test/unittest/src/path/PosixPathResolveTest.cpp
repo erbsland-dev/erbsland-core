@@ -9,6 +9,7 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <pwd.h>
 #include <unistd.h>
 
 #include <exception>
@@ -29,6 +30,16 @@ public:
         const auto currentDirectory = Path::currentDirectory();
         REQUIRE(currentDirectory.isAbsolute());
         REQUIRE(currentDirectory.isValid());
+    }
+
+    void testUserHomeDirectory() {
+        const auto homeDirectory = Path::userHomeDirectoryOrThrow();
+        REQUIRE(homeDirectory.isAbsolute());
+        REQUIRE(homeDirectory.isValid());
+        const auto *account = ::getpwuid(::geteuid());
+        REQUIRE(account != nullptr);
+        REQUIRE(account->pw_dir != nullptr);
+        REQUIRE_EQUAL(toStdString(homeDirectory), account->pw_dir);
     }
 
     void testLexicalPhysicalAndWeakResolve() {

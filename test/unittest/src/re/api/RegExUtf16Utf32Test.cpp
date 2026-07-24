@@ -8,7 +8,7 @@
 #include <erbsland/re/Match16.hpp>
 #include <erbsland/re/Match32.hpp>
 #include <erbsland/re/RegEx.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>

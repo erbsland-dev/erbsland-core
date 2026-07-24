@@ -15,30 +15,50 @@
 #include "u8/U8String_fwd.hpp"
 #include "u8/U8StringEditor_fwd.hpp"
 
-#include "../mem/CowManualStorage.hpp"
+#include "../mem/SharedArrayData_fwd.hpp"
+#include "../mem/SharedDataPointer.hpp"
 #include "../util/List.hpp"
 #include "../util/LoopResult.hpp"
 #include "../util/LoopStatus.hpp"
 #include "../util/Set.hpp"
 
+#include <array>
 #include <concepts>
+#include <cstdint>
 #include <functional>
 #include <initializer_list>
 #include <optional>
-#include <set>
+#include <span>
 #include <type_traits>
 #include <utility>
+#include <variant>
 
 namespace erbsland::text {
 
+namespace impl {
+class CharSetRangeBuilder;
+}
+
 /// A normalized set of Unicode scalar values.
-/// The set stores non-overlapping character ranges in copy-on-write storage. Invalid characters are ignored.
+/// The set stores up to two ranges inline and uses copy-on-write storage for larger sets. Invalid characters are
+/// ignored.
 /// @seedoc{/reference/text/char_range}
 /// @tested{CharSetTest}
 class CharSet final {
-public:
-    /// The normalized range storage type.
-    using Ranges = std::set<CharRange>;
+private:
+    struct InlineRanges {
+        std::array<CharRange, 2> values{}; ///< The inline normalized ranges.
+    };
+
+    using RangeData = mem::SharedArrayData<
+        CharRange,
+        uint32_t,
+        mem::SharedArrayDataConstructMethod::None,
+        mem::SharedArrayDataCleanupMethod::None>;
+    using RangeDataPtr = mem::SharedDataPointer<RangeData, true>;
+    using Storage = std::variant<InlineRanges, RangeDataPtr>;
+
+    static_assert(std::is_trivially_copyable_v<CharRange>);
 
 public:
     /// Create an empty character set.
@@ -55,11 +75,11 @@ public:
     CharSet(std::initializer_list<Char> characters);
 
     // defaults
-    ~CharSet() = default;
-    CharSet(const CharSet &) noexcept = default;
-    CharSet(CharSet &&) noexcept = default;
-    auto operator=(const CharSet &) noexcept -> CharSet & = default;
-    auto operator=(CharSet &&) noexcept -> CharSet & = default;
+    ~CharSet();
+    CharSet(const CharSet &) noexcept;
+    CharSet(CharSet &&other) noexcept;
+    auto operator=(const CharSet &) noexcept -> CharSet &;
+    auto operator=(CharSet &&other) noexcept -> CharSet &;
 
 public: // operators
     auto operator==(const CharSet &other) const noexcept -> bool;
@@ -77,7 +97,7 @@ public: // operators
 
 public: // tests
     /// Test if this set is empty.
-    [[nodiscard]] auto isEmpty() const noexcept -> bool { return ranges().empty(); }
+    [[nodiscard]] auto isEmpty() const noexcept -> bool { return rangeSpan().empty(); }
     /// Test if the character is contained in this set.
     [[nodiscard]] auto contains(Char character) const noexcept -> bool;
     /// Test if this set is a subset of another set.
@@ -101,8 +121,6 @@ public: // tests
     [[nodiscard]] auto containsUppercaseMappableCharacters() const -> bool;
 
 public: // accessors
-    /// Access the normalized ranges in this set.
-    [[nodiscard]] auto ranges() const noexcept -> const Ranges & { return _ranges.data(); }
     /// Create the union of this set and another set.
     [[nodiscard]] auto unitedWith(const CharSet &other) const -> CharSet;
     /// Create the intersection of this set and another set.
@@ -183,20 +201,23 @@ public: // factory methods
     [[nodiscard]] static auto fromPattern(const U32String &pattern) -> CharSet;
 
 private:
+    friend class impl::CharSetRangeBuilder;
+
     template <typename>
     static constexpr auto cIsSupportedForEachFunction = false;
 
     template <typename Function, typename Value>
     [[nodiscard]] static auto processForEach(Function &function, Value &&value) -> util::LoopStatus;
 
-    void assign(Ranges ranges);
-    static void addTo(Ranges &ranges, CharRange range);
-    static void removeFrom(Ranges &ranges, CharRange range);
+    [[nodiscard]] auto rangeSpan() const noexcept -> std::span<const CharRange>;
+    [[nodiscard]] static auto inlineRangeCount(const InlineRanges &ranges) noexcept -> std::size_t;
+    void addWithCapacity(CharRange range, std::size_t capacityHint);
+    void ensureSharedCapacity(std::size_t requiredCapacity);
     [[nodiscard]] static auto nextScalar(Char character) noexcept -> std::optional<Char>;
     [[nodiscard]] static auto previousScalar(Char character) noexcept -> std::optional<Char>;
 
 private:
-    mem::CowManualStorage<Ranges> _ranges; ///< The normalized range storage.
+    Storage _storage{InlineRanges{}}; ///< The inline or shared normalized range storage.
 };
 
 }

@@ -136,7 +136,9 @@ class LibrarySourceMap:
         path = self.clean_posix_path(include_path)
         return path is not None and path in self._paths
 
-    def path_for_include(self, include_path: str, context: str, context_path: PurePosixPath | None = None) -> PurePosixPath:
+    def path_for_include(
+        self, include_path: str, context: str, context_path: PurePosixPath | None = None
+    ) -> PurePosixPath:
         """Resolve an include path to exactly one library source file."""
         path = self.clean_posix_path(include_path)
         if path is not None:
@@ -335,11 +337,11 @@ class FixIncludePaths:
             return include_line.render(path=target.as_posix(), is_global=True)
         if self.existing_local_include(path, include_line.path, scan_context):
             return include_line.render()
+        if include_line.path.startswith("erbsland/"):
+            return include_line.render(is_global=True)
         target = self.resolve_optional_library_target(path, include_line.path, self.context(path, include_line))
         if target is not None:
             return include_line.render(path=target.as_posix(), is_global=True)
-        if include_line.path.startswith("erbsland/"):
-            return include_line.render(is_global=True)
         if not include_line.is_global and self.looks_like_project_include(include_line.path):
             self.source_map.path_for_include(include_line.path, self.context(path, include_line))
         return include_line.render()
@@ -419,7 +421,7 @@ class FixIncludePaths:
     def context(self, path: Path, include_line: IncludeLine) -> str:
         """Create a detailed context for error messages."""
         start_quote, end_quote = ("<", ">") if include_line.is_global else ('"', '"')
-        return f'{self.display_path(path)}: #include {start_quote}{include_line.path}{end_quote}'
+        return f"{self.display_path(path)}: #include {start_quote}{include_line.path}{end_quote}"
 
     def display_path(self, path: Path) -> Path:
         """Create a user-friendly display path relative to the project."""

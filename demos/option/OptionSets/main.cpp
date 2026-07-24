@@ -79,8 +79,9 @@ auto optionSets() -> el::ExitCode {
     options->addSet(createReportSet());
 
     auto manager = el::OptionManager{options};
-    const auto values = manager.parseOrThrow(
-        makeArgs({"instrumentos"_el, "--instrument"_el, "Interferómetro Norte"_el, "--title"_el, "Prueba matinal"_el}));
+    auto arguments =
+        makeArgs({"instrumentos"_el, "--instrument"_el, "Interferómetro Norte"_el, "--title"_el, "Prueba matinal"_el});
+    const auto values = manager.parseOrThrow(arguments);
     if (values == nullptr) {
         return el::ExitCode::success();
     }

@@ -93,7 +93,7 @@ This makes complete option declarations compact while still keeping the importan
 
     auto definingOptions() -> el::ExitCode {
         auto manager = el::OptionManager{createDefinitionOptions()};
-        const auto args = makeArgs(
+        auto args = makeArgs(
             {"optica"_el,
                 "--instrument"_el,
                 "Prisma-7"_el,
@@ -126,13 +126,16 @@ This makes complete option declarations compact while still keeping the importan
 Choose the Right Value Type
 ===========================
 
-The parser supports four option types:
+The parser supports five option types:
 
 * :cpp:enumerator:`OptionType::Flag <erbsland::options::OptionType::Flag>` stores whether a switch appeared, and also
   remembers how often it appeared.
 * :cpp:enumerator:`OptionType::Integer <erbsland::options::OptionType::Integer>` parses a signed decimal integer.
 * :cpp:enumerator:`OptionType::Text <erbsland::options::OptionType::Text>` stores one text value exactly as the command
   line supplied it after argument conversion.
+* :cpp:enumerator:`OptionType::SensitiveText <erbsland::options::OptionType::SensitiveText>` stores exactly one value
+  in a marked :cpp:type:`String <erbsland::text::String>`, masks its converted argument with five stars, and does not
+  permit defaults, lists, or repeated occurrences.
 * :cpp:enumerator:`OptionType::Choice <erbsland::options::OptionType::Choice>` accepts text from a configured choice
   list and stores the configured spelling.
 
@@ -323,6 +326,9 @@ Repeated Values and Maximum
 :cpp:func:`setMaximum() <erbsland::options::OptionEditor::setMaximum>` controls how many values an option may store.
 For a text or integer option, this turns the parsed result into a list.
 For a flag, repeated occurrences increase the flag count.
+Implicit repetitions such as ``-vv`` remain valid.
+An explicit boolean flag value is a complete assignment and therefore must occur exactly once; repeating it or mixing it
+with an implicit occurrence is a syntax error.
 
 Repeated regular options may be supplied by repeating the option name.
 For positionals, the maximum controls how many positional values can be consumed for that definition.

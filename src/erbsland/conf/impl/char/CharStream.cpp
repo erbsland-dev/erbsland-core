@@ -4,6 +4,7 @@
 
 #include "CharClass.hpp"
 
+#include "../../../mem/ByteSpan.hpp"
 #include "../../../text/EncodingError.hpp"
 #include "../../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../../text/Literals.hpp"
@@ -108,7 +109,7 @@ auto CharStream::readNextLine() -> bool {
         // 2. Also, skipping this line for hash-calculation.
         _hashEnabled = true;
     } else if (_hashEnabled && !_line.isEmpty()) {
-        _hash.update(std::as_bytes(_lineBytes));
+        _hash.update(mem::toConstByteSpan(_lineBytes));
     }
     _lineCharacterStartIndex = {};
     _captureStartLine =

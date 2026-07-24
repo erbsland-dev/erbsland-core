@@ -55,7 +55,7 @@ target_sources(erbsland-core PRIVATE
         LineOffset.hpp
         LineRange.hpp
         LineUnit.hpp
-        StdFormatForUnit.hpp
+        StdFormat.hpp
         U16DataIndex.hpp
         U16DataLength.hpp
         U16DataLength_fwd.hpp

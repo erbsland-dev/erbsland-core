@@ -3,7 +3,7 @@
 
 #include <erbsland/text/impl/UnsafeU8StringBuffer.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ByteLength.hpp>

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/conf/NamePath.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

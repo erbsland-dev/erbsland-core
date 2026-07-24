@@ -26,4 +26,8 @@ if(WIN32)
     target_sources(erbsland-core-unittest PRIVATE
             WindowsTimeZoneMapTest.cpp
     )
+elseif(UNIX)
+    target_sources(erbsland-core-unittest PRIVATE
+            PosixLocalTimeZoneTest.cpp
+    )
 endif()

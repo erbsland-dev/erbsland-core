@@ -19,17 +19,21 @@ It keeps conversion helpers out of the core string classes while still allowing 
     auto converted = el::StringConverter{utf16}.toString();
 
 ``toString()`` returns a read-only UTF-8 value.
-It aliases compatible Core storage and owns newly converted storage.
-All conversion methods accept :cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>`.
+It aliases compatible Core storage in tolerant mode and owns newly converted storage.
+Every conversion method accepts :cpp:enum:`EncodingMode <erbsland::text::EncodingMode>`, defaulting to ``Tolerant``.
 
 Extension libraries can support additional source types by specializing
 :cpp:struct:`StringConverterTraits <erbsland::text::StringConverterTraits>`.
 
-Encoding Error Mode
--------------------
+Encoding Mode
+-------------
 
-:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>` controls how encoding errors are handled during
-string conversion.
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` controls how encoding errors are handled by
+``StringConverter``.
+``Tolerant`` is the default and replaces malformed input with Unicode replacement characters when transcoding.
+Compatible representations may instead be copied unchanged without validation.
+``Strict`` throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` when malformed input is encountered.
+Use strict mode when a conversion must also validate its source, including an existing Erbsland string.
 
 String Decoder
 --------------
@@ -45,10 +49,10 @@ String Decoder
 
 The decoder accepts :cpp:class:`StringEncoding <erbsland::text::StringEncoding>`,
 :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>`, and
-:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>` for all target string widths.
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` for all target string widths.
 Only an encoded ``U+FEFF`` signature at the start of the byte input is interpreted as a BOM.
-A repeated or embedded ``U+FEFF`` is invalid content and follows ``EncodingErrorMode``; it is never returned as a
-character in the decoded string.
+A repeated or embedded ``U+FEFF`` is invalid content and follows ``EncodingMode``; it is never returned as a character
+in the decoded string.
 
 String Encoder
 --------------
@@ -71,8 +75,13 @@ Each standalone ``encode()`` or ``encodeTo()`` call applies its requested BOM po
 empty text that produce only a BOM.
 Stateful output streams suppress the BOM after their first successful write.
 Explicit BOM output is generated as an encoding signature.
-An ordinary ``Char{0xFEFF}`` in source content is invalid and follows ``EncodingErrorMode`` instead of emitting a
-signature.
+When the source and target representations match, the encoder copies the native units directly without a validation pass
+because Erbsland strings are assumed to contain valid text.
+When transcoding is necessary, malformed source sequences become Unicode replacement characters.
+Call the matching ``isValidUtf8()``, ``isValidUtf16()``, or ``isValidUtf32()`` method before encoding when invalid
+internal text must be detected.
+An ordinary ``Char{0xFEFF}`` in source content is never interpreted as a signature; during transcoding it becomes a
+replacement character like other invalid content.
 
 Extension libraries can support additional Erbsland-compatible source types by specializing
 :cpp:struct:`StringEncoderTraits <erbsland::text::StringEncoderTraits>`.
@@ -137,7 +146,7 @@ Interface
     :members:
 .. doxygenclass:: erbsland::text::EncodingError
     :members:
-.. doxygenenum:: erbsland::text::EncodingErrorMode
+.. doxygenenum:: erbsland::text::EncodingMode
 .. doxygenclass:: erbsland::text::StringConverter
     :members:
 .. doxygenclass:: erbsland::text::StringDecoder

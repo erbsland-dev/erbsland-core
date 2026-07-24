@@ -84,8 +84,8 @@ auto OptionValue::type() const noexcept -> OptionValueType {
             } else if constexpr (std::is_same_v<Value, std::vector<OptionInteger>>) {
                 return OptionValueType::IntegerList;
             } else if constexpr (std::is_same_v<Value, text::String>) {
-                return OptionValueType::Text;
-            } else {
+                return value.isSensitive() ? OptionValueType::SensitiveText : OptionValueType::Text;
+            } else if constexpr (std::is_same_v<Value, std::vector<text::String>>) {
                 return OptionValueType::TextList;
             }
         },

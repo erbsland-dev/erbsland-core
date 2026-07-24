@@ -1,0 +1,24 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode              : "benchmark"
+Duration          : 500ms
+Threads           : 4
+Seed              : 0x4552'4253'4c41'4e44
+Corpus Limit      : 1 MiB
+Progress Interval : 1s
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name              : "statistics-test"
+Direction         : "read"
+File Type         : "binary"
+Methods           : "read-span"
+File Size Min     : 4 KiB
+File Size Max     : 4 KiB
+Chunk Modes       : "random"
+Chunk Size Min    : 1
+Chunk Size Max    : 257
+Buffering         : "minimal-memory"
+Back Buffer Limit : 8 KiB
+Localities        : "rotating"
+Weight            : 1

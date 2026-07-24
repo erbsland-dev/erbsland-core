@@ -18,7 +18,6 @@
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
 #include "../CharSet.hpp"
-#include "../EncodingErrorMode.hpp"
 #include "../EscapeAmount.hpp"
 #include "../EscapeFormat.hpp"
 #include "../FloatFormat.hpp"
@@ -73,7 +72,7 @@ namespace erbsland::text {
 /// Use `String`/`U8String` for storage and read-only access.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U8StringEditorTest StringEscapingTest}
+/// @tested{U8StringEditorTest StringEscapingTest BooleanConversionTest}
 class U8StringEditor {
     friend class debug::impl::StringDebugAccess;
     friend class U8String;
@@ -129,6 +128,10 @@ public: // comparison
 public: // tests
     /// @copydoc erbsland::text::U8String::isEmpty() const
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::isSensitive() const
+    [[nodiscard]] auto isSensitive() const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::markAsSensitive()
+    void markAsSensitive() noexcept;
     /// @copydoc erbsland::text::U8String::isValidUtf8() const
     [[nodiscard]] auto isValidUtf8() const noexcept -> bool;
     /// @copydoc erbsland::text::U8String::startsWith(const U8String &, CharCompareFn) const
@@ -159,8 +162,6 @@ public: // read
     [[nodiscard]] auto charAt(unit::ByteIndex startIndex) const noexcept -> Char;
     /// @copydoc erbsland::text::U8String::readCharAndAdvance(unit::ByteIndex &) const
     [[nodiscard]] auto readCharAndAdvance(unit::ByteIndex &index) const noexcept -> Char;
-    /// @copydoc erbsland::text::U8String::readCharAndAdvanceOrThrow(unit::ByteIndex &) const
-    [[nodiscard]] auto readCharAndAdvanceOrThrow(unit::ByteIndex &index) const -> Char;
     /// @copydoc erbsland::text::U8String::readCharAndRetreat(unit::ByteIndex &) const
     [[nodiscard]] auto readCharAndRetreat(unit::ByteIndex &index) const noexcept -> Char;
     /// @copydoc erbsland::text::U8String::charAt(unit::CpIndex) const
@@ -333,6 +334,14 @@ public: // transform
         -> U8StringEditor;
 
 public: // conversion
+    /// Convert an ASCII-case-insensitive ELCL boolean literal, or return a default for unsupported text.
+    /// @param defaultValue The value returned for invalid, incomplete, padded, or empty text.
+    /// @return The recognized boolean value, or `defaultValue`.
+    [[nodiscard]] auto toBoolean(bool defaultValue = {}) const noexcept -> bool;
+    /// Convert an ASCII-case-insensitive ELCL boolean literal.
+    /// @return The recognized boolean value.
+    /// @throws err::ParseError if the complete text is not a supported literal.
+    [[nodiscard]] auto toBooleanOrThrow() const -> bool;
     /// Convert this string to an integer, or return the given default value on error.
     template <math::AnyIntegerType T>
     [[nodiscard]] auto toInteger(

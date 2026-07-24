@@ -6,7 +6,7 @@
 #include <erbsland/re/Input.hpp>
 #include <erbsland/re/InputBase.hpp>
 #include <erbsland/re/RegEx.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/U8EncodingError.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

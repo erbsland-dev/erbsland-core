@@ -4,8 +4,7 @@
 
 #include "LocalTimeZoneBackend.hpp"
 
-#include <filesystem>
-#include <string>
+#include "../../../text/String.hpp"
 
 namespace erbsland::time::tz::impl {
 
@@ -16,9 +15,9 @@ public:
     [[nodiscard]] auto timeZone() noexcept -> std::optional<TimeZone> override;
 
 private:
-    [[nodiscard]] static auto nameFromPath(const std::filesystem::path &path) -> std::string;
-    [[nodiscard]] static auto nameFromEnvironment() -> std::string;
-    [[nodiscard]] static auto nameFromEtcTimezone() -> std::string;
+    [[nodiscard]] static auto nameFromPath(const text::String &path) -> text::String;
+    [[nodiscard]] static auto nameFromEnvironment() -> text::String;
+    [[nodiscard]] static auto nameFromEtcTimezone() -> text::String;
 };
 
 }

@@ -23,17 +23,17 @@ public:
     /// Create empty shared storage.
     constexpr U8StringSharedStorage() noexcept : _data{}, _range{unit::ByteRange::empty()} {}
     /// Create shared storage by copying a standard string view.
-    explicit U8StringSharedStorage(std::string_view text);
+    explicit U8StringSharedStorage(std::string_view text, bool sensitive = false);
     /// Create shared storage by copying a standard UTF-8 string view.
-    explicit U8StringSharedStorage(std::u8string_view text);
+    explicit U8StringSharedStorage(std::u8string_view text, bool sensitive = false);
     /// Create shared storage by copying a literal storage.
-    explicit U8StringSharedStorage(const U8StringLiteralStorage &literal);
+    explicit U8StringSharedStorage(const U8StringLiteralStorage &literal, bool sensitive = false);
     /// Create shared storage by copying the selected data view.
-    explicit U8StringSharedStorage(const U8StringDataView &view);
+    explicit U8StringSharedStorage(const U8StringDataView &view, bool sensitive = false);
     /// Create shared storage from existing shared data and range.
     U8StringSharedStorage(U8StringDataPtr data, unit::ByteRange range) noexcept;
     /// Create uninitialized storage for writing new data into it.
-    explicit U8StringSharedStorage(unit::ByteRange range) noexcept;
+    explicit U8StringSharedStorage(unit::ByteRange range, bool sensitive = false) noexcept;
 
 public: // defaults
     ~U8StringSharedStorage() = default;
@@ -45,6 +45,10 @@ public: // defaults
 public: // tests
     /// Test if the storage is empty.
     [[nodiscard]] auto isEmpty() const noexcept -> bool;
+    /// Test if the shared allocation is marked as sensitive.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool;
+    /// Mark the complete shared allocation as sensitive.
+    void markAsSensitive() noexcept;
 
 public: // accessors
     /// Access the shared data pointer.
@@ -64,9 +68,9 @@ public: // accessors
 
 public:
     /// Create string storage by copying the exact bytes from a span.
-    [[nodiscard]] static auto fromBytes(std::span<const char> bytes) -> U8StringSharedStorage;
+    [[nodiscard]] static auto fromBytes(std::span<const char> bytes, bool sensitive = false) -> U8StringSharedStorage;
     /// Create uninitialized string storage for the given byte size.
-    [[nodiscard]] static auto forSize(std::size_t size) -> U8StringSharedStorage;
+    [[nodiscard]] static auto forSize(std::size_t size, bool sensitive = false) -> U8StringSharedStorage;
     /// Throw if a size cannot be represented by the byte length type.
     static void validateSize(std::size_t size);
     /// Add two sizes and validate the result as a string byte length.

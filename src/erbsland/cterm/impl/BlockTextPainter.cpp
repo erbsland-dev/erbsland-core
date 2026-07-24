@@ -8,13 +8,11 @@
 #include "paragraph/Painter.hpp"
 
 #include "../../text/Char.hpp"
-#include "../../text/EncodingErrorMode.hpp"
 
 namespace erbsland::cterm::impl {
 
 using namespace bgeo;
 using text::Char;
-using text::EncodingErrorMode;
 using text::String;
 using text::U32String;
 
@@ -104,11 +102,7 @@ void BlockTextPainter::drawBlockText(
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
-    drawBlockText(
-        BlockStringEditor{text, EncodingErrorMode::Replace},
-        rect,
-        simpleBlockTextOptions(alignment, style),
-        animationCycle);
+    drawBlockText(BlockStringEditor{text}, rect, simpleBlockTextOptions(alignment, style), animationCycle);
 }
 
 void BlockTextPainter::drawBlockText(

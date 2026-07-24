@@ -273,12 +273,14 @@ public: // take
 
 public: // algorithms
     /// Call a function for every element.
-    /// @param function The function called for every element.
+    /// @param function The function called as `function(value)` or `function(value, index)`.
+    /// If both forms are supported, the indexed form is used.
     /// @return The result of the iteration.
     template <typename Function>
     auto forEach(Function function) const -> LoopResult;
     /// Call a function for every element in reverse order.
-    /// @param function The function called for every element.
+    /// @param function The function called as `function(value)` or `function(value, index)`.
+    /// If both forms are supported, the indexed form is used.
     /// @return The result of the iteration.
     template <typename Function>
     auto forEachReverse(Function function) const -> LoopResult;

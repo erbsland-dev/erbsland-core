@@ -12,6 +12,7 @@
 #include "../text/Literals.hpp"
 #include "../time/TimeDelta.hpp"
 
+#include <mutex>
 #include <utility>
 
 namespace erbsland::path {
@@ -22,85 +23,136 @@ using time::DateTime;
 using time::TimeDelta;
 using time::TimePoint;
 
-PathInfo::PathInfo(const Path &path, const PathInfoParts parts) noexcept {
+PathInfo::PathInfo(const Path &path, const PathInfoParts parts) noexcept : PathInfo{path, parts, {}} {
+}
+
+PathInfo::PathInfo(const Path &path, const PathInfoParts parts, impl::PathInfoCacheTrustWeakPtr cacheTrust) noexcept :
+    _cacheTrust{std::move(cacheTrust)} {
     if (path.isEmpty()) {
         return;
     }
-    _data = impl::PathInfoDataPtr{new impl::PathInfoData{path}};
-    _data->requestedParts = parts;
+    _path = path;
+    _cache = path._data->infoCache();
     ensureParts(parts);
 }
 
+PathInfo::PathInfo(PathInfo &&other) noexcept :
+    _path{std::move(other._path)},
+    _cache{std::exchange(other._cache, nullptr)},
+    _resolvedPath{std::move(other._resolvedPath)},
+    _cacheTrust{std::move(other._cacheTrust)} {
+}
+
+auto PathInfo::operator=(PathInfo &&other) noexcept -> PathInfo & {
+    if (this != &other) {
+        _path = std::move(other._path);
+        _cache = std::exchange(other._cache, nullptr);
+        _resolvedPath = std::move(other._resolvedPath);
+        _cacheTrust = std::move(other._cacheTrust);
+    }
+    return *this;
+}
+
+auto PathInfo::fromDirectoryScan(
+    const Path &path, const PathInfoParts parts, const impl::PathInfoCacheTrustPtr &cacheTrust) noexcept -> PathInfo {
+    return PathInfo{path, parts, cacheTrust};
+}
+
 auto PathInfo::isEmpty() const noexcept -> bool {
-    return _data.isNull();
+    return _cache == nullptr;
 }
 
 auto PathInfo::path() const noexcept -> const Path & {
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? Path::empty() : pathInfoData->originalPath;
+    return isEmpty() ? Path::empty() : _path;
 }
 
 auto PathInfo::resolvedPath() const noexcept -> const Path & {
     ensureParts(PathInfoPart::Type);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? Path::empty() : pathInfoData->resolvedPath;
+    if (isEmpty()) {
+        return Path::empty();
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    _resolvedPath = _cache->data.resolvedPath;
+    return _resolvedPath;
 }
 
 auto PathInfo::exists() const noexcept -> bool {
     ensureParts(PathInfoPart::Type);
-    const auto *pathInfoData = data();
-    return pathInfoData != nullptr && pathInfoData->exists;
+    if (isEmpty()) {
+        return false;
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.exists;
 }
 
 auto PathInfo::type() const noexcept -> PathType {
     ensureParts(PathInfoPart::Type);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? PathType::Unknown : pathInfoData->type;
+    if (isEmpty()) {
+        return PathType::Unknown;
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.type;
 }
 
 auto PathInfo::fileSize() const noexcept -> unit::ByteLength {
     ensureParts(PathInfoPart::Size);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? unit::ByteLength{} : pathInfoData->fileSize;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.fileSize;
 }
 
 auto PathInfo::lastModified() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastModified;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.lastModified;
 }
 
 auto PathInfo::lastAccessed() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastAccessed;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.lastAccessed;
 }
 
 auto PathInfo::birthTime() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? DateTime{} : pathInfoData->birthTime;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.birthTime;
 }
 
 auto PathInfo::lastMetadataChange() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? DateTime{} : pathInfoData->lastMetadataChange;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.lastMetadataChange;
 }
 
 auto PathInfo::creationTime() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr) {
+    if (isEmpty()) {
         return {};
     }
-    if (pathInfoData->birthTime.isValid()) {
-        return pathInfoData->birthTime;
+    const auto lock = std::scoped_lock{_cache->mutex};
+    const auto &data = _cache->data;
+    if (data.birthTime.isValid()) {
+        return data.birthTime;
     }
-    if (pathInfoData->lastMetadataChange.isValid()) {
-        return pathInfoData->lastMetadataChange;
+    if (data.lastMetadataChange.isValid()) {
+        return data.lastMetadataChange;
     }
-    return pathInfoData->lastModified;
+    return data.lastModified;
 }
 
 auto PathInfo::isReadable() const noexcept -> bool {
@@ -117,104 +169,134 @@ auto PathInfo::isExecutable() const noexcept -> bool {
 
 auto PathInfo::ownerName() const noexcept -> UserName {
     ensureParts(PathInfoPart::OwnerName);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? UserName{} : pathInfoData->ownerName;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.ownerName;
 }
 
 auto PathInfo::ownerNameOrThrow() const -> UserName {
     ensurePartsOrThrow(PathInfoPart::OwnerName);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr || pathInfoData->ownerName.isEmpty()) {
+    if (isEmpty()) {
+        throw PathError{"File owner is unavailable"_el};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    if (_cache->data.ownerName.isEmpty()) {
         throw PathError{
             PathErrorContext{"File owner is unavailable"_el, "The owner name could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->ownerName;
+    return _cache->data.ownerName;
 }
 
 auto PathInfo::ownerId() const noexcept -> UserId {
     ensureParts(PathInfoPart::OwnerId);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? UserId{} : pathInfoData->ownerId;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.ownerId;
 }
 
 auto PathInfo::ownerIdOrThrow() const -> UserId {
     ensurePartsOrThrow(PathInfoPart::OwnerId);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr || pathInfoData->ownerId.isEmpty()) {
+    if (isEmpty()) {
+        throw PathError{"File owner identifier is unavailable"_el};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    if (_cache->data.ownerId.isEmpty()) {
         throw PathError{PathErrorContext{
             "File owner identifier is unavailable"_el, "The owner identifier could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->ownerId;
+    return _cache->data.ownerId;
 }
 
 auto PathInfo::groupName() const noexcept -> GroupName {
     ensureParts(PathInfoPart::GroupName);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? GroupName{} : pathInfoData->groupName;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.groupName;
 }
 
 auto PathInfo::groupNameOrThrow() const -> GroupName {
     ensurePartsOrThrow(PathInfoPart::GroupName);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr || pathInfoData->groupName.isEmpty()) {
+    if (isEmpty()) {
+        throw PathError{"File group is unavailable"_el};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    if (_cache->data.groupName.isEmpty()) {
         throw PathError{
             PathErrorContext{"File group is unavailable"_el, "The group name could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->groupName;
+    return _cache->data.groupName;
 }
 
 auto PathInfo::groupId() const noexcept -> GroupId {
     ensureParts(PathInfoPart::GroupId);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? GroupId{} : pathInfoData->groupId;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.groupId;
 }
 
 auto PathInfo::groupIdOrThrow() const -> GroupId {
     ensurePartsOrThrow(PathInfoPart::GroupId);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr || pathInfoData->groupId.isEmpty()) {
+    if (isEmpty()) {
+        throw PathError{"File group identifier is unavailable"_el};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    if (_cache->data.groupId.isEmpty()) {
         throw PathError{PathErrorContext{
             "File group identifier is unavailable"_el, "The group identifier could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->groupId;
+    return _cache->data.groupId;
 }
 
 auto PathInfo::accessInfo() const noexcept -> PathAccessInfo {
     ensureParts(PathInfoPart::AccessRights);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? PathAccessInfo{} : pathInfoData->accessInfo;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.accessInfo;
 }
 
 auto PathInfo::accessInfoOrThrow() const -> PathAccessInfo {
     ensurePartsOrThrow(PathInfoPart::AccessRights);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr) {
+    if (isEmpty()) {
         throw PathError{PathErrorContext{
             "File permissions are unavailable"_el, "The access permissions could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->accessInfo;
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.accessInfo;
 }
 
 auto PathInfo::attributes() const noexcept -> PathAttributes {
     ensureParts(PathInfoPart::Attributes);
-    const auto *pathInfoData = data();
-    return pathInfoData == nullptr ? PathAttributes{} : pathInfoData->attributes;
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.attributes;
 }
 
 auto PathInfo::attributesOrThrow() const -> PathAttributes {
     ensurePartsOrThrow(PathInfoPart::Attributes);
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr) {
+    if (isEmpty()) {
         throw PathError{PathErrorContext{
             "File attributes are unavailable"_el, "The attributes could not be determined for the path."_el}
                 .setSourcePath(path().toString())};
     }
-    return pathInfoData->attributes;
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.attributes;
 }
 
 auto PathInfo::hasAttribute(const PathAttribute attribute) const noexcept -> bool {
@@ -222,40 +304,33 @@ auto PathInfo::hasAttribute(const PathAttribute attribute) const noexcept -> boo
 }
 
 void PathInfo::reload() {
-    const auto *pathInfoData = data();
-    if (pathInfoData == nullptr) {
+    if (isEmpty()) {
         return;
     }
-    auto parts = pathInfoData->requestedParts;
+    auto parts = PathInfoParts{};
+    {
+        const auto lock = std::scoped_lock{_cache->mutex};
+        parts = _cache->data.requestedParts;
+    }
     if (parts.isEmpty()) {
         parts = PathInfoPart::Default;
     }
     try {
-        ensurePartsOrThrow(parts, true);
+        reloadPartsOrThrow(parts);
     } catch (const PathError &) {}
 }
 
 void PathInfo::reload(const PathInfoParts parts) {
-    auto *pathInfoData = mutableData();
-    if (pathInfoData == nullptr) {
+    if (isEmpty()) {
         return;
     }
     auto requestedParts = parts;
     if (requestedParts.isEmpty()) {
         requestedParts = PathInfoPart::Default;
     }
-    pathInfoData->requestedParts = requestedParts;
     try {
-        ensurePartsOrThrow(requestedParts, true);
+        reloadPartsOrThrow(requestedParts);
     } catch (const PathError &) {}
-}
-
-auto PathInfo::data() const noexcept -> const impl::PathInfoData * {
-    return _data.isNull() ? nullptr : _data.constGet();
-}
-
-auto PathInfo::mutableData() const noexcept -> impl::PathInfoData * {
-    return _data.isNull() ? nullptr : _data.get();
 }
 
 void PathInfo::ensureParts(const PathInfoParts parts) const noexcept {
@@ -264,97 +339,94 @@ void PathInfo::ensureParts(const PathInfoParts parts) const noexcept {
     } catch (const PathError &) {}
 }
 
-void PathInfo::ensurePartsOrThrow(const PathInfoParts parts, const bool forceReload) const {
-    auto *pathInfoData = mutableData();
-    if (pathInfoData == nullptr || parts.isEmpty()) {
+void PathInfo::ensurePartsOrThrow(const PathInfoParts parts) const {
+    if (isEmpty() || parts.isEmpty()) {
         return;
     }
-    pathInfoData->requestedParts.set(parts);
-    if (pathInfoData->refreshFailed && !forceReload) {
+    const auto lock = std::scoped_lock{_cache->mutex};
+    auto &data = _cache->data;
+    data.requestedParts.set(parts);
+    if (data.refreshFailed) {
         throw PathError{PathErrorContext{
             "Path information is unavailable"_el,
             "A previous refresh failed and the cached information is no longer valid."_el}
-                .setSourcePath(pathInfoData->originalPath.toString())
+                .setSourcePath(_path.toString())
                 .setHelp("Reload the path information and try again."_el)};
     }
 
-    const auto missingParts = !pathInfoData->loadedParts.contains(parts);
-    const auto hasCache = pathInfoData->lastRefresh != TimePoint{};
-    const auto cacheExpired = hasCache && pathInfoData->lastRefresh.timeDeltaToNow() > TimeDelta::seconds(1);
-    if (forceReload || missingParts || cacheExpired) {
-        const auto originalPath = pathInfoData->originalPath;
-        auto requestedParts = pathInfoData->requestedParts | PathInfoPart::Type;
-        if (requestedParts.isSet(PathInfoPart::OwnerName)) {
-            requestedParts.set(PathInfoPart::OwnerId);
-        }
-        if (requestedParts.isSet(PathInfoPart::GroupName)) {
-            requestedParts.set(PathInfoPart::GroupId);
-        }
-        try {
-            auto loadedData = impl::pathBackend().loadInfoOrThrow(originalPath, requestedParts);
-            loadedData.requestedParts = pathInfoData->requestedParts;
-            loadedData.refreshFailed = false;
-            *pathInfoData = std::move(loadedData);
-        } catch (const PathError &) {
-            pathInfoData->resolvedPath = {};
-            pathInfoData->loadedParts.clear();
-            pathInfoData->exists = false;
-            pathInfoData->type = PathType::Unknown;
-            pathInfoData->fileSize = {};
-            pathInfoData->lastModified = {};
-            pathInfoData->lastAccessed = {};
-            pathInfoData->birthTime = {};
-            pathInfoData->lastMetadataChange = {};
-            pathInfoData->ownerName = {};
-            pathInfoData->ownerId = {};
-            pathInfoData->groupName = {};
-            pathInfoData->groupId = {};
-            pathInfoData->accessInfo = {};
-            pathInfoData->attributes = {};
-            pathInfoData->refreshFailed = true;
-            pathInfoData->lastRefresh = TimePoint::now();
-            throw;
-        }
+    const auto missingParts = !data.loadedParts.contains(parts);
+    const auto hasCache = data.lastRefresh != TimePoint{};
+    const auto cacheExpired =
+        _cacheTrust.expired() && hasCache && data.lastRefresh.timeDeltaToNow() > TimeDelta::seconds(1);
+    if (missingParts || cacheExpired) {
+        const auto trustResolvedPath = !cacheExpired && !data.resolvedPath.isEmpty();
+        refreshDataOrThrow(data, trustResolvedPath);
     }
-    resolveNames(parts);
+    resolveNames(parts, data);
 }
 
-void PathInfo::resolveNames(const PathInfoParts parts) const {
-    auto *pathInfoData = mutableData();
-    if (pathInfoData == nullptr) {
-        return;
+void PathInfo::reloadPartsOrThrow(const PathInfoParts parts) const {
+    const auto lock = std::scoped_lock{_cache->mutex};
+    _cache->data.requestedParts = parts;
+    refreshDataOrThrow(_cache->data, false);
+    resolveNames(parts, _cache->data);
+}
+
+void PathInfo::refreshDataOrThrow(impl::PathInfoData &data, const bool trustResolvedPath) const {
+    auto requestedParts = data.requestedParts | PathInfoPart::Type;
+    if (requestedParts.isSet(PathInfoPart::OwnerName)) {
+        requestedParts.set(PathInfoPart::OwnerId);
     }
-    const auto needsOwner =
-        parts.isSet(PathInfoPart::OwnerName) && !pathInfoData->ownerId.isEmpty() && pathInfoData->ownerName.isEmpty();
-    const auto needsGroup =
-        parts.isSet(PathInfoPart::GroupName) && !pathInfoData->groupId.isEmpty() && pathInfoData->groupName.isEmpty();
+    if (requestedParts.isSet(PathInfoPart::GroupName)) {
+        requestedParts.set(PathInfoPart::GroupId);
+    }
+    try {
+        auto loadedData = trustResolvedPath
+            ? impl::pathBackend().loadResolvedInfoOrThrow(_path, data.resolvedPath, requestedParts)
+            : impl::pathBackend().loadInfoOrThrow(_path, requestedParts);
+        loadedData.requestedParts = data.requestedParts;
+        loadedData.refreshFailed = false;
+        data = std::move(loadedData);
+    } catch (const PathError &) {
+        const auto requested = data.requestedParts;
+        data = {};
+        data.requestedParts = requested;
+        data.refreshFailed = true;
+        data.lastRefresh = TimePoint::now();
+        throw;
+    }
+}
+
+void PathInfo::resolveNames(const PathInfoParts parts, impl::PathInfoData &data) const {
+    const auto needsOwner = parts.isSet(PathInfoPart::OwnerName) && !data.ownerId.isEmpty() && data.ownerName.isEmpty();
+    const auto needsGroup = parts.isSet(PathInfoPart::GroupName) && !data.groupId.isEmpty() && data.groupName.isEmpty();
     if (!needsOwner && !needsGroup) {
         return;
     }
     auto &lookup = core::application().userLookup();
     if (needsOwner) {
         try {
-            pathInfoData->ownerName = lookup.userNameForId(pathInfoData->ownerId);
+            data.ownerName = lookup.userNameForId(data.ownerId);
         } catch (const PlatformError &error) {
             throw PathError{PathErrorContext{
                 "File owner is unavailable"_el,
                 "The operating system could not resolve the owner name for the path."_el}
-                    .setSourcePath(pathInfoData->originalPath.toString())
+                    .setSourcePath(_path.toString())
                     .setPlatformContext(error.context())};
         }
-        pathInfoData->loadedParts.set(PathInfoPart::OwnerName);
+        data.loadedParts.set(PathInfoPart::OwnerName);
     }
     if (needsGroup) {
         try {
-            pathInfoData->groupName = lookup.groupNameForId(pathInfoData->groupId);
+            data.groupName = lookup.groupNameForId(data.groupId);
         } catch (const PlatformError &error) {
             throw PathError{PathErrorContext{
                 "File group is unavailable"_el,
                 "The operating system could not resolve the group name for the path."_el}
-                    .setSourcePath(pathInfoData->originalPath.toString())
+                    .setSourcePath(_path.toString())
                     .setPlatformContext(error.context())};
         }
-        pathInfoData->loadedParts.set(PathInfoPart::GroupName);
+        data.loadedParts.set(PathInfoPart::GroupName);
     }
 }
 

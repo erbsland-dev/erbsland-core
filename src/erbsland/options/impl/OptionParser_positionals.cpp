@@ -49,7 +49,7 @@ auto OptionParser::assignPositionals() -> bool {
         auto storedCount = unit::ArgumentCount::zero();
         while (storedCount < valueLimit && positionalIndex < _positionals.size()) {
             const auto &positional = _positionals.at(positionalIndex);
-            if (!acceptStorageResult(_storage.storeValue(option, positional.value, positional.index))) {
+            if (!storeValue(option, positional.value, positional.index, unit::ByteIndex::zero())) {
                 return false;
             }
             ++storedCount;

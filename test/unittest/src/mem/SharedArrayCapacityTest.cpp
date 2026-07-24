@@ -58,6 +58,47 @@ public:
         REQUIRE_EQUAL(ByteData::allocationSizeForCapacity(capacity), blockSize * 2U);
     }
 
+    void testBestGeometricGrowthUsesPortablePages() {
+        using el::mem::impl::BestGrowthStrategy;
+        const auto page = el::mem::impl::cAllocationPageSize.toSizeT();
+
+        REQUIRE_EQUAL(
+            el::mem::impl::bestGrowth(ByteLength{}, ByteLength{1U}, BestGrowthStrategy::Geometric), ByteLength{page});
+        REQUIRE_EQUAL(
+            el::mem::impl::bestGrowth(ByteLength{page}, ByteLength{page + 1U}, BestGrowthStrategy::Geometric),
+            ByteLength{page * 2U});
+        REQUIRE_EQUAL(
+            el::mem::impl::bestGrowth(ByteLength{page + 1U}, ByteLength{page * 3U}, BestGrowthStrategy::Geometric),
+            ByteLength{page * 4U});
+        REQUIRE_EQUAL(
+            el::mem::impl::bestGrowth(ByteLength{page}, ByteLength{page * 100U}, BestGrowthStrategy::Geometric),
+            ByteLength{page * 128U});
+        REQUIRE_EQUAL(
+            el::mem::impl::bestGrowth(ByteLength{page}, ByteLength::maximum(), BestGrowthStrategy::Geometric),
+            ByteLength::maximum());
+    }
+
+    void testBestGeometricCapacityIncludesOverheadAndIsPageAligned() {
+        using el::mem::impl::BestGrowthStrategy;
+        const auto capacity = el::mem::impl::bestGrowthCapacity<ByteData>(0U, 5000U, BestGrowthStrategy::Geometric);
+        const auto allocationSize = ByteData::allocationSizeForCapacity(capacity);
+
+        REQUIRE(capacity >= 5000U);
+        REQUIRE_EQUAL(allocationSize % el::mem::impl::cAllocationPageSize.toSizeT(), 0U);
+
+        using WideData = el::mem::SharedArrayData<std::uint32_t, std::uint64_t>;
+        const auto wideCapacity = el::mem::impl::bestGrowthCapacity<WideData>(0U, 5000U, BestGrowthStrategy::Geometric);
+        const auto wideAllocationSize = WideData::allocationSizeForCapacity(wideCapacity);
+        const auto wideTarget = el::mem::impl::bestGrowth(
+            ByteLength{},
+            ByteLength::fromSizeT(WideData::allocationSizeForCapacity(5000U)),
+            BestGrowthStrategy::Geometric);
+        REQUIRE(wideCapacity >= 5000U);
+        REQUIRE_EQUAL(wideTarget.toSizeT() % el::mem::impl::cAllocationPageSize.toSizeT(), 0U);
+        REQUIRE(wideAllocationSize <= wideTarget.toSizeT());
+        REQUIRE(wideTarget.toSizeT() - wideAllocationSize < sizeof(WideData::DataType));
+    }
+
     void testBestGrowthNearMaximumStaysAllocatable() {
         const auto maxCapacity =
             (std::numeric_limits<std::size_t>::max() - ByteData::allocationOverhead()) / sizeof(ByteData::DataType);

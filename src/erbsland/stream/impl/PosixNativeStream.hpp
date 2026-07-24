@@ -64,8 +64,8 @@ public: // implement NativeByteStream
     auto movePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> unit::ByteIndex override;
     void close() override;
     void abort() noexcept override;
-    [[nodiscard]] auto read(std::span<mem::Byte> destination) -> unit::ByteLength override;
-    void write(std::span<const mem::Byte> bytes) override;
+    [[nodiscard]] auto read(mem::ByteSpan destination) -> unit::ByteLength override;
+    void write(mem::ConstByteSpan bytes) override;
 
 public:
     [[nodiscard]] auto isOpen() const noexcept -> bool;
@@ -93,3 +93,4 @@ private:
 };
 
 }
+#include "../../mem/ByteSpan.hpp"

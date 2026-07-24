@@ -3,20 +3,26 @@
 #include "BufferedByteInputStreamData.hpp"
 
 #include "IoService.hpp"
+#include "StreamBufferSizes.hpp"
 
+#include "../../mem/impl/UnsafeByteBlockBuffer.hpp"
 #include "../../mem/impl/UnsafeRingBufferAccess.hpp"
 
+#include <optional>
 #include <span>
 #include <utility>
 
 namespace erbsland::stream::impl {
 
 BufferedByteInputStreamData::BufferedByteInputStreamData(
-    NativeByteStreamPtr nativeStream, InputStreamSettings streamSettings) :
+    NativeByteStreamPtr nativeStream, InputStreamSettings streamSettings, const bool useRuntimeSensitive) :
     native{std::move(nativeStream)},
     settings{streamSettings},
-    front{settings.bufferCapacity()},
-    back{settings.bufferCapacity()} {
+    front{streamBufferSizes(settings.buffering()).ioRing},
+    back{streamBufferSizes(settings.buffering()).ioRing},
+    runtimeSensitive{useRuntimeSensitive} {
+    front.setSensitive(settings.isSensitive());
+    back.setSensitive(settings.isSensitive());
     if (native->supportsPositioning()) {
         logicalPosition.store(native->position().toRawValue());
     }
@@ -33,8 +39,10 @@ void BufferedByteInputStreamData::scheduleRead() {
 }
 
 void BufferedByteInputStreamData::performRead() {
-    auto access = std::unique_ptr<mem::impl::UnsafeRingBufferAccess>{};
-    auto destination = std::span<mem::Byte>{};
+    auto access = std::optional<mem::impl::UnsafeRingBufferAccess>{};
+    auto transfer = std::optional<mem::impl::UnsafeByteBlockBuffer>{};
+    auto destination = mem::ByteSpan{};
+    auto epoch = uint64_t{};
     {
         const auto lock = std::scoped_lock{mutex};
         if (aborted.load()) {
@@ -42,9 +50,14 @@ void BufferedByteInputStreamData::performRead() {
             condition.notify_all();
             return;
         }
-        access = std::make_unique<mem::impl::UnsafeRingBufferAccess>(back);
-        const auto spans = access->writableSpans();
-        destination = spans[0];
+        epoch = sensitivityEpoch.load();
+        if (runtimeSensitive) {
+            transfer.emplace(back.available(), true);
+            destination = transfer->data();
+        } else {
+            access.emplace(back);
+            destination = access->writableSpans()[0];
+        }
     }
 
     auto readLength = unit::ByteLength::zero();
@@ -57,8 +70,13 @@ void BufferedByteInputStreamData::performRead() {
 
     {
         const auto lock = std::scoped_lock{mutex};
-        if (!aborted.load() && !failure) {
-            access->commitWritten(readLength);
+        if (!aborted.load() && !failure && epoch == sensitivityEpoch.load()) {
+            if (runtimeSensitive) {
+                const auto privateBytes = transfer->take(readLength);
+                static_cast<void>(back.write(privateBytes.span()));
+            } else {
+                access->commitWritten(readLength);
+            }
             finished = readLength.isZero();
         }
         access.reset();
@@ -66,8 +84,10 @@ void BufferedByteInputStreamData::performRead() {
         if (failure && !aborted.load()) {
             error = failure;
             streamState.store(StreamState::Failed);
-        } else if (!aborted.load() && front.isEmpty() && !back.isEmpty()) {
-            front.swap(back);
+        } else if (!aborted.load()) {
+            if (front.isEmpty() && !back.isEmpty()) {
+                front.swap(back);
+            }
             scheduleRead();
         }
     }

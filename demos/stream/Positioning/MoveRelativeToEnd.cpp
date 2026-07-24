@@ -10,7 +10,7 @@ namespace demo {
 void moveRelativeToEnd() {
     const auto directory = createStreamDemoDirectory("尾部"_el);
     const auto path = directory->path() / "tracks.bin"_el;
-    path.content().writeDataOrThrow(el::ByteBlock{std::vector<uint8_t>{1U, 2U, 3U, 4U, 90U, 91U}});
+    path.content().writeDataOrThrow(el::ByteBlock({1U, 2U, 3U, 4U, 90U, 91U}));
     const auto input = path.content().openByteInputStream();
 
     input->movePosition(el::StreamPositionOrigin::End, el::ByteOffset{-2});

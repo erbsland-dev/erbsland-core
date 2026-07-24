@@ -3,12 +3,12 @@
 #include "U8StringSharedStorage.hpp"
 
 #include "U8StringData.hpp"
-#include "U8StringReadTools.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
-#include "../../../mem/impl/SharedArrayCapacity.hpp"
+#include "../../../mem/impl/BestGrowth.hpp"
 #include "../../impl/ThrowHelper.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <exception>
 #include <utility>
@@ -22,28 +22,42 @@ auto U8StringSharedStorage::isEmpty() const noexcept -> bool {
     return _range.isEmpty() || _data.isNull();
 }
 
-U8StringSharedStorage::U8StringSharedStorage(const std::string_view text) :
-    _data{createU8StringData(text)}, _range{ByteRange::fromSizeT(text.size())} {
+U8StringSharedStorage::U8StringSharedStorage(const std::string_view text, const bool sensitive) :
+    _data{createU8StringData(text, sensitive)}, _range{ByteRange::fromSizeT(text.size())} {
 }
 
-U8StringSharedStorage::U8StringSharedStorage(const std::u8string_view text) :
-    _data{createU8StringData(text)}, _range{ByteRange::fromSizeT(text.size())} {
+U8StringSharedStorage::U8StringSharedStorage(const std::u8string_view text, const bool sensitive) :
+    _data{createU8StringData(text, sensitive)}, _range{ByteRange::fromSizeT(text.size())} {
 }
 
-U8StringSharedStorage::U8StringSharedStorage(const U8StringLiteralStorage &literal) :
-    U8StringSharedStorage{literal.dataView()} {
+U8StringSharedStorage::U8StringSharedStorage(const U8StringLiteralStorage &literal, const bool sensitive) :
+    U8StringSharedStorage{literal.dataView(), sensitive} {
 }
 
-U8StringSharedStorage::U8StringSharedStorage(const U8StringDataView &view) :
-    U8StringSharedStorage{U8StringReadTools{view}.toStdString()} {
+U8StringSharedStorage::U8StringSharedStorage(const U8StringDataView &view, const bool sensitive) :
+    U8StringSharedStorage{ByteRange::fromSizeT(view.dataSpan().size()), sensitive} {
+    if (!view.dataSpan().empty()) {
+        std::memcpy(dataForWrite(), view.dataSpan().data(), view.dataSpan().size());
+    }
 }
 
 U8StringSharedStorage::U8StringSharedStorage(U8StringDataPtr data, ByteRange range) noexcept :
     _data{std::move(data)}, _range{range} {
 }
 
-U8StringSharedStorage::U8StringSharedStorage(const ByteRange range) noexcept :
-    _data{createU8StringData(range.length().toSizeT())}, _range{range} {
+U8StringSharedStorage::U8StringSharedStorage(const ByteRange range, const bool sensitive) noexcept :
+    _data{createU8StringData(range.length().toSizeT(), sensitive)}, _range{range} {
+}
+
+auto U8StringSharedStorage::isSensitive() const noexcept -> bool {
+    return !_data.isNull() && _data.constGet()->isSensitive();
+}
+
+void U8StringSharedStorage::markAsSensitive() noexcept {
+    if (_data.isNull()) {
+        return;
+    }
+    _data.constGet()->setSensitive();
 }
 
 auto U8StringSharedStorage::data() const noexcept -> mem::UnsafeConstCharPtr {
@@ -79,21 +93,22 @@ auto U8StringSharedStorage::isUniqueFullRange() const noexcept -> bool {
     return !_data.isNull() && !_data.isShared() && isFullRange(_data.constGet()->size());
 }
 
-auto U8StringSharedStorage::fromBytes(const std::span<const char> bytes) -> U8StringSharedStorage {
+auto U8StringSharedStorage::fromBytes(const std::span<const char> bytes, const bool sensitive)
+    -> U8StringSharedStorage {
     if (bytes.empty()) {
         return {};
     }
-    auto storage = U8StringSharedStorage{ByteRange::fromSizeT(bytes.size())};
+    auto storage = U8StringSharedStorage{ByteRange::fromSizeT(bytes.size()), sensitive};
     std::memcpy(storage.dataForWrite(), bytes.data(), bytes.size());
     storage.dataForWrite()[bytes.size()] = '\0';
     return storage;
 }
 
-auto U8StringSharedStorage::forSize(const std::size_t size) -> U8StringSharedStorage {
+auto U8StringSharedStorage::forSize(const std::size_t size, const bool sensitive) -> U8StringSharedStorage {
     if (size == 0U) {
         return {};
     }
-    return U8StringSharedStorage{ByteRange::fromSizeT(size)};
+    return U8StringSharedStorage{ByteRange::fromSizeT(size), sensitive};
 }
 
 void U8StringSharedStorage::validateSize(const std::size_t size) {
@@ -126,7 +141,7 @@ void U8StringSharedStorage::clear() noexcept {
         return;
     }
     const auto reservedCapacity = capacity().toSizeT();
-    _data = createU8StringData(0U, reservedCapacity);
+    _data = createU8StringData(0U, reservedCapacity, isSensitive());
     _range = ByteRange::empty();
 }
 
@@ -136,19 +151,21 @@ void U8StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCapa
     const auto requiredCapacityWithTerminator =
         checkedAddSize(requiredCapacity, 1U, "StringEditor storage capacity exceeds bounds");
     const auto oldRange = _range;
+    const auto oldSensitive = isSensitive();
     const auto forceReallocate =
         _data.isNull() || _data.isShared() || !_range.index().isZero() || !isFullRange(_data.constGet()->size());
-    mem::impl::ensureSharedArrayCapacity(
-        _data,
-        usedSizeWithTerminator,
-        requiredCapacityWithTerminator,
-        forceReallocate,
-        [usedSize, oldRange](const auto *oldData, auto *newData) -> void {
-            if (oldData != nullptr && usedSize > 0U) {
-                std::memcpy(newData->data(), oldData->data() + oldRange.index().toSizeT(), usedSize);
-            }
-            newData->data()[usedSize] = '\0';
-        });
+    if (forceReallocate || requiredCapacityWithTerminator > _data.constGet()->capacity()) {
+        const auto oldCapacity =
+            _data.isNull() ? std::size_t{} : static_cast<std::size_t>(_data.constGet()->capacity());
+        const auto requestedCapacity = std::max(usedSizeWithTerminator, requiredCapacityWithTerminator);
+        const auto newCapacity = mem::impl::bestGrowthCapacity<U8StringData>(oldCapacity, requestedCapacity);
+        auto newData = createU8StringData(usedSize, newCapacity - 1U, oldSensitive);
+        if (!_data.isNull() && usedSize > 0U) {
+            std::memcpy(newData.get()->data(), _data.constGet()->data() + oldRange.index().toSizeT(), usedSize);
+        }
+        newData.get()->data()[usedSize] = '\0';
+        _data = std::move(newData);
+    }
     _range = ByteRange::fromSizeT(usedSize);
 }
 
@@ -226,7 +243,7 @@ void U8StringSharedStorage::detach() {
         _range = ByteRange::fromSizeT(dataSize - 1U);
         return;
     }
-    *this = U8StringSharedStorage{dataView()};
+    *this = U8StringSharedStorage{dataView(), isSensitive()};
 }
 
 auto U8StringSharedStorage::dataView() const noexcept -> U8StringDataView {
@@ -251,7 +268,7 @@ auto U8StringSharedStorage::isFullRange(const std::size_t dataSize) const noexce
 
 void U8StringSharedStorage::rematerialize(const std::size_t reservedCapacity) {
     const auto usedSize = _range.length().toSizeT();
-    auto data = createU8StringData(usedSize, reservedCapacity);
+    auto data = createU8StringData(usedSize, reservedCapacity, isSensitive());
     if (!_data.isNull() && usedSize > 0U) {
         std::memcpy(data.get()->data(), this->data() + _range.index().toSizeT(), usedSize);
         data.get()->data()[usedSize] = '\0';

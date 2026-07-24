@@ -8,6 +8,7 @@ add_subdirectory(saturating_math)
 target_sources(erbsland-core-unittest PRIVATE
         ClampedIntegerTest.cpp
         ConstexprSaturatingMathTest.cpp
+        IntegerBitOperationsTest.cpp
         IntegerComparisonHelperTest.cpp
         IntegerMathTest.cpp
         IntegerTraitsTest.cpp

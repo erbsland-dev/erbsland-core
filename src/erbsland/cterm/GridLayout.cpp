@@ -4,6 +4,7 @@
 
 #include "../err/OutOfRangeError.hpp"
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 #include <numeric>
 #include <utility>
@@ -14,12 +15,13 @@ using bgeo::BlockCoordinate;
 using bgeo::BlockPosition;
 using bgeo::BlockRectangle;
 using bgeo::BlockSize;
+using namespace text::literals;
 
 GridLayout::GridLayout(std::vector<BlockCoordinate> columnWidths, std::vector<BlockCoordinate> rowHeights) :
     _columnWidths{std::move(columnWidths)}, _rowHeights{std::move(rowHeights)} {
 
-    validateSizes(_columnWidths, "columnWidths");
-    validateSizes(_rowHeights, "rowHeights");
+    validateSizes(_columnWidths, "columnWidths"_el);
+    validateSizes(_rowHeights, "rowHeights"_el);
 }
 
 GridLayout::GridLayout(
@@ -38,14 +40,14 @@ auto GridLayout::columnCount() const noexcept -> std::size_t {
 
 auto GridLayout::rowHeight(const std::size_t row) const -> BlockCoordinate {
     if (row >= rowCount()) {
-        throw err::OutOfRangeError{"GridLayout row index is out of range."};
+        throw err::OutOfRangeError{"GridLayout row index is out of range."_el};
     }
     return _rowHeights[row];
 }
 
 auto GridLayout::columnWidth(const std::size_t column) const -> BlockCoordinate {
     if (column >= columnCount()) {
-        throw err::OutOfRangeError{"GridLayout column index is out of range."};
+        throw err::OutOfRangeError{"GridLayout column index is out of range."_el};
     }
     return _columnWidths[column];
 }
@@ -75,7 +77,7 @@ auto GridLayout::cellRect(
     -> BlockRectangle {
 
     if (row >= rowCount() || column >= columnCount()) {
-        throw err::OutOfRangeError{"GridLayout cell index is out of range."};
+        throw err::OutOfRangeError{"GridLayout cell index is out of range."_el};
     }
     const auto leftSize = borderSize(border, FrameBorder::Element::Left);
     const auto topSize = borderSize(border, FrameBorder::Element::Top);
@@ -97,13 +99,13 @@ auto GridLayout::borderSize(const FrameBorder &border, const FrameBorder::Elemen
     return BlockCoordinate{style != FrameStyle::None && FrameBorder::isLineStyle(style) ? 1 : 0};
 }
 
-void GridLayout::validateSizes(const std::vector<BlockCoordinate> &sizes, const std::string_view name) {
+void GridLayout::validateSizes(const std::vector<BlockCoordinate> &sizes, const text::StringLiteral &name) {
     if (sizes.empty()) {
-        throw err::ParameterError{"The size list must not be empty.", name};
+        throw err::ParameterError{"The size list must not be empty."_el, name};
     }
     for (const auto size : sizes) {
         if (size <= 0) {
-            throw err::ParameterError{"The size list must contain only positive sizes.", name};
+            throw err::ParameterError{"The size list must contain only positive sizes."_el, name};
         }
     }
 }

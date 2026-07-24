@@ -6,7 +6,7 @@
 #include <erbsland/text/IntegerFormat.hpp>
 #include <erbsland/text/IntegerFormatFlag.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/ToString.hpp>

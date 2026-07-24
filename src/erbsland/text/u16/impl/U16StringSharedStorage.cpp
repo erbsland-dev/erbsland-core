@@ -3,7 +3,6 @@
 #include "U16StringSharedStorage.hpp"
 
 #include "U16StringData.hpp"
-#include "U16StringReadTools.hpp"
 
 #include "../../../math/SaturatingMath.hpp"
 #include "../../../mem/impl/SharedArrayCapacity.hpp"
@@ -42,7 +41,10 @@ U16StringSharedStorage::U16StringSharedStorage(const U16StringLiteralStorage &li
 }
 
 U16StringSharedStorage::U16StringSharedStorage(const U16StringDataView &view) :
-    U16StringSharedStorage{U16StringReadTools{view}.toStdU16String()} {
+    U16StringSharedStorage{U16DataRange::fromSizeT(view.dataSpan().size())} {
+    if (!view.dataSpan().empty()) {
+        std::memcpy(dataForWrite(), view.dataSpan().data(), view.dataSpan().size_bytes());
+    }
 }
 
 U16StringSharedStorage::U16StringSharedStorage(U16StringDataPtr data, U16DataRange range) noexcept :

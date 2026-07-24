@@ -17,6 +17,7 @@
 namespace erbsland::cterm {
 
 /// Shared implementation for foreground and background color values.
+/// @tested{ColorParsingTest ColorTest}
 class ColorBase {
 public:
     /// Internal color identifiers used for ANSI conversion and parsing.
@@ -63,13 +64,20 @@ public: // operators
 
 public: // conversion
     /// Convert the color name to a string.
+    /// @return The canonical color identifier.
     [[nodiscard]] auto toString() const -> text::String;
 
 protected:
+    /// Create a color enum from the given string, or return a fallback.
+    /// @param str The color identifier.
+    /// @param defaultValue The fallback enum value.
+    /// @return The parsed enum value or `defaultValue`.
+    [[nodiscard]] static auto enumFromString(const text::String &str, Value defaultValue) -> Value;
     /// Create a color enum from the given string.
-    /// @return The color enum.
-    /// @throws err::ParameterError if the color does not exist.
-    [[nodiscard]] static auto enumFromString(const text::String &str) -> Value;
+    /// @param str The color identifier.
+    /// @return The parsed enum value.
+    /// @throws err::ParseError if the color does not exist.
+    [[nodiscard]] static auto enumFromStringOrThrow(const text::String &str) -> Value;
     /// Create brighter enum
     [[nodiscard]] static auto brighterEnum(Value value) -> Value;
 
@@ -94,6 +102,7 @@ protected:
 };
 
 /// A foreground or background color.
+/// @tested{ColorParsingTest ColorTest}
 template <ColorRole tColorType>
 class ColorPart : public ColorBase {
 public:
@@ -177,13 +186,19 @@ public: // conversion
     [[nodiscard]] auto brighter() const noexcept -> ColorPart { return ColorPart{Hue{brighterEnum(_value)}}; }
 
 public: // tools
+    /// Create a color from the given string, or return a fallback.
+    /// @param str The color name.
+    /// @param defaultValue The value returned for invalid text.
+    /// @return The parsed color or `defaultValue`.
+    [[nodiscard]] static auto fromString(const text::String &str, const ColorPart defaultValue) -> ColorPart {
+        return ColorPart{Hue{enumFromString(str, defaultValue._value)}};
+    }
     /// Create a color from the given string.
-    /// Accepts lowercase names as well as identifier-normalized space/underscore variants.
     /// @param str The color name.
     /// @return The parsed color.
-    /// @throws err::ParameterError if the color does not exist.
-    [[nodiscard]] static auto fromString(const text::String &str) -> ColorPart {
-        return ColorPart{Hue{enumFromString(str)}};
+    /// @throws err::ParseError if the color does not exist.
+    [[nodiscard]] static auto fromStringOrThrow(const text::String &str) -> ColorPart {
+        return ColorPart{Hue{enumFromStringOrThrow(str)}};
     }
     /// Create a color from the given index.
     /// @param index The index from 0 (black) to 15 (bright white), <0 = inherited, 16+ = default

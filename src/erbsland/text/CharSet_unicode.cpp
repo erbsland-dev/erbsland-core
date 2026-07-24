@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CharSet.hpp"
 
+#include "impl/CharSetRangeBuilder.hpp"
 #include "impl/UnicodeData.hpp"
 
 namespace erbsland::text {
@@ -63,47 +64,73 @@ auto CharSet::caseFolded() const -> CharSet {
 }
 
 auto CharSet::from(const UnicodeCategory category) -> CharSet {
-    auto result = CharSet{};
-
     const auto asciiData = impl::asciiUnicodeDataTable();
+    const auto unicodeData = impl::unicodeDataMap();
+    auto counter = impl::CharSetRangeCounter{};
     for (const auto &data : asciiData) {
         if (data.category() == category) {
-            result.add(Char{data.start});
+            counter.add(CharRange{Char{data.start}});
         }
     }
-
-    const auto unicodeData = impl::unicodeDataMap();
     for (auto index = std::size_t{0}; index < unicodeData.size(); ++index) {
         const auto &data = unicodeData[index];
         if (data.category() != category) {
             continue;
         }
         const auto nextStart = index + 1 < unicodeData.size() ? unicodeData[index + 1].start : char32_t{0x110000U};
-        result.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
+        counter.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
     }
-    return result;
-}
-
-auto CharSet::from(const UnicodeCategoryGroup categoryGroup) -> CharSet {
-    auto result = CharSet{};
-
-    const auto asciiData = impl::asciiUnicodeDataTable();
+    auto builder = impl::CharSetRangeBuilder{counter.count()};
     for (const auto &data : asciiData) {
-        if (data.categoryGroup() == categoryGroup) {
-            result.add(Char{data.start});
+        if (data.category() == category) {
+            builder.add(CharRange{Char{data.start}});
         }
     }
 
+    for (auto index = std::size_t{0}; index < unicodeData.size(); ++index) {
+        const auto &data = unicodeData[index];
+        if (data.category() != category) {
+            continue;
+        }
+        const auto nextStart = index + 1 < unicodeData.size() ? unicodeData[index + 1].start : char32_t{0x110000U};
+        builder.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
+    }
+    return builder.take();
+}
+
+auto CharSet::from(const UnicodeCategoryGroup categoryGroup) -> CharSet {
+    const auto asciiData = impl::asciiUnicodeDataTable();
     const auto unicodeData = impl::unicodeDataMap();
+    auto counter = impl::CharSetRangeCounter{};
+    for (const auto &data : asciiData) {
+        if (data.categoryGroup() == categoryGroup) {
+            counter.add(CharRange{Char{data.start}});
+        }
+    }
     for (auto index = std::size_t{0}; index < unicodeData.size(); ++index) {
         const auto &data = unicodeData[index];
         if (data.categoryGroup() != categoryGroup) {
             continue;
         }
         const auto nextStart = index + 1 < unicodeData.size() ? unicodeData[index + 1].start : char32_t{0x110000U};
-        result.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
+        counter.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
     }
-    return result;
+    auto builder = impl::CharSetRangeBuilder{counter.count()};
+    for (const auto &data : asciiData) {
+        if (data.categoryGroup() == categoryGroup) {
+            builder.add(CharRange{Char{data.start}});
+        }
+    }
+
+    for (auto index = std::size_t{0}; index < unicodeData.size(); ++index) {
+        const auto &data = unicodeData[index];
+        if (data.categoryGroup() != categoryGroup) {
+            continue;
+        }
+        const auto nextStart = index + 1 < unicodeData.size() ? unicodeData[index + 1].start : char32_t{0x110000U};
+        builder.add(CharRange{Char{data.start}, Char{static_cast<char32_t>(nextStart - 1U)}});
+    }
+    return builder.take();
 }
 
 }

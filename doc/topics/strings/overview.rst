@@ -25,7 +25,7 @@
     single: UTF-8
     single: UTF-16
     single: UTF-32
-    single: EncodingErrorMode
+    single: EncodingMode
 
 ********************
 Working with Strings
@@ -80,8 +80,8 @@ Use UTF-16 when:
 * You interface with platform APIs that use UTF-16.
 * You need fixed-size code units for indexing while still supporting the full Unicode range.
 
-UTF-16 is larger than UTF-8 for ASCII content but smaller than UTF-32. Surrogate pairs complicate character indexing,
-so indexed code-point access may require scanning surrogate pairs.
+UTF-16 is larger than UTF-8 for ASCII content but smaller than UTF-32. Surrogate pairs complicate character indexing, so
+indexed code-point access may require scanning surrogate pairs.
 
 UTF-32
 ------
@@ -349,7 +349,8 @@ Use them when you need to modify, append, or store strings that outlive their so
 .. erbsland-demo-end::
 
 Creating an editor from a read-only string or literal creates editable copy-on-write storage.
-Use editors only when you need to change text in place or build it incrementally. For stored and completed text, use
+Use editors only when you need to change text in place or build it incrementally.
+For stored and completed text, use
 :cpp:type:`String <erbsland::text::String>`.
 
 If you need a more generic approach building strings, you may find the
@@ -560,6 +561,8 @@ invalid Unicode data.
 This behaviour is especially useful when processing untrusted input, imported files, or text received from external
 systems where encoding errors may occur.
 
-When you need stricter control, string conversion functions provide an
-:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>` parameter. This allows you to select
-different error-handling strategies, ranging from automatic replacement to more restrictive validation modes.
+Every :cpp:class:`StringConverter <erbsland::text::StringConverter>` conversion accepts an
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` parameter.
+Use ``Strict`` to validate and reject malformed source text or keep the default ``Tolerant`` mode for fast conversion.
+Once text is stored in an Erbsland string, string operations stay tolerant; call ``isValidUtf8()``, ``isValidUtf16()``,
+or ``isValidUtf32()`` explicitly when an application needs to validate internal text.

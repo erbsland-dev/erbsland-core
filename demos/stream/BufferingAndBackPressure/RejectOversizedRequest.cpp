@@ -23,7 +23,7 @@ void rejectOversizedRequest() {
 /// buffer is empty.
 void writeOversizedCellNote(const el::Path &path) {
     auto settings = el::OutputStreamSettings{};
-    settings.setBufferCapacity(el::ByteLength{8U}).setBackBufferLimit(el::ByteLength{16U});
+    settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteLength{16U});
     auto options = el::PathWriteTextOptions{};
     options.setStreamSettings(settings);
     const auto output = path.content().openTextOutputStream(options);

@@ -4,6 +4,7 @@
 
 #include "UnsafeRingBufferAccess_fwd.hpp"
 
+#include "../ByteSpan.hpp"
 #include "../RingBuffer.hpp"
 
 #include <array>
@@ -30,11 +31,11 @@ public:
 
 public:
     /// Get the readable sections around the wrap point.
-    [[nodiscard]] auto readableSpans() const noexcept -> std::array<std::span<const Byte>, 2> {
+    [[nodiscard]] auto readableSpans() const noexcept -> std::array<ConstByteSpan, 2> {
         return buffer().readableSpans();
     }
     /// Get the writable sections around the wrap point.
-    [[nodiscard]] auto writableSpans() noexcept -> std::array<std::span<Byte>, 2> { return buffer().writableSpans(); }
+    [[nodiscard]] auto writableSpans() noexcept -> std::array<ByteSpan, 2> { return buffer().writableSpans(); }
     /// Make bytes written through this lease visible to readers.
     void commitWritten(const unit::ByteLength length) { buffer().commitWritten(length.toSizeTOrThrow()); }
     /// Consume bytes read through this lease.

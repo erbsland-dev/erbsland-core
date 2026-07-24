@@ -11,7 +11,7 @@ namespace erbsland::text {
 template <math::AnyIntegerType T>
 auto StringCharReader::readIntegerOrThrow(const IntegerParseOptions &options) -> T {
     const auto startState = save();
-    const auto result = scanInteger(options, true);
+    const auto result = scanInteger(options);
     if (result.status != ReadNumberStatus::Success) {
         throwError(result.status, result.position);
     }

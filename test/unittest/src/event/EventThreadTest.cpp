@@ -16,7 +16,7 @@ using namespace el::event;
 TESTED_TARGETS(UnmanagedEventThread EventLoop Events)
 class EventThreadTest final : public el::UnitTest {
 public:
-    void testCurrentEventsOutsideManagedLoopThrows() { REQUIRE_THROWS_AS(el::err::LogicError, currentEvents()); }
+    void testCurrentEventsOutsideLoopThrows() { REQUIRE_THROWS_AS(el::err::LogicError, currentEvents()); }
 
     void testStartInvokeAndJoin() {
         const auto thread = UnmanagedEventThread::create();
@@ -84,21 +84,17 @@ public:
         REQUIRE(called.load());
     }
 
-    void testCurrentEventsInUnmanagedThreadThrows() {
+    void testCurrentEventsInUnmanagedThread() {
         const auto thread = UnmanagedEventThread::create();
-        auto threw = std::atomic<bool>{false};
+        auto matched = std::atomic<bool>{false};
 
         thread->start();
-        thread->events()->invoke([thread, &threw]() -> void {
-            try {
-                static_cast<void>(currentEvents());
-            } catch (const el::err::LogicError &) {
-                threw = true;
-            }
+        thread->events()->invoke([thread, &matched]() -> void {
+            matched = currentEvents() == thread->events();
             thread->quit();
         });
         thread->join();
 
-        REQUIRE(threw.load());
+        REQUIRE(matched.load());
     }
 };

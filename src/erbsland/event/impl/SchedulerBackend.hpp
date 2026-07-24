@@ -36,8 +36,9 @@ public:
 
 public: // implement EventBackend
     [[nodiscard]] auto backendId() const noexcept -> EventBackendId override;
-    void attach(EventBackendTargetWeakPtr target) override;
-    void wake() noexcept override;
+    /// @param target The target for scheduler events.
+    /// @param driver The unused native driver.
+    void attach(EventBackendTargetWeakPtr target, EventLoopDriverWeakPtr driver) override;
     void poll(time::TimePoint now) override;
     [[nodiscard]] auto handleEvent(const Event &event) -> bool override;
     [[nodiscard]] auto nextWakeTime() const -> std::optional<time::TimePoint> override;

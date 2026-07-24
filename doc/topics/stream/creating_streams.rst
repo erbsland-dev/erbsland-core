@@ -187,7 +187,7 @@ The diagram lists their configurable properties; each property has a matching ge
         class PathReadTextOptions {
             +encoding
             +bomMode
-            +encodingErrorMode
+            +encodingMode
             +maximumByteLength
             +maximumCpLength
             +timeout
@@ -206,10 +206,33 @@ The diagram lists their configurable properties; each property has a matching ge
             +accessProfile
             +encoding
             +bomMode
-            +encodingErrorMode
             +timeout
             +streamSettings
         }
+
+Sensitive File Input
+--------------------
+
+Enable sensitivity in the nested stream settings before opening the stream.
+The setting protects library-owned byte rings and decoder storage, and generic text reads return marked UTF-8 strings.
+For byte streams, the ordinary owned ``read()``, ``readExact()``, ``readAll()``, and coroutine APIs automatically return
+marked byte blocks when this setting is enabled.
+
+.. code-block:: cpp
+
+    auto streamSettings = el::InputStreamSettings{};
+    streamSettings.setSensitive(true);
+
+    auto options = el::PathReadTextOptions{};
+    options.setStreamSettings(streamSettings);
+    const auto input = path.content().openTextInputStream(options);
+    const auto result = input->readAll(el::CpLength{4096U});
+    if (result.hasData()) {
+        useSecretText(result.data());
+    }
+
+The sensitivity policy is carried by the stream settings rather than a separate read-method family.
+Converting the returned string to another width or an external representation creates an ordinary unmarked value.
 
 ``createParents``
     Creates missing parent directories before opening an output file.
@@ -234,9 +257,11 @@ The diagram lists their configurable properties; each property has a matching ge
     Controls whether a byte-order mark is accepted or emitted automatically, required, or rejected.
     This is especially important when generic UTF-16 or UTF-32 must discover its byte order.
 
-``encodingErrorMode``
-    Chooses whether invalid input or unrepresentable output throws, is ignored when lossy recovery is possible, or is
-    replaced with the Unicode replacement character.
+``encodingMode``
+    Applies only to text input and chooses whether invalid encoded data throws or is replaced with the Unicode
+    replacement character.
+    Text output assumes strings use the intended representation; only transcoding repairs malformed data with the
+    replacement character.
 
 ``maximumByteLength`` and ``maximumCpLength``
     Protect the whole-file ``readData...`` and ``readText...`` convenience methods from unbounded allocation.
@@ -258,11 +283,11 @@ After opening, every shared user sees the same time and memory policy.
     classDiagram
         class InputStreamSettings {
             +timeout
-            +bufferCapacity
+            +buffering
         }
         class OutputStreamSettings {
             +timeout
-            +bufferCapacity
+            +buffering
             +backBufferLimit
         }
 
@@ -270,9 +295,10 @@ After opening, every shared user sees the same time and memory policy.
     Sets the maximum wait for one public operation.
     It is not a deadline for the whole file: a loop may make progress through many individually bounded operations.
 
-``bufferCapacity``
-    Sets the fixed capacity used for native read-ahead or the output front buffer.
-    Larger buffers can reduce native calls, while smaller buffers reduce the stream's fixed memory footprint.
+``buffering``
+    Expresses the intended balance between memory use and throughput using ``MinimalMemory``, ``Interactive``,
+    ``Balanced``, ``Throughput``, or ``Bulk``.
+    The library selects suitable sizes independently for native rings, aggregate reads, decoders, and output retention.
 
 ``backBufferLimit``
     Sets the hard limit for queued output beyond the fixed front buffer.
@@ -294,7 +320,7 @@ file.
     void configureAtCreation() {
         auto streamSettings = el::OutputStreamSettings{};
         streamSettings.setTimeout(el::TimeDelta::milliseconds(250))
-            .setBufferCapacity(el::ByteLength{16U * 1024U})
+            .setBuffering(el::StreamBuffering::Throughput)
             .setBackBufferLimit(el::ByteLength{128U * 1024U});
 
         auto options = el::PathWriteTextOptions{el::StringEncoding::Utf16LittleEndian};

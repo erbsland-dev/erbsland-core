@@ -8,7 +8,7 @@
 #include <erbsland/conf/impl/lexer/Lexer.hpp>
 #include <erbsland/conf/impl/utilities/InternalView.hpp>
 #include <erbsland/conf/impl/value/Value.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 #include <cmath>
 #include <filesystem>

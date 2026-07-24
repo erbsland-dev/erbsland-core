@@ -6,7 +6,7 @@
 
 #include <erbsland/re/CharAndPosition.hpp>
 #include <erbsland/re/Input.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/impl/UnsafeU8StringAccess.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 

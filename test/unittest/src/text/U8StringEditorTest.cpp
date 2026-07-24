@@ -1,12 +1,10 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
@@ -267,31 +265,6 @@ public:
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
         REQUIRE(invalid.readCharAndRetreat(index).isReplacement());
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
-    }
-
-    void testStrictIndexedSequentialRead() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
-        auto index = ByteIndex::zero();
-
-        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'A');
-        REQUIRE_EQUAL(index, ByteIndex{1U});
-        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u00A2');
-        REQUIRE_EQUAL(index, ByteIndex{3U});
-        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u20AC');
-        REQUIRE_EQUAL(index, ByteIndex{6U});
-        REQUIRE_EQUAL(text.readCharAndAdvanceOrThrow(index).toRawValue(), U'\U0001F600');
-        REQUIRE_EQUAL(index, ByteIndex{10U});
-
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, text.readCharAndAdvanceOrThrow(index));
-        REQUIRE_EQUAL(index, ByteIndex{10U});
-        index = ByteIndex::noIndex();
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, text.readCharAndAdvanceOrThrow(index));
-        REQUIRE(index.isNoIndex());
-
-        const auto invalid = U8StringEditor{std::string_view{invalidUtf8Data()}};
-        index = ByteIndex{1U};
-        REQUIRE_THROWS_AS(EncodingError, invalid.readCharAndAdvanceOrThrow(index));
-        REQUIRE_EQUAL(index, ByteIndex{1U});
     }
 
     void testCaseMapping() {
@@ -836,66 +809,46 @@ public:
         REQUIRE_EQUAL(StringConverter{text}.toStdU32String(), std::u32string{U"A\uFFFDB"});
     }
 
-    void testFromUtf8AllModes() {
-        const auto valid = StringConverter{std::string_view{"Hello"}}.toU8String(EncodingErrorMode::Throw);
+    void testFromUtf8EncodingModes() {
+        const auto valid = StringConverter{std::string_view{"Hello"}}.toU8String(EncodingMode::Strict);
 
         REQUIRE_EQUAL(StringConverter{valid}.toStdString(), std::string{"Hello"});
         REQUIRE(
-            StringConverter{StringConverter{std::string_view{}}.toU8String(EncodingErrorMode::Throw)}
+            StringConverter{StringConverter{std::string_view{}}.toU8String(EncodingMode::Strict)}
                 .toStdString()
                 .empty());
-        REQUIRE_FALSE(
-            StringConverter{StringConverter{std::string_view{invalidUtf8Data()}}.toU8String(EncodingErrorMode::Ignore)}
-                .toStdString()
-                .empty());
-
         for (const auto error : th::allUtf8Errors) {
             WITH_CONTEXT(requireFromUtf8Modes(error));
         }
     }
 
-    void testFromUtf16AllModes() {
+    void testFromUtf16EncodingModes() {
         const auto valid =
-            StringConverter{th::stdU16StringFromHex("0041 00A2 20AC D83D DE00")}.toU8String(EncodingErrorMode::Throw);
+            StringConverter{th::stdU16StringFromHex("0041 00A2 20AC D83D DE00")}.toU8String(EncodingMode::Strict);
 
         REQUIRE_EQUAL(StringConverter{valid}.toStdU32String(), std::u32string{U"A¢€😀"});
 
         const auto invalid = th::stdU16StringFromHex("D800 0041 DC00 D800 D83D DE00");
-        const auto invalidOnly = th::stdU16StringFromHex("D800 D800");
-
         REQUIRE_EQUAL(
-            StringConverter{StringConverter{invalid}.toU8String(EncodingErrorMode::Replace)}.toStdU32String(),
+            StringConverter{StringConverter{invalid}.toU8String(EncodingMode::Tolerant)}.toStdU32String(),
             std::u32string{U"\uFFFDA\uFFFD\uFFFD😀"});
-        REQUIRE_EQUAL(
-            StringConverter{StringConverter{invalid}.toU8String(EncodingErrorMode::Ignore)}.toStdU32String(),
-            std::u32string{U"A😀"});
-        REQUIRE(
-            StringConverter{StringConverter{invalidOnly}.toU8String(EncodingErrorMode::Ignore)}.toStdString().empty());
-        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingErrorMode::Throw));
+        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingMode::Strict));
     }
 
-    void testFromUtf32AllModes() {
-        const auto valid = StringConverter{std::u32string_view{U"A¢€😀"}}.toU8String(EncodingErrorMode::Throw);
+    void testFromUtf32EncodingModes() {
+        const auto valid = StringConverter{std::u32string_view{U"A¢€😀"}}.toU8String(EncodingMode::Strict);
 
         REQUIRE_EQUAL(StringConverter{valid}.toStdU32String(), std::u32string{U"A¢€😀"});
 
         const auto invalid = std::u32string{U'A', char32_t{0xD800U}, char32_t{0x110000U}, U'B'};
 
         REQUIRE_EQUAL(
-            StringConverter{StringConverter{invalid}.toU8String(EncodingErrorMode::Replace)}.toStdU32String(),
+            StringConverter{StringConverter{invalid}.toU8String(EncodingMode::Tolerant)}.toStdU32String(),
             std::u32string{U"A\uFFFD\uFFFDB"});
-        REQUIRE_EQUAL(
-            StringConverter{StringConverter{invalid}.toU8String(EncodingErrorMode::Ignore)}.toStdU32String(),
-            std::u32string{U"AB"});
-        REQUIRE(
-            StringConverter{StringConverter{std::u32string{char32_t{0xD800U}, char32_t{0x110000U}}}.toU8String(
-                                EncodingErrorMode::Ignore)}
-                .toStdString()
-                .empty());
-        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingErrorMode::Throw));
+        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingMode::Strict));
     }
 
-    void testFromWideAllModes() {
+    void testFromWideEncodingModes() {
 #ifdef ERBSLAND_WCHAR_16BIT
         const auto invalid = th::stdWStringFromHex("D800 0041 DC00 D800 D83D DE00");
         const auto valid = th::stdWStringFromHex("0041 00A2 20AC D83D DE00");
@@ -905,11 +858,11 @@ public:
 #endif
 
         REQUIRE_EQUAL(
-            StringConverter{StringConverter{valid}.toU8String(EncodingErrorMode::Throw)}.toStdU32String(),
+            StringConverter{StringConverter{valid}.toU8String(EncodingMode::Strict)}.toStdU32String(),
             std::u32string{U"A¢€😀"});
         REQUIRE_FALSE(
-            StringConverter{StringConverter{invalid}.toU8String(EncodingErrorMode::Replace)}.toStdU32String().empty());
-        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingErrorMode::Throw));
+            StringConverter{StringConverter{invalid}.toU8String(EncodingMode::Tolerant)}.toStdU32String().empty());
+        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingMode::Strict));
     }
 
 private:
@@ -928,12 +881,9 @@ private:
         const auto malformed = th::invalidUtf8(error, "A", "B");
 
         REQUIRE_EQUAL(
-            StringConverter{StringConverter{malformed}.toU8String(EncodingErrorMode::Replace)}.toStdU32String(),
+            StringConverter{StringConverter{malformed}.toU8String(EncodingMode::Tolerant)}.toStdU32String(),
             expectedReplaceDecodedText(error));
-        REQUIRE_EQUAL(
-            StringConverter{StringConverter{malformed}.toU8String(EncodingErrorMode::Ignore)}.toStdU32String(),
-            expectedIgnoreDecodedText(error));
-        REQUIRE_THROWS(StringConverter{malformed}.toU8String(EncodingErrorMode::Throw));
+        REQUIRE_THROWS(StringConverter{malformed}.toU8String(EncodingMode::Strict));
     }
 
     [[nodiscard]] static auto expectedReplaceDecodedText(const th::Utf8Error error) -> std::u32string {
@@ -962,17 +912,6 @@ private:
             return std::u32string{U"A\uFFFD\uFFFD\uFFFD B"};
         default:
             return {};
-        }
-    }
-
-    [[nodiscard]] static auto expectedIgnoreDecodedText(const th::Utf8Error error) -> std::u32string {
-        switch (error) {
-        case th::Utf8Error::InvalidContinuationByteIn2ByteSequence:
-        case th::Utf8Error::InvalidContinuationByteIn3ByteSequence:
-        case th::Utf8Error::InvalidContinuationByteIn4ByteSequence:
-            return std::u32string{U"A B"};
-        default:
-            return std::u32string{U"AB"};
         }
     }
 };

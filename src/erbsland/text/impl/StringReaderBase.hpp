@@ -55,14 +55,6 @@ public:
     [[nodiscard]] virtual auto readIf(const CharSet &expected) noexcept -> std::optional<Char> = 0;
     /// Peek a tolerant character.
     [[nodiscard]] virtual auto peek() const noexcept -> Char = 0;
-    /// Read a strict character and advance on success.
-    [[nodiscard]] virtual auto readOrThrow() -> Char = 0;
-    /// Read a strict character only if it matches the expected character.
-    [[nodiscard]] virtual auto readIfOrThrow(Char expected) -> bool = 0;
-    /// Read a strict character only if it matches the expected character set.
-    [[nodiscard]] virtual auto readIfOrThrow(const CharSet &expected) -> std::optional<Char> = 0;
-    /// Peek a strict character.
-    [[nodiscard]] virtual auto peekOrThrow() const -> Char = 0;
     /// Test if the reader is at the end of data.
     [[nodiscard]] virtual auto isAtEnd() const noexcept -> bool = 0;
     /// Test if at least `count` decoded characters are available.
@@ -73,10 +65,6 @@ public:
     virtual auto advanceIf(Char expected) noexcept -> bool = 0;
     /// Advance by one tolerant character only if it matches the expected character set.
     virtual auto advanceIf(const CharSet &expected) noexcept -> bool = 0;
-    /// Advance by one strict character only if it matches the expected character.
-    virtual auto advanceIfOrThrow(Char expected) -> bool = 0;
-    /// Advance by one strict character only if it matches the expected character set.
-    virtual auto advanceIfOrThrow(const CharSet &expected) -> bool = 0;
 
 public: // read loops
     /// Read while expected characters are found.

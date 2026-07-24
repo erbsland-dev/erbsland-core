@@ -11,6 +11,7 @@ target_sources(erbsland-core PRIVATE
         U16Format.tpp
         U16String.cpp
         U16String.hpp
+        U16String_boolean.cpp
         U16String_comparison.cpp
         U16String_fwd.hpp
         U16String_integer.tpp
@@ -28,6 +29,7 @@ target_sources(erbsland-core PRIVATE
         U16StringConstIterator_fwd.hpp
         U16StringEditor.cpp
         U16StringEditor.hpp
+        U16StringEditor_boolean.cpp
         U16StringEditor_comparison.cpp
         U16StringEditor_float.cpp
         U16StringEditor_fwd.hpp

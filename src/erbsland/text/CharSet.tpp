@@ -8,17 +8,15 @@
 #include <functional>
 #include <initializer_list>
 #include <optional>
-#include <set>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace erbsland::text {
 
 template <typename Function>
 auto CharSet::forEach(Function function) const -> util::LoopResult {
     if constexpr (std::invocable<Function &, const CharRange &>) {
-        for (const auto &range : ranges()) {
+        for (const auto &range : rangeSpan()) {
             const auto status = processForEach(function, range);
             if (status != util::LoopStatus::Continue) {
                 return util::impl::loopStatusToResult(status);
@@ -26,7 +24,7 @@ auto CharSet::forEach(Function function) const -> util::LoopResult {
         }
         return util::LoopResult::Success;
     } else if constexpr (std::invocable<Function &, Char>) {
-        for (const auto &range : ranges()) {
+        for (const auto &range : rangeSpan()) {
             auto character = range.from();
             while (character <= range.to()) {
                 const auto status = processForEach(function, character);
@@ -55,43 +53,12 @@ auto CharSet::transform(Function function) const -> CharSet {
         std::convertible_to<std::invoke_result_t<Function &, Char>, Char>,
         "CharSet::transform() requires a function that returns Char.");
 
-    auto resultRanges = Ranges{};
-    auto rangeStart = std::optional<Char>{};
-    auto rangeEnd = std::optional<Char>{};
-    const auto flushRange = [&]() -> void {
-        if (rangeStart.has_value() && rangeEnd.has_value()) {
-            addTo(resultRanges, CharRange{*rangeStart, *rangeEnd});
-            rangeStart.reset();
-            rangeEnd.reset();
-        }
-    };
-
+    auto result = CharSet{};
     forEach([&](const Char character) -> util::LoopStatus {
         const auto mappedCharacter = static_cast<Char>(std::invoke(function, character));
-        if (!mappedCharacter.isValidUnicode()) {
-            return util::LoopStatus::Continue;
-        }
-        if (!rangeStart.has_value()) {
-            rangeStart = mappedCharacter;
-            rangeEnd = mappedCharacter;
-            return util::LoopStatus::Continue;
-        }
-        if (mappedCharacter == *rangeEnd) {
-            return util::LoopStatus::Continue;
-        }
-        const auto nextCharacter = nextScalar(*rangeEnd);
-        if (nextCharacter.has_value() && mappedCharacter == *nextCharacter) {
-            rangeEnd = mappedCharacter;
-            return util::LoopStatus::Continue;
-        }
-        flushRange();
-        rangeStart = mappedCharacter;
-        rangeEnd = mappedCharacter;
+        result.add(mappedCharacter);
         return util::LoopStatus::Continue;
     });
-    flushRange();
-    auto result = CharSet{};
-    result.assign(std::move(resultRanges));
     return result;
 }
 

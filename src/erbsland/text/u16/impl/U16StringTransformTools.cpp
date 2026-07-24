@@ -3,6 +3,7 @@
 #include "U16StringTransformTools.hpp"
 
 #include "U16StringReadTools.hpp"
+#include "U16Writer.hpp"
 
 #include "../U16StringEditor.hpp"
 
@@ -11,6 +12,8 @@
 #include "../../impl/EscapeFormatter.hpp"
 #include "../../impl/SafeStringEscapeTools.hpp"
 
+#include <cstring>
+#include <span>
 #include <string_view>
 
 namespace erbsland::text::impl {
@@ -23,7 +26,7 @@ auto U16StringTransformTools::forEach(const ProcessCharacterFn &function) const 
     }
     auto result = util::LoopResult::Success;
     const auto completed =
-        utf16::forEachDecodedCharacter(_data.dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        utf16::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             const auto status = function(character);
             if (status == util::LoopStatus::Continue) {
                 return true;
@@ -43,51 +46,69 @@ auto U16StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
 
     const auto data = _data.dataSpan();
     auto position = U16DataIndex::zero();
-    auto result = U16StringSharedStorage{};
-    auto appendTools = U16StringAppendTools{result};
-    auto changed = false;
-    const auto startResult = [&](const std::size_t unchangedEnd) -> void {
-        if (changed) {
-            return;
-        }
-        changed = true;
-        if (!data.empty()) {
-            result.ensureMutableCapacity(data.size());
-        }
-        if (unchangedEnd > 0U) {
-            appendTools.append(U16StringDataView{data, U16DataRange::fromSizeT(unchangedEnd)});
-        }
-    };
-
     while (position.toSizeT() < data.size()) {
         const auto begin = position.toSizeT();
         const auto character = utf16::decodeCharOrReplace(data, position);
         const auto mapped = function(character);
         if (mapped.isEndOfData()) {
-            startResult(begin);
-            return result;
+            return U16StringSharedStorage::fromCodeUnits(data.first(begin));
         }
-        if (mapped.isNoCodePoint()) {
-            startResult(begin);
+        if (mapped == character) {
             continue;
         }
-        if (!changed && mapped == character) {
-            continue;
+
+        auto reservedSize = begin;
+        if (mapped.isValidUnicode()) {
+            reservedSize = U16StringSharedStorage::checkedAddSize(
+                reservedSize, utf16::encodedLength(mapped).toSizeTOrThrow(), "Transformed string exceeds size bounds");
         }
-        startResult(begin);
-        appendTools.append(mapped);
-    }
-    if (changed) {
+        auto sizingPosition = position;
+        while (sizingPosition.toSizeT() < data.size()) {
+            const auto sizingCharacter = utf16::decodeCharOrReplace(data, sizingPosition);
+            const auto sizingMapped = function(sizingCharacter);
+            if (sizingMapped.isEndOfData()) {
+                break;
+            }
+            if (sizingMapped.isValidUnicode()) {
+                reservedSize = U16StringSharedStorage::checkedAddSize(
+                    reservedSize,
+                    utf16::encodedLength(sizingMapped).toSizeTOrThrow(),
+                    "Transformed string exceeds size bounds");
+            }
+        }
+
+        auto result = U16StringSharedStorage{};
+        if (reservedSize > 0U) {
+            result.ensureMutableCapacity(reservedSize);
+        }
+        if (begin > 0U) {
+            std::memcpy(result.dataForWrite(), data.data(), begin * sizeof(char16_t));
+        }
+
+        auto writeSize = begin;
+        auto transformPosition = U16DataIndex::fromSizeT(begin);
+        while (transformPosition.toSizeT() < data.size()) {
+            const auto transformCharacter = utf16::decodeCharOrReplace(data, transformPosition);
+            const auto transformMapped = function(transformCharacter);
+            if (transformMapped.isEndOfData()) {
+                break;
+            }
+            if (!transformMapped.isValidUnicode()) {
+                continue;
+            }
+            const auto encodedSize = utf16::encodedLength(transformMapped).toSizeTOrThrow();
+            const auto requiredSize = U16StringSharedStorage::checkedAddSize(
+                writeSize, encodedSize, "Transformed string exceeds size bounds");
+            if (requiredSize > result.capacity().toSizeT()) {
+                result.ensureMutableCapacity(requiredSize);
+            }
+            U16Writer{std::span<char16_t>{result.dataForWrite() + writeSize, encodedSize}}.write(transformMapped);
+            writeSize = requiredSize;
+        }
+        result.resize(writeSize);
         return result;
     }
     return std::nullopt;
-}
-
-auto U16StringTransformTools::transformed(const TransformCharacterFn function) const -> U16StringSharedStorage {
-    if (auto result = transformedIfChanged(function)) {
-        return std::move(*result);
-    }
-    return U16StringSharedStorage{_data};
 }
 
 auto U16StringTransformTools::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
@@ -189,7 +210,7 @@ auto U16StringTransformTools::escapedSize(const EscapeFormat format, const Escap
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto length = std::size_t{0U};
-    utf16::forEachDecodedCharacter(_data.dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf16::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
             length += formatter->escapeSize(character, StringKind::U16);
         } else {
@@ -207,7 +228,7 @@ auto U16StringTransformTools::toEscaped(const EscapeFormat format, const EscapeA
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto builder = AnyStringBuilder{StringKind::U16};
-    utf16::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf16::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
             formatter->escape(character, builder);
         } else {

@@ -17,6 +17,7 @@
 #include "../../stream/ByteOutputStream_fwd.hpp"
 #include "../../stream/TextInputStream_fwd.hpp"
 #include "../../stream/TextOutputStream_fwd.hpp"
+#include "../../text/String_fwd.hpp"
 
 #include <memory>
 #include <optional>
@@ -39,6 +40,10 @@ public:
     /// @return The absolute current working directory.
     /// @throws PathError if the directory cannot be determined or converted.
     [[nodiscard]] virtual auto currentDirectoryOrThrow() const -> Path = 0;
+    /// Return the effective user's home directory.
+    /// @return The absolute home directory reported by the operating-system account database.
+    /// @throws PathError if the directory cannot be determined or converted.
+    [[nodiscard]] virtual auto userHomeDirectoryOrThrow() const -> Path = 0;
     /// Return the system directory for temporary files and directories.
     /// @return The absolute system temporary directory.
     /// @throws PathError if the directory cannot be determined or converted.
@@ -77,8 +82,19 @@ public:
     /// @return The loaded path information data.
     /// @throws PathError if resolving or native metadata access fails.
     [[nodiscard]] virtual auto loadInfoOrThrow(const Path &path, PathInfoParts parts) const -> PathInfoData = 0;
-    /// List the direct children of a directory.
-    [[nodiscard]] virtual auto directoryEntriesOrThrow(const Path &path) const -> std::vector<Path> = 0;
+    /// Load information for a path using a recently resolved physical path.
+    /// @param path The original path to inspect and report in diagnostics.
+    /// @param resolvedPath The trusted physical path from the current cache period.
+    /// @param parts The requested information parts.
+    /// @return The loaded path information data.
+    /// @throws PathError if native metadata access fails.
+    [[nodiscard]] virtual auto loadResolvedInfoOrThrow(
+        const Path &path, const Path &resolvedPath, PathInfoParts parts) const -> PathInfoData;
+    /// List the direct children of a directory and preload metadata returned by the directory scan.
+    /// @param path The logical directory path used to assemble returned child paths.
+    /// @param resolvedPath The recently resolved physical directory used for native access.
+    [[nodiscard]] virtual auto directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const
+        -> std::vector<Path> = 0;
     /// Create one directory. Parent directories must already exist.
     virtual void createDirectoryEntryOrThrow(const Path &path, PathAccessProfile profile) const = 0;
     /// Remove one empty directory, file, or symbolic link.
@@ -130,6 +146,16 @@ public:
     /// @throws PathError if the change fails.
     virtual void clearAttributesOrThrow(
         const Path &path, PathAttributes attributes, PathChangeOptions options) const = 0;
+
+protected:
+    /// Append one native directory-entry name without reparsing the trusted base path.
+    [[nodiscard]] static auto directoryEntryPath(const Path &base, const text::String &name) noexcept -> Path;
+    /// Copy a path value without copying its attached information cache.
+    [[nodiscard]] static auto pathWithoutInfo(const Path &path) noexcept -> Path;
+    /// Attach preloaded metadata to a path returned from a native directory scan.
+    static void preloadInfo(Path &path, PathInfoData data);
+    /// Invalidate metadata attached to a path after a successful mutation.
+    static void invalidateInfo(const Path &path);
 };
 
 }

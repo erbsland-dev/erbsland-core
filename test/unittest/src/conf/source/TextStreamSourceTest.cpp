@@ -4,7 +4,7 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/impl/source/TextStreamSource.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/stream/TextInputStream.hpp>

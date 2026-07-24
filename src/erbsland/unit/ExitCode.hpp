@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../core/Definitions.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
 #include <algorithm>

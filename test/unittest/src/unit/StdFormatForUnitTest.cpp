@@ -7,7 +7,7 @@
 #include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unit/ExitCode.hpp>
 #include <erbsland/unit/IntegerAmount.hpp>
-#include <erbsland/unit/StdFormatForUnit.hpp>
+#include <erbsland/unit/StdFormat.hpp>
 #include <erbsland/unit/Version.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

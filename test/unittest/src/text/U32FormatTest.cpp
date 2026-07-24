@@ -3,7 +3,7 @@
 
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/FormatError.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u32/U32Format.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>

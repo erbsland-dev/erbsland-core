@@ -23,16 +23,15 @@ using impl::BlockStringDataPtr;
 using impl::BlockStringRangeView;
 using impl::BlockStringWrapper;
 using namespace text;
+using namespace text::literals;
 
 BlockString::BlockString() noexcept : _data{impl::sharedEmptyBlockStringData()} {
 }
 
-BlockString::BlockString(const String &string, const EncodingErrorMode encodingErrorMode) :
-    BlockString{BlockStringEditor{string, encodingErrorMode}} {
+BlockString::BlockString(const String &string) : BlockString{BlockStringEditor{string}} {
 }
 
-BlockString::BlockString(const String &string, const BlockStyle style, const EncodingErrorMode encodingErrorMode) :
-    BlockString{BlockStringEditor{string, style, encodingErrorMode}} {
+BlockString::BlockString(const String &string, const BlockStyle style) : BlockString{BlockStringEditor{string, style}} {
 }
 
 BlockString::BlockString(const U32String &string) : BlockString{BlockStringEditor{string}} {
@@ -77,7 +76,7 @@ auto BlockString::displayWidth() const noexcept -> int {
 }
 
 auto BlockString::at(const BlockIndex index) const -> Block {
-    return BlockStringRangeView{*_data, _range}.at(index, "BlockString");
+    return BlockStringRangeView{*_data, _range}.at(index, "BlockString"_el);
 }
 
 auto BlockString::begin() const noexcept -> const_iterator {

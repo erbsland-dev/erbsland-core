@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ManagedEventThread.hpp"
 
-#include "CurrentEventsScope.hpp"
-
 #include "../EventLoop.hpp"
 
 namespace erbsland::event::impl {
@@ -41,7 +39,6 @@ auto ManagedEventThread::events() -> event::EventsPtr {
 }
 
 void ManagedEventThread::runEventLoop() {
-    auto scope = CurrentEventsScope{eventLoopPtr()};
     eventLoop().run();
 }
 

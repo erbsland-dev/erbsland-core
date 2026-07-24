@@ -27,6 +27,7 @@ public:
     auto operator=(SecureRandom &&) -> SecureRandom & = delete;
 
 public: // implement Random
+    [[nodiscard]] auto isSecure() const noexcept -> bool override { return true; }
     [[nodiscard]] auto getInt32(int32_t minimum, int32_t maximum) -> int32_t override;
     [[nodiscard]] auto getUInt32(uint32_t minimum, uint32_t maximum) -> uint32_t override;
     [[nodiscard]] auto getInt64(int64_t minimum, int64_t maximum) -> int64_t override;

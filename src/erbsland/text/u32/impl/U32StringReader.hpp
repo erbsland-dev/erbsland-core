@@ -35,17 +35,11 @@ public:
     [[nodiscard]] auto readIf(Char expected) noexcept -> bool override;
     [[nodiscard]] auto readIf(const CharSet &expected) noexcept -> std::optional<Char> override;
     [[nodiscard]] auto peek() const noexcept -> Char override;
-    [[nodiscard]] auto readOrThrow() -> Char override;
-    [[nodiscard]] auto readIfOrThrow(Char expected) -> bool override;
-    [[nodiscard]] auto readIfOrThrow(const CharSet &expected) -> std::optional<Char> override;
-    [[nodiscard]] auto peekOrThrow() const -> Char override;
     [[nodiscard]] auto isAtEnd() const noexcept -> bool override;
     [[nodiscard]] auto canRead(unit::CpLength count) const noexcept -> bool override;
     auto advance(unit::CpLength count) noexcept -> bool override;
     auto advanceIf(Char expected) noexcept -> bool override;
     auto advanceIf(const CharSet &expected) noexcept -> bool override;
-    auto advanceIfOrThrow(Char expected) -> bool override;
-    auto advanceIfOrThrow(const CharSet &expected) -> bool override;
     auto readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept

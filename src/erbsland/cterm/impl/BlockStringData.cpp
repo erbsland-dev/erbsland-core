@@ -77,12 +77,8 @@ void BlockStringData::appendCharacters(
     }
 }
 
-void BlockStringData::appendCharacters(
-    const String &text,
-    const Color color,
-    const BlockAttributes attributes,
-    const EncodingErrorMode encodingErrorMode) {
-    appendCharacters(StringConverter{text}.toU32String(encodingErrorMode), color, attributes);
+void BlockStringData::appendCharacters(const String &text, const Color color, const BlockAttributes attributes) {
+    appendCharacters(StringConverter{text}.toU32String(), color, attributes);
 }
 
 auto sharedEmptyBlockStringData() -> const BlockStringDataPtr & {
@@ -90,8 +86,8 @@ auto sharedEmptyBlockStringData() -> const BlockStringDataPtr & {
     return data;
 }
 
-auto BlockStringData::measureDisplayWidth(const String &text, const EncodingErrorMode encodingErrorMode) -> int {
-    return measureDisplayWidth(StringConverter{text}.toU32String(encodingErrorMode));
+auto BlockStringData::measureDisplayWidth(const String &text) -> int {
+    return measureDisplayWidth(StringConverter{text}.toU32String());
 }
 
 auto BlockStringData::measureDisplayWidth(const U32String &text) -> int {

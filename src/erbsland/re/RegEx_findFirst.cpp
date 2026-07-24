@@ -35,7 +35,7 @@ auto RegEx::findFirst(const InputPtr &input) const -> MatchPtr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    const auto engine = this->engine();
+    const auto &engine = this->engine();
     auto state = engine->createState(input);
     if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
@@ -47,7 +47,7 @@ auto RegEx::findFirst(const Input16Ptr &input) const -> Match16Ptr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    const auto engine = this->engine();
+    const auto &engine = this->engine();
     auto state = engine->createState(input);
     if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};
@@ -59,7 +59,7 @@ auto RegEx::findFirst(const Input32Ptr &input) const -> Match32Ptr {
     if (input == nullptr) {
         throw err::ParameterError{"Input cannot be null."_el, "input"_el};
     }
-    const auto engine = this->engine();
+    const auto &engine = this->engine();
     auto state = engine->createState(input);
     if (engine->findFirst(*state) == impl::EngineHasMatch::No) {
         return {};

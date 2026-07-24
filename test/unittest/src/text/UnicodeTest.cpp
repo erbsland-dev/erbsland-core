@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/impl/UnicodeData.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/UnicodeVersion.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

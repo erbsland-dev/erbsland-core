@@ -1,0 +1,44 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "UnsafeCustomPasswordHashParameters.hpp"
+
+#include "../../err/ParameterError.hpp"
+
+#include <limits>
+
+namespace erbsland::cryptology::unsafe {
+
+UnsafeCustomPasswordHashParameters::UnsafeCustomPasswordHashParameters(
+    const PasswordHashAlgorithm algorithm,
+    const uint32_t first,
+    const uint32_t second,
+    const uint32_t third,
+    const uint64_t large) noexcept :
+    _algorithm{algorithm}, _first{first}, _second{second}, _third{third}, _large{large} {
+}
+
+auto UnsafeCustomPasswordHashParameters::argon2id(const uint32_t memoryKiB, const uint32_t passes, const uint32_t lanes)
+    -> UnsafeCustomPasswordHashParameters {
+    if (lanes == 0U || lanes > 16U || passes == 0U || passes > 10U || memoryKiB < 8U * lanes ||
+        memoryKiB > 1024U * 1024U) {
+        throw err::ParameterError{"Argon2id costs exceed the supported safety bounds", "parameters"};
+    }
+    return {PasswordHashAlgorithm::Argon2id, memoryKiB, passes, lanes, 0U};
+}
+
+auto UnsafeCustomPasswordHashParameters::scrypt(
+    const uint64_t cost, const uint32_t blockSize, const uint32_t parallelization)
+    -> UnsafeCustomPasswordHashParameters {
+    if (cost <= 1U || (cost & (cost - 1U)) != 0U || blockSize == 0U || parallelization == 0U ||
+        blockSize > std::numeric_limits<uint32_t>::max() / 128U) {
+        throw err::ParameterError{"Invalid scrypt costs", "parameters"};
+    }
+    constexpr auto maximumUnits = uint64_t{1024U} * 1024U;
+    if (cost > maximumUnits / blockSize || parallelization > 16U ||
+        cost * blockSize > (maximumUnits * 10U) / parallelization) {
+        throw err::ParameterError{"scrypt costs exceed the supported safety bounds", "parameters"};
+    }
+    return {PasswordHashAlgorithm::Scrypt, blockSize, parallelization, 0U, cost};
+}
+
+}

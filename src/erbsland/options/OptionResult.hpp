@@ -5,15 +5,22 @@
 #include "OptionErrorContext.hpp"
 #include "OptionResult_fwd.hpp"
 #include "OptionResultStatus.hpp"
+#include "OptionSensitiveTextLocation.hpp"
 #include "OptionValues_fwd.hpp"
 
 namespace erbsland::options {
 
+namespace impl {
+class OptionParser;
+}
+
 /// The result of processing command line arguments.
 ///
 /// `parse()` returns this object for every outcome, including successful parsing, help/version requests, and errors.
-/// @tested{OptionsFrameworkTest}
+/// @tested{OptionsFrameworkTest OptionsParserTest}
 class OptionResult {
+    friend class impl::OptionParser;
+
 public:
     OptionResult() = default;
 
@@ -45,11 +52,23 @@ public: // accessors
     void setErrorContext(std::optional<OptionErrorContext> errorContext) noexcept {
         _errorContext = std::move(errorContext);
     }
+    /// Get the command-line locations that contained sensitive text.
+    /// Locations are available for successful, display-request, and error results.
+    /// @return The sensitive suffix locations in parsing order.
+    [[nodiscard]] auto sensitiveTextLocations() const noexcept -> const OptionSensitiveTextLocations & {
+        return _sensitiveTextLocations;
+    }
+
+private:
+    void setSensitiveTextLocations(OptionSensitiveTextLocations locations) {
+        _sensitiveTextLocations = std::move(locations);
+    }
 
 private:
     OptionValuesPtr _values;                                 ///< The parsed option values.
     OptionResultStatus _status{OptionResultStatus::Success}; ///< The result status.
     std::optional<OptionErrorContext> _errorContext;         ///< The error context.
+    OptionSensitiveTextLocations _sensitiveTextLocations;    ///< Sensitive source locations found while parsing.
 };
 
 }

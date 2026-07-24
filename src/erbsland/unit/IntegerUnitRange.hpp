@@ -11,6 +11,9 @@
 
 #include "../util/HashHelper.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
+#include "../util/impl/LoopControl.hpp"
+#include "../util/LoopResult.hpp"
+#include "../util/LoopStatus.hpp"
 
 #include <compare>
 #include <cstddef>
@@ -190,6 +193,29 @@ public: // math
     friend void swap(IntegerUnitRange &first, IntegerUnitRange &second) noexcept {
         std::swap(first._index, second._index);
         std::swap(first._length, second._length);
+    }
+
+public: // iteration
+    /// Call a function for each index in this range.
+    /// Raw index values are incremented internally, avoiding saturation checks for every step.
+    /// @param loopFn The function to call with each index. It may return `void` or `util::LoopStatus`.
+    /// @return The result of the loop.
+    template <typename Fn>
+    auto forEach(Fn &&loopFn) const -> util::LoopResult {
+        if (!isValid()) {
+            return util::LoopResult::Error;
+        }
+        if (_length.isZero()) {
+            return util::LoopResult::Success;
+        }
+        const auto end = endIndex().toRawValue();
+        for (auto index = _index.toRawValue(); index < end; ++index) {
+            const auto status = util::impl::invokeLoopFunction(loopFn, Index{index});
+            if (status != util::LoopStatus::Continue) {
+                return util::impl::loopStatusToResult(status);
+            }
+        }
+        return util::LoopResult::Success;
     }
 
 public: // factory methods

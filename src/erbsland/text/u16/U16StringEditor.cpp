@@ -18,6 +18,7 @@
 #include "impl/U16StringTransformTools.hpp"
 #include "impl/U16Writer.hpp"
 
+#include "../EncodingMode.hpp"
 #include "../StringConverter.hpp"
 #include "../u32/impl/U32Encoding.hpp"
 #include "../u32/U32StringEditor.hpp"
@@ -52,7 +53,7 @@ auto U16StringEditor::isEmpty() const noexcept -> bool {
 auto U16StringEditor::toHash() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf16::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.toRawValue());
             return true;
         });
@@ -62,7 +63,7 @@ auto U16StringEditor::toHash() const noexcept -> std::size_t {
 auto U16StringEditor::toHashCI() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf16::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.caseFolded().toRawValue());
             return true;
         });

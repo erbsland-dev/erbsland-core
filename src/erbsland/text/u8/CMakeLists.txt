@@ -11,6 +11,7 @@ target_sources(erbsland-core PRIVATE
         U8Format.tpp
         U8String.cpp
         U8String.hpp
+        U8String_boolean.cpp
         U8String_comparison.cpp
         U8String_fwd.hpp
         U8String_integer.tpp
@@ -28,6 +29,7 @@ target_sources(erbsland-core PRIVATE
         U8StringConstIterator_fwd.hpp
         U8StringEditor.cpp
         U8StringEditor.hpp
+        U8StringEditor_boolean.cpp
         U8StringEditor_comparison.cpp
         U8StringEditor_float.cpp
         U8StringEditor_fwd.hpp

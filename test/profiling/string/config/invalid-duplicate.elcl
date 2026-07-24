@@ -1,0 +1,15 @@
+@version: "1.0"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name      : "duplicate"
+Widths    : "u8"
+Types     : "string"
+Use Cases : "hash"
+Variants  : "normal"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name      : "duplicate"
+Widths    : "u8"
+Types     : "string"
+Use Cases : "hash"
+Variants  : "normal"

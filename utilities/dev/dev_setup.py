@@ -107,6 +107,7 @@ class DevSetupRunner:
                 "--init",
                 "--recursive",
                 "test/erbsland-unittest",
+                "test/erbsland-lang-config-tests",
             ],
             label="Initializing git submodules",
         )

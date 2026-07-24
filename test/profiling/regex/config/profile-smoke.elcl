@@ -1,0 +1,22 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "profile"
+Duration            : 100ms
+Threads             : 2
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 50us
+Memory Limit        : 8 MiB
+Progress Interval   : 20ms
+Regex Timeout       : 1s
+Workspace           : ""
+Keep Files          : no
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "profile-smoke"
+Use Cases           : "find-all"
+Inputs              : "string-utf8"
+Pattern             : /\w+/
+Subject             : "alpha beta gamma"
+Weight              : 2

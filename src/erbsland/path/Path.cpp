@@ -400,6 +400,18 @@ auto Path::currentDirectory() noexcept -> Path {
     }
 }
 
+auto Path::userHomeDirectory() noexcept -> Path {
+    try {
+        return userHomeDirectoryOrThrow();
+    } catch (const PathError &) {
+        return {};
+    }
+}
+
+auto Path::userHomeDirectoryOrThrow() -> Path {
+    return impl::pathBackend().userHomeDirectoryOrThrow();
+}
+
 auto Path::systemTempDirectory() noexcept -> Path {
     try {
         return systemTempDirectoryOrThrow();

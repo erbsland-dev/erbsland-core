@@ -135,9 +135,9 @@ Use ``BlockStyle`` when you want to bundle color and character attributes into o
 Block Strings
 -------------
 
-``BlockString`` is the primary owning read-only sequence of ``Block`` values. Use it for status bars, prompts, labels,
-stored options, drawing inputs and completed lines. ``BlockStringEditor`` is the mutable counterpart used while a
-sequence is actively assembled or changed.
+``BlockString`` is the primary owning read-only sequence of ``Block`` values.
+Use it for status bars, prompts, labels, stored options, drawing inputs and completed lines.
+``BlockStringEditor`` is the mutable counterpart used while a sequence is actively assembled or changed.
 
 Building Colored BlockText Fragments ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -166,7 +166,8 @@ It keeps colors, attributes, and text in a single readable sequence.
         fg::BrightBlack,
         " shortcut");
 
-``append(...)`` accepts colors, ``BlockStyle``, ``Block`` values, ``BlockAttributes``, plain text and other block strings.
+``append(...)`` accepts colors, ``BlockStyle``, ``Block`` values, ``BlockAttributes``, plain text and other block
+strings.
 Colors and attributes remain active for subsequent elements within the same call.
 
 Completed text can be constructed directly as a ``BlockString`` from UTF-8 or UTF-32 text:
@@ -198,8 +199,8 @@ This keeps normal value semantics:
     // original is still "alpha"
     // copy is now "Alpha"
 
-``BlockString`` owns or shares its storage and exposes only non-mutating operations. A ``BlockStringEditor`` converts
-implicitly to ``BlockString``, so read-only APIs safely accept both categories.
+``BlockString`` owns or shares its storage and exposes only non-mutating operations.
+A ``BlockStringEditor`` converts implicitly to ``BlockString``, so read-only APIs safely accept both categories.
 
 .. code-block:: cpp
 
@@ -211,16 +212,15 @@ implicitly to ``BlockString``, so read-only APIs safely accept both categories.
 Handling Invalid UTF-8 Input
 ----------------------------
 
-``EncodingErrors`` controls how UTF-8-based constructors react when the input is malformed.
+UTF-8-based constructors are tolerant and replace malformed input.
 
 .. code-block:: cpp
 
-    const auto strict = BlockString{"Gr\xC3", EncodingErrors::Throw};     // throws
-    const auto lossy = BlockString{"Gr\xC3", EncodingErrors::Replace};    // inserts U+FFFD
-    const auto compact = BlockString{"Gr\xC3", EncodingErrors::Ignore};   // drops the broken bytes when supported
+    const auto text = el::String{"Gr\xC3"};
+    const auto displayText = BlockString{text}; // inserts U+FFFD
 
-Use ``EncodingErrors::Throw`` at the boundary where invalid data should fail fast.
-Use ``EncodingErrors::Replace`` when the application should stay readable even with damaged input.
+Validate byte or standard-string input before constructing Erbsland text when invalid data should fail fast.
+For existing UTF-8 Erbsland strings, call ``isValidUtf8()`` explicitly when validation is required.
 
 Searching, Slicing, and Measuring
 ---------------------------------

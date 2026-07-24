@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -20,6 +20,12 @@ using namespace el::text::literals;
 using namespace el::text;
 
 namespace th = erbsland::unittest::th;
+
+template <typename T>
+concept HasModeToU8String = requires(const T &converter) { converter.toU8String(EncodingMode::Strict); };
+
+template <typename T>
+concept HasModeToStdString = requires(const T &converter) { converter.toStdString(EncodingMode::Strict); };
 
 TESTED_TARGETS(StringConverter StringConverterTraits)
 class StringConverterTest final : public el::UnitTest {
@@ -72,10 +78,24 @@ public:
 
     void testInvalidInputModes() {
         const auto invalid = std::string{th::stdStringFromHex("41 C0 42")};
+        const auto invalidCore = U8String{U8StringEditor{std::string_view{invalid}}};
 
-        REQUIRE_EQUAL(StringConverter{invalid}.toStdU32String(), std::u32string{U"A\uFFFDB"});
-        REQUIRE_EQUAL(StringConverter{invalid}.toStdU32String(EncodingErrorMode::Ignore), std::u32string{U"AB"});
-        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingErrorMode::Throw));
+        REQUIRE_EQUAL(
+            StringConverter{StringConverter{invalid}.toU32String()}.toStdU32String(), std::u32string{U"A\uFFFDB"});
+        REQUIRE_THROWS(StringConverter{invalid}.toU8String(EncodingMode::Strict));
+        REQUIRE_THROWS(StringConverter{invalid}.toStdString(EncodingMode::Strict));
+        REQUIRE_THROWS(StringConverter{invalidCore}.toStdString(EncodingMode::Strict));
+        REQUIRE_EQUAL(StringConverter{invalidCore}.toStdString(), th::stdStringFromHex("41 EF BF BD 42"));
+    }
+
+    void testEncodingModeIsAvailableForAllConversions() {
+        using StdConverter = StringConverter<std::string>;
+        using CoreConverter = StringConverter<U8String>;
+
+        static_assert(HasModeToU8String<StdConverter>);
+        static_assert(HasModeToU8String<CoreConverter>);
+        static_assert(HasModeToStdString<StdConverter>);
+        static_assert(HasModeToStdString<CoreConverter>);
     }
 
     void testStringLifetimeAndAliasing() {

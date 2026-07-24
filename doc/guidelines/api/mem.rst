@@ -2,211 +2,198 @@
 Memory Domain API Guidelines
 ****************************
 
-These guidelines extend the Common, Text, and Unit and Value API Guidelines for public APIs that model bytes, byte
-blocks, shared storage, and unsafe memory boundaries.
-
-The purpose of this document is to define a base naming vocabulary for memory APIs.
-It is intentionally plain, technical and list based to get a quick overview of method names and their usage patterns.
-If you introduce new vocabulary, update this page to provide a good reference for future extensions.
-
 Core Semantics
 ==============
 
-Storage Vocabulary
-------------------
+Ownership Model
+---------------
 
 .. code-block:: text
 
-    Byte // explicit single-byte value
-    ByteBlock // owning read-only shared byte sequence
-    ByteBlockEditor // mutable copy-on-write byte sequence
-    CowStorage // automatic-detach copy-on-write wrapper
-    CowManualStorage // explicit-detach copy-on-write wrapper
-    SharedDataPointer // intrusive copy-on-write pointer for library storage internals
-    StorageIdentifier // identity token for a backend storage range
-    Unsafe❮Type❯Ptr // deliberate raw pointer boundary
+    borrowed view = non-owning contiguous bytes valid until source mutation or destruction
+    direct owner = independent allocation copied deeply and transferred by move
+    shared block = immutable value or slice sharing read-only allocation ownership
+    block editor = mutable copy-on-write value that detaches before modification
+    ring = bounded FIFO bytes stored in up to two contiguous segments around a wrap point
 
 Byte Ranges
 -----------
 
 .. code-block:: text
 
-    unit::ByteIndex // index into byte data
-    unit::ByteLength // byte count or capacity
-    unit::ByteRange // half-open byte range
-    endIndex() // first index after the visible byte sequence
-    get(index, defaultValue) // tolerant byte access
-    getOrThrow(index) // strict byte access
+    index = zero-based byte position
+    length or capacity = non-negative byte count
+    range = half-open byte positions with inclusive begin and exclusive end
+    tolerant access = fallback or unchanged destination for an invalid range
+    strict access = typed bounds failure for an invalid range
+
+Sensitive Data
+--------------
+
+.. code-block:: text
+
+    marked allocation = one-way sensitivity metadata shared by every non-empty block alias
+    sensitive direct owner = reversible per-object mode copied with independently owned storage
+    owning block operation = may propagate sensitivity from a marked source to its destination
+    borrowed view = carries no sensitivity metadata and does not mark a destination
+    secure erasure = optimizer-resistant overwrite of complete owned capacity
+    ordinary conversion = explicit unmarked copy unless its owning-type contract propagates sensitivity
+    comparison = ordinary byte comparison without a constant-time guarantee
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    Byte // wrapper around one uint8_t value
-    ByteBlock // owning read-only byte container and shared slice
-    ByteBlockEditor // mutable copy-on-write byte container
-    ByteReader // sequential byte and integer reader
-    ByteWriter // sequential byte and integer writer
-    Endianness // byte order for multi-byte integer IO
-    StorageIdentifier // stable identity for storage ranges
+    Byte // explicit single-byte value
+    ByteSpan, ConstByteSpan // mutable and read-only dynamic byte views
+    FixedByteSpan❮extent❯, FixedConstByteSpan❮extent❯ // fixed-extent byte views
+    ByteArray❮size❯ // fixed-size mutable byte owner
+    ByteBuffer // dynamic deep-copying mutable byte owner
+    ByteBlock // shared read-only byte value and slice
 
-Storage and Pointer Types
-=========================
+Secondary Types
+===============
 
 .. code-block:: text
 
-    CowStorage // shared copy-on-write storage with automatic mutable detach
-    CowManualStorage // shared copy-on-write storage with explicit mutable detach
-    SharedData // base for intrusive shared data objects
-    SharedVirtualData // polymorphic shared data base with virtual clone
-    SharedArrayData // compact shared trailing-array storage
-    SharedDataPointer // intrusive shared-data pointer with optional manual detach
-    ReferenceCounter // atomic intrusive reference counter
-    UnsafeConstMemoryPtr, UnsafeMemoryPtr // raw memory pointer aliases
-    UnsafeConstCharPtr, UnsafeCharPtr // raw char pointer aliases
-    UnsafeConstChar8Ptr, UnsafeChar8Ptr // raw char8_t pointer aliases
-    impl::UnsafeByteBlockBuffer // uncommitted ByteBlockEditor storage for native byte reads
+    Endianness // little- or big-endian integer byte order
+    ByteBlockEditor // explicit mutable copy-on-write byte value
+    RingBuffer, ByteRingBuffer // bounded FIFO bytes with optional integer operations
+    ByteReader, ByteWriter // sequential byte and integer reader and writer
+    StorageIdentifier // identity token for a visible backend storage range
+    CowStorage❮Data❯, CowManualStorage❮Data❯ // automatic- and explicit-detach copy-on-write wrappers
+    SharedData, SharedVirtualData // intrusive shared-data bases
+    SharedArrayData❮Value❯ // intrusive trailing-array storage
+    SharedDataPointer❮Data❯ // intrusive shared-data pointer with optional manual detach
+    ReferenceCounter // atomic intrusive reference state
+    UnsafeConstMemoryPtr, UnsafeMemoryPtr // explicit raw memory boundaries
+    UnsafeConstCharPtr, UnsafeCharPtr // explicit raw character boundaries
+
+Pattern Definitions
+===================
+
+.. code-block:: text
+
+    B = ByteArray❮size❯/ByteBuffer/ByteBlock/ByteBlockEditor // owning byte sequence
+    S = ByteSpan/ConstByteSpan/FixedByteSpan❮size❯/FixedConstByteSpan❮size❯ // borrowed byte sequence
 
 Byte Value Patterns
 ===================
 
 .. code-block:: text
 
-    Byte(value) // create from uint8_t
-    o.toRawValue() -> uint8_t // return raw byte value
-    o.toUInt8() -> uint8_t // return byte as unsigned integer
-    o.masked(mask) -> uint8_t // apply bit mask
-    o.matches(mask, expected) -> bool // test masked bits against expected value
+    T(value) // create from a raw byte-compatible value
+    o.toStdByte()/toUInt8()/toChar() -> T // cross an explicit raw-value boundary
+    o.shifted❮Direction❯/rotated❮Direction❯(amount) -> Byte // return transformed bits
+    o.shift❮Direction❯/rotate❮Direction❯(amount) // transform bits in place
+    o.masked(mask) -> Byte // return masked bits
+    o.matches(mask, expected) -> bool // test masked bits against an expected value
 
-Byte Sequence Patterns
-======================
-
-.. code-block:: text
-
-    ByteBlock(length[, value]) // create repeated byte value
-    ByteBlock(span/vector) // create byte block from raw byte values
-    ByteBlock(editor) // share the complete editor data without copying
-    ByteBlockEditor(length[, value]) // create editable repeated byte values
-    ByteBlockEditor(span/vector) // create an editor from raw byte values
-    ByteBlockEditor(block) // create an editable copy of visible block data
-    o.isEmpty() -> bool // test for no visible bytes
-    o.startsWith/endsWith(bytes) -> bool // prefix or suffix test
-    o.contains(bytes) -> bool // byte sequence membership
-    o.length() -> unit::ByteLength // visible byte length
-    o.endIndex() -> unit::ByteIndex // first index after visible bytes
-    o.get(index[, defaultValue]) -> Byte // tolerant indexed byte access
-    o.getOrThrow(index) -> Byte // strict indexed byte access, throws err::OutOfRangeError
-    o.slice(range/begin, end-or-length) -> ByteBlock // shared byte slice
-    o.find(bytes[, start]) -> unit::ByteIndex // first byte-sequence occurrence
-    o.findLast(bytes) -> unit::ByteIndex // last byte-sequence occurrence
-    o.toByteVector() -> vector<Byte> // materialize explicit byte values
-    o.toUInt8Vector() -> vector<uint8_t> // materialize raw unsigned byte values
-    o.toCharVector() -> vector<char> // materialize raw char values
-
-Byte Block Mutation Patterns
-============================
-
-.. code-block:: text
-
-    o.set(index, byte) -> void // tolerant indexed byte write
-    o.setOrThrow(index, byte) -> void // strict indexed byte write, throws err::OutOfRangeError
-    o.clear() -> ByteBlockEditor& // remove bytes while keeping capacity
-    o.reset() -> void // remove bytes and release storage
-    o.remove(range) -> ByteBlockEditor& // remove byte range in-place
-    o.keep(range) -> ByteBlockEditor& // keep only byte range in-place
-    o.replace(range, bytes) -> ByteBlockEditor& // replace range in-place
-    o.insert(index, bytes) -> ByteBlockEditor& // insert bytes, appending for out-of-range index
-    o.append(byte/bytes) -> ByteBlockEditor& // append bytes
-    o.removed(range) -> ByteBlockEditor // return editable copy with range removed
-    o.replaced(range, bytes) -> ByteBlockEditor // return editable copy with range replaced
-    o.join(parts) -> ByteBlockEditor // join byte blocks using this editor as separator
-    ByteBlockEditor::fromJoined(parts) -> ByteBlockEditor // join byte blocks without a separator
-
-Capacity and Identity Patterns
-==============================
-
-.. code-block:: text
-
-    o.detach() -> void // ensure unique byte or data storage
-    o.capacity() -> unit::ByteLength // current storage capacity
-    o.reserve(capacity) -> void/T& // reserve storage capacity
-    o.shrinkToFit() -> void // release unused storage
-    o.isShared() -> bool // test whether storage is shared
-    o.useCount() -> integer // current shared reference count
-    o.storageId() -> std::size_t // raw implementation identity for diagnostics
-    StorageIdentifier::fromMemoryRange(begin, end) -> StorageIdentifier // identity for visible storage range
-    o.toRawValues() -> array<uint64_t, 2> // mixed storage identity values
-
-Reader and Writer Patterns
-==========================
-
-.. code-block:: text
-
-    ByteReader(block/editor) // create sequential reader sharing the input data
-    ByteWriter() // create sequential writer
-    o.length() -> unit::ByteLength // readable or written byte length
-    o.position() -> unit::ByteIndex // current read or write position
-    o.setPosition(index) -> void // move position, clamped to length
-    o.endianness() -> Endianness // byte order for integer helpers
-    o.setEndianness(value) -> void // set byte order for integer helpers
-    o.isAtEnd() -> bool // test if reader reached the end
-    o.canRead(byteCount) -> bool // test if reader has enough remaining bytes
-    o.advance(byteCount) -> void // move reader forward, clamped to length
-    o.toByteBlock() -> ByteBlock // materialize written bytes
-    o.readByte([default]) -> Byte // read one byte and advance, or default at end
-    o.peekByte([offset][, default]) -> Byte // read without advancing, or default at end
-    o.readByteOrThrow()/peekByteOrThrow() -> Byte // strict byte read, throws err::OutOfRangeError
-    o.readInteger<T>(default) -> T // tolerant integer read with endianness
-    o.readIntegerOrThrow<T>() -> T // strict integer read, throws err::OutOfRangeError
-    o.readIntegerInto(value) -> bool // read into existing value, false if not enough bytes
-    o.writeByte(byte) -> ByteWriter& // write one byte and advance
-    o.writeInteger(value) -> ByteWriter& // write integer with configured endianness
-    o.read❮SignWidth❯([default]) -> T // typed tolerant integer reader, e.g. readUInt32()
-    o.read❮SignWidth❯OrThrow() -> T // typed strict integer reader
-    o.write❮SignWidth❯(value) -> ByteWriter& // typed integer writer
-
-Unsafe Byte Buffer Patterns
+Byte Sequence Read Patterns
 ===========================
 
 .. code-block:: text
 
-    UnsafeByteBlockBuffer(capacity) // allocate uncommitted byte block storage
-    o.data() -> span<Byte> // writable byte span for low-level APIs
-    o.capacity() -> ByteLength // usable byte capacity
-    o.take(length) -> ByteBlockEditor // commit length bytes and move out the editable byte block
+    o.isEmpty() -> bool // test for no visible bytes
+    o.length()/endIndex() -> T // inspect visible sequence bounds
+    o.get(index[, fallback]) -> Byte // tolerant indexed access
+    o.getOrThrow(index) -> Byte // strict indexed access
+    o.span([range]) -> ConstByteSpan // borrow complete or clamped visible bytes
+    o.startsWith/endsWith/contains(bytes) -> bool // test byte-sequence membership
+    o.find/findLast(bytes[, start]) -> unit::ByteIndex // locate a byte sequence
+    o.forEach(function) -> util::LoopResult // visit bytes with an optional index
+    o.toByteBuffer() -> ByteBuffer // create an independent mutable byte copy
 
-Copy-On-Write Storage Patterns
+Mutable Byte Sequence Patterns
 ==============================
 
 .. code-block:: text
 
-    T::from(data) -> T // create unique storage from existing data
-    T::create(args...) -> T // create unique storage by constructing data in place
-    o.data() const -> const Data& // read stored data
-    o.data() -> Data& // mutable data access with automatic detach
-    o.detachedData() -> Data& // mutable data access with explicit detach naming
-    o.setData(data) -> void // replace stored data with a unique object
-    o.emplaceData(args...) -> void // replace by constructing a unique object in place
-    o.detach() -> void // ensure unique ownership
-    o.swap(other) -> void // exchange storage
-    swap(a, b) -> void // exchange storage objects
+    T(length[, value])/T(bytes) // create owned byte storage
+    T::fromSpan(span) -> T // explicitly copy borrowed bytes
+    o.set/setOrThrow(index, byte) // tolerant or strict indexed write
+    o.fill([range], byte) // fill complete or clamped visible storage
+    o.overwrite([range], bytes) // copy the largest fitting source prefix without resizing
+    o.xorAt/xorAtOrThrow(index, byte) // tolerant or strict indexed XOR
+    o.xorWith([range], bytes) -> T // apply bulk XOR with type-specific size behavior
+    o.append/insert/replace(position, bytes) -> T& // resize and add or replace bytes
+    o.remove/keep(range) -> T& // remove or retain a clamped range
+    o.resize/reserve/shrinkToFit(capacity) // manage visible length and capacity
+    o.clear()/reset() // empty while retaining or releasing storage
 
-Advanced Shared Data Patterns
-=============================
+Shared Block Patterns
+=====================
 
 .. code-block:: text
 
-    SharedDataPointer(data) // take intrusive shared ownership of newly allocated data
-    o.get()/constGet() -> Data* // mutable or const pointer access
-    o.reset([data]) -> void // replace managed data
-    o.isNull() -> bool // test for no managed data
-    o.operator*/operator-> // access managed data, detaching unless manual-detach mode is enabled
-    SharedArrayData::create(size, capacity) -> Data* // allocate unreferenced trailing-array storage
-    o.clone() -> Data* // create unreferenced detached copy
-    SharedArrayData::destroy(data) -> void // destroy trailing-array storage
-    T::canAllocateWithCapacity(capacity) -> bool // test allocation preconditions
-    T::allocationOverhead() -> std::size_t // bytes before trailing element storage
-    T::allocationSizeForCapacity(capacity) -> std::size_t // total allocation size
-    o.addReference()/removeReference() -> ReferenceStatus // intrusive reference count changes
-    o.isReferenced()/status() -> bool/ReferenceStatus // reference counter state
+    T(editor-or-block) // share visible block allocation ownership
+    o.slice(range) -> ByteBlock // create a shared read-only slice
+    o.join(parts) -> ByteBlockEditor // join byte sequences using the receiver as separator
+    T::fromJoined(parts) -> ByteBlockEditor // join byte sequences without a separator
+    o.detach() // ensure unique mutable storage before low-level access
+
+Integer Access Patterns
+=======================
+
+.. code-block:: text
+
+    getInteger❮T❯(bytes, offset[, endianness, fallback]) -> T // tolerant endian-aware read
+    getIntegerInto(bytes, value, offset[, endianness]) -> bool // checked endian-aware read
+    getIntegerOrThrow❮T❯(bytes, offset[, endianness]) -> T // strict endian-aware read
+    setInteger(bytes, offset, value[, endianness]) -> bool // checked endian-aware write
+    setIntegerOrThrow(bytes, offset, value[, endianness]) // strict endian-aware write
+    toByteSpan/toConstByteSpan(stdSpan) -> S // create a zero-copy compatibility view
+
+Sequential Read and Write Patterns
+==================================
+
+.. code-block:: text
+
+    T(block-or-editor) // create a reader sharing its input data
+    T([endianness]) // create an empty sequential writer
+    o.position()/length() -> T // inspect sequential bounds
+    o.isAtEnd() -> bool // test whether a sequential reader reached its end
+    o.setPosition/advance(amount) // move within clamped bounds
+    o.readByte/peekByte([fallback]) -> Byte // tolerant advancing or non-advancing read
+    o.readByteOrThrow/peekByteOrThrow() -> Byte // strict advancing or non-advancing read
+    o.readInteger❮T❯([fallback])/readIntegerOrThrow❮T❯() -> T // tolerant or strict integer read
+    o.writeByte/writeInteger(value) -> ByteWriter& // append and advance
+    o.toByteBlock() -> ByteBlock // materialize written bytes
+
+Ring Buffer Patterns
+====================
+
+.. code-block:: text
+
+    T(capacity[, maximumCapacity]) // create a fixed or growable bounded ring
+    o.length()/available()/capacity()/maximumCapacity() -> unit::ByteLength // inspect ring bounds
+    o.write(bytes)/read(destination) -> unit::ByteLength // transfer as many bytes as possible
+    o.writeExact(bytes) -> util::Result // atomically write all bytes or leave the ring unchanged
+    o.read(maximum) -> ByteBlock // remove up to the requested byte count
+    o.readInteger() -> T // atomically read one endian-aware integer
+    o.writeInteger(value) -> util::Result // atomically write one endian-aware integer
+    o.clear()/shrinkToInitial() // discard bytes or restore empty initial capacity
+
+Sensitive Byte Storage Patterns
+===============================
+
+.. code-block:: text
+
+    o.isSensitive() -> bool // inspect the shared-allocation mark or direct-owner mode
+    o.markAsSensitive() // irreversibly mark ByteBlock or ByteBlockEditor shared storage
+    o.setSensitive(enabled) // configure reversible ByteBuffer or RingBuffer sensitive mode
+    o.secureErase() // erase complete capacity while preserving visible length and sensitivity
+    o.copy/slice/mutate(...) -> T // preserve or propagate sensitivity according to owning-type semantics
+
+Shared Storage Patterns
+=======================
+
+.. code-block:: text
+
+    T::create/from(data) -> T // create unique shared storage
+    o.data()/detachedData() -> T& // access data with automatic or explicit detach semantics
+    o.setData/emplaceData(value) // replace storage with a unique object
+    o.detach() // ensure unique shared storage
+    o.isShared()/useCount() -> T // inspect shared ownership
+    o.reset([data])/swap(other) // replace or exchange intrusive storage

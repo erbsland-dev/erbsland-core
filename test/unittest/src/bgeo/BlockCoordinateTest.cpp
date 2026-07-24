@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockCoordinate.hpp>
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/math/SaturatingInteger.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

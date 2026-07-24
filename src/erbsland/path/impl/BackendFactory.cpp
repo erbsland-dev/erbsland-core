@@ -23,7 +23,7 @@ auto pathBackend() noexcept -> PathBackend & {
     return *gPathBackend;
 }
 
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
 void setPathBackend(PathBackendPtr &&backend) noexcept {
     if (backend == nullptr) {
         gPathBackend = createPathBackend();

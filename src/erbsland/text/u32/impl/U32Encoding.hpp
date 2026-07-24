@@ -84,21 +84,17 @@ inline void fastRetreatChar(const std::span<const char32_t> /*text*/, unit::CpIn
 /// specified mode.
 /// @tested{U32EncodingTest}
 template <typename tFunction>
-void forEachValidatedCharacter(const std::u32string_view text, const EncodingErrorMode errorMode, tFunction function) {
+void forEachValidatedCharacter(const std::u32string_view text, const EncodingMode mode, tFunction function) {
     for (auto index = std::size_t{0}; index < text.size(); ++index) {
         const auto character = Char{text[index]};
         if (character.isValidUnicode()) {
             function(character);
             continue;
         }
-        switch (errorMode) {
-        case EncodingErrorMode::Throw:
+        if (mode == EncodingMode::Strict) {
             throwU32EncodingError("Invalid Unicode code point", index);
-        case EncodingErrorMode::Ignore:
-            break;
-        case EncodingErrorMode::Replace:
+        } else {
             function(Char::replacement());
-            break;
         }
     }
 }
@@ -106,8 +102,7 @@ void forEachValidatedCharacter(const std::u32string_view text, const EncodingErr
 /// Iterate over all characters in a UTF-32 span, validating each character.
 /// @tested{U32EncodingTest}
 template <typename Function>
-auto forEachDecodedCharacter(const std::span<const char32_t> text, const EncodingErrorMode errorMode, Function function)
-    -> bool {
+auto forEachDecodedCharacter(const std::span<const char32_t> text, const EncodingMode mode, Function function) -> bool {
     for (auto position = std::size_t{0}; position < text.size(); ++position) {
         const auto character = Char{text[position]};
         if (character.isValidUnicode()) {
@@ -120,12 +115,9 @@ auto forEachDecodedCharacter(const std::span<const char32_t> text, const Encodin
             }
             continue;
         }
-        switch (errorMode) {
-        case EncodingErrorMode::Throw:
+        if (mode == EncodingMode::Strict) {
             throwU32EncodingError("Invalid Unicode code point", position);
-        case EncodingErrorMode::Ignore:
-            break;
-        case EncodingErrorMode::Replace:
+        } else {
             if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
                 if (!function(Char::replacement())) {
                     return false;
@@ -133,7 +125,6 @@ auto forEachDecodedCharacter(const std::span<const char32_t> text, const Encodin
             } else {
                 function(Char::replacement());
             }
-            break;
         }
     }
     return true;
@@ -141,22 +132,20 @@ auto forEachDecodedCharacter(const std::span<const char32_t> text, const Encodin
 
 /// Iterate over UTF-32 encoded byte data from a byte reader, validating each character.
 /// @tested{U8StringEncodingTest}
-template <EncodingErrorMode errorMode, typename Function>
+template <EncodingMode mode, typename Function>
 auto forEachValidatedCharacter(mem::ByteReader &reader, Function function) -> bool {
     auto cpIndex = std::size_t{0};
     while (!reader.isAtEnd()) {
         if (!reader.canRead(4U)) {
-            if constexpr (errorMode == EncodingErrorMode::Throw) {
+            if constexpr (mode == EncodingMode::Strict) {
                 throwEncodingError("Truncated UTF-32 data");
             } else {
-                if constexpr (errorMode == EncodingErrorMode::Replace) {
-                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                        if (!function(Char::replacement())) {
-                            return false;
-                        }
-                    } else {
-                        function(Char::replacement());
+                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                    if (!function(Char::replacement())) {
+                        return false;
                     }
+                } else {
+                    function(Char::replacement());
                 }
                 reader.advance(4U);
                 continue;
@@ -176,18 +165,16 @@ auto forEachValidatedCharacter(mem::ByteReader &reader, Function function) -> bo
             cpIndex += 1U;
             continue;
         }
-        if constexpr (errorMode == EncodingErrorMode::Throw) {
+        if constexpr (mode == EncodingMode::Strict) {
             reader.setPosition(codePointPosition);
             throwU32EncodingError("Invalid Unicode code point", cpIndex);
         } else {
-            if constexpr (errorMode == EncodingErrorMode::Replace) {
-                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                    if (!function(Char::replacement())) {
-                        return false;
-                    }
-                } else {
-                    function(Char::replacement());
+            if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                if (!function(Char::replacement())) {
+                    return false;
                 }
+            } else {
+                function(Char::replacement());
             }
             cpIndex += 1U;
         }
@@ -198,14 +185,12 @@ auto forEachValidatedCharacter(mem::ByteReader &reader, Function function) -> bo
 /// Iterate over UTF-32 encoded byte data from a byte reader with a runtime selected error handling mode.
 /// @tested{U8StringEncodingTest}
 template <typename Function>
-auto forEachValidatedCharacter(mem::ByteReader &reader, const EncodingErrorMode errorMode, Function function) -> bool {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
-        return forEachValidatedCharacter<EncodingErrorMode::Throw>(reader, function);
-    case EncodingErrorMode::Ignore:
-        return forEachValidatedCharacter<EncodingErrorMode::Ignore>(reader, function);
-    case EncodingErrorMode::Replace:
-        return forEachValidatedCharacter<EncodingErrorMode::Replace>(reader, function);
+auto forEachValidatedCharacter(mem::ByteReader &reader, const EncodingMode mode, Function function) -> bool {
+    switch (mode) {
+    case EncodingMode::Strict:
+        return forEachValidatedCharacter<EncodingMode::Strict>(reader, function);
+    case EncodingMode::Tolerant:
+        return forEachValidatedCharacter<EncodingMode::Tolerant>(reader, function);
     }
     return false;
 }

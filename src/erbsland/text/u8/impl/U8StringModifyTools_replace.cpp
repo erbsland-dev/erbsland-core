@@ -19,13 +19,13 @@ auto U8StringModifyTools::removed(const CpRange range) const -> U8StringSharedSt
     const auto data = _data.dataSpan();
     const auto removeRange = _data.relativeRangeForAbsolute(U8StringCharReadTool{_data}.sliceRange(range));
     if (data.empty() || removeRange.isEmpty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
 
     const auto start = removeRange.index().toSizeT();
     const auto count = removeRange.length().toSizeT();
     const auto newSize = data.size() - count;
-    auto storage = U8StringSharedStorage::forSize(newSize);
+    auto storage = U8StringSharedStorage::forSize(newSize, _sensitive);
     if (start > 0U) {
         std::memcpy(storage.dataForWrite(), data.data(), start);
     }
@@ -39,7 +39,7 @@ auto U8StringModifyTools::removed(const CpRange range) const -> U8StringSharedSt
 auto U8StringModifyTools::removedAll(const CharSet &characters) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || characters.isEmpty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
     return replacedCharacters(
         [&](const Char character) noexcept -> bool { return characters.contains(character); }, {});
@@ -56,14 +56,15 @@ auto U8StringModifyTools::kept(const CpRange range) const -> U8StringSharedStora
     if (data.empty() || keepRange.isEmpty()) {
         return {};
     }
-    return U8StringSharedStorage::fromBytes(data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
+    return U8StringSharedStorage::fromBytes(
+        data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()), _sensitive);
 }
 
 auto U8StringModifyTools::replacedAll(const CharSet &characters, const Char replacement) const
     -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || characters.isEmpty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
     const auto bytes = characterBytes(replacement);
     return replacedCharacters(
@@ -75,7 +76,7 @@ auto U8StringModifyTools::replacedAll(const CharSet &characters, const U8StringD
     -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (data.empty() || characters.isEmpty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
     return replacedCharacters(
         [&](const Char character) noexcept -> bool { return characters.contains(character); }, replacement.dataSpan());
@@ -100,12 +101,13 @@ auto U8StringModifyTools::kept(const ByteRange range) const -> U8StringSharedSto
     if (keepRange.isEmpty()) {
         return {};
     }
-    return U8StringSharedStorage::fromBytes(data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()));
+    return U8StringSharedStorage::fromBytes(
+        data.subspan(keepRange.index().toSizeT(), keepRange.length().toSizeT()), _sensitive);
 }
 
 auto U8StringModifyTools::inserted(const ByteIndex index, const U8StringDataView &text) const -> U8StringSharedStorage {
     if (index.isNoIndex()) {
-        return U8StringSharedStorage::fromBytes(_data.dataSpan());
+        return U8StringSharedStorage::fromBytes(_data.dataSpan(), _sensitive);
     }
     const auto insertIndex = ByteIndex::fromSizeT(std::min(index.toSizeT(), _data.dataSpan().size()));
     return replaced(ByteRange::emptyAt(insertIndex), text);
@@ -113,7 +115,7 @@ auto U8StringModifyTools::inserted(const ByteIndex index, const U8StringDataView
 
 auto U8StringModifyTools::inserted(const CpIndex index, const U8StringDataView &text) const -> U8StringSharedStorage {
     if (index.isNoIndex()) {
-        return U8StringSharedStorage::fromBytes(_data.dataSpan());
+        return U8StringSharedStorage::fromBytes(_data.dataSpan(), _sensitive);
     }
     auto byteIndex = byteIndexForCharacterIndex(_data, index);
     if (byteIndex.isNoIndex()) {
@@ -125,19 +127,19 @@ auto U8StringModifyTools::inserted(const CpIndex index, const U8StringDataView &
 auto U8StringModifyTools::replaced(const ByteRange range, const U8StringDataView &text) const -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     if (!range.isValid()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
     const auto replaceRange = range.clampedTo(ByteLength::fromSizeT(data.size()));
     const auto replacement = text.dataSpan();
     if (replaceRange.isEmpty() && replacement.empty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
 
     const auto start = replaceRange.index().toSizeT();
     const auto removeLength = replaceRange.length().toSizeT();
     const auto newSize = U8StringSharedStorage::checkedAddSize(
         data.size() - removeLength, replacement.size(), "Modified string exceeds size bounds");
-    auto storage = U8StringSharedStorage::forSize(newSize);
+    auto storage = U8StringSharedStorage::forSize(newSize, _sensitive);
     if (start > 0U) {
         std::memcpy(storage.dataForWrite(), data.data(), start);
     }
@@ -166,7 +168,7 @@ auto U8StringModifyTools::replacedFirst(
     -> U8StringSharedStorage {
     const auto range = findFirstTextRange(_data, text, compareFn);
     if (!range.isValid()) {
-        return U8StringSharedStorage::fromBytes(_data.dataSpan());
+        return U8StringSharedStorage::fromBytes(_data.dataSpan(), _sensitive);
     }
     return replaced(range, replacement);
 }
@@ -177,7 +179,7 @@ auto U8StringModifyTools::replacedText(
     const auto data = _data.dataSpan();
     const auto needle = text.dataSpan();
     if (data.empty() || needle.empty()) {
-        return U8StringSharedStorage::fromBytes(data);
+        return U8StringSharedStorage::fromBytes(data, _sensitive);
     }
 
     auto newSize = std::size_t{0};
@@ -196,7 +198,7 @@ auto U8StringModifyTools::replacedText(
         }
     }
     U8StringSharedStorage::validateSize(newSize);
-    auto storage = U8StringSharedStorage::forSize(newSize);
+    auto storage = U8StringSharedStorage::forSize(newSize, _sensitive);
     auto writePosition = std::size_t{0};
     position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
@@ -252,7 +254,7 @@ auto U8StringModifyTools::replaceTextInStorage(
         return storage;
     }
     if (!storage.isUniqueFullRange() || !replacement.empty()) {
-        storage = U8StringModifyTools{dataView}.replacedText(text, replacement, compareFn);
+        storage = U8StringModifyTools{dataView, storage.isSensitive()}.replacedText(text, replacement, compareFn);
         return storage;
     }
 

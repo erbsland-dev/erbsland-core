@@ -8,6 +8,7 @@
 #include "../math/IntegerRange.hpp"
 #include "../math/IntegerTypes.hpp"
 #include "../mem/ByteBlock.hpp"
+#include "../mem/ByteBuffer.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/StringEditor.hpp"
 #include "../unit/ByteLength.hpp"
@@ -71,6 +72,11 @@ public:
     /// @param length The number of bytes to build. Zero or infinite lengths return an empty block.
     /// @return A block with random bytes, or an empty block.
     [[nodiscard]] auto buildByteBlock(unit::ByteLength length) -> mem::ByteBlock;
+    /// Create a deep-copying buffer of random bytes.
+    /// @param length The number of bytes to build. Zero or infinite lengths return an empty buffer.
+    /// Secure generators return a buffer with sensitive mode enabled.
+    /// @return A buffer with random bytes, or an empty buffer.
+    [[nodiscard]] auto buildByteBuffer(unit::ByteLength length) -> mem::ByteBuffer;
     /// Select a valid element index for a container with `count` elements.
     /// @param count The number of available elements.
     /// @return A random index in `[0, count)`, or `ElementIndex::noIndex()` for zero or infinite counts.
@@ -220,6 +226,9 @@ public: // shuffling
     void shuffle(util::List<T, Self> &values);
 
 public: // source methods
+    /// Test if this generator is suitable for security-sensitive random data.
+    /// Secure generators automatically mark byte blocks created by `buildByteBlock()` as sensitive.
+    [[nodiscard]] virtual auto isSecure() const noexcept -> bool { return false; }
     /// Generate a random 32-bit signed integer in the inclusive range.
     /// @param minimum The lower inclusive bound. Reversed bounds are ordered automatically.
     /// @param maximum The upper inclusive bound. Reversed bounds are ordered automatically.

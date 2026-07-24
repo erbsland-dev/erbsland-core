@@ -97,20 +97,20 @@ void DynamicStringPatternData::appendSet(const CharSet &charSet) {
     if (charSet.isEmpty()) {
         throwParseError("String pattern character set must not be empty");
     }
-    if (_ranges.size() + charSet.ranges().size() > std::numeric_limits<std::uint16_t>::max()) {
+    const auto rangeOffset = checkedRangeCount(_ranges.size());
+    auto rangeCountValue = std::size_t{0};
+    charSet.forEach([&rangeCountValue](const CharRange) noexcept -> void { ++rangeCountValue; });
+    if (rangeCountValue > std::numeric_limits<std::uint16_t>::max() - _ranges.size()) {
         throwParseError("String pattern has too many ranges");
     }
-    const auto rangeOffset = checkedRangeCount(_ranges.size());
-    const auto rangeCount = checkedRangeCount(charSet.ranges().size());
+    const auto rangeCount = checkedRangeCount(rangeCountValue);
     _elements.push_back(
         StringPatternElement{
             .kind = StringPatternElementKind::Set,
             .character = {},
             .rangeOffset = rangeOffset,
             .rangeCount = rangeCount});
-    for (const auto &range : charSet.ranges()) {
-        _ranges.push_back(range);
-    }
+    charSet.forEach([this](const CharRange range) -> void { _ranges.push_back(range); });
 }
 
 void DynamicStringPatternData::appendSetPattern(const U32String &pattern) {

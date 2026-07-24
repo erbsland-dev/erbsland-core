@@ -2,286 +2,179 @@
 Unit and Value Domain API Guidelines
 ************************************
 
-These guidelines extend the Common API Guidelines for public APIs in the ``unit`` namespace.
-This namespace provides unit based types for indexes, lengths, ranges, counts and offsets.
-If you introduce new vocabulary or types, update this page.
-
 Core Semantics
 ==============
 
-Vocabulary
+Unit Model
 ----------
 
-Index
-    A zero-based position that points to one element in a sequence.
-    An index may have a special "no index" state.
+.. code-block:: text
 
-Length
-    A non-negative span that counts consecutive elements in a sequence. An amount has no direction.
-    An amount may have a special "infinite" state.
+    index = zero-based position with an optional no-index state
+    length or count = non-negative span with an optional infinite state
+    offset = signed movement relative to an index
+    range = half-open start index plus length
+    integer amount = signed ratio-scaled value with explicit compatible-ratio conversion
+    raw value = underlying native integer crossed only through an explicit boundary
 
-Integer Amount
-    A signed amount in a ratio-scaled unit. Use this for values such as seconds, milliseconds, meters, or kilometers
-    where explicit conversion between compatible ratios is required.
-
-Offset
-    A signed movement relative to an index.
-    Positive offsets move forward, negative offsets move backward.
-
-Range
-    A start index plus an amount.
-    Ranges are half-open: they contain index and exclude the end-index.
-
-Raw Value
-    The underlying native integer.
-
-Raw Value Access
+Arithmetic Model
 ----------------
 
-Unit types share the following uniform pattern to access the underlying raw value.vocabulary
+.. code-block:: text
+
+    equal units added or subtracted = same unit
+    index plus length or offset = moved index
+    range plus offset = moved range
+    length scaled by unsigned integer = non-negative length
+    offset scaled by signed integer = directed offset
+    unit multiplied or divided by unit = forbidden
+    operator failure = saturation or documented special state, never an exception
+    exact operation = named throwing variant
+
+Range Model
+-----------
 
 .. code-block:: text
 
-    o.toRawValue() -> R
-    
-This name is intentionally explicit: it marks the point where code leaves the protected domain model and talks to
-low-level APIs or storage formats.
-We do not add implicit conversions to native integers.
-
-Operators
----------
-
-Operators are added when their meaning is safe and obvious at the call site.
-Operators never throw, special named ``...OrThrow()`` variants exists of a caller needs these exceptions.
-
-.. code-block:: text
-
-    T +/- T -> T  // add/subtract the same type
-    T +/-= T -> T&  // add/subtract in-place
-    ++/--T -> T&  // increment/decrement
-    T++/-- -> T  // increment/decrement
-
-    -offset -> offset  // negation only for signed offsets
-    index +/- length -> index  // adding length to index moves
-    index +/-= length -> index&  // adding length to index moves
-    index +/- offset -> index  // adding offset to index moves
-    index +/-= offset -> index&  // adding offset to index moves
-    range +/- offset -> range  // adding offset to range moves
-    range +/-= offset -> range&  // adding offset to range moves
-    length * unsigned-integer -> length  // scale a length with saturation
-    length / unsigned-integer -> length  // divide a length
-    length % unsigned-integer -> length  // length remainder
-    length *= unsigned-integer -> length&  // in-place length scaling
-    length /= unsigned-integer -> length&  // in-place length division
-    length %= unsigned-integer -> length&  // in-place length remainder
-    offset * signed-integer -> offset  // scale an offset with saturation
-    offset / signed-integer -> offset  // divide an offset
-    offset % signed-integer -> offset  // offset remainder
-    offset *= signed-integer -> offset&  // in-place offset scaling
-    offset /= signed-integer -> offset&  // in-place offset division
-    offset %= signed-integer -> offset&  // in-place offset remainder
-
-Integer scalar operands include native integers and saturating integers.
-Length operands require unsigned scalars because a length is non-negative.
-Offset operands require signed scalars because an offset has direction.
-Unit values are never multiplied, divided or modulo-applied with other unit values.
-
-Ranges
-------
-
-.. code-block:: text
-
-    [begin, length]  // [1, 3] => 3 elements, first element at zero-based index 1
-    [begin, end]  // [1, 3] => 2 elements, first element at zero-based index 1
+    begin = included start index
+    end = first excluded index
+    index and length = [index, index + length)
+    begin and end = [begin, end)
+    no range = invalid or absent range
+    all range = zero index and infinite length
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    // for UTF-8 stings and byte blocks and streams
-    ByteIndex  // byte index
-    ByteLength  // byte amount
-    ByteOffset  // byte offset
-    ByteRange  // byte range
-    ByteUnit  // the unit definition for the byte types
+    IntegerUnitIndex❮Unit❯ // zero-based index with a no-index state
+    IntegerUnitAmount❮Unit❯ // non-negative length or count with an infinite state
+    IntegerUnitOffset❮Unit❯ // signed movement or index difference
+    IntegerUnitRange❮Unit❯ // half-open index and length composition
+    IntegerAmount❮UnitRatio❯ // signed ratio-scaled amount
 
-    // for UTF-16 strings
-    U16DataIndex  // a char16_t index
-    U16DataLength  // a char16_t length
-    U16DataOffset  // a char16_t offset
-    U16DataRange  // a char16_t range
-    U16DataUnit  // the unit definition for the char16_t types
-
-    // for all sting types:
-    CpIndex  // code-point index
-    CpLength  // code-point length
-    CpOffset  // code-point offset
-    CpRange  // code-point length
-    CpUnit  // the unit definition for the code-point types
-
-    // for containers:
-    ElementIndex  // element index
-    ElementCount  // element count
-    ElementOffset  // element offset
-    ElementRange  // element range
-    ElementUnit  // the unit definition for the element types
-
-    // for command line and format arguments:
-    ArgumentIndex  // an argument index
-    ArgumentCount  // an argument count
-    ArgumentUnit  // the unit definition for the argument types
-
-    // for source code and diagnostic locations:
-    LineIndex  // zero-based source line index
-    LineCount  // source line count, used instead of LineLength for diagnostic source windows
-    LineOffset  // source line offset
-    LineRange  // source line range
-    LineUnit  // the unit definition for source line types
-    ColumnIndex  // zero-based source column index
-    ColumnCount  // source column count, used instead of ColumnLength for diagnostic pointer spans
-    ColumnOffset  // source column offset
-    ColumnRange  // source column range
-    ColumnUnit  // the unit definition for source column types
-    CodeLocation  // source location with line, column and code-point position
-    CodeContinuousRange  // continuous source range with exclusive end location
-
-    // specialized types:
-    ExitCode  // an exit code returned by processes
-    Version  // a version consisting of a major, minor, revision and build part
-    VersionPart  // enum to address a part of a version
-    VersionRange  // a range of versions
-    Major, Minor, Revision, BuildNumber // individual version parts
-    VersionUnit  // generic base unit for all version parts
-    MajorUnit, MinorUnit, RevisionUnit, BuildNumberUnit // part specific units
-
-Secondary Types
-===============
+Concrete Unit Types
+===================
 
 .. code-block:: text
 
-    // generic templates to create new unit types:
-    IntegerAmount<UnitTag, Ratio, Value>  // signed ratio-scaled amount with saturating value
-    IntegerUnit  // base class defining raw times for a unit based integer
-    IntegerUnitIndex<Tag, Value>  // zero based index type with optional "no index" state
-    IntegerUnitAmount<Tag, Value>  // amount for lengths or counts with optional "infinite" state
-    IntegerUnitOffset<Tag, Value>  // signed offset type for moving an index or index differences
-    IntegerUnitRange<Tag, Value>  // a composition of an index with an amount (length)
-    ElementUnit  // integer unit for generic element containers
-    ElementIndex  // zero-based position in a list-like container
-    ElementCount  // non-negative number of elements. for list sizes, capacities, and counts
-    ElementRange  // half-open range of elements
-    ElementOffset  // signed movement in element units
+    ByteIndex, ByteLength, ByteOffset, ByteRange // UTF-8, memory, and stream byte units
+    U16DataIndex, U16DataLength, U16DataOffset, U16DataRange // UTF-16 storage units
+    CpIndex, CpLength, CpOffset, CpRange // Unicode code-point units
+    ElementIndex, ElementCount, ElementOffset, ElementRange // generic container units
+    ArgumentIndex, ArgumentCount // command-line and format argument units
+    LineIndex, LineCount, LineOffset, LineRange // diagnostic source-line units
+    ColumnIndex, ColumnCount, ColumnOffset, ColumnRange // diagnostic source-column units
 
-    // Version
-    Version  // represents a version with major, minor, revision and build number
-    Major, Minor, Revision, BuildNumber  // strong types version part
-    MajorUnit, MinorUnit, RevisionUnit, BuildNumberUnit  // units for version parts derive from `VersionUnit`
-
-Common Factory Patterns
-=======================
+Value Types
+===========
 
 .. code-block:: text
 
-    T::zero() -> T  // the zero value
-    T::one() -> T  // the value one when it is meaningful
-    T::minimum() -> T  // the smallest valid value, excluding special states
-    T::maximum() -> T  // the largest valid value, excluding special states
+    CodeLocation, CodeContinuousRange // source location and continuous source range
+    Version, VersionRange // version value and constraint
+    ExitCode // process exit status
+
+Supporting Types
+================
+
+.. code-block:: text
+
+    IntegerUnit // base tag for index, amount, offset, and range families
+    ByteUnit, U16DataUnit, CpUnit, ElementUnit, ArgumentUnit // storage and collection unit tags
+    LineUnit, ColumnUnit // diagnostic source-position unit tags
+    VersionPart // selected version comparison precision
+    Major, Minor, Revision, BuildNumber // strongly typed version parts
+    VersionUnit, MajorUnit, MinorUnit, RevisionUnit, BuildNumberUnit // version unit tags
+
+Pattern Definitions
+===================
+
+.. code-block:: text
+
+    I = ❮Unit❯Index // index in a unit family
+    L = ❮Unit❯Length/❮Unit❯Count // non-negative span in a unit family
+    O = ❮Unit❯Offset // signed movement in a unit family
+    R = ❮NativeInteger❯ // underlying native integer
+
+Common Value Patterns
+=====================
+
+.. code-block:: text
+
+    T(value) // explicitly create from a raw value
+    o.toRawValue() -> R // cross the explicit native-integer boundary
+    o.isZero/isOne/isMinimum/isMaximum() -> bool // test common value states
+    T::zero/one/minimum/maximum() -> T // create common value states
+    o.toSizeT() -> std::size_t // convert non-negative values to a native size
 
 Index Patterns
 ==============
 
 .. code-block:: text
 
-    o.isZero(), o.isOne(), o.isMinimum(), o.isMaximum()  // value predicates
-    o.isNoIndex()  // the special no-index state
-    o.isValid()  // "not no-index"
-    o.isWithin(length)  // testing if the index is a valid position within a length
-    o.advance(length) -> T&  // moving forward by a non-negative length
-    o.advanced(length) -> T  // moving forward by a non-negative length
-    o.retreat(length) -> T&  // moving backward by a non-negative length
-    o.retreated(length) -> T  // moving backward by a non-negative length
-    o.move(offset) -> T&  // moving by a signed offset
-    o.moved(offset) -> T  // moving by a signed offset
-    o.increment(), o.incremented(), o.decrement(), o.decremented()  // single-step movement
-    o.distanceFromZero() -> Length  // the distance from zero
-    o.absoluteDistanceTo(index) -> Length  // non-directional distance between two indexes
-    o.offsetFromZero() -> Offset  // signed offset from zero, saturated if necessary
-    o.offsetTo(index) -> Offset  // signed offset to another index, saturated if necessary
-    o.wouldOffsetToSaturate(index)  // testing if offsetTo(index) would return a saturated value
-    o.toSizeT()  // conversion to std::size_t
-    T::noIndex() -> T  // the special no-index state
-    T::end(length) -> T  // converting a length measured from zero into the matching end index
+    o.isNoIndex()/isValid()/isWithin(length) -> bool // test index states and membership
+    o.advance/retreat(length) -> T& // move by a non-negative length
+    o.advanced/retreated(length) -> T // return an index moved by a non-negative length
+    o.move(offset) -> T& // move in place by a signed offset
+    o.moved(offset) -> T // return a value moved by a signed offset
+    o.increment/decrement() -> T& // move one position
+    o.distanceFromZero/absoluteDistanceTo(index) -> L // calculate non-directional distance
+    o.offsetFromZero/offsetTo(index) -> O // calculate signed distance
+    T::noIndex()/end(length) -> T // create the absent state or first excluded index
 
-Length Patterns
-===============
+Length and Offset Patterns
+==========================
 
 .. code-block:: text
 
-    o.isZero(), o.isOne(), o.isMinimum(), o.isMaximum()  // value predicates
-    o.isInfinite(), o.isFinite()  // the special infinite state
-    o.add(length) -> T&  // combining spans
-    o.added(length) -> T  // combining spans
-    o.subtract(length) -> T&  // reducing spans
-    o.subtracted(length) -> T  // reducing spans
-    o.multiply(unsigned-integer), o.multiplied(unsigned-integer)  // scaling a length
-    o.divide(unsigned-integer), o.divided(unsigned-integer)  // dividing a length
-    o.applyModulo(unsigned-integer), o.modulo(unsigned-integer)  // remainder in the same length unit
-    o.wouldAddSaturate(length)  // testing if addition would clamp or become infinite
-    o.wouldSubtractSaturate(length)  // testing if subtraction would clamp to zero
-    o.toSizeT()  // conversion to std::size_t
-    T::infinite() -> T  // the special infinite length
-
-Offset Patterns
-===============
-
-.. code-block:: text
-
-    o.isZero(), o.isOne(), o.isMinusOne(), o.isMinimum(), o.isMaximum()  // value predicates
-    o.isNegative(), o.isPositive()  // sign predicates
-    o.add(offset) -> T&  // combining movement
-    o.added(offset) -> T  // combining movement
-    o.subtract(offset) -> T&  // subtracting movement
-    o.subtracted(offset) -> T  // subtracting movement
-    o.multiply(signed-integer), o.multiplied(signed-integer)  // scaling an offset
-    o.divide(signed-integer), o.divided(signed-integer)  // dividing an offset
-    o.applyModulo(signed-integer), o.modulo(signed-integer)  // remainder in the same offset unit
-    o.wouldAddSaturate(offset), o.wouldSubtractSaturate(offset)  // testing if arithmetic would clamp
-    o.absoluteLength() -> Length  // converting magnitude into the matching length
-    o.negated() -> T  // sign inversion
-    T::minusOne() -> T  // the value negative one
+    o.isInfinite()/isFinite() -> bool // test amount special states
+    o.add/subtract(value) -> T& // combine values in place with saturation
+    o.added/subtracted(value) -> T // return a combined value
+    o.multiply/divide/applyModulo(integer) -> T& // scale or reduce in place
+    o.multiplied/divided/modulo(integer) -> T // return a scaled or reduced value
+    o.wouldAddSaturate/wouldSubtractSaturate(value) -> bool // test arithmetic saturation
+    o.absoluteLength() -> L // convert an offset magnitude to a matching length
+    o.negated() -> O // reverse an offset direction
+    T::infinite()/minusOne() -> T // create family-specific special values
 
 Range Patterns
 ==============
 
 .. code-block:: text
 
-    o.index() -> Index  // the start index
-    o.length() -> Length  // the number of elements
-    o.endIndex() -> Index  // the first index after the range
-    o.contains(index)  // membership
-    o.isWithin(length)  // testing if the whole range fits into bounds
-    o.isEmpty(), o.isInfinite(), o.isValid()  // state predicates
-    o.advance(length), o.retreat(length), o.move(offset)  // moving the start index
-    T::empty(), T::emptyAt(index), T::all(), T::noRange()  // common factories
+    T(index, length) // create a half-open range
+    T::fromBeginEnd(begin, end) -> T // create from included and excluded boundaries
+    o.index()/length()/endIndex() -> T // inspect range components
+    o.contains(index)/isWithin(length) -> bool // test membership or complete fit
+    o.isEmpty()/isInfinite()/isValid() -> bool // test range states
+    o.forEach(function) -> util::LoopResult // visit each represented index
+    o.advance/retreat(length) -> T& // move by a non-negative length
+    o.move(offset) -> T& // move a range in place
+    o.moved(offset) -> T // return a moved range
+    T::empty/all/noRange/emptyAt(index) -> T // create common range states
+
+Ratio Amount Patterns
+=====================
+
+.. code-block:: text
+
+    T(value) // create an amount at its declared ratio
+    T(otherAmount) // explicitly convert a compatible unit and ratio
+    o.to❮Ratio❯()/to❮Ratio❯OrThrow() -> T // convert with saturation or exact failure
+    o.add/subtract(amount) -> T& // combine compatible amounts in place
+    o.added/subtracted(amount) -> T // return a compatible amount result
 
 Version Patterns
 ================
 
 .. code-block:: text
 
-    o.major(), o.minor(), o.revision(), o.build()  // part access
-    o.compare(version, precision)  // precision-limited comparison
-    o.inRange(range, precision)  // range membership
-    o.toNumber()  // packed numeric representation
-    T::fromNumber(number)  // unpacking numeric representation
-
-Version Patterns
-================
-
-.. code-block:: text
-
-    T::all()  // all versions
-    T::atLeast/Most(version)  // minimum/maximum version constraint
-    T::between(minimum, maximum)  // bounded version range
-    T::exact(version)  // single version match
+    T(major[, minor, revision, build]) // create a version from strongly typed parts
+    o.major()/minor()/revision()/build() -> T // access version parts
+    o.compare(version[, precision]) -> std::strong_ordering // compare through a selected part
+    o.toNumber() -> uint64_t // pack all version parts
+    T::fromNumber(number) -> T // unpack all version parts
+    T::all/atLeast/atMost/between/exact([versions]) -> VersionRange // create a version constraint
+    o.contains(version[, precision]) -> bool // test a version constraint

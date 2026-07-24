@@ -10,12 +10,12 @@ namespace erbsland::re::impl {
 
 #undef ERBSLAND_RE_CREATE_REGULAR_GROUP_MANAGER
 #define ERBSLAND_RE_CREATE_REGULAR_GROUP_MANAGER(minimumGroupCount)                                                    \
-    if (captureGroupCount <= 1) {                                                                                      \
+    if (captureGroupCount <= minimumGroupCount) {                                                                      \
         return std::make_unique<CaptureGroupManagerBase<minimumGroupCount>>();                                         \
     }
 #undef ERBSLAND_RE_CREATE_ATOMIC_GROUP_MANAGER
 #define ERBSLAND_RE_CREATE_ATOMIC_GROUP_MANAGER(minimumGroupCount)                                                     \
-    if (captureGroupCount <= 1) {                                                                                      \
+    if (captureGroupCount <= minimumGroupCount) {                                                                      \
         return std::make_unique<CaptureGroupManagerWithAtomic<minimumGroupCount>>();                                   \
     }
 

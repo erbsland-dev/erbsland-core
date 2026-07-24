@@ -22,6 +22,7 @@ class PosixBackend final : public Backend {
     constexpr static auto cMinimumDelayBetweenScreenSizeDetection = std::chrono::milliseconds{100};
     constexpr static auto cEscapeSequenceTimeout = std::chrono::milliseconds{25};
     constexpr static auto cMaximumPendingKeyInputSize = 1024;
+    constexpr static auto cMaximumInputReadSize = 64;
 
 public:
     enum class SizeDetectionResult : uint8_t { NoTerminalAttached, NoTerminalSize, Success };
@@ -48,6 +49,7 @@ public:
     [[nodiscard]] auto readKey(std::chrono::milliseconds timeout) -> Key override;
     [[nodiscard]] auto waitForKey() -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
+    void purgePendingInput() noexcept override;
 
 public:
     /// Create or access the global instance.
@@ -74,8 +76,6 @@ private:
     [[nodiscard]] static auto waitForInput(OptionalTimeout timeout) -> bool;
     /// Poll whether stdin is currently readable without blocking.
     [[nodiscard]] static auto pollForInput() -> bool;
-    /// Read one chunk of raw input from stdin.
-    [[nodiscard]] static auto readInputChunk() -> std::string;
     /// Read one or more available chunks and append them to the pending key buffer.
     void appendInputChunks(OptionalTimeout timeout);
     /// Mark the start time for one pending escape sequence.

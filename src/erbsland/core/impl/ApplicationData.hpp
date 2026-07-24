@@ -16,6 +16,7 @@
 #include "../../event/impl/EventLoop.hpp"
 #include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../options/Options.hpp"
+#include "../../options/OptionSensitiveTextLocation.hpp"
 #include "../../options/OptionValues.hpp"
 #include "../../random/Random_fwd.hpp"
 #include "../../stream/StandardStreamRedirect.hpp"
@@ -31,7 +32,7 @@ namespace erbsland::core::impl {
 /// The interface for the internal data of the application.
 /// This is the actual singleton to allow temporary `Application` instances.
 /// Construction and `setCommandLineArguments` are protected by the mutex in `ApplicationInstanceManager`.
-/// @tested{ApplicationTestScopeTest}
+/// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
 class ApplicationData {
 public:
     struct EventData {
@@ -52,9 +53,11 @@ public:
     virtual ~ApplicationData() = default;
 
 public:
-    /// Set the command line arguments from the user application instance in `main()`.
+    /// Set and convert borrowed narrow command-line arguments from `main()`.
+    /// The argument vector remains owned by the caller and must remain valid for the application lifetime.
     virtual void setCommandLineArguments(int argc, char *argv[]) = 0;
-    /// Set the command line arguments from the user application instance in `main()`.
+    /// Set and convert borrowed wide command-line arguments from `wmain()`.
+    /// The argument vector remains owned by the caller and must remain valid for the application lifetime.
     virtual void setCommandLineArguments(int argc, wchar_t *argv[]) = 0;
     /// Do cleanup tasks before application exit.
     /// - Restore terminal integration after the application instance has been destroyed.
@@ -67,6 +70,12 @@ public:
 public: // accessors
     [[nodiscard]] virtual auto info() noexcept -> ApplicationInfo & = 0;
     [[nodiscard]] virtual auto commandLineArguments() const noexcept -> const CommandLineArguments & = 0;
+    /// Access mutable converted arguments exclusively for option parsing and sensitive-text masking.
+    [[nodiscard]] virtual auto commandLineArgumentsForParsing() noexcept -> CommandLineArguments & = 0;
+    /// Mask sensitive suffixes in the borrowed native argument vector without changing its layout.
+    /// Existing bytes or code units are replaced with stars; terminators and buffer sizes are preserved.
+    /// @param locations The sensitive locations reported by the option parser.
+    virtual void maskSensitiveCommandLineText(const options::OptionSensitiveTextLocations &locations) noexcept = 0;
     [[nodiscard]] virtual auto options() noexcept -> const options::OptionsPtr & = 0;
     virtual void setOptions(options::OptionsPtr options) noexcept = 0;
     [[nodiscard]] virtual auto optionValues() noexcept -> const options::OptionValuesPtr & = 0;

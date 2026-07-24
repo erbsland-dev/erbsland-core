@@ -288,6 +288,40 @@ and relies on the guard destructor to restore the original standard input on eve
 
 .. erbsland-demo-end::
 
+Protect Native Standard-Input Buffers
+=====================================
+
+Use :cpp:class:`SensitiveInputScope <erbsland::stream::io::SensitiveInputScope>` while reading secret text from the
+process-native standard input pipeline.
+Requests are process-wide, thread-safe, and counted, so nested components can independently request protection.
+The final scope erases decoder, retained text, and byte buffers and may discard unread input.
+The native target stays stable behind ``stdIn()`` while its unified decoder changes storage policy in place.
+An epoch-checked protected transfer prevents a native read that crossed the final transition from publishing its bytes.
+
+.. code-block:: cpp
+
+    auto outer = el::stream::io::SensitiveInputScope{};
+    {
+        auto inner = el::stream::io::SensitiveInputScope{};
+        const auto result = el::stdIn()->readLine(el::CpLength{1024U});
+        consumeSecret(result.data());
+    }
+    outer.reset();
+
+Manual lifetimes can stop out of nesting order:
+
+.. code-block:: cpp
+
+    auto first = el::stream::io::startSensitiveInput();
+    auto second = el::stream::io::startSensitiveInput();
+    el::stream::io::stopSensitiveInput(std::move(first));
+    el::stream::io::stopSensitiveInput(std::move(second));
+
+The token identifier and source location are diagnostic aids.
+Invalid, moved-from, or already stopped tokens raise ``LogicError``.
+These scopes affect only the process-native pipeline; a third-party stream installed with ``redirectStdIn()`` retains
+its own buffering policy.
+
 Capture Output Without Changing the Producer
 ============================================
 
@@ -297,8 +331,8 @@ Typical examples include integration tests, command embedding, report previews, 
 component's console output.
 The producer remains unaware of the capture and continues to use the standard-output API.
 
-Create a :cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>`, redirect standard output to it, and
-keep the guard in the narrowest scope that covers the producer call.
+Create a :cpp:class:`AnyStringBuilderStream <erbsland::stream::AnyStringBuilderStream>`, redirect standard output to it,
+and keep the guard in the narrowest scope that covers the producer call.
 Once the guard is gone, standard output again points to the previous target and the captured string can safely be
 printed, compared, or returned.
 Printing the capture while the redirect is still active would append it to itself instead of displaying it on the

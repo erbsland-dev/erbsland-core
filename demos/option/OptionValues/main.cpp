@@ -41,8 +41,9 @@ auto optionValues() -> el::ExitCode {
     options->addOption("instrument"_el).setRequired().setHelpDescription("Primary instrument."_el);
 
     auto manager = el::OptionManager{options};
-    const auto values = manager.parseOrThrow(
-        makeArgs({"valores"_el, "-vv"_el, "--point"_el, "entrada"_el, "-p"_el, "lente"_el, "microscopio"_el}));
+    auto arguments =
+        makeArgs({"valores"_el, "-vv"_el, "--point"_el, "entrada"_el, "-p"_el, "lente"_el, "microscopio"_el});
+    const auto values = manager.parseOrThrow(arguments);
 
     const auto verboseByLongName = values->value("--verbose"_el);
     const auto verboseByAlias = values->value("verbose"_el);

@@ -40,9 +40,8 @@ inline void handleCharacterClass(ParserState &state) {
         // Add all ranges from the Unicode categories to the existing ranges.
         for (const auto &category : categories) {
             const auto characterSet = category.characterSet();
-            for (const auto &range : characterSet.ranges()) {
-                ranges.emplace_back(range.from(), range.to());
-            }
+            characterSet.forEach(
+                [&ranges](const text::CharRange range) -> void { ranges.emplace_back(range.from(), range.to()); });
         }
         auto charClass = CharClass{ranges};
         charClass.prepareForUse();

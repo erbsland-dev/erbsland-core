@@ -1,0 +1,16 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 20s
+Threads             : 4
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 100us
+Memory Limit        : 64 MiB
+Progress Interval   : 1s
+
+--*[ Scenario ]*-------------------------------------------------------------
+Name                : "worker-failure"
+Functionality       : "parse"
+Fail Worker         : yes

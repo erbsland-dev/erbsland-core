@@ -1,13 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/CharSet.hpp>
-#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEncoder.hpp>
+#include <erbsland/text/StringFormat.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/U8String.hpp>
@@ -72,7 +72,7 @@ public:
         REQUIRE_EQUAL(U8String::fromFloat(1.25), U8String{U8StringEditor::fromFloat(1.25)});
         REQUIRE_EQUAL(U8String::fromBoolean(true), "true"_el);
 
-        const auto bytes = el::mem::ByteBlock{std::vector<std::uint8_t>{0x12U, 0x34U}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<std::uint8_t>{0x12U, 0x34U});
         REQUIRE_EQUAL(U8String::fromByteBlock(bytes), "1234"_el);
 
         auto first = U8String{std::string_view{"first"}};
@@ -118,6 +118,54 @@ public:
 
         REQUIRE_EQUAL(StringConverter{second}.toStdString(), std::string{"Hello"});
         REQUIRE_EQUAL(StringConverter{third}.toStdString(), std::string{"Hello"});
+    }
+
+    void testSensitivityFollowsUtf8Storage() {
+        auto sharedEditor = U8StringEditor{std::string_view{"secret"}};
+        auto marked = U8String{sharedEditor};
+        auto alias = marked;
+
+        REQUIRE_FALSE(marked.isSensitive());
+        marked.markAsSensitive();
+        REQUIRE(marked.isSensitive());
+        REQUIRE(alias.isSensitive());
+        REQUIRE(sharedEditor.isSensitive());
+        auto slice = marked.slice(CpRange{CpIndex{1U}, CpLength{3U}});
+        REQUIRE(slice.isSensitive());
+        REQUIRE(marked.copy().isSensitive());
+        REQUIRE(marked.trimmed().isSensitive());
+        REQUIRE(marked.replaced(CpRange{CpIndex{}, CpLength::one()}, "S"_el).isSensitive());
+        REQUIRE_FALSE(marked.toEscaped(EscapeFormat::Json).isSensitive());
+        REQUIRE_FALSE(marked.toSafeString(CpLength{100U}).isSensitive());
+        REQUIRE_FALSE(StringFormat{"{}"_el}.build(marked).isSensitive());
+        REQUIRE_FALSE(StringEncoder{marked}.encode(StringEncoding::Utf8).isSensitive());
+
+        auto ordinary = U8StringEditor{std::string_view{"prefix"}};
+        ordinary.append(marked);
+        REQUIRE_FALSE(ordinary.isSensitive());
+        ordinary.insert(ByteIndex{}, marked);
+        REQUIRE_FALSE(ordinary.isSensitive());
+        ordinary.replace(ByteRange{ByteIndex{}, ByteLength{1U}}, marked);
+        REQUIRE_FALSE(ordinary.isSensitive());
+        REQUIRE_FALSE(U8String::fromJoined({"prefix"_el, marked}).isSensitive());
+
+        auto sensitiveEditor = U8StringEditor{marked};
+        REQUIRE(sensitiveEditor.isSensitive());
+        sensitiveEditor.append(" suffix"_el);
+        REQUIRE(sensitiveEditor.isSensitive());
+        sensitiveEditor.clear();
+        REQUIRE(sensitiveEditor.isSensitive());
+        sensitiveEditor.reset();
+        REQUIRE_FALSE(sensitiveEditor.isSensitive());
+
+        auto literal = U8String{"literal"_el};
+        const auto literalAlias = literal;
+        literal.markAsSensitive();
+        REQUIRE(literal.isSensitive());
+        REQUIRE_FALSE(literalAlias.isSensitive());
+        auto empty = U8String{};
+        empty.markAsSensitive();
+        REQUIRE_FALSE(empty.isSensitive());
     }
 
     void testCopyMaterializesString() {
@@ -208,31 +256,6 @@ public:
         index = ByteIndex::zero();
         REQUIRE(string.advance(index, CpLength::infinite()));
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{10});
-    }
-
-    void testStrictIndexedSequentialRead() {
-        const auto string = U8String{U8StringEditor{std::u8string_view{u8"A¢€😀"}}};
-        auto index = ByteIndex::zero();
-
-        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'A');
-        REQUIRE_EQUAL(index, ByteIndex{1U});
-        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u00A2');
-        REQUIRE_EQUAL(index, ByteIndex{3U});
-        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\u20AC');
-        REQUIRE_EQUAL(index, ByteIndex{6U});
-        REQUIRE_EQUAL(string.readCharAndAdvanceOrThrow(index).toRawValue(), U'\U0001F600');
-        REQUIRE_EQUAL(index, ByteIndex{10U});
-
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, string.readCharAndAdvanceOrThrow(index));
-        REQUIRE_EQUAL(index, ByteIndex{10U});
-        index = ByteIndex::noIndex();
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, string.readCharAndAdvanceOrThrow(index));
-        REQUIRE(index.isNoIndex());
-
-        const auto invalid = U8String{U8StringEditor{std::string_view{invalidUtf8Data()}}};
-        index = ByteIndex{1U};
-        REQUIRE_THROWS_AS(EncodingError, invalid.readCharAndAdvanceOrThrow(index));
-        REQUIRE_EQUAL(index, ByteIndex{1U});
     }
 
     void testRetreat() {

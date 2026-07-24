@@ -69,6 +69,13 @@ class PathResolveBackendTest final : public el::UnitTest {
             return currentDirectory;
         }
 
+        [[nodiscard]] auto userHomeDirectoryOrThrow() const -> Path override {
+            if (failUserHomeDirectory) {
+                throw el::path::PathError{"user home directory failed"_el};
+            }
+            return userHomeDirectory;
+        }
+
         [[nodiscard]] auto resolveOrThrow(const Path &path, const PathResolveOptions options) const -> Path override {
             lastResolvePath = path;
             lastResolveMode = options.mode();
@@ -84,7 +91,7 @@ class PathResolveBackendTest final : public el::UnitTest {
 
         [[nodiscard]] auto loadInfoOrThrow(const Path &path, el::path::PathInfoParts parts) const
             -> el::path::impl::PathInfoData override {
-            auto result = el::path::impl::PathInfoData{path};
+            auto result = el::path::impl::PathInfoData{};
             result.resolvedPath = resolveOrThrow(path, PathResolveOptions{});
             result.exists = true;
             result.loadedParts = parts | el::path::PathInfoPart::Type;
@@ -103,6 +110,7 @@ class PathResolveBackendTest final : public el::UnitTest {
 
     public:
         Path currentDirectory{"/work/root"_el};
+        Path userHomeDirectory{"/home/test-user"_el};
         std::optional<Path> resolveResult;
         mutable Path lastResolvePath;
         mutable PathResolveMode lastResolveMode = PathResolveMode::Physical;
@@ -111,6 +119,7 @@ class PathResolveBackendTest final : public el::UnitTest {
         mutable std::shared_ptr<MemoryOutputStream> lastOutputStream;
         bool outputHasExistingContent{false};
         bool failCurrentDirectory = false;
+        bool failUserHomeDirectory = false;
         bool failResolve = false;
     };
 
@@ -182,6 +191,17 @@ public:
         REQUIRE_EQUAL(toStdString(Path::currentDirectory()), "/work/root");
         scope.backendPtr->failCurrentDirectory = true;
         REQUIRE(Path::currentDirectory().isEmpty());
+    }
+
+    void testUserHomeDirectoryDelegatesAndReportsBackendFailure() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+
+        REQUIRE_EQUAL(toStdString(Path::userHomeDirectory()), "/home/test-user");
+        REQUIRE_EQUAL(toStdString(Path::userHomeDirectoryOrThrow()), "/home/test-user");
+
+        scope.backendPtr->failUserHomeDirectory = true;
+        REQUIRE(Path::userHomeDirectory().isEmpty());
+        REQUIRE_THROWS_AS(el::path::PathError, Path::userHomeDirectoryOrThrow());
     }
 
     void testTextOutputSuppressesBomForExistingAppendTarget() {

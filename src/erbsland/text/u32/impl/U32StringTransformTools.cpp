@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U32StringTransformTools.hpp"
 
+#include "U32Writer.hpp"
+
 #include "../U32StringEditor.hpp"
 
 #include "../../../util/impl/LoopControl.hpp"
@@ -9,6 +11,8 @@
 #include "../../impl/EscapeFormatter.hpp"
 #include "../../impl/SafeStringEscapeTools.hpp"
 
+#include <cstring>
+#include <span>
 #include <string_view>
 
 namespace erbsland::text::impl {
@@ -23,7 +27,7 @@ auto U32StringTransformTools::forEach(const ProcessCharacterFn &function) const 
     }
     auto result = util::LoopResult::Success;
     const auto completed =
-        utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             const auto status = function(character);
             if (status == util::LoopStatus::Continue) {
                 return true;
@@ -43,51 +47,63 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
 
     const auto data = _data.dataSpan();
     auto position = CpIndex::zero();
-    auto result = U32StringSharedStorage{};
-    auto appendTools = U32StringAppendTools{result};
-    auto changed = false;
-    const auto startResult = [&](const std::size_t unchangedEnd) -> void {
-        if (changed) {
-            return;
-        }
-        changed = true;
-        if (!data.empty()) {
-            result.ensureMutableCapacity(data.size());
-        }
-        if (unchangedEnd > 0U) {
-            appendTools.append(U32StringDataView{data, CpRange::fromSizeT(unchangedEnd)});
-        }
-    };
-
     while (position.toSizeT() < data.size()) {
         const auto begin = position.toSizeT();
         const auto character = utf32::decodeCharOrReplace(data, position);
         const auto mapped = function(character);
         if (mapped.isEndOfData()) {
-            startResult(begin);
-            return result;
+            return U32StringSharedStorage::fromCodeUnits(data.first(begin));
         }
-        if (mapped.isNoCodePoint()) {
-            startResult(begin);
+        if (mapped == character) {
             continue;
         }
-        if (!changed && mapped == character) {
-            continue;
+
+        auto reservedSize = U32StringSharedStorage::checkedAddSize(
+            begin, static_cast<std::size_t>(mapped.isValidUnicode()), "Transformed string exceeds size bounds");
+        auto sizingPosition = position;
+        while (sizingPosition.toSizeT() < data.size()) {
+            const auto sizingCharacter = utf32::decodeCharOrReplace(data, sizingPosition);
+            const auto sizingMapped = function(sizingCharacter);
+            if (sizingMapped.isEndOfData()) {
+                break;
+            }
+            reservedSize = U32StringSharedStorage::checkedAddSize(
+                reservedSize,
+                static_cast<std::size_t>(sizingMapped.isValidUnicode()),
+                "Transformed string exceeds size bounds");
         }
-        startResult(begin);
-        appendTools.append(mapped);
-    }
-    if (changed) {
+
+        auto result = U32StringSharedStorage{};
+        if (reservedSize > 0U) {
+            result.ensureMutableCapacity(reservedSize);
+        }
+        if (begin > 0U) {
+            std::memcpy(result.dataForWrite(), data.data(), begin * sizeof(char32_t));
+        }
+
+        auto writeSize = begin;
+        auto transformPosition = CpIndex::fromSizeT(begin);
+        while (transformPosition.toSizeT() < data.size()) {
+            const auto transformCharacter = utf32::decodeCharOrReplace(data, transformPosition);
+            const auto transformMapped = function(transformCharacter);
+            if (transformMapped.isEndOfData()) {
+                break;
+            }
+            if (!transformMapped.isValidUnicode()) {
+                continue;
+            }
+            const auto requiredSize =
+                U32StringSharedStorage::checkedAddSize(writeSize, 1U, "Transformed string exceeds size bounds");
+            if (requiredSize > result.capacity().toSizeT()) {
+                result.ensureMutableCapacity(requiredSize);
+            }
+            U32Writer{std::span<char32_t>{result.dataForWrite() + writeSize, 1U}}.write(transformMapped);
+            writeSize = requiredSize;
+        }
+        result.resize(writeSize);
         return result;
     }
     return std::nullopt;
-}
-
-auto U32StringTransformTools::transformed(const TransformCharacterFn function) const -> U32StringSharedStorage {
-    if (auto result = transformedIfChanged(function)) {
-        return std::move(*result);
-    }
-    return U32StringSharedStorage{_data};
 }
 
 auto U32StringTransformTools::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
@@ -173,7 +189,7 @@ auto U32StringTransformTools::escapedSize(const EscapeFormat format, const Escap
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto length = std::size_t{0U};
-    utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
             length += formatter->escapeSize(character, StringKind::U32);
         } else {
@@ -191,7 +207,7 @@ auto U32StringTransformTools::toEscaped(const EscapeFormat format, const EscapeA
     }
     const auto formatter = EscapeFormatter::forFormat(format);
     auto builder = AnyStringBuilder{StringKind::U32};
-    utf32::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
         if (formatter->needsEscape(character, amount)) {
             formatter->escape(character, builder);
         } else {

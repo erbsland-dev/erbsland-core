@@ -46,7 +46,7 @@ public: // attributes
 
 public: // content methods
     /// Read the contents of a file into a string.
-    /// If encoding error mode is set to `Throw`, this function returns no string instead of throwing.
+    /// In strict encoding mode, this function returns no string instead of propagating an encoding exception.
     /// @param options The read options.
     /// @return The string read from the file or std::nullopt on any error.
     [[nodiscard]] auto readText(PathReadTextOptions options = {}) const noexcept -> std::optional<text::String>;
@@ -76,7 +76,6 @@ public: // content methods
     /// @param text The text to write.
     /// @param options The options to use.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
-    /// @throws text::EncodingError if the operation failed due to encoding errors.
     void writeTextOrThrow(const text::String &text, PathWriteTextOptions options = {}) const;
     /// Write byte data into a file at this path.
     /// @param options The options to use.
@@ -109,6 +108,12 @@ public: // content methods
     /// @returns The open stream.
     /// @throws PathError if the operation failed (no file, access errors, etc.)
     [[nodiscard]] auto openByteOutputStream(PathWriteDataOptions options = {}) const -> stream::ByteOutputStreamPtr;
+
+private:
+    /// Throw a path error.
+    [[noreturn]] void throwError(text::String title, text::String description) const;
+    /// Throw error if path is empty.
+    [[noreturn]] void throwPathEmptyError() const;
 
 private:
     impl::PathContentImplPtr _impl;

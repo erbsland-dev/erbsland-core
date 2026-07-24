@@ -4,7 +4,7 @@
 #include "../util/MoveAwareTestValue.hpp"
 
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringCIHashMap.hpp>
 #include <erbsland/text/StringCIMap.hpp>
 #include <erbsland/text/StringConverter.hpp>

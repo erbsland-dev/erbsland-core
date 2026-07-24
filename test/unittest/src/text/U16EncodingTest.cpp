@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/impl/U16Encoding.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
@@ -12,7 +12,7 @@
 #include <string_view>
 
 using el::text::Char;
-using el::text::EncodingErrorMode;
+using el::text::EncodingMode;
 using el::unit::ByteRange;
 
 namespace th = erbsland::unittest::th;
@@ -31,43 +31,36 @@ public:
         const auto text = th::stdU16StringFromHex("0041 00A2 20AC D83D DE00");
         auto result = std::u32string{};
 
-        el::text::impl::utf16::forEachDecodedCharacter(
-            text, EncodingErrorMode::Throw, [&](const Char character) -> void {
-                result.push_back(character.toRawValue());
-            });
+        el::text::impl::utf16::forEachDecodedCharacter(text, EncodingMode::Strict, [&](const Char character) -> void {
+            result.push_back(character.toRawValue());
+        });
 
         REQUIRE_EQUAL(result, std::u32string{U"A¢€😀"});
     }
 
-    void testUtf16ReplaceModeHandlesInvalidSequences() {
+    void testUtf16TolerantModeHandlesInvalidSequences() {
         const auto text = th::stdU16StringFromHex("D800 0041 FEFF DC00 D800 D83D DE00");
 
         REQUIRE_EQUAL(
-            collectDecodedCharacters(text, EncodingErrorMode::Replace), std::u32string{U"\uFFFDA\uFFFD\uFFFD\uFFFD😀"});
+            collectDecodedCharacters(text, EncodingMode::Tolerant), std::u32string{U"\uFFFDA\uFFFD\uFFFD\uFFFD😀"});
     }
 
-    void testUtf16IgnoreModeHandlesInvalidSequences() {
-        const auto text = th::stdU16StringFromHex("D800 0041 FEFF DC00 D800 D83D DE00");
-
-        REQUIRE_EQUAL(collectDecodedCharacters(text, EncodingErrorMode::Ignore), std::u32string{U"A😀"});
-    }
-
-    void testUtf16ThrowModeRejectsAllInvalidCases() {
+    void testUtf16StrictModeRejectsAllInvalidCases() {
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
-                th::stdU16StringFromHex("D800"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+                th::stdU16StringFromHex("D800"), EncodingMode::Strict, [&](const Char) -> void {}));
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
-                th::stdU16StringFromHex("DC00"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+                th::stdU16StringFromHex("DC00"), EncodingMode::Strict, [&](const Char) -> void {}));
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
-                th::stdU16StringFromHex("D800 0041"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+                th::stdU16StringFromHex("D800 0041"), EncodingMode::Strict, [&](const Char) -> void {}));
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
-                th::stdU16StringFromHex("0041 D800"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+                th::stdU16StringFromHex("0041 D800"), EncodingMode::Strict, [&](const Char) -> void {}));
         REQUIRE_THROWS(
             el::text::impl::utf16::forEachDecodedCharacter(
-                th::stdU16StringFromHex("FEFF"), EncodingErrorMode::Throw, [&](const Char) -> void {}));
+                th::stdU16StringFromHex("FEFF"), EncodingMode::Strict, [&](const Char) -> void {}));
     }
 
     void testToUtf16StringFromUtf8OverAllMalformedCategories() {
@@ -77,11 +70,11 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto collectDecodedCharacters(
-        const std::u16string_view text, const EncodingErrorMode errorMode) -> std::u32string {
+    [[nodiscard]] static auto collectDecodedCharacters(const std::u16string_view text, const EncodingMode mode)
+        -> std::u32string {
         auto result = std::u32string{};
         el::text::impl::utf16::forEachDecodedCharacter(
-            text, errorMode, [&](const Char character) -> void { result.push_back(character.toRawValue()); });
+            text, mode, [&](const Char character) -> void { result.push_back(character.toRawValue()); });
         return result;
     }
 

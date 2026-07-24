@@ -2,13 +2,6 @@
 Time Domain API Guidelines
 **************************
 
-These guidelines extend the Common, Math, Text, and Unit and Value API Guidelines for public APIs that model dates,
-times, durations, time points, and time zones.
-
-The purpose of this document is to define a base naming vocabulary for time APIs.
-It is intentionally plain, technical and list based to get a quick overview of method names and their usage patterns.
-If you introduce new vocabulary, update this page to provide a good reference for future extensions.
-
 Core Semantics
 ==============
 
@@ -17,66 +10,60 @@ Calendar Model
 
 .. code-block:: text
 
-    calendar // proleptic Gregorian
-    internal epoch // 0000-01-01T00:00:00Z
-    supported dates // 0000-01-01 through 9999-12-31
-    invalid date/time // special state that sorts before valid values
-    POSIX epoch // 1970-01-01T00:00:00Z, only for std::time_t conversion
+    calendar = proleptic Gregorian
+    internal epoch = 0000-01-01T00:00:00Z
+    supported civil dates = 0000-01-01 through 9999-12-31
+    invalid civil value = special state ordered before valid values
+    POSIX epoch = 1970-01-01T00:00:00Z used only at the native POSIX-time boundary
 
-Time and Duration Vocabulary
-----------------------------
+Time Model
+----------
 
 .. code-block:: text
 
-    Duration // signed span with second resolution
-    TimeDelta // signed span with nanosecond resolution
-    CalendarDelta // independent signed calendar and fixed-unit components
-    TimePoint // monotonic steady-clock point for elapsed-time measurement
-    Time // wall-clock time within one day
-    TimeWithZone // wall-clock time with a zone, but no instant without a date
-    DateTime // UTC instant plus display offset or named time-zone metadata
-    TimeZone // UTC, fixed offset, or supported named IANA time zone
+    wall-clock time = nanosecond-precision time within one day
+    zoned wall-clock time = time and zone without an instant until combined with a date
+    instant = UTC date and time plus display offset or named-zone metadata
+    time zone = UTC, normalized fixed offset, or supported named IANA zone
+    monotonic point = steady-clock value used only for elapsed-time measurement
+
+Delta Model
+-----------
+
+.. code-block:: text
+
+    duration = signed span with second resolution
+    precise delta = signed span with nanosecond resolution
+    calendar delta = independent signed calendar and fixed-unit components
+    calendar arithmetic = apply years and months in civil space, then fixed units
+    saturating arithmetic = clamp to supported boundaries
+    exact arithmetic = report overflow instead of clamping
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    Date // civil date with invalid state
-    Time // wall-clock time of day with nanosecond precision
-    TimeWithZone // time of day plus TimeZone
-    DateTime // instant stored as UTC date/time with display offset information
-    Duration // signed second-resolution duration
-    TimeDelta // signed nanosecond-resolution duration
-    CalendarDelta // non-normalized delta from nanoseconds through years
+    Date // civil Gregorian date with an invalid state
+    Time // nanosecond-precision wall-clock time within one day
+    TimeWithZone // wall-clock time plus a zone but no date
+    DateTime // UTC instant with display offset or named-zone metadata
+    Duration // signed second-resolution span
+    TimeDelta // signed nanosecond-resolution span
+    CalendarDelta // independent calendar and fixed-unit delta
+    TimeZone // UTC, fixed offset, or supported named IANA zone
     TimePoint // monotonic steady-clock point
-    ElapsedTimer // restartable elapsed-time helper
-    TimeZone // UTC, fixed offset, or named IANA time zone
-    TimeZoneId // transient numeric time-zone identifier
 
-Amount Types
-============
+Amount and Part Types
+=====================
 
 .. code-block:: text
 
     Nanoseconds, Microseconds, Milliseconds // fractional-second amounts
-    Seconds, Minutes, Hours, Days, Weeks // second-ratio amounts
-    Months // calendar month amount
-    Years // calendar year amount
-
-Part Types
-==========
-
-.. code-block:: text
-
-    Year // Gregorian calendar year, range 0..9999
-    Month // month of year, range 1..12
-    Day // day of month, range 1..31
-    DayOfYear // one-based day of year, range 1..366
-    DayOfWeek // Monday through Sunday, stored as 0..6
-    Hour // hour of day, range 0..23
-    Minute // minute of hour, range 0..59
-    Second // second of minute, range 0..59
+    Seconds, Minutes, Hours, Days, Weeks // fixed-ratio second amounts
+    Months, Years // calendar amounts
+    Year, Month, Day, DayOfYear, DayOfWeek // bounded calendar parts
+    Hour, Minute, Second // bounded wall-clock parts
 
 Supporting Types
 ================
@@ -84,211 +71,138 @@ Supporting Types
 .. code-block:: text
 
     DateParts, TimeParts, DateTimeParts // named aggregate part results
-    YearDayOfYearParts, YearMonthParts, MonthDayParts // calendar extraction/navigation results
+    YearDayOfYearParts, YearMonthParts, MonthDayParts // calendar extraction results
     Duration::Parts, Duration::DaysAndNanoseconds // duration decomposition results
-    TimeWrapResult // time-of-day addition result plus day crossings
-    tz::TimeOffset // UTC offset, zone id, abbreviation id and DST flag for an instant
-    TimeDeltaFormat // human-readable and ELCL delta formatting options
+    TimeWrapResult // time-of-day arithmetic result with day crossings
+    ElapsedTimer // restartable monotonic elapsed-time helper
+    TimeZoneId // transient numeric zone identifier
+    tz::TimeOffset // resolved offset, abbreviation, and daylight-saving metadata
+    TimeDeltaFormat // human-readable and ELCL delta formatting policy
 
-Enumerations and Flags
-======================
+Policy Types
+============
 
 .. code-block:: text
 
-    DateTimePrecision // ISO parse/format precision from year through nanosecond
-    DayOfWeekFormat // short or long day-of-week name
-    DurationPart // largest part used when splitting Duration
-    IsoTimeFormat, IsoTimeFormatFlags // ISO date/time formatting flags
-    TimeOccurrenceInFold // first or second local occurrence during a DST fold
-    TimeDeltaUnit // smallest fixed unit used for delta formatting
-    SecondsUnitTag, MonthsUnitTag, YearsUnitTag // unit tags for time amounts
+    DateTimePrecision // ISO precision from year through nanosecond
+    IsoTimeFormat, IsoTimeFormatFlags // ISO date and time formatting policy
+    DayOfWeekFormat, DurationPart // name style and largest split duration part
+    TimeOccurrenceInFold // first or second local occurrence during a daylight-saving fold
+    TimeDeltaUnit // smallest fixed unit shown by delta formatting
+    SecondsUnitTag, MonthsUnitTag, YearsUnitTag // dimensions of time amount types
 
-Part Patterns
-=============
+Part Value Patterns
+===================
 
 .. code-block:: text
 
     T(value) // create a clamped part value
-    o.isFirst()/isLast() -> bool // test part range boundaries
-    o.added/subtracted(value-or-amount) -> T // clamped part arithmetic
-    o.add/subtract(value-or-amount) -> void // clamped in-place part arithmetic
-    o.incremented/decremented() -> T // single-step clamped part arithmetic
-    o.increment/decrement() -> void // single-step in-place part arithmetic
-    o.toAmount() -> Amount // convert one-based or ranged part to zero-based amount
-    T::fromAmount(amount) -> T // create part from zero-based amount, clamping
-    T::fromAmountOrThrow(amount) -> T // create part from amount or throw err::OutOfRangeError
-    T::first()/last() -> T // supported part boundaries
-    T::minimum()/maximum() -> T // aliases for first and last
-    T::contains(value) -> bool // raw range membership
+    T::first/last/minimum/maximum() -> T // create part boundaries
+    T::contains(value) -> bool // test raw-value membership
+    o.isFirst()/isLast() -> bool // test a part boundary
+    o.add/subtract(value) // apply clamped part arithmetic
+    o.added/subtracted(value) -> T // return a clamped arithmetic result
+    o.next/previous([context]) -> T // navigate to an adjacent valid calendar part
+    o.toAmount() -> T // convert a bounded part to its zero-based amount
+    T::fromAmount/fromAmountOrThrow(amount) -> T // convert with clamping or exact failure
 
-Calendar Patterns
-=================
+Calendar Inspection Patterns
+============================
 
 .. code-block:: text
 
-    o.year()/month()/day() -> Part // access date parts
-    o.dayOfYear()/dayOfWeek() -> Part // derived calendar parts
-    o.parts() -> Parts // return named part aggregate
-    o.exists(year, month) -> bool // test if a day exists in a month
-    o.dayCount(year) -> Days // number of days in a month or year
-    o.daysSinceEpoch() -> Days // first day of a year as epoch offset
-    o.daysBeforeMonth(month) -> Days // cumulative days before month start
-    o.monthOfDay(dayOfYear) -> Month // resolve day-of-year to month
-    o.next/previous([context]) -> T/Parts // move to adjacent calendar part, clamped
-    o.hasNext/hasPrevious([context]) -> bool // test adjacent calendar availability
-    T::extract❮Parts❯(...) -> Parts // split epoch or day-of-year values into calendar parts
-    T::january()/february()/.../december() -> Month // named month factories
-    T::monday()/tuesday()/.../sunday() -> DayOfWeek // named weekday factories
+    o.year()/month()/day()/dayOfYear()/dayOfWeek() -> T // access calendar parts
+    o.hour()/minute()/second() -> T // access wall-clock parts
+    o.parts() -> T // return a named aggregate of available parts
+    T::exists(parts) -> bool // test whether civil parts form a real date
+    T::firstDay/lastDay(context) -> Date // get a month or year boundary date
+    T::extract❮Parts❯(value) -> T // decompose an epoch or day-of-year value
 
-Date Patterns
-=============
+Civil Value Patterns
+====================
 
 .. code-block:: text
 
-    Date() // create invalid date
-    Date(year, month, day) // create valid date or invalid state
-    o.isValid() -> bool // test whether date represents a real calendar date
-    o.isFirst()/isLast() -> bool // test supported date boundaries
-    o.wouldAddSaturate(amount) -> bool // test if addition would clamp at date boundaries
-    o.added(amount) -> Date // return saturated date arithmetic result
-    o.addedOrThrow(amount) -> Date // return date arithmetic result or throw err::OverflowError
-    o.add(amount) -> void // saturated in-place date arithmetic
-    o.addOrThrow(amount) -> void // in-place date arithmetic or throw err::OverflowError
-    o.next/previous([dayOfWeek]) -> Date // adjacent date or adjacent weekday
-    o.toDaysSinceEpoch() -> Days // internal epoch day offset, -1 for invalid
-    o.daysTo(date) -> Days // signed day distance
-    o.toIsoString(flags, precision) -> text::StringEditor // ISO date text or empty for invalid
-    T::fromYearMonthDay(...) -> Date // create from raw parts or invalid state
-    T::fromYearMonthDayOrThrow(...) -> Date // create from raw parts or throw err::OutOfRangeError
-    T::fromParts(...) -> Date // create from typed parts or invalid state
-    T::fromPartsOrThrow(...) -> Date // create from typed parts or throw err::OutOfRangeError
-    T::fromDaysSinceEpoch(days) -> Date // create from internal epoch day offset
-    T::exists(year, month, day) -> bool // test real calendar date
-    T::firstDay/lastDay(year[, month]) -> Date // date boundary for year or month
-    T::epoch()/first()/last() -> Date // named date boundaries
+    T(parts) // create a civil value with clamped or invalid-state behavior
+    T::fromParts/fromPartsOrThrow(parts) -> T // create with invalid or throwing failure reporting
+    o.isValid()/isFirst()/isLast() -> bool // inspect civil state or supported boundaries
+    o.add/subtract(amount) // apply saturating arithmetic in place
+    o.added/subtracted(amount) -> T // return a saturating arithmetic result
+    o.addOrThrow/subtractOrThrow(amount) // apply exact arithmetic in place
+    o.addedOrThrow/subtractedOrThrow(amount) -> T // return an exact result or throw
+    o.wouldAddSaturate/wouldSubtractSaturate(amount) -> bool // test boundary saturation
+    o.durationTo/timeDeltaTo(other) -> T // calculate a signed distance
+    T::epoch/first/last() -> T // create named civil boundaries
 
-Time Patterns
-=============
+Time-of-Day Patterns
+====================
 
 .. code-block:: text
 
-    Time() // create midnight
-    Time(hour, minute[, second[, fraction]]) // create clamped time-of-day
-    o.isZero() -> bool // test for midnight
-    o.hour()/minute()/second() -> Part // access time parts
-    o.millisecondFraction()/nanosecondFraction() -> Amount // access second fractions
-    o.durationSinceMidnight() -> Duration // seconds since midnight
-    o.timeDeltaSinceMidnight() -> TimeDelta // nanoseconds since midnight
-    o.toSecondsSinceMidnight() -> Seconds // total seconds since midnight
-    o.toNanosecondsSinceMidnight() -> Nanoseconds // total nanoseconds since midnight
-    o.toIsoString(flags, precision) -> text::StringEditor // ISO time text
-    o.addWithWrap(delta-or-duration) -> Days // add in-place and return day crossings
-    o.addedWithWrap(delta-or-duration) -> TimeWrapResult // wrapped copy and day crossings
-    T::fromDurationSinceMidnight(delta-or-duration) -> Time // wrap duration into one day
-    T::first()/last() -> Time // first and last time of day
-
-    TimeWithZone() // create midnight UTC
-    TimeWithZone(time[, zone]) // compose a wall-clock time and zone
-    o.time()/timeZone() -> Time/TimeZone // access composed values
-    o.toString() -> text::String // human-readable time and zone
+    o.durationSinceMidnight()/timeDeltaSinceMidnight() -> T // get fixed time since midnight
+    o.addWithWrap(delta) -> Days // add in place and return signed day crossings
+    o.addedWithWrap(delta) -> TimeWrapResult // return wrapped time and day crossings
+    T::fromDurationSinceMidnight(delta) -> Time // wrap a fixed delta into one day
+    o.time()/timeZone() -> T // inspect a zoned wall-clock value
 
 Duration and Delta Patterns
 ===========================
 
 .. code-block:: text
 
-    Duration(seconds-or-chrono-or-parts) // create second-resolution duration
-    TimeDelta(nanoseconds-or-chrono) // create nanosecond-resolution duration
-    o.isZero()/isPositive()/isNegative() -> bool // test sign state
-    o.seconds()/minutes()/hours()/days() -> Amount // access split duration components
-    o.parts(largestPart) -> Duration::Parts // split duration by largest part
-    o.toSeconds()/toNanoseconds() -> Amount // total stored amount
-    o.toStdSeconds()/toStdNanoseconds() -> std::chrono::duration // chrono conversion
-    o.toDaysAndNanoseconds() -> Duration::DaysAndNanoseconds // split into whole days and remainder
-    o.toSecondsWithFractions()/toDaysWithFractions() -> double // fractional conversion
-    o.wouldConvertToTimeDeltaSaturate() -> bool // test if Duration to TimeDelta would saturate
-    o.toTimeDelta() -> TimeDelta // saturating duration to delta conversion
-    o.toTimeDeltaOrThrow() -> TimeDelta // duration to delta conversion or throw err::OverflowError
-    o.toDuration() -> Duration // delta to second-resolution duration, truncating toward zero
-    TimeDelta::❮unit❯(ticks) -> TimeDelta // saturating factory, nanoseconds through weeks
-    TimeDelta::❮unit❯OrThrow(ticks) -> TimeDelta // exact factory or err::OverflowError
-    CalendarDelta(amount-or-parts) // create independent fixed/calendar parts
-    o.isValidTimeDelta() -> bool // test exact fixed conversion
-    o.toTimeDelta() -> optional<TimeDelta> // exact fixed conversion or empty optional
-    o.toTimeDeltaOrThrow() -> TimeDelta // exact fixed conversion or err::OverflowError
-    o.toString(format) -> text::String // normalized display without changing stored parts
-    TimeDeltaFormat::shortUnits()/longUnits()/elcl() -> TimeDeltaFormat // useful format factories
-    T::zero() -> T // zero duration or delta
+    T(amount-or-parts) // create a duration or delta
+    T::❮unit❯/❮unit❯OrThrow(ticks) -> T // create with saturation or exact failure reporting
+    T::zero() -> T // create a zero span
+    o.isZero()/isPositive()/isNegative() -> bool // inspect sign state
+    o.to❮Unit❯()/toStd❮Unit❯() -> T // convert to a Core or standard duration
+    o.parts([largestPart]) -> T // decompose a duration
+    o.toTimeDelta/toTimeDeltaOrThrow() -> TimeDelta // convert with saturation or exact failure
+    o.toDuration() -> Duration // truncate a precise delta toward zero seconds
+    o.isValidTimeDelta() -> bool // test exact conversion of a calendar delta
 
-DateTime Patterns
-=================
-
-.. code-block:: text
-
-    DateTime() // create invalid date/time
-    DateTime(date, time) // create UTC date/time
-    DateTime(date, timeWithOffset) // resolve a civil date/time through its numeric offset
-    DateTime(date, time, offset-or-zone[, occurrence]) // create local date/time
-    o.isValid()/isUtc() -> bool // date/time state tests
-    o.utcDate()/utcTime() -> Date/Time // stored UTC values
-    o.date()/time() -> Date/Time // local display values
-    o.timeOffset() -> Duration // display UTC offset
-    o.timeZone() -> TimeZone // display time zone or UTC
-    o.timeZoneAbbreviation() -> text::StringEditor // zone abbreviation or empty string
-    o.wouldAddSaturate/wouldSubtractSaturate(duration-or-calendar-delta) -> bool // arithmetic saturation tests
-    o.added/subtracted(duration-or-calendar-delta) -> DateTime // saturated instant/calendar arithmetic
-    o.addedOrThrow/subtractedOrThrow(duration-or-calendar-delta) -> DateTime // arithmetic or err::OverflowError
-    o.add/subtract(duration-or-calendar-delta) -> void // saturated in-place arithmetic
-    o.addOrThrow/subtractOrThrow(duration-or-calendar-delta) -> void // in-place arithmetic or err::OverflowError
-    o.durationTo(dateTime) -> Duration // signed second-resolution distance
-    o.timeDeltaTo(dateTime) -> TimeDelta // signed nanosecond-resolution distance
-    o.toUtc() -> DateTime // convert display zone to UTC
-    o.toTimeZone(zone) -> DateTime // convert display zone
-    o.toSecondsSinceEpoch() -> Seconds // internal epoch second offset, -1 for invalid
-    o.toTimeT() -> std::time_t // convert using POSIX epoch
-    o.toIsoString(flags, precision) -> text::StringEditor // ISO date/time text or empty for invalid
-    T::now() -> DateTime // current UTC date/time
-    T::fromSecondsSinceEpoch(seconds[, fractions]) -> DateTime // create from internal epoch
-    T::fromDurationSinceEpoch(duration) -> DateTime // create from internal epoch duration
-    T::fromTimeT(posixTime) -> DateTime // create from POSIX epoch seconds
-    T::fromIsoString(text[, zone][, precision]) -> DateTime // parse or return invalid state
-    T::fromIsoStringOrThrow(text[, zone][, precision]) -> DateTime // parse or throw err::ParseError
-    T::epoch()/first()/last()/posixEpoch() -> DateTime // named date/time boundaries
-
-Time Zone Patterns
+Date-Time Patterns
 ==================
 
 .. code-block:: text
 
-    TimeZone() // create UTC
-    TimeZone(offset-or-id) // create fixed offset or named zone by identifier
-    TimeZone(hours[, minutes[, seconds]]) // create normalized fixed offset
-    o.isUtc()/isStaticOffset()/isNamed() -> bool // time-zone storage state tests
-    o.staticOffset() -> Duration // fixed offset or zero
-    o.name() -> text::StringEditor // primary zone name or empty string
-    o.id() -> TimeZoneId // transient zone identifier
-    T::isValidName(name) -> bool // test supported zone or special UTC/fixed-offset text
-    T::fromName(name) -> optional<TimeZone> // create named zone or empty optional
-    T::fromNameOrThrow(name) -> TimeZone // create named zone or throw err::ParseError
-    T::names() -> text::StringEditorList // all supported IANA zone names
-    T::databaseVersion() -> unit::Version // bundled IANA database version
-    T::utc() -> TimeZone // UTC zone
-    o.isDst() -> bool // test daylight-saving state on tz::TimeOffset
-    T::local() -> TimeZone // process-cached system zone, local-marked UTC on failure
-    o.isLocalTime() -> bool // zone originated from the system-local setting
-    o.isDst()/isLocalTime() -> bool // resolved-offset state on tz::TimeOffset
+    T(date, time[, zone-or-offset, occurrence]) // create an instant from civil values
+    o.utcDate()/utcTime() -> T // inspect stored UTC parts
+    o.date()/time()/timeZone()/timeOffset() -> T // inspect display-zone parts
+    o.toUtc()/toTimeZone(zone) -> DateTime // preserve the instant and change display metadata
+    o.toSecondsSinceEpoch()/toTimeT() -> T // cross internal or POSIX epoch boundaries
+    T::now() -> DateTime // get the current UTC instant
+    T::fromSecondsSinceEpoch/fromTimeT(value) -> DateTime // create from an epoch boundary
 
-Elapsed-Time Patterns
-=====================
+Time-Zone Patterns
+==================
 
 .. code-block:: text
 
-    TimePoint() // create steady-clock epoch value
-    TimePoint(steadyClockTimePoint) // wrap std::chrono::steady_clock::time_point
-    o.timeDeltaTo(point) -> TimeDelta // signed delta to another monotonic point
-    o.timeDeltaToNow() -> TimeDelta // elapsed delta to current steady time
-    TimePoint::now() -> TimePoint // current steady-clock point
-    TimePoint::inFuture(delta) -> TimePoint // current steady-clock point plus delta
-    ElapsedTimer() // start timer at construction
-    o.restart() -> void // reset start point to now
-    o.elapsed() -> TimeDelta // elapsed monotonic time since start or restart
+    T(offset-or-id) // create UTC, a fixed offset, or a named zone
+    o.isUtc()/isStaticOffset()/isNamed()/isLocalTime() -> bool // inspect zone representation
+    o.staticOffset()/name()/id() -> T // inspect zone identity
+    T::fromName/fromNameOrThrow(name) -> TimeZone // resolve with empty or throwing failure reporting
+    T::names() -> text::StringEditorList // list supported IANA zone names
+    T::databaseVersion() -> unit::Version // inspect the bundled IANA database version
+    T::utc()/local() -> TimeZone // access UTC or cached system-local zones
+
+Formatting and Parsing Patterns
+===============================
+
+.. code-block:: text
+
+    o.toIsoString([flags, precision]) -> text::StringEditor // create ISO text
+    T::fromIsoString/fromIsoStringOrThrow(text[, zone, precision]) -> T // parse with invalid or throwing failure
+    o.toString([format]) -> text::String // create normalized human-readable text
+    T::shortUnits/longUnits/elcl() -> TimeDeltaFormat // create a standard delta format
+
+Monotonic Time Patterns
+=======================
+
+.. code-block:: text
+
+    T::now()/inFuture(delta) -> TimePoint // create current or future steady-clock points
+    o.timeDeltaTo(point)/timeDeltaToNow() -> TimeDelta // measure a signed monotonic delta
+    T() // start an elapsed timer at construction
+    o.restart() // restart elapsed measurement at the current monotonic point
+    o.elapsed() -> TimeDelta // inspect elapsed monotonic time

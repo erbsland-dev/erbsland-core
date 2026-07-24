@@ -40,6 +40,7 @@ target_sources(erbsland-core PRIVATE
         Options.cpp
         Options.hpp
         Options_fwd.hpp
+        OptionSensitiveTextLocation.hpp
         OptionSet.cpp
         OptionSet.hpp
         OptionSet_fwd.hpp

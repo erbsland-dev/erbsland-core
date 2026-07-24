@@ -11,7 +11,6 @@
 
 #include "../bgeo/BlockPosition.hpp"
 #include "../bgeo/BlockSize.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
@@ -218,7 +217,7 @@ public: // write
     }
     /// @overload
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
-    void write(const text::String &text) noexcept { write(BlockStringEditor{text, text::EncodingErrorMode::Replace}); }
+    void write(const text::String &text) noexcept { write(BlockStringEditor{text}); }
     /// @overload
     void write(const text::U32String &text) noexcept { write(BlockStringEditor{text}); }
     /// Write a buffer at the current cursor position.
@@ -260,7 +259,7 @@ public: // write
     auto printParagraph(
         const text::String &paragraph, const ParagraphOptions &options = ParagraphOptions::defaultOptions()) noexcept
         -> int {
-        return printParagraphImpl(BlockStringEditor{paragraph, text::EncodingErrorMode::Replace}, options);
+        return printParagraphImpl(BlockStringEditor{paragraph}, options);
     }
     /// @overload
     auto printParagraph(

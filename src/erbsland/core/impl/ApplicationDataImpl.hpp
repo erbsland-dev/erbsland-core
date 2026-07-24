@@ -12,7 +12,7 @@
 namespace erbsland::core::impl {
 
 /// The default storage implementation for the internal application data.
-/// @tested{ApplicationTestScopeTest}
+/// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
 class ApplicationDataImpl : public ApplicationData {
 public:
     ApplicationDataImpl();
@@ -28,6 +28,8 @@ public: // implement ApplicationData
 public: // accessors
     [[nodiscard]] auto info() noexcept -> ApplicationInfo & override;
     [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments & override;
+    [[nodiscard]] auto commandLineArgumentsForParsing() noexcept -> CommandLineArguments & override;
+    void maskSensitiveCommandLineText(const options::OptionSensitiveTextLocations &locations) noexcept override;
     [[nodiscard]] auto options() noexcept -> const options::OptionsPtr & override;
     void setOptions(options::OptionsPtr options) noexcept override;
     [[nodiscard]] auto optionValues() noexcept -> const options::OptionValuesPtr & override;
@@ -63,6 +65,9 @@ private:
 
     std::atomic<bool> _commandLineArgumentsInitialized{false}; ///< If command line arguments are initialized.
     CommandLineArguments _commandLineArguments;                ///< Converted command line arguments.
+    int _nativeArgumentCount{0};                               ///< The original native argument count.
+    char **_nativeArguments{nullptr};                          ///< Borrowed original UTF-8 argument vector.
+    wchar_t **_nativeWideArguments{nullptr};                   ///< Borrowed original wide argument vector.
 
     options::OptionsPtr _options;                              ///< The global options configuration.
     options::OptionValuesPtr _optionValues;                    ///< The option values after parsing.

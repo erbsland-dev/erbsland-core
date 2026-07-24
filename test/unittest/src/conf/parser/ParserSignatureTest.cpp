@@ -7,7 +7,7 @@
 #include <erbsland/conf/SignatureSigner.hpp>
 #include <erbsland/conf/SignatureValidator.hpp>
 #include <erbsland/conf/Signer.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
 #include <erbsland/text/StringCharReader.hpp>
 #include <erbsland/text/StringEditor.hpp>
@@ -129,7 +129,7 @@ public:
         REQUIRE(file.is_open());
         std::string fileContents((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
         REQUIRE_EQUAL(fileContents.size(), 18);
-        hash.update(std::span(reinterpret_cast<const std::byte *>(fileContents.data()), fileContents.size()));
+        hash.update(el::mem::toConstByteSpan(std::span<const char>{fileContents}));
         auto actualDigest = hash.finalize();
         REQUIRE_EQUAL(actualDigest, expectedDigest);
 

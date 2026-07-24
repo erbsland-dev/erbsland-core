@@ -58,6 +58,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/frame-weaver/src/FrameWeaverApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/FrameWeaver/src/FrameWeaverApp.cpp`.
 
 This file contains the render loop, random frame placement, and the custom style definition used by the demo.

@@ -5,7 +5,6 @@
 #include "../char/NamedChars.hpp"
 #include "../constants/Defaults.hpp"
 
-#include "../../../text/EncodingError.hpp"
 #include "../../../unit/ByteRange.hpp"
 
 namespace erbsland::conf::impl {
@@ -61,16 +60,7 @@ auto FastNameDecoder::captureFromDecoderState(const DecoderState &state) const n
 }
 
 void FastNameDecoder::readCurrentCharacter() {
-    try {
-        _currentChar = text::Char{_buffer.readCharAndAdvanceOrThrow(_readIndex)};
-    } catch (const text::EncodingError &error) {
-        throw ConfError{
-            ConfErrorCategory::Encoding,
-            "Decoding the Configuration Name Failed"_el,
-            error.reason(),
-            location(),
-            std::current_exception()};
-    }
+    _currentChar = _buffer.readCharAndAdvance(_readIndex);
 }
 
 }

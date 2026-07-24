@@ -10,6 +10,7 @@
 
 #include "../../i18n/DisplayTextMap.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/StringEditor.hpp"
 
 #include <utility>
 
@@ -18,7 +19,7 @@ namespace erbsland::options::impl {
 using namespace text::literals;
 
 OptionParser::OptionParser(
-    OptionsPtr options, const core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText) :
+    OptionsPtr options, core::CommandLineArguments &args, i18n::DisplayTextMapConstPtr displayText) :
     _options{std::move(options)},
     _args{args},
     _displayText{displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap()},
@@ -27,6 +28,10 @@ OptionParser::OptionParser(
     if (_options != nullptr) {
         _options->setExecutablePath(_args.isEmpty() ? text::String{} : _args.first());
     }
+}
+
+OptionParser::~OptionParser() {
+    cleanupSensitiveTextNoThrow();
 }
 
 auto OptionParser::parse() -> OptionResult {
@@ -86,25 +91,33 @@ auto OptionParser::parse() -> OptionResult {
 }
 
 auto OptionParser::finishSuccess() -> OptionResult {
+    cleanupSensitiveText();
     auto result = OptionResult{};
     result.setStatus(OptionResultStatus::Success);
     _values->setModuleName(_moduleName);
     _values->setModule(_selectedModule);
     result.setValues(_values);
+    result.setSensitiveTextLocations(_sensitiveTextLocations);
     return result;
 }
 
 auto OptionParser::finishStatus(const OptionResultStatus status) -> OptionResult {
+    cleanupSensitiveText();
     auto result = OptionResult{};
     result.setStatus(status);
     auto values = OptionValues::create();
     values->setModuleName(_moduleName);
     values->setModule(_selectedModule);
     result.setValues(values);
+    result.setSensitiveTextLocations(_sensitiveTextLocations);
     return result;
 }
 
 auto OptionParser::finishError() -> OptionResult {
+    cleanupSensitiveText();
+    if (_error.has_value()) {
+        _error->setArguments(_args);
+    }
     auto result = OptionResult{};
     result.setStatus(OptionResultStatus::Error);
     result.setErrorContext(_error);
@@ -112,6 +125,7 @@ auto OptionParser::finishError() -> OptionResult {
     values->setModuleName(_moduleName);
     values->setModule(_selectedModule);
     result.setValues(values);
+    result.setSensitiveTextLocations(_sensitiveTextLocations);
     return result;
 }
 
@@ -121,6 +135,53 @@ auto OptionParser::acceptStorageResult(const bool success) -> bool {
     }
     makeError(_storage.errorContext().value());
     return false;
+}
+
+auto OptionParser::storeValue(
+    const OptionPtr &option,
+    const text::String &value,
+    const unit::ArgumentIndex argumentIndex,
+    const unit::ByteIndex startIndex) -> bool {
+    if (option != nullptr && option->type() == OptionType::SensitiveText) {
+        if (!argumentIndex.isNoIndex()) {
+            const auto elementIndex = unit::ElementIndex::fromSizeT(argumentIndex.toSizeT());
+            if (elementIndex.toSizeT() < _args.count().toSizeT()) {
+                auto source = _args.get(elementIndex);
+                source.markAsSensitive();
+                _args.set(elementIndex, std::move(source));
+            }
+        }
+        _sensitiveTextLocations.emplace_back(argumentIndex, startIndex);
+    }
+    return acceptStorageResult(_storage.storeValue(option, value, argumentIndex));
+}
+
+void OptionParser::cleanupSensitiveText() {
+    while (_sensitiveTextCleanupIndex < _sensitiveTextLocations.size()) {
+        const auto &location = _sensitiveTextLocations.at(_sensitiveTextCleanupIndex);
+        ++_sensitiveTextCleanupIndex;
+        if (location.argumentIndex().isNoIndex() || location.startIndex().isNoIndex()) {
+            continue;
+        }
+        const auto argumentIndex = unit::ElementIndex::fromSizeT(location.argumentIndex().toSizeT());
+        if (argumentIndex.toSizeT() >= _args.count().toSizeT()) {
+            continue;
+        }
+        const auto original = _args.get(argumentIndex);
+        if (location.startIndex().toSizeT() > original.length().toSizeT()) {
+            continue;
+        }
+        auto replacement =
+            text::StringEditor{original.slice(unit::ByteRange{unit::ByteIndex::zero(), location.startIndex()})};
+        replacement.append("*****"_el);
+        _args.set(argumentIndex, text::String{replacement});
+    }
+}
+
+void OptionParser::cleanupSensitiveTextNoThrow() noexcept {
+    try {
+        cleanupSensitiveText();
+    } catch (...) {}
 }
 
 auto OptionParser::makeError(const OptionErrorReason reason, text::String description, const unit::ArgumentIndex index)
@@ -171,9 +232,6 @@ auto OptionParser::makeError(OptionErrorContext context) -> bool {
     }
     if (context.module() == nullptr) {
         context.setModule(_selectedModule);
-    }
-    if (context.arguments().isEmpty()) {
-        context.setArguments(_args);
     }
     context.setDisplayText(_displayText);
     if (context.description().isEmpty()) {

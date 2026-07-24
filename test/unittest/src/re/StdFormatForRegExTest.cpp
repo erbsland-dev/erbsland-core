@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

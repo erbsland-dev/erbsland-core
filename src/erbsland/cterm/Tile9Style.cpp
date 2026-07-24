@@ -3,7 +3,6 @@
 #include "Tile9Style.hpp"
 
 #include "../err/ParameterError.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
@@ -25,8 +24,7 @@ Tile9Style::Tile9Style(const std::array<text::Char, 16> tiles, const BlockStyle 
     _hasExtendedTiles = true;
 }
 
-Tile9Style::Tile9Style(const text::String &tiles) :
-    Tile9Style(parseTiles(BlockStringEditor{tiles, text::EncodingErrorMode::Replace})) {
+Tile9Style::Tile9Style(const text::String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
 }
 
 Tile9Style::Tile9Style(const text::U32String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {

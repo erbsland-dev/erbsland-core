@@ -10,7 +10,7 @@
 
 namespace erbsland::text::impl {
 
-auto createU8StringData(const std::string_view stdString) -> U8StringDataPtr {
+auto createU8StringData(const std::string_view stdString, const bool sensitive) -> U8StringDataPtr {
     if (stdString.empty()) {
         return U8StringDataPtr{};
     }
@@ -19,22 +19,25 @@ auto createU8StringData(const std::string_view stdString) -> U8StringDataPtr {
         std::terminate();
     }
     const auto size = static_cast<U8StringData::SizeType>(stdString.size()) + 1U;
-    auto *data = U8StringData::create(size, size);
+    const auto flags = sensitive ? U8StringData::cSensitiveFlag : std::uint8_t{};
+    auto *data = U8StringData::create(size, size, flags);
     std::memcpy(data->data(), stdString.data(), stdString.size());
     data->data()[stdString.size()] = '\0';
     return U8StringDataPtr{data};
 }
 
-auto createU8StringData(const std::u8string_view stdString) -> U8StringDataPtr {
+auto createU8StringData(const std::u8string_view stdString, const bool sensitive) -> U8StringDataPtr {
     return createU8StringData(
-        std::string_view{reinterpret_cast<mem::UnsafeConstCharPtr>(stdString.data()), stdString.size()});
+        std::string_view{reinterpret_cast<mem::UnsafeConstCharPtr>(stdString.data()), stdString.size()}, sensitive);
 }
 
-auto createU8StringData(const std::size_t actualStringDataSize) -> U8StringDataPtr {
-    return createU8StringData(actualStringDataSize, actualStringDataSize);
+auto createU8StringData(const std::size_t actualStringDataSize, const bool sensitive) -> U8StringDataPtr {
+    return createU8StringData(actualStringDataSize, actualStringDataSize, sensitive);
 }
 
-auto createU8StringData(const std::size_t actualStringDataSize, const std::size_t reservedCapacity) -> U8StringDataPtr {
+auto createU8StringData(
+    const std::size_t actualStringDataSize, const std::size_t reservedCapacity, const bool sensitive)
+    -> U8StringDataPtr {
     if (actualStringDataSize > reservedCapacity) {
         std::terminate();
     }
@@ -47,7 +50,8 @@ auto createU8StringData(const std::size_t actualStringDataSize, const std::size_
     }
     const auto size = static_cast<U8StringData::SizeType>(actualStringDataSize) + 1U;
     const auto capacity = static_cast<U8StringData::SizeType>(reservedCapacity) + 1U;
-    auto *data = U8StringData::create(size, capacity);
+    const auto flags = sensitive ? U8StringData::cSensitiveFlag : std::uint8_t{};
+    auto *data = U8StringData::create(size, capacity, flags);
     data->data()[actualStringDataSize] = '\0';
     return U8StringDataPtr{data};
 }

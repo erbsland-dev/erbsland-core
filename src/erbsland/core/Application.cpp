@@ -145,7 +145,8 @@ void Application::parseCommandLine() {
     _data->options()->setApplicationInfo(_data->info());
 
     auto manager = options::OptionManager{_data->options(), _data->displayText()};
-    const auto result = manager.parse(_data->commandLineArguments());
+    const auto result = manager.parse(_data->commandLineArgumentsForParsing());
+    _data->maskSensitiveCommandLineText(result.sensitiveTextLocations());
     const auto &values = result.values();
     switch (result.status()) {
     case options::OptionResultStatus::Success:

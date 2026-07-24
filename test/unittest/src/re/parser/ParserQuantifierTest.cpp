@@ -3,7 +3,7 @@
 
 #include "ParserBase.hpp"
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 using impl::limits::maximumQuantifierCount;
 

@@ -4,6 +4,7 @@
 
 #include "UnsafeRingBufferAccess.hpp"
 
+#include "../ByteSpan.hpp"
 #include "../Endianness.hpp"
 
 #include "../../err/LogicError.hpp"
@@ -85,7 +86,7 @@ public: // write
 
 private:
     UnsafeRingBufferAccess _access;
-    std::array<std::span<Byte>, 2> _spans;
+    std::array<ByteSpan, 2> _spans;
     Endianness _endianness{Endianness::Little};
     std::size_t _spanIndex{0U};
     std::size_t _spanPosition{0U};

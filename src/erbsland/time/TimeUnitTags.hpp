@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../core/Definitions.hpp"
+
 namespace erbsland::time {
 
 /// Unit tag for time amounts measured in seconds and fractions/multiples of seconds.

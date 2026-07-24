@@ -3,7 +3,7 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -15,7 +15,7 @@
 #include <vector>
 
 using el::mem::ByteBlock;
-using el::text::EncodingErrorMode;
+using el::text::EncodingMode;
 using el::text::StringBomMode;
 using el::text::StringConverter;
 using el::text::StringDecoder;
@@ -44,7 +44,7 @@ public:
             std::u32string{U"A"});
     }
 
-    void testBomAndErrorModes() {
+    void testBomAndEncodingModes() {
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{makeBlock({0xEFU, 0xBBU, 0xBFU, 0x41U})}.toU8String(StringEncoding::Utf8)}
                 .toStdString(),
@@ -53,17 +53,11 @@ public:
         const auto malformed = makeBlock({0x41U, 0xC0U, 0x42U});
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{malformed}.toU8String(
-                                StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Replace)}
+                                StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Tolerant)}
                 .toStdU32String(),
             std::u32string{U"A\uFFFDB"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{malformed}.toU8String(
-                                StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"AB"});
         REQUIRE_THROWS(
-            StringDecoder{malformed}.toU8String(
-                StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Throw));
+            StringDecoder{malformed}.toU8String(StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict));
     }
 
     void testInitialAndRepeatedBomForEveryEncoding() {
@@ -92,57 +86,49 @@ public:
             initial.insert(initial.end(), testCase.letterA.begin(), testCase.letterA.end());
             REQUIRE_EQUAL(
                 StringConverter{StringDecoder{makeBlock(initial)}.decode(
-                                    testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Throw)}
+                                    testCase.encoding, StringBomMode::Automatic, EncodingMode::Strict)}
                     .toStdU32String(),
                 std::u32string{U"A"});
             REQUIRE_EQUAL(
                 StringConverter{StringDecoder{makeBlock(initial)}.decode(
-                                    testCase.encoding, StringBomMode::Require, EncodingErrorMode::Throw)}
+                                    testCase.encoding, StringBomMode::Require, EncodingMode::Strict)}
                     .toStdU32String(),
                 std::u32string{U"A"});
             REQUIRE_THROWS_AS(
                 el::text::EncodingError,
                 StringDecoder{makeBlock(initial)}.decode(
-                    testCase.encoding, StringBomMode::Reject, EncodingErrorMode::Throw));
+                    testCase.encoding, StringBomMode::Reject, EncodingMode::Strict));
 
             auto repeated = testCase.bom;
             repeated.insert(repeated.end(), testCase.bom.begin(), testCase.bom.end());
             repeated.insert(repeated.end(), testCase.letterA.begin(), testCase.letterA.end());
             REQUIRE_EQUAL(
                 StringConverter{StringDecoder{makeBlock(repeated)}.decode(
-                                    testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Replace)}
+                                    testCase.encoding, StringBomMode::Automatic, EncodingMode::Tolerant)}
                     .toStdU32String(),
                 std::u32string{U"\uFFFDA"});
-            REQUIRE_EQUAL(
-                StringConverter{StringDecoder{makeBlock(repeated)}.decode(
-                                    testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                    .toStdU32String(),
-                std::u32string{U"A"});
             REQUIRE_THROWS_AS(
                 el::text::EncodingError,
                 StringDecoder{makeBlock(repeated)}.decode(
-                    testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                    testCase.encoding, StringBomMode::Automatic, EncodingMode::Strict));
 
             auto embedded = testCase.letterA;
             embedded.insert(embedded.end(), testCase.bom.begin(), testCase.bom.end());
             embedded.insert(embedded.end(), testCase.letterB.begin(), testCase.letterB.end());
             REQUIRE_EQUAL(
                 StringConverter{StringDecoder{makeBlock(embedded)}.decode(
-                                    testCase.encoding, StringBomMode::Reject, EncodingErrorMode::Replace)}
+                                    testCase.encoding, StringBomMode::Reject, EncodingMode::Tolerant)}
                     .toStdU32String(),
                 std::u32string{U"A\uFFFDB"});
-            REQUIRE_EQUAL(
-                StringConverter{StringDecoder{makeBlock(embedded)}.decode(
-                                    testCase.encoding, StringBomMode::Reject, EncodingErrorMode::Ignore)}
-                    .toStdU32String(),
-                std::u32string{U"AB"});
             REQUIRE_THROWS_AS(
                 el::text::EncodingError,
                 StringDecoder{makeBlock(embedded)}.decode(
-                    testCase.encoding, StringBomMode::Reject, EncodingErrorMode::Throw));
+                    testCase.encoding, StringBomMode::Reject, EncodingMode::Strict));
         }
     }
 
 private:
-    [[nodiscard]] static auto makeBlock(const std::vector<uint8_t> &bytes) -> ByteBlock { return ByteBlock{bytes}; }
+    [[nodiscard]] static auto makeBlock(const std::vector<uint8_t> &bytes) -> ByteBlock {
+        return ByteBlock::fromVector(bytes);
+    }
 };

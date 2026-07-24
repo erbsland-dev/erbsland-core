@@ -29,9 +29,7 @@ public:
     }
     /// Create a set from an existing character set.
     explicit Set(const CharSet &charSet) {
-        for (const auto &range : charSet.ranges()) {
-            add(range);
-        }
+        charSet.forEach([this](const CharRange range) -> void { add(range); });
     }
 
 public: // accessors

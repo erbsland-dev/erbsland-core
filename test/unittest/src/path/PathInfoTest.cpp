@@ -35,6 +35,7 @@ class PathInfoTest final : public el::UnitTest {
         [[nodiscard]] auto currentDirectoryOrThrow() const -> Path override { return Path{"/work/root"_el}; }
 
         [[nodiscard]] auto resolveOrThrow(const Path &path, PathResolveOptions) const -> Path override {
+            ++resolveCount;
             if (failResolve) {
                 throw el::path::PathError{
                     el::path::PathErrorContext{"resolve failed"_el}.setSourcePath(path.toString())};
@@ -44,13 +45,28 @@ class PathInfoTest final : public el::UnitTest {
 
         [[nodiscard]] auto loadInfoOrThrow(const Path &path, const PathInfoParts parts) const
             -> el::path::impl::PathInfoData override {
+            ++fullLoadCount;
+            return load(path, resolveOrThrow(path, PathResolveOptions{}), parts);
+        }
+
+        [[nodiscard]] auto loadResolvedInfoOrThrow(
+            const Path &path, const Path &resolvedPath, const PathInfoParts parts) const
+            -> el::path::impl::PathInfoData override {
+            ++trustedLoadCount;
+            lastTrustedResolvedPath = resolvedPath;
+            return load(path, resolvedPath, parts);
+        }
+
+    private:
+        [[nodiscard]] auto load(const Path &path, const Path &resolvedPath, const PathInfoParts parts) const
+            -> el::path::impl::PathInfoData {
             ++loadCount;
             lastParts = parts;
             if (failLoad) {
                 throw el::path::PathError{el::path::PathErrorContext{"info failed"_el}.setSourcePath(path.toString())};
             }
-            auto result = el::path::impl::PathInfoData{path};
-            result.resolvedPath = resolveOrThrow(path, PathResolveOptions{});
+            auto result = el::path::impl::PathInfoData{};
+            result.resolvedPath = resolvedPath;
             result.exists = true;
             result.type = PathType::RegularFile;
             result.loadedParts = parts | PathInfoPart::Type;
@@ -70,8 +86,13 @@ class PathInfoTest final : public el::UnitTest {
             return result;
         }
 
+    public:
         mutable int loadCount{};
+        mutable int fullLoadCount{};
+        mutable int trustedLoadCount{};
+        mutable int resolveCount{};
         mutable PathInfoParts lastParts;
+        mutable Path lastTrustedResolvedPath;
         bool failLoad{false};
         bool failResolve{false};
     };
@@ -115,6 +136,37 @@ public:
         REQUIRE_EQUAL(info.fileSize(), el::unit::ByteLength{123U});
         REQUIRE(scope.backendPtr->lastParts.isSet(PathInfoPart::Size));
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 2);
+        REQUIRE_EQUAL(scope.backendPtr->fullLoadCount, 1);
+        REQUIRE_EQUAL(scope.backendPtr->trustedLoadCount, 1);
+        REQUIRE_EQUAL(scope.backendPtr->resolveCount, 1);
+        REQUIRE_EQUAL(toStdString(scope.backendPtr->lastTrustedResolvedPath), "/resolved/report.txt");
+    }
+
+    void testPathCopiesShareInformationCache() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+
+        const auto path = Path{"report.txt"_el};
+        REQUIRE(path.info().exists());
+        REQUIRE_EQUAL(scope.backendPtr->loadCount, 1);
+
+        REQUIRE(path.info().isRegularFile());
+        const auto copiedPath = path;
+        REQUIRE(copiedPath.info().exists());
+        REQUIRE_EQUAL(scope.backendPtr->loadCount, 1);
+    }
+
+    void testMoveLeavesSourceEmpty() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+
+        auto source = Path{"report.txt"_el}.info();
+        auto moved = std::move(source);
+        REQUIRE(source.isEmpty());
+        REQUIRE(moved.exists());
+
+        auto assigned = el::path::PathInfo{};
+        assigned = std::move(moved);
+        REQUIRE(moved.isEmpty());
+        REQUIRE(assigned.exists());
     }
 
     void testLazyLoadOfTimeParts() {

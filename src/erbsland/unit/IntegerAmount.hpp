@@ -279,6 +279,8 @@ public: // manipulation
     }
     /// Clamp this amount to the given inclusive range.
     void clamp(IntegerAmount first, IntegerAmount last) noexcept { _value.clamp(first._value, last._value); }
+    /// Return the absolute value of this amount.
+    [[nodiscard]] auto toAbsolute() const noexcept -> IntegerAmount { return IntegerAmount{_value.toAbsolute()}; }
 
 public: // factory methods
     /// Return the zero amount.

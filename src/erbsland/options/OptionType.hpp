@@ -17,10 +17,11 @@ class OptionType {
 public:
     /// The supported option types.
     enum Type : uint8_t {
-        Flag,    ///< A switch without an argument; repeated use increments the flag count.
-        Integer, ///< A signed decimal integer argument.
-        Text,    ///< An arbitrary text argument.
-        Choice,  ///< A text argument that must match one configured `OptionChoice`.
+        Flag,          ///< A boolean switch; bare use is true and compatible parsers accept explicit boolean values.
+        Integer,       ///< A signed decimal integer argument.
+        Text,          ///< An arbitrary text argument.
+        SensitiveText, ///< A single sensitive text argument stored in protected memory.
+        Choice,        ///< A text argument that must match one configured `OptionChoice`.
     };
 
 public:

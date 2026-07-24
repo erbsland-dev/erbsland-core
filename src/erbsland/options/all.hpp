@@ -22,6 +22,7 @@
 #include "OptionParserFlag.hpp"
 #include "OptionResult.hpp"
 #include "OptionResultStatus.hpp"
+#include "OptionSensitiveTextLocation.hpp"
 #include "OptionSet.hpp"
 #include "OptionSetManager.hpp"
 #include "OptionType.hpp"

@@ -2,148 +2,151 @@
 Event Domain API Guidelines
 ***************************
 
-These guidelines extend the Common API Guidelines for public APIs around the event system.
-
-The purpose of this document is to define a base naming vocabulary for the event system.
-It is intentionally plain, technical and list based to get a quick overview of method names and their usage patterns.
-If you introduce new vocabulary, update this page to provide a good reference for future extensions.
-
 Core Semantics
 ==============
 
-*   **post**: send raw event objects.
-*   **invoke**: callback/message execution
-*   **timer**: for scheduled work needs with explicit lifetime
-*   **events**: method/API name to access event functionality of an object
-*   **on❮What❯**: registering callbacks for events
+Dispatch Model
+--------------
+
+.. code-block:: text
+
+    post = enqueue a typed event object
+    invoke = enqueue callback execution
+    owner loop = one loop that serializes a source's state and callbacks
+    wake = thread-safe notification that new work or native activity is available
+    quit = terminal event-loop request processed in queue order
+
+Subscriptions and Scheduling
+----------------------------
+
+.. code-block:: text
+
+    subscription = retained connection whose release or disconnection removes all represented callbacks
+    delayed invocation = fire-and-forget callback after a delay
+    timer = retained cancellation handle for one-shot or repeated scheduled work
+    fixed delay = next interval starts after callback completion
+    fixed rate = callbacks follow a stable cadence
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    Event // a single event with optional event data
-    EventBackendId // A backend identifier (concrete instances in namespace event::id)
-    EventData // the base of all event data types
-    EventId // A event identifier (concrete instances in namespace event::id)
-    EventLoop // The event loop interface
-    EventLoopErrorAction // The action an event loop takes after a handled exception
-    EventLoopErrorHandler // A callback for event-loop exception handling
-    EventPipe // A event driven pipe for thread to thread communication
-    EventRegistry // The event and backend id registry (singleton managed by Application)
-    Events // The target for posting events and invoking callbacks
-    EventTimer // A thread-safe timer for scheduled callbacks
-    EventThread // A lightweight event driver thread for user code
+    Event // one typed event with optional data and posting time
+    Events // target for posting events, invoking callbacks, and accessing backends
+    EventLoop // serialized event dispatch and native wait loop
+    EventTimer // thread-safe retained scheduled-callback handle
+    EventThread // event loop running on a dedicated thread
 
-Secondary Types
-===============
+Event Value Types
+=================
 
 .. code-block:: text
 
-    EventBackend // The interface of an event backend
-    EventBackendIdInfo // Information about registered backend identifiers
-    EventBackendTarget // The backend-facing target for posting and waking the loop
-    EventCallback // A callback executed by an event loop
-    EventIdInfo // Information about registered event identifiers
-    EventPipeReceiver // A receiver of data from a pipe
-    EventPipeSender // A sender of data to a pipe
-    EventScheduler // The frontend interface of the scheduler backend
-    EventSource // The source for events.
-    EventTimerMode // The scheduling mode of a timer
+    EventId, EventBackendId // registered event and backend identifiers
+    EventData // base for typed event payloads
+    EventSource, EventEditor // event-loop-owned source and retained callback subscription
+    EventIdInfo, EventBackendIdInfo // registered identifier metadata
+    EventCallback // callback executed by an event loop
+    EventRegistry // application-managed identifier registry
 
-Event Patterns
-==============
+Scheduling and Thread Types
+===========================
 
 .. code-block:: text
 
-    T(EventId [, EventData]) // create an event
-    o.time() // get the time point of the event
-    o.identifier() // get the event identifier
-    o.data() // access the event data
+    EventScheduler // scheduling frontend supplied by the scheduler backend
+    EventTimerMode // inactive, once, fixed-delay, or fixed-rate scheduling mode
+    ManagedEventThread // application-owned event thread
+    UnmanagedEventThread // standalone event thread
+    EventLoopErrorAction, EventLoopErrorHandler // callback-failure handling policy
 
-Events Patterns
-===============
-
-.. code-block:: text
-
-    o.post(event) // post an event
-    o.invoke(callback) // queue a callback to execute in the target event loop
-    o.invokeAfter(delay, callback) // queue a callback after a delay
-    o.get<T>() -> T& // access a backend frontend interface
-    o.createTimer(callback) -> EventTimerPtr // create an inactive timer with a fixed callback
-    currentEvents() -> EventsPtr // access the events interface for the current managed event loop
-
-Event Attachment Patterns
-=========================
+Backend Types
+=============
 
 .. code-block:: text
 
-    o.events() -> EventsPtr // access a core event target on Application/EventThread
-    o.events() -> TEventEditor // access event callbacks on a domain object
-    o.on❮Event❯(callback) -> T& // add a callback and return the editor
+    EventBackend // native or domain event backend interface
+    EventBackendTarget // backend-facing loop target for posting and waking
+    EventLoopDriver // injectable native wait and wake abstraction
+
+Pattern Definitions
+===================
+
+.. code-block:: text
+
+    Ep = EventsPtr/EventLoopPtr // event target or concrete loop pointer
+
+Event Value Patterns
+====================
+
+.. code-block:: text
+
+    T(identifier[, data]) // create an event with its posting time
+    o.identifier()/time()/data() -> T // inspect event identity, time, or payload
+    T::register❮Kind❯(name) -> T // register a stable event or backend identifier
+    o.info(identifier) -> T // inspect registered identifier metadata
+
+Dispatch Patterns
+=================
+
+.. code-block:: text
+
+    o.post(event) // enqueue a raw event
+    o.invoke(callback) // enqueue callback execution in the target loop
+    o.invokeAfter(delay, callback) // enqueue a fire-and-forget delayed callback
+    o.get❮Backend❯() -> T& // access one backend frontend interface
+    currentEvents() -> EventsPtr // access the loop currently running on this thread
+
+Subscription Patterns
+=====================
+
+.. code-block:: text
+
+    o.events() -> T // access an event target or domain event editor
+    o.on❮Event❯(callback) -> T& // add a callback through an editor
+    o.disconnect() // remove all callbacks represented by an editor
+    o.isConnected() -> bool // test whether an editor subscription is active
+    o.ownerEvents() -> EventsPtr // access the loop that owns an event source
 
 Event Loop Patterns
 ===================
 
 .. code-block:: text
 
-    o.run() // run until stopped
-    o.runOnce() -> bool // run one event-loop cycle
-    o.runOnce(maximumWait) -> bool // run one event-loop cycle with a maximum wait time
-    o.runUntilIdle() -> std::size_t // run all immediately available events
-    o.stop() // request loop stop
-    o.quit() // post a terminal quit event
-    o.isRunning() -> bool // test if the loop is running
-    o.isQuitRequested() -> bool // test if the loop is terminating
-    o.hasError() -> bool // test if a callback error is queued
-    o.takeError() -> std::exception_ptr // take the oldest callback error
-    o.setErrorHandler(handler) // configure event-loop exception handling
-    o.registerBackend(backend) // register an event backend before the loop runs
+    T::create([driver-or-backend]) -> EventLoopPtr // create a loop with optional integration
+    o.run() // run until stopped or quit
+    o.runOnce([maximumWait]) -> bool // perform one bounded event-loop cycle
+    o.runUntilIdle() -> std::size_t // dispatch all immediately available work
+    o.stop()/quit() // request immediate stop or queued graceful termination
+    o.isRunning()/isQuitRequested() -> bool // inspect loop lifecycle state
+    o.hasError() -> bool // test whether a callback failure is queued
+    o.takeError() -> std::exception_ptr // consume the oldest callback failure
+    o.setErrorHandler(handler) // configure callback-failure handling
+    o.registerBackend(backend) // attach a backend before the loop runs
 
-Event Thread Patterns
-=====================
+Timer and Thread Patterns
+=========================
 
 .. code-block:: text
 
-    Application::createEventThread() -> ManagedEventThreadPtr // create an application-managed event thread
-    UnmanagedEventThread::create() -> UnmanagedEventThreadPtr // create a standalone event thread
-    o.start() // start the event loop in a new thread
-    o.quit() // request graceful event-loop quit
-    o.join() // wait until the thread has finished
-    o.isStarted() -> bool // test if the thread was started
-    o.isRunning() -> bool // test if the event loop is running
-    o.eventLoop() -> EventLoop& // access the event loop
-    o.events() -> EventsPtr // access the events
-
-Timer Patterns
-==============
-
-.. code-block:: text
-
-    o.startOnce(delay) // run once after a delay while the timer is kept alive
-    o.startFixedDelay(interval) // repeat interval after callback completion
-    o.startFixedRate(interval) // repeat on a fixed cadence
-    o.stop() // stop a timer
-    o.isActive() -> bool // test if a timer is scheduled or pending
-    o.mode() -> EventTimerMode // get the current timer mode
-    o.interval() -> TimeDelta // get the current delay or interval
+    o.createTimer(callback) -> EventTimerPtr // create an inactive retained timer
+    o.startOnce/startFixedDelay/startFixedRate(interval) // schedule retained work
+    o.stop() // cancel scheduled timer work
+    o.isActive() -> bool // test whether a timer is scheduled or pending
+    o.mode()/interval() -> T // inspect timer scheduling
+    o.createEventThread() -> ManagedEventThreadPtr // create an application-owned event thread
+    T::create() -> UnmanagedEventThreadPtr // create a standalone event thread
+    o.start()/quit()/join() // control an event thread lifecycle
+    o.eventLoop()/events() -> Ep // access a thread's loop or event target
 
 Backend Patterns
 ================
 
 .. code-block:: text
 
-    o.attach(target) // attach a target for backend events
-    o.backendId() -> EventBackendId // get the unique backend identifier
-    o.wake() // wake a backend from blocking work if supported
-    o.poll(now) // poll for due backend events
-    o.handleEvent(event) -> bool // handle an event owned by the backend
-    o.nextWakeTime() -> optional<TimePoint> // get the next requested poll time
-
-Backend Target Patterns
-=======================
-
-.. code-block:: text
-
-    o.postFromBackend(event) // post a backend-generated event to the loop
-    o.wakeFromBackend() // wake the loop after a backend state change
+    o.attach(target, driver) // attach the backend to one event loop
+    o.poll(now)/handleEvent(event) -> bool // collect or handle backend work
+    o.nextWakeTime() -> time::TimePoint // report the next requested poll time
+    o.wait([maximumWait])/wake() // wait for or signal native activity
+    o.postFromBackend(event)/wakeFromBackend() // notify the owning loop from a backend

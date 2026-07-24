@@ -4,7 +4,9 @@
 
 #include "KeyDecoder.hpp"
 #include "PosixSignalDispatcher.hpp"
+#include "StandardInput.hpp"
 
+#include "../../mem/impl/SecureErase.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -13,6 +15,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <cstring>
 #include <iostream>
 #include <thread>
 
@@ -29,16 +32,18 @@ namespace erbsland::cterm::impl {
 std::mutex PosixBackend::_instanceMutex;
 PosixBackend *PosixBackend::_instance = nullptr;
 
-PosixBackend::PosixBackend(TerminalFlags terminalFlags) : _terminalFlags{terminalFlags} {
+PosixBackend::PosixBackend(const TerminalFlags terminalFlags) : _terminalFlags{terminalFlags} {
     // called once per application.
     _instance = this;
     if (!_terminalFlags.has(TerminalFlag::NoSignalHandling)) {
         _signalHandler = std::make_unique<PosixSignalDispatcher>(
             [this](const int signalNumber) -> void { handleProcessSignal(signalNumber); });
     }
+    _pendingKeyInput.reserve(cMaximumPendingKeyInputSize + cMaximumInputReadSize);
 }
 
 PosixBackend::~PosixBackend() {
+    purgePendingInput();
     _signalHandler.reset();
     std::scoped_lock lock{_instanceMutex};
     if (_instance != nullptr) {
@@ -184,7 +189,7 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
             markPendingEscapeSequence();
             appendInputChunks(escapeSequenceWaitTimeout(timeout));
         }
-        const auto parseResult = KeyDecoder{text::String{_pendingKeyInput}}.parseConsoleInputPrefix();
+        const auto parseResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
         if (parseResult.status() == KeyParseStatus::Parsed) {
             erasePendingKeyInput(parseResult.consumedByteCount().toSizeT());
             return parseResult.key();
@@ -195,12 +200,11 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
                     erasePendingKeyInput(1);
                     return Key{Key::Escape};
                 }
-                _pendingKeyInput.clear();
-                _pendingEscapeStarted.reset();
+                purgePendingInput();
                 return {};
             }
             appendInputChunks(escapeSequenceWaitTimeout(timeout));
-            const auto retriedResult = KeyDecoder{text::String{_pendingKeyInput}}.parseConsoleInputPrefix();
+            const auto retriedResult = KeyDecoder{text::String{_pendingKeyInput}, true}.parseConsoleInputPrefix();
             if (retriedResult.status() == KeyParseStatus::Parsed) {
                 erasePendingKeyInput(retriedResult.consumedByteCount().toSizeT());
                 return retriedResult.key();
@@ -214,14 +218,12 @@ auto PosixBackend::readDecodedKey(const OptionalTimeout timeout) -> Key {
                     erasePendingKeyInput(1);
                     return Key{Key::Escape};
                 }
-                _pendingKeyInput.clear();
-                _pendingEscapeStarted.reset();
+                purgePendingInput();
             }
             return {};
         }
         if (parseResult.consumedByteCount().toSizeT() == 0) {
-            _pendingKeyInput.clear();
-            _pendingEscapeStarted.reset();
+            purgePendingInput();
             return {};
         }
         erasePendingKeyInput(parseResult.consumedByteCount().toSizeT());
@@ -256,7 +258,11 @@ auto PosixBackend::escapeSequenceWaitTimeout(const OptionalTimeout timeout) cons
 }
 
 void PosixBackend::erasePendingKeyInput(const std::size_t byteCount) {
-    _pendingKeyInput.erase(0, byteCount);
+    const auto count = std::min(byteCount, _pendingKeyInput.size());
+    const auto remaining = _pendingKeyInput.size() - count;
+    std::memmove(_pendingKeyInput.data(), _pendingKeyInput.data() + count, remaining);
+    mem::impl::secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data() + remaining, count}));
+    _pendingKeyInput.resize(remaining);
     if (_pendingKeyInput.empty() || _pendingKeyInput[0] != '\x1b') {
         _pendingEscapeStarted.reset();
     } else {
@@ -265,9 +271,13 @@ void PosixBackend::erasePendingKeyInput(const std::size_t byteCount) {
 }
 
 auto PosixBackend::readLine() -> text::String {
-    std::string input;
-    std::getline(std::cin, input);
-    return text::String{input};
+    return readStandardInputLine();
+}
+
+void PosixBackend::purgePendingInput() noexcept {
+    mem::impl::secureErase(std::as_writable_bytes(std::span{_pendingKeyInput.data(), _pendingKeyInput.size()}));
+    _pendingKeyInput.clear();
+    _pendingEscapeStarted.reset();
 }
 
 auto PosixBackend::getOrCreate(const TerminalFlags terminalFlags) noexcept -> BackendPtr {
@@ -329,7 +339,7 @@ void PosixBackend::initializeKeyInputSession() {
 void PosixBackend::restoreKeyInputSession() {
     tcsetattr(STDIN_FILENO, TCSANOW, &_originalState);
     _keyInputSessionActive = false;
-    _pendingKeyInput.clear();
+    purgePendingInput();
 }
 
 auto PosixBackend::waitForInput(const OptionalTimeout timeout) -> bool {
@@ -358,25 +368,19 @@ auto PosixBackend::pollForInput() -> bool {
     return select(STDIN_FILENO + 1, &set, nullptr, nullptr, &tv) > 0;
 }
 
-auto PosixBackend::readInputChunk() -> std::string {
-    char buffer[64];
-    const auto length = ::read(STDIN_FILENO, buffer, sizeof(buffer));
-    if (length <= 0) {
-        return {};
-    }
-    return {buffer, static_cast<std::size_t>(length)};
-}
-
 void PosixBackend::appendInputChunks(const OptionalTimeout timeout) {
     if (!waitForInput(timeout)) {
         return;
     }
     while (_pendingKeyInput.size() < cMaximumPendingKeyInputSize) {
-        const auto chunk = readInputChunk();
-        if (chunk.empty()) {
+        char buffer[cMaximumInputReadSize];
+        const auto length = ::read(STDIN_FILENO, buffer, sizeof(buffer));
+        if (length <= 0) {
+            mem::impl::secureErase(std::as_writable_bytes(std::span{buffer}));
             return;
         }
-        _pendingKeyInput += chunk;
+        _pendingKeyInput.append(buffer, static_cast<std::size_t>(length));
+        mem::impl::secureErase(std::as_writable_bytes(std::span{buffer}));
         if (!pollForInput()) {
             return;
         }

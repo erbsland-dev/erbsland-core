@@ -84,19 +84,21 @@ public:
     /// Calls the affected post-hooks after parsing.
     /// Returns after successful and erroneous parsing and if `--help` or `--version` is encountered.
     /// You are responsible to handle displaying help, version, and errors, based on the returned `OptionResult`.
-    /// @param args The command line arguments to parse.
+    /// Sensitive option text is replaced in `args` before this method returns.
+    /// @param args The mutable command line arguments to parse and mask.
     /// @return The result of the parsing operation.
-    [[nodiscard]] auto parse(const core::CommandLineArguments &args) -> OptionResult;
+    [[nodiscard]] auto parse(core::CommandLineArguments &args) -> OptionResult;
     /// Parse already converted command line arguments or throw on error.
     /// Calls all registered pre-hooks before parsing.
     /// Calls the affected post-hooks after parsing.
     /// Automatically calls `displayVersion` or `displayHelp` if the respective option is encountered and returns
     /// a null pointer to indicate successful parsing without values.
     /// Automatically displays an error document before throwing.
-    /// @param args The command line arguments to parse.
+    /// Sensitive option text is replaced in `args` before this method returns.
+    /// @param args The mutable command line arguments to parse and mask.
     /// @return The parsed option values or a null pointer if help or version was displayed.
     /// @throws options::OptionError If parsing, validation, or a callback fails.
-    [[nodiscard]] auto parseOrThrow(const core::CommandLineArguments &args) -> OptionValuesPtr;
+    [[nodiscard]] auto parseOrThrow(core::CommandLineArguments &args) -> OptionValuesPtr;
     /// Display help using the configured renderer.
     /// Help is displayed using the configured renderer.
     /// The default renderer writes the output to the terminal or standard output.
@@ -129,14 +131,14 @@ public: // convenience overloads
     /// @param argc Argument count from `main`.
     /// @param argv UTF-8 encoded argument vector from `main`.
     /// @return The result of parsing.
-    /// @see parse(const CommandLineArguments&)
+    /// @see parse(CommandLineArguments&)
     /// @see convertCommandLineArguments(int, char**)
     [[nodiscard]] auto parse(int argc, char *argv[]) -> OptionResult;
     /// Parse wide command line arguments.
     /// @param argc Argument count from `wmain`.
     /// @param argv Wide argument vector from `wmain`.
     /// @return The result of parsing.
-    /// @see parse(const CommandLineArguments&)
+    /// @see parse(CommandLineArguments&)
     /// @see convertCommandLineArguments(int, wchar_t**)
     [[nodiscard]] auto parse(int argc, wchar_t *argv[]) -> OptionResult;
     /// Parse UTF-8 encoded command line arguments or throw on error.
@@ -144,7 +146,7 @@ public: // convenience overloads
     /// @param argv UTF-8 encoded argument vector from `main`.
     /// @return The parsed option values or null if help/version was displayed.
     /// @throws options::OptionError If parsing, validation, or a callback fails.
-    /// @see parseOrThrow(const CommandLineArguments&)
+    /// @see parseOrThrow(CommandLineArguments&)
     /// @see convertCommandLineArguments(int, char**)
     [[nodiscard]] auto parseOrThrow(int argc, char *argv[]) -> OptionValuesPtr;
     /// Parse wide command line arguments or throw on error.
@@ -152,7 +154,7 @@ public: // convenience overloads
     /// @param argv Wide argument vector from `wmain`.
     /// @return The parsed option values or null if help/version was displayed.
     /// @throws options::OptionError If parsing, validation, or a callback fails.
-    /// @see parseOrThrow(const CommandLineArguments&)
+    /// @see parseOrThrow(CommandLineArguments&)
     /// @see convertCommandLineArguments(int, wchar_t**)
     [[nodiscard]] auto parseOrThrow(int argc, wchar_t *argv[]) -> OptionValuesPtr;
 

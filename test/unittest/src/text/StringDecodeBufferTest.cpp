@@ -3,7 +3,7 @@
 
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/impl/UnsafeDecodeBufferAccess.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecodeBuffer.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -18,7 +18,7 @@
 using el::mem::Byte;
 using el::text::Char;
 using el::text::EncodingError;
-using el::text::EncodingErrorMode;
+using el::text::EncodingMode;
 using el::text::StringBomMode;
 using el::text::StringConverter;
 using el::text::StringDecodeBuffer;
@@ -55,6 +55,27 @@ public:
         REQUIRE_EQUAL(buffer.codePointStatus(), StringDecodeBuffer::CodePointStatus::Complete);
         REQUIRE_EQUAL(toStdString(buffer.takeString()), th::stdStringFromHex("C3 A4"));
         REQUIRE(buffer.isEmpty());
+    }
+
+    void testSensitiveModeMarksOnlyUtf8Results() {
+        auto buffer = StringDecodeBuffer{ByteLength{16U}, StringEncoding::Utf8, StringBomMode::Reject};
+        buffer.setSensitive(true);
+        REQUIRE(buffer.isSensitive());
+        buffer.write(std::string_view{"secret"});
+        const auto marked = buffer.takeString();
+        REQUIRE_EQUAL(toStdString(marked), std::string{"secret"});
+        REQUIRE(marked.isSensitive());
+
+        buffer.reset();
+        REQUIRE(buffer.isSensitive());
+        buffer.write(std::string_view{"x"});
+        const auto wide = buffer.takeU16String();
+        REQUIRE_EQUAL(StringConverter{wide}.toStdString(), std::string{"x"});
+
+        buffer.setSensitive(false);
+        REQUIRE_FALSE(buffer.isSensitive());
+        REQUIRE(buffer.isEmpty());
+        REQUIRE_EQUAL(buffer.capacity(), ByteLength{16U});
     }
 
     void testUtf8BoundaryStatus() {
@@ -123,26 +144,22 @@ public:
         };
 
         for (const auto &testCase : testCases) {
-            for (const auto errorMode : {EncodingErrorMode::Replace, EncodingErrorMode::Ignore}) {
-                auto buffer =
-                    StringDecodeBuffer{ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, errorMode};
-                for (const auto byte : testCase.bom) {
-                    buffer.write(std::vector<uint8_t>{byte});
-                }
-                REQUIRE(buffer.takeString().isEmpty());
-                for (const auto byte : testCase.bom) {
-                    buffer.write(std::vector<uint8_t>{byte});
-                }
-                buffer.write(testCase.letterA);
-                buffer.finish();
-                const auto expected =
-                    errorMode == EncodingErrorMode::Replace ? std::u32string{U"\uFFFDA"} : std::u32string{U"A"};
-                REQUIRE_EQUAL(StringConverter{buffer.takeString()}.toStdU32String(), expected);
-                REQUIRE_FALSE(buffer.readChar().has_value());
+            auto buffer = StringDecodeBuffer{
+                ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, EncodingMode::Tolerant};
+            for (const auto byte : testCase.bom) {
+                buffer.write(std::vector<uint8_t>{byte});
             }
+            REQUIRE(buffer.takeString().isEmpty());
+            for (const auto byte : testCase.bom) {
+                buffer.write(std::vector<uint8_t>{byte});
+            }
+            buffer.write(testCase.letterA);
+            buffer.finish();
+            REQUIRE_EQUAL(StringConverter{buffer.takeString()}.toStdU32String(), std::u32string{U"\uFFFDA"});
+            REQUIRE_FALSE(buffer.readChar().has_value());
 
-            auto throwBuffer = StringDecodeBuffer{
-                ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, EncodingErrorMode::Throw};
+            auto throwBuffer =
+                StringDecodeBuffer{ByteLength{16U}, testCase.encoding, StringBomMode::Automatic, EncodingMode::Strict};
             for (const auto byte : testCase.bom) {
                 throwBuffer.write(std::vector<uint8_t>{byte});
             }
@@ -154,23 +171,16 @@ public:
         }
     }
 
-    void testFinalIncompleteSequenceErrorModes() {
-        auto replaceBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Replace};
+    void testFinalIncompleteSequenceEncodingModes() {
+        auto replaceBuffer =
+            StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Tolerant};
         replaceBuffer.write(std::vector<uint8_t>{0xC3U});
         REQUIRE(replaceBuffer.takeString().isEmpty());
         replaceBuffer.finish();
         REQUIRE_EQUAL(toStdString(replaceBuffer.takeString()), th::stdStringFromHex("EF BF BD"));
 
-        auto ignoreBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Ignore};
-        ignoreBuffer.write(std::vector<uint8_t>{0xC3U});
-        ignoreBuffer.finish();
-        REQUIRE(ignoreBuffer.takeString().isEmpty());
-        REQUIRE(ignoreBuffer.isEmpty());
-
-        auto throwBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Throw};
+        auto throwBuffer =
+            StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict};
         throwBuffer.write(std::vector<uint8_t>{0xC3U});
         throwBuffer.finish();
         REQUIRE_THROWS_AS(EncodingError, throwBuffer.takeString());
@@ -210,26 +220,20 @@ public:
         REQUIRE_EQUAL(utf32Buffer.readChar().value(), Char{0x1F600U});
     }
 
-    void testReadCharBomAndErrorModes() {
+    void testReadCharBomAndEncodingModes() {
         auto bomBuffer = StringDecodeBuffer{ByteLength{8U}, StringEncoding::Utf16};
         bomBuffer.write(std::vector<uint8_t>{0xFFU, 0xFEU, 0x41U, 0x00U});
         REQUIRE_EQUAL(bomBuffer.readChar().value(), Char{U'A'});
         REQUIRE_EQUAL(bomBuffer.effectiveEncoding(), StringEncoding::Utf16LittleEndian);
 
-        auto replaceBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Replace};
+        auto replaceBuffer =
+            StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Tolerant};
         replaceBuffer.write(std::vector<uint8_t>{0xC3U});
         replaceBuffer.finish();
         REQUIRE_EQUAL(replaceBuffer.readChar().value(), Char::replacement());
 
-        auto ignoreBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Ignore};
-        ignoreBuffer.write(std::vector<uint8_t>{0xFFU, 0x41U});
-        REQUIRE_EQUAL(ignoreBuffer.readChar().value(), Char{U'A'});
-        REQUIRE(ignoreBuffer.isEmpty());
-
-        auto throwBuffer = StringDecodeBuffer{
-            ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Throw};
+        auto throwBuffer =
+            StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict};
         throwBuffer.write(std::vector<uint8_t>{0xFFU});
         REQUIRE_THROWS_AS(EncodingError, throwBuffer.readChar());
         REQUIRE_EQUAL(throwBuffer.byteLength(), ByteLength{1U});
@@ -280,7 +284,9 @@ public:
         }
         access.commitWritten(ByteLength{3U});
 
-        REQUIRE_EQUAL(toStdString(buffer.takeString()), std::string{"abc"});
+        const auto [decoded, characterLength] = access.takeStringWithLength(CpLength::infinite(), false);
+        REQUIRE_EQUAL(toStdString(decoded), std::string{"abc"});
+        REQUIRE_EQUAL(characterLength, CpLength{3U});
         REQUIRE_EQUAL(access.consumedByteLength(), ByteLength{3U});
 
         buffer.reset();

@@ -121,8 +121,9 @@ auto optionSetCallbacks() -> el::ExitCode {
     configureOptions(options);
 
     auto manager = el::OptionManager{options};
-    const auto values = manager.parseOrThrow(
-        makeArgs({"night-logbook"_el, "--area"_el, "duinrand"_el, "--note"_el, "vleermuizen actief"_el, "round-a"_el}));
+    auto arguments =
+        makeArgs({"night-logbook"_el, "--area"_el, "duinrand"_el, "--note"_el, "vleermuizen actief"_el, "round-a"_el});
+    const auto values = manager.parseOrThrow(arguments);
     if (values == nullptr) {
         return el::ExitCode::success();
     }

@@ -23,7 +23,8 @@ namespace erbsland::text::impl {
 /// @tested{U8StringModifierTest}
 class U8StringModifyTools final {
 public:
-    explicit constexpr U8StringModifyTools(const U8StringDataView &data) noexcept : _data{data} {}
+    explicit constexpr U8StringModifyTools(const U8StringDataView &data, const bool sensitive = false) noexcept :
+        _data{data}, _sensitive{sensitive} {}
 
 public:
     /// Remove a byte range from mutable storage, reusing unique full-range storage when possible.
@@ -151,6 +152,7 @@ private:
 
 private:
     U8StringDataView _data;
+    bool _sensitive{false};
 };
 
 template <typename Predicate>
@@ -175,7 +177,7 @@ auto U8StringModifyTools::replacedCharacters(Predicate predicate, const std::spa
         }
     }
     U8StringSharedStorage::validateSize(newSize);
-    auto storage = U8StringSharedStorage::forSize(newSize);
+    auto storage = U8StringSharedStorage::forSize(newSize, _sensitive);
     auto writePosition = std::size_t{0};
     position = unit::ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
@@ -228,7 +230,7 @@ auto U8StringModifyTools::replaceCharactersInStorage(
         return storage;
     }
     if (!canWriteInPlace) {
-        storage = U8StringModifyTools{dataView}.replacedCharacters(predicate, replacement);
+        storage = U8StringModifyTools{dataView, storage.isSensitive()}.replacedCharacters(predicate, replacement);
         return storage;
     }
 

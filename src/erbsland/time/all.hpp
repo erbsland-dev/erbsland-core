@@ -19,6 +19,7 @@
 #include "ElapsedTimer.hpp"
 #include "Hour.hpp"
 #include "IsoTimeFormat.hpp"
+#include "Literals.hpp"
 #include "Minute.hpp"
 #include "Month.hpp"
 #include "Second.hpp"

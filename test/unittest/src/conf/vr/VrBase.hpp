@@ -6,7 +6,7 @@
 
 #include <erbsland/conf/impl/vr/Rules.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
 #include <erbsland/err/DiagnosticHelper.hpp>
 #include <erbsland/text/CaseSensitivity.hpp>

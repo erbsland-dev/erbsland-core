@@ -4,7 +4,7 @@
 #include "CryptologyTestHelper.hpp"
 
 #include <erbsland/cryptology/Hasher.hpp>
-#include <erbsland/cryptology/StdFormatForCryptology.hpp>
+#include <erbsland/cryptology/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
@@ -34,7 +34,7 @@ public:
         HashAlgorithm algorithm, const el::mem::ByteBlock &message, const el::mem::ByteBlock &expectedDigest) {
         // Verify in one go.
         Hasher hash{algorithm};
-        const auto messageSpan = message.bytes();
+        const auto messageSpan = message.span();
         hash.update(message);
         auto actualDigest = hash.finalize();
         REQUIRE_EQUAL(actualDigest, expectedDigest);

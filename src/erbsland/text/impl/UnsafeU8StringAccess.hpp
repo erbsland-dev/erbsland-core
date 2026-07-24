@@ -10,7 +10,7 @@ namespace erbsland::text::impl {
 
 /// Provides unsafe access to the internal read-only string data.
 /// @warning Do not use this class in user code!
-/// @notest{implicitly tested via U8StringEditor}
+/// @tested{OptionsParserTest}
 class UnsafeU8StringAccess {
 public:
     /// Create an accessor

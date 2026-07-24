@@ -3,15 +3,18 @@
 #include "BlockStringRangeView.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
+#include "../../text/Literals.hpp"
+#include "../../text/StringFormat.hpp"
 
 #include <algorithm>
 #include <ranges>
-#include <string>
 
 namespace erbsland::cterm::impl {
 
 using text::Char;
 using text::CharSet;
+using text::StringFormat;
+using namespace text::literals;
 
 auto BlockStringRangeView::storageIndex(const BlockIndex localIndex) const noexcept -> BlockIndex {
     return _range.index() + localIndex.offsetFromZero();
@@ -75,9 +78,9 @@ auto BlockStringRangeView::operator[](const BlockIndex index) const noexcept -> 
     return characterAt(index);
 }
 
-auto BlockStringRangeView::at(const BlockIndex index, const std::string_view typeName) const -> Block {
+auto BlockStringRangeView::at(const BlockIndex index, const text::StringLiteral &typeName) const -> Block {
     if (!index.isWithin(length())) {
-        throw err::OutOfRangeError{std::string{typeName} + " index out of range."};
+        throw err::OutOfRangeError{StringFormat{"{} index out of range."_el}.build(typeName)};
     }
     return characterAt(index);
 }

@@ -7,9 +7,9 @@
 
 #include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/StringConverter.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringList.hpp"
+#include "../../../text/u8/impl/U8StringLiteralFactory.hpp"
 
 #include <mutex>
 
@@ -19,12 +19,10 @@ using namespace text::literals;
 using namespace text;
 
 auto Database::zoneNameToString(const ZoneName &zoneName) -> String {
-    const auto secondText =
-        zoneName.text2 == cEmptyTextId ? String{} : StringConverter{Database::textFromIndex(zoneName.text2)}.toString();
-    const auto thirdText =
-        zoneName.text3 == cEmptyTextId ? String{} : StringConverter{Database::textFromIndex(zoneName.text3)}.toString();
+    const auto secondText = zoneName.text2 == cEmptyTextId ? String{} : Database::textFromIndex(zoneName.text2);
+    const auto thirdText = zoneName.text3 == cEmptyTextId ? String{} : Database::textFromIndex(zoneName.text3);
     return String::fromJoined(
-        {StringConverter{Database::textFromIndex(zoneName.text1)}.toString(),
+        {Database::textFromIndex(zoneName.text1),
             zoneName.text2 == cEmptyTextId ? String{} : String{"/"_el},
             secondText,
             zoneName.text3 == cEmptyTextId ? String{} : String{"/"_el},
@@ -81,7 +79,7 @@ auto Database::abbreviation(ZoneId zoneId, AbbreviationOffset abbreviationOffset
         return {};
     }
     const auto textId = zoneInfo->textIdFromAbbreviationOffset(abbreviationOffset);
-    return StringConverter{textFromIndex(textId)}.toString();
+    return textFromIndex(textId);
 }
 
 auto Database::info(ZoneId zoneId) const noexcept -> std::shared_ptr<const Info> {
@@ -107,24 +105,12 @@ auto Database::info(ZoneId zoneId) const noexcept -> std::shared_ptr<const Info>
     return shared;
 }
 
-auto Database::textFromIndex(TextId index) noexcept -> std::string_view {
+auto Database::textFromIndex(TextId index) noexcept -> String {
     if (index == cEmptyTextId || index >= textEntries().size()) {
         return {};
     }
     const auto &text = textEntries()[index];
-    return std::string_view{textBlock().data() + text.offset, text.length};
-}
-
-auto Database::indexFromText(std::string_view text) noexcept -> TextId {
-    if (text.empty()) {
-        return cEmptyTextId;
-    }
-    for (auto i = std::size_t{1}; i < textEntries().size(); ++i) {
-        if (textFromIndex(static_cast<TextId>(i)) == text) {
-            return static_cast<TextId>(i);
-        }
-    }
-    return cEmptyTextId;
+    return text::impl::createU8StringLiteral(textBlock().data() + text.offset, text.length);
 }
 
 auto Database::indexFromText(const String &textView) noexcept -> TextId {
@@ -132,7 +118,7 @@ auto Database::indexFromText(const String &textView) noexcept -> TextId {
         return cEmptyTextId;
     }
     for (auto i = std::size_t{1}; i < textEntries().size(); ++i) {
-        if (textView == StringConverter{textFromIndex(static_cast<TextId>(i))}.toString()) {
+        if (textView == textFromIndex(static_cast<TextId>(i))) {
             return static_cast<TextId>(i);
         }
     }

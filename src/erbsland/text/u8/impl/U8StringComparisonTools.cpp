@@ -5,6 +5,8 @@
 #include "U8Encoding.hpp"
 #include "U8StringReadTools.hpp"
 
+#include "../../impl/DecodedStringSearch.hpp"
+
 namespace erbsland::text::impl {
 
 using unit::ByteIndex;
@@ -17,7 +19,7 @@ auto U8StringComparisonTools::containsOneDecodedCharacter(
     }
 
     auto result = false;
-    utf8::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf8::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
         result = characters.contains(character);
         return !result;
     });
@@ -48,6 +50,26 @@ auto U8StringComparisonTools::find(
     const auto needle = text.dataSpan();
     if (needle.empty()) {
         return start;
+    }
+
+    if (DecodedStringSearch::isUsefulFor(needle.size())) {
+        try {
+            const auto readNeedle = [&needle](ByteIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= needle.size()) {
+                    return Char::endOfData();
+                }
+                return utf8::decodeCharOrReplace(needle, position);
+            };
+            const auto readData = [&data](ByteIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= data.size()) {
+                    return Char::endOfData();
+                }
+                return utf8::decodeCharOrReplace(data, position);
+            };
+            return DecodedStringSearch{needle.size(), ByteIndex::zero(), readNeedle, compareFn}.find(start, readData);
+        } catch (...) {
+            // Preserve the noexcept search API by falling back to the allocation-free implementation.
+        }
     }
 
     auto position = start;
@@ -86,11 +108,10 @@ auto U8StringComparisonTools::contains(const U8StringDataView &other, const Char
 
 auto U8StringComparisonTools::contains(const Char character) const noexcept -> bool {
     auto result = false;
-    utf8::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            result = currentCharacter == character;
-            return !result;
-        });
+    utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        result = currentCharacter == character;
+        return !result;
+    });
     return result;
 }
 
@@ -102,6 +123,27 @@ auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCom
     }
 
     const auto data = _data.dataSpan();
+    if (DecodedStringSearch::isUsefulFor(needle.size())) {
+        try {
+            const auto readNeedle = [&needle](ByteIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= needle.size()) {
+                    return Char::endOfData();
+                }
+                return utf8::decodeCharOrReplace(needle, position);
+            };
+            const auto readData = [&data](ByteIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= data.size()) {
+                    return Char::endOfData();
+                }
+                return utf8::decodeCharOrReplace(data, position);
+            };
+            return DecodedStringSearch{needle.size(), ByteIndex::zero(), readNeedle, compareFn}.count(
+                ByteIndex::zero(), readData);
+        } catch (...) {
+            // Preserve the noexcept search API by falling back to the allocation-free implementation.
+        }
+    }
+
     auto result = ElementCount{};
     auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
@@ -117,13 +159,12 @@ auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCom
 
 auto U8StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
     auto result = ElementCount{};
-    utf8::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            if (currentCharacter == character) {
-                ++result;
-            }
-            return true;
-        });
+    utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        if (currentCharacter == character) {
+            ++result;
+        }
+        return true;
+    });
     return result;
 }
 
@@ -133,11 +174,10 @@ auto U8StringComparisonTools::containsOneOf(const CharSet &characters) const noe
 
 auto U8StringComparisonTools::containsOnly(const CharSet &characters) const noexcept -> bool {
     auto result = true;
-    utf8::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            result = characters.contains(currentCharacter);
-            return result;
-        });
+    utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        result = characters.contains(currentCharacter);
+        return result;
+    });
     return result;
 }
 

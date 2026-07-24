@@ -4,7 +4,7 @@
 
 #include "RegExBase.hpp"
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
 
 class RegExCharClassBase : public RegExBase {

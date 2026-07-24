@@ -18,24 +18,24 @@ StringDecoder::StringDecoder(const mem::ByteBlockEditor &data) noexcept : _data{
 StringDecoder::StringDecoder(const mem::ByteBlock &data) noexcept : _data{data} {
 }
 
-auto StringDecoder::decode(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const -> String {
-    return toU8String(encoding, bomMode, errorMode);
+auto StringDecoder::decode(const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode) const
+    -> String {
+    return toU8String(encoding, bomMode, mode);
 }
 
 auto StringDecoder::toU8String(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const -> U8String {
-    return impl::StringConversionTools::decodeU8String(_data, encoding, bomMode, errorMode);
+    const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode) const -> U8String {
+    return impl::StringConversionTools::decodeU8String(_data, encoding, bomMode, mode);
 }
 
 auto StringDecoder::toU16String(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const -> U16String {
-    return impl::StringConversionTools::decodeU16String(_data, encoding, bomMode, errorMode);
+    const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode) const -> U16String {
+    return impl::StringConversionTools::decodeU16String(_data, encoding, bomMode, mode);
 }
 
 auto StringDecoder::toU32String(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const -> U32String {
-    return impl::StringConversionTools::decodeU32String(_data, encoding, bomMode, errorMode);
+    const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode) const -> U32String {
+    return impl::StringConversionTools::decodeU32String(_data, encoding, bomMode, mode);
 }
 
 }

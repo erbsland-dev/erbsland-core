@@ -17,6 +17,7 @@
 #include "impl/U8StringReadTools.hpp"
 #include "impl/U8StringTransformTools.hpp"
 
+#include "../EncodingMode.hpp"
 #include "../impl/ByteBlockFormatter.hpp"
 #include "../impl/FloatConversion.hpp"
 #include "../u16/U16StringEditor.hpp"
@@ -50,11 +51,29 @@ U8String::U8String(const U8StringLiteral<char8_t> &str) noexcept :
 }
 
 auto U8String::copy() const -> U8String {
-    return U8String{U8StringEditor{*this}};
+    return U8String{U8StringSharedStorage{dataView(), isSensitive()}};
 }
 
 auto U8String::isEmpty() const noexcept -> bool {
     return U8StringReadTools{dataView()}.isEmpty();
+}
+
+auto U8String::isSensitive() const noexcept -> bool {
+    const auto *shared = std::get_if<U8StringSharedStorage>(&_storage);
+    return shared != nullptr && shared->isSensitive();
+}
+
+void U8String::markAsSensitive() noexcept {
+    if (isEmpty()) {
+        return;
+    }
+    if (auto *shared = std::get_if<U8StringSharedStorage>(&_storage)) {
+        shared->markAsSensitive();
+        return;
+    }
+    if (const auto *literal = std::get_if<U8StringLiteralStorage>(&_storage)) {
+        _storage = U8StringSharedStorage{*literal, true};
+    }
 }
 
 auto U8String::isValidUtf8() const noexcept -> bool {
@@ -64,7 +83,7 @@ auto U8String::isValidUtf8() const noexcept -> bool {
 auto U8String::toHash() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf8::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.toRawValue());
             return true;
         });
@@ -74,7 +93,7 @@ auto U8String::toHash() const noexcept -> std::size_t {
 auto U8String::toHashCI() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf8::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.caseFolded().toRawValue());
             return true;
         });
@@ -158,10 +177,6 @@ auto U8String::charAt(const ByteIndex startIndex) const noexcept -> Char {
 
 auto U8String::readCharAndAdvance(ByteIndex &index) const noexcept -> Char {
     return U8StringReadTools{dataView()}.read(index);
-}
-
-auto U8String::readCharAndAdvanceOrThrow(ByteIndex &index) const -> Char {
-    return U8StringReadTools{dataView()}.readOrThrow(index);
 }
 
 auto U8String::readCharAndRetreat(ByteIndex &index) const noexcept -> Char {
@@ -264,67 +279,67 @@ auto U8String::splitAt(const CpIndex index) const noexcept -> std::pair<U8String
 }
 
 auto U8String::removed(const ByteRange range) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(range)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.removed(range)};
 }
 
 auto U8String::removed(const CpRange range) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(range)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.removed(range)};
 }
 
 auto U8String::removedAll(const CharSet &characters) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removedAll(characters)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.removedAll(characters)};
 }
 
 auto U8String::removedAll(const U8String &text, const CharCompareFn compareFn) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.removed(text.dataView(), compareFn)};
 }
 
 auto U8String::removedFirst(const U8String &text, const CharCompareFn compareFn) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.removedFirst(text.dataView(), compareFn)};
 }
 
 auto U8String::kept(const ByteRange range) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.kept(range)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.kept(range)};
 }
 
 auto U8String::kept(const CpRange range) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.kept(range)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.kept(range)};
 }
 
 auto U8String::inserted(const ByteIndex index, const U8String &text) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.inserted(index, text.dataView())};
 }
 
 auto U8String::inserted(const CpIndex index, const U8String &text) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.inserted(index, text.dataView())};
 }
 
 auto U8String::replaced(const ByteRange range, const U8String &text) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.replaced(range, text.dataView())};
 }
 
 auto U8String::replaced(const CpRange range, const U8String &text) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.replaced(range, text.dataView())};
 }
 
 auto U8String::replacedAll(const CharSet &characters, const Char replacement) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replacedAll(characters, replacement)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.replacedAll(characters, replacement)};
 }
 
 auto U8String::replacedAll(const CharSet &characters, const U8String &replacement) const -> U8String {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.replacedAll(characters, replacement.dataView())};
 }
 
 auto U8String::replacedAll(const U8String &text, const U8String &replacement, const CharCompareFn compareFn) const
     -> U8String {
-    return U8StringEditor{
-        U8StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
+    return U8String{
+        U8StringModifyTools{dataView(), isSensitive()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U8String::replacedFirst(const U8String &text, const U8String &replacement, const CharCompareFn compareFn) const
     -> U8String {
-    return U8StringEditor{
-        U8StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
+    return U8String{U8StringModifyTools{dataView(), isSensitive()}.replacedFirst(
+        text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U8String::truncated(const CpLength maximumWidth, const TruncateMode mode) const -> U8String {
@@ -333,11 +348,12 @@ auto U8String::truncated(const CpLength maximumWidth, const TruncateMode mode) c
 
 auto U8String::truncated(const CpLength maximumWidth, const TruncateMode mode, const U8String &ellipsis) const
     -> U8String {
-    return U8StringEditor{U8StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    return U8String{
+        U8StringTransformTools{dataView(), isSensitive()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
 auto U8String::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U8String {
-    return U8StringEditor{U8StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+    return U8String{U8StringTransformTools{dataView(), isSensitive()}.aligned(length, alignment, fill)};
 }
 
 auto U8String::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U8String {
@@ -355,7 +371,7 @@ auto U8String::toEscaped(const EscapeFormat format, const EscapeAmount amount) c
 auto U8String::fromCharacter(const Char character, const CpLength count) -> U8String {
     auto storage = U8StringSharedStorage{};
     U8StringAppendTools{storage}.append(character, count);
-    return U8String{U8StringStorage{std::move(storage)}};
+    return U8String{std::move(storage)};
 }
 
 auto U8String::fromJoined(const std::initializer_list<U8String> parts) -> U8String {
@@ -379,7 +395,7 @@ auto U8String::fromJoined(const std::initializer_list<U8String> parts) -> U8Stri
         writePosition = U8StringSharedStorage::checkedAddSize(
             writePosition, data.size(), "Joined string write exceeds size bounds");
     }
-    return U8String{U8StringStorage{std::move(storage)}};
+    return U8String{std::move(storage)};
 }
 
 auto U8String::fromFloat(const double value, const FloatFormat format) -> U8String {
@@ -394,7 +410,7 @@ auto U8String::fromByteBlock(const mem::ByteBlock &bytes, const ByteFormat forma
     auto storage = U8StringSharedStorage{};
     auto appendTools = U8StringAppendTools{storage};
     impl::formatByteBlock(appendTools, bytes, format);
-    return U8String{U8StringStorage{std::move(storage)}};
+    return U8String{std::move(storage)};
 }
 
 auto U8String::forEach(const ProcessCharacterFn &function) const -> util::LoopResult {
@@ -402,8 +418,8 @@ auto U8String::forEach(const ProcessCharacterFn &function) const -> util::LoopRe
 }
 
 auto U8String::transformed(const TransformCharacterFn function) const -> U8String {
-    if (auto result = U8StringTransformTools{dataView()}.transformedIfChanged(function)) {
-        return U8StringEditor{std::move(*result)};
+    if (auto result = U8StringTransformTools{dataView(), isSensitive()}.transformedIfChanged(function)) {
+        return U8String{std::move(*result)};
     }
     return *this;
 }
@@ -429,27 +445,6 @@ auto U8String::storageId() const noexcept -> mem::StorageIdentifier {
         return literal->storageId();
     }
     return {};
-}
-
-auto U8String::isFullStorageRange() const noexcept -> bool {
-    if (const auto *shared = std::get_if<U8StringSharedStorage>(&_storage)) {
-        return shared->range().index().isZero() && shared->range().length().toSizeT() == shared->dataSize();
-    }
-    if (const auto *literal = std::get_if<U8StringLiteralStorage>(&_storage)) {
-        return literal->range().index().isZero() && literal->range().length().toSizeT() == literal->size();
-    }
-    return false;
-}
-
-auto U8String::stringForUnchangedTransform() const -> U8String {
-    if (isFullStorageRange()) {
-        return *this;
-    }
-    const auto view = dataView();
-    if (view.dataSpan().empty()) {
-        return {};
-    }
-    return U8String{U8StringStorage{U8StringSharedStorage{view}}};
 }
 
 auto U8String::withRange(const ByteRange range) const noexcept -> U8String {

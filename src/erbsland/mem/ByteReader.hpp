@@ -150,8 +150,7 @@ private:
         using Unsigned = std::make_unsigned_t<T>;
         auto result = Unsigned{0};
         for (auto i = std::size_t{0}; i < sizeof(T); ++i) {
-            const auto byte =
-                static_cast<Unsigned>(_block.get(_position + unit::ByteLength::fromSizeT(i)).toRawValue());
+            const auto byte = static_cast<Unsigned>(_block.get(_position + unit::ByteLength::fromSizeT(i)).toUInt8());
             const auto shift = _endianness == Endianness::Little ? i * 8U : (sizeof(T) - 1U - i) * 8U;
             result |= static_cast<Unsigned>(byte) << shift;
         }

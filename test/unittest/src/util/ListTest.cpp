@@ -11,6 +11,7 @@
 #include <erbsland/util/LoopStatus.hpp>
 
 #include <compare>
+#include <cstdint>
 #include <set>
 #include <string>
 #include <utility>
@@ -19,6 +20,7 @@
 using el::unit::ElementCount;
 using el::unit::ElementIndex;
 using el::unit::ElementRange;
+using el::util::LoopResult;
 using el::util::LoopStatus;
 
 TESTED_TARGETS(List ElementUnit ElementIndex ElementCount ElementRange ElementOffset)
@@ -166,6 +168,29 @@ public:
         auto reverseVisited = std::vector<int>{};
         list.forEachReverse([&](int value) { reverseVisited.push_back(value); });
         REQUIRE_EQUAL(reverseVisited, (std::vector<int>{3, 3, 2, 1, 1}));
+
+        auto indexedValues = std::vector<int>{};
+        auto indexes = std::vector<uint64_t>{};
+        REQUIRE_EQUAL(
+            list.forEach([&](int value, const ElementIndex index) -> void {
+                indexedValues.push_back(value);
+                indexes.push_back(index.toRawValue());
+            }),
+            LoopResult::Success);
+        REQUIRE_EQUAL(indexedValues, (std::vector<int>{1, 1, 2, 3, 3}));
+        REQUIRE_EQUAL(indexes, (std::vector<uint64_t>{0U, 1U, 2U, 3U, 4U}));
+
+        auto reverseIndexes = std::vector<uint64_t>{};
+        REQUIRE_EQUAL(
+            list.forEachReverse(
+                [&](int, const ElementIndex index) -> void { reverseIndexes.push_back(index.toRawValue()); }),
+            LoopResult::Success);
+        REQUIRE_EQUAL(reverseIndexes, (std::vector<uint64_t>{4U, 3U, 2U, 1U, 0U}));
+
+        const auto indexedStop = list.forEach([](int, const ElementIndex index) -> LoopStatus {
+            return index == ElementIndex{2U} ? LoopStatus::Stop : LoopStatus::Continue;
+        });
+        REQUIRE_EQUAL(indexedStop, LoopResult::Stopped);
 
         REQUIRE_EQUAL(
             list.mapped([](int value) -> int { return value * 2; }).toStdVector(), (std::vector<int>{2, 2, 4, 6, 6}));

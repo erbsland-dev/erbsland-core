@@ -1,0 +1,26 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "profile"
+Duration            : 100ms
+Threads             : 2
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 50us
+Memory Limit        : 8 MiB
+Progress Interval   : 20ms
+Sensitive Mode      : "normal"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "profile-smoke"
+Widths              : "u8"
+Types               : "string-editor"
+Use Cases           : "append"
+Variants            : "text-growing"
+Content Profiles    : "mixed"
+Size Modes          : "fixed"
+Size Min            : 256
+Size Max            : 256
+Operand Size Min    : 32
+Operand Size Max    : 32
+Weight              : 2

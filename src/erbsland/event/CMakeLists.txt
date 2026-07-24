@@ -17,11 +17,17 @@ target_sources(erbsland-core PRIVATE
         EventBackendTarget_fwd.hpp
         EventCallback.hpp
         EventData.hpp
+        EventEditor.cpp
+        EventEditor.hpp
+        EventEditor_fwd.hpp
         EventId.hpp
         EventIdInfo.hpp
         EventLoop.cpp
         EventLoop.hpp
         EventLoop_fwd.hpp
+        EventLoopDriver.cpp
+        EventLoopDriver.hpp
+        EventLoopDriver_fwd.hpp
         EventLoopErrorAction.hpp
         EventLoopErrorHandler.hpp
         EventPipe.hpp
@@ -34,6 +40,7 @@ target_sources(erbsland-core PRIVATE
         Events_fwd.hpp
         EventScheduler.hpp
         EventScheduler_fwd.hpp
+        EventSource.cpp
         EventSource.hpp
         EventSource_fwd.hpp
         EventThread.hpp

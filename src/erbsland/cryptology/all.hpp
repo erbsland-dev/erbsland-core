@@ -11,6 +11,11 @@
 #include "HashRequirements.hpp"
 #include "HashThroughput.hpp"
 #include "Hasher.hpp"
-#include "StdFormatForCryptology.hpp"
+#include "PasswordHash.hpp"
+#include "PasswordHashAlgorithm.hpp"
+#include "PasswordHashKey.hpp"
+#include "PasswordHashPolicy.hpp"
+#include "PasswordHasher.hpp"
+#include "PasswordVerification.hpp"
 
 

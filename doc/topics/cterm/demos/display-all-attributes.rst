@@ -53,6 +53,6 @@ Relevant Source Files
 =====================
 
 If you want to explore the implementation, start with
-:file:`demos/cterm/display-all-attributes/src/DisplayAllAttributesApp.cpp`.
+:file:`demos/cterm/DisplayAllAttributes/src/DisplayAllAttributesApp.cpp`.
 
 This file contains the attribute table generation and the direct use of ``BlockAttributes`` with terminal print calls.

@@ -9,9 +9,9 @@
 
 namespace erbsland::cterm {
 
-auto Block::withCombining(const text::Char codePoint, const text::EncodingErrorMode encodingErrors) const -> Block {
+auto Block::withCombining(const text::Char codePoint) const noexcept -> Block {
     auto result = *this;
-    result._character = _character.withCombining(codePoint, encodingErrors);
+    result._character = _character.withCombining(codePoint);
     return result;
 }
 

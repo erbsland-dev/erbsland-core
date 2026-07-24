@@ -5,7 +5,8 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
+#include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
 #include <erbsland/text/StringList.hpp>
 
 #include <algorithm>
@@ -40,7 +41,7 @@ public:
                 line = std::get<el::text::String>(lines[currentLine]);
             } else {
                 const auto &bytes = std::get<el::mem::ByteBlock>(lines[currentLine]);
-                const auto byteSpan = bytes.bytes();
+                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{bytes}.data();
                 line = el::text::String{
                     std::string_view{reinterpret_cast<const char *>(byteSpan.data()), byteSpan.size()}};
             }

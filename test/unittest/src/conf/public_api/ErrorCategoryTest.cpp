@@ -4,7 +4,7 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/ConfErrorCategory.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

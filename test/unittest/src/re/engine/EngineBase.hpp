@@ -10,7 +10,7 @@
 #include <erbsland/re/impl/diagnostics/Assembler.hpp>
 #include <erbsland/re/impl/diagnostics/Disassembler.hpp>
 #include <erbsland/re/impl/engine/Engine.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

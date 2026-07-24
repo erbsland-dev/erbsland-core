@@ -4,7 +4,7 @@
 #include <erbsland/bgeo/Alignment.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/SafeStringFlag.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TruncateMode.hpp>
 #include <erbsland/text/u16/U16String.hpp>
@@ -17,6 +17,7 @@
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -116,6 +117,23 @@ public:
             std::u32string{U".Ab¢."});
     }
 
+    void testChangingTransformFunctionCannotOverflowReservation() {
+        _changingTransformCall = 0U;
+        auto u8Source = U8String{u8"Ab"_el};
+        u8Source.markAsSensitive();
+        const auto u8Result = u8Source.transformed(changingTransform);
+        REQUIRE_EQUAL(StringConverter{u8Result}.toStdU32String(), std::u32string{U"😀😀"});
+        REQUIRE(u8Result.isSensitive());
+
+        _changingTransformCall = 0U;
+        const auto u16Result = U16String{u"Ab"_el}.transformed(changingTransform);
+        REQUIRE_EQUAL(StringConverter{u16Result}.toStdU32String(), std::u32string{U"😀😀"});
+
+        _changingTransformCall = 0U;
+        const auto u32Result = U32String{U"Ab"_el}.transformed(changingTransform);
+        REQUIRE_EQUAL(StringConverter{u32Result}.toStdU32String(), std::u32string{U"😀😀"});
+    }
+
     void testSafeString() {
         const auto text = U8StringEditor{std::u8string_view{u8"A\né Z"}};
 
@@ -151,4 +169,19 @@ public:
             StringConverter{u32Text.toSafeString(CpLength{100U}, SafeStringFlag::OnlyAscii)}.toStdU32String(),
             std::u32string{U"A\\n\\u00E9"});
     }
+
+private:
+    static auto changingTransform(const Char) noexcept -> Char {
+        const auto call = _changingTransformCall++;
+        if (call == 0U) {
+            return Char{U'a'};
+        }
+        if (call == 1U) {
+            return Char::noCodePoint();
+        }
+        return Char{U'😀'};
+    }
+
+private:
+    static inline std::size_t _changingTransformCall{};
 };

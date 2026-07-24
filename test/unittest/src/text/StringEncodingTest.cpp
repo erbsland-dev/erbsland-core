@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -17,7 +17,7 @@ using el::unit::ByteLength;
 TESTED_TARGETS(StringEncoding)
 class StringEncodingTest final : public el::UnitTest {
 private:
-    [[nodiscard]] static auto toBytes(const std::span<const Byte> bytes) -> std::vector<uint8_t> {
+    [[nodiscard]] static auto toBytes(const el::mem::ConstByteSpan bytes) -> std::vector<uint8_t> {
         auto result = std::vector<uint8_t>{};
         result.reserve(bytes.size());
         for (const auto byte : bytes) {

@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

@@ -9,7 +9,7 @@
 #include <erbsland/text/impl/LinkData.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/PlainTextRenderer.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>

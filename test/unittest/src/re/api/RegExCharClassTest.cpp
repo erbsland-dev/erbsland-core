@@ -3,7 +3,7 @@
 
 #include "RegExCharClassBase.hpp"
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 using namespace el::re;
 

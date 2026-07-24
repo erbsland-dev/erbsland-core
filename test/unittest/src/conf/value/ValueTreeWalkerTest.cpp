@@ -5,7 +5,7 @@
 
 #include <erbsland/conf/impl/value/ValueTreeWalker.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringList.hpp>

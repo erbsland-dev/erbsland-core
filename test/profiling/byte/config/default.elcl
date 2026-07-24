@@ -1,0 +1,35 @@
+@version: "1.0"
+
+# This complete default configuration is embedded into byte-types-profile.
+# Run with --write-template <path> to create an editable copy.
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 5m
+Threads             : 4
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 1
+Samples             : 9
+Minimum Sample Time : 20ms
+Memory Limit        : 256 MiB
+Progress Interval   : 10s
+Sensitive Mode      : "all"
+
+# Defining one or more [scenario] list entries replaces the built-in suite.
+# `all` expands types, use cases, compatible variants, and sensitivity.
+# Size modes expand to fixed-size scenarios before execution.
+#
+# *[scenario]
+# name: "focused-edit"
+# types: "byte-block-editor", "byte-buffer"
+# use_cases: "append", "insert", "replace"
+# variants: "all"
+# size_modes: "boundaries", "exponential"
+# size_min: 1
+# size_max: 1 MiB
+# size_step: 64
+# operand_size_min: 1
+# operand_size_max: 4 KiB
+# sensitive_modes: "normal", "sensitive"
+# weight: 1

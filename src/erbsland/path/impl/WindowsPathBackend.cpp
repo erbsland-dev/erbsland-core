@@ -13,8 +13,8 @@
 #include "../PathWindowsFormat.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../stream/impl/BufferedByteInputStream.hpp"
 #include "../../stream/impl/BufferedByteOutputStream.hpp"
+#include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../stream/impl/NativeOutputStream.hpp"
 #include "../../stream/impl/WindowsNativeStream.hpp"
 #include "../../system/GroupId.hpp"
@@ -32,6 +32,7 @@
 
 #include <aclapi.h>
 #include <sddl.h>
+#include <userenv.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -63,6 +64,44 @@ auto WindowsPathBackend::currentDirectoryOrThrow() const -> Path {
             GetLastError());
     }
     return Path::fromWindowsOrThrow(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(actualLength)));
+}
+
+auto WindowsPathBackend::userHomeDirectoryOrThrow() const -> Path {
+    auto token = HANDLE{};
+    if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &token) == 0) {
+        throwSystemError(
+            "User home directory is unavailable"_el,
+            "The current process token could not be opened."_el,
+            {},
+            GetLastError());
+    }
+    const auto closeToken = std::unique_ptr<void, decltype(&CloseHandle)>{token, &CloseHandle};
+
+    auto length = DWORD{0};
+    static_cast<void>(GetUserProfileDirectoryW(token, nullptr, &length));
+    const auto lengthError = GetLastError();
+    if (length == 0U || lengthError != ERROR_INSUFFICIENT_BUFFER) {
+        throwSystemError(
+            "User home directory is unavailable"_el,
+            "The operating system could not determine the current user's profile-directory size."_el,
+            {},
+            lengthError);
+    }
+    auto buffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(length)};
+    if (GetUserProfileDirectoryW(token, buffer.dataAsWide(), &length) == 0 || length <= 1U) {
+        throwSystemError(
+            "User home directory is unavailable"_el,
+            "The operating system could not determine the current user's profile directory."_el,
+            {},
+            GetLastError());
+    }
+    const auto home = Path::fromWindows(buffer.takeAsUtf8(unit::U16DataLength::fromSizeT(length - 1U)));
+    if (home.isEmpty() || !home.isAbsolute()) {
+        throw PathError{PathErrorContext{
+            "User home directory is unavailable"_el,
+            "The current user's profile directory contains an invalid path."_el}};
+    }
+    return home;
 }
 
 auto WindowsPathBackend::systemTempDirectoryOrThrow() const -> Path {
@@ -110,8 +149,13 @@ auto WindowsPathBackend::resolveOrThrow(const Path &path, const PathResolveOptio
 }
 
 auto WindowsPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts parts) const -> PathInfoData {
-    auto result = PathInfoData{path};
-    result.resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
+    return loadResolvedInfoOrThrow(path, resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink), parts);
+}
+
+auto WindowsPathBackend::loadResolvedInfoOrThrow(
+    [[maybe_unused]] const Path &path, const Path &resolvedPath, const PathInfoParts parts) const -> PathInfoData {
+    auto result = PathInfoData{};
+    result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
     const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
@@ -246,10 +290,9 @@ auto WindowsPathBackend::openByteInputStreamOrThrow(const Path &path, const Path
             path,
             GetLastError());
     }
-    return std::make_shared<stream::impl::BufferedByteInputStream>(
-        std::make_shared<stream::impl::WindowsNativeStream>(
-            handle, stream::impl::NativeStreamOwnership::Owned, path.toString()),
-        options.streamSettings());
+    auto native = std::make_shared<stream::impl::WindowsNativeStream>(
+        handle, stream::impl::NativeStreamOwnership::Owned, path.toString());
+    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
 }
 
 void WindowsPathBackend::setAccessProfileOrThrow(
@@ -276,6 +319,7 @@ void WindowsPathBackend::setAccessProfileOrThrow(
             resolvedPath,
             securityStatus);
     }
+    invalidateInfo(path);
 }
 
 void WindowsPathBackend::addAttributesOrThrow(
@@ -299,6 +343,7 @@ void WindowsPathBackend::addAttributesOrThrow(
             resolvedPath,
             GetLastError());
     }
+    invalidateInfo(path);
 }
 
 void WindowsPathBackend::clearAttributesOrThrow(
@@ -322,6 +367,7 @@ void WindowsPathBackend::clearAttributesOrThrow(
             resolvedPath,
             GetLastError());
     }
+    invalidateInfo(path);
 }
 
 auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(

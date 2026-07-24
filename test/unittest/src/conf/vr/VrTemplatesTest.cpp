@@ -6,7 +6,7 @@
 #include <erbsland/conf/impl/lexer/Name.hpp>
 #include <erbsland/conf/impl/value/Section.hpp>
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
 
 using namespace el::conf;

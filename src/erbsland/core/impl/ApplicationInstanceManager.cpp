@@ -95,7 +95,7 @@ auto ApplicationInstanceManager::instance() -> ApplicationInstanceManager * {
     return _instance;
 }
 
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
 void ApplicationInstanceManager::startSimulatedMain() {
     instance()->resetSimulatedMain();
 }

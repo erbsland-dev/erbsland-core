@@ -6,7 +6,6 @@
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringEditor.hpp"
 #include "../../text/StringEncoder.hpp"
 
 #include <exception>
@@ -22,18 +21,17 @@ EncodedTextOutputStream::EncodedTextOutputStream(
     ByteOutputStreamPtr byteOutputStream,
     const StringEncoding encoding,
     const StringBomMode bomMode,
-    const EncodingErrorMode errorMode,
     const bool initialBomAlreadyHandled) :
     _byteOutputStream{std::move(byteOutputStream)},
     _encoding{encoding},
     _effectiveEncoding{encoding.effectiveEncoding()},
     _bomMode{bomMode},
-    _errorMode{errorMode},
     _bomWritten{initialBomAlreadyHandled} {
     if (!_byteOutputStream) {
         throw StreamError{StreamErrorContext{
             "Failed to create the text output stream."_el, "The required byte output stream was not provided."_el}};
     }
+    _bufferedByteOutputStream = dynamic_cast<BufferedByteOutputStream *>(_byteOutputStream.get());
 }
 
 auto EncodedTextOutputStream::createErrorContext() const noexcept -> StreamErrorContext {
@@ -118,8 +116,19 @@ void EncodedTextOutputStream::abort() noexcept {
 }
 
 auto EncodedTextOutputStream::write(const Char character) -> StreamWriteStatus {
-    const auto text = String::fromCharacter(character.isValidUnicode() ? character : Char::replacement());
-    return write(text);
+    const auto lock = std::unique_lock{_mutex, std::try_to_lock};
+    if (!lock.owns_lock()) {
+        return StreamWriteStatus::Timeout;
+    }
+    const auto normalized = character.isValidUnicode() ? character : Char::replacement();
+    const auto bomMode = bomModeForNextWrite();
+    const auto result = _bufferedByteOutputStream != nullptr
+        ? _bufferedByteOutputStream->writeEncodedCharacter(normalized, _encoding, bomMode)
+        : _byteOutputStream->write(StringEncoder{normalized}.encode(_encoding, bomMode));
+    if (result == StreamWriteStatus::Success) {
+        _bomWritten = true;
+    }
+    return result;
 }
 
 auto EncodedTextOutputStream::write(const String &text) -> StreamWriteStatus {
@@ -132,13 +141,9 @@ auto EncodedTextOutputStream::write(const String &text) -> StreamWriteStatus {
 
 auto EncodedTextOutputStream::writeLocked(const String &text) -> StreamWriteStatus {
     const auto bomMode = bomModeForNextWrite();
-    auto result = StreamWriteStatus::Timeout;
-    if (const auto buffered = std::dynamic_pointer_cast<BufferedByteOutputStream>(_byteOutputStream)) {
-        result = buffered->writeEncodedText(text, _encoding, bomMode, _errorMode);
-    } else {
-        const auto data = StringEncoder{text}.encode(_encoding, bomMode, _errorMode);
-        result = _byteOutputStream->write(data);
-    }
+    const auto result = _bufferedByteOutputStream != nullptr
+        ? _bufferedByteOutputStream->writeEncodedText(text, _encoding, bomMode)
+        : _byteOutputStream->write(StringEncoder{text}.encode(_encoding, bomMode));
     if (result == StreamWriteStatus::Success) {
         _bomWritten = true;
     }
@@ -146,7 +151,7 @@ auto EncodedTextOutputStream::writeLocked(const String &text) -> StreamWriteStat
 }
 
 auto EncodedTextOutputStream::writeLine() -> StreamWriteStatus {
-    return write(String::fromCharacter(U'\n'));
+    return write(Char{U'\n'});
 }
 
 auto EncodedTextOutputStream::writeLine(const String &text) -> StreamWriteStatus {

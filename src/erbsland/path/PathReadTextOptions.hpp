@@ -3,7 +3,7 @@
 #pragma once
 
 #include "../stream/InputStreamSettings.hpp"
-#include "../text/EncodingErrorMode.hpp"
+#include "../text/EncodingMode.hpp"
 #include "../text/StringBomMode.hpp"
 #include "../text/StringEncoding.hpp"
 #include "../time/TimeDelta.hpp"
@@ -48,9 +48,9 @@ public:
     /// Set the byte-order-mark mode.
     auto setBomMode(text::StringBomMode value) -> PathReadTextOptions &;
     /// Get the handling mode for encoding errors.
-    [[nodiscard]] auto encodingErrorMode() const -> text::EncodingErrorMode { return _encodingErrorMode; }
+    [[nodiscard]] auto encodingMode() const -> text::EncodingMode { return _encodingMode; }
     /// Set the handling mode for encoding errors.
-    auto setEncodingErrorMode(text::EncodingErrorMode value) -> PathReadTextOptions &;
+    auto setEncodingMode(text::EncodingMode value) -> PathReadTextOptions &;
     /// Get the maximum number of bytes to read.
     [[nodiscard]] auto maximumByteLength() const -> unit::ByteLength { return _maximumByteLength; }
     /// Set the maximum number of bytes to read.
@@ -62,24 +62,26 @@ public:
     /// Get the maximum wait for one stream operation.
     [[nodiscard]] auto timeout() const noexcept -> time::TimeDelta { return _streamSettings.timeout(); }
     /// Set the maximum wait for one stream operation.
-    auto setTimeout(const time::TimeDelta value) noexcept -> PathReadTextOptions & {
-        _streamSettings.setTimeout(value);
-        return *this;
-    }
+    auto setTimeout(time::TimeDelta value) noexcept -> PathReadTextOptions &;
+    /// Get the intended balance between memory use and throughput.
+    [[nodiscard]] auto buffering() const noexcept -> stream::StreamBuffering { return _streamSettings.buffering(); }
+    /// Set the intended balance between memory use and throughput.
+    auto setBuffering(stream::StreamBuffering value) noexcept -> PathReadTextOptions &;
+    /// Test if library-owned input buffers use secure erasure.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool { return _streamSettings.isSensitive(); }
+    /// Enable or disable secure erasure for library-owned input buffers.
+    auto setSensitive(bool value) noexcept -> PathReadTextOptions &;
     /// Get the stream settings.
     [[nodiscard]] auto streamSettings() const noexcept -> const stream::InputStreamSettings & {
         return _streamSettings;
     }
     /// Set the stream settings.
-    auto setStreamSettings(const stream::InputStreamSettings &value) noexcept -> PathReadTextOptions & {
-        _streamSettings = value;
-        return *this;
-    }
+    auto setStreamSettings(const stream::InputStreamSettings &value) noexcept -> PathReadTextOptions &;
 
 private:
     text::StringEncoding _encoding = text::StringEncoding::Utf8;
     text::StringBomMode _bomMode = text::StringBomMode::Automatic;
-    text::EncodingErrorMode _encodingErrorMode = text::EncodingErrorMode::Replace;
+    text::EncodingMode _encodingMode = text::EncodingMode::Tolerant;
     unit::ByteLength _maximumByteLength = unit::ByteLength{10'000'000LL};
     unit::CpLength _maximumCpLength = unit::CpLength::infinite();
     stream::InputStreamSettings _streamSettings{stream::InputStreamSettings{}.setTimeout(cDefaultTimeout)};

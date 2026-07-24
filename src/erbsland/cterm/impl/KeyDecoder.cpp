@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "KeyDecoder.hpp"
 
-#include "../../text/EncodingErrorMode.hpp"
+#include "../../text/EncodingMode.hpp"
 #include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/ReadNumberStatus.hpp"
@@ -51,8 +51,7 @@ auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offse
 
     const auto remainingLength = ByteLength::fromSizeT(text.length().toSizeT() - offset.toSizeT());
     const auto prefixLength = std::min(remainingLength, ByteLength{4U});
-    auto buffer =
-        StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Throw};
+    auto buffer = StringDecodeBuffer{ByteLength{4U}, StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict};
 
     for (auto byteOffset = std::size_t{0U}; byteOffset < prefixLength.toSizeT(); ++byteOffset) {
         const auto currentOffset = offset + ByteLength::fromSizeT(byteOffset);

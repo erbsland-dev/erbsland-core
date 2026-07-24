@@ -2,11 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Random.hpp"
 
-#include "../mem/ByteWriter.hpp"
+#include "../math/SaturatingMath.hpp"
+#include "../mem/impl/SecureErase.hpp"
+#include "../mem/impl/UnsafeByteBlockBuffer.hpp"
+#include "../mem/impl/UnsafeByteBufferAccess.hpp"
+#include "../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../text/String.hpp"
+#include "../text/u8/impl/U8Writer.hpp"
 
 #include <algorithm>
-#include <array>
+#include <stdexcept>
 
 namespace erbsland::random {
 
@@ -15,31 +20,55 @@ auto Random::buildString(const unit::CpLength length, const text::CharSet &chara
         return {};
     }
     const auto choices = characters.toList();
-    auto result = text::StringEditor{};
-    for (auto i = unit::CpLength{}; i < length; ++i) {
-        result.append(selectElement(choices));
+    auto maximumCharacterSize = std::size_t{0};
+    for (const auto character : choices) {
+        maximumCharacterSize = std::max(maximumCharacterSize, character.utf8Size().toSizeT());
     }
-    return result;
+    const auto characterCount = length.toSizeTOrThrow();
+    if (math::willMultiplyOverflow(characterCount, maximumCharacterSize)) {
+        throw std::length_error{"Random string exceeds size bounds"};
+    }
+    const auto capacity = unit::ByteLength::fromSizeTOrThrow(characterCount * maximumCharacterSize);
+    auto buffer = text::impl::UnsafeU8StringBuffer{capacity, isSecure()};
+    auto writer = text::impl::U8Writer{std::span<char>{buffer.data(), capacity.toSizeT()}};
+    for (auto i = unit::CpLength{}; i < length; ++i) {
+        writer.write(selectElement(choices));
+    }
+    return text::String{buffer.take(unit::ByteLength::fromSizeTOrThrow(writer.position()))};
 }
 
 auto Random::buildByteBlock(const unit::ByteLength length) -> mem::ByteBlock {
     if (length.isZero() || length.isInfinite()) {
         return {};
     }
-    auto writer = mem::ByteWriter{};
-    writer.reserve(length);
-    auto remaining = length.toSizeTOrThrow();
-    auto buffer = std::array<std::byte, 256>{};
-    while (remaining > 0U) {
-        const auto chunkSize = std::min(remaining, buffer.size());
-        auto chunk = std::span<std::byte>{buffer}.first(chunkSize);
-        fillBytes(chunk);
-        for (const auto byte : chunk) {
-            writer.writeByte(mem::Byte{static_cast<uint8_t>(byte)});
+    const auto secure = isSecure();
+    auto buffer = mem::impl::UnsafeByteBlockBuffer{length, secure};
+    try {
+        fillBytes(std::as_writable_bytes(buffer.data()));
+    } catch (...) {
+        if (!secure) {
+            mem::impl::secureErase(std::as_writable_bytes(buffer.data()));
         }
-        remaining -= chunkSize;
+        throw;
     }
-    return writer.toByteBlock();
+    return mem::ByteBlock{buffer.take(length)};
+}
+
+auto Random::buildByteBuffer(const unit::ByteLength length) -> mem::ByteBuffer {
+    auto result = mem::ByteBuffer{};
+    result.setSensitive(isSecure());
+    if (length.isZero() || length.isInfinite()) {
+        return result;
+    }
+    result.resize(length);
+    auto access = mem::impl::UnsafeByteBufferAccess{result};
+    try {
+        fillBytes(std::as_writable_bytes(access.writableData()));
+    } catch (...) {
+        result.secureErase();
+        throw;
+    }
+    return result;
 }
 
 auto Random::selectIndex(const unit::ElementCount count) -> unit::ElementIndex {

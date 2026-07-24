@@ -107,45 +107,36 @@ auto Name::normalize(text::String inputText) -> text::String {
     result.reserve(inputText.length());
     std::size_t characterCount = 0;
     bool lastWasWordSeparator = false;
-    try {
-        while (!reader.isAtEnd()) {
-            const auto character = reader.readOrThrow();
-            // No "if (characterCount >= limits::maxNameLength) { ... }", as the initial size check is sufficient.
-            if (character == impl::nc::space || character == impl::nc::underscore) {
-                if (result.isEmpty()) {
-                    throw ConfError{ConfErrorCategory::Syntax, "A name must not start with space or underscore."_el};
-                }
-                if (lastWasWordSeparator) {
-                    throw ConfError{
-                        ConfErrorCategory::Syntax,
-                        "Two subsequent word separators (space, underscore) are not allowed."_el};
-                }
-                lastWasWordSeparator = true;
-            } else if (character == impl::CharClass::DecimalDigit) {
-                if (result.isEmpty() ||
-                    (result.characterLength() == unit::CpLength::one() &&
-                        result.charAt(text::StringSide::Front) == U'@')) {
-                    throw ConfError{ConfErrorCategory::Syntax, "A name must not start with a number."_el};
-                }
-                lastWasWordSeparator = false;
-            } else if (character == impl::CharClass::Letter) {
-                lastWasWordSeparator = false;
-            } else if (characterCount == 0 && character == impl::nc::at) {
-                lastWasWordSeparator = false; // Allow the `@` as a first character to create meta-names.
-            } else {
+    while (!reader.isAtEnd()) {
+        const auto character = reader.read();
+        // No "if (characterCount >= limits::maxNameLength) { ... }", as the initial size check is sufficient.
+        if (character == impl::nc::space || character == impl::nc::underscore) {
+            if (result.isEmpty()) {
+                throw ConfError{ConfErrorCategory::Syntax, "A name must not start with space or underscore."_el};
+            }
+            if (lastWasWordSeparator) {
                 throw ConfError{
                     ConfErrorCategory::Syntax,
-                    text::StringFormat{"Invalid character at position {}"_el}.build(characterCount)};
+                    "Two subsequent word separators (space, underscore) are not allowed."_el};
             }
-            result.append(character.toIdentifierNormalized());
-            characterCount++;
+            lastWasWordSeparator = true;
+        } else if (character == impl::CharClass::DecimalDigit) {
+            if (result.isEmpty() ||
+                (result.characterLength() == unit::CpLength::one() && result.charAt(text::StringSide::Front) == U'@')) {
+                throw ConfError{ConfErrorCategory::Syntax, "A name must not start with a number."_el};
+            }
+            lastWasWordSeparator = false;
+        } else if (character == impl::CharClass::Letter) {
+            lastWasWordSeparator = false;
+        } else if (characterCount == 0 && character == impl::nc::at) {
+            lastWasWordSeparator = false; // Allow the `@` as a first character to create meta-names.
+        } else {
+            throw ConfError{
+                ConfErrorCategory::Syntax,
+                text::StringFormat{"Invalid character at position {}"_el}.build(characterCount)};
         }
-    } catch (const text::EncodingError &) {
-        throw ConfError{
-            ConfErrorCategory::Encoding,
-            "Decoding the Configuration Name Failed"_el,
-            "The given name is not correctly UTF-8 encoded."_el,
-            std::current_exception()};
+        result.append(character.toIdentifierNormalized());
+        characterCount++;
     }
     if (result.charAt(text::StringSide::Back) == U'_') {
         throw ConfError{ConfErrorCategory::Syntax, "A name must not end with a space or underscore."_el};
@@ -164,20 +155,12 @@ void Name::validateText(const text::String &inputText) {
         throw ConfError{ConfErrorCategory::LimitExceeded, "The given text-name exceeds the size limit."_el};
     }
     auto reader = text::StringCharReader{inputText};
-    try {
-        while (!reader.isAtEnd()) {
-            if (reader.readOrThrow() != impl::CharClass::ValidLang) {
-                throw ConfError{
-                    ConfErrorCategory::Syntax,
-                    "The text-name contains a character that is not allowed in a configuration document."_el};
-            }
+    while (!reader.isAtEnd()) {
+        if (reader.read() != impl::CharClass::ValidLang) {
+            throw ConfError{
+                ConfErrorCategory::Syntax,
+                "The text-name contains a character that is not allowed in a configuration document."_el};
         }
-    } catch (const text::EncodingError &) {
-        throw ConfError{
-            ConfErrorCategory::Encoding,
-            "Decoding the Configuration Text Name Failed"_el,
-            "The given text-name is not correctly UTF-8 encoded."_el,
-            std::current_exception()};
     }
 }
 

@@ -1,0 +1,33 @@
+@version: "1.0"
+
+# This complete default configuration is embedded into stream-file-profile.
+# Run with --write-template <path> to create an editable copy.
+
+---[ Run ]---------------------------------------------------------------------
+Mode              : "profile"
+Suite             : "cover-all"
+Duration          : 8m
+Threads           : 4
+Seed              : 0x4552'4253'4c41'4e44
+Corpus Limit      : 256 MiB
+Progress Interval : 10s
+Workspace         : "" # Empty uses the system temporary directory.
+Keep Files        : no
+
+# Defining one or more [scenario] list entries replaces the curated cover-all
+# suite. Every listed field can contain a scalar or a value list.
+#
+# *[scenario]
+# name: "focused-binary-read"
+# direction: "read"
+# file_type: "binary"
+# methods: "read-span", "read-exact"
+# file_size_min: 8 MiB
+# file_size_max: 64 MiB
+# chunk_modes: "fixed", "incrementing", "random"
+# chunk_size_min: 1
+# chunk_size_max: 1 MiB
+# buffering: "minimal-memory", balanced
+# back_buffer_limit: 16 MiB # optional override
+# localities: "hot", "rotating"
+# weight: 1

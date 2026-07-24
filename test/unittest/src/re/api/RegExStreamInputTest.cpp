@@ -4,7 +4,7 @@
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/re/Match.hpp>
 #include <erbsland/re/RegEx.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/stream/TextInputStream.hpp>
 #include <erbsland/text/EncodingError.hpp>

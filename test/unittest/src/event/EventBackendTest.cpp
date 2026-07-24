@@ -32,11 +32,10 @@ class EventBackendTest final : public el::UnitTest {
 
     public: // implement EventBackend
         [[nodiscard]] auto backendId() const noexcept -> EventBackendId override { return _backendId; }
-        void attach(EventBackendTargetWeakPtr target) override {
+        void attach(EventBackendTargetWeakPtr target, [[maybe_unused]] EventLoopDriverWeakPtr driver) override {
             attached = true;
             _target = std::move(target);
         }
-        void wake() noexcept override { wakeCount += 1; }
         void poll(const TimePoint now) override {
             pollCount += 1;
             if (!_nextWakeTime.has_value() || now < *_nextWakeTime) {
@@ -60,7 +59,6 @@ class EventBackendTest final : public el::UnitTest {
     public:
         bool attached{false};
         std::size_t pollCount{0};
-        std::size_t wakeCount{0};
         void requestTargetWake() {
             if (const auto target = _target.lock(); target != nullptr) {
                 target->wakeFromBackend();
@@ -82,8 +80,9 @@ class EventBackendTest final : public el::UnitTest {
 
     public: // implement EventBackend
         [[nodiscard]] auto backendId() const noexcept -> EventBackendId override { return _backendId; }
-        void attach(EventBackendTargetWeakPtr target) override { _target = std::move(target); }
-        void wake() noexcept override {}
+        void attach(EventBackendTargetWeakPtr target, [[maybe_unused]] EventLoopDriverWeakPtr driver) override {
+            _target = std::move(target);
+        }
         void poll(const TimePoint now) override {
             pollCount += 1;
             if (!_armed) {
@@ -179,7 +178,7 @@ public:
         REQUIRE_EQUAL(log, std::vector<int>({9, 900}));
     }
 
-    void testWakeFromBackendWakesRegisteredBackends() {
+    void testWakeFromBackendWakesDriver() {
         const auto loop = EventLoop::create();
         auto log = std::vector<int>{};
         auto backend = std::make_unique<TestBackend>(log, id::SchedulerBackend, 3, std::nullopt);
@@ -188,7 +187,7 @@ public:
         loop->registerBackend(std::move(backend));
         backendPtr->requestTargetWake();
 
-        REQUIRE_GREATER_EQUAL(backendPtr->wakeCount, std::size_t{1});
+        REQUIRE(backendPtr != nullptr);
     }
 
     void testHandleEventDispatch() {

@@ -292,7 +292,7 @@ auto OptionDisplayModel::optionValueName(const OptionPtr &option, const i18n::Di
     if (option->type() == OptionType::Integer) {
         return resolvedDisplayText->text("options.IntegerPlaceholder"_el);
     }
-    if (option->type() == OptionType::Text) {
+    if (option->type() == OptionType::Text || option->type() == OptionType::SensitiveText) {
         return resolvedDisplayText->text("options.ValuePlaceholder"_el);
     }
     if (option->type() == OptionType::Choice || option->choices() != nullptr) {

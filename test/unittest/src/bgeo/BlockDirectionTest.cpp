@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/bgeo/BlockDirection.hpp>
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>

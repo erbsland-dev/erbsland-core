@@ -26,7 +26,9 @@ public:
     /// Create the shared input state.
     /// @param nativeStream The synchronous native stream used for source reads.
     /// @param streamSettings The immutable settings for the buffered stream.
-    BufferedByteInputStreamData(NativeByteStreamPtr nativeStream, InputStreamSettings streamSettings);
+    /// @param runtimeSensitive Enable protected epoch-checked transfers for runtime policy changes.
+    BufferedByteInputStreamData(
+        NativeByteStreamPtr nativeStream, InputStreamSettings streamSettings, bool runtimeSensitive = false);
 
 public:
     /// Schedule a source read when the back ring can accept one.
@@ -44,6 +46,8 @@ public:
     std::atomic<StreamState> streamState{StreamState::Open}; ///< Current stream lifecycle state.
     std::atomic<bool> aborted{false};                        ///< Whether pending work must be abandoned.
     std::atomic<uint64_t> logicalPosition{0U};               ///< Caller-independent logical byte position.
+    std::atomic<uint64_t> sensitivityEpoch{0U};              ///< Invalidates runtime-switch transfer buffers.
+    bool runtimeSensitive{false};                            ///< Whether the storage policy can change at runtime.
     bool readInProgress{false}; ///< Whether a background read currently owns the back ring.
     bool positioning{false};    ///< Whether a positioning operation prevents new read-ahead.
     bool finished{false};       ///< Whether the native source reached end-of-stream.

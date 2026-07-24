@@ -9,6 +9,7 @@ target_sources(erbsland-core PRIVATE
         AnyIntegerTypes.hpp
         BoundedInteger.hpp
         ConstexprSaturatingMath.hpp
+        IntegerBitOperations.hpp
         IntegerConversion.hpp
         IntegerMath.hpp
         IntegerRange.hpp

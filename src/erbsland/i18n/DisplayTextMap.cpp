@@ -164,6 +164,7 @@ void DisplayTextMap::addDefaultTexts() {
         .set("options.OptionsHeading"_el, "Options"_el)
         .set("options.HelpOptionDescription"_el, "Display this help."_el)
         .set("options.VersionOptionDescription"_el, "Display version information."_el)
+        .set("options.BooleanPlaceholder"_el, "boolean"_el)
         .set("options.IntegerPlaceholder"_el, "integer"_el)
         .set("options.ValuePlaceholder"_el, "value"_el)
         .set("options.ChoicePlaceholder"_el, "choice"_el)

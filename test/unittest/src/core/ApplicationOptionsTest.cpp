@@ -4,6 +4,8 @@
 #include "ApplicationTestScope.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/options/OptionError.hpp>
+#include <erbsland/options/OptionErrorContext.hpp>
 #include <erbsland/options/OptionModule.hpp>
 #include <erbsland/options/Options.hpp>
 #include <erbsland/options/OptionValue.hpp>
@@ -11,10 +13,15 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <string_view>
+
 using el::core::Application;
+using el::options::OptionError;
+using el::options::OptionErrorContext;
 using el::options::OptionModule;
 using el::options::OptionModulePtr;
 using el::options::OptionType;
+using el::options::OptionValuePtr;
 using el::options::OptionValuesPtr;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
@@ -120,6 +127,72 @@ public:
         moduleMainCalled = false;
         applicationMainCalled = false;
         runErrorCase(errorArgv, moduleMainCalled, applicationMainCalled);
+    }
+
+    void testApplicationMasksNarrowSensitiveArgumentsOnSuccessAndError() {
+        {
+            char arg0[] = "tool";
+            char arg1[] = "--secret=long-secret";
+            char *argv[] = {arg0, arg1};
+            auto scope = ApplicationTestScope<Application>{2, argv};
+            auto &application = scope.app();
+            application.options()->addOption("--secret"_el).setType(OptionType::SensitiveText);
+            application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
+
+            REQUIRE_EQUAL(application.run(), 0);
+            REQUIRE(application.commandLineArguments().get(ElementIndex{1U}) == "--secret=*****"_el);
+            REQUIRE(std::string_view{arg1} == "--secret=***********");
+        }
+
+        char arg0[] = "tool";
+        char arg1[] = "--secret";
+        char arg2[] = "rejected-secret";
+        char *argv[] = {arg0, arg1, arg2};
+        auto scope = ApplicationTestScope<Application>{3, argv};
+        auto &application = scope.app();
+        application.options()
+            ->addOption("--secret"_el)
+            .setType(OptionType::SensitiveText)
+            .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
+                throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
+            });
+
+        REQUIRE(application.run() != 0);
+        REQUIRE(application.commandLineArguments().get(ElementIndex{2U}) == "*****"_el);
+        REQUIRE(std::string_view{arg2} == "***************");
+    }
+
+    void testApplicationMasksWideSensitiveArgumentsOnSuccessAndError() {
+        {
+            wchar_t arg0[] = L"tool";
+            wchar_t arg1[] = L"--secret";
+            wchar_t arg2[] = L"秘密値";
+            wchar_t *argv[] = {arg0, arg1, arg2};
+            auto scope = ApplicationTestScope<Application>{3, argv};
+            auto &application = scope.app();
+            application.options()->addOption("--secret"_el).setType(OptionType::SensitiveText);
+            application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
+
+            REQUIRE_EQUAL(application.run(), 0);
+            REQUIRE(application.commandLineArguments().get(ElementIndex{2U}) == "*****"_el);
+            REQUIRE(std::wstring_view{arg2} == L"***");
+        }
+
+        wchar_t arg0[] = L"tool";
+        wchar_t arg1[] = L"--secret=wide-error";
+        wchar_t *argv[] = {arg0, arg1};
+        auto scope = ApplicationTestScope<Application>{2, argv};
+        auto &application = scope.app();
+        application.options()
+            ->addOption("--secret"_el)
+            .setType(OptionType::SensitiveText)
+            .setValidateFn([](OptionValuePtr, OptionValuesPtr) -> void {
+                throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
+            });
+
+        REQUIRE(application.run() != 0);
+        REQUIRE(application.commandLineArguments().get(ElementIndex{1U}) == "--secret=*****"_el);
+        REQUIRE(std::wstring_view{arg1} == L"--secret=**********");
     }
 
 private:

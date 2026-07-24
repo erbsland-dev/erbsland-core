@@ -5,12 +5,14 @@
 #include "BackendFactory.hpp"
 #include "CharactersSets.hpp"
 #include "PathConstants.hpp"
+#include "PathInfoCache.hpp"
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../unit/CpIndex.hpp"
 
+#include <memory>
 #include <type_traits>
 
 namespace erbsland::path::impl {
@@ -19,8 +21,53 @@ using namespace text::literals;
 using namespace text;
 using namespace unit;
 
-PathData::PathData(const PathFormat format, text::String root, text::StringList elements) :
-    _format{format}, _root{std::move(root)}, _elements{std::move(elements)} {
+PathData::PathData(
+    const PathFormat format, text::String root, text::StringList elements, const unit::CpLength characterLength) :
+    _format{format}, _root{std::move(root)}, _elements{std::move(elements)}, _characterLength{characterLength} {
+}
+
+PathData::PathData(const PathData &other) :
+    mem::SharedData{},
+    _format{other._format},
+    _root{other._root},
+    _elements{other._elements},
+    _characterLength{other._characterLength} {
+}
+
+PathData::PathData(PathData &&other) noexcept :
+    mem::SharedData{},
+    _format{other._format},
+    _root{std::move(other._root)},
+    _elements{std::move(other._elements)},
+    _characterLength{other._characterLength},
+    _infoCache{other._infoCache.exchange(nullptr)} {
+}
+
+PathData::~PathData() {
+    resetInfoCache();
+}
+
+auto PathData::operator=(const PathData &other) -> PathData & {
+    if (this != &other) {
+        _format = other._format;
+        _root = other._root;
+        _elements = other._elements;
+        _characterLength = other._characterLength;
+        resetInfoCache();
+    }
+    return *this;
+}
+
+auto PathData::operator=(PathData &&other) noexcept -> PathData & {
+    if (this != &other) {
+        _format = other._format;
+        _root = std::move(other._root);
+        _elements = std::move(other._elements);
+        _characterLength = other._characterLength;
+        auto *movedCache = other._infoCache.exchange(nullptr);
+        delete _infoCache.exchange(movedCache);
+    }
+    return *this;
 }
 
 auto PathData::isAbsolute() const noexcept -> bool {
@@ -45,14 +92,19 @@ auto PathData::elements() const noexcept -> text::StringList {
 
 void PathData::setFormat(PathFormat format) noexcept {
     _format = format;
+    resetInfoCache();
 }
 
 void PathData::setRoot(text::String root) noexcept {
     _root = std::move(root);
+    updateCharacterLength();
+    resetInfoCache();
 }
 
 void PathData::setElements(text::StringList elements) noexcept {
     _elements = std::move(elements);
+    updateCharacterLength();
+    resetInfoCache();
 }
 
 auto PathData::publicElementCount() const noexcept -> unit::ElementCount {
@@ -71,6 +123,35 @@ auto PathData::publicElements() const -> text::StringList {
     }
     result.append(_elements);
     return result;
+}
+
+auto PathData::infoCache() const -> PathInfoCache * {
+    auto *result = _infoCache.load();
+    if (result != nullptr) {
+        return result;
+    }
+    auto *created = new PathInfoCache{};
+    if (_infoCache.compare_exchange_strong(result, created)) {
+        return created;
+    }
+    delete created;
+    return result;
+}
+
+void PathData::resetInfoCache() noexcept {
+    delete _infoCache.exchange(nullptr);
+}
+
+void PathData::updateCharacterLength() noexcept {
+    _characterLength = _root.characterLength();
+    auto first = true;
+    for (const auto &element : _elements) {
+        if (!first) {
+            _characterLength += CpLength::one();
+        }
+        _characterLength += element.characterLength();
+        first = false;
+    }
 }
 
 auto PathData::toString() const -> String {
@@ -160,10 +241,27 @@ auto PathData::create(const PathFormat format, const String &root, StringList el
     if (totalLength > cMaximumPathCharacters) {
         return {};
     }
-    return PathDataPtr{new PathData{format, root, std::move(elements)}};
+    return PathDataPtr{new PathData{format, root, std::move(elements), totalLength}};
 }
 
 template auto PathData::create<PathData>(PathFormat, const String &, StringList) noexcept -> PathDataPtr;
+
+auto PathData::createJoined(const PathData &base, const String &element) noexcept -> std::unique_ptr<PathData> {
+    if (element.isEmpty() || element.containsOneOf(invalidPathCharacters())) {
+        return {};
+    }
+    const auto elementCount = base.publicElementCount() + ElementCount::one();
+    auto characterLength = base._characterLength + element.characterLength();
+    if (!base._elements.isEmpty()) {
+        characterLength += CpLength::one();
+    }
+    if (elementCount > cMaximumPathElements || characterLength > cMaximumPathCharacters) {
+        return {};
+    }
+    auto elements = base._elements;
+    elements.append(element);
+    return std::make_unique<PathData>(base._format, base._root, std::move(elements), characterLength);
+}
 
 auto PathData::nonRootElementsFromPublicSlice(const StringList &elements, bool &sliceStartsWithRoot) -> StringList {
     sliceStartsWithRoot = false;

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SensitiveInput.hpp"
 #include "StandardStreamRedirect.hpp"
 #include "TextInputStream.hpp"
 #include "TextOutputStream.hpp"

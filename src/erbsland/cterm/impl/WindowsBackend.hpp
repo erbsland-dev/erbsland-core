@@ -39,6 +39,7 @@ public: // input
     [[nodiscard]] auto readKey(std::chrono::milliseconds timeout) -> Key override;
     [[nodiscard]] auto waitForKey() -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
+    void purgePendingInput() noexcept override;
 
 public:
     /// Create or access the global instance.

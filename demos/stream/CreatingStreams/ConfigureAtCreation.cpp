@@ -11,7 +11,7 @@ namespace demo {
 void configureAtCreation() {
     auto streamSettings = el::OutputStreamSettings{};
     streamSettings.setTimeout(el::TimeDelta::milliseconds(250))
-        .setBufferCapacity(el::ByteLength{16U * 1024U})
+        .setBuffering(el::StreamBuffering::Throughput)
         .setBackBufferLimit(el::ByteLength{128U * 1024U});
 
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf16LittleEndian};

@@ -1,0 +1,8 @@
+@version: "1.0"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name      : "immutable-append"
+Widths    : "u8"
+Types     : "string"
+Use Cases : "append"
+Variants  : "all"

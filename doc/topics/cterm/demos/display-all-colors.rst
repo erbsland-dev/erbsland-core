@@ -52,6 +52,6 @@ Relevant Source Files
 =====================
 
 If you want to explore the implementation, start with
-:file:`demos/cterm/display-all-colors/src/DisplayAllColorsApp.cpp`.
+:file:`demos/cterm/DisplayAllColors/src/DisplayAllColorsApp.cpp`.
 
 This file contains the palette table, matrix, and rainbow pattern rendering logic.

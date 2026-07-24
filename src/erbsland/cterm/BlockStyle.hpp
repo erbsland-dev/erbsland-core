@@ -10,6 +10,7 @@
 namespace erbsland::cterm {
 
 /// A combined terminal text style with color and character attributes.
+/// @tested{BlockStyleTest ColorParsingTest}
 class BlockStyle final {
 public:
     /// Create a style with inherited color and attributes.
@@ -71,6 +72,19 @@ public: // accessors
     void setAttributes(const BlockAttributes attributes) noexcept { _attributes = attributes; }
 
 public: // tools
+    /// Convert this style to its canonical textual representation.
+    /// @return The canonical style specification.
+    [[nodiscard]] auto toString() const -> text::String;
+    /// Parse a style, or return a fallback for invalid text.
+    /// @param str The style specification.
+    /// @param defaultValue The value returned for invalid text.
+    /// @return The parsed style or `defaultValue`.
+    [[nodiscard]] static auto fromString(const text::String &str, BlockStyle defaultValue) -> BlockStyle;
+    /// Parse a style.
+    /// @param str The style specification.
+    /// @return The parsed style.
+    /// @throws err::ParseError if the text is invalid.
+    [[nodiscard]] static auto fromStringOrThrow(const text::String &str) -> BlockStyle;
     /// Create a new style by overlaying another style onto this one.
     /// Inherited color components keep the existing color, and unspecified attributes keep the existing attributes.
     /// @param overlay The overlay style.

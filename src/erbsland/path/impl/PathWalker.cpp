@@ -8,7 +8,7 @@
 #include "../PathResolveMode.hpp"
 
 #include "../../text/Literals.hpp"
-#include "../../text/StringConverter.hpp"
+#include "../../text/StringSet.hpp"
 
 #include <algorithm>
 
@@ -37,9 +37,10 @@ auto PathWalker::walkImpl(const WalkFn &walkFn, const PathWalkOptions &options) 
         throw PathError{
             PathErrorContext{"Path walk could not be started"_el, "No base path was provided for the path walk."_el}};
     }
-    auto visitedDirectories = std::set<std::string>{};
+    auto visitedDirectories = text::StringSet{};
     auto hadErrors = false;
-    const auto result = visit(_path, walkFn, options, visitedDirectories, hadErrors);
+    const auto cacheTrust = std::make_shared<PathInfoCacheTrust>();
+    const auto result = visit(_path, walkFn, options, visitedDirectories, hadErrors, false, cacheTrust);
     if (result == VisitResult::Stop) {
         return PathWalkResult::Stopped;
     }
@@ -53,10 +54,13 @@ auto PathWalker::visit(
     const Path &path,
     const WalkFn &walkFn,
     const PathWalkOptions &options,
-    std::set<std::string> &visitedDirectories,
-    bool &hadErrors) const -> VisitResult {
+    text::StringSet &visitedDirectories,
+    bool &hadErrors,
+    const bool trustCache,
+    const PathInfoCacheTrustPtr &cacheTrust) const -> VisitResult {
     try {
-        auto info = PathInfo{path, options.infoParts() | PathInfoPart::Type};
+        auto info = trustCache ? PathInfo::fromDirectoryScan(path, options.infoParts() | PathInfoPart::Type, cacheTrust)
+                               : path.info(options.infoParts() | PathInfoPart::Type);
         if (!info.exists()) {
             throw PathError{
                 PathErrorContext{"Path could not be walked"_el, "Information for the path is unavailable."_el}
@@ -71,7 +75,7 @@ auto PathWalker::visit(
             }
             if (options.symlinkMode() == SymlinkMode::Follow) {
                 const auto resolvedPath = path.resolveOrThrow(PathResolveMode::Physical);
-                info = PathInfo{resolvedPath, options.infoParts() | PathInfoPart::Type};
+                info = resolvedPath.info(options.infoParts() | PathInfoPart::Type);
                 if (!info.exists()) {
                     throw PathError{PathErrorContext{
                         "Symbolic link could not be followed"_el, "The symbolic-link target is unavailable."_el}
@@ -83,9 +87,7 @@ auto PathWalker::visit(
         }
 
         if (isDirectory && options.symlinkMode() == SymlinkMode::Follow) {
-            const auto physicalPath = path.resolveOrThrow(PathResolveMode::Physical);
-            const auto key = text::StringConverter{physicalPath.toString()}.toStdString();
-            if (!visitedDirectories.insert(key).second) {
+            if (!visitedDirectories.tryInsert(info.resolvedPath().toString())) {
                 return VisitResult::Continue;
             }
         }
@@ -99,10 +101,11 @@ auto PathWalker::visit(
         }
 
         if (isDirectory) {
-            auto entries = pathBackend().directoryEntriesOrThrow(path);
-            std::ranges::sort(entries);
+            auto entries = pathBackend().directoryEntriesOrThrow(path, info.resolvedPath());
+            std::ranges::sort(
+                entries, [](const Path &left, const Path &right) -> bool { return left.name() < right.name(); });
             for (const auto &entry : entries) {
-                const auto childResult = visit(entry, walkFn, options, visitedDirectories, hadErrors);
+                const auto childResult = visit(entry, walkFn, options, visitedDirectories, hadErrors, true, cacheTrust);
                 if (childResult == VisitResult::Stop || childResult == VisitResult::Failure) {
                     return childResult;
                 }

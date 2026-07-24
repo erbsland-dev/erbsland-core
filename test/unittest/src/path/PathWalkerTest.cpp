@@ -5,13 +5,16 @@
 
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
+#include <erbsland/path/PathInfo.hpp>
 #include <erbsland/path/PathWalkDirection.hpp>
 #include <erbsland/path/PathWalker.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <chrono>
 #include <filesystem>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace el::text::literals;
@@ -116,5 +119,33 @@ public:
             [](const el::path::Path &) -> el::path::PathWalkStatus { return el::path::PathWalkStatus::Continue; },
             options);
         REQUIRE(result.isFailure());
+    }
+
+    void testDiscoveredPathRetainsPrefetchedType() {
+        const auto fixture = PathTestFixture{"walker-prefetched-info"};
+        const auto file = fixture.child("entry.txt");
+        file.content().writeTextOrThrow("data"_el);
+
+        auto discovered = el::path::Path{};
+        auto discoveredInfo = el::path::PathInfo{};
+        REQUIRE(fixture.path()
+                .walker()
+                .walkOrThrow(
+                    [&](const el::path::Path &path, const el::path::PathInfo &info) -> el::path::PathWalkStatus {
+                        if (path.name() == "entry.txt"_el) {
+                            discovered = path;
+                            discoveredInfo = info;
+                        }
+                        return el::path::PathWalkStatus::Continue;
+                    })
+                .isSuccessful());
+        REQUIRE_FALSE(discovered.isEmpty());
+
+        std::filesystem::remove(file.toStdPath());
+        REQUIRE(discovered.info().isRegularFile());
+        REQUIRE_FALSE(el::path::Path{file.toStdPath()}.info().exists());
+
+        std::this_thread::sleep_for(std::chrono::milliseconds{1100});
+        REQUIRE_FALSE(discoveredInfo.exists());
     }
 };

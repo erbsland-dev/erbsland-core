@@ -5,7 +5,7 @@
 
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 #include <stdexcept>
 

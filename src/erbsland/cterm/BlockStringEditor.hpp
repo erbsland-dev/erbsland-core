@@ -14,7 +14,6 @@
 
 #include "../bgeo/BlockSize.hpp"
 #include "../text/CharSet.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/String.hpp"
 #include "../text/StringSide.hpp"
 #include "../text/u32/U32String.hpp"
@@ -55,27 +54,15 @@ public:
     BlockStringEditor() noexcept;
     /// Create a terminal string from UTF-8 text.
     /// @param str The UTF-8 text to split into terminal characters.
-    /// @param encodingErrorMode How UTF-8 encoding errors are handled.
     /// Control codes are ignored except for tab and newline.
-    /// Use `text::EncodingErrorMode::Throw` to make malformed UTF-8 explicit at the string-construction boundary.
-    /// `text::EncodingErrorMode::Replace` replaces each malformed UTF-8 byte with one Unicode replacement character.
-    /// @throws text::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
-    /// UTF-8, or if the text contains an unsupported character sequence.
-    explicit BlockStringEditor(
-        const text::String &str, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
+    /// Malformed UTF-8 is replaced with Unicode replacement characters.
+    explicit BlockStringEditor(const text::String &str);
     /// Create a terminal string from UTF-8 text with a uniform style.
     /// @param str The UTF-8 text to split into terminal characters.
     /// @param style The style to use for the characters.
-    /// @param encodingErrorMode How UTF-8 encoding errors are handled.
     /// Control codes are ignored except for tab and newline.
-    /// Use `text::EncodingErrorMode::Throw` to make malformed UTF-8 explicit at the string-construction boundary.
-    /// `text::EncodingErrorMode::Replace` replaces each malformed UTF-8 byte with one Unicode replacement character.
-    /// @throws text::EncodingError If `encodingErrorMode` is `text::EncodingErrorMode::Throw` and the text is not valid
-    /// UTF-8, or if the text contains an unsupported character sequence.
-    explicit BlockStringEditor(
-        const text::String &str,
-        BlockStyle style,
-        text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
+    /// Malformed UTF-8 is replaced with Unicode replacement characters.
+    explicit BlockStringEditor(const text::String &str, BlockStyle style);
     /// Create a terminal string from UTF-32 text.
     /// @param str The UTF-32 text to split into terminal characters.
     /// Control codes are ignored except for tab and newline.
@@ -309,11 +296,7 @@ public: // modifiers
     /// Append text using one uniform style.
     /// @param text The text to append.
     /// @param style The style applied to the appended characters.
-    /// @param encodingErrorMode The handling mode for encoding errors.
-    void appendStyled(
-        const text::String &text,
-        BlockStyle style,
-        text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
+    void appendStyled(const text::String &text, BlockStyle style);
     /// @overload
     void appendStyled(const text::U32String &text, BlockStyle style) noexcept;
     /// Append another terminal string with a base style.
@@ -417,10 +400,7 @@ private:
         -> BlockStringEditor;
 
     [[nodiscard]] static auto splitCharacters(
-        const text::String &str,
-        Color color = {},
-        BlockAttributes attributes = {},
-        text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace) -> Storage;
+        const text::String &str, Color color = {}, BlockAttributes attributes = {}) -> Storage;
     [[nodiscard]] static auto splitCharacters(
         const text::U32String &str, Color color = {}, BlockAttributes attributes = {}) -> Storage;
     [[nodiscard]] auto createPrintContext() noexcept -> BlockPrintContextPtr;

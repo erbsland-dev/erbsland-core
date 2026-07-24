@@ -15,7 +15,7 @@
 #include "../../../mem/RingBuffer_fwd.hpp"
 #include "../../../unit/ByteLength_fwd.hpp"
 #include "../../../util/Result.hpp"
-#include "../../EncodingErrorMode.hpp"
+#include "../../EncodingMode.hpp"
 #include "../../StringBomMode.hpp"
 #include "../../StringEncoding.hpp"
 
@@ -42,36 +42,26 @@ public:
 
 public:
     /// Encode the visible UTF-32 data into the requested byte encoding.
-    [[nodiscard]] auto encode(
-        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
-        -> mem::ByteBlock;
+    [[nodiscard]] auto encode(StringEncoding encoding, StringBomMode bomMode) const -> mem::ByteBlock;
     /// Calculate the exact byte length produced by `encode()`.
-    [[nodiscard]] auto encodedLength(
-        StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode = EncodingErrorMode::Replace) const
-        -> unit::ByteLength;
+    [[nodiscard]] auto encodedLength(StringEncoding encoding, StringBomMode bomMode) const -> unit::ByteLength;
     /// Atomically encode the visible UTF-32 data directly into a ring buffer.
-    [[nodiscard]] auto encodeTo(
-        mem::RingBuffer &buffer,
-        StringEncoding encoding,
-        StringBomMode bomMode,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> util::Result;
+    [[nodiscard]] auto encodeTo(mem::RingBuffer &buffer, StringEncoding encoding, StringBomMode bomMode) const
+        -> util::Result;
     /// Decode byte data into a UTF-32 string.
     [[nodiscard]] static auto decode(
-        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
+        const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingMode mode)
         -> U32StringEditor;
 
 public: // helpers
     /// Encode visible UTF-32 data as UTF-8 bytes.
-    [[nodiscard]] static auto encodeUtf8(
-        std::span<const char32_t> data, StringBomMode bomMode, EncodingErrorMode errorMode) -> mem::ByteBlock;
+    [[nodiscard]] static auto encodeUtf8(std::span<const char32_t> data, StringBomMode bomMode) -> mem::ByteBlock;
     /// Encode visible UTF-32 data as UTF-16 bytes.
     [[nodiscard]] static auto encodeUtf16(
-        std::span<const char32_t> data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
-        -> mem::ByteBlock;
+        std::span<const char32_t> data, StringEncoding encoding, StringBomMode bomMode) -> mem::ByteBlock;
     /// Encode visible UTF-32 data as UTF-32 bytes.
     [[nodiscard]] static auto encodeUtf32(
-        std::span<const char32_t> data, StringEncoding encoding, StringBomMode bomMode, EncodingErrorMode errorMode)
-        -> mem::ByteBlock;
+        std::span<const char32_t> data, StringEncoding encoding, StringBomMode bomMode) -> mem::ByteBlock;
     /// Resolve the byte layout after applying BOM rules.
     [[nodiscard]] static auto resolveBomLayout(
         const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode) -> DecodeLayout;
@@ -79,13 +69,13 @@ public: // helpers
     template <typename Function>
     [[nodiscard]] static auto decodeFromCharacters(Function function) -> U32StringEditor;
     /// Decode byte data as UTF-8.
-    [[nodiscard]] static auto decodeUtf8(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+    [[nodiscard]] static auto decodeUtf8(const mem::ByteBlock &data, DecodeLayout layout, EncodingMode mode)
         -> U32StringEditor;
     /// Decode byte data as UTF-16.
-    [[nodiscard]] static auto decodeUtf16(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+    [[nodiscard]] static auto decodeUtf16(const mem::ByteBlock &data, DecodeLayout layout, EncodingMode mode)
         -> U32StringEditor;
     /// Decode byte data as UTF-32.
-    [[nodiscard]] static auto decodeUtf32(const mem::ByteBlock &data, DecodeLayout layout, EncodingErrorMode errorMode)
+    [[nodiscard]] static auto decodeUtf32(const mem::ByteBlock &data, DecodeLayout layout, EncodingMode mode)
         -> U32StringEditor;
 
 private:

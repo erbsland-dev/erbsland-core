@@ -2,92 +2,119 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
-#include <erbsland/text/StringConverter.hpp>
+#include <erbsland/MakeOneNamespace.hpp>
+#include <erbsland/path/PathInfo.hpp>
+#include <erbsland/path/PathWalker.hpp>
+#include <erbsland/StdFormat.hpp>
+#include <erbsland/String.hpp>
+#include <erbsland/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <atomic>
 #include <cstdlib>
-#include <filesystem>
+#include <exception>
 #include <format>
+#include <stdexcept>
+#include <thread>
+#include <vector>
 
 using namespace el::conf;
+using el::path::Path;
 
 TESTED_TARGETS(Parser)
 class ParserComplianceTest final : public el::UnitTest {
 public:
-    static constexpr auto cTestSuiteEnv = "ERBSLAND_CORE_CONF_TEST_SUITE";
-    static constexpr auto cTestSuiteDir = "test/erbsland-lang-config-tests";
-    static constexpr auto cTestSuiteSubdir = "tests/V1_0";
+    static constexpr auto cTestSuiteEnv = "ERBSLAND_CORE_CONF_TEST_SUITE"_el;
+    static constexpr auto cTestSuiteDir = "test/erbsland-lang-config-tests"_el;
+    static constexpr auto cTestSuiteSubdir = "tests/V1_0"_el;
+    static constexpr auto cWorkerCount = std::size_t{32};
 
-    std::filesystem::path testSuitePath;
-    std::filesystem::path testFilePath;
-    SourcePtr source;
-    DocumentPtr document;
+    Path testSuitePath;
+    Path testFilePath;
 
     auto additionalErrorMessages() -> std::string override {
         try {
-            std::string result;
-            result += std::format(
-                "Failed test file path: {}\n", std::filesystem::relative(testFilePath, testSuitePath).string());
-            if (document != nullptr) {
-                result += "State of the parsed document:\n";
-                auto flatMap = document->toFlatValueMap();
-                for (const auto &[namePath, value] : flatMap) {
-                    result += el::text::StringConverter{namePath.toText()}.toStdString() + ": " +
-                        el::text::StringConverter{value->toTestText()}.toStdString() + "\n";
-                }
-            } else {
-                result += "No document was parsed.\n";
-            }
-            return result;
+            return std::format("Failed test file path: {}\n", testFilePath.toRelative(testSuitePath).toString());
         } catch (...) {
             return {"unexpected exception"};
         }
     }
 
-    void validateTestFile(const std::filesystem::path &path, bool expectPass) {
-        source = Source::fromFile(el::path::Path{path});
+    static void validateTestFile(const Path &path, bool expectPass) {
+        const auto source = Source::fromFile(path);
         try {
             Parser parser;
-            document = {};
-            document = parser.parseOrThrow(source);
+            parser.parseOrThrow(source);
             if (!expectPass) {
-                consoleWriteLine("Parsing file should have failed.");
-                REQUIRE(expectPass);
+                throw std::runtime_error{"Parsing file should have failed."};
             }
-        } catch (const ConfError &error) {
+        } catch (const ConfError &) {
             if (expectPass) {
-                consoleWriteLine(el::text::StringConverter{error.toString()}.toStdString());
-                REQUIRE_FALSE(expectPass);
+                throw;
+            }
+        }
+    }
+
+    void runTestFiles(const el::List<Path> &paths) {
+        const auto &rawPaths = paths.toRawValue();
+        auto nextIndex = std::atomic_size_t{};
+        auto failures = std::vector<std::exception_ptr>(rawPaths.size());
+        auto workers = std::vector<std::jthread>{};
+        workers.reserve(cWorkerCount);
+        for (auto workerIndex = std::size_t{}; workerIndex < cWorkerCount; ++workerIndex) {
+            workers.emplace_back([&rawPaths, &nextIndex, &failures]() -> void {
+                while (true) {
+                    const auto index = nextIndex.fetch_add(1, std::memory_order_relaxed);
+                    if (index >= rawPaths.size()) {
+                        return;
+                    }
+                    try {
+                        const auto &path = rawPaths[index];
+                        validateTestFile(path, path.name().contains("PASS"_el));
+                    } catch (...) {
+                        failures[index] = std::current_exception();
+                    }
+                }
+            });
+        }
+        for (auto &worker : workers) {
+            worker.join();
+        }
+        for (auto index = std::size_t{}; index < failures.size(); ++index) {
+            if (failures[index] != nullptr) {
+                testFilePath = rawPaths[index];
+                std::rethrow_exception(failures[index]);
             }
         }
     }
 
     void testPassOrFail() {
-        const bool suiteExplicitlyConfigured = (std::getenv(cTestSuiteEnv) != nullptr);
-        if (const auto testSuiteEnv = std::getenv(cTestSuiteEnv); testSuiteEnv != nullptr) {
-            testSuitePath = std::filesystem::path(testSuiteEnv);
+        const auto testSuiteEnvPtr = std::getenv(el::StringConverter{cTestSuiteEnv}.toStdString().c_str());
+        const bool suiteExplicitlyConfigured = (testSuiteEnvPtr != nullptr);
+        if (testSuiteEnvPtr != nullptr) {
+            testSuitePath = Path(el::String{std::string_view{testSuiteEnvPtr}});
         } else {
             // If no environment variable is set, the unittest wasn't started using CTest.
             // In this case, we make a guess about the location, assuming this unittest runs in an IDE
             // and the build directory is located inside the project directory.
-            auto guessedPath = std::filesystem::path(unitTestExecutablePath()).parent_path();
+            auto guessedPath = Path(unitTestExecutablePath()).parent();
             int maxDepth = 5;
-            while (is_directory(guessedPath) && maxDepth-- > 0) {
-                if (is_directory(guessedPath / cTestSuiteDir)) {
-                    testSuitePath = guessedPath / cTestSuiteDir;
+            while (guessedPath.info().isDirectory() && maxDepth-- > 0) {
+                auto newPath = guessedPath / cTestSuiteDir;
+                if (newPath.info().isDirectory()) {
+                    testSuitePath = newPath;
                     break;
                 }
-                guessedPath = guessedPath.parent_path();
+                guessedPath = guessedPath.parent();
             }
         }
-        if (testSuitePath.empty() || !std::filesystem::is_directory(testSuitePath)) {
+        if (testSuitePath.isEmpty() || !testSuitePath.info().isDirectory()) {
             consoleWriteLine(
                 std::format(
                     "Parser compliance test suite directory was not found: {}\n"
                     "Set {} to the local checkout of the compliance test suite to enable this test.",
-                    testSuitePath.empty() ? std::string{"<empty>"} : testSuitePath.string(),
-                    cTestSuiteEnv));
+                    testSuitePath.isEmpty() ? el::String{"<empty>"_el} : testSuitePath.toString(),
+                    el::String{cTestSuiteEnv}));
             // Only fail if the suite location was explicitly configured. Otherwise, allow
             // IDE/local runs without the external test suite checkout.
             if (suiteExplicitlyConfigured) {
@@ -96,19 +123,16 @@ public:
             return;
         }
         testSuitePath /= cTestSuiteSubdir;
-        REQUIRE(std::filesystem::is_directory(testSuitePath));
-        std::filesystem::recursive_directory_iterator it(testSuitePath);
-        std::vector<std::filesystem::directory_entry> entries;
-        for (const auto &entry : it) {
-            if (entry.is_regular_file() && entry.path().extension() == ".elcl") {
-                entries.push_back(entry);
-            }
-        }
-        std::ranges::sort(entries, [](const auto &a, const auto &b) { return a.path() < b.path(); });
-        for (const auto &entry : entries) {
-            testFilePath = entry.path();
-            bool expectPass = testFilePath.filename().string().find("PASS") != std::string::npos;
-            WITH_CONTEXT(validateTestFile(entry.path(), expectPass));
-        }
+        REQUIRE(testSuitePath.info().isDirectory());
+        el::List<Path> paths;
+        testSuitePath.walker().walkOrThrow(
+            [&](const Path &path) -> el::PathWalkStatus {
+                if (path.suffix() == ".elcl"_el) {
+                    paths.append(path);
+                }
+                return el::PathWalkStatus::Continue;
+            },
+            el::PathWalkOptions{}.setTypes(el::PathType::RegularFile));
+        WITH_CONTEXT(runTestFiles(paths));
     }
 };

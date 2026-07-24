@@ -10,9 +10,11 @@ namespace erbsland::options {
 
 /// Flags that customize the command-line parser.
 enum class OptionParserFlag : uint8_t {
-    DisableHelp = 1U << 0U,    ///< Disable the built-in `-h` and `--help` request.
-    DisableVersion = 1U << 1U, ///< Disable the built-in `--version` request.
-    All = (1U << 0U) | (1U << 1U),
+    None = 0,                        ///< No flags
+    DisableHelp = 1U << 0U,          ///< Disable the built-in `-h` and `--help` request.
+    DisableVersion = 1U << 1U,       ///< Disable the built-in `--version` request.
+    DisableBooleanValues = 1U << 2U, ///< Treat all flags as valueless for positional-argument compatibility.
+    All = 0b111U,                    ///< All flags
 };
 
 /// A set of command-line parser flags.

@@ -7,7 +7,7 @@
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/impl/source/StringSource.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/String.hpp>
 
 #include <string>

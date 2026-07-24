@@ -52,6 +52,6 @@ Relevant Source Files
 =====================
 
 If you want to explore the implementation, start with
-:file:`demos/cterm/frame-color-animations/src/FrameColorAnimationsApp.cpp`.
+:file:`demos/cterm/FrameColorAnimations/src/FrameColorAnimationsApp.cpp`.
 
 This file contains the animation loop, panel layout, and color sequences for each frame mode.

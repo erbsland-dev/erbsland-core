@@ -47,6 +47,32 @@ auto TimeDelta::operator-() const noexcept -> TimeDelta {
     return TimeDelta{-_nanoseconds};
 }
 
+auto TimeDelta::operator/(const IntegerValue divisor) const noexcept -> TimeDelta {
+    return TimeDelta{_nanoseconds / divisor};
+}
+
+auto TimeDelta::operator/=(IntegerValue divisor) noexcept -> TimeDelta & {
+    _nanoseconds /= divisor;
+    return *this;
+}
+
+auto TimeDelta::operator/(const TimeDelta divisor) const noexcept -> IntegerValue {
+    return _nanoseconds.toValue() / divisor._nanoseconds.toValue();
+}
+
+auto TimeDelta::operator*(IntegerValue factor) const noexcept -> TimeDelta {
+    return TimeDelta{_nanoseconds * factor};
+}
+
+auto TimeDelta::operator*=(IntegerValue factor) noexcept -> TimeDelta & {
+    _nanoseconds *= factor;
+    return *this;
+}
+
+auto TimeDelta::toMilliseconds() const noexcept -> Milliseconds {
+    return _nanoseconds.converted<Milliseconds>();
+}
+
 auto TimeDelta::toSeconds() const noexcept -> Seconds {
     return _nanoseconds.converted<Seconds>();
 }

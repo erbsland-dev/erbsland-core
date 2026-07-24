@@ -47,11 +47,19 @@ U8StringEditor::U8StringEditor(const U8StringLiteral<char> &literal) : _storage{
 U8StringEditor::U8StringEditor(const U8StringLiteral<char8_t> &literal) : _storage{literal.dataView()} {
 }
 
-U8StringEditor::U8StringEditor(const U8String &view) : _storage{view.dataView()} {
+U8StringEditor::U8StringEditor(const U8String &view) : _storage{view.dataView(), view.isSensitive()} {
 }
 
 auto U8StringEditor::isEmpty() const noexcept -> bool {
     return _storage.isEmpty();
+}
+
+auto U8StringEditor::isSensitive() const noexcept -> bool {
+    return _storage.isSensitive();
+}
+
+void U8StringEditor::markAsSensitive() noexcept {
+    _storage.markAsSensitive();
 }
 
 auto U8StringEditor::isValidUtf8() const noexcept -> bool {
@@ -135,10 +143,6 @@ auto U8StringEditor::charAt(const ByteIndex startIndex) const noexcept -> Char {
 
 auto U8StringEditor::readCharAndAdvance(ByteIndex &index) const noexcept -> Char {
     return U8StringReadTools{dataView()}.read(index);
-}
-
-auto U8StringEditor::readCharAndAdvanceOrThrow(ByteIndex &index) const -> Char {
-    return U8StringReadTools{dataView()}.readOrThrow(index);
 }
 
 auto U8StringEditor::readCharAndRetreat(ByteIndex &index) const noexcept -> Char {

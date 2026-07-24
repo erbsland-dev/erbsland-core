@@ -2,11 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/math/IntegerRange.hpp>
+#include <erbsland/mem/impl/ByteBlockData.hpp>
+#include <erbsland/mem/impl/SecureErase.hpp>
 #include <erbsland/random/Random.hpp>
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringList.hpp>
+#include <erbsland/text/u8/impl/U8StringData.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/ElementCount.hpp>
@@ -39,7 +42,7 @@ using namespace el::text::literals;
 
 namespace erbsland::test::randomtest {
 
-class CountingRandom final : public Random {
+class CountingRandom : public Random {
 public:
     [[nodiscard]] auto getInt32(const int32_t minimum, const int32_t maximum) -> int32_t override {
         return static_cast<int32_t>(getInt64(minimum, maximum));
@@ -78,6 +81,66 @@ private:
     uint64_t _next{0U};
 };
 
+class SecureCountingRandom final : public CountingRandom {
+public:
+    [[nodiscard]] auto isSecure() const noexcept -> bool override { return true; }
+};
+
+class ThrowingRandom final : public Random {
+public:
+    [[nodiscard]] auto isSecure() const noexcept -> bool override { return true; }
+    [[nodiscard]] auto getInt32(const int32_t minimum, const int32_t maximum) -> int32_t override {
+        return static_cast<int32_t>(getInt64(minimum, maximum));
+    }
+    [[nodiscard]] auto getUInt32(const uint32_t minimum, const uint32_t maximum) -> uint32_t override {
+        return static_cast<uint32_t>(getUInt64(minimum, maximum));
+    }
+    [[nodiscard]] auto getInt64(const int64_t minimum, const int64_t maximum) -> int64_t override {
+        return static_cast<int64_t>(getUInt64(static_cast<uint64_t>(minimum), static_cast<uint64_t>(maximum)));
+    }
+    [[nodiscard]] auto getUInt64(uint64_t, uint64_t) -> uint64_t override {
+        if (_selectionCount++ != 0U) {
+            throw std::runtime_error{"Injected random selection failure."};
+        }
+        return 0U;
+    }
+    [[nodiscard]] auto getDouble(double, double) -> double override {
+        throw std::runtime_error{"Injected random selection failure."};
+    }
+    [[nodiscard]] auto getBool() -> bool override { throw std::runtime_error{"Injected random selection failure."}; }
+    void fillBytes(const std::span<std::byte> destination) override {
+        if (!destination.empty()) {
+            destination.front() = std::byte{0x5a};
+        }
+        throw std::runtime_error{"Injected random byte failure."};
+    }
+
+private:
+    std::size_t _selectionCount{};
+};
+
+struct RandomEraseEvent final {
+    std::size_t size{};
+    bool isZero{};
+};
+
+std::vector<RandomEraseEvent> gRandomEraseEvents;
+
+void observeRandomErase(const std::span<const std::byte> bytes) noexcept {
+    gRandomEraseEvents.push_back({bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool {
+                                      return value == std::byte{};
+                                  })});
+}
+
+class RandomEraseObserverGuard final {
+public:
+    RandomEraseObserverGuard() {
+        gRandomEraseEvents.clear();
+        el::mem::impl::setSecureEraseObserver(observeRandomErase);
+    }
+    ~RandomEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+};
+
 }
 
 using namespace erbsland::test::randomtest;
@@ -104,7 +167,14 @@ public:
         REQUIRE_EQUAL(random.selectElement(std::vector<int>{}, 99), 99);
         REQUIRE(random.buildIntegerList(ElementCount::zero(), 1, 3).count().isZero());
         REQUIRE(random.buildString(CpLength{4}, CharSet{}).isEmpty());
+        REQUIRE(random.buildString(CpLength::zero(), CharSet::fromPattern("A-Z"_el)).isEmpty());
         REQUIRE(random.buildByteBlock(ByteLength::zero()).isEmpty());
+        REQUIRE(random.buildByteBuffer(ByteLength::zero()).isEmpty());
+
+        auto secureRandom = SecureCountingRandom{};
+        const auto emptySecureBuffer = secureRandom.buildByteBuffer(ByteLength::zero());
+        REQUIRE(emptySecureBuffer.isEmpty());
+        REQUIRE(emptySecureBuffer.isSensitive());
     }
 
     void testStringAndBytes() {
@@ -115,7 +185,78 @@ public:
 
         const auto block = random.buildByteBlock(ByteLength{4});
         REQUIRE_EQUAL(block.length(), ByteLength{4});
+        REQUIRE_FALSE(block.isSensitive());
+        REQUIRE_FALSE(random.isSecure());
         REQUIRE_EQUAL(block.toUInt8Vector(), (std::vector<uint8_t>{3U, 4U, 5U, 6U}));
+
+        const auto buffer = random.buildByteBuffer(ByteLength{4});
+        REQUIRE_EQUAL(buffer.length(), ByteLength{4});
+        REQUIRE_EQUAL(buffer.toUInt8Vector(), (std::vector<uint8_t>{7U, 8U, 9U, 10U}));
+    }
+
+    void testSecureStringAndBytesUseProtectedAllocations() {
+        const auto guard = RandomEraseObserverGuard{};
+        {
+            auto random = SecureCountingRandom{};
+            const auto sensitiveText = random.buildString(CpLength{3U}, CharSet{"Aé🦊"_el});
+            REQUIRE(sensitiveText.isSensitive());
+            REQUIRE_EQUAL(sensitiveText.characterLength(), CpLength{3U});
+            REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{0U}), el::text::Char{U'A'});
+            REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{1U}), el::text::Char{U'é'});
+            REQUIRE_EQUAL(sensitiveText.charAt(el::unit::CpIndex{2U}), el::text::Char{U'🦊'});
+            REQUIRE(gRandomEraseEvents.empty());
+        }
+        REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(
+            gRandomEraseEvents.front().size, el::text::impl::U8StringData::allocationSizeForCapacity(std::size_t{13U}));
+        REQUIRE(gRandomEraseEvents.front().isZero);
+
+        gRandomEraseEvents.clear();
+        {
+            auto random = SecureCountingRandom{};
+            REQUIRE(random.isSecure());
+            const auto sensitiveBytes = random.buildByteBlock(ByteLength{4U});
+            REQUIRE_EQUAL(sensitiveBytes.length(), ByteLength{4U});
+            REQUIRE(sensitiveBytes.isSensitive());
+            REQUIRE_EQUAL(sensitiveBytes.get(el::unit::ByteIndex{0U}), el::mem::Byte{0U});
+            REQUIRE_EQUAL(sensitiveBytes.get(el::unit::ByteIndex{3U}), el::mem::Byte{3U});
+            REQUIRE(gRandomEraseEvents.empty());
+        }
+        REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(
+            gRandomEraseEvents.front().size, el::mem::impl::ByteBlockData::allocationSizeForCapacity(std::size_t{4U}));
+        REQUIRE(gRandomEraseEvents.front().isZero);
+
+        gRandomEraseEvents.clear();
+        {
+            auto random = SecureCountingRandom{};
+            const auto sensitiveBytes = random.buildByteBuffer(ByteLength{4U});
+            REQUIRE(sensitiveBytes.isSensitive());
+            REQUIRE_EQUAL(sensitiveBytes.length(), ByteLength{4U});
+        }
+        REQUIRE_FALSE(gRandomEraseEvents.empty());
+    }
+
+    void testSensitiveBuildersErasePartialDataAfterGeneratorFailure() {
+        const auto guard = RandomEraseObserverGuard{};
+        {
+            auto random = ThrowingRandom{};
+            REQUIRE_THROWS(random.buildString(CpLength{3U}, CharSet::fromPattern("A-C"_el)));
+        }
+        REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(
+            gRandomEraseEvents.front().size, el::text::impl::U8StringData::allocationSizeForCapacity(std::size_t{4U}));
+        REQUIRE(gRandomEraseEvents.front().isZero);
+
+        gRandomEraseEvents.clear();
+        {
+            auto random = ThrowingRandom{};
+            REQUIRE_THROWS(random.buildByteBlock(ByteLength{4U}));
+        }
+        REQUIRE_EQUAL(gRandomEraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(
+            gRandomEraseEvents.front().size, el::mem::impl::ByteBlockData::allocationSizeForCapacity(std::size_t{4U}));
+        REQUIRE(gRandomEraseEvents.front().isZero);
     }
 
     void testElementSelection() {

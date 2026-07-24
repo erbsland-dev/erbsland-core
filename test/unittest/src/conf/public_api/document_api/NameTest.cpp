@@ -5,7 +5,7 @@
 
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/Name.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <unordered_set>

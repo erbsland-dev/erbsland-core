@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(impl)
+add_subdirectory(unsafe)
 
 target_sources(erbsland-core PRIVATE
         CryptographicSecurity.hpp
@@ -14,5 +15,17 @@ target_sources(erbsland-core PRIVATE
         Hasher.hpp
         HashRequirements.hpp
         HashThroughput.hpp
-        StdFormatForCryptology.hpp
+        PasswordHash.cpp
+        PasswordHash.hpp
+        PasswordHashAlgorithm.cpp
+        PasswordHashAlgorithm.hpp
+        PasswordHasher.cpp
+        PasswordHasher.hpp
+        PasswordHashKey.cpp
+        PasswordHashKey.hpp
+        PasswordHashPolicy.cpp
+        PasswordHashPolicy.hpp
+        PasswordVerification.cpp
+        PasswordVerification.hpp
+        StdFormat.hpp
 )

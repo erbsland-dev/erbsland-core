@@ -48,7 +48,7 @@ target_sources(erbsland-core PRIVATE
         SourceIdentifier.hpp
         SourceResolver.hpp
         SourceResolverContext.hpp
-        StdFormatForConf.hpp
+        StdFormat.hpp
         TestFormat.hpp
         Value.cpp
         Value.hpp

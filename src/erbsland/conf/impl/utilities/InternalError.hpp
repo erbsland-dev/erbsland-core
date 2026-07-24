@@ -39,9 +39,9 @@ inline void require(const bool condition, const char (&message)[N]) {
 // A test that is performed at runtime.
 // We perform these tests at places where we want to ensure correctness for safety reasons.
 #define ERBSLAND_CORE_CONF_REQUIRE_SAFETY(condition, message) ::erbsland::conf::impl::require(condition, message)
-// A test that is only performed in debug builds.
+// A test that is only performed in debug and unit-test builds.
 // We perform these tests just to get better debugging information, but the program would fail safely otherwise.
-#if defined(_DEBUG) || !defined(NDEBUG)
+#if defined(_DEBUG) || !defined(NDEBUG) || defined(ERBSLAND_UNITTEST_BUILD)
 #define ERBSLAND_CORE_CONF_REQUIRE_DEBUG(condition, message) ::erbsland::conf::impl::require(condition, message)
 #else
 #define ERBSLAND_CORE_CONF_REQUIRE_DEBUG(condition, message)

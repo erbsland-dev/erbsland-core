@@ -69,8 +69,14 @@ public:
         const ByteBlock &bytes,
         const std::size_t maximumRead = std::numeric_limits<std::size_t>::max(),
         const std::size_t timeoutCount = 0U,
-        const bool blocked = false) :
-        _bytes{bytes.toByteVector()}, _maximumRead{maximumRead}, _timeoutsRemaining{timeoutCount}, _blocked{blocked} {}
+        const bool blocked = false,
+        const bool sensitive = false) :
+        _bytes{bytes.span().begin(), bytes.span().end()},
+        _maximumRead{maximumRead},
+        _timeoutsRemaining{timeoutCount},
+        _blocked{blocked} {
+        _settings.setSensitive(sensitive);
+    }
 
 public: // controls
     void release() noexcept { _released.store(true); }
@@ -93,7 +99,7 @@ public: // implement ByteInputStream
     void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
 protected:
-    [[nodiscard]] auto readFromSource(std::span<Byte> destination, ReadDeadline)
+    [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, ReadDeadline)
         -> StreamReadResult<ByteLength> override {
         if (_state != el::stream::StreamState::Open) {
             throw StreamError{el::stream::StreamErrorContext{
@@ -154,7 +160,7 @@ public: // implement ByteOutputStream
         return el::stream::StreamCloseStatus::Closed;
     }
     void abort() noexcept override { _state = el::stream::StreamState::Closed; }
-    auto write(const std::span<const Byte> bytes) -> StreamWriteStatus override {
+    auto write(const el::mem::ConstByteSpan bytes) -> StreamWriteStatus override {
         if (_state != el::stream::StreamState::Open) {
             throw StreamError{el::stream::StreamErrorContext{
                 "Failed to write to the controlled stream."_el, "The controlled stream is closed."_el}};
@@ -196,8 +202,8 @@ TESTED_TARGETS(ByteInputStream ByteOutputStream TextInputStream TextOutputStream
 class AsyncStreamTest final : public el::UnitTest {
 public:
     void testByteExactAndAllPreserveStatuses() {
-        auto stream =
-            std::make_shared<ControlledByteInputStream>(ByteBlock{std::vector<uint8_t>{1U, 2U, 3U, 4U}}, 1U, 1U);
+        auto stream = std::make_shared<ControlledByteInputStream>(
+            ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U, 4U}), 1U, 1U);
 
         auto timeout = stream->coReadExact(ByteLength{2U});
         waitFor(timeout);
@@ -218,9 +224,28 @@ public:
         REQUIRE(finished.result().isFinished());
     }
 
+    void testSensitiveCoroutineReadsAreMarked() {
+        auto stream = std::make_shared<ControlledByteInputStream>(
+            ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U}), 1U, 1U, false, true);
+
+        auto timeout = stream->coReadExact(ByteLength{2U});
+        waitFor(timeout);
+        REQUIRE(timeout.result().isTimeout());
+
+        auto exact = stream->coReadExact(ByteLength{2U});
+        waitFor(exact);
+        REQUIRE_EQUAL(exact.result().data().toUInt8Vector(), std::vector<uint8_t>({1U, 2U}));
+        REQUIRE(exact.result().data().isSensitive());
+
+        auto all = stream->coReadAll(ByteLength{8U});
+        waitFor(all);
+        REQUIRE_EQUAL(all.result().data().toUInt8Vector(), std::vector<uint8_t>({3U}));
+        REQUIRE(all.result().data().isSensitive());
+    }
+
     void testReadDoesNotBlockCallerAndRetainsStream() {
         auto stream = std::make_shared<ControlledByteInputStream>(
-            ByteBlock{std::vector<uint8_t>{42U}}, std::numeric_limits<std::size_t>::max(), 0U, true);
+            ByteBlock::fromVector(std::vector<uint8_t>{42U}), std::numeric_limits<std::size_t>::max(), 0U, true);
         auto weakStream = std::weak_ptr<ControlledByteInputStream>{stream};
 
         auto task = stream->coRead(ByteLength{1U});
@@ -238,7 +263,7 @@ public:
 
     void testTaskDestructionCancelsContinuation() {
         auto stream = std::make_shared<ControlledByteInputStream>(
-            ByteBlock{std::vector<uint8_t>{9U}}, std::numeric_limits<std::size_t>::max(), 0U, true);
+            ByteBlock::fromVector(std::vector<uint8_t>{9U}), std::numeric_limits<std::size_t>::max(), 0U, true);
         auto weakStream = std::weak_ptr<ControlledByteInputStream>{stream};
         {
             auto task = stream->coRead(ByteLength{1U});
@@ -254,7 +279,7 @@ public:
 
     void testByteBlockGeneratorYieldsTimeoutAndData() {
         auto stream = std::make_shared<ControlledByteInputStream>(
-            ByteBlock{std::vector<uint8_t>{7U, 8U}}, std::numeric_limits<std::size_t>::max(), 1U);
+            ByteBlock::fromVector(std::vector<uint8_t>{7U, 8U}), std::numeric_limits<std::size_t>::max(), 1U);
         auto generator = stream->coReadBlocks(ByteLength{8U});
 
         auto timeout = nextValue(generator);
@@ -272,10 +297,10 @@ public:
     }
 
     void testRejectsStackOwnershipAndPropagatesErrors() {
-        auto stackStream = ControlledByteInputStream{ByteBlock{std::vector<uint8_t>{1U}}};
+        auto stackStream = ControlledByteInputStream{ByteBlock::fromVector(std::vector<uint8_t>{1U})};
         REQUIRE_THROWS_AS(el::err::LogicError, stackStream.coRead(ByteLength{1U}));
 
-        auto stream = std::make_shared<ControlledByteInputStream>(ByteBlock{std::vector<uint8_t>{1U}});
+        auto stream = std::make_shared<ControlledByteInputStream>(ByteBlock::fromVector(std::vector<uint8_t>{1U}));
         stream->close();
         auto task = stream->coRead(ByteLength{1U});
         waitFor(task);
@@ -284,7 +309,7 @@ public:
 
     void testOwnedByteAndTextWrites() {
         auto byteStream = std::make_shared<ControlledByteOutputStream>(StreamWriteStatus::Success, true);
-        auto writeTask = byteStream->coWrite(ByteBlock{std::vector<uint8_t>{1U, 2U, 3U}});
+        auto writeTask = byteStream->coWrite(ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U}));
         waitUntil([&byteStream]() -> bool { return byteStream->started(); });
         REQUIRE_FALSE(writeTask.isComplete());
         byteStream->release();
@@ -293,7 +318,7 @@ public:
         REQUIRE_EQUAL(byteStream->data(), std::vector<uint8_t>({1U, 2U, 3U}));
 
         auto timeoutStream = std::make_shared<ControlledByteOutputStream>(StreamWriteStatus::Timeout);
-        auto timeoutTask = timeoutStream->coWrite(ByteBlock{std::vector<uint8_t>{4U, 5U}});
+        auto timeoutTask = timeoutStream->coWrite(ByteBlock::fromVector(std::vector<uint8_t>{4U, 5U}));
         waitFor(timeoutTask);
         REQUIRE(timeoutTask.result().isTimeout());
         REQUIRE(timeoutStream->data().empty());

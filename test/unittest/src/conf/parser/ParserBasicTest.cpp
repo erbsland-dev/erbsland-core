@@ -4,7 +4,7 @@
 #include "ParserTestHelper.hpp"
 
 #include <erbsland/conf/SourceIdentifier.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/err/ParameterError.hpp>
 
 using namespace el::text::literals;

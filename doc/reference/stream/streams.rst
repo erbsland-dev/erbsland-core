@@ -49,7 +49,7 @@ Successful input positioning discards read-ahead, decoder state, retained aggreg
 Output positioning waits for all accepted output to reach the native stream in order, but does not replace ``flush()``.
 
 Text positions must lie on an encoded code-point boundary.
-A misaligned position is handled by the configured encoding-error mode on the next read.
+A misaligned position is handled by the configured input encoding mode on the next read.
 Generic UTF-16 and UTF-32 input must resolve its byte order before moving away from byte zero; use an explicit endian
 encoding when immediate random access is required.
 Returning to byte zero enables normal byte-order-mark detection or output again, while movement to a nonzero position
@@ -73,6 +73,28 @@ Selecting another read operation replays retained input in order.
 end-of-stream or its maximum.
 The no-argument byte and text ``readAll()`` methods have a 10 MiB default maximum.
 Process large inputs with repeated bounded chunk reads instead of collecting them with ``readAll()``.
+
+Sensitive Input
+===============
+
+Set ``InputStreamSettings::setSensitive(true)`` before opening a file stream when decoded or raw input should use
+securely erased library-owned buffers.
+Opening configures the shared byte and text implementations with ordinary or protected runtime storage.
+Ordinary streams allocate only ordinary buffers and do not pay the protected-storage or secure-erasure cost.
+Owned byte reads from a sensitive stream automatically return a marked :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`
+from ``read()``, ``readExact()``, ``readAll()``, and their coroutine variants.
+Generic text reads return marked UTF-8 strings when the stream setting is sensitive.
+Transport, decoder, and retained buffers follow the same policy.
+The final byte block or UTF-8 string retains its mark; conversions to other representations are ordinary.
+
+For process-native standard input, :cpp:class:`SensitiveInputScope <erbsland::stream::io::SensitiveInputScope>` counts
+one process-wide request.
+Nested requests may finish in any order; the last stop erases and discards unread native input.
+Native standard input is the intentional runtime-switching exception: its unified decoder changes storage policy in
+place, while a protected, epoch-checked byte transfer prevents an in-flight read from publishing data after a
+transition.
+Manual code can pair ``startSensitiveInput()`` with a consuming ``stopSensitiveInput(std::move(token))`` call.
+Redirected ``stdIn()`` targets are intentionally unaffected.
 
 Atomic Output and Back Pressure
 ===============================
@@ -156,6 +178,15 @@ Interface
     :members:
 .. doxygenclass:: erbsland::stream::OutputStreamSettings
     :members:
+.. doxygenclass:: erbsland::stream::io::SensitiveInputToken
+    :members:
+
+.. doxygenfunction:: erbsland::stream::io::startSensitiveInput(std::source_location location = std::source_location::current()) -> SensitiveInputToken
+
+.. doxygenfunction:: erbsland::stream::io::stopSensitiveInput(SensitiveInputToken token)
+
+.. doxygenclass:: erbsland::stream::io::SensitiveInputScope
+    :members:
 .. doxygenclass:: erbsland::stream::StandardStreamRedirect
     :members:
 .. doxygenfunction:: erbsland::stream::stdIn() -> TextInputStreamPtr
@@ -187,6 +218,7 @@ Interface
 .. doxygenfunction:: erbsland::stream::io::printError(const tArgs &...args) -> StreamWriteStatus
 
 .. doxygenfunction:: erbsland::stream::io::printErrorLine(const tArgs &...args) -> StreamWriteStatus
+.. doxygenenum:: erbsland::stream::StreamBuffering
 .. doxygenclass:: erbsland::stream::StreamCloseStatus
     :members:
 .. doxygenclass:: erbsland::stream::StreamError

@@ -172,7 +172,7 @@ class FixIncludePathsTest(unittest.TestCase):
 """,
         )
 
-        with self.assertRaisesRegex(UtilityError, "must not contain \"src\""):
+        with self.assertRaisesRegex(UtilityError, 'must not contain "src"'):
             self.run_fix_include_paths()
 
     def test_error_does_not_write_partial_changes(self) -> None:
@@ -261,6 +261,35 @@ class FixIncludePathsTest(unittest.TestCase):
         self.assertIn('#include "LocalHelper.hpp"', text)
         self.assertIn("#include <erbsland/unittest/UnitTest.hpp>", text)
         self.assertIn("#include <vector>", text)
+
+    def test_unit_tests_keep_merged_erbsland_include(self) -> None:
+        self.write_file(
+            "src/erbsland/text/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "src/erbsland/time/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+""",
+        )
+        self.write_file(
+            "test/unittest/src/MergedIncludeTest.cpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+// SPDX-License-Identifier: Apache-2.0
+
+#include "erbsland/Literals.hpp"
+""",
+        )
+
+        self.run_fix_include_paths()
+
+        text = self.read_file("test/unittest/src/MergedIncludeTest.cpp")
+        self.assertIn("#include <erbsland/Literals.hpp>", text)
 
     def test_demos_use_erbsland_global_include_and_keep_local_helpers(self) -> None:
         self.write_file(

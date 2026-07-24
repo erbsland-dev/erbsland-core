@@ -8,9 +8,12 @@ target_sources(erbsland-core PRIVATE
         AnyStringBuilderFactory.cpp
         AnyStringBuilderFactory.hpp
         AnyStringComparison.hpp
+        BooleanConversion.hpp
         ByteBlockFormatter.cpp
         ByteBlockFormatter.hpp
         CharSetFromPattern.hpp
+        CharSetRangeBuilder.cpp
+        CharSetRangeBuilder.hpp
         CodeBlockData.hpp
         CodeLineMarkerData.cpp
         CodeLineMarkerData.hpp
@@ -24,6 +27,7 @@ target_sources(erbsland-core PRIVATE
         ConfigEscapeFormatter.hpp
         CppEscapeFormatter.cpp
         CppEscapeFormatter.hpp
+        DecodedStringSearch.hpp
         DisplayEscapeFormatter.cpp
         DisplayEscapeFormatter.hpp
         DynamicStringPatternData.cpp
@@ -59,6 +63,11 @@ target_sources(erbsland-core PRIVATE
         NamedFormatDomain.hpp
         NamedFormatParser.cpp
         NamedFormatParser.hpp
+        NamedKeyEntry.hpp
+        NamedKeyFormat.cpp
+        NamedKeyFormat.hpp
+        NamedKeyParser.cpp
+        NamedKeyParser.hpp
         NoneEscapeFormatter.cpp
         NoneEscapeFormatter.hpp
         PlainTextRenderer.cpp
@@ -76,6 +85,7 @@ target_sources(erbsland-core PRIVATE
         StringConversionTools.cpp
         StringConversionTools.hpp
         StringConversionTools_fwd.hpp
+        StringDecodeBuffer.tpp
         StringEncodingWriter.hpp
         StringHashMap.hpp
         StringHashMap_fwd.hpp

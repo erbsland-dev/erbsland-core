@@ -14,6 +14,6 @@ public:
     /// Convert compact hexadecimal test data into a byte block.
     [[nodiscard]] static auto bytesFromHex(const std::string_view hex) -> el::mem::ByteBlock {
         const auto bytes = el::unittest::th::stdStringFromHex(hex);
-        return el::mem::ByteBlock{std::span<const char>{bytes}};
+        return el::mem::ByteBlock::fromSpan(std::span<const char>{bytes});
     }
 };

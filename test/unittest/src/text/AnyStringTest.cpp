@@ -4,7 +4,7 @@
 #include <erbsland/text/AnyString.hpp>
 #include <erbsland/text/AnyStringEditor.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>

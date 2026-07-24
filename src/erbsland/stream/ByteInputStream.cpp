@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ByteInputStream.hpp"
 
+#include "impl/StreamBufferSizes.hpp"
+
 #include "../err/ParameterError.hpp"
-#include "../mem/ByteBlock.hpp"
-#include "../mem/impl/UnsafeByteBlockBuffer.hpp"
+#include "../mem/impl/UnsafeRingBufferAccess.hpp"
 #include "../text/Literals.hpp"
 
 #include <algorithm>
-#include <array>
-#include <cstring>
+#include <limits>
+#include <utility>
 
 namespace erbsland::stream {
 
@@ -65,35 +66,109 @@ auto ByteInputStream::deadlineFromNow() const -> ReadDeadline {
     return time::TimePoint::inFuture(inputSettings().timeout());
 }
 
-auto ByteInputStream::readChunkLocked(const std::span<Byte> destination, const ReadDeadline deadline)
+auto ByteInputStream::retainedBuffer() -> mem::RingBuffer & {
+    if (!_retainedBytes) {
+        const auto initialCapacity = impl::streamBufferSizes(inputSettings().buffering()).ioRing;
+        const auto maximumCapacity = ByteLength::fromSizeT(std::numeric_limits<std::size_t>::max());
+        _retainedBytes.emplace(initialCapacity, maximumCapacity);
+        _retainedBytes->setSensitive(inputSettings().isSensitive());
+    } else if (_retainedBytes->isSensitive() != inputSettings().isSensitive()) {
+        _retainedBytes->secureErase();
+        _retainedBytes->setSensitive(inputSettings().isSensitive());
+    }
+    return *_retainedBytes;
+}
+
+auto ByteInputStream::readChunkLocked(const mem::ByteSpan destination, const ReadDeadline deadline)
     -> StreamReadResult<ByteLength> {
     if (destination.empty()) {
         return {StreamReadStatus::Data, ByteLength::zero()};
     }
-    if (_replayPosition < _replayBytes.size()) {
-        const auto count = std::min(destination.size(), _replayBytes.size() - _replayPosition);
-        std::memcpy(destination.data(), _replayBytes.data() + _replayPosition, count * sizeof(Byte));
-        _replayPosition += count;
-        if (_replayPosition == _replayBytes.size()) {
-            _replayBytes.clear();
-            _replayPosition = 0U;
-        }
-        return {StreamReadStatus::Data, ByteLength::fromSizeT(count)};
+    auto &retained = retainedBuffer();
+    if (!retained.isEmpty()) {
+        return {StreamReadStatus::Data, retained.read(destination)};
     }
     return readFromSource(destination, deadline);
 }
 
-auto ByteInputStream::read(const std::span<Byte> destination) -> StreamReadResult<ByteLength> {
+auto ByteInputStream::readIntoRetained(const ByteLength maximumLength, const ReadDeadline deadline)
+    -> StreamReadStatus {
+    if (maximumLength.isZero()) {
+        return StreamReadStatus::Data;
+    }
+    auto &retained = retainedBuffer();
+    if (isFailure(retained.reserveAdditional(maximumLength))) {
+        throwError(
+            "Failed to retain byte-stream data."_el,
+            "The requested aggregate byte length exceeds the supported storage size."_el);
+    }
+    auto access = mem::impl::UnsafeRingBufferAccess{retained};
+    const auto spans = access.writableSpans();
+    auto destination = spans[0];
+    if (destination.empty()) {
+        destination = spans[1];
+    }
+    destination = destination.first(std::min(destination.size(), maximumLength.toSizeT()));
+    const auto result = readFromSource(destination, deadline);
+    if (result != StreamReadStatus::Data) {
+        return result.status();
+    }
+    if (result.data().isZero() || result.data().toSizeT() > destination.size()) {
+        throwError(
+            "Failed to read byte-stream data."_el, "The byte input source reported an invalid number of bytes."_el);
+    }
+    access.commitWritten(result.data());
+    return StreamReadStatus::Data;
+}
+
+auto ByteInputStream::prepareRead(const ByteLength maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
+    if (maximumLength.isZero() || !retainedBuffer().isEmpty()) {
+        return StreamReadStatus::Data;
+    }
+    return readIntoRetained(maximumLength, deadline);
+}
+
+auto ByteInputStream::prepareExact(const ByteLength length, const ReadDeadline deadline) -> StreamReadStatus {
+    auto &retained = retainedBuffer();
+    while (retained.length() < length) {
+        const auto status = readIntoRetained(length - retained.length(), deadline);
+        if (status != StreamReadStatus::Data) {
+            return status;
+        }
+    }
+    return StreamReadStatus::Data;
+}
+
+auto ByteInputStream::prepareAll(const ByteLength maximumLength, const ReadDeadline deadline) -> StreamReadStatus {
+    auto &retained = retainedBuffer();
+    while (retained.length() < maximumLength) {
+        const auto maximumRead = std::min(
+            impl::streamBufferSizes(inputSettings().buffering()).aggregateChunk, maximumLength - retained.length());
+        const auto status = readIntoRetained(maximumRead, deadline);
+        if (status == StreamReadStatus::Timeout) {
+            return status;
+        }
+        if (status == StreamReadStatus::Finished) {
+            return retained.isEmpty() ? StreamReadStatus::Finished : StreamReadStatus::Data;
+        }
+    }
+    return StreamReadStatus::Data;
+}
+
+auto ByteInputStream::takeRetained(const ByteLength length) -> ByteBlock {
+    return retainedBuffer().read(length);
+}
+
+auto ByteInputStream::read(const mem::ByteSpan destination) -> StreamReadResult<ByteLength> {
     return readUntil(destination, deadlineFromNow());
 }
 
-auto ByteInputStream::readUntil(const std::span<Byte> destination, const ReadDeadline deadline)
+auto ByteInputStream::readUntil(const mem::ByteSpan destination, const ReadDeadline deadline)
     -> StreamReadResult<ByteLength> {
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
         return {StreamReadStatus::Timeout, ByteLength::zero()};
     }
-    cancelAggregateRead();
     return readChunkLocked(destination, deadline);
 }
 
@@ -103,18 +178,11 @@ auto ByteInputStream::read(const ByteLength maximumLength) -> StreamReadResult<B
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, ByteBlock{}};
+        return {StreamReadStatus::Timeout, {}};
     }
-    cancelAggregateRead();
-    if (maximumLength.isZero()) {
-        return {StreamReadStatus::Data, ByteBlock{}};
-    }
-    auto buffer = mem::impl::UnsafeByteBlockBuffer{maximumLength};
-    const auto result = readChunkLocked(buffer.data(), deadlineFromNow());
-    if (result != StreamReadStatus::Data) {
-        return {result, ByteBlock{}};
-    }
-    return {StreamReadStatus::Data, buffer.take(result.data())};
+    const auto status = prepareRead(maximumLength, deadlineFromNow());
+    return status == StreamReadStatus::Data ? StreamReadResult<ByteBlock>{status, takeRetained(maximumLength)}
+                                            : StreamReadResult<ByteBlock>{status, {}};
 }
 
 auto ByteInputStream::readExact(const ByteLength length) -> StreamReadResult<ByteBlock> {
@@ -123,38 +191,18 @@ auto ByteInputStream::readExact(const ByteLength length) -> StreamReadResult<Byt
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, ByteBlock{}};
+        return {StreamReadStatus::Timeout, {}};
     }
-    selectAggregateRead(AggregateReadKind::Exact, length);
-    if (length.isZero()) {
-        return {StreamReadStatus::Data, takePending()};
-    }
-    const auto deadline = deadlineFromNow();
-    auto buffer = std::array<Byte, 16U * 1024U>{};
-    while (_pendingBytes.size() < length.toSizeT()) {
-        const auto remaining = length.toSizeT() - _pendingBytes.size();
-        const auto result =
-            readChunkLocked(std::span<Byte>{buffer.data(), std::min(buffer.size(), remaining)}, deadline);
-        if (result != StreamReadStatus::Data) {
-            return {result.status(), ByteBlock{}};
-        }
-        if (result.data().isZero()) {
-            throwError(
-                "Failed to read byte-stream data."_el,
-                "The byte input source reported data without providing any bytes."_el);
-        }
-        appendPending(std::span<const Byte>{buffer.data(), result.data().toSizeT()});
-    }
-    return {StreamReadStatus::Data, takePending()};
+    const auto status = prepareExact(length, deadlineFromNow());
+    return status == StreamReadStatus::Data ? StreamReadResult<ByteBlock>{status, takeRetained(length)}
+                                            : StreamReadResult<ByteBlock>{status, {}};
 }
 
 auto ByteInputStream::readByte() -> StreamReadResult<Byte> {
     auto byte = Byte{};
-    const auto result = read(std::span<Byte>{&byte, 1U});
-    if (result != StreamReadStatus::Data) {
-        return {result, Byte{}};
-    }
-    return {StreamReadStatus::Data, byte};
+    const auto result = read(mem::ByteSpan{&byte, 1U});
+    return result == StreamReadStatus::Data ? StreamReadResult<Byte>{StreamReadStatus::Data, byte}
+                                            : StreamReadResult<Byte>{result.status(), {}};
 }
 
 auto ByteInputStream::readAll() -> StreamReadResult<ByteBlock> {
@@ -162,43 +210,16 @@ auto ByteInputStream::readAll() -> StreamReadResult<ByteBlock> {
 }
 
 auto ByteInputStream::readAll(const ByteLength maximumLength) -> StreamReadResult<ByteBlock> {
-    constexpr auto cBufferSize = std::size_t{16U * 1024U};
-
     if (maximumLength.isInfinite()) {
         throw err::ParameterError{"The maximum aggregate byte length must be finite.", "maximumLength"};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
-        return {StreamReadStatus::Timeout, ByteBlock{}};
+        return {StreamReadStatus::Timeout, {}};
     }
-    selectAggregateRead(AggregateReadKind::All, maximumLength);
-    if (maximumLength.isZero()) {
-        return {StreamReadStatus::Data, takePending()};
-    }
-    const auto deadline = deadlineFromNow();
-    auto buffer = std::array<Byte, cBufferSize>{};
-    while (_pendingBytes.size() < maximumLength.toSizeT()) {
-        const auto remaining = std::min(cBufferSize, maximumLength.toSizeT() - _pendingBytes.size());
-        const auto readResult = readChunkLocked(std::span<Byte>{buffer.data(), remaining}, deadline);
-        if (readResult == StreamReadStatus::Timeout) {
-            return {StreamReadStatus::Timeout, ByteBlock{}};
-        }
-        if (readResult == StreamReadStatus::Finished) {
-            if (_pendingBytes.empty()) {
-                _aggregateKind = AggregateReadKind::None;
-                _aggregateTarget = {};
-                return {StreamReadStatus::Finished, ByteBlock{}};
-            }
-            return {StreamReadStatus::Data, takePending()};
-        }
-        if (readResult.data().isZero()) {
-            throwError(
-                "Failed to read byte-stream data."_el,
-                "The byte input source reported data without providing any bytes."_el);
-        }
-        appendPending(std::span<const Byte>{buffer.data(), readResult.data().toSizeT()});
-    }
-    return {StreamReadStatus::Data, takePending()};
+    const auto status = prepareAll(maximumLength, deadlineFromNow());
+    return status == StreamReadStatus::Data ? StreamReadResult<ByteBlock>{status, takeRetained(maximumLength)}
+                                            : StreamReadResult<ByteBlock>{status, {}};
 }
 
 auto ByteInputStream::coRead(const ByteLength maximumLength) -> util::CoTask<StreamReadResult<ByteBlock>> {
@@ -243,56 +264,16 @@ auto ByteInputStream::coReadBlocks(const ByteLength maximumLength)
     }
 }
 
-void ByteInputStream::selectAggregateRead(const AggregateReadKind kind, const ByteLength target) {
-    if (_aggregateKind == kind && _aggregateTarget == target) {
-        return;
-    }
-    cancelAggregateRead();
-    _aggregateKind = kind;
-    _aggregateTarget = target;
-}
-
-void ByteInputStream::cancelAggregateRead() {
-    if (_aggregateKind == AggregateReadKind::None) {
-        return;
-    }
-    if (!_pendingBytes.empty()) {
-        auto replay = std::vector<Byte>{};
-        replay.reserve(_pendingBytes.size() + _replayBytes.size() - _replayPosition);
-        replay.insert(replay.end(), _pendingBytes.begin(), _pendingBytes.end());
-        replay.insert(
-            replay.end(), _replayBytes.begin() + static_cast<std::ptrdiff_t>(_replayPosition), _replayBytes.end());
-        _replayBytes = std::move(replay);
-        _replayPosition = 0U;
-    }
-    _pendingBytes.clear();
-    _aggregateKind = AggregateReadKind::None;
-    _aggregateTarget = {};
-}
-
-void ByteInputStream::appendPending(const std::span<const Byte> bytes) {
-    _pendingBytes.insert(_pendingBytes.end(), bytes.begin(), bytes.end());
-}
-
-auto ByteInputStream::takePending() -> ByteBlock {
-    auto result = ByteBlock{std::span<const Byte>{_pendingBytes}};
-    _pendingBytes.clear();
-    _aggregateKind = AggregateReadKind::None;
-    _aggregateTarget = {};
-    return result;
-}
-
 auto ByteInputStream::hasRetainedInput() const noexcept -> bool {
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
-    return lock.owns_lock() && _aggregateKind == AggregateReadKind::None && _replayPosition < _replayBytes.size();
+    return lock.owns_lock() && _retainedBytes && !_retainedBytes->isEmpty();
 }
 
 void ByteInputStream::discardRetainedInput() noexcept {
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
-    if (!lock.owns_lock()) {
-        return;
+    if (lock.owns_lock()) {
+        clearRetainedInput();
     }
-    clearRetainedInput();
 }
 
 auto ByteInputStream::sourceSupportsPositioning() const noexcept -> bool {
@@ -313,11 +294,9 @@ auto ByteInputStream::moveSourcePosition(const StreamPositionOrigin origin, cons
 }
 
 void ByteInputStream::clearRetainedInput() noexcept {
-    _pendingBytes.clear();
-    _replayBytes.clear();
-    _replayPosition = 0U;
-    _aggregateKind = AggregateReadKind::None;
-    _aggregateTarget = {};
+    if (_retainedBytes) {
+        _retainedBytes->clear();
+    }
 }
 
 }

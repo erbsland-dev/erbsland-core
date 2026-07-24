@@ -45,7 +45,7 @@ auto createManualOptions() -> el::OptionsPtr {
 
 auto manualParsing() -> el::ExitCode {
     auto manager = el::OptionManager{createManualOptions()};
-    const auto args = makeArgs({"fotometria"_el, "--note"_el, "Lectura estable en lámpara azul"_el, "--repeat=2"_el});
+    auto args = makeArgs({"fotometria"_el, "--note"_el, "Lectura estable en lámpara azul"_el, "--repeat=2"_el});
     const auto result = manager.parse(args);
 
     if (result.status() != el::OptionResultStatus::Success) {

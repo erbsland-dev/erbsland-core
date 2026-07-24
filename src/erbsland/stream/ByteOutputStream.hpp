@@ -8,13 +8,11 @@
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../mem/Endianness.hpp"
+#include "../unit/ByteIndex.hpp"
 #include "../util/CoTask.hpp"
 
-#include <array>
 #include <concepts>
 #include <cstdint>
-#include <span>
-#include <type_traits>
 
 namespace erbsland::stream {
 
@@ -44,7 +42,7 @@ public: // core interface
     /// @param bytes The bytes to write.
     /// @return `Success` if all bytes were accepted, or `Timeout` if nothing was accepted.
     /// @throws stream::StreamError If the stream is closed or the backing target fails.
-    virtual auto write(std::span<const mem::Byte> bytes) -> StreamWriteStatus = 0;
+    virtual auto write(mem::ConstByteSpan bytes) -> StreamWriteStatus = 0;
 
 public: // default interface
     /// Write a read-only byte block.
@@ -68,14 +66,9 @@ public: // integer write
     /// @throws stream::StreamError If the stream is closed or the backing target fails.
     template <std::integral T>
     auto writeInteger(T value) -> StreamWriteStatus {
-        using Unsigned = std::make_unsigned_t<T>;
-        const auto unsignedValue = static_cast<Unsigned>(value);
-        auto bytes = std::array<mem::Byte, sizeof(T)>{};
-        for (auto i = std::size_t{0}; i < sizeof(T); ++i) {
-            const auto shift = _endianness == mem::Endianness::Little ? i * 8U : (sizeof(T) - 1U - i) * 8U;
-            bytes[i] = mem::Byte{static_cast<uint8_t>((unsignedValue >> shift) & Unsigned{0xffU})};
-        }
-        return write(std::span<const mem::Byte>{bytes});
+        auto bytes = mem::ByteArray<sizeof(T)>{};
+        bytes.setIntegerOrThrow(unit::ByteIndex::zero(), value, _endianness);
+        return write(bytes.span());
     }
 
 public: // integer wrappers
@@ -101,3 +94,5 @@ private:
 };
 
 }
+#include "../mem/ByteArray.hpp"
+#include "../mem/ByteSpan.hpp"

@@ -5,92 +5,92 @@ Regular Expression API Guidelines
 Core Semantics
 ==============
 
-Core strings own their backing storage.
-Regular expression subjects, matches and captured slices may therefore share storage without a separate borrowed-view
-API.
-Names identify the encoding of the result, not its ownership mode.
+Matching Model
+--------------
+
+.. code-block:: text
+
+    match = test only at the start of the input
+    full match = require the complete input
+    find first = scan for the first matching position
+    find all = lazily scan successive non-overlapping matches
+    collect all = materialize all successive non-overlapping matches
+    group zero = complete match
+    capture position = native UTF-8 byte, UTF-16 code-unit, or UTF-32 code-unit offset
+    captured text = shared owning slice that retains the complete subject storage
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    RegEx // immutable eager or lazy regular expression
-    Match, Match16, Match32 // UTF-8, UTF-16 and UTF-32 results
-    Input, Input16, Input32 // custom-source extension points for each result family
-    RegExError, RegExErrorContext // structured RE failures and diagnostic context
-    Flag, Flags // regular-expression matching modes
+    RegEx // immutable eagerly or lazily compiled regular expression
+    Match, Match16, Match32 // immutable UTF-8, UTF-16, and UTF-32 match results
+
+Secondary Types
+===============
+
+.. code-block:: text
+
+    Input, Input16, Input32 // custom input extension points for each text width
+    InputBase, MatchBase // width-independent input and result interfaces
+    CaptureGroup, CaptureRange, CaptureGroupIndex, InputPosition // captured identity and native-unit bounds
+    Settings // feature, complexity, and execution limits
+    Flag, Flags // matching modes
     Feature, Features // optional syntax and compatibility features
+    RegExError, RegExErrorContext, ErrorCategory // structured failures and categories
 
-Compilation Patterns
-====================
-
-.. code-block:: text
-
-    RegEx.compile(text::String) -> RegExPtr
-    RegEx.compile(text::U16String) -> RegExPtr
-    RegEx.compile(text::U32String) -> RegExPtr
-    RegEx.lazyCompile(text::AnyString) -> RegExPtr
-    o.pattern() -> text::String // normalized UTF-8 source pattern
-    o.isCompiled() -> bool
-    o.compileNow() -> void
-
-All pattern overloads share the same reader-based compilation path.
-Pattern limits are code-point based.
-All APIs that receive Core strings use tolerant decoding and treat malformed units as U+FFFD.
-Compiled expressions retain that normalized UTF-8 source pattern independently of the input string width.
-Custom inputs are exception-transparent and may provide strict decoding instead.
-Lazy expressions retain their pattern, flags and settings without validation.
-Their first matching, replacement or diagnostic operation compiles a shared engine exactly once.
-Explicit validation uses ``compileNow()`` and preserves ``RegExError`` diagnostics.
-
-Error Message Patterns
-======================
-
-All :cpp:class:`RegExError <erbsland::re::RegExError>` messages separate operation from cause:
+Pattern Definitions
+===================
 
 .. code-block:: text
 
-    title = what operation failed
-    description = why it failed, including relevant values or limits
-    category and location = structured context only
+    Mp = MatchPtr/Match16Ptr/Match32Ptr // match pointer corresponding to the input width
+    S = text::String/text::U16String/text::U32String // string corresponding to the match width
 
-Use stable operation titles such as ``Failed to parse regular expression``, ``Failed to compile regular expression``,
-``Failed to assemble regular expression`` and ``Failed to match regular expression``.
-
-The regular-expression API never throws C++ standard-library exception types.
-Use
-:cpp:class:`err::ParameterError <erbsland::err::ParameterError>` for invalid API arguments and selectors, and
-:cpp:class:`RegExError <erbsland::re::RegExError>` for parsing, compilation, diagnostics and matching failures.
-Exceptions raised by user callbacks propagate unchanged.
-
-Subject and Match Patterns
-==========================
+Compilation and Matching Patterns
+=================================
 
 .. code-block:: text
 
-    o.match(text::String) -> MatchPtr
-    o.match(text::U16String) -> Match16Ptr
-    o.match(text::U32String) -> Match32Ptr
-    o.❮operation❯(Input❮width❯Ptr) -> Match❮width❯Ptr // custom source, same result family
-    Match.content() -> text::String
-    Match16.content() -> text::U16String
-    Match32.content() -> text::U32String
+    T::compile(pattern[, flags, settings]) -> RegExPtr // compile immediately
+    T::lazyCompile(pattern[, flags, settings]) -> RegExPtr // compile on first use
+    o.pattern() -> text::AnyString // inspect the retained pattern
+    o.isCompiled() -> bool // test whether lazy compilation has completed
+    o.compileNow() // force lazy compilation
+    o.match(input) -> Mp // match at the start
+    o.fullMatch(input) -> Mp // require the complete input
+    o.findFirst(input) -> Mp // scan for the first match
+    o.findAll(input) -> util::CoGenerator❮Mp❯ // lazily scan all matches
+    o.collectAll(input) -> util::List❮Mp❯ // materialize all matches
+    o.replaceAll(text, replacement-or-callback) -> text::String // replace every UTF-8 match
 
-The same mapping applies to ``fullMatch``, ``findFirst``, ``findAll`` and ``collectAll``.
-Do not add ``...View`` method, input or match names: ownership is already part of the Core view semantics.
-
-Capture Group Patterns
-======================
+Match Result Patterns
+=====================
 
 .. code-block:: text
 
-    o.group(CaptureGroupIndex) -> CaptureGroup
-    o.group(text::String) -> CaptureGroup
-    o.content(CaptureGroupIndex) -> text::U❮width❯String
-    o.content(text::String) -> text::U❮width❯String
+    o.begin/end/range([group]) -> T // inspect native-unit bounds of the whole match or one capture
+    o.group(index-or-name) -> CaptureGroup // inspect capture identity and bounds
+    o.content([index-or-name]) -> S // return an owning slice for the whole match or one capture
+    o.groups() -> CaptureGroupList // inspect all captured groups
+    o.isMatched() -> bool // test whether a capture participated
 
-Use :cpp:type:`CaptureGroupIndex <erbsland::re::CaptureGroupIndex>` for group selectors.
-Keep
-:cpp:type:`InputPosition <erbsland::re::InputPosition>` and :cpp:class:`CaptureRange <erbsland::re::CaptureRange>`
-encoding-agnostic because custom inputs define their coordinate system.
+Settings Patterns
+=================
+
+.. code-block:: text
+
+    o.❮limit❯()/set❮Limit❯(value) // inspect or tighten a pattern or execution limit
+    o.timeout()/setTimeout(value) // inspect or set the per-operation timeout
+    o.enableFeature/disableFeature(feature) // change accepted syntax or compatibility behavior
+    o.hasFeature(feature) -> bool // test whether a syntax feature is enabled
+
+Custom Input Patterns
+=====================
+
+.. code-block:: text
+
+    o.read(position) -> CharAndPosition // decode one character and the next native-unit position
+    o.isAtEnd(position) -> bool // test the custom input boundary
+    o.slice(range) -> S // create retained input content for a captured range

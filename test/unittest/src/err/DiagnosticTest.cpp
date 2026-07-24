@@ -11,10 +11,6 @@
 #include <erbsland/stream/StreamErrorContext.hpp>
 #include <erbsland/system/PlatformError.hpp>
 #include <erbsland/system/PosixErrorContext.hpp>
-
-#if defined(_WIN32)
-#include <erbsland/system/WindowsErrorContext.hpp>
-#endif
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
@@ -165,42 +161,6 @@ public:
         WITH_CONTEXT(requireContains(text, "Permission denied"));
         REQUIRE(text.find("Caused By") == std::string::npos);
         REQUIRE(document.root()->contains(el::text::TextNodeType::Separator));
-    }
-
-    void testPosixCategoryMappingAndPlatformError() {
-        const auto previousErrno = errno;
-        errno = ENOENT;
-        const auto capturedErrno = el::system::PosixErrorContext::fromErrno();
-        errno = previousErrno;
-        REQUIRE_EQUAL(capturedErrno->errorCode(), ENOENT);
-        const auto context = el::system::PosixErrorContext::fromErrorCode(2);
-        REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);
-        REQUIRE_EQUAL(
-            el::system::PosixErrorContext{EACCES}.category(), el::system::PlatformErrorCategory::PermissionDenied);
-        REQUIRE_EQUAL(
-            el::system::PosixErrorContext{EEXIST}.category(), el::system::PlatformErrorCategory::AlreadyExists);
-        REQUIRE_EQUAL(el::system::PosixErrorContext{-1}.category(), el::system::PlatformErrorCategory::Unknown);
-        const auto error = el::system::PlatformError{"Native lookup failed"_el, context};
-        REQUIRE_EQUAL(error.context(), context);
-        const auto text = toStdString(error.diagnostic()->toTextDocument().toString());
-        WITH_CONTEXT(requireContains(text, "Native lookup failed"));
-        WITH_CONTEXT(requireContains(text, "errno"));
-    }
-
-    void testWindowsCategoryMappingAndUnknownFallback() {
-#if defined(_WIN32)
-        REQUIRE_EQUAL(
-            el::system::WindowsErrorContext{ERROR_FILE_NOT_FOUND}.category(),
-            el::system::PlatformErrorCategory::NotFound);
-        REQUIRE_EQUAL(
-            el::system::WindowsErrorContext{ERROR_ACCESS_DENIED}.category(),
-            el::system::PlatformErrorCategory::PermissionDenied);
-        REQUIRE_EQUAL(
-            el::system::WindowsErrorContext{ERROR_ALREADY_EXISTS}.category(),
-            el::system::PlatformErrorCategory::AlreadyExists);
-        REQUIRE_EQUAL(
-            el::system::WindowsErrorContext{0xffffffffU}.category(), el::system::PlatformErrorCategory::Unknown);
-#endif
     }
 
     void testExternalPathAndSystemTextAreEscaped() {

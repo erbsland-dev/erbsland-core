@@ -8,7 +8,7 @@
 #include <erbsland/re/impl/Limits.hpp>
 #include <erbsland/re/impl/text/ReplacementParser.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/StringFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

@@ -5,7 +5,7 @@
 
 #include <erbsland/re/impl/text/Category.hpp>
 #include <erbsland/re/impl/text/Character.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 using namespace el::re;
 using el::text::Char;

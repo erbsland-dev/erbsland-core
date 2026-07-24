@@ -11,9 +11,9 @@ namespace demo {
 void handleEncodingError() {
     const auto directory = createStreamDemoDirectory("codificación"_el);
     const auto path = directory->path() / "muestra.txt"_el;
-    path.content().writeDataOrThrow(el::ByteBlock{std::vector<uint8_t>{0xf0U, 0x28U, 0x8cU, 0x28U}});
+    path.content().writeDataOrThrow(el::ByteBlock({0xf0U, 0x28U, 0x8cU, 0x28U}));
     auto options = el::PathReadTextOptions{el::StringEncoding::Utf8};
-    options.setEncodingErrorMode(el::EncodingErrorMode::Throw);
+    options.setEncodingMode(el::EncodingMode::Strict);
 
     try {
         static_cast<void>(path.content().openTextInputStream(options)->readAll());

@@ -3,7 +3,7 @@
 
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/err/DiagnosticHelper.hpp>
 #include <erbsland/err/Exception.hpp>
 #include <erbsland/text/StringConverter.hpp>

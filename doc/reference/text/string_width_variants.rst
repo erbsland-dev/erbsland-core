@@ -42,14 +42,8 @@ the decoded character.
 At the exact end position, it returns ``Char::endOfData()`` and leaves the index unchanged.
 For ``noIndex`` or a past-end index, it returns ``Char::noCodePoint()`` and leaves the index unchanged.
 
-For UTF-8 strings, ``readCharAndAdvanceOrThrow(index)`` provides the strict counterpart.
-It returns only a valid decoded character, throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` for
-malformed UTF-8, and throws :cpp:class:`OutOfRangeError <erbsland::err::OutOfRangeError>` at or outside the end of the
-string.
-The index remains unchanged when either error is raised.
-This method is useful in UTF-8-only parser hot paths that already maintain a byte index and do not need the
-width-independent state, lookahead, or capture helpers of
-:cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
+Malformed encoding is returned as ``Char::replacement()`` and advances according to the tolerant decoding rules.
+Call ``isValidUtf8()`` before the read loop when a UTF-8-only parser must reject malformed internal text.
 
 ``readCharAndRetreat(index)`` treats the index as the position after the character to read.
 It reads the previous character and retreats the index to that character's start.
@@ -82,11 +76,36 @@ It does not perform line layout, grapheme-cluster shaping, bidirectional reorder
 terminal/font-specific corrections.
 For text containing line breaks, the result is usually not the width of any rendered line.
 
+Sensitive UTF-8 Storage
+=======================
+
+``U8String`` and ``U8StringEditor`` can mark their shared allocation with ``markAsSensitive()``.
+The mark is one-way and is visible to every alias of the same allocation.
+Copies, slices, trims, and same-string modified results preserve it, while inserting marked text into an ordinary
+destination does not change that destination.
+Conversions to another string width, encoded data, standard-library strings, escaped text, formatted text, and
+diagnostics produce ordinary unmarked results.
+
+Marking a non-empty literal first materializes shared storage.
+Storage-less empty strings remain unmarked.
+Marked allocations are securely erased when replaced or finally released.
+This facility is best-effort storage hygiene rather than a high-security container or information-flow policy.
+
 Searching
 =========
 
 All string ``find...`` overloads that accept a start or end position treat a no-index position as invalid input and
 return the matching ``noIndex()`` value immediately.
+
+Boolean Conversion
+==================
+
+Every read-only and editor string width provides ``toBoolean(defaultValue)`` and ``toBooleanOrThrow()``.
+Both recognize the complete ASCII-case-insensitive ELCL literals ``true``, ``on``, ``yes``, ``enabled``, ``false``,
+``off``, ``no``, and ``disabled``.
+Empty input, surrounding whitespace, partial matches, and all other text are invalid.
+``toBoolean()`` returns its supplied default for invalid text, while ``toBooleanOrThrow()`` raises
+:cpp:class:`ParseError <erbsland::err::ParseError>`.
 
 Interface
 =========

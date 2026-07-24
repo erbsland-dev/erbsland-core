@@ -4,6 +4,7 @@
 
 #include "Byte.hpp"
 #include "ByteBlock.hpp"
+#include "ByteSpan.hpp"
 
 #include "impl/UnsafeRingBufferAccess_fwd.hpp"
 
@@ -30,7 +31,7 @@ public:
     RingBuffer(unit::ByteLength initialCapacity, unit::ByteLength maximumCapacity);
 
     // defaults/deletions
-    virtual ~RingBuffer() = default;
+    virtual ~RingBuffer();
     RingBuffer(const RingBuffer &) = delete;
     RingBuffer(RingBuffer &&) = delete;
     auto operator=(const RingBuffer &) -> RingBuffer & = delete;
@@ -51,6 +52,11 @@ public: // state
     [[nodiscard]] auto isFull() const noexcept -> bool { return _length == _storage.size(); }
     /// Test if an atomic write can fit within the hard storage limit.
     [[nodiscard]] auto canWrite(unit::ByteLength length) const noexcept -> bool;
+    /// Test if discarded storage is securely erased.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool { return _sensitive; }
+    /// Enable or disable secure erasure for discarded storage.
+    /// Disabling this mode securely erases the complete allocation and discards all buffered bytes.
+    void setSensitive(bool sensitive) noexcept;
 
 public: // safe access
     /// Reserve space for additional bytes without changing the visible data.
@@ -58,17 +64,19 @@ public: // safe access
     [[nodiscard]] auto reserveAdditional(unit::ByteLength length) -> util::Result;
     /// Copy as many bytes as possible into the ring.
     /// @return The number of copied bytes.
-    auto write(std::span<const Byte> bytes) -> unit::ByteLength;
+    auto write(ConstByteSpan bytes) -> unit::ByteLength;
     /// Atomically copy all bytes into the ring.
     /// @return `Failure` without modification if the bytes exceed the hard limit.
-    [[nodiscard]] auto writeExact(std::span<const Byte> bytes) -> util::Result;
+    [[nodiscard]] auto writeExact(ConstByteSpan bytes) -> util::Result;
     /// Copy as many buffered bytes as possible to the destination.
     /// @return The number of copied bytes.
-    auto read(std::span<Byte> destination) -> unit::ByteLength;
+    auto read(ByteSpan destination) -> unit::ByteLength;
     /// Read up to the requested number of bytes.
     [[nodiscard]] auto read(unit::ByteLength maximum) -> ByteBlock;
     /// Discard all buffered bytes.
     void clear() noexcept;
+    /// Securely erase the complete allocation and discard all buffered bytes.
+    void secureErase() noexcept;
     /// Shrink empty storage back to its initial capacity.
     void shrinkToInitial();
     /// Swap complete ring state with another ring.
@@ -76,9 +84,9 @@ public: // safe access
 
 private:
     /// Get the readable sections around the wrap point.
-    [[nodiscard]] auto readableSpans() const noexcept -> std::array<std::span<const Byte>, 2>;
+    [[nodiscard]] auto readableSpans() const noexcept -> std::array<ConstByteSpan, 2>;
     /// Get the writable sections around the wrap point.
-    [[nodiscard]] auto writableSpans() noexcept -> std::array<std::span<Byte>, 2>;
+    [[nodiscard]] auto writableSpans() noexcept -> std::array<ByteSpan, 2>;
     /// Make bytes written through unsafe access visible to readers.
     void commitWritten(std::size_t length);
     /// Consume bytes read through unsafe access.
@@ -89,6 +97,8 @@ private:
     void endUnsafeAccess() noexcept;
     /// Verify that safe access is currently allowed.
     void verifySafeAccess() const;
+    /// Securely erase a prefix of readable bytes.
+    void eraseReadablePrefix(std::size_t length) noexcept;
 
 private:
     std::vector<Byte> _storage;      ///< Contiguous ring storage.
@@ -97,6 +107,7 @@ private:
     std::size_t _readPosition{};     ///< First readable byte.
     std::size_t _length{};           ///< Number of readable bytes.
     bool _unsafeAccessActive{false}; ///< True while an unsafe access lease exists.
+    bool _sensitive{false};          ///< True if discarded storage must be securely erased.
 };
 
 }

@@ -4,7 +4,7 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/re/RegExError.hpp>
 
 #include <algorithm>

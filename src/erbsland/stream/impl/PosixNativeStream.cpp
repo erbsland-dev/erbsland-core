@@ -208,7 +208,7 @@ void PosixNativeStream::abort() noexcept {
     }
 }
 
-auto PosixNativeStream::read(const std::span<mem::Byte> destination) -> ByteLength {
+auto PosixNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
     const auto operation = Operation{*this};
     if (destination.empty()) {
         return ByteLength::zero();
@@ -225,7 +225,7 @@ auto PosixNativeStream::read(const std::span<mem::Byte> destination) -> ByteLeng
     }
 }
 
-void PosixNativeStream::write(const std::span<const mem::Byte> bytes) {
+void PosixNativeStream::write(const mem::ConstByteSpan bytes) {
     writeBytes(std::span<const char>{reinterpret_cast<const char *>(bytes.data()), bytes.size()});
 }
 
@@ -271,7 +271,9 @@ auto createNativeStandardOutputStream(const NativeStandardStream stream) -> Nati
 
 auto createNativeStandardInputStream() -> ByteInputStreamPtr {
     return std::make_shared<BufferedByteInputStream>(
-        std::make_shared<PosixNativeStream>(STDIN_FILENO, NativeStreamOwnership::Borrowed));
+        std::make_shared<PosixNativeStream>(STDIN_FILENO, NativeStreamOwnership::Borrowed),
+        InputStreamSettings{},
+        true);
 }
 
 }

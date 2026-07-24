@@ -5,7 +5,7 @@
 #include <erbsland/text/CharSignal.hpp>
 #include <erbsland/text/IntegerBase.hpp>
 #include <erbsland/text/LetterCase.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringEncoding.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

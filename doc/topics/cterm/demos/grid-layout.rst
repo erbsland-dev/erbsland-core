@@ -53,6 +53,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/grid-layout/src/GridLayoutApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/GridLayout/src/GridLayoutApp.cpp`.
 
 This file contains the border state, grid sizing logic, and the render loop that draws the cells and grid lines.

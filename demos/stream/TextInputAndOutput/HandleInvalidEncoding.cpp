@@ -12,7 +12,7 @@ void rejectInvalidEncoding(const el::Path &path);
 void handleInvalidEncoding() {
     const auto directory = createStreamDemoDirectory("felkodning"_el);
     const auto path = directory->path() / "skadad.txt"_el;
-    const auto bytes = el::ByteBlock{std::vector<uint8_t>{0x56U, 0xc3U, 0x28U}};
+    const auto bytes = el::ByteBlock({0x56U, 0xc3U, 0x28U});
     path.content().writeDataOrThrow(bytes);
     rejectInvalidEncoding(path);
 }
@@ -22,7 +22,7 @@ void handleInvalidEncoding() {
 void rejectInvalidEncoding(const el::Path &path) {
     constexpr auto cMaximumAttempts = 3U;
     auto options = el::PathReadTextOptions{el::StringEncoding::Utf8};
-    options.setEncodingErrorMode(el::EncodingErrorMode::Throw);
+    options.setEncodingMode(el::EncodingMode::Strict);
     options.setTimeout(el::TimeDelta::seconds(1));
     try {
         const auto input = path.content().openTextInputStream(options);

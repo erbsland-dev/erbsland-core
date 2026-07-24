@@ -4,7 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/impl/UnsafeU16StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
 #include <erbsland/text/StringEncoder.hpp>
@@ -75,7 +75,7 @@ public:
         REQUIRE_EQUAL(U16String::fromFloat(1.25), U16String{U16StringEditor::fromFloat(1.25)});
         REQUIRE_EQUAL(U16String::fromBoolean(true), u"true"_el);
 
-        const auto bytes = el::mem::ByteBlock{std::vector<std::uint8_t>{0x12U, 0x34U}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<std::uint8_t>{0x12U, 0x34U});
         REQUIRE_EQUAL(U16String::fromByteBlock(bytes), u"1234"_el);
 
         auto first = U16String{std::u16string_view{u"first"}};
@@ -330,6 +330,27 @@ public:
         REQUIRE(view.findLastNotOf(characters, U16DataIndex::noIndex()).isNoIndex());
     }
 
+    void testLinearDecodedSearchForLongRepeatedPrefixes() {
+        auto needleData = std::u16string(64U, u'a');
+        needleData.back() = u'b';
+        auto textData = std::u16string(4096U, u'a');
+        textData.push_back(u'b');
+        const auto needle = U16String{std::u16string_view{needleData}};
+        const auto text = U16String{std::u16string_view{textData}};
+
+        REQUIRE_EQUAL(text.find(needle), U16DataIndex{4033U});
+        REQUIRE_EQUAL(text.count(needle), ElementCount{1U});
+
+        needleData.back() = u'c';
+        REQUIRE(text.find(U16String{std::u16string_view{needleData}}).isNoIndex());
+
+        auto uppercaseNeedleData = std::u16string(64U, u'A');
+        uppercaseNeedleData.back() = u'B';
+        REQUIRE_EQUAL(
+            text.find(U16String{std::u16string_view{uppercaseNeedleData}}, Char::compareAsciiFolded),
+            U16DataIndex{4033U});
+    }
+
     void testCaseMapping() {
 
         const auto mixed = U16StringEditor{std::u16string_view{u"A\u00C4\u03A3\u03C2K"}};
@@ -352,10 +373,12 @@ public:
         REQUIRE_EQUAL(unchanged.transformed(Char::caseFolded).storageId(), unchanged.storageId());
 
         const auto sharedView = U16String{unchanged};
+        REQUIRE_EQUAL(sharedView.transformed(Char::toAsciiLowercase).storageId(), sharedView.storageId());
         REQUIRE_EQUAL(
             StringConverter{sharedView.transformed(Char::toAsciiLowercase)}.toStdU16String(), std::u16string{u"abc"});
 
         const auto literalView = U16String{u"abc"_el};
+        REQUIRE_EQUAL(literalView.transformed(Char::toAsciiLowercase).storageId(), literalView.storageId());
         REQUIRE_EQUAL(
             StringConverter{literalView.transformed(Char::toAsciiLowercase)}.toStdU16String(), std::u16string{u"abc"});
 

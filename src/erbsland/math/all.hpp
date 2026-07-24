@@ -8,6 +8,7 @@
 #include "AnyIntegerTypes.hpp"
 #include "BoundedInteger.hpp"
 #include "ConstexprSaturatingMath.hpp"
+#include "IntegerBitOperations.hpp"
 #include "IntegerConversion.hpp"
 #include "IntegerMath.hpp"
 #include "IntegerRange.hpp"

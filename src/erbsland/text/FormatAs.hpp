@@ -4,6 +4,8 @@
 
 #include "FormatAs_fwd.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <cstdint>
 
 namespace erbsland::text {

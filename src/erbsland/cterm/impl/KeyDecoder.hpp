@@ -90,7 +90,14 @@ public:
 public:
     /// Create a decoder for the given input bytes.
     /// @param text The input bytes to decode.
-    explicit KeyDecoder(text::String text) noexcept : _text{std::move(text)} {}
+    /// @param sensitive Securely erase the copied input bytes when the decoder is destroyed.
+    explicit KeyDecoder(text::String text, bool sensitive = false) noexcept : _text{std::move(text)} {
+        if (sensitive) {
+            _text.markAsSensitive();
+        }
+    }
+
+    ~KeyDecoder() = default;
 
     KeyDecoder(const KeyDecoder &) = delete;
     KeyDecoder(KeyDecoder &&) = delete;

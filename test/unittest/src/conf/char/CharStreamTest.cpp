@@ -7,7 +7,9 @@
 #include <erbsland/conf/impl/char/CharStream.hpp>
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
+#include <erbsland/mem/ByteBuffer.hpp>
+#include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
 #include <erbsland/unit/CodeLocation.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -115,13 +117,14 @@ public:
         REQUIRE(decodedChar.character().isEndOfData());
     }
     void testBom() {
-        const auto content = el::mem::ByteBlock{std::vector<uint8_t>{
-            0xEFU,
-            0xBBU,
-            0xBFU, // utf-8 BOM
-            0x41U, // a
-            0x42U, // b
-        }};
+        const auto content = el::mem::ByteBlock::fromVector(
+            std::vector<uint8_t>{
+                0xEFU,
+                0xBBU,
+                0xBFU, // utf-8 BOM
+                0x41U, // a
+                0x42U, // b
+            });
         const auto testFile = createTestFile(content);
         auto source = Source::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());
@@ -139,7 +142,7 @@ public:
     void requireErrorAfterValidA(const T &content, ConfErrorCategory expectedErrorCategory) {
         auto source = [&]() -> SourcePtr {
             if constexpr (std::is_same_v<T, el::mem::ByteBlock>) {
-                const auto byteSpan = content.bytes();
+                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{content}.data();
                 return Source::fromString(
                     el::text::String{
                         std::string_view{reinterpret_cast<const char *>(byteSpan.data()), byteSpan.size()}});
@@ -161,7 +164,7 @@ public:
     }
 
     void testInvalidUtf8Sequences() {
-        std::vector<el::mem::Byte> content = {
+        auto content = el::mem::ByteBuffer{
             el::mem::Byte(0x41),        // a
             el::mem::Byte(0b11110100U), // => 1'0011'1111'1111'1111'1111 = 0x13FFFF
             el::mem::Byte(0b10111111U), // ConfError, because it exceeds the valid unicode range.
@@ -169,7 +172,7 @@ public:
             el::mem::Byte(0b10111111U),
             el::mem::Byte(0x41), // a
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11110100U), // 4 byte sequence
@@ -178,7 +181,7 @@ public:
             el::mem::Byte(0b10111111U),
             el::mem::Byte(0x41), // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11110100U), // 4 byte sequence
@@ -187,7 +190,7 @@ public:
             el::mem::Byte(0b10000000U), // ok
             el::mem::Byte(0x41),        // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11110100U), // 4 byte sequence
@@ -196,7 +199,7 @@ public:
             el::mem::Byte(0b00111111U), // not ok.
             el::mem::Byte(0x41),        // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11110100U), // 4 byte sequence
@@ -204,14 +207,14 @@ public:
             el::mem::Byte(0b10000000U), // ok
             // last byte is missing.
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b10000001U), // not ok, follow-up byte without start byte.
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0x41),        // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11101101U), // low surrogate U+D800, not ok!
@@ -219,7 +222,7 @@ public:
             el::mem::Byte(0b10000000U),
             el::mem::Byte(0x41), // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),        // A
             el::mem::Byte(0b11101101U), // high surrogate U+DFFF, not ok!
@@ -227,7 +230,7 @@ public:
             el::mem::Byte(0b10111111U),
             el::mem::Byte(0x41), // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
         content = {
             el::mem::Byte(0x41),  // A
             el::mem::Byte(0xEFU), // BOM in the middle of the document is not allowed.
@@ -235,7 +238,7 @@ public:
             el::mem::Byte(0xBFU),
             el::mem::Byte(0x41), // A
         };
-        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock{content}, ConfErrorCategory::Encoding))
+        WITH_CONTEXT(requireErrorAfterValidA(el::mem::ByteBlock::fromSpan(content.span()), ConfErrorCategory::Encoding))
     }
 
     void testInvalidControlCharacters() {

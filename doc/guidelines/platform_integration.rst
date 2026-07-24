@@ -36,6 +36,19 @@ Platform Notes
 2.  Use RAII wrappers for handles, allocated native buffers and other resources.
 3.  Avoid leaking platform naming, separators, encodings or handle types into public cross-platform APIs.
 
+Native Event Reactors
+=====================
+
+1.  ``EventLoopDriver`` is the only public native wait and wake abstraction.
+2.  Default drivers use ``epoll`` with ``eventfd`` on Linux, ``kqueue`` with ``EVFILT_USER`` on macOS, and IOCP with
+    posted wake completions on Windows.
+3.  Descriptor and ``HANDLE`` registration APIs remain in platform-specific ``event::impl`` interfaces.
+4.  Native registrations use RAII and a unique generation token. Unregistration removes the token before stale
+    readiness or completion records can be delivered.
+5.  Backends receive the loop driver when attached and must use that single driver-controlled wait path.
+6.  Keep socket and resolver policy in domain backends; native drivers only multiplex readiness, completion and wake
+    notifications.
+
 Tests
 =====
 

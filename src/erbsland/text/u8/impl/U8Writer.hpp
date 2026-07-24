@@ -144,7 +144,7 @@ template <typename tString>
         return result;
     }
     auto reservedSize = unit::ByteLength::zero();
-    utf8::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf8::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });
     if (reservedSize.isZero()) {
@@ -153,7 +153,7 @@ template <typename tString>
     result.resize(reservedSize.toSizeT());
     U8Writer writer{std::span{result.data(), result.size()}};
     utf8::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { writer.write(character); });
+        data, EncodingMode::Tolerant, [&](const Char character) -> void { writer.write(character); });
     return result;
 }
 
@@ -167,7 +167,7 @@ template <typename tString>
         return result;
     }
     auto reservedSize = unit::ByteLength::zero();
-    utf16::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf16::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });
     if (reservedSize.isZero()) {
@@ -176,7 +176,7 @@ template <typename tString>
     result.resize(reservedSize.toSizeT());
     U8Writer writer{std::span{result.data(), result.size()}};
     utf16::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { writer.write(character); });
+        data, EncodingMode::Tolerant, [&](const Char character) -> void { writer.write(character); });
     return result;
 }
 
@@ -190,7 +190,7 @@ template <typename tString>
         return result;
     }
     auto reservedSize = unit::ByteLength::zero();
-    utf32::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         reservedSize += utf8::encodedLength(character);
     });
     if (reservedSize.isZero()) {
@@ -199,7 +199,7 @@ template <typename tString>
     result.resize(reservedSize.toSizeT());
     U8Writer writer{std::span{result.data(), result.size()}};
     utf32::forEachDecodedCharacter(
-        data, EncodingErrorMode::Replace, [&](const Char character) -> void { writer.write(character); });
+        data, EncodingMode::Tolerant, [&](const Char character) -> void { writer.write(character); });
     return result;
 }
 

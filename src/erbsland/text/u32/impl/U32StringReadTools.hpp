@@ -71,11 +71,6 @@ public: // read
     /// Read the character before the given index and retreat the index.
     /// If the index is out of bounds, returns a signal character and does not retreat the index.
     [[nodiscard]] auto readAndRetreat(unit::CpIndex &index) const noexcept -> Char;
-    /// Access the character at the given start UTF-32 code-unit position or throw if no valid character is found.
-    [[nodiscard]] auto charAtOrThrow(unit::CpIndex startIndex) const -> Char;
-    /// Read the character at the given index and advance the index.
-    /// Throw on encoding errors or out-of-bound reads.
-    [[nodiscard]] auto readOrThrow(unit::CpIndex &index) const -> Char;
     /// Advance the given UTF-32 code-unit index to the start of the next character.
     auto advance(unit::CpIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
     /// Retreat the given UTF-32 code-unit index to the start of the previous character.

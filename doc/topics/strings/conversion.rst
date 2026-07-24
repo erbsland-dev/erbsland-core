@@ -87,7 +87,11 @@ Cross-Encoding Conversion with ``StringConverter``
 string encodings.
 
 It supports all library string and editor types and the corresponding standard-library string types.
-The converter validates the source text and produces a correctly encoded target string.
+All conversion methods accept an :cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` argument and default to
+``Tolerant``.
+Use ``Strict`` when the source encoding must be validated as part of the conversion.
+In tolerant mode, compatible representations may be copied unchanged without validation; transcoding replaces malformed
+sequences with the Unicode replacement character.
 
 To perform a conversion, construct a temporary converter from the source string and call one of the available ``to...``
 methods:
@@ -178,8 +182,8 @@ It allows you to encode all strings and editors from this library into UTF-8, UT
 Additionally you can choose if the encoded strings shall be little or big-endian encoded.
 Also, you can put a BOM in front of the encoded byte sequence.
 The BOM is encoding infrastructure at the byte boundary, not string content.
-Erbsland Core reserves ``U+FEFF`` for this purpose: a raw ``U+FEFF`` encountered in text is invalid and follows the
-selected encoding-error mode.
+Erbsland Core reserves ``U+FEFF`` for this purpose: a raw ``U+FEFF`` encountered during transcoding is invalid and is
+written as a replacement character.
 
 .. erbsland-demo::
     :source: text/StringEncoder/EncodeStrings.cpp
@@ -267,8 +271,10 @@ The enum values in :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>` are
 when encoding strings.
 ``Automatic`` will choose adding a BOM depending on the encoding.
 On decoding, these modes apply only to an initial encoded signature.
-A second or embedded BOM sequence is invalid content and is thrown, replaced with ``U+FFFD``, or ignored according to
-:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>`.
+A second or embedded BOM sequence is invalid content and is either replaced with ``U+FFFD`` or rejected according to
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` at the byte-decoding boundary.
+When encoding an Erbsland string, a raw ``U+FEFF`` is copied unchanged for a matching representation and becomes
+``U+FFFD`` when transcoding.
 
 .. erbsland-demo::
     :source: text/StringEncoder/BomHandling.cpp

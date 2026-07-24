@@ -3,7 +3,7 @@
 
 #include "EngineBase.hpp"
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 TESTED_TARGETS(Engine)
 TAGS(Matching)

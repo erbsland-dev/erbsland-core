@@ -23,7 +23,7 @@
 #include "CodeSnippetMarker.hpp"
 #include "CombinedChar.hpp"
 #include "EncodingError.hpp"
-#include "EncodingErrorMode.hpp"
+#include "EncodingMode.hpp"
 #include "EscapeAmount.hpp"
 #include "EscapeFormat.hpp"
 #include "FloatFormat.hpp"

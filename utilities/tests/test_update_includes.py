@@ -65,6 +65,7 @@ class UpdateIncludesTest(unittest.TestCase):
         app.exclude_dirs = []
         app.exclude_headers = set()
         app.exclude_from_all_headers = set()
+        app.exclude_from_parent_folding = set()
         app.create_all_base_dir = ""
         return app
 
@@ -259,14 +260,20 @@ class WindowsErrorContext {};
 """,
         )
         self.write_header(
-            "text/StdFormatForText.hpp",
+            "text/StdFormat.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "time/StdFormat.hpp",
             """// Copyright (c) 2026 Tobias Erbsland
 #pragma once
 """,
         )
         app = self.create_manual_app()
-        app.fold_into_parent = {"text"}
-        app.exclude_from_all_headers = {Path("text/StdFormatForText.hpp")}
+        app.fold_into_parent = {"text", "time"}
+        app.exclude_from_all_headers = {Path("text/StdFormat.hpp"), Path("time/StdFormat.hpp")}
 
         app.collect_header_files()
         app._create_effective_parent_include_map()
@@ -274,12 +281,100 @@ class WindowsErrorContext {};
         app.generate_includes()
 
         text_all_text = (self.project_dir / "src" / "erbsland" / "text" / "all.hpp").read_text(encoding="utf-8")
+        time_all_text = (self.project_dir / "src" / "erbsland" / "time" / "all.hpp").read_text(encoding="utf-8")
         root_all_text = (self.project_dir / "src" / "erbsland" / "all.hpp").read_text(encoding="utf-8")
+        root_wrapper_text = (self.project_dir / "include" / "erbsland" / "StdFormat.hpp").read_text(encoding="utf-8")
         self.assertIn('#include "String.hpp"', text_all_text)
-        self.assertNotIn("StdFormatForText.hpp", text_all_text)
+        self.assertNotIn("StdFormat.hpp", text_all_text)
+        self.assertNotIn("StdFormat.hpp", time_all_text)
         self.assertIn('#include "text/String.hpp"', root_all_text)
-        self.assertNotIn("StdFormatForText.hpp", root_all_text)
-        self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "StdFormatForText.hpp").is_file())
+        self.assertNotIn("StdFormat.hpp", root_all_text)
+        self.assertIn("src/erbsland/text/StdFormat.hpp", root_wrapper_text)
+        self.assertIn("src/erbsland/time/StdFormat.hpp", root_wrapper_text)
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "StdFormat.hpp").is_file())
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "time" / "StdFormat.hpp").is_file())
+
+    def test_duplicate_folded_headers_are_merged_deterministically(self) -> None:
+        self.write_header(
+            "text/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "time/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        stale_wrapper = self.project_dir / "include" / "erbsland" / "Obsolete.hpp"
+        stale_wrapper.write_text("stale\n", encoding="utf-8")
+
+        def run_generator() -> None:
+            app = self.create_manual_app()
+            app.fold_into_parent = {"text", "time"}
+            app.collect_header_files()
+            app._create_effective_parent_include_map()
+            app.generate_all_headers()
+            app.generate_includes()
+            app.remove_obsolete_includes()
+
+        run_generator()
+
+        root_all_path = self.project_dir / "src" / "erbsland" / "all.hpp"
+        root_wrapper_path = self.project_dir / "include" / "erbsland" / "Literals.hpp"
+        root_all_text = root_all_path.read_text(encoding="utf-8")
+        root_wrapper_text = root_wrapper_path.read_text(encoding="utf-8")
+        self.assertLess(root_all_text.index("text/Literals.hpp"), root_all_text.index("time/Literals.hpp"))
+        self.assertLess(
+            root_wrapper_text.index("src/erbsland/text/Literals.hpp"),
+            root_wrapper_text.index("src/erbsland/time/Literals.hpp"),
+        )
+        self.assertEqual(root_wrapper_text.count("src/erbsland/text/Literals.hpp"), 1)
+        self.assertEqual(root_wrapper_text.count("src/erbsland/time/Literals.hpp"), 1)
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "Literals.hpp").is_file())
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "time" / "Literals.hpp").is_file())
+        self.assertFalse(stale_wrapper.exists())
+
+        first_root_all_text = root_all_text
+        first_root_wrapper_text = root_wrapper_text
+        run_generator()
+        self.assertEqual(root_all_path.read_text(encoding="utf-8"), first_root_all_text)
+        self.assertEqual(root_wrapper_path.read_text(encoding="utf-8"), first_root_wrapper_text)
+
+    def test_header_can_be_excluded_from_parent_folding(self) -> None:
+        self.write_header(
+            "text/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        self.write_header(
+            "time/Literals.hpp",
+            """// Copyright (c) 2026 Tobias Erbsland
+#pragma once
+""",
+        )
+        app = self.create_manual_app()
+        app.fold_into_parent = {"text", "time"}
+        app.exclude_from_parent_folding = {Path("time/Literals.hpp")}
+
+        app.collect_header_files()
+        app._create_effective_parent_include_map()
+        app.generate_all_headers()
+        app.generate_includes()
+
+        text_all_text = (self.project_dir / "src" / "erbsland" / "text" / "all.hpp").read_text(encoding="utf-8")
+        time_all_text = (self.project_dir / "src" / "erbsland" / "time" / "all.hpp").read_text(encoding="utf-8")
+        root_all_text = (self.project_dir / "src" / "erbsland" / "all.hpp").read_text(encoding="utf-8")
+        root_wrapper_text = (self.project_dir / "include" / "erbsland" / "Literals.hpp").read_text(encoding="utf-8")
+        self.assertIn('#include "Literals.hpp"', text_all_text)
+        self.assertIn('#include "Literals.hpp"', time_all_text)
+        self.assertIn('#include "text/Literals.hpp"', root_all_text)
+        self.assertNotIn('#include "time/Literals.hpp"', root_all_text)
+        self.assertIn("src/erbsland/text/Literals.hpp", root_wrapper_text)
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "text" / "Literals.hpp").is_file())
+        self.assertTrue((self.project_dir / "include" / "erbsland" / "time" / "Literals.hpp").is_file())
 
     def test_tpp_headers_are_not_published(self) -> None:
         self.write_header(

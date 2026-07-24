@@ -16,4 +16,8 @@ auto EventLoop::create(EventBackendPtr backend) -> EventLoopPtr {
     return result;
 }
 
+auto EventLoop::create(EventLoopDriverPtr driver) -> EventLoopPtr {
+    return std::make_shared<impl::EventLoop>(std::move(driver));
+}
+
 }

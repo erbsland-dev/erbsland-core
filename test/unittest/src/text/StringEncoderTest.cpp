@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/RingBuffer.hpp>
-#include <erbsland/text/EncodingError.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
@@ -12,7 +11,6 @@
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
-#include <span>
 #include <string>
 #include <vector>
 
@@ -38,13 +36,7 @@ private:
             const auto encoding = StringEncoding{encodingValue};
             for (const auto bomMode : {StringBomMode::Automatic, StringBomMode::Require, StringBomMode::Reject}) {
                 const auto encoder = StringEncoder{text};
-                for (
-                    const auto errorMode :
-                    {EncodingErrorMode::Replace, EncodingErrorMode::Ignore, EncodingErrorMode::Throw}) {
-                    REQUIRE_EQUAL(
-                        encoder.encodedLength(encoding, bomMode, errorMode),
-                        encoder.encode(encoding, bomMode, errorMode).length());
-                }
+                REQUIRE_EQUAL(encoder.encodedLength(encoding, bomMode), encoder.encode(encoding, bomMode).length());
             }
         }
     }
@@ -162,24 +154,44 @@ public:
         REQUIRE_EQUAL(buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(), std::vector<uint8_t>({0xaaU}));
     }
 
-    void testErrorModesAndExceptionAtomicity() {
+    void testMalformedTextIsEncodedTolerantly() {
         const auto malformed = U32StringEditor{std::u32string{char32_t{0x110000U}, U'A'}};
         const auto encoder = StringEncoder{malformed};
-        for (const auto errorMode : {EncodingErrorMode::Replace, EncodingErrorMode::Ignore}) {
-            auto buffer = el::mem::RingBuffer{el::unit::ByteLength{16U}};
-            REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject, errorMode)));
-            REQUIRE_EQUAL(
-                buffer.read(el::unit::ByteLength::infinite()),
-                encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, errorMode));
-        }
-
         auto buffer = el::mem::RingBuffer{el::unit::ByteLength{16U}};
-        const auto prefix = std::vector<el::mem::Byte>({el::mem::Byte{0xaaU}});
-        REQUIRE(isSuccessful(buffer.writeExact(prefix)));
-        REQUIRE_THROWS_AS(
-            EncodingError,
-            encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Throw));
-        REQUIRE_EQUAL(buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(), std::vector<uint8_t>({0xaaU}));
+        REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject)));
+        REQUIRE_EQUAL(
+            buffer.read(el::unit::ByteLength::infinite()), encoder.encode(StringEncoding::Utf8, StringBomMode::Reject));
+    }
+
+    void testMatchingRepresentationIsCopiedAndTranscodingReplacesMalformedText() {
+        const auto invalidUtf8Bytes = std::string{'A', static_cast<char>(0xc0U), 'B'};
+        const auto invalidUtf8 = U8StringEditor{std::string_view{invalidUtf8Bytes}};
+        const auto encoder = StringEncoder{invalidUtf8};
+
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject).toUInt8Vector(),
+            std::vector<uint8_t>({0x41U, 0xc0U, 0x42U}));
+        REQUIRE_EQUAL(encoder.encodedLength(StringEncoding::Utf8, StringBomMode::Reject), el::unit::ByteLength{3U});
+        REQUIRE_EQUAL(
+            encoder.encode(StringEncoding::Utf16, StringBomMode::Reject).toUInt8Vector(),
+            std::vector<uint8_t>({0x41U, 0x00U, 0xfdU, 0xffU, 0x42U, 0x00U}));
+
+        auto buffer = el::mem::RingBuffer{el::unit::ByteLength{4U}, el::unit::ByteLength{16U}};
+        REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Require)));
+        REQUIRE_EQUAL(
+            buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(),
+            std::vector<uint8_t>({0xefU, 0xbbU, 0xbfU, 0x41U, 0xc0U, 0x42U}));
+    }
+
+    void testCharacterEncoderWritesDirectly() {
+        const auto character = Char{U'😀'};
+        const auto encoder = StringEncoder{character};
+        auto buffer = el::mem::RingBuffer{el::unit::ByteLength{4U}, el::unit::ByteLength{16U}};
+
+        REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject)));
+        REQUIRE_EQUAL(
+            buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(),
+            std::vector<uint8_t>({0xf0U, 0x9fU, 0x98U, 0x80U}));
     }
 
     void testRawBomCodePointIsInvalidContent() {
@@ -187,13 +199,8 @@ public:
         const auto encoder = StringEncoder{text};
 
         REQUIRE_EQUAL(
-            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Replace).toUInt8Vector(),
+            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject).toUInt8Vector(),
             std::vector<uint8_t>({0x41U, 0xEFU, 0xBFU, 0xBDU, 0x42U}));
-        REQUIRE_EQUAL(
-            encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Ignore).toUInt8Vector(),
-            std::vector<uint8_t>({0x41U, 0x42U}));
-        REQUIRE_THROWS_AS(
-            EncodingError, encoder.encode(StringEncoding::Utf8, StringBomMode::Reject, EncodingErrorMode::Throw));
     }
 
     void testStandaloneCallsApplyBomIndependently() {

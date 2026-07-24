@@ -53,6 +53,17 @@ Interface
 .. doxygenenum:: erbsland::time::DurationPart
 .. doxygenclass:: erbsland::time::ElapsedTimer
     :members:
+.. doxygenfunction:: erbsland::time::literals::operator""_ns(const unsigned long long value) -> Nanoseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_us(const unsigned long long value) -> Microseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_ms(const unsigned long long value) -> Milliseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_s(const unsigned long long value) -> Seconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_m(const unsigned long long value) -> Minutes
+
+.. doxygenfunction:: erbsland::time::literals::operator""_h(const unsigned long long value) -> Hours
 .. doxygentypedef:: erbsland::time::Nanoseconds
 
 .. doxygentypedef:: erbsland::time::Microseconds
@@ -72,18 +83,6 @@ Interface
 .. doxygentypedef:: erbsland::time::Months
 
 .. doxygentypedef:: erbsland::time::Years
-
-.. doxygenfunction:: erbsland::time::literals::operator_ns(const int64_t value) -> Nanoseconds
-
-.. doxygenfunction:: erbsland::time::literals::operator_us(const int64_t value) -> Microseconds
-
-.. doxygenfunction:: erbsland::time::literals::operator_ms(const int64_t value) -> Milliseconds
-
-.. doxygenfunction:: erbsland::time::literals::operator_s(const int64_t value) -> Seconds
-
-.. doxygenfunction:: erbsland::time::literals::operator_m(const int64_t value) -> Minutes
-
-.. doxygenfunction:: erbsland::time::literals::operator_h(const int64_t value) -> Hours
 .. doxygenclass:: erbsland::time::TimeDelta
     :members:
 .. doxygenclass:: erbsland::time::TimeDeltaFormat

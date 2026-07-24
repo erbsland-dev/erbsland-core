@@ -1,0 +1,10 @@
+@version: "1.0"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name       : "unsupported-array-size"
+Types      : "byte-array"
+Use Cases  : "fill"
+Variants   : "whole"
+Size Modes : "fixed"
+Size Min   : 123
+Size Max   : 123

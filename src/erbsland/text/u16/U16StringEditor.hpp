@@ -18,7 +18,6 @@
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
 #include "../CharSet.hpp"
-#include "../EncodingErrorMode.hpp"
 #include "../EscapeAmount.hpp"
 #include "../EscapeFormat.hpp"
 #include "../FloatFormat.hpp"
@@ -74,7 +73,7 @@ namespace erbsland::text {
 /// Use `StringEditor` for most use cases and `U16StringEditor` only if you need random access to code points or require
 /// UTF-16 encoding.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U16StringTest StringEscapingTest}
+/// @tested{U16StringTest StringEscapingTest BooleanConversionTest}
 class U16StringEditor {
     friend class debug::impl::StringDebugAccess;
     friend class U16String;
@@ -330,6 +329,14 @@ public: // transform
         -> U16StringEditor;
 
 public: // conversion
+    /// Convert an ASCII-case-insensitive ELCL boolean literal, or return a default for unsupported text.
+    /// @param defaultValue The value returned for invalid, incomplete, padded, or empty text.
+    /// @return The recognized boolean value, or `defaultValue`.
+    [[nodiscard]] auto toBoolean(bool defaultValue = {}) const noexcept -> bool;
+    /// Convert an ASCII-case-insensitive ELCL boolean literal.
+    /// @return The recognized boolean value.
+    /// @throws err::ParseError if the complete text is not a supported literal.
+    [[nodiscard]] auto toBooleanOrThrow() const -> bool;
     /// Convert this string to an integer, or return the given default value on error.
     template <math::AnyIntegerType T>
     [[nodiscard]] auto toInteger(

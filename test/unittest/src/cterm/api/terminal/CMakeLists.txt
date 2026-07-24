@@ -14,6 +14,9 @@ target_sources(erbsland-core-unittest PRIVATE
         KeysTest.cpp
         KeyTest.cpp
         ReadableBufferDispatchProbe.hpp
+        ReadLineOptionsTest.cpp
+        ReadLineTest.cpp
+        ReadSecretTest.cpp
         TerminalConvenienceTest.cpp
         TerminalFlagsTest.cpp
         TerminalStreamTest.cpp

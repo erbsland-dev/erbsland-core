@@ -4,9 +4,8 @@
 #include <erbsland/err/OverflowError.hpp>
 #include <erbsland/text/AnyString.hpp>
 #include <erbsland/text/AnyStringEditor.hpp>
-#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/ParseNumberError.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringCharReader.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringKind.hpp>
@@ -37,7 +36,6 @@
 using namespace el::text;
 using namespace el::unit;
 using el::err::OverflowError;
-using el::text::EncodingError;
 using el::text::ParseNumberError;
 using el::util::LoopResult;
 using el::util::LoopStatus;
@@ -76,7 +74,6 @@ public:
         REQUIRE(reader.canRead(CpLength::zero()));
         REQUIRE_FALSE(reader.advance());
         REQUIRE_THROWS(reader.advanceOrThrow());
-        REQUIRE_THROWS(reader.peekOrThrow());
     }
 
     void testReadUtf8StringAndView() {
@@ -119,8 +116,8 @@ public:
 
         REQUIRE(reader.canRead(CpLength{4U}));
         REQUIRE_EQUAL(reader.read().toRawValue(), U'A');
-        REQUIRE_EQUAL(reader.peekOrThrow().toRawValue(), U'\u00A2');
-        REQUIRE_EQUAL(reader.readOrThrow().toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(reader.peek().toRawValue(), U'\u00A2');
+        REQUIRE_EQUAL(reader.read().toRawValue(), U'\u00A2');
 
         const auto saved = reader.save();
         reader.advanceOrThrow();
@@ -170,11 +167,11 @@ public:
         REQUIRE_EQUAL(cent.value().toRawValue(), U'\u00A2');
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
 
-        REQUIRE_FALSE(reader.readIfOrThrow(Char{U'!'}));
+        REQUIRE_FALSE(reader.readIf(Char{U'!'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE(reader.readIfOrThrow(Char{U'\u20AC'}));
+        REQUIRE(reader.readIf(Char{U'\u20AC'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{3U});
-        REQUIRE_THROWS(reader.readIfOrThrow(Char{U'!'}));
+        REQUIRE_FALSE(reader.readIf(Char{U'!'}));
     }
 
     void testConditionalReadUtf16String() {
@@ -193,11 +190,11 @@ public:
         REQUIRE_EQUAL(emoji.value().toRawValue(), U'\U0001F600');
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
 
-        const auto euro = reader.readIfOrThrow(matchingSet());
+        const auto euro = reader.readIf(matchingSet());
         REQUIRE(euro.has_value());
         REQUIRE_EQUAL(euro.value().toRawValue(), U'\u20AC');
         REQUIRE_EQUAL(reader.position(), CpIndex{3U});
-        REQUIRE_THROWS(reader.readIfOrThrow(matchingSet()));
+        REQUIRE_FALSE(reader.readIf(matchingSet()).has_value());
     }
 
     void testConditionalReadUtf32String() {
@@ -209,14 +206,14 @@ public:
         REQUIRE(reader.readIf(Char{U'A'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{1U});
 
-        const auto cent = reader.readIfOrThrow(matchingSet());
+        const auto cent = reader.readIf(matchingSet());
         REQUIRE(cent.has_value());
         REQUIRE_EQUAL(cent.value().toRawValue(), U'\u00A2');
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE_FALSE(reader.readIfOrThrow(Char{U'!'}));
+        REQUIRE_FALSE(reader.readIf(Char{U'!'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE(reader.readIfOrThrow(Char{U'\u20AC'}));
-        REQUIRE_THROWS(reader.readIfOrThrow(Char{U'!'}));
+        REQUIRE(reader.readIf(Char{U'\u20AC'}));
+        REQUIRE_FALSE(reader.readIf(Char{U'!'}));
     }
 
     void testConditionalAdvanceUtf8String() {
@@ -232,9 +229,9 @@ public:
         REQUIRE_EQUAL(reader.position(), CpIndex{1U});
         REQUIRE(reader.advanceIf(matchingSet()));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE(reader.advanceIfOrThrow(Char{U'\u20AC'}));
+        REQUIRE(reader.advanceIf(Char{U'\u20AC'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{3U});
-        REQUIRE_THROWS(reader.advanceIfOrThrow(Char{U'!'}));
+        REQUIRE_FALSE(reader.advanceIf(Char{U'!'}));
     }
 
     void testConditionalAdvanceUtf16String() {
@@ -248,9 +245,9 @@ public:
         REQUIRE_EQUAL(reader.position(), CpIndex{1U});
         REQUIRE(reader.advanceIf(matchingSet()));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE_FALSE(reader.advanceIfOrThrow(Char{U'!'}));
+        REQUIRE_FALSE(reader.advanceIf(Char{U'!'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE(reader.advanceIfOrThrow(matchingSet()));
+        REQUIRE(reader.advanceIf(matchingSet()));
         REQUIRE_EQUAL(reader.position(), CpIndex{3U});
         REQUIRE(reader.isAtEnd());
     }
@@ -264,11 +261,11 @@ public:
         REQUIRE(reader.position().isZero());
         REQUIRE(reader.advanceIf(Char{U'A'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{1U});
-        REQUIRE(reader.advanceIfOrThrow(matchingSet()));
+        REQUIRE(reader.advanceIf(matchingSet()));
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
-        REQUIRE(reader.advanceIfOrThrow(Char{U'\u20AC'}));
+        REQUIRE(reader.advanceIf(Char{U'\u20AC'}));
         REQUIRE_EQUAL(reader.position(), CpIndex{3U});
-        REQUIRE_THROWS(reader.advanceIfOrThrow(matchingSet()));
+        REQUIRE_FALSE(reader.advanceIf(matchingSet()));
     }
 
     void testReadWhileAcrossEncodings() {
@@ -959,18 +956,15 @@ public:
             static_cast<void>(
                 invalidReader.readIntegerOrThrow<std::int32_t>(IntegerParseOptions::fixedDecimal(CpLength{2U})));
             REQUIRE(false);
-        } catch (const EncodingError &) {
-            REQUIRE_EQUAL(invalidReader.position(), CpIndex::one());
+        } catch (const ParseNumberError &) {
+            REQUIRE(invalidReader.position().isZero());
         }
     }
 
-    void testInvalidEncodingIsTolerantByDefaultAndStrictOnThrowingReads() {
+    void testInvalidEncodingIsTolerant() {
         auto utf8Reader = StringCharReader{U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}}};
         REQUIRE_EQUAL(utf8Reader.read().toRawValue(), U'A');
         REQUIRE(utf8Reader.peek().isReplacement());
-        REQUIRE_THROWS(utf8Reader.peekOrThrow());
-        REQUIRE_THROWS(utf8Reader.readOrThrow());
-        REQUIRE_EQUAL(utf8Reader.position(), CpIndex{1U});
         REQUIRE(utf8Reader.read().isReplacement());
         REQUIRE_EQUAL(utf8Reader.read().toRawValue(), U'B');
 
@@ -978,7 +972,6 @@ public:
         auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{invalidUtf16}}};
         REQUIRE_EQUAL(utf16Reader.read().toRawValue(), U'A');
         REQUIRE(utf16Reader.peek().isReplacement());
-        REQUIRE_THROWS(utf16Reader.peekOrThrow());
         REQUIRE(utf16Reader.read().isReplacement());
         REQUIRE_EQUAL(utf16Reader.read().toRawValue(), U'B');
 
@@ -986,37 +979,8 @@ public:
         auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{invalidUtf32}}};
         REQUIRE_EQUAL(utf32Reader.read().toRawValue(), U'A');
         REQUIRE(utf32Reader.peek().isReplacement());
-        REQUIRE_THROWS(utf32Reader.peekOrThrow());
         REQUIRE(utf32Reader.read().isReplacement());
         REQUIRE_EQUAL(utf32Reader.read().toRawValue(), U'B');
-    }
-
-    void testConditionalThrowingReadsRejectInvalidEncoding() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}}};
-        REQUIRE_EQUAL(utf8Reader.read().toRawValue(), U'A');
-        REQUIRE_THROWS(utf8Reader.readIfOrThrow(Char::replacement()));
-        REQUIRE_EQUAL(utf8Reader.position(), CpIndex{1U});
-        REQUIRE_THROWS(utf8Reader.advanceIfOrThrow(Char{U'B'}));
-        REQUIRE_EQUAL(utf8Reader.position(), CpIndex{1U});
-        REQUIRE(utf8Reader.readIf(Char::replacement()));
-
-        const auto invalidUtf16 = std::u16string{u'A', char16_t{0xD800U}, u'B'};
-        auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{invalidUtf16}}};
-        REQUIRE_EQUAL(utf16Reader.read().toRawValue(), U'A');
-        REQUIRE_THROWS(utf16Reader.readIfOrThrow(Char::replacement()));
-        REQUIRE_EQUAL(utf16Reader.position(), CpIndex{1U});
-        REQUIRE_THROWS(utf16Reader.advanceIfOrThrow(Char{U'B'}));
-        REQUIRE_EQUAL(utf16Reader.position(), CpIndex{1U});
-        REQUIRE(utf16Reader.advanceIf(Char::replacement()));
-
-        const auto invalidUtf32 = std::u32string{U'A', char32_t{0x110000U}, U'B'};
-        auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{invalidUtf32}}};
-        REQUIRE_EQUAL(utf32Reader.read().toRawValue(), U'A');
-        REQUIRE_THROWS(utf32Reader.readIfOrThrow(Char::replacement()));
-        REQUIRE_EQUAL(utf32Reader.position(), CpIndex{1U});
-        REQUIRE_THROWS(utf32Reader.advanceIfOrThrow(Char{U'B'}));
-        REQUIRE_EQUAL(utf32Reader.position(), CpIndex{1U});
-        REQUIRE(utf32Reader.readIf(Char::replacement()));
     }
 
 private:

@@ -3,7 +3,7 @@
 
 #include "AssemblerBase.hpp"
 
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 
 TESTED_TARGETS(Assembler)
 TAGS(Diagnostics)

@@ -45,6 +45,18 @@ public:
         source = """/// Build a widget.
 /// @tested{WidgetTest}
 auto buildWidget() -> Widget;
+
+/// Build another widget.
+/// @tested{WidgetTest}
+[[nodiscard]] inline auto buildAnotherWidget() -> Widget;
+"""
+
+        self.assertEqual([], validate_test_status_text(source))
+
+    def test_accepts_type_alias_marker(self) -> None:
+        source = """/// A documented widget alias.
+/// @tested{WidgetTest}
+using WidgetAlias = Widget;
 """
 
         self.assertEqual([], validate_test_status_text(source))

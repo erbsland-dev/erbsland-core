@@ -11,15 +11,40 @@ Topic pages are the primary learning resource for this library.
 While reference pages focus on the technical details of individual APIs, topic pages explain how frameworks, concepts,
 or groups of classes work together.
 
-A good topic page helps the reader understand a feature from a practical and conceptual point of view. Instead of
-describing APIs class by class, it explains how you can solve a problem, structure your code, or use a feature
-effectively.
+What are Good Topic Pages?
+==========================
+
+A topic page always **answers a user question** that starts with "How do I ...?".
+This is not meant literally, but conceptually how to think about topic pages.
+Example: A question could be "How do I access characters in a string?" and "How do I write a parser for strings?".
+It leads to a topic page called "Character Access and Parsing of Strings".
+This page answers both questions in detail.
+
+A good topic page helps the reader understand a feature from a practical and conceptual point of view.
+It does not describe APIs class by class, function by function.
+It answers user questions and explains **how you can solve a problem**.
+
+A topic page goes even further, it demonstrates **how the API should be used** and it also teaches developers
+best practices and how to use a feature effectively.
+
+File Structure
+==============
+
+.. code-block::
+
+    +-- doc
+        +-- topics
+            +-- <domain>  // directory with the domain name, usually equals the namespace
+                +-- index.rst  // entry page, short domain intro + TOC
+                +-- overview.rst  // overview page; one section per topic; brief summary linking to the topic
+                +-- <topic>.rst  // one topic from this domain
 
 Page Structure
 ==============
 
-Each topic page should follow a consistent structure. This helps readers quickly understand where to find information
-and improves the overall readability of the documentation.
+Each topic page should follow a consistent structure.
+This helps readers quickly understand where to find information and improves the overall readability of the
+documentation.
 
 #. **Index Entries:** Add one or more ``.. index::`` entries so readers can quickly locate the page through topic
    searches.

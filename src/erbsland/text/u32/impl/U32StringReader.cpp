@@ -82,38 +82,6 @@ auto U32StringReader::peek() const noexcept -> Char {
     return U32StringReadTools{_text.dataView()}.charAt(_position);
 }
 
-auto U32StringReader::readOrThrow() -> Char {
-    const auto result = U32StringReadTools{_text.dataView()}.readOrThrow(_position);
-    ++_cpPosition;
-    return result;
-}
-
-auto U32StringReader::readIfOrThrow(const Char expected) -> bool {
-    auto position = _position;
-    const auto result = U32StringReadTools{_text.dataView()}.readOrThrow(position);
-    if (result != expected) {
-        return false;
-    }
-    _position = position;
-    ++_cpPosition;
-    return true;
-}
-
-auto U32StringReader::readIfOrThrow(const CharSet &expected) -> std::optional<Char> {
-    auto position = _position;
-    const auto result = U32StringReadTools{_text.dataView()}.readOrThrow(position);
-    if (!expected.contains(result)) {
-        return {};
-    }
-    _position = position;
-    ++_cpPosition;
-    return result;
-}
-
-auto U32StringReader::peekOrThrow() const -> Char {
-    return U32StringReadTools{_text.dataView()}.charAtOrThrow(_position);
-}
-
 auto U32StringReader::isAtEnd() const noexcept -> bool {
     return peek().isEndOfData();
 }
@@ -155,14 +123,6 @@ auto U32StringReader::advanceIf(const Char expected) noexcept -> bool {
 
 auto U32StringReader::advanceIf(const CharSet &expected) noexcept -> bool {
     return readIf(expected).has_value();
-}
-
-auto U32StringReader::advanceIfOrThrow(const Char expected) -> bool {
-    return readIfOrThrow(expected);
-}
-
-auto U32StringReader::advanceIfOrThrow(const CharSet &expected) -> bool {
-    return readIfOrThrow(expected).has_value();
 }
 
 auto U32StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept

@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CombinedChar.hpp"
 
-#include "EncodingError.hpp"
 #include "StringCharReader.hpp"
 
 namespace erbsland::text {
@@ -46,43 +45,25 @@ auto CombinedChar::byteCount() const noexcept -> unit::ByteLength {
     return result;
 }
 
-auto CombinedChar::withCombining(const Char codePoint, const EncodingErrorMode encodingErrors) const -> CombinedChar {
+auto CombinedChar::withCombining(const Char codePoint) const noexcept -> CombinedChar {
     if (characterCount().isZero()) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"A base code point is required before combining code points can be appended."};
-        }
         return *this;
     }
     if (!codePoint.isValidUnicode()) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"CombinedChar requires a valid Unicode code point."};
-        }
         return *this;
     }
     if (codePoint.isNull()) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"CombinedChar does not support the Unicode code point U+0000."};
-        }
         return *this;
     }
     if (codePoint.isControl()) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"CombinedChar combining code points must not be control codes."};
-        }
         return *this;
     }
     if (codePoint.displayWidth() != 0) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"CombinedChar combining code points must have zero display width."};
-        }
         return *this;
     }
     auto result = *this;
     const auto index = countCodePoints(result._characters);
     if (index >= result._characters.size()) {
-        if (encodingErrors == EncodingErrorMode::Throw) {
-            throw EncodingError{"CombinedChar supports at most three Unicode code points."};
-        }
         return *this;
     }
     result._characters[index] = codePoint;

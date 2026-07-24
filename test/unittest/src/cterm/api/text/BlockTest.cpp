@@ -3,7 +3,6 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -73,26 +72,13 @@ public:
         REQUIRE_EQUAL(combined.toString(), erbsland::text::StringEditor{bytes({0x65, 0xCC, 0x81})});
     }
 
-    void testWithCombiningThrowRejectsInvalidCodePoints() {
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, Block{}.withCombining(U'\u0301', erbsland::text::EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, Block{U'e'}.withCombining(U'x', erbsland::text::EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, Block{U'e'}.withCombining(U'\n', erbsland::text::EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError,
-            Block{U"e\u0301\u0302"_el}.withCombining(U'\u0303', erbsland::text::EncodingErrorMode::Throw));
-    }
-
-    void testWithCombiningReplaceLeavesInvalidAdditionsUnchanged() {
+    void testWithCombiningLeavesInvalidAdditionsUnchanged() {
         const auto base = Block{U"e\u0301\u0302"_el};
 
         REQUIRE_EQUAL(Block{}.withCombining(U'\u0301'), Block{});
         REQUIRE_EQUAL(Block{U'e'}.withCombining(U'x'), Block{U'e'});
         REQUIRE_EQUAL(Block{U'e'}.withCombining(U'\n'), Block{U'e'});
         REQUIRE_EQUAL(base.withCombining(U'\u0303'), base);
-        REQUIRE_EQUAL(base.withCombining(U'\u0303', erbsland::text::EncodingErrorMode::Ignore), base);
     }
 
     void testEqualityComparesCodePointsAndColors() {
@@ -317,7 +303,7 @@ public:
             thirdCombiningMark.characters(), (std::array<erbsland::text::Char, 3>{U'a', U'\u0301', U'\u0302'}));
     }
 
-    void testUtf8ConstructorsReplaceEncodingErrorMode() {
+    void testUtf8ConstructorsReplaceMalformedInput() {
         const auto character = Block{erbsland::text::StringEditor{bytes({0xC3})}};
 
         REQUIRE_EQUAL(character.characterCount(), erbsland::unit::CpLength{1});

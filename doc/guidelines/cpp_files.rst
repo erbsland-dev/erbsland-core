@@ -73,12 +73,12 @@ The production API uses the Erbsland ``StringFormat`` system.
 Optional ``std::formatter`` specializations exist only to improve diagnostics in unit tests and other explicit
 standard-library interoperability code.
 
-1.  Keep all specializations for a domain in ``StdFormatFor<Domain>.hpp``.
+1.  Keep all specializations for a domain in its ``StdFormat.hpp`` header.
 2.  Do not include these headers from regular domain headers or generated ``all.hpp`` headers.
 3.  Include the matching formatter header explicitly in a unit test that compares domain values with
     ``REQUIRE_*`` or ``CHECK_*`` macros.
-4.  A formatter based on :cpp:type:`erbsland::text::String <erbsland::text::String>` includes ``StdFormatForText.hpp`` and derives from the
-    matching ``std::formatter`` base.
+4.  A formatter based on :cpp:type:`erbsland::text::String <erbsland::text::String>` includes
+    ``text/StdFormat.hpp`` and derives from the matching ``std::formatter`` base.
 
 Directories and Namespaces
 ==========================

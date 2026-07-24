@@ -1,1443 +1,1442 @@
 @version: "1.0"
-@features: "all"
 # Dense scalar values and value lists.
 
-[scalar batch 000]
-decimal value: -200000
-hexadecimal value: 0x1234
-binary value: 0b11
-float value: 1.000e-0
-boolean value: disabled
-text value: "Telemetry sample 000 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-01
-time value: 00:00:00
-date time value: 2026-01-01 00:00:00z
-byte count value: 1 KiB
-time delta value: 1 weeks
-bytes value: <01 23 45 67 89 ab cd ef 00>
-regex value: /^sensor-000-[a-z]+$/
-mixed list: 0, 1.25, enabled, "sample 000", 2026-06-01, <de ad be ef>
-
-[scalar batch 001]
-decimal value: -192081
-hexadecimal value: 0x11235
-binary value: 0b100000100
-float value: 2.001e-1
-boolean value: enabled
-text value: "Telemetry sample 001 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-02
-time value: 01:07:13
-date time value: 2026-02-02 01:07:13z
-byte count value: 2 KiB
-time delta value: 2 weeks
-bytes value: <01 23 45 67 89 ab cd ef 01>
-regex value: /^sensor-001-[a-z]+$/
-mixed list: 1, 2.25, enabled, "sample 001", 2026-06-02, <de ad be ef>
-
-[scalar batch 002]
-decimal value: -184162
-hexadecimal value: 0x21236
-binary value: 0b1000000101
-float value: 3.002e-2
-boolean value: disabled
-text value: "Telemetry sample 002 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-03
-time value: 02:14:26
-date time value: 2026-03-03 02:14:26z
-byte count value: 3 KiB
-time delta value: 3 weeks
-bytes value: <01 23 45 67 89 ab cd ef 02>
-regex value: /^sensor-002-[a-z]+$/
-mixed list: 2, 3.25, enabled, "sample 002", 2026-06-03, <de ad be ef>
-
-[scalar batch 003]
-decimal value: -176243
-hexadecimal value: 0x31237
-binary value: 0b1100000110
-float value: 4.003e-3
-boolean value: enabled
-text value: "Telemetry sample 003 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-04
-time value: 03:21:39
-date time value: 2026-04-04 03:21:39z
-byte count value: 4 KiB
-time delta value: 4 weeks
-bytes value: <01 23 45 67 89 ab cd ef 03>
-regex value: /^sensor-003-[a-z]+$/
-mixed list: 3, 4.25, enabled, "sample 003", 2026-06-04, <de ad be ef>
-
-[scalar batch 004]
-decimal value: -168324
-hexadecimal value: 0x41238
-binary value: 0b10000000111
-float value: 5.004e-4
-boolean value: disabled
-text value: "Telemetry sample 004 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-05
-time value: 04:28:52
-date time value: 2026-05-05 04:28:52z
-byte count value: 5 KiB
-time delta value: 5 weeks
-bytes value: <01 23 45 67 89 ab cd ef 04>
-regex value: /^sensor-004-[a-z]+$/
-mixed list: 4, 5.25, enabled, "sample 004", 2026-06-05, <de ad be ef>
-
-[scalar batch 005]
-decimal value: -160405
-hexadecimal value: 0x51239
-binary value: 0b10100001000
-float value: 6.005e-5
-boolean value: enabled
-text value: "Telemetry sample 005 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-06
-time value: 05:35:05
-date time value: 2026-06-06 05:35:05z
-byte count value: 6 KiB
-time delta value: 6 weeks
-bytes value: <01 23 45 67 89 ab cd ef 05>
-regex value: /^sensor-005-[a-z]+$/
-mixed list: 5, 6.25, enabled, "sample 005", 2026-06-06, <de ad be ef>
-
-[scalar batch 006]
-decimal value: -152486
-hexadecimal value: 0x6123a
-binary value: 0b11000001001
-float value: 7.006e-6
-boolean value: disabled
-text value: "Telemetry sample 006 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-07
-time value: 06:42:18
-date time value: 2026-07-07 06:42:18z
-byte count value: 7 KiB
-time delta value: 7 weeks
-bytes value: <01 23 45 67 89 ab cd ef 06>
-regex value: /^sensor-006-[a-z]+$/
-mixed list: 6, 7.25, enabled, "sample 006", 2026-06-07, <de ad be ef>
-
-[scalar batch 007]
-decimal value: -144567
-hexadecimal value: 0x7123b
-binary value: 0b11100001010
-float value: 8.007e-7
-boolean value: enabled
-text value: "Telemetry sample 007 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-08
-time value: 07:49:31
-date time value: 2026-08-08 07:49:31z
-byte count value: 8 KiB
-time delta value: 8 weeks
-bytes value: <01 23 45 67 89 ab cd ef 07>
-regex value: /^sensor-007-[a-z]+$/
-mixed list: 7, 8.25, enabled, "sample 007", 2026-06-08, <de ad be ef>
-
-[scalar batch 008]
-decimal value: -136648
-hexadecimal value: 0x8123c
-binary value: 0b100000001011
-float value: 9.008e-0
-boolean value: disabled
-text value: "Telemetry sample 008 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-09
-time value: 08:56:44
-date time value: 2026-09-09 08:56:44z
-byte count value: 9 KiB
-time delta value: 9 weeks
-bytes value: <01 23 45 67 89 ab cd ef 08>
-regex value: /^sensor-008-[a-z]+$/
-mixed list: 8, 9.25, enabled, "sample 008", 2026-06-09, <de ad be ef>
-
-[scalar batch 009]
-decimal value: -128729
-hexadecimal value: 0x9123d
-binary value: 0b100100001100
-float value: 10.009e-1
-boolean value: enabled
-text value: "Telemetry sample 009 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-10
-time value: 09:03:57
-date time value: 2026-10-10 09:03:57z
-byte count value: 10 KiB
-time delta value: 10 weeks
-bytes value: <01 23 45 67 89 ab cd ef 09>
-regex value: /^sensor-009-[a-z]+$/
-mixed list: 9, 10.25, enabled, "sample 009", 2026-06-10, <de ad be ef>
-
-[scalar batch 010]
-decimal value: -120810
-hexadecimal value: 0xa123e
-binary value: 0b101000001101
-float value: 11.010e-2
-boolean value: disabled
-text value: "Telemetry sample 010 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-11
-time value: 10:10:10
-date time value: 2026-11-11 10:10:10z
-byte count value: 11 KiB
-time delta value: 11 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0a>
-regex value: /^sensor-010-[a-z]+$/
-mixed list: 10, 11.25, enabled, "sample 010", 2026-06-11, <de ad be ef>
-
-[scalar batch 011]
-decimal value: -112891
-hexadecimal value: 0xb123f
-binary value: 0b101100001110
-float value: 12.011e-3
-boolean value: enabled
-text value: "Telemetry sample 011 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-12
-time value: 11:17:23
-date time value: 2026-12-12 11:17:23z
-byte count value: 12 KiB
-time delta value: 12 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0b>
-regex value: /^sensor-011-[a-z]+$/
-mixed list: 11, 12.25, enabled, "sample 011", 2026-06-12, <de ad be ef>
-
-[scalar batch 012]
-decimal value: -104972
-hexadecimal value: 0xc1240
-binary value: 0b110000001111
-float value: 13.012e-4
-boolean value: disabled
-text value: "Telemetry sample 012 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-13
-time value: 12:24:36
-date time value: 2026-01-13 12:24:36z
-byte count value: 13 KiB
-time delta value: 13 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0c>
-regex value: /^sensor-012-[a-z]+$/
-mixed list: 12, 13.25, enabled, "sample 012", 2026-06-13, <de ad be ef>
-
-[scalar batch 013]
-decimal value: -97053
-hexadecimal value: 0xd1241
-binary value: 0b110100010000
-float value: 14.013e-5
-boolean value: enabled
-text value: "Telemetry sample 013 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-14
-time value: 13:31:49
-date time value: 2026-02-14 13:31:49z
-byte count value: 14 KiB
-time delta value: 14 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0d>
-regex value: /^sensor-013-[a-z]+$/
-mixed list: 13, 14.25, enabled, "sample 013", 2026-06-14, <de ad be ef>
-
-[scalar batch 014]
-decimal value: -89134
-hexadecimal value: 0xe1242
-binary value: 0b111000010001
-float value: 15.014e-6
-boolean value: disabled
-text value: "Telemetry sample 014 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-15
-time value: 14:38:02
-date time value: 2026-03-15 14:38:02z
-byte count value: 15 KiB
-time delta value: 15 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0e>
-regex value: /^sensor-014-[a-z]+$/
-mixed list: 14, 15.25, enabled, "sample 014", 2026-06-15, <de ad be ef>
-
-[scalar batch 015]
-decimal value: -81215
-hexadecimal value: 0xf1243
-binary value: 0b111100010010
-float value: 16.015e-7
-boolean value: enabled
-text value: "Telemetry sample 015 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-16
-time value: 15:45:15
-date time value: 2026-04-16 15:45:15z
-byte count value: 16 KiB
-time delta value: 16 weeks
-bytes value: <01 23 45 67 89 ab cd ef 0f>
-regex value: /^sensor-015-[a-z]+$/
-mixed list: 15, 16.25, enabled, "sample 015", 2026-06-16, <de ad be ef>
-
-[scalar batch 016]
-decimal value: -73296
-hexadecimal value: 0x101244
-binary value: 0b1000000010011
-float value: 17.016e-0
-boolean value: disabled
-text value: "Telemetry sample 016 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-17
-time value: 16:52:28
-date time value: 2026-05-17 16:52:28z
-byte count value: 17 KiB
-time delta value: 17 weeks
-bytes value: <01 23 45 67 89 ab cd ef 10>
-regex value: /^sensor-016-[a-z]+$/
-mixed list: 16, 17.25, enabled, "sample 016", 2026-06-17, <de ad be ef>
-
-[scalar batch 017]
-decimal value: -65377
-hexadecimal value: 0x111245
-binary value: 0b1000100010100
-float value: 18.017e-1
-boolean value: enabled
-text value: "Telemetry sample 017 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-18
-time value: 17:59:41
-date time value: 2026-06-18 17:59:41z
-byte count value: 18 KiB
-time delta value: 18 weeks
-bytes value: <01 23 45 67 89 ab cd ef 11>
-regex value: /^sensor-017-[a-z]+$/
-mixed list: 17, 18.25, enabled, "sample 017", 2026-06-18, <de ad be ef>
-
-[scalar batch 018]
-decimal value: -57458
-hexadecimal value: 0x121246
-binary value: 0b1001000010101
-float value: 19.018e-2
-boolean value: disabled
-text value: "Telemetry sample 018 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-19
-time value: 18:06:54
-date time value: 2026-07-19 18:06:54z
-byte count value: 19 KiB
-time delta value: 19 weeks
-bytes value: <01 23 45 67 89 ab cd ef 12>
-regex value: /^sensor-018-[a-z]+$/
-mixed list: 18, 19.25, enabled, "sample 018", 2026-06-19, <de ad be ef>
-
-[scalar batch 019]
-decimal value: -49539
-hexadecimal value: 0x131247
-binary value: 0b1001100010110
-float value: 20.019e-3
-boolean value: enabled
-text value: "Telemetry sample 019 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-20
-time value: 19:13:07
-date time value: 2026-08-20 19:13:07z
-byte count value: 20 KiB
-time delta value: 20 weeks
-bytes value: <01 23 45 67 89 ab cd ef 13>
-regex value: /^sensor-019-[a-z]+$/
-mixed list: 19, 20.25, enabled, "sample 019", 2026-06-20, <de ad be ef>
-
-[scalar batch 020]
-decimal value: -41620
-hexadecimal value: 0x141248
-binary value: 0b1010000010111
-float value: 21.020e-4
-boolean value: disabled
-text value: "Telemetry sample 020 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-21
-time value: 20:20:20
-date time value: 2026-09-21 20:20:20z
-byte count value: 21 KiB
-time delta value: 21 weeks
-bytes value: <01 23 45 67 89 ab cd ef 14>
-regex value: /^sensor-020-[a-z]+$/
-mixed list: 20, 21.25, enabled, "sample 020", 2026-06-21, <de ad be ef>
-
-[scalar batch 021]
-decimal value: -33701
-hexadecimal value: 0x151249
-binary value: 0b1010100011000
-float value: 22.021e-5
-boolean value: enabled
-text value: "Telemetry sample 021 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-22
-time value: 21:27:33
-date time value: 2026-10-22 21:27:33z
-byte count value: 22 KiB
-time delta value: 22 weeks
-bytes value: <01 23 45 67 89 ab cd ef 15>
-regex value: /^sensor-021-[a-z]+$/
-mixed list: 21, 22.25, enabled, "sample 021", 2026-06-22, <de ad be ef>
-
-[scalar batch 022]
-decimal value: -25782
-hexadecimal value: 0x16124a
-binary value: 0b1011000011001
-float value: 23.022e-6
-boolean value: disabled
-text value: "Telemetry sample 022 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-23
-time value: 22:34:46
-date time value: 2026-11-23 22:34:46z
-byte count value: 23 KiB
-time delta value: 23 weeks
-bytes value: <01 23 45 67 89 ab cd ef 16>
-regex value: /^sensor-022-[a-z]+$/
-mixed list: 22, 23.25, enabled, "sample 022", 2026-06-23, <de ad be ef>
-
-[scalar batch 023]
-decimal value: -17863
-hexadecimal value: 0x17124b
-binary value: 0b1011100011010
-float value: 24.023e-7
-boolean value: enabled
-text value: "Telemetry sample 023 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-24
-time value: 23:41:59
-date time value: 2026-12-24 23:41:59z
-byte count value: 24 KiB
-time delta value: 24 weeks
-bytes value: <01 23 45 67 89 ab cd ef 17>
-regex value: /^sensor-023-[a-z]+$/
-mixed list: 23, 24.25, enabled, "sample 023", 2026-06-24, <de ad be ef>
-
-[scalar batch 024]
-decimal value: -9944
-hexadecimal value: 0x18124c
-binary value: 0b1100000011011
-float value: 25.024e-0
-boolean value: disabled
-text value: "Telemetry sample 024 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-25
-time value: 00:48:12
-date time value: 2026-01-25 00:48:12z
-byte count value: 25 KiB
-time delta value: 25 weeks
-bytes value: <01 23 45 67 89 ab cd ef 18>
-regex value: /^sensor-024-[a-z]+$/
-mixed list: 24, 25.25, enabled, "sample 024", 2026-06-25, <de ad be ef>
-
-[scalar batch 025]
-decimal value: -2025
-hexadecimal value: 0x19124d
-binary value: 0b1100100011100
-float value: 26.025e-1
-boolean value: enabled
-text value: "Telemetry sample 025 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-26
-time value: 01:55:25
-date time value: 2026-02-26 01:55:25z
-byte count value: 26 KiB
-time delta value: 26 weeks
-bytes value: <01 23 45 67 89 ab cd ef 19>
-regex value: /^sensor-025-[a-z]+$/
-mixed list: 25, 26.25, enabled, "sample 025", 2026-06-26, <de ad be ef>
-
-[scalar batch 026]
-decimal value: 5894
-hexadecimal value: 0x1a124e
-binary value: 0b1101000011101
-float value: 27.026e-2
-boolean value: disabled
-text value: "Telemetry sample 026 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-27
-time value: 02:02:38
-date time value: 2026-03-27 02:02:38z
-byte count value: 27 KiB
-time delta value: 27 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1a>
-regex value: /^sensor-026-[a-z]+$/
-mixed list: 26, 27.25, enabled, "sample 026", 2026-06-27, <de ad be ef>
-
-[scalar batch 027]
-decimal value: 13813
-hexadecimal value: 0x1b124f
-binary value: 0b1101100011110
-float value: 28.027e-3
-boolean value: enabled
-text value: "Telemetry sample 027 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-01
-time value: 03:09:51
-date time value: 2026-04-01 03:09:51z
-byte count value: 28 KiB
-time delta value: 28 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1b>
-regex value: /^sensor-027-[a-z]+$/
-mixed list: 27, 28.25, enabled, "sample 027", 2026-06-01, <de ad be ef>
-
-[scalar batch 028]
-decimal value: 21732
-hexadecimal value: 0x1c1250
-binary value: 0b1110000011111
-float value: 29.028e-4
-boolean value: disabled
-text value: "Telemetry sample 028 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-02
-time value: 04:16:04
-date time value: 2026-05-02 04:16:04z
-byte count value: 29 KiB
-time delta value: 29 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1c>
-regex value: /^sensor-028-[a-z]+$/
-mixed list: 28, 29.25, enabled, "sample 028", 2026-06-02, <de ad be ef>
-
-[scalar batch 029]
-decimal value: 29651
-hexadecimal value: 0x1d1251
-binary value: 0b1110100100000
-float value: 30.029e-5
-boolean value: enabled
-text value: "Telemetry sample 029 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-03
-time value: 05:23:17
-date time value: 2026-06-03 05:23:17z
-byte count value: 30 KiB
-time delta value: 30 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1d>
-regex value: /^sensor-029-[a-z]+$/
-mixed list: 29, 30.25, enabled, "sample 029", 2026-06-03, <de ad be ef>
-
-[scalar batch 030]
-decimal value: 37570
-hexadecimal value: 0x1e1252
-binary value: 0b1111000100001
-float value: 31.030e-6
-boolean value: disabled
-text value: "Telemetry sample 030 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-04
-time value: 06:30:30
-date time value: 2026-07-04 06:30:30z
-byte count value: 31 KiB
-time delta value: 31 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1e>
-regex value: /^sensor-030-[a-z]+$/
-mixed list: 30, 31.25, enabled, "sample 030", 2026-06-04, <de ad be ef>
-
-[scalar batch 031]
-decimal value: 45489
-hexadecimal value: 0x1f1253
-binary value: 0b1111100100010
-float value: 32.031e-7
-boolean value: enabled
-text value: "Telemetry sample 031 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-05
-time value: 07:37:43
-date time value: 2026-08-05 07:37:43z
-byte count value: 32 KiB
-time delta value: 32 weeks
-bytes value: <01 23 45 67 89 ab cd ef 1f>
-regex value: /^sensor-031-[a-z]+$/
-mixed list: 31, 32.25, enabled, "sample 031", 2026-06-05, <de ad be ef>
-
-[scalar batch 032]
-decimal value: 53408
-hexadecimal value: 0x201254
-binary value: 0b10000000100011
-float value: 33.032e-0
-boolean value: disabled
-text value: "Telemetry sample 032 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-06
-time value: 08:44:56
-date time value: 2026-09-06 08:44:56z
-byte count value: 33 KiB
-time delta value: 33 weeks
-bytes value: <01 23 45 67 89 ab cd ef 20>
-regex value: /^sensor-032-[a-z]+$/
-mixed list: 32, 33.25, enabled, "sample 032", 2026-06-06, <de ad be ef>
-
-[scalar batch 033]
-decimal value: 61327
-hexadecimal value: 0x211255
-binary value: 0b10000100100100
-float value: 34.033e-1
-boolean value: enabled
-text value: "Telemetry sample 033 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-07
-time value: 09:51:09
-date time value: 2026-10-07 09:51:09z
-byte count value: 34 KiB
-time delta value: 34 weeks
-bytes value: <01 23 45 67 89 ab cd ef 21>
-regex value: /^sensor-033-[a-z]+$/
-mixed list: 33, 34.25, enabled, "sample 033", 2026-06-07, <de ad be ef>
-
-[scalar batch 034]
-decimal value: 69246
-hexadecimal value: 0x221256
-binary value: 0b10001000100101
-float value: 35.034e-2
-boolean value: disabled
-text value: "Telemetry sample 034 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-08
-time value: 10:58:22
-date time value: 2026-11-08 10:58:22z
-byte count value: 35 KiB
-time delta value: 35 weeks
-bytes value: <01 23 45 67 89 ab cd ef 22>
-regex value: /^sensor-034-[a-z]+$/
-mixed list: 34, 35.25, enabled, "sample 034", 2026-06-08, <de ad be ef>
-
-[scalar batch 035]
-decimal value: 77165
-hexadecimal value: 0x231257
-binary value: 0b10001100100110
-float value: 36.035e-3
-boolean value: enabled
-text value: "Telemetry sample 035 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-09
-time value: 11:05:35
-date time value: 2026-12-09 11:05:35z
-byte count value: 36 KiB
-time delta value: 36 weeks
-bytes value: <01 23 45 67 89 ab cd ef 23>
-regex value: /^sensor-035-[a-z]+$/
-mixed list: 35, 36.25, enabled, "sample 035", 2026-06-09, <de ad be ef>
-
-[scalar batch 036]
-decimal value: 85084
-hexadecimal value: 0x241258
-binary value: 0b10010000100111
-float value: 37.036e-4
-boolean value: disabled
-text value: "Telemetry sample 036 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-10
-time value: 12:12:48
-date time value: 2026-01-10 12:12:48z
-byte count value: 37 KiB
-time delta value: 37 weeks
-bytes value: <01 23 45 67 89 ab cd ef 24>
-regex value: /^sensor-036-[a-z]+$/
-mixed list: 36, 37.25, enabled, "sample 036", 2026-06-10, <de ad be ef>
-
-[scalar batch 037]
-decimal value: 93003
-hexadecimal value: 0x251259
-binary value: 0b10010100101000
-float value: 38.037e-5
-boolean value: enabled
-text value: "Telemetry sample 037 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-11
-time value: 13:19:01
-date time value: 2026-02-11 13:19:01z
-byte count value: 38 KiB
-time delta value: 38 weeks
-bytes value: <01 23 45 67 89 ab cd ef 25>
-regex value: /^sensor-037-[a-z]+$/
-mixed list: 37, 38.25, enabled, "sample 037", 2026-06-11, <de ad be ef>
-
-[scalar batch 038]
-decimal value: 100922
-hexadecimal value: 0x26125a
-binary value: 0b10011000101001
-float value: 39.038e-6
-boolean value: disabled
-text value: "Telemetry sample 038 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-12
-time value: 14:26:14
-date time value: 2026-03-12 14:26:14z
-byte count value: 39 KiB
-time delta value: 39 weeks
-bytes value: <01 23 45 67 89 ab cd ef 26>
-regex value: /^sensor-038-[a-z]+$/
-mixed list: 38, 39.25, enabled, "sample 038", 2026-06-12, <de ad be ef>
-
-[scalar batch 039]
-decimal value: 108841
-hexadecimal value: 0x27125b
-binary value: 0b10011100101010
-float value: 40.039e-7
-boolean value: enabled
-text value: "Telemetry sample 039 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-13
-time value: 15:33:27
-date time value: 2026-04-13 15:33:27z
-byte count value: 40 KiB
-time delta value: 40 weeks
-bytes value: <01 23 45 67 89 ab cd ef 27>
-regex value: /^sensor-039-[a-z]+$/
-mixed list: 39, 40.25, enabled, "sample 039", 2026-06-13, <de ad be ef>
-
-[scalar batch 040]
-decimal value: 116760
-hexadecimal value: 0x28125c
-binary value: 0b10100000101011
-float value: 41.040e-0
-boolean value: disabled
-text value: "Telemetry sample 040 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-14
-time value: 16:40:40
-date time value: 2026-05-14 16:40:40z
-byte count value: 41 KiB
-time delta value: 41 weeks
-bytes value: <01 23 45 67 89 ab cd ef 28>
-regex value: /^sensor-040-[a-z]+$/
-mixed list: 40, 41.25, enabled, "sample 040", 2026-06-14, <de ad be ef>
-
-[scalar batch 041]
-decimal value: 124679
-hexadecimal value: 0x29125d
-binary value: 0b10100100101100
-float value: 42.041e-1
-boolean value: enabled
-text value: "Telemetry sample 041 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-15
-time value: 17:47:53
-date time value: 2026-06-15 17:47:53z
-byte count value: 42 KiB
-time delta value: 42 weeks
-bytes value: <01 23 45 67 89 ab cd ef 29>
-regex value: /^sensor-041-[a-z]+$/
-mixed list: 41, 42.25, enabled, "sample 041", 2026-06-15, <de ad be ef>
-
-[scalar batch 042]
-decimal value: 132598
-hexadecimal value: 0x2a125e
-binary value: 0b10101000101101
-float value: 43.042e-2
-boolean value: disabled
-text value: "Telemetry sample 042 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-16
-time value: 18:54:06
-date time value: 2026-07-16 18:54:06z
-byte count value: 43 KiB
-time delta value: 43 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2a>
-regex value: /^sensor-042-[a-z]+$/
-mixed list: 42, 43.25, enabled, "sample 042", 2026-06-16, <de ad be ef>
-
-[scalar batch 043]
-decimal value: 140517
-hexadecimal value: 0x2b125f
-binary value: 0b10101100101110
-float value: 44.043e-3
-boolean value: enabled
-text value: "Telemetry sample 043 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-17
-time value: 19:01:19
-date time value: 2026-08-17 19:01:19z
-byte count value: 44 KiB
-time delta value: 44 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2b>
-regex value: /^sensor-043-[a-z]+$/
-mixed list: 43, 44.25, enabled, "sample 043", 2026-06-17, <de ad be ef>
-
-[scalar batch 044]
-decimal value: 148436
-hexadecimal value: 0x2c1260
-binary value: 0b10110000101111
-float value: 45.044e-4
-boolean value: disabled
-text value: "Telemetry sample 044 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-18
-time value: 20:08:32
-date time value: 2026-09-18 20:08:32z
-byte count value: 45 KiB
-time delta value: 45 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2c>
-regex value: /^sensor-044-[a-z]+$/
-mixed list: 44, 45.25, enabled, "sample 044", 2026-06-18, <de ad be ef>
-
-[scalar batch 045]
-decimal value: 156355
-hexadecimal value: 0x2d1261
-binary value: 0b10110100110000
-float value: 46.045e-5
-boolean value: enabled
-text value: "Telemetry sample 045 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-19
-time value: 21:15:45
-date time value: 2026-10-19 21:15:45z
-byte count value: 46 KiB
-time delta value: 46 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2d>
-regex value: /^sensor-045-[a-z]+$/
-mixed list: 45, 46.25, enabled, "sample 045", 2026-06-19, <de ad be ef>
-
-[scalar batch 046]
-decimal value: 164274
-hexadecimal value: 0x2e1262
-binary value: 0b10111000110001
-float value: 47.046e-6
-boolean value: disabled
-text value: "Telemetry sample 046 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-20
-time value: 22:22:58
-date time value: 2026-11-20 22:22:58z
-byte count value: 47 KiB
-time delta value: 47 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2e>
-regex value: /^sensor-046-[a-z]+$/
-mixed list: 46, 47.25, enabled, "sample 046", 2026-06-20, <de ad be ef>
-
-[scalar batch 047]
-decimal value: 172193
-hexadecimal value: 0x2f1263
-binary value: 0b10111100110010
-float value: 48.047e-7
-boolean value: enabled
-text value: "Telemetry sample 047 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-21
-time value: 23:29:11
-date time value: 2026-12-21 23:29:11z
-byte count value: 48 KiB
-time delta value: 48 weeks
-bytes value: <01 23 45 67 89 ab cd ef 2f>
-regex value: /^sensor-047-[a-z]+$/
-mixed list: 47, 48.25, enabled, "sample 047", 2026-06-21, <de ad be ef>
-
-[scalar batch 048]
-decimal value: 180112
-hexadecimal value: 0x301264
-binary value: 0b11000000110011
-float value: 49.048e-0
-boolean value: disabled
-text value: "Telemetry sample 048 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-22
-time value: 00:36:24
-date time value: 2026-01-22 00:36:24z
-byte count value: 49 KiB
-time delta value: 49 weeks
-bytes value: <01 23 45 67 89 ab cd ef 30>
-regex value: /^sensor-048-[a-z]+$/
-mixed list: 48, 49.25, enabled, "sample 048", 2026-06-22, <de ad be ef>
-
-[scalar batch 049]
-decimal value: 188031
-hexadecimal value: 0x311265
-binary value: 0b11000100110100
-float value: 50.049e-1
-boolean value: enabled
-text value: "Telemetry sample 049 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-23
-time value: 01:43:37
-date time value: 2026-02-23 01:43:37z
-byte count value: 50 KiB
-time delta value: 50 weeks
-bytes value: <01 23 45 67 89 ab cd ef 31>
-regex value: /^sensor-049-[a-z]+$/
-mixed list: 49, 50.25, enabled, "sample 049", 2026-06-23, <de ad be ef>
-
-[scalar batch 050]
-decimal value: 195950
-hexadecimal value: 0x321266
-binary value: 0b11001000110101
-float value: 51.050e-2
-boolean value: disabled
-text value: "Telemetry sample 050 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-24
-time value: 02:50:50
-date time value: 2026-03-24 02:50:50z
-byte count value: 51 KiB
-time delta value: 51 weeks
-bytes value: <01 23 45 67 89 ab cd ef 32>
-regex value: /^sensor-050-[a-z]+$/
-mixed list: 50, 51.25, enabled, "sample 050", 2026-06-24, <de ad be ef>
-
-[scalar batch 051]
-decimal value: 203869
-hexadecimal value: 0x331267
-binary value: 0b11001100110110
-float value: 52.051e-3
-boolean value: enabled
-text value: "Telemetry sample 051 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-25
-time value: 03:57:03
-date time value: 2026-04-25 03:57:03z
-byte count value: 52 KiB
-time delta value: 52 weeks
-bytes value: <01 23 45 67 89 ab cd ef 33>
-regex value: /^sensor-051-[a-z]+$/
-mixed list: 51, 52.25, enabled, "sample 051", 2026-06-25, <de ad be ef>
-
-[scalar batch 052]
-decimal value: 211788
-hexadecimal value: 0x341268
-binary value: 0b11010000110111
-float value: 53.052e-4
-boolean value: disabled
-text value: "Telemetry sample 052 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-26
-time value: 04:04:16
-date time value: 2026-05-26 04:04:16z
-byte count value: 53 KiB
-time delta value: 53 weeks
-bytes value: <01 23 45 67 89 ab cd ef 34>
-regex value: /^sensor-052-[a-z]+$/
-mixed list: 52, 53.25, enabled, "sample 052", 2026-06-26, <de ad be ef>
-
-[scalar batch 053]
-decimal value: 219707
-hexadecimal value: 0x351269
-binary value: 0b11010100111000
-float value: 54.053e-5
-boolean value: enabled
-text value: "Telemetry sample 053 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-27
-time value: 05:11:29
-date time value: 2026-06-27 05:11:29z
-byte count value: 54 KiB
-time delta value: 54 weeks
-bytes value: <01 23 45 67 89 ab cd ef 35>
-regex value: /^sensor-053-[a-z]+$/
-mixed list: 53, 54.25, enabled, "sample 053", 2026-06-27, <de ad be ef>
-
-[scalar batch 054]
-decimal value: 227626
-hexadecimal value: 0x36126a
-binary value: 0b11011000111001
-float value: 55.054e-6
-boolean value: disabled
-text value: "Telemetry sample 054 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-01
-time value: 06:18:42
-date time value: 2026-07-01 06:18:42z
-byte count value: 55 KiB
-time delta value: 55 weeks
-bytes value: <01 23 45 67 89 ab cd ef 36>
-regex value: /^sensor-054-[a-z]+$/
-mixed list: 54, 55.25, enabled, "sample 054", 2026-06-01, <de ad be ef>
-
-[scalar batch 055]
-decimal value: 235545
-hexadecimal value: 0x37126b
-binary value: 0b11011100111010
-float value: 56.055e-7
-boolean value: enabled
-text value: "Telemetry sample 055 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-02
-time value: 07:25:55
-date time value: 2026-08-02 07:25:55z
-byte count value: 56 KiB
-time delta value: 56 weeks
-bytes value: <01 23 45 67 89 ab cd ef 37>
-regex value: /^sensor-055-[a-z]+$/
-mixed list: 55, 56.25, enabled, "sample 055", 2026-06-02, <de ad be ef>
-
-[scalar batch 056]
-decimal value: 243464
-hexadecimal value: 0x38126c
-binary value: 0b11100000111011
-float value: 57.056e-0
-boolean value: disabled
-text value: "Telemetry sample 056 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-03
-time value: 08:32:08
-date time value: 2026-09-03 08:32:08z
-byte count value: 57 KiB
-time delta value: 57 weeks
-bytes value: <01 23 45 67 89 ab cd ef 38>
-regex value: /^sensor-056-[a-z]+$/
-mixed list: 56, 57.25, enabled, "sample 056", 2026-06-03, <de ad be ef>
-
-[scalar batch 057]
-decimal value: 251383
-hexadecimal value: 0x39126d
-binary value: 0b11100100111100
-float value: 58.057e-1
-boolean value: enabled
-text value: "Telemetry sample 057 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-04
-time value: 09:39:21
-date time value: 2026-10-04 09:39:21z
-byte count value: 58 KiB
-time delta value: 58 weeks
-bytes value: <01 23 45 67 89 ab cd ef 39>
-regex value: /^sensor-057-[a-z]+$/
-mixed list: 57, 58.25, enabled, "sample 057", 2026-06-04, <de ad be ef>
-
-[scalar batch 058]
-decimal value: 259302
-hexadecimal value: 0x3a126e
-binary value: 0b11101000111101
-float value: 59.058e-2
-boolean value: disabled
-text value: "Telemetry sample 058 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-05
-time value: 10:46:34
-date time value: 2026-11-05 10:46:34z
-byte count value: 59 KiB
-time delta value: 59 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3a>
-regex value: /^sensor-058-[a-z]+$/
-mixed list: 58, 59.25, enabled, "sample 058", 2026-06-05, <de ad be ef>
-
-[scalar batch 059]
-decimal value: 267221
-hexadecimal value: 0x3b126f
-binary value: 0b11101100111110
-float value: 60.059e-3
-boolean value: enabled
-text value: "Telemetry sample 059 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-06
-time value: 11:53:47
-date time value: 2026-12-06 11:53:47z
-byte count value: 60 KiB
-time delta value: 60 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3b>
-regex value: /^sensor-059-[a-z]+$/
-mixed list: 59, 60.25, enabled, "sample 059", 2026-06-06, <de ad be ef>
-
-[scalar batch 060]
-decimal value: 275140
-hexadecimal value: 0x3c1270
-binary value: 0b11110000111111
-float value: 61.060e-4
-boolean value: disabled
-text value: "Telemetry sample 060 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-07
-time value: 12:00:00
-date time value: 2026-01-07 12:00:00z
-byte count value: 61 KiB
-time delta value: 61 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3c>
-regex value: /^sensor-060-[a-z]+$/
-mixed list: 60, 61.25, enabled, "sample 060", 2026-06-07, <de ad be ef>
-
-[scalar batch 061]
-decimal value: 283059
-hexadecimal value: 0x3d1271
-binary value: 0b11110101000000
-float value: 62.061e-5
-boolean value: enabled
-text value: "Telemetry sample 061 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-08
-time value: 13:07:13
-date time value: 2026-02-08 13:07:13z
-byte count value: 62 KiB
-time delta value: 62 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3d>
-regex value: /^sensor-061-[a-z]+$/
-mixed list: 61, 62.25, enabled, "sample 061", 2026-06-08, <de ad be ef>
-
-[scalar batch 062]
-decimal value: 290978
-hexadecimal value: 0x3e1272
-binary value: 0b11111001000001
-float value: 63.062e-6
-boolean value: disabled
-text value: "Telemetry sample 062 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-09
-time value: 14:14:26
-date time value: 2026-03-09 14:14:26z
-byte count value: 63 KiB
-time delta value: 63 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3e>
-regex value: /^sensor-062-[a-z]+$/
-mixed list: 62, 63.25, enabled, "sample 062", 2026-06-09, <de ad be ef>
-
-[scalar batch 063]
-decimal value: 298897
-hexadecimal value: 0x3f1273
-binary value: 0b11111101000010
-float value: 64.063e-7
-boolean value: enabled
-text value: "Telemetry sample 063 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-10
-time value: 15:21:39
-date time value: 2026-04-10 15:21:39z
-byte count value: 64 KiB
-time delta value: 64 weeks
-bytes value: <01 23 45 67 89 ab cd ef 3f>
-regex value: /^sensor-063-[a-z]+$/
-mixed list: 63, 64.25, enabled, "sample 063", 2026-06-10, <de ad be ef>
-
-[scalar batch 064]
-decimal value: 306816
-hexadecimal value: 0x401274
-binary value: 0b100000001000011
-float value: 65.064e-0
-boolean value: disabled
-text value: "Telemetry sample 064 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-11
-time value: 16:28:52
-date time value: 2026-05-11 16:28:52z
-byte count value: 65 KiB
-time delta value: 65 weeks
-bytes value: <01 23 45 67 89 ab cd ef 40>
-regex value: /^sensor-064-[a-z]+$/
-mixed list: 64, 65.25, enabled, "sample 064", 2026-06-11, <de ad be ef>
-
-[scalar batch 065]
-decimal value: 314735
-hexadecimal value: 0x411275
-binary value: 0b100000101000100
-float value: 66.065e-1
-boolean value: enabled
-text value: "Telemetry sample 065 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-12
-time value: 17:35:05
-date time value: 2026-06-12 17:35:05z
-byte count value: 66 KiB
-time delta value: 66 weeks
-bytes value: <01 23 45 67 89 ab cd ef 41>
-regex value: /^sensor-065-[a-z]+$/
-mixed list: 65, 66.25, enabled, "sample 065", 2026-06-12, <de ad be ef>
-
-[scalar batch 066]
-decimal value: 322654
-hexadecimal value: 0x421276
-binary value: 0b100001001000101
-float value: 67.066e-2
-boolean value: disabled
-text value: "Telemetry sample 066 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-13
-time value: 18:42:18
-date time value: 2026-07-13 18:42:18z
-byte count value: 67 KiB
-time delta value: 67 weeks
-bytes value: <01 23 45 67 89 ab cd ef 42>
-regex value: /^sensor-066-[a-z]+$/
-mixed list: 66, 67.25, enabled, "sample 066", 2026-06-13, <de ad be ef>
-
-[scalar batch 067]
-decimal value: 330573
-hexadecimal value: 0x431277
-binary value: 0b100001101000110
-float value: 68.067e-3
-boolean value: enabled
-text value: "Telemetry sample 067 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-14
-time value: 19:49:31
-date time value: 2026-08-14 19:49:31z
-byte count value: 68 KiB
-time delta value: 68 weeks
-bytes value: <01 23 45 67 89 ab cd ef 43>
-regex value: /^sensor-067-[a-z]+$/
-mixed list: 67, 68.25, enabled, "sample 067", 2026-06-14, <de ad be ef>
-
-[scalar batch 068]
-decimal value: 338492
-hexadecimal value: 0x441278
-binary value: 0b100010001000111
-float value: 69.068e-4
-boolean value: disabled
-text value: "Telemetry sample 068 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-15
-time value: 20:56:44
-date time value: 2026-09-15 20:56:44z
-byte count value: 69 KiB
-time delta value: 69 weeks
-bytes value: <01 23 45 67 89 ab cd ef 44>
-regex value: /^sensor-068-[a-z]+$/
-mixed list: 68, 69.25, enabled, "sample 068", 2026-06-15, <de ad be ef>
-
-[scalar batch 069]
-decimal value: 346411
-hexadecimal value: 0x451279
-binary value: 0b100010101001000
-float value: 70.069e-5
-boolean value: enabled
-text value: "Telemetry sample 069 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-16
-time value: 21:03:57
-date time value: 2026-10-16 21:03:57z
-byte count value: 70 KiB
-time delta value: 70 weeks
-bytes value: <01 23 45 67 89 ab cd ef 45>
-regex value: /^sensor-069-[a-z]+$/
-mixed list: 69, 70.25, enabled, "sample 069", 2026-06-16, <de ad be ef>
-
-[scalar batch 070]
-decimal value: 354330
-hexadecimal value: 0x46127a
-binary value: 0b100011001001001
-float value: 71.070e-6
-boolean value: disabled
-text value: "Telemetry sample 070 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-17
-time value: 22:10:10
-date time value: 2026-11-17 22:10:10z
-byte count value: 71 KiB
-time delta value: 71 weeks
-bytes value: <01 23 45 67 89 ab cd ef 46>
-regex value: /^sensor-070-[a-z]+$/
-mixed list: 70, 71.25, enabled, "sample 070", 2026-06-17, <de ad be ef>
-
-[scalar batch 071]
-decimal value: 362249
-hexadecimal value: 0x47127b
-binary value: 0b100011101001010
-float value: 72.071e-7
-boolean value: enabled
-text value: "Telemetry sample 071 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-18
-time value: 23:17:23
-date time value: 2026-12-18 23:17:23z
-byte count value: 72 KiB
-time delta value: 72 weeks
-bytes value: <01 23 45 67 89 ab cd ef 47>
-regex value: /^sensor-071-[a-z]+$/
-mixed list: 71, 72.25, enabled, "sample 071", 2026-06-18, <de ad be ef>
-
-[scalar batch 072]
-decimal value: 370168
-hexadecimal value: 0x48127c
-binary value: 0b100100001001011
-float value: 73.072e-0
-boolean value: disabled
-text value: "Telemetry sample 072 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-19
-time value: 00:24:36
-date time value: 2026-01-19 00:24:36z
-byte count value: 73 KiB
-time delta value: 73 weeks
-bytes value: <01 23 45 67 89 ab cd ef 48>
-regex value: /^sensor-072-[a-z]+$/
-mixed list: 72, 73.25, enabled, "sample 072", 2026-06-19, <de ad be ef>
-
-[scalar batch 073]
-decimal value: 378087
-hexadecimal value: 0x49127d
-binary value: 0b100100101001100
-float value: 74.073e-1
-boolean value: enabled
-text value: "Telemetry sample 073 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-20
-time value: 01:31:49
-date time value: 2026-02-20 01:31:49z
-byte count value: 74 KiB
-time delta value: 74 weeks
-bytes value: <01 23 45 67 89 ab cd ef 49>
-regex value: /^sensor-073-[a-z]+$/
-mixed list: 73, 74.25, enabled, "sample 073", 2026-06-20, <de ad be ef>
-
-[scalar batch 074]
-decimal value: 386006
-hexadecimal value: 0x4a127e
-binary value: 0b100101001001101
-float value: 75.074e-2
-boolean value: disabled
-text value: "Telemetry sample 074 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-21
-time value: 02:38:02
-date time value: 2026-03-21 02:38:02z
-byte count value: 75 KiB
-time delta value: 75 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4a>
-regex value: /^sensor-074-[a-z]+$/
-mixed list: 74, 75.25, enabled, "sample 074", 2026-06-21, <de ad be ef>
-
-[scalar batch 075]
-decimal value: 393925
-hexadecimal value: 0x4b127f
-binary value: 0b100101101001110
-float value: 76.075e-3
-boolean value: enabled
-text value: "Telemetry sample 075 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-22
-time value: 03:45:15
-date time value: 2026-04-22 03:45:15z
-byte count value: 76 KiB
-time delta value: 76 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4b>
-regex value: /^sensor-075-[a-z]+$/
-mixed list: 75, 76.25, enabled, "sample 075", 2026-06-22, <de ad be ef>
-
-[scalar batch 076]
-decimal value: 401844
-hexadecimal value: 0x4c1280
-binary value: 0b100110001001111
-float value: 77.076e-4
-boolean value: disabled
-text value: "Telemetry sample 076 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-23
-time value: 04:52:28
-date time value: 2026-05-23 04:52:28z
-byte count value: 77 KiB
-time delta value: 77 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4c>
-regex value: /^sensor-076-[a-z]+$/
-mixed list: 76, 77.25, enabled, "sample 076", 2026-06-23, <de ad be ef>
-
-[scalar batch 077]
-decimal value: 409763
-hexadecimal value: 0x4d1281
-binary value: 0b100110101010000
-float value: 78.077e-5
-boolean value: enabled
-text value: "Telemetry sample 077 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-24
-time value: 05:59:41
-date time value: 2026-06-24 05:59:41z
-byte count value: 78 KiB
-time delta value: 78 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4d>
-regex value: /^sensor-077-[a-z]+$/
-mixed list: 77, 78.25, enabled, "sample 077", 2026-06-24, <de ad be ef>
-
-[scalar batch 078]
-decimal value: 417682
-hexadecimal value: 0x4e1282
-binary value: 0b100111001010001
-float value: 79.078e-6
-boolean value: disabled
-text value: "Telemetry sample 078 – Καλημέρα – おはようございます – 😀"
-date value: 2026-07-25
-time value: 06:06:54
-date time value: 2026-07-25 06:06:54z
-byte count value: 79 KiB
-time delta value: 79 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4e>
-regex value: /^sensor-078-[a-z]+$/
-mixed list: 78, 79.25, enabled, "sample 078", 2026-06-25, <de ad be ef>
-
-[scalar batch 079]
-decimal value: 425601
-hexadecimal value: 0x4f1283
-binary value: 0b100111101010010
-float value: 80.079e-7
-boolean value: enabled
-text value: "Telemetry sample 079 – Καλημέρα – おはようございます – 😀"
-date value: 2026-08-26
-time value: 07:13:07
-date time value: 2026-08-26 07:13:07z
-byte count value: 80 KiB
-time delta value: 80 weeks
-bytes value: <01 23 45 67 89 ab cd ef 4f>
-regex value: /^sensor-079-[a-z]+$/
-mixed list: 79, 80.25, enabled, "sample 079", 2026-06-26, <de ad be ef>
-
-[scalar batch 080]
-decimal value: 433520
-hexadecimal value: 0x501284
-binary value: 0b101000001010011
-float value: 81.080e-0
-boolean value: disabled
-text value: "Telemetry sample 080 – Καλημέρα – おはようございます – 😀"
-date value: 2026-09-27
-time value: 08:20:20
-date time value: 2026-09-27 08:20:20z
-byte count value: 81 KiB
-time delta value: 81 weeks
-bytes value: <01 23 45 67 89 ab cd ef 50>
-regex value: /^sensor-080-[a-z]+$/
-mixed list: 80, 81.25, enabled, "sample 080", 2026-06-27, <de ad be ef>
-
-[scalar batch 081]
-decimal value: 441439
-hexadecimal value: 0x511285
-binary value: 0b101000101010100
-float value: 82.081e-1
-boolean value: enabled
-text value: "Telemetry sample 081 – Καλημέρα – おはようございます – 😀"
-date value: 2026-10-01
-time value: 09:27:33
-date time value: 2026-10-01 09:27:33z
-byte count value: 82 KiB
-time delta value: 82 weeks
-bytes value: <01 23 45 67 89 ab cd ef 51>
-regex value: /^sensor-081-[a-z]+$/
-mixed list: 81, 82.25, enabled, "sample 081", 2026-06-01, <de ad be ef>
-
-[scalar batch 082]
-decimal value: 449358
-hexadecimal value: 0x521286
-binary value: 0b101001001010101
-float value: 83.082e-2
-boolean value: disabled
-text value: "Telemetry sample 082 – Καλημέρα – おはようございます – 😀"
-date value: 2026-11-02
-time value: 10:34:46
-date time value: 2026-11-02 10:34:46z
-byte count value: 83 KiB
-time delta value: 83 weeks
-bytes value: <01 23 45 67 89 ab cd ef 52>
-regex value: /^sensor-082-[a-z]+$/
-mixed list: 82, 83.25, enabled, "sample 082", 2026-06-02, <de ad be ef>
-
-[scalar batch 083]
-decimal value: 457277
-hexadecimal value: 0x531287
-binary value: 0b101001101010110
-float value: 84.083e-3
-boolean value: enabled
-text value: "Telemetry sample 083 – Καλημέρα – おはようございます – 😀"
-date value: 2026-12-03
-time value: 11:41:59
-date time value: 2026-12-03 11:41:59z
-byte count value: 84 KiB
-time delta value: 84 weeks
-bytes value: <01 23 45 67 89 ab cd ef 53>
-regex value: /^sensor-083-[a-z]+$/
-mixed list: 83, 84.25, enabled, "sample 083", 2026-06-03, <de ad be ef>
-
-[scalar batch 084]
-decimal value: 465196
-hexadecimal value: 0x541288
-binary value: 0b101010001010111
-float value: 85.084e-4
-boolean value: disabled
-text value: "Telemetry sample 084 – Καλημέρα – おはようございます – 😀"
-date value: 2026-01-04
-time value: 12:48:12
-date time value: 2026-01-04 12:48:12z
-byte count value: 85 KiB
-time delta value: 85 weeks
-bytes value: <01 23 45 67 89 ab cd ef 54>
-regex value: /^sensor-084-[a-z]+$/
-mixed list: 84, 85.25, enabled, "sample 084", 2026-06-04, <de ad be ef>
-
-[scalar batch 085]
-decimal value: 473115
-hexadecimal value: 0x551289
-binary value: 0b101010101011000
-float value: 86.085e-5
-boolean value: enabled
-text value: "Telemetry sample 085 – Καλημέρα – おはようございます – 😀"
-date value: 2026-02-05
-time value: 13:55:25
-date time value: 2026-02-05 13:55:25z
-byte count value: 86 KiB
-time delta value: 86 weeks
-bytes value: <01 23 45 67 89 ab cd ef 55>
-regex value: /^sensor-085-[a-z]+$/
-mixed list: 85, 86.25, enabled, "sample 085", 2026-06-05, <de ad be ef>
-
-[scalar batch 086]
-decimal value: 481034
-hexadecimal value: 0x56128a
-binary value: 0b101011001011001
-float value: 87.086e-6
-boolean value: disabled
-text value: "Telemetry sample 086 – Καλημέρα – おはようございます – 😀"
-date value: 2026-03-06
-time value: 14:02:38
-date time value: 2026-03-06 14:02:38z
-byte count value: 87 KiB
-time delta value: 87 weeks
-bytes value: <01 23 45 67 89 ab cd ef 56>
-regex value: /^sensor-086-[a-z]+$/
-mixed list: 86, 87.25, enabled, "sample 086", 2026-06-06, <de ad be ef>
-
-[scalar batch 087]
-decimal value: 488953
-hexadecimal value: 0x57128b
-binary value: 0b101011101011010
-float value: 88.087e-7
-boolean value: enabled
-text value: "Telemetry sample 087 – Καλημέρα – おはようございます – 😀"
-date value: 2026-04-07
-time value: 15:09:51
-date time value: 2026-04-07 15:09:51z
-byte count value: 88 KiB
-time delta value: 88 weeks
-bytes value: <01 23 45 67 89 ab cd ef 57>
-regex value: /^sensor-087-[a-z]+$/
-mixed list: 87, 88.25, enabled, "sample 087", 2026-06-07, <de ad be ef>
-
-[scalar batch 088]
-decimal value: 496872
-hexadecimal value: 0x58128c
-binary value: 0b101100001011011
-float value: 89.088e-0
-boolean value: disabled
-text value: "Telemetry sample 088 – Καλημέρα – おはようございます – 😀"
-date value: 2026-05-08
-time value: 16:16:04
-date time value: 2026-05-08 16:16:04z
-byte count value: 89 KiB
-time delta value: 89 weeks
-bytes value: <01 23 45 67 89 ab cd ef 58>
-regex value: /^sensor-088-[a-z]+$/
-mixed list: 88, 89.25, enabled, "sample 088", 2026-06-08, <de ad be ef>
-
-[scalar batch 089]
-decimal value: 504791
-hexadecimal value: 0x59128d
-binary value: 0b101100101011100
-float value: 90.089e-1
-boolean value: enabled
-text value: "Telemetry sample 089 – Καλημέρα – おはようございます – 😀"
-date value: 2026-06-09
-time value: 17:23:17
-date time value: 2026-06-09 17:23:17z
-byte count value: 90 KiB
-time delta value: 90 weeks
-bytes value: <01 23 45 67 89 ab cd ef 59>
-regex value: /^sensor-089-[a-z]+$/
-mixed list: 89, 90.25, enabled, "sample 089", 2026-06-09, <de ad be ef>
+---[ Scalar Batch 000 ]--------------------------------------------------------
+Decimal Value     : -200000
+Hexadecimal Value : 0x1234
+Binary Value      : 0b11
+Float Value       : 1.000e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 000 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-01
+Time Value        : 00:00:00
+Date Time Value   : 2026-01-01 00:00:00z
+Byte Count Value  : 1 KiB
+Time Delta Value  : 1 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 00>
+Regex Value       : /^sensor-000-[a-z]+$/
+Mixed List        : 0, 1.25, enabled, "sample 000", 2026-06-01, <de ad be ef>
+
+---[ Scalar Batch 001 ]--------------------------------------------------------
+Decimal Value     : -192081
+Hexadecimal Value : 0x11235
+Binary Value      : 0b100000100
+Float Value       : 2.001e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 001 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-02
+Time Value        : 01:07:13
+Date Time Value   : 2026-02-02 01:07:13z
+Byte Count Value  : 2 KiB
+Time Delta Value  : 2 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 01>
+Regex Value       : /^sensor-001-[a-z]+$/
+Mixed List        : 1, 2.25, enabled, "sample 001", 2026-06-02, <de ad be ef>
+
+---[ Scalar Batch 002 ]--------------------------------------------------------
+Decimal Value     : -184162
+Hexadecimal Value : 0x21236
+Binary Value      : 0b1000000101
+Float Value       : 3.002e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 002 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-03
+Time Value        : 02:14:26
+Date Time Value   : 2026-03-03 02:14:26z
+Byte Count Value  : 3 KiB
+Time Delta Value  : 3 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 02>
+Regex Value       : /^sensor-002-[a-z]+$/
+Mixed List        : 2, 3.25, enabled, "sample 002", 2026-06-03, <de ad be ef>
+
+---[ Scalar Batch 003 ]--------------------------------------------------------
+Decimal Value     : -176243
+Hexadecimal Value : 0x31237
+Binary Value      : 0b1100000110
+Float Value       : 4.003e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 003 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-04
+Time Value        : 03:21:39
+Date Time Value   : 2026-04-04 03:21:39z
+Byte Count Value  : 4 KiB
+Time Delta Value  : 4 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 03>
+Regex Value       : /^sensor-003-[a-z]+$/
+Mixed List        : 3, 4.25, enabled, "sample 003", 2026-06-04, <de ad be ef>
+
+---[ Scalar Batch 004 ]--------------------------------------------------------
+Decimal Value     : -168324
+Hexadecimal Value : 0x41238
+Binary Value      : 0b10000000111
+Float Value       : 5.004e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 004 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-05
+Time Value        : 04:28:52
+Date Time Value   : 2026-05-05 04:28:52z
+Byte Count Value  : 5 KiB
+Time Delta Value  : 5 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 04>
+Regex Value       : /^sensor-004-[a-z]+$/
+Mixed List        : 4, 5.25, enabled, "sample 004", 2026-06-05, <de ad be ef>
+
+---[ Scalar Batch 005 ]--------------------------------------------------------
+Decimal Value     : -160405
+Hexadecimal Value : 0x51239
+Binary Value      : 0b10100001000
+Float Value       : 6.005e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 005 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-06
+Time Value        : 05:35:05
+Date Time Value   : 2026-06-06 05:35:05z
+Byte Count Value  : 6 KiB
+Time Delta Value  : 6 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 05>
+Regex Value       : /^sensor-005-[a-z]+$/
+Mixed List        : 5, 6.25, enabled, "sample 005", 2026-06-06, <de ad be ef>
+
+---[ Scalar Batch 006 ]--------------------------------------------------------
+Decimal Value     : -152486
+Hexadecimal Value : 0x6123a
+Binary Value      : 0b11000001001
+Float Value       : 7.006e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 006 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-07
+Time Value        : 06:42:18
+Date Time Value   : 2026-07-07 06:42:18z
+Byte Count Value  : 7 KiB
+Time Delta Value  : 7 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 06>
+Regex Value       : /^sensor-006-[a-z]+$/
+Mixed List        : 6, 7.25, enabled, "sample 006", 2026-06-07, <de ad be ef>
+
+---[ Scalar Batch 007 ]--------------------------------------------------------
+Decimal Value     : -144567
+Hexadecimal Value : 0x7123b
+Binary Value      : 0b11100001010
+Float Value       : 8.007e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 007 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-08
+Time Value        : 07:49:31
+Date Time Value   : 2026-08-08 07:49:31z
+Byte Count Value  : 8 KiB
+Time Delta Value  : 8 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 07>
+Regex Value       : /^sensor-007-[a-z]+$/
+Mixed List        : 7, 8.25, enabled, "sample 007", 2026-06-08, <de ad be ef>
+
+---[ Scalar Batch 008 ]--------------------------------------------------------
+Decimal Value     : -136648
+Hexadecimal Value : 0x8123c
+Binary Value      : 0b100000001011
+Float Value       : 9.008e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 008 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-09
+Time Value        : 08:56:44
+Date Time Value   : 2026-09-09 08:56:44z
+Byte Count Value  : 9 KiB
+Time Delta Value  : 9 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 08>
+Regex Value       : /^sensor-008-[a-z]+$/
+Mixed List        : 8, 9.25, enabled, "sample 008", 2026-06-09, <de ad be ef>
+
+---[ Scalar Batch 009 ]--------------------------------------------------------
+Decimal Value     : -128729
+Hexadecimal Value : 0x9123d
+Binary Value      : 0b100100001100
+Float Value       : 10.009e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 009 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-10
+Time Value        : 09:03:57
+Date Time Value   : 2026-10-10 09:03:57z
+Byte Count Value  : 10 KiB
+Time Delta Value  : 10 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 09>
+Regex Value       : /^sensor-009-[a-z]+$/
+Mixed List        : 9, 10.25, enabled, "sample 009", 2026-06-10, <de ad be ef>
+
+---[ Scalar Batch 010 ]--------------------------------------------------------
+Decimal Value     : -120810
+Hexadecimal Value : 0xa123e
+Binary Value      : 0b101000001101
+Float Value       : 11.010e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 010 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-11
+Time Value        : 10:10:10
+Date Time Value   : 2026-11-11 10:10:10z
+Byte Count Value  : 11 KiB
+Time Delta Value  : 11 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0a>
+Regex Value       : /^sensor-010-[a-z]+$/
+Mixed List        : 10, 11.25, enabled, "sample 010", 2026-06-11, <de ad be ef>
+
+---[ Scalar Batch 011 ]--------------------------------------------------------
+Decimal Value     : -112891
+Hexadecimal Value : 0xb123f
+Binary Value      : 0b101100001110
+Float Value       : 12.011e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 011 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-12
+Time Value        : 11:17:23
+Date Time Value   : 2026-12-12 11:17:23z
+Byte Count Value  : 12 KiB
+Time Delta Value  : 12 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0b>
+Regex Value       : /^sensor-011-[a-z]+$/
+Mixed List        : 11, 12.25, enabled, "sample 011", 2026-06-12, <de ad be ef>
+
+---[ Scalar Batch 012 ]--------------------------------------------------------
+Decimal Value     : -104972
+Hexadecimal Value : 0xc1240
+Binary Value      : 0b110000001111
+Float Value       : 13.012e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 012 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-13
+Time Value        : 12:24:36
+Date Time Value   : 2026-01-13 12:24:36z
+Byte Count Value  : 13 KiB
+Time Delta Value  : 13 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0c>
+Regex Value       : /^sensor-012-[a-z]+$/
+Mixed List        : 12, 13.25, enabled, "sample 012", 2026-06-13, <de ad be ef>
+
+---[ Scalar Batch 013 ]--------------------------------------------------------
+Decimal Value     : -97053
+Hexadecimal Value : 0xd1241
+Binary Value      : 0b110100010000
+Float Value       : 14.013e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 013 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-14
+Time Value        : 13:31:49
+Date Time Value   : 2026-02-14 13:31:49z
+Byte Count Value  : 14 KiB
+Time Delta Value  : 14 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0d>
+Regex Value       : /^sensor-013-[a-z]+$/
+Mixed List        : 13, 14.25, enabled, "sample 013", 2026-06-14, <de ad be ef>
+
+---[ Scalar Batch 014 ]--------------------------------------------------------
+Decimal Value     : -89134
+Hexadecimal Value : 0xe1242
+Binary Value      : 0b111000010001
+Float Value       : 15.014e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 014 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-15
+Time Value        : 14:38:02
+Date Time Value   : 2026-03-15 14:38:02z
+Byte Count Value  : 15 KiB
+Time Delta Value  : 15 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0e>
+Regex Value       : /^sensor-014-[a-z]+$/
+Mixed List        : 14, 15.25, enabled, "sample 014", 2026-06-15, <de ad be ef>
+
+---[ Scalar Batch 015 ]--------------------------------------------------------
+Decimal Value     : -81215
+Hexadecimal Value : 0xf1243
+Binary Value      : 0b111100010010
+Float Value       : 16.015e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 015 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-16
+Time Value        : 15:45:15
+Date Time Value   : 2026-04-16 15:45:15z
+Byte Count Value  : 16 KiB
+Time Delta Value  : 16 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 0f>
+Regex Value       : /^sensor-015-[a-z]+$/
+Mixed List        : 15, 16.25, enabled, "sample 015", 2026-06-16, <de ad be ef>
+
+---[ Scalar Batch 016 ]--------------------------------------------------------
+Decimal Value     : -73296
+Hexadecimal Value : 0x101244
+Binary Value      : 0b1000000010011
+Float Value       : 17.016e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 016 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-17
+Time Value        : 16:52:28
+Date Time Value   : 2026-05-17 16:52:28z
+Byte Count Value  : 17 KiB
+Time Delta Value  : 17 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 10>
+Regex Value       : /^sensor-016-[a-z]+$/
+Mixed List        : 16, 17.25, enabled, "sample 016", 2026-06-17, <de ad be ef>
+
+---[ Scalar Batch 017 ]--------------------------------------------------------
+Decimal Value     : -65377
+Hexadecimal Value : 0x111245
+Binary Value      : 0b1000100010100
+Float Value       : 18.017e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 017 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-18
+Time Value        : 17:59:41
+Date Time Value   : 2026-06-18 17:59:41z
+Byte Count Value  : 18 KiB
+Time Delta Value  : 18 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 11>
+Regex Value       : /^sensor-017-[a-z]+$/
+Mixed List        : 17, 18.25, enabled, "sample 017", 2026-06-18, <de ad be ef>
+
+---[ Scalar Batch 018 ]--------------------------------------------------------
+Decimal Value     : -57458
+Hexadecimal Value : 0x121246
+Binary Value      : 0b1001000010101
+Float Value       : 19.018e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 018 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-19
+Time Value        : 18:06:54
+Date Time Value   : 2026-07-19 18:06:54z
+Byte Count Value  : 19 KiB
+Time Delta Value  : 19 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 12>
+Regex Value       : /^sensor-018-[a-z]+$/
+Mixed List        : 18, 19.25, enabled, "sample 018", 2026-06-19, <de ad be ef>
+
+---[ Scalar Batch 019 ]--------------------------------------------------------
+Decimal Value     : -49539
+Hexadecimal Value : 0x131247
+Binary Value      : 0b1001100010110
+Float Value       : 20.019e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 019 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-20
+Time Value        : 19:13:07
+Date Time Value   : 2026-08-20 19:13:07z
+Byte Count Value  : 20 KiB
+Time Delta Value  : 20 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 13>
+Regex Value       : /^sensor-019-[a-z]+$/
+Mixed List        : 19, 20.25, enabled, "sample 019", 2026-06-20, <de ad be ef>
+
+---[ Scalar Batch 020 ]--------------------------------------------------------
+Decimal Value     : -41620
+Hexadecimal Value : 0x141248
+Binary Value      : 0b1010000010111
+Float Value       : 21.020e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 020 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-21
+Time Value        : 20:20:20
+Date Time Value   : 2026-09-21 20:20:20z
+Byte Count Value  : 21 KiB
+Time Delta Value  : 21 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 14>
+Regex Value       : /^sensor-020-[a-z]+$/
+Mixed List        : 20, 21.25, enabled, "sample 020", 2026-06-21, <de ad be ef>
+
+---[ Scalar Batch 021 ]--------------------------------------------------------
+Decimal Value     : -33701
+Hexadecimal Value : 0x151249
+Binary Value      : 0b1010100011000
+Float Value       : 22.021e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 021 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-22
+Time Value        : 21:27:33
+Date Time Value   : 2026-10-22 21:27:33z
+Byte Count Value  : 22 KiB
+Time Delta Value  : 22 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 15>
+Regex Value       : /^sensor-021-[a-z]+$/
+Mixed List        : 21, 22.25, enabled, "sample 021", 2026-06-22, <de ad be ef>
+
+---[ Scalar Batch 022 ]--------------------------------------------------------
+Decimal Value     : -25782
+Hexadecimal Value : 0x16124a
+Binary Value      : 0b1011000011001
+Float Value       : 23.022e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 022 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-23
+Time Value        : 22:34:46
+Date Time Value   : 2026-11-23 22:34:46z
+Byte Count Value  : 23 KiB
+Time Delta Value  : 23 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 16>
+Regex Value       : /^sensor-022-[a-z]+$/
+Mixed List        : 22, 23.25, enabled, "sample 022", 2026-06-23, <de ad be ef>
+
+---[ Scalar Batch 023 ]--------------------------------------------------------
+Decimal Value     : -17863
+Hexadecimal Value : 0x17124b
+Binary Value      : 0b1011100011010
+Float Value       : 24.023e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 023 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-24
+Time Value        : 23:41:59
+Date Time Value   : 2026-12-24 23:41:59z
+Byte Count Value  : 24 KiB
+Time Delta Value  : 24 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 17>
+Regex Value       : /^sensor-023-[a-z]+$/
+Mixed List        : 23, 24.25, enabled, "sample 023", 2026-06-24, <de ad be ef>
+
+---[ Scalar Batch 024 ]--------------------------------------------------------
+Decimal Value     : -9944
+Hexadecimal Value : 0x18124c
+Binary Value      : 0b1100000011011
+Float Value       : 25.024e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 024 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-25
+Time Value        : 00:48:12
+Date Time Value   : 2026-01-25 00:48:12z
+Byte Count Value  : 25 KiB
+Time Delta Value  : 25 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 18>
+Regex Value       : /^sensor-024-[a-z]+$/
+Mixed List        : 24, 25.25, enabled, "sample 024", 2026-06-25, <de ad be ef>
+
+---[ Scalar Batch 025 ]--------------------------------------------------------
+Decimal Value     : -2025
+Hexadecimal Value : 0x19124d
+Binary Value      : 0b1100100011100
+Float Value       : 26.025e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 025 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-26
+Time Value        : 01:55:25
+Date Time Value   : 2026-02-26 01:55:25z
+Byte Count Value  : 26 KiB
+Time Delta Value  : 26 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 19>
+Regex Value       : /^sensor-025-[a-z]+$/
+Mixed List        : 25, 26.25, enabled, "sample 025", 2026-06-26, <de ad be ef>
+
+---[ Scalar Batch 026 ]--------------------------------------------------------
+Decimal Value     : 5894
+Hexadecimal Value : 0x1a124e
+Binary Value      : 0b1101000011101
+Float Value       : 27.026e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 026 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-27
+Time Value        : 02:02:38
+Date Time Value   : 2026-03-27 02:02:38z
+Byte Count Value  : 27 KiB
+Time Delta Value  : 27 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1a>
+Regex Value       : /^sensor-026-[a-z]+$/
+Mixed List        : 26, 27.25, enabled, "sample 026", 2026-06-27, <de ad be ef>
+
+---[ Scalar Batch 027 ]--------------------------------------------------------
+Decimal Value     : 13813
+Hexadecimal Value : 0x1b124f
+Binary Value      : 0b1101100011110
+Float Value       : 28.027e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 027 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-01
+Time Value        : 03:09:51
+Date Time Value   : 2026-04-01 03:09:51z
+Byte Count Value  : 28 KiB
+Time Delta Value  : 28 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1b>
+Regex Value       : /^sensor-027-[a-z]+$/
+Mixed List        : 27, 28.25, enabled, "sample 027", 2026-06-01, <de ad be ef>
+
+---[ Scalar Batch 028 ]--------------------------------------------------------
+Decimal Value     : 21732
+Hexadecimal Value : 0x1c1250
+Binary Value      : 0b1110000011111
+Float Value       : 29.028e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 028 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-02
+Time Value        : 04:16:04
+Date Time Value   : 2026-05-02 04:16:04z
+Byte Count Value  : 29 KiB
+Time Delta Value  : 29 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1c>
+Regex Value       : /^sensor-028-[a-z]+$/
+Mixed List        : 28, 29.25, enabled, "sample 028", 2026-06-02, <de ad be ef>
+
+---[ Scalar Batch 029 ]--------------------------------------------------------
+Decimal Value     : 29651
+Hexadecimal Value : 0x1d1251
+Binary Value      : 0b1110100100000
+Float Value       : 30.029e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 029 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-03
+Time Value        : 05:23:17
+Date Time Value   : 2026-06-03 05:23:17z
+Byte Count Value  : 30 KiB
+Time Delta Value  : 30 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1d>
+Regex Value       : /^sensor-029-[a-z]+$/
+Mixed List        : 29, 30.25, enabled, "sample 029", 2026-06-03, <de ad be ef>
+
+---[ Scalar Batch 030 ]--------------------------------------------------------
+Decimal Value     : 37570
+Hexadecimal Value : 0x1e1252
+Binary Value      : 0b1111000100001
+Float Value       : 31.030e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 030 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-04
+Time Value        : 06:30:30
+Date Time Value   : 2026-07-04 06:30:30z
+Byte Count Value  : 31 KiB
+Time Delta Value  : 31 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1e>
+Regex Value       : /^sensor-030-[a-z]+$/
+Mixed List        : 30, 31.25, enabled, "sample 030", 2026-06-04, <de ad be ef>
+
+---[ Scalar Batch 031 ]--------------------------------------------------------
+Decimal Value     : 45489
+Hexadecimal Value : 0x1f1253
+Binary Value      : 0b1111100100010
+Float Value       : 32.031e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 031 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-05
+Time Value        : 07:37:43
+Date Time Value   : 2026-08-05 07:37:43z
+Byte Count Value  : 32 KiB
+Time Delta Value  : 32 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 1f>
+Regex Value       : /^sensor-031-[a-z]+$/
+Mixed List        : 31, 32.25, enabled, "sample 031", 2026-06-05, <de ad be ef>
+
+---[ Scalar Batch 032 ]--------------------------------------------------------
+Decimal Value     : 53408
+Hexadecimal Value : 0x201254
+Binary Value      : 0b10000000100011
+Float Value       : 33.032e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 032 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-06
+Time Value        : 08:44:56
+Date Time Value   : 2026-09-06 08:44:56z
+Byte Count Value  : 33 KiB
+Time Delta Value  : 33 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 20>
+Regex Value       : /^sensor-032-[a-z]+$/
+Mixed List        : 32, 33.25, enabled, "sample 032", 2026-06-06, <de ad be ef>
+
+---[ Scalar Batch 033 ]--------------------------------------------------------
+Decimal Value     : 61327
+Hexadecimal Value : 0x211255
+Binary Value      : 0b10000100100100
+Float Value       : 34.033e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 033 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-07
+Time Value        : 09:51:09
+Date Time Value   : 2026-10-07 09:51:09z
+Byte Count Value  : 34 KiB
+Time Delta Value  : 34 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 21>
+Regex Value       : /^sensor-033-[a-z]+$/
+Mixed List        : 33, 34.25, enabled, "sample 033", 2026-06-07, <de ad be ef>
+
+---[ Scalar Batch 034 ]--------------------------------------------------------
+Decimal Value     : 69246
+Hexadecimal Value : 0x221256
+Binary Value      : 0b10001000100101
+Float Value       : 35.034e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 034 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-08
+Time Value        : 10:58:22
+Date Time Value   : 2026-11-08 10:58:22z
+Byte Count Value  : 35 KiB
+Time Delta Value  : 35 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 22>
+Regex Value       : /^sensor-034-[a-z]+$/
+Mixed List        : 34, 35.25, enabled, "sample 034", 2026-06-08, <de ad be ef>
+
+---[ Scalar Batch 035 ]--------------------------------------------------------
+Decimal Value     : 77165
+Hexadecimal Value : 0x231257
+Binary Value      : 0b10001100100110
+Float Value       : 36.035e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 035 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-09
+Time Value        : 11:05:35
+Date Time Value   : 2026-12-09 11:05:35z
+Byte Count Value  : 36 KiB
+Time Delta Value  : 36 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 23>
+Regex Value       : /^sensor-035-[a-z]+$/
+Mixed List        : 35, 36.25, enabled, "sample 035", 2026-06-09, <de ad be ef>
+
+---[ Scalar Batch 036 ]--------------------------------------------------------
+Decimal Value     : 85084
+Hexadecimal Value : 0x241258
+Binary Value      : 0b10010000100111
+Float Value       : 37.036e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 036 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-10
+Time Value        : 12:12:48
+Date Time Value   : 2026-01-10 12:12:48z
+Byte Count Value  : 37 KiB
+Time Delta Value  : 37 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 24>
+Regex Value       : /^sensor-036-[a-z]+$/
+Mixed List        : 36, 37.25, enabled, "sample 036", 2026-06-10, <de ad be ef>
+
+---[ Scalar Batch 037 ]--------------------------------------------------------
+Decimal Value     : 93003
+Hexadecimal Value : 0x251259
+Binary Value      : 0b10010100101000
+Float Value       : 38.037e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 037 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-11
+Time Value        : 13:19:01
+Date Time Value   : 2026-02-11 13:19:01z
+Byte Count Value  : 38 KiB
+Time Delta Value  : 38 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 25>
+Regex Value       : /^sensor-037-[a-z]+$/
+Mixed List        : 37, 38.25, enabled, "sample 037", 2026-06-11, <de ad be ef>
+
+---[ Scalar Batch 038 ]--------------------------------------------------------
+Decimal Value     : 100922
+Hexadecimal Value : 0x26125a
+Binary Value      : 0b10011000101001
+Float Value       : 39.038e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 038 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-12
+Time Value        : 14:26:14
+Date Time Value   : 2026-03-12 14:26:14z
+Byte Count Value  : 39 KiB
+Time Delta Value  : 39 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 26>
+Regex Value       : /^sensor-038-[a-z]+$/
+Mixed List        : 38, 39.25, enabled, "sample 038", 2026-06-12, <de ad be ef>
+
+---[ Scalar Batch 039 ]--------------------------------------------------------
+Decimal Value     : 108841
+Hexadecimal Value : 0x27125b
+Binary Value      : 0b10011100101010
+Float Value       : 40.039e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 039 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-13
+Time Value        : 15:33:27
+Date Time Value   : 2026-04-13 15:33:27z
+Byte Count Value  : 40 KiB
+Time Delta Value  : 40 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 27>
+Regex Value       : /^sensor-039-[a-z]+$/
+Mixed List        : 39, 40.25, enabled, "sample 039", 2026-06-13, <de ad be ef>
+
+---[ Scalar Batch 040 ]--------------------------------------------------------
+Decimal Value     : 116760
+Hexadecimal Value : 0x28125c
+Binary Value      : 0b10100000101011
+Float Value       : 41.040e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 040 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-14
+Time Value        : 16:40:40
+Date Time Value   : 2026-05-14 16:40:40z
+Byte Count Value  : 41 KiB
+Time Delta Value  : 41 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 28>
+Regex Value       : /^sensor-040-[a-z]+$/
+Mixed List        : 40, 41.25, enabled, "sample 040", 2026-06-14, <de ad be ef>
+
+---[ Scalar Batch 041 ]--------------------------------------------------------
+Decimal Value     : 124679
+Hexadecimal Value : 0x29125d
+Binary Value      : 0b10100100101100
+Float Value       : 42.041e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 041 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-15
+Time Value        : 17:47:53
+Date Time Value   : 2026-06-15 17:47:53z
+Byte Count Value  : 42 KiB
+Time Delta Value  : 42 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 29>
+Regex Value       : /^sensor-041-[a-z]+$/
+Mixed List        : 41, 42.25, enabled, "sample 041", 2026-06-15, <de ad be ef>
+
+---[ Scalar Batch 042 ]--------------------------------------------------------
+Decimal Value     : 132598
+Hexadecimal Value : 0x2a125e
+Binary Value      : 0b10101000101101
+Float Value       : 43.042e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 042 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-16
+Time Value        : 18:54:06
+Date Time Value   : 2026-07-16 18:54:06z
+Byte Count Value  : 43 KiB
+Time Delta Value  : 43 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2a>
+Regex Value       : /^sensor-042-[a-z]+$/
+Mixed List        : 42, 43.25, enabled, "sample 042", 2026-06-16, <de ad be ef>
+
+---[ Scalar Batch 043 ]--------------------------------------------------------
+Decimal Value     : 140517
+Hexadecimal Value : 0x2b125f
+Binary Value      : 0b10101100101110
+Float Value       : 44.043e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 043 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-17
+Time Value        : 19:01:19
+Date Time Value   : 2026-08-17 19:01:19z
+Byte Count Value  : 44 KiB
+Time Delta Value  : 44 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2b>
+Regex Value       : /^sensor-043-[a-z]+$/
+Mixed List        : 43, 44.25, enabled, "sample 043", 2026-06-17, <de ad be ef>
+
+---[ Scalar Batch 044 ]--------------------------------------------------------
+Decimal Value     : 148436
+Hexadecimal Value : 0x2c1260
+Binary Value      : 0b10110000101111
+Float Value       : 45.044e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 044 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-18
+Time Value        : 20:08:32
+Date Time Value   : 2026-09-18 20:08:32z
+Byte Count Value  : 45 KiB
+Time Delta Value  : 45 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2c>
+Regex Value       : /^sensor-044-[a-z]+$/
+Mixed List        : 44, 45.25, enabled, "sample 044", 2026-06-18, <de ad be ef>
+
+---[ Scalar Batch 045 ]--------------------------------------------------------
+Decimal Value     : 156355
+Hexadecimal Value : 0x2d1261
+Binary Value      : 0b10110100110000
+Float Value       : 46.045e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 045 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-19
+Time Value        : 21:15:45
+Date Time Value   : 2026-10-19 21:15:45z
+Byte Count Value  : 46 KiB
+Time Delta Value  : 46 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2d>
+Regex Value       : /^sensor-045-[a-z]+$/
+Mixed List        : 45, 46.25, enabled, "sample 045", 2026-06-19, <de ad be ef>
+
+---[ Scalar Batch 046 ]--------------------------------------------------------
+Decimal Value     : 164274
+Hexadecimal Value : 0x2e1262
+Binary Value      : 0b10111000110001
+Float Value       : 47.046e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 046 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-20
+Time Value        : 22:22:58
+Date Time Value   : 2026-11-20 22:22:58z
+Byte Count Value  : 47 KiB
+Time Delta Value  : 47 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2e>
+Regex Value       : /^sensor-046-[a-z]+$/
+Mixed List        : 46, 47.25, enabled, "sample 046", 2026-06-20, <de ad be ef>
+
+---[ Scalar Batch 047 ]--------------------------------------------------------
+Decimal Value     : 172193
+Hexadecimal Value : 0x2f1263
+Binary Value      : 0b10111100110010
+Float Value       : 48.047e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 047 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-21
+Time Value        : 23:29:11
+Date Time Value   : 2026-12-21 23:29:11z
+Byte Count Value  : 48 KiB
+Time Delta Value  : 48 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 2f>
+Regex Value       : /^sensor-047-[a-z]+$/
+Mixed List        : 47, 48.25, enabled, "sample 047", 2026-06-21, <de ad be ef>
+
+---[ Scalar Batch 048 ]--------------------------------------------------------
+Decimal Value     : 180112
+Hexadecimal Value : 0x301264
+Binary Value      : 0b11000000110011
+Float Value       : 49.048e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 048 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-22
+Time Value        : 00:36:24
+Date Time Value   : 2026-01-22 00:36:24z
+Byte Count Value  : 49 KiB
+Time Delta Value  : 49 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 30>
+Regex Value       : /^sensor-048-[a-z]+$/
+Mixed List        : 48, 49.25, enabled, "sample 048", 2026-06-22, <de ad be ef>
+
+---[ Scalar Batch 049 ]--------------------------------------------------------
+Decimal Value     : 188031
+Hexadecimal Value : 0x311265
+Binary Value      : 0b11000100110100
+Float Value       : 50.049e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 049 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-23
+Time Value        : 01:43:37
+Date Time Value   : 2026-02-23 01:43:37z
+Byte Count Value  : 50 KiB
+Time Delta Value  : 50 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 31>
+Regex Value       : /^sensor-049-[a-z]+$/
+Mixed List        : 49, 50.25, enabled, "sample 049", 2026-06-23, <de ad be ef>
+
+---[ Scalar Batch 050 ]--------------------------------------------------------
+Decimal Value     : 195950
+Hexadecimal Value : 0x321266
+Binary Value      : 0b11001000110101
+Float Value       : 51.050e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 050 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-24
+Time Value        : 02:50:50
+Date Time Value   : 2026-03-24 02:50:50z
+Byte Count Value  : 51 KiB
+Time Delta Value  : 51 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 32>
+Regex Value       : /^sensor-050-[a-z]+$/
+Mixed List        : 50, 51.25, enabled, "sample 050", 2026-06-24, <de ad be ef>
+
+---[ Scalar Batch 051 ]--------------------------------------------------------
+Decimal Value     : 203869
+Hexadecimal Value : 0x331267
+Binary Value      : 0b11001100110110
+Float Value       : 52.051e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 051 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-25
+Time Value        : 03:57:03
+Date Time Value   : 2026-04-25 03:57:03z
+Byte Count Value  : 52 KiB
+Time Delta Value  : 52 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 33>
+Regex Value       : /^sensor-051-[a-z]+$/
+Mixed List        : 51, 52.25, enabled, "sample 051", 2026-06-25, <de ad be ef>
+
+---[ Scalar Batch 052 ]--------------------------------------------------------
+Decimal Value     : 211788
+Hexadecimal Value : 0x341268
+Binary Value      : 0b11010000110111
+Float Value       : 53.052e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 052 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-26
+Time Value        : 04:04:16
+Date Time Value   : 2026-05-26 04:04:16z
+Byte Count Value  : 53 KiB
+Time Delta Value  : 53 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 34>
+Regex Value       : /^sensor-052-[a-z]+$/
+Mixed List        : 52, 53.25, enabled, "sample 052", 2026-06-26, <de ad be ef>
+
+---[ Scalar Batch 053 ]--------------------------------------------------------
+Decimal Value     : 219707
+Hexadecimal Value : 0x351269
+Binary Value      : 0b11010100111000
+Float Value       : 54.053e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 053 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-27
+Time Value        : 05:11:29
+Date Time Value   : 2026-06-27 05:11:29z
+Byte Count Value  : 54 KiB
+Time Delta Value  : 54 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 35>
+Regex Value       : /^sensor-053-[a-z]+$/
+Mixed List        : 53, 54.25, enabled, "sample 053", 2026-06-27, <de ad be ef>
+
+---[ Scalar Batch 054 ]--------------------------------------------------------
+Decimal Value     : 227626
+Hexadecimal Value : 0x36126a
+Binary Value      : 0b11011000111001
+Float Value       : 55.054e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 054 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-01
+Time Value        : 06:18:42
+Date Time Value   : 2026-07-01 06:18:42z
+Byte Count Value  : 55 KiB
+Time Delta Value  : 55 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 36>
+Regex Value       : /^sensor-054-[a-z]+$/
+Mixed List        : 54, 55.25, enabled, "sample 054", 2026-06-01, <de ad be ef>
+
+---[ Scalar Batch 055 ]--------------------------------------------------------
+Decimal Value     : 235545
+Hexadecimal Value : 0x37126b
+Binary Value      : 0b11011100111010
+Float Value       : 56.055e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 055 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-02
+Time Value        : 07:25:55
+Date Time Value   : 2026-08-02 07:25:55z
+Byte Count Value  : 56 KiB
+Time Delta Value  : 56 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 37>
+Regex Value       : /^sensor-055-[a-z]+$/
+Mixed List        : 55, 56.25, enabled, "sample 055", 2026-06-02, <de ad be ef>
+
+---[ Scalar Batch 056 ]--------------------------------------------------------
+Decimal Value     : 243464
+Hexadecimal Value : 0x38126c
+Binary Value      : 0b11100000111011
+Float Value       : 57.056e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 056 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-03
+Time Value        : 08:32:08
+Date Time Value   : 2026-09-03 08:32:08z
+Byte Count Value  : 57 KiB
+Time Delta Value  : 57 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 38>
+Regex Value       : /^sensor-056-[a-z]+$/
+Mixed List        : 56, 57.25, enabled, "sample 056", 2026-06-03, <de ad be ef>
+
+---[ Scalar Batch 057 ]--------------------------------------------------------
+Decimal Value     : 251383
+Hexadecimal Value : 0x39126d
+Binary Value      : 0b11100100111100
+Float Value       : 58.057e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 057 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-04
+Time Value        : 09:39:21
+Date Time Value   : 2026-10-04 09:39:21z
+Byte Count Value  : 58 KiB
+Time Delta Value  : 58 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 39>
+Regex Value       : /^sensor-057-[a-z]+$/
+Mixed List        : 57, 58.25, enabled, "sample 057", 2026-06-04, <de ad be ef>
+
+---[ Scalar Batch 058 ]--------------------------------------------------------
+Decimal Value     : 259302
+Hexadecimal Value : 0x3a126e
+Binary Value      : 0b11101000111101
+Float Value       : 59.058e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 058 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-05
+Time Value        : 10:46:34
+Date Time Value   : 2026-11-05 10:46:34z
+Byte Count Value  : 59 KiB
+Time Delta Value  : 59 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3a>
+Regex Value       : /^sensor-058-[a-z]+$/
+Mixed List        : 58, 59.25, enabled, "sample 058", 2026-06-05, <de ad be ef>
+
+---[ Scalar Batch 059 ]--------------------------------------------------------
+Decimal Value     : 267221
+Hexadecimal Value : 0x3b126f
+Binary Value      : 0b11101100111110
+Float Value       : 60.059e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 059 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-06
+Time Value        : 11:53:47
+Date Time Value   : 2026-12-06 11:53:47z
+Byte Count Value  : 60 KiB
+Time Delta Value  : 60 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3b>
+Regex Value       : /^sensor-059-[a-z]+$/
+Mixed List        : 59, 60.25, enabled, "sample 059", 2026-06-06, <de ad be ef>
+
+---[ Scalar Batch 060 ]--------------------------------------------------------
+Decimal Value     : 275140
+Hexadecimal Value : 0x3c1270
+Binary Value      : 0b11110000111111
+Float Value       : 61.060e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 060 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-07
+Time Value        : 12:00:00
+Date Time Value   : 2026-01-07 12:00:00z
+Byte Count Value  : 61 KiB
+Time Delta Value  : 61 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3c>
+Regex Value       : /^sensor-060-[a-z]+$/
+Mixed List        : 60, 61.25, enabled, "sample 060", 2026-06-07, <de ad be ef>
+
+---[ Scalar Batch 061 ]--------------------------------------------------------
+Decimal Value     : 283059
+Hexadecimal Value : 0x3d1271
+Binary Value      : 0b11110101000000
+Float Value       : 62.061e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 061 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-08
+Time Value        : 13:07:13
+Date Time Value   : 2026-02-08 13:07:13z
+Byte Count Value  : 62 KiB
+Time Delta Value  : 62 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3d>
+Regex Value       : /^sensor-061-[a-z]+$/
+Mixed List        : 61, 62.25, enabled, "sample 061", 2026-06-08, <de ad be ef>
+
+---[ Scalar Batch 062 ]--------------------------------------------------------
+Decimal Value     : 290978
+Hexadecimal Value : 0x3e1272
+Binary Value      : 0b11111001000001
+Float Value       : 63.062e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 062 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-09
+Time Value        : 14:14:26
+Date Time Value   : 2026-03-09 14:14:26z
+Byte Count Value  : 63 KiB
+Time Delta Value  : 63 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3e>
+Regex Value       : /^sensor-062-[a-z]+$/
+Mixed List        : 62, 63.25, enabled, "sample 062", 2026-06-09, <de ad be ef>
+
+---[ Scalar Batch 063 ]--------------------------------------------------------
+Decimal Value     : 298897
+Hexadecimal Value : 0x3f1273
+Binary Value      : 0b11111101000010
+Float Value       : 64.063e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 063 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-10
+Time Value        : 15:21:39
+Date Time Value   : 2026-04-10 15:21:39z
+Byte Count Value  : 64 KiB
+Time Delta Value  : 64 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 3f>
+Regex Value       : /^sensor-063-[a-z]+$/
+Mixed List        : 63, 64.25, enabled, "sample 063", 2026-06-10, <de ad be ef>
+
+---[ Scalar Batch 064 ]--------------------------------------------------------
+Decimal Value     : 306816
+Hexadecimal Value : 0x401274
+Binary Value      : 0b100000001000011
+Float Value       : 65.064e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 064 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-11
+Time Value        : 16:28:52
+Date Time Value   : 2026-05-11 16:28:52z
+Byte Count Value  : 65 KiB
+Time Delta Value  : 65 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 40>
+Regex Value       : /^sensor-064-[a-z]+$/
+Mixed List        : 64, 65.25, enabled, "sample 064", 2026-06-11, <de ad be ef>
+
+---[ Scalar Batch 065 ]--------------------------------------------------------
+Decimal Value     : 314735
+Hexadecimal Value : 0x411275
+Binary Value      : 0b100000101000100
+Float Value       : 66.065e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 065 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-12
+Time Value        : 17:35:05
+Date Time Value   : 2026-06-12 17:35:05z
+Byte Count Value  : 66 KiB
+Time Delta Value  : 66 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 41>
+Regex Value       : /^sensor-065-[a-z]+$/
+Mixed List        : 65, 66.25, enabled, "sample 065", 2026-06-12, <de ad be ef>
+
+---[ Scalar Batch 066 ]--------------------------------------------------------
+Decimal Value     : 322654
+Hexadecimal Value : 0x421276
+Binary Value      : 0b100001001000101
+Float Value       : 67.066e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 066 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-13
+Time Value        : 18:42:18
+Date Time Value   : 2026-07-13 18:42:18z
+Byte Count Value  : 67 KiB
+Time Delta Value  : 67 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 42>
+Regex Value       : /^sensor-066-[a-z]+$/
+Mixed List        : 66, 67.25, enabled, "sample 066", 2026-06-13, <de ad be ef>
+
+---[ Scalar Batch 067 ]--------------------------------------------------------
+Decimal Value     : 330573
+Hexadecimal Value : 0x431277
+Binary Value      : 0b100001101000110
+Float Value       : 68.067e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 067 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-14
+Time Value        : 19:49:31
+Date Time Value   : 2026-08-14 19:49:31z
+Byte Count Value  : 68 KiB
+Time Delta Value  : 68 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 43>
+Regex Value       : /^sensor-067-[a-z]+$/
+Mixed List        : 67, 68.25, enabled, "sample 067", 2026-06-14, <de ad be ef>
+
+---[ Scalar Batch 068 ]--------------------------------------------------------
+Decimal Value     : 338492
+Hexadecimal Value : 0x441278
+Binary Value      : 0b100010001000111
+Float Value       : 69.068e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 068 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-15
+Time Value        : 20:56:44
+Date Time Value   : 2026-09-15 20:56:44z
+Byte Count Value  : 69 KiB
+Time Delta Value  : 69 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 44>
+Regex Value       : /^sensor-068-[a-z]+$/
+Mixed List        : 68, 69.25, enabled, "sample 068", 2026-06-15, <de ad be ef>
+
+---[ Scalar Batch 069 ]--------------------------------------------------------
+Decimal Value     : 346411
+Hexadecimal Value : 0x451279
+Binary Value      : 0b100010101001000
+Float Value       : 70.069e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 069 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-16
+Time Value        : 21:03:57
+Date Time Value   : 2026-10-16 21:03:57z
+Byte Count Value  : 70 KiB
+Time Delta Value  : 70 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 45>
+Regex Value       : /^sensor-069-[a-z]+$/
+Mixed List        : 69, 70.25, enabled, "sample 069", 2026-06-16, <de ad be ef>
+
+---[ Scalar Batch 070 ]--------------------------------------------------------
+Decimal Value     : 354330
+Hexadecimal Value : 0x46127a
+Binary Value      : 0b100011001001001
+Float Value       : 71.070e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 070 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-17
+Time Value        : 22:10:10
+Date Time Value   : 2026-11-17 22:10:10z
+Byte Count Value  : 71 KiB
+Time Delta Value  : 71 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 46>
+Regex Value       : /^sensor-070-[a-z]+$/
+Mixed List        : 70, 71.25, enabled, "sample 070", 2026-06-17, <de ad be ef>
+
+---[ Scalar Batch 071 ]--------------------------------------------------------
+Decimal Value     : 362249
+Hexadecimal Value : 0x47127b
+Binary Value      : 0b100011101001010
+Float Value       : 72.071e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 071 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-18
+Time Value        : 23:17:23
+Date Time Value   : 2026-12-18 23:17:23z
+Byte Count Value  : 72 KiB
+Time Delta Value  : 72 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 47>
+Regex Value       : /^sensor-071-[a-z]+$/
+Mixed List        : 71, 72.25, enabled, "sample 071", 2026-06-18, <de ad be ef>
+
+---[ Scalar Batch 072 ]--------------------------------------------------------
+Decimal Value     : 370168
+Hexadecimal Value : 0x48127c
+Binary Value      : 0b100100001001011
+Float Value       : 73.072e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 072 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-19
+Time Value        : 00:24:36
+Date Time Value   : 2026-01-19 00:24:36z
+Byte Count Value  : 73 KiB
+Time Delta Value  : 73 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 48>
+Regex Value       : /^sensor-072-[a-z]+$/
+Mixed List        : 72, 73.25, enabled, "sample 072", 2026-06-19, <de ad be ef>
+
+---[ Scalar Batch 073 ]--------------------------------------------------------
+Decimal Value     : 378087
+Hexadecimal Value : 0x49127d
+Binary Value      : 0b100100101001100
+Float Value       : 74.073e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 073 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-20
+Time Value        : 01:31:49
+Date Time Value   : 2026-02-20 01:31:49z
+Byte Count Value  : 74 KiB
+Time Delta Value  : 74 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 49>
+Regex Value       : /^sensor-073-[a-z]+$/
+Mixed List        : 73, 74.25, enabled, "sample 073", 2026-06-20, <de ad be ef>
+
+---[ Scalar Batch 074 ]--------------------------------------------------------
+Decimal Value     : 386006
+Hexadecimal Value : 0x4a127e
+Binary Value      : 0b100101001001101
+Float Value       : 75.074e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 074 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-21
+Time Value        : 02:38:02
+Date Time Value   : 2026-03-21 02:38:02z
+Byte Count Value  : 75 KiB
+Time Delta Value  : 75 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4a>
+Regex Value       : /^sensor-074-[a-z]+$/
+Mixed List        : 74, 75.25, enabled, "sample 074", 2026-06-21, <de ad be ef>
+
+---[ Scalar Batch 075 ]--------------------------------------------------------
+Decimal Value     : 393925
+Hexadecimal Value : 0x4b127f
+Binary Value      : 0b100101101001110
+Float Value       : 76.075e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 075 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-22
+Time Value        : 03:45:15
+Date Time Value   : 2026-04-22 03:45:15z
+Byte Count Value  : 76 KiB
+Time Delta Value  : 76 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4b>
+Regex Value       : /^sensor-075-[a-z]+$/
+Mixed List        : 75, 76.25, enabled, "sample 075", 2026-06-22, <de ad be ef>
+
+---[ Scalar Batch 076 ]--------------------------------------------------------
+Decimal Value     : 401844
+Hexadecimal Value : 0x4c1280
+Binary Value      : 0b100110001001111
+Float Value       : 77.076e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 076 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-23
+Time Value        : 04:52:28
+Date Time Value   : 2026-05-23 04:52:28z
+Byte Count Value  : 77 KiB
+Time Delta Value  : 77 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4c>
+Regex Value       : /^sensor-076-[a-z]+$/
+Mixed List        : 76, 77.25, enabled, "sample 076", 2026-06-23, <de ad be ef>
+
+---[ Scalar Batch 077 ]--------------------------------------------------------
+Decimal Value     : 409763
+Hexadecimal Value : 0x4d1281
+Binary Value      : 0b100110101010000
+Float Value       : 78.077e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 077 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-24
+Time Value        : 05:59:41
+Date Time Value   : 2026-06-24 05:59:41z
+Byte Count Value  : 78 KiB
+Time Delta Value  : 78 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4d>
+Regex Value       : /^sensor-077-[a-z]+$/
+Mixed List        : 77, 78.25, enabled, "sample 077", 2026-06-24, <de ad be ef>
+
+---[ Scalar Batch 078 ]--------------------------------------------------------
+Decimal Value     : 417682
+Hexadecimal Value : 0x4e1282
+Binary Value      : 0b100111001010001
+Float Value       : 79.078e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 078 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-07-25
+Time Value        : 06:06:54
+Date Time Value   : 2026-07-25 06:06:54z
+Byte Count Value  : 79 KiB
+Time Delta Value  : 79 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4e>
+Regex Value       : /^sensor-078-[a-z]+$/
+Mixed List        : 78, 79.25, enabled, "sample 078", 2026-06-25, <de ad be ef>
+
+---[ Scalar Batch 079 ]--------------------------------------------------------
+Decimal Value     : 425601
+Hexadecimal Value : 0x4f1283
+Binary Value      : 0b100111101010010
+Float Value       : 80.079e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 079 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-08-26
+Time Value        : 07:13:07
+Date Time Value   : 2026-08-26 07:13:07z
+Byte Count Value  : 80 KiB
+Time Delta Value  : 80 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 4f>
+Regex Value       : /^sensor-079-[a-z]+$/
+Mixed List        : 79, 80.25, enabled, "sample 079", 2026-06-26, <de ad be ef>
+
+---[ Scalar Batch 080 ]--------------------------------------------------------
+Decimal Value     : 433520
+Hexadecimal Value : 0x501284
+Binary Value      : 0b101000001010011
+Float Value       : 81.080e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 080 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-09-27
+Time Value        : 08:20:20
+Date Time Value   : 2026-09-27 08:20:20z
+Byte Count Value  : 81 KiB
+Time Delta Value  : 81 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 50>
+Regex Value       : /^sensor-080-[a-z]+$/
+Mixed List        : 80, 81.25, enabled, "sample 080", 2026-06-27, <de ad be ef>
+
+---[ Scalar Batch 081 ]--------------------------------------------------------
+Decimal Value     : 441439
+Hexadecimal Value : 0x511285
+Binary Value      : 0b101000101010100
+Float Value       : 82.081e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 081 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-10-01
+Time Value        : 09:27:33
+Date Time Value   : 2026-10-01 09:27:33z
+Byte Count Value  : 82 KiB
+Time Delta Value  : 82 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 51>
+Regex Value       : /^sensor-081-[a-z]+$/
+Mixed List        : 81, 82.25, enabled, "sample 081", 2026-06-01, <de ad be ef>
+
+---[ Scalar Batch 082 ]--------------------------------------------------------
+Decimal Value     : 449358
+Hexadecimal Value : 0x521286
+Binary Value      : 0b101001001010101
+Float Value       : 83.082e-2
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 082 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-11-02
+Time Value        : 10:34:46
+Date Time Value   : 2026-11-02 10:34:46z
+Byte Count Value  : 83 KiB
+Time Delta Value  : 83 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 52>
+Regex Value       : /^sensor-082-[a-z]+$/
+Mixed List        : 82, 83.25, enabled, "sample 082", 2026-06-02, <de ad be ef>
+
+---[ Scalar Batch 083 ]--------------------------------------------------------
+Decimal Value     : 457277
+Hexadecimal Value : 0x531287
+Binary Value      : 0b101001101010110
+Float Value       : 84.083e-3
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 083 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-12-03
+Time Value        : 11:41:59
+Date Time Value   : 2026-12-03 11:41:59z
+Byte Count Value  : 84 KiB
+Time Delta Value  : 84 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 53>
+Regex Value       : /^sensor-083-[a-z]+$/
+Mixed List        : 83, 84.25, enabled, "sample 083", 2026-06-03, <de ad be ef>
+
+---[ Scalar Batch 084 ]--------------------------------------------------------
+Decimal Value     : 465196
+Hexadecimal Value : 0x541288
+Binary Value      : 0b101010001010111
+Float Value       : 85.084e-4
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 084 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-01-04
+Time Value        : 12:48:12
+Date Time Value   : 2026-01-04 12:48:12z
+Byte Count Value  : 85 KiB
+Time Delta Value  : 85 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 54>
+Regex Value       : /^sensor-084-[a-z]+$/
+Mixed List        : 84, 85.25, enabled, "sample 084", 2026-06-04, <de ad be ef>
+
+---[ Scalar Batch 085 ]--------------------------------------------------------
+Decimal Value     : 473115
+Hexadecimal Value : 0x551289
+Binary Value      : 0b101010101011000
+Float Value       : 86.085e-5
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 085 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-02-05
+Time Value        : 13:55:25
+Date Time Value   : 2026-02-05 13:55:25z
+Byte Count Value  : 86 KiB
+Time Delta Value  : 86 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 55>
+Regex Value       : /^sensor-085-[a-z]+$/
+Mixed List        : 85, 86.25, enabled, "sample 085", 2026-06-05, <de ad be ef>
+
+---[ Scalar Batch 086 ]--------------------------------------------------------
+Decimal Value     : 481034
+Hexadecimal Value : 0x56128a
+Binary Value      : 0b101011001011001
+Float Value       : 87.086e-6
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 086 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-03-06
+Time Value        : 14:02:38
+Date Time Value   : 2026-03-06 14:02:38z
+Byte Count Value  : 87 KiB
+Time Delta Value  : 87 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 56>
+Regex Value       : /^sensor-086-[a-z]+$/
+Mixed List        : 86, 87.25, enabled, "sample 086", 2026-06-06, <de ad be ef>
+
+---[ Scalar Batch 087 ]--------------------------------------------------------
+Decimal Value     : 488953
+Hexadecimal Value : 0x57128b
+Binary Value      : 0b101011101011010
+Float Value       : 88.087e-7
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 087 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-04-07
+Time Value        : 15:09:51
+Date Time Value   : 2026-04-07 15:09:51z
+Byte Count Value  : 88 KiB
+Time Delta Value  : 88 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 57>
+Regex Value       : /^sensor-087-[a-z]+$/
+Mixed List        : 87, 88.25, enabled, "sample 087", 2026-06-07, <de ad be ef>
+
+---[ Scalar Batch 088 ]--------------------------------------------------------
+Decimal Value     : 496872
+Hexadecimal Value : 0x58128c
+Binary Value      : 0b101100001011011
+Float Value       : 89.088e-0
+Boolean Value     : disabled
+Text Value        : "Telemetry sample 088 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-05-08
+Time Value        : 16:16:04
+Date Time Value   : 2026-05-08 16:16:04z
+Byte Count Value  : 89 KiB
+Time Delta Value  : 89 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 58>
+Regex Value       : /^sensor-088-[a-z]+$/
+Mixed List        : 88, 89.25, enabled, "sample 088", 2026-06-08, <de ad be ef>
+
+---[ Scalar Batch 089 ]--------------------------------------------------------
+Decimal Value     : 504791
+Hexadecimal Value : 0x59128d
+Binary Value      : 0b101100101011100
+Float Value       : 90.089e-1
+Boolean Value     : enabled
+Text Value        : "Telemetry sample 089 – Καλημέρα – おはようございます – 😀"
+Date Value        : 2026-06-09
+Time Value        : 17:23:17
+Date Time Value   : 2026-06-09 17:23:17z
+Byte Count Value  : 90 KiB
+Time Delta Value  : 90 weeks
+Bytes Value       : <01 23 45 67 89 ab cd ef 59>
+Regex Value       : /^sensor-089-[a-z]+$/
+Mixed List        : 89, 90.25, enabled, "sample 089", 2026-06-09, <de ad be ef>

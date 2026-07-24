@@ -4,7 +4,7 @@
 
 #include "AnyStringEditor.hpp"
 #include "Char.hpp"
-#include "EncodingErrorMode.hpp"
+#include "EncodingMode.hpp"
 #include "String.hpp"
 #include "StringBomMode.hpp"
 #include "StringEditor.hpp"
@@ -14,16 +14,22 @@
 #include "u32/U32StringEditor.hpp"
 #include "u8/U8StringEditor.hpp"
 
+#include "../err/ParameterError.hpp"
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
+#include "../mem/ByteBuffer.hpp"
+#include "../mem/ByteSpan.hpp"
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
 
+#include <algorithm>
 #include <cstdint>
+#include <cstring>
 #include <optional>
 #include <span>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace erbsland::text::impl {
@@ -33,33 +39,53 @@ class UnsafeDecodeBufferAccess;
 namespace erbsland::text {
 
 /// A bounded byte buffer for incrementally decoding encoded string data.
-/// The buffer keeps incomplete trailing code points pending until more data is written or `finish()` is called.
+/// Sensitive mode protects discarded input bytes and marks UTF-8 results.
+/// @seedoc{/reference/text/string_decode_buffer}
 /// @tested{StringDecodeBufferTest}
 class StringDecodeBuffer final {
     friend class impl::UnsafeDecodeBufferAccess;
 
 public:
-    /// The status of the buffered data at the code-point boundary.
+    /// The status of buffered data at the code-point boundary.
     enum class CodePointStatus : uint8_t {
         Complete,     ///< The buffer ends at a complete code-point boundary.
-        NeedMoreData, ///< The buffer ends with a valid prefix that needs more bytes.
+        NeedMoreData, ///< A valid trailing prefix needs more bytes.
         Invalid,      ///< The buffer contains invalid bytes.
+    };
+
+private:
+    struct ScanResult final {
+        CodePointStatus status{CodePointStatus::NeedMoreData}; ///< Boundary status.
+        unit::ByteLength byteLength{};                         ///< Bytes covered by this result.
+    };
+
+    /// A byte and character range selected for one decode operation.
+    struct DecodedRange final {
+        unit::ByteLength byteLength;    ///< Source bytes covered by the selection.
+        unit::CpLength characterLength; ///< Characters produced by the selection.
+        bool isValid{true};             ///< Whether the selection contains only valid encoded characters.
+    };
+
+    /// A decoded UTF-8 string with the character count found while decoding.
+    struct DecodedU8String final {
+        U8String text;                  ///< Decoded text.
+        unit::CpLength characterLength; ///< Number of decoded characters.
     };
 
 public:
     /// Create a decode buffer.
-    /// @param bufferLength The byte capacity. Must be at least four bytes.
+    /// @param bufferLength The fixed byte capacity. Must be at least four bytes.
     /// @param encoding The configured text encoding.
     /// @param bomMode How byte order marks are handled.
-    /// @param errorMode How decoding errors are handled.
+    /// @param mode How malformed input is handled.
     /// @throws err::ParameterError If `bufferLength` is smaller than four bytes.
     explicit StringDecodeBuffer(
         unit::ByteLength bufferLength,
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace);
+        EncodingMode mode = EncodingMode::Tolerant);
 
-    // defaults
+    // defaults/deletions
     ~StringDecodeBuffer() = default;
     StringDecodeBuffer(const StringDecodeBuffer &) = delete;
     StringDecodeBuffer(StringDecodeBuffer &&) = default;
@@ -72,48 +98,48 @@ public: // state
     /// Get the effective encoding after BOM resolution.
     [[nodiscard]] auto effectiveEncoding() const noexcept -> StringEncoding { return _effectiveEncoding; }
     /// Get the byte capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength { return _buffer.length(); }
     /// Get the available byte space.
-    [[nodiscard]] auto availableSpace() const noexcept -> unit::ByteLength;
+    [[nodiscard]] auto availableSpace() const noexcept -> unit::ByteLength { return capacity() - _byteLength; }
     /// Get the number of buffered bytes.
-    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength;
-    /// Count how many complete characters can be decoded now.
+    [[nodiscard]] auto byteLength() const noexcept -> unit::ByteLength { return _byteLength; }
+    /// Count complete characters available for decoding.
     [[nodiscard]] auto decodableCharacters(unit::CpLength maximum = unit::CpLength::infinite()) -> unit::CpLength;
     /// Test if no bytes are buffered.
     [[nodiscard]] auto isEmpty() const noexcept -> bool { return _byteLength.isZero(); }
-    /// Test if `finish()` was called.
+    /// Test if input was marked complete.
     [[nodiscard]] auto isFinished() const noexcept -> bool { return _finished; }
-    /// Get the code-point boundary status of the buffered data.
+    /// Get the code-point boundary status.
     [[nodiscard]] auto codePointStatus() -> CodePointStatus;
-    /// Test if the buffered data ends at a complete code-point boundary.
+    /// Test if buffered data ends at a complete code-point boundary.
     [[nodiscard]] auto isCodePointComplete() -> bool { return codePointStatus() == CodePointStatus::Complete; }
 
 public: // input
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
-    void write(std::span<const mem::Byte> bytes);
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write borrowed bytes into available storage.
+    void write(mem::ConstByteSpan bytes);
+    /// Write an ordinary byte block.
     void write(const mem::ByteBlock &bytes);
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write explicit byte values.
     void write(const std::vector<mem::Byte> &bytes);
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write unsigned byte values.
     void write(const std::vector<uint8_t> &bytes);
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write character byte values.
     void write(const std::vector<char> &bytes);
-    /// Write bytes to the buffer.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write character bytes.
     void write(std::string_view bytes);
-    /// Write raw UTF-8 bytes from a read-only string.
-    /// @throws err::ParameterError If the data does not fit into the available space.
+    /// Write raw UTF-8 bytes from a string.
     void writeStringBytes(const String &bytes);
-    /// Mark the input as complete.
+    /// Mark input complete.
     void finish() noexcept { _finished = true; }
-    /// Reset the buffer.
+    /// Reset decoder state, preserving its sensitivity mode.
     void reset() noexcept;
+
+public: // sensitivity
+    /// Test if discarded decoder storage is securely erased and UTF-8 results are marked.
+    [[nodiscard]] auto isSensitive() const noexcept -> bool { return _buffer.isSensitive(); }
+    /// Enable or disable sensitive decoder storage.
+    /// Disabling securely erases buffered input and resets decoder state.
+    void setSensitive(bool sensitive) noexcept;
 
 public: // peek
     /// Decode available bytes to a string matching the effective encoding.
@@ -129,15 +155,12 @@ public: // peek
 
 public: // take
     /// Decode and consume one character.
-    /// @return The decoded character, or empty if no complete character is available.
-    /// @throws text::EncodingError If the buffer was configured to throw on decoding errors and decoding fails.
     [[nodiscard]] auto readChar() -> std::optional<Char>;
     /// Decode and consume available bytes to a string matching the effective encoding.
     [[nodiscard]] auto takeAnyString(unit::CpLength maximum = unit::CpLength::infinite()) -> AnyString;
     /// Decode and consume available bytes to the default string type.
     [[nodiscard]] auto takeString(unit::CpLength maximum = unit::CpLength::infinite()) -> String;
     /// Decode and consume one line to the default string type.
-    /// The returned line ends after a decoded LF character if one is available within `maximum`.
     [[nodiscard]] auto takeStringLine(unit::CpLength maximum = unit::CpLength::infinite()) -> String;
     /// Decode and consume available bytes to a UTF-8 string.
     [[nodiscard]] auto takeU8String(unit::CpLength maximum = unit::CpLength::infinite()) -> U8String;
@@ -147,32 +170,28 @@ public: // take
     [[nodiscard]] auto takeU32String(unit::CpLength maximum = unit::CpLength::infinite()) -> U32String;
 
 private:
-    struct ScanResult final {
-        CodePointStatus status{CodePointStatus::NeedMoreData};
-        unit::ByteLength byteLength{};
-    };
-
-private:
-    [[nodiscard]] auto writableSpan() noexcept -> std::span<mem::Byte>;
+    [[nodiscard]] auto writableSpan() noexcept -> mem::ByteSpan;
     void commitWritten(unit::ByteLength length);
-    void appendByte(mem::Byte byte) noexcept;
+    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength { return _consumedByteLength; }
+    [[nodiscard]] auto isBomResolved() const noexcept -> bool { return _bomResolved; }
+    void resetForContinuation(StringEncoding effectiveEncoding) noexcept;
+    [[nodiscard]] auto takeStringWithLength(unit::CpLength maximum, bool stopAtLineEnd)
+        -> std::pair<String, unit::CpLength>;
+    [[nodiscard]] auto decodableByteLength(
+        unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+    [[nodiscard]] auto lineByteLength(
+        unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+    [[nodiscard]] auto decodedRange(unit::CpLength maximum, bool stopAtLineEnd) -> DecodedRange;
+    template <typename Function>
+    auto forEachDecodedCharacter(DecodedRange range, bool consumeDecoded, Function function) -> unit::CpLength;
+    void copyUtf8Range(DecodedRange range, std::span<char> destination, bool consumeDecoded);
+    void consume(unit::ByteLength length) noexcept;
     [[nodiscard]] auto writeIndex() const noexcept -> unit::ByteIndex;
     [[nodiscard]] auto byteAt(unit::ByteIndex index) const noexcept -> mem::Byte;
-    [[nodiscard]] auto byteMatches(std::span<const mem::Byte> prefix) const noexcept -> bool;
-    [[nodiscard]] auto byteMatchesAvailable(std::span<const mem::Byte> prefix) const noexcept -> bool;
-    [[nodiscard]] auto materialize(unit::ByteLength length) const -> mem::ByteBlock;
-    [[nodiscard]] auto decodeContentToU8(const mem::ByteBlock &data) const -> U8String;
-    [[nodiscard]] auto decodeContentToU16(const mem::ByteBlock &data) const -> U16String;
-    [[nodiscard]] auto decodeContentToU32(const mem::ByteBlock &data) const -> U32String;
-    void consume(unit::ByteLength length) noexcept;
-    [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength;
-    [[nodiscard]] auto isBomResolved() const noexcept -> bool;
-    void resetForContinuation(StringEncoding effectiveEncoding) noexcept;
+    [[nodiscard]] auto byteMatches(mem::ConstByteSpan prefix) const noexcept -> bool;
+    [[nodiscard]] auto byteMatchesAvailable(mem::ConstByteSpan prefix) const noexcept -> bool;
+    void erasePrefix(unit::ByteLength length) noexcept;
     [[nodiscard]] auto ensureBomResolved() -> bool;
-    [[nodiscard]] auto decodableByteLength(unit::CpLength maximum, unit::CpLength *characterCount = nullptr)
-        -> unit::ByteLength;
-    [[nodiscard]] auto lineByteLength(unit::CpLength maximum, unit::CpLength *characterCount = nullptr)
-        -> unit::ByteLength;
     [[nodiscard]] auto scanCodePoint(unit::ByteIndex index) const noexcept -> ScanResult;
     [[nodiscard]] auto decodeCharacter(unit::ByteIndex index, unit::ByteLength byteLength) const noexcept -> Char;
     [[nodiscard]] auto scanUtf8(unit::ByteIndex index) const noexcept -> ScanResult;
@@ -181,18 +200,29 @@ private:
     [[nodiscard]] auto readUInt16(unit::ByteIndex index) const noexcept -> char16_t;
     [[nodiscard]] auto readUInt32(unit::ByteIndex index) const noexcept -> char32_t;
     [[nodiscard]] static auto isContinuationByte(uint8_t value) noexcept -> bool;
+    [[nodiscard]] auto storageWritableSpan() noexcept -> mem::ByteSpan;
+    void resetStorage() noexcept {
+        if (_buffer.isSensitive()) {
+            _buffer.secureErase();
+        }
+    }
+    [[nodiscard]] auto decodeToU8(unit::CpLength maximum, bool stopAtLineEnd, bool consumeDecoded) -> DecodedU8String;
+    [[nodiscard]] auto decodeToU16(unit::CpLength maximum, bool consumeDecoded) -> U16String;
+    [[nodiscard]] auto decodeToU32(unit::CpLength maximum, bool consumeDecoded) -> U32String;
 
 private:
-    std::vector<mem::Byte> _buffer; ///< The ring buffer storage.
-    unit::ByteIndex _readIndex{};   ///< The first buffered byte in the ring storage.
-    unit::ByteLength _byteLength{}; ///< The number of buffered bytes.
-    StringEncoding _encoding{StringEncoding::Utf8};
-    StringEncoding _effectiveEncoding{StringEncoding::Utf8};
-    StringBomMode _bomMode{StringBomMode::Automatic};
-    EncodingErrorMode _errorMode{EncodingErrorMode::Replace};
-    bool _finished{false};
-    bool _bomResolved{false};
-    unit::ByteLength _consumedByteLength{}; ///< Bytes consumed since construction or the last reset.
+    mem::ByteBuffer _buffer;                                 ///< Fixed-capacity ring storage.
+    unit::ByteIndex _readIndex{};                            ///< First buffered byte in ring storage.
+    unit::ByteLength _byteLength{};                          ///< Number of buffered bytes.
+    StringEncoding _encoding{StringEncoding::Utf8};          ///< Configured encoding.
+    StringEncoding _effectiveEncoding{StringEncoding::Utf8}; ///< BOM-resolved encoding.
+    StringBomMode _bomMode{StringBomMode::Automatic};        ///< BOM handling mode.
+    EncodingMode _mode{EncodingMode::Tolerant};              ///< Invalid-input handling mode.
+    bool _finished{false};                                   ///< Whether the source is complete.
+    bool _bomResolved{false};                                ///< Whether initial BOM handling is complete.
+    unit::ByteLength _consumedByteLength{};                  ///< Bytes consumed since reset.
 };
 
 }
+
+#include "impl/StringDecodeBuffer.tpp"

@@ -67,6 +67,15 @@ public:
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, gridLayout({1}, {1, -1}));
     }
 
+    void testConstructorReportsTheParameterName() {
+        try {
+            static_cast<void>(gridLayout({}, {1}));
+            REQUIRE(false);
+        } catch (const erbsland::err::ParameterError &error) {
+            REQUIRE_EQUAL(error.toString(), "The size list must not be empty. (parameter: columnWidths)"_el);
+        }
+    }
+
     void testCellRectRejectsInvalidIndexes() {
         const auto layout = gridLayout({2}, {1});
         const auto border = FrameBorder{};

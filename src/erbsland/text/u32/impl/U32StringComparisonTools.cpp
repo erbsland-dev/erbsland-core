@@ -5,6 +5,8 @@
 #include "U32Encoding.hpp"
 #include "U32StringReadTools.hpp"
 
+#include "../../impl/DecodedStringSearch.hpp"
+
 namespace erbsland::text::impl {
 
 using unit::CpIndex;
@@ -17,7 +19,7 @@ auto U32StringComparisonTools::containsOneDecodedCharacter(
     }
 
     auto result = false;
-    utf32::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> bool {
+    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> bool {
         result = characters.contains(character);
         return !result;
     });
@@ -48,6 +50,26 @@ auto U32StringComparisonTools::find(
     const auto needle = text.dataSpan();
     if (needle.empty()) {
         return start;
+    }
+
+    if (DecodedStringSearch::isUsefulFor(needle.size())) {
+        try {
+            const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= needle.size()) {
+                    return Char::endOfData();
+                }
+                return utf32::decodeCharOrReplace(needle, position);
+            };
+            const auto readData = [&data](CpIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= data.size()) {
+                    return Char::endOfData();
+                }
+                return utf32::decodeCharOrReplace(data, position);
+            };
+            return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.find(start, readData);
+        } catch (...) {
+            // Preserve the noexcept search API by falling back to the allocation-free implementation.
+        }
     }
 
     auto position = start;
@@ -86,11 +108,10 @@ auto U32StringComparisonTools::contains(const U32StringDataView &other, const Ch
 
 auto U32StringComparisonTools::contains(const Char character) const noexcept -> bool {
     auto result = false;
-    utf32::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            result = currentCharacter == character;
-            return !result;
-        });
+    utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        result = currentCharacter == character;
+        return !result;
+    });
     return result;
 }
 
@@ -102,6 +123,27 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
     }
 
     const auto data = _data.dataSpan();
+    if (DecodedStringSearch::isUsefulFor(needle.size())) {
+        try {
+            const auto readNeedle = [&needle](CpIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= needle.size()) {
+                    return Char::endOfData();
+                }
+                return utf32::decodeCharOrReplace(needle, position);
+            };
+            const auto readData = [&data](CpIndex &position) noexcept -> Char {
+                if (position.toSizeT() >= data.size()) {
+                    return Char::endOfData();
+                }
+                return utf32::decodeCharOrReplace(data, position);
+            };
+            return DecodedStringSearch{needle.size(), CpIndex::zero(), readNeedle, compareFn}.count(
+                CpIndex::zero(), readData);
+        } catch (...) {
+            // Preserve the noexcept search API by falling back to the allocation-free implementation.
+        }
+    }
+
     auto result = ElementCount{};
     auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
@@ -117,13 +159,12 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
 
 auto U32StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
     auto result = ElementCount{};
-    utf32::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            if (currentCharacter == character) {
-                ++result;
-            }
-            return true;
-        });
+    utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        if (currentCharacter == character) {
+            ++result;
+        }
+        return true;
+    });
     return result;
 }
 
@@ -133,11 +174,10 @@ auto U32StringComparisonTools::containsOneOf(const CharSet &characters) const no
 
 auto U32StringComparisonTools::containsOnly(const CharSet &characters) const noexcept -> bool {
     auto result = true;
-    utf32::forEachDecodedCharacter(
-        _data.dataSpan(), EncodingErrorMode::Replace, [&](const Char currentCharacter) -> bool {
-            result = characters.contains(currentCharacter);
-            return result;
-        });
+    utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
+        result = characters.contains(currentCharacter);
+        return result;
+    });
     return result;
 }
 

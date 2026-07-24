@@ -17,11 +17,15 @@ target_sources(erbsland-core PRIVATE
         InputStream.hpp
         InputStreamSettings.hpp
         OutputStream.hpp
+        OutputStreamSettings.cpp
         OutputStreamSettings.hpp
+        SensitiveInput.cpp
+        SensitiveInput.hpp
         StandardStreamRedirect.cpp
         StandardStreamRedirect.hpp
         StandardStreams.cpp
         StandardStreams.hpp
+        StreamBuffering.hpp
         StreamCloseStatus.hpp
         StreamError.cpp
         StreamError.hpp

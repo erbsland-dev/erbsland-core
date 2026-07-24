@@ -6,7 +6,7 @@
 #include <erbsland/conf/impl/source/FileSource.hpp>
 #include <erbsland/conf/impl/source/StringSource.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/path/Path.hpp>
 #include <erbsland/text/String.hpp>
 

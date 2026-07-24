@@ -9,7 +9,6 @@
 
 #include "../text/Char.hpp"
 #include "../text/CombinedChar.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
 #include "../text/u32/U32StringEditor.hpp"
@@ -178,14 +177,9 @@ public: // modifiers
     void setStyle(const BlockStyle style) noexcept { _style = style; }
     /// Create a character with an additional combining code point appended.
     /// @param codePoint The combining code point to append.
-    /// @param encodingErrors How invalid combining code points are handled.
     /// @return A copy of this character with the combining code point appended.
-    /// `EncodingErrorMode::Replace` and `EncodingErrorMode::Ignore` keep the original character unchanged for invalid
-    /// combining code points or when the storage is already full.
-    /// @throws text::EncodingError If `encodingErrors` is `EncodingErrorMode::Throw` and the code point is
-    /// unsupported.
-    [[nodiscard]] auto withCombining(
-        text::Char codePoint, text::EncodingErrorMode encodingErrors = text::EncodingErrorMode::Replace) const -> Block;
+    /// Invalid combining code points and additions beyond the fixed storage are ignored.
+    [[nodiscard]] auto withCombining(text::Char codePoint) const noexcept -> Block;
     /// Create a character with style applied on top of the stored style.
     /// `Inherited` color components keep the current color component, and unspecified attributes keep the current
     /// attribute state.

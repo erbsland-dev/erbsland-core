@@ -5,7 +5,7 @@
 
 #include <erbsland/conf/impl/utilities/InternalError.hpp>
 #include <erbsland/conf/impl/value/DocumentBuilder.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

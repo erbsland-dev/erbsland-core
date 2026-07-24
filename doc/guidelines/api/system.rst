@@ -2,13 +2,6 @@
 System Domain API Guidelines
 ****************************
 
-These guidelines extend the Common API Guidelines for public APIs that expose operating-system services.
-
-The purpose of this document is to define a base naming vocabulary for system APIs.
-It is intentionally plain, technical, and list-based to provide a quick overview of method names and their usage
-patterns.
-If new vocabulary is introduced, update this page to provide a reference for future extensions.
-
 Core Semantics
 ==============
 
@@ -17,10 +10,10 @@ Identity Lookup
 
 .. code-block:: text
 
-    user id // platform owner identifier such as a POSIX UID or Windows SID string
-    group id // platform group identifier such as a POSIX GID or Windows SID string
-    user name // display name resolved from a platform user id, with optional domain
-    group name // display name resolved from a platform group id, with optional domain
+    user id = platform owner identifier such as a POSIX UID or Windows SID string
+    group id = platform group identifier such as a POSIX GID or Windows SID string
+    user name = display name resolved from a platform user id, with optional domain
+    group name = display name resolved from a platform group id, with optional domain
 
 Primary Types
 =============
@@ -30,6 +23,16 @@ Primary Types
     UserId, GroupId // type-safe platform identity identifiers
     UserName, GroupName // type-safe platform identity names
     UserLookup // cached lookup service for platform user and group identities
+
+Secondary Types
+===============
+
+.. code-block:: text
+
+    PlatformError // native operating-system failure
+    PlatformErrorContext // portable structured native failure context
+    PosixErrorContext, WindowsErrorContext // platform-specific diagnostic contexts
+    PlatformErrorCategory // native subsystem or API failure category
 
 Lookup Patterns
 ===============
@@ -48,3 +51,12 @@ Application Patterns
 .. code-block:: text
 
     application().userLookup() -> UserLookup& // access the application-shared lookup service
+
+Platform Error Patterns
+=======================
+
+.. code-block:: text
+
+    T(operation[, nativeCode]) // create native failure context for an operation
+    o.category()/nativeCode()/nativeMessage() -> T // inspect structured native failure data
+    o.set❮Property❯(value) -> PlatformErrorContext& // fluently add portable diagnostic context

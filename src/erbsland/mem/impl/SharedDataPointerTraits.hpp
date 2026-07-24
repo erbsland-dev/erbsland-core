@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SharedByteDataWithFlag_fwd.hpp"
 #include "SharedDataPointerTraits_fwd.hpp"
 
 #include "../SharedArrayData_fwd.hpp"
@@ -15,10 +16,22 @@ namespace erbsland::mem::impl {
 template <typename tDataType>
 struct IsSharedArrayData : std::false_type {};
 
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-struct IsSharedArrayData<SharedArrayData<tDataType, tSizeType, tConstructMethod>> : std::true_type {};
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+struct IsSharedArrayData<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>> : std::true_type {};
 
-template <typename tDataType, bool tIsSharedArrayData = IsSharedArrayData<tDataType>::value>
+template <typename tDataType>
+struct IsSharedByteDataWithFlag : std::false_type {};
+
+template <typename tDataType>
+struct IsSharedByteDataWithFlag<SharedByteDataWithFlag<tDataType>> : std::true_type {};
+
+template <
+    typename tDataType,
+    bool tIsSpecialSharedData = IsSharedArrayData<tDataType>::value || IsSharedByteDataWithFlag<tDataType>::value>
 struct IsRegularSharedData : std::false_type {};
 
 template <typename tDataType>
@@ -26,7 +39,9 @@ struct IsRegularSharedData<tDataType, false>
     : std::bool_constant<std::is_base_of_v<SharedData, tDataType> && !std::is_base_of_v<SharedVirtualData, tDataType>> {
 };
 
-template <typename tDataType, bool tIsSharedArrayData = IsSharedArrayData<tDataType>::value>
+template <
+    typename tDataType,
+    bool tIsSpecialSharedData = IsSharedArrayData<tDataType>::value || IsSharedByteDataWithFlag<tDataType>::value>
 struct IsPolymorphicSharedData : std::false_type {};
 
 template <typename tDataType>
@@ -122,10 +137,14 @@ struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsPolymorphicSharedDa
 /// @tparam tDataType The element type stored in the shared array.
 /// @tparam tSizeType The array size type, limited by `SharedArrayData`.
 /// @tparam tConstructMethod The element construction policy.
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-struct SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>> {
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+struct SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>> {
     /// The concrete managed array type.
-    using Type = SharedArrayData<tDataType, tSizeType, tConstructMethod>;
+    using Type = SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>;
 
     /// Indicates that `SharedDataPointer` can manage this data type.
     static constexpr auto isSupported = true;
@@ -144,6 +163,18 @@ struct SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructM
     [[nodiscard]] static auto clone(const Type *data) -> Type *;
     /// Destroy an array allocated by `SharedArrayData::create()` or `SharedArrayData::clone()`.
     /// @param data A non-null array header.
+    static void destroy(Type *data) noexcept;
+};
+
+/// Traits for compact shared byte data with allocation-level flags.
+template <typename tDataType>
+struct SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>> {
+    using Type = SharedByteDataWithFlag<tDataType>;
+    static constexpr auto isSupported = true;
+
+    [[nodiscard]] static auto referenceCounter(Type *data) noexcept -> ReferenceCounter &;
+    [[nodiscard]] static auto referenceCounter(const Type *data) noexcept -> const ReferenceCounter &;
+    [[nodiscard]] static auto clone(const Type *data) -> Type *;
     static void destroy(Type *data) noexcept;
 };
 

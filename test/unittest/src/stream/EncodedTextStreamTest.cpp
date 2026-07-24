@@ -4,6 +4,7 @@
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/stream/impl/EncodedTextInputStream.hpp>
 #include <erbsland/stream/impl/EncodedTextOutputStream.hpp>
+#include <erbsland/stream/impl/InputStreamFactory.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -46,7 +47,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
             const std::size_t maximumRead = std::numeric_limits<std::size_t>::max(),
             const std::optional<std::size_t> timeoutCall = std::nullopt,
             const bool readyAtEnd = true) :
-            _bytes{bytes.toByteVector()},
+            _bytes{bytes.span().begin(), bytes.span().end()},
             _maximumRead{maximumRead},
             _timeoutCall{timeoutCall},
             _readyAtEnd{readyAtEnd} {}
@@ -69,7 +70,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
         void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
     protected:
-        [[nodiscard]] auto readFromSource(std::span<Byte> destination, const ReadDeadline deadline)
+        [[nodiscard]] auto readFromSource(el::mem::ByteSpan destination, const ReadDeadline deadline)
             -> el::stream::StreamReadResult<ByteLength> override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
@@ -89,6 +90,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
 
     public:
         using ByteInputStream::read;
+        void setSensitive() noexcept { _settings.setSensitive(true); }
         std::vector<ReadDeadline> deadlines;
 
     private:
@@ -119,7 +121,7 @@ class EncodedTextStreamTest final : public el::UnitTest {
         }
         void abort() noexcept override { _state = el::stream::StreamState::Closed; }
 
-        auto write(std::span<const Byte> bytes) -> el::stream::StreamWriteStatus override {
+        auto write(el::mem::ConstByteSpan bytes) -> el::stream::StreamWriteStatus override {
             if (_state != el::stream::StreamState::Open) {
                 throw StreamError{el::stream::StreamErrorContext{
                     "Failed to write to the test stream."_el, "The test output stream is closed."_el}};
@@ -180,6 +182,22 @@ class EncodedTextStreamTest final : public el::UnitTest {
     }
 
 public:
+    void testFactorySelectsStoragePolicy() {
+        const auto bytes = ByteBlock::fromVector(std::vector<uint8_t>{'x'});
+        auto ordinaryBytes = std::make_shared<MemoryInputStream>(bytes);
+        const auto ordinary = el::stream::impl::createEncodedTextInputStream(ordinaryBytes, StringEncoding::Utf8);
+        REQUIRE_FALSE(ordinary->inputSettings().isSensitive());
+        REQUIRE_EQUAL(StringConverter{ordinary->readAll().data()}.toStdString(), std::string{"x"});
+
+        auto sensitiveBytes = std::make_shared<MemoryInputStream>(bytes);
+        sensitiveBytes->setSensitive();
+        const auto sensitive = el::stream::impl::createEncodedTextInputStream(sensitiveBytes, StringEncoding::Utf8);
+        REQUIRE(sensitive->inputSettings().isSensitive());
+        const auto sensitiveText = sensitive->readAll().data();
+        REQUIRE(sensitiveText == "x"_el);
+        REQUIRE(sensitiveText.isSensitive());
+    }
+
     void testReadCharAndRead() {
         auto bytes = StringEncoder{StringEditor{std::string_view{"Hello"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
@@ -192,6 +210,65 @@ public:
         REQUIRE_EQUAL(StringConverter{textStream.read(CpLength{2U}).data()}.toStdString(), std::string{"el"});
         REQUIRE_EQUAL(StringConverter{textStream.read().data()}.toStdString(), std::string{"lo"});
         REQUIRE(textStream.read() == StreamReadStatus::Finished);
+    }
+
+    void testReadCharWaitsForSplitUtf8Sequence() {
+        const auto bytes = ByteBlock::fromVector(std::vector<uint8_t>{0xf0U, 0x9fU, 0x98U, 0x80U});
+        auto ordinaryBytes = std::make_shared<MemoryInputStream>(bytes, 1U);
+        auto ordinary = el::stream::impl::EncodedTextInputStream{ordinaryBytes, StringEncoding::Utf8};
+        REQUIRE_EQUAL(ordinary.readChar().data(), Char{U'\U0001f600'});
+        REQUIRE(ordinary.readChar().isFinished());
+
+        auto sensitiveBytes = std::make_shared<MemoryInputStream>(bytes, 1U);
+        sensitiveBytes->setSensitive();
+        auto sensitive = el::stream::impl::EncodedTextInputStream{sensitiveBytes, StringEncoding::Utf8};
+        REQUIRE_EQUAL(sensitive.readChar().data(), Char{U'\U0001f600'});
+        REQUIRE(sensitive.readChar().isFinished());
+    }
+
+    void testSensitiveTextReads() {
+        auto bytes = StringEncoder{StringEditor{std::string_view{"alpha\nbeta"}}}.encode(StringEncoding::Utf8);
+        auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U);
+        byteStream->setSensitive();
+        auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
+
+        const auto line = stream.readLine(CpLength{16U});
+        REQUIRE(line.hasData());
+        REQUIRE(line.data() == "alpha\n"_el);
+        REQUIRE(line.data().isSensitive());
+        const auto all = stream.readAll();
+        REQUIRE(all.hasData());
+        REQUIRE(all.data() == "beta"_el);
+        REQUIRE(all.data().isSensitive());
+        REQUIRE(stream.read(CpLength::zero()).data().isEmpty());
+    }
+
+    void testSensitiveTextRetainsProtectedDataAcrossTimeoutAndOperationSwitch() {
+        auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
+        auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
+        byteStream->setSensitive();
+        auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
+
+        REQUIRE(stream.readLine(CpLength{8U}).isTimeout());
+        const auto prefix = stream.read(CpLength{2U});
+        REQUIRE(prefix.data() == "ab"_el);
+        REQUIRE(prefix.data().isSensitive());
+        const auto suffix = stream.readLine(CpLength{8U});
+        REQUIRE(suffix.data() == "c\n"_el);
+        REQUIRE(suffix.data().isSensitive());
+    }
+
+    void testSensitiveTextMalformedEncodingModes() {
+        auto bytes = ByteBlock::fromVector(std::vector<uint8_t>{0x41U, 0xffU, 0x42U});
+        auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
+        byteStream->setSensitive();
+        auto stream = el::stream::impl::EncodedTextInputStream{
+            byteStream, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Tolerant};
+
+        const auto ordinary = stream.readAll(CpLength{8U});
+        REQUIRE_EQUAL(
+            StringConverter{ordinary.data()}.toStdString(), std::string{"A"} + th::stdStringFromHex("EF BF BD") + "B");
+        REQUIRE(ordinary.data().isSensitive());
     }
 
     void testReadLinesKeepEndingsAndTruncate() {
@@ -259,6 +336,20 @@ public:
             }));
     }
 
+    void testLongLineAcrossManySmallSourceChunks() {
+        auto source = std::string(10'000U, 'a');
+        source += "\nnext\n";
+        auto bytes = StringEncoder{StringEditor{std::string_view{source}}}.encode(StringEncoding::Utf8);
+        auto byteStream = std::make_shared<MemoryInputStream>(bytes, 3U);
+        auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
+
+        const auto line = stream.readLine(CpLength{20'000U});
+        REQUIRE(line.hasData());
+        REQUIRE_EQUAL(line.data().characterLength(), CpLength{10'001U});
+        REQUIRE_EQUAL(line.data().charAt(StringSide::Back), Char{U'\n'});
+        REQUIRE_EQUAL(StringConverter{stream.readLine(CpLength{20'000U}).data()}.toStdString(), std::string{"next\n"});
+    }
+
     void testChangingTextReadReplaysRetainedText() {
         auto bytes = StringEncoder{StringEditor{std::string_view{"abc\n"}}}.encode(StringEncoding::Utf8);
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 2U, 2U);
@@ -318,17 +409,18 @@ public:
         REQUIRE_EQUAL(stream.effectiveEncoding(), StringEncoding::Utf16LittleEndian);
     }
 
-    void testThrowModePropagatesEncodingErrors() {
-        auto bytes = ByteBlock{std::vector<uint8_t>{0xffU}};
+    void testStrictModePropagatesEncodingErrors() {
+        auto bytes = ByteBlock::fromVector(std::vector<uint8_t>{0xffU});
         auto byteStream = std::make_shared<MemoryInputStream>(bytes);
         auto stream = el::stream::impl::EncodedTextInputStream{
-            byteStream, StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Throw};
+            byteStream, StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict};
 
         REQUIRE_THROWS_AS(EncodingError, stream.readAll());
     }
 
     void testInputUtf8SplitSequences() {
-        auto bytes = ByteBlock{std::vector<uint8_t>{0x41U, 0xF0U, 0x9FU, 0x98U, 0x80U, 0x0DU, 0x0AU, 0x42U}};
+        auto bytes =
+            ByteBlock::fromVector(std::vector<uint8_t>{0x41U, 0xF0U, 0x9FU, 0x98U, 0x80U, 0x0DU, 0x0AU, 0x42U});
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf8};
 
@@ -340,8 +432,8 @@ public:
     }
 
     void testInputUtf16SplitSequences() {
-        auto bytes = ByteBlock{
-            std::vector<uint8_t>{0xFFU, 0xFEU, 0x41U, 0x00U, 0x3DU, 0xD8U, 0x00U, 0xDEU, 0x0AU, 0x00U, 0x42U, 0x00U}};
+        auto bytes = ByteBlock::fromVector(
+            std::vector<uint8_t>{0xFFU, 0xFEU, 0x41U, 0x00U, 0x3DU, 0xD8U, 0x00U, 0xDEU, 0x0AU, 0x00U, 0x42U, 0x00U});
         auto byteStream = std::make_shared<MemoryInputStream>(bytes, 1U);
         auto stream = el::stream::impl::EncodedTextInputStream{byteStream, StringEncoding::Utf16};
 
@@ -422,11 +514,27 @@ public:
     void testOutputCanSuppressInitialBom() {
 
         const auto byteStream = std::make_shared<MemoryOutputStream>();
-        auto stream = el::stream::impl::EncodedTextOutputStream{
-            byteStream, StringEncoding::Utf16, StringBomMode::Require, EncodingErrorMode::Replace, true};
+        auto stream =
+            el::stream::impl::EncodedTextOutputStream{byteStream, StringEncoding::Utf16, StringBomMode::Require, true};
 
         stream.write("A"_el);
 
         REQUIRE_EQUAL(byteStream->data, std::vector<uint8_t>({0x41U, 0x00U}));
+    }
+
+    void testOutputTrustsMatchingRepresentationAndReplacesWhenTranscoding() {
+        const auto invalidBytes = std::string{'A', static_cast<char>(0xc0U), 'B'};
+        const auto invalid = String{el::text::U8StringEditor{std::string_view{invalidBytes}}};
+
+        const auto utf8Bytes = std::make_shared<MemoryOutputStream>();
+        auto utf8 = el::stream::impl::EncodedTextOutputStream{utf8Bytes, StringEncoding::Utf8, StringBomMode::Reject};
+        REQUIRE(utf8.write(invalid).isSuccess());
+        REQUIRE_EQUAL(utf8Bytes->data, std::vector<uint8_t>({0x41U, 0xc0U, 0x42U}));
+
+        const auto utf16Bytes = std::make_shared<MemoryOutputStream>();
+        auto utf16 =
+            el::stream::impl::EncodedTextOutputStream{utf16Bytes, StringEncoding::Utf16, StringBomMode::Reject};
+        REQUIRE(utf16.write(invalid).isSuccess());
+        REQUIRE_EQUAL(utf16Bytes->data, std::vector<uint8_t>({0x41U, 0x00U, 0xfdU, 0xffU, 0x42U, 0x00U}));
     }
 };

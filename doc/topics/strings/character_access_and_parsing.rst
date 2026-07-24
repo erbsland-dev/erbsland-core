@@ -62,8 +62,8 @@ In practice:
   It provides efficient sequential access, lookahead, recovery, and code-point positions for diagnostics.
   It also provides capturing of strings and low-level integer parsing.
 - For a UTF-8-only hot path that already stores a ``ByteIndex`` and does not need reader state, use
-  :cpp:func:`readCharAndAdvanceOrThrow()
-  <erbsland::text::U8String::readCharAndAdvanceOrThrow>` for strict decoding without constructing a reader.
+  :cpp:func:`readCharAndAdvance() <erbsland::text::U8String::readCharAndAdvance>` for tolerant decoding without
+  constructing a reader.
 - Use :cpp:func:`forEach() <erbsland::text::U8String::forEach>` or a range-based ``for`` loop when
   every decoded character is visited.
 - Use byte indexes together with :cpp:func:`find() <erbsland::text::U8String::find>` and similar functions,
@@ -88,6 +88,17 @@ Most APIs that work with parsing and diagnostics use code-point positions.
 Most APIs that work with string storage and slicing use byte positions.
 
 Understanding this distinction makes it easier to choose the correct access pattern throughout the rest of this page.
+
+Parse Boolean Literals
+======================
+
+All UTF-8, UTF-16, and UTF-32 string and editor types provide ``toBoolean()`` and ``toBooleanOrThrow()``.
+They recognize the complete ASCII-case-insensitive ELCL literals ``true``, ``on``, ``yes``, ``enabled``, ``false``,
+``off``, ``no``, and ``disabled``.
+
+Use ``toBoolean(defaultValue)`` for optional input whose invalid form should use a fallback.
+Use ``toBooleanOrThrow()`` when invalid text is an error.
+Neither method trims input: empty text, surrounding whitespace, and partial matches are invalid.
 
 Parse Text with ``StringCharReader``
 ====================================

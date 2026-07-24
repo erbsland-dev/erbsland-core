@@ -3,7 +3,7 @@
 
 #include <erbsland/text/IntegerFormatFlag.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringTree.hpp>
 #include <erbsland/unittest/UnitTest.hpp>

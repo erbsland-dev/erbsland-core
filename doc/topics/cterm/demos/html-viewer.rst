@@ -58,7 +58,7 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/html-viewer/src/HtmlViewerApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/HtmlViewer/src/HtmlViewerApp.cpp`.
 
 This file contains the option setup, Core path-based file loading, HTML parsing, document rendering, and viewport
 navigation.

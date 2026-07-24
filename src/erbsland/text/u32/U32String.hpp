@@ -72,7 +72,7 @@ namespace erbsland::text {
 /// Copy, move, slicing, trimming are fast and copy-free operations.
 /// Use `String` for most use cases and `U32String` only if you need random access to code points or require
 /// UTF-32 encoding.
-/// @tested{U32StringTest StringEscapingTest}
+/// @tested{U32StringTest StringEscapingTest BooleanConversionTest}
 class U32String final {
     friend class debug::impl::StringDebugAccess;
     friend class U32StringEditor;
@@ -349,6 +349,14 @@ public: // transform and copy-modify
         const U32String &text, const U32String &replacement, CharCompareFn compareFn = {}) const -> U32String;
 
 public: // conversion
+    /// Convert an ASCII-case-insensitive ELCL boolean literal, or return a default for unsupported text.
+    /// @param defaultValue The value returned for invalid, incomplete, padded, or empty text.
+    /// @return The recognized boolean value, or `defaultValue`.
+    [[nodiscard]] auto toBoolean(bool defaultValue = {}) const noexcept -> bool;
+    /// Convert an ASCII-case-insensitive ELCL boolean literal.
+    /// @return The recognized boolean value.
+    /// @throws err::ParseError if the complete text is not a supported literal.
+    [[nodiscard]] auto toBooleanOrThrow() const -> bool;
     /// Convert this string to an integer, or return the given default value on error.
     template <math::AnyIntegerType T>
     [[nodiscard]] auto toInteger(
@@ -406,10 +414,6 @@ public: // minimal std-library compatibility
     friend void swap(U32String &first, U32String &second) noexcept;
 
 private:
-    /// Test if this string covers the full backing storage range.
-    [[nodiscard]] auto isFullStorageRange() const noexcept -> bool;
-    /// Create a string for a transformation that did not change decoded text.
-    [[nodiscard]] auto stringForUnchangedTransform() const -> U32String;
     /// Create a string with the same storage and a different storage range.
     [[nodiscard]] auto withRange(unit::CpRange range) const noexcept -> U32String;
     /// Get the view to the string data.

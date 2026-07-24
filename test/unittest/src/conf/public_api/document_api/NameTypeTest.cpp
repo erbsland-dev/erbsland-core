@@ -4,7 +4,7 @@
 #include "../../ConfTestHelper.hpp"
 
 #include <erbsland/conf/NameType.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::conf;

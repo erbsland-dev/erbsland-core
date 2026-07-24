@@ -8,8 +8,8 @@
 #include "../EventBackendId.hpp"
 #include "../EventBackendTarget.hpp"
 #include "../EventLoop.hpp"
+#include "../EventLoopDriver.hpp"
 
-#include <condition_variable>
 #include <cstdint>
 #include <deque>
 #include <memory>
@@ -26,6 +26,7 @@ class EventLoop final : public event::EventLoop,
                         public std::enable_shared_from_this<EventLoop> {
 public:
     EventLoop();
+    explicit EventLoop(EventLoopDriverPtr driver);
 
 public: // implement Events
     void post(Event event) override;
@@ -57,7 +58,6 @@ private:
     [[nodiscard]] auto registerBackendInternal(EventBackendPtr backend) -> EventBackend &;
     [[nodiscard]] auto createFundamentalBackend(EventBackendId backendId) -> EventBackendPtr;
     void ensureBackendsAttached();
-    void notifyWake() noexcept;
     void postInternal(Event event, bool allowAfterQuit);
     [[nodiscard]] auto runOnceImpl(std::optional<time::TimeDelta> maximumWait) -> bool;
     [[nodiscard]] auto takeNextEvent() -> std::optional<Event>;
@@ -71,18 +71,16 @@ private:
     [[nodiscard]] auto backendSnapshot() const -> std::vector<EventBackend *>;
     void pollBackends(time::TimePoint now);
     [[nodiscard]] auto nextBackendWakeTime() const -> std::optional<time::TimePoint>;
-    void wakeBackends() noexcept;
     void waitForWake();
     void waitForWake(time::TimeDelta waitTime);
 
 private:
     mutable std::mutex _mutex;              ///< Protects loop state.
-    std::condition_variable _cv;            ///< Wakes the loop for posted events and timer changes.
+    EventLoopDriverPtr _driver;             ///< Native wait and wake driver.
     std::deque<Event> _queue;               ///< Immediate event queue.
     std::queue<std::exception_ptr> _errors; ///< Captured callback errors.
     std::vector<EventBackendPtr> _backends; ///< Registered backends.
     EventLoopErrorHandler _errorHandler;    ///< Optional event-loop error handler.
-    uint64_t _wakeCounter{0};               ///< Counts wake notifications without queued events.
     bool _backendsAttached{false};          ///< True if backends are attached to this loop backend target.
     bool _running{false};                   ///< True while `run()` is active.
     bool _stopRequested{false};             ///< Stop flag for `run()`.

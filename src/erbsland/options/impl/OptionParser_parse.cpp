@@ -4,6 +4,7 @@
 
 #include "../Option.hpp"
 #include "../OptionModule.hpp"
+#include "../OptionParserFlag.hpp"
 #include "../OptionType.hpp"
 
 #include "../../text/EscapeFormat.hpp"
@@ -35,8 +36,8 @@ auto OptionParser::prepareModuleParsing() -> bool {
     }
 
     const auto &argument = getArgAt(_argumentIndex);
-    if (((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) ||
-        (argument == "--version"_el && isEnabledBuiltInFlag(argument))) {
+    const auto builtInFlag = builtInFlagAt(_argumentIndex);
+    if (builtInFlag.has_value() && builtInFlag->validValue && builtInFlag->value) {
         return true;
     }
     if (argument.startsWith("-"_el)) {
@@ -83,10 +84,6 @@ auto OptionParser::parseActiveOptions() -> bool {
             }
             return true;
         }
-        if (((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) ||
-            (argument == "--version"_el && isEnabledBuiltInFlag(argument))) {
-            return true;
-        }
         if (argument.startsWith("--"_el)) {
             if (!parseLongOption(argument, _argumentIndex)) {
                 return false;
@@ -125,7 +122,7 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
 
     const auto optionType = match.option->type();
     if (optionType == OptionType::Flag) {
-        if (!equalsIndex.isNoIndex()) {
+        if (!equalsIndex.isNoIndex() && !booleanValuesEnabled()) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
@@ -134,19 +131,47 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
                 index,
                 match.option);
         }
+        if (!equalsIndex.isNoIndex()) {
+            const auto valueText = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
+            auto value = false;
+            if (!parseBooleanLiteral(valueText, value)) {
+                return makeError(
+                    OptionErrorReason::UnexpectedValueType,
+                    "Invalid boolean value"_el,
+                    StringFormat{
+                        "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, "
+                        "no, or disabled."}
+                        .build(valueText.toEscaped(EscapeFormat::Display), name.toEscaped(EscapeFormat::Display)),
+                    index,
+                    match.option);
+            }
+            return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
+        }
+        if (booleanValuesEnabled()) {
+            const auto valueIndex = _argumentIndex.incremented();
+            if (isIndexInArgs(valueIndex)) {
+                auto value = false;
+                if (parseBooleanLiteral(getArgAt(valueIndex), value)) {
+                    _argumentIndex = valueIndex;
+                    return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
+                }
+            }
+        }
         return acceptStorageResult(_storage.storeFlag(match.option, index));
     }
 
     auto value = String{};
     auto valueIndex = index;
+    auto valueStartIndex = ByteIndex::zero();
     if (!equalsIndex.isNoIndex()) {
-        value = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
+        valueStartIndex = equalsIndex.incremented();
+        value = argument.slice({valueStartIndex, ByteLength::infinite()});
     } else if (!consumeFollowingValue(value, index, match.option)) {
         return false;
     } else {
         valueIndex = _argumentIndex;
     }
-    return acceptStorageResult(_storage.storeValue(match.option, value, valueIndex));
+    return storeValue(match.option, value, valueIndex, valueStartIndex);
 }
 
 auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex index) -> bool {
@@ -170,7 +195,7 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
                 StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
                 index);
         }
-        if (match.option->type() == OptionType::Flag) {
+        if (match.option->type() == OptionType::Flag && !booleanValuesEnabled()) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
@@ -179,8 +204,27 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
                 index,
                 match.option);
         }
-        return acceptStorageResult(_storage.storeValue(
-            match.option, argument.slice({equalsIndex.incremented(), ByteLength::infinite()}), index));
+        if (match.option->type() == OptionType::Flag) {
+            const auto valueText = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
+            auto value = false;
+            if (!parseBooleanLiteral(valueText, value)) {
+                return makeError(
+                    OptionErrorReason::UnexpectedValueType,
+                    "Invalid boolean value"_el,
+                    StringFormat{
+                        "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, "
+                        "no, or disabled."}
+                        .build(valueText.toEscaped(EscapeFormat::Display), name.toEscaped(EscapeFormat::Display)),
+                    index,
+                    match.option);
+            }
+            return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
+        }
+        return storeValue(
+            match.option,
+            argument.slice({equalsIndex.incremented(), ByteLength::infinite()}),
+            index,
+            equalsIndex.incremented());
     }
 
     if (!argument.startsWith("-"_el)) {
@@ -214,13 +258,23 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
     }
     if (remainingNames.isEmpty()) {
         if (firstMatch.option->type() == OptionType::Flag) {
+            if (booleanValuesEnabled()) {
+                const auto valueIndex = _argumentIndex.incremented();
+                if (isIndexInArgs(valueIndex)) {
+                    auto value = false;
+                    if (parseBooleanLiteral(getArgAt(valueIndex), value)) {
+                        _argumentIndex = valueIndex;
+                        return acceptStorageResult(_storage.storeFlag(firstMatch.option, index, value, true));
+                    }
+                }
+            }
             return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
         }
         auto value = String{};
         if (!consumeFollowingValue(value, index, firstMatch.option)) {
             return false;
         }
-        return acceptStorageResult(_storage.storeValue(firstMatch.option, value, _argumentIndex));
+        return storeValue(firstMatch.option, value, _argumentIndex, ByteIndex::zero());
     }
     if (firstMatch.option->type() != OptionType::Flag) {
         return makeError(

@@ -14,7 +14,7 @@ using namespace text::literals;
 auto currentEvents() -> EventsPtr {
     const auto result = impl::currentEventsWeakPtr().lock();
     if (result == nullptr) {
-        throw err::LogicError{"The current thread is not running a managed event loop."_el};
+        throw err::LogicError{"The current thread is not running an event loop."_el};
     }
     return result;
 }

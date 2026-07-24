@@ -83,40 +83,6 @@ auto U8StringReader::peek() const noexcept -> Char {
     return U8StringReadTools{_text.dataView()}.charAt(_position);
 }
 
-auto U8StringReader::readOrThrow() -> Char {
-    const auto result = U8StringReadTools{_text.dataView()}.readOrThrow(_position);
-    if (!result.isSignal()) {
-        ++_cpPosition;
-    }
-    return result;
-}
-
-auto U8StringReader::readIfOrThrow(const Char expected) -> bool {
-    auto position = _position;
-    const auto result = U8StringReadTools{_text.dataView()}.readOrThrow(position);
-    if (result != expected) {
-        return false;
-    }
-    _position = position;
-    ++_cpPosition;
-    return true;
-}
-
-auto U8StringReader::readIfOrThrow(const CharSet &expected) -> std::optional<Char> {
-    auto position = _position;
-    const auto result = U8StringReadTools{_text.dataView()}.readOrThrow(position);
-    if (!expected.contains(result)) {
-        return {};
-    }
-    _position = position;
-    ++_cpPosition;
-    return result;
-}
-
-auto U8StringReader::peekOrThrow() const -> Char {
-    return U8StringReadTools{_text.dataView()}.charAtOrThrow(_position);
-}
-
 auto U8StringReader::isAtEnd() const noexcept -> bool {
     return _position.distanceFromZero() >= _text.length();
 }
@@ -158,14 +124,6 @@ auto U8StringReader::advanceIf(const Char expected) noexcept -> bool {
 
 auto U8StringReader::advanceIf(const CharSet &expected) noexcept -> bool {
     return readIf(expected).has_value();
-}
-
-auto U8StringReader::advanceIfOrThrow(const Char expected) -> bool {
-    return readIfOrThrow(expected);
-}
-
-auto U8StringReader::advanceIfOrThrow(const CharSet &expected) -> bool {
-    return readIfOrThrow(expected).has_value();
 }
 
 auto U8StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept -> LoopResult {

@@ -17,8 +17,9 @@ using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;
 
-BufferedByteInputStream::BufferedByteInputStream(NativeByteStreamPtr nativeStream, InputStreamSettings settings) :
-    _data{std::make_shared<BufferedByteInputStreamData>(std::move(nativeStream), settings)} {
+BufferedByteInputStream::BufferedByteInputStream(
+    NativeByteStreamPtr nativeStream, InputStreamSettings settings, const bool runtimeSensitive) :
+    _data{std::make_shared<BufferedByteInputStreamData>(std::move(nativeStream), settings, runtimeSensitive)} {
     const auto lock = std::scoped_lock{_data->mutex};
     _data->scheduleRead();
 }
@@ -68,9 +69,9 @@ void BufferedByteInputStream::abort() noexcept {
     }
     if (_data->mutex.try_lock()) {
         if (!_data->readInProgress) {
-            _data->back.clear();
+            _data->back.secureErase();
         }
-        _data->front.clear();
+        _data->front.secureErase();
         _data->mutex.unlock();
     }
     _data->condition.notify_all();
@@ -80,7 +81,25 @@ auto BufferedByteInputStream::createErrorContext() const noexcept -> StreamError
     return _data->native->createErrorContext();
 }
 
-auto BufferedByteInputStream::readFromSource(const std::span<mem::Byte> destination, const ReadDeadline deadline)
+void BufferedByteInputStream::setSensitive(const bool sensitive) noexcept {
+    if (!_data->runtimeSensitive) {
+        return;
+    }
+    discardRetainedInput();
+    const auto lock = std::scoped_lock{_data->mutex};
+    if (_data->settings.isSensitive() == sensitive) {
+        return;
+    }
+    _data->sensitivityEpoch.fetch_add(1U);
+    _data->front.setSensitive(sensitive);
+    _data->back.setSensitive(sensitive);
+    _data->settings.setSensitive(sensitive);
+    _data->finished = false;
+    _data->scheduleRead();
+    _data->condition.notify_all();
+}
+
+auto BufferedByteInputStream::readFromSource(const mem::ByteSpan destination, const ReadDeadline deadline)
     -> StreamReadResult<ByteLength> {
     if (destination.empty()) {
         return {StreamReadStatus::Data, ByteLength::zero()};
@@ -182,8 +201,8 @@ auto BufferedByteInputStream::beginPositioning(std::unique_lock<std::mutex> &loc
 }
 
 void BufferedByteInputStream::completePositioning(const ByteIndex position) {
-    _data->front.clear();
-    _data->back.clear();
+    _data->front.secureErase();
+    _data->back.secureErase();
     _data->finished = false;
     _data->logicalPosition.store(position.toRawValue());
     _data->positioning = false;

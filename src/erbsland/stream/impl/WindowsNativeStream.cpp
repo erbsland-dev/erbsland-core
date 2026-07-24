@@ -244,7 +244,7 @@ void WindowsNativeStream::abort() noexcept {
     }
 }
 
-auto WindowsNativeStream::read(const std::span<mem::Byte> destination) -> ByteLength {
+auto WindowsNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
     const auto operation = Operation{*this};
     if (destination.empty()) {
         return ByteLength::zero();
@@ -264,7 +264,7 @@ auto WindowsNativeStream::read(const std::span<mem::Byte> destination) -> ByteLe
     return ByteLength::fromSizeT(readCount);
 }
 
-void WindowsNativeStream::write(const std::span<const mem::Byte> bytes) {
+void WindowsNativeStream::write(const mem::ConstByteSpan bytes) {
     writeBytes(std::span<const char>{reinterpret_cast<const char *>(bytes.data()), bytes.size()});
 }
 
@@ -338,7 +338,9 @@ auto createNativeStandardOutputStream(const NativeStandardStream stream) -> Nati
 
 auto createNativeStandardInputStream() -> ByteInputStreamPtr {
     return std::make_shared<BufferedByteInputStream>(
-        std::make_shared<WindowsNativeStream>(GetStdHandle(STD_INPUT_HANDLE), NativeStreamOwnership::Borrowed));
+        std::make_shared<WindowsNativeStream>(GetStdHandle(STD_INPUT_HANDLE), NativeStreamOwnership::Borrowed),
+        InputStreamSettings{},
+        true);
 }
 
 }

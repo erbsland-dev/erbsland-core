@@ -7,5 +7,8 @@ target_sources(erbsland-core-unittest PRIVATE
         CryptologyTestHelper.hpp
         HashAlgorithmTest.cpp
         HasherTest.cpp
+        HashValidationTest.cpp
+        PasswordHashTest.cpp
+        PasswordPrimitiveTest.cpp
         Sha3ValidationTest.cpp
 )

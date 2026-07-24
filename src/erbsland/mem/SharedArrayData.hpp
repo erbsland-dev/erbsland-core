@@ -5,6 +5,7 @@
 #include "ReferenceCounter.hpp"
 #include "SharedArrayData_fwd.hpp"
 
+#include "impl/SecureErase.hpp"
 #include "impl/SharedArrayDataTraits.hpp"
 #include "impl/SharedDataPointerTraits.hpp"
 
@@ -23,7 +24,7 @@
 
 namespace erbsland::mem {
 
-/// A class for custom implicitly/explicitly shared byte data.
+/// A one-allocation intrusive shared header with aligned trailing array storage.
 /// @seedoc{/reference/mem/cow_storage}
 /// @warning This is an advanced data type, meant for people extending the library.
 /// Do not use it unless you understand the implications and have a specific need.
@@ -31,11 +32,20 @@ namespace erbsland::mem {
 /// @tparam tDataType The element type stored in the trailing array.
 /// @tparam tSizeType The size type, either `uint32_t` or `uint64_t`.
 /// @tparam tConstructMethod Controls if and how array elements are constructed.
-template <typename tDataType, impl::SharedArrayDataSizeType tSizeType, SharedArrayDataConstructMethod tConstructMethod>
+/// @tparam tCleanupMethod Controls whether the complete allocation is securely erased before deallocation.
+template <
+    typename tDataType,
+    impl::SharedArrayDataSizeType tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
 class SharedArrayData final {
     static_assert(
         tConstructMethod != SharedArrayDataConstructMethod::None || std::is_trivially_copyable_v<tDataType>,
         "SharedArrayData without element construction requires a trivially copyable element type.");
+    static_assert(
+        tCleanupMethod != SharedArrayDataCleanupMethod::SecureErase ||
+            (tConstructMethod == SharedArrayDataConstructMethod::None && std::is_trivially_copyable_v<tDataType>),
+        "Secure shared array cleanup is only supported for raw trivially copyable storage.");
 
 public:
     /// The integer type used for size and capacity values.
@@ -88,13 +98,12 @@ public: // construction/destruction
     [[nodiscard]] static auto create(SizeType size, SizeType capacity) -> SharedArrayData * {
         checkSizeRange(size, capacity);
         auto *data = allocateHeader(size, capacity);
+        initializeSecureStorage(data);
         auto constructedCount = std::size_t{0};
         try {
             constructedCount = constructElements(data->data(), toSizeT(capacity));
         } catch (...) {
-            destroyElements(data->data(), constructedCount);
-            data->~SharedArrayData();
-            deallocateStorage(data);
+            destroyAllocation(data, constructedCount);
             throw;
         }
         return data;
@@ -102,9 +111,12 @@ public: // construction/destruction
     /// Create a detached copy of this shared array data.
     /// For trivially copied raw storage, only the used range is copied. For constructed element storage, the used range
     /// is copied and the remaining capacity is default/value constructed according to `tConstructMethod`.
+    /// If copying or construction throws, all successfully constructed destination elements are destroyed and the
+    /// destination allocation is cleaned up before the exception is rethrown. Secure allocations are erased in full.
     /// @return A newly allocated, unreferenced copy of this array data block.
     [[nodiscard]] auto clone() const -> SharedArrayData * {
         auto *copy = allocateHeader(_size, _capacity);
+        initializeSecureStorage(copy);
         auto constructedCount = std::size_t{0};
         try {
             if constexpr (tConstructMethod == SharedArrayDataConstructMethod::None) {
@@ -115,22 +127,20 @@ public: // construction/destruction
                     constructElements(copy->data() + constructedCount, toSizeT(_capacity) - constructedCount);
             }
         } catch (...) {
-            destroyElements(copy->data(), constructedCount);
-            copy->~SharedArrayData();
-            deallocateStorage(copy);
+            destroyAllocation(copy, constructedCount);
             throw;
         }
         return copy;
     }
     /// Destroy data created by `create` or `clone`.
+    /// Constructed elements and the header end their lifetimes first. In secure mode, the complete allocation,
+    /// including metadata, alignment padding, used storage, and unused capacity, is then erased before deallocation.
     /// @param data The array data block to destroy, or `nullptr`.
     static void destroy(SharedArrayData *data) noexcept {
         if (data == nullptr) {
             return;
         }
-        destroyElements(data->data(), toSizeT(data->_capacity));
-        data->~SharedArrayData();
-        deallocateStorage(data);
+        destroyAllocation(data, toSizeT(data->_capacity));
     }
 
 public: // tools
@@ -266,6 +276,26 @@ private:
             std::destroy_n(data, count);
         }
     }
+    /// Zero-initialize complete secure storage, including unused capacity.
+    static void initializeSecureStorage(SharedArrayData *data) noexcept {
+        if constexpr (tCleanupMethod == SharedArrayDataCleanupMethod::SecureErase) {
+            std::memset(static_cast<void *>(data->data()), 0, toSizeT(data->_capacity) * sizeof(DataType));
+        }
+    }
+    /// Destroy constructed elements and the header, securely erase when requested, and deallocate the block.
+    /// The allocation size is captured before header destruction. Secure cleanup covers the header, alignment padding,
+    /// used elements, and unused capacity.
+    /// @param data The allocation header.
+    /// @param constructedCount The number of live elements to destroy.
+    static void destroyAllocation(SharedArrayData *data, std::size_t constructedCount) noexcept {
+        const auto allocationSize = allocationSizeForCapacity(data->_capacity);
+        destroyElements(data->data(), constructedCount);
+        data->~SharedArrayData();
+        if constexpr (tCleanupMethod == SharedArrayDataCleanupMethod::SecureErase) {
+            impl::secureErase(std::span<std::byte>{reinterpret_cast<std::byte *>(data), allocationSize});
+        }
+        deallocateStorage(data);
+    }
     /// Convert the configured size type into `std::size_t` for allocation and standard-library calls.
     /// On platforms where `std::size_t` is smaller than `SizeType`, values that cannot be represented terminate the
     /// program.
@@ -311,26 +341,43 @@ private:
 
 namespace erbsland::mem::impl {
 
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::referenceCounter(
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>>::referenceCounter(
     Type *data) noexcept -> ReferenceCounter & {
     return data->_referenceCount;
 }
 
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::referenceCounter(
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>>::referenceCounter(
     const Type *data) noexcept -> const ReferenceCounter & {
     return data->_referenceCount;
 }
 
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::clone(const Type *data)
-    -> Type * {
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+auto SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>>::clone(
+    const Type *data) -> Type * {
     return data->clone();
 }
 
-template <typename tDataType, typename tSizeType, SharedArrayDataConstructMethod tConstructMethod>
-void SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod>>::destroy(Type *data) noexcept {
+template <
+    typename tDataType,
+    typename tSizeType,
+    SharedArrayDataConstructMethod tConstructMethod,
+    SharedArrayDataCleanupMethod tCleanupMethod>
+void SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>>::destroy(
+    Type *data) noexcept {
     Type::destroy(data);
 }
 

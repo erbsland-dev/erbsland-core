@@ -81,6 +81,8 @@ public:
     /// @param character The combined Unicode text for `Type::Character` or `Type::Combined`.
     /// @param modifiers The modifiers pressed together with this key.
     Key(Type type, const text::U32String &character, KeyModifiers modifiers = {});
+    /// Create a key by copying a fixed combined-character payload.
+    Key(Type type, const text::CombinedChar &character, KeyModifiers modifiers = {}) noexcept;
 
     // defaults
     ~Key() = default;
@@ -125,6 +127,8 @@ public: // accessors
     /// Get the full combined Unicode payload for character input.
     /// @return The stored Unicode text, or an empty string for non-character keys.
     [[nodiscard]] auto combined() const -> text::U32String;
+    /// Borrow the fixed combined-character payload without creating a string copy.
+    [[nodiscard]] auto combinedCharacter() const noexcept -> const text::CombinedChar & { return _character; }
     /// Test if this object represents a supported key.
     [[nodiscard]] auto valid() const noexcept -> bool { return _type != None; }
     /// Get a hash for this key.

@@ -8,7 +8,6 @@
 
 #include "../bgeo/BlockAlignedSource.hpp"
 #include "../err/ParameterError.hpp"
-#include "../text/EncodingErrorMode.hpp"
 
 namespace erbsland::cterm {
 
@@ -279,7 +278,7 @@ void WritableBuffer::drawBlockText(
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
-    drawBlockText(BlockStringEditor{text, text::EncodingErrorMode::Replace}, rect, alignment, style, animationCycle);
+    drawBlockText(BlockStringEditor{text}, rect, alignment, style, animationCycle);
 }
 
 void WritableBuffer::drawBlockText(

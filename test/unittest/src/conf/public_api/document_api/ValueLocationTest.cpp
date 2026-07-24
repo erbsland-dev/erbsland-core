@@ -3,7 +3,7 @@
 
 #include "ValueTestHelper.hpp"
 
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 using el::unit::CodeLocation;
 using namespace el::text::literals;

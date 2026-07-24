@@ -3,15 +3,13 @@
 #include "Block16Style.hpp"
 
 #include "../err/ParameterError.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
 
 using namespace text::literals;
 
-Block16Style::Block16Style(const text::String &tiles) :
-    _tiles(toTiles(BlockStringEditor{tiles, text::EncodingErrorMode::Replace})) {
+Block16Style::Block16Style(const text::String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {
 }
 
 Block16Style::Block16Style(const text::U32String &tiles) : _tiles(toTiles(BlockStringEditor{tiles})) {

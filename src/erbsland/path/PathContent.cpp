@@ -12,8 +12,9 @@
 
 #include "../err/Exception.hpp"
 #include "../err/OutOfRangeError.hpp"
+#include "../mem/ByteArray.hpp"
 #include "../mem/ByteBlock.hpp"
-#include "../mem/ByteBlockEditor.hpp"
+#include "../mem/impl/UnsafeByteBlockBuffer.hpp"
 #include "../stream/ByteInputStream.hpp"
 #include "../stream/ByteOutputStream.hpp"
 #include "../stream/TextOutputStream.hpp"
@@ -21,13 +22,17 @@
 #include "../text/StringDecoder.hpp"
 #include "../unit/ByteLength.hpp"
 
+#include <algorithm>
 #include <array>
 #include <memory>
+#include <utility>
 
 namespace erbsland::path {
 
 using namespace text::literals;
 using namespace stream;
+using namespace text;
+using namespace unit;
 
 PathContent::PathContent() = default;
 
@@ -51,7 +56,7 @@ auto PathContent::path() const -> const Path & {
     return _impl == nullptr ? Path::empty() : _impl->path();
 }
 
-auto PathContent::readText(const PathReadTextOptions options) const noexcept -> std::optional<text::String> {
+auto PathContent::readText(const PathReadTextOptions options) const noexcept -> std::optional<String> {
     try {
         return readTextOrThrow(options);
     } catch (const err::Exception &) {
@@ -59,14 +64,14 @@ auto PathContent::readText(const PathReadTextOptions options) const noexcept -> 
     }
 }
 
-auto PathContent::readTextOrThrow(const PathReadTextOptions options) const -> text::String {
+auto PathContent::readTextOrThrow(const PathReadTextOptions options) const -> String {
     const auto data = readDataOrThrow(
         PathReadDataOptions{}
             .setMaximumByteLength(options.maximumByteLength())
             .setStreamSettings(options.streamSettings()));
-    auto result = text::StringDecoder{data}.decode(options.encoding(), options.bomMode(), options.encodingErrorMode());
+    auto result = StringDecoder{data}.decode(options.encoding(), options.bomMode(), options.encodingMode());
     if (options.maximumCpLength().isFinite() && result.characterLength() > options.maximumCpLength()) {
-        throw err::OutOfRangeError{"File text exceeds maximum code-point length"_el};
+        throwError("Failed to read file data."_el, "The reported file size exceeds the maximum code-point length."_el);
     }
     return result;
 }
@@ -80,55 +85,69 @@ auto PathContent::readData(const PathReadDataOptions options) const noexcept -> 
 }
 
 auto PathContent::readDataOrThrow(const PathReadDataOptions options) const -> mem::ByteBlock {
-    constexpr auto cBufferSize = std::size_t{16U * 1024U};
-
+    constexpr auto cBufferSize = ByteLength{16U * 1024U};
     if (isEmpty()) {
-        throw PathError{
-            PathErrorContext{"File could not be read"_el, "No path was provided for the read operation."_el}.setHelp(
-                "Provide a non-empty path to the file."_el)};
+        throwPathEmptyError();
     }
-
-    if (options.maximumByteLength().isFinite()) {
-        const auto info = path().info(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size});
-        if (info.isRegularFile() && info.fileSize() > options.maximumByteLength()) {
-            throw err::OutOfRangeError{"File data exceeds maximum byte length"_el};
+    const auto maximumLength = options.maximumByteLength();
+    if (maximumLength.isZero()) {
+        return mem::ByteBlock{};
+    }
+    const auto info = path().info(PathInfoParts{PathInfoPart::Type, PathInfoPart::Size});
+    auto initialCapacity = cBufferSize;
+    auto knownFileSize = ByteLength::infinite();
+    if (info.isRegularFile()) {
+        // Add one byte as probe if the file size has changed after our probe.
+        // This last byte is important! It is an "automatic" probe to detect if there is more data
+        // after the reported file size.
+        knownFileSize = info.fileSize();
+        initialCapacity = knownFileSize + ByteLength::one();
+    }
+    if (maximumLength.isFinite()) {
+        if (knownFileSize.isFinite() && knownFileSize > maximumLength) {
+            throwError("Failed to read file data."_el, "The reported file size exceeds the maximum byte length."_el);
         }
+        // Reserve one byte more than the maximum length to probe if we exceed it.
+        initialCapacity = std::min(initialCapacity, maximumLength + ByteLength::one());
     }
-
-    // FIXME! This is inefficient, use `UnsafeByteBlockBuffer`,
-    // If the file size could be determined, reserve the final size.
-    // If not, start conservatively, e.g. 1kb, capped by maximumSize
-    // and use `BestGrowth.hpp` to increase size in defined steps.
-    // document this behaviour, so the user is aware that when reading really small
-    // files, they have to set a small maximum size.
     auto stream = openByteInputStream(options);
-    auto result = mem::ByteBlockEditor{};
-    auto totalLength = unit::ByteLength::zero();
-    auto buffer = std::array<mem::Byte, cBufferSize>{};
+    auto buffer = mem::impl::UnsafeByteBlockBuffer{initialCapacity};
+    auto totalLength = ByteLength::zero();
     while (true) {
-        const auto readResult = stream->read(std::span<mem::Byte>{buffer});
-        if (readResult == StreamReadStatus::Finished) {
+        auto readSpan = buffer.remainingData(totalLength);
+        assert(!readSpan.empty());
+        const auto result = stream->read(readSpan);
+        if (result == StreamReadStatus::Finished) {
             break;
         }
-        if (readResult == StreamReadStatus::Timeout) {
-            throw StreamError{StreamErrorContext{
+        if (result == StreamReadStatus::Timeout) {
+            throwError(
                 "Failed to read file data."_el,
-                "The file input stream timed out before reaching the end of the file."_el}
-                    .setPath(path().toString())};
+                "The file input stream timed out before reaching the end of the file."_el);
         }
-        const auto readLength = readResult.data();
-        if (options.maximumByteLength().isFinite() && readLength > options.maximumByteLength() - totalLength) {
-            throw err::OutOfRangeError{"File data exceeds maximum byte length"_el};
+        if (result.data().isZero()) {
+            throwError(
+                "Failed to read file data."_el, "The file input stream reported data without providing any bytes."_el);
         }
-        const auto block = mem::ByteBlock{std::span<const mem::Byte>{buffer.data(), readLength.toSizeT()}};
-        result.append(block);
-        totalLength += readLength;
+        totalLength += result.data(); // increment the total length
+        if (maximumLength.isFinite() && totalLength > maximumLength) {
+            throwError("Failed to read file data."_el, "File data exceeds maximum byte length."_el);
+        }
+        if (totalLength == buffer.capacity()) {
+            // if we reached the capacity, we need to make room for more data.
+            auto requestedCapacity = totalLength + cBufferSize;
+            if (maximumLength.isFinite()) {
+                // if we have a maximum length, only request one byte more to probe if we exceed it.
+                requestedCapacity = std::min(requestedCapacity, maximumLength + ByteLength::one());
+            }
+            assert(requestedCapacity > buffer.capacity());
+            buffer.grow(requestedCapacity, totalLength);
+        }
     }
-    return result;
+    return buffer.take(totalLength);
 }
 
-auto PathContent::writeText(const text::String &text, const PathWriteTextOptions options) const noexcept
-    -> util::Result {
+auto PathContent::writeText(const String &text, const PathWriteTextOptions options) const noexcept -> util::Result {
     try {
         writeTextOrThrow(text, options);
         return util::Result::Success;
@@ -137,13 +156,12 @@ auto PathContent::writeText(const text::String &text, const PathWriteTextOptions
     }
 }
 
-void PathContent::writeTextOrThrow(const text::String &text, const PathWriteTextOptions options) const {
+void PathContent::writeTextOrThrow(const String &text, const PathWriteTextOptions options) const {
     auto stream = openTextOutputStream(options);
     if (stream->write(text) == StreamWriteStatus::Timeout || stream->flush() == StreamWriteStatus::Timeout ||
         stream->close() == StreamCloseStatus::Timeout) {
-        throw StreamError{StreamErrorContext{
-            "Failed to write file text."_el, "The file output stream timed out before the text was fully written."_el}
-                .setPath(path().toString())};
+        throwError(
+            "Failed to write file text."_el, "The file output stream timed out before the text was fully written."_el);
     }
 }
 
@@ -161,46 +179,45 @@ void PathContent::writeDataOrThrow(const mem::ByteBlock &data, const PathWriteDa
     auto stream = openByteOutputStream(options);
     if (stream->write(data) == StreamWriteStatus::Timeout || stream->flush() == StreamWriteStatus::Timeout ||
         stream->close() == StreamCloseStatus::Timeout) {
-        throw StreamError{StreamErrorContext{
-            "Failed to write file data."_el, "The file output stream timed out before the data was fully written."_el}
-                .setPath(path().toString())};
+        throwError(
+            "Failed to write file data."_el, "The file output stream timed out before the data was fully written."_el);
     }
 }
 
 auto PathContent::openTextInputStream(const PathReadTextOptions options) const -> TextInputStreamPtr {
     if (isEmpty()) {
-        throw PathError{PathErrorContext{
-            "File could not be opened for reading"_el, "No path was provided for the read operation."_el}
-                .setHelp("Provide a non-empty path to the file."_el)};
+        throwPathEmptyError();
     }
     return impl::pathBackend().openTextInputStreamOrThrow(path(), options);
 }
 
 auto PathContent::openTextOutputStream(const PathWriteTextOptions options) const -> TextOutputStreamPtr {
     if (isEmpty()) {
-        throw PathError{PathErrorContext{
-            "File could not be opened for writing"_el, "No path was provided for the write operation."_el}
-                .setHelp("Provide a non-empty path to the file."_el)};
+        throwPathEmptyError();
     }
     return impl::pathBackend().openTextOutputStreamOrThrow(path(), options);
 }
 
 auto PathContent::openByteInputStream(const PathReadDataOptions options) const -> ByteInputStreamPtr {
     if (isEmpty()) {
-        throw PathError{PathErrorContext{
-            "File could not be opened for reading"_el, "No path was provided for the read operation."_el}
-                .setHelp("Provide a non-empty path to the file."_el)};
+        throwPathEmptyError();
     }
     return impl::pathBackend().openByteInputStreamOrThrow(path(), options);
 }
 
 auto PathContent::openByteOutputStream(const PathWriteDataOptions options) const -> ByteOutputStreamPtr {
     if (isEmpty()) {
-        throw PathError{PathErrorContext{
-            "File could not be opened for writing"_el, "No path was provided for the write operation."_el}
-                .setHelp("Provide a non-empty path to the file."_el)};
+        throwPathEmptyError();
     }
     return impl::pathBackend().openByteOutputStreamOrThrow(path(), options);
+}
+
+void PathContent::throwError(String title, String description) const {
+    throw PathError{PathErrorContext{std::move(title), std::move(description)}.setSourcePath(path().toString())};
+}
+
+void PathContent::throwPathEmptyError() const {
+    throwError("File could not be opened"_el, "No path was provided for the operation."_el);
 }
 
 }

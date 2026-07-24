@@ -14,6 +14,7 @@ namespace erbsland::test::pathtest {
 class PathBackendTestBase : public path::impl::CommonPathBackend {
 public: // implement PathBackend
     [[nodiscard]] auto currentDirectoryOrThrow() const -> path::Path override { return unsupportedPath(); }
+    [[nodiscard]] auto userHomeDirectoryOrThrow() const -> path::Path override { return unsupportedPath(); }
     [[nodiscard]] auto systemTempDirectoryOrThrow() const -> path::Path override { return unsupportedPath(); }
     [[nodiscard]] auto resolveOrThrow(const path::Path &, path::PathResolveOptions) const -> path::Path override {
         return unsupportedPath();
@@ -22,7 +23,8 @@ public: // implement PathBackend
         -> path::impl::PathInfoData override {
         throwUnsupported();
     }
-    [[nodiscard]] auto directoryEntriesOrThrow(const path::Path &) const -> std::vector<path::Path> override {
+    [[nodiscard]] auto directoryEntriesOrThrow(const path::Path &, const path::Path &) const
+        -> std::vector<path::Path> override {
         throwUnsupported();
     }
     void createDirectoryEntryOrThrow(const path::Path &, path::PathAccessProfile) const override { throwUnsupported(); }

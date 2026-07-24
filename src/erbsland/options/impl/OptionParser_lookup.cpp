@@ -15,6 +15,7 @@
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringFormat.hpp"
+#include "../../unit/ByteUnit.hpp"
 
 namespace erbsland::options::impl {
 
@@ -136,29 +137,90 @@ auto OptionParser::isEnabledBuiltInFlag(const text::String &name) const -> bool 
     return false;
 }
 
+auto OptionParser::booleanValuesEnabled() const noexcept -> bool {
+    return _options != nullptr && !_options->parserFlags().isSet(OptionParserFlag::DisableBooleanValues);
+}
+
+auto OptionParser::parseBooleanLiteral(const text::String &text, bool &value) noexcept -> bool {
+    const auto falseDefault = text.toBoolean(false);
+    const auto trueDefault = text.toBoolean(true);
+    if (falseDefault != trueDefault) {
+        return false;
+    }
+    value = falseDefault;
+    return true;
+}
+
+auto OptionParser::builtInFlagAt(const unit::ArgumentIndex index) const -> std::optional<BuiltInFlagMatch> {
+    const auto argument = getArgAt(index);
+    const auto equalsIndex = argument.find("="_el);
+    const auto name = argument.slice({unit::ByteIndex::zero(), equalsIndex});
+    if (name != "-h"_el && name != "--help"_el && name != "--version"_el) {
+        return {};
+    }
+    if (!isEnabledBuiltInFlag(name)) {
+        return {};
+    }
+
+    auto result =
+        BuiltInFlagMatch{name == "--version"_el ? OptionResultStatus::DisplayVersion : OptionResultStatus::DisplayHelp};
+    if (!equalsIndex.isNoIndex()) {
+        result.explicitValue = true;
+        if (!booleanValuesEnabled() ||
+            !parseBooleanLiteral(
+                argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()}), result.value)) {
+            result.validValue = false;
+        }
+    } else if (booleanValuesEnabled()) {
+        const auto valueIndex = index.incremented();
+        if (isIndexInArgs(valueIndex) && parseBooleanLiteral(getArgAt(valueIndex), result.value)) {
+            result.consumedFollowing = true;
+            result.explicitValue = true;
+        }
+    }
+    return result;
+}
+
 auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) const -> bool {
     return isHelpOrVersionRequest(status, unit::ArgumentIndex::one());
 }
 
 auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit::ArgumentIndex startIndex) const
     -> bool {
+    struct OccurrenceState final {
+        std::size_t count{0};
+        bool explicitValue{false};
+    };
+    auto helpState = OccurrenceState{};
+    auto versionState = OccurrenceState{};
+    auto requestedStatus = std::optional<OptionResultStatus>{};
+    auto invalidSyntax = false;
     auto index = startIndex;
     while (isIndexInArgs(index)) {
         const auto &argument = getArgAt(index);
         if (argument == "--"_el) {
-            return false;
+            break;
         }
-        if ((argument == "-h"_el || argument == "--help"_el) && isEnabledBuiltInFlag(argument)) {
-            status = OptionResultStatus::DisplayHelp;
-            return true;
-        }
-        if (argument == "--version"_el && isEnabledBuiltInFlag(argument)) {
-            status = OptionResultStatus::DisplayVersion;
-            return true;
+        if (const auto match = builtInFlagAt(index)) {
+            auto &state = match->status == OptionResultStatus::DisplayHelp ? helpState : versionState;
+            invalidSyntax = invalidSyntax || !match->validValue ||
+                (state.count > 0U && (state.explicitValue || match->explicitValue));
+            ++state.count;
+            state.explicitValue = state.explicitValue || match->explicitValue;
+            if (match->validValue && match->value && !requestedStatus.has_value()) {
+                requestedStatus = match->status;
+            }
+            if (match->consumedFollowing) {
+                ++index;
+            }
         }
         ++index;
     }
-    return false;
+    if (invalidSyntax || !requestedStatus.has_value()) {
+        return false;
+    }
+    status = requestedStatus.value();
+    return true;
 }
 
 auto OptionParser::validateOptionNames() -> bool {
@@ -200,6 +262,24 @@ auto OptionParser::validateOptionNames() -> bool {
                     OptionErrorReason::SyntaxError,
                     "Invalid option definition"_el,
                     text::StringFormat{"{} is a choice option, but it has no accepted choices."}.build(
+                        OptionDisplayModel::optionTitle(option)),
+                    unit::ArgumentIndex::noIndex(),
+                    option);
+            }
+            if (option->type() == OptionType::SensitiveText && !option->maximum().isOne()) {
+                return makeError(
+                    OptionErrorReason::SyntaxError,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} is sensitive text and must accept exactly one value."}.build(
+                        OptionDisplayModel::optionTitle(option)),
+                    unit::ArgumentIndex::noIndex(),
+                    option);
+            }
+            if (option->type() == OptionType::SensitiveText && option->hasDefaultValue()) {
+                return makeError(
+                    OptionErrorReason::SyntaxError,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} is sensitive text and cannot define a default value."}.build(
                         OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);

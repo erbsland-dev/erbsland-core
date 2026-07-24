@@ -136,7 +136,7 @@ auto BufferedByteOutputStream::createErrorContext() const noexcept -> StreamErro
     return _data->native->createErrorContext();
 }
 
-auto BufferedByteOutputStream::write(const std::span<const mem::Byte> bytes) -> StreamWriteStatus {
+auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWriteStatus {
     if (bytes.empty()) {
         return StreamWriteStatus::Success;
     }
@@ -167,10 +167,10 @@ auto BufferedByteOutputStream::write(const std::span<const mem::Byte> bytes) -> 
             const auto frontCount = std::min(bytes.size(), _data->front.capacity().toSizeT());
             const auto backCount = bytes.size() - frontCount;
             if (isSuccessful(_data->back.reserveAdditional(unit::ByteLength::fromSizeT(backCount)))) {
-                static_cast<void>(_data->front.write(std::span<const mem::Byte>{bytes.data(), frontCount}));
+                static_cast<void>(_data->front.write(mem::ConstByteSpan{bytes.data(), frontCount}));
                 if (backCount > 0U) {
                     const auto result =
-                        _data->back.writeExact(std::span<const mem::Byte>{bytes.data() + frontCount, backCount});
+                        _data->back.writeExact(mem::ConstByteSpan{bytes.data() + frontCount, backCount});
                     if (isFailure(result)) {
                         std::terminate();
                     }
@@ -191,18 +191,10 @@ auto BufferedByteOutputStream::write(const std::span<const mem::Byte> bytes) -> 
     }
 }
 
-auto BufferedByteOutputStream::writeEncodedText(
-    const text::String &source,
-    const text::StringEncoding encoding,
-    const text::StringBomMode bomMode,
-    const text::EncodingErrorMode errorMode) -> StreamWriteStatus {
-    const auto encoder = text::StringEncoder{source};
-    const auto encodedLength = encoder.encodedLength(encoding, bomMode, errorMode);
-    if (encodedLength > _data->settings.backBufferLimit()) {
-        throwError(
-            "Failed to write text to the output stream."_el,
-            "The complete encoded text request exceeds the configured output buffer limit."_el);
-    }
+template <typename T>
+auto BufferedByteOutputStream::writeEncoded(
+    const text::StringEncoder<T> &encoder, const text::StringEncoding encoding, const text::StringBomMode bomMode)
+    -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
     while (true) {
@@ -218,15 +210,33 @@ auto BufferedByteOutputStream::writeEncodedText(
             }
             continue;
         }
-        if (isSuccessful(encoder.encodeTo(_data->back, encoding, bomMode, errorMode))) {
-            _data->logicalPosition.fetch_add(encodedLength.toRawValue());
+        const auto previousLength = _data->back.length();
+        if (isSuccessful(encoder.encodeTo(_data->back, encoding, bomMode))) {
+            _data->logicalPosition.fetch_add((_data->back.length() - previousLength).toRawValue());
             _data->scheduleWrite();
             return StreamWriteStatus::Success;
+        }
+        if (previousLength.isZero()) {
+            throwError(
+                "Failed to write text to the output stream."_el,
+                "The complete encoded text request exceeds the configured output buffer limit."_el);
         }
         if (_data->condition.wait_until(lock, deadline.toStdTimePoint()) == std::cv_status::timeout) {
             return StreamWriteStatus::Timeout;
         }
     }
+}
+
+auto BufferedByteOutputStream::writeEncodedText(
+    const text::String &source, const text::StringEncoding encoding, const text::StringBomMode bomMode)
+    -> StreamWriteStatus {
+    return writeEncoded(text::StringEncoder{source}, encoding, bomMode);
+}
+
+auto BufferedByteOutputStream::writeEncodedCharacter(
+    const text::Char character, const text::StringEncoding encoding, const text::StringBomMode bomMode)
+    -> StreamWriteStatus {
+    return writeEncoded(text::StringEncoder{character}, encoding, bomMode);
 }
 
 auto BufferedByteOutputStream::supportsPositioning() const noexcept -> bool {

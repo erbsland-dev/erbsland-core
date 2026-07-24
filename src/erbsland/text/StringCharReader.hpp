@@ -127,45 +127,10 @@ public:
     /// Tolerant decoding rules are used for malformed encoded data.
     /// Returns `false` when no movement was possible, returns `true` if moves at least one character.
     auto advance(unit::CpLength count) noexcept -> bool;
-    /// Read a character strictly and advance on success.
-    /// Throws for end of data, out-of-range positions, and malformed encoding. The current position advances only
-    /// after a character was decoded successfully.
-    [[nodiscard]] auto readOrThrow() -> Char;
-    /// Read a character strictly only if it matches a given character.
-    /// If the strict read succeeds but the character does not match, the current position is unchanged.
-    /// @param expected The character to match.
-    /// @return `true` if the character was read and matched, `false` otherwise.
-    /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws text::EncodingError if the current position does not contain valid encoding.
-    [[nodiscard]] auto readIfOrThrow(Char expected) -> bool;
-    /// Read a character strictly only if it matches a given character set.
-    /// If the strict read succeeds but the character does not match, the current position is unchanged.
-    /// @param expected The character set to match.
-    /// @return The character if it matches, `std::nullopt` otherwise.
-    /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws text::EncodingError if the current position does not contain valid encoding.
-    [[nodiscard]] auto readIfOrThrow(const CharSet &expected) -> std::optional<Char>;
-    /// Peek a character strictly.
-    /// Throws for end of data, out-of-range positions, and malformed encoding. This method never advances.
-    [[nodiscard]] auto peekOrThrow() const -> Char;
     /// Advance by one decoded character or throw if no movement was possible.
     void advanceOrThrow();
     /// Advance by decoded characters or throw if no movement was possible.
     void advanceOrThrow(unit::CpLength count);
-    /// Advance one character strictly only if it matches a given character.
-    /// If the strict read succeeds but the character does not match, the current position is unchanged.
-    /// @param expected The character to match.
-    /// @return `true` if the character matched and the position was advanced, `false` otherwise.
-    /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws text::EncodingError if the current position does not contain valid encoding.
-    auto advanceIfOrThrow(Char expected) -> bool;
-    /// Advance one character strictly only if it matches a given character set.
-    /// If the strict read succeeds but the character does not match, the current position is unchanged.
-    /// @param expected The character set to match.
-    /// @return `true` if the character matched and the position was advanced, `false` otherwise.
-    /// @throws err::OutOfRangeError if the current position does not point to a character.
-    /// @throws text::EncodingError if the current position does not contain valid encoding.
-    auto advanceIfOrThrow(const CharSet &expected) -> bool;
     /// Test if the reader is at the end of data.
     [[nodiscard]] auto isAtEnd() const noexcept -> bool;
     /// Test if at least `count` decoded characters are available.
@@ -220,7 +185,6 @@ public: // read integers
     /// @tparam T The native or saturating integer type to read.
     /// @param options The integer parsing options.
     /// @return The parsed integer converted into the requested type.
-    /// @throws text::EncodingError when malformed encoding is encountered.
     /// @throws text::ParseNumberError when the integer cannot be read.
     /// @throws err::OverflowError when the integer cannot be converted into the requested type.
     template <math::AnyIntegerType T>
@@ -293,7 +257,7 @@ private:
 
 private:
     [[nodiscard]] static auto createBackendForAnyString(const AnyString &text) -> impl::StringReaderBase *;
-    [[nodiscard]] auto scanInteger(const IntegerParseOptions &options, bool strict) -> ReadIntegerResult;
+    [[nodiscard]] auto scanInteger(const IntegerParseOptions &options) -> ReadIntegerResult;
     [[nodiscard]] auto readIntegerResultOrThrow(const IntegerParseOptions &options) -> ReadIntegerResult;
     [[noreturn]] static void throwError(ReadNumberStatus status, unit::CpIndex position);
 

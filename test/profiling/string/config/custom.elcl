@@ -1,0 +1,42 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 20s
+Threads             : 2
+Warmup Samples      : 0
+Samples             : 2
+Minimum Sample Time : 1ms
+Memory Limit        : 16 MiB
+Progress Interval   : 1s
+Sensitive Mode      : "normal"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-boundaries"
+Widths              : "u8", "u16", "u32"
+Types               : "string-editor"
+Use Cases           : "append", "replace"
+Variants            : "all"
+Content Profiles    : "ascii", "mixed", "supplementary"
+Size Modes          : "boundaries"
+Size Min            : 63
+Size Max            : 257
+Operand Size Min    : 1
+Operand Size Max    : 64
+Sensitive Modes     : "normal"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-random"
+Widths              : "u8"
+Types               : "string"
+Use Cases           : "traverse", "search"
+Variants            : "all"
+Content Profiles    : "malformed-sparse"
+Size Modes          : "random"
+Size Min            : 64
+Size Max            : 4096
+Operand Size Min    : 4
+Operand Size Max    : 32
+Sensitive Modes     : "normal"
+Weight              : 1

@@ -24,7 +24,7 @@ public:
         const auto fixture = PathTestFixture{"posix-operation-errors"};
         const auto missing = fixture.child("missing");
         try {
-            static_cast<void>(el::path::impl::pathBackend().directoryEntriesOrThrow(missing));
+            static_cast<void>(el::path::impl::pathBackend().directoryEntriesOrThrow(missing, missing));
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
             requirePosixError(error, ENOENT);

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ByteOutputStream.hpp"
 
+#include "../mem/impl/UnsafeByteBlockAccess.hpp"
+
 namespace erbsland::stream {
 
 auto ByteOutputStream::endianness() const noexcept -> mem::Endianness {
@@ -13,11 +15,11 @@ void ByteOutputStream::setEndianness(const mem::Endianness endianness) noexcept 
 }
 
 auto ByteOutputStream::write(const mem::Byte byte) -> StreamWriteStatus {
-    return write(std::span<const mem::Byte>{&byte, 1U});
+    return write(mem::ConstByteSpan{&byte, 1U});
 }
 
 auto ByteOutputStream::write(const mem::ByteBlock &bytes) -> StreamWriteStatus {
-    return write(bytes.bytes());
+    return write(mem::impl::UnsafeByteBlockAccess{bytes}.data());
 }
 
 auto ByteOutputStream::coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus> {

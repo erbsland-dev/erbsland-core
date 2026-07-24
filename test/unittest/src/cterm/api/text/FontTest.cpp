@@ -3,10 +3,10 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/cterm/Font.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

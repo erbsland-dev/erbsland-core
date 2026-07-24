@@ -5,12 +5,13 @@
 #include "../ByteOutputStream.hpp"
 #include "../TextOutputStream.hpp"
 
-#include "../../text/EncodingErrorMode.hpp"
 #include "../../text/StringBomMode.hpp"
 
 #include <mutex>
 
 namespace erbsland::stream::impl {
+
+class BufferedByteOutputStream;
 
 /// Text output stream that encodes text into a byte output stream.
 /// @tested{EncodedTextStreamTest}
@@ -20,13 +21,11 @@ public:
     /// @param byteOutputStream The byte stream to write to.
     /// @param encoding The configured text encoding.
     /// @param bomMode How byte order marks are written.
-    /// @param errorMode How invalid source text is handled.
     /// @throws stream::StreamError If `byteOutputStream` is empty.
     explicit EncodedTextOutputStream(
         ByteOutputStreamPtr byteOutputStream,
         text::StringEncoding encoding,
         text::StringBomMode bomMode = text::StringBomMode::Automatic,
-        text::EncodingErrorMode errorMode = text::EncodingErrorMode::Replace,
         bool initialBomAlreadyHandled = false);
 
     // defaults
@@ -69,10 +68,10 @@ private:
 private:
     mutable std::mutex _mutex;
     ByteOutputStreamPtr _byteOutputStream;
+    BufferedByteOutputStream *_bufferedByteOutputStream{}; ///< Cached optional direct-encoding capability.
     text::StringEncoding _encoding{text::StringEncoding::Utf8};
     text::StringEncoding _effectiveEncoding{text::StringEncoding::Utf8};
     text::StringBomMode _bomMode{text::StringBomMode::Automatic};
-    text::EncodingErrorMode _errorMode{text::EncodingErrorMode::Replace};
     bool _bomWritten{false};
 };
 

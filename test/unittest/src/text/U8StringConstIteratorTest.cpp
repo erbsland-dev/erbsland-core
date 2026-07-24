@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>

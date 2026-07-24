@@ -3,7 +3,7 @@
 
 #include <erbsland/re/impl/text/CharSequence.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashHelper.hpp>
 

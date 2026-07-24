@@ -7,7 +7,7 @@
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
 #include "../../Char.hpp"
-#include "../../EncodingErrorMode.hpp"
+#include "../../EncodingMode.hpp"
 #include "../../impl/ThrowHelper.hpp"
 
 #include <algorithm>
@@ -167,11 +167,11 @@ inline auto decodeCharOrThrow(const std::span<const char> buffer, unit::ByteInde
 }
 
 /// Decode a single UTF-8 character in the buffer and advance the position.
-/// Works like `decodeCharOrReplace` but returns no character in error cases.
+/// Try to decode one character and return no value for malformed input.
 /// @param buffer The byte buffer to decode.
 /// @param position The read position that is advanced after a successful read.
 /// @return A valid decoded character or no character in case of an error.
-[[nodiscard]] inline auto decodeCharOrIgnore(const std::span<const char> buffer, unit::ByteIndex &position) noexcept
+[[nodiscard]] inline auto tryDecodeChar(const std::span<const char> buffer, unit::ByteIndex &position) noexcept
     -> std::optional<Char> {
     auto index = position.toSizeT();
     if (index >= buffer.size()) {
@@ -326,19 +326,13 @@ inline void fastRetreatChar(const std::span<const char> buffer, unit::ByteIndex 
 /// Decode all UTF-8 characters with the selected error handling mode and call the function for each result.
 /// Stops when the callback returns `false`.
 /// @tested{U8EncodingTest}
-template <EncodingErrorMode errorMode, typename Function>
+template <EncodingMode mode, typename Function>
 auto forEachDecodedCharacter(const std::span<const char> data, Function function) -> bool {
     auto position = unit::ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         auto character = Char{};
-        if constexpr (errorMode == EncodingErrorMode::Throw) {
+        if constexpr (mode == EncodingMode::Strict) {
             character = decodeCharOrThrow(data, position);
-        } else if constexpr (errorMode == EncodingErrorMode::Ignore) {
-            if (const auto optChar = decodeCharOrIgnore(data, position); optChar.has_value()) {
-                character = *optChar;
-            } else {
-                continue;
-            }
         } else {
             character = decodeCharOrReplace(data, position);
         }
@@ -356,15 +350,12 @@ auto forEachDecodedCharacter(const std::span<const char> data, Function function
 /// Decode all UTF-8 characters with a runtime selected error handling mode.
 /// @tested{U8EncodingTest}
 template <typename Function>
-auto forEachDecodedCharacter(const std::span<const char> data, const EncodingErrorMode errorMode, Function function)
-    -> bool {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
-        return forEachDecodedCharacter<EncodingErrorMode::Throw>(data, function);
-    case EncodingErrorMode::Ignore:
-        return forEachDecodedCharacter<EncodingErrorMode::Ignore>(data, function);
-    case EncodingErrorMode::Replace:
-        return forEachDecodedCharacter<EncodingErrorMode::Replace>(data, function);
+auto forEachDecodedCharacter(const std::span<const char> data, const EncodingMode mode, Function function) -> bool {
+    switch (mode) {
+    case EncodingMode::Strict:
+        return forEachDecodedCharacter<EncodingMode::Strict>(data, function);
+    case EncodingMode::Tolerant:
+        return forEachDecodedCharacter<EncodingMode::Tolerant>(data, function);
     }
     return false;
 }
@@ -382,7 +373,7 @@ inline void decodeCharOrThrow_decodeCont(
         throwU8EncodingError("Unexpected continuation byte", reader.position().toSizeT() + offset);
     }
     unicodeValue <<= 6;
-    unicodeValue |= static_cast<char32_t>(decodedByte.masked(0b00111111U));
+    unicodeValue |= decodedByte.masked(0b00111111U).toUInt32();
 }
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
@@ -396,16 +387,16 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     const auto decodedByte = reader.peekByte();
     if (decodedByte.toUInt8() < 0x80U) {
         reader.advance(1U);
-        return Char{static_cast<char32_t>(decodedByte.toUInt8())};
+        return Char{static_cast<char32_t>(decodedByte.toUInt32())};
     }
     char32_t unicodeValue{};
     auto sequenceSize = std::size_t{0};
     if (decodedByte.matches(0b11100000U, 0b11000000U) && decodedByte.toUInt8() >= 0b11000010U) {
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U).toUInt32());
         decodeCharOrThrow_decodeCont(reader, 1U, unicodeValue);
         sequenceSize = 2U;
     } else if (decodedByte.matches(0b11110000U, 0b11100000U)) {
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U).toUInt32());
         decodeCharOrThrow_decodeCont(reader, 1U, unicodeValue);
         decodeCharOrThrow_decodeCont(reader, 2U, unicodeValue);
         if (unicodeValue < 0x800U) {
@@ -413,7 +404,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
         }
         sequenceSize = 3U;
     } else if (decodedByte.matches(0b11111000U, 0b11110000U) && decodedByte.toUInt8() < 0b11110101U) {
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U).toUInt32());
         decodeCharOrThrow_decodeCont(reader, 1U, unicodeValue);
         decodeCharOrThrow_decodeCont(reader, 2U, unicodeValue);
         decodeCharOrThrow_decodeCont(reader, 3U, unicodeValue);
@@ -440,19 +431,19 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     const auto decodedByte = reader.peekByte();
     if (decodedByte.toUInt8() < 0x80U) {
         reader.advance(1U);
-        return Char{static_cast<char32_t>(decodedByte.toUInt8())};
+        return Char{static_cast<char32_t>(decodedByte.toUInt32())};
     }
     auto sequenceSize = std::size_t{0};
     char32_t unicodeValue{};
     if (decodedByte.matches(0b11100000U, 0b11000000U) && decodedByte.toUInt8() >= 0b11000010U) {
         sequenceSize = 2U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U).toUInt32());
     } else if (decodedByte.matches(0b11110000U, 0b11100000U)) {
         sequenceSize = 3U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U).toUInt32());
     } else if (decodedByte.matches(0b11111000U, 0b11110000U) && decodedByte.toUInt8() < 0b11110101U) {
         sequenceSize = 4U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U).toUInt32());
     } else {
         reader.advance(1U);
         return Char::replacement();
@@ -468,7 +459,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
             return Char::replacement();
         }
         unicodeValue <<= 6U;
-        unicodeValue |= static_cast<char32_t>(continuationByte.masked(0b00111111U));
+        unicodeValue |= static_cast<char32_t>(continuationByte.masked(0b00111111U).toUInt32());
     }
     if ((sequenceSize == 3U && unicodeValue < 0x800U) || (sequenceSize == 4U && unicodeValue < 0x10000U)) {
         reader.advance(1U);
@@ -484,7 +475,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
 }
 
 /// Decode a single UTF-8 character from a byte reader and advance the position.
-[[nodiscard]] inline auto decodeCharOrIgnore(mem::ByteReader &reader) noexcept -> std::optional<Char> {
+[[nodiscard]] inline auto tryDecodeChar(mem::ByteReader &reader) noexcept -> std::optional<Char> {
     if (!reader.canRead(1U)) {
         return std::nullopt;
     }
@@ -497,13 +488,13 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
     char32_t unicodeValue{};
     if (decodedByte.matches(0b11100000U, 0b11000000U) && decodedByte.toUInt8() >= 0b11000010U) {
         sequenceSize = 2U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00011111U).toUInt32());
     } else if (decodedByte.matches(0b11110000U, 0b11100000U)) {
         sequenceSize = 3U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00001111U).toUInt32());
     } else if (decodedByte.matches(0b11111000U, 0b11110000U) && decodedByte.toUInt8() < 0b11110101U) {
         sequenceSize = 4U;
-        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U));
+        unicodeValue = static_cast<char32_t>(decodedByte.masked(0b00000111U).toUInt32());
     } else {
         reader.advance(1U);
         return std::nullopt;
@@ -519,7 +510,7 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
             return std::nullopt;
         }
         unicodeValue <<= 6U;
-        unicodeValue |= static_cast<char32_t>(continuationByte.masked(0b00111111U));
+        unicodeValue |= static_cast<char32_t>(continuationByte.masked(0b00111111U).toUInt32());
     }
     if ((sequenceSize == 3U && unicodeValue < 0x800U) || (sequenceSize == 4U && unicodeValue < 0x10000U)) {
         reader.advance(1U);
@@ -536,18 +527,12 @@ inline auto decodeCharOrThrow(mem::ByteReader &reader) -> Char {
 
 /// Decode all UTF-8 characters from a byte reader with the selected error handling mode.
 /// @tested{U8StringEncodingTest}
-template <EncodingErrorMode errorMode, typename Function>
+template <EncodingMode mode, typename Function>
 auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool {
     while (!reader.isAtEnd()) {
         auto character = Char{};
-        if constexpr (errorMode == EncodingErrorMode::Throw) {
+        if constexpr (mode == EncodingMode::Strict) {
             character = decodeCharOrThrow(reader);
-        } else if constexpr (errorMode == EncodingErrorMode::Ignore) {
-            if (const auto optChar = decodeCharOrIgnore(reader); optChar.has_value()) {
-                character = *optChar;
-            } else {
-                continue;
-            }
         } else {
             character = decodeCharOrReplace(reader);
         }
@@ -565,14 +550,12 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
 /// Decode all UTF-8 characters from a byte reader with a runtime selected error handling mode.
 /// @tested{U8StringEncodingTest}
 template <typename Function>
-auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingErrorMode errorMode, Function function) -> bool {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
-        return forEachDecodedCharacter<EncodingErrorMode::Throw>(reader, function);
-    case EncodingErrorMode::Ignore:
-        return forEachDecodedCharacter<EncodingErrorMode::Ignore>(reader, function);
-    case EncodingErrorMode::Replace:
-        return forEachDecodedCharacter<EncodingErrorMode::Replace>(reader, function);
+auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingMode mode, Function function) -> bool {
+    switch (mode) {
+    case EncodingMode::Strict:
+        return forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
+    case EncodingMode::Tolerant:
+        return forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
     }
     return false;
 }
@@ -581,7 +564,7 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingErrorMode er
 [[nodiscard]] inline auto isValid(const std::span<const char> data) noexcept -> bool {
     auto position = unit::ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
-        if (!decodeCharOrIgnore(data, position).has_value()) {
+        if (!tryDecodeChar(data, position).has_value()) {
             return false;
         }
     }

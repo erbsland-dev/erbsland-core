@@ -8,7 +8,7 @@
 #include <erbsland/re/diagnostics/Disassembler.hpp>
 #include <erbsland/re/Match.hpp>
 #include <erbsland/re/RegEx.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <optional>

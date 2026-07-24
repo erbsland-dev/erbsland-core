@@ -4,7 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/ByteFormat.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -199,7 +199,7 @@ public:
 
 private:
     [[nodiscard]] static auto makeBlock(std::initializer_list<std::uint8_t> bytes) -> ByteBlock {
-        return ByteBlock{std::vector<std::uint8_t>{bytes}};
+        return ByteBlock::fromVector(std::vector<std::uint8_t>{bytes});
     }
 
     [[nodiscard]] static auto format(const ByteBlock &block, const ByteFormat byteFormat = ByteFormat::defaultFormat())

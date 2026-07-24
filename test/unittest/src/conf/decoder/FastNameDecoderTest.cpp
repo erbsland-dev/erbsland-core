@@ -7,7 +7,7 @@
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/impl/decoder/FastNameDecoder.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 using namespace el::conf;
 using el::conf::impl::FastNameDecoder;

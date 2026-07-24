@@ -6,8 +6,11 @@
 #include "../PosixErrorContext.hpp"
 
 #include "../../err/ParameterError.hpp"
+#include "../../text/IntegerBase.hpp"
+#include "../../text/IntegerParseOptions.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
+#include "../../unit/CpLength.hpp"
 
 #include <grp.h>
 #include <pwd.h>
@@ -15,7 +18,6 @@
 #include <unistd.h>
 
 #include <cerrno>
-#include <charconv>
 #include <cstring>
 #include <limits>
 #include <memory>
@@ -127,13 +129,10 @@ auto PosixUserLookupBackend::groupIdForName(const GroupName &name) -> GroupId {
 }
 
 auto PosixUserLookupBackend::parseId(const text::String &id, const text::String &kind) -> unsigned long {
-    static_cast<void>(kind);
-    const auto idText = text::StringConverter{id}.toStdString();
-    auto result = 0UL;
-    const auto *begin = idText.data();
-    const auto *end = begin + idText.size();
-    const auto [position, error] = std::from_chars(begin, end, result);
-    if (error != std::errc{} || position != end || result > std::numeric_limits<unsigned int>::max()) {
+    auto options = text::IntegerParseOptions{};
+    options.setFixedBase(text::IntegerBase::Decimal).setMinimumDigits(unit::CpLength::one());
+    const auto result = id.toInteger<unsigned long>(std::numeric_limits<unsigned long>::max(), options);
+    if (result > std::numeric_limits<unsigned int>::max()) {
         throw err::ParameterError{"Invalid POSIX user or group identifier."_el, kind};
     }
     return result;

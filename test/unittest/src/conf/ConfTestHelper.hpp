@@ -3,7 +3,7 @@
 #pragma once
 
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
 #include <erbsland/re/RegEx.hpp>

@@ -18,6 +18,8 @@ target_sources(erbsland-core PRIVATE
         EncodedTextInputStream.hpp
         EncodedTextOutputStream.cpp
         EncodedTextOutputStream.hpp
+        InputStreamFactory.cpp
+        InputStreamFactory.hpp
         IoService.cpp
         IoService.hpp
         NativeByteStream.hpp
@@ -29,6 +31,8 @@ target_sources(erbsland-core PRIVATE
         PrintContextToBuilder.hpp
         PrintContextToWrite.cpp
         PrintContextToWrite.hpp
+        RetainedTextBuffer.cpp
+        RetainedTextBuffer.hpp
         StandardInputStreamProxy.cpp
         StandardInputStreamProxy.hpp
         StandardStreamProxy.cpp
@@ -41,6 +45,8 @@ target_sources(erbsland-core PRIVATE
         StandardStreamSlot.hpp
         StandardTextOutputStream.cpp
         StandardTextOutputStream.hpp
+        StreamBufferSizes.cpp
+        StreamBufferSizes.hpp
         StreamErrorDiagnostic.cpp
         StreamErrorDiagnostic.hpp
         TextOutputStreamTraits.hpp

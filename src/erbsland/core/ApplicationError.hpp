@@ -26,7 +26,7 @@ public:
     /// Create an application error with the given reason and exit-code.
     /// @param context The context with error details.
     /// @param cause The diagnostic cause.
-    explicit ApplicationError(ApplicationErrorContext context, const std::exception_ptr &cause) noexcept :
+    explicit ApplicationError(ApplicationErrorContext context, const std::exception_ptr &cause = {}) noexcept :
         err::RuntimeError{context.title(), cause}, _context{std::move(context)} {}
     /// @overload
     explicit ApplicationError(text::String reason, const unit::ExitCode exitCode = unit::ExitCode::failure()) noexcept :

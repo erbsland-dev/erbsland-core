@@ -28,6 +28,12 @@ public:
         REQUIRE(currentDirectory.isValid());
     }
 
+    void testUserHomeDirectory() {
+        const auto homeDirectory = Path::userHomeDirectoryOrThrow();
+        REQUIRE(homeDirectory.isAbsolute());
+        REQUIRE(homeDirectory.isValid());
+    }
+
     void testLexicalPhysicalAndWeakResolve() {
         const auto fixture = createFixture();
         const auto basePath = pathFromStd(fixture);

@@ -26,8 +26,9 @@ class EventLoopTest final : public el::UnitTest {
     class ThrowingBackend final : public EventBackend {
     public: // implement EventBackend
         [[nodiscard]] auto backendId() const noexcept -> EventBackendId override { return id::SchedulerBackend; }
-        void attach(EventBackendTargetWeakPtr target) override { _target = std::move(target); }
-        void wake() noexcept override {}
+        void attach(EventBackendTargetWeakPtr target, [[maybe_unused]] EventLoopDriverWeakPtr driver) override {
+            _target = std::move(target);
+        }
         void poll([[maybe_unused]] TimePoint now) override {}
         [[nodiscard]] auto handleEvent(const Event &event) -> bool override {
             if (event.identifier() != id::TimerEvent) {

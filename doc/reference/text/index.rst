@@ -6,6 +6,7 @@ Text Processing
     :maxdepth: 1
 
     any_string_builder
+    base_n
     char_range
     format_definitions
     html/index

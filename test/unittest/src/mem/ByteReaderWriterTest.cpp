@@ -140,6 +140,6 @@ public:
 
 private:
     [[nodiscard]] static auto makeBlock(std::initializer_list<uint8_t> bytes) -> ByteBlock {
-        return ByteBlock{std::vector<uint8_t>{bytes}};
+        return ByteBlock::fromVector(std::vector<uint8_t>{bytes});
     }
 };

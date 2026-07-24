@@ -19,6 +19,12 @@ class RegisteredUtility:
 
 
 REGISTERED_UTILITIES = {
+    "api_guidelines": RegisteredUtility(
+        "API Guidelines",
+        "dev.api_guidelines",
+        "ApiGuidelinesApp",
+        help="Validate the structure and pattern syntax of domain-specific API guideline pages.",
+    ),
     "cleanup": RegisteredUtility(
         "Clean Up",
         "dev.cleanup",
@@ -126,6 +132,12 @@ REGISTERED_UTILITIES = {
         "dev.github_workflows",
         "GitHubWorkflowsApp",
         help="Audit GitHub workflow action pins and version annotations.",
+    ),
+    "include_dependencies": RegisteredUtility(
+        "Include Dependencies",
+        "dev.include_dependencies",
+        "IncludeDependenciesApp",
+        help="Inspect, export and validate the library source-level include dependency graph.",
     ),
     "generate_saturating_math_data": RegisteredUtility(
         "Generate Saturating Math Data",

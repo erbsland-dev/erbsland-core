@@ -108,6 +108,25 @@ public:
         requireMissing(text, "--version");
     }
 
+    void testBooleanFlagValueHelpCanBeDisabled() {
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption({"-v"_el, "--verbose"_el});
+        auto manager = OptionManager{options};
+
+        auto text = toStdString(manager.helpDocument({}).toString());
+        requireContains(text, "-h, --help[=<boolean>]");
+        requireContains(text, "-v, --verbose[=<boolean>]");
+        requireContains(text, "--version[=<boolean>]");
+
+        options->setParserFlag(OptionParserFlag::DisableBooleanValues);
+        text = toStdString(manager.helpDocument({}).toString());
+        requireContains(text, "-h, --help");
+        requireContains(text, "-v, --verbose");
+        requireContains(text, "--version");
+        requireMissing(text, "[=<boolean>]");
+    }
+
     void testCustomDisplayText() {
         const auto options = makeOptions();
         auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
@@ -236,7 +255,8 @@ public:
         auto options = Options::create();
         options->setExecutablePath("demo-tool"_el);
         auto manager = OptionManager{options};
-        const auto result = manager.parse(makeArgs({"demo-tool"_el, unsafeArgument}));
+        auto arguments = makeArgs({"demo-tool"_el, unsafeArgument});
+        const auto result = manager.parse(arguments);
         REQUIRE(result.errorContext().has_value());
 
         const auto text = toStdString(manager.errorDocument(result.errorContext().value()).toString());
@@ -327,7 +347,8 @@ public:
                 .setType(OptionType::Integer)
                 .setHelpDescription("Number of operations."_el);
             auto manager = OptionManager{options};
-            const auto result = manager.parse(makeArgs({"tool"_el, "--count"_el, "wrong"_el}));
+            auto arguments = makeArgs({"tool"_el, "--count"_el, "wrong"_el});
+            const auto result = manager.parse(arguments);
             REQUIRE(result.errorContext().has_value());
             context = result.errorContext().value();
         }
@@ -351,7 +372,8 @@ public:
         module->addOption("--count"_el).setType(OptionType::Integer).setHelpDescription("Number of operations."_el);
         options->addModule(module);
         auto manager = OptionManager{options};
-        const auto result = manager.parse(makeArgs({"tool"_el, "run"_el, "--count"_el, "wrong"_el}));
+        auto arguments = makeArgs({"tool"_el, "run"_el, "--count"_el, "wrong"_el});
+        const auto result = manager.parse(arguments);
         REQUIRE(result.errorContext().has_value());
 
         const auto text = toStdString(manager.errorDocument(result.errorContext().value()).toString());

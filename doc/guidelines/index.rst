@@ -26,6 +26,7 @@ project.
 .. toctree::
     :maxdepth: 3
 
+    code_style
     cmake_files
     cpp_files
     platform_integration
@@ -35,10 +36,12 @@ project.
     writing_style
     demo
     examples
+    example_themes
     api_guidelines
     api/common
     api/bgeo
     api/conf
+    api/core
     api/cryptology
     api/cterm
     api/err
@@ -46,6 +49,7 @@ project.
     api/i18n
     api/math
     api/mem
+    api/network
     api/options
     api/path
     api/random

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/unit/CodeLocation.hpp>
-#include <erbsland/unit/StdFormatForUnit.hpp>
+#include <erbsland/unit/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::text::literals;

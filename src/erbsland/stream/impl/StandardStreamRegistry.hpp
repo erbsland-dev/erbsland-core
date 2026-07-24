@@ -10,6 +10,8 @@
 
 #include <memory>
 #include <mutex>
+#include <source_location>
+#include <unordered_map>
 
 namespace erbsland::stream::impl {
 
@@ -49,15 +51,25 @@ public:
         TextInputStreamPtr input,
         TextOutputStreamPtr output,
         TextOutputStreamPtr error) noexcept;
+    /// Register one native standard-input sensitivity request.
+    [[nodiscard]] auto startSensitiveInput(std::source_location location) -> uint64_t;
+    /// Stop one registered native standard-input sensitivity request.
+    void stopSensitiveInput(uint64_t id);
 
 private:
-    std::mutex _mutex;                 ///< Synchronizes access to the registry.
-    TextInputStreamPtr _inputTarget;   ///< The current input target.
-    TextOutputStreamPtr _outputTarget; ///< The current output target.
-    TextOutputStreamPtr _errorTarget;  ///< The current error target.
-    TextInputStreamPtr _inputProxy;    ///< The stable input proxy.
-    TextOutputStreamPtr _outputProxy;  ///< The stable output proxy.
-    TextOutputStreamPtr _errorProxy;   ///< The stable error proxy.
+    [[nodiscard]] auto nativeInputTargetLocked() -> TextInputStreamPtr;
+
+private:
+    std::mutex _mutex;                     ///< Synchronizes access to the registry.
+    TextInputStreamPtr _inputTarget;       ///< The current input target.
+    TextInputStreamPtr _nativeInputTarget; ///< The separately tracked process-native input target.
+    TextOutputStreamPtr _outputTarget;     ///< The current output target.
+    TextOutputStreamPtr _errorTarget;      ///< The current error target.
+    TextInputStreamPtr _inputProxy;        ///< The stable input proxy.
+    TextOutputStreamPtr _outputProxy;      ///< The stable output proxy.
+    TextOutputStreamPtr _errorProxy;       ///< The stable error proxy.
+    uint64_t _nextSensitiveInputId{1U};    ///< Next diagnostic sensitivity identifier.
+    std::unordered_map<uint64_t, std::source_location> _sensitiveInputRequests; ///< Active native-input requests.
 };
 
 /// Access the process-wide standard stream registry.

@@ -6,7 +6,7 @@
 #include <erbsland/conf/impl/char/CharStream.hpp>
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/path/Path.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -65,8 +65,8 @@ public:
     void testDocumentWithBOM() {
         const auto content =
             el::text::String{"@signature \"...\"\n[main]\nvalue: 123\nanother value: \"example\"\n"_el};
-        const auto encoded = el::text::StringEncoder{content}.encode(
-            el::text::StringEncoding::Utf8, el::text::StringBomMode::Require, el::text::EncodingErrorMode::Throw);
+        const auto encoded =
+            el::text::StringEncoder{content}.encode(el::text::StringEncoding::Utf8, el::text::StringBomMode::Require);
         const auto testFile = createTestFile(encoded);
         auto source = Source::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());

@@ -13,7 +13,7 @@ namespace erbsland::path::impl {
 /// Implemented in `PosixPathBackend.cpp` and `WindowsPathBackend.cpp`.
 [[nodiscard]] auto createPathBackend() noexcept -> PathBackendPtr;
 
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
 /// Function for unit tests to replace the path backend.
 /// - This call is not thread-safe.
 /// - Can be called repeatedly.

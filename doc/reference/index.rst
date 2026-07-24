@@ -16,6 +16,7 @@ Reference
     i18n/index
     math/index
     mem/index
+    network/index
     options/index
     path/index
     random/index

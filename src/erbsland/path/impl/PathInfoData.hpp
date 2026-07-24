@@ -8,8 +8,6 @@
 #include "../PathInfoParts.hpp"
 #include "../PathType.hpp"
 
-#include "../../mem/SharedData.hpp"
-#include "../../mem/SharedDataPointer.hpp"
 #include "../../system/GroupId.hpp"
 #include "../../system/GroupName.hpp"
 #include "../../system/UserId.hpp"
@@ -19,16 +17,13 @@
 #include "../../time/TimePoint.hpp"
 #include "../../unit/ByteLength.hpp"
 
-#include <utility>
-
 namespace erbsland::path::impl {
 
 /// Shared data for path information.
 /// @tested{PathInfoTest PosixPathInfoTest WindowsPathInfoTest}
-class PathInfoData final : public mem::SharedData {
+class PathInfoData final {
 public:
     PathInfoData() = default;
-    explicit PathInfoData(Path path) : originalPath{std::move(path)} {}
 
     // defaults
     ~PathInfoData() = default;
@@ -38,7 +33,6 @@ public:
     auto operator=(PathInfoData &&) noexcept -> PathInfoData & = default;
 
 public:
-    Path originalPath;                 ///< The path passed to the `PathInfo` constructor.
     Path resolvedPath;                 ///< The resolved physical path.
     PathInfoParts requestedParts;      ///< The information parts requested for this instance.
     PathInfoParts loadedParts;         ///< The information parts loaded into this data.
@@ -58,7 +52,5 @@ public:
     PathAccessInfo accessInfo;         ///< Portable access information.
     PathAttributes attributes;         ///< Native attributes.
 };
-
-using PathInfoDataPtr = mem::SharedDataPointer<PathInfoData>;
 
 }

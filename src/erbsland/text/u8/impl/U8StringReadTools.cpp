@@ -6,7 +6,6 @@
 #include "U8Writer.hpp"
 
 #include "../../../unit/U16DataLength.hpp"
-#include "../../impl/ThrowHelper.hpp"
 #include "../../u16/impl/U16Encoding.hpp"
 #include "../../u16/impl/U16Writer.hpp"
 #include "../../u32/impl/U32Writer.hpp"
@@ -14,6 +13,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstring>
+#include <optional>
 #include <span>
 
 namespace erbsland::text::impl {
@@ -121,23 +121,6 @@ auto U8StringReadTools::readAndRetreat(ByteIndex &index) const noexcept -> Char 
     return result;
 }
 
-auto U8StringReadTools::charAtOrThrow(const ByteIndex startIndex) const -> Char {
-    const auto data = _data.dataSpan();
-    if (startIndex.isNoIndex() || startIndex.toSizeT() >= data.size()) {
-        throwOutOfRange("Read position out of range");
-    }
-    auto position = startIndex;
-    return utf8::decodeCharOrThrow(data, position);
-}
-
-auto U8StringReadTools::readOrThrow(ByteIndex &index) const -> Char {
-    const auto data = _data.dataSpan();
-    if (index.isNoIndex() || index.toSizeT() >= data.size()) {
-        throwOutOfRange("Read position out of range");
-    }
-    return Char{utf8::decodeCharOrThrow(data, index)};
-}
-
 auto U8StringReadTools::advance(ByteIndex &index, CpLength count) const noexcept -> bool {
     if (index.isNoIndex() || count.isZero()) {
         return false;
@@ -221,10 +204,19 @@ auto U8StringReadTools::findFirstOfCharacterSet(
         return ByteIndex::noIndex();
     }
 
-    const auto &ranges = characters.ranges();
-    if (isMatching && ranges.size() == 1U && ranges.begin()->isSingleChar() &&
-        ranges.begin()->from().toRawValue() <= 0x7FU) {
-        const auto separator = static_cast<char>(ranges.begin()->from().toRawValue());
+    auto firstRange = std::optional<CharRange>{};
+    auto hasMultipleRanges = false;
+    characters.forEach([&](const CharRange range) noexcept -> util::LoopStatus {
+        if (firstRange.has_value()) {
+            hasMultipleRanges = true;
+            return util::LoopStatus::Stop;
+        }
+        firstRange = range;
+        return util::LoopStatus::Continue;
+    });
+    if (isMatching && !hasMultipleRanges && firstRange.has_value() && firstRange->isSingleChar() &&
+        firstRange->from().toRawValue() <= 0x7FU) {
+        const auto separator = static_cast<char>(firstRange->from().toRawValue());
         const auto match =
             std::find(data.begin() + static_cast<std::ptrdiff_t>(start.toSizeT()), data.end(), separator);
         if (match == data.end()) {

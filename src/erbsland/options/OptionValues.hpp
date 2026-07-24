@@ -74,7 +74,7 @@ public: // typed accessors
     /// Read a flag value.
     /// @param name Lookup name to read.
     /// @param defaultFlag Returned when the name is absent or not a flag.
-    /// @return `true` if the flag was present at least once.
+    /// @return The stored boolean value. An explicitly false flag still has a source occurrence.
     [[nodiscard]] auto getFlag(const text::String &name, bool defaultFlag = false) const -> bool;
     /// Read the number of source occurrences for a flag value.
     /// @param name Lookup name to read.

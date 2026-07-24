@@ -31,58 +31,57 @@ using mem::ByteReader;
 using mem::ByteWriter;
 using mem::Endianness;
 
-auto U16StringEncodingTools::encodeUtf8(
-    const std::span<const char16_t> data, const StringBomMode bomMode, const EncodingErrorMode errorMode) -> ByteBlock {
+auto U16StringEncodingTools::encodeUtf8(const std::span<const char16_t> data, const StringBomMode bomMode)
+    -> ByteBlock {
     auto writer = ByteWriter{};
     auto u8Writer = U8Writer{writer};
     if (StringEncoding{StringEncoding::Utf8}.writesBom(bomMode)) {
         u8Writer.writeBom();
     }
-    utf16::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u8Writer.write(character); });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
+        data, [&](const Char character) -> void { u8Writer.write(character); });
     return writer.toByteBlock();
 }
 
 auto U16StringEncodingTools::encodeUtf16(
-    const std::span<const char16_t> data,
-    const StringEncoding encoding,
-    const StringBomMode bomMode,
-    const EncodingErrorMode errorMode) -> ByteBlock {
+    const std::span<const char16_t> data, const StringEncoding encoding, const StringBomMode bomMode) -> ByteBlock {
     auto writer = ByteWriter{};
     writer.setEndianness(encoding.endianness());
     auto u16Writer = U16Writer{writer};
     if (encoding.writesBom(bomMode)) {
         u16Writer.writeBom();
     }
-    utf16::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u16Writer.write(character); });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
+        data, [&](const Char character) -> void { u16Writer.write(character); });
     return writer.toByteBlock();
 }
 
 auto U16StringEncodingTools::encodeUtf32(
-    const std::span<const char16_t> data,
-    const StringEncoding encoding,
-    const StringBomMode bomMode,
-    const EncodingErrorMode errorMode) -> ByteBlock {
+    const std::span<const char16_t> data, const StringEncoding encoding, const StringBomMode bomMode) -> ByteBlock {
     auto writer = ByteWriter{};
     writer.setEndianness(encoding.endianness());
     auto u32Writer = U32Writer{writer};
     if (encoding.writesBom(bomMode)) {
         u32Writer.writeBom();
     }
-    utf16::forEachDecodedCharacter(data, errorMode, [&](const Char character) -> void { u32Writer.write(character); });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
+        data, [&](const Char character) -> void { u32Writer.write(character); });
     return writer.toByteBlock();
 }
 
 auto U16StringEncodingTools::resolveBomLayout(
     const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) -> DecodeLayout {
-    const auto hasUtf32LeBom =
-        data.startsWith(StringEncoding{StringEncoding::Utf32LittleEndian}.bomBytes(StringBomMode::Require));
-    const auto hasUtf32BeBom =
-        data.startsWith(StringEncoding{StringEncoding::Utf32BigEndian}.bomBytes(StringBomMode::Require));
-    const auto hasUtf8Bom = data.startsWith(StringEncoding{StringEncoding::Utf8}.bomBytes(StringBomMode::Require));
+    const auto hasUtf32LeBom = data.startsWith(
+        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf32LittleEndian}.bomBytes(StringBomMode::Require)));
+    const auto hasUtf32BeBom = data.startsWith(
+        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf32BigEndian}.bomBytes(StringBomMode::Require)));
+    const auto hasUtf8Bom =
+        data.startsWith(ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf8}.bomBytes(StringBomMode::Require)));
     const auto hasUtf16LeBom = !hasUtf32LeBom &&
-        data.startsWith(StringEncoding{StringEncoding::Utf16LittleEndian}.bomBytes(StringBomMode::Require));
-    const auto hasUtf16BeBom =
-        data.startsWith(StringEncoding{StringEncoding::Utf16BigEndian}.bomBytes(StringBomMode::Require));
+        data.startsWith(
+            ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf16LittleEndian}.bomBytes(StringBomMode::Require)));
+    const auto hasUtf16BeBom = data.startsWith(
+        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf16BigEndian}.bomBytes(StringBomMode::Require)));
     const auto hasBom = hasUtf32LeBom || hasUtf32BeBom || hasUtf8Bom || hasUtf16LeBom || hasUtf16BeBom;
     if (!hasBom) {
         if (bomMode == StringBomMode::Require) {
@@ -137,120 +136,94 @@ auto U16StringEncodingTools::resolveBomLayout(
     return DecodeLayout{.endianness = encoding.endianness(), .start = 0U};
 }
 
-auto U16StringEncodingTools::decodeUtf8(
-    const ByteBlock &data, const DecodeLayout layout, const EncodingErrorMode errorMode) -> U16StringEditor {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
+auto U16StringEncodingTools::decodeUtf8(const ByteBlock &data, const DecodeLayout layout, const EncodingMode mode)
+    -> U16StringEditor {
+    switch (mode) {
+    case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            utf8::forEachDecodedCharacter<EncodingErrorMode::Throw>(reader, function);
+            utf8::forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
         });
-    case EncodingErrorMode::Ignore:
+    case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            utf8::forEachDecodedCharacter<EncodingErrorMode::Ignore>(reader, function);
-        });
-    case EncodingErrorMode::Replace:
-        return decodeFromCharacters([&](auto function) -> void {
-            auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            utf8::forEachDecodedCharacter<EncodingErrorMode::Replace>(reader, function);
+            utf8::forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
         });
     }
     return {};
 }
 
-auto U16StringEncodingTools::decodeUtf16(
-    const ByteBlock &data, const DecodeLayout layout, const EncodingErrorMode errorMode) -> U16StringEditor {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
+auto U16StringEncodingTools::decodeUtf16(const ByteBlock &data, const DecodeLayout layout, const EncodingMode mode)
+    -> U16StringEditor {
+    switch (mode) {
+    case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
-            utf16::forEachDecodedCharacter<EncodingErrorMode::Throw>(reader, function);
+            utf16::forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
         });
-    case EncodingErrorMode::Ignore:
+    case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
-            utf16::forEachDecodedCharacter<EncodingErrorMode::Ignore>(reader, function);
-        });
-    case EncodingErrorMode::Replace:
-        return decodeFromCharacters([&](auto function) -> void {
-            auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            reader.setEndianness(layout.endianness);
-            utf16::forEachDecodedCharacter<EncodingErrorMode::Replace>(reader, function);
+            utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
         });
     }
     return {};
 }
 
-auto U16StringEncodingTools::decodeUtf32(
-    const ByteBlock &data, const DecodeLayout layout, const EncodingErrorMode errorMode) -> U16StringEditor {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
+auto U16StringEncodingTools::decodeUtf32(const ByteBlock &data, const DecodeLayout layout, const EncodingMode mode)
+    -> U16StringEditor {
+    switch (mode) {
+    case EncodingMode::Strict:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
-            utf32::forEachValidatedCharacter<EncodingErrorMode::Throw>(reader, function);
+            utf32::forEachValidatedCharacter<EncodingMode::Strict>(reader, function);
         });
-    case EncodingErrorMode::Ignore:
+    case EncodingMode::Tolerant:
         return decodeFromCharacters([&](auto function) -> void {
             auto reader = ByteReader{data};
             reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
             reader.setEndianness(layout.endianness);
-            utf32::forEachValidatedCharacter<EncodingErrorMode::Ignore>(reader, function);
-        });
-    case EncodingErrorMode::Replace:
-        return decodeFromCharacters([&](auto function) -> void {
-            auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            reader.setEndianness(layout.endianness);
-            utf32::forEachValidatedCharacter<EncodingErrorMode::Replace>(reader, function);
+            utf32::forEachValidatedCharacter<EncodingMode::Tolerant>(reader, function);
         });
     }
     return {};
 }
 
-auto U16StringEncodingTools::encode(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const -> ByteBlock {
+auto U16StringEncodingTools::encode(const StringEncoding encoding, const StringBomMode bomMode) const -> ByteBlock {
     switch (encoding.toRawValue()) {
     case StringEncoding::Utf8:
-        return encodeUtf8(_data.dataSpan(), bomMode, errorMode);
+        return encodeUtf8(_data.dataSpan(), bomMode);
     case StringEncoding::Utf16:
     case StringEncoding::Utf16LittleEndian:
     case StringEncoding::Utf16BigEndian:
-        return encodeUtf16(_data.dataSpan(), encoding, bomMode, errorMode);
+        return encodeUtf16(_data.dataSpan(), encoding, bomMode);
     case StringEncoding::Utf32:
     case StringEncoding::Utf32LittleEndian:
     case StringEncoding::Utf32BigEndian:
-        return encodeUtf32(_data.dataSpan(), encoding, bomMode, errorMode);
+        return encodeUtf32(_data.dataSpan(), encoding, bomMode);
     }
     return {};
 }
 
-auto U16StringEncodingTools::encodedLength(
-    const StringEncoding encoding, const StringBomMode bomMode, const EncodingErrorMode errorMode) const
+auto U16StringEncodingTools::encodedLength(const StringEncoding encoding, const StringBomMode bomMode) const
     -> unit::ByteLength {
     auto result = encoding.bomLength(bomMode);
-    utf16::forEachDecodedCharacter(_data.dataSpan(), errorMode, [&](const Char character) -> void {
-        result.addOrThrow(character.encodedBytes(encoding));
-    });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
+        _data.dataSpan(), [&](const Char character) -> void { result.addOrThrow(character.encodedBytes(encoding)); });
     return result;
 }
 
 auto U16StringEncodingTools::encodeTo(
-    mem::RingBuffer &buffer,
-    const StringEncoding encoding,
-    const StringBomMode bomMode,
-    const EncodingErrorMode errorMode) const -> util::Result {
-    const auto length = encodedLength(encoding, bomMode, errorMode);
+    mem::RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode) const -> util::Result {
+    const auto length = encodedLength(encoding, bomMode);
     if (isFailure(buffer.reserveAdditional(length))) {
         return util::Result::Failure;
     }
@@ -260,8 +233,8 @@ auto U16StringEncodingTools::encodeTo(
     if (encoding.writesBom(bomMode)) {
         writer.writeBom();
     }
-    utf16::forEachDecodedCharacter(
-        _data.dataSpan(), errorMode, [&](const Char character) -> void { writer.write(character); });
+    utf16::forEachDecodedCharacter<EncodingMode::Tolerant>(
+        _data.dataSpan(), [&](const Char character) -> void { writer.write(character); });
     if (ringWriter.position().distanceFromZero() != length) {
         throw err::LogicError{"Encoded byte length does not match the calculated length."};
     }
@@ -270,22 +243,20 @@ auto U16StringEncodingTools::encodeTo(
 }
 
 auto U16StringEncodingTools::decode(
-    const ByteBlock &data,
-    const StringEncoding encoding,
-    const StringBomMode bomMode,
-    const EncodingErrorMode errorMode) -> U16StringEditor {
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
+    -> U16StringEditor {
     const auto layout = resolveBomLayout(data, encoding, bomMode);
     switch (encoding.toRawValue()) {
     case StringEncoding::Utf8:
-        return decodeUtf8(data, layout, errorMode);
+        return decodeUtf8(data, layout, mode);
     case StringEncoding::Utf16:
     case StringEncoding::Utf16LittleEndian:
     case StringEncoding::Utf16BigEndian:
-        return decodeUtf16(data, layout, errorMode);
+        return decodeUtf16(data, layout, mode);
     case StringEncoding::Utf32:
     case StringEncoding::Utf32LittleEndian:
     case StringEncoding::Utf32BigEndian:
-        return decodeUtf32(data, layout, errorMode);
+        return decodeUtf32(data, layout, mode);
     }
     return {};
 }

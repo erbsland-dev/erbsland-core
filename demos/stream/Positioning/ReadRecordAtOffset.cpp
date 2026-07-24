@@ -10,7 +10,7 @@ namespace demo {
 void readRecordAtOffset() {
     const auto directory = createStreamDemoDirectory("记录"_el);
     const auto path = directory->path() / "animals.bin"_el;
-    path.content().writeDataOrThrow(el::ByteBlock{std::vector<uint8_t>{10U, 11U, 12U, 20U, 21U, 22U}});
+    path.content().writeDataOrThrow(el::ByteBlock({10U, 11U, 12U, 20U, 21U, 22U}));
     const auto input = path.content().openByteInputStream();
 
     input->setPosition(el::ByteIndex{3U});

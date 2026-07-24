@@ -27,10 +27,14 @@ public:
 
 public:
     /// Store a parsed flag.
-    [[nodiscard]] auto storeFlag(const OptionPtr &option, unit::ArgumentIndex index) -> bool;
+    /// @param option The flag definition.
+    /// @param index The source option argument.
+    /// @param value The boolean flag value.
+    /// @param explicitValue Whether the value was explicitly written on the command line.
+    [[nodiscard]] auto storeFlag(
+        const OptionPtr &option, unit::ArgumentIndex index, bool value = true, bool explicitValue = false) -> bool;
     /// Store a parsed value according to the option type.
-    [[nodiscard]] auto storeValue(const OptionPtr &option, const text::String &value, unit::ArgumentIndex index)
-        -> bool;
+    [[nodiscard]] auto storeValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index) -> bool;
     /// Apply defaults for all absent options.
     [[nodiscard]] auto applyDefaults(const std::vector<OptionSetPtr> &optionSets) -> bool;
     /// Check required options.
@@ -48,6 +52,8 @@ private:
     [[nodiscard]] auto storeIntegerValue(const OptionPtr &option, OptionInteger value, unit::ArgumentIndex index)
         -> bool;
     [[nodiscard]] auto storeTextValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index) -> bool;
+    [[nodiscard]] auto storeSensitiveTextValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index)
+        -> bool;
     [[nodiscard]] auto storeDefaultValue(const OptionPtr &option) -> bool;
     [[nodiscard]] auto storeDefaultIntegerValue(const OptionPtr &option, OptionInteger value) -> bool;
     [[nodiscard]] auto storeDefaultTextValue(const OptionPtr &option, text::String value) -> bool;

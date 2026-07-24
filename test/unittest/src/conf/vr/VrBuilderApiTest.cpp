@@ -11,7 +11,7 @@
 #include <erbsland/conf/impl/vr/MultipleConstraint.hpp>
 #include <erbsland/conf/impl/vr/Rule.hpp>
 #include <erbsland/conf/impl/vr/Rules.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/RulesBuilder.hpp>
 #include <erbsland/conf/vr/RuleType.hpp>
 #include <erbsland/text/StringList.hpp>

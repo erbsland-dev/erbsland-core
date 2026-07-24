@@ -4,7 +4,7 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/text/FormatAs.hpp>
 #include <erbsland/text/impl/FormatMakeArguments.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/U8Format.hpp>
 #include <erbsland/text/u8/U8StringEditor.hpp>
@@ -108,7 +108,7 @@ public:
     }
 
     void testByteBlockFormatArgument() {
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0x01U, 0xabU}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0x01U, 0xabU});
         const auto argument = el::text::impl::makeFormatArgument(bytes);
 
         REQUIRE_EQUAL(argument.kind(), el::text::FormatArgumentKind::Bytes);

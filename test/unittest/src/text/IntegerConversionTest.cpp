@@ -8,7 +8,7 @@
 #include <erbsland/text/IntegerFormat.hpp>
 #include <erbsland/text/IntegerParseOptions.hpp>
 #include <erbsland/text/IntegerSignMode.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>

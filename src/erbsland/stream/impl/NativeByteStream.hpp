@@ -39,10 +39,10 @@ public:
     /// Read bytes synchronously from the native source.
     /// @param destination The writable destination buffer.
     /// @return The number of bytes read, or zero at end-of-stream.
-    [[nodiscard]] virtual auto read(std::span<mem::Byte> destination) -> unit::ByteLength = 0;
+    [[nodiscard]] virtual auto read(mem::ByteSpan destination) -> unit::ByteLength = 0;
     /// Write all bytes synchronously to the native target.
     /// @param bytes The bytes to write completely before returning.
-    virtual void write(std::span<const mem::Byte> bytes) = 0;
+    virtual void write(mem::ConstByteSpan bytes) = 0;
     /// Flush native output synchronously.
     virtual void flush() = 0;
     /// Close the native stream synchronously.
@@ -52,3 +52,4 @@ public:
 };
 
 }
+#include "../../mem/ByteSpan.hpp"

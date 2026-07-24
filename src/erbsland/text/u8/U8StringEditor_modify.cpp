@@ -137,67 +137,68 @@ auto U8StringEditor::truncate(const CpLength maximumWidth, const TruncateMode mo
 }
 
 auto U8StringEditor::removed(const ByteRange range) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(range)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.removed(range)};
 }
 
 auto U8StringEditor::removed(const CpRange range) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(range)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.removed(range)};
 }
 
 auto U8StringEditor::removedAll(const CharSet &characters) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removedAll(characters)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.removedAll(characters)};
 }
 
 auto U8StringEditor::removedAll(const U8String &text, const CharCompareFn compareFn) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.removed(text.dataView(), compareFn)};
 }
 
 auto U8StringEditor::removedFirst(const U8String &text, const CharCompareFn compareFn) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.removedFirst(text.dataView(), compareFn)};
 }
 
 auto U8StringEditor::kept(const ByteRange range) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.kept(range)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.kept(range)};
 }
 
 auto U8StringEditor::kept(const CpRange range) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.kept(range)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.kept(range)};
 }
 
 auto U8StringEditor::inserted(const ByteIndex index, const U8String &text) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.inserted(index, text.dataView())};
 }
 
 auto U8StringEditor::inserted(const CpIndex index, const U8String &text) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.inserted(index, text.dataView())};
 }
 
 auto U8StringEditor::replaced(const ByteRange range, const U8String &text) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.replaced(range, text.dataView())};
 }
 
 auto U8StringEditor::replaced(const CpRange range, const U8String &text) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.replaced(range, text.dataView())};
 }
 
 auto U8StringEditor::replacedFirst(
     const U8String &text, const U8String &replacement, const CharCompareFn compareFn) const -> U8StringEditor {
-    return U8StringEditor{
-        U8StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.replacedFirst(
+        text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U8StringEditor::replacedAll(const CharSet &characters, const Char replacement) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replacedAll(characters, replacement)};
+    return U8StringEditor{U8StringModifyTools{dataView(), isSensitive()}.replacedAll(characters, replacement)};
 }
 
 auto U8StringEditor::replacedAll(const CharSet &characters, const U8String &replacement) const -> U8StringEditor {
-    return U8StringEditor{U8StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
+    return U8StringEditor{
+        U8StringModifyTools{dataView(), isSensitive()}.replacedAll(characters, replacement.dataView())};
 }
 
 auto U8StringEditor::replacedAll(const U8String &text, const U8String &replacement, const CharCompareFn compareFn) const
     -> U8StringEditor {
     return U8StringEditor{
-        U8StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
+        U8StringModifyTools{dataView(), isSensitive()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U8StringEditor::truncated(const CpLength maximumWidth, const TruncateMode mode) const -> U8StringEditor {
@@ -206,12 +207,13 @@ auto U8StringEditor::truncated(const CpLength maximumWidth, const TruncateMode m
 
 auto U8StringEditor::truncated(const CpLength maximumWidth, const TruncateMode mode, const U8String &ellipsis) const
     -> U8StringEditor {
-    return U8StringEditor{U8StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    return U8StringEditor{
+        U8StringTransformTools{dataView(), isSensitive()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
 auto U8StringEditor::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
     -> U8StringEditor {
-    return U8StringEditor{U8StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+    return U8StringEditor{U8StringTransformTools{dataView(), isSensitive()}.aligned(length, alignment, fill)};
 }
 
 auto U8StringEditor::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U8StringEditor {
@@ -298,7 +300,7 @@ auto U8StringEditor::fromByteBlock(const mem::ByteBlock &bytes, const ByteFormat
 auto U8StringEditor::toHash() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf8::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.toRawValue());
             return true;
         });
@@ -308,7 +310,7 @@ auto U8StringEditor::toHash() const noexcept -> std::size_t {
 auto U8StringEditor::toHashCI() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf8::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.caseFolded().toRawValue());
             return true;
         });
@@ -320,7 +322,7 @@ auto U8StringEditor::forEach(const ProcessCharacterFn &function) const -> util::
 }
 
 auto U8StringEditor::transformed(const TransformCharacterFn function) const -> U8StringEditor {
-    if (auto result = U8StringTransformTools{dataView()}.transformedIfChanged(function)) {
+    if (auto result = U8StringTransformTools{dataView(), isSensitive()}.transformedIfChanged(function)) {
         return U8StringEditor{std::move(*result)};
     }
     return *this;

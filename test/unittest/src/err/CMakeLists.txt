@@ -7,3 +7,13 @@ target_sources(erbsland-core-unittest PRIVATE
         DiagnosticTest.cpp
         ErrorDocumentBuilderTest.cpp
 )
+
+if(WIN32)
+    target_sources(erbsland-core-unittest PRIVATE
+            WindowsDiagnosticTest.cpp
+    )
+elseif(UNIX)
+    target_sources(erbsland-core-unittest PRIVATE
+            PosixDiagnosticTest.cpp
+    )
+endif()

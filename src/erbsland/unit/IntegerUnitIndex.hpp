@@ -263,6 +263,18 @@ public: // math
     [[nodiscard]] constexpr auto incremented() const noexcept -> IntegerUnitIndex { return advanced(Length::one()); }
     /// Create a new index decremented by one.
     [[nodiscard]] constexpr auto decremented() const noexcept -> IntegerUnitIndex { return retreated(Length::one()); }
+    /// Advance this index without checking special states or arithmetic bounds.
+    /// The caller must ensure this index and `length` are finite and that the result remains a valid index.
+    constexpr auto uncheckedAdvance(const Length length) noexcept -> IntegerUnitIndex & {
+        _value = static_cast<Value>(_value + length.toRawValue());
+        return *this;
+    }
+    /// Increment this index without checking special states or arithmetic bounds.
+    /// The caller must ensure this is a valid index below maximum().
+    constexpr auto uncheckedIncrement() noexcept -> IntegerUnitIndex & {
+        ++_value;
+        return *this;
+    }
 
 public: // conversion
     /// Create a grid index from row and column indices, bound to with and height of a grid.

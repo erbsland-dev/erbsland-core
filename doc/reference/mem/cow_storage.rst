@@ -62,6 +62,16 @@ The allocation must be created, cloned, and destroyed through
 :cpp:class:`SharedArrayData <erbsland::mem::SharedArrayData>` itself, because the header and trailing elements are one
 memory block.
 
+:cpp:enum:`SharedArrayDataCleanupMethod <erbsland::mem::SharedArrayDataCleanupMethod>` selects ordinary cleanup or
+secure erasure for raw, trivially copyable arrays.
+Secure allocations are zero-initialized across their complete element capacity and securely erased through an
+optimizer-resistant platform backend before deallocation.
+The final erase covers the one-block allocation in full: reference-count metadata, size and capacity fields, alignment
+padding, used elements, and unused capacity.
+Every copy-on-write allocation is erased independently when its final owner releases it.
+If construction or cloning fails, already constructed elements are destroyed and the failed allocation follows the same
+cleanup path before the exception is rethrown.
+
 Headers that only store or pass a :cpp:class:`SharedDataPointer <erbsland::mem::SharedDataPointer>` to shared array data
 can include ``SharedArrayData_fwd.hpp``.
 Constructors, destructors, copies, detach operations, and direct data access must be implemented in a source file that
@@ -111,6 +121,8 @@ Interface
     :members:
 
 .. doxygenenum:: erbsland::mem::SharedArrayDataConstructMethod
+
+.. doxygenenum:: erbsland::mem::SharedArrayDataCleanupMethod
 .. doxygenclass:: erbsland::mem::SharedData
     :members:
 .. doxygenclass:: erbsland::mem::SharedDataPointer

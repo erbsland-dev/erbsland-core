@@ -4,13 +4,78 @@
 #include "../../support/TerminalTestHelper.hpp"
 #include "../../support/TestHelper.hpp"
 
+#include <erbsland/cterm/impl/StandardInput.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <memory>
 #include <string_view>
+#include <utility>
 
-TESTED_TARGETS(Backend)
+TESTED_TARGETS(Backend readStandardInputLine)
 class BackendTest final : public UNITTEST_SUBCLASS(TerminalTestHelper) {
+    class LineInputStream final : public el::stream::TextInputStream {
+    public:
+        explicit LineInputStream(el::text::String line) : _line{std::move(line)} {}
+
+    public: // implement TextInputStream
+        [[nodiscard]] auto encoding() const noexcept -> el::text::StringEncoding override {
+            return el::text::StringEncoding::Utf8;
+        }
+        [[nodiscard]] auto effectiveEncoding() const noexcept -> el::text::StringEncoding override {
+            return el::text::StringEncoding::Utf8;
+        }
+        [[nodiscard]] auto inputSettings() const noexcept -> const el::stream::InputStreamSettings & override {
+            return _settings;
+        }
+        [[nodiscard]] auto state() const noexcept -> el::stream::StreamState override { return _state; }
+        [[nodiscard]] auto isReady() const noexcept -> bool override { return true; }
+        [[nodiscard]] auto waitForReady() -> el::stream::StreamWaitStatus override {
+            return el::stream::StreamWaitStatus::Ready;
+        }
+        auto close() -> el::stream::StreamCloseStatus override {
+            _state = el::stream::StreamState::Closed;
+            return el::stream::StreamCloseStatus::Closed;
+        }
+        void abort() noexcept override { _state = el::stream::StreamState::Closed; }
+
+        [[nodiscard]] auto readChar() -> el::stream::StreamReadResult<el::text::Char> override {
+            return {el::stream::StreamReadStatus::Finished, el::text::Char{}};
+        }
+        [[nodiscard]] auto read(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+            return {el::stream::StreamReadStatus::Finished, el::text::String{}};
+        }
+        [[nodiscard]] auto readLine(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+            if (_wasRead) {
+                return {el::stream::StreamReadStatus::Finished, el::text::String{}};
+            }
+            _wasRead = true;
+            if (_line.isEmpty()) {
+                return {el::stream::StreamReadStatus::Finished, el::text::String{}};
+            }
+            return {el::stream::StreamReadStatus::Data, _line};
+        }
+        [[nodiscard]] auto readAll(el::unit::CpLength) -> el::stream::StreamReadResult<el::text::String> override {
+            return {el::stream::StreamReadStatus::Finished, el::text::String{}};
+        }
+
+    private:
+        el::text::String _line;
+        bool _wasRead{false};
+        el::stream::InputStreamSettings _settings;
+        el::stream::StreamState _state{el::stream::StreamState::Open};
+    };
+
 public:
+    void testStandardInputLineEndings() {
+        REQUIRE_EQUAL(readLine("Grüezi\n"_el), "Grüezi"_el);
+        REQUIRE_EQUAL(readLine("first\r\n"_el), "first"_el);
+        REQUIRE_EQUAL(readLine("second\r"_el), "second"_el);
+        REQUIRE_EQUAL(readLine("without line ending"_el), "without line ending"_el);
+        REQUIRE_EQUAL(readLine("content\r\r\n"_el), "content\r"_el);
+        REQUIRE(readLine({}).isEmpty());
+    }
+
     void testTerminalUsesEmitColorWhenColorCodesAreUnavailable() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsColorCodes = false;
@@ -171,5 +236,11 @@ public:
         REQUIRE_FALSE(terminal->blockAttributes().isBold());
         REQUIRE_EQUAL(backend->_emittedBlockAttributes.size(), std::size_t{0});
         REQUIRE(backend->output().find("\x1b[1m") == std::string::npos);
+    }
+
+private:
+    [[nodiscard]] static auto readLine(el::text::String line) -> el::text::String {
+        auto redirect = el::stream::redirectStdIn(std::make_shared<LineInputStream>(std::move(line)));
+        return el::cterm::impl::readStandardInputLine();
     }
 };

@@ -39,13 +39,9 @@ public:
     /// Create an empty read-only string.
     BlockString() noexcept;
     /// Create a terminal string from UTF-8 text.
-    explicit BlockString(
-        const text::String &string, text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
+    explicit BlockString(const text::String &string);
     /// Create a terminal string from UTF-8 text with a uniform style.
-    explicit BlockString(
-        const text::String &string,
-        BlockStyle style,
-        text::EncodingErrorMode encodingErrorMode = text::EncodingErrorMode::Replace);
+    explicit BlockString(const text::String &string, BlockStyle style);
     /// Create a terminal string from UTF-32 text.
     explicit BlockString(const text::U32String &string);
     /// Create a terminal string from UTF-32 text with a uniform style.

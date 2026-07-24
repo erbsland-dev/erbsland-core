@@ -2,9 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/CombinedChar.hpp>
-#include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
@@ -78,16 +77,6 @@ public:
         REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(U'\n'), CombinedChar{U'e'});
         REQUIRE_EQUAL(CombinedChar{U'e'}.withCombining(Char{0x110000U}), CombinedChar{U'e'});
         REQUIRE_EQUAL(full.withCombining(U'\u0303'), full);
-
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, CombinedChar{}.withCombining(U'\u0301', EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, CombinedChar{U'e'}.withCombining(U'x', EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, CombinedChar{U'e'}.withCombining(U'\n', EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(
-            erbsland::text::EncodingError, CombinedChar{U'e'}.withCombining(Char{0x110000U}, EncodingErrorMode::Throw));
-        REQUIRE_THROWS_AS(erbsland::text::EncodingError, full.withCombining(U'\u0303', EncodingErrorMode::Throw));
     }
 
     void testFromStringNormalizesUnsupportedText() {

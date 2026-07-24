@@ -5,6 +5,7 @@
 #include "../StringDecodeBuffer.hpp"
 
 #include <span>
+#include <utility>
 
 namespace erbsland::text::impl {
 
@@ -18,7 +19,7 @@ public:
 
 public:
     /// Access the first contiguous writable span.
-    [[nodiscard]] auto writableSpan() noexcept -> std::span<mem::Byte> { return _buffer.writableSpan(); }
+    [[nodiscard]] auto writableSpan() noexcept -> mem::ByteSpan { return _buffer.writableSpan(); }
     /// Commit bytes written through `writableSpan()`.
     void commitWritten(unit::ByteLength length) { _buffer.commitWritten(length); }
     /// Get bytes consumed since the last reset.
@@ -29,9 +30,18 @@ public:
     void resetForContinuation(StringEncoding effectiveEncoding) noexcept {
         _buffer.resetForContinuation(effectiveEncoding);
     }
+    /// Decode and consume text while retaining the already determined character count.
+    /// @param maximum The maximum number of characters to decode.
+    /// @param stopAtLineEnd Whether decoding stops after a line ending.
+    /// @return The decoded text and its character count.
+    [[nodiscard]] auto takeStringWithLength(unit::CpLength maximum, bool stopAtLineEnd)
+        -> std::pair<String, unit::CpLength> {
+        return _buffer.takeStringWithLength(maximum, stopAtLineEnd);
+    }
 
 private:
     StringDecodeBuffer &_buffer; ///< The accessed buffer.
 };
 
 }
+#include "../../mem/ByteSpan.hpp"

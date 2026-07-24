@@ -39,6 +39,15 @@ target_sources(erbsland-core PRIVATE
         KeyDecoder.hpp
         LineBuffer.cpp
         LineBuffer.hpp
+        ReadLine.cpp
+        ReadLine.hpp
+        ReadLineBase.cpp
+        ReadLineBase.hpp
+        ReadLineBase_render.cpp
+        ReadSecret.cpp
+        ReadSecret.hpp
+        StandardInput.cpp
+        StandardInput.hpp
         TerminalDocumentStyleData.cpp
         TerminalDocumentStyleData.hpp
         TypeTraits.hpp
@@ -46,6 +55,7 @@ target_sources(erbsland-core PRIVATE
 
 if (WIN32)
     target_sources(erbsland-core PRIVATE
+            InputRecordEraseGuard.hpp
             WindowsBackend.cpp
             WindowsBackend.hpp
             WindowsBackend_input.cpp

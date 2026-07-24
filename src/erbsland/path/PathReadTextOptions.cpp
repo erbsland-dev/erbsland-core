@@ -23,8 +23,8 @@ auto PathReadTextOptions::setBomMode(text::StringBomMode value) -> PathReadTextO
     return *this;
 }
 
-auto PathReadTextOptions::setEncodingErrorMode(text::EncodingErrorMode value) -> PathReadTextOptions & {
-    _encodingErrorMode = value;
+auto PathReadTextOptions::setEncodingMode(text::EncodingMode value) -> PathReadTextOptions & {
+    _encodingMode = value;
     return *this;
 }
 
@@ -35,6 +35,27 @@ auto PathReadTextOptions::setMaximumByteLength(unit::ByteLength value) -> PathRe
 
 auto PathReadTextOptions::setMaximumCpLength(unit::CpLength value) -> PathReadTextOptions & {
     _maximumCpLength = value;
+    return *this;
+}
+
+auto PathReadTextOptions::setTimeout(const time::TimeDelta value) noexcept -> PathReadTextOptions & {
+    _streamSettings.setTimeout(value);
+    return *this;
+}
+
+auto PathReadTextOptions::setBuffering(const stream::StreamBuffering value) noexcept -> PathReadTextOptions & {
+    _streamSettings.setBuffering(value);
+    return *this;
+}
+
+auto PathReadTextOptions::setSensitive(bool value) noexcept -> PathReadTextOptions & {
+    _streamSettings.setSensitive(value);
+    return *this;
+}
+
+auto PathReadTextOptions::setStreamSettings(const stream::InputStreamSettings &value) noexcept
+    -> PathReadTextOptions & {
+    _streamSettings = value;
     return *this;
 }
 

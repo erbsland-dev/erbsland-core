@@ -3,9 +3,9 @@
 
 #include "RemappedBufferTestSupport.hpp"
 
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/cterm/RemappedBuffer.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
@@ -215,6 +215,16 @@ public:
         REQUIRE_THROWS_AS(
             erbsland::err::ParameterError,
             buffer.moveColumns(blockCoordinate(3), 2, blockCoordinate(-1), Block::space()));
+    }
+
+    void testInvalidArgumentsReportTheParameterName() {
+        auto buffer = RemappedBuffer{bgeo::BlockSize{4, 3}, bgeo::Orientation::Vertical};
+        try {
+            buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1);
+            REQUIRE(false);
+        } catch (const erbsland::err::ParameterError &error) {
+            REQUIRE_EQUAL(error.toString(), "The start coordinate is out of bounds. (parameter: startColumn)"_el);
+        }
     }
 
     void testStressOperationsAgainstReferenceModel() {

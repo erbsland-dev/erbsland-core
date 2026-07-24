@@ -152,6 +152,8 @@ public: // input handling.
     /// Can be ignored in `Input::Mode::Key` mode.
     /// @return The read text, without line breaks.
     [[nodiscard]] virtual auto readLine() -> text::String = 0;
+    /// Securely discard pending key input and partial native decoder state.
+    virtual void purgePendingInput() noexcept {}
 
 public:
     /// Create the default backend for this platform.

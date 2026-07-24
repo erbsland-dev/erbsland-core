@@ -2,37 +2,31 @@
 Random Domain API Guidelines
 ****************************
 
-These guidelines extend the Common API Guidelines for public APIs that generate random values, sample collections, or
-fill random byte buffers.
-
-The purpose of this document is to define a base naming vocabulary for random APIs.
-It is intentionally plain, technical and list based to get a quick overview of method names and their usage patterns.
-If you introduce new vocabulary, update this page to provide a good reference for future extensions.
-
 Core Semantics
 ==============
 
-Generator Vocabulary
+Generator Properties
 --------------------
 
 .. code-block:: text
 
-    Random // abstract generator interface and convenience sampling API
-    FastRandom // fast pseudo-random generator for non-security use
-    ThreadSafeFastRandom // synchronized fast pseudo-random generator for shared non-security use
-    SecureRandom // operating-system-backed generator for security-sensitive values
+    pseudo-random = fast seeded sequence for non-security use
+    reproducible = identical sequence for an explicit seed
+    synchronized = serialized access to one pseudo-random sequence
+    secure = operating-system entropy suitable for security-sensitive values
+    secure owning result = string or block allocation marked, or byte-buffer sensitive mode enabled, before filling
 
 Range and Empty-Input Semantics
 -------------------------------
 
 .. code-block:: text
 
-    integer minimum/maximum // inclusive bounds, automatically ordered when reversed
-    floating minimum/maximum // ordered bounds with generator-specific endpoint behavior
-    zero/infinite count // produces an empty generated collection
-    empty choices // selection returns fallback; generated collections are empty
-    empty byte span // accepted by fillBytes()
-    empty or invalid count // selectIndex() returns ElementIndex::noIndex()
+    integer bounds = inclusive and automatically ordered when reversed
+    floating bounds = ordered with generator-specific endpoint behavior
+    zero or infinite count = empty generated collection
+    empty choices = fallback selection or empty generated collection
+    empty byte destination = valid no-op
+    empty or invalid element count = no-index selection
 
 Primary Types
 =============
@@ -41,8 +35,15 @@ Primary Types
 
     Random // common generator interface with selection, building, shuffling and byte-fill helpers
     FastRandom // reproducible pseudo-random generator when constructed with an explicit seed
-    ThreadSafeFastRandom // mutex-protected FastRandom wrapper for shared generator instances
     SecureRandom // cryptographic generator backed by the platform entropy source
+
+Secondary Types
+===============
+
+.. code-block:: text
+
+    ThreadSafeFastRandom // synchronized FastRandom wrapper for shared generator instances
+    RandomError // failure to obtain secure system entropy
 
 Source Patterns
 ===============
@@ -53,6 +54,7 @@ Source Patterns
     o.getUInt❮width❯(minimum, maximum) -> uint❮width❯_t // random unsigned integer in inclusive range
     o.getDouble(minimum, maximum) -> double // random floating-point value in ordered range
     o.getBool() -> bool // random boolean
+    o.isSecure() -> bool // report security suitability and automatic marking of owning results
     o.fillBytes(destination) -> void // fill an existing byte span with random bytes
 
 Selection Patterns
@@ -71,8 +73,9 @@ Build Patterns
 .. code-block:: text
 
     o.buildIntegerList(count, minimum, maximum) -> util::List<T> // random integers with replacement
-    o.buildString(length, characters) -> text::String // random UTF-8 string from a character set
-    o.buildByteBlock(length) -> mem::ByteBlock // random byte block
+    o.buildString(length, characters) -> text::String // random UTF-8 text; secure generators mark its allocation
+    o.buildByteBlock(length) -> mem::ByteBlock // random bytes; secure generators mark storage before filling
+    o.buildByteBuffer(length) -> mem::ByteBuffer // random bytes; secure generators enable sensitive mode before filling
     o.buildElementList(count, choices) -> util::List<T> // sample elements with replacement
     o.buildUniqueElementList(count, choices) -> util::List<T> // sample elements without replacement
 
@@ -83,24 +86,20 @@ Mutation Patterns
 
     o.shuffle(span/vector/list) -> void // randomly reorder values in place
 
-Construction and Application Patterns
-=====================================
+Construction Patterns
+=====================
 
 .. code-block:: text
 
-    FastRandom() // automatically seeded pseudo-random generator
-    FastRandom(seed) // reproducible pseudo-random sequence
-    ThreadSafeFastRandom() // automatically seeded shared pseudo-random generator
-    ThreadSafeFastRandom(seed) // reproducible synchronized pseudo-random sequence
-    SecureRandom() // generator using the system entropy source
-    Application::random() -> ThreadSafeFastRandom& // shared application pseudo-random generator
-    Application::secureRandom() -> SecureRandom& // shared application secure generator
+    T() // create an automatically seeded pseudo-random generator
+    T(seed) // create a reproducible pseudo-random sequence
+    o.isSecure() -> bool // report security suitability and sensitive owning-result construction
+    o.❮draw❯(...) // report unavailable system entropy with RandomError
 
-Error Patterns
-==============
+Application Patterns
+====================
 
 .. code-block:: text
 
-    SecureRandom::❮draw❯(...) // may throw random::RandomError when entropy cannot be provided
-    FastRandom::❮draw❯(...) // pseudo-random draw without entropy-source errors
-    ThreadSafeFastRandom::❮draw❯(...) // synchronized pseudo-random draw without entropy-source errors
+    o.random() -> ThreadSafeFastRandom& // access the shared application pseudo-random generator
+    o.secureRandom() -> SecureRandom& // access the shared application secure generator

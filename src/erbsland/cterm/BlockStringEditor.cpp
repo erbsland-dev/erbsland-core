@@ -19,17 +19,16 @@ using impl::BlockStringData;
 using impl::BlockStringDataPtr;
 using impl::BlockStringRangeView;
 using namespace text;
+using namespace text::literals;
 
 BlockStringEditor::BlockStringEditor() noexcept : _data{impl::sharedEmptyBlockStringData()} {
 }
 
-BlockStringEditor::BlockStringEditor(const String &str, const EncodingErrorMode encodingErrorMode) :
-    BlockStringEditor{str, BlockStyle{}, encodingErrorMode} {
+BlockStringEditor::BlockStringEditor(const String &str) : BlockStringEditor{str, BlockStyle{}} {
 }
 
-BlockStringEditor::BlockStringEditor(
-    const String &str, const BlockStyle style, const EncodingErrorMode encodingErrorMode) :
-    BlockStringEditor{splitCharacters(str, style.color(), style.attributes(), encodingErrorMode)} {
+BlockStringEditor::BlockStringEditor(const String &str, const BlockStyle style) :
+    BlockStringEditor{splitCharacters(str, style.color(), style.attributes())} {
 }
 
 BlockStringEditor::BlockStringEditor(const U32String &str) : BlockStringEditor{str, BlockStyle{}} {
@@ -144,7 +143,7 @@ auto BlockStringEditor::withTabsExpanded(const int targetColumn) const -> BlockS
 }
 
 auto BlockStringEditor::at(const BlockIndex index) const -> Block {
-    return BlockStringRangeView{*_data, _range}.at(index, "BlockStringEditor");
+    return BlockStringRangeView{*_data, _range}.at(index, "BlockStringEditor"_el);
 }
 
 auto BlockStringEditor::begin() noexcept -> iterator {
@@ -448,10 +447,9 @@ void BlockStringEditor::insertWithBaseStyle(BlockIndex pos, const BlockString &o
     syncRangeWithStorage();
 }
 
-void BlockStringEditor::appendStyled(
-    const String &text, const BlockStyle style, const EncodingErrorMode encodingErrorMode) {
+void BlockStringEditor::appendStyled(const String &text, const BlockStyle style) {
     detach();
-    _data->appendCharacters(text, style.color(), style.attributes(), encodingErrorMode);
+    _data->appendCharacters(text, style.color(), style.attributes());
     syncRangeWithStorage();
 }
 

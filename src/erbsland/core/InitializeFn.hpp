@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Definitions.hpp"
+
 #include <functional>
 
 namespace erbsland::core {

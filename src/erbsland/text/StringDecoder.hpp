@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "EncodingErrorMode.hpp"
+#include "EncodingMode.hpp"
 #include "String.hpp"
 #include "StringBomMode.hpp"
 #include "StringDecoder_fwd.hpp"
@@ -32,22 +32,22 @@ public:
     [[nodiscard]] auto decode(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> String;
+        EncodingMode mode = EncodingMode::Tolerant) const -> String;
     /// Decode to a UTF-8 string.
     [[nodiscard]] auto toU8String(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> U8String;
+        EncodingMode mode = EncodingMode::Tolerant) const -> U8String;
     /// Decode to a UTF-16 string.
     [[nodiscard]] auto toU16String(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> U16String;
+        EncodingMode mode = EncodingMode::Tolerant) const -> U16String;
     /// Decode to a UTF-32 string.
     [[nodiscard]] auto toU32String(
         StringEncoding encoding,
         StringBomMode bomMode = StringBomMode::Automatic,
-        EncodingErrorMode errorMode = EncodingErrorMode::Replace) const -> U32String;
+        EncodingMode mode = EncodingMode::Tolerant) const -> U32String;
 
 private:
     mem::ByteBlock _data;

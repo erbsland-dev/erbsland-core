@@ -17,7 +17,6 @@
 #include <map>
 #include <memory>
 #include <shared_mutex>
-#include <string_view>
 
 namespace erbsland::time::tz::impl {
 
@@ -59,11 +58,7 @@ public:
     /// Look up a text entry by index.
     /// @param index The text index.
     /// @return The text string.
-    [[nodiscard]] static auto textFromIndex(TextId index) noexcept -> std::string_view;
-    /// Look up a text index by string.
-    /// @param text The text string.
-    /// @return The text index, or a sentinel value if not found.
-    [[nodiscard]] static auto indexFromText(std::string_view text) noexcept -> TextId;
+    [[nodiscard]] static auto textFromIndex(TextId index) noexcept -> text::String;
     /// Look up a text index by string.
     /// @param text The text string.
     /// @return The text index, or a sentinel value if not found.

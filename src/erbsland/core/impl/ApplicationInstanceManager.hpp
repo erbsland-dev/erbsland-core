@@ -43,7 +43,7 @@ public:
     /// Access the instance manager instance.
     [[nodiscard]] static auto instance() -> ApplicationInstanceManager *;
 
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
 public: // methods for unit tests
     /// Set up the system as at the start of the main method.
     static void startSimulatedMain();
@@ -54,7 +54,7 @@ public: // methods for unit tests
 #endif
 
 protected:
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
     /// Reset the simulated main method state.
     virtual void resetSimulatedMain();
 #endif

@@ -4,7 +4,7 @@
 
 #include "impl/BlockTextUtil.hpp"
 
-#include "../err/ParameterError.hpp"
+#include "../err/ParseError.hpp"
 #include "../text/StringConverter.hpp"
 
 #include <algorithm>
@@ -46,15 +46,24 @@ auto ColorBase::toString() const -> text::String {
     return tableEntry().name;
 }
 
-auto ColorBase::enumFromString(const text::String &str) -> Value {
-    const auto normalizedIdentifier = str.trimmed().transformed(text::Char::toIdentifierNormalized);
+auto ColorBase::enumFromString(const text::String &str, const Value defaultValue) -> Value {
+    const auto normalizedIdentifier = str.transformed(text::Char::toIdentifierNormalized);
     const auto &table = colorTable();
     auto it =
         std::ranges::find_if(table, [&](const auto &entry) -> bool { return normalizedIdentifier == entry.name; });
     if (it == table.end()) {
-        throw err::ParameterError{"Unknown color."_el, "str"_el};
+        return defaultValue;
     }
     return it->value;
+}
+
+auto ColorBase::enumFromStringOrThrow(const text::String &str) -> Value {
+    constexpr auto cInvalid = Value::_Count;
+    const auto result = enumFromString(str, cInvalid);
+    if (result == cInvalid) {
+        throw err::ParseError{"Unknown terminal color identifier."_el};
+    }
+    return result;
 }
 
 auto ColorBase::brighterEnum(Value value) -> Value {

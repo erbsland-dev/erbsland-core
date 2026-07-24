@@ -13,6 +13,7 @@
 namespace erbsland::cterm {
 
 /// A foreground/background color pair for terminal rendering.
+/// @tested{ColorParsingTest ColorTest}
 class Color final {
 public: // ctors/dtor/assign/move
     /// Create a color that inherits both components from the layer below.
@@ -59,6 +60,9 @@ public: // accessors
     void setBg(const Background background) noexcept { _background = background; }
 
 public: // conversion and tools
+    /// Convert this color to its canonical textual representation.
+    /// @return The canonical color specification.
+    [[nodiscard]] auto toString() const -> text::String;
     /// Combine this color with a new overlay color.
     /// Foreground or background components set to `Inherited` keep the value from this color.
     /// Components set to `Default` explicitly reset to the terminal default color.
@@ -72,13 +76,16 @@ public: // conversion and tools
     /// @param overlay The overlay color.
     /// @return The new color with the overlay applied.
     [[nodiscard]] auto overlayWith(const Color &overlay) const -> Color;
+    /// Convert a color or color-pair into a block color, or return a fallback.
+    /// @param str The textual color specification.
+    /// @param defaultValue The value returned for invalid text.
+    /// @return The parsed color or `defaultValue`.
+    [[nodiscard]] static auto fromString(const text::String &str, Color defaultValue) -> Color;
     /// Convert a color or color-pair into a block color.
-    /// Format must be either `"fg"` or `"fg:bg"`.
-    /// Foreground and background names accept spaces, underscores, and hyphens between words.
     /// @param str The textual color specification.
     /// @return The parsed color.
-    /// @throws err::ParameterError if one of the colors does not exist.
-    [[nodiscard]] static auto fromString(const text::String &str) -> Color;
+    /// @throws err::ParseError if the specification is invalid.
+    [[nodiscard]] static auto fromStringOrThrow(const text::String &str) -> Color;
     /// Converts two indexes into a color-pair.
     /// @see ColorPart::fromIndex16 for details.
     [[nodiscard]] static auto fromIndex16(const int fgIndex, const int bgIndex) -> Color {

@@ -17,6 +17,8 @@ auto OptionType::toString() const -> text::String {
         return "integer"_el;
     case Text:
         return "text"_el;
+    case SensitiveText:
+        return "sensitive-text"_el;
     case Choice:
         return "choice"_el;
     }

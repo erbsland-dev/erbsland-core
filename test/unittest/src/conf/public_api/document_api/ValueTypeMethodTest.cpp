@@ -3,7 +3,7 @@
 
 #include "ValueTestHelper.hpp"
 
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 TESTED_TARGETS(Document Value)
 class ValueTypeMethodTest final : public UNITTEST_SUBCLASS(ValueTestHelper) {

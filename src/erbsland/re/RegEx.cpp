@@ -52,9 +52,9 @@ auto RegEx::isCompiled() const noexcept -> bool {
     return _lazyState == nullptr || _lazyState->isCompiled.load(std::memory_order_acquire);
 }
 
-auto RegEx::engine() const -> impl::ConstEnginePtr {
+auto RegEx::engine() const -> const impl::ConstEnginePtr & {
     if (_lazyState != nullptr) {
-        const auto state = _lazyState;
+        const auto &state = _lazyState;
         std::call_once(state->compileOnce, [this, &state]() -> void {
             state->engine = buildEngine(_pattern, state->flags, state->settings);
             state->isCompiled.store(true, std::memory_order_release);

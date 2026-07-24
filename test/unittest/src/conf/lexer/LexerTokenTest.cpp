@@ -56,7 +56,7 @@ public:
         verifyToken<el::time::TimeWithZone>(TokenType::Time, "12:34:56z"_el, time);
         el::time::DateTime dt{makeDate(2024, 1, 2), time};
         verifyToken<el::time::DateTime>(TokenType::DateTime, "2024-01-02 12:34:56z"_el, dt);
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0x01, 0x02}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0x01, 0x02});
         verifyToken<el::mem::ByteBlock>(TokenType::Bytes, "<0102>"_el, bytes);
         const auto delta = el::time::CalendarDelta{el::time::Seconds{5}};
         verifyToken<el::time::CalendarDelta>(TokenType::TimeDelta, "5s"_el, delta);

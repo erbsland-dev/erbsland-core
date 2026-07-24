@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsPathBackend.hpp"
 
+#include "PathInfoData.hpp"
 #include "WindowsAccessProfileSecurity.hpp"
 
 #include "../Path.hpp"
@@ -12,6 +13,8 @@
 #include "../../text/impl/UnsafeU16StringAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
+#include "../../time/impl/WindowsTimeConverter.hpp"
+#include "../../unit/ByteLength.hpp"
 
 #include <winioctl.h>
 
@@ -27,8 +30,9 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
-auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path) const -> std::vector<Path> {
-    auto searchPath = text::StringConverter{pathTextOrThrow(path)}.toStdWString();
+auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const
+    -> std::vector<Path> {
+    auto searchPath = text::StringConverter{pathTextOrThrow(resolvedPath)}.toStdWString();
     if (!searchPath.empty() && searchPath.back() != L'\\') {
         searchPath.push_back(L'\\');
     }
@@ -46,10 +50,42 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path) const -> std:
     }
     auto closeFindHandle = std::unique_ptr<void, decltype(&FindClose)>{findHandle, &FindClose};
     auto result = std::vector<Path>{};
+    const auto refreshTime = time::TimePoint::now();
+    const auto logicalPathIsResolved = path == resolvedPath;
     while (true) {
         const auto name = std::wstring_view{findData.cFileName};
         if (name != L"." && name != L"..") {
-            result.emplace_back(path / Path::fromWindowsOrThrow(text::StringConverter{name}.toString()));
+            const auto pathName = text::StringConverter{name}.toString();
+            auto child = directoryEntryPath(path, pathName);
+            if (child.isEmpty()) {
+                throw PathError{PathErrorContext{
+                    "Directory entry is invalid"_el,
+                    "The operating system returned a directory-entry name that cannot be represented as a path."_el}
+                        .setSourcePath(path.toString())};
+            }
+            auto info = PathInfoData{};
+            info.resolvedPath =
+                logicalPathIsResolved ? pathWithoutInfo(child) : directoryEntryPath(resolvedPath, pathName);
+            info.lastRefresh = refreshTime;
+            info.exists = true;
+            info.type = typeFromAttributes(findData.dwFileAttributes, findData.dwReserved0, FILE_TYPE_DISK);
+            info.loadedParts.set(PathInfoPart::Type);
+            const auto size = (static_cast<std::uint64_t>(findData.nFileSizeHigh) << 32U) |
+                static_cast<std::uint64_t>(findData.nFileSizeLow);
+            if (info.type == PathType::RegularFile) {
+                info.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(size));
+            }
+            info.loadedParts.set(PathInfoPart::Size);
+            info.lastModified = time::impl::WindowsTimeConverter::fromFileTime(findData.ftLastWriteTime);
+            info.lastAccessed = time::impl::WindowsTimeConverter::fromFileTime(findData.ftLastAccessTime);
+            info.birthTime = time::impl::WindowsTimeConverter::fromFileTime(findData.ftCreationTime);
+            info.loadedParts.set(PathInfoPart::Times);
+            info.accessInfo = accessInfoFromAttributes(findData.dwFileAttributes);
+            info.loadedParts.set(PathInfoPart::AccessRights);
+            info.attributes = pathAttributesFromWindowsAttributes(findData.dwFileAttributes);
+            info.loadedParts.set(PathInfoPart::Attributes);
+            preloadInfo(child, std::move(info));
+            result.emplace_back(std::move(child));
         }
         if (FindNextFileW(findHandle, &findData) != 0) {
             continue;
@@ -91,6 +127,7 @@ void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const Pat
             path,
             GetLastError());
     }
+    invalidateInfo(path);
 }
 
 void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
@@ -110,6 +147,7 @@ void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
         throwSystemError(
             "Path could not be removed"_el, "The operating system could not remove the path."_el, path, GetLastError());
     }
+    invalidateInfo(path);
 }
 
 void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
@@ -125,6 +163,7 @@ void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &de
             destination,
             GetLastError());
     }
+    invalidateInfo(destination);
 }
 
 void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
@@ -140,6 +179,8 @@ void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destin
             destination,
             GetLastError());
     }
+    invalidateInfo(source);
+    invalidateInfo(destination);
 }
 
 auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
@@ -233,12 +274,14 @@ void WindowsPathBackend::createSymlinkOrThrow(
         flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
     }
     if (CreateSymbolicLinkW(pathAccess.dataAsWide(), targetAccess.dataAsWide(), flags) != 0) {
+        invalidateInfo(path);
         return;
     }
     auto errorCode = GetLastError();
     if (errorCode == ERROR_INVALID_PARAMETER) {
         flags &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
         if (CreateSymbolicLinkW(pathAccess.dataAsWide(), targetAccess.dataAsWide(), flags) != 0) {
+            invalidateInfo(path);
             return;
         }
         errorCode = GetLastError();

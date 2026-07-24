@@ -18,7 +18,9 @@ public:
     /// Create a buffered input stream around a synchronous native stream.
     /// @param nativeStream The native stream used for source reads.
     /// @param settings The timeout and buffer settings.
-    explicit BufferedByteInputStream(NativeByteStreamPtr nativeStream, InputStreamSettings settings = {});
+    /// @param runtimeSensitive Enable runtime sensitivity changes for process-native standard input.
+    explicit BufferedByteInputStream(
+        NativeByteStreamPtr nativeStream, InputStreamSettings settings = {}, bool runtimeSensitive = false);
     /// Abort pending work without waiting for native I/O.
     ~BufferedByteInputStream() override;
 
@@ -35,9 +37,11 @@ public:
     auto close() -> StreamCloseStatus override;
     void abort() noexcept override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
+    /// Change the storage policy of a runtime-switchable stream and discard buffered input.
+    void setSensitive(bool sensitive) noexcept;
 
 protected: // implement ByteInputStream
-    [[nodiscard]] auto readFromSource(std::span<mem::Byte> destination, ReadDeadline deadline)
+    [[nodiscard]] auto readFromSource(mem::ByteSpan destination, ReadDeadline deadline)
         -> StreamReadResult<unit::ByteLength> override;
     [[nodiscard]] auto sourceSupportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto sourcePosition() const -> unit::ByteIndex override;
@@ -54,3 +58,4 @@ private:
 };
 
 }
+#include "../../mem/ByteSpan.hpp"

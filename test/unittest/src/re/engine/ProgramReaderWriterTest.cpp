@@ -5,7 +5,7 @@
 #include <erbsland/re/impl/engine/ProgramReader.hpp>
 #include <erbsland/re/impl/engine/ProgramWriter.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

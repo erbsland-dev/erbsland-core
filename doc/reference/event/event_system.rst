@@ -13,7 +13,10 @@ Use ``Events::invoke`` to execute a callback in the target event loop, including
 Use ``Events::invokeAfter`` for fire-and-forget delayed callbacks.
 Use ``EventTimer`` when the caller needs to keep a cancellation object for one-shot or repeated scheduled work.
 Keep the returned ``EventTimer`` pointer for as long as the scheduled work shall remain active.
-Use ``currentEvents()`` from domain event editors to attach to the current managed event loop.
+Use ``currentEvents()`` from domain event editors to attach to the event loop currently running on the thread.
+Retaining an ``EventEditor`` retains its complete callback subscription; releasing or disconnecting it removes that
+subscription.
+``EventLoopDriver`` provides the single native wait and wake path and can be injected for tests or custom reactors.
 Use ``ManagedEventThread`` for application-owned worker event loops and ``UnmanagedEventThread`` for standalone worker
 event loops.
 
@@ -34,11 +37,15 @@ Interface
 .. doxygentypedef:: erbsland::event::EventCallback
 .. doxygenclass:: erbsland::event::EventData
     :members:
+.. doxygenclass:: erbsland::event::EventEditor
+    :members:
 .. doxygenclass:: erbsland::event::EventId
     :members:
 .. doxygenclass:: erbsland::event::EventIdInfo
     :members:
 .. doxygenclass:: erbsland::event::EventLoop
+    :members:
+.. doxygenclass:: erbsland::event::EventLoopDriver
     :members:
 .. doxygenenum:: erbsland::event::EventLoopErrorAction
 .. doxygentypedef:: erbsland::event::EventLoopErrorHandler

@@ -2,14 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ByteArray.hpp"
+#include "ByteSpan.hpp"
 #include "Endianness.hpp"
 #include "RingBuffer.hpp"
 
-#include <array>
+#include "impl/UnsafeByteArrayAccess.hpp"
+
 #include <concepts>
-#include <cstdint>
 #include <optional>
-#include <type_traits>
 
 namespace erbsland::mem {
 
@@ -33,27 +34,17 @@ public: // integers
         if (length().toSizeT() < sizeof(T)) {
             return std::nullopt;
         }
-        auto bytes = std::array<Byte, sizeof(T)>{};
-        static_cast<void>(read(std::span<Byte>{bytes}));
-        auto result = std::make_unsigned_t<T>{0};
-        for (auto i = std::size_t{0}; i < bytes.size(); ++i) {
-            const auto shift = _endianness == Endianness::Little ? i * 8U : (bytes.size() - i - 1U) * 8U;
-            result |= static_cast<std::make_unsigned_t<T>>(bytes[i].toUInt8()) << shift;
-        }
-        return static_cast<T>(result);
+        auto bytes = ByteArray<sizeof(T)>{};
+        static_cast<void>(read(impl::UnsafeByteArrayAccess{bytes}.writableData()));
+        return bytes.template getInteger<T>(unit::ByteIndex::zero(), _endianness);
     }
     /// Atomically write an integer.
     /// @return `Failure` without modification if the hard storage limit would be exceeded.
     template <std::integral T>
     [[nodiscard]] auto writeInteger(const T value) -> util::Result {
-        using Unsigned = std::make_unsigned_t<T>;
-        const auto unsignedValue = static_cast<Unsigned>(value);
-        auto bytes = std::array<Byte, sizeof(T)>{};
-        for (auto i = std::size_t{0}; i < bytes.size(); ++i) {
-            const auto shift = _endianness == Endianness::Little ? i * 8U : (bytes.size() - i - 1U) * 8U;
-            bytes[i] = Byte{static_cast<uint8_t>((unsignedValue >> shift) & Unsigned{0xffU})};
-        }
-        return writeExact(std::span<const Byte>{bytes});
+        auto bytes = ByteArray<sizeof(T)>{};
+        bytes.setIntegerOrThrow(unit::ByteIndex::zero(), value, _endianness);
+        return writeExact(bytes.span());
     }
 
 private:

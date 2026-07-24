@@ -30,6 +30,6 @@ target_sources(erbsland-core PRIVATE
         BlockSize.hpp
         BlockSize_fwd.hpp
         Orientation.hpp
-        StdFormatForBlock.hpp
+        StdFormat.hpp
         Symmetry.hpp
 )

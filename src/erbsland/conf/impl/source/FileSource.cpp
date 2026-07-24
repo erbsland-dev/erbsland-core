@@ -30,7 +30,7 @@ auto FileSource::createStream() -> stream::TextInputStreamPtr {
     auto options = path::PathReadTextOptions{};
     options.setEncoding(text::StringEncoding::Utf8)
         .setBomMode(text::StringBomMode::Automatic)
-        .setEncodingErrorMode(text::EncodingErrorMode::Throw);
+        .setEncodingMode(text::EncodingMode::Strict);
     return info.resolvedPath().content().openTextInputStream(options);
 }
 

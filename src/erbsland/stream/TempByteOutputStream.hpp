@@ -54,7 +54,7 @@ public: // implement OutputStream / ByteOutputStream
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
     [[nodiscard]] auto endianness() const noexcept -> mem::Endianness override;
     void setEndianness(mem::Endianness endianness) noexcept override;
-    auto write(std::span<const mem::Byte> bytes) -> StreamWriteStatus override;
+    auto write(mem::ConstByteSpan bytes) -> StreamWriteStatus override;
 
 private:
     /// Create a temporary byte output stream for an existing path and stream.
@@ -72,3 +72,4 @@ private:
 };
 
 }
+#include "../mem/ByteSpan.hpp"

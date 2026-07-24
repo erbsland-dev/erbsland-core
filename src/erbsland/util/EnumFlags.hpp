@@ -4,6 +4,8 @@
 
 #include "impl/EnumFlagsTraits.hpp"
 
+#include "../core/Definitions.hpp"
+
 #include <cstddef>
 #include <functional>
 #include <initializer_list>

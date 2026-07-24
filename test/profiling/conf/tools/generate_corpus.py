@@ -7,18 +7,54 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from pathlib import Path
-
 
 PROFILE_DIR = Path(__file__).resolve().parent.parent
 DATA_DIR = PROFILE_DIR / "data"
 OUTPUT_PATH = PROFILE_DIR / "src" / "EmbeddedDocuments.cpp"
 
 
+def title_name(value: str) -> str:
+    """Convert regular ELCL names to their human-readable equivalent."""
+    if '"' in value:
+        return value
+    return " . ".join(part.strip().replace("_", " ").title() for part in value.split("."))
+
+
+def pretty_format(text: str) -> str:
+    """Apply the profiling-corpus ELCL layout."""
+    source = [line for line in text.splitlines() if not line.startswith("@features:")]
+    assignment_names = []
+    for line in source:
+        match = re.match(r"^([A-Za-z][A-Za-z0-9_ ]*)\s*:", line)
+        if match:
+            assignment_names.append(title_name(match.group(1)))
+    width = min(32, max((len(name) for name in assignment_names), default=4))
+    result = []
+    for line in source:
+        match = re.match(r"^\*\[\s*(.*?)\s*\]$", line)
+        if match:
+            prefix = f"--*[ {title_name(match.group(1))} ]*"
+            result.append(prefix + "-" * max(3, 79 - len(prefix)))
+            continue
+        match = re.match(r"^\[\s*(.*?)\s*\]$", line)
+        if match:
+            prefix = f"---[ {title_name(match.group(1))} ]"
+            result.append(prefix + "-" * max(3, 79 - len(prefix)))
+            continue
+        match = re.match(r"^([A-Za-z][A-Za-z0-9_ ]*)\s*:(.*)$", line)
+        if match:
+            name = title_name(match.group(1))
+            result.append(f"{name:<{width}} :{match.group(2)}")
+            continue
+        result.append(line)
+    return "\n".join(result)
+
+
 def scalar_document() -> str:
     lines = [
         '@version: "1.0"',
-        '@features: "all"',
         "# Dense scalar values and value lists.",
         "",
     ]
@@ -40,7 +76,7 @@ def scalar_document() -> str:
                 f"time delta value: {index + 1} weeks",
                 f"bytes value: <01 23 45 67 89 ab cd ef {index:02x}>",
                 f"regex value: /^sensor-{index:03d}-[a-z]+$/",
-                f"mixed list: {index}, {index + 1}.25, enabled, \"sample {index:03d}\", "
+                f'mixed list: {index}, {index + 1}.25, enabled, "sample {index:03d}", '
                 f"2026-06-{index % 27 + 1:02d}, <de ad be ef>",
                 "",
             ]
@@ -49,14 +85,14 @@ def scalar_document() -> str:
 
 
 def hierarchy_document() -> str:
-    lines = ['@version: "1.0"', '@features: "all"', "# Nested sections, text names and section lists.", ""]
+    lines = ['@version: "1.0"', "# Nested sections, text names and section lists.", ""]
     for index in range(100):
         lines.extend(
             [
                 f"[environment_{index:03d}.service_{index:03d}.localized_labels]",
                 f'name: "Service {index:03d}"',
                 f"port: {20000 + index}",
-                f"hosts: \"node-{index:03d}-a\", \"node-{index:03d}-b\", \"node-{index:03d}-c\"",
+                f'hosts: "node-{index:03d}-a", "node-{index:03d}-b", "node-{index:03d}-c"',
                 f'[text."Localized Labels {index:03d}"]',
                 f'"English": "Processing station {index:03d}"',
                 f'"日本語": "処理ステーション {index:03d}"',
@@ -70,7 +106,7 @@ def hierarchy_document() -> str:
                 "*[worker]",
                 f"identifier: {index}",
                 f'label: "Worker {index:03d}"',
-                f"capabilities: \"parse\", \"index\", \"report-{index % 9}\"",
+                f'capabilities: "parse", "index", "report-{index % 9}"',
                 f"limits: {index + 1}, {index + 2}, {index + 3}, {index + 4}",
                 "",
             ]
@@ -81,7 +117,6 @@ def hierarchy_document() -> str:
 def multiline_document() -> str:
     lines = [
         '@version: "1.0"',
-        '@features: "all"',
         "# Multiline text, code, regular expressions and byte data.",
         "",
     ]
@@ -114,14 +149,14 @@ def multiline_document() -> str:
 
 
 def application_document() -> str:
-    lines = ['@version: "1.0"', '@features: "all"', "# Realistic mixed service configuration.", ""]
+    lines = ['@version: "1.0"', "# Realistic mixed service configuration.", ""]
     for index in range(100):
         lines.extend(
             [
                 f"[service_{index:03d}.database.observability]",
                 f'enabled: {"yes" if index % 3 else "no"}',
                 f'display name: "Ingestion Service {index:03d} – Zürich"',
-                f"endpoint: \"https://service-{index:03d}.example.invalid/api/v1/events\"",
+                f'endpoint: "https://service-{index:03d}.example.invalid/api/v1/events"',
                 f"retry delays: 1, 2, 5, 10, 30, 60",
                 f"started: 2026-{index % 12 + 1:02d}-{index % 27 + 1:02d} "
                 f"{index % 24:02d}:{index * 11 % 60:02d}:00z",
@@ -131,7 +166,7 @@ def application_document() -> str:
                 f"pool size: {8 + index % 32}",
                 f"statement timeout: {index % 20 + 1} seconds",
                 f"sample rate: 0.{index % 90 + 10}",
-                f"labels: \"region-{index % 7}\", \"tier-{index % 4}\", \"owner-{index % 13}\"",
+                f'labels: "region-{index % 7}", "tier-{index % 4}", "owner-{index % 13}"',
                 f"health pattern: /^service-{index:03d}:(ready|degraded)$/",
                 "",
             ]
@@ -141,10 +176,10 @@ def application_document() -> str:
 
 def documents() -> list[tuple[str, str]]:
     return [
-        ("scalar-values.elcl", scalar_document()),
-        ("hierarchy.elcl", hierarchy_document()),
-        ("multiline.elcl", multiline_document()),
-        ("application.elcl", application_document()),
+        ("scalar-values.elcl", pretty_format(scalar_document())),
+        ("hierarchy.elcl", pretty_format(hierarchy_document())),
+        ("multiline.elcl", pretty_format(multiline_document())),
+        ("application.elcl", pretty_format(application_document())),
     ]
 
 
@@ -166,17 +201,19 @@ def generated_cpp(corpus: list[tuple[str, str]]) -> str:
         "// This file is generated by test/profiling/conf/tools/generate_corpus.py",
         '#include "EmbeddedDocuments.hpp"',
         "",
-        "namespace profiling::conf {",
+        "namespace app::conf {",
+        "",
+        "namespace el = erbsland;",
         "",
         "// clang-format off",
     ]
     for index, (_, text) in enumerate(corpus):
-        lines.append(f"static constexpr auto cDocument{index} = std::string_view{{")
+        lines.append(f"static constexpr auto cDocument{index} = el::text::StringLiteral{{")
         lines.extend(cpp_literal_lines(text))
         lines.extend(["};", ""])
     lines.append("const std::array<EmbeddedDocument, 4> cEmbeddedDocuments{{")
     for index, (name, _) in enumerate(corpus):
-        lines.append(f'    {{"{name}", cDocument{index}}},')
+        lines.append(f'    {{el::text::StringLiteral{{"{name}"}}, cDocument{index}}},')
     lines.extend(["}};", "// clang-format on", "", "}", ""])
     return "\n".join(lines)
 

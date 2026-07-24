@@ -7,7 +7,6 @@
 #include "../BlockString.hpp"
 #include "../BlockStringEditor.hpp"
 
-#include "../../text/EncodingErrorMode.hpp"
 #include "../../text/String.hpp"
 #include "../../text/u32/U32String.hpp"
 
@@ -77,12 +76,8 @@ public:
     /// Append UTF-8 text using one uniform style.
     /// @param text The UTF-8 text to append.
     /// @param style The style applied to the appended characters.
-    /// @param encodingErrors How malformed UTF-8 is handled.
-    void appendStyled(
-        const text::String &text,
-        const BlockStyle style,
-        const text::EncodingErrorMode encodingErrors = text::EncodingErrorMode::Replace) {
-        _data.appendCharacters(text, style.color(), style.attributes(), encodingErrors);
+    void appendStyled(const text::String &text, const BlockStyle style) {
+        _data.appendCharacters(text, style.color(), style.attributes());
     }
     /// Materialize the current builder contents into an owned string copy.
     /// @return A copied terminal string.

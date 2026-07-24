@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsBackend.hpp"
 
+#include "InputRecordEraseGuard.hpp"
+#include "StandardInput.hpp"
 #include "WindowsBackendPrivate.hpp"
 #include "WindowsSignalDispatcher.hpp"
 
@@ -20,7 +22,8 @@ namespace erbsland::cterm::impl {
 
 auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
     if (!_p->_pendingKeys.empty()) {
-        const auto key = _p->_pendingKeys.front();
+        auto key = _p->_pendingKeys.front();
+        _p->_pendingKeys.front() = {};
         _p->_pendingKeys.pop_front();
         return key;
     }
@@ -43,7 +46,8 @@ auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
             break;
         }
 
-        INPUT_RECORD inputRecord;
+        INPUT_RECORD inputRecord{};
+        const auto inputRecordEraseGuard = InputRecordEraseGuard{inputRecord};
         DWORD read = 0;
         if ((ReadConsoleInputW(inputHandle, &inputRecord, 1, &read) == 0) || read != 1) {
             break;
@@ -184,7 +188,8 @@ auto WindowsBackend::readKeyFromConsole(const OptionalTimeout timeout) -> Key {
     if (_p->_pendingKeys.empty()) {
         return {};
     }
-    const auto key = _p->_pendingKeys.front();
+    auto key = _p->_pendingKeys.front();
+    _p->_pendingKeys.front() = {};
     _p->_pendingKeys.pop_front();
     return key;
 }
@@ -204,9 +209,22 @@ auto WindowsBackend::keyModifiersFromControlState(const uint32_t controlKeyState
 }
 
 auto WindowsBackend::readLine() -> text::String {
-    std::string input;
-    std::getline(std::cin, input);
-    return text::String{input};
+    return readStandardInputLine();
+}
+
+void WindowsBackend::purgePendingInput() noexcept {
+    for (auto &key : _p->_pendingKeys) {
+        mem::impl::secureErase(std::as_writable_bytes(std::span{&key, 1U}));
+    }
+    _p->_pendingKeys.clear();
+    if (_p->_pendingTextInput.has_value()) {
+        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
+        _p->_pendingTextInput.reset();
+    }
+    if (_p->_pendingHighSurrogate.has_value()) {
+        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        _p->_pendingHighSurrogate.reset();
+    }
 }
 
 auto WindowsBackend::getOrCreate(const TerminalFlags terminalFlags) noexcept -> BackendPtr {
@@ -275,8 +293,9 @@ void WindowsBackend::flushPendingTextInput() {
     if (_p->_pendingTextInput->characterCount() <= unit::CpLength::one()) {
         _p->_pendingKeys.emplace_back(Key::Character, _p->_pendingTextInput->first());
     } else {
-        _p->_pendingKeys.emplace_back(Key::Combined, _p->_pendingTextInput->toU32String());
+        _p->_pendingKeys.emplace_back(Key::Combined, *_p->_pendingTextInput);
     }
+    mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingTextInput, 1U}));
     _p->_pendingTextInput.reset();
 }
 
@@ -304,6 +323,9 @@ auto WindowsBackend::decodeUtf16CodeUnit(const char16_t codeUnit) -> std::option
     constexpr auto cLowSurrogateEnd = char16_t{0xdfffU};
 
     if (codeUnit >= cHighSurrogateStart && codeUnit <= cHighSurrogateEnd) {
+        if (_p->_pendingHighSurrogate.has_value()) {
+            mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        }
         _p->_pendingHighSurrogate = codeUnit;
         return std::nullopt;
     }
@@ -313,10 +335,14 @@ auto WindowsBackend::decodeUtf16CodeUnit(const char16_t codeUnit) -> std::option
         }
         const auto high = static_cast<uint32_t>(*_p->_pendingHighSurrogate - cHighSurrogateStart);
         const auto low = static_cast<uint32_t>(codeUnit - cLowSurrogateStart);
+        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
         _p->_pendingHighSurrogate.reset();
         return static_cast<char32_t>(0x10000U + ((high << 10U) | low));
     }
-    _p->_pendingHighSurrogate.reset();
+    if (_p->_pendingHighSurrogate.has_value()) {
+        mem::impl::secureErase(std::as_writable_bytes(std::span{&*_p->_pendingHighSurrogate, 1U}));
+        _p->_pendingHighSurrogate.reset();
+    }
     return static_cast<char32_t>(codeUnit);
 }
 

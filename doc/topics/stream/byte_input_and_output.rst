@@ -316,7 +316,7 @@ length.
         auto options = el::PathWriteDataOptions{};
         options.setTimeout(el::TimeDelta::seconds(1));
         const auto output = path.content().openByteOutputStream(options);
-        const auto record = el::ByteBlock{std::vector<uint8_t>{4U, 8U, 15U, 16U, 23U, 42U}};
+        const auto record = el::ByteBlock({4U, 8U, 15U, 16U, 23U, 42U});
 
         try {
             for (auto attempt = 0U; attempt < cMaximumAttempts; ++attempt) {

@@ -103,7 +103,7 @@ template <typename tString>
         return result;
     }
     result.reserve(data.size());
-    utf8::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf8::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         result.push_back(static_cast<tString::value_type>(character.toRawValue()));
     });
     return result;
@@ -119,7 +119,7 @@ template <typename tString>
         return result;
     }
     result.reserve(data.size());
-    utf16::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf16::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         result.push_back(static_cast<tString::value_type>(character.toRawValue()));
     });
     return result;
@@ -135,7 +135,7 @@ template <typename tString>
         return result;
     }
     result.reserve(data.size());
-    utf32::forEachDecodedCharacter(data, EncodingErrorMode::Replace, [&](const Char character) -> void {
+    utf32::forEachDecodedCharacter(data, EncodingMode::Tolerant, [&](const Char character) -> void {
         result.push_back(static_cast<tString::value_type>(character.toRawValue()));
     });
     return result;

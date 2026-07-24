@@ -1,0 +1,25 @@
+@version: "1.0"
+
+# This complete default configuration is embedded into char-set-profile.
+# Run with --write-template <path> to create an editable copy.
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 5m
+Threads             : 1
+Seed                : 0x4348'4152'5345'5450
+Warmup Samples      : 1
+Samples             : 9
+Minimum Sample Time : 20ms
+Memory Limit        : 64 MiB
+Progress Interval   : 10s
+
+# Defining one or more [scenario] entries replaces the built-in suite.
+#
+# *[scenario]
+# Name          : "focused-contains"
+# Functionality : "contains"
+# Case          : "ascii-policy-hit"
+# Track Allocations : no
+# Weight        : 1

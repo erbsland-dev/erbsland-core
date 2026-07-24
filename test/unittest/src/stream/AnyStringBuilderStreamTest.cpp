@@ -90,7 +90,7 @@ public:
 
     void testPrintByteBlocks() {
         auto stream = el::stream::AnyStringBuilderStream::create(StringKind::U8);
-        const auto block = el::mem::ByteBlock{std::vector<std::uint8_t>{0xabU, 0x01U, 0x02U, 0x03U, 0xefU}};
+        const auto block = el::mem::ByteBlock::fromVector(std::vector<std::uint8_t>{0xabU, 0x01U, 0x02U, 0x03U, 0xefU});
 
         stream->printLine("hash: ", block);
 

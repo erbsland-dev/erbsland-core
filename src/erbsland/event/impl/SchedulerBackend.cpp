@@ -23,12 +23,9 @@ auto SchedulerBackend::backendId() const noexcept -> EventBackendId {
     return EventScheduler::backendId();
 }
 
-void SchedulerBackend::attach(EventBackendTargetWeakPtr target) {
+void SchedulerBackend::attach(EventBackendTargetWeakPtr target, [[maybe_unused]] EventLoopDriverWeakPtr driver) {
     std::scoped_lock lock{_state->mutex};
     _state->target = std::move(target);
-}
-
-void SchedulerBackend::wake() noexcept {
 }
 
 void SchedulerBackend::poll(const time::TimePoint now) {

@@ -1,0 +1,10 @@
+# Configuration file for the "include_dependencies.py" script.
+# Reuse the public-header exposure policy so the two utilities cannot drift.
+@include: "update_includes.elcl"
+
+------------*[ Required Dependencies ]
+Name                : "definitions"
+Target              : "core/Definitions.hpp"
+Excluded Headers    :
+    * "core/Namespaces.hpp"
+    * "core/MakeOneNamespace.hpp"

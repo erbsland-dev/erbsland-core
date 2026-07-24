@@ -242,7 +242,7 @@ public:
         requireError(
             parse(options, {"tool"_el, "--flag=value"_el}),
             OptionErrorReason::UnexpectedValueType,
-            "Flag does not accept a value"_el,
+            "Invalid boolean value"_el,
             option,
             {},
             ArgumentIndex{1U});
@@ -399,7 +399,8 @@ private:
 
     [[nodiscard]] static auto parse(const OptionsPtr &options, std::initializer_list<String> args) -> OptionResult {
         auto manager = OptionManager{options};
-        return manager.parse(makeArgs(args));
+        auto arguments = makeArgs(args);
+        return manager.parse(arguments);
     }
 
     void requireError(

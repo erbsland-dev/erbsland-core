@@ -8,7 +8,7 @@ namespace erbsland::text {
 
 /// The mode for handling byte order marks (BOM) at encoded-data boundaries.
 /// Only an initial encoded signature is handled as a BOM. Any subsequent encoded U+FEFF is invalid text content and
-/// is handled using the selected `EncodingErrorMode`.
+/// is handled using the selected `EncodingMode`.
 enum class StringBomMode : uint8_t {
     /// Accepts a BOM at the start of decoded byte data.
     /// For `StringEncoding::Utf16` and `StringEncoding::Utf32` change the byte order if a BOM is found,

@@ -16,6 +16,37 @@ paths, convert external formats, and perform portable filesystem work with struc
 For the domain overview and filesystem behavior, see :doc:`/topics/path/overview`.
 For practical path-value examples, see :doc:`/topics/path/working_with_paths`.
 
+Process Directories
+===================
+
+``Path::currentDirectory()`` returns the process working directory.
+``Path::userHomeDirectory()`` resolves the effective user's configured home or profile directory through the native
+account system rather than an environment variable.
+It returns an absolute native path without creating or checking the directory.
+The ``OrThrow`` form reports lookup and conversion failures as ``PathError``; the non-throwing form returns an empty
+path.
+``Path::systemTempDirectory()`` resolves the platform temporary directory.
+
+Path Information Cache
+======================
+
+Each non-empty ``Path`` lazily owns one path-information cache, and ordinary copies of that path share it.
+Repeated ``Path::info()`` calls during the one-second cache period therefore reuse previously loaded metadata and the
+resolved physical path.
+Requesting another information part can extend the snapshot without resolving the path again while the cached resolution
+is current.
+``PathInfo::reload()`` explicitly resolves and refreshes the path.
+
+Directory traversal seeds each returned child path with metadata obtained by the native directory enumeration.
+On POSIX systems this includes the entry type when the filesystem supplies it.
+On Windows it also includes the size, timestamps, access approximation, and native attributes returned by
+``FindFirstFileExW`` and ``FindNextFileW``.
+The walker trusts each enumeration snapshot for the duration of that walk, even when processing a very large sibling set
+takes longer than the normal cache period.
+
+Successful mutations through the library invalidate the cache attached to each directly affected path.
+External filesystem changes remain snapshot-based and become visible after cache expiry or an explicit reload.
+
 Path Diagnostics
 ================
 

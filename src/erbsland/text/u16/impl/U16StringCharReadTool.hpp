@@ -32,8 +32,6 @@ public: // read
     [[nodiscard]] auto charLength() const noexcept -> unit::CpLength;
     /// Access the character at the given character position.
     [[nodiscard]] auto charAt(unit::CpIndex index) const noexcept -> Char;
-    /// Access the character at the given character position or throw if no valid character is found.
-    [[nodiscard]] auto charAtOrThrow(unit::CpIndex index) const -> Char;
     /// Get the start UTF-16 data index for the given code-point index.
     [[nodiscard]] auto byteIndexAt(unit::CpIndex index) const noexcept -> unit::U16DataIndex;
     /// Get the code-point index for the given UTF-16 data index.

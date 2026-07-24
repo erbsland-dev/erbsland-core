@@ -59,8 +59,11 @@ using PathList = util::List<Path>;
 ///   Special Windows paths, like "/??/", "//./", "//?/Volume" and "//./PhysicalDrive0", etc. are not supported.
 ///   Any path that looks like a special path is converted into an empty path on construction for security reasons.
 /// @seedoc{/topics/path/working_with_paths}
-/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest}
+/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest PathResolveBackendTest}
 class Path final {
+    friend class PathInfo;
+    friend class impl::PathBackend;
+
 public:
     /// Creates an empty, invalid path.
     Path() = default;
@@ -253,6 +256,7 @@ public: // path resolving
 
 public: // components
     /// Access information about the file or directory of this path.
+    /// Repeated calls on this path or one of its copies share the attached information cache.
     /// @param parts The parts to initially request and cache.
     [[nodiscard]] auto info(PathInfoParts parts = PathInfoPart::Default) const noexcept -> PathInfo;
     /// Access the path walker component for this path.
@@ -322,6 +326,15 @@ public: // factory methods
     /// Return a path to the current working directory of the process.
     /// @return An absolute path to the current working directory.
     [[nodiscard]] static auto currentDirectory() noexcept -> Path;
+    /// Return the home directory for the effective user of this process.
+    /// This lookup uses the operating-system account database and does not inspect environment variables.
+    /// @return An absolute path to the effective user's home directory, or an empty path on error.
+    [[nodiscard]] static auto userHomeDirectory() noexcept -> Path;
+    /// Return the home directory for the effective user of this process.
+    /// This lookup uses the operating-system account database and does not inspect environment variables.
+    /// @return An absolute path to the effective user's home directory.
+    /// @throws PathError if the home directory cannot be determined or converted.
+    [[nodiscard]] static auto userHomeDirectoryOrThrow() -> Path;
     /// Return the system directory for temporary files and directories.
     /// @return An absolute path to the system temporary directory, or an empty path on error.
     [[nodiscard]] static auto systemTempDirectory() noexcept -> Path;

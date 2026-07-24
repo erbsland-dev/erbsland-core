@@ -122,6 +122,7 @@ void EventRegistry::registerInternalIds() noexcept {
     addEvent(timer(), "dev.erbsland.core.Timer"_el, "A timer event"_el);
     addBackend(noBackend(), "dev.erbsland.core.NoBackend"_el, "No backend"_el);
     addBackend(schedulerBackend(), "dev.erbsland.core.SchedulerBackend"_el, "Scheduler backend"_el);
+    addBackend(networkBackend(), "dev.erbsland.core.NetworkBackend"_el, "Network backend"_el);
 }
 
 void EventRegistry::addEvent(EventId eventId, String name, String description) {

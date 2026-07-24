@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Hasher.hpp"
 
-#include "impl/HashWorker.hpp"
-#include "impl/HashWorkerFactory.hpp"
+#include "impl/hash/HashWorker.hpp"
+#include "impl/hash/HashWorkerFactory.hpp"
 
 #include "../err/LogicError.hpp"
 #include "../mem/ByteBlock.hpp"
@@ -35,21 +35,28 @@ void Hasher::reset() {
     workerForWrite().reset();
 }
 
-void Hasher::update(const std::span<const std::byte> data) {
+void Hasher::secureErase() {
+    if (!isValid()) {
+        return;
+    }
+    if (_worker.use_count() > 1) {
+        _worker = impl::createHashWorker(_worker->algorithm());
+        return;
+    }
+    _worker->secureErase();
+}
+
+void Hasher::update(const mem::ConstByteSpan data) {
     workerForWrite().update(data);
 }
 
-void Hasher::update(const std::span<const mem::Byte> data) {
-    update(std::as_bytes(data));
-}
-
 void Hasher::update(const mem::ByteBlock &data) {
-    update(data.bytes());
+    workerForWrite().update(data.span());
 }
 
 void Hasher::update(const text::String &text) {
     const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataView().dataSpan();
-    update(std::as_bytes(bytes));
+    workerForWrite().update(mem::toConstByteSpan(bytes));
 }
 
 auto Hasher::finalize() -> mem::ByteBlock {

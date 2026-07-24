@@ -3,7 +3,7 @@
 
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
@@ -16,6 +16,10 @@
 #include <erbsland/util/LoopStatus.hpp>
 #include <erbsland/util/Set.hpp>
 
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iterator>
 #include <set>
 #include <string>
 #include <vector>
@@ -58,7 +62,9 @@ public:
         REQUIRE(fromSet.contains(Char{U'B'}));
         REQUIRE_FALSE(fromSet.contains(Char{0x110000U}));
         REQUIRE_EQUAL(fromList.toList().toStdVector(), std::vector<Char>({Char{U'A'}, Char{U'C'}}));
-        REQUIRE_EQUAL(normalized.ranges().size(), std::size_t{1});
+        auto normalizedRanges = std::vector<CharRange>{};
+        normalized.forEach([&normalizedRanges](const CharRange value) -> void { normalizedRanges.push_back(value); });
+        REQUIRE_EQUAL(normalizedRanges.size(), std::size_t{1});
         REQUIRE(normalized.contains(Char{U'F'}));
     }
 
@@ -78,6 +84,50 @@ public:
         REQUIRE_FALSE(copy.contains(Char{U'A'}));
         REQUIRE(copy.contains(Char{U'B'}));
         REQUIRE(copy.contains(Char{U'C'}));
+    }
+
+    void testInlineAndSharedStorageTransitions() {
+        using Char = el::text::Char;
+        using CharRange = el::text::CharRange;
+        using CharSet = el::text::CharSet;
+
+        auto value = CharSet{Char{U'a'}, Char{U'c'}};
+        REQUIRE_EQUAL(collectRanges(value).size(), std::size_t{2});
+
+        value.add(Char{U'e'});
+        REQUIRE_EQUAL(collectRanges(value).size(), std::size_t{3});
+        const auto sharedCopy = value;
+
+        value.add(CharRange{U'a', U'e'});
+        REQUIRE_EQUAL(collectRanges(value), std::vector<CharRange>({CharRange{U'a', U'e'}}));
+        REQUIRE_EQUAL(
+            collectRanges(sharedCopy), std::vector<CharRange>({CharRange{U'a'}, CharRange{U'c'}, CharRange{U'e'}}));
+
+        auto split = CharSet::fromRange(U'a', U'z');
+        split.remove(Char{U'm'});
+        REQUIRE_EQUAL(collectRanges(split), std::vector<CharRange>({CharRange{U'a', U'l'}, CharRange{U'n', U'z'}}));
+
+        auto reduced = sharedCopy;
+        reduced.remove(CharRange{U'c', U'e'});
+        REQUIRE_EQUAL(collectRanges(reduced), std::vector<CharRange>({CharRange{U'a'}}));
+        reduced.remove(Char{U'a'});
+        REQUIRE(reduced.isEmpty());
+    }
+
+    void testMoveKeepsSourceValue() {
+        using Char = el::text::Char;
+        using CharSet = el::text::CharSet;
+
+        auto source = CharSet{Char{U'a'}, Char{U'c'}, Char{U'e'}};
+        const auto expected = source;
+        const auto constructed = std::move(source);
+        REQUIRE_EQUAL(constructed, expected);
+        REQUIRE_EQUAL(source, expected);
+
+        auto assigned = CharSet{};
+        assigned = std::move(source);
+        REQUIRE_EQUAL(assigned, expected);
+        REQUIRE_EQUAL(source, expected);
     }
 
     void testSetOperations() {
@@ -237,5 +287,92 @@ public:
         REQUIRE(set.contains(Char{U'A'}));
         REQUIRE(set.contains(Char::replacement()));
         REQUIRE(set.contains(Char{U'B'}));
+    }
+
+    void testAlgebraAgainstReferenceSets() {
+        constexpr auto setCount = std::uint32_t{64U};
+        for (auto leftMask = std::uint32_t{0}; leftMask < setCount; ++leftMask) {
+            for (auto rightMask = std::uint32_t{0}; rightMask < setCount; ++rightMask) {
+                runWithContext(
+                    SOURCE_LOCATION(),
+                    [&]() -> void { requireAlgebra(leftMask, rightMask); },
+                    [leftMask, rightMask]() -> std::string {
+                        return "left mask: " + std::to_string(leftMask) + ", right mask: " + std::to_string(rightMask);
+                    });
+            }
+        }
+    }
+
+private:
+    using Char = el::text::Char;
+    using CharRange = el::text::CharRange;
+    using CharSet = el::text::CharSet;
+    using ReferenceSet = std::set<Char>;
+
+    [[nodiscard]] static auto collectRanges(const CharSet &value) -> std::vector<CharRange> {
+        auto result = std::vector<CharRange>{};
+        value.forEach([&result](const CharRange range) -> void { result.push_back(range); });
+        return result;
+    }
+
+    [[nodiscard]] static auto createSet(const std::uint32_t mask) -> CharSet {
+        constexpr auto characters = std::array<Char, 6>{U'a', U'b', U'd', U'e', U'g', U'h'};
+        auto result = CharSet{};
+        for (auto index = std::size_t{0}; index < characters.size(); ++index) {
+            if ((mask & (std::uint32_t{1U} << index)) != 0U) {
+                result.add(characters[index]);
+            }
+        }
+        return result;
+    }
+
+    [[nodiscard]] static auto createReferenceSet(const std::uint32_t mask) -> ReferenceSet {
+        constexpr auto characters = std::array<Char, 6>{U'a', U'b', U'd', U'e', U'g', U'h'};
+        auto result = ReferenceSet{};
+        for (auto index = std::size_t{0}; index < characters.size(); ++index) {
+            if ((mask & (std::uint32_t{1U} << index)) != 0U) {
+                result.insert(characters[index]);
+            }
+        }
+        return result;
+    }
+
+    void requireEqual(const CharSet &actual, const ReferenceSet &expected) {
+        REQUIRE_EQUAL(actual.toSet().toStdSet(), expected);
+        for (auto codePoint = char32_t{U'`'}; codePoint <= U'i'; ++codePoint) {
+            const auto character = Char{codePoint};
+            REQUIRE_EQUAL(actual.contains(character), expected.contains(character));
+        }
+    }
+
+    void requireAlgebra(const std::uint32_t leftMask, const std::uint32_t rightMask) {
+        const auto left = createSet(leftMask);
+        const auto right = createSet(rightMask);
+        const auto leftReference = createReferenceSet(leftMask);
+        const auto rightReference = createReferenceSet(rightMask);
+
+        auto unionReference = leftReference;
+        unionReference.insert(rightReference.begin(), rightReference.end());
+        WITH_CONTEXT(requireEqual(left | right, unionReference));
+
+        auto intersectionReference = ReferenceSet{};
+        std::ranges::set_intersection(
+            leftReference, rightReference, std::inserter(intersectionReference, intersectionReference.end()));
+        WITH_CONTEXT(requireEqual(left & right, intersectionReference));
+
+        auto subtractionReference = ReferenceSet{};
+        std::ranges::set_difference(
+            leftReference, rightReference, std::inserter(subtractionReference, subtractionReference.end()));
+        WITH_CONTEXT(requireEqual(left - right, subtractionReference));
+
+        auto symmetricDifferenceReference = ReferenceSet{};
+        std::ranges::set_symmetric_difference(
+            leftReference,
+            rightReference,
+            std::inserter(symmetricDifferenceReference, symmetricDifferenceReference.end()));
+        WITH_CONTEXT(requireEqual(left ^ right, symmetricDifferenceReference));
+
+        REQUIRE_EQUAL(left.isSubsetOf(right), std::ranges::includes(rightReference, leftReference));
+        REQUIRE_EQUAL(left.isSupersetOf(right), std::ranges::includes(leftReference, rightReference));
     }
 };

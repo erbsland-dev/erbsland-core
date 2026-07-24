@@ -3,11 +3,13 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(algorithm)
+add_subdirectory(hash)
+
 target_sources(erbsland-core PRIVATE
-        HashWorker.hpp
-        HashWorkerFactory.cpp
-        HashWorkerFactory.hpp
-        Keccak.hpp
-        Sha3.hpp
-        Sha3HashWorker.hpp
+        PasswordHashData.hpp
+        PasswordHashData_fwd.hpp
+        PasswordHashFormat.cpp
+        PasswordHashFormat.hpp
+        SecureEraseGuard.hpp
 )

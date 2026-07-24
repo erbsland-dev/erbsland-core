@@ -1,0 +1,37 @@
+@version: "1.0"
+
+# This complete default configuration is embedded into string-types-profile.
+# Run with --write-template <path> to create an editable copy.
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 5m
+Threads             : 4
+Seed                : 0x5354'5249'4e47'5052
+Warmup Samples      : 1
+Samples             : 9
+Minimum Sample Time : 20ms
+Memory Limit        : 256 MiB
+Progress Interval   : 10s
+Sensitive Mode      : "normal"
+
+# Defining one or more [scenario] list entries replaces the built-in suite.
+# Sizes and operand sizes are decoded code-point counts.
+# `all` expands compatible widths, types, use cases, variants, and profiles.
+#
+# *[scenario]
+# name: "focused-edit"
+# widths: "u8", "u16", "u32"
+# types: "string-editor"
+# use_cases: "append", "insert", "replace", "cow-stress", "edit-stress"
+# variants: "all"
+# content_profiles: "ascii", "mixed", "supplementary"
+# size_modes: "boundaries", "exponential"
+# size_min: 1
+# size_max: 1 MiB
+# size_step: 64
+# operand_size_min: 1
+# operand_size_max: 4 KiB
+# sensitive_modes: "normal"
+# weight: 1

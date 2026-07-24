@@ -15,7 +15,7 @@
 #include <erbsland/unit/LineOffset.hpp>
 #include <erbsland/unit/LineRange.hpp>
 #include <erbsland/unit/LineUnit.hpp>
-#include <erbsland/unit/StdFormatForUnit.hpp>
+#include <erbsland/unit/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -24,6 +24,7 @@
 #include <cstdint>
 #include <limits>
 #include <type_traits>
+#include <vector>
 
 using namespace el::unit;
 
@@ -119,6 +120,11 @@ public:
         static_assert(ByteIndex{5}.advanced(ByteLength{3}) == ByteIndex{8});
         static_assert(ByteIndex{5}.retreated(ByteLength{8}).isZero());
         static_assert(ByteIndex{5}.moved(ByteOffset{-2}) == ByteIndex{3});
+        static_assert([]() {
+            auto index = ByteIndex{5};
+            index.uncheckedAdvance(ByteLength{3}).uncheckedIncrement();
+            return index;
+        }() == ByteIndex{9});
         static_assert(ByteIndex{5}.absoluteDistanceTo(ByteIndex{2}) == ByteLength{3});
         static_assert((ByteIndex{5} + ByteLength{3}) == ByteIndex{8});
         static_assert((ByteIndex{5} - ByteLength{8}).isZero());
@@ -304,5 +310,39 @@ public:
         REQUIRE(noRange.endIndex().isNoIndex());
         REQUIRE(noRange.clampedTo(ByteLength{10}).isEmpty());
         REQUIRE(!noRange.withOrigin(ByteIndex{10}).isValid());
+    }
+
+    void testRangeForEach() {
+        auto visited = std::vector<uint64_t>{};
+        const auto completed = ByteRange{ByteIndex{4}, ByteLength{3}}.forEach(
+            [&](const ByteIndex index) -> void { visited.push_back(index.toRawValue()); });
+        REQUIRE_EQUAL(completed, el::util::LoopResult::Success);
+        REQUIRE_EQUAL(visited, (std::vector<uint64_t>{4U, 5U, 6U}));
+
+        auto visitCount = std::size_t{};
+        const auto stopped =
+            ByteRange{ByteIndex{4}, ByteLength{3}}.forEach([&](const ByteIndex index) -> el::util::LoopStatus {
+                ++visitCount;
+                return index == ByteIndex{5} ? el::util::LoopStatus::Stop : el::util::LoopStatus::Continue;
+            });
+        REQUIRE_EQUAL(stopped, el::util::LoopResult::Stopped);
+        REQUIRE_EQUAL(visitCount, std::size_t{2U});
+
+        const auto failed = ByteRange{ByteIndex{4}, ByteLength{3}}.forEach(
+            [](const ByteIndex) -> el::util::LoopStatus { return el::util::LoopStatus::Error; });
+        REQUIRE_EQUAL(failed, el::util::LoopResult::Error);
+
+        auto called = false;
+        REQUIRE_EQUAL(
+            ByteRange::emptyAt(ByteIndex{4}).forEach([&](const ByteIndex) -> void { called = true; }),
+            el::util::LoopResult::Success);
+        REQUIRE_FALSE(called);
+        REQUIRE_EQUAL(ByteRange::noRange().forEach([](const ByteIndex) -> void {}), el::util::LoopResult::Error);
+
+        auto maximumIndex = ByteIndex{};
+        const auto maximumResult = ByteRange{ByteIndex::maximum(), ByteLength::one()}.forEach(
+            [&](const ByteIndex index) -> void { maximumIndex = index; });
+        REQUIRE_EQUAL(maximumResult, el::util::LoopResult::Success);
+        REQUIRE_EQUAL(maximumIndex, ByteIndex::maximum());
     }
 };

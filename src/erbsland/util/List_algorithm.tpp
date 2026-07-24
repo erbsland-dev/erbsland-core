@@ -5,6 +5,7 @@
 #include "impl/LoopControl.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <functional>
 
 namespace erbsland::util {
@@ -12,11 +13,19 @@ namespace erbsland::util {
 template <typename tElement, typename tSelf>
 template <typename Function>
 auto List<tElement, tSelf>::forEach(Function function) const -> LoopResult {
+    auto rawIndex = typename Index::Value{};
     for (const auto &value : raw()) {
-        const auto status = impl::invokeLoopFunction(function, value);
+        const auto status = [&]() -> LoopStatus {
+            if constexpr (std::invocable<Function &, const Element &, Index>) {
+                return impl::invokeLoopFunction(function, value, Index{rawIndex});
+            } else {
+                return impl::invokeLoopFunction(function, value);
+            }
+        }();
         if (status != LoopStatus::Continue) {
             return impl::loopStatusToResult(status);
         }
+        ++rawIndex;
     }
     return LoopResult::Success;
 }
@@ -25,8 +34,16 @@ template <typename tElement, typename tSelf>
 template <typename Function>
 auto List<tElement, tSelf>::forEachReverse(Function function) const -> LoopResult {
     const auto &data = raw();
+    auto rawIndex = static_cast<typename Index::Value>(data.size());
     for (auto iterator = data.rbegin(); iterator != data.rend(); ++iterator) {
-        const auto status = impl::invokeLoopFunction(function, *iterator);
+        --rawIndex;
+        const auto status = [&]() -> LoopStatus {
+            if constexpr (std::invocable<Function &, const Element &, Index>) {
+                return impl::invokeLoopFunction(function, *iterator, Index{rawIndex});
+            } else {
+                return impl::invokeLoopFunction(function, *iterator);
+            }
+        }();
         if (status != LoopStatus::Continue) {
             return impl::loopStatusToResult(status);
         }

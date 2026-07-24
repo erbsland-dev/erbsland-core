@@ -1,0 +1,15 @@
+@version: "1.0"
+
+# Default ELCL parser benchmark.
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 5m
+Threads             : 1
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 1
+Samples             : 9
+Minimum Sample Time : 20ms
+Memory Limit        : 256 MiB
+Progress Interval   : 10s

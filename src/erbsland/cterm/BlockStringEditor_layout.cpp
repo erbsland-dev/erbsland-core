@@ -88,7 +88,7 @@ auto BlockStringEditor::fromLines(
         } else {
             data.append(Block{U'\n', color, attributes});
         }
-        data.appendCharacters(line, color, attributes, text::EncodingErrorMode::Replace);
+        data.appendCharacters(line, color, attributes);
     }
     return fromStorageWithDisplayWidth(std::move(data.chars()), data.displayWidth());
 }
@@ -127,14 +127,11 @@ auto BlockStringEditor::fromLines(const std::initializer_list<text::U32String> l
     return fromLines(lines, style.color(), style.attributes());
 }
 
-auto BlockStringEditor::splitCharacters(
-    const text::String &str,
-    const Color color,
-    const BlockAttributes attributes,
-    const text::EncodingErrorMode encodingErrorMode) -> Storage {
+auto BlockStringEditor::splitCharacters(const text::String &str, const Color color, const BlockAttributes attributes)
+    -> Storage {
     auto data = BlockStringData{};
-    data.reserve(static_cast<std::size_t>(BlockStringData::measureDisplayWidth(str, encodingErrorMode)));
-    data.appendCharacters(str, color, attributes, encodingErrorMode);
+    data.reserve(static_cast<std::size_t>(BlockStringData::measureDisplayWidth(str)));
+    data.appendCharacters(str, color, attributes);
     return std::move(data.chars());
 }
 

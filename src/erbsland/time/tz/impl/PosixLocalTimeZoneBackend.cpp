@@ -2,69 +2,86 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixLocalTimeZoneBackend.hpp"
 
-#include "../../../text/StringConverter.hpp"
+#include "../../../text/CharSet.hpp"
+#include "../../../text/Literals.hpp"
+#include "../../../text/StringEditor.hpp"
+#include "../../../text/StringList.hpp"
+#include "../../../unit/CpIndex.hpp"
 
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
+#include <string>
+#include <string_view>
 
 namespace erbsland::time::tz::impl {
 
-auto PosixLocalTimeZoneBackend::nameFromPath(const std::filesystem::path &path) -> std::string {
-    const auto value = path.generic_string();
-    constexpr auto marker = std::string_view{"zoneinfo/"};
-    const auto markerPosition = value.rfind(marker);
-    if (markerPosition == std::string::npos) {
+using namespace text::literals;
+
+auto PosixLocalTimeZoneBackend::nameFromPath(const text::String &path) -> text::String {
+    const auto parts = text::StringList::fromSplit(path, text::CharSet{U'/'});
+    auto index = parts.findLast("zoneinfo"_el);
+    if (index.isNoIndex()) {
         return {};
     }
-    return value.substr(markerPosition + marker.size());
+    ++index;
+    if (!index.isWithin(parts.count())) {
+        return {};
+    }
+    auto result = text::StringEditor{};
+    for (; index.isWithin(parts.count()); ++index) {
+        if (!result.isEmpty()) {
+            result.append("/"_el);
+        }
+        result.append(parts.get(index));
+    }
+    return result;
 }
 
-auto PosixLocalTimeZoneBackend::nameFromEnvironment() -> std::string {
+auto PosixLocalTimeZoneBackend::nameFromEnvironment() -> text::String {
     const auto *rawValue = std::getenv("TZ");
     if (rawValue == nullptr || *rawValue == '\0') {
         return {};
     }
-    auto value = std::string{rawValue};
-    if (value.front() == ':') {
-        value.erase(value.begin());
+    auto value = text::String{std::string_view{rawValue}};
+    if (value.charAt(text::StringSide::Front) == U':') {
+        value = value.slice(text::StringSide::Back, unit::CpIndex{1U});
     }
-    if (const auto pathName = nameFromPath(value); !pathName.empty()) {
+    if (const auto pathName = nameFromPath(value); !pathName.isEmpty()) {
         return pathName;
     }
-    if (!value.empty() && value.front() != '/') {
+    if (!value.isEmpty() && value.charAt(text::StringSide::Front) != U'/') {
         return value;
     }
     return {};
 }
 
-auto PosixLocalTimeZoneBackend::nameFromEtcTimezone() -> std::string {
+auto PosixLocalTimeZoneBackend::nameFromEtcTimezone() -> text::String {
     auto stream = std::ifstream{"/etc/timezone"};
-    auto value = std::string{};
-    if (stream && std::getline(stream, value)) {
-        while (!value.empty() && (value.back() == '\r' || value.back() == '\n' || value.back() == ' ')) {
-            value.pop_back();
-        }
+    auto nativeValue = std::string{};
+    if (!stream || !std::getline(stream, nativeValue)) {
+        return {};
     }
-    return value;
+    return text::String{nativeValue}.trimmed(text::CharSet{U'\r', U'\n', U' '}, text::StringSide::Back);
 }
 
 auto PosixLocalTimeZoneBackend::timeZone() noexcept -> std::optional<TimeZone> {
     try {
         auto name = nameFromEnvironment();
-        if (name.empty()) {
+        if (name.isEmpty()) {
             std::error_code error;
             const auto link = std::filesystem::read_symlink("/etc/localtime", error);
             if (!error) {
-                name = nameFromPath(link);
+                name = nameFromPath(text::String{link.generic_string()});
             }
         }
-        if (name.empty()) {
+        if (name.isEmpty()) {
             name = nameFromEtcTimezone();
         }
-        if (name.empty()) {
+        if (name.isEmpty()) {
             return {};
         }
-        return TimeZone::fromName(text::String{name});
+        return TimeZone::fromName(name);
     } catch (...) {
         return {};
     }

@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RingBuffer.hpp"
 
+#include "SecureErase.hpp"
+
 #include "impl/BestGrowth.hpp"
 #include "impl/RingBufferStorageTraits.hpp"
+#include "impl/UnsafeByteBlockBuffer.hpp"
 
 #include "../err/LogicError.hpp"
 #include "../err/ParameterError.hpp"
@@ -33,6 +36,12 @@ RingBuffer::RingBuffer(const ByteLength initialCapacity, const ByteLength maximu
     }
 }
 
+RingBuffer::~RingBuffer() {
+    if (_sensitive) {
+        secureErase();
+    }
+}
+
 auto RingBuffer::capacity() const noexcept -> ByteLength {
     return ByteLength::fromSizeT(_storage.size());
 }
@@ -53,6 +62,16 @@ auto RingBuffer::canWrite(const ByteLength length) const noexcept -> bool {
     return !length.isInfinite() && length.toSizeT() <= _maximumCapacity - _length;
 }
 
+void RingBuffer::setSensitive(const bool sensitive) noexcept {
+    if (_unsafeAccessActive) {
+        std::terminate();
+    }
+    if (_sensitive && !sensitive) {
+        secureErase();
+    }
+    _sensitive = sensitive;
+}
+
 auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
     verifySafeAccess();
     if (!canWrite(length)) {
@@ -63,7 +82,8 @@ auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
         return util::Result::Success;
     }
 
-    const auto bestCapacity = impl::bestGrowthCapacity<impl::RingBufferStorageTraits>(_storage.size(), required);
+    const auto bestCapacity = impl::bestGrowthCapacity<impl::RingBufferStorageTraits>(
+        _storage.size(), required, impl::BestGrowthStrategy::Geometric);
     const auto newCapacity = std::min(bestCapacity, _maximumCapacity);
     auto newStorage = std::vector<Byte>(newCapacity);
     const auto readable = readableSpans();
@@ -74,12 +94,15 @@ auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
             offset += span.size();
         }
     }
-    _storage = std::move(newStorage);
+    _storage.swap(newStorage);
+    if (_sensitive) {
+        mem::secureErase(ByteSpan{newStorage});
+    }
     _readPosition = 0U;
     return util::Result::Success;
 }
 
-auto RingBuffer::write(const std::span<const Byte> bytes) -> ByteLength {
+auto RingBuffer::write(const ConstByteSpan bytes) -> ByteLength {
     verifySafeAccess();
     const auto maximumWrite = std::min(bytes.size(), _maximumCapacity - _length);
     if (isFailure(reserveAdditional(ByteLength::fromSizeT(maximumWrite)))) {
@@ -99,7 +122,7 @@ auto RingBuffer::write(const std::span<const Byte> bytes) -> ByteLength {
     return ByteLength::fromSizeT(maximumWrite);
 }
 
-auto RingBuffer::writeExact(const std::span<const Byte> bytes) -> util::Result {
+auto RingBuffer::writeExact(const ConstByteSpan bytes) -> util::Result {
     verifySafeAccess();
     if (isFailure(reserveAdditional(ByteLength::fromSizeT(bytes.size())))) {
         return util::Result::Failure;
@@ -107,7 +130,7 @@ auto RingBuffer::writeExact(const std::span<const Byte> bytes) -> util::Result {
     return write(bytes) == ByteLength::fromSizeT(bytes.size()) ? util::Result::Success : util::Result::Failure;
 }
 
-auto RingBuffer::read(const std::span<Byte> destination) -> ByteLength {
+auto RingBuffer::read(const ByteSpan destination) -> ByteLength {
     verifySafeAccess();
     const auto maximumRead = std::min(destination.size(), _length);
     auto remaining = maximumRead;
@@ -127,15 +150,28 @@ auto RingBuffer::read(const std::span<Byte> destination) -> ByteLength {
 auto RingBuffer::read(const ByteLength maximum) -> ByteBlock {
     verifySafeAccess();
     const auto readLength = maximum.isInfinite() ? _length : std::min(maximum.toSizeT(), _length);
-    auto bytes = std::vector<Byte>(readLength);
-    static_cast<void>(read(std::span<Byte>{bytes}));
-    return ByteBlock{bytes};
+    auto buffer = impl::UnsafeByteBlockBuffer{ByteLength::fromSizeT(readLength), _sensitive};
+    static_cast<void>(read(buffer.data()));
+    return buffer.take(ByteLength::fromSizeT(readLength));
 }
 
 void RingBuffer::clear() noexcept {
     if (_unsafeAccessActive) {
         std::terminate();
     }
+    if (_sensitive) {
+        secureErase();
+    } else {
+        _readPosition = 0U;
+        _length = 0U;
+    }
+}
+
+void RingBuffer::secureErase() noexcept {
+    if (_unsafeAccessActive) {
+        std::terminate();
+    }
+    mem::secureErase(ByteSpan{_storage});
     _readPosition = 0U;
     _length = 0U;
 }
@@ -145,7 +181,11 @@ void RingBuffer::shrinkToInitial() {
     if (!isEmpty() || _storage.size() == _initialCapacity) {
         return;
     }
-    _storage = std::vector<Byte>(_initialCapacity);
+    auto newStorage = std::vector<Byte>(_initialCapacity);
+    _storage.swap(newStorage);
+    if (_sensitive) {
+        mem::secureErase(ByteSpan{newStorage});
+    }
     _readPosition = 0U;
 }
 
@@ -159,20 +199,19 @@ void RingBuffer::swap(RingBuffer &other) noexcept {
     swap(_maximumCapacity, other._maximumCapacity);
     swap(_readPosition, other._readPosition);
     swap(_length, other._length);
+    swap(_sensitive, other._sensitive);
 }
 
-auto RingBuffer::readableSpans() const noexcept -> std::array<std::span<const Byte>, 2> {
+auto RingBuffer::readableSpans() const noexcept -> std::array<ConstByteSpan, 2> {
     if (_length == 0U) {
         return {};
     }
     const auto firstLength = std::min(_length, _storage.size() - _readPosition);
     const auto secondLength = _length - firstLength;
-    return {
-        std::span<const Byte>{_storage.data() + _readPosition, firstLength},
-        std::span<const Byte>{_storage.data(), secondLength}};
+    return {ConstByteSpan{_storage.data() + _readPosition, firstLength}, ConstByteSpan{_storage.data(), secondLength}};
 }
 
-auto RingBuffer::writableSpans() noexcept -> std::array<std::span<Byte>, 2> {
+auto RingBuffer::writableSpans() noexcept -> std::array<ByteSpan, 2> {
     const auto freeLength = _storage.size() - _length;
     if (freeLength == 0U) {
         return {};
@@ -180,8 +219,7 @@ auto RingBuffer::writableSpans() noexcept -> std::array<std::span<Byte>, 2> {
     const auto writePosition = (_readPosition + _length) % _storage.size();
     const auto firstLength = std::min(freeLength, _storage.size() - writePosition);
     const auto secondLength = freeLength - firstLength;
-    return {
-        std::span<Byte>{_storage.data() + writePosition, firstLength}, std::span<Byte>{_storage.data(), secondLength}};
+    return {ByteSpan{_storage.data() + writePosition, firstLength}, ByteSpan{_storage.data(), secondLength}};
 }
 
 void RingBuffer::commitWritten(const std::size_t length) {
@@ -195,6 +233,9 @@ void RingBuffer::consumeRead(const std::size_t length) {
     if (length > _length) {
         throw err::ParameterError{"Consumed byte count exceeds readable ring buffer data.", "length"};
     }
+    if (_sensitive) {
+        eraseReadablePrefix(length);
+    }
     if (length == _length) {
         _readPosition = 0U;
         _length = 0U;
@@ -202,6 +243,17 @@ void RingBuffer::consumeRead(const std::size_t length) {
     }
     _readPosition = (_readPosition + length) % _storage.size();
     _length -= length;
+}
+
+void RingBuffer::eraseReadablePrefix(const std::size_t length) noexcept {
+    auto remaining = length;
+    for (const auto span : readableSpans()) {
+        const auto count = std::min(span.size(), remaining);
+        if (count > 0U) {
+            mem::secureErase(ByteSpan{const_cast<Byte *>(span.data()), count});
+            remaining -= count;
+        }
+    }
 }
 
 void RingBuffer::beginUnsafeAccess() {

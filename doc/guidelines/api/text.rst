@@ -2,256 +2,242 @@
 Text Domain API Guidelines
 **************************
 
-These guidelines extend the common API guidelines for public text-processing APIs.
-
 Core Semantics
 ==============
 
-Read-only Values, Editors and Literals
---------------------------------------
-
-*   ``String`` is the primary owning, read-only text value.
-*   ``StringEditor`` is the explicit mutable counterpart type.
-*   ``StringLiteral`` is a ``constexpr`` static string literal, that can be held as reference by ``String``.
+String and Character Model
+--------------------------
 
 .. code-block:: text
 
-    String  // parameters, stored text, slices, keys, completed output and ordinary values
-    StringEditor  // text under active mutation and explicit mutable handoff
-    "text"_el, StringLiteral  // primary string literal
+    String/U❮width❯String = owning read-only value, slice, key, parameter, or completed output
+    StringEditor/U❮width❯StringEditor = explicit mutable storage and mutable handoff
+    StringLiteral/U❮width❯StringLiteral = compile-time literal created with the _el suffix
+    AnyString/AnyStringEditor = runtime-width read-only or mutable value
+    unqualified String names = UTF-8 aliases
+    character = Unicode code point, not grapheme, glyph, or byte
+    UTF-8 native position = byte index or length
+    UTF-16 native position = char16 data index or length
+    UTF-32 native position = code-point index or length
+    cross-width position = code-point index or length
+    signal = explicit non-character result from tolerant character access
 
-The width-specific names follow the same rule:
+Comparison
+----------
 
 .. code-block:: text
 
-    U❮width❯String  // owning read-only UTF-8, UTF-16 or UTF-32 value
-    U❮width❯StringEditor  // mutable UTF-8, UTF-16 or UTF-32 editor
-    U❮width❯StringLiteral  // constexpr reference to a string literal, created with ``""_el``
+    default order = decoded code-point order
+    exact comparison = no case folding
+    ASCII folding = case-insensitive comparison limited to ASCII letters
+    Unicode folding = case-insensitive comparison using Unicode mapping
+    cross-width comparison = decoded comparison without storage conversion
 
-``String``, ``StringEditor`` and ``StringLiteral`` are aliases for their UTF-8 counterparts.
-``AnyString`` and ``AnyStringEditor`` hold one of the three width-specific read-only or editor types respectively.
+Sensitive UTF-8 Storage
+-----------------------
 
-Char Means Unicode Code Point
------------------------------
+.. code-block:: text
 
-:cpp:class:`Char <erbsland::text::Char>` represents one Unicode code point, not a grapheme cluster, glyph or byte.
-Use ``character`` in parameter names and documentation unless signal values are explicitly part of the contract.
+    marked allocation = one-way sensitivity metadata shared by every UTF-8 alias
+    same-width result = copy, slice, trim, detach, and same-string modification preserve the mark
+    conversion boundary = other widths, encoded bytes, formatting, escaping, and standard text are unmarked
+    comparison = ordinary string comparison without a constant-time guarantee
+    release = complete allocation erased after its final alias is released
 
-Indexes and Ranges
-------------------
+Typed Formatting
+----------------
 
-Strings use unit-locked indexes, lengths and ranges.
-UTF-8 uses ``ByteIndex`` and ``ByteLength`` natively, UTF-16 uses ``U16DataIndex`` and ``U16DataLength``, and UTF-32
-uses ``CpIndex`` and ``CpLength``.
-All widths also provide explicit code-point access where appropriate.
-The string API has methods to convert between ``Cp...`` units and the native units.
-The unit type API has methods to convert between ``...Index``, ``...Length/Count`` and ``...Offset``.
+.. code-block:: text
 
-Comparison Functions
---------------------
-
-Text comparison, search and count methods take an optional :cpp:type:`CharCompareFn <erbsland::text::CharCompareFn>`.
-An empty function uses decoded code-point comparison, there are predefined methods in ``Char`` for ASCII and Unicode
-case-folded comparison.
-``CaseSensitivity`` selects exact or case-folded comparison and provides callbacks for Unicode or ASCII-only folding.
-
-``AnyString`` compares read-only strings across UTF-8, UTF-16 and UTF-32 without converting their storage.
-Its comparison operators accept all values that implicitly convert to ``AnyString``, including width-specific strings,
-editors and literals.
-``AnyStringEditor`` does not provide comparison operators of its own.
+    field = {[index]:selector:options}
+    selector colon = mandatory even without options
+    selector = runtime argument domain such as text, number, boolean, or bytes
+    options = named and comma-separated
+    option alias = globally unique stable ASCII identifier
+    enum-value alias = unique within its option
+    identifier matching = ASCII case-insensitive
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    String  // primary owning read-only UTF-8 string
-    StringEditor  // primary mutable UTF-8 string
-    AnyString  // read-only value of any supported width
-    AnyStringEditor  // mutable value of any supported width
-    AnyStringBuilder  // width-agnostic incremental string builder
-    StringLiteral  // thin UTF-8 wrapper around ``""_el`` literals
-    StringCharReader  // width-agnostic sequential decoded-character reader
-    StringSplitter  // sequential zero-copy UTF-8 splitter
-    StringConverter  // explicit Erbsland/standard string conversion entry point
-    StringDecodeBuffer  // bounded incremental byte-to-text decoder
-    StringDecoder  // explicit byte-block-to-string decoder
-    StringEncoder  // explicit string-to-byte-block or ring-buffer encoder
-    StringFormat  // pattern-based formatter
-    StringList, StringEditorList  // read-only and mutable UTF-8 lists
-    StringMap, StringHashMap, StringSet, StringHashSet  // read-only UTF-8 keyed collections
-    Char, CharRange, CharSet  // Unicode code-point and set types
-    TextDocument, TextNode  // mutable semantic text document
+    String, U8String, U16String, U32String // owning read-only strings for each supported width
+    Char // Unicode code-point value with explicit signal states
 
-Secondary Types
-===============
+Processing Types
+================
 
 .. code-block:: text
 
-    U8String, U16String, U32String
-    U8StringEditor, U16StringEditor, U32StringEditor
-    U8StringLiteral, U16StringLiteral, U32StringLiteral
-    U8StringList, U16StringList, U32StringList
-    U8StringSplitter, U16StringSplitter, U32StringSplitter
-    U8StringEditorList, U16StringEditorList, U32StringEditorList
-    U8StringMap, U16StringMap, U32StringMap
-    U8StringHashMap, U16StringHashMap, U32StringHashMap
-    U8StringSet, U16StringSet, U32StringSet
-    U8StringHashSet, U16StringHashSet, U32StringHashSet
-    U8Format, U16Format, U32Format
+    AnyString, AnyStringEditor, AnyStringBuilder // runtime-width text values and builder
+    StringEditor, U8StringEditor, U16StringEditor, U32StringEditor // explicit mutable string storage
+    StringLiteral, U8StringLiteral, U16StringLiteral, U32StringLiteral // compile-time string literals
+    StringCharReader, StringCharReaderState // sequential decoded-character reader and retained state
+    StringSplitter, U8StringSplitter, U16StringSplitter, U32StringSplitter // owning sequential splitters
+    CharRange, CharSet, CombinedChar, CharSignal // code-point range, set, combined value, and access signal
+    UnicodeCategory, UnicodeCategoryGroup, AsciiCategory // character classifications
+    StringKind, StringSide, StringSplitMode, CaseSensitivity // width, position, splitting, and comparison policies
+    StringConverter // explicit Erbsland and standard string conversion entry point
+    StringDecoder, StringEncoder, StringDecodeBuffer // byte codecs and bounded incremental decoding
+    StringEncoding, EncodingMode, StringBomMode // encoding, error, and byte-order-mark policies
 
-Options and Formats
-===================
-
-.. code-block:: text
-
-    ByteFormat // options how to format byte blocks as hexadecimal text
-    CaseSensitivity // options how to compare case in text APIs
-    FloatFormat // options how to format floating-point values
-    FloatParseOptions // options how to parse floating-point values
-    IntegerBase // base 2,7,10,16 and related methods for representing integers
-    StringEncoding // UTF family, byte order and BOM behavior
-    TextNodeType // semantic type of a text document node
-
-Typed String Format Specifications
-==================================
-
-Typed ``StringFormat`` fields use ``{[index]:selector:options}``.
-The trailing colon after the selector is mandatory, including when no options are specified.
-Selectors are domain names such as ``text``, ``number``, ``bool``, and ``bytes`` and lock the field to the matching
-runtime argument type.
-
-Typed specifications use named, comma-separated options.
-Every public option has one globally unique and stable short alias.
-A short alias must not be reused by an option in another domain.
-Enum-value aliases only need to be unique within their option because they are interpreted after the option name.
-
-Option names, option aliases, enum values, and value aliases use ASCII identifiers and are matched case-insensitively.
-New typed domains must use the shared named-option parser and keep selector dispatch extensible for future domains such
-as date, datetime, and time.
-
-Utilities
-=========
-
-.. code-block:: text
-
-    StringPattern // lightweight decoded-character pattern matcher
-    StringSplitMode // discard or keep the separator in returned slices
-    CodeSnippet // line-oriented source excerpt with its first line index and optional language
-    CodeSnippetMarker // marker range for a line-oriented code snippet
-    html::HtmlParser // tolerant HTML to TextDocument parser
-
-Common String Patterns for Any Types
-====================================
-
-.. code-block:: text
-
-    o.toString() -> String // ordinary conversions and transformations return read-only strings
-    o.toU(8/16/32)String() -> U(8/16/32)String // additionally used when a type supports multiple string widths
-    o.toAnyString() -> AnyString // for returning a conversation/transformation that can be of any width
-    o.takeString() -> String // after a such call, the type is reset.
-    o.toStringEditor() -> StringEditor // special name, for conversion of if an editor is the logical choice
-    o.takeStringEditor() -> StringEditor // to pass an internally used editor back to the user
-
-String API Patterns
-===================
-
-``TString`` denotes the read-only type for a width and ``TEditor`` its matching editor.
-
-.. code-block:: text
-
-    o.charAt(index/side) -> Char  // access a decoded character or signal
-    o.characterLength() -> CpLength  // count decoded code points
-    o.compare(text[, compareFn]) -> std::strong_ordering  // compare decoded text
-    o.contains(text[, compareFn]) -> bool  // test for text
-    o.copy() -> TString  // compact the selected range into independent storage
-    o.find(text[, start][, compareFn]) -> ❮index❯  // find text using native indexes
-    o.forEach(function) -> util::LoopResult  // visit decoded code points
-    o.indexAt(cpIndex/side) -> ❮index❯  // convert to a native position
-    o.slice(range/side) -> TString  // create a shared read-only slice
-    o.splitAt(index) -> std::pair<TString, TString>  // split into read-only values
-    o.toCharIndex(dataIndex) -> CpIndex  // convert a native position
-    o.toEscaped(format, amount) -> TString  // create escaped read-only text
-    o.toSafeString(maximumWidth, flags) -> TString  // create bounded diagnostic text
-    o.transformed(function) -> TString  // transform decoded code points
-    o.trimmed([characters][, side]) -> TString  // create trimmed text
-
-String Splitter API Patterns
+Formatting and Parsing Types
 ============================
 
 .. code-block:: text
 
-    TStringSplitter{text, character/set[, mode]}  // create an owning sequential splitter
-    o.isAtEnd() -> bool  // test if all parts were read
-    o.next() -> TString  // read the next shared slice
-    o.remaining() -> TString  // access the unread suffix
-    o.reset() -> void  // restart at the beginning
+    StringFormat, U8Format, U16Format, U32Format // typed formatters for each output width
+    FormatArgument, FormatArgumentKind, FormatAs❮Type❯ // erased arguments and typed formatting adapters
+    BooleanFormat, ByteFormat, IntegerFormat, FloatFormat // scalar formatting policies
+    IntegerParseOptions, FloatParseOptions // numeric parsing policies
+    ReadIntegerResult, ReadNumberStatus // incremental numeric parsing result and status
+    IntegerBase, IntegerSignMode, LetterCase, Capitalization // numeric and text presentation values
+    EscapeFormat, EscapeAmount, SafeStringFlags, TruncateMode // escaping and bounded-display policies
+    FormatError, ParseNumberError // typed formatting and numeric parsing failures
+    EncodingError, U8EncodingError, U16EncodingError, U32EncodingError // width-specific encoding failures
 
-StringEditor API Patterns
+Collection and Pattern Types
+============================
+
+.. code-block:: text
+
+    StringList, U8StringList, U16StringList, U32StringList // read-only string lists
+    StringEditorList, U8StringEditorList, U16StringEditorList, U32StringEditorList // mutable string lists
+    StringMap, StringHashMap, StringSet, StringHashSet // ordered and hashed UTF-8 collections
+    StringCIMap, StringCIHashMap, StringCISet, StringCIHashSet // ASCII-case-insensitive UTF-8 collections
+    U❮width❯StringMap, U❮width❯StringHashMap // width-specific ordered and hashed maps
+    U❮width❯StringSet, U❮width❯StringHashSet // width-specific ordered and hashed sets
+    StringPattern // lightweight decoded-character matcher
+    StringTree // dot-separated string-key hierarchy
+
+Document Types
+==============
+
+.. code-block:: text
+
+    TextDocument, TextNode, TextNodeData // mutable semantic document tree
+    TextNodeType, TextWalkStatus, TextWalkResult // node classification and traversal control
+    PlainTextRenderer // semantic document to plain-text renderer
+    CodeSnippet, CodeSnippetMarker // indexed source excerpt and annotation
+    html::HtmlParser // tolerant HTML-to-document parser
+
+Codec Types
+===========
+
+.. code-block:: text
+
+    base_n::BaseNFormat // alphabet, padding, whitespace, and line-wrapping policy
+    base_n::BaseNEncoder, base_n::BaseNDecoder // binary-to-text and text-to-binary codecs
+    base_n::BaseNFormatFlag, base_n::BaseNFormatFlags // padding and wrapping flags
+
+Pattern Definitions
+===================
+
+.. code-block:: text
+
+    E = StringEditor/U❮width❯StringEditor // mutable string for the selected width
+    I = unit::❮Index❯ // native or code-point string index
+    S = String/U❮width❯String // read-only string for the selected width
+
+String Value Patterns
+=====================
+
+.. code-block:: text
+
+    o.length()/characterLength()/isEmpty() -> T // inspect native-unit and code-point bounds
+    o.charAt(index-or-side) -> Char // access a decoded character or signal
+    o.indexAt(cpIndex-or-side)/toCharIndex(nativeIndex) -> I // convert between native and code-point positions
+    o.slice(range-or-side)/copy() -> S // create a shared slice or compact independent value
+    o.compare(text[, comparison]) -> std::strong_ordering // compare decoded text
+    o.find/findLast(text[, start, comparison]) -> I // locate text using native indexes
+    o.startsWith/endsWith/contains(text[, comparison]) -> bool // test text membership
+    o.forEach(function) -> util::LoopResult // visit decoded code points
+    o.splitAt(index) -> std::pair❮S❯ // split into read-only values
+    o.trimmed/transformed([arguments]) -> S // return processed read-only text
+    o.toEscaped/toSafeString([options]) -> S // create escaped or bounded diagnostic text
+
+String Editing Patterns
+=======================
+
+.. code-block:: text
+
+    T(string-or-literal) // create explicit editable storage
+    o.append/insert/replace(position, text) -> E& // add or replace text in place
+    o.remove/trim(range-or-characters) -> E& // remove text in place
+    o.slice/trimmed(range-or-characters) -> E // return an editable result
+    o.clear()/reset() // empty while retaining or releasing storage
+    o.reserve(capacity)/detach() // prepare storage or ensure exclusive ownership
+    o.toString/takeString() -> String // copy or move completed UTF-8 text
+    o.toStringEditor/takeStringEditor() -> StringEditor // copy or move mutable UTF-8 storage
+
+Reader and Split Patterns
 =========================
 
-Editors provide the read-only observations above and explicit mutation.
-Category-preserving editor operations return ``TEditor``.
+.. code-block:: text
+
+    T(text[, separator, mode]) // create an owning reader or splitter
+    o.isAtEnd()/position()/remaining() -> T // inspect sequential state
+    o.next()/peek() -> T // consume or inspect the next character or slice
+    o.reset([state]) // restart or restore retained reader state
+
+Conversion and Encoding Patterns
+================================
 
 .. code-block:: text
 
-    TEditor{string/literal}  // create editable storage
-    o.append(character/text[, count]) -> TEditor&  // append text
-    o.clear() -> TEditor&  // remove all text while keeping capacity
-    o.detach() -> void  // ensure exclusive storage
-    o.insert(index, text) -> TEditor&  // insert text
-    o.remove(range) -> TEditor&  // remove text
-    o.replace(range, text) -> TEditor&  // replace text
-    o.reserve(capacity) -> void  // reserve native storage units
-    o.slice(range/side) -> TEditor  // preserve editability
-    o.trim([characters][, side]) -> TEditor&  // trim in place
-    o.trimmed([characters][, side]) -> TEditor  // create an editable result
+    T(input[, encoding]) // create a conversion, decoder, or encoder operation
+    o.toString/toU❮width❯String/toStdString([mode]) -> T // convert with tolerant or strict decoding
+    o.toAnyString() -> AnyString // preserve runtime-selected width
+    o.decode([mode]) -> S // decode owned bytes to the requested width
+    o.encode() -> mem::ByteBlock // tolerantly encode text into owned bytes
+    o.encodedLength() -> unit::ByteLength // calculate encoded byte length
+    o.encodeTo(ring) -> util::Result // atomically encode into a byte ring
+    o.peek❮Width❯String/take❮Width❯String(maximum) -> S // inspect or consume bounded decoded text
+    o.setSensitive(enabled) // configure StringDecodeBuffer storage and UTF-8 result marking
 
-Converter, Decoder and Builder Patterns
-=======================================
+Formatting and Parsing Patterns
+===============================
 
 .. code-block:: text
 
-    StringConverter{text}.toString() -> String
-    StringConverter{text}.toU❮width❯String() -> U❮width❯String
-    StringConverter{text}.toStdString() -> std::string
-    StringDecoder{data}.decode(...) -> String
-    StringDecoder{data}.toU❮width❯String(...) -> U❮width❯String
-    StringEncoder{text}.encode(...) -> ByteBlock
-    StringEncoder{text}.encodedLength(...) -> ByteLength
-    StringEncoder{text}.encodeTo(ring, ...) -> util::Result
-    o.peek❮Target❯String(maximum) -> ❮Target❯String
-    o.take❮Target❯String(maximum) -> ❮Target❯String
-    AnyStringBuilder::u❮width❯() -> AnyStringBuilder
-    builder.toString() -> String
-    builder.takeString() -> String
-    builder.toStringEditor() -> StringEditor  // intentional mutable copy
-    builder.takeStringEditor() -> StringEditor  // intentional mutable handoff
+    T(pattern) // create a typed formatter
+    o.format(arguments) -> S // format checked runtime arguments
+    T::format(pattern, arguments) -> S // format without retaining a formatter
+    o.toBoolean/toInteger/toFloat([fallback-or-options]) -> T // parse with a fallback
+    o.toBooleanOrThrow/toIntegerOrThrow/toFloatOrThrow([options]) -> T // parse or throw
+    o.toString() -> String // create a canonical option or policy representation
+    T::fromString/fromStringOrThrow(text) -> T // parse a canonical option or policy representation
 
-Text Document Patterns
-======================
+Sensitive UTF-8 Patterns
+========================
 
 .. code-block:: text
 
-    TextDocument()  // create an empty document with a valid root
-    o.root() -> TextNodePtr  // access the document root
-    o.add❮Element❯(...) -> TextNodePtr // add a child element to the root
-    o.toString() -> String  // render completed plain text
-    PlainTextRenderer{document}.build() -> String  // build completed plain text
-    o.appendTo(builder) -> AnyStringBuilder&  // append to an active builder
+    o.isSensitive() -> bool // inspect the shared UTF-8 allocation mark
+    o.markAsSensitive() // irreversibly mark the complete shared UTF-8 allocation
+    o.copy/slice/trimmed/transformed(...) -> S // preserve the source mark for same-width results
+    o.reset() // release this alias; erase marked storage after the final alias releases it
 
-Header Files
-============
+Document Patterns
+=================
 
 .. code-block:: text
 
-    String.hpp  // primary read-only string and literal aliases
-    StringEditor.hpp  // primary mutable string alias
-    Literals.hpp  // enable ``""_el`` with ``using namespace el::text::literals``
-    AnyStringBuilder.hpp  // incrementally build strings
-    StringConverter.hpp  // convert between Erbsland and standard strings
-    StringDecodeBuffer.hpp  // incrementally decode byte chunks
-    StringDecoder.hpp  // decode binary text
-    StringEncoder.hpp  // encode Erbsland strings
-    StringEncoding.hpp  // select UTF family, byte order and BOM behavior
-    StringSplitter.hpp  // sequentially split UTF-8 strings into shared slices
+    T() // create an empty document with a valid root
+    o.root()/add❮Element❯(arguments) -> TextNodePtr // access or extend the document tree
+    o.walk(callback) -> TextWalkResult // traverse semantic nodes
+    o.toString() -> String // render completed plain text
+    o.appendTo(builder) -> AnyStringBuilder& // append completed plain text
+    T(document) // create a plain-text renderer for a document
+    o.build() -> String // explicitly render a document
+
+Base-N Codec Patterns
+=====================
+
+.. code-block:: text
+
+    T::base16/base32/base64❮Variant❯() -> base_n::BaseNFormat // create a standard format
+    T(input[, format]) // create an encoder from bytes or decoder from text
+    o.encode() -> AnyString // encode into the configured output width
+    o.decode/decodeOrThrow() -> mem::ByteBlock // decode with empty or throwing failure reporting

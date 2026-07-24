@@ -7,9 +7,10 @@
 
 #include "../ByteOutputStream.hpp"
 
-#include "../../text/EncodingErrorMode.hpp"
+#include "../../text/Char.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringBomMode.hpp"
+#include "../../text/StringEncoder_fwd.hpp"
 #include "../../text/StringEncoding.hpp"
 #include "../../time/TimePoint.hpp"
 
@@ -43,7 +44,7 @@ public:
     auto close() -> StreamCloseStatus override;
     void abort() noexcept override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
-    auto write(std::span<const mem::Byte> bytes) -> StreamWriteStatus override;
+    auto write(mem::ConstByteSpan bytes) -> StreamWriteStatus override;
 
 public: // implement StreamPositioning
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
@@ -56,18 +57,24 @@ public:
     /// @param text The text to encode and enqueue.
     /// @param encoding The target byte encoding.
     /// @param bomMode How to write a byte-order mark.
-    /// @param errorMode How encoding errors are handled.
     /// @return `Success` if all encoded bytes were accepted, or `Timeout` if nothing was accepted.
-    auto writeEncodedText(
-        const text::String &text,
-        text::StringEncoding encoding,
-        text::StringBomMode bomMode,
-        text::EncodingErrorMode errorMode) -> StreamWriteStatus;
+    auto writeEncodedText(const text::String &text, text::StringEncoding encoding, text::StringBomMode bomMode)
+        -> StreamWriteStatus;
+    /// Atomically encode one character directly into the bounded back ring.
+    /// @param character The character to encode and enqueue.
+    /// @param encoding The target byte encoding.
+    /// @param bomMode How to write a byte-order mark.
+    /// @return `Success` if all encoded bytes were accepted, or `Timeout` if nothing was accepted.
+    auto writeEncodedCharacter(text::Char character, text::StringEncoding encoding, text::StringBomMode bomMode)
+        -> StreamWriteStatus;
 
 public:
     using ByteOutputStream::write;
 
 private:
+    template <typename T>
+    auto writeEncoded(const text::StringEncoder<T> &encoder, text::StringEncoding encoding, text::StringBomMode bomMode)
+        -> StreamWriteStatus;
     [[nodiscard]] auto beginPositioning(std::unique_lock<std::mutex> &lock, time::TimePoint deadline) -> bool;
     void completePositioning(unit::ByteIndex position);
     void cancelPositioning() noexcept;
@@ -77,3 +84,4 @@ private:
 };
 
 }
+#include "../../mem/ByteSpan.hpp"

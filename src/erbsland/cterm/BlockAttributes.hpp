@@ -4,6 +4,8 @@
 
 #include "impl/HashHelper.hpp"
 
+#include "../text/String.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -13,6 +15,7 @@ namespace erbsland::cterm {
 /// A set of optional ANSI character attributes.
 /// Each attribute stores two states: whether it is explicitly specified and whether it is enabled.
 /// Unspecified attributes inherit the state from the surrounding writer or character below.
+/// @tested{BlockAttributesTest ColorParsingTest}
 class BlockAttributes final {
 public:
     /// A single character attribute flag.
@@ -70,6 +73,19 @@ public: // accessors
     [[nodiscard]] constexpr auto mask() const noexcept -> uint8_t { return _enabledMask & _specifiedMask; }
 
 public: // tools
+    /// Convert these attributes to their canonical textual representation.
+    /// @return The canonical attribute list.
+    [[nodiscard]] auto toString() const -> text::String;
+    /// Parse attributes, or return a fallback for invalid text.
+    /// @param str The attribute specification.
+    /// @param defaultValue The value returned for invalid text.
+    /// @return The parsed attributes or `defaultValue`.
+    [[nodiscard]] static auto fromString(const text::String &str, BlockAttributes defaultValue) -> BlockAttributes;
+    /// Parse attributes.
+    /// @param str The attribute specification.
+    /// @return The parsed attributes.
+    /// @throws err::ParseError if the text is invalid.
+    [[nodiscard]] static auto fromStringOrThrow(const text::String &str) -> BlockAttributes;
     /// Create attributes from an enabled/specified mask pair.
     /// @param enabledMask The enabled bits.
     /// @param specifiedMask The specified bits.

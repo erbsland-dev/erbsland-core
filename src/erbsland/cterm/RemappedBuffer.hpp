@@ -6,9 +6,9 @@
 
 #include "../bgeo/BlockDirection.hpp"
 #include "../bgeo/Orientation.hpp"
+#include "../text/StringLiteral.hpp"
 
 #include <span>
-#include <string_view>
 
 namespace erbsland::cterm {
 
@@ -223,7 +223,7 @@ private:
     /// @param maximum The maximum accepted count.
     /// @param parameterName The parameter name for error reporting.
     /// @throws err::ParameterError if the count is invalid.
-    static void validateCount(int count, int maximum, std::string_view parameterName);
+    static void validateCount(int count, int maximum, const text::StringLiteral &parameterName);
     /// Validate a span inside the currently visible range.
     /// @param start The first coordinate in the span.
     /// @param count The number of elements in the span.
@@ -232,7 +232,11 @@ private:
     /// @param countName The parameter name for the count.
     /// @throws err::ParameterError if the span is invalid.
     static void validateExistingSpan(
-        bgeo::BlockCoordinate start, int count, int limit, std::string_view startName, std::string_view countName);
+        bgeo::BlockCoordinate start,
+        int count,
+        int limit,
+        const text::StringLiteral &startName,
+        const text::StringLiteral &countName);
     /// Validate an insert-style operation on an axis.
     /// @param start The insertion coordinate.
     /// @param count The number of inserted elements.
@@ -241,7 +245,11 @@ private:
     /// @param countName The parameter name for the count.
     /// @throws err::ParameterError if the arguments are invalid.
     static void validateInsertArguments(
-        bgeo::BlockCoordinate start, int count, int limit, std::string_view startName, std::string_view countName);
+        bgeo::BlockCoordinate start,
+        int count,
+        int limit,
+        const text::StringLiteral &startName,
+        const text::StringLiteral &countName);
     /// Validate a directional count for shift and rotate.
     /// @param direction The direction to validate.
     /// @param count The number of cells to move.

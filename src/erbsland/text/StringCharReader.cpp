@@ -120,22 +120,6 @@ auto StringCharReader::peek() const noexcept -> Char {
     return _reader->peek();
 }
 
-auto StringCharReader::readOrThrow() -> Char {
-    return _reader->readOrThrow();
-}
-
-auto StringCharReader::readIfOrThrow(const Char expected) -> bool {
-    return _reader->readIfOrThrow(expected);
-}
-
-auto StringCharReader::readIfOrThrow(const CharSet &expected) -> std::optional<Char> {
-    return _reader->readIfOrThrow(expected);
-}
-
-auto StringCharReader::peekOrThrow() const -> Char {
-    return _reader->peekOrThrow();
-}
-
 auto StringCharReader::isAtEnd() const noexcept -> bool {
     return _reader->isAtEnd();
 }
@@ -170,16 +154,8 @@ void StringCharReader::advanceOrThrow(const CpLength count) {
     }
 }
 
-auto StringCharReader::advanceIfOrThrow(const Char expected) -> bool {
-    return _reader->advanceIfOrThrow(expected);
-}
-
-auto StringCharReader::advanceIfOrThrow(const CharSet &expected) -> bool {
-    return _reader->advanceIfOrThrow(expected);
-}
-
 auto StringCharReader::parseInteger(const IntegerParseOptions &options) noexcept -> ReadIntegerResult {
-    return scanInteger(options, false);
+    return scanInteger(options);
 }
 
 void StringCharReader::startCapture() noexcept {
@@ -246,7 +222,7 @@ auto StringCharReader::readToBufferUntil(const CharSet &stopSet, CpLength maximu
     return _reader->readToBufferUntil(stopSet, maximum);
 }
 
-auto StringCharReader::scanInteger(const IntegerParseOptions &options, const bool strict) -> ReadIntegerResult {
+auto StringCharReader::scanInteger(const IntegerParseOptions &options) -> ReadIntegerResult {
     const auto state = save();
     const auto startPosition = position();
     auto base = IntegerBase{IntegerBase::Decimal};
@@ -263,11 +239,11 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options, const boo
             .status = status,
         };
     };
-    const auto current = [this, strict]() -> Char {
+    const auto current = [this]() -> Char {
         if (isAtEnd()) {
             return Char::endOfData();
         }
-        return strict ? peekOrThrow() : peek();
+        return peek();
     };
 
     if (options.minimumDigits() > options.maximumDigits()) {
@@ -385,7 +361,7 @@ auto StringCharReader::scanInteger(const IntegerParseOptions &options, const boo
 auto StringCharReader::readIntegerResultOrThrow(const IntegerParseOptions &options) -> ReadIntegerResult {
     const auto state = save();
     try {
-        const auto result = scanInteger(options, true);
+        const auto result = scanInteger(options);
         if (result.status != ReadNumberStatus::Success) {
             throwError(result.status, result.position);
         }

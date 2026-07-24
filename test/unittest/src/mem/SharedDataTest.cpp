@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/mem/impl/SecureErase.hpp>
 #include <erbsland/mem/ReferenceCounter.hpp>
 #include <erbsland/mem/SharedArrayData.hpp>
 #include <erbsland/mem/SharedData.hpp>
@@ -8,10 +9,12 @@
 #include <erbsland/mem/SharedVirtualData.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
+#include <span>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -111,6 +114,28 @@ struct alignas(32) ElementProbe {
     inline static std::atomic<int> copiesBeforeThrow{std::numeric_limits<int>::max()};
 };
 
+struct SharedArrayEraseEvent final {
+    std::size_t size{};
+    bool isZero{};
+};
+
+std::vector<SharedArrayEraseEvent> gSharedArrayEraseEvents;
+
+void observeSharedArrayErase(const std::span<const std::byte> bytes) noexcept {
+    gSharedArrayEraseEvents.push_back(
+        {bytes.size(),
+            std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool { return value == std::byte{}; })});
+}
+
+class SharedArrayEraseObserverGuard final {
+public:
+    SharedArrayEraseObserverGuard() {
+        gSharedArrayEraseEvents.clear();
+        el::mem::impl::setSecureEraseObserver(observeSharedArrayErase);
+    }
+    ~SharedArrayEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+};
+
 TESTED_TARGETS(SharedDataPointer SharedVirtualData)
 class SharedDataTest final : public el::UnitTest {
     using ObjectPointer = SharedDataPointer<ObjectProbe>;
@@ -124,8 +149,14 @@ class SharedDataTest final : public el::UnitTest {
     using LargeBytePointer = SharedDataPointer<LargeByteData>;
     using ElementData = SharedArrayData<ElementProbe, uint32_t, SharedArrayDataConstructMethod::ValueConstruct>;
     using WideData = SharedArrayData<std::uint64_t, uint64_t>;
+    using SecureByteData = SharedArrayData<
+        std::byte,
+        uint32_t,
+        SharedArrayDataConstructMethod::None,
+        SharedArrayDataCleanupMethod::SecureErase>;
 
     using ElementPointer = SharedDataPointer<ElementData>;
+    using SecureBytePointer = SharedDataPointer<SecureByteData>;
 
 public:
     void testReferenceCounter() {
@@ -311,6 +342,28 @@ public:
 
         ElementData::destroy(rawData);
         REQUIRE_EQUAL(ElementProbe::constructed.load(), ElementProbe::destroyed.load());
+    }
+
+    void testSecureArrayErasesCompleteAllocationOnDestructionAndDetach() {
+        const auto guard = SharedArrayEraseObserverGuard{};
+        constexpr auto capacity = uint32_t{17U};
+        constexpr auto expectedSize = SecureByteData::allocationSizeForCapacity(capacity);
+        {
+            auto first = SecureBytePointer{SecureByteData::create(4U, capacity)};
+            first->data()[0] = std::byte{0x31};
+            first->data()[16] = std::byte{0x7f};
+            auto second = first;
+
+            first->data()[0] = std::byte{0x42};
+            REQUIRE_NOT_EQUAL(first.constGet(), second.constGet());
+            REQUIRE(gSharedArrayEraseEvents.empty());
+        }
+
+        REQUIRE_EQUAL(gSharedArrayEraseEvents.size(), std::size_t{2U});
+        for (const auto &event : gSharedArrayEraseEvents) {
+            REQUIRE_EQUAL(event.size, expectedSize);
+            REQUIRE(event.isZero);
+        }
     }
 
     void testConcurrentCopies() {

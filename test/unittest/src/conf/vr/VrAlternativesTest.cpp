@@ -4,7 +4,7 @@
 #include "VrBase.hpp"
 
 #include <erbsland/conf/Parser.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
 
 using namespace el::conf;

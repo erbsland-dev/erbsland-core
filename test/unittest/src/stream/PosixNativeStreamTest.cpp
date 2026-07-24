@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/mem/ByteArray.hpp>
 #include <erbsland/stream/impl/PosixNativeStream.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -95,8 +96,8 @@ public:
         const auto writeCount = ::write(pipe.writeDescriptor(), expected.data(), expected.size());
         REQUIRE_EQUAL(writeCount, static_cast<ssize_t>(expected.size()));
 
-        auto buffer = std::array<Byte, 32>{};
-        const auto readCount = stream.read(std::span<Byte>{buffer});
+        auto buffer = std::array<el::mem::Byte, 32>{};
+        const auto readCount = stream.read(el::mem::ByteSpan{buffer});
         REQUIRE_EQUAL(readCount, ByteLength::fromSizeT(expected.size()));
 
         auto actual = std::string{};
@@ -149,8 +150,8 @@ public:
         auto stream =
             el::stream::impl::PosixNativeStream{ownedDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
         auto future = std::async(std::launch::async, [&stream]() -> ByteLength {
-            auto buffer = std::array<Byte, 8>{};
-            return stream.read(buffer);
+            auto buffer = std::array<el::mem::Byte, 8>{};
+            return stream.read(el::mem::ByteSpan{buffer});
         });
         REQUIRE_EQUAL(future.wait_for(std::chrono::milliseconds{50}), std::future_status::timeout);
 

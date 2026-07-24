@@ -4,7 +4,7 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/impl/vr/VersionMask.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>

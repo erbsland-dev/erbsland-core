@@ -3,6 +3,7 @@
 #include "EventLoop.hpp"
 
 #include "CallbackEventData.hpp"
+#include "CurrentEventsScope.hpp"
 #include "SchedulerBackend.hpp"
 
 #include "../EventRegistry.hpp"
@@ -19,7 +20,13 @@ using namespace text::literals;
 using time::TimeDelta;
 using time::TimePoint;
 
-EventLoop::EventLoop() {
+EventLoop::EventLoop() : EventLoop{EventLoopDriver::createDefault()} {
+}
+
+EventLoop::EventLoop(EventLoopDriverPtr driver) : _driver{std::move(driver)} {
+    if (_driver == nullptr) {
+        throw err::ParameterError{"The event-loop driver must not be null."_el, "driver"_el};
+    }
 }
 
 void EventLoop::post(Event event) {
@@ -34,10 +41,8 @@ void EventLoop::postInternal(Event event, const bool allowAfterQuit) {
             return;
         }
         _queue.emplace_back(std::move(event));
-        _wakeCounter += 1U;
     }
-    _cv.notify_all();
-    wakeBackends();
+    _driver->wake();
 }
 
 void EventLoop::invoke(EventCallback callback) {
@@ -57,12 +62,12 @@ void EventLoop::postFromBackend(Event event) {
 }
 
 void EventLoop::wakeFromBackend() noexcept {
-    notifyWake();
-    wakeBackends();
+    _driver->wake();
 }
 
 void EventLoop::run() {
     ensureBackendsAttached();
+    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
     {
         std::scoped_lock lock{_mutex};
         if (_running) {
@@ -88,6 +93,7 @@ void EventLoop::run() {
 
 auto EventLoop::runOnce() -> bool {
     ensureBackendsAttached();
+    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
     {
         std::scoped_lock lock{_mutex};
         if (_running) {
@@ -111,6 +117,7 @@ auto EventLoop::runOnce() -> bool {
 
 auto EventLoop::runOnce(const TimeDelta maximumWait) -> bool {
     ensureBackendsAttached();
+    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
     {
         std::scoped_lock lock{_mutex};
         if (_running) {
@@ -134,6 +141,7 @@ auto EventLoop::runOnce(const TimeDelta maximumWait) -> bool {
 
 auto EventLoop::runUntilIdle() -> std::size_t {
     ensureBackendsAttached();
+    auto currentEventsScope = CurrentEventsScope{shared_from_this()};
     {
         std::scoped_lock lock{_mutex};
         if (_running) {
@@ -161,19 +169,15 @@ void EventLoop::stop() noexcept {
     {
         std::scoped_lock lock{_mutex};
         _stopRequested = true;
-        _wakeCounter += 1U;
     }
-    _cv.notify_all();
-    wakeBackends();
+    _driver->wake();
 }
 
 void EventLoop::quit() noexcept {
     auto queueQuitEvent = false;
     {
         std::scoped_lock lock{_mutex};
-        if (_quitEventQueued) {
-            _wakeCounter += 1U;
-        } else {
+        if (!_quitEventQueued) {
             _quitRequested = true;
             _quitEventQueued = true;
             queueQuitEvent = true;
@@ -187,8 +191,7 @@ void EventLoop::quit() noexcept {
         }
         return;
     }
-    _cv.notify_all();
-    wakeBackends();
+    _driver->wake();
 }
 
 auto EventLoop::isRunning() const noexcept -> bool {
@@ -265,7 +268,7 @@ auto EventLoop::getBackend(const EventBackendId backendId) -> EventBackend & {
 auto EventLoop::registerBackendInternal(EventBackendPtr backend) -> EventBackend & {
     auto &result = *backend;
     if (_backendsAttached) {
-        backend->attach(EventBackendTargetWeakPtr{weak_from_this()});
+        backend->attach(EventBackendTargetWeakPtr{weak_from_this()}, EventLoopDriverWeakPtr{_driver});
     }
     _backends.emplace_back(std::move(backend));
     // Returning the reference is safe, as the backend lifetime is bound to the event loop.
@@ -286,21 +289,15 @@ void EventLoop::ensureBackendsAttached() {
     }
     const auto target = EventBackendTargetWeakPtr{weak_from_this()};
     for (const auto &backend : _backends) {
-        backend->attach(target);
+        backend->attach(target, EventLoopDriverWeakPtr{_driver});
     }
     _backendsAttached = true;
 }
 
-void EventLoop::notifyWake() noexcept {
-    {
-        std::scoped_lock lock{_mutex};
-        _wakeCounter += 1U;
-    }
-    _cv.notify_all();
-}
-
 auto EventLoop::runOnceImpl(const std::optional<TimeDelta> maximumWait) -> bool {
     auto maximumWaitEnd = std::optional<TimePoint>{};
+    const auto pollNativeOnce = maximumWait.has_value() && !maximumWait->isPositive();
+    auto nativePollCompleted = false;
     if (maximumWait.has_value()) {
         if (maximumWait->isPositive()) {
             maximumWaitEnd = TimePoint::inFuture(*maximumWait);
@@ -323,6 +320,11 @@ auto EventLoop::runOnceImpl(const std::optional<TimeDelta> maximumWait) -> bool 
             return false;
         }
         if (maximumWaitEnd.has_value() && *maximumWaitEnd <= now) {
+            if (pollNativeOnce && !nativePollCompleted) {
+                waitForWake(TimeDelta::zero());
+                nativePollCompleted = true;
+                continue;
+            }
             return false;
         }
 
@@ -477,26 +479,12 @@ auto EventLoop::nextBackendWakeTime() const -> std::optional<TimePoint> {
     return result;
 }
 
-void EventLoop::wakeBackends() noexcept {
-    for (const auto backend : backendSnapshot()) {
-        backend->wake();
-    }
-}
-
 void EventLoop::waitForWake() {
-    std::unique_lock lock{_mutex};
-    const auto wakeCounter = _wakeCounter;
-    _cv.wait(lock, [this, wakeCounter]() -> bool {
-        return !_queue.empty() || _stopRequested || _wakeCounter != wakeCounter;
-    });
+    _driver->wait();
 }
 
 void EventLoop::waitForWake(const TimeDelta waitTime) {
-    std::unique_lock lock{_mutex};
-    const auto wakeCounter = _wakeCounter;
-    _cv.wait_for(lock, waitTime.toStdNanoseconds(), [this, wakeCounter]() -> bool {
-        return !_queue.empty() || _stopRequested || _wakeCounter != wakeCounter;
-    });
+    _driver->wait(waitTime);
 }
 
 }

@@ -1,0 +1,16 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "smoke"
+Duration            : 30s
+Threads             : 1
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 0
+Samples             : 2
+Minimum Sample Time : 200us
+Memory Limit        : 16 MiB
+Progress Interval   : 1s
+Regex Timeout       : 5s
+Workspace           : ""
+Keep Files          : no

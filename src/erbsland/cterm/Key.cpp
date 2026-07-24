@@ -204,6 +204,13 @@ Key::Key(const Type type, const U32String &character, const KeyModifiers modifie
     }
 }
 
+Key::Key(const Type type, const CombinedChar &character, const KeyModifiers modifiers) noexcept :
+    _type{type}, _modifiers{modifiers} {
+    if (type == Character || type == Combined) {
+        _character = character;
+    }
+}
+
 auto Key::operator==(const Char other) const noexcept -> bool {
     return _type == Character && _modifiers.empty() && _character.first() == other;
 }

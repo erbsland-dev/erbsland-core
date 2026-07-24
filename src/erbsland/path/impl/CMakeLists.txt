@@ -10,6 +10,7 @@ target_sources(erbsland-core PRIVATE
         CharactersSets.hpp
         CommonPathBackend.cpp
         CommonPathBackend.hpp
+        PathBackend.cpp
         PathBackend.hpp
         PathConstants.hpp
         PathContent.cpp
@@ -19,6 +20,8 @@ target_sources(erbsland-core PRIVATE
         PathData.hpp
         PathErrorDiagnostic.cpp
         PathErrorDiagnostic.hpp
+        PathInfoCache.hpp
+        PathInfoCache_fwd.hpp
         PathInfoData.cpp
         PathInfoData.hpp
         PathNameTools.cpp
@@ -34,6 +37,7 @@ target_sources(erbsland-core PRIVATE
 )
 
 if (WIN32)
+    target_link_libraries(erbsland-core PRIVATE Userenv)
     target_sources(erbsland-core PRIVATE
             WindowsAccessProfileSecurity.cpp
             WindowsAccessProfileSecurity.hpp

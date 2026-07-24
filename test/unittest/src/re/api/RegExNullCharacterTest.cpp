@@ -9,7 +9,7 @@
 #include <erbsland/re/Match32.hpp>
 #include <erbsland/re/RegEx.hpp>
 #include <erbsland/re/RegExError.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>

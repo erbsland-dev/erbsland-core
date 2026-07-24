@@ -16,6 +16,9 @@ values.
 
 Unit values are not multiplied, divided or modulo-applied with other unit values.
 Indexes also keep their stricter domain model and can only be moved with matching lengths and offsets.
+The ``uncheckedAdvance()`` and ``uncheckedIncrement()`` operations are reserved for measured low-level loops whose
+finite inputs and valid result bounds are already proven.
+Regular code uses the checked, saturating index operations.
 
 Finite length multiplication saturates at the largest finite length.
 Infinite lengths remain infinite for scalar multiplication, division and modulo.

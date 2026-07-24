@@ -114,14 +114,18 @@ They define the following sections:
 
 *   **Core Semantics:**
     Domain specific information that is required to understand the following sections.
-    Compact, minimal/no-prosa, noise-free, technical definitions.
+    Optional, at most 60 lines and four subsections.
+    Compact, minimal/no-prosa, noise-free technical definitions.
 *   **Primary Types:**
-    Types that define this domain.
+    Mandatory first type section.
     Text block, plain list of type names with ``// short description``, one line per collapsed type.
-*   **[Secondary Types]:**
-    Zero to many blocks defining additional types in this domain.
+*   **[❮name❯ Types]:**
+    Zero to many blocks defining additional types in this domain; with exactly two type sections, the second is
+    **Secondary Types**.
     Text block, plain list of type names with ``// short description``, one line per collapsed type.
-*   **❮name❯ API Patterns**
+*   **[Pattern Definitions]:**
+    Optional text block defining compact one- or two-character pattern shortcuts.
+*   **❮name❯ Patterns**
     Zero to many blocks defining API patterns.
     Text block, plain, collapsed patterns with ``// short description``, one line per collapsed pattern.
     Patterns omit keywords like ``const``, ``auto``, ``static``.

@@ -6,23 +6,19 @@
 from __future__ import annotations
 
 import json
-import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-SOURCE_SUFFIXES = frozenset({".hpp", ".tpp", ".cpp"})
-INCLUDE_PATTERN = re.compile(r'^[ \t]*#[ \t]*include[ \t]*([<"])([^>"]+)[>"]', re.MULTILINE)
-
-
-@dataclass(frozen=True)
-class DirectInclude:
-    """One direct include in a C++ source file."""
-
-    line_number: int
-    target: str
-    system: bool
+from lib.include_dependencies import (
+    DirectInclude,
+    IncludeGraph,
+    direct_includes,
+    discover_source_paths,
+    infer_role,
+    resolve_local_include,
+)
 
 
 @dataclass(frozen=True)
@@ -34,33 +30,6 @@ class AuditFile:
     platform: str
     owner: str | None
     direct_includes: tuple[DirectInclude, ...]
-
-
-def direct_includes(text: str) -> tuple[DirectInclude, ...]:
-    """Extract direct include directives from source text."""
-    result = []
-    for match in INCLUDE_PATTERN.finditer(text):
-        result.append(
-            DirectInclude(
-                line_number=text.count("\n", 0, match.start()) + 1,
-                target=match.group(2),
-                system=match.group(1) == "<",
-            )
-        )
-    return tuple(result)
-
-
-def infer_role(path: Path) -> str:
-    """Infer the audit role of a library source file."""
-    if path.name == "all.hpp":
-        return "generated"
-    if path.name.endswith("_fwd.hpp") or path.name == "fwd.hpp":
-        return "forward"
-    if path.suffix == ".tpp":
-        return "template"
-    if path.suffix == ".cpp":
-        return "source"
-    return "header"
 
 
 def infer_platform(path: Path) -> str:
@@ -75,21 +44,6 @@ def infer_platform(path: Path) -> str:
     if "macos" in path_text or "darwin" in path_text or "apple" in path_text:
         return "macos"
     return "all"
-
-
-def resolve_local_include(source: Path, include: DirectInclude) -> Path | None:
-    """Resolve a quoted include relative to its containing file."""
-    if include.system:
-        return None
-    return (source.parent / include.target).resolve()
-
-
-def discover_source_paths(source_directory: Path) -> list[Path]:
-    """Discover every C++ library source file in deterministic order."""
-    return sorted(
-        (path for path in source_directory.rglob("*") if path.is_file() and path.suffix in SOURCE_SUFFIXES),
-        key=lambda item: item.as_posix().casefold(),
-    )
 
 
 def find_template_owners(paths: Iterable[Path]) -> dict[Path, Path]:
@@ -194,35 +148,11 @@ def parse_ninja_dependencies(text: str, project_directory: Path) -> dict[str, in
 def transitive_dependency_counts(files: Iterable[AuditFile], project_directory: Path) -> dict[str, int]:
     """Count reachable project sources for each audited file's direct-include graph."""
     file_list = list(files)
-    source_root = (project_directory / "src" / "erbsland").resolve()
-    relative_paths = {file.path.removeprefix("src/erbsland/") for file in file_list}
-    graph: dict[str, set[str]] = defaultdict(set)
-    for file in file_list:
-        relative = file.path.removeprefix("src/erbsland/")
-        source = project_directory / file.path
-        for include in file.direct_includes:
-            target = resolve_local_include(source, include)
-            if target is None:
-                continue
-            try:
-                target_relative = target.relative_to(source_root).as_posix()
-            except ValueError:
-                continue
-            if target_relative in relative_paths:
-                graph[relative].add(target_relative)
-
-    result: dict[str, int] = {}
-    for relative in relative_paths:
-        reachable: set[str] = set()
-        pending = list(graph.get(relative, ()))
-        while pending:
-            dependency = pending.pop()
-            if dependency == relative or dependency in reachable:
-                continue
-            reachable.add(dependency)
-            pending.extend(graph.get(dependency, ()))
-        result[relative] = len(reachable)
-    return result
+    graph = IncludeGraph.from_project(project_directory)
+    return {
+        file.path.removeprefix("src/erbsland/"): len(graph.reachable(file.path.removeprefix("src/erbsland/")))
+        for file in file_list
+    }
 
 
 def trace_source_events(document: dict[str, Any]) -> Iterable[tuple[str, int]]:

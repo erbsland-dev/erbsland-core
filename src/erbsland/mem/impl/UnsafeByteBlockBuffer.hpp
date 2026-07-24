@@ -2,29 +2,44 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BestGrowth.hpp"
 #include "ByteBlockData.hpp"
 #include "UnsafeByteBlockBuffer_fwd.hpp"
 
 #include "../ByteBlockEditor.hpp"
+#include "../ByteSpan.hpp"
 
 #include "../../unit/ByteLength.hpp"
 
+#include <algorithm>
 #include <cstddef>
+#include <cstring>
 #include <exception>
 #include <span>
+#include <stdexcept>
 #include <utility>
 
 namespace erbsland::mem::impl {
 
 /// Owns uncommitted byte block storage for low-level native APIs.
+/// Storage is uninitialized; every byte included in `take()` must be written first.
 /// @warning Do not use this class in user code!
 /// @tested{ByteStreamTest}
 class UnsafeByteBlockBuffer {
 public:
+    /// Create an empty buffer.
+    UnsafeByteBlockBuffer() = default;
     /// Create a buffer with the given usable capacity.
-    explicit UnsafeByteBlockBuffer(unit::ByteLength capacity) : _block{capacity} {
-        if (!_block._data.isNull()) {
-            _block._data.get()->setSize(0U);
+    explicit UnsafeByteBlockBuffer(unit::ByteLength capacity, bool sensitive = false) : _sensitive{sensitive} {
+        const auto capacityValue = capacity.toSizeTOrThrow();
+        if (capacityValue != 0U) {
+            if (!ByteBlockData::canAllocateWithCapacity(capacityValue)) {
+                throw std::length_error{"Byte block capacity exceeds the supported limit"};
+            }
+            _data = ByteBlockDataPtr{ByteBlockData::create(
+                0U,
+                static_cast<ByteBlockData::SizeType>(capacityValue),
+                _sensitive ? ByteBlockData::cSensitiveFlag : std::uint8_t{})};
         }
     }
 
@@ -37,24 +52,68 @@ public:
 
 public:
     /// Access the writable buffer span.
-    [[nodiscard]] auto data() noexcept -> std::span<Byte> {
-        if (_block._data.isNull()) {
+    [[nodiscard]] auto data() noexcept -> ByteSpan {
+        if (_data.isNull()) {
             return {};
         }
-        return std::span<Byte>{_block._data.get()->data(), _block._data.get()->capacity()};
+        return ByteSpan{_data.get()->data(), _data.get()->capacity()};
+    }
+    /// Access the remaining data after a given index or length.
+    [[nodiscard]] auto remainingData(const unit::ByteLength initialLength) noexcept -> ByteSpan {
+        if (initialLength > capacity()) {
+            return {};
+        }
+        return data().subspan(initialLength.toSizeT());
     }
     /// Access the usable buffer capacity.
-    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength { return _block.capacity(); }
+    [[nodiscard]] auto capacity() const noexcept -> unit::ByteLength {
+        return _data.isNull() ? unit::ByteLength::zero() : unit::ByteLength::fromSizeT(_data.constGet()->capacity());
+    }
+    /// Grow the buffer while preserving a written prefix.
+    /// @param minimumCapacity The minimum capacity after growth.
+    /// @param preservedLength The initialized prefix that must survive relocation.
+    /// @param maximumCapacity The hard upper bound for growth.
+    /// @return The complete writable buffer after any relocation.
+    auto grow(
+        unit::ByteLength minimumCapacity,
+        unit::ByteLength preservedLength,
+        unit::ByteLength maximumCapacity = unit::ByteLength::infinite()) -> ByteSpan {
+        if (!minimumCapacity.isFinite() || !preservedLength.isFinite() || preservedLength > capacity() ||
+            preservedLength > minimumCapacity || (maximumCapacity.isFinite() && minimumCapacity > maximumCapacity)) {
+            std::terminate();
+        }
+        if (minimumCapacity <= capacity()) {
+            return data();
+        }
+        const auto minimum = minimumCapacity.toSizeT();
+        auto target = bestGrowthCapacity<ByteBlockData>(capacity().toSizeT(), minimum, BestGrowthStrategy::Geometric);
+        if (maximumCapacity.isFinite()) {
+            target = std::min(target, maximumCapacity.toSizeT());
+        }
+        if (!ByteBlockData::canAllocateWithCapacity(target)) {
+            throw std::length_error{"Byte block capacity exceeds the supported limit"};
+        }
+        const auto flags =
+            _data.isNull() ? (_sensitive ? ByteBlockData::cSensitiveFlag : std::uint8_t{}) : _data.constGet()->flags();
+        auto replacement =
+            ByteBlockDataPtr{ByteBlockData::create(0U, static_cast<ByteBlockData::SizeType>(target), flags)};
+        if (!preservedLength.isZero()) {
+            std::memcpy(replacement.get()->data(), _data.constGet()->data(), preservedLength.toSizeT() * sizeof(Byte));
+        }
+        _data = std::move(replacement);
+        return data();
+    }
+    /// Release all buffer storage.
+    void reset() noexcept { _data.reset(); }
     /// Create a byte block from the buffer and release the buffer.
     [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> ByteBlockEditor {
         const auto finalLength = checkedFinalLength(length);
         if (finalLength.isZero()) {
-            _block.reset();
+            _data.reset();
             return {};
         }
-        auto result = std::move(_block);
-        result._data.get()->setSize(static_cast<ByteBlockData::SizeType>(finalLength.toSizeT()));
-        return result;
+        _data.get()->setSize(static_cast<ByteBlockData::SizeType>(finalLength.toSizeT()));
+        return ByteBlockEditor{std::move(_data)};
     }
 
 private:
@@ -70,7 +129,8 @@ private:
     }
 
 private:
-    ByteBlockEditor _block; ///< The uncommitted byte block storage.
+    ByteBlockDataPtr _data; ///< The uncommitted low-level byte storage.
+    bool _sensitive{};      ///< Sensitivity mode retained while storage is empty.
 };
 
 }

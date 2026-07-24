@@ -180,7 +180,7 @@ public: // replacement
 private: // internal API
     [[nodiscard]] static auto buildEngine(const text::AnyString &pattern, Flags flags, const Settings &settings)
         -> impl::ConstEnginePtr;
-    [[nodiscard]] auto engine() const -> impl::ConstEnginePtr;
+    [[nodiscard]] auto engine() const -> const impl::ConstEnginePtr &;
 
 public:
     struct PrivateTag {};

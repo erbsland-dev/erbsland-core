@@ -32,12 +32,13 @@ target_sources(erbsland-core PRIVATE
         ElapsedTimer.hpp
         Hour.hpp
         IsoTimeFormat.hpp
+        Literals.hpp
         Minute.hpp
         Month.cpp
         Month.hpp
         Month_fwd.hpp
         Second.hpp
-        StdFormatForTime.hpp
+        StdFormat.hpp
         Time.cpp
         Time.hpp
         TimeAmounts.hpp

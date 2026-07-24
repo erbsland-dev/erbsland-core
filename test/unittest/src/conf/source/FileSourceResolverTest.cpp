@@ -4,7 +4,7 @@
 #include "../ConfTestHelper.hpp"
 
 #include <erbsland/conf/FileSourceResolver.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/path/Path.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringEditor.hpp>

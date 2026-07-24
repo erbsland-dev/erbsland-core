@@ -3,7 +3,7 @@
 
 #include <erbsland/bgeo/BlockAlignedSource.hpp>
 #include <erbsland/bgeo/BlockRectangle.hpp>
-#include <erbsland/bgeo/StdFormatForBlock.hpp>
+#include <erbsland/bgeo/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>

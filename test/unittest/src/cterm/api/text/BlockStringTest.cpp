@@ -62,6 +62,15 @@ public:
         REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, view.at(BlockIndex{3U}));
     }
 
+    void testAtReportsThePublicTypeName() {
+        try {
+            static_cast<void>(BlockString{}.at(BlockIndex{0U}));
+            REQUIRE(false);
+        } catch (const erbsland::err::OutOfRangeError &error) {
+            REQUIRE_EQUAL(error.toString(), "BlockString index out of range."_el);
+        }
+    }
+
     void testTrimmedUsesDefaultWhitespaceCharacters() {
         const auto source = BlockStringEditor{"xx \talpha\n yy"_el};
         const auto view = BlockString{source}.slice(BlockRange{BlockIndex{2U}, BlockCount{9U}});

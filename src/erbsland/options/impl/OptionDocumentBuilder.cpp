@@ -8,6 +8,7 @@
 
 #include "../Option.hpp"
 #include "../OptionModule.hpp"
+#include "../OptionParserFlag.hpp"
 #include "../Options.hpp"
 #include "../OptionSet.hpp"
 #include "../OptionType.hpp"
@@ -171,6 +172,14 @@ void OptionDocumentBuilder::appendOptionName(const TextNodePtr &termName, const 
 }
 
 void OptionDocumentBuilder::appendOptionValuePlaceholder(const TextNodePtr &termName, const OptionPtr &option) const {
+    if (option != nullptr && option->type() == OptionType::Flag && _options != nullptr &&
+        !_options->parserFlags().isSet(OptionParserFlag::DisableBooleanValues)) {
+        termName->addText("[="_el);
+        appendPlaceholder(
+            termName, NodeType::OptionMeta, _displayText->text("options.BooleanPlaceholder"_el), "value"_el);
+        termName->addText("]"_el);
+        return;
+    }
     const auto placeholder = OptionDisplayModel::optionValueName(option, _displayText);
     if (!placeholder.isEmpty()) {
         termName->addText(" "_el);

@@ -3,7 +3,7 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteReader.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -19,7 +19,7 @@
 using el::mem::ByteBlock;
 using el::mem::ByteReader;
 using el::text::Char;
-using el::text::EncodingErrorMode;
+using el::text::EncodingMode;
 using el::unit::ByteIndex;
 
 namespace th = erbsland::unittest::th;
@@ -107,26 +107,26 @@ public:
         }
     }
 
-    void testDecodeCharOrIgnoreSuccessCases() {
-        requireDecodeOrIgnore({0x41U}, U'A', 1U);
-        requireDecodeOrIgnore({0xC2U, 0xA2U}, U'\u00A2', 2U);
-        requireDecodeOrIgnore({0xE2U, 0x82U, 0xACU}, U'\u20AC', 3U);
-        requireDecodeOrIgnore({0xF0U, 0x9FU, 0x98U, 0x80U}, U'\U0001F600', 4U);
+    void testTryDecodeCharSuccessCases() {
+        requireTryDecode({0x41U}, U'A', 1U);
+        requireTryDecode({0xC2U, 0xA2U}, U'\u00A2', 2U);
+        requireTryDecode({0xE2U, 0x82U, 0xACU}, U'\u20AC', 3U);
+        requireTryDecode({0xF0U, 0x9FU, 0x98U, 0x80U}, U'\U0001F600', 4U);
     }
 
-    void testDecodeCharOrIgnoreErrors() {
+    void testTryDecodeCharErrors() {
         auto empty = std::array<char, 0>{};
         auto position = ByteIndex::zero();
 
-        REQUIRE_FALSE(el::text::impl::utf8::decodeCharOrIgnore(std::span<char>{empty}, position).has_value());
+        REQUIRE_FALSE(el::text::impl::utf8::tryDecodeChar(std::span<char>{empty}, position).has_value());
         REQUIRE(position.isZero());
 
         auto bom = std::array<char, 3>{static_cast<char>(0xEFU), static_cast<char>(0xBBU), static_cast<char>(0xBFU)};
-        REQUIRE_FALSE(el::text::impl::utf8::decodeCharOrIgnore(std::span<char>{bom}, position).has_value());
+        REQUIRE_FALSE(el::text::impl::utf8::tryDecodeChar(std::span<char>{bom}, position).has_value());
         REQUIRE_EQUAL(position.toSizeT(), std::size_t{3U});
 
         for (const auto error : th::allUtf8Errors) {
-            WITH_CONTEXT(requireDecodeOrIgnoreMalformedUtf8(error));
+            WITH_CONTEXT(requireTryDecodeMalformedUtf8(error));
         }
     }
 
@@ -137,7 +137,7 @@ public:
         requireReaderDecodeOrThrow({0xF0U, 0x9FU, 0x98U, 0x80U}, U'\U0001F600', 4U);
 
         requireReaderDecodeOrReplace({0xE2U, 0x82U, 0xACU}, U'\u20AC', 3U);
-        requireReaderDecodeOrIgnore({0xF0U, 0x9FU, 0x98U, 0x80U}, U'\U0001F600', 4U);
+        requireReaderTryDecode({0xF0U, 0x9FU, 0x98U, 0x80U}, U'\U0001F600', 4U);
     }
 
     void testReaderDecodeCharErrorMovement() {
@@ -148,7 +148,7 @@ public:
         for (const auto error : th::allUtf8Errors) {
             WITH_CONTEXT(requireReaderDecodeOrThrowFailsForMalformedUtf8(error));
             WITH_CONTEXT(requireReaderDecodeOrReplaceMalformedUtf8(error));
-            WITH_CONTEXT(requireReaderDecodeOrIgnoreMalformedUtf8(error));
+            WITH_CONTEXT(requireReaderTryDecodeMalformedUtf8(error));
         }
     }
 
@@ -158,7 +158,7 @@ public:
         reader.setPosition(ByteIndex{1U});
 
         const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
-            reader, EncodingErrorMode::Throw, [&](const Char character) -> void {
+            reader, EncodingMode::Strict, [&](const Char character) -> void {
                 collected.push_back(character.toRawValue());
             });
 
@@ -174,11 +174,11 @@ public:
         auto reader = ByteReader{makeBlock(text)};
 
         REQUIRE(
-            el::text::impl::utf8::forEachDecodedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf8::forEachDecodedCharacter<EncodingMode::Strict>(
                 std::span<const char>{text.data(), text.size()},
                 [&](const Char character) -> void { spanCollected.push_back(character.toRawValue()); }));
         REQUIRE(
-            el::text::impl::utf8::forEachDecodedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf8::forEachDecodedCharacter<EncodingMode::Strict>(
                 reader, [&](const Char character) -> void { readerCollected.push_back(character.toRawValue()); }));
 
         REQUIRE_EQUAL(spanCollected, std::u32string{U"A¢"});
@@ -242,21 +242,15 @@ public:
         WITH_CONTEXT(requireCutOffValidUtf8Sequence({0xF0U, 0x9FU, 0x98U, 0x80U}));
     }
 
-    void testForEachDecodedCharacterReplaceModeOverAllMalformedUtf8Categories() {
+    void testForEachDecodedCharacterTolerantModeOverAllMalformedUtf8Categories() {
         for (const auto error : th::allUtf8Errors) {
-            WITH_CONTEXT(requireForEachDecodedCharacterReplaceMode(error));
+            WITH_CONTEXT(requireForEachDecodedCharacterTolerantMode(error));
         }
     }
 
-    void testForEachDecodedCharacterIgnoreModeOverAllMalformedUtf8Categories() {
+    void testForEachDecodedCharacterStrictModeOverAllMalformedUtf8Categories() {
         for (const auto error : th::allUtf8Errors) {
-            WITH_CONTEXT(requireForEachDecodedCharacterIgnoreMode(error));
-        }
-    }
-
-    void testForEachDecodedCharacterThrowModeOverAllMalformedUtf8Categories() {
-        for (const auto error : th::allUtf8Errors) {
-            WITH_CONTEXT(requireForEachDecodedCharacterThrowMode(error));
+            WITH_CONTEXT(requireForEachDecodedCharacterStrictMode(error));
         }
     }
 
@@ -266,9 +260,7 @@ public:
         auto callbackCount = std::size_t{0};
 
         const auto finished = el::text::impl::utf8::forEachDecodedCharacter(
-            std::span<const char>{text.data(), text.size()},
-            EncodingErrorMode::Throw,
-            [&](const Char character) -> bool {
+            std::span<const char>{text.data(), text.size()}, EncodingMode::Strict, [&](const Char character) -> bool {
                 collected.push_back(character.toRawValue());
                 callbackCount += 1U;
                 return callbackCount < 2U;
@@ -309,15 +301,15 @@ private:
         for (const auto value : values) {
             result.push_back(value);
         }
-        return ByteBlock{result};
+        return ByteBlock::fromVector(result);
     }
 
     [[nodiscard]] static auto makeBlock(std::initializer_list<uint8_t> values) -> ByteBlock {
-        return ByteBlock{std::vector<uint8_t>{values}};
+        return ByteBlock::fromVector(std::vector<uint8_t>{values});
     }
 
     [[nodiscard]] static auto makeBlock(const std::string &values) -> ByteBlock {
-        return ByteBlock{std::span<const char>{values.data(), values.size()}};
+        return ByteBlock::fromSpan(std::span<const char>{values.data(), values.size()});
     }
 
     template <std::size_t N>
@@ -353,12 +345,12 @@ private:
     }
 
     template <std::size_t N>
-    void requireDecodeOrIgnore(
+    void requireTryDecode(
         const std::uint8_t (&values)[N], const char32_t expected, const std::size_t expectedPosition) {
         auto bytes = byteArray(values);
         auto position = ByteIndex::zero();
 
-        const auto result = el::text::impl::utf8::decodeCharOrIgnore(std::span<char>{bytes}, position);
+        const auto result = el::text::impl::utf8::tryDecodeChar(std::span<char>{bytes}, position);
 
         REQUIRE(result.has_value());
         REQUIRE_EQUAL(result->toRawValue(), expected);
@@ -388,11 +380,11 @@ private:
     }
 
     template <std::size_t N>
-    void requireReaderDecodeOrIgnore(
+    void requireReaderTryDecode(
         const std::uint8_t (&values)[N], const char32_t expected, const std::size_t expectedPosition) {
         auto reader = ByteReader{makeBlock(values)};
 
-        const auto result = el::text::impl::utf8::decodeCharOrIgnore(reader);
+        const auto result = el::text::impl::utf8::tryDecodeChar(reader);
 
         REQUIRE(result.has_value());
         REQUIRE_EQUAL(result->toRawValue(), expected);
@@ -448,11 +440,11 @@ private:
         REQUIRE_EQUAL(position, fastAdvancePosition);
     }
 
-    void requireDecodeOrIgnoreMalformedUtf8(const th::Utf8Error error) {
+    void requireTryDecodeMalformedUtf8(const th::Utf8Error error) {
         const auto malformed = th::invalidUtf8(error);
         auto position = ByteIndex::zero();
 
-        const auto result = el::text::impl::utf8::decodeCharOrIgnore(std::span<const char>{malformed}, position);
+        const auto result = el::text::impl::utf8::tryDecodeChar(std::span<const char>{malformed}, position);
         auto fastAdvancePosition = ByteIndex::zero();
         el::text::impl::utf8::fastAdvanceChar(std::span<const char>{malformed}, fastAdvancePosition);
 
@@ -487,11 +479,11 @@ private:
         REQUIRE_EQUAL(reader.position().toSizeT(), expectedMalformedMovement(error));
     }
 
-    void requireReaderDecodeOrIgnoreMalformedUtf8(const th::Utf8Error error) {
+    void requireReaderTryDecodeMalformedUtf8(const th::Utf8Error error) {
         const auto malformed = th::invalidUtf8(error);
         auto reader = ByteReader{makeBlock(malformed)};
 
-        const auto result = el::text::impl::utf8::decodeCharOrIgnore(reader);
+        const auto result = el::text::impl::utf8::tryDecodeChar(reader);
 
         REQUIRE_FALSE(result.has_value());
         REQUIRE_EQUAL(reader.position().toSizeT(), expectedMalformedMovement(error));
@@ -515,12 +507,12 @@ private:
             REQUIRE(decodeReplaceResult.isReplacement());
             REQUIRE_EQUAL(decodeReplacePosition.toSizeT(), std::size_t{1});
 
-            auto decodeIgnorePosition = ByteIndex::zero();
+            auto tryDecodePosition = ByteIndex::zero();
             REQUIRE_FALSE(
-                el::text::impl::utf8::decodeCharOrIgnore(
-                    std::span<const char>{truncated.data(), truncated.size()}, decodeIgnorePosition)
+                el::text::impl::utf8::tryDecodeChar(
+                    std::span<const char>{truncated.data(), truncated.size()}, tryDecodePosition)
                     .has_value());
-            REQUIRE_EQUAL(decodeIgnorePosition.toSizeT(), std::size_t{1});
+            REQUIRE_EQUAL(tryDecodePosition.toSizeT(), std::size_t{1});
 
             auto fastAdvancePosition = ByteIndex::zero();
             el::text::impl::utf8::fastAdvanceChar(
@@ -540,39 +532,26 @@ private:
         }
     }
 
-    void requireForEachDecodedCharacterReplaceMode(const th::Utf8Error error) {
+    void requireForEachDecodedCharacterTolerantMode(const th::Utf8Error error) {
         const auto malformed = th::invalidUtf8(error, "A", "B");
         auto collected = std::u32string{};
 
         const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
             std::span<const char>{malformed.data(), malformed.size()},
-            EncodingErrorMode::Replace,
+            EncodingMode::Tolerant,
             [&](const Char character) -> void { collected.push_back(character.toRawValue()); });
 
         REQUIRE(completed);
         REQUIRE_EQUAL(collected, expectedReplaceDecodedText(error));
     }
 
-    void requireForEachDecodedCharacterIgnoreMode(const th::Utf8Error error) {
-        const auto malformed = th::invalidUtf8(error, "A", "B");
-        auto collected = std::u32string{};
-
-        const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
-            std::span<const char>{malformed.data(), malformed.size()},
-            EncodingErrorMode::Ignore,
-            [&](const Char character) -> void { collected.push_back(character.toRawValue()); });
-
-        REQUIRE(completed);
-        REQUIRE_EQUAL(collected, expectedIgnoreDecodedText(error));
-    }
-
-    void requireForEachDecodedCharacterThrowMode(const th::Utf8Error error) {
+    void requireForEachDecodedCharacterStrictMode(const th::Utf8Error error) {
         const auto malformed = th::invalidUtf8(error, "A", "B");
 
         REQUIRE_THROWS(
             el::text::impl::utf8::forEachDecodedCharacter(
                 std::span<const char>{malformed.data(), malformed.size()},
-                EncodingErrorMode::Throw,
+                EncodingMode::Strict,
                 [&](const Char) -> void {}));
     }
 
@@ -602,17 +581,6 @@ private:
             return std::u32string{U"A\uFFFD\uFFFD\uFFFD B"};
         default:
             return {};
-        }
-    }
-
-    [[nodiscard]] static auto expectedIgnoreDecodedText(const th::Utf8Error error) -> std::u32string {
-        switch (error) {
-        case th::Utf8Error::InvalidContinuationByteIn2ByteSequence:
-        case th::Utf8Error::InvalidContinuationByteIn3ByteSequence:
-        case th::Utf8Error::InvalidContinuationByteIn4ByteSequence:
-            return std::u32string{U"A B"};
-        default:
-            return std::u32string{U"AB"};
         }
     }
 };

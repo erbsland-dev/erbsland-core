@@ -98,8 +98,8 @@ inline auto decodeCharOrThrow(const std::span<const char16_t> buffer, unit::U16D
 
 /// Decode a single UTF-16 character in the buffer and advance the position.
 /// Malformed surrogate units return no character and advance by one code unit.
-[[nodiscard]] inline auto decodeCharOrIgnore(
-    const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept -> std::optional<Char> {
+[[nodiscard]] inline auto tryDecodeChar(const std::span<const char16_t> buffer, unit::U16DataIndex &position) noexcept
+    -> std::optional<Char> {
     const auto index = position.toSizeT();
     if (index >= buffer.size()) {
         return std::nullopt;
@@ -156,7 +156,7 @@ inline void fastRetreatChar(const std::span<const char16_t> buffer, unit::U16Dat
 /// Iterate over a UTF-16 encoded string, decoding each character and handling errors according to the specified mode.
 /// @tested{U16EncodingTest}
 template <typename tFunction>
-void forEachDecodedCharacter(const std::u16string_view text, const EncodingErrorMode errorMode, tFunction function) {
+void forEachDecodedCharacter(const std::u16string_view text, const EncodingMode mode, tFunction function) {
     for (auto index = std::size_t{0}; index < text.size(); ++index) {
         const auto unit = text[index];
         if (Char::isHighSurrogate(unit)) {
@@ -167,26 +167,18 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
                 ++index;
                 continue;
             }
-            switch (errorMode) {
-            case EncodingErrorMode::Throw:
+            if (mode == EncodingMode::Strict) {
                 throwU16EncodingError("Invalid UTF-16 high surrogate", index);
-            case EncodingErrorMode::Ignore:
-                break;
-            case EncodingErrorMode::Replace:
+            } else {
                 function(Char::replacement());
-                break;
             }
             continue;
         }
         if (Char::isLowSurrogate(unit)) {
-            switch (errorMode) {
-            case EncodingErrorMode::Throw:
+            if (mode == EncodingMode::Strict) {
                 throwU16EncodingError("Invalid UTF-16 low surrogate", index);
-            case EncodingErrorMode::Ignore:
-                break;
-            case EncodingErrorMode::Replace:
+            } else {
                 function(Char::replacement());
-                break;
             }
             continue;
         }
@@ -195,14 +187,10 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
             function(character);
             continue;
         }
-        switch (errorMode) {
-        case EncodingErrorMode::Throw:
+        if (mode == EncodingMode::Strict) {
             throwU16EncodingError("Invalid Unicode code point in UTF-16 data", index);
-        case EncodingErrorMode::Ignore:
-            break;
-        case EncodingErrorMode::Replace:
+        } else {
             function(Char::replacement());
-            break;
         }
     }
 }
@@ -210,26 +198,20 @@ void forEachDecodedCharacter(const std::u16string_view text, const EncodingError
 /// Iterate over a UTF-16 encoded string, decoding each character and handling errors according to the specified mode.
 /// @tested{U16EncodingTest}
 template <typename tFunction>
-void forEachDecodedCharacter(const std::u16string &text, const EncodingErrorMode errorMode, tFunction function) {
-    forEachDecodedCharacter(std::u16string_view{text}, errorMode, function);
+void forEachDecodedCharacter(const std::u16string &text, const EncodingMode mode, tFunction function) {
+    forEachDecodedCharacter(std::u16string_view{text}, mode, function);
 }
 
 /// Decode all UTF-16 characters with the selected error handling mode and call the function for each result.
 /// Stops when the callback returns `false`.
 /// @tested{U16EncodingTest}
-template <EncodingErrorMode errorMode, typename Function>
+template <EncodingMode mode, typename Function>
 auto forEachDecodedCharacter(const std::span<const char16_t> data, Function function) -> bool {
     auto position = unit::U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         auto character = Char{};
-        if constexpr (errorMode == EncodingErrorMode::Throw) {
+        if constexpr (mode == EncodingMode::Strict) {
             character = decodeCharOrThrow(data, position);
-        } else if constexpr (errorMode == EncodingErrorMode::Ignore) {
-            if (const auto optChar = decodeCharOrIgnore(data, position); optChar.has_value()) {
-                character = *optChar;
-            } else {
-                continue;
-            }
         } else {
             character = decodeCharOrReplace(data, position);
         }
@@ -247,15 +229,12 @@ auto forEachDecodedCharacter(const std::span<const char16_t> data, Function func
 /// Decode all UTF-16 characters with a runtime selected error handling mode.
 /// @tested{U16EncodingTest}
 template <typename Function>
-auto forEachDecodedCharacter(const std::span<const char16_t> data, const EncodingErrorMode errorMode, Function function)
-    -> bool {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
-        return forEachDecodedCharacter<EncodingErrorMode::Throw>(data, function);
-    case EncodingErrorMode::Ignore:
-        return forEachDecodedCharacter<EncodingErrorMode::Ignore>(data, function);
-    case EncodingErrorMode::Replace:
-        return forEachDecodedCharacter<EncodingErrorMode::Replace>(data, function);
+auto forEachDecodedCharacter(const std::span<const char16_t> data, const EncodingMode mode, Function function) -> bool {
+    switch (mode) {
+    case EncodingMode::Strict:
+        return forEachDecodedCharacter<EncodingMode::Strict>(data, function);
+    case EncodingMode::Tolerant:
+        return forEachDecodedCharacter<EncodingMode::Tolerant>(data, function);
     }
     return false;
 }
@@ -264,7 +243,7 @@ auto forEachDecodedCharacter(const std::span<const char16_t> data, const Encodin
 [[nodiscard]] inline auto isValid(const std::span<const char16_t> data) noexcept -> bool {
     auto position = unit::U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
-        if (!decodeCharOrIgnore(data, position).has_value()) {
+        if (!tryDecodeChar(data, position).has_value()) {
             return false;
         }
     }
@@ -273,22 +252,20 @@ auto forEachDecodedCharacter(const std::span<const char16_t> data, const Encodin
 
 /// Iterate over UTF-16 encoded byte data from a byte reader, decoding each character.
 /// @tested{U8StringEncodingTest}
-template <EncodingErrorMode errorMode, typename Function>
+template <EncodingMode mode, typename Function>
 auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool {
     auto unitIndex = std::size_t{0};
     while (!reader.isAtEnd()) {
         if (!reader.canRead(2U)) {
-            if constexpr (errorMode == EncodingErrorMode::Throw) {
+            if constexpr (mode == EncodingMode::Strict) {
                 throwEncodingError("Truncated UTF-16 data");
             } else {
-                if constexpr (errorMode == EncodingErrorMode::Replace) {
-                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                        if (!function(Char::replacement())) {
-                            return false;
-                        }
-                    } else {
-                        function(Char::replacement());
+                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                    if (!function(Char::replacement())) {
+                        return false;
                     }
+                } else {
+                    function(Char::replacement());
                 }
                 reader.advance(2U);
                 continue;
@@ -316,36 +293,32 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
                     continue;
                 }
             }
-            if constexpr (errorMode == EncodingErrorMode::Throw) {
+            if constexpr (mode == EncodingMode::Strict) {
                 reader.setPosition(unitPosition);
                 throwU16EncodingError("Invalid UTF-16 high surrogate", unitIndex);
             } else {
-                if constexpr (errorMode == EncodingErrorMode::Replace) {
-                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                        if (!function(Char::replacement())) {
-                            return false;
-                        }
-                    } else {
-                        function(Char::replacement());
+                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                    if (!function(Char::replacement())) {
+                        return false;
                     }
+                } else {
+                    function(Char::replacement());
                 }
                 unitIndex += 1U;
                 continue;
             }
         }
         if (Char::isLowSurrogate(unit)) {
-            if constexpr (errorMode == EncodingErrorMode::Throw) {
+            if constexpr (mode == EncodingMode::Strict) {
                 reader.setPosition(unitPosition);
                 throwU16EncodingError("Invalid UTF-16 low surrogate", unitIndex);
             } else {
-                if constexpr (errorMode == EncodingErrorMode::Replace) {
-                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                        if (!function(Char::replacement())) {
-                            return false;
-                        }
-                    } else {
-                        function(Char::replacement());
+                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                    if (!function(Char::replacement())) {
+                        return false;
                     }
+                } else {
+                    function(Char::replacement());
                 }
                 unitIndex += 1U;
                 continue;
@@ -353,18 +326,16 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
         }
         const auto character = Char{static_cast<char32_t>(unit)};
         if (!character.isValidUnicode()) {
-            if constexpr (errorMode == EncodingErrorMode::Throw) {
+            if constexpr (mode == EncodingMode::Strict) {
                 reader.setPosition(unitPosition);
                 throwU16EncodingError("Invalid Unicode code point in UTF-16 data", unitIndex);
             } else {
-                if constexpr (errorMode == EncodingErrorMode::Replace) {
-                    if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
-                        if (!function(Char::replacement())) {
-                            return false;
-                        }
-                    } else {
-                        function(Char::replacement());
+                if constexpr (std::same_as<std::invoke_result_t<Function, Char>, bool>) {
+                    if (!function(Char::replacement())) {
+                        return false;
                     }
+                } else {
+                    function(Char::replacement());
                 }
                 unitIndex += 1U;
                 continue;
@@ -385,14 +356,12 @@ auto forEachDecodedCharacter(mem::ByteReader &reader, Function function) -> bool
 /// Iterate over UTF-16 encoded byte data from a byte reader with a runtime selected error handling mode.
 /// @tested{U8StringEncodingTest}
 template <typename Function>
-auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingErrorMode errorMode, Function function) -> bool {
-    switch (errorMode) {
-    case EncodingErrorMode::Throw:
-        return forEachDecodedCharacter<EncodingErrorMode::Throw>(reader, function);
-    case EncodingErrorMode::Ignore:
-        return forEachDecodedCharacter<EncodingErrorMode::Ignore>(reader, function);
-    case EncodingErrorMode::Replace:
-        return forEachDecodedCharacter<EncodingErrorMode::Replace>(reader, function);
+auto forEachDecodedCharacter(mem::ByteReader &reader, const EncodingMode mode, Function function) -> bool {
+    switch (mode) {
+    case EncodingMode::Strict:
+        return forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
+    case EncodingMode::Tolerant:
+        return forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
     }
     return false;
 }

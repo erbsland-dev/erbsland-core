@@ -14,23 +14,39 @@ constexpr auto cMinimumGrowthBlock = unit::ByteLength{16U};
 /// The largest growth block used before switching to fixed-size block rounding.
 constexpr auto cMaximumGrowthBlock = unit::ByteLength{0x10000U};
 
-/// Calculate a good allocation size for growing compact shared arrays.
+/// Portable allocation-page quantum for larger memory blocks.
+constexpr auto cAllocationPageSize = unit::ByteLength{0x1000U};
+
+/// Selects how a growing allocation reserves spare capacity.
+enum class BestGrowthStrategy {
+    Compact,  ///< Minimize spare capacity using compact allocation blocks.
+    Geometric ///< Double larger allocations to avoid repeated relocation.
+};
+
+/// Calculate a good allocation size for growing storage.
 /// @param currentAllocationSize The current total allocation size in bytes.
 /// @param requestedAllocationSize The requested total allocation size in bytes.
+/// @param strategy The allocation growth strategy.
 /// @return The total allocation size that should be allocated.
-[[nodiscard]] auto bestGrowth(unit::ByteLength currentAllocationSize, unit::ByteLength requestedAllocationSize) noexcept
-    -> unit::ByteLength;
+/// @tested{SharedArrayCapacityTest}
+[[nodiscard]] auto bestGrowth(
+    unit::ByteLength currentAllocationSize,
+    unit::ByteLength requestedAllocationSize,
+    BestGrowthStrategy strategy = BestGrowthStrategy::Compact) noexcept -> unit::ByteLength;
 
-/// Calculate a good element capacity for a compact shared array.
+/// Calculate a good element capacity for shared storage.
 /// This helper accounts for the data container overhead before applying the growth policy.
 /// @tparam tSharedArrayData The shared array data type.
 /// @param currentCapacity The current element capacity.
 /// @param requestedCapacity The requested element capacity.
+/// @param strategy The allocation growth strategy.
 /// @return A capacity that is at least `requestedCapacity`.
 /// @tested{SharedArrayCapacityTest}
 template <typename tSharedArrayData>
-[[nodiscard]] auto bestGrowthCapacity(const std::size_t currentCapacity, const std::size_t requestedCapacity) noexcept
-    -> std::size_t {
+[[nodiscard]] auto bestGrowthCapacity(
+    const std::size_t currentCapacity,
+    const std::size_t requestedCapacity,
+    const BestGrowthStrategy strategy = BestGrowthStrategy::Compact) noexcept -> std::size_t {
     using Data = tSharedArrayData;
     if (requestedCapacity <= currentCapacity) {
         return currentCapacity;
@@ -42,7 +58,7 @@ template <typename tSharedArrayData>
     const auto currentAllocationSize = unit::ByteLength::fromSizeT(Data::allocationSizeForCapacity(currentCapacity));
     const auto requestedAllocationSize =
         unit::ByteLength::fromSizeT(Data::allocationSizeForCapacity(requestedCapacity));
-    const auto targetAllocationSize = bestGrowth(currentAllocationSize, requestedAllocationSize).toSizeT();
+    const auto targetAllocationSize = bestGrowth(currentAllocationSize, requestedAllocationSize, strategy).toSizeT();
     const auto overhead = Data::allocationOverhead();
     if (targetAllocationSize <= overhead) {
         return requestedCapacity;

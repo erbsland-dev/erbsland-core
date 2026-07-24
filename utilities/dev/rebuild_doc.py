@@ -120,6 +120,7 @@ class RebuildDocApp(UtilityApp):
     """Safely rebuild the Sphinx documentation."""
 
     description = "Remove generated documentation output and rebuild the Sphinx documentation."
+    sphinx_worker_count = 8
 
     def __init__(self) -> None:
         super().__init__()
@@ -132,7 +133,10 @@ class RebuildDocApp(UtilityApp):
         parser.add_argument("--force", action="store_true", help="Remove all generated documentation input/output.")
         parser.add_argument("--no-filter", action="store_true", help="Show the complete Sphinx and Doxygen output.")
         parser.add_argument(
-            "--show-suppressed", action="store_true", help="Show configured Doxygen warnings while retaining concise output.")
+            "--show-suppressed",
+            action="store_true",
+            help="Show configured Doxygen warnings while retaining concise output.",
+        )
 
     def handle_command_line_args(self, args) -> None:
         self.project_root = self.project_directory
@@ -194,9 +198,9 @@ class RebuildDocApp(UtilityApp):
     def rebuild_documentation(self) -> None:
         """Run sphinx-build to rebuild the documentation."""
         executable = self.sphinx_build_executable()
-        command = [str(executable), "doc", "_build"]
+        command = [str(executable), "-j", str(self.sphinx_worker_count), "doc", "_build"]
         if self.verbose:
-            print("Running sphinx-build doc _build", flush=True)
+            print(f"Running sphinx-build -j {self.sphinx_worker_count} doc _build", flush=True)
         if self.filter_output:
             return_code = self.run_sphinx_build_filtered(command)
             status = self.sphinx_status_line(return_code)
@@ -212,6 +216,7 @@ class RebuildDocApp(UtilityApp):
     def run_sphinx_build_filtered(self, command: list[str]) -> int:
         """Run sphinx-build and display only relevant diagnostics."""
         output_filter = DocumentationOutputFilter(self.project_root, show_suppressed=self.show_suppressed)
+        captured_output: list[str] = []
         process = subprocess.Popen(
             command,
             cwd=self.project_root,
@@ -225,10 +230,16 @@ class RebuildDocApp(UtilityApp):
         )
         if process.stdout is not None:
             for line in process.stdout:
-                filtered_line = output_filter.filter_line(line.rstrip("\n\r"))
+                line = line.rstrip("\n\r")
+                captured_output.append(line)
+                filtered_line = output_filter.filter_line(line)
                 if filtered_line is not None:
                     print(filtered_line, flush=True)
         return_code = process.wait()
+        if return_code != 0:
+            print("Complete sphinx-build output after failure:", flush=True)
+            for line in captured_output:
+                print(output_filter.shorten_paths(line), flush=True)
         for line in output_filter.suppressed_warning_summary():
             print(line, flush=True)
         return return_code

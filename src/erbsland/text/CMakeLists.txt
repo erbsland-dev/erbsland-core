@@ -3,6 +3,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(base_n)
 add_subdirectory(html)
 add_subdirectory(impl)
 add_subdirectory(pattern)
@@ -49,7 +50,7 @@ target_sources(erbsland-core PRIVATE
         CombinedChar.cpp
         CombinedChar.hpp
         EncodingError.hpp
-        EncodingErrorMode.hpp
+        EncodingMode.hpp
         EscapeAmount.cpp
         EscapeAmount.hpp
         EscapeFormat.cpp
@@ -84,7 +85,7 @@ target_sources(erbsland-core PRIVATE
         ReadIntegerResult.hpp
         ReadNumberStatus.hpp
         SafeStringFlag.hpp
-        StdFormatForText.hpp
+        StdFormat.hpp
         String.hpp
         String_fwd.hpp
         StringBomMode.hpp
@@ -106,7 +107,6 @@ target_sources(erbsland-core PRIVATE
         StringConverter_fwd.hpp
         StringDecodeBuffer.cpp
         StringDecodeBuffer.hpp
-        StringDecodeBuffer_decode.cpp
         StringDecoder.cpp
         StringDecoder.hpp
         StringDecoder_fwd.hpp

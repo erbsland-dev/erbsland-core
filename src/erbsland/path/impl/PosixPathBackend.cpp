@@ -13,8 +13,8 @@
 #include "../PathResolveMode.hpp"
 
 #include "../../core/Definitions.hpp"
-#include "../../stream/impl/BufferedByteInputStream.hpp"
 #include "../../stream/impl/BufferedByteOutputStream.hpp"
+#include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../stream/impl/NativeOutputStream.hpp"
 #include "../../stream/impl/PosixNativeStream.hpp"
 #include "../../system/GroupId.hpp"
@@ -27,12 +27,14 @@
 #include "../../time/impl/PosixTimeConverter.hpp"
 #include "../../unit/ByteLength.hpp"
 
+#include <dirent.h>
 #include <fcntl.h>
 
 #ifdef ERBSLAND_OS_LINUX
 #include <linux/fs.h>
 #include <sys/ioctl.h>
 #endif
+#include <pwd.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -67,6 +69,43 @@ auto PosixPathBackend::currentDirectoryOrThrow() const -> Path {
                 errno);
         }
         bufferSize *= 2U;
+    }
+}
+
+auto PosixPathBackend::userHomeDirectoryOrThrow() const -> Path {
+    const auto configuredBufferSize = ::sysconf(_SC_GETPW_R_SIZE_MAX);
+    auto bufferSize =
+        configuredBufferSize > 1024L ? static_cast<std::size_t>(configuredBufferSize) : std::size_t{1024U};
+    while (true) {
+        auto buffer = std::make_unique<char[]>(bufferSize);
+        auto password = passwd{};
+        auto *result = static_cast<passwd *>(nullptr);
+        const auto status = ::getpwuid_r(::geteuid(), &password, buffer.get(), bufferSize, &result);
+        if (status == ERANGE) {
+            bufferSize *= 2U;
+            continue;
+        }
+        if (status != 0) {
+            throwSystemError(
+                "User home directory is unavailable"_el,
+                "The operating system could not resolve the effective user's account."_el,
+                {},
+                status);
+        }
+        if (result == nullptr || result->pw_dir == nullptr || result->pw_dir[0] == '\0') {
+            throwSystemError(
+                "User home directory is unavailable"_el,
+                "The effective user's account does not provide a home directory."_el,
+                {},
+                ENOENT);
+        }
+        const auto home = Path::fromPosix(text::String{std::string_view{result->pw_dir}});
+        if (home.isEmpty() || !home.isAbsolute()) {
+            throw PathError{PathErrorContext{
+                "User home directory is unavailable"_el,
+                "The effective user's account contains an invalid home-directory path."_el}};
+        }
+        return home;
     }
 }
 
@@ -121,8 +160,13 @@ auto PosixPathBackend::resolveOrThrow(const Path &path, const PathResolveOptions
 }
 
 auto PosixPathBackend::loadInfoOrThrow(const Path &path, const PathInfoParts parts) const -> PathInfoData {
-    auto result = PathInfoData{path};
-    result.resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
+    return loadResolvedInfoOrThrow(path, resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink), parts);
+}
+
+auto PosixPathBackend::loadResolvedInfoOrThrow(
+    [[maybe_unused]] const Path &path, const Path &resolvedPath, const PathInfoParts parts) const -> PathInfoData {
+    auto result = PathInfoData{};
+    result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
     const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
@@ -205,10 +249,9 @@ auto PosixPathBackend::openByteInputStreamOrThrow(const Path &path, const PathRe
             path,
             errno);
     }
-    return std::make_shared<stream::impl::BufferedByteInputStream>(
-        std::make_shared<stream::impl::PosixNativeStream>(
-            fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString()),
-        options.streamSettings());
+    auto native = std::make_shared<stream::impl::PosixNativeStream>(
+        fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString());
+    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
 }
 
 void PosixPathBackend::setAccessProfileOrThrow(
@@ -239,16 +282,19 @@ void PosixPathBackend::setAccessProfileOrThrow(
             resolvedPath,
             errno);
     }
+    invalidateInfo(path);
 }
 
 void PosixPathBackend::addAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     applyAttributesOrThrow(resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink), attributes, true);
+    invalidateInfo(path);
 }
 
 void PosixPathBackend::clearAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     applyAttributesOrThrow(resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink), attributes, false);
+    invalidateInfo(path);
 }
 
 auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
@@ -379,6 +425,26 @@ auto PosixPathBackend::typeFromMode(const mode_t mode) noexcept -> PathType {
         return PathType::Pipe;
     }
     return PathType::Unknown;
+}
+
+auto PosixPathBackend::typeFromDirectoryEntry(const unsigned char type) noexcept -> PathType {
+    switch (type) {
+    case DT_DIR:
+        return PathType::Directory;
+    case DT_REG:
+        return PathType::RegularFile;
+    case DT_LNK:
+        return PathType::Symlink;
+    case DT_CHR:
+    case DT_BLK:
+        return PathType::Device;
+    case DT_SOCK:
+        return PathType::Socket;
+    case DT_FIFO:
+        return PathType::Pipe;
+    default:
+        return PathType::Unknown;
+    }
 }
 
 auto PosixPathBackend::accessInfoFromStatus(const struct stat &info, const PathType type) -> PathAccessInfo {

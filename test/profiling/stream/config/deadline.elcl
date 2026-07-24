@@ -1,0 +1,8 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode         : "benchmark"
+Suite        : "smoke"
+Duration     : 1ns
+Threads      : 4
+Corpus Limit : 8 MiB

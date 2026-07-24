@@ -3,7 +3,7 @@
 
 #include "LexerTestHelper.hpp"
 
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 
 using namespace el::text::literals;
 

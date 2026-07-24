@@ -36,6 +36,15 @@ public:
         REQUIRE_EQUAL(text.displayWidth(), 4);
     }
 
+    void testAtReportsThePublicTypeName() {
+        try {
+            static_cast<void>(BlockStringEditor{}.at(BlockIndex{0U}));
+            REQUIRE(false);
+        } catch (const erbsland::err::OutOfRangeError &error) {
+            REQUIRE_EQUAL(error.toString(), "BlockStringEditor index out of range."_el);
+        }
+    }
+
     void testCountAndIndexOfRespectColorSpecificAndColorAgnosticSearches() {
         auto text = BlockStringEditor{};
         text.append(Block{U'A', fg::Red, bg::Black});
@@ -422,25 +431,8 @@ public:
         REQUIRE_EQUAL(text[BlockIndex{3}], U'B');
     }
 
-    void testInvalidUtf8Fails() {
-        REQUIRE_THROWS_AS(
-            erbsland::text::U8EncodingError,
-            (BlockStringEditor{erbsland::text::StringEditor{bytes({0xC3})}, erbsland::text::EncodingErrorMode::Throw}));
-    }
-
-    void testUtf8StringCanIgnoreEncodingErrorMode() {
-        const auto text = BlockStringEditor{
-            erbsland::text::StringEditor{bytes({0x41, 0xC3, 0x42})}, erbsland::text::EncodingErrorMode::Ignore};
-
-        REQUIRE_EQUAL(text.length(), BlockCount{2});
-        REQUIRE_EQUAL(text[BlockIndex{0}], U'A');
-        REQUIRE_EQUAL(text[BlockIndex{1}], U'B');
-    }
-
-    void testUtf8StringCanReplaceEncodingErrorModeDeterministically() {
-        const auto text = BlockStringEditor{
-            erbsland::text::StringEditor{bytes({0x41, 0xE2, 0x28, 0xA1, 0x42})},
-            erbsland::text::EncodingErrorMode::Replace};
+    void testUtf8StringReplacesMalformedInputDeterministically() {
+        const auto text = BlockStringEditor{erbsland::text::StringEditor{bytes({0x41, 0xE2, 0x28, 0xA1, 0x42})}};
 
         REQUIRE_EQUAL(text.length(), BlockCount{5});
         REQUIRE_EQUAL(text[BlockIndex{0}], U'A');
@@ -450,12 +442,11 @@ public:
         REQUIRE_EQUAL(text[BlockIndex{4}], U'B');
     }
 
-    void testStyledUtf8StringCanReplaceEncodingErrorMode() {
+    void testStyledUtf8StringReplacesMalformedInput() {
         auto attributes = BlockAttributes{};
         attributes.setBold(true);
         const auto style = BlockStyle{Color{fg::Red, bg::Blue}, attributes};
-        const auto text = BlockStringEditor{
-            erbsland::text::StringEditor{bytes({0xC3})}, style, erbsland::text::EncodingErrorMode::Replace};
+        const auto text = BlockStringEditor{erbsland::text::StringEditor{bytes({0xC3})}, style};
 
         REQUIRE_EQUAL(text.length(), BlockCount{1});
         REQUIRE_EQUAL(text[BlockIndex{0}], U'\uFFFD');

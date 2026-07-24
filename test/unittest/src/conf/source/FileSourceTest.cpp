@@ -7,7 +7,7 @@
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/impl/source/FileSource.hpp>
 #include <erbsland/conf/Source.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/path/Path.hpp>
 #include <erbsland/text/String.hpp>
 
@@ -89,7 +89,7 @@ public:
         if (withLineEnding) {
             bytes.back() = static_cast<uint8_t>('\n');
         }
-        const auto filePath = createTestFile(el::mem::ByteBlock{bytes});
+        const auto filePath = createTestFile(el::mem::ByteBlock::fromVector(bytes));
         source = Source::fromFile(el::path::Path{filePath});
         REQUIRE_NOTHROW(source->open());
         REQUIRE_EQUAL(source->readLine().length().toSizeT(), byteLength);
@@ -100,7 +100,7 @@ public:
         if (withLineEnding) {
             bytes.back() = static_cast<uint8_t>('\n');
         }
-        const auto filePath = createTestFile(el::mem::ByteBlock{bytes});
+        const auto filePath = createTestFile(el::mem::ByteBlock::fromVector(bytes));
         source = Source::fromFile(el::path::Path{filePath});
         REQUIRE_NOTHROW(source->open());
         try {
@@ -120,7 +120,7 @@ public:
     }
 
     void testBomIsConsumed() {
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{0xef, 0xbb, 0xbf, 'a', 'b', 'c', '\n'}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{0xef, 0xbb, 0xbf, 'a', 'b', 'c', '\n'});
         const auto filePath = createTestFile(bytes);
         source = Source::fromFile(el::path::Path{filePath});
         REQUIRE_NOTHROW(source->open());
@@ -128,7 +128,7 @@ public:
     }
 
     void testMalformedUtf8IsTranslated() {
-        const auto bytes = el::mem::ByteBlock{std::vector<uint8_t>{'a', 0x80, '\n'}};
+        const auto bytes = el::mem::ByteBlock::fromVector(std::vector<uint8_t>{'a', 0x80, '\n'});
         const auto filePath = createTestFile(bytes);
         source = Source::fromFile(el::path::Path{filePath});
         REQUIRE_NOTHROW(source->open());

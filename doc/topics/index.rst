@@ -10,6 +10,7 @@ Topics
     :maxdepth: 3
 
     core/index
+    security/index
     cryptology/index
     strings/index
     options/index

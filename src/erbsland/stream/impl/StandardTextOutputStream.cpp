@@ -3,6 +3,7 @@
 #include "StandardTextOutputStream.hpp"
 
 #include "IoService.hpp"
+#include "StreamBufferSizes.hpp"
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
@@ -148,13 +149,14 @@ auto StandardTextOutputStream::state() const noexcept -> StreamState {
 
 auto StandardTextOutputStream::isReady() const noexcept -> bool {
     const auto lock = std::scoped_lock{_data->mutex};
-    return _data->pendingBytes <= _data->settings.bufferCapacity().toSizeT() && state() == StreamState::Open;
+    return _data->pendingBytes <= streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() &&
+        state() == StreamState::Open;
 }
 
 auto StandardTextOutputStream::waitForReady() -> StreamWaitStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
-        return _data->pendingBytes <= _data->settings.bufferCapacity().toSizeT() || _data->error ||
+        return _data->pendingBytes <= streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() || _data->error ||
             state() != StreamState::Open;
     });
     if (_data->error) {
@@ -236,7 +238,7 @@ auto StandardTextOutputStream::write(const String &text) -> StreamWriteStatus {
             "Failed to write text to the output stream."_el,
             "The complete text request exceeds the configured output buffer limit."_el);
     }
-    const auto capacity = _data->settings.bufferCapacity().toSizeTOrThrow() + requestLimit;
+    const auto capacity = streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() + requestLimit;
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
     while (_data->pendingBytes + byteLength > capacity) {

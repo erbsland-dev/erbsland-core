@@ -23,6 +23,10 @@ namespace erbsland::time {
 /// @tested{TimeCoreTest}
 class TimeDelta final {
 public:
+    /// The native integer type this delta is based on.
+    using IntegerValue = Nanoseconds::Value;
+
+public:
     /// Create a zero delta.
     TimeDelta() noexcept = default;
     /// Create a delta from nanoseconds.
@@ -34,7 +38,7 @@ public:
     /// @param amount The amount to convert.
     template <typename tAmount>
         requires std::is_same_v<SecondsUnitTag, typename tAmount::Unit>
-    TimeDelta(tAmount amount) noexcept : // NOLINT(*-explicit-constructor)
+    constexpr TimeDelta(tAmount amount) noexcept : // NOLINT(*-explicit-constructor)
         _nanoseconds{amount.template converted<Nanoseconds>()} {}
     /// Create a delta from a `std::chrono::duration`.
     /// @tparam tRep The representation type.
@@ -53,11 +57,29 @@ public:
 
 public: // operators
     [[nodiscard]] auto operator<=>(const TimeDelta &other) const noexcept -> std::strong_ordering = default;
+    ERBSLAND_CORE_CONSTEXPR_COMPARE_FROM_SPACESHIP(const TimeDelta &other, other._nanoseconds);
+
+    /// Add two time deltas.
     [[nodiscard]] auto operator+(TimeDelta other) const noexcept -> TimeDelta;
+    /// Add a time delta.
     auto operator+=(TimeDelta other) noexcept -> TimeDelta &;
+    /// Subtract two time deltas.
     [[nodiscard]] auto operator-(TimeDelta other) const noexcept -> TimeDelta;
+    /// Subtract a time delta.
     auto operator-=(TimeDelta other) noexcept -> TimeDelta &;
+    /// Negate this time delta.
     [[nodiscard]] auto operator-() const noexcept -> TimeDelta;
+    /// Divide this time delta.
+    /// By dividing the time-delta with regular integer, the result is a time-delta.
+    [[nodiscard]] auto operator/(IntegerValue divisor) const noexcept -> TimeDelta;
+    /// Divide this time delta.
+    auto operator/=(IntegerValue divisor) noexcept -> TimeDelta &;
+    /// By dividing the time-delta with another time-delta, the result is a regular integer.
+    [[nodiscard]] auto operator/(TimeDelta divisor) const noexcept -> IntegerValue;
+    /// Multiply this time delta.
+    [[nodiscard]] auto operator*(IntegerValue factor) const noexcept -> TimeDelta;
+    /// Multiply this time delta.
+    auto operator*=(IntegerValue factor) noexcept -> TimeDelta &;
 
 public: // tests
     /// Test if this delta is zero.
@@ -67,11 +89,23 @@ public: // tests
     /// Test if this delta is negative.
     [[nodiscard]] constexpr auto isNegative() const noexcept -> bool { return _nanoseconds.isNegative(); }
 
+public: // tools
+    /// Get the absolute value of this delta.
+    [[nodiscard]] auto toAbsolute() const noexcept -> TimeDelta { return _nanoseconds.toAbsolute(); }
+    /// Return a time delta that is at minimum the given value.
+    template <typename tAmount>
+        requires std::is_same_v<SecondsUnitTag, typename tAmount::Unit>
+    [[nodiscard]] auto minimum(tAmount amount) const noexcept -> TimeDelta {
+        return std::max(*this, TimeDelta{amount});
+    }
+
 public: // conversion
     /// Convert this delta to a human-readable string.
     [[nodiscard]] auto toString(const TimeDeltaFormat &format = {}) const -> text::String;
     /// Return the total nanoseconds.
     [[nodiscard]] constexpr auto toNanoseconds() const noexcept -> Nanoseconds { return _nanoseconds; }
+    /// Return the total milliseconds, truncating sub-milliseconds nanoseconds toward zero.
+    [[nodiscard]] auto toMilliseconds() const noexcept -> Milliseconds;
     /// Return the total seconds, truncating sub-second nanoseconds toward zero.
     [[nodiscard]] auto toSeconds() const noexcept -> Seconds;
     /// Return the total seconds as a floating-point value.

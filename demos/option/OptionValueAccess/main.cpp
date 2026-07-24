@@ -51,8 +51,9 @@ using namespace el::text::literals;
 /// `moduleName()` when dispatching manually.
 auto optionValueAccess() -> el::ExitCode {
     auto manager = el::OptionManager{createValueOptions()};
-    const auto values = manager.parseOrThrow(makeArgs(
-        {"night-values"_el, "count"_el, "-vv"_el, "--route"_el, "forest-edge"_el, "-r"_el, "pond"_el, "dune"_el}));
+    auto arguments = makeArgs(
+        {"night-values"_el, "count"_el, "-vv"_el, "--route"_el, "forest-edge"_el, "-r"_el, "pond"_el, "dune"_el});
+    const auto values = manager.parseOrThrow(arguments);
 
     const auto routes = values->getTextList("route"_el);
     auto routeList = el::StringList{};

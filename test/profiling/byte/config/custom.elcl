@@ -1,0 +1,37 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 20s
+Threads             : 2
+Warmup Samples      : 0
+Samples             : 2
+Minimum Sample Time : 1ms
+Memory Limit        : 8 MiB
+Progress Interval   : 1s
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-boundaries"
+Types               : "byte-block-editor", "byte-buffer"
+Use Cases           : "append", "replace"
+Variants            : "all"
+Size Modes          : "boundaries"
+Size Min            : 63
+Size Max            : 257
+Operand Size Min    : 1
+Operand Size Max    : 64
+Sensitive Modes     : "normal", "sensitive"
+Weight              : 1
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name                : "custom-array"
+Types               : "byte-array"
+Use Cases           : "bitwise"
+Variants            : "xor"
+Size Modes          : "fixed"
+Size Min            : 64
+Size Max            : 64
+Operand Size Min    : 16
+Operand Size Max    : 16
+Sensitive Modes     : "all"
+Weight              : 1

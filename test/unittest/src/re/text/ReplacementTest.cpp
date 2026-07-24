@@ -5,7 +5,7 @@
 #include "../TestHelper.hpp"
 
 #include <erbsland/re/impl/text/Replacement.hpp>
-#include <erbsland/re/StdFormatForRegEx.hpp>
+#include <erbsland/re/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 using namespace el::re;

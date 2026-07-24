@@ -50,6 +50,33 @@ internal name.
 Here, ``-n`` and ``--name`` are accepted on the command line.
 The alias ``name`` is only used in user code.
 
+Boolean Flag Values
+~~~~~~~~~~~~~~~~~~~
+
+Flags are false when absent, true when written without a value, and accept explicit ELCL boolean literals by default.
+The recognized ASCII-case-insensitive true values are ``true``, ``on``, ``yes``, and ``enabled``; the false values are
+``false``, ``off``, ``no``, and ``disabled``.
+Both ``--flag=false`` and ``--flag false`` are accepted.
+The separate form consumes the following argument only when it is a recognized literal, preserving all other text for
+positional parsing.
+
+Implicit repetitions such as ``-vv`` are counted normally.
+An explicit value makes the flag a single assignment, so explicit repetitions and mixtures such as
+``--verbose=false -v`` are rejected.
+An explicit false value remains a source occurrence even though
+:cpp:func:`getFlag() <erbsland::options::OptionValues::getFlag>` returns false.
+
+Set :cpp:enumerator:`OptionParserFlag::DisableBooleanValues <erbsland::options::OptionParserFlag::DisableBooleanValues>`
+on the root options object when an application needs the legacy valueless grammar:
+
+.. code-block:: cpp
+
+    options->setParserFlag(el::OptionParserFlag::DisableBooleanValues);
+
+The setting applies to every flag in the options tree, including built-in help and version.
+Attached flag values are then errors, following boolean-looking words remain positional, and generated help omits the
+optional boolean placeholder.
+
 Built-in Requests
 ~~~~~~~~~~~~~~~~~
 
@@ -104,6 +131,43 @@ If you explicitly set an inconsistent type after adding choices, parsing fails w
 to the affected option.
 For example, choices require :cpp:enumerator:`OptionType::Choice <erbsland::options::OptionType::Choice>`, and a choice
 option must have at least one configured choice.
+
+Sensitive Text
+~~~~~~~~~~~~~~
+
+Use :cpp:enumerator:`OptionType::SensitiveText <erbsland::options::OptionType::SensitiveText>` for a password, token, or
+other command-line value that should enter protected text storage:
+
+.. code-block:: cpp
+
+    options->addOption({"-s"_el, "--secret"_el, "secret"_el})
+        .setType(el::OptionType::SensitiveText);
+
+    auto arguments = el::OptionManager::convertCommandLineArguments(argc, argv);
+    const auto result = manager.parse(arguments);
+    const auto secret = result.values()->getText("secret"_el);
+
+Sensitive text accepts exactly one value.
+Definitions with a default value or a maximum other than one are rejected, and repeating the option is an error.
+The parsed value is stored as a marked :cpp:type:`String <erbsland::text::String>` and is available through
+:cpp:func:`OptionValues::getText() <erbsland::options::OptionValues::getText>` or
+:cpp:func:`OptionValue::getText() <erbsland::options::OptionValue::getText>`.
+
+The converted argument list passed to ``parse()`` or ``parseOrThrow()`` must be a mutable lvalue.
+Before either method returns, each sensitive suffix is replaced with exactly five stars.
+Thus ``--secret=value`` becomes ``--secret=*****``, while a separate or positional value becomes ``*****``.
+The previous copy-on-write allocation is securely erased when it is writable shared storage; literal-backed strings are
+never modified.
+Error contexts built by the parser contain the masked argument list.
+
+:cpp:func:`OptionResult::sensitiveTextLocations() <erbsland::options::OptionResult::sensitiveTextLocations>` exposes
+the read-only list of :cpp:class:`OptionSensitiveTextLocation <erbsland::options::OptionSensitiveTextLocation>` values
+for every result status.
+Each location contains the argument index and UTF-8 byte index at which the sensitive suffix began.
+Attached long and short values start after ``=``, while separate and positional values start at byte zero.
+
+Command-line masking reduces later accidental exposure but cannot retract values already visible to the shell, process
+listings, operating-system facilities, logs, or earlier application code.
 
 Custom Value Names
 ~~~~~~~~~~~~~~~~~~
@@ -198,6 +262,10 @@ Interface
 .. doxygenenum:: erbsland::options::OptionResultStatus
 .. doxygenclass:: erbsland::options::Options
     :members:
+.. doxygenclass:: erbsland::options::OptionSensitiveTextLocation
+    :members:
+
+.. doxygentypedef:: erbsland::options::OptionSensitiveTextLocations
 .. doxygenclass:: erbsland::options::OptionSet
     :members:
 .. doxygenclass:: erbsland::options::OptionSetManager

@@ -2,16 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EmbeddedDocument.hpp"
+
 #include <array>
-#include <string_view>
 
-namespace profiling::conf {
-
-/// A named ELCL document embedded into the profiling executable.
-struct EmbeddedDocument {
-    std::string_view name;
-    std::string_view text;
-};
+namespace app::conf {
 
 /// The embedded parser profiling corpus.
 extern const std::array<EmbeddedDocument, 4> cEmbeddedDocuments;

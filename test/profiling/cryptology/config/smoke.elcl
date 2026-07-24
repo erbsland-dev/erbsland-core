@@ -1,0 +1,12 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "smoke"
+Duration            : 20s
+Threads             : 1
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 100us
+Memory Limit        : 16 MiB
+Progress Interval   : 1s

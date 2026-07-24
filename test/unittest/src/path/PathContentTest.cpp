@@ -6,6 +6,7 @@
 #include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathCreateMode.hpp>
+#include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathReadDataOptions.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -21,6 +22,7 @@ using el::mem::ByteBlock;
 using el::path::Path;
 using el::path::PathContent;
 using el::path::PathCreateMode;
+using el::path::PathError;
 using el::path::PathReadDataOptions;
 using el::path::PathReadTextOptions;
 using el::path::PathWriteDataOptions;
@@ -51,18 +53,18 @@ public:
         const auto path = pathFromStd(fixture.path() / "report.bin");
         const auto content = path.content();
 
-        REQUIRE(content.writeData(ByteBlock{std::vector<uint8_t>{1U, 2U, 3U}}).isSuccessful());
+        REQUIRE(content.writeData(ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U})).isSuccessful());
         REQUIRE_EQUAL(content.readDataOrThrow().toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U}));
-        REQUIRE(content.writeData(ByteBlock{std::vector<uint8_t>{4U}}).isFailure());
+        REQUIRE(content.writeData(ByteBlock::fromVector(std::vector<uint8_t>{4U})).isFailure());
 
         auto overwrite = PathWriteDataOptions{};
         overwrite.setCreationMode(PathCreateMode::CreateOrOverwrite);
-        content.writeDataOrThrow(ByteBlock{std::vector<uint8_t>{4U, 5U}}, overwrite);
+        content.writeDataOrThrow(ByteBlock::fromVector(std::vector<uint8_t>{4U, 5U}), overwrite);
         REQUIRE_EQUAL(content.readDataOrThrow().toUInt8Vector(), std::vector<uint8_t>({4U, 5U}));
 
         auto append = PathWriteDataOptions{};
         append.setCreationMode(PathCreateMode::CreateOrAppend);
-        content.writeDataOrThrow(ByteBlock{std::vector<uint8_t>{6U}}, append);
+        content.writeDataOrThrow(ByteBlock::fromVector(std::vector<uint8_t>{6U}), append);
         REQUIRE_EQUAL(content.readDataOrThrow().toUInt8Vector(), std::vector<uint8_t>({4U, 5U, 6U}));
     }
 
@@ -84,7 +86,7 @@ public:
 
         auto options = PathWriteDataOptions{};
         options.setCreateParents(true);
-        content.writeDataOrThrow(ByteBlock{std::vector<uint8_t>{7U}}, options);
+        content.writeDataOrThrow(ByteBlock::fromVector(std::vector<uint8_t>{7U}), options);
 
         REQUIRE(std::filesystem::exists(fixture.path() / "one" / "two" / "report.bin"));
         REQUIRE_EQUAL(content.readDataOrThrow().toUInt8Vector(), std::vector<uint8_t>({7U}));
@@ -133,10 +135,10 @@ public:
         const auto path = pathFromStd(fixture.path() / "invalid.txt");
         const auto content = path.content();
 
-        content.writeDataOrThrow(ByteBlock{std::vector<uint8_t>{0xffU}});
+        content.writeDataOrThrow(ByteBlock::fromVector(std::vector<uint8_t>{0xffU}));
 
         auto options = PathReadTextOptions{StringEncoding::Utf8};
-        options.setEncodingErrorMode(EncodingErrorMode::Throw);
+        options.setEncodingMode(EncodingMode::Strict);
 
         REQUIRE_THROWS_AS(el::text::EncodingError, content.readTextOrThrow(options));
         REQUIRE_FALSE(content.readText(options).has_value());
@@ -150,11 +152,11 @@ public:
 
         auto dataOptions = PathReadDataOptions{};
         dataOptions.setMaximumByteLength(el::unit::ByteLength{2U});
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, content.readDataOrThrow(dataOptions));
+        REQUIRE_THROWS_AS(PathError, content.readDataOrThrow(dataOptions));
         REQUIRE_FALSE(content.readData(dataOptions).has_value());
 
         auto options = PathReadTextOptions{el::unit::CpLength{2U}};
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, content.readTextOrThrow(options));
+        REQUIRE_THROWS_AS(PathError, content.readTextOrThrow(options));
         REQUIRE_FALSE(content.readText(options).has_value());
     }
 

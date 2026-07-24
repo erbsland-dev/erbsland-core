@@ -58,5 +58,5 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore how the effect is implemented, start with :file:`demos/cterm/retro-plasma/src/RetroPlasmaApp.cpp`
-and :file:`demos/cterm/retro-plasma/src/PlasmaRenderer.cpp`.
+If you want to explore how the effect is implemented, start with :file:`demos/cterm/RetroPlasma/src/RetroPlasmaApp.cpp`
+and :file:`demos/cterm/RetroPlasma/src/PlasmaRenderer.cpp`.

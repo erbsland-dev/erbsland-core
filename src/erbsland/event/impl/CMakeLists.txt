@@ -10,6 +10,8 @@ target_sources(erbsland-core PRIVATE
         EventLoop.cpp
         EventLoop.hpp
         EventLoop_fwd.hpp
+        EventLoopDriverRegistration.cpp
+        EventLoopDriverRegistration.hpp
         EventThreadBase.cpp
         EventThreadBase.hpp
         EventTimer.cpp
@@ -25,3 +27,20 @@ target_sources(erbsland-core PRIVATE
         UnmanagedEventThread.cpp
         UnmanagedEventThread.hpp
 )
+
+if(WIN32)
+    target_sources(erbsland-core PRIVATE
+            WindowsEventLoopDriver.cpp
+            WindowsEventLoopDriver.hpp
+    )
+elseif(APPLE)
+    target_sources(erbsland-core PRIVATE
+            KqueueEventLoopDriver.cpp
+            KqueueEventLoopDriver.hpp
+    )
+elseif(UNIX)
+    target_sources(erbsland-core PRIVATE
+            EpollEventLoopDriver.cpp
+            EpollEventLoopDriver.hpp
+    )
+endif()

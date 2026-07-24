@@ -69,20 +69,54 @@ buffer cells or applying partial styling.
 Serializing Palette Values
 --------------------------
 
-For configuration files or theme definitions, colors can also be treated as stable, named palette entries.
+For configuration files or theme definitions, foreground colors, background colors, complete colors, block attributes,
+and block styles have the same conversion API.
 
 ``ColorBase::Value`` is the shared enum behind foreground and background colors.
-``ColorPart::fromString()`` and ``toString()`` convert between these enum values and human-readable names.
+Use ``toString()`` for a canonical representation, ``fromString()`` with a fallback for untrusted optional input, or
+``fromStringOrThrow()`` when invalid configuration must be reported.
 
 .. code-block:: cpp
 
-    const auto foreground = Foreground::fromString("bright_cyan");
-    const auto background = Background::fromString("black");
-    const auto accent = Color{foreground, background};
+    const auto foreground = Foreground::fromStringOrThrow("Bright Cyan");
+    const auto accent = Color::fromStringOrThrow("bright_cyan:black");
+    const auto fallback = Color{fg::White, bg::Black};
+    const auto optionalColor = Color::fromString(userText, fallback);
 
     terminal.printLine(accent, "Configured from text");
 
-This makes it easy to load themes from text files or serialize color choices for later reuse.
+Color identifiers use the names from the built-in color table.
+They accept ASCII case differences and spaces inside an identifier, while canonical output uses lowercase letters and
+underscores.
+``default`` is the terminal default color, while ``inherited`` preserves a lower layer.
+``reset`` is not a color identifier.
+
+The supported formats are:
+
+.. code-block:: text
+
+    Foreground or Background:  color
+    Color:                     foreground[:background]
+    BlockAttributes:           attribute[,attribute...]
+    BlockStyle:                foreground[:background[:attributes]]
+
+An attribute without a prefix is enabled.
+The optional ``+`` prefix also enables it, while ``-`` explicitly disables it.
+Unmentioned attributes remain inherited, and the standalone value ``inherited`` represents an entirely inherited
+attribute set.
+``inherited`` cannot be combined with other attributes, and duplicate attributes are invalid.
+
+.. code-block:: cpp
+
+    const auto emphasis = BlockAttributes::fromStringOrThrow("bold,-italic");
+    const auto style = BlockStyle::fromStringOrThrow("bright_white:blue:bold,-italic");
+
+    assert(emphasis.toString() == "bold,-italic");
+    assert(style.toString() == "bright_white:blue:bold,-italic");
+
+Spaces may occur inside an identifier such as ``Bright White``, but whitespace around ``:``, ``,`` or at the beginning
+or end of a field is invalid.
+This keeps serialized values unambiguous and directly usable in ELCL configuration.
 
 Building Animated Palettes
 --------------------------

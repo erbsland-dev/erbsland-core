@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StandardStreamRegistry.hpp"
 
+#include "BufferedByteInputStream.hpp"
 #include "EncodedTextInputStream.hpp"
 #include "NativeOutputStream.hpp"
 #include "StandardInputStreamProxy.hpp"
@@ -11,6 +12,7 @@
 
 #include "../StreamError.hpp"
 
+#include "../../err/LogicError.hpp"
 #include "../../text/Literals.hpp"
 
 namespace erbsland::stream::impl {
@@ -44,8 +46,7 @@ auto StandardStreamRegistry::errorProxy() -> TextOutputStreamPtr {
 auto StandardStreamRegistry::inputTarget() -> TextInputStreamPtr {
     auto lock = std::scoped_lock{_mutex};
     if (_inputTarget == nullptr) {
-        _inputTarget =
-            std::make_shared<EncodedTextInputStream>(createNativeStandardInputStream(), text::StringEncoding::Utf8);
+        _inputTarget = nativeInputTargetLocked();
     }
     return _inputTarget;
 }
@@ -102,8 +103,7 @@ auto StandardStreamRegistry::replace(
     auto previousError = _errorTarget;
     if (slot == StandardStreamSlot::In) {
         if (previousInput == nullptr) {
-            previousInput =
-                std::make_shared<EncodedTextInputStream>(createNativeStandardInputStream(), text::StringEncoding::Utf8);
+            previousInput = nativeInputTargetLocked();
         }
         _inputTarget = std::move(input);
     }
@@ -123,6 +123,43 @@ auto StandardStreamRegistry::replace(
     }
     return std::make_shared<StandardStreamRedirectData>(
         slot, std::move(previousInput), std::move(previousOutput), std::move(previousError));
+}
+
+auto StandardStreamRegistry::startSensitiveInput(const std::source_location location) -> uint64_t {
+    auto lock = std::scoped_lock{_mutex};
+    auto id = _nextSensitiveInputId++;
+    if (id == 0U) {
+        id = _nextSensitiveInputId++;
+    }
+    const auto wasEmpty = _sensitiveInputRequests.empty();
+    _sensitiveInputRequests.emplace(id, location);
+    if (wasEmpty && _nativeInputTarget != nullptr) {
+        std::static_pointer_cast<EncodedTextInputStream>(_nativeInputTarget)->setSensitive(true);
+    }
+    return id;
+}
+
+void StandardStreamRegistry::stopSensitiveInput(const uint64_t id) {
+    auto lock = std::scoped_lock{_mutex};
+    if (id == 0U || _sensitiveInputRequests.erase(id) == 0U) {
+        throw err::LogicError{"Invalid or already stopped sensitive-input token."};
+    }
+    if (_sensitiveInputRequests.empty() && _nativeInputTarget != nullptr) {
+        std::static_pointer_cast<EncodedTextInputStream>(_nativeInputTarget)->setSensitive(false);
+    }
+}
+
+auto StandardStreamRegistry::nativeInputTargetLocked() -> TextInputStreamPtr {
+    if (_nativeInputTarget == nullptr) {
+        auto native = std::make_shared<EncodedTextInputStream>(
+            std::static_pointer_cast<BufferedByteInputStream>(createNativeStandardInputStream()),
+            text::StringEncoding::Utf8);
+        if (!_sensitiveInputRequests.empty()) {
+            native->setSensitive(true);
+        }
+        _nativeInputTarget = std::move(native);
+    }
+    return _nativeInputTarget;
 }
 
 void StandardStreamRegistry::restore(

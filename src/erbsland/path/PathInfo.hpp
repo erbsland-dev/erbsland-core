@@ -9,7 +9,8 @@
 #include "PathInfoParts.hpp"
 #include "PathType.hpp"
 
-#include "impl/PathInfoData.hpp"
+#include "impl/PathInfoCache.hpp"
+#include "impl/PathWalker_fwd.hpp"
 
 #include "../system/GroupId.hpp"
 #include "../system/GroupName.hpp"
@@ -22,9 +23,14 @@ namespace erbsland::path {
 
 /// Information about a file or directory.
 /// Caching:
-/// - All information for the given path is cached for performance reasons.
+/// - The cache is attached to the original `Path` value and shared by its copies. Repeated `Path::info()` calls for
+///   that value therefore reuse the same snapshot.
+/// - Directory walks preload every metadata field returned by the native directory scan. A walk trusts these scan
+///   snapshots for the duration of the walk.
 /// - A call of `reload()` invalidates cached information immediately and triggers path resolving.
 /// - Without manually calling `reload()`, the cache is automatically invalidated after one second.
+/// - Successful library mutations invalidate the cache attached to the directly affected path.
+/// @seedoc{/reference/path/paths}
 /// Empty/Unresolved/Non-Existing Behavior:
 /// - exists() returns `false`.
 /// - resolvedPath() returns an empty path.
@@ -42,6 +48,8 @@ namespace erbsland::path {
 /// - If you need to follow symbolic links, resolve the path yourself before accessing the path info.
 /// @tested{PathInfoTest PosixPathInfoTest WindowsPathInfoTest}
 class PathInfo final {
+    friend class impl::PathWalker;
+
 public:
     /// Creates an empty path info instance.
     PathInfo() = default;
@@ -58,9 +66,9 @@ public:
     // defaults
     ~PathInfo() = default;
     PathInfo(const PathInfo &) = default;
-    PathInfo(PathInfo &&) = default;
+    PathInfo(PathInfo &&other) noexcept;
     auto operator=(const PathInfo &) -> PathInfo & = default;
-    auto operator=(PathInfo &&) -> PathInfo & = default;
+    auto operator=(PathInfo &&other) noexcept -> PathInfo &;
 
 public: // main attributes
     /// Test if the path behind this info is empty.
@@ -192,14 +200,20 @@ public:
     void reload(PathInfoParts parts);
 
 private:
-    [[nodiscard]] auto data() const noexcept -> const impl::PathInfoData *;
-    [[nodiscard]] auto mutableData() const noexcept -> impl::PathInfoData *;
+    PathInfo(const Path &path, PathInfoParts parts, impl::PathInfoCacheTrustWeakPtr cacheTrust) noexcept;
+    [[nodiscard]] static auto fromDirectoryScan(
+        const Path &path, PathInfoParts parts, const impl::PathInfoCacheTrustPtr &cacheTrust) noexcept -> PathInfo;
     void ensureParts(PathInfoParts parts) const noexcept;
-    void ensurePartsOrThrow(PathInfoParts parts, bool forceReload = false) const;
-    void resolveNames(PathInfoParts parts) const;
+    void ensurePartsOrThrow(PathInfoParts parts) const;
+    void reloadPartsOrThrow(PathInfoParts parts) const;
+    void refreshDataOrThrow(impl::PathInfoData &data, bool trustResolvedPath) const;
+    void resolveNames(PathInfoParts parts, impl::PathInfoData &data) const;
 
 private:
-    mutable impl::PathInfoDataPtr _data;
+    Path _path;
+    impl::PathInfoCache *_cache{};
+    mutable Path _resolvedPath;
+    impl::PathInfoCacheTrustWeakPtr _cacheTrust;
 };
 
 }

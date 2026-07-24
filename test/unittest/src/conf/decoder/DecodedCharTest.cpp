@@ -5,7 +5,7 @@
 
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/impl/decoder/DecodedChar.hpp>
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/unit/CodeLocation.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

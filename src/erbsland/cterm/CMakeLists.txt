@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         Block.hpp
         Block16Style.cpp
         Block16Style.hpp
+        BlockAttributes.cpp
         BlockAttributes.hpp
         BlockCombinationStyle.cpp
         BlockCombinationStyle.hpp
@@ -78,6 +79,17 @@ target_sources(erbsland-core PRIVATE
         ParagraphSpacing.hpp
         ReadableBuffer.cpp
         ReadableBuffer.hpp
+        ReadLine.cpp
+        ReadLine.hpp
+        ReadLine_fwd.hpp
+        ReadLineDisplayStyle.hpp
+        ReadLineOptions.cpp
+        ReadLineOptions.hpp
+        ReadLineResult.hpp
+        ReadLineStatus.hpp
+        ReadSecret.cpp
+        ReadSecret.hpp
+        ReadSecret_fwd.hpp
         RemappedBuffer.cpp
         RemappedBuffer.hpp
         TabOverflowBehavior.hpp

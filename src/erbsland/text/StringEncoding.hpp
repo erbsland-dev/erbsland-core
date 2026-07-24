@@ -5,6 +5,7 @@
 #include "StringBomMode.hpp"
 
 #include "../mem/Byte.hpp"
+#include "../mem/ByteSpan.hpp"
 #include "../mem/Endianness.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
@@ -94,7 +95,7 @@ public: // encoding information
     [[nodiscard]] auto bomLength(StringBomMode mode) const noexcept -> unit::ByteLength;
     /// Get the byte order mark written in the given mode.
     /// The returned span is empty if this encoding does not write a byte order mark in the selected mode.
-    [[nodiscard]] auto bomBytes(StringBomMode mode) const noexcept -> std::span<const mem::Byte>;
+    [[nodiscard]] auto bomBytes(StringBomMode mode) const noexcept -> mem::ConstByteSpan;
 
 private:
     Value _value{Utf8}; ///< The raw string encoding value.

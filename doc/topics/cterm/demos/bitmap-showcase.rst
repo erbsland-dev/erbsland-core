@@ -54,6 +54,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/bitmap-showcase/src/BitmapShowcaseApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/BitmapShowcase/src/BitmapShowcaseApp.cpp`.
 
 This file contains the page layout, sample bitmaps, and the rendering option combinations used by the demo.

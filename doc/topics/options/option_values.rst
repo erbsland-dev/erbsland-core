@@ -94,10 +94,10 @@ Use Typed Getters for Normal Code
 
 The typed getters are the easiest and safest way to read parsed values:
 
-* :cpp:func:`getFlag() <erbsland::options::OptionValues::getFlag>` reads whether a flag appeared.
+* :cpp:func:`getFlag() <erbsland::options::OptionValues::getFlag>` reads the stored boolean value.
 * :cpp:func:`getFlagCount() <erbsland::options::OptionValues::getFlagCount>` reads how often a flag appeared.
 * :cpp:func:`getInteger() <erbsland::options::OptionValues::getInteger>` reads an integer.
-* :cpp:func:`getText() <erbsland::options::OptionValues::getText>` reads a text or choice value.
+* :cpp:func:`getText() <erbsland::options::OptionValues::getText>` reads text, choice, or marked sensitive text.
 * :cpp:func:`getIntegerList() <erbsland::options::OptionValues::getIntegerList>` reads repeated integers.
 * :cpp:func:`getTextList() <erbsland::options::OptionValues::getTextList>` reads repeated text values.
 
@@ -111,6 +111,9 @@ Flags, Lists, and Module Names
 
 Repeated flags are stored as a count.
 This makes ``-vv`` and ``-v -v`` useful for verbosity levels without creating extra options.
+An explicit false value is still an occurrence: ``getFlag()`` returns ``false``, while ``getFlagCount()`` returns one
+and the corresponding :cpp:class:`OptionValue <erbsland::options::OptionValue>` retains its source argument index.
+This distinction lets code tell an omitted flag or configured default from an explicit user choice.
 
 Repeated text or integer values are stored as lists.
 The parser preserves the order in which the values were assigned to that option.

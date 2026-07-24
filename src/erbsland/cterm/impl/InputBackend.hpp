@@ -19,6 +19,7 @@ public:
     [[nodiscard]] auto readKeyImpl(std::chrono::milliseconds timeout) const -> Key override;
     [[nodiscard]] auto waitForKeyImpl() const -> Key override;
     [[nodiscard]] auto readLine() -> text::String override;
+    void purgePendingInput() noexcept override;
 
 public:
     /// Change the current backend.

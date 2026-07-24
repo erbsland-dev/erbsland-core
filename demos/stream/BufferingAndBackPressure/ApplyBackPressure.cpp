@@ -9,7 +9,7 @@ namespace demo {
 
 void applyBackPressure() {
     auto settings = el::OutputStreamSettings{};
-    settings.setBufferCapacity(el::ByteLength{128U}).setBackBufferLimit(el::ByteLength{512U});
+    settings.setBuffering(el::StreamBuffering::Interactive).setBackBufferLimit(el::ByteLength{512U});
     auto options = el::PathWriteTextOptions{};
     options.setStreamSettings(settings);
 

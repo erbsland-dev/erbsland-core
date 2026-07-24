@@ -8,7 +8,9 @@
 
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
+#include "../mem/ByteSpan.hpp"
 #include "../mem/Endianness.hpp"
+#include "../mem/RingBuffer.hpp"
 #include "../time/TimePoint.hpp"
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
@@ -18,9 +20,9 @@
 #include <concepts>
 #include <cstdint>
 #include <mutex>
+#include <optional>
 #include <span>
 #include <type_traits>
-#include <vector>
 
 namespace erbsland::stream::impl {
 class EncodedTextInputStream;
@@ -48,9 +50,9 @@ public:
 
 public: // accessors
     /// Get the byte order used by integer convenience methods.
-    [[nodiscard]] virtual auto endianness() const noexcept -> mem::Endianness;
+    [[nodiscard]] auto endianness() const noexcept -> mem::Endianness;
     /// Set the byte order used by integer convenience methods.
-    virtual void setEndianness(mem::Endianness endianness) noexcept;
+    void setEndianness(mem::Endianness endianness) noexcept;
 
 public: // implement StreamPositioning
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
@@ -63,7 +65,7 @@ public: // core interface
     /// @param destination The destination bytes to fill.
     /// @return The status and number of bytes read.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] auto read(std::span<mem::Byte> destination) -> StreamReadResult<unit::ByteLength>;
+    [[nodiscard]] auto read(mem::ByteSpan destination) -> StreamReadResult<unit::ByteLength>;
 
 public: // default interface
     /// Read up to `maximumLength` bytes and return them as a byte block.
@@ -71,7 +73,7 @@ public: // default interface
     /// @return The status and bytes that were read.
     /// @throws err::ParameterError If `maximumLength` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] virtual auto read(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto read(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
     /// Read exactly `length` bytes.
     /// @param length The number of bytes to read.
     /// Partial bytes are retained by the stream after timeout or premature end-of-stream. Repeating this operation
@@ -79,11 +81,11 @@ public: // default interface
     /// @return `Data` with exactly `length` bytes, or an empty `Timeout`/`Finished` result.
     /// @throws err::ParameterError If `length` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] virtual auto readExact(unit::ByteLength length) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto readExact(unit::ByteLength length) -> StreamReadResult<mem::ByteBlock>;
     /// Read one byte.
     /// @return The status and next byte.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] virtual auto readByte() -> StreamReadResult<mem::Byte>;
+    [[nodiscard]] auto readByte() -> StreamReadResult<mem::Byte>;
     /// Read remaining bytes up to `cDefaultByteReadMaximum`.
     /// @return The status and bytes read before the limit, end, or timeout.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
@@ -93,7 +95,7 @@ public: // default interface
     /// @return The status and bytes read before the limit, end, or timeout.
     /// @throws err::ParameterError If `maximumLength` is infinite.
     /// @throws stream::StreamError If the stream is closed or the backing source fails.
-    [[nodiscard]] virtual auto readAll(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
+    [[nodiscard]] auto readAll(unit::ByteLength maximumLength) -> StreamReadResult<mem::ByteBlock>;
 
 public: // coroutine interface
     /// Asynchronously read one owned byte block.
@@ -176,30 +178,27 @@ public: // integer wrappers
     /// Read an unsigned 64-bit integer.
     [[nodiscard]] auto readUInt64() -> StreamReadResult<uint64_t> { return readInteger<uint64_t>(); }
 
-private:
-    enum class AggregateReadKind : uint8_t {
-        None,
-        Exact,
-        All,
-    };
-
 protected:
     /// Create the absolute deadline for a public read operation.
     [[nodiscard]] auto deadlineFromNow() const -> ReadDeadline;
 
+protected:
+    [[nodiscard]] auto readUntil(mem::ByteSpan destination, ReadDeadline deadline)
+        -> StreamReadResult<unit::ByteLength>;
+
 private:
-    [[nodiscard]] auto readUntil(std::span<mem::Byte> destination, ReadDeadline deadline)
+    [[nodiscard]] auto readChunkLocked(mem::ByteSpan destination, ReadDeadline deadline)
         -> StreamReadResult<unit::ByteLength>;
-    [[nodiscard]] auto readChunkLocked(std::span<mem::Byte> destination, ReadDeadline deadline)
-        -> StreamReadResult<unit::ByteLength>;
-    void selectAggregateRead(AggregateReadKind kind, unit::ByteLength target);
-    void cancelAggregateRead();
-    void appendPending(std::span<const mem::Byte> bytes);
-    [[nodiscard]] auto takePending() -> mem::ByteBlock;
+    [[nodiscard]] auto readIntoRetained(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareRead(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareExact(unit::ByteLength length, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto prepareAll(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    [[nodiscard]] auto retainedBuffer() -> mem::RingBuffer &;
+    [[nodiscard]] auto takeRetained(unit::ByteLength length) -> mem::ByteBlock;
 
 protected:
     /// Read the next source chunk using the remaining time before `deadline`.
-    [[nodiscard]] virtual auto readFromSource(std::span<mem::Byte> destination, ReadDeadline deadline)
+    [[nodiscard]] virtual auto readFromSource(mem::ByteSpan destination, ReadDeadline deadline)
         -> StreamReadResult<unit::ByteLength> = 0;
     /// Test if retained input can be returned without accessing the source.
     [[nodiscard]] auto hasRetainedInput() const noexcept -> bool;
@@ -216,13 +215,9 @@ protected:
 
 private:
     void clearRetainedInput() noexcept;
-    mem::Endianness _endianness{mem::Endianness::Little};      ///< Integer byte order.
-    mutable std::mutex _readMutex;                             ///< Serializes logical read state.
-    AggregateReadKind _aggregateKind{AggregateReadKind::None}; ///< Pending aggregate operation.
-    unit::ByteLength _aggregateTarget{};                       ///< Target of the pending aggregate operation.
-    std::vector<mem::Byte> _pendingBytes;                      ///< Bytes retained by a pending aggregate operation.
-    std::vector<mem::Byte> _replayBytes;                       ///< Retained bytes exposed after changing operations.
-    std::size_t _replayPosition{0U};                           ///< First unread byte in the replay storage.
+    mem::Endianness _endianness{mem::Endianness::Little}; ///< Integer byte order.
+    mutable std::mutex _readMutex;                        ///< Serializes logical read state.
+    std::optional<mem::RingBuffer> _retainedBytes;        ///< Ordered bytes retained across logical operations.
 };
 
 }

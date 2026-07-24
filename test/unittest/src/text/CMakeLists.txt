@@ -3,21 +3,25 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(base_n)
+
 target_sources(erbsland-core-unittest PRIVATE
         AnyStringBuilderTest.cpp
         AnyStringTest.cpp
+        BooleanConversionTest.cpp
         ByteFormatTest.cpp
         CaseSensitivityTest.cpp
         CharRangeTest.cpp
         CharSetTest.cpp
         CharTest.cpp
         CombinedCharTest.cpp
-        EncodingErrorModeTest.cpp
+        EncodingModeTest.cpp
         FloatConversionTest.cpp
         FormatAsTest.cpp
         HtmlParserTest.cpp
         HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
+        NamedKeyParserTest.cpp
         StdFormatForTextTest.cpp
         StringCharReaderTest.cpp
         StringConverterTest.cpp

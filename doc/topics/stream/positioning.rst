@@ -79,7 +79,7 @@ The next read begins from the requested location.
     void readRecordAtOffset() {
         const auto directory = createStreamDemoDirectory("记录"_el);
         const auto path = directory->path() / "animals.bin"_el;
-        path.content().writeDataOrThrow(el::ByteBlock{std::vector<uint8_t>{10U, 11U, 12U, 20U, 21U, 22U}});
+        path.content().writeDataOrThrow(el::ByteBlock({10U, 11U, 12U, 20U, 21U, 22U}));
         const auto input = path.content().openByteInputStream();
 
         input->setPosition(el::ByteIndex{3U});
@@ -114,7 +114,7 @@ Negative, overflowing, invalid, or non-native positions throw ``ParameterError``
     void moveRelativeToEnd() {
         const auto directory = createStreamDemoDirectory("尾部"_el);
         const auto path = directory->path() / "tracks.bin"_el;
-        path.content().writeDataOrThrow(el::ByteBlock{std::vector<uint8_t>{1U, 2U, 3U, 4U, 90U, 91U}});
+        path.content().writeDataOrThrow(el::ByteBlock({1U, 2U, 3U, 4U, 90U, 91U}));
         const auto input = path.content().openByteInputStream();
 
         input->movePosition(el::StreamPositionOrigin::End, el::ByteOffset{-2});
@@ -170,7 +170,7 @@ Position Encoded Text Carefully
 ===============================
 
 Text positions count original encoded bytes, including a consumed or written BOM.
-They must land on a code-point boundary; a misaligned next read is handled by the configured encoding-error mode.
+They must land on a code-point boundary; a misaligned next read is handled by the configured input encoding mode.
 Generic UTF-16 and UTF-32 must resolve byte order at byte zero before moving elsewhere, so explicit endian encodings are
 preferable for immediate random access.
 

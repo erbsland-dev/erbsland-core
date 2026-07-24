@@ -37,7 +37,7 @@ class PathOperationsBackendTest final : public el::UnitTest {
         }
         [[nodiscard]] auto loadInfoOrThrow(const el::path::Path &path, const el::path::PathInfoParts parts) const
             -> el::path::impl::PathInfoData override {
-            auto result = el::path::impl::PathInfoData{path};
+            auto result = el::path::impl::PathInfoData{};
             result.resolvedPath = resolveOrThrow(path, {});
             result.exists = false;
             result.loadedParts = parts | el::path::PathInfoPart::Type;

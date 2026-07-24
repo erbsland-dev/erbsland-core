@@ -59,6 +59,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/text-gallery/src/TextGalleryApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/TextGallery/src/TextGalleryApp.cpp`.
 
 This file contains the complete layout logic for the panels, titles, and footer prompts shown in the demo.

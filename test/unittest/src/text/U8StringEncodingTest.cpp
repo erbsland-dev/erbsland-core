@@ -3,7 +3,7 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteReader.hpp>
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
 #include <erbsland/text/StringEncoder.hpp>
@@ -97,47 +97,32 @@ public:
                 StringEncoding::Utf32LittleEndian));
     }
 
-    void testDecodeErrorModes() {
+    void testDecodeEncodingModes() {
         const auto malformedUtf8 = makeBlock({0x41U, 0xC0U, 0x42U});
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{malformedUtf8}.toU8String(StringEncoding::Utf8)}.toStdU32String(),
             std::u32string{U"A\uFFFDB"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{malformedUtf8}.toU8String(
-                                StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"AB"});
         REQUIRE_THROWS(
             StringDecoder{malformedUtf8}.toU8String(
-                StringEncoding::Utf8, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict));
 
         const auto malformedUtf16 = makeBlock({0x00U, 0xD8U, 0x41U, 0x00U});
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{malformedUtf16}.toU8String(StringEncoding::Utf16LittleEndian)}
                 .toStdU32String(),
             std::u32string{U"\uFFFDA"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{malformedUtf16}.toU8String(
-                                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"A"});
         REQUIRE_THROWS(
             StringDecoder{malformedUtf16}.toU8String(
-                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingMode::Strict));
 
         const auto malformedUtf32 = makeBlock({0x00U, 0xD8U, 0x00U, 0x00U, 0x41U, 0x00U, 0x00U, 0x00U});
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{malformedUtf32}.toU8String(StringEncoding::Utf32LittleEndian)}
                 .toStdU32String(),
             std::u32string{U"\uFFFDA"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{malformedUtf32}.toU8String(
-                                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"A"});
         REQUIRE_THROWS(
             StringDecoder{malformedUtf32}.toU8String(
-                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingMode::Strict));
     }
 
     void testDecodeTruncatedUtf16AndUtf32Tails() {
@@ -146,28 +131,18 @@ public:
                 StringDecoder{makeBlock({0x41U, 0x00U, 0x99U})}.toU8String(StringEncoding::Utf16LittleEndian)}
                 .toStdU32String(),
             std::u32string{U"A\uFFFD"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{makeBlock({0x41U, 0x00U, 0x99U})}.toU8String(
-                                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"A"});
         REQUIRE_THROWS(
             StringDecoder{makeBlock({0x41U, 0x00U, 0x99U})}.toU8String(
-                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                StringEncoding::Utf16LittleEndian, StringBomMode::Automatic, EncodingMode::Strict));
 
         REQUIRE_EQUAL(
             StringConverter{StringDecoder{makeBlock({0x41U, 0x00U, 0x00U, 0x00U, 0x99U})}.toU8String(
                                 StringEncoding::Utf32LittleEndian)}
                 .toStdU32String(),
             std::u32string{U"A\uFFFD"});
-        REQUIRE_EQUAL(
-            StringConverter{StringDecoder{makeBlock({0x41U, 0x00U, 0x00U, 0x00U, 0x99U})}.toU8String(
-                                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Ignore)}
-                .toStdU32String(),
-            std::u32string{U"A"});
         REQUIRE_THROWS(
             StringDecoder{makeBlock({0x41U, 0x00U, 0x00U, 0x00U, 0x99U})}.toU8String(
-                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingErrorMode::Throw));
+                StringEncoding::Utf32LittleEndian, StringBomMode::Automatic, EncodingMode::Strict));
     }
 
     void testUtf16AndUtf32ReaderDecoding() {
@@ -176,14 +151,14 @@ public:
         auto utf16Reader = ByteReader{utf16Data};
         utf16Reader.setPosition(ByteIndex{2U});
         REQUIRE(
-            el::text::impl::utf16::forEachDecodedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf16::forEachDecodedCharacter<EncodingMode::Strict>(
                 utf16Reader, [&](const Char character) -> void { utf16Text.push_back(character.toRawValue()); }));
         REQUIRE_EQUAL(utf16Text, std::u32string{U"A😀"});
         REQUIRE_EQUAL(utf16Reader.position(), ByteIndex{8U});
 
         auto invalidUtf16Reader = ByteReader{makeBlock({0x00U, 0xD8U, 0x41U, 0x00U})};
         REQUIRE_THROWS(
-            el::text::impl::utf16::forEachDecodedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf16::forEachDecodedCharacter<EncodingMode::Strict>(
                 invalidUtf16Reader, [](Char) -> void {}));
         REQUIRE_EQUAL(invalidUtf16Reader.position(), ByteIndex::zero());
 
@@ -192,14 +167,14 @@ public:
         auto utf32Reader = ByteReader{utf32Data};
         utf32Reader.setPosition(ByteIndex{4U});
         REQUIRE(
-            el::text::impl::utf32::forEachValidatedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf32::forEachValidatedCharacter<EncodingMode::Strict>(
                 utf32Reader, [&](const Char character) -> void { utf32Text.push_back(character.toRawValue()); }));
         REQUIRE_EQUAL(utf32Text, std::u32string{U"A"});
         REQUIRE_EQUAL(utf32Reader.position(), ByteIndex{8U});
 
         auto invalidUtf32Reader = ByteReader{makeBlock({0x00U, 0xD8U, 0x00U, 0x00U})};
         REQUIRE_THROWS(
-            el::text::impl::utf32::forEachValidatedCharacter<EncodingErrorMode::Throw>(
+            el::text::impl::utf32::forEachValidatedCharacter<EncodingMode::Strict>(
                 invalidUtf32Reader, [](Char) -> void {}));
         REQUIRE_EQUAL(invalidUtf32Reader.position(), ByteIndex::zero());
     }
@@ -245,10 +220,12 @@ private:
     [[nodiscard]] static auto sampleU32() -> std::u32string { return std::u32string{U"A¢€😀"}; }
 
     [[nodiscard]] static auto makeBlock(std::initializer_list<uint8_t> bytes) -> ByteBlock {
-        return ByteBlock{std::vector<uint8_t>{bytes}};
+        return ByteBlock::fromVector(std::vector<uint8_t>{bytes});
     }
 
-    [[nodiscard]] static auto makeBlock(const std::vector<uint8_t> &bytes) -> ByteBlock { return ByteBlock{bytes}; }
+    [[nodiscard]] static auto makeBlock(const std::vector<uint8_t> &bytes) -> ByteBlock {
+        return ByteBlock::fromVector(bytes);
+    }
 
     [[nodiscard]] static auto withBom(std::initializer_list<uint8_t> bom, const std::vector<uint8_t> &bytes)
         -> std::vector<uint8_t> {

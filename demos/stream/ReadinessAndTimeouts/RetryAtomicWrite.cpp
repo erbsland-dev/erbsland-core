@@ -11,7 +11,7 @@ namespace demo {
 
 void retryAtomicWrite() {
     auto output = ScriptedByteOutputStream{1U};
-    const auto observation = el::ByteBlock{std::vector<uint8_t>{0x17U, 0x04U, 0x2aU}};
+    const auto observation = el::ByteBlock({0x17U, 0x04U, 0x2aU});
     const auto attempts = writeObservationRecord(output, observation);
     el::io::printLine("Attempts: "_el, attempts);
     el::io::printLine("Record accepted once: "_el, output.bytes().size() == observation.length().toSizeT());

@@ -12,6 +12,8 @@
 namespace erbsland::options {
 
 /// Storage for a parsed option value or default value.
+/// Sensitive text is stored as a marked scalar string and never as a list or default value.
+/// @tested{OptionsParserTest}
 using OptionValueStorage =
     std::variant<bool, OptionInteger, std::vector<OptionInteger>, text::String, std::vector<text::String>>;
 

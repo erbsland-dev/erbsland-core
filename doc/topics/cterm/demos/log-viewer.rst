@@ -54,6 +54,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/log-viewer/src/LogViewerApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/LogViewer/src/LogViewerApp.cpp`.
 
 This file contains the log generator, the cursor-buffer rendering logic, and the follow versus pan viewport handling.

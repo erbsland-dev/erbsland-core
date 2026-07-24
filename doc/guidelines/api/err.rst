@@ -2,14 +2,6 @@
 Error Domain API Guidelines
 ***************************
 
-These guidelines extend the Common API Guidelines for public APIs that report errors with typed exceptions, structured
-diagnostics and diagnostic cause chains.
-
-The ``err`` namespace is the neutral error foundation of the library.
-It owns the common exception base classes, cross-domain error categories and the abstract diagnostic interface.
-Domain-specific exceptions live in their owning domain namespace, so concrete diagnostics can refer to domain types
-without creating circular dependencies.
-
 Core Semantics
 ==============
 
@@ -18,95 +10,89 @@ Exception Model
 
 .. code-block:: text
 
-    Exception // common base for all library exceptions
-    reason // human-readable error text stored as text::String
-    cause // optional std::exception_ptr with extended diagnostic cause
-    what() // std::exception compatible null-terminated reason text
-    toString() // local plain text for one exception, without rendering causes
-    diagnostic() // abstract diagnostic for one exception
-    DiagnosticConstPtr // immutable shared diagnostic pointer
-    TextDocument // neutral output tree for rendered diagnostics
-    DomainError // typed exception owned by the domain that reports the failure
-    OperationOrThrow() // explicit throwing variant of an otherwise non-throwing API
+    exception = throwable failure with a human-readable local reason
+    diagnostic = structured, renderable representation of one failure
+    domain error = typed exception owned by the failing domain
+    reason = human-readable local error text
+    cause = optional exception from a genuinely separate failure layer
 
 Diagnostic Trust Boundary
 -------------------------
 
-*   Developer-authored titles, descriptions, help text, option contexts and display-map values are trusted
-    and rendered verbatim.
-*   Library-owned builders must escape values originating outside the application, including path text, command-line
-    arguments, native messages, and foreign exception text.
-*   ``EscapeFormat::Display`` is used for readable output that cannot inject terminal control sequences.
+.. code-block:: text
+
+    developer-authored text = trusted and rendered verbatim
+    external values = display-escaped before insertion into diagnostics
+    native or foreign text = untrusted external value
 
 Usage of Cause Chain
 --------------------
 
-*   ``cause`` is only used for a genuinely separate failure layer.
-*   Most prominent example: :cpp:class:`ApplicationError <erbsland::core::ApplicationError>` transporting the actual cause.
-*   In library errors should fold and explain platform errors to keep exceptions chains small and
-    diagnostics useful for the user. (E.g. by embedding :cpp:class:`PlatformErrorContext <erbsland::system::PlatformErrorContext>`)
+.. code-block:: text
+
+    cause = failure from a separate abstraction layer
+    platform context = part of its owning domain diagnostic, not a routine cause
 
 Writing Style of Error Messages
 -------------------------------
 
-Domain reasons stay clean and user-facing, answering the most important questions of the user:
-
-*   **What** went wrong? (title)
-*   **Why** did it fail? (description)
-*   Optional: **How** can the problem get resolved? (help)
-
-Neutral Error Types
-===================
-
 .. code-block:: text
 
-    Exception // base class for all Erbsland exceptions
-    LogicError // violated programming precondition or invariant
-    RuntimeError // domain-neutral runtime failure
-    ParameterError // invalid API argument
-    OutOfRangeError // requested value, index or range is outside accepted bounds
-    OverflowError // arithmetic or conversion result cannot be represented
-    ParseError // text cannot be parsed as the requested value
+    title = what failed
+    description = why it failed
+    help = optional resolution
+    external values = display-escaped before insertion
 
-Diagnostic Types
-================
-
-.. code-block:: text
-
-    Diagnostic // abstract interface for one error
-    ErrorDocumentBuilder // shared builder for consistently styled error documents
-
-Domain Errors
+Primary Types
 =============
 
 .. code-block:: text
 
-    ❮domain❯::❮Type❯Error // domain specific error
+    Exception // base class for all Erbsland exceptions
+    Diagnostic // abstract structured representation of one failure
 
-Exception and Domain Exception Patterns
-=======================================
+Secondary Types
+===============
 
 .. code-block:: text
 
-    Exception() // create an exception with empty reason
-    Exception(reason[, cause]) // create an exception with reason and optional cause
-    ❮Type❯Error(reason[, cause]) // Error with reason and cause
-    ❮Type❯Error(context[, cause]) // Using a context to store more info than reason alone.
-    o.what() -> mem::UnsafeConstCharPtr // std::exception reason text
+    LogicError, RuntimeError // programming and domain-neutral runtime failures
+    ParameterError, OutOfRangeError // invalid argument and bounds failures
+    OverflowError, ParseError // representation and text-parsing failures
+    ErrorDocumentBuilder // shared builder for consistently styled error documents
+    DiagnosticHelper // adapter from exceptions and cause chains to diagnostic documents
+    ❮domain❯::❮Type❯Error // domain specific error
+
+Pattern Definitions
+===================
+
+.. code-block:: text
+
+    V = ❮DiagnosticData❯ // domain-specific diagnostic data
+
+Exception Patterns
+==================
+
+.. code-block:: text
+
+    T() // create an exception with an empty reason
+    T(reason[, cause]) // create an exception with a reason and optional cause
+    T(context[, cause]) // create a domain exception from structured context
+    o.what() -> mem::UnsafeConstCharPtr // expose the reason at the standard exception boundary
     o.reason() -> const text::String& // stored human-readable reason
     o.hasCause() -> bool // test if a chained diagnostic cause is available
     o.cause() -> std::exception_ptr // access the chained diagnostic cause
     o.toString() -> text::String // local display text for one exception
     o.diagnostic() -> DiagnosticConstPtr // abstract diagnostic for one exception
-    o.toTextDocument([displayText]) -> TextDocument // render one diagnostic with optional display text
+    o.toTextDocument([displayText]) -> text::TextDocument // render one diagnostic with optional display text
 
-Context to Provide Additional Error Data
-========================================
+Error Context Patterns
+======================
 
 .. code-block:: text
 
-    ❮Type❯ErrorContext(title [, description]) // common ctor for context
-    ❮Type❯ErrorContext(title, domainValue) // domain specific data
+    T(title[, description]) // create context with common diagnostic text
+    T(title, domainValue) // create context with domain-specific data
     o.setDescription(text) -> T& // chained setters to build context
     o.set❮DomainData❯(data) -> T& // adding domain specific data
     o.❮domainData❯() -> V // accessing the data for building diagnostics
@@ -114,10 +100,7 @@ Context to Provide Additional Error Data
 Throw Helper Patterns
 =====================
 
-*   Throw helpers are implementation details for domains that need to break include cycles.
-*   Throw helpers are **implementation detail**, not public API.
-*   Prefer direct ``throw`` in ordinary code.
-
 .. code-block:: text
 
-    ❮domain❯::impl::throw❮Error❯(...) // placed in `❮domain❯/impl/ThrowHelper.hpp`
+    throw❮Error❯(...) // implementation helper used only to break include cycles
+    ❮operation❯OrThrow(...) -> T // throwing variant of an otherwise non-throwing operation

@@ -86,7 +86,7 @@ public:
     void testByteInputPositioning() {
         const auto fixture = Fixture{"byte-input"};
         const auto path = fixture.file("data.bin");
-        path.content().writeDataOrThrow(ByteBlock{std::vector<uint8_t>{1U, 2U, 3U, 4U}});
+        path.content().writeDataOrThrow(ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U, 4U}));
         const auto stream = path.content().openByteInputStream();
 
         REQUIRE(stream->supportsPositioning());
@@ -110,7 +110,7 @@ public:
         const auto stream = path.content().openByteOutputStream(options);
 
         REQUIRE(stream->supportsPositioning());
-        REQUIRE(stream->write(ByteBlock{std::vector<uint8_t>{1U, 2U, 3U, 4U}}).isSuccess());
+        REQUIRE(stream->write(ByteBlock::fromVector(std::vector<uint8_t>{1U, 2U, 3U, 4U})).isSuccess());
         REQUIRE_EQUAL(stream->position(), ByteIndex{4U});
         REQUIRE(stream->setPosition(ByteIndex{1U}).isSuccess());
         REQUIRE(stream->write(Byte{9U}).isSuccess());

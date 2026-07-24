@@ -18,6 +18,7 @@
 #include "impl/U16StringReadTools.hpp"
 #include "impl/U16StringTransformTools.hpp"
 
+#include "../EncodingMode.hpp"
 #include "../impl/ByteBlockFormatter.hpp"
 #include "../impl/FloatConversion.hpp"
 #include "../StringConverter.hpp"
@@ -45,7 +46,7 @@ U16String::U16String(const U16StringLiteral &str) noexcept :
 }
 
 auto U16String::copy() const -> U16String {
-    return U16String{U16StringEditor{*this}};
+    return U16String{U16StringSharedStorage{dataView()}};
 }
 
 auto U16String::isEmpty() const noexcept -> bool {
@@ -59,7 +60,7 @@ auto U16String::isValidUtf16() const noexcept -> bool {
 auto U16String::toHash() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf16::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.toRawValue());
             return true;
         });
@@ -69,7 +70,7 @@ auto U16String::toHash() const noexcept -> std::size_t {
 auto U16String::toHashCI() const noexcept -> std::size_t {
     auto result = std::size_t{0};
     impl::utf16::forEachDecodedCharacter(
-        dataView().dataSpan(), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+        dataView().dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
             util::advanceHash(result, character.caseFolded().toRawValue());
             return true;
         });
@@ -255,66 +256,65 @@ auto U16String::splitAt(const CpIndex index) const noexcept -> std::pair<U16Stri
 }
 
 auto U16String::removed(const U16DataRange range) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.removed(range)};
+    return U16String{U16StringModifyTools{dataView()}.removed(range)};
 }
 
 auto U16String::removed(const CpRange range) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.removed(range)};
+    return U16String{U16StringModifyTools{dataView()}.removed(range)};
 }
 
 auto U16String::removedAll(const CharSet &characters) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.removedAll(characters)};
+    return U16String{U16StringModifyTools{dataView()}.removedAll(characters)};
 }
 
 auto U16String::removedAll(const U16String &text, const CharCompareFn compareFn) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
+    return U16String{U16StringModifyTools{dataView()}.removed(text.dataView(), compareFn)};
 }
 
 auto U16String::removedFirst(const U16String &text, const CharCompareFn compareFn) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
+    return U16String{U16StringModifyTools{dataView()}.removedFirst(text.dataView(), compareFn)};
 }
 
 auto U16String::kept(const U16DataRange range) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.kept(range)};
+    return U16String{U16StringModifyTools{dataView()}.kept(range)};
 }
 
 auto U16String::kept(const CpRange range) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.kept(range)};
+    return U16String{U16StringModifyTools{dataView()}.kept(range)};
 }
 
 auto U16String::inserted(const U16DataIndex index, const U16String &text) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U16String{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
 }
 
 auto U16String::inserted(const CpIndex index, const U16String &text) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
+    return U16String{U16StringModifyTools{dataView()}.inserted(index, text.dataView())};
 }
 
 auto U16String::replaced(const U16DataRange range, const U16String &text) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U16String{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
 }
 
 auto U16String::replaced(const CpRange range, const U16String &text) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
+    return U16String{U16StringModifyTools{dataView()}.replaced(range, text.dataView())};
 }
 
 auto U16String::replacedAll(const CharSet &characters, const Char replacement) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.replacedAll(characters, replacement)};
+    return U16String{U16StringModifyTools{dataView()}.replacedAll(characters, replacement)};
 }
 
 auto U16String::replacedAll(const CharSet &characters, const U16String &replacement) const -> U16String {
-    return U16StringEditor{U16StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
+    return U16String{U16StringModifyTools{dataView()}.replacedAll(characters, replacement.dataView())};
 }
 
 auto U16String::replacedAll(const U16String &text, const U16String &replacement, const CharCompareFn compareFn) const
     -> U16String {
-    return U16StringEditor{
-        U16StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
+    return U16String{U16StringModifyTools{dataView()}.replacedAll(text.dataView(), replacement.dataView(), compareFn)};
 }
 
 auto U16String::replacedFirst(const U16String &text, const U16String &replacement, const CharCompareFn compareFn) const
     -> U16String {
-    return U16StringEditor{
+    return U16String{
         U16StringModifyTools{dataView()}.replacedFirst(text.dataView(), replacement.dataView(), compareFn)};
 }
 
@@ -324,11 +324,11 @@ auto U16String::truncated(const CpLength maximumWidth, const TruncateMode mode) 
 
 auto U16String::truncated(const CpLength maximumWidth, const TruncateMode mode, const U16String &ellipsis) const
     -> U16String {
-    return U16StringEditor{U16StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
+    return U16String{U16StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
 auto U16String::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U16String {
-    return U16StringEditor{U16StringTransformTools{dataView()}.aligned(length, alignment, fill)};
+    return U16String{U16StringTransformTools{dataView()}.aligned(length, alignment, fill)};
 }
 
 auto U16String::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U16String {
@@ -346,7 +346,7 @@ auto U16String::toEscaped(const EscapeFormat format, const EscapeAmount amount) 
 auto U16String::fromCharacter(const Char character, const CpLength count) -> U16String {
     auto storage = U16StringSharedStorage{};
     U16StringAppendTools{storage}.append(character, count);
-    return U16String{U16StringStorage{std::move(storage)}};
+    return U16String{std::move(storage)};
 }
 
 auto U16String::fromJoined(const std::initializer_list<U16String> parts) -> U16String {
@@ -370,7 +370,7 @@ auto U16String::fromJoined(const std::initializer_list<U16String> parts) -> U16S
         writePosition = U16StringSharedStorage::checkedAddSize(
             writePosition, data.size(), "Joined string write exceeds size bounds");
     }
-    return U16String{U16StringStorage{std::move(storage)}};
+    return U16String{std::move(storage)};
 }
 
 auto U16String::fromFloat(const double value, const FloatFormat format) -> U16String {
@@ -385,7 +385,7 @@ auto U16String::fromByteBlock(const mem::ByteBlock &bytes, const ByteFormat form
     auto storage = U16StringSharedStorage{};
     auto appendTools = U16StringAppendTools{storage};
     impl::formatByteBlock(appendTools, bytes, format);
-    return U16String{U16StringStorage{std::move(storage)}};
+    return U16String{std::move(storage)};
 }
 
 auto U16String::forEach(const ProcessCharacterFn &function) const -> util::LoopResult {
@@ -394,9 +394,9 @@ auto U16String::forEach(const ProcessCharacterFn &function) const -> util::LoopR
 
 auto U16String::transformed(const TransformCharacterFn function) const -> U16String {
     if (auto result = U16StringTransformTools{dataView()}.transformedIfChanged(function)) {
-        return U16StringEditor{std::move(*result)};
+        return U16String{std::move(*result)};
     }
-    return U16StringEditor{U16StringSharedStorage{dataView()}};
+    return *this;
 }
 
 auto U16String::begin() const noexcept -> const_iterator {
@@ -420,27 +420,6 @@ auto U16String::storageId() const noexcept -> mem::StorageIdentifier {
         return literal->storageId();
     }
     return {};
-}
-
-auto U16String::isFullStorageRange() const noexcept -> bool {
-    if (const auto *shared = std::get_if<U16StringSharedStorage>(&_storage)) {
-        return shared->range().index().isZero() && shared->range().length().toSizeT() == shared->dataSize();
-    }
-    if (const auto *literal = std::get_if<U16StringLiteralStorage>(&_storage)) {
-        return literal->range().index().isZero() && literal->range().length().toSizeT() == literal->size();
-    }
-    return false;
-}
-
-auto U16String::stringForUnchangedTransform() const -> U16String {
-    if (isFullStorageRange()) {
-        return *this;
-    }
-    const auto view = dataView();
-    if (view.dataSpan().empty()) {
-        return {};
-    }
-    return U16String{U16StringStorage{U16StringSharedStorage{view}}};
 }
 
 auto U16String::withRange(const U16DataRange range) const noexcept -> U16String {

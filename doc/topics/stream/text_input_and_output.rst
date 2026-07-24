@@ -275,6 +275,13 @@ existing string as part of the same request.
 These low-level methods avoid building another formatting context and are the right choice for large, already-built
 text.
 
+.. note::
+
+    Text output assumes that Erbsland strings already contain the representation the application intends to write.
+    When the target uses the same representation, the stream copies it without another validation pass.
+    When transcoding is required, malformed source sequences become Unicode replacement characters.
+    Call ``isValid()`` before writing when the application must reject malformed internal text.
+
 :cpp:func:`print() <erbsland::stream::TextOutputStream::print>` and
 :cpp:func:`printLine() <erbsland::stream::TextOutputStream::printLine>` combine strings, characters, numbers, booleans,
 and formatting objects concisely.
@@ -432,8 +439,8 @@ from byte zero and no BOM can be inspected there.
 
 These policies apply only at the initial byte boundary.
 Readers consume an accepted signature before producing text, and writers emit it through their dedicated BOM path.
-A repeated or embedded encoded ``U+FEFF`` is invalid content and follows the stream's encoding-error mode; no public
-string, reader, or iterator exposes an internal BOM signal.
+A repeated or embedded encoded ``U+FEFF`` is invalid input content and follows the input stream's encoding mode; no
+public string, reader, or iterator exposes an internal BOM signal.
 
 :cpp:func:`encoding() <erbsland::stream::TextOutputStream::encoding>` reports the configured value.
 :cpp:func:`effectiveEncoding() <erbsland::stream::TextOutputStream::effectiveEncoding>` reports the concrete encoding
@@ -498,25 +505,20 @@ Choose Deliberately How Malformed Text Is Handled
 
 Malformed encoded input is different from failed I/O.
 The source may be readable and complete while its bytes are not valid for the selected encoding.
-:cpp:enum:`EncodingErrorMode <erbsland::text::EncodingErrorMode>` lets the boundary decide whether an application may
+:cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` lets the boundary decide whether an application may
 continue with a lossy interpretation:
 
-``Replace``
+``Tolerant``
     Inserts the Unicode replacement character for malformed input.
     This is a useful default for display, diagnostics, and imported prose where preserving progress matters most.
 
-``Ignore``
-    Skips malformed input.
-    Use it only when omission is an explicit part of the data policy because the resulting text no longer identifies
-    where information was lost.
-
-``Throw``
+``Strict``
     Raises :cpp:class:`EncodingError <erbsland::text::EncodingError>` at the first malformed sequence.
     Use it for configuration, source code, identifiers, signed text, and other formats where replacement could change
     meaning or conceal corruption.
 
 Set the mode before opening the stream.
-Choosing ``Throw`` does not turn a timeout into an exception: bounded flow control still returns ``Timeout``.
+Choosing ``Strict`` does not turn a timeout into an exception: bounded flow control still returns ``Timeout``.
 Likewise, an inaccessible or failed source still throws ``StreamError``.
 Catch ``EncodingError`` when you can reject or report invalid content, and catch ``StreamError`` where you can explain
 which source operation failed.
@@ -539,7 +541,7 @@ outcomes.
     void rejectInvalidEncoding(const el::Path &path) {
         constexpr auto cMaximumAttempts = 3U;
         auto options = el::PathReadTextOptions{el::StringEncoding::Utf8};
-        options.setEncodingErrorMode(el::EncodingErrorMode::Throw);
+        options.setEncodingMode(el::EncodingMode::Strict);
         options.setTimeout(el::TimeDelta::seconds(1));
         try {
             const auto input = path.content().openTextInputStream(options);

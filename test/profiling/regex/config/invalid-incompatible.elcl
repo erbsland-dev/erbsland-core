@@ -1,0 +1,12 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Suite             : "snapshot"
+
+--*[ Scenario ]*---------------------------------------------------------------
+Name              : "replace-file"
+Use Cases         : "replace-all"
+Inputs            : "file-utf8"
+Pattern           : /a/
+Subject           : "alpha"
+Replacement Modes : "expression"

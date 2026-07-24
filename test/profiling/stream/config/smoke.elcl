@@ -1,0 +1,11 @@
+@version: "1.0"
+
+---[ Run ]---------------------------------------------------------------------
+Mode              : "profile"
+Suite             : "smoke"
+Duration          : 2s
+Threads           : 1
+Seed              : 0x4552'4253'4c41'4e44
+Corpus Limit      : 8 MiB
+Progress Interval : 1s
+Keep Files        : no

@@ -28,15 +28,17 @@ You will also learn when to throttle an output producer and when to flush accept
 Understand the Buffer Limits
 ============================
 
-Stream settings provide two related size controls:
+Stream settings provide an intent-based buffering control and one output bound:
 
-``bufferCapacity``
-    The fixed capacity used by the byte stream for native input or output.
+``buffering``
+    Selects ``MinimalMemory``, ``Interactive``, ``Balanced``, ``Throughput``, or ``Bulk`` according to the intended
+    workload.
     Both :cpp:class:`InputStreamSettings <erbsland::stream::InputStreamSettings>` and
     :cpp:class:`OutputStreamSettings <erbsland::stream::OutputStreamSettings>` provide this setting.
 
 ``backBufferLimit``
-    The maximum size of the growing output queue.
+    The maximum size of the growing output queue. Each buffering preset supplies a default, which can be explicitly
+    overridden and later restored with ``clearBackBufferLimit()``.
     Only ``OutputStreamSettings`` provides this setting because output must retain complete application writes while a
     destination is busy.
 
@@ -44,10 +46,58 @@ Text streams use the buffers of their backing byte streams.
 Text input adds decoding after the buffered byte input, while text output encodes each request before the bytes enter
 the output queue.
 
+The presets currently resolve to the following internal limits.
+These values are implementation policy rather than independent public settings, so future releases can tune them while
+preserving the workload intention selected by the application.
+
+.. list-table:: Stream buffering presets
+    :header-rows: 1
+
+    *   - Preset
+        - I/O rings
+        - Aggregate chunk
+        - Decoder
+        - Initial output retention
+        - Default back limit
+    *   - ``MinimalMemory``
+        - 4 KiB
+        - 16 KiB
+        - 4 KiB
+        - 4 KiB
+        - 256 KiB
+    *   - ``Interactive``
+        - 16 KiB
+        - 32 KiB
+        - 16 KiB
+        - 4 KiB
+        - 1 MiB
+    *   - ``Balanced``
+        - 64 KiB
+        - 64 KiB
+        - 64 KiB
+        - 16 KiB
+        - 16 MiB
+    *   - ``Throughput``
+        - 256 KiB
+        - 256 KiB
+        - 128 KiB
+        - 64 KiB
+        - 64 MiB
+    *   - ``Bulk``
+        - 1 MiB
+        - 1 MiB
+        - 256 KiB
+        - 256 KiB
+        - 256 MiB
+
+``backBufferLimit()`` always reports the effective value.
+Changing ``buffering`` preserves an explicit override, while ``clearBackBufferLimit()`` restores the default belonging
+to the currently selected preset.
+
 Input Streams Read Ahead
 ------------------------
 
-An input stream uses two fixed rings of ``bufferCapacity`` bytes.
+An input stream uses two fixed rings sized from the selected buffering preset.
 Public reads consume the front ring while a background worker fills the back ring from the native source.
 When the front ring is empty, the rings exchange roles and read-ahead continues.
 
@@ -86,7 +136,7 @@ The back ring grows when necessary, but never beyond ``backBufferLimit``.
     flowchart LR
         app["Application write"] --> request["Atomic bytes<br/>text is encoded here"]
         request --> back["Back ring<br/>grows to backBufferLimit"]
-        back --> front["Front ring<br/>fixed bufferCapacity"]
+        back --> front["Front ring<br/>preset capacity"]
         front -->|"background write"| target["Native target"]
 
 The bounded back ring is what makes write results simple.
@@ -104,8 +154,9 @@ Choose Sizes From Records and Concurrency
 -----------------------------------------
 
 The defaults are a good starting point for ordinary files and terminals.
-Choose a different ``bufferCapacity`` when measurements show that the endpoint benefits from another native transfer
-size or when the fixed memory per stream must be reduced.
+Choose a different buffering preset when measurements show that the endpoint benefits from more throughput or when the
+fixed memory per stream must be reduced.
+``Balanced`` is the default for general-purpose streams.
 For output, choose ``backBufferLimit`` from the largest indivisible record the application must write and the amount of
 burst traffic it may queue safely.
 
@@ -117,8 +168,8 @@ effective policy later through ``inputSettings()`` or ``outputSettings()``.
 .. rubric:: Demo
 
 The following demo opens text input and output streams for a cell-imaging workflow.
-It gives the input rings 8 KiB each, selects a 4 KiB output front ring, and allows a 32 KiB output back ring.
-Using different values makes the independent purposes of the two settings visible.
+It chooses ``Interactive`` input and ``Throughput`` output, then explicitly limits the output back ring to 32 KiB.
+The presets express the workload intent without exposing the different internal buffer sizes.
 
 .. erbsland-demo::
     :source: stream/BufferingAndBackPressure/ConfigureBuffers.cpp
@@ -127,31 +178,26 @@ Using different values makes the independent purposes of the two settings visibl
 
 .. code-block:: cpp
 
-    /// Configure buffer sizes before opening text streams.
-    /// Text streams use the settings of their backing byte streams. Input has two fixed rings of `bufferCapacity()`, while
-    /// output combines a fixed front ring with a growing back ring limited by `backBufferLimit()`.
+    /// Configure buffering intentions before opening text streams.
+    /// Text streams use the settings of their backing byte streams, while the library selects suitable internal sizes for
+    /// each buffer role.
     void openCellImagingStreams(const el::Path &sourcePath, const el::Path &targetPath) {
         auto inputSettings = el::InputStreamSettings{};
-        inputSettings.setBufferCapacity(el::ByteLength{8U * 1024U});
+        inputSettings.setBuffering(el::StreamBuffering::Interactive);
         auto readOptions = el::PathReadTextOptions{};
         readOptions.setStreamSettings(inputSettings);
         const auto input = sourcePath.content().openTextInputStream(readOptions);
 
         auto outputSettings = el::OutputStreamSettings{};
-        outputSettings.setBufferCapacity(el::ByteLength{4U * 1024U})
+        outputSettings.setBuffering(el::StreamBuffering::Throughput)
             .setBackBufferLimit(el::ByteLength{32U * 1024U});
         auto writeOptions = el::PathWriteTextOptions{};
         writeOptions.setStreamSettings(outputSettings);
         const auto output = targetPath.content().openTextOutputStream(writeOptions);
 
         el::io::printLine(
-            "Input buffer: "_el,
-            input->inputSettings().bufferCapacity().toSizeT(),
-            " bytes"_el);
-        el::io::printLine(
-            "Output buffer: "_el,
-            output->outputSettings().bufferCapacity().toSizeT(),
-            " bytes"_el);
+            "Input buffering: interactive"_el);
+        el::io::printLine("Output buffering: throughput"_el);
         el::io::printLine(
             "Output back buffer: "_el,
             output->outputSettings().backBufferLimit().toSizeT(),
@@ -164,8 +210,8 @@ Using different values makes the independent purposes of the two settings visibl
 .. erbsland-ansi::
     :escape-char: ␛
 
-    Input buffer: 8192 bytes
-    Output buffer: 4096 bytes
+    Input buffering: interactive
+    Output buffering: throughput
     Output back buffer: 32768 bytes
 
 .. erbsland-demo-end::
@@ -327,7 +373,7 @@ For text, remember that the encoded byte length may be larger than the number of
 
 .. rubric:: Demo
 
-The demo opens a text output stream with an 8-byte front buffer and a 16-byte back-buffer limit.
+The demo opens a text output stream with minimal-memory buffering and a 16-byte back-buffer limit.
 It then writes a longer observation as one atomic line.
 The stream rejects the request and the output shows the resulting error title and description.
 
@@ -343,7 +389,7 @@ The stream rejects the request and the output shows the resulting error title an
     /// buffer is empty.
     void writeOversizedCellNote(const el::Path &path) {
         auto settings = el::OutputStreamSettings{};
-        settings.setBufferCapacity(el::ByteLength{8U}).setBackBufferLimit(el::ByteLength{16U});
+        settings.setBuffering(el::StreamBuffering::MinimalMemory).setBackBufferLimit(el::ByteLength{16U});
         auto options = el::PathWriteTextOptions{};
         options.setStreamSettings(settings);
         const auto output = path.content().openTextOutputStream(options);

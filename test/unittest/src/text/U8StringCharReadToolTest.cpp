@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8StringCharReadTool.hpp>
 #include <erbsland/text/u8/impl/U8StringDataView.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
@@ -49,7 +49,6 @@ public:
         REQUIRE_EQUAL(tool.charIndexAt(ByteIndex::zero()), CpIndex::zero());
         REQUIRE(tool.byteIndexAt(CpIndex{1U}).isNoIndex());
         REQUIRE(tool.charIndexAt(ByteIndex{1U}).isNoIndex());
-        REQUIRE_THROWS(tool.charAtOrThrow(CpIndex::zero()));
         REQUIRE(tool.find(el::text::impl::U8StringDataView{}, CpIndex::zero()).isZero());
         REQUIRE(tool.findFirstOf(CharSet{Char{U'A'}}).isNoIndex());
         REQUIRE(tool.findLastNotOf(CharSet{Char{U'A'}}).isNoIndex());
@@ -67,9 +66,6 @@ public:
         REQUIRE(tool.charAt(CpIndex{4}).isEndOfData());
         REQUIRE(tool.charAt(CpIndex{5}).isNoCodePoint());
         REQUIRE(tool.charAt(CpIndex::noIndex()).isNoCodePoint());
-        REQUIRE_EQUAL(tool.charAtOrThrow(CpIndex{3}).toRawValue(), U'\U0001F600');
-        REQUIRE_THROWS(tool.charAtOrThrow(CpIndex{4}));
-        REQUIRE_THROWS(tool.charAtOrThrow(CpIndex::noIndex()));
         REQUIRE_EQUAL(tool.sliceRange(CpRange{CpIndex{1}, CpLength{2}}), expectedRange);
     }
 

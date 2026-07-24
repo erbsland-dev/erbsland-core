@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PathBackend.hpp"
+#include "PathInfoCache_fwd.hpp"
 
 #include "../PathFormat.hpp"
 #include "../PathWindowsFormat.hpp"
@@ -13,8 +14,11 @@
 #include "../../text/StringEditor_fwd.hpp"
 #include "../../text/StringList.hpp"
 #include "../../unit/ByteLength.hpp"
+#include "../../unit/CpLength.hpp"
 #include "../../unit/ElementCount.hpp"
 
+#include <atomic>
+#include <memory>
 #include <utility>
 
 namespace erbsland::path::impl {
@@ -24,14 +28,18 @@ namespace erbsland::path::impl {
 class PathData final : public mem::SharedData {
 public:
     PathData() = default;
-    PathData(PathFormat format, text::String root, text::StringList elements);
+    PathData(PathFormat format, text::String root, text::StringList elements, unit::CpLength characterLength);
 
     // defaults
-    ~PathData() = default;
-    PathData(const PathData &) = default;
-    PathData(PathData &&) noexcept = default;
-    auto operator=(const PathData &) -> PathData & = default;
-    auto operator=(PathData &&) noexcept -> PathData & = default;
+    ~PathData();
+    PathData(const PathData &other);
+    PathData(PathData &&other) noexcept;
+    auto operator=(const PathData &other) -> PathData &;
+    auto operator=(PathData &&other) noexcept -> PathData &;
+
+public:
+    /// Access the lazily created information cache for this path value.
+    [[nodiscard]] auto infoCache() const -> PathInfoCache *;
 
 public:
     [[nodiscard]] auto isAbsolute() const noexcept -> bool;
@@ -60,6 +68,9 @@ public:
     template <typename tData = PathData>
     [[nodiscard]] static auto create(PathFormat format, const text::String &root, text::StringList elements) noexcept
         -> mem::SharedDataPointer<tData>;
+    /// Create path data by appending one already separated path element.
+    [[nodiscard]] static auto createJoined(const PathData &base, const text::String &element) noexcept
+        -> std::unique_ptr<PathData>;
     /// Return the non-root elements from a public element list.
     [[nodiscard]] static auto nonRootElementsFromPublicSlice(
         const text::StringList &elements, bool &sliceStartsWithRoot) -> text::StringList;
@@ -67,15 +78,19 @@ public:
     [[nodiscard]] static auto backend() noexcept -> PathBackend &;
 
 private:
+    void resetInfoCache() noexcept;
+    void updateCharacterLength() noexcept;
     [[nodiscard]] auto windowsRootLength(PathWindowsFormat format) const noexcept -> unit::ByteLength;
     void appendWindowsRoot(text::StringEditor &result, PathWindowsFormat format) const;
     static void appendRootWithWindowsSeparators(
         text::StringEditor &result, const text::String &root, bool skipFirstCharacter);
 
 private:
-    PathFormat _format = PathFormat::Generic; ///< The determined path format.
-    text::String _root;                       ///< The normalized root element, if any.
-    text::StringList _elements;               ///< The path elements without the root.
+    PathFormat _format = PathFormat::Generic;          ///< The determined path format.
+    text::String _root;                                ///< The normalized root element, if any.
+    text::StringList _elements;                        ///< The path elements without the root.
+    unit::CpLength _characterLength;                   ///< Cached character length of the normalized path.
+    mutable std::atomic<PathInfoCache *> _infoCache{}; ///< Lazily allocated path-information cache owned by this data.
 };
 
 using PathDataPtr = mem::SharedDataPointer<PathData>;

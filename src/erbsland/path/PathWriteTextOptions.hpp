@@ -5,7 +5,6 @@
 #include "PathCreateFileOptions.hpp"
 
 #include "../stream/OutputStreamSettings.hpp"
-#include "../text/EncodingErrorMode.hpp"
 #include "../text/StringBomMode.hpp"
 #include "../text/StringEncoding.hpp"
 #include "../time/TimeDelta.hpp"
@@ -72,13 +71,6 @@ public:
         _bomMode = value;
         return *this;
     }
-    /// Get the handling mode for encoding errors.
-    [[nodiscard]] auto encodingErrorMode() const noexcept -> text::EncodingErrorMode { return _encodingErrorMode; }
-    /// Set the handling mode for encoding errors.
-    auto setEncodingErrorMode(const text::EncodingErrorMode value) noexcept -> PathWriteTextOptions & {
-        _encodingErrorMode = value;
-        return *this;
-    }
     /// Get the maximum wait for one stream operation.
     [[nodiscard]] auto timeout() const noexcept -> time::TimeDelta { return _streamSettings.timeout(); }
     /// Set the maximum wait for one stream operation.
@@ -100,7 +92,6 @@ private:
     PathCreateFileOptions _createFileOptions;
     text::StringEncoding _encoding = text::StringEncoding::Utf8;
     text::StringBomMode _bomMode = text::StringBomMode::Automatic;
-    text::EncodingErrorMode _encodingErrorMode = text::EncodingErrorMode::Replace;
     stream::OutputStreamSettings _streamSettings{stream::OutputStreamSettings{}.setTimeout(cDefaultTimeout)};
 };
 

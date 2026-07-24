@@ -2,16 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../Byte.hpp"
-#include "../SharedArrayData_fwd.hpp"
-#include "../SharedDataPointer.hpp"
+#include "SharedByteDataWithFlag_fwd.hpp"
 
-#include <cstdint>
+#include "../Byte.hpp"
+#include "../SharedDataPointer.hpp"
 
 namespace erbsland::mem::impl {
 
 /// Shared byte data for `ByteBlockEditor` and `ByteBlock`.
-using ByteBlockData = SharedArrayData<Byte, uint64_t>;
+using ByteBlockData = SharedByteDataWithFlag<Byte>;
 
 /// Shared pointer to byte block data.
 using ByteBlockDataPtr = SharedDataPointer<ByteBlockData>;

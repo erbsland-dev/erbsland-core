@@ -52,6 +52,6 @@ Related Demos
 Relevant Source Files
 =====================
 
-If you want to explore the implementation, start with :file:`demos/cterm/key-input-demo/src/KeyInputDemoApp.cpp`.
+If you want to explore the implementation, start with :file:`demos/cterm/KeyInputDemo/src/KeyInputDemoApp.cpp`.
 
 This file contains the scrolling buffer setup, key stamping logic, and footer/help text generation.

@@ -6,8 +6,8 @@
 #include "../PathCreateMode.hpp"
 #include "../PathError.hpp"
 
-#include "../../stream/impl/EncodedTextInputStream.hpp"
 #include "../../stream/impl/EncodedTextOutputStream.hpp"
+#include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../unit/ElementIndex.hpp"
@@ -145,16 +145,18 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
 
 auto CommonPathBackend::openTextInputStreamOrThrow(const Path &path, const PathReadTextOptions options) const
     -> stream::TextInputStreamPtr {
-    return std::make_shared<stream::impl::EncodedTextInputStream>(
+    return stream::impl::createEncodedTextInputStream(
         openByteInputStreamOrThrow(path, PathReadDataOptions{}.setStreamSettings(options.streamSettings())),
         options.encoding(),
         options.bomMode(),
-        options.encodingErrorMode());
+        options.encodingMode());
 }
 
 auto CommonPathBackend::openByteOutputStreamOrThrow(const Path &path, const PathWriteDataOptions options) const
     -> stream::ByteOutputStreamPtr {
-    return openByteOutputStreamWithExistingContentOrThrow(path, options).stream;
+    auto result = openByteOutputStreamWithExistingContentOrThrow(path, options).stream;
+    invalidateInfo(path);
+    return result;
 }
 
 auto CommonPathBackend::openTextOutputStreamOrThrow(const Path &path, const PathWriteTextOptions options) const
@@ -165,14 +167,11 @@ auto CommonPathBackend::openTextOutputStreamOrThrow(const Path &path, const Path
     dataOptions.setAccessProfile(options.accessProfile());
     dataOptions.setStreamSettings(options.streamSettings());
     auto openResult = openByteOutputStreamWithExistingContentOrThrow(path, dataOptions);
+    invalidateInfo(path);
     const auto initialBomAlreadyHandled =
         options.creationMode() == PathCreateMode::CreateOrAppend && openResult.hasExistingContent;
     return std::make_shared<stream::impl::EncodedTextOutputStream>(
-        std::move(openResult.stream),
-        options.encoding(),
-        options.bomMode(),
-        options.encodingErrorMode(),
-        initialBomAlreadyHandled);
+        std::move(openResult.stream), options.encoding(), options.bomMode(), initialBomAlreadyHandled);
 }
 
 auto CommonPathBackend::absoluteLexicalPathOrThrow(const Path &path) const -> Path {

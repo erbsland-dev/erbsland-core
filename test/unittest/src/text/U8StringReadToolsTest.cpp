@@ -1,13 +1,14 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/text/StdFormatForText.hpp>
+#include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u8/impl/U8StringComparisonTools.hpp>
 #include <erbsland/text/u8/impl/U8StringReadTools.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
+#include <erbsland/unit/ElementCount.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -18,11 +19,12 @@
 
 using el::text::Char;
 using el::text::CharSet;
-using el::text::EncodingErrorMode;
+using el::text::EncodingMode;
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
 using el::unit::CpLength;
+using el::unit::ElementCount;
 
 namespace th = erbsland::unittest::th;
 
@@ -52,7 +54,6 @@ public:
         REQUIRE(tools.range().isEmpty());
         REQUIRE_EQUAL(tools.byteLength().toSizeT(), 0U);
         REQUIRE(tools.charAt(ByteIndex::zero()).isEndOfData());
-        REQUIRE_THROWS(tools.charAtOrThrow(ByteIndex::zero()));
         REQUIRE_EQUAL(tools.toStdString(), std::string{});
         REQUIRE(tools.toStdU8String().empty());
     }
@@ -113,9 +114,6 @@ public:
         REQUIRE(tools.charAt(ByteIndex{10}).isEndOfData());
         REQUIRE(tools.charAt(ByteIndex{11}).isNoCodePoint());
         REQUIRE(tools.charAt(ByteIndex::noIndex()).isNoCodePoint());
-        REQUIRE_EQUAL(tools.charAtOrThrow(ByteIndex{6}).toRawValue(), U'\U0001F600');
-        REQUIRE_THROWS(tools.charAtOrThrow(ByteIndex{10}));
-        REQUIRE_THROWS(tools.charAtOrThrow(ByteIndex::noIndex()));
     }
 
     void testInvalidUtf8Read() {
@@ -123,7 +121,6 @@ public:
 
         REQUIRE_FALSE(tools.isValidUtf8());
         REQUIRE(tools.charAt(ByteIndex{1}).isReplacement());
-        REQUIRE_THROWS(tools.charAtOrThrow(ByteIndex{1}));
     }
 
     void testReadAndAdvance() {
@@ -344,7 +341,7 @@ public:
         auto characters = std::u32string{};
 
         const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
-            makeSpan(text), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+            makeSpan(text), EncodingMode::Tolerant, [&](const Char character) -> bool {
                 characters.push_back(character.toRawValue());
                 return true;
             });
@@ -361,7 +358,7 @@ public:
         auto characters = std::u32string{};
 
         const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
-            makeSpan(text), EncodingErrorMode::Replace, [&](const Char character) -> bool {
+            makeSpan(text), EncodingMode::Tolerant, [&](const Char character) -> bool {
                 characters.push_back(character.toRawValue());
                 return true;
             });
@@ -378,7 +375,7 @@ public:
         auto count = std::size_t{0};
 
         const auto completed = el::text::impl::utf8::forEachDecodedCharacter(
-            makeSpan(text), EncodingErrorMode::Replace, [&](const Char) -> bool {
+            makeSpan(text), EncodingMode::Tolerant, [&](const Char) -> bool {
                 ++count;
                 return count < 2U;
             });
@@ -414,6 +411,26 @@ public:
         const auto continuationByte = th::stdStringFromHex("A2");
         const auto utf8Tools = makeComparisonTools(cent);
         REQUIRE(utf8Tools.find(makeDataView(continuationByte)).isNoIndex());
+    }
+
+    void testLinearDecodedSearchForLongRepeatedPrefixes() {
+        auto needle = std::string(64U, 'a');
+        needle.back() = 'b';
+        auto data = std::string(4096U, 'a');
+        data.push_back('b');
+        const auto tools = makeComparisonTools(data);
+
+        REQUIRE_EQUAL(tools.find(makeDataView(needle)), ByteIndex{4033U});
+        REQUIRE_EQUAL(tools.count(makeDataView(needle)), ElementCount{1U});
+        needle.back() = 'c';
+        REQUIRE(tools.find(makeDataView(needle)).isNoIndex());
+
+        auto malformedNeedle = th::stdStringFromHex("A2");
+        malformedNeedle.append(64U, 'a');
+        auto malformedData = th::stdStringFromHex("C2 A2");
+        malformedData.append(64U, 'a');
+        REQUIRE_EQUAL(
+            makeComparisonTools(malformedData).find(makeDataView(malformedNeedle), ByteIndex{1U}), ByteIndex{1U});
     }
 
     void testFindFirstOf() {

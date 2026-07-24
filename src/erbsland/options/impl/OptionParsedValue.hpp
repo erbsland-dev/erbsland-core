@@ -24,11 +24,13 @@ public:
         OptionPtr option,
         OptionValueStorage storage,
         unit::ArgumentCount count,
-        std::vector<unit::ArgumentIndex> argumentIndexes) :
+        std::vector<unit::ArgumentIndex> argumentIndexes,
+        const bool explicitFlagValue = false) :
         option{std::move(option)},
         storage{std::move(storage)},
         count{count},
-        argumentIndexes{std::move(argumentIndexes)} {}
+        argumentIndexes{std::move(argumentIndexes)},
+        explicitFlagValue{explicitFlagValue} {}
 
     [[nodiscard]] static auto create(const OptionPtr &option, OptionValueStorage storage, unit::ArgumentCount count)
         -> OptionParsedValuePtr {
@@ -38,14 +40,17 @@ public:
         const OptionPtr &option,
         OptionValueStorage storage,
         unit::ArgumentCount count,
-        std::vector<unit::ArgumentIndex> argumentIndexes) -> OptionParsedValuePtr {
-        return std::make_shared<OptionParsedValue>(option, std::move(storage), count, std::move(argumentIndexes));
+        std::vector<unit::ArgumentIndex> argumentIndexes,
+        const bool explicitFlagValue = false) -> OptionParsedValuePtr {
+        return std::make_shared<OptionParsedValue>(
+            option, std::move(storage), count, std::move(argumentIndexes), explicitFlagValue);
     }
 
     OptionPtr option;
     OptionValueStorage storage;
     unit::ArgumentCount count{unit::ArgumentCount::zero()};
     std::vector<unit::ArgumentIndex> argumentIndexes;
+    bool explicitFlagValue{false};
 };
 
 }

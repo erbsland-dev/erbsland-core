@@ -3,7 +3,7 @@
 
 #include "../ConfTestHelper.hpp"
 
-#include <erbsland/conf/StdFormatForConf.hpp>
+#include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/conf/vr/RuleType.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

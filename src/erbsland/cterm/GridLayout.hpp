@@ -8,9 +8,9 @@
 #include "../bgeo/BlockPosition.hpp"
 #include "../bgeo/BlockRectangle.hpp"
 #include "../bgeo/BlockSize.hpp"
+#include "../text/StringLiteral.hpp"
 
 #include <initializer_list>
-#include <string_view>
 #include <vector>
 
 namespace erbsland::cterm {
@@ -83,7 +83,7 @@ public:
 private:
     [[nodiscard]] static auto borderSize(const FrameBorder &border, FrameBorder::Element element) noexcept
         -> bgeo::BlockCoordinate;
-    static void validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, std::string_view name);
+    static void validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, const text::StringLiteral &name);
 
 private:
     std::vector<bgeo::BlockCoordinate> _columnWidths;

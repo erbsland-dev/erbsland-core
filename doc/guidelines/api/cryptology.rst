@@ -2,14 +2,6 @@
 Cryptology Domain API Guidelines
 ********************************
 
-These guidelines extend the Common, Memory, Text, and Unit API Guidelines for cryptographic algorithms and stateful
-operations.
-
-The purpose of this document is to define a base naming vocabulary for cryptology APIs.
-It is intentionally plain, technical, and list-based to provide a quick overview of method names and their usage
-patterns.
-If new vocabulary is introduced, update this page to provide a reference for future extensions.
-
 Core Semantics
 ==============
 
@@ -18,68 +10,89 @@ Algorithm Policy
 
 .. code-block:: text
 
-    CryptographicStatus // current library policy: Disallowed, Legacy, or Acceptable
-    CryptographicSecurity // coarse selection level: Standard or High
-    HashThroughput // hash-specific relative throughput: Low, Medium, or High
-    stable identifier // persisted canonical algorithm name; does not change with recommendation metadata
-    recommendation metadata // versioned library policy that can change as cryptographic guidance evolves
+    algorithm status = disallowed, legacy verification only, or acceptable for new results
+    security level = standard or high user-facing selection threshold
+    throughput = low, medium, or high relative hashing speed
+    stable identifier = persisted canonical name independent of changing recommendation metadata
+    recommendation = versioned library policy ordered by security family and implementation properties
 
 Hash Lifecycle
 --------------
 
 .. code-block:: text
 
-    invalid Hasher // default placeholder; operations except isValid() throw err::LogicError
-    active Hasher // accepts zero or more update() calls
-    finalized Hasher // finalize() returns cached digest; update() requires reset() first
-    copied Hasher // shares state and detaches before the next mutation
+    invalid state = algorithm-less placeholder that accepts no hashing operations
+    active state = zero or more message updates before finalization
+    finalized state = immutable cached digest until reset
+    copied state = shared state that detaches before mutation
+
+Password Hashing
+----------------
+
+.. code-block:: text
+
+    password record = immutable canonical database or configuration boundary
+    password input = UTF-8 text whose allocation should be marked as sensitive
+    application key = at least 32 marked bytes, optionally identified for rotation
+    reviewed policy = supported algorithm and cost preset for new records
+    replacement record = successful verification result upgraded for format, policy, mode, or key changes
+    unsafe policy = explicit custom-cost or unkeyed escape hatch isolated from ordinary API lookup
 
 Primary Types
 =============
 
 .. code-block:: text
 
-    HashAlgorithm // fixed-output cryptographic hash algorithm and selection metadata
+    HashAlgorithm // fixed-output cryptographic hash algorithm
     Hasher // copy-on-write streaming hash state
+    PasswordHash // opaque canonical password storage record
+    PasswordHasher // password record creation and verification service
+
+Secondary Types
+===============
+
+.. code-block:: text
+
     HashRequirements // explicit status, security, and throughput selection requirements
+    CryptographicStatus, CryptographicSecurity, HashThroughput // algorithm selection metadata
+    PasswordHashAlgorithm // supported password-hashing algorithm identifier
+    PasswordHashKey // marked application pepper and optional public rotation identifier
+    PasswordHashPolicy // reviewed password-hashing construction and cost preset
+    PasswordVerification // explicit verification and migration result
 
-Selection Types
-===============
-
-.. code-block:: text
-
-    CryptographicStatus // whether an algorithm is allowed for new results
-    CryptographicSecurity // coarse security level for user-facing selection
-    HashThroughput // relative throughput among fixed-output streaming hashes
-
-Algorithm Patterns
-==================
+Hash Selection Patterns
+=======================
 
 .. code-block:: text
 
-    o.digestSize() -> unit::ByteLength // fixed digest size
-    o.status() -> CryptographicStatus // current usability policy
-    o.security() -> CryptographicSecurity // coarse security level
-    o.throughput() -> HashThroughput // current relative implementation throughput
-    o.isSafe() -> bool // acceptable with at least standard security
-    o.matches(requirements) -> bool // test all explicit selection requirements
-    HashAlgorithm::all/allSafe() -> span // enumerate stable algorithm lists
-    HashAlgorithm::matching(requirements) -> util::List<HashAlgorithm> // enumerate requirement matches
-    HashAlgorithm::recommended(requirements) -> optional<HashAlgorithm> // select the preferred matching algorithm
-    o.toString() -> text::String // stable lowercase algorithm identifier
-    HashAlgorithm::fromString(text) -> optional<HashAlgorithm> // parse an exact canonical identifier
-    HashAlgorithm::fromStringOrThrow(text) -> HashAlgorithm // parse or throw err::ParseError
+    o.digestSize() -> unit::ByteLength // get the fixed digest size
+    o.status()/security()/throughput() -> T // inspect current selection metadata
+    o.matches(requirements) -> bool // test every explicit selection requirement
+    T::all/allSafe() -> List<HashAlgorithm> // enumerate stable algorithm sets
+    T::matching/recommended(requirements) -> T // list or select requirement matches
+    o.toString() -> text::String // get the stable lowercase algorithm identifier
+    T::fromString/fromStringOrThrow(text) -> T // parse an exact canonical identifier
 
-Hasher Patterns
-===============
+Hashing Patterns
+================
 
 .. code-block:: text
 
-    Hasher() // create an invalid placeholder
-    Hasher(algorithm) // create active state for an algorithm
-    o.isValid() -> bool // test whether an algorithm and worker are present
-    o.algorithm() -> HashAlgorithm // configured algorithm; invalid state throws
-    o.reset() // begin a new stream with the same algorithm
-    o.update(byte span/ByteBlock) // add exact binary bytes
-    o.update(text::String) // add exact stored UTF-8 bytes without conversion
+    T(algorithm) // create active state for an algorithm
+    o.isValid() -> bool // test whether hashing state is present
+    o.reset()/secureErase() // begin a new stream, optionally erasing the previous message state
+    o.update(bytes/text) // append exact bytes without representation conversion
     o.finalize() -> mem::ByteBlock // finalize once or return the cached digest
+
+Password Hashing Patterns
+=========================
+
+.. code-block:: text
+
+    T(key[, policy]) // create a password hasher using reviewed defaults
+    T::withKeyRotation(active, fallbacks[, policy]) -> T // configure an active key and bounded legacy keys
+    o.hash(text::String) -> PasswordHash // create a salted canonical record from preferably marked text
+    o.verify(password, record) -> PasswordVerification // return acceptance and any migration record
+    T::fromString/fromStringOrThrow(text) -> PasswordHash // parse a canonical storage record
+    o.toString() -> text::String // create the canonical storage representation
+    o.replacementHash() -> PasswordHash // access an upgraded record after accepted verification

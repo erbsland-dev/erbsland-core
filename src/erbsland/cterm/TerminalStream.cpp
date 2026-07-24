@@ -5,6 +5,7 @@
 #include "Terminal.hpp"
 
 #include "../stream/impl/IoService.hpp"
+#include "../stream/impl/StreamBufferSizes.hpp"
 #include "../text/Literals.hpp"
 #include "../time/TimePoint.hpp"
 
@@ -210,14 +211,15 @@ auto TerminalStream::state() const noexcept -> StreamState {
 
 auto TerminalStream::isReady() const noexcept -> bool {
     const auto lock = std::scoped_lock{_data->mutex};
-    return _data->pendingBytes <= _data->settings.bufferCapacity().toSizeT() && state() == StreamState::Open;
+    return _data->pendingBytes <= stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() &&
+        state() == StreamState::Open;
 }
 
 auto TerminalStream::waitForReady() -> StreamWaitStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto ready = _data->condition.wait_for(lock, _data->settings.timeout().toStdNanoseconds(), [this]() -> bool {
-        return _data->pendingBytes <= _data->settings.bufferCapacity().toSizeT() || _data->error ||
-            state() != StreamState::Open;
+        return _data->pendingBytes <= stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeT() ||
+            _data->error || state() != StreamState::Open;
     });
     if (_data->error) {
         std::rethrow_exception(_data->error);
@@ -286,8 +288,8 @@ auto TerminalStream::write(const String &text) -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
     const auto byteLength = Data::commandLength(command);
-    const auto capacity =
-        _data->settings.bufferCapacity().toSizeTOrThrow() + _data->settings.backBufferLimit().toSizeTOrThrow();
+    const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
+        _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {
         throwError(
             "Failed to write to the terminal."_el,
@@ -320,8 +322,8 @@ auto TerminalStream::writeLine(const String &text) -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
     const auto byteLength = Data::commandLength(command);
-    const auto capacity =
-        _data->settings.bufferCapacity().toSizeTOrThrow() + _data->settings.backBufferLimit().toSizeTOrThrow();
+    const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
+        _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {
         throwError(
             "Failed to write a terminal line."_el,

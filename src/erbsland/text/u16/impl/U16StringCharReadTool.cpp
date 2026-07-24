@@ -4,8 +4,6 @@
 
 #include "U16Encoding.hpp"
 
-#include "../../impl/ThrowHelper.hpp"
-
 #include <algorithm>
 
 namespace erbsland::text::impl {
@@ -38,23 +36,6 @@ auto U16StringCharReadTool::charAt(const CpIndex index) const noexcept -> Char {
         ++currentIndex;
     }
     return currentIndex == index ? Char::endOfData() : Char::noCodePoint();
-}
-
-auto U16StringCharReadTool::charAtOrThrow(const CpIndex index) const -> Char {
-    if (index.isNoIndex()) {
-        throwOutOfRange("Read position out of range");
-    }
-    const auto data = _data.dataSpan();
-    auto position = U16DataIndex::zero();
-    auto currentIndex = CpIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        if (currentIndex == index) {
-            return utf16::decodeCharOrThrow(data, position);
-        }
-        utf16::fastAdvanceChar(data, position);
-        ++currentIndex;
-    }
-    throwOutOfRange("Read position out of range");
 }
 
 auto U16StringCharReadTool::byteIndexAt(const CpIndex index) const noexcept -> U16DataIndex {

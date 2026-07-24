@@ -1,0 +1,39 @@
+@version: "1.0"
+
+# This complete default configuration is embedded into regex-api-profile.
+# Run with --write-template <path> to create an editable copy.
+
+---[ Run ]---------------------------------------------------------------------
+Mode                : "benchmark"
+Suite               : "snapshot"
+Duration            : 5m
+Threads             : 4
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 1
+Samples             : 9
+Minimum Sample Time : 20ms
+Memory Limit        : 256 MiB
+Progress Interval   : 10s
+Regex Timeout       : 30s
+Workspace           : ""
+Keep Files          : no
+
+# Defining one or more [scenario] entries replaces the built-in suite.
+# `pattern` is an ELCL regular-expression value; `pattern_name` selects a
+# built-in stress pattern. Exactly one of `corpus`, `subject`, or `source_file`
+# may be specified. Relative source files resolve beside this configuration.
+# `file` in `inputs` expands using `file_encodings`.
+#
+# *[scenario]
+# name: "focused-words"
+# use_cases: "find-first", "find-all", "collect-all"
+# inputs: "string-utf8", "file"
+# file_encodings: "utf8", "utf16", "utf32"
+# pattern: /\b\w+\b/
+# flags: "crlf"
+# corpus: "shakespeare-text"
+# repeat: 1
+# replacement_modes: "expression", "callback"
+# replacement: "<{0}>"
+# timeout: 30s
+# weight: 1

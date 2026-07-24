@@ -53,5 +53,5 @@ target_sources(erbsland-core PRIVATE
         RegExError.hpp
         RegExErrorContext.hpp
         Settings.hpp
-        StdFormatForRegEx.hpp
+        StdFormat.hpp
 )

@@ -10,9 +10,10 @@
 #include "../PathWalkOptions.hpp"
 #include "../PathWalkResult.hpp"
 
+#include "../../text/StringSet.hpp"
+
 #include <functional>
-#include <set>
-#include <string>
+#include <memory>
 #include <utility>
 
 namespace erbsland::path::impl {
@@ -44,8 +45,10 @@ private:
         const Path &path,
         const WalkFn &walkFn,
         const PathWalkOptions &options,
-        std::set<std::string> &visitedDirectories,
-        bool &hadErrors) const -> VisitResult;
+        text::StringSet &visitedDirectories,
+        bool &hadErrors,
+        bool trustCache,
+        const PathInfoCacheTrustPtr &cacheTrust) const -> VisitResult;
     [[nodiscard]] static auto callbackResult(PathWalkStatus status) noexcept -> VisitResult;
 
 private:

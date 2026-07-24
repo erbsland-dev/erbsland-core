@@ -76,11 +76,6 @@ public: // read
     /// Read the character before the given index and retreat the index.
     /// If the index is out of bounds, returns a signal character and does not retreat the index.
     [[nodiscard]] auto readAndRetreat(unit::U16DataIndex &index) const noexcept -> Char;
-    /// Access the character at the given start UTF-16 code-unit position or throw if no valid character is found.
-    [[nodiscard]] auto charAtOrThrow(unit::U16DataIndex startIndex) const -> Char;
-    /// Read the character at the given index and advance the index.
-    /// Throw on encoding errors or out-of-bound reads.
-    [[nodiscard]] auto readOrThrow(unit::U16DataIndex &index) const -> Char;
     /// Advance the given UTF-16 code-unit index to the start of the next character.
     auto advance(unit::U16DataIndex &index, unit::CpLength count = unit::CpLength::one()) const noexcept -> bool;
     /// Retreat the given UTF-16 code-unit index to the start of the previous character.

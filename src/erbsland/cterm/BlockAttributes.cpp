@@ -1,0 +1,112 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#include "BlockAttributes.hpp"
+
+#include "../err/ParseError.hpp"
+#include "../text/impl/NamedKeyFormat.hpp"
+#include "../text/impl/NamedKeyParser.hpp"
+#include "../text/Literals.hpp"
+#include "../text/StringCharReader.hpp"
+#include "../text/StringEditor.hpp"
+
+#include <array>
+
+namespace erbsland::cterm {
+
+using namespace text::literals;
+
+namespace {
+
+constexpr auto cAttributeFlags = std::array{
+    BlockAttributes::Bold,
+    BlockAttributes::Dim,
+    BlockAttributes::Italic,
+    BlockAttributes::Underline,
+    BlockAttributes::Blink,
+    BlockAttributes::Reverse,
+    BlockAttributes::Hidden,
+    BlockAttributes::Strikethrough,
+};
+
+constexpr auto cInheritedKey = 0;
+
+auto attributeFormat() -> const text::impl::NamedKeyFormat & {
+    static const auto keys = text::impl::NamedKeyFormat::Keys{{
+        {"inherited"_el, cInheritedKey},
+        {"bold"_el, BlockAttributes::Bold.value},
+        {"dim"_el, BlockAttributes::Dim.value},
+        {"italic"_el, BlockAttributes::Italic.value},
+        {"underline"_el, BlockAttributes::Underline.value},
+        {"blink"_el, BlockAttributes::Blink.value},
+        {"reverse"_el, BlockAttributes::Reverse.value},
+        {"hidden"_el, BlockAttributes::Hidden.value},
+        {"strikethrough"_el, BlockAttributes::Strikethrough.value},
+    }};
+    static const auto format = text::impl::NamedKeyFormat{}
+                                   .setKeys(keys)
+                                   .setAllowedKeyPrefixes(text::CharSet{U'+', U'-'})
+                                   .setValuesAllowed(false)
+                                   .setValueListAllowed(false);
+    return format;
+}
+
+}
+
+auto BlockAttributes::toString() const -> text::String {
+    if (_specifiedMask == 0) {
+        return "inherited"_el;
+    }
+    auto result = text::StringEditor{};
+    for (const auto flag : cAttributeFlags) {
+        if (!isSpecified(flag)) {
+            continue;
+        }
+        if (!result.isEmpty()) {
+            result.append(","_el);
+        }
+        if (!isEnabled(flag)) {
+            result.append("-"_el);
+        }
+        result.append(attributeFormat().keyName(flag.value));
+    }
+    return text::String{result};
+}
+
+auto BlockAttributes::fromString(const text::String &str, const BlockAttributes defaultValue) -> BlockAttributes {
+    try {
+        return fromStringOrThrow(str);
+    } catch (const err::ParseError &) {
+        return defaultValue;
+    }
+}
+
+auto BlockAttributes::fromStringOrThrow(const text::String &str) -> BlockAttributes {
+    if (str.isEmpty()) {
+        throw err::ParseError{"A block attribute list must not be empty."_el};
+    }
+
+    auto reader = text::StringCharReader{str};
+    const auto entries = text::impl::NamedKeyParser{reader, attributeFormat()}.readAllEntries();
+    if (entries.isEmpty()) {
+        throw err::ParseError{"A block attribute list must not be empty."_el};
+    }
+    const auto first = entries.first();
+    if (first.keyIndex() == cInheritedKey) {
+        if (entries.count() != unit::ElementCount::one() || !first.prefix().isNoCodePoint()) {
+            throw err::ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
+        }
+        return {};
+    }
+
+    auto result = BlockAttributes{};
+    for (const auto &entry : entries) {
+        if (entry.keyIndex() == cInheritedKey) {
+            throw err::ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
+        }
+        const auto flag = Flag{static_cast<uint8_t>(entry.keyIndex())};
+        result.setFlag(flag, entry.prefix() != U'-');
+    }
+    return result;
+}
+
+}

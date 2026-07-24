@@ -10,9 +10,9 @@ Demos in this library serve multiple purposes.
 They...
 
 1. demonstrate the **user view** of the library.
-2. provide **verified and compiled** example code that can be used in the documentation.
-3. show the **intended** usage of the API.
-4. allow evaluating the impact of API changes in the library.
+2. explain the API using a practical example of **real-world code** that is useful for a user.
+3. provide **verified and compiled** example code that can be used in the documentation.
+4. show the **intended** usage of the API.
 5. are embedded in the documentation, and become part of the text.
 
 Demo Executable Behavior
@@ -85,8 +85,23 @@ To force resynchronization, delete the line with the hash and run ``demo_doc`` a
 To refresh every demo block in a documentation directory and its subdirectories, run
 ``.venv/bin/python3 utilities/run.py demo_doc refresh doc/topics``.
 
+Language and Themes in Demos
+============================
+
+When to use a theme and language?
+
+* Only use a theme for small functions like demos to make them more entertaining.
+* Don't use a theme for large application like demos that resemble real-life applications.
+
+How to use a theme and language?
+
+* Non-english natural language must only be used in data, values or input an example/demo processes.
+  It is a good method to separate user-input from application logic.
+* Error messages, diagnostic output, and any output that explains the behavior of the example/demo must be English.
+* Only if you choose a theme and language manually, see :doc:`example_themes` for a comprehensive list.
+
 Code Style, API Usage and Theming
 =================================
 
-See :doc:`examples` for details how to format and write example code.
-Also, what kind of example shall be chosen for the library.
+* See :doc:`examples` for details how to format and write example code.
+* Only if you choose a theme and language manually, see :doc:`example_themes` for a comprehensive list.

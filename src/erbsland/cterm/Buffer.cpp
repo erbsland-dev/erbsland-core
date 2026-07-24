@@ -6,7 +6,6 @@
 #include "Tile9Style.hpp"
 
 #include "../err/ParameterError.hpp"
-#include "../text/EncodingErrorMode.hpp"
 
 #include <algorithm>
 #include <array>
@@ -179,7 +178,7 @@ void Buffer::drawBlockText(
     const Color color,
     const std::size_t animationCycle) {
 
-    auto renderedText = BlockText{BlockStringEditor{text, text::EncodingErrorMode::Replace}, rect, alignment};
+    auto renderedText = BlockText{BlockStringEditor{text}, rect, alignment};
     renderedText.setColor(color);
     drawBlockText(renderedText, animationCycle);
 }

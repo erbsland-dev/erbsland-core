@@ -1,0 +1,12 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "profile"
+Suite               : "smoke"
+Duration            : 5ms
+Threads             : 1
+Warmup Samples      : 0
+Samples             : 1
+Minimum Sample Time : 100us
+Memory Limit        : 64 MiB
+Progress Interval   : 1ms

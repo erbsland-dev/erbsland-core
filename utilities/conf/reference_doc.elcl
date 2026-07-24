@@ -108,6 +108,12 @@ Headers     :
     * "i18n/DisplayTextTranslator.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "math/integer_bit_operations.rst"
+Title       : "Integer Bit and Byte-Order Operations"
+Headers     :
+    * "math/IntegerBitOperations.hpp"
+
+------------*[ Reference Groups ]
 Page        : "math/integer_math.rst"
 Title       : "Integer Types and Math Operations"
 Headers     :
@@ -131,13 +137,18 @@ Page        : "mem/byte_utilities.rst"
 Title       : "Byte Reader, Writer, Types and Utilities"
 Headers     :
     * "mem/Byte.hpp"
+    * "mem/ByteArray.hpp"
     * "mem/ByteBlock.hpp"
     * "mem/ByteBlockEditor.hpp"
+    * "mem/ByteIntegerAccess.hpp"
     * "mem/ByteRingBuffer.hpp"
     * "mem/ByteReader.hpp"
+    * "mem/ByteSpan.hpp"
+    * "mem/ByteBuffer.hpp"
     * "mem/ByteWriter.hpp"
     * "mem/Endianness.hpp"
     * "mem/RingBuffer.hpp"
+    * "mem/SecureErase.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "mem/cow_storage.rst"
@@ -180,6 +191,7 @@ Headers     :
     * "options/OptionParserFlag.hpp"
     * "options/OptionResult.hpp"
     * "options/OptionResultStatus.hpp"
+    * "options/OptionSensitiveTextLocation.hpp"
     * "options/OptionSet.hpp"
     * "options/OptionSetManager.hpp"
     * "options/OptionType.hpp"
@@ -244,6 +256,19 @@ Headers     :
     * "cryptology/Hasher.hpp"
     * "cryptology/HashRequirements.hpp"
     * "cryptology/HashThroughput.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/password_hashing.rst"
+Title       : "Password Hashing"
+Headers     :
+    * "cryptology/PasswordHash.hpp"
+    * "cryptology/PasswordHashAlgorithm.hpp"
+    * "cryptology/PasswordHashKey.hpp"
+    * "cryptology/PasswordHashPolicy.hpp"
+    * "cryptology/PasswordHasher.hpp"
+    * "cryptology/PasswordVerification.hpp"
+    * "cryptology/unsafe/UnsafeCustomPasswordHashParameters.hpp"
+    * "cryptology/unsafe/UnsafeNoPasswordHashKey.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "random/random.rst"
@@ -337,6 +362,8 @@ Headers     :
     * "stream/InputStreamSettings.hpp"
     * "stream/OutputStream.hpp"
     * "stream/OutputStreamSettings.hpp"
+    * "stream/StreamBuffering.hpp"
+    * "stream/SensitiveInput.hpp"
     * "stream/StandardStreams.hpp"
     * "stream/StandardStreamRedirect.hpp"
     * "stream/StreamCloseStatus.hpp"
@@ -354,6 +381,15 @@ Headers     :
     * "stream/TempByteOutputStream.hpp"
     * "stream/TempTextOutputStream.hpp"
     * "stream/TextPrintContext.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/base_n.rst"
+Title       : "Base-N Encoding and Decoding"
+Headers     :
+    * "text/base_n/BaseNDecoder.hpp"
+    * "text/base_n/BaseNEncoder.hpp"
+    * "text/base_n/BaseNFormat.hpp"
+    * "text/base_n/BaseNFormatFlag.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/char_range.rst"
@@ -388,13 +424,13 @@ Headers     :
 Page        : "text/std_compatibility.rst"
 Title       : "Standard Library Compatibility"
 Headers     :
-    * "bgeo/StdFormatForBlock.hpp"
-    * "conf/StdFormatForConf.hpp"
-    * "cryptology/StdFormatForCryptology.hpp"
-    * "re/StdFormatForRegEx.hpp"
-    * "text/StdFormatForText.hpp"
-    * "time/StdFormatForTime.hpp"
-    * "unit/StdFormatForUnit.hpp"
+    * "bgeo/StdFormat.hpp"
+    * "conf/StdFormat.hpp"
+    * "cryptology/StdFormat.hpp"
+    * "re/StdFormat.hpp"
+    * "text/StdFormat.hpp"
+    * "time/StdFormat.hpp"
+    * "unit/StdFormat.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/format_definitions.rst"
@@ -454,7 +490,7 @@ Headers     :
     * "text/EncodingError.hpp"
     * "text/StringEncoding.hpp"
     * "text/ToString.hpp"
-    * "text/EncodingErrorMode.hpp"
+    * "text/EncodingMode.hpp"
     * "text/StringKind.hpp"
     * "text/U8EncodingError.hpp"
     * "text/U16EncodingError.hpp"
@@ -631,6 +667,7 @@ Headers     :
     * "time/DurationPart.hpp"
     * "time/ElapsedTimer.hpp"
     * "time/CalendarDelta.hpp"
+    * "time/Literals.hpp"
     * "time/TimeAmounts.hpp"
     * "time/TimeDelta.hpp"
     * "time/TimeDeltaFormat.hpp"
@@ -645,7 +682,7 @@ Header Globs:
     * "unit/*.hpp"
 Excluded Header Globs:
     * "unit/ExitCode.hpp"
-    * "unit/StdFormatForUnit.hpp"
+    * "unit/StdFormat.hpp"
     * "unit/Version*.hpp"
 
 ------------*[ Reference Groups ]
@@ -688,6 +725,15 @@ Header Globs:
     * "cterm/*.hpp"
 Excluded Header Globs:
     * "cterm/TerminalDocument*.hpp"
+    * "cterm/ReadLine*.hpp"
+    * "cterm/ReadSecret*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cterm/read_line.rst"
+Title       : "Interactive Line Editor"
+Header Globs:
+    * "cterm/ReadLine*.hpp"
+    * "cterm/ReadSecret*.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "cterm/terminal_document_renderer.rst"
@@ -716,11 +762,13 @@ Headers     :
     * "event/EventLoop.hpp"
     * "event/EventLoopErrorAction.hpp"
     * "event/EventLoopErrorHandler.hpp"
+    * "event/EventLoopDriver.hpp"
     * "event/EventPipe.hpp"
     * "event/EventPipeReceiver.hpp"
     * "event/EventPipeSender.hpp"
     * "event/EventRegistry.hpp"
     * "event/EventScheduler.hpp"
+    * "event/EventEditor.hpp"
     * "event/EventSource.hpp"
     * "event/Events.hpp"
     * "event/EventTimer.hpp"
@@ -728,6 +776,51 @@ Headers     :
     * "event/EventThread.hpp"
     * "event/ManagedEventThread.hpp"
     * "event/UnmanagedEventThread.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/addressing.rst"
+Title       : "Network Addressing Types"
+Headers     :
+    * "network/Host.hpp"
+    * "network/HostEndpoint.hpp"
+    * "network/HostName.hpp"
+    * "network/IpAddress.hpp"
+    * "network/IpEndpoint.hpp"
+    * "network/IpNetwork.hpp"
+    * "network/IpVersion.hpp"
+    * "network/Port.hpp"
+    * "network/ScopeId.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/facade.rst"
+Title       : "Network Facade"
+Headers     :
+    * "network/Network.hpp"
+    * "network/NetworkCallbacks.hpp"
+    * "network/NetworkError.hpp"
+    * "network/NetworkErrorContext.hpp"
+    * "network/NetworkSendStatus.hpp"
+    * "network/NetworkSourceState.hpp"
+    * "network/SocketBufferLimits.hpp"
+    * "network/UdpDatagram.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/sources.rst"
+Title       : "Network Event Sources"
+Headers     :
+    * "network/HostLookup.hpp"
+    * "network/HostLookupEvents.hpp"
+    * "network/TcpConnection.hpp"
+    * "network/TcpConnectionAttempt.hpp"
+    * "network/TcpConnectionAttemptEvents.hpp"
+    * "network/TcpConnectionEvents.hpp"
+    * "network/TcpConnectionRequest.hpp"
+    * "network/TcpListener.hpp"
+    * "network/TcpListenerEvents.hpp"
+    * "network/UdpPeer.hpp"
+    * "network/UdpPeerEvents.hpp"
+    * "network/UdpSocket.hpp"
+    * "network/UdpSocketEvents.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "conf/parser.rst"

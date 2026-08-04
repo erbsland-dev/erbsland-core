@@ -6,8 +6,6 @@
 #include "Value.hpp"
 #include "ValueHelper.hpp"
 
-#include <stdexcept>
-
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
@@ -26,10 +24,10 @@ auto DocumentBuilderStorage::getDocumentAndReset() noexcept -> std::shared_ptr<D
 
 void DocumentBuilderStorage::updateLastSection(const ValuePtr &sectionValue, const NamePath &sectionNamePath) {
     if (sectionValue == nullptr) {
-        throw err::ParameterError{"sectionValue must not be null.", "sectionValue"};
+        throw err::ParameterError{"sectionValue must not be null."_el, "sectionValue"_el};
     }
     if (sectionNamePath.empty()) {
-        throw err::ParameterError{"sectionNamePath must not be empty.", "sectionNamePath"};
+        throw err::ParameterError{"sectionNamePath must not be empty."_el, "sectionNamePath"_el};
     }
     _lastSectionValue = sectionValue;
     _lastSectionNamePath = sectionNamePath;
@@ -134,10 +132,10 @@ void DocumentBuilderStorage::addChildValue(
 
 void DocumentBuilderStorage::validateAddArguments(const NamePath &namePath, const ValuePtr &value) const {
     if (namePath.empty()) {
-        throw err::ParameterError{"namePath must not be empty.", "namePath"};
+        throw err::ParameterError{"namePath must not be empty."_el, "namePath"_el};
     }
     if (value == nullptr) {
-        throw err::ParameterError{"value must not be null.", "value"};
+        throw err::ParameterError{"value must not be null."_el, "value"_el};
     }
 }
 

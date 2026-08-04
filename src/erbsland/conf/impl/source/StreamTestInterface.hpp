@@ -10,11 +10,16 @@ namespace erbsland::conf::impl {
 class StreamTestInterface {
 public:
     using Stream = std::basic_istream<char>;
+
+    // defaults
     virtual ~StreamTestInterface() = default;
 
 public:
+    /// Notify the test interface after opening the stream.
     virtual void afterOpen([[maybe_unused]] Stream &stream) const {}
+    /// Notify the test interface before reading from the stream.
     virtual void beforeRead([[maybe_unused]] Stream &stream) const {}
+    /// Notify the test interface after closing the stream.
     virtual void afterClose([[maybe_unused]] Stream &stream) const {}
 };
 

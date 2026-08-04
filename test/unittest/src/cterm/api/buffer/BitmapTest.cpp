@@ -38,8 +38,9 @@ public:
     void testRectMatchesBitmapBounds() {
         const auto bitmap = Bitmap{bgeo::BlockSize{4, 3}};
 
-        REQUIRE_EQUAL(bitmap.rect().topLeft(), bgeo::BlockPosition(0, 0));
-        REQUIRE_EQUAL(bitmap.rect().size(), bgeo::BlockSize(4, 3));
+        const auto rectangle = bitmap.rect();
+        REQUIRE_EQUAL(rectangle.topLeft(), bgeo::BlockPosition(0, 0));
+        REQUIRE_EQUAL(rectangle.size(), bgeo::BlockSize(4, 3));
     }
 
     void testDataAccessorsExposeTheUnderlyingPixelStorage() {

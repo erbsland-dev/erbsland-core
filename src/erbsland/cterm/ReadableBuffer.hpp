@@ -2,25 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Bitmap_fwd.hpp"
 #include "Block.hpp"
+#include "ReadableBuffer_fwd.hpp"
+#include "WritableBuffer_fwd.hpp"
 
 #include "../bgeo/BlockRectangle.hpp"
 #include "../bgeo/BlockSize.hpp"
 #include "../text/CharSet.hpp"
 
-#include <memory>
-
 namespace erbsland::cterm {
-
-class ReadableBuffer;
-using ReadableBufferPtr = std::shared_ptr<ReadableBuffer>;
-class Bitmap;
-class WritableBuffer;
-using WritableBufferPtr = std::shared_ptr<WritableBuffer>;
 
 /// A readable buffer.
 class ReadableBuffer {
 public:
+    // defaults
     virtual ~ReadableBuffer() = default;
 
 public: // API

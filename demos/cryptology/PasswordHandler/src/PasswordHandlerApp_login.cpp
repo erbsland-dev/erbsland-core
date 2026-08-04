@@ -6,11 +6,14 @@
 #include "PepperStore.hpp"
 #include "UserDatabase.hpp"
 
+#include <erbsland/core/ApplicationError.hpp>
 #include <erbsland/cryptology/PasswordHash.hpp>
 #include <erbsland/path/PathCollisionMode.hpp>
 #include <erbsland/path/PathInfo.hpp>
 #include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
+
+#include <utility>
 
 namespace demo {
 
@@ -30,16 +33,19 @@ auto PasswordHandlerApp::login(const el::OptionValuesPtr &values) -> el::ExitCod
     auto database = paths.database.info().exists() ? UserDatabase::load(paths.database) : UserDatabase{};
     const auto storedHash = database.contains(username) ? el::PasswordHash::fromString(database.passwordHash(username))
                                                         : el::PasswordHash{};
-    const auto password = PasswordPrompt::readPassword(terminal());
+    const auto password = PasswordPrompt{terminal()}.readPassword();
     initializeStorage(paths);
-    auto hasher = PepperStore::loadHasher(paths.pepper);
+    auto pepperStore = PepperStore{std::move(paths.pepper)};
+    auto hasher = pepperStore.loadHasher();
     const auto verification = hasher.verify(password, storedHash);
     if (verification.isRejected()) {
         el::io::printLine("Login rejected."_el);
         return el::ExitCode::failure();
     }
     if (verification.replacementHash().has_value()) {
-        static_cast<void>(database.trySetPassword(username, verification.replacementHash()->toString()));
+        if (!database.trySetPassword(username, verification.replacementHash()->toString())) {
+            throw el::ApplicationError{"The verified user no longer exists in the password database."_el};
+        }
         database.save(paths.database, el::PathCollisionMode::Overwrite);
     }
     el::io::printLine("Login accepted."_el);

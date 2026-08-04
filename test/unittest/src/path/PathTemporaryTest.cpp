@@ -105,7 +105,7 @@ public:
         const auto fixture = PathTestFixture{"temporary-collisions"};
         auto invalidOptions = el::path::PathTempDirectoryOptions{};
         invalidOptions.setPrefix("nested/name-"_el);
-        REQUIRE(fixture.path().operations().createTempDirectory(invalidOptions) == nullptr);
+        REQUIRE_FALSE(fixture.path().operations().createTempDirectory(invalidOptions));
 
         constexpr auto alphabet = std::string_view{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"};
         for (const auto character : alphabet) {
@@ -114,7 +114,7 @@ public:
         auto collisionOptions = el::path::PathTempDirectoryOptions{};
         collisionOptions.setPrefix("occupied-"_el)
             .setRandomLength(el::unit::CpLength{1U})
-            .setMaximumAttempts(el::unit::ElementCount{2U});
-        REQUIRE(fixture.path().operations().createTempDirectory(collisionOptions) == nullptr);
+            .setMaximumAttempts(el::unit::ItemCount{2U});
+        REQUIRE_FALSE(fixture.path().operations().createTempDirectory(collisionOptions));
     }
 };

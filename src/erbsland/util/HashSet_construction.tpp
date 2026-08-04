@@ -6,7 +6,7 @@ namespace erbsland::util {
 
 template <typename tKey, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
-HashSet<tKey, tHash, tEqual, tSelf>::HashSet() : _storage{} {
+HashSet<tKey, tHash, tEqual, tSelf>::HashSet() : _storage{defaultStorage()} {
 }
 
 template <typename tKey, typename tHash, typename tEqual, typename tSelf>
@@ -22,7 +22,7 @@ auto HashSet<tKey, tHash, tEqual, tSelf>::fromList(const List<Key> &values) -> S
 
 template <typename tKey, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
-HashSet<tKey, tHash, tEqual, tSelf>::HashSet(std::initializer_list<Key> values) {
+HashSet<tKey, tHash, tEqual, tSelf>::HashSet(std::initializer_list<Key> values) : _storage{defaultStorage()} {
     auto data = Raw{};
     data.reserve(values.size());
     for (const auto &value : values) {
@@ -101,6 +101,16 @@ template <typename tKey, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
 auto HashSet<tKey, tHash, tEqual, tSelf>::makeSelf(Raw raw) -> Self {
     return Self{std::move(raw)};
+}
+
+template <typename tKey, typename tHash, typename tEqual, typename tSelf>
+    requires std::default_initializable<tKey> && std::copyable<tKey>
+auto HashSet<tKey, tHash, tEqual, tSelf>::defaultStorage() -> Storage {
+    if constexpr (std::is_empty_v<Hash> && std::is_empty_v<Equal>) {
+        return Storage::sharedDefault();
+    } else {
+        return Storage{};
+    }
 }
 
 template <typename tKey, typename tHash, typename tEqual, typename tSelf>

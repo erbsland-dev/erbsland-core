@@ -56,7 +56,7 @@ void RulesFromDocument::read() {
         throwValidationError("Rules from a document can only be read into an empty rule-set"_el);
     }
     auto filter = [](const conf::ValuePtr &node) -> bool {
-        if (!node->isDocument() && node->namePath().front() == vrc::cReservedTemplate) {
+        if (!node->isDocument() && node->namePath().front() == Name::vrName(Name::VR::ReservedTemplate)) {
             return false; // Skip the template nodes, as they are just referenced from regular nodes.
         }
         if (node->name().isIndex()) {
@@ -64,7 +64,8 @@ void RulesFromDocument::read() {
                 return false; // coverage: this should never happen
             }
             const auto parentName = node->parent()->name();
-            if (parentName == vrc::cReservedKey || parentName == vrc::cReservedDependency) {
+            if (parentName == Name::vrName(Name::VR::ReservedKey) ||
+                parentName == Name::vrName(Name::VR::ReservedDependency)) {
                 return false; // skip the individual entries in `vr_key` and `vr_dependency`
             }
         }
@@ -84,28 +85,28 @@ void RulesFromDocument::read() {
 
 void RulesFromDocument::processDocumentNode(const conf::ValuePtr &node) {
     try {
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!node->isDocument(), "Document nodes are not allowed in validation rules");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!node->isDocument(), "Document nodes are not allowed in validation rules"_el);
         if (node->type() == ValueType::SectionWithTexts) {
             throwValidationError("Section with texts is not allowed in a validation rules document"_el);
         }
         const auto namePath = node->namePath();
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!namePath.empty(), "Expected non-empty name path for a node");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!namePath.empty(), "Expected non-empty name path for a node"_el);
         if (namePath.containsText()) {
             throwValidationError("Text names are not allowed in a validation rules document"_el);
         }
         const auto &name = namePath.back();
-        if (name == vrc::cReservedTemplate) {
+        if (name == Name::vrName(Name::VR::ReservedTemplate)) {
             // As the template node is filtered, any occurrence of `vr_template` means that this definition
             // is a subsection and therefore at the wrong place.
             throwValidationError("Templates must be defined in the document root"_el);
         }
-        if (name == vrc::cReservedName) {
+        if (name == Name::vrName(Name::VR::ReservedName)) {
             processNameNode(node);
-        } else if (name == vrc::cReservedDependency) {
+        } else if (name == Name::vrName(Name::VR::ReservedDependency)) {
             processDependencies(node);
-        } else if (name == vrc::cReservedKey) {
+        } else if (name == Name::vrName(Name::VR::ReservedKey)) {
             processKey(node);
-        } else if (name == vrc::cReservedEntry || name == vrc::cReservedAny) {
+        } else if (name == Name::vrName(Name::VR::ReservedEntry) || name == Name::vrName(Name::VR::ReservedAny)) {
             processRegularNode(node);
         } else if (!name.isReservedValidationRule() || name.isEscapedReservedValidationRule()) {
             processRegularNode(node);
@@ -137,12 +138,13 @@ void RulesFromDocument::processRegularNode(const conf::ValuePtr &node) {
 }
 
 void RulesFromDocument::processNodeRules(const conf::ValuePtr &node, const RulePtr &rule) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(node->type() == ValueType::SectionWithNames, "Expected section with names node");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
+        node->type() == ValueType::SectionWithNames, "Expected section with names node"_el);
     handleTypeOrTemplate(node, rule);
-    if (rule->type() == vr::RuleType::Alternatives && node->hasValue(vrc::cUseTemplate)) {
+    if (rule->type() == vr::RuleType::Alternatives && node->hasValue(Name::vrName(Name::VR::UseTemplate))) {
         // if we used a template with alternatives, do not allow further constraint definitions.
         for (const auto &value : *node) {
-            if (value->name() != vrc::cUseTemplate) {
+            if (value->name() != Name::vrName(Name::VR::UseTemplate)) {
                 throwValidationError(
                     "Templates that define alternatives cannot be customized at the usage location"_el);
             }
@@ -154,8 +156,9 @@ void RulesFromDocument::processNodeRules(const conf::ValuePtr &node, const RuleP
 }
 
 void RulesFromDocument::processNameNodeRules(const conf::ValuePtr &node, const RulePtr &rule) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(node->type() == ValueType::SectionWithNames, "Expected section with names node");
-    if (const auto value = node->value(vrc::cType); value != nullptr) {
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
+        node->type() == ValueType::SectionWithNames, "Expected section with names node"_el);
+    if (const auto value = node->value(Name::vrName(Name::VR::Type)); value != nullptr) {
         if (value->type() != ValueType::Text) {
             throwValidationError("The 'type' value must be a text"_el, value->namePath(), value->location());
         }
@@ -164,7 +167,7 @@ void RulesFromDocument::processNameNodeRules(const conf::ValuePtr &node, const R
                 "Name node-rules must have a 'type' value of 'text'"_el, value->namePath(), value->location());
         }
     }
-    if (node->hasValue(vrc::cUseTemplate)) {
+    if (node->hasValue(Name::vrName(Name::VR::UseTemplate))) {
         throwValidationError("Name node-rules cannot have a 'use_template' value"_el);
     }
     handleCaseSensitive(node, rule);
@@ -172,18 +175,19 @@ void RulesFromDocument::processNameNodeRules(const conf::ValuePtr &node, const R
 }
 
 void RulesFromDocument::processCommonNodeRules(const conf::ValuePtr &node, const RulePtr &rule) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(node->type() == ValueType::SectionWithNames, "Expected section with names node");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
+        node->type() == ValueType::SectionWithNames, "Expected section with names node"_el);
     std::unordered_map<text::String, text::String> customErrorMessages;
     for (const auto &value : *node) {
         try {
             if (value->type().isStructural()) {
-                if (rule->ruleName() == vrc::cReservedName) {
+                if (rule->ruleName() == Name::vrName(Name::VR::ReservedName)) {
                     throwValidationError("A 'vr_name' section cannot have subsections"_el);
                 }
                 continue; // Ignore subsections, section lists, etc.
             }
-            if (value->name() == vrc::cType || value->name() == vrc::cUseTemplate ||
-                value->name() == vrc::cCaseSensitive) {
+            if (value->name() == Name::vrName(Name::VR::Type) || value->name() == Name::vrName(Name::VR::UseTemplate) ||
+                value->name() == Name::vrName(Name::VR::CaseSensitive)) {
                 continue; // "type", "use_template" and "case_sensitive" are already handled.
             }
             handleConstraintAndAttributes(customErrorMessages, rule, value);
@@ -247,7 +251,7 @@ void RulesFromDocument::handleConstraintAndAttributes(
         constraint->setName(name);
         constraint->setLocation(value->location());
         constraint->setNegated(isNegated);
-        const auto isFromTemplate = value->namePath().front() == vrc::cReservedTemplate;
+        const auto isFromTemplate = value->namePath().front() == Name::vrName(Name::VR::ReservedTemplate);
         constraint->setFromTemplate(isFromTemplate);
         // Test if there is a conflict and if overwriting is allowed.
         if (rule->hasConstraint(constraint->type())) {

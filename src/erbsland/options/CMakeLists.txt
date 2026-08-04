@@ -18,6 +18,7 @@ target_sources(erbsland-core PRIVATE
         OptionChoices_fwd.hpp
         OptionEditor.cpp
         OptionEditor.hpp
+        OptionEditor.tpp
         OptionError.cpp
         OptionError.hpp
         OptionErrorContext.hpp
@@ -30,6 +31,7 @@ target_sources(erbsland-core PRIVATE
         OptionInteger.hpp
         OptionManager.cpp
         OptionManager.hpp
+        OptionManager_fwd.hpp
         OptionModule.cpp
         OptionModule.hpp
         OptionModule_fwd.hpp

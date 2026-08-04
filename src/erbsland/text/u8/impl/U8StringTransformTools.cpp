@@ -37,6 +37,25 @@ auto U8StringTransformTools::forEach(const ProcessCharacterFn &function) const -
     return completed ? util::LoopResult::Success : result;
 }
 
+auto U8StringTransformTools::forEach(const ProcessCharacterWithCpIndexFn &function) const -> util::LoopResult {
+    if (function == nullptr) {
+        return util::LoopResult::Success;
+    }
+    auto result = util::LoopResult::Success;
+    auto index = unit::CpIndex::zero();
+    const auto completed =
+        utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
+            const auto status = function(character, index);
+            if (status == util::LoopStatus::Continue) {
+                index.uncheckedIncrement();
+                return true;
+            }
+            result = util::impl::loopStatusToResult(status);
+            return false;
+        });
+    return completed ? util::LoopResult::Success : result;
+}
+
 auto U8StringTransformTools::transformedIfChanged(const TransformCharacterFn function) const
     -> std::optional<U8StringSharedStorage> {
 

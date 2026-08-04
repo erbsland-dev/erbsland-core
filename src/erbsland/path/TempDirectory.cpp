@@ -20,7 +20,11 @@ TempDirectory::TempDirectory(Path path, const bool removeOnDestroy) :
 
 TempDirectory::~TempDirectory() {
     if (_removeOnDestroy) {
-        static_cast<void>(remove());
+        try {
+            removeOrThrow();
+        } catch (const PathError &) {
+            // Destruction is explicitly best-effort; callers can use removeOrThrow() when failure must be observed.
+        }
     }
 }
 

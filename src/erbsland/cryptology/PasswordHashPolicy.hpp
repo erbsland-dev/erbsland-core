@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PasswordHashAlgorithm.hpp"
+#include "PasswordHashPolicy_fwd.hpp"
 
 #include "unsafe/UnsafeCustomPasswordHashParameters.hpp"
 
@@ -57,6 +58,7 @@ public: // factories
     [[nodiscard]] static auto scrypt() noexcept -> PasswordHashPolicy;
 
 private:
+    /// Create a policy from normalized algorithm-specific parameters.
     PasswordHashPolicy(
         PasswordHashAlgorithm algorithm,
         uint32_t memoryKiB,

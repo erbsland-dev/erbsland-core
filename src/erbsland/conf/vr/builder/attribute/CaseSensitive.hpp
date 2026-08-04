@@ -9,10 +9,13 @@
 namespace erbsland::conf::vr::builder {
 
 /// Sets the case sensitivity used by the rule.
-struct CaseSensitive : Attribute {
+class CaseSensitive : public Attribute {
+public:
+    /// Set the case sensitivity for a rule.
+    /// @param caseSensitivity The requested case sensitivity.
     explicit CaseSensitive(const text::CaseSensitivity caseSensitivity = text::CaseSensitivity::CaseSensitive) :
         _caseSensitivity{caseSensitivity} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     text::CaseSensitivity _caseSensitivity{text::CaseSensitivity::CaseSensitive};
 };
 

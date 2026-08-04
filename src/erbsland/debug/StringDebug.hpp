@@ -14,13 +14,30 @@
 
 namespace erbsland::debug {
 
+/// Build a debug tree for a UTF-8 string editor.
+/// @param value The value to inspect.
+/// @param details The optional details to include.
+/// @return The debug tree for `value`.
+/// @tested{StringDebugTest}
 [[nodiscard]] auto toDebugTree(const text::U8StringEditor &value, DebugViewDetails details = {}) -> text::StringTree;
+/// @overload
 [[nodiscard]] auto toDebugTree(const text::U8String &value, DebugViewDetails details = {}) -> text::StringTree;
+/// @overload
 [[nodiscard]] auto toDebugTree(const text::U16StringEditor &value, DebugViewDetails details = {}) -> text::StringTree;
+/// @overload
 [[nodiscard]] auto toDebugTree(const text::U16String &value, DebugViewDetails details = {}) -> text::StringTree;
+/// @overload
 [[nodiscard]] auto toDebugTree(const text::U32StringEditor &value, DebugViewDetails details = {}) -> text::StringTree;
+/// @overload
 [[nodiscard]] auto toDebugTree(const text::U32String &value, DebugViewDetails details = {}) -> text::StringTree;
-
+/// Build a formatted debug string for a supported value.
+/// @tparam T The type of value to inspect.
+/// @param value The value to inspect.
+/// @param details The optional details to include.
+/// @param indentWidth The indentation width for each tree depth.
+/// @param initialIndentWidth The indentation width before the root.
+/// @return The formatted debug string for `value`.
+/// @tested{StringDebugTest}
 template <typename T>
 [[nodiscard]] auto toDebugString(
     const T &value,

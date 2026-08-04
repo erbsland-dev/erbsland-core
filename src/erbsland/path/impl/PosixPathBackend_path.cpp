@@ -22,7 +22,6 @@
 #include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../time/impl/PosixTimeConverter.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <fcntl.h>

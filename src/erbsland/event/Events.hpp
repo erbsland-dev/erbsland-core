@@ -22,6 +22,7 @@ namespace erbsland::event {
 /// @tested{ApplicationEventTest EventLoopTest EventThreadTest EventTimerTest}
 class Events {
 public:
+    // defaults
     virtual ~Events() = default;
 
 public: // interface
@@ -57,6 +58,7 @@ public: // interface
     }
 
 private:
+    /// Get the backend implementation with the given identifier.
     [[nodiscard]] virtual auto getBackend(EventBackendId backendId) -> EventBackend & = 0;
 };
 

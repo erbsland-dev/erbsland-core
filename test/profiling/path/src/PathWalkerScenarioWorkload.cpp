@@ -61,7 +61,7 @@ auto PathWalkerScenarioWorkload::createWorker([[maybe_unused]] const std::uint32
 }
 
 void PathWalkerScenarioWorkload::validate(const pf::SampleMeasurement &measurement) {
-    if (measurement.operations == 0U || measurement.metrics.count() != el::ElementCount::one()) {
+    if (measurement.operations == 0U || measurement.metrics.count() != el::ItemCount::one()) {
         throw el::ApplicationError{"The path-walker workload produced an invalid measurement."_el};
     }
     if (measurement.metrics.first() != measurement.operations * _expectedEntryCount) {

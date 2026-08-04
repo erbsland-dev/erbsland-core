@@ -16,13 +16,18 @@ public:
         const auto date = Date::fromYearMonthDay(2026, 7, 23);
         const auto time = Time{Hour{14}, Minute{5}, Second{9}};
 
-        REQUIRE_EQUAL(std::format("{}", date), std::string{"2026-07-23"});
-        REQUIRE_EQUAL(std::format("{}", time), std::string{"14:05:09"});
-        REQUIRE_EQUAL(std::format("{}", DateTime{date, time}), std::string{"2026-07-23 14:05:09Z"});
+        const auto formattedDate = std::format("{}", date);
+        const auto formattedTime = std::format("{}", time);
+        const auto formattedDateTime = std::format("{}", DateTime{date, time});
+        REQUIRE_EQUAL(formattedDate, std::string{"2026-07-23"});
+        REQUIRE_EQUAL(formattedTime, std::string{"14:05:09"});
+        REQUIRE_EQUAL(formattedDateTime, std::string{"2026-07-23 14:05:09Z"});
     }
 
     void testDeltaValues() {
-        REQUIRE_EQUAL(std::format("{}", TimeDelta::minutes(90)), std::string{"1 h 30 min"});
-        REQUIRE_EQUAL(std::format("{}", CalendarDelta{Months{2}}), std::string{"2 mo"});
+        const auto formattedTimeDelta = std::format("{}", TimeDelta::minutes(90));
+        const auto formattedCalendarDelta = std::format("{}", CalendarDelta{Months{2}});
+        REQUIRE_EQUAL(formattedTimeDelta, std::string{"1 h 30 min"});
+        REQUIRE_EQUAL(formattedCalendarDelta, std::string{"2 mo"});
     }
 };

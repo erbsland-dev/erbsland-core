@@ -29,17 +29,17 @@ public:
     void testParameterizedConstructorAndAccessors() {
         el::unit::CodeLocation position{el::unit::LineIndex{2U}, el::unit::ColumnIndex{3U}};
         character = DecodedChar{U'A', el::unit::ByteIndex{7}, position};
-        REQUIRE(character.character() == U'A');
+        REQUIRE_EQUAL(character.character(), U'A');
         REQUIRE_EQUAL(character.index(), el::unit::ByteIndex{7});
-        REQUIRE(character.codeLocation() == position);
+        REQUIRE_EQUAL(character.codeLocation(), position);
     }
 
     void testCopyAndMove() {
         el::unit::CodeLocation position{el::unit::LineIndex{1U}, el::unit::ColumnIndex{4U}};
         character = DecodedChar{U'B', el::unit::ByteIndex{9}, position};
         DecodedChar copy{character};
-        REQUIRE(copy.character() == character.character());
-        REQUIRE(copy.index() == character.index());
-        REQUIRE(copy.codeLocation() == character.codeLocation());
+        REQUIRE_EQUAL(copy.character(), character.character());
+        REQUIRE_EQUAL(copy.index(), character.index());
+        REQUIRE_EQUAL(copy.codeLocation(), character.codeLocation());
     }
 };

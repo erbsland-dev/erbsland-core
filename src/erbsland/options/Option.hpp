@@ -27,6 +27,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class Option {
 public:
+    /// Create an empty option.
     Option() = default;
     /// Create an option with names.
     Option(std::initializer_list<text::String> names);
@@ -150,9 +151,11 @@ public: // accessors
     /// Get the value validation callback.
     [[nodiscard]] auto validateFn() const noexcept -> const OptionValidateFn & { return _validateFn; }
     /// Set the value validation callback.
+    /// @param fn The new value validation callback `(OptionValuePtr valueToValidate, OptionValuesPtr values) -> void`
     void setValidateFn(OptionValidateFn fn) { _validateFn = std::move(fn); }
 
 private:
+    /// Update the implicit value type after changing the option names.
     void updateImplicitTypeFromNames() noexcept;
 
 private:

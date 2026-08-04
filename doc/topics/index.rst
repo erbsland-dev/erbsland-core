@@ -20,4 +20,5 @@ Topics
     re/index
     event/index
     stream/index
+    network/index
     cterm/index

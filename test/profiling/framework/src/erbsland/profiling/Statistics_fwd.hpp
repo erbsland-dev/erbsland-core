@@ -2,5 +2,5 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 namespace erbsland::profiling {
-struct Statistics;
+class Statistics;
 }

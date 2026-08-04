@@ -19,61 +19,58 @@ using namespace el::text::literals;
 
 using el::stream::StreamError;
 using el::stream::TextOutputStream;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using namespace el::text;
 using namespace el::text::literals;
 
-namespace {
-
-class PrintStringType final {
-public:
-    [[nodiscard]] auto toString() const -> String { return String{"string"_el}; }
-};
-
-class PrintReadOnlyStringType final {
-public:
-    [[nodiscard]] auto toString() const -> String { return "view"_el; }
-};
-
-class PrintRawValueType final {
-public:
-    [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 255U; }
-};
-
-class PrintBothType final {
-public:
-    [[nodiscard]] auto toString() const -> String { return String{"string-wins"_el}; }
-    [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 17U; }
-};
-
-class MutableRawValueType final {
-public:
-    [[nodiscard]] constexpr auto toRawValue() noexcept -> std::uint16_t { return 1U; }
-};
-
-class NonIntegerRawValueType final {
-public:
-    [[nodiscard]] constexpr auto toRawValue() const noexcept -> float { return 1.0F; }
-};
-
-class CharacterRawValueType final {
-public:
-    [[nodiscard]] constexpr auto toRawValue() const noexcept -> char { return 'x'; }
-};
-
-static_assert(el::stream::impl::PrintObjectWithToString<PrintStringType>);
-static_assert(el::stream::impl::PrintObjectWithToString<PrintReadOnlyStringType>);
-static_assert(el::stream::impl::PrintObjectWithToString<PrintBothType>);
-static_assert(el::stream::impl::PrintObjectWithRawInteger<PrintRawValueType>);
-static_assert(!el::stream::impl::PrintObjectWithRawInteger<PrintBothType>);
-static_assert(!el::stream::impl::PrintObjectWithRawInteger<MutableRawValueType>);
-static_assert(!el::stream::impl::PrintObjectWithRawInteger<NonIntegerRawValueType>);
-static_assert(!el::stream::impl::PrintObjectWithRawInteger<CharacterRawValueType>);
-
-}
-
 TESTED_TARGETS(StandardTextOutputStream NativeOutputStream)
 class StandardTextOutputStreamTest final : public el::UnitTest {
+private:
+    class PrintStringType final {
+    public:
+        [[nodiscard]] auto toString() const -> String { return String{"string"_el}; }
+    };
+
+    class PrintReadOnlyStringType final {
+    public:
+        [[nodiscard]] auto toString() const -> String { return "view"_el; }
+    };
+
+    class PrintRawValueType final {
+    public:
+        [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 255U; }
+    };
+
+    class PrintBothType final {
+    public:
+        [[nodiscard]] auto toString() const -> String { return String{"string-wins"_el}; }
+        [[nodiscard]] constexpr auto toRawValue() const noexcept -> std::uint16_t { return 17U; }
+    };
+
+    class MutableRawValueType final {
+    public:
+        [[nodiscard]] constexpr auto toRawValue() noexcept -> std::uint16_t { return 1U; }
+    };
+
+    class NonIntegerRawValueType final {
+    public:
+        [[nodiscard]] constexpr auto toRawValue() const noexcept -> float { return 1.0F; }
+    };
+
+    class CharacterRawValueType final {
+    public:
+        [[nodiscard]] constexpr auto toRawValue() const noexcept -> char { return 'x'; }
+    };
+
+    static_assert(el::stream::impl::PrintObjectWithToString<PrintStringType>);
+    static_assert(el::stream::impl::PrintObjectWithToString<PrintReadOnlyStringType>);
+    static_assert(el::stream::impl::PrintObjectWithToString<PrintBothType>);
+    static_assert(el::stream::impl::PrintObjectWithRawInteger<PrintRawValueType>);
+    static_assert(!el::stream::impl::PrintObjectWithRawInteger<PrintBothType>);
+    static_assert(!el::stream::impl::PrintObjectWithRawInteger<MutableRawValueType>);
+    static_assert(!el::stream::impl::PrintObjectWithRawInteger<NonIntegerRawValueType>);
+    static_assert(!el::stream::impl::PrintObjectWithRawInteger<CharacterRawValueType>);
+
     class FakeNativeOutputStream final : public el::stream::impl::NativeOutputStream {
     public:
         void writeBytes(const std::span<const char> bytes) override {
@@ -129,7 +126,7 @@ public:
         auto integerFormat = IntegerFormat::hexadecimal();
         integerFormat.setFlags(IntegerFormatFlag::BasePrefix);
         auto floatFormat = FloatFormat::fixed();
-        floatFormat.setPrecision(ElementCount{2U});
+        floatFormat.setPrecision(ItemCount{2U});
         auto booleanFormat = BooleanFormat::yesNo().setCapitalization(Capitalization::Titlecase);
 
         stream.printLine("value=", integerFormat, 255U, ", ok=", true, ", ratio=", floatFormat, 1.25);
@@ -244,7 +241,8 @@ public:
         auto stream = el::stream::impl::StandardTextOutputStream{fake};
 
         stream.printLine("Before close");
-        REQUIRE(stream.close() == el::stream::StreamCloseStatus::Closed);
+        const auto closeStatus = stream.close();
+        REQUIRE_EQUAL(closeStatus, el::stream::StreamCloseStatus::Closed);
         REQUIRE_FALSE(stream.isOpen());
         REQUIRE_EQUAL(fake->text, std::string{"Before close\n"});
     }

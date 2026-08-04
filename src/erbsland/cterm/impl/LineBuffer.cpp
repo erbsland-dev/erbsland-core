@@ -87,12 +87,4 @@ void LineBuffer::EmitLock::unlock() noexcept {
     _emitLockCount -= 1;
 }
 
-LineBuffer::EmitLockGuard::EmitLockGuard(LineBuffer &lineBuffer) : _lineBuffer{lineBuffer} {
-    _lineBuffer._emitLock.lock();
-}
-
-LineBuffer::EmitLockGuard::~EmitLockGuard() {
-    _lineBuffer._emitLock.unlock();
-}
-
 }

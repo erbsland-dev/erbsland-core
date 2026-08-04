@@ -4,8 +4,6 @@
 
 #include "IpAddress.hpp"
 
-#include "../text/FormatAs.hpp"
-
 #include <compare>
 #include <cstdint>
 #include <optional>
@@ -72,7 +70,9 @@ public: // conversion
     [[nodiscard]] static auto fromStringOrThrow(const text::String &text) -> IpNetwork;
 
 private:
+    /// Get the maximum valid prefix length for an IP version.
     [[nodiscard]] static auto maximumPrefix(IpVersion version) noexcept -> uint8_t;
+    /// Clear host bits beyond a network prefix.
     [[nodiscard]] static auto normalizedAddress(const IpAddress &address, uint8_t prefixLength) noexcept -> IpAddress;
 
 private:
@@ -85,9 +85,4 @@ private:
 template <>
 struct std::hash<erbsland::network::IpNetwork> {
     auto operator()(const erbsland::network::IpNetwork &value) const noexcept -> std::size_t { return value.toHash(); }
-};
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::network::IpNetwork> : FormatAs<network::IpNetwork, String> {
-    [[nodiscard]] auto format(const network::IpNetwork &value) const -> String { return value.toString(); }
 };

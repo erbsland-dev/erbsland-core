@@ -11,9 +11,9 @@ TESTED_TARGETS(Parser)
 TAGS(Parsing) class ParserQuantifierCounterIndexTest final : public UNITTEST_SUBCLASS(ParserBase) {
 public:
     void requireValidCounterIndexNesting(const PatternNodePtr &root) {
-        using impl::node_data::Quantifier;
+        using el::re::impl::node_data::Quantifier;
 
-        REQUIRE(root != nullptr);
+        REQUIRE_NOT_EQUAL(root, nullptr);
 
         Quantifier::CounterIndex nestingLevel = 0;
         const PatternNode &rootNode = *root;

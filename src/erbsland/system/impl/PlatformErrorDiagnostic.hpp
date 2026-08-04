@@ -13,6 +13,7 @@ namespace erbsland::system::impl {
 /// @tested{DiagnosticTest}
 class PlatformErrorDiagnostic final : public err::Diagnostic {
 public:
+    /// Create a diagnostic for a platform error.
     PlatformErrorDiagnostic(text::String title, PlatformErrorContextConstPtr context) noexcept;
 
 public: // implement Diagnostic

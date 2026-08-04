@@ -51,7 +51,9 @@ public:
     void addIndivisibleRange(BlockRange range);
 
 private:
+    /// Append a character after applying pending trim behavior.
     void appendTrimmedCharacter(const Block &character);
+    /// Append whitespace retained while waiting for the next character.
     void flushPendingWhitespace();
 
 private:

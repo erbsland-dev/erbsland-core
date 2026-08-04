@@ -11,6 +11,7 @@ namespace erbsland::system::impl {
 /// Windows implementation for user and group lookups.
 class WindowsUserLookupBackend final : public UserLookupBackend {
 public:
+    /// Create a Windows user-lookup backend.
     WindowsUserLookupBackend() = default;
 
 public: // implement UserLookupBackend
@@ -20,8 +21,11 @@ public: // implement UserLookupBackend
     [[nodiscard]] auto groupIdForName(const GroupName &name) -> GroupId override;
 
 private:
+    /// Throw an error for a failed native account lookup.
     [[noreturn]] static void throwLookupError(text::String reason, system::WindowsErrorContext::ErrorCode errorCode);
+    /// Resolve an account name from a textual Windows SID.
     [[nodiscard]] static auto accountNameForSidString(const text::String &sid) -> text::String;
+    /// Resolve a textual Windows SID from an account name.
     [[nodiscard]] static auto sidStringForAccountName(const text::String &name) -> text::String;
 };
 

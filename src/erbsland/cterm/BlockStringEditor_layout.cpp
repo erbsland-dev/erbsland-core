@@ -4,6 +4,7 @@
 
 #include "BlockString.hpp"
 
+#include "impl/BlockPrintContextToBlockString.hpp"
 #include "impl/BlockPrintContextToString.hpp"
 #include "impl/BlockStringData.hpp"
 #include "impl/BlockStringRangeView.hpp"
@@ -147,8 +148,7 @@ auto BlockStringEditor::createPrintContext() noexcept -> BlockPrintContextPtr {
     return std::make_unique<BlockPrintContextToBlockString>(*this);
 }
 
-void BlockStringEditor::appendString(const BlockString &view, const BlockStyle style) noexcept {
-    static_cast<void>(style);
+void BlockStringEditor::appendString(const BlockString &view, const BlockStyle) noexcept {
     if (view.isEmpty()) {
         return;
     }

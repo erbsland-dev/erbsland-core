@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "TerminalStream_fwd.hpp"
+
+#include "impl/TerminalStreamData_fwd.hpp"
+
 #include "../core/Definitions.hpp"
 
 #include <memory>
@@ -9,12 +13,11 @@
 
 namespace erbsland::cterm {
 
-class TerminalStream;
-
 /// Shared synchronization state for terminal text streams.
 /// @tested{TerminalStreamTest}
 class TerminalStreamSynchronization final {
 public:
+    /// Create synchronization state for one terminal stream.
     TerminalStreamSynchronization() = default;
 
     // defaults
@@ -26,6 +29,7 @@ public:
 
 private:
     friend class TerminalStream;
+    friend class impl::TerminalStreamData;
 
 private:
     std::mutex _mutex; ///< Synchronizes writes to a shared terminal.

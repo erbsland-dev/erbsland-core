@@ -45,7 +45,7 @@ protected: // implement pf::ProfilingApplication
         const auto values = optionValues();
         if (!values->valueCount("write-template"_el).isZero()) {
             const auto path = el::Path{values->getText("write-template"_el)};
-            ConfigurationLoader::writeTemplate(path);
+            Configuration::writeTemplate(path);
             el::io::printLine("template="_el, path.toString());
             return el::ExitCode::success();
         }
@@ -54,7 +54,7 @@ protected: // implement pf::ProfilingApplication
         if (!values->valueCount("config"_el).isZero()) {
             configPath = el::Path{values->getText("config"_el)};
         }
-        auto configuration = ConfigurationLoader::load(configPath);
+        auto configuration = Configuration::load(configPath);
         if (!values->valueCount("mode"_el).isZero()) {
             configuration.run.mode =
                 values->getText("mode"_el) == "benchmark"_el ? RunMode::Benchmark : RunMode::Profile;

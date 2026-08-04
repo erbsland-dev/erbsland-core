@@ -22,21 +22,21 @@ using namespace text::literals;
 
 void FileSourceResolver::enable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file source resolver feature.", "feature"};
+        throw err::ParameterError{"Invalid file source resolver feature."_el, "feature"_el};
     }
     _features.set(feature);
 }
 
 void FileSourceResolver::disable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file source resolver feature.", "feature"};
+        throw err::ParameterError{"Invalid file source resolver feature."_el, "feature"_el};
     }
     _features.reset(feature);
 }
 
 auto FileSourceResolver::isEnabled(const Feature feature) const -> bool {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file source resolver feature.", "feature"};
+        throw err::ParameterError{"Invalid file source resolver feature."_el, "feature"_el};
     }
     return _features.test(feature);
 }
@@ -305,11 +305,11 @@ auto FileSourceResolver::scanForPaths(
                                                                   : path::PathWalkStatus::Continue;
                 }
                 if (filenamePattern.matches(candidate)) {
-                    if (paths.count().toSizeT() >= limits::maxIncludeSources) {
+                    if (paths.count().toSizeT() >= impl::limits::maxIncludeSources) {
                         throw ConfError(
                             ConfErrorCategory::LimitExceeded,
                             text::StringFormat{"This include directive includes more than {} documents."_el}.build(
-                                limits::maxIncludeSources));
+                                impl::limits::maxIncludeSources));
                     }
                     paths.append(candidate);
                 }

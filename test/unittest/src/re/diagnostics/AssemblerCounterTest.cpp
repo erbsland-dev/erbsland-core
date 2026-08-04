@@ -42,13 +42,13 @@ public:
     void testCounterLimits() {
         // Index is zero-based, and the maximum number of counters is fixed.
         WITH_CONTEXT(requireCompile({
-            std::format("COUNTER {}, 0", impl::limits::maximumCounterCount - 1),
+            std::format("COUNTER {}, 0", el::re::impl::limits::maximumCounterCount - 1),
         }));
-        WITH_CONTEXT(requireCounter(static_cast<CounterIndex>(impl::limits::maximumCounterCount - 1), 0));
+        WITH_CONTEXT(requireCounter(static_cast<CounterIndex>(el::re::impl::limits::maximumCounterCount - 1), 0));
 
         WITH_CONTEXT(
             requireCompilerError({
-                std::format("COUNTER {}, 0", impl::limits::maximumCounterCount),
+                std::format("COUNTER {}, 0", el::re::impl::limits::maximumCounterCount),
             }),
             "out of range");
 

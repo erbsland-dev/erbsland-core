@@ -69,7 +69,7 @@ public:
             "value 09 = 9002\n"_el);
         Parser parser;
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{mainFile})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
             {"main.value_01"_el, "Integer(5001)"_el},
@@ -121,7 +121,7 @@ public:
             "value 07 = 123\n"_el);
         Parser parser;
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{mainFile})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         auto expectedValueMap = ExpectedValueMap{
             {"block"_el, "SectionList()"_el},
             {"block[0]"_el, "SectionWithNames()"_el},
@@ -151,14 +151,14 @@ public:
         const auto mainFile = createTestFile("config/main.elcl", "@include: \"none*.elcl\"\n"_el);
         Parser parser;
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{mainFile})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
     }
 
     void testNoWildcardMatches2() {
         const auto mainFile = createTestFile("config/main.elcl", "@include: \"**/none.elcl\"\n"_el);
         Parser parser;
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{mainFile})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
     }
 
     void testNullSourceFromResolver() {

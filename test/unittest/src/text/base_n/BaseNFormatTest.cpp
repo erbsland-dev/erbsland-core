@@ -73,7 +73,8 @@ private:
         REQUIRE(format.whitespace().contains(U' '));
         for (std::size_t i = 0; i < alphabetLength; ++i) {
             const auto character = format.characterFor(static_cast<uint8_t>(i));
-            REQUIRE(format.valueFor(character) == static_cast<uint8_t>(i));
+            const auto value = format.valueFor(character);
+            REQUIRE_EQUAL(value, static_cast<uint8_t>(i));
         }
     }
 };

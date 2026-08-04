@@ -10,6 +10,7 @@ namespace app::string::impl {
 
 using namespace el::text::literals;
 
+/// Append benchmark descriptors for a family of string API variants.
 void addDescriptor(
     std::vector<UseCaseDescriptor> &target,
     const StringType type,
@@ -28,6 +29,7 @@ void addDescriptor(
     }
 }
 
+/// Append descriptors for string inspection, traversal, and search operations.
 void addReadableDescriptors(std::vector<UseCaseDescriptor> &target, const StringType type) {
     addDescriptor(
         target,
@@ -79,6 +81,7 @@ void addReadableDescriptors(std::vector<UseCaseDescriptor> &target, const String
     addDescriptor(target, type, UseCase::EscapeSafe, {"safe-string"_el}, {"toSafeString"_el});
 }
 
+/// Append descriptors for string creation, copying, conversion, and joining.
 void addLifecycleDescriptors(std::vector<UseCaseDescriptor> &target, const StringType type) {
     addDescriptor(
         target, type, UseCase::Create, {"copy-source"_el, "from-character"_el}, {"constructors/fromCharacter"_el});
@@ -107,6 +110,7 @@ void addLifecycleDescriptors(std::vector<UseCaseDescriptor> &target, const Strin
     addDescriptor(target, type, UseCase::Join, {"four-parts"_el}, {"fromJoined"_el});
 }
 
+/// Append descriptors specific to mutable string-editor operations.
 void addEditorDescriptors(std::vector<UseCaseDescriptor> &target) {
     constexpr auto type = StringType::StringEditor;
     addDescriptor(
@@ -148,6 +152,7 @@ void addEditorDescriptors(std::vector<UseCaseDescriptor> &target) {
 }
 
 template <typename Enum, typename ToString>
+/// Parse an enum value by comparing its textual representations.
 [[nodiscard]] auto parseEnum(const el::String &value, const Enum first, const Enum last, ToString toStringFn)
     -> std::optional<Enum> {
     for (auto item = first; item <= last; item = static_cast<Enum>(static_cast<int>(item) + 1)) {

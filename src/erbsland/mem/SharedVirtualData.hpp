@@ -14,6 +14,7 @@ namespace erbsland::mem {
 /// @tested{SharedDataTest}
 class SharedVirtualData : public SharedData {
 public:
+    // defaults
     SharedVirtualData() = default;
     SharedVirtualData(const SharedVirtualData &) noexcept = default;
     SharedVirtualData(SharedVirtualData &&) noexcept = default;

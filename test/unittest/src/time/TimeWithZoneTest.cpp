@@ -30,8 +30,9 @@ public:
         REQUIRE_EQUAL(positive.minute(), Minute{37});
         REQUIRE_EQUAL(positive.second(), Second{14});
         REQUIRE_EQUAL(positive.nanosecondFraction(), Nanoseconds{123'400'000});
-        REQUIRE(positive == TimeWithZone{time, TimeZone{Hours{14}}});
-        REQUIRE_FALSE(positive == utc);
+        const auto expectedPositive = TimeWithZone{time, TimeZone{Hours{14}}};
+        REQUIRE_EQUAL(positive, expectedPositive);
+        REQUIRE_NOT_EQUAL(positive, utc);
 
         const auto zurich = TimeWithZone{time, TimeZone::fromNameOrThrow("Europe/Zurich"_el)};
         REQUIRE_EQUAL(zurich.toString(), "17:37:14.1234[Europe/Zurich]"_el);

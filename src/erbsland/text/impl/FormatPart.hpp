@@ -24,25 +24,33 @@ public:
     auto operator=(FormatPart &&) -> FormatPart & = default;
 
 public: // accessors
+    /// Get the kind of this format part.
     [[nodiscard]] auto kind() const -> FormatPartKind { return _kind; }
+    /// Get the static text of this format part.
     [[nodiscard]] auto text() const -> const AnyString & { return _text; }
+    /// Get the referenced format argument index.
     [[nodiscard]] auto argumentIndex() const -> unit::ArgumentIndex { return _argumentIndex; }
+    /// Get the immutable field format specification.
     [[nodiscard]] auto spec() const -> const FormatSpec & { return _spec; }
+    /// Get the mutable field format specification.
     [[nodiscard]] auto spec() -> FormatSpec & { return _spec; }
 
 public: // modifiers
+    /// Set the referenced format argument index.
     auto setArgumentIndex(const unit::ArgumentIndex argumentIndex) noexcept -> FormatPart & {
         _argumentIndex = argumentIndex;
         return *this;
     }
 
 public: // factories
+    /// Create a static-text format part.
     [[nodiscard]] static auto fromStaticText(AnyString text) -> FormatPart {
         FormatPart part;
         part._text = std::move(text);
         part._kind = FormatPartKind::StaticText;
         return part;
     }
+    /// Create a field format part.
     [[nodiscard]] static auto fromField(const FormatSpec &spec, const unit::ArgumentIndex argumentIndex) -> FormatPart {
         FormatPart part;
         part._kind = FormatPartKind::Field;

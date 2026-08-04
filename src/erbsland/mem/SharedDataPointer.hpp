@@ -185,19 +185,23 @@ private:
         auto *oldData = std::exchange(_data, copy);
         release(oldData);
     }
+    /// Increase the intrusive reference count when data exists.
     static void addReference(tDataType *data) noexcept {
         if (data != nullptr) {
             referenceCounter(data).addReference();
         }
     }
+    /// Release an intrusive reference and destroy its final owner.
     static void release(tDataType *data) noexcept {
         if (data != nullptr && referenceCounter(data).removeReference() == ReferenceCounter::NoReferences) {
             Traits::destroy(data);
         }
     }
+    /// Access a mutable intrusive reference counter.
     [[nodiscard]] static auto referenceCounter(tDataType *data) noexcept -> ReferenceCounter & {
         return Traits::referenceCounter(data);
     }
+    /// Access an immutable intrusive reference counter.
     [[nodiscard]] static auto referenceCounter(const tDataType *data) noexcept -> const ReferenceCounter & {
         return Traits::referenceCounter(data);
     }

@@ -106,7 +106,8 @@ void PasswordHandlerApp::initializeStorage(const StoragePaths &paths) {
     const auto pepperExists = paths.pepper.info().exists();
     const auto databaseExists = paths.database.info().exists();
     if (!pepperExists) {
-        PepperStore::create(paths.pepper);
+        auto pepperStore = PepperStore{paths.pepper};
+        pepperStore.create();
     }
     if (!databaseExists) {
         UserDatabase{}.save(paths.database, el::PathCollisionMode::Stop);

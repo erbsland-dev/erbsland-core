@@ -6,8 +6,10 @@
 
 namespace erbsland::re::impl {
 
+/// UTF-16 capture-group match backed by an owning string.
 class U16StringMatch final : public Match16 {
 public:
+    /// Create a match backed by `text`.
     U16StringMatch(CaptureGroupList captureGroupList, const text::U16String &text) :
         Match16{std::move(captureGroupList)}, _text{text} {}
 

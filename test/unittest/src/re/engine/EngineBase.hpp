@@ -26,6 +26,8 @@ using impl::EngineStatePtr;
 using impl::ProgramPtr;
 using impl::SequenceData;
 
+/// Provides shared setup, execution, and assertions for regular-expression engine tests.
+/// @notest{This helper is exercised by its derived engine test suites.}
 class EngineBase : public re_test::TestHelper {
 public:
     ConstEngineDataPtr engineData;
@@ -37,6 +39,7 @@ public:
     std::vector<std::string> assemblerListing;
     StringEditor text;
 
+    /// Create diagnostic lines for the captured groups.
     auto createGroupLines() noexcept -> std::vector<std::string> {
         std::vector<std::string> result;
         for (std::size_t i = 0; i < captureGroups.size(); ++i) {
@@ -93,6 +96,7 @@ public:
         }
     }
 
+    /// Assemble an engine program from Core string lines.
     void assembleProgram(const el::text::StringList &lines) {
         assemblerListing = {};
         auto lineNumber = std::size_t{1};
@@ -105,6 +109,7 @@ public:
         engine = Engine::create(engineData);
     }
 
+    /// Assemble an engine program from standard string-view lines.
     void assembleProgram(const std::initializer_list<std::string_view> lines) {
         assembleProgram(re_test::string_helper::toStringList(lines));
     }
@@ -119,6 +124,7 @@ public:
         text.clear();
     }
 
+    /// Run a prefix match against test input.
     void runEngineMatch(const String &textToMatch) {
         text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
@@ -131,6 +137,7 @@ public:
         }
     }
 
+    /// Run a full match against test input.
     void runEngineFullMatch(const String &textToMatch) {
         text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
@@ -143,6 +150,7 @@ public:
         }
     }
 
+    /// Run a first-match search against test input.
     void runEngineFindFirst(const String &textToMatch) {
         text = StringEditor{textToMatch};
         input = std::make_shared<MockStringInput>(text);
@@ -189,11 +197,13 @@ public:
         }
     }
 
+    /// Require that a first-match search finds no match.
     void requireNoFindFirst(const String &textToMatch) {
         runEngineFindFirst(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::No);
     }
 
+    /// Require that a first-match search finds the expected match range.
     void requireFindFirst(const String &textToMatch, const std::optional<CaptureRange> &matchRange = std::nullopt) {
         runEngineFindFirst(textToMatch);
         REQUIRE_EQUAL(hasMatch, EngineHasMatch::Yes);
@@ -213,6 +223,7 @@ public:
         }
     }
 
+    /// Require captured-group diagnostics to match expected lines.
     void requireGroups(const std::vector<std::string> &expectedGroups) {
         const auto actualGroups = createGroupLines();
         WITH_CONTEXT(requireLines(actualGroups, expectedGroups));

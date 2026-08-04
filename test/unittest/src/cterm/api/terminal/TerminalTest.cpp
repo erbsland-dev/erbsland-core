@@ -294,9 +294,9 @@ public:
         const auto output = backend->output();
         const auto alternateBufferPos = output.find("\x1b[?1049h");
         const auto textPos = output.find("ABCDE");
-        REQUIRE(alternateBufferPos != std::string::npos);
-        REQUIRE(textPos != std::string::npos);
-        REQUIRE(alternateBufferPos < textPos);
+        REQUIRE_NOT_EQUAL(alternateBufferPos, std::string::npos);
+        REQUIRE_NOT_EQUAL(textPos, std::string::npos);
+        REQUIRE_LESS(alternateBufferPos, textPos);
     }
 
     void testUpdateScreenCanKeepTheMainBufferWhenConfigured() {
@@ -310,7 +310,7 @@ public:
         REQUIRE_FALSE(terminal->isAlternateScreenActive());
         REQUIRE_FALSE(backend->_isAlternateScreenActive);
         REQUIRE_EQUAL(backend->_alternateScreenBufferChanges.size(), std::size_t{0});
-        REQUIRE(backend->output().find("\x1b[?1049h") == std::string::npos);
+        requireNotContains(backend->output(), "\x1b[?1049h");
     }
 
     void testBackBufferUsesPartialUpdatesForSmallDifferences() {
@@ -324,10 +324,10 @@ public:
         terminal->updateScreen(createBuffer({"ABZDE"}));
 
         const auto output = backend->output();
-        REQUIRE(output.find("\x1b[H") != std::string::npos);
-        REQUIRE(output.find("\x1b[1;3HZ") != std::string::npos);
-        REQUIRE(output.find("ABZDE\n") == std::string::npos);
-        REQUIRE(output.find("\x1b[2J") == std::string::npos);
+        requireContains(output, "\x1b[H");
+        requireContains(output, "\x1b[1;3HZ");
+        requireNotContains(output, "ABZDE\n");
+        requireNotContains(output, "\x1b[2J");
     }
 
     void testBackBufferRewritesTheFullFrameForLargeDifferences() {
@@ -347,9 +347,9 @@ public:
         }));
 
         const auto output = backend->output();
-        REQUIRE(output.find("WXYZ") != std::string::npos);
-        REQUIRE(output.find("\x1b[2;1HIJKL") != std::string::npos);
-        REQUIRE(output.find("WXYZ\nIJKL\n") == std::string::npos);
+        requireContains(output, "WXYZ");
+        requireContains(output, "\x1b[2;1HIJKL");
+        requireNotContains(output, "WXYZ\nIJKL\n");
     }
 
     void testTerminalCanBeInitializedAndRestoredMultipleTimes() {
@@ -370,8 +370,8 @@ public:
         REQUIRE_EQUAL(backend->_initializePlatformCallCount, 2);
         REQUIRE_EQUAL(backend->_restorePlatformCallCount, 2);
         REQUIRE_EQUAL(backend->_cursorVisibilityChanges, std::vector<bool>({false, true, false, true}));
-        REQUIRE(backend->output().find("A") != std::string::npos);
-        REQUIRE(backend->output().find("B") != std::string::npos);
+        requireContains(backend->output(), "A");
+        requireContains(backend->output(), "B");
     }
 
     void testRestoreScreenClearsAlternateScreenStateForTheNextSession() {
@@ -391,7 +391,7 @@ public:
         terminal->updateScreen(createBuffer({"VWXYZ"}));
 
         REQUIRE_EQUAL(backend->_alternateScreenBufferChanges, std::vector<bool>({true}));
-        REQUIRE(backend->output().find("\x1b[?1049h") != std::string::npos);
+        requireContains(backend->output(), "\x1b[?1049h");
     }
 
     void testRestoreScreenResetsTheColorAndRestoresTheBackend() {
@@ -411,5 +411,16 @@ public:
         REQUIRE_EQUAL(backend->_cursorVisibilityChanges.size(), std::size_t{2});
         REQUIRE_FALSE(backend->_cursorVisibilityChanges[0]);
         REQUIRE(backend->_cursorVisibilityChanges[1]);
+    }
+
+private:
+    void requireContains(const std::string &text, const std::string_view expected) {
+        const auto position = text.find(expected);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+    }
+
+    void requireNotContains(const std::string &text, const std::string_view unexpected) {
+        const auto position = text.find(unexpected);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

@@ -9,8 +9,10 @@
 
 namespace erbsland::re::impl {
 
+/// Modifier for a regular-expression operation diagnostic.
 enum class OperationModifier : uint8_t { Negated, Assert, CaseInsensitive, Skip, Add, Start, Stop };
 
+/// Convert an operation modifier to display text.
 [[nodiscard]] inline auto toString(const OperationModifier modifier) -> text::String {
     using namespace text::literals;
     switch (modifier) {

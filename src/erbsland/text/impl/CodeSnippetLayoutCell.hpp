@@ -13,6 +13,7 @@
 namespace erbsland::text::impl {
 
 /// One terminal-displayable source cell in a laid-out code snippet row.
+/// @tested{CodeSnippetLayoutTest}
 struct CodeSnippetLayoutCell final {
     String text;                       ///< The printable source slice or replacement text.
     unit::ColumnRange range;           ///< Represented logical source columns.

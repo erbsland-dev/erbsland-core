@@ -41,6 +41,7 @@
 #include "IntegerSignMode.hpp"
 #include "LetterCase.hpp"
 #include "Literals.hpp"
+#include "NormalizationForm.hpp"
 #include "ParseNumberError.hpp"
 #include "PlainTextRenderer.hpp"
 #include "ProcessCharacterFn.hpp"

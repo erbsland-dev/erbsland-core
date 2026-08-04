@@ -13,6 +13,8 @@
 
 namespace app::regex {
 
+using namespace el::text::literals;
+
 /// The profiler execution mode.
 enum class RunMode : std::uint8_t { Profile, Benchmark };
 /// A regular-expression API use case.
@@ -34,6 +36,8 @@ enum class InputKind : std::uint8_t { StringUtf8, StringUtf16, StringUtf32, File
 enum class ReplacementMode : std::uint8_t { NotApplicable, Expression, Callback };
 /// The source for a scenario corpus.
 enum class CorpusSource : std::uint8_t { Inline, File };
+/// The regular-expression implementation used for a scenario.
+enum class Backend : std::uint8_t { Erbsland, Standard };
 
 /// One public API coverage path.
 /// @notest{Verified by regex profiler coverage CTest entries.}
@@ -48,7 +52,7 @@ struct CoverageDescriptor {
 /// @notest{Verified by regex profiler configuration CTest entries.}
 struct RunSettings {
     RunMode mode{RunMode::Benchmark};                                          ///< The execution mode.
-    el::String suite{"snapshot"};                                              ///< The built-in suite.
+    el::String suite{"snapshot"_el};                                           ///< The built-in suite.
     std::chrono::nanoseconds duration{std::chrono::minutes{5}};                ///< Hard run deadline.
     std::uint32_t threadCount{4U};                                             ///< Workload thread count.
     std::uint64_t seed{0x455242534c414e44ULL};                                 ///< Global deterministic seed.
@@ -78,9 +82,11 @@ struct Scenario {
     el::String subject;                                              ///< Inline UTF-8 subject.
     el::String sourceFile;                                           ///< External UTF-8 source path.
     std::uint32_t repetitionCount{1U};                               ///< Corpus repetition count.
-    el::String replacement{"{0}"};                                   ///< Replacement expression.
+    el::String replacement{"{0}"_el};                                ///< Replacement expression.
     std::chrono::milliseconds timeout{std::chrono::seconds{30}};     ///< Scenario engine timeout.
     std::uint32_t weight{1U};                                        ///< Profile-mode weight.
+    Backend backend{Backend::Erbsland};                              ///< Implementation under measurement.
+    el::String comparisonName;                                       ///< Pair name for comparison scenarios.
 };
 
 /// A validated and expanded profiler configuration.
@@ -88,6 +94,14 @@ struct Scenario {
 struct Configuration {
     RunSettings run;                 ///< Run settings.
     std::vector<Scenario> scenarios; ///< Expanded scenarios.
+
+    /// Load the embedded defaults and an optional overriding ELCL file.
+    /// @param path Optional user configuration.
+    /// @return The effective expanded configuration.
+    [[nodiscard]] static auto load(const std::optional<el::Path> &path) -> Configuration;
+    /// Write the embedded default configuration.
+    /// @param path Destination path.
+    static void writeTemplate(const el::Path &path);
 };
 
 /// One worker result.
@@ -138,6 +152,9 @@ struct SampleResult {
 /// Convert a replacement mode to its stable spelling.
 /// @notest{Trivial enum conversion.}
 [[nodiscard]] auto toString(ReplacementMode value) -> el::String;
+/// Convert a backend to its stable spelling.
+/// @notest{Trivial enum conversion.}
+[[nodiscard]] auto toString(Backend value) -> el::String;
 /// Parse a use-case name.
 /// @notest{Verified by regex profiler configuration CTest entries.}
 [[nodiscard]] auto parseUseCase(const el::String &value) -> std::optional<UseCase>;

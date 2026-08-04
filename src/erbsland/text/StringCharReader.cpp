@@ -5,6 +5,7 @@
 #include "AnyString.hpp"
 #include "AnyStringEditor.hpp"
 #include "ParseNumberError.hpp"
+#include "String.hpp"
 
 #include "u16/impl/U16StringReader.hpp"
 #include "u16/U16String.hpp"
@@ -19,7 +20,9 @@
 #include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
 #include "../math/IntegerMath.hpp"
+#include "../unit/ByteIndex.hpp"
 
+#include <exception>
 #include <optional>
 
 namespace erbsland::text {
@@ -108,12 +111,12 @@ auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, C
     return _reader->readUntil(readFn, stopSet, maximum);
 }
 
-auto StringCharReader::advanceWhile(const CharSet &expected, CpLength maximum) noexcept -> util::LoopResult {
-    return _reader->readWhile([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, expected, maximum);
+auto StringCharReader::advanceWhile(const CharSet &expected, CpLength maximum) noexcept -> CpLength {
+    return _reader->advanceWhile(expected, maximum);
 }
 
-auto StringCharReader::advanceUntil(const CharSet &stopSet, CpLength maximum) noexcept -> util::LoopResult {
-    return _reader->readUntil([](Char) -> util::LoopStatus { return util::LoopStatus::Continue; }, stopSet, maximum);
+auto StringCharReader::advanceUntil(const CharSet &stopSet, CpLength maximum) noexcept -> CpLength {
+    return _reader->advanceUntil(stopSet, maximum);
 }
 
 auto StringCharReader::peek() const noexcept -> Char {
@@ -142,6 +145,27 @@ auto StringCharReader::advanceIf(const Char expected) noexcept -> bool {
 
 auto StringCharReader::advanceIf(const CharSet &expected) noexcept -> bool {
     return _reader->advanceIf(expected);
+}
+
+auto StringCharReader::advanceIf(const String &expected, const CharCompareFn compareFn) noexcept -> bool {
+    const auto saved = save();
+    auto expectedPosition = unit::ByteIndex::zero();
+    while (true) {
+        const auto expectedCharacter = expected.readCharAndAdvance(expectedPosition);
+        if (expectedCharacter.isEndOfData()) {
+            return true;
+        }
+        const auto actualCharacter = read();
+        const auto matches = !actualCharacter.isEndOfData() &&
+            (compareFn != nullptr ? compareFn(actualCharacter, expectedCharacter) == std::strong_ordering::equal
+                                  : actualCharacter == expectedCharacter);
+        if (!matches) {
+            if (!restore(saved)) {
+                std::terminate();
+            }
+            return false;
+        }
+    }
 }
 
 void StringCharReader::advanceOrThrow() {
@@ -375,19 +399,19 @@ auto StringCharReader::readIntegerResultOrThrow(const IntegerParseOptions &optio
 void StringCharReader::throwError(const ReadNumberStatus status, const CpIndex position) {
     switch (status) {
     case ReadNumberStatus::Success:
-        throw text::ParseNumberError("Integer number was read successfully"_el, status, position);
+        throw ParseNumberError("Integer number was read successfully"_el, status, position);
     case ReadNumberStatus::NoDigits:
-        throw text::ParseNumberError("Expected an integer number, got no digits"_el, status, position);
+        throw ParseNumberError("Expected an integer number, got no digits"_el, status, position);
     case ReadNumberStatus::TooFewDigits:
-        throw text::ParseNumberError("Expected an integer number with more digits"_el, status, position);
+        throw ParseNumberError("Expected an integer number with more digits"_el, status, position);
     case ReadNumberStatus::TooManyDigits:
-        throw text::ParseNumberError("Integer number has too many digits"_el, status, position);
+        throw ParseNumberError("Integer number has too many digits"_el, status, position);
     case ReadNumberStatus::Overflow:
         throw err::OverflowError("Integer number exceeds the supported range"_el);
     case ReadNumberStatus::ParseError:
-        throw text::ParseNumberError("Integer number has invalid syntax"_el, status, position);
+        throw ParseNumberError("Integer number has invalid syntax"_el, status, position);
     }
-    throw text::ParseNumberError("Integer number could not be read"_el, status, position);
+    throw ParseNumberError("Integer number could not be read"_el, status, position);
 }
 
 }

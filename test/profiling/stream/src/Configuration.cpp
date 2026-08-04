@@ -11,7 +11,7 @@
 
 namespace app::stream {
 
-auto ConfigurationLoader::load(const std::optional<el::Path> &path) -> Configuration {
+auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
     auto parser = el::conf::Parser{};
     const auto defaultText = el::String{cDefaultConfigurationText};
     const auto defaultDocument = parser.parseTextOrThrow(defaultText);
@@ -23,7 +23,7 @@ auto ConfigurationLoader::load(const std::optional<el::Path> &path) -> Configura
     return impl::parseConfigurationDocument(document, &defaults);
 }
 
-void ConfigurationLoader::writeTemplate(const el::Path &path) {
+void Configuration::writeTemplate(const el::Path &path) {
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf8};
     options.setCreateParents(true).setBomMode(el::StringBomMode::Reject);
     path.content().writeTextOrThrow(el::String{cDefaultConfigurationText}, options);

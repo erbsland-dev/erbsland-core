@@ -16,16 +16,15 @@ Document Model
     name path = absolute or relative sequence of configuration names
     location = source identifier plus line and column of a parsed value
 
-Sources and Trust
------------------
+Source Model
+------------
 
 .. code-block:: text
 
-    source = closed configuration input with a stable identity
+    source = configuration input with a stable identity
     resolution = deterministic expansion of an include relative to its containing source
-    access check = independent authorization of every resolved source before it is opened
+    source authorization = independent trust decision for every resolved source
     signature validation = application trust decision over the parser's exact digest and signature data
-    signing = insertion or replacement of the initial signature line without changing document bytes otherwise
 
 Primary Types
 =============

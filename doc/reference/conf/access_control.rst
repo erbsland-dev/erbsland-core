@@ -26,8 +26,12 @@ Interface
 
 .. doxygenclass:: erbsland::conf::AccessCheck
     :members:
+
+.. doxygentypedef:: erbsland::conf::AccessCheckPtr
 .. doxygenenum:: erbsland::conf::AccessCheckResult
 .. doxygenstruct:: erbsland::conf::AccessSources
     :members:
 .. doxygenclass:: erbsland::conf::FileAccessCheck
     :members:
+
+.. doxygentypedef:: erbsland::conf::FileAccessCheckPtr

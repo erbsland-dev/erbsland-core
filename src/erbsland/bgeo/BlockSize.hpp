@@ -339,13 +339,6 @@ private:
     BlockCoordinate _height;
 };
 
-template <typename Fn>
-void BlockSize::forEach(Fn fn) const {
-    for (auto y = BlockCoordinate{0}; y < height(); ++y) {
-        for (auto x = BlockCoordinate{0}; x < width(); ++x) {
-            fn(BlockPosition{x, y});
-        }
-    }
 }
 
-}
+#include "BlockSize.tpp"

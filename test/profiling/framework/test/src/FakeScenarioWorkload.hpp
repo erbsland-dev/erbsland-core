@@ -13,6 +13,7 @@
 /// @tested{WorkloadRunnerTest}
 class FakeScenarioWorkload final : public erbsland::profiling::ScenarioWorkload {
 public:
+    /// Create a deterministic scenario workload with shared counters.
     FakeScenarioWorkload(
         std::shared_ptr<std::atomic<std::uint64_t>> executions,
         std::shared_ptr<std::atomic<std::uint64_t>> validations,

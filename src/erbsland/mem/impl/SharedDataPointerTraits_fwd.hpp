@@ -7,4 +7,10 @@ namespace erbsland::mem::impl {
 template <typename tDataType, typename tEnable>
 struct SharedDataPointerTraits;
 
+template <typename tDataType>
+struct RegularSharedDataPointerTraits;
+
+template <typename tDataType>
+struct PolymorphicSharedDataPointerTraits;
+
 }

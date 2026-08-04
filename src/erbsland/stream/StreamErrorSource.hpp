@@ -12,6 +12,7 @@ namespace erbsland::stream {
 /// @tested{StreamErrorSourceTest}
 class StreamErrorSource {
 public:
+    // defaults
     virtual ~StreamErrorSource() = default;
 
 public:

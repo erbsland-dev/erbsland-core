@@ -9,7 +9,7 @@
 
 namespace erbsland::text::impl {
 
-using unit::ElementCount;
+using unit::ItemCount;
 using unit::U16DataIndex;
 
 auto U16StringComparisonTools::containsOneDecodedCharacter(
@@ -118,7 +118,7 @@ auto U16StringComparisonTools::contains(const Char character) const noexcept -> 
 }
 
 auto U16StringComparisonTools::count(const U16StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> ElementCount {
+    -> ItemCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
@@ -146,7 +146,7 @@ auto U16StringComparisonTools::count(const U16StringDataView &other, const CharC
         }
     }
 
-    auto result = ElementCount{};
+    auto result = ItemCount{};
     auto position = U16DataIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
@@ -159,8 +159,8 @@ auto U16StringComparisonTools::count(const U16StringDataView &other, const CharC
     return result;
 }
 
-auto U16StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
-    auto result = ElementCount{};
+auto U16StringComparisonTools::count(const Char character) const noexcept -> ItemCount {
+    auto result = ItemCount{};
     utf16::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
         if (currentCharacter == character) {
             ++result;

@@ -112,7 +112,9 @@ auto U8StringSharedStorage::forSize(const std::size_t size, const bool sensitive
 }
 
 void U8StringSharedStorage::validateSize(const std::size_t size) {
-    static_cast<void>(ByteLength::fromSizeTOrThrow(size));
+    if (math::willCastOverflow<ByteLength::Value>(size)) {
+        throwOverflow("String storage size exceeds bounds");
+    }
 }
 
 auto U8StringSharedStorage::checkedAddSize(
@@ -158,7 +160,7 @@ void U8StringSharedStorage::ensureMutableCapacity(const std::size_t requiredCapa
         const auto oldCapacity =
             _data.isNull() ? std::size_t{} : static_cast<std::size_t>(_data.constGet()->capacity());
         const auto requestedCapacity = std::max(usedSizeWithTerminator, requiredCapacityWithTerminator);
-        const auto newCapacity = mem::impl::bestGrowthCapacity<U8StringData>(oldCapacity, requestedCapacity);
+        const auto newCapacity = mem::impl::BestGrowth{oldCapacity, requestedCapacity}.bestGrowth<U8StringData>();
         auto newData = createU8StringData(usedSize, newCapacity - 1U, oldSensitive);
         if (!_data.isNull() && usedSize > 0U) {
             std::memcpy(newData.get()->data(), _data.constGet()->data() + oldRange.index().toSizeT(), usedSize);

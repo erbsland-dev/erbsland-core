@@ -8,11 +8,9 @@
 #include "OptionSensitiveTextLocation.hpp"
 #include "OptionValues_fwd.hpp"
 
-namespace erbsland::options {
+#include "impl/OptionParser_fwd.hpp"
 
-namespace impl {
-class OptionParser;
-}
+namespace erbsland::options {
 
 /// The result of processing command line arguments.
 ///
@@ -22,6 +20,7 @@ class OptionResult {
     friend class impl::OptionParser;
 
 public:
+    /// Create an empty parse result.
     OptionResult() = default;
 
     // defaults
@@ -60,6 +59,7 @@ public: // accessors
     }
 
 private:
+    /// Record source locations whose sensitive text must be masked.
     void setSensitiveTextLocations(OptionSensitiveTextLocations locations) {
         _sensitiveTextLocations = std::move(locations);
     }

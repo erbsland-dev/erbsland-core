@@ -14,6 +14,7 @@ public:
     using Result::Result;
 
 public: // operators
+    /// Compare two read-line status values.
     constexpr auto operator==(const ReadLineStatus &other) const noexcept -> bool {
         return _value.value == other._value.value;
     }

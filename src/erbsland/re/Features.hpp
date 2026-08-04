@@ -38,6 +38,7 @@ public: // diagnostics
     }
 
 public: // helpers
+    /// Get every supported regular-expression feature in stable order.
     [[nodiscard]] constexpr static auto all() noexcept -> std::array<Feature, 16> {
         return std::array<Feature, 16>{
             Feature::QuotedLiterals,

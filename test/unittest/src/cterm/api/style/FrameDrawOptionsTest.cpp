@@ -17,13 +17,13 @@ public:
         REQUIRE_EQUAL(options.fillColor().color(0), Color{});
         REQUIRE(options.fillBlock().isEmpty());
         REQUIRE_EQUAL(options.style(), FrameStyle::Light);
-        REQUIRE(options.block16Style() == nullptr);
-        REQUIRE(options.tile9Style() == nullptr);
-        REQUIRE(options.combinationStyle() != nullptr);
+        REQUIRE_FALSE(options.block16Style());
+        REQUIRE_FALSE(options.tile9Style());
+        REQUIRE(options.combinationStyle());
         REQUIRE_EQUAL(options.animationOffset(), static_cast<std::size_t>(0));
         REQUIRE_EQUAL(options.frameColorMode(), FrameColorMode::OneColor);
         REQUIRE_EQUAL(options.fillColorMode(), FrameColorMode::OneColor);
-        REQUIRE(&FrameDrawOptions::defaultOptions() == &options);
+        REQUIRE_EQUAL(&FrameDrawOptions::defaultOptions(), &options);
     }
 
     void testFrameAndFillColorSettersReplaceTheConfiguredSequences() {
@@ -110,9 +110,9 @@ public:
 
         REQUIRE_EQUAL(options.fillBlock(), expectedFillBlock);
         REQUIRE_EQUAL(options.style(), FrameStyle::Double);
-        REQUIRE(options.block16Style() == block16Style);
-        REQUIRE(options.tile9Style() == tile9Style);
-        REQUIRE(options.combinationStyle() == combinationStyle);
+        REQUIRE_EQUAL(options.block16Style(), block16Style);
+        REQUIRE_EQUAL(options.tile9Style(), tile9Style);
+        REQUIRE_EQUAL(options.combinationStyle(), combinationStyle);
         REQUIRE_EQUAL(options.animationOffset(), static_cast<std::size_t>(7));
         REQUIRE_EQUAL(options.frameColorMode(), FrameColorMode::ChasingBorderCW);
         REQUIRE_EQUAL(options.fillColorMode(), FrameColorMode::VerticalStripes);

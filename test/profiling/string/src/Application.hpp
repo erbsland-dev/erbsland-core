@@ -80,7 +80,7 @@ protected: // implement pf::ProfilingApplication
         const auto values = optionValues();
         if (!values->valueCount("write-template"_el).isZero()) {
             const auto path = el::Path{values->getText("write-template"_el)};
-            ConfigurationLoader::writeTemplate(path);
+            Configuration::writeTemplate(path);
             el::io::printLine("template="_el, path.toString());
             return el::ExitCode::success();
         }
@@ -102,7 +102,7 @@ protected: // implement pf::ProfilingApplication
         if (!values->valueCount("sensitive-mode"_el).isZero()) {
             overrides.sensitiveSelection = parseSensitiveSelection(values->getText("sensitive-mode"_el));
         }
-        auto configuration = ConfigurationLoader::load(configPath, overrides);
+        auto configuration = Configuration::load(configPath, overrides);
         const auto widthFilters = values->getTextList("width"_el);
         const auto typeFilters = values->getTextList("type"_el);
         const auto useCaseFilters = values->getTextList("use-case"_el);
@@ -144,7 +144,7 @@ protected: // implement pf::ProfilingApplication
         auto runner = WorkloadRunner{std::move(configuration)};
         if (values->getFlag("list-coverage"_el)) {
             runner.printCoverage();
-            static_cast<void>(el::stdOut()->flush());
+            el::stdOut()->flush();
             return el::ExitCode::success();
         }
         if (values->getFlag("dry-run"_el)) {

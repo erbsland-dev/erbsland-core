@@ -73,7 +73,9 @@ void BufferedByteInputStreamData::performRead() {
         if (!aborted.load() && !failure && epoch == sensitivityEpoch.load()) {
             if (runtimeSensitive) {
                 const auto privateBytes = transfer->take(readLength);
-                static_cast<void>(back.write(privateBytes.span()));
+                if (back.write(privateBytes.span()) != readLength) {
+                    std::terminate();
+                }
             } else {
                 access->commitWritten(readLength);
             }

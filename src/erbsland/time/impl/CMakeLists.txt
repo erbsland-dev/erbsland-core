@@ -4,16 +4,22 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        DateTimeEpochs.cpp
+        DateTimeEpochs.hpp
+        DateTimeTraits.hpp
         IsoDateTimeParser.cpp
         IsoDateTimeParser.hpp
         ParsedIsoDateTime.hpp
-        PosixTimeConverter.cpp
-        PosixTimeConverter.hpp
         TimeDeltaFormatter.cpp
         TimeDeltaFormatter.hpp
         TimePart.hpp
         TimePartBases.hpp
         TimePartWithAmount.hpp
-        WindowsTimeConverter.cpp
-        WindowsTimeConverter.hpp
 )
+
+if(WIN32)
+    target_sources(erbsland-core PRIVATE
+            WindowsTimeConverter.cpp
+            WindowsTimeConverter.hpp
+    )
+endif()

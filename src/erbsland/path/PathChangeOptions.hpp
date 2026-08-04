@@ -10,6 +10,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathChangeOptions final {
 public:
+    /// Create path-change options with their default values.
     PathChangeOptions() = default;
 
 public: // accessors

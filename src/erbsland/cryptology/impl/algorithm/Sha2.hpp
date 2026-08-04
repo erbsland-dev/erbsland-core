@@ -30,7 +30,7 @@ using namespace erbsland::mem;
 /// shortcut attacks that broke SHA-1 do not carry over.
 ///
 /// Source: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (section 6.2)
-/// @tested{HashValidationTest}
+/// @tested{HashValidationTest HashFullValidationTest}
 class Sha2_256 final {
 public:
     /// Create a new instance and initialize the state.
@@ -234,7 +234,7 @@ private:
 ///
 /// Source: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (sections 6.4 and 6.5)
 /// @tparam tDigestBytes The size of the digest in bytes; 48 selects SHA-384, 64 selects SHA-512.
-/// @tested{HashValidationTest}
+/// @tested{HashValidationTest HashFullValidationTest}
 template <std::size_t tDigestBytes>
 class Sha2_64 final {
 public:

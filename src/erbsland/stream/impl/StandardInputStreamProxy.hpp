@@ -14,9 +14,10 @@ class StandardInputStreamProxy final : public TextInputStream {
 public:
     /// Create the standard input proxy.
     StandardInputStreamProxy() = default;
-
-    // defaults
+    /// dtor, aborts any pending inputs.
     ~StandardInputStreamProxy() override { abort(); }
+
+    // defaults/deletions
     StandardInputStreamProxy(const StandardInputStreamProxy &) = delete;
     auto operator=(const StandardInputStreamProxy &) -> StandardInputStreamProxy & = delete;
     StandardInputStreamProxy(StandardInputStreamProxy &&) = delete;
@@ -42,6 +43,7 @@ public:
     using TextInputStream::readLine;
 
 private:
+    /// Get the current proxied standard input stream.
     [[nodiscard]] auto target() const -> TextInputStreamPtr;
 };
 

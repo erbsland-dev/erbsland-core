@@ -7,8 +7,11 @@
 
 using namespace erbsland::re;
 
+/// Test match backed by an owning UTF-8 input string.
+/// @notest{Test-only mock.}
 class MockStringMatch : public Match {
 public:
+    /// Create a match backed by `inputString`.
     MockStringMatch(CaptureGroupList captureGroupList, const erbsland::text::String &inputString) :
         Match{std::move(captureGroupList)}, _inputString{inputString} {}
 

@@ -13,6 +13,7 @@ public:
     using Result::Result;
 
 public: // operators
+    /// Compare two stream-close statuses.
     constexpr auto operator==(const StreamCloseStatus &other) const noexcept -> bool {
         return _value.value == other._value.value;
     }

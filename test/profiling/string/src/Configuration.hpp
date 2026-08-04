@@ -2,24 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "ProfileTypes.hpp"
-
-#include <optional>
+#include "RunOverrides.hpp"
 
 namespace app::string {
 
-/// Optional command-line settings applied before scenario expansion.
-/// @notest{Covered by string profiler CLI CTest entries.}
-struct RunOverrides {
-    std::optional<RunMode> mode;                          ///< Optional execution-mode override.
-    std::optional<std::uint32_t> threadCount;             ///< Optional worker-count override.
-    std::optional<SensitiveSelection> sensitiveSelection; ///< Optional U8 sensitivity override.
-};
+/// A validated and expanded configuration.
+/// @notest{Verified by string profiler configuration CTest entries.}
+struct Configuration {
+    RunSettings run;                   ///< Run settings.
+    std::vector<Scenario> scenarios{}; ///< Expanded scenarios.
 
-/// Load, validate, and expand string-profiler configuration.
-/// @notest{Covered by string profiler dry-run and configuration CTest entries.}
-class ConfigurationLoader final {
-public:
     /// Load embedded defaults and an optional overriding ELCL file.
     /// @param path Optional user configuration.
     /// @param overrides Command-line run overrides applied before expansion.

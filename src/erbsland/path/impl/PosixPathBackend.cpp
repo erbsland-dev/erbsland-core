@@ -17,6 +17,7 @@
 #include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../stream/impl/NativeOutputStream.hpp"
 #include "../../stream/impl/PosixNativeStream.hpp"
+#include "../../system/EnvironmentVariables.hpp"
 #include "../../system/GroupId.hpp"
 #include "../../system/UserId.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
@@ -24,7 +25,7 @@
 #include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../time/impl/PosixTimeConverter.hpp"
+#include "../../time/DateTime.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <dirent.h>
@@ -110,8 +111,9 @@ auto PosixPathBackend::userHomeDirectoryOrThrow() const -> Path {
 }
 
 auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
-    if (const auto *environmentPath = std::getenv("TMPDIR"); environmentPath != nullptr && environmentPath[0] != '\0') {
-        const auto path = Path::fromPosix(text::String{std::string_view{environmentPath}});
+    if (const auto environmentPath = system::EnvironmentVariables{}.get("TMPDIR"_el);
+        environmentPath.has_value() && !environmentPath->isEmpty()) {
+        const auto path = Path::fromPosix(*environmentPath);
         if (!path.isEmpty()) {
             const auto absolutePath = path.toAbsolute();
             if (!absolutePath.isEmpty()) {
@@ -189,15 +191,20 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
         result.loadedParts.set(PathInfoPart::Size);
     }
     if (parts.isSet(PathInfoPart::Times)) {
+        const auto dateTimeFromTimespec = [](const timespec &value) noexcept -> time::DateTime {
+            return time::DateTime::fromTicks(
+                time::Seconds{value.tv_sec}, time::Nanoseconds{value.tv_nsec}, time::TimeEpoch::Posix)
+                .value_or(time::DateTime{});
+        };
 #ifdef ERBSLAND_OS_MACOS
-        result.lastModified = time::impl::PosixTimeConverter::fromTimespec(info.st_mtimespec);
-        result.lastAccessed = time::impl::PosixTimeConverter::fromTimespec(info.st_atimespec);
-        result.birthTime = time::impl::PosixTimeConverter::fromTimespec(info.st_birthtimespec);
-        result.lastMetadataChange = time::impl::PosixTimeConverter::fromTimespec(info.st_ctimespec);
+        result.lastModified = dateTimeFromTimespec(info.st_mtimespec);
+        result.lastAccessed = dateTimeFromTimespec(info.st_atimespec);
+        result.birthTime = dateTimeFromTimespec(info.st_birthtimespec);
+        result.lastMetadataChange = dateTimeFromTimespec(info.st_ctimespec);
 #elif defined(ERBSLAND_OS_LINUX)
-        result.lastModified = time::impl::PosixTimeConverter::fromTimespec(info.st_mtim);
-        result.lastAccessed = time::impl::PosixTimeConverter::fromTimespec(info.st_atim);
-        result.lastMetadataChange = time::impl::PosixTimeConverter::fromTimespec(info.st_ctim);
+        result.lastModified = dateTimeFromTimespec(info.st_mtim);
+        result.lastAccessed = dateTimeFromTimespec(info.st_atim);
+        result.lastMetadataChange = dateTimeFromTimespec(info.st_ctim);
 #endif
         result.loadedParts.set(PathInfoPart::Times);
     }
@@ -341,7 +348,8 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
             hasExistingContent,
         };
     } catch (...) {
-        static_cast<void>(::close(fileDescriptor));
+        // Preserve the setup error; a close failure cannot safely be retried.
+        ::close(fileDescriptor);
         throw;
     }
 }

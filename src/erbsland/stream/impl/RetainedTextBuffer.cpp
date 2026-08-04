@@ -2,18 +2,20 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "RetainedTextBuffer.hpp"
 
+#include "../../err/LogicError.hpp"
 #include "../../text/impl/UnsafeU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
+#include "../../text/Literals.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::stream::impl {
 
 using namespace text;
+using namespace text::literals;
 using namespace unit;
 
 void RetainedTextBuffer::setSensitive(const bool sensitive) noexcept {
@@ -30,13 +32,13 @@ void RetainedTextBuffer::clear() noexcept {
 
 void RetainedTextBuffer::append(String text, const CpLength textLength, const bool lineScanned) {
     if (text.isEmpty() != textLength.isZero()) {
-        throw std::logic_error{"Decoded text and its character length do not match"};
+        throw err::LogicError{"Decoded text and its character length do not match"_el};
     }
     if (text.isEmpty()) {
         return;
     }
     if (text.isSensitive() != _sensitive) {
-        throw std::logic_error{"Decoded text sensitivity does not match the retained stream policy"};
+        throw err::LogicError{"Decoded text sensitivity does not match the retained stream policy"_el};
     }
     if (lineScanned && _lineScanLength == _length) {
         _lineScanLength += textLength;

@@ -15,6 +15,7 @@ namespace erbsland::event {
 /// @tested{EventLoopDriverTest EventLoopTest}
 class EventLoopDriver {
 public:
+    // defaults
     virtual ~EventLoopDriver() = default;
 
 public: // factory

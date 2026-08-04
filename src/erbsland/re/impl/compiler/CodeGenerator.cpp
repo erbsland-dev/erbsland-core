@@ -10,6 +10,13 @@ using namespace text::literals;
 
 CodeGenerator::CodeGenerator(PatternNodePtr patternNode, EngineDataPtr engineData) :
     _rootNode{std::move(patternNode)}, _engineData{std::move(engineData)} {
+
+    // Most expressions fit into these buffers. Keeping their capacity avoids repeated growth while
+    // leaf segments and nested groups are discovered during traversal.
+    _groupStack.reserve(16U);
+    _segments.reserve(32U);
+    _activeSegments.reserve(32U);
+    _jumpLocations.reserve(16U);
 }
 
 void CodeGenerator::generateCode() {
@@ -33,8 +40,8 @@ void CodeGenerator::generateCode() {
                 _groupStack.pop_back();
             }
         });
-    ERBSLAND_CORE_RE_REQUIRE_SAFETY(_segments.size() == 1, "Expected exactly one segment"_el);
-    _engineData->program = _segments.at(_rootNode->id());
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(_activeSegmentCount == 1, "Expected exactly one segment"_el);
+    _engineData->program = std::move(getSegment(_rootNode->id()));
     if (_engineData->program.size() > limits::maximumProgramLength) {
         throw RegExError{
             ErrorCategory::Limit,
@@ -45,14 +52,33 @@ void CodeGenerator::generateCode() {
 }
 
 auto CodeGenerator::createSegment(const PatternNode &node) -> Program & {
-    auto [it, inserted] = _segments.try_emplace(node.id());
-    ERBSLAND_CORE_RE_REQUIRE_SAFETY(inserted, "Segment already exists"_el);
-    return it->second;
+    const auto index = static_cast<std::size_t>(node.id());
+    if (index >= _segments.size()) {
+        _segments.resize(index + 1U);
+        _activeSegments.resize(index + 1U, false);
+    }
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(!_activeSegments[index], "Segment already exists"_el);
+    _activeSegments[index] = true;
+    ++_activeSegmentCount;
+    return _segments[index];
+}
+
+auto CodeGenerator::getSegment(const PatternNodeId nodeId) -> Program & {
+    const auto index = static_cast<std::size_t>(nodeId);
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(index < _segments.size() && _activeSegments[index], "Segment does not exist"_el);
+    return _segments[index];
+}
+
+void CodeGenerator::releaseSegment(const PatternNodeId nodeId) {
+    const auto index = static_cast<std::size_t>(nodeId);
+    ERBSLAND_CORE_RE_REQUIRE_SAFETY(index < _segments.size() && _activeSegments[index], "Segment does not exist"_el);
+    _activeSegments[index] = false;
+    --_activeSegmentCount;
 }
 
 auto CodeGenerator::createDeltaJump(int32_t delta) -> ProgramCounter {
     auto result = static_cast<ProgramCounter>(_jumpLocations.size());
-    _jumpLocations.emplace(result, delta);
+    _jumpLocations.emplace_back(delta);
     return result;
 }
 

@@ -25,7 +25,7 @@ public:
             64,
             0,
             nullptr);
-        REQUIRE(server != INVALID_HANDLE_VALUE);
+        REQUIRE_NOT_EQUAL(server, INVALID_HANDLE_VALUE);
         auto called = false;
         auto completionError = DWORD{ERROR_INVALID_FUNCTION};
         auto overlapped = OVERLAPPED{};
@@ -37,18 +37,24 @@ public:
                 completionError = error;
             });
         const auto connectResult = ConnectNamedPipe(server, &overlapped);
-        REQUIRE(connectResult != 0 || GetLastError() == ERROR_IO_PENDING);
+        const auto lastError = GetLastError();
+        const auto connected = connectResult != 0;
+        const auto isPending = lastError == ERROR_IO_PENDING;
+        REQUIRE(connected || isPending);
         const auto client =
             CreateFileW(pipeName.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-        REQUIRE(client != INVALID_HANDLE_VALUE);
+        REQUIRE_NOT_EQUAL(client, INVALID_HANDLE_VALUE);
 
         driver.wait(TimeDelta{Seconds{1}});
         REQUIRE(called);
         REQUIRE_EQUAL(completionError, DWORD{ERROR_SUCCESS});
 
         registration.reset();
-        REQUIRE(CloseHandle(client) != 0);
-        REQUIRE(DisconnectNamedPipe(server) != 0);
-        REQUIRE(CloseHandle(server) != 0);
+        const auto clientClosed = CloseHandle(client);
+        const auto disconnected = DisconnectNamedPipe(server);
+        const auto serverClosed = CloseHandle(server);
+        REQUIRE(clientClosed);
+        REQUIRE(disconnected);
+        REQUIRE(serverClosed);
     }
 };

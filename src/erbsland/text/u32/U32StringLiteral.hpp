@@ -9,7 +9,6 @@
 #include "impl/U32StringDataView.hpp"
 #include "impl/U32StringReadTools.hpp"
 
-#include "../FormatAs_fwd.hpp"
 #include "../StringSide.hpp"
 
 #include "../../mem/UnsafeCharPtr.hpp"
@@ -30,9 +29,6 @@ class U32StringLiteral final {
     friend class U32String;
     friend constexpr auto impl::createU32StringLiteral(const char32_t *data, std::size_t size) noexcept
         -> U32StringLiteral;
-    // format
-    template <typename T>
-    friend struct FormatAsU32Text;
 
 public:
     /// Create a new U32StringCharLiteral from a UTF-32 string `char32_t` literal.

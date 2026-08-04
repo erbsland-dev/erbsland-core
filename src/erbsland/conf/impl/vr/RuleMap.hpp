@@ -2,15 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Rule_fwd.hpp"
+
 #include "../../Name.hpp"
 
 #include <unordered_map>
 #include <vector>
 
 namespace erbsland::conf::impl {
-
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
 
 /// A combined map and list of rules.
 class RuleMap {

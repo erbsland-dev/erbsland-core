@@ -21,6 +21,7 @@ namespace erbsland::event {
 /// @tested{ApplicationEventTest EventLoopTest EventThreadTest EventTimerTest EventBackendTest}
 class EventLoop : public Events {
 public:
+    // defaults
     ~EventLoop() override = default;
 
 public: // factory methods

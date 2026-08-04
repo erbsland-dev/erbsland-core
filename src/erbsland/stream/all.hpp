@@ -13,6 +13,7 @@
 #include "OutputStream.hpp"
 #include "OutputStreamSettings.hpp"
 #include "SensitiveInput.hpp"
+#include "SensitiveInputScope.hpp"
 #include "StandardStreamRedirect.hpp"
 #include "StandardStreams.hpp"
 #include "StreamBuffering.hpp"

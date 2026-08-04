@@ -172,10 +172,14 @@ Interface
     :members:
 .. doxygenclass:: erbsland::stream::InputStream
     :members:
+
+.. doxygentypedef:: erbsland::stream::InputStreamPtr
 .. doxygenclass:: erbsland::stream::InputStreamSettings
     :members:
 .. doxygenclass:: erbsland::stream::OutputStream
     :members:
+
+.. doxygentypedef:: erbsland::stream::OutputStreamPtr
 .. doxygenclass:: erbsland::stream::OutputStreamSettings
     :members:
 .. doxygenclass:: erbsland::stream::io::SensitiveInputToken
@@ -184,7 +188,6 @@ Interface
 .. doxygenfunction:: erbsland::stream::io::startSensitiveInput(std::source_location location = std::source_location::current()) -> SensitiveInputToken
 
 .. doxygenfunction:: erbsland::stream::io::stopSensitiveInput(SensitiveInputToken token)
-
 .. doxygenclass:: erbsland::stream::io::SensitiveInputScope
     :members:
 .. doxygenclass:: erbsland::stream::StandardStreamRedirect

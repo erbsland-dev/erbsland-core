@@ -15,10 +15,8 @@ namespace erbsland::cterm {
 /// @tested{ReadLineTest}
 class ReadLine {
 public:
-    /// Destroy the line editor, safely stopping an active operation.
+    // defaults/deletions
     virtual ~ReadLine() = default;
-
-    // deletions
     ReadLine(const ReadLine &) = delete;
     ReadLine(ReadLine &&) = delete;
     auto operator=(const ReadLine &) -> ReadLine & = delete;
@@ -56,6 +54,7 @@ public: // tests
     [[nodiscard]] virtual auto isActive() const noexcept -> bool = 0;
 
 protected:
+    /// Create an inactive line-input operation.
     ReadLine() = default;
 };
 

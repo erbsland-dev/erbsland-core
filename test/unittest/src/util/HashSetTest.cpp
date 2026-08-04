@@ -1,9 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include "MoveAwareTestValue.hpp"
+#include "MoveAwareTestValueHash.hpp"
 
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashSet.hpp>
 #include <erbsland/util/List.hpp>
@@ -15,7 +15,7 @@
 #include <utility>
 #include <vector>
 
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::util::LoopStatus;
 
 TESTED_TARGETS(HashSet)
@@ -26,6 +26,19 @@ public:
     using MoveHashSet = el::util::HashSet<erbsland::test::MoveAwareTestValue, erbsland::test::MoveAwareTestValueHash>;
     using MoveValue = erbsland::test::MoveAwareTestValue;
 
+    void testSharedDefaultStorage() {
+        auto first = IntHashSet{};
+        const auto second = IntHashSet{};
+
+        REQUIRE_EQUAL(&first.toRawValue(), &second.toRawValue());
+
+        first.insert(1);
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE(first.contains(1));
+        REQUIRE(second.count().isZero());
+    }
+
     void testConstructionAndElements() {
         const auto empty = IntHashSet{};
         REQUIRE(empty.count().isZero());
@@ -33,11 +46,13 @@ public:
         REQUIRE_EQUAL(empty.last(), 0);
 
         const auto set = IntHashSet{{3, 1, 2, 1}};
-        REQUIRE_EQUAL(set.count(), ElementCount{3});
+        REQUIRE_EQUAL(set.count(), ItemCount{3});
         REQUIRE(set.contains(set.first()));
         REQUIRE(set.contains(set.last()));
-        REQUIRE(set.toStdSet() == (std::set<int>{1, 2, 3}));
-        REQUIRE(set.toStdUnorderedSet() == (std::unordered_set<int>{1, 2, 3}));
+        const auto stdSet = set.toStdSet();
+        const auto stdUnorderedSet = set.toStdUnorderedSet();
+        REQUIRE_EQUAL(stdSet, (std::set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(stdUnorderedSet, (std::unordered_set<int>{1, 2, 3}));
 
         auto values = set.toStdVector();
         std::sort(values.begin(), values.end());
@@ -53,9 +68,10 @@ public:
         auto first = IntHashSet{{1, 2}};
         auto second = first;
 
-        second.reserve(ElementCount{32}).insert(3).remove(1);
+        second.reserve(ItemCount{32}).insert(3).remove(1);
 
-        REQUIRE(second.capacity().toSizeT() >= 32U);
+        const auto reservedCapacity = second.capacity().toSizeT();
+        REQUIRE_GREATER_EQUAL(reservedCapacity, 32U);
         REQUIRE(first.compare(IntHashSet{{1, 2}}));
         REQUIRE(second.compare(IntHashSet{{2, 3}}));
         REQUIRE(second.tryInsert(4));
@@ -63,7 +79,9 @@ public:
         REQUIRE(second.tryRemove(4));
         REQUIRE(!second.tryRemove(4));
         second.shrinkToFit();
-        REQUIRE(second.capacity().toSizeT() >= second.count().toSizeT());
+        const auto capacity = second.capacity().toSizeT();
+        const auto count = second.count().toSizeT();
+        REQUIRE_GREATER_EQUAL(capacity, count);
     }
 
     void testMoveAwareInsert() {
@@ -100,7 +118,7 @@ public:
             return LoopStatus::Stop;
         });
         REQUIRE_EQUAL(visited.size(), std::size_t{1});
-        REQUIRE_EQUAL(set.countIf([](int key) -> bool { return key > 1; }), ElementCount{1});
+        REQUIRE_EQUAL(set.countIf([](int key) -> bool { return key > 1; }), ItemCount{1});
     }
 
     void testSetOperationsAndPredicates() {

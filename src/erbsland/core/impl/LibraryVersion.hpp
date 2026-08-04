@@ -7,7 +7,9 @@
 
 namespace erbsland::core::impl {
 
+/// Get the library version as structured data.
 auto libraryVersion() noexcept -> unit::Version;
+/// Get the library version as display text.
 auto libraryVersionText() noexcept -> text::String;
 
 }

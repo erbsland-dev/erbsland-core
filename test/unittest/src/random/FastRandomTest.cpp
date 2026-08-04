@@ -17,7 +17,9 @@ public:
         auto second = FastRandom{12345U};
 
         for (auto i = 0; i < 20; ++i) {
-            REQUIRE_EQUAL(first.getUInt64(0U, 1000000U), second.getUInt64(0U, 1000000U));
+            const auto firstValue = first.getUInt64(0U, 1000000U);
+            const auto secondValue = second.getUInt64(0U, 1000000U);
+            REQUIRE_EQUAL(firstValue, secondValue);
         }
     }
 
@@ -26,12 +28,12 @@ public:
 
         for (auto i = 0; i < 100; ++i) {
             const auto signedValue = random.getInt32(-3, 3);
-            REQUIRE(signedValue >= -3);
-            REQUIRE(signedValue <= 3);
+            REQUIRE_GREATER_EQUAL(signedValue, -3);
+            REQUIRE_LESS_EQUAL(signedValue, 3);
 
             const auto unsignedValue = random.getUInt64(5U, 10U);
-            REQUIRE(unsignedValue >= 5U);
-            REQUIRE(unsignedValue <= 10U);
+            REQUIRE_GREATER_EQUAL(unsignedValue, 5U);
+            REQUIRE_LESS_EQUAL(unsignedValue, 10U);
         }
     }
 

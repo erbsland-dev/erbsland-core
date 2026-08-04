@@ -8,12 +8,16 @@
 
 namespace erbsland::path::impl {
 
+/// Storage for a path value.
 class PathContent {
 public:
+    /// Create empty path storage.
     PathContent() = default;
+    /// Create path storage for `path`.
     explicit PathContent(Path path) noexcept;
 
 public:
+    /// Get the stored path.
     [[nodiscard]] auto path() const noexcept -> const Path &;
 
 private:

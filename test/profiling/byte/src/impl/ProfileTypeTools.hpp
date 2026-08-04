@@ -7,12 +7,11 @@
 #include <array>
 #include <initializer_list>
 
-namespace app::byte {
+namespace app::byte::impl {
 
 using namespace el::text::literals;
 
-namespace impl {
-
+/// Append benchmark descriptors for a byte API variant family.
 void addDescriptor(
     std::vector<UseCaseDescriptor> &target,
     const ByteType type,
@@ -30,12 +29,14 @@ void addDescriptor(
     }
 }
 
+/// Append descriptors for byte-reading operations.
 void addReadableDescriptors(std::vector<UseCaseDescriptor> &target, const ByteType type) {
     addDescriptor(target, type, UseCase::ReadIndexed, {"sequential"_el, "random"_el}, {"get/getOrThrow"_el});
     addDescriptor(target, type, UseCase::Traverse, {"for-each"_el, "span"_el}, {"forEach/span"_el});
     addDescriptor(target, type, UseCase::IntegerRead, {"little"_el, "big"_el}, {"getInteger/getIntegerInto"_el});
 }
 
+/// Append descriptors for mutable byte operations.
 void addMutableDescriptors(std::vector<UseCaseDescriptor> &target, const ByteType type) {
     addDescriptor(target, type, UseCase::WriteIndexed, {"set"_el, "xor-at"_el}, {"set/xorAt"_el});
     addDescriptor(target, type, UseCase::IntegerWrite, {"little"_el, "big"_el}, {"setInteger"_el});
@@ -44,6 +45,7 @@ void addMutableDescriptors(std::vector<UseCaseDescriptor> &target, const ByteTyp
     addDescriptor(target, type, UseCase::Xor, {"whole"_el, "range"_el}, {"xorWith"_el});
 }
 
+/// Append descriptors for dynamic byte-storage operations.
 void addDynamicDescriptors(std::vector<UseCaseDescriptor> &target, const ByteType type) {
     addDescriptor(target, type, UseCase::ClearReset, {"clear"_el, "reset"_el}, {"clear/reset"_el});
     addDescriptor(target, type, UseCase::ReserveShrink, {"reserve"_el, "shrink"_el}, {"reserve/shrinkToFit"_el});
@@ -57,8 +59,6 @@ void addDynamicDescriptors(std::vector<UseCaseDescriptor> &target, const ByteTyp
         target, type, UseCase::RemoveKeep, {"front"_el, "middle"_el, "back"_el, "keep"_el}, {"remove/removed/keep"_el});
     addDescriptor(
         target, type, UseCase::EditStress, {"growth"_el, "overlap"_el}, {"append/insert/replace/remove/resize"_el});
-}
-
 }
 
 }

@@ -12,6 +12,7 @@
 
 namespace erbsland::conf::impl {
 
+/// Get the implementation value behind a public value pointer.
 [[nodiscard]] inline auto getImplValue(const conf::ValuePtr &value) -> ValuePtr {
     if (value == nullptr) {
         return {};
@@ -23,6 +24,7 @@ namespace erbsland::conf::impl {
     return valueImpl;
 }
 
+/// Invoke a callable with the implementation value behind a public value pointer.
 template <class Fn>
 void callImplValueFn(const conf::ValuePtr &value, Fn &&fn) {
     if (auto documentImpl = std::dynamic_pointer_cast<Document>(value); documentImpl != nullptr) {

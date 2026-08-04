@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DocumentValidator_fwd.hpp"
 #include "KeyIndex.hpp"
 #include "Rule.hpp"
 
@@ -28,7 +29,7 @@ public:
     /// @param version The version of the document format to validate.
     DocumentValidator(RulePtr root, conf::ValuePtr value, Integer version);
 
-    // defaults and deletions
+    // defaults/deletions
     ~DocumentValidator() = default;
     DocumentValidator(const DocumentValidator &) = delete;
     DocumentValidator(DocumentValidator &&) = delete;

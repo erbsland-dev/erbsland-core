@@ -18,6 +18,7 @@ namespace erbsland::re {
 /// The abstract baseclass for regular expression matches.
 class MatchBase {
 public:
+    // defaults/deletions
     virtual ~MatchBase() = default;
     MatchBase(const MatchBase &) = delete;
     auto operator=(const MatchBase &) -> MatchBase & = delete;

@@ -26,7 +26,7 @@
 #include <erbsland/text/TextNodeData.hpp>
 #include <erbsland/text/TextNodeType.hpp>
 #include <erbsland/unit/ArgumentUnit.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unit/Version.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -353,8 +353,8 @@ public:
             context = result.errorContext().value();
         }
 
-        REQUIRE(context.options() != nullptr);
-        REQUIRE(context.option() != nullptr);
+        REQUIRE(context.options());
+        REQUIRE(context.option());
         const auto text = toStdString(OptionError{context}.diagnostic()->toTextDocument().toString());
         requireContains(text, "Invalid integer value\n");
         requireContains(text, "Usage:\n");
@@ -462,7 +462,7 @@ private:
 
     [[nodiscard]] static auto makeArgs(std::initializer_list<el::text::String> args) -> el::text::StringList {
         auto result = el::text::StringList{};
-        result.reserve(el::unit::ElementCount{args.size()});
+        result.reserve(el::unit::ItemCount{args.size()});
         for (const auto &arg : args) {
             result.append(arg.copy());
         }
@@ -470,22 +470,24 @@ private:
     }
 
     void requireContains(const std::string &text, const std::string &needle) {
+        const auto position = text.find(needle);
         runWithContext(
             SOURCE_LOCATION(),
-            [&]() -> void { REQUIRE(text.find(needle) != std::string::npos); },
+            [&]() -> void { REQUIRE_NOT_EQUAL(position, std::string::npos); },
             [&]() -> std::string { return "needle: " + needle + "\ntext:\n" + text; });
     }
 
     void requireMissing(const std::string &text, const std::string &needle) {
-        REQUIRE(text.find(needle) == std::string::npos);
+        const auto position = text.find(needle);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 
     void requireBefore(const std::string &text, const std::string &first, const std::string &second) {
         const auto firstIndex = text.find(first);
         const auto secondIndex = text.find(second);
-        REQUIRE(firstIndex != std::string::npos);
-        REQUIRE(secondIndex != std::string::npos);
-        REQUIRE(firstIndex < secondIndex);
+        REQUIRE_NOT_EQUAL(firstIndex, std::string::npos);
+        REQUIRE_NOT_EQUAL(secondIndex, std::string::npos);
+        REQUIRE_LESS(firstIndex, secondIndex);
     }
 
     void requireContainsNode(

@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void CaseSensitive::operator()(impl::Rule &rule) {
+void CaseSensitive::operator()(Rule &rule) {
     rule.setCaseSensitivity(_caseSensitivity);
 }
 

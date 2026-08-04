@@ -18,6 +18,7 @@ public:
     static constexpr auto cMaximumLength = unit::CpLength{1024U};
 
 public:
+    // defaults/deletions
     virtual ~ReadSecret() = default;
     ReadSecret(const ReadSecret &) = delete;
     ReadSecret(ReadSecret &&) = delete;
@@ -31,13 +32,19 @@ public:
     [[nodiscard]] static auto create(TerminalPtr terminal, ReadLineOptions options = {}) -> ReadSecretPtr;
 
 public:
+    /// Start interactive secret input.
     virtual void start() = 0;
+    /// Process available terminal input and return its result.
     [[nodiscard]] virtual auto update() -> ReadLineResult = 0;
+    /// Wait for input, process it, and return its result.
     [[nodiscard]] virtual auto waitForInput() -> ReadLineResult = 0;
+    /// Stop interactive secret input.
     virtual void stop() noexcept = 0;
+    /// Test if secret input is active.
     [[nodiscard]] virtual auto isActive() const noexcept -> bool = 0;
 
 protected:
+    /// Create an inactive secret-input operation.
     ReadSecret() = default;
 };
 

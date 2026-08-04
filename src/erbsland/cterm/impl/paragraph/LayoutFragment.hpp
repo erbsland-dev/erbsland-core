@@ -41,6 +41,7 @@ public:
     LayoutFragment(const Type type, const int width, const Color color) noexcept :
         _type{type}, _width{width}, _color{color} {}
 
+    // defaults
     LayoutFragment() = default;
 
 public:

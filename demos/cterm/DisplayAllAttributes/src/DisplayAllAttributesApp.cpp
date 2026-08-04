@@ -51,7 +51,8 @@ auto DisplayAllAttributesApp::beforeMain() -> int {
     printPausePrompt();
     terminal()->flush();
     if (terminal()->isInteractive()) {
-        static_cast<void>(terminal()->input().readLine());
+        // Wait for user input to continue, the input is discarded
+        [[maybe_unused]] const auto input = terminal()->input().readLine();
     }
     return -1;
 }

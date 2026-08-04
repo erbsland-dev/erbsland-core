@@ -18,11 +18,6 @@ using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
 
-namespace {
-constexpr auto cLastValidDay = Days{3652424};
-constexpr auto cLastMonthSinceEpoch = Months{9999LL * 12LL + 11LL};
-}
-
 Date::Date(const Year year, const Month month, const Day day) noexcept :
     _days{daysFromParts(year, month, day).toValue()} {
 }

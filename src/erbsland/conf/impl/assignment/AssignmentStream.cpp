@@ -145,7 +145,7 @@ auto AssignmentStream::currentLocation() const noexcept -> Location {
 }
 
 auto AssignmentStream::handleMetaValue() -> Assignment {
-    auto name = Name{NameType::Regular, std::get<text::String>(token().content()), PrivateTag{}};
+    auto name = Name::createRegular(std::get<text::String>(token().content()));
     const auto nameLocation = currentLocation();
     if (std::ranges::find(Name::allMetaNames(), name) == Name::allMetaNames().end()) {
         throwSyntaxError("Unknown meta value name."_el, name);
@@ -188,17 +188,14 @@ auto AssignmentStream::handleMetaValue() -> Assignment {
 }
 
 auto AssignmentStream::handleValue() -> Assignment {
-    const bool isTextName = (token().type() == TokenType::TextName);
-    auto name = Name{
-        // The name is already checked and normalized by the lexer.
-        isTextName ? NameType::Text : NameType::Regular,
-        std::get<text::String>(token().content()),
-        PrivateTag{}};
+    const bool isTextName = token().type() == TokenType::TextName;
+    auto name = isTextName ? Name::createText(std::get<text::String>(token().content()))
+                           : Name::createRegular(std::get<text::String>(token().content()));
     auto nameLocation = currentLocation();
     const auto createAssignment = [&](ValuePtr &&value) noexcept -> Assignment {
         value->setLocation(nameLocation); // copy
         auto namePath = _currentSectionPath;
-        namePath.append(name);
+        namePath.append(std::move(name));
         return Assignment{AssignmentType::Value, std::move(namePath), std::move(nameLocation), value};
     };
 
@@ -464,11 +461,11 @@ auto AssignmentStream::handleSection() -> Assignment {
         if (namePath.size() >= limits::maxNamePathLength) {
             throwLimitExceededError("A name path must not exceed 10 name components."_el);
         }
-        namePath.append(
-            Name{
-                token().type() == TokenType::RegularName ? NameType::Regular : NameType::Text,
-                std::get<text::String>(token().content()),
-                PrivateTag{}});
+        if (token().type() == TokenType::RegularName) {
+            namePath.append(Name::createRegular(std::get<text::String>(token().content())));
+        } else {
+            namePath.append(Name::createText(std::get<text::String>(token().content())));
+        }
         expectNext(TokenType::NamePathSeparator, TokenType::SectionListClose, TokenType::SectionMapClose);
         if (token().type() != TokenType::NamePathSeparator) {
             break; // if we didn't get a seperator, the section is closed.

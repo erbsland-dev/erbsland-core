@@ -6,9 +6,9 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -102,22 +102,22 @@ public:
         const auto anyEditor = AnyStringEditor{U16StringEditor{u"middle"_el}};
 
         REQUIRE_EQUAL(text.compare("middle"_el), std::strong_ordering::equal);
-        REQUIRE(text == "middle"_el);
-        REQUIRE(text == u8"middle"_el);
-        REQUIRE(text == u"middle"_el);
-        REQUIRE(text == U"middle"_el);
-        REQUIRE(text == u8Editor);
-        REQUIRE(text == u32Editor);
-        REQUIRE(text == anyEditor);
-        REQUIRE(text != "other"_el);
-        REQUIRE(text < U"next"_el);
-        REQUIRE(text <= u"middle"_el);
-        REQUIRE(text > u8"lower"_el);
-        REQUIRE(text >= "middle"_el);
-        REQUIRE(U"next"_el > text);
-        REQUIRE(u"middle"_el <= text);
-        REQUIRE(u8"lower"_el < text);
-        REQUIRE("middle"_el >= text);
+        REQUIRE_EQUAL(text, "middle"_el);
+        REQUIRE_EQUAL(text, u8"middle"_el);
+        REQUIRE_EQUAL(text, u"middle"_el);
+        REQUIRE_EQUAL(text, U"middle"_el);
+        REQUIRE_EQUAL(text, u8Editor);
+        REQUIRE_EQUAL(text, u32Editor);
+        REQUIRE_EQUAL(text, anyEditor);
+        REQUIRE_NOT_EQUAL(text, "other"_el);
+        REQUIRE_LESS(text, U"next"_el);
+        REQUIRE_LESS_EQUAL(text, u"middle"_el);
+        REQUIRE_GREATER(text, u8"lower"_el);
+        REQUIRE_GREATER_EQUAL(text, "middle"_el);
+        REQUIRE_GREATER(U"next"_el, text);
+        REQUIRE_LESS_EQUAL(u"middle"_el, text);
+        REQUIRE_LESS(u8"lower"_el, text);
+        REQUIRE_GREATER_EQUAL("middle"_el, text);
         REQUIRE_EQUAL(text <=> U"next"_el, std::strong_ordering::less);
         REQUIRE_EQUAL(U"lower"_el <=> text, std::strong_ordering::less);
     }
@@ -145,7 +145,7 @@ public:
     }
 
     void testComparisonReplacesMalformedEncoding() {
-        const auto invalidU8 = AnyString{String{StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}}}};
+        const auto invalidU8 = AnyString{String{String{th::stdStringFromHex("41 C0 42")}}};
         const auto invalidU16 = AnyString{U16String{U16StringEditor{std::u16string{u'A', char16_t{0xD800U}, u'B'}}}};
         const auto invalidU32 = AnyString{U32String{U32StringEditor{std::u32string{U'A', char32_t{0x110000U}, U'B'}}}};
 
@@ -164,21 +164,21 @@ public:
         WITH_CONTEXT(requireEqualComparison(empty, emptyU8));
         WITH_CONTEXT(requireEqualComparison(empty, emptyU16));
         WITH_CONTEXT(requireEqualComparison(empty, emptyU32));
-        REQUIRE(empty == ""_el);
-        REQUIRE(empty == u""_el);
-        REQUIRE(empty < U"a"_el);
-        REQUIRE(u8"a"_el > empty);
+        REQUIRE_EQUAL(empty, ""_el);
+        REQUIRE_EQUAL(empty, u""_el);
+        REQUIRE_LESS(empty, U"a"_el);
+        REQUIRE_GREATER(u8"a"_el, empty);
     }
 
 private:
     void requireEqualComparison(const AnyString &left, const AnyString &right) {
         REQUIRE_EQUAL(left.compare(right), std::strong_ordering::equal);
-        REQUIRE(left == right);
-        REQUIRE_FALSE(left != right);
-        REQUIRE_FALSE(left < right);
-        REQUIRE(left <= right);
-        REQUIRE_FALSE(left > right);
-        REQUIRE(left >= right);
+        REQUIRE_EQUAL(left, right);
+        REQUIRE_EQUAL(left, right);
+        REQUIRE_GREATER_EQUAL(left, right);
+        REQUIRE_LESS_EQUAL(left, right);
+        REQUIRE_LESS_EQUAL(left, right);
+        REQUIRE_GREATER_EQUAL(left, right);
         REQUIRE_EQUAL(left <=> right, std::strong_ordering::equal);
     }
 };

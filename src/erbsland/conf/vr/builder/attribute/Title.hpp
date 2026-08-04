@@ -11,9 +11,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Sets the user-facing title of a rule.
-struct Title : Attribute {
+class Title : public Attribute {
+public:
+    /// Set the user-facing rule title.
+    /// @param title The title to move into the attribute.
     explicit Title(text::String title) : _title{std::move(title)} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     text::String _title;
 };
 

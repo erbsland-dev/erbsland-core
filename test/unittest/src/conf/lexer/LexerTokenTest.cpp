@@ -27,23 +27,39 @@ public:
         const el::unit::CodeLocation end{
             el::unit::LineIndex::zero(), el::unit::ColumnIndex{rawText.characterLength().toRawValue()}};
         LexerToken token{type, begin, end, rawText, expectedValue};
-        REQUIRE(token.type() == type);
-        REQUIRE(token.begin() == begin);
-        REQUIRE(token.end() == end);
-        REQUIRE(token.rawText() == rawText);
+        REQUIRE_EQUAL(token.type(), type);
+        REQUIRE_EQUAL(token.begin(), begin);
+        REQUIRE_EQUAL(token.end(), end);
+        REQUIRE_EQUAL(token.rawText(), rawText);
         REQUIRE(std::holds_alternative<ValueType>(token.content()));
-        REQUIRE(std::get<ValueType>(token.content()) == expectedValue);
+        const auto actualValue = std::get<ValueType>(token.content());
+        REQUIRE_EQUAL(actualValue, expectedValue);
     }
 
     void testNoContentToken() {
         const el::unit::CodeLocation begin{el::unit::LineIndex{2U}, el::unit::ColumnIndex::zero()};
         const el::unit::CodeLocation end{el::unit::LineIndex{2U}, el::unit::ColumnIndex{1U}};
         LexerToken token{TokenType::LineBreak, begin, end, el::text::String{"\n"_el}, NoContent{}};
-        REQUIRE(token.type() == TokenType::LineBreak);
-        REQUIRE(token.begin() == begin);
-        REQUIRE(token.end() == end);
-        REQUIRE(token.rawText() == el::text::String{"\n"_el});
+        REQUIRE_EQUAL(token.type(), TokenType::LineBreak);
+        REQUIRE_EQUAL(token.begin(), begin);
+        REQUIRE_EQUAL(token.end(), end);
+        REQUIRE_EQUAL(token.rawText(), el::text::String{"\n"_el});
         REQUIRE(std::holds_alternative<NoContent>(token.content()));
+    }
+
+    void testInternalViewContent() {
+        const auto noContent = LexerToken{TokenType::EndOfData};
+        const auto noContentText = internalView(noContent)->toString();
+        REQUIRE(noContentText.contains("value: No Content"_el));
+
+        const auto integer = LexerToken{
+            TokenType::Integer,
+            el::unit::CodeLocation{},
+            el::unit::CodeLocation{},
+            el::text::String{"42"_el},
+            Integer{42}};
+        const auto integerText = internalView(integer)->toString();
+        REQUIRE(integerText.contains("value: Integer: 42"_el));
     }
 
     void testValueTokens() {

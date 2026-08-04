@@ -56,23 +56,31 @@ public:
         SectionMapClose,             ///< The end of a section map.          (NoContent)
         SectionListOpen,             ///< The start of a section list block. (NoContent)
         SectionListClose,            ///< The end of a section list block.   (NoContent)
-        Error                        ///< Error block, for relaxed lexing.   (text::String) = error message.
+        Error,                       ///< Error block, for relaxed lexing.   (text::String) = error message.
     };
 
-public:                                                      // construction
-    TokenType() = default;                                   // Create an error type.
+public:
+    /// Create an error token type.
+    TokenType() = default;
+    /// Create a token type from a given value.
     TokenType(const Value value) noexcept : _value{value} {} // NOLINT(*-explicit-constructor)
 
 public:                                                      // operators
+    /// Test if two token types are equal.
     constexpr auto operator==(const TokenType &other) const noexcept -> bool { return _value == other._value; }
+    /// Test if this token type equals a raw value.
     constexpr auto operator==(const Value other) const noexcept -> bool { return _value == other; }
+    /// Test if two token types differ.
     constexpr auto operator!=(const TokenType &other) const noexcept -> bool { return _value != other._value; }
+    /// Test if this token type differs from a raw value.
     constexpr auto operator!=(const Value other) const noexcept -> bool { return _value != other; }
 
 public: // accessors
+    /// Get the raw token-type value.
     [[nodiscard]] constexpr auto raw() const noexcept -> Value { return _value; }
 
 public: // helper
+    /// Convert a multi-line opening delimiter to its token type.
     [[nodiscard]] constexpr static auto fromMultiLineOpen(const text::Char character) noexcept -> TokenType {
         switch (character.toRawValue()) {
         case nc::doubleQuote.toRawValue():
@@ -88,6 +96,7 @@ public: // helper
         }
     }
 
+    /// Convert a multi-line closing delimiter to its token type.
     [[nodiscard]] constexpr static auto fromMultiLineClose(const text::Char character) noexcept -> TokenType {
         switch (character.toRawValue()) {
         case nc::doubleQuote.toRawValue():
@@ -107,6 +116,7 @@ private:
     Value _value{Error};
 };
 
+/// Convert a token type into its display name.
 [[nodiscard]] inline auto toString(const TokenType tokenType) noexcept -> text::String {
     using namespace text::literals;
     switch (tokenType.raw()) {

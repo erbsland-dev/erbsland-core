@@ -7,9 +7,9 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
-using namespace erbsland::text::literals;
-
 namespace erbsland::conf::impl::lexer {
+
+using namespace text::literals;
 
 auto expectRegularOrMetaName(Decoder &decoder, const AcceptedNameEnd acceptedNameEnd) -> NameResult {
     bool isMetaName = false;

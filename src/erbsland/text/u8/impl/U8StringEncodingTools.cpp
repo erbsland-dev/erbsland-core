@@ -70,17 +70,15 @@ auto U8StringEncodingTools::encodeUtf32(
 
 auto U8StringEncodingTools::resolveBomLayout(
     const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) -> DecodeLayout {
-    const auto hasUtf32LeBom = data.startsWith(
-        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf32LittleEndian}.bomBytes(StringBomMode::Require)));
-    const auto hasUtf32BeBom = data.startsWith(
-        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf32BigEndian}.bomBytes(StringBomMode::Require)));
-    const auto hasUtf8Bom =
-        data.startsWith(ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf8}.bomBytes(StringBomMode::Require)));
+    const auto hasUtf32LeBom =
+        data.startsWith(StringEncoding{StringEncoding::Utf32LittleEndian}.bomBytes(StringBomMode::Require));
+    const auto hasUtf32BeBom =
+        data.startsWith(StringEncoding{StringEncoding::Utf32BigEndian}.bomBytes(StringBomMode::Require));
+    const auto hasUtf8Bom = data.startsWith(StringEncoding{StringEncoding::Utf8}.bomBytes(StringBomMode::Require));
     const auto hasUtf16LeBom = !hasUtf32LeBom &&
-        data.startsWith(
-            ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf16LittleEndian}.bomBytes(StringBomMode::Require)));
-    const auto hasUtf16BeBom = data.startsWith(
-        ByteBlock::fromSpan(StringEncoding{StringEncoding::Utf16BigEndian}.bomBytes(StringBomMode::Require)));
+        data.startsWith(StringEncoding{StringEncoding::Utf16LittleEndian}.bomBytes(StringBomMode::Require));
+    const auto hasUtf16BeBom =
+        data.startsWith(StringEncoding{StringEncoding::Utf16BigEndian}.bomBytes(StringBomMode::Require));
     const auto hasBom = hasUtf32LeBom || hasUtf32BeBom || hasUtf8Bom || hasUtf16LeBom || hasUtf16BeBom;
     if (!hasBom) {
         if (bomMode == StringBomMode::Require) {
@@ -258,6 +256,34 @@ auto U8StringEncodingTools::decode(
         return decodeUtf32(data, layout, mode);
     }
     return {};
+}
+
+void U8StringEncodingTools::validate(
+    const ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) {
+    const auto layout = resolveBomLayout(data, encoding, bomMode);
+    auto reader = ByteReader{data};
+    reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+    reader.setEndianness(layout.endianness);
+    const auto consume = [](const Char) -> void {};
+    auto complete = false;
+    switch (encoding.toRawValue()) {
+    case StringEncoding::Utf8:
+        complete = utf8::forEachDecodedCharacter<EncodingMode::Strict>(reader, consume);
+        break;
+    case StringEncoding::Utf16:
+    case StringEncoding::Utf16LittleEndian:
+    case StringEncoding::Utf16BigEndian:
+        complete = utf16::forEachDecodedCharacter<EncodingMode::Strict>(reader, consume);
+        break;
+    case StringEncoding::Utf32:
+    case StringEncoding::Utf32LittleEndian:
+    case StringEncoding::Utf32BigEndian:
+        complete = utf32::forEachValidatedCharacter<EncodingMode::Strict>(reader, consume);
+        break;
+    }
+    if (!complete) {
+        std::terminate();
+    }
 }
 
 }

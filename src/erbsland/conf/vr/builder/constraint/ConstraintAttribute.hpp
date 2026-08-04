@@ -11,17 +11,20 @@
 namespace erbsland::conf::vr::builder {
 
 /// Base interface for builder constraints with common validation helpers.
-struct ConstraintAttribute : Attribute {
+class ConstraintAttribute : public Attribute {
 protected:
+    /// Require that a rule type is supported by this constraint.
     static void requireRuleTypeForConstraint(
         const impl::Rule &rule,
         const text::String &constraintName,
         const std::initializer_list<vr::RuleType> supportedTypes);
 
 private:
+    /// Test whether a rule has one of the supported types.
     [[nodiscard]] static auto hasRuleType(
         const impl::Rule &rule, const std::initializer_list<vr::RuleType> supportedTypes) -> bool;
 
+    /// Throw an error for a constraint used with an unsupported rule.
     [[noreturn]] static void throwUnsupportedConstraint(const impl::Rule &rule, const text::String &constraintName);
 };
 

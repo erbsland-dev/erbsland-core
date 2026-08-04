@@ -8,39 +8,98 @@ target_sources(erbsland-core PRIVATE
         CharsConstraint.hpp
         ConfKey.cpp
         ConfKey.hpp
+        ConfVersionRange.hpp
         Constraint.cpp
         Constraint.hpp
+        Constraint_fwd.hpp
         ConstraintHandlerContext.hpp
+        ContainsConstraint.hpp
         DependencyDefinition.cpp
         DependencyDefinition.hpp
+        DependencyDefinition_fwd.hpp
         DependencyMode.cpp
         DependencyMode.hpp
         DocumentValidator.cpp
         DocumentValidator.hpp
         DocumentValidator_constraints.cpp
+        DocumentValidator_fwd.hpp
         DocumentValidator_rules.cpp
+        EndsConstraint.hpp
+        EqualsBooleanConstraint.cpp
+        EqualsBooleanConstraint.hpp
+        EqualsBytesConstraint.cpp
+        EqualsBytesConstraint.hpp
         EqualsConstraint.cpp
         EqualsConstraint.hpp
+        EqualsFloatConstraint.cpp
+        EqualsFloatConstraint.hpp
+        EqualsIntegerConstraint.cpp
+        EqualsIntegerConstraint.hpp
+        EqualsMatrixConstraint.cpp
+        EqualsMatrixConstraint.hpp
+        EqualsTextConstraint.cpp
+        EqualsTextConstraint.hpp
+        InBytesConstraint.cpp
+        InBytesConstraint.hpp
         InConstraint.cpp
         InConstraint.hpp
+        InFloatConstraint.cpp
+        InFloatConstraint.hpp
+        InIntegerConstraint.cpp
+        InIntegerConstraint.hpp
+        InTextConstraint.cpp
+        InTextConstraint.hpp
         KeyConstraint.cpp
         KeyConstraint.hpp
+        KeyConstraint_fwd.hpp
         KeyDefinition.cpp
         KeyDefinition.hpp
+        KeyDefinition_fwd.hpp
+        KeyElementEqual.hpp
+        KeyElementHash.hpp
+        KeyEqual.hpp
+        KeyHash.hpp
         KeyIndex.cpp
         KeyIndex.hpp
+        KeyIndex_fwd.hpp
+        KeyIndexData.hpp
+        KeyIndexData_fwd.hpp
+        KeyIndexDataMultiple.hpp
+        KeyIndexDataSingle.hpp
+        KeyIndexDataTypes.hpp
         MatchesConstraint.cpp
         MatchesConstraint.hpp
         MinMaxConstraint.cpp
         MinMaxConstraint.hpp
+        MinMaxDateConstraint.cpp
+        MinMaxDateConstraint.hpp
+        MinMaxDateTimeConstraint.cpp
+        MinMaxDateTimeConstraint.hpp
+        MinMaxFloatConstraint.cpp
+        MinMaxFloatConstraint.hpp
+        MinMaxIntegerConstraint.cpp
+        MinMaxIntegerConstraint.hpp
+        MinMaxMatrixConstraint.cpp
+        MinMaxMatrixConstraint.hpp
         MultipleConstraint.cpp
         MultipleConstraint.hpp
+        MultipleFloatConstraint.cpp
+        MultipleFloatConstraint.hpp
+        MultipleIntegerConstraint.cpp
+        MultipleIntegerConstraint.hpp
+        MultipleMatrixConstraint.cpp
+        MultipleMatrixConstraint.hpp
+        NamePathHelper.cpp
+        NamePathHelper.hpp
+        Pass2Frame.hpp
         Rule.cpp
         Rule.hpp
+        Rule_fwd.hpp
         RuleMap.cpp
         RuleMap.hpp
         Rules.cpp
         Rules.hpp
+        Rules_fwd.hpp
         RulesBuilder.cpp
         RulesBuilder.hpp
         RulesConstants.hpp
@@ -50,12 +109,17 @@ target_sources(erbsland-core PRIVATE
         RulesFromDocument.hpp
         RulesFromDocument_constraintHandlers.cpp
         RulesFromDocument_nodes.cpp
+        StartsConstraint.hpp
         StringPartConstraint.cpp
         StringPartConstraint.hpp
+        TypedMinMaxConstraint.hpp
+        TypeTraits.hpp
         ValidationContext.hpp
+        ValidationContext_fwd.hpp
         ValidationError.cpp
         ValidationError.hpp
         ValidationTarget.hpp
         VersionMask.cpp
         VersionMask.hpp
+        VersionMask_fwd.hpp
 )

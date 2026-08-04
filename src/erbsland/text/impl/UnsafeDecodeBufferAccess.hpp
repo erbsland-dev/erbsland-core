@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UnsafeDecodeBufferAccess_fwd.hpp"
+
 #include "../StringDecodeBuffer.hpp"
 
 #include <span>

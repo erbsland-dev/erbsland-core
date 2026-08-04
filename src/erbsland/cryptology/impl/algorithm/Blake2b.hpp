@@ -9,6 +9,7 @@
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
+#include "../../../text/Literals.hpp"
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
 
@@ -21,6 +22,7 @@
 namespace erbsland::cryptology::impl {
 
 // algorithms are never included in the public API, therefore using these namespaces never leaks.
+using namespace text::literals;
 using namespace erbsland::unit;
 using namespace erbsland::mem;
 
@@ -31,7 +33,7 @@ using namespace erbsland::mem;
 /// RFC 7693 exactly; all message words and output words use little-endian byte order.
 ///
 /// Source: https://www.rfc-editor.org/rfc/rfc7693.html
-/// @tested{PasswordPrimitiveTest}
+/// @tested{PasswordPrimitiveTest HashPrimitiveFullValidationTest}
 class Blake2b final {
 public:
     /// Create an unkeyed BLAKE2b instance with a selected digest length.
@@ -39,7 +41,7 @@ public:
     /// @throws err::ParameterError If `digestLength` is outside the supported range.
     explicit Blake2b(const ByteLength digestLength) : _digestLength{digestLength} {
         if (digestLength.isZero() || digestLength > ByteLength{64U}) {
-            throw err::ParameterError{"BLAKE2b digest length must be between 1 and 64 bytes", "digestLength"};
+            throw err::ParameterError{"BLAKE2b digest length must be between 1 and 64 bytes"_el, "digestLength"_el};
         }
         _state = cInitializationVector;
         // RFC 7693 section 2.5 packs digest length into bits 0-7, key length into 8-15, fanout into 16-23, and
@@ -50,6 +52,8 @@ public:
 
     /// Erase the chaining state and partial message block.
     ~Blake2b() { secureErase(); }
+
+    // defaults/deletions
     Blake2b(const Blake2b &) = delete;
     Blake2b(Blake2b &&) = delete;
     auto operator=(const Blake2b &) -> Blake2b & = delete;

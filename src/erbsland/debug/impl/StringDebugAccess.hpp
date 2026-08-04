@@ -5,6 +5,8 @@
 #include "StringDebugAccess_fwd.hpp"
 
 #include "../../mem/StorageIdentifier.hpp"
+#include "../../text/impl/StringStorageKind.hpp"
+#include "../../text/impl/StringTraits.hpp"
 #include "../../text/u16/impl/U16StringData.hpp"
 #include "../../text/u16/impl/U16StringLiteralStorage.hpp"
 #include "../../text/u16/impl/U16StringSharedStorage.hpp"
@@ -19,81 +21,44 @@
 #include "../../text/u8/impl/U8StringLiteralStorage.hpp"
 #include "../../text/u8/impl/U8StringSharedStorage.hpp"
 #include "../../text/u8/U8String.hpp"
-#include "../../text/u8/U8StringEditor.hpp"
 
 #include <span>
 #include <variant>
 
 namespace erbsland::debug::impl {
 
-enum class StringStorageKind {
-    Empty,
-    Shared,
-    Literal,
-};
-
+/// Provide debug-only access to a string without copying its storage.
+/// @tparam tString The editable or read-only string type.
+/// @tested{StringDebugBuilderTest}
+template <text::impl::AnyStringOrStringEditorType tString>
 class StringDebugAccess final {
+    using StringStorageKind = text::impl::StringStorageKind;
+
 public:
-    [[nodiscard]] static auto dataView(const text::U8StringEditor &value) noexcept -> text::impl::U8StringDataView {
-        return value.dataView();
-    }
-    [[nodiscard]] static auto dataView(const text::U8String &value) noexcept -> text::impl::U8StringDataView {
-        return value.dataView();
-    }
-    [[nodiscard]] static auto dataView(const text::U16StringEditor &value) noexcept -> text::impl::U16StringDataView {
-        return value.dataView();
-    }
-    [[nodiscard]] static auto dataView(const text::U16String &value) noexcept -> text::impl::U16StringDataView {
-        return value.dataView();
-    }
-    [[nodiscard]] static auto dataView(const text::U32StringEditor &value) noexcept -> text::impl::U32StringDataView {
-        return value.dataView();
-    }
-    [[nodiscard]] static auto dataView(const text::U32String &value) noexcept -> text::impl::U32StringDataView {
-        return value.dataView();
+    /// Create debug access for a string value.
+    /// @param value The string value to inspect.
+    explicit StringDebugAccess(const tString &value) noexcept : _value{value} {}
+
+    /// Get the string's data view.
+    [[nodiscard]] auto dataView() const noexcept { return _value.dataView(); }
+
+    /// Get the kind of storage backing the string.
+    [[nodiscard]] auto storageKind() const noexcept -> StringStorageKind {
+        if constexpr (text::impl::AnyStringEditorType<tString>) {
+            return StringStorageKind::Shared;
+        } else if constexpr (text::impl::AnyStringType<tString>) {
+            return text::impl::storageKind(_value._storage);
+        } else {
+            std::terminate();
+        }
     }
 
-    [[nodiscard]] static auto storageKind(const text::U8StringEditor &) noexcept -> StringStorageKind {
-        return StringStorageKind::Shared;
-    }
-    [[nodiscard]] static auto storageKind(const text::U16StringEditor &) noexcept -> StringStorageKind {
-        return StringStorageKind::Shared;
-    }
-    [[nodiscard]] static auto storageKind(const text::U32StringEditor &) noexcept -> StringStorageKind {
-        return StringStorageKind::Shared;
-    }
-    [[nodiscard]] static auto storageKind(const text::U8String &value) noexcept -> StringStorageKind {
-        return viewStorageKind<text::impl::U8StringSharedStorage, text::impl::U8StringLiteralStorage>(value._storage);
-    }
-    [[nodiscard]] static auto storageKind(const text::U16String &value) noexcept -> StringStorageKind {
-        return viewStorageKind<text::impl::U16StringSharedStorage, text::impl::U16StringLiteralStorage>(value._storage);
-    }
-    [[nodiscard]] static auto storageKind(const text::U32String &value) noexcept -> StringStorageKind {
-        return viewStorageKind<text::impl::U32StringSharedStorage, text::impl::U32StringLiteralStorage>(value._storage);
-    }
+    /// Test whether the string's backing storage is shared.
+    [[nodiscard]] auto isShared() const noexcept -> bool { return _value.isStorageShared(); }
 
-    [[nodiscard]] static auto isShared(const text::U8StringEditor &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U16StringEditor &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U32StringEditor &value) noexcept -> bool {
-        return value._storage.sharedData().isShared();
-    }
-    [[nodiscard]] static auto isShared(const text::U8String &value) noexcept -> bool {
-        return viewShared<text::impl::U8StringSharedStorage>(value._storage);
-    }
-    [[nodiscard]] static auto isShared(const text::U16String &value) noexcept -> bool {
-        return viewShared<text::impl::U16StringSharedStorage>(value._storage);
-    }
-    [[nodiscard]] static auto isShared(const text::U32String &value) noexcept -> bool {
-        return viewShared<text::impl::U32StringSharedStorage>(value._storage);
-    }
-
-    template <typename T>
-    [[nodiscard]] static auto backingStorageId(const T &value) noexcept -> mem::StorageIdentifier {
-        const auto data = dataView(value).data();
+    /// Get an identifier for the complete backing storage.
+    [[nodiscard]] auto backingStorageId() const noexcept -> mem::StorageIdentifier {
+        const auto data = dataView().data();
         if (data.data() == nullptr) {
             return {};
         }
@@ -101,24 +66,7 @@ public:
     }
 
 private:
-    template <typename SharedStorage, typename LiteralStorage, typename Storage>
-    [[nodiscard]] static auto viewStorageKind(const Storage &storage) noexcept -> StringStorageKind {
-        if (std::holds_alternative<SharedStorage>(storage)) {
-            return StringStorageKind::Shared;
-        }
-        if (std::holds_alternative<LiteralStorage>(storage)) {
-            return StringStorageKind::Literal;
-        }
-        return StringStorageKind::Empty;
-    }
-
-    template <typename SharedStorage, typename Storage>
-    [[nodiscard]] static auto viewShared(const Storage &storage) noexcept -> bool {
-        if (const auto *shared = std::get_if<SharedStorage>(&storage)) {
-            return shared->sharedData().isShared();
-        }
-        return false;
-    }
+    const tString &_value;
 };
 
 }

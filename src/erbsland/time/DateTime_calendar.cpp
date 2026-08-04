@@ -11,7 +11,9 @@ auto DateTime::wouldAddSaturate(const CalendarDelta &delta) const noexcept -> bo
         return false;
     }
     try {
-        static_cast<void>(addedOrThrow(delta));
+        if (!addedOrThrow(delta).isValid()) {
+            std::terminate();
+        }
         return false;
     } catch (const err::OverflowError &) {
         return true;

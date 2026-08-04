@@ -4,13 +4,11 @@
 
 #include "CoGenerator_fwd.hpp"
 
-#include "../err/LogicError.hpp"
+#include "impl/CoGeneratorIterator.hpp"
+#include "impl/CoGeneratorPromise.hpp"
 
 #include <concepts>
 #include <coroutine>
-#include <cstddef>
-#include <exception>
-#include <iterator>
 #include <optional>
 #include <type_traits>
 #include <utility>
@@ -32,133 +30,11 @@ class CoGenerator {
     static_assert(std::move_constructible<tValue>, "CoGenerator requires a move constructible value type.");
 
 public:
-    struct promise_type;
-    class Iterator;
-
     using Value = tValue;                                    ///< The value type yielded by this generator.
+    using promise_type = impl::CoGeneratorPromise<tValue>;
     using handle_type = std::coroutine_handle<promise_type>; ///< The standard coroutine handle type.
-
-    /// The promise type used by the C++ coroutine machinery.
-    /// @tested{CoGeneratorTest}
-    struct promise_type {
-        friend class CoGenerator;
-        friend class Iterator;
-
-    public:
-        /// Create the coroutine return object.
-        /// @return The generator that owns this coroutine state.
-        auto get_return_object() -> CoGenerator { return CoGenerator{handle_type::from_promise(*this)}; }
-        /// Suspend before the first coroutine statement.
-        /// @return A suspension token that keeps the coroutine lazy.
-        auto initial_suspend() noexcept -> std::suspend_always { return {}; }
-        /// Suspend after the coroutine has finished so the owner can destroy the frame.
-        /// @return A suspension token for the final suspend point.
-        auto final_suspend() noexcept -> std::suspend_always { return {}; }
-        /// Store a yielded value in the coroutine promise.
-        /// @tparam tYielded The concrete yielded value type.
-        /// @param value The value to store for the next consumer access.
-        /// @return A suspension token that pauses the coroutine after the value is stored.
-        template <typename tYielded>
-            requires std::constructible_from<Value, tYielded>
-        auto yield_value(tYielded &&value) -> std::suspend_always {
-            _currentValue.emplace(std::forward<tYielded>(value));
-            return {};
-        }
-        /// Finish the coroutine without a final value.
-        void return_void() noexcept {}
-        /// Store an unhandled coroutine exception until the consumer resumes or accesses the generator.
-        void unhandled_exception() noexcept { _exception = std::current_exception(); }
-
-    private:
-        std::optional<Value> _currentValue{};
-        std::exception_ptr _exception{};
-    };
-
-    /// A single-pass input iterator over the yielded values.
-    /// @tested{CoGeneratorTest}
-    class Iterator {
-    public:
-        using iterator_category = std::input_iterator_tag; ///< The standard iterator category.
-        using value_type = Value;                          ///< The standard iterator value type.
-        using difference_type = std::ptrdiff_t;            ///< The standard iterator difference type.
-        using reference = const Value &;                   ///< The iterator reference type.
-        using pointer = const Value *;                     ///< The iterator pointer type.
-
-    public:
-        /// Create an end iterator.
-        Iterator() = default;
-        /// Create an iterator for a coroutine handle.
-        /// @param handle The active coroutine handle.
-        explicit Iterator(handle_type handle) noexcept : _handle{handle} {}
-
-    public: // operators
-        /// Access the current yielded value.
-        /// @return A reference to the current value.
-        /// @throws err::LogicError If this iterator does not point to a yielded value.
-        [[nodiscard]] auto operator*() const -> reference { return currentValue(); }
-        /// Access the current yielded value.
-        /// @return A pointer to the current value.
-        /// @throws err::LogicError If this iterator does not point to a yielded value.
-        [[nodiscard]] auto operator->() const -> pointer { return &currentValue(); }
-        /// Advance to the next yielded value.
-        /// @return A reference to this iterator.
-        /// @throws Any exception that escaped from the coroutine body.
-        auto operator++() -> Iterator & {
-            resume();
-            return *this;
-        }
-        /// Advance to the next yielded value.
-        /// @throws Any exception that escaped from the coroutine body.
-        void operator++(int) { resume(); }
-        /// Test if two iterators point to the same coroutine state.
-        /// @param other The iterator to compare with.
-        /// @return `true` if both iterators have the same handle.
-        [[nodiscard]] auto operator==(const Iterator &other) const noexcept -> bool { return _handle == other._handle; }
-        /// Test if two iterators point to different coroutine states.
-        /// @param other The iterator to compare with.
-        /// @return `true` if both iterators have different handles.
-        [[nodiscard]] auto operator!=(const Iterator &other) const noexcept -> bool { return !(*this == other); }
-
-    private:
-        /// Access the current yielded value.
-        /// @return A reference to the current value.
-        [[nodiscard]] auto currentValue() const -> reference {
-            if (!_handle || _handle.done() || !_handle.promise()._currentValue.has_value()) {
-                throw err::LogicError{"Dereferencing an invalid CoGenerator iterator."};
-            }
-            if (_handle.promise()._exception) {
-                std::rethrow_exception(_handle.promise()._exception);
-            }
-            return *_handle.promise()._currentValue;
-        }
-        /// Resume the coroutine and update this iterator state.
-        /// @throws Any exception that escaped from the coroutine body.
-        void resume() {
-            if (!_handle) {
-                throw err::LogicError{"Incrementing an invalid CoGenerator iterator."};
-            }
-            if (_handle.done()) {
-                _handle.promise()._currentValue.reset();
-                _handle = {};
-                return;
-            }
-            _handle.resume();
-            auto &promise = _handle.promise();
-            if (promise._exception) {
-                promise._currentValue.reset();
-                std::rethrow_exception(promise._exception);
-            }
-            if (_handle.done()) {
-                promise._currentValue.reset();
-                _handle = {};
-            }
-        }
-
-    private:
-        handle_type _handle{};
-    };
-
-    using iterator = Iterator; ///< The standard iterator type.
+    using Iterator = impl::CoGeneratorIterator<tValue>;
+    using iterator = Iterator;                               ///< The standard iterator type.
 
 public:
     /// Create an empty generator.
@@ -249,5 +125,12 @@ private:
 private:
     handle_type _handle{};
 };
+
+/// Create the coroutine return object.
+/// @return The generator that owns this coroutine state.
+template <typename tValue>
+auto impl::CoGeneratorPromise<tValue>::get_return_object() -> CoGenerator<tValue> {
+    return CoGenerator<tValue>{std::coroutine_handle<CoGeneratorPromise<tValue>>::from_promise(*this)};
+}
 
 }

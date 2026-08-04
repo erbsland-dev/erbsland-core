@@ -5,7 +5,7 @@
 #include "U8StringDataView.hpp"
 
 #include "../../../unit/ByteIndex.hpp"
-#include "../../../unit/ElementCount.hpp"
+#include "../../../unit/ItemCount.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
 
@@ -22,6 +22,7 @@ public:
     using CharacterSet = CharSet;
 
 public:
+    /// Create comparison tools for `data`.
     explicit constexpr U8StringComparisonTools(const U8StringDataView &data) noexcept : _data{data} {}
 
 public: // comparison
@@ -53,9 +54,9 @@ public: // tests
     [[nodiscard]] auto contains(Char character) const noexcept -> bool;
     /// Count non-overlapping occurrences of the given decoded text.
     [[nodiscard]] auto count(const U8StringDataView &other, CharCompareFn compareFn = {}) const noexcept
-        -> unit::ElementCount;
+        -> unit::ItemCount;
     /// Count occurrences of the given decoded character.
-    [[nodiscard]] auto count(Char character) const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto count(Char character) const noexcept -> unit::ItemCount;
     /// Test if the view contains one decoded character from the given character set.
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// Test if the view contains only decoded characters from the given character set.

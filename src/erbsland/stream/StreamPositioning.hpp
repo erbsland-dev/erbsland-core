@@ -17,6 +17,7 @@ namespace erbsland::stream {
 /// @tested{StreamPositionTest}
 class StreamPositioning : public virtual StreamErrorSource {
 public:
+    // defaults
     virtual ~StreamPositioning() = default;
 
 public: // positioning

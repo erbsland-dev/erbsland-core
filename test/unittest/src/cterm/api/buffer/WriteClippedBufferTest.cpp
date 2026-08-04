@@ -47,7 +47,7 @@ public:
     void testSharedWrapperHandlesNullContentAndReplacement() {
         auto view = WriteClippedBuffer{bgeo::BlockSize{2, 1}};
 
-        REQUIRE(view.content() == nullptr);
+        REQUIRE_EQUAL(view.content(), nullptr);
         REQUIRE_EQUAL(view.get(bgeo::BlockPosition{0, 0}), U' ');
         view.set(bgeo::BlockPosition{0, 0}, Block{U'X'});
 
@@ -55,7 +55,7 @@ public:
         view.setContent(firstBuffer);
         view.set(bgeo::BlockPosition{0, 0}, Block{U'A'});
 
-        REQUIRE(view.content() == firstBuffer);
+        REQUIRE_EQUAL(view.content(), firstBuffer);
         requireRowsEqual(*firstBuffer, {"A."});
 
         auto secondBuffer = createSharedBuffer({".."});

@@ -34,11 +34,9 @@ public: // ctors/dtor/assign/move
     constexpr Color(const Background background) noexcept : _background{background} {}
     /// @overload
     constexpr Color(const Background::Hue background) noexcept : _background{background} {}
-    /// Destroy the color value.
+    // defaults
     ~Color() = default;
-    /// Copy construct a color value.
     Color(const Color &) noexcept = default;
-    /// Copy-assign a color value.
     auto operator=(const Color &) noexcept -> Color & = default;
 
 public: // operators

@@ -117,7 +117,7 @@ void HtmlTokenizer::tokenizeText() {
             _reader.appendToBuffer(decodedCharacter);
             continue;
         }
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferString()};
 }
@@ -125,7 +125,7 @@ void HtmlTokenizer::tokenizeText() {
 void HtmlTokenizer::tokenizeLiteralTagText() {
     _reader.clearBuffer();
     if (_reader.peek() == U'<') {
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     while (!_reader.isAtEnd() && _reader.peek() != U'<') {
         auto decodedCharacter = Char{};
@@ -133,7 +133,7 @@ void HtmlTokenizer::tokenizeLiteralTagText() {
             _reader.appendToBuffer(decodedCharacter);
             continue;
         }
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     _currentToken = HtmlToken{HtmlTokenType::Text, takeBufferString()};
 }
@@ -154,7 +154,7 @@ auto HtmlTokenizer::tokenizeComment() -> bool {
             _currentToken = HtmlToken{HtmlTokenType::Comment, takeBufferString()};
             return true;
         }
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     return false;
 }
@@ -174,7 +174,7 @@ auto HtmlTokenizer::tokenizeDocType() -> bool {
     skipWhitespace();
     _reader.clearBuffer();
     while (!_reader.isAtEnd() && _reader.peek() != U'>') {
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     if (!_reader.advanceIf(U'>')) {
         return false;
@@ -272,7 +272,7 @@ auto HtmlTokenizer::parseAttributeValue(String &value) -> bool {
                 _reader.appendToBuffer(decodedCharacter);
                 continue;
             }
-            static_cast<void>(_reader.readToBuffer());
+            _reader.readToBuffer();
         }
         if (!_reader.advanceIf(quoteCharacter)) {
             return false;
@@ -291,7 +291,7 @@ auto HtmlTokenizer::parseAttributeValue(String &value) -> bool {
             _reader.appendToBuffer(decodedCharacter);
             continue;
         }
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     value = takeBufferString();
     return !value.isEmpty();
@@ -300,7 +300,7 @@ auto HtmlTokenizer::parseAttributeValue(String &value) -> bool {
 auto HtmlTokenizer::parseName() -> std::optional<String> {
     _reader.clearBuffer();
     while (!_reader.isAtEnd() && !_reader.peek().isAsciiWhitespace() && !isNameTerminator(_reader.peek())) {
-        static_cast<void>(_reader.readToBuffer());
+        _reader.readToBuffer();
     }
     auto result = takeBufferString();
     if (result.isEmpty()) {

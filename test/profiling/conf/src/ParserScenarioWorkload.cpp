@@ -23,7 +23,7 @@ void ParserScenarioWorkload::prepare([[maybe_unused]] const pf::RunConfiguration
             _failWorker = std::get<bool>(parameter.value);
         }
     }
-    for (const auto &document : cEmbeddedDocuments) {
+    for (const auto &document : embeddedDocuments()) {
         _documents.append(el::String{document.text});
         _corpusBytes += document.text.length().toRawValue();
     }

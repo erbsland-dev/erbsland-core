@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BufferedByteOutputStream_fwd.hpp"
 #include "BufferedByteOutputStreamData_fwd.hpp"
 #include "NativeByteStream.hpp"
 
@@ -10,9 +11,9 @@
 #include "../../text/Char.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringBomMode.hpp"
-#include "../../text/StringEncoder_fwd.hpp"
 #include "../../text/StringEncoding.hpp"
 #include "../../time/TimePoint.hpp"
+#include "../../util/Result.hpp"
 
 #include <memory>
 #include <mutex>
@@ -30,6 +31,7 @@ public:
     /// Abort pending work without waiting for native I/O.
     ~BufferedByteOutputStream() override;
 
+    // defaults/deletions
     BufferedByteOutputStream(const BufferedByteOutputStream &) = delete;
     BufferedByteOutputStream(BufferedByteOutputStream &&) = delete;
     auto operator=(const BufferedByteOutputStream &) -> BufferedByteOutputStream & = delete;
@@ -72,11 +74,17 @@ public:
     using ByteOutputStream::write;
 
 private:
+    /// Encode a supported source through the shared bounded-buffer retry policy.
     template <typename T>
-    auto writeEncoded(const text::StringEncoder<T> &encoder, text::StringEncoding encoding, text::StringBomMode bomMode)
-        -> StreamWriteStatus;
+    auto writeEncoded(const T &source, text::StringEncoding encoding, text::StringBomMode bomMode) -> StreamWriteStatus;
+    /// Transactionally encode one character into the back ring.
+    [[nodiscard]] auto encodeCharacterToBack(
+        text::Char character, text::StringEncoding encoding, text::StringBomMode bomMode) -> util::Result;
+    /// Begin a serialized source-positioning operation.
     [[nodiscard]] auto beginPositioning(std::unique_lock<std::mutex> &lock, time::TimePoint deadline) -> bool;
+    /// Complete a source-positioning operation at the given position.
     void completePositioning(unit::ByteIndex position);
+    /// Cancel an in-progress source-positioning operation.
     void cancelPositioning() noexcept;
 
 private:

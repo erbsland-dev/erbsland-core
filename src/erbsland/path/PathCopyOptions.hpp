@@ -11,6 +11,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathCopyOptions final {
 public:
+    /// Create path-copy options with their default values.
     PathCopyOptions() = default;
 
 public:

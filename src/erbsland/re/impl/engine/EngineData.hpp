@@ -4,23 +4,24 @@
 
 #include "CaptureGroupNames.hpp"
 #include "CharClassData.hpp"
+#include "EngineData_fwd.hpp"
 #include "Program.hpp"
 #include "SequenceData.hpp"
 
-#include <memory>
+#include "../Limits.hpp"
+
+#include <cstddef>
 
 namespace erbsland::re::impl {
 
-class EngineData;
-using EngineDataPtr = std::shared_ptr<EngineData>;
-using ConstEngineDataPtr = std::shared_ptr<const EngineData>;
-
+/// Compiled regular-expression data consumed by the matching engine.
 class EngineData {
 public:
     SequenceData sequenceData;
     CharClassData charClassData;
     Program program;
     CaptureGroupNames captureGroupNames;
+    std::size_t counterCount{limits::maximumCounterCount};
     bool hasAtomicGroups{false};
 };
 

@@ -17,14 +17,14 @@ using namespace el::text::literals;
 
 struct DoesToMethodReturnDefault {
     virtual ~DoesToMethodReturnDefault() = default;
-    [[nodiscard]] virtual auto isDefault(impl::ValuePtr value) const -> bool = 0;
+    [[nodiscard]] virtual auto isDefault(el::conf::impl::ValuePtr value) const -> bool = 0;
 };
 
 template <typename Type>
 using ValueToMethod = Type (el::conf::Value::*)() const;
 template <typename Type, ValueToMethod<Type> tMethod>
 struct DoesToMethodReturnDefaultT : DoesToMethodReturnDefault {
-    [[nodiscard]] auto isDefault(impl::ValuePtr value) const -> bool override {
+    [[nodiscard]] auto isDefault(el::conf::impl::ValuePtr value) const -> bool override {
         return (value.get()->*tMethod)() == Type{};
     }
 };
@@ -61,24 +61,24 @@ public:
             std::make_shared<DoesToMethodReturnDefaultT<el::re::RegExPtr, &el::conf::Value::asRegEx>>()),
     };
 
-    impl::ValuePtr value;
+    el::conf::impl::ValuePtr value;
 
     void requireDefaults(ValueType valueType) {
-        REQUIRE(value != nullptr);
-        REQUIRE(value->hasParent() == false);
-        REQUIRE(value->parent() == nullptr);
-        REQUIRE(value->type() == valueType);
-        REQUIRE(value->hasLocation() == false);
+        REQUIRE(value);
+        REQUIRE_EQUAL(value->hasParent(), false);
+        REQUIRE_FALSE(value->parent());
+        REQUIRE_EQUAL(value->type(), valueType);
+        REQUIRE_EQUAL(value->hasLocation(), false);
         REQUIRE(value->location().isUndefined());
-        REQUIRE(value->size() == 0);
-        REQUIRE(value->value(0U) == nullptr);
-        // REQUIRE(value->value(el::text::String{"test"_el}) == nullptr);
-        REQUIRE(value->begin() == value->end());
+        REQUIRE_EQUAL(value->size(), 0);
+        REQUIRE_FALSE(value->value(0U));
+        // REQUIRE_FALSE(value->value(el::text::String{"test"_el}));
+        REQUIRE_EQUAL(value->begin(), value->end());
         for (auto const &[type, op] : cDoesReturnDefault) {
             if (type != valueType) {
                 runWithContext(
                     SOURCE_LOCATION(),
-                    [&]() { REQUIRE(op->isDefault(value) == true); },
+                    [&]() { REQUIRE_EQUAL(op->isDefault(value), true); },
                     [&]() {
                         return std::format(
                             "Tested type = {}, failed default type = {}",
@@ -90,102 +90,102 @@ public:
     }
 
     void testValueTypes() {
-        value = impl::Value::createInteger(70ll);
+        value = el::conf::impl::Value::createInteger(70ll);
         WITH_CONTEXT(requireDefaults(ValueType::Integer));
-        REQUIRE(value->asInteger() == 70ll);
-        REQUIRE(value->toTextRepresentation() == "70"_el);
-        value = impl::Value::createInteger(0x1234'5678'abcd'ef01ll); // make sure 64bit are actually stored.
-        REQUIRE(value->asInteger() == 0x1234'5678'abcd'ef01ll);
-        REQUIRE(value->toTextRepresentation() == "1311768467750121217"_el)
-        value = impl::Value::createBoolean(true);
+        REQUIRE_EQUAL(value->asInteger(), 70ll);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "70"_el);
+        value = el::conf::impl::Value::createInteger(0x1234'5678'abcd'ef01ll); // make sure 64bit are actually stored.
+        REQUIRE_EQUAL(value->asInteger(), 0x1234'5678'abcd'ef01ll);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "1311768467750121217"_el);
+        value = el::conf::impl::Value::createBoolean(true);
         WITH_CONTEXT(requireDefaults(ValueType::Boolean));
-        REQUIRE(value->asBoolean() == true);
-        REQUIRE(value->toTextRepresentation() == "true"_el)
-        value = impl::Value::createBoolean(false);
-        REQUIRE(value->asBoolean() == false);
-        REQUIRE(value->toTextRepresentation() == "false"_el)
-        value = impl::Value::createFloat(29.18e+20);
+        REQUIRE_EQUAL(value->asBoolean(), true);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "true"_el);
+        value = el::conf::impl::Value::createBoolean(false);
+        REQUIRE_EQUAL(value->asBoolean(), false);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "false"_el);
+        value = el::conf::impl::Value::createFloat(29.18e+20);
         WITH_CONTEXT(requireDefaults(ValueType::Float));
-        REQUIRE(std::abs(value->asFloat() - 29.18e+20) < 1e-10);
-        value = impl::Value::createText("→ Text ←"_el);
+        REQUIRE_LESS(std::abs(value->asFloat() - 29.18e+20), 1e-10);
+        value = el::conf::impl::Value::createText("→ Text ←"_el);
         WITH_CONTEXT(requireDefaults(ValueType::Text));
-        REQUIRE(value->asText() == "→ Text ←"_el);
-        REQUIRE(value->toTextRepresentation() == "→ Text ←"_el);
-        value = impl::Value::createDate(makeDate(2024, 8, 21));
+        REQUIRE_EQUAL(value->asText(), "→ Text ←"_el);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "→ Text ←"_el);
+        value = el::conf::impl::Value::createDate(makeDate(2024, 8, 21));
         WITH_CONTEXT(requireDefaults(ValueType::Date));
-        REQUIRE(value->asDate() == makeDate(2024, 8, 21));
-        REQUIRE(value->toTextRepresentation() == "2024-08-21"_el);
-        value = impl::Value::createTime(makeTime(23, 19, 27));
+        REQUIRE_EQUAL(value->asDate(), makeDate(2024, 8, 21));
+        REQUIRE_EQUAL(value->toTextRepresentation(), "2024-08-21"_el);
+        value = el::conf::impl::Value::createTime(makeTime(23, 19, 27));
         WITH_CONTEXT(requireDefaults(ValueType::Time));
-        REQUIRE(value->asTime() == makeTime(23, 19, 27));
+        REQUIRE_EQUAL(value->asTime(), makeTime(23, 19, 27));
         REQUIRE(value->asTimeWithZone().timeZone().isLocalTime());
-        REQUIRE(value->toTextRepresentation() == "23:19:27"_el);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "23:19:27"_el);
         const auto copiedTime = value->deepCopy();
-        REQUIRE(copiedTime != value);
-        REQUIRE(copiedTime->asTime() == makeTime(23, 19, 27));
-        value = impl::Value::createTimeWithZone(makeTimeWithZone(23, 19, 27));
+        REQUIRE_NOT_EQUAL(copiedTime, value);
+        REQUIRE_EQUAL(copiedTime->asTime(), makeTime(23, 19, 27));
+        value = el::conf::impl::Value::createTimeWithZone(makeTimeWithZone(23, 19, 27));
         WITH_CONTEXT(requireDefaults(ValueType::Time));
-        REQUIRE(value->asTime() == makeTime(23, 19, 27));
-        REQUIRE(value->asTimeWithZone() == makeTimeWithZone(23, 19, 27));
-        REQUIRE(value->toTextRepresentation() == "23:19:27Z"_el);
-        value = impl::Value::createDateTime(makeDateTime(2024, 8, 21, 23, 19, 27, 0, 0));
+        REQUIRE_EQUAL(value->asTime(), makeTime(23, 19, 27));
+        REQUIRE_EQUAL(value->asTimeWithZone(), makeTimeWithZone(23, 19, 27));
+        REQUIRE_EQUAL(value->toTextRepresentation(), "23:19:27Z"_el);
+        value = el::conf::impl::Value::createDateTime(makeDateTime(2024, 8, 21, 23, 19, 27, 0, 0));
         WITH_CONTEXT(requireDefaults(ValueType::DateTime));
-        REQUIRE(value->asDateTime() == makeDateTime(2024, 8, 21, 23, 19, 27, 0, 0));
-        REQUIRE(value->toTextRepresentation() == "2024-08-21 23:19:27Z"_el);
-        value = impl::Value::createBytes(bytesFromHex("0102ff00"_el));
+        REQUIRE_EQUAL(value->asDateTime(), makeDateTime(2024, 8, 21, 23, 19, 27, 0, 0));
+        REQUIRE_EQUAL(value->toTextRepresentation(), "2024-08-21 23:19:27Z"_el);
+        value = el::conf::impl::Value::createBytes(bytesFromHex("0102ff00"_el));
         WITH_CONTEXT(requireDefaults(ValueType::Bytes));
-        REQUIRE(value->asBytes() == bytesFromHex("0102ff00"_el));
-        REQUIRE(value->toTextRepresentation() == "0102ff00"_el);
-        value = impl::Value::createCalendarDelta(el::time::CalendarDelta{el::time::Hours{18}});
+        REQUIRE_EQUAL(value->asBytes(), bytesFromHex("0102ff00"_el));
+        REQUIRE_EQUAL(value->toTextRepresentation(), "0102ff00"_el);
+        value = el::conf::impl::Value::createCalendarDelta(el::time::CalendarDelta{el::time::Hours{18}});
         WITH_CONTEXT(requireDefaults(ValueType::TimeDelta));
-        REQUIRE(value->asCalendarDelta() == el::time::CalendarDelta{el::time::Hours{18}});
-        REQUIRE(value->toTextRepresentation() == "18h"_el);
+        REQUIRE_EQUAL(value->asCalendarDelta(), el::time::CalendarDelta{el::time::Hours{18}});
+        REQUIRE_EQUAL(value->toTextRepresentation(), "18h"_el);
         const auto compiledRegEx = el::re::RegEx::compile("^\\d+$"_el);
-        value = impl::Value::createRegEx(compiledRegEx);
+        value = el::conf::impl::Value::createRegEx(compiledRegEx);
         WITH_CONTEXT(requireDefaults(ValueType::RegEx));
-        REQUIRE(value->asRegEx() != nullptr);
-        REQUIRE(value->asRegEx()->pattern() == "^\\d+$"_el);
-        REQUIRE(value->toTextRepresentation() == "^\\d+$"_el);
+        REQUIRE(value->asRegEx());
+        REQUIRE_EQUAL(value->asRegEx()->pattern(), "^\\d+$"_el);
+        REQUIRE_EQUAL(value->toTextRepresentation(), "^\\d+$"_el);
         const auto copiedRegExValue = value->deepCopy();
-        REQUIRE(copiedRegExValue != value);
-        REQUIRE(copiedRegExValue->asRegEx() == compiledRegEx);
-        value = impl::Value::createValueList({});
+        REQUIRE_NOT_EQUAL(copiedRegExValue, value);
+        REQUIRE_EQUAL(copiedRegExValue->asRegEx(), compiledRegEx);
+        value = el::conf::impl::Value::createValueList({});
         WITH_CONTEXT(requireDefaults(ValueType::ValueList));
-        REQUIRE(value->asValueList().empty() == true);
+        REQUIRE_EQUAL(value->asValueList().empty(), true);
         REQUIRE(value->toTextRepresentation().isEmpty());
-        value = impl::Value::createSectionList();
+        value = el::conf::impl::Value::createSectionList();
         WITH_CONTEXT(requireDefaults(ValueType::SectionList));
         REQUIRE(value->toTextRepresentation().isEmpty());
-        value = impl::Value::createIntermediateSection();
+        value = el::conf::impl::Value::createIntermediateSection();
         WITH_CONTEXT(requireDefaults(ValueType::IntermediateSection));
         REQUIRE(value->toTextRepresentation().isEmpty());
-        value = impl::Value::createSectionWithNames();
+        value = el::conf::impl::Value::createSectionWithNames();
         WITH_CONTEXT(requireDefaults(ValueType::SectionWithNames));
         REQUIRE(value->toTextRepresentation().isEmpty());
-        value = impl::Value::createSectionWithTexts();
+        value = el::conf::impl::Value::createSectionWithTexts();
         WITH_CONTEXT(requireDefaults(ValueType::SectionWithTexts));
         REQUIRE(value->toTextRepresentation().isEmpty());
     }
 
     void testLocation() {
-        value = impl::Value::createInteger(1);
-        REQUIRE(value->hasLocation() == false);
+        value = el::conf::impl::Value::createInteger(1);
+        REQUIRE_EQUAL(value->hasLocation(), false);
         auto sourceIdentifier = SourceIdentifier::createForFile("main.elcl"_el);
         value->setLocation(
             Location(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{4U}}));
-        REQUIRE(value->hasLocation() == true);
+        REQUIRE_EQUAL(value->hasLocation(), true);
         REQUIRE(
             value->location() ==
             Location(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{4U}}));
         auto sourceIdentifier2 = SourceIdentifier::createForFile("another.elcl"_el);
         value->setLocation(
             Location(sourceIdentifier2, el::unit::CodeLocation{el::unit::LineIndex{6U}, el::unit::ColumnIndex{8U}}));
-        REQUIRE(value->hasLocation() == true);
+        REQUIRE_EQUAL(value->hasLocation(), true);
         REQUIRE(
             value->location() ==
             Location(sourceIdentifier2, el::unit::CodeLocation{el::unit::LineIndex{6U}, el::unit::ColumnIndex{8U}}));
         value->setLocation({});
-        REQUIRE(value->hasLocation() == false);
-        REQUIRE(value->location() == Location());
+        REQUIRE_EQUAL(value->hasLocation(), false);
+        REQUIRE_EQUAL(value->location(), Location());
     }
 };

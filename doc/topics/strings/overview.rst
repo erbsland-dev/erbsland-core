@@ -566,3 +566,8 @@ Every :cpp:class:`StringConverter <erbsland::text::StringConverter>` conversion 
 Use ``Strict`` to validate and reject malformed source text or keep the default ``Tolerant`` mode for fast conversion.
 Once text is stored in an Erbsland string, string operations stay tolerant; call ``isValidUtf8()``, ``isValidUtf16()``,
 or ``isValidUtf32()`` explicitly when an application needs to validate internal text.
+
+When equivalent Unicode spellings must have a consistent representation, normalize them explicitly with
+:cpp:enum:`NormalizationForm <erbsland::text::NormalizationForm>`.
+The :doc:`normalizing_strings` topic explains how to choose between canonical and compatibility normalization and how
+normalization interacts with malformed input and string storage.

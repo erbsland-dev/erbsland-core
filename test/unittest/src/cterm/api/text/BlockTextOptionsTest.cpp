@@ -13,7 +13,7 @@ public:
 
         REQUIRE(options.colorSequence().empty());
         REQUIRE_EQUAL(options.color(), Color{});
-        REQUIRE(options.font() == nullptr);
+        REQUIRE_EQUAL(options.font(), nullptr);
         REQUIRE_EQUAL(options.animation(), BlockTextAnimation::None);
         REQUIRE_EQUAL(options.alignment(), bgeo::Alignment::TopLeft);
         REQUIRE_EQUAL(options.lineIndent(), 0);
@@ -28,7 +28,8 @@ public:
         REQUIRE_EQUAL(options.wordBreakMark(), U'-');
         REQUIRE_EQUAL(options.maximumLineWraps(), 0);
         requireStringEqual(options.paragraphEllipsisMark(), U"…"_el);
-        REQUIRE_EQUAL(options.tabStops().size(), std::size_t{1});
+        const auto tabStopCount = options.tabStops().size();
+        REQUIRE_EQUAL(tabStopCount, std::size_t{1});
         REQUIRE_EQUAL(options.tabStops()[0], ParagraphOptions::cTabWrappedLineIndent);
         REQUIRE_EQUAL(options.tabOverflowBehavior(), TabOverflowBehavior::AddSpace);
         REQUIRE_EQUAL(options.onError(), ParagraphOnError::PlainOutput);
@@ -60,11 +61,13 @@ public:
         options.setAnimation(BlockTextAnimation::ColorDiagonal);
         options.setParagraphOptions(paragraphOptions);
 
-        REQUIRE_EQUAL(options.colorSequence().sequenceLength(), std::size_t{2});
+        const auto colorSequenceLength = options.colorSequence().sequenceLength();
+        REQUIRE_EQUAL(colorSequenceLength, std::size_t{2});
         REQUIRE_EQUAL(options.color(), Color(fg::Red, bg::Black));
-        REQUIRE(options.font() == font);
+        REQUIRE_EQUAL(options.font(), font);
         REQUIRE_EQUAL(options.animation(), BlockTextAnimation::ColorDiagonal);
-        REQUIRE_EQUAL(options.paragraphOptions().alignment(), bgeo::Alignment::BottomRight);
+        const auto alignment = options.paragraphOptions().alignment();
+        REQUIRE_EQUAL(alignment, bgeo::Alignment::BottomRight);
         REQUIRE_EQUAL(options.lineIndent(), 2);
         REQUIRE_EQUAL(options.firstLineIndent(), 4);
         REQUIRE_EQUAL(options.wrappedLineIndent(), 6);
@@ -77,7 +80,8 @@ public:
         REQUIRE_EQUAL(options.wordBreakMark(), U'~');
         REQUIRE_EQUAL(options.maximumLineWraps(), 5);
         requireStringEqual(options.paragraphEllipsisMark(), U"..."_el);
-        REQUIRE_EQUAL(options.tabStops().size(), std::size_t{2});
+        const auto tabStopCount = options.tabStops().size();
+        REQUIRE_EQUAL(tabStopCount, std::size_t{2});
         REQUIRE_EQUAL(options.tabStops()[0], 2);
         REQUIRE_EQUAL(options.tabStops()[1], 8);
         REQUIRE_EQUAL(options.tabOverflowBehavior(), TabOverflowBehavior::LineBreak);
@@ -99,7 +103,8 @@ public:
         options.setParagraphEllipsisMark(BlockStringEditor{"(more)"_el});
         options.setTabStops({4});
 
-        REQUIRE_EQUAL(options.colorSequence().sequenceLength(), std::size_t{1});
+        const auto colorSequenceLength = options.colorSequence().sequenceLength();
+        REQUIRE_EQUAL(colorSequenceLength, std::size_t{1});
         REQUIRE_EQUAL(options.color(), Color(fg::Cyan, bg::Blue));
         REQUIRE_EQUAL(options.alignment(), bgeo::Alignment::BottomCenter);
         REQUIRE_EQUAL(options.lineIndent(), 0);
@@ -110,13 +115,16 @@ public:
         requireStringEqual(options.lineBreakEndMark(), U"!"_el);
         requireStringEqual(options.lineBreakStartMark(), U"?"_el);
         requireStringEqual(options.paragraphEllipsisMark(), U"(more)"_el);
-        REQUIRE_EQUAL(options.tabStops().size(), std::size_t{1});
+        const auto tabStopCount = options.tabStops().size();
+        REQUIRE_EQUAL(tabStopCount, std::size_t{1});
         REQUIRE_EQUAL(options.tabStops()[0], 4);
     }
 
 private:
     void requireStringEqual(const BlockString &actual, const erbsland::text::U32String &expected) {
-        REQUIRE_EQUAL(actual.length().toSizeT(), expected.length().toSizeT());
+        const auto actualLength = actual.length().toSizeT();
+        const auto expectedLength = expected.length().toSizeT();
+        REQUIRE_EQUAL(actualLength, expectedLength);
         for (std::size_t i = 0; i < expected.length().toSizeT(); ++i) {
             REQUIRE_EQUAL(actual[BlockIndex::fromSizeT(i)], expected[erbsland::unit::CpIndex::fromSizeT(i)]);
         }

@@ -26,9 +26,9 @@ public:
         const auto regex16 = RegEx::compile(u"(A)(😀)(B)"_el);
         const auto regex32 = RegEx::compile(U"(A)(😀)(B)"_el);
 
-        REQUIRE(regex8->fullMatch("A😀B"_el) != nullptr);
-        REQUIRE(regex16->fullMatch("A😀B"_el) != nullptr);
-        REQUIRE(regex32->fullMatch("A😀B"_el) != nullptr);
+        REQUIRE(regex8->fullMatch("A😀B"_el));
+        REQUIRE(regex16->fullMatch("A😀B"_el));
+        REQUIRE(regex32->fullMatch("A😀B"_el));
         REQUIRE_EQUAL(regex16->fullMatch("A😀B"_el)->content(2), "😀"_el);
         REQUIRE_EQUAL(regex32->fullMatch("A😀B"_el)->content(2), "😀"_el);
         REQUIRE_EQUAL(regex8->pattern().toString(), "(A)(😀)(B)"_el);
@@ -40,8 +40,8 @@ public:
         const auto re = RegEx::compile("😀"_el);
         const auto text = el::text::U16String{u"😀x😀"_el};
 
-        REQUIRE(re->match(text) != nullptr);
-        REQUIRE(re->fullMatch(el::text::U16String{u"😀"_el}) != nullptr);
+        REQUIRE(re->match(text));
+        REQUIRE(re->fullMatch(el::text::U16String{u"😀"_el}));
         REQUIRE_EQUAL(re->findFirst(el::text::U16String{u"x😀"_el})->content(), u"😀"_el);
 
         auto generatedCount = std::size_t{};
@@ -57,8 +57,8 @@ public:
         const auto re = RegEx::compile("😀"_el);
         const auto text = el::text::U32String{U"😀x😀"_el};
 
-        REQUIRE(re->match(text) != nullptr);
-        REQUIRE(re->fullMatch(el::text::U32String{U"😀"_el}) != nullptr);
+        REQUIRE(re->match(text));
+        REQUIRE(re->fullMatch(el::text::U32String{U"😀"_el}));
         REQUIRE_EQUAL(re->findFirst(el::text::U32String{U"x😀"_el})->content(), U"😀"_el);
 
         auto generatedCount = std::size_t{};
@@ -75,14 +75,14 @@ public:
         const auto text = el::text::U16String{u"A\U0001F600B"_el};
 
         const auto m = re->fullMatch(text);
-        REQUIRE(m != nullptr);
+        REQUIRE(m);
         REQUIRE_EQUAL(m->begin(), 0U);
         REQUIRE_EQUAL(m->end(), 4U); // A + surrogate pair + B
 
-        REQUIRE(m->content() == u"A\U0001F600B"_el);
-        REQUIRE(m->content(1) == u"A"_el);
-        REQUIRE(m->content(2) == u"\U0001F600"_el);
-        REQUIRE(m->content(3) == u"B"_el);
+        REQUIRE_EQUAL(m->content(), u"A\U0001F600B"_el);
+        REQUIRE_EQUAL(m->content(1), u"A"_el);
+        REQUIRE_EQUAL(m->content(2), u"\U0001F600"_el);
+        REQUIRE_EQUAL(m->content(3), u"B"_el);
     }
 
     void testFullMatchUtf32AndGroups() {
@@ -90,14 +90,14 @@ public:
         const auto text = el::text::U32String{U"A\U0001F600B"_el};
 
         const auto m = re->fullMatch(text);
-        REQUIRE(m != nullptr);
+        REQUIRE(m);
         REQUIRE_EQUAL(m->begin(), 0U);
         REQUIRE_EQUAL(m->end(), 3U);
 
-        REQUIRE(m->content() == U"A\U0001F600B"_el);
-        REQUIRE(m->content(1) == U"A"_el);
-        REQUIRE(m->content(2) == U"\U0001F600"_el);
-        REQUIRE(m->content(3) == U"B"_el);
+        REQUIRE_EQUAL(m->content(), U"A\U0001F600B"_el);
+        REQUIRE_EQUAL(m->content(1), U"A"_el);
+        REQUIRE_EQUAL(m->content(2), U"\U0001F600"_el);
+        REQUIRE_EQUAL(m->content(3), U"B"_el);
     }
 
     void testFindAllUtf16ViewEmojiTwice() {
@@ -129,7 +129,7 @@ public:
     void testUtf8MatchAndGeneratorOwnTemporarySubject() {
         const auto re = RegEx::compile("😀"_el);
         const auto match = re->findFirst(String{StringEditor{"x😀y"_el}});
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         REQUIRE_EQUAL(match->content(), "😀"_el);
 
         auto generator = re->findAll(String{StringEditor{"😀x😀"_el}});
@@ -146,8 +146,8 @@ public:
         const auto match16 = re->findFirst(el::text::U16String{el::text::U16StringEditor{u"x😀y"_el}});
         const auto match32 = re->findFirst(el::text::U32String{el::text::U32StringEditor{U"x😀y"_el}});
 
-        REQUIRE(match16 != nullptr);
-        REQUIRE(match32 != nullptr);
+        REQUIRE(match16);
+        REQUIRE(match32);
         REQUIRE_EQUAL(match16->content(), u"😀"_el);
         REQUIRE_EQUAL(match32->content(), U"😀"_el);
     }
@@ -155,23 +155,23 @@ public:
     void testMalformedUtf8SubjectBecomesReplacementIncludingCrlfPeek() {
         const auto re = RegEx::compile(el::text::U32String{U"\r�"_el}, Flags{Flag::CRLF});
         const auto malformed = re_test::string_helper::bytesToString({'\r', 0xFFU});
-        REQUIRE(re->fullMatch(String{malformed}) != nullptr);
+        REQUIRE(re->fullMatch(String{malformed}));
     }
 
     void testMalformedUtf16SubjectBecomesReplacement() {
         const auto re = RegEx::compile(el::text::U32String{U"a�"_el});
-        REQUIRE(re->fullMatch(el::text::U16String{u"a\xD800"_el}) != nullptr);
+        REQUIRE(re->fullMatch(el::text::U16String{u"a\xD800"_el}));
     }
 
     void testMalformedUtf32SubjectBecomesReplacement() {
         const auto re = RegEx::compile(el::text::U32String{U"a�"_el});
-        REQUIRE(re->fullMatch(el::text::U32String{U"a\xD800"_el}) != nullptr);
+        REQUIRE(re->fullMatch(el::text::U32String{U"a\xD800"_el}));
     }
 
     void testMalformedPatternBecomesReplacement() {
         const auto malformed = re_test::string_helper::bytesToString({'a', 0xFFU});
         const auto re = RegEx::compile(String{malformed});
-        REQUIRE(re->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
+        REQUIRE(re->fullMatch(el::text::U32String{U"a�"_el}));
         REQUIRE_EQUAL(re->pattern(), "a�"_el);
     }
 
@@ -179,8 +179,8 @@ public:
         const auto regex16 = RegEx::compile(el::text::U16String{u"a\xD800"_el});
         const auto regex32 = RegEx::compile(el::text::U32String{U"a\xD800"_el});
 
-        REQUIRE(regex16->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
-        REQUIRE(regex32->fullMatch(el::text::U32String{U"a�"_el}) != nullptr);
+        REQUIRE(regex16->fullMatch(el::text::U32String{U"a�"_el}));
+        REQUIRE(regex32->fullMatch(el::text::U32String{U"a�"_el}));
         REQUIRE_EQUAL(regex16->pattern(), "a�"_el);
         REQUIRE_EQUAL(regex32->pattern(), "a�"_el);
     }

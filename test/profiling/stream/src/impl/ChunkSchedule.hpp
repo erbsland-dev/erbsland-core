@@ -17,9 +17,11 @@ namespace app::stream::impl {
 /// @notest{Covered by stream profiler CTest entries.}
 class ChunkSchedule final {
 public:
+    /// Create a chunk schedule for `scenario` using `seed`.
     ChunkSchedule(const Scenario &scenario, const std::uint64_t seed) :
         _scenario{scenario}, _random{seed}, _next{scenario.chunkSizeMinimum} {}
 
+    /// Get the next transfer size, limited by the remaining data.
     [[nodiscard]] auto next(const std::uint64_t remaining = std::numeric_limits<std::uint64_t>::max())
         -> std::uint64_t {
         auto result = _scenario.chunkSizeMaximum;

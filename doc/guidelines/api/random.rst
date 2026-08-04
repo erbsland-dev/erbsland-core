@@ -64,7 +64,7 @@ Selection Patterns
 
     o.selectInteger(minimum, maximum) -> T // random native integer in inclusive ordered range
     o.selectInteger(range) -> T // random native integer from an IntegerRange
-    o.selectIndex(count) -> unit::ElementIndex // random index in [0, count)
+    o.selectIndex(count) -> unit::ItemIndex // random index in [0, count)
     o.selectElement(choices[, valueIfEmpty]) -> T // random element or fallback for empty choices
 
 Build Patterns

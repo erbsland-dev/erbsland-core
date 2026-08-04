@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void IsOptional::operator()(impl::Rule &rule) {
+void IsOptional::operator()(Rule &rule) {
     rule.setOptional(_isOptional);
 }
 

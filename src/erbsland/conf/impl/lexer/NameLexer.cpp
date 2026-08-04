@@ -106,7 +106,7 @@ auto NameLexer::expectRegularName() -> Name {
     auto [isMetaName, name] = lexer::expectRegularOrMetaName(_decoder, lexer::AcceptedNameEnd::NamePath);
     expectNameSeparatorIndexOrEnd();
     _afterFirstElement = true;
-    return Name{NameType::Regular, Name::Storage{std::move(name)}, PrivateTag{}};
+    return Name{NameType::Regular, Name::Storage{std::move(name)}, Name::PrivateTag{}};
 }
 
 auto NameLexer::expectTextNameOrIndex() -> Name {

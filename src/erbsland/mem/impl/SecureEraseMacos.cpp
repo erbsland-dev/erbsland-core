@@ -4,10 +4,14 @@
 
 #include <string.h>
 
+#include <exception>
+
 namespace erbsland::mem::impl {
 
 void secureEraseBackend(const std::span<std::byte> memory) noexcept {
-    static_cast<void>(memset_s(memory.data(), memory.size(), 0, memory.size()));
+    if (memset_s(memory.data(), memory.size(), 0, memory.size()) != 0) {
+        std::terminate();
+    }
 }
 
 }

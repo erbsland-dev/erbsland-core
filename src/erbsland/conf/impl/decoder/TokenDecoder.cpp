@@ -4,6 +4,8 @@
 
 #include "../char/NamedChars.hpp"
 
+#include "../../../text/Literals.hpp"
+
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
@@ -64,7 +66,7 @@ auto TokenDecoder::createEndOfDataToken() -> LexerToken {
 
 void TokenDecoder::next() {
     if (_currentCharacter.character().isError()) {
-        throw err::LogicError("TokenDecoder: An error was not correctly handled.");
+        throw err::LogicError("TokenDecoder: An error was not correctly handled."_el);
     }
     try {
         // Transactions store a checkpoint into this line instead of copying characters. Therefore they cannot cross

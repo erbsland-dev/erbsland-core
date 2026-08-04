@@ -29,6 +29,7 @@ namespace erbsland::stream {
 /// @tested{EncodedTextStreamTest StandardTextOutputStreamTest AnyStringBuilderStreamTest AsyncStreamTest}
 class TextOutputStream : public OutputStream {
 public:
+    // defaults
     ~TextOutputStream() override = default;
 
 public: // accessors

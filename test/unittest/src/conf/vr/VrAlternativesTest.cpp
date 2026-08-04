@@ -162,7 +162,8 @@ public:
         WITH_CONTEXT(requirePassLines({
             "[app]",
         }));
-        REQUIRE_EQUAL(document->getOrThrow<Integer>(el::text::String{"app.service"}), 10);
+        const auto service = document->getOrThrow<Integer>(el::text::String{"app.service"});
+        REQUIRE_EQUAL(service, 10);
 
         WITH_CONTEXT(requireRulesFailLines({
             "*[app.service]*",

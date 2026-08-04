@@ -13,6 +13,8 @@
 using namespace el::conf;
 using namespace el::text::literals;
 
+/// Helper for creating documents and values in document API tests.
+/// @notest{Used only by document API tests.}
 class ValueTestHelper : public ConfTestHelper {
 public:
     DocumentPtr doc;
@@ -77,6 +79,7 @@ public:
                                       "value = {2}\n"
                                       "# EOF\n";
 
+    /// Parse the comprehensive test document with the supplied values.
     void setupTemplate1(
         std::string value1, std::string value2 = {}, std::string value3 = {}, std::string nok_value = {}) {
 
@@ -96,6 +99,7 @@ public:
 
     constexpr static auto template2 = "[main]\nvalue: {}\n# EOF\n";
 
+    /// Parse the single-value test document.
     void setupTemplate2(std::string valueText) {
         auto documentText = el::text::String{std::format(template2, valueText)};
         Parser parser;
@@ -110,6 +114,7 @@ public:
                                       "\"text\": {0}\n"
                                       "# EOF\n";
 
+    /// Parse the test document with scalar and list values.
     void setupTemplate3(std::string valueText) {
         auto documentText = el::text::String{std::format(template3, valueText)};
         Parser parser;

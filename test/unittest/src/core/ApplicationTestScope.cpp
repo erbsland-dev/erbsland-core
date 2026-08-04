@@ -1,52 +1,74 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include "ApplicationTestScope.hpp"
+#include "ApplicationTestScopeManager.hpp"
+#include "IllegalApplicationInstanceAccess.hpp"
 
 #include <erbsland/core/Application.hpp>
 #include <erbsland/core/impl/ApplicationInstanceManager.hpp>
 
-std::atomic<bool> ApplicationTestScopeBase::_applicationTestScopeOpen{};
-std::unique_ptr<TestApplicationInstanceManagerOverride> ApplicationTestScopeBase::_applicationInstanceManagerOverride;
-
-TestApplicationInstanceManagerOverride::TestApplicationInstanceManagerOverride(
-    std::atomic<bool> &applicationTestScopeOpen) :
-    _applicationTestScopeOpen{applicationTestScopeOpen} {
+auto ApplicationTestScopeManager::instance() -> ApplicationTestScopeManager & {
+    static auto manager = ApplicationTestScopeManager{};
+    return manager;
 }
 
-auto TestApplicationInstanceManagerOverride::registerUserInstance(erbsland::core::Application *appInstance)
+void ApplicationTestScopeManager::install() {
+    auto &manager = instance();
+    erbsland::core::impl::ApplicationInstanceManager::setInstance(&manager);
+}
+
+void ApplicationTestScopeManager::openScope(std::unique_ptr<ApplicationInstanceBuilderBase> &&builder) {
+    install();
+    if (_isScopeOpen.exchange(true)) {
+        throw IllegalApplicationInstanceAccess{"Nested application test scopes are not supported."};
+    }
+    try {
+        erbsland::core::impl::ApplicationInstanceManager::startSimulatedMain();
+        _applicationInstanceBuilder = std::move(builder);
+    } catch (...) {
+        _isScopeOpen = false;
+        throw;
+    }
+}
+
+void ApplicationTestScopeManager::closeScope() {
+    erbsland::core::impl::ApplicationInstanceManager::stopSimulatedMain();
+    _applicationInstanceBuilder.reset();
+    _isScopeOpen = false;
+}
+
+auto ApplicationTestScopeManager::registerUserInstance(erbsland::core::Application *appInstance)
     -> erbsland::core::impl::ApplicationDataPtr {
-    if (!_applicationTestScopeOpen) {
+    if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
             "ApplicationInstanceManager::registerUserInstance access outside of an open test scope"};
     }
     return ApplicationInstanceManager::registerUserInstance(appInstance);
 }
 
-auto TestApplicationInstanceManagerOverride::unregisterInstance(const erbsland::core::Application *appInstance)
-    -> bool {
-    if (!_applicationTestScopeOpen) {
+auto ApplicationTestScopeManager::unregisterInstance(const erbsland::core::Application *appInstance) -> bool {
+    if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
             "ApplicationInstanceManager::unregisterInstance access outside of an open test scope"};
     }
     return ApplicationInstanceManager::unregisterInstance(appInstance);
 }
-void TestApplicationInstanceManagerOverride::linkWith(erbsland::core::Application &app) {
-    if (!_applicationTestScopeOpen) {
+void ApplicationTestScopeManager::linkWith(erbsland::core::Application &app) {
+    if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
             "ApplicationInstanceManager::linkWith access outside of an open test scope"};
     }
     ApplicationInstanceManager::linkWith(app);
 }
-auto TestApplicationInstanceManagerOverride::application() -> erbsland::core::Application & {
-    if (!_applicationTestScopeOpen) {
+auto ApplicationTestScopeManager::application() -> erbsland::core::Application & {
+    if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
             "ApplicationInstanceManager::application access outside of an open test scope"};
     }
     return ApplicationInstanceManager::application();
 }
-auto TestApplicationInstanceManagerOverride::createApplicationData() -> erbsland::core::impl::ApplicationDataPtr {
-    if (!_applicationTestScopeOpen) {
+auto ApplicationTestScopeManager::createApplicationData() -> erbsland::core::impl::ApplicationDataPtr {
+    if (!_isScopeOpen) {
         throw IllegalApplicationInstanceAccess{
             "ApplicationInstanceManager::createApplicationData access outside of an open test scope"};
     }
@@ -54,10 +76,4 @@ auto TestApplicationInstanceManagerOverride::createApplicationData() -> erbsland
         throw IllegalApplicationInstanceAccess{"No application data builder installed for the open test scope."};
     }
     return _applicationInstanceBuilder->createApplicationData();
-}
-
-void ApplicationTestScopeBase::installApplicationInstanceManagerOverride() {
-    _applicationInstanceManagerOverride =
-        std::make_unique<TestApplicationInstanceManagerOverride>(_applicationTestScopeOpen);
-    erbsland::core::impl::ApplicationInstanceManager::setInstance(_applicationInstanceManagerOverride.get());
 }

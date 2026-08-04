@@ -12,6 +12,7 @@ namespace erbsland::event {
 /// @tested{ApplicationEventTest}
 class ManagedEventThread : public EventThread {
 public:
+    // defaults
     ~ManagedEventThread() override = default;
 };
 

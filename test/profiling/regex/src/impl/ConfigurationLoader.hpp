@@ -6,6 +6,7 @@
 #include "BuiltInConfiguration.hpp"
 #include "ConfigurationLoader_fwd.hpp"
 #include "DefaultConfiguration.hpp"
+#include "ScenarioTemplate.hpp"
 
 #include "../ProfileTypes.hpp"
 
@@ -23,27 +24,8 @@ using namespace el::text::literals;
 class ConfigurationLoader final {
     using ValuePtr = el::conf::ValuePtr;
 
-    struct ScenarioTemplate {
-        ValuePtr sourceValue;
-        el::String name;
-        std::vector<UseCase> useCases;
-        std::vector<InputKind> inputs;
-        std::vector<el::String> fileEncodings;
-        el::String patternName;
-        el::String pattern;
-        el::re::Flags flags;
-        el::String corpusName;
-        CorpusSource corpusSource{CorpusSource::Inline};
-        el::String subject;
-        el::String sourceFile;
-        std::uint32_t repetitionCount{1U};
-        std::vector<ReplacementMode> replacementModes;
-        el::String replacement{"{0}"};
-        std::chrono::milliseconds timeout{std::chrono::seconds{30}};
-        std::uint32_t weight{1U};
-    };
-
 public:
+    /// Load the embedded configuration and optionally extend it from a file.
     [[nodiscard]] static auto load(const std::optional<el::Path> &path) -> Configuration {
         auto parser = el::conf::Parser{};
         auto run = RunSettings{};
@@ -91,13 +73,16 @@ public:
     }
 
 private:
+    /// Raise a configuration error with the given message.
     [[noreturn]] static void configError(const el::String &message) { throw el::ApplicationError{message}; }
 
+    /// Raise a configuration error at the given configuration value.
     [[noreturn]] static void configError(const el::String &message, const ValuePtr &value) {
         throw el::conf::ConfError{
             el::conf::ConfErrorCategory::Validation, message, value->namePath(), value->location()};
     }
 
+    /// Verify that a configuration value has only recognized child keys.
     static void requireKnownKeys(const ValuePtr &value, const std::span<const el::StringLiteral> known) {
         for (const auto &child : *value) {
             const auto childName = child->name().asText();
@@ -107,11 +92,13 @@ private:
         }
     }
 
+    /// Get a list value or return the supplied defaults.
     [[nodiscard]] static auto texts(const ValuePtr &value, const el::String &name, std::vector<el::String> defaults)
         -> std::vector<el::String> {
         return value->hasValue(name) ? value->valueOrThrow(name)->asListOrThrow<el::String>() : std::move(defaults);
     }
 
+    /// Get a positive integer configuration value or its default.
     [[nodiscard]] static auto positiveInteger(
         const ValuePtr &value, const el::String &name, const std::uint64_t defaultValue, const bool allowZero = false)
         -> std::uint64_t {
@@ -128,6 +115,7 @@ private:
         return static_cast<std::uint64_t>(result);
     }
 
+    /// Parse the configured run mode.
     [[nodiscard]] static auto parseMode(const el::String &value) -> RunMode {
         if (value == "profile"_el) {
             return RunMode::Profile;
@@ -138,6 +126,7 @@ private:
         configError(el::StringFormat{"Unsupported run mode '{}'."_el}.build(value));
     }
 
+    /// Get a duration configuration value or its default.
     [[nodiscard]] static auto duration(
         const ValuePtr &value, const el::String &name, const std::chrono::nanoseconds defaultValue)
         -> std::chrono::nanoseconds {
@@ -147,6 +136,7 @@ private:
         return value->getCalendarDeltaOrThrow(name).toTimeDeltaOrThrow().toStdNanoseconds();
     }
 
+    /// Parse the use cases selected for a scenario.
     [[nodiscard]] static auto parseUseCases(const ValuePtr &value) -> std::vector<UseCase> {
         auto result = std::vector<UseCase>{};
         for (const auto &name : texts(value, "use_cases"_el, {"match"_el})) {
@@ -159,6 +149,7 @@ private:
         return result;
     }
 
+    /// Map a configured file encoding name to its input kind.
     [[nodiscard]] static auto inputForEncoding(const el::String &name) -> std::optional<InputKind> {
         if (name == "utf8"_el) {
             return InputKind::FileUtf8;
@@ -172,6 +163,7 @@ private:
         return {};
     }
 
+    /// Parse scenario input kinds and their file encodings.
     [[nodiscard]] static auto parseInputs(const ValuePtr &value, std::vector<el::String> &fileEncodings)
         -> std::vector<InputKind> {
         auto result = std::vector<InputKind>{};
@@ -198,6 +190,7 @@ private:
         return result;
     }
 
+    /// Parse one unexpanded scenario definition.
     [[nodiscard]] static auto parseScenario(
         const ValuePtr &value, const RunSettings &run, const el::Path &configurationDirectory) -> ScenarioTemplate {
         constexpr auto keys = std::array{
@@ -233,7 +226,7 @@ private:
             result.patternName = result.name;
         } else {
             result.patternName = value->getTextOrThrow("pattern_name"_el);
-            const auto pattern = BuiltInCatalog::pattern(result.patternName);
+            const auto pattern = built_in_catalog::pattern(result.patternName);
             if (!pattern) {
                 configError(el::StringFormat{"Unsupported built-in pattern '{}'."_el}.build(result.patternName), value);
             }
@@ -254,9 +247,9 @@ private:
         }
         if (value->hasValue("corpus"_el)) {
             result.corpusName = value->getTextOrThrow("corpus"_el);
-            if (const auto generated = BuiltInCatalog::generatedCorpus(result.corpusName)) {
+            if (const auto generated = built_in_catalog::generatedCorpus(result.corpusName)) {
                 result.subject = *generated;
-            } else if (const auto file = BuiltInCatalog::file(result.corpusName)) {
+            } else if (const auto file = built_in_catalog::file(result.corpusName)) {
                 result.corpusSource = CorpusSource::File;
                 result.sourceFile = *file;
             } else {
@@ -309,6 +302,7 @@ private:
         return result;
     }
 
+    /// Expand a scenario template into its concrete scenarios.
     static void expandTemplate(const ScenarioTemplate &source, std::vector<Scenario> &target) {
         for (const auto useCase : source.useCases) {
             for (const auto input : source.inputs) {
@@ -355,6 +349,7 @@ private:
         }
     }
 
+    /// Parse the run settings from a configuration value.
     static void parseRun(const ValuePtr &run, RunSettings &result) {
         constexpr auto keys = std::array{
             "mode"_el,
@@ -402,6 +397,7 @@ private:
         }
     }
 
+    /// Parse a configuration document and append its scenario templates.
     static void parseDocument(
         const ValuePtr &document,
         RunSettings &run,

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CursorWriter.hpp"
 
+#include "impl/BlockPrintContextToCursorWriter.hpp"
 #include "impl/BlockPrintContextToString.hpp"
 
 namespace erbsland::cterm {

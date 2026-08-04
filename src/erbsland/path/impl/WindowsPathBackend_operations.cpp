@@ -76,9 +76,9 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &r
                 info.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(size));
             }
             info.loadedParts.set(PathInfoPart::Size);
-            info.lastModified = time::impl::WindowsTimeConverter::fromFileTime(findData.ftLastWriteTime);
-            info.lastAccessed = time::impl::WindowsTimeConverter::fromFileTime(findData.ftLastAccessTime);
-            info.birthTime = time::impl::WindowsTimeConverter::fromFileTime(findData.ftCreationTime);
+            info.lastModified = time::impl::windows_time_converter::fromFileTime(findData.ftLastWriteTime);
+            info.lastAccessed = time::impl::windows_time_converter::fromFileTime(findData.ftLastAccessTime);
+            info.birthTime = time::impl::windows_time_converter::fromFileTime(findData.ftCreationTime);
             info.loadedParts.set(PathInfoPart::Times);
             info.accessInfo = accessInfoFromAttributes(findData.dwFileAttributes);
             info.loadedParts.set(PathInfoPart::AccessRights);
@@ -202,7 +202,7 @@ auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
             GetLastError());
     }
     const auto closeHandle = std::unique_ptr<void, decltype(&CloseHandle)>{handle, &CloseHandle};
-    alignas(SymbolicLinkReparseData) auto buffer = std::array<std::byte, MAXIMUM_REPARSE_DATA_BUFFER_SIZE>{};
+    alignas(WindowsSymbolicLinkReparseData) auto buffer = std::array<std::byte, MAXIMUM_REPARSE_DATA_BUFFER_SIZE>{};
     auto bytesReturned = DWORD{};
     if (DeviceIoControl(
             handle,
@@ -219,13 +219,13 @@ auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
             path,
             GetLastError());
     }
-    const auto pathBufferOffset = offsetof(SymbolicLinkReparseData, pathBuffer);
+    const auto pathBufferOffset = offsetof(WindowsSymbolicLinkReparseData, pathBuffer);
     if (bytesReturned < pathBufferOffset) {
         throw PathError{PathErrorContext{
             "Symbolic link could not be read"_el, "The operating system returned malformed symbolic-link data."_el}
                 .setSourcePath(path.toString())};
     }
-    const auto *reparseData = reinterpret_cast<const SymbolicLinkReparseData *>(buffer.data());
+    const auto *reparseData = reinterpret_cast<const WindowsSymbolicLinkReparseData *>(buffer.data());
     if (reparseData->reparseDataLength > bytesReturned - 8U) {
         throw PathError{PathErrorContext{
             "Symbolic link could not be read"_el, "The operating system returned malformed symbolic-link data."_el}

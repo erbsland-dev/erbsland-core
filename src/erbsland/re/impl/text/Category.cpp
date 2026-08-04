@@ -4,9 +4,9 @@
 
 #include "../../../err/ParameterError.hpp"
 #include "../../../text/Literals.hpp"
-#include "../../../text/StringEditor.hpp"
 
 #include <algorithm>
+#include <array>
 #include <ranges>
 
 namespace erbsland::re::impl {
@@ -99,13 +99,13 @@ constexpr void Category::addRegexMask(
     }
 }
 
-auto Category::maskFor(const Char character) noexcept -> Mask {
+auto Category::computeMaskFor(const Char character) noexcept -> Mask {
     if (!character.isValidUnicode()) {
         return 0U;
     }
 
     const auto unicodeCategory = character.category();
-    const auto unicodeGroup = character.categoryGroup();
+    const auto unicodeGroup = static_cast<UnicodeCategoryGroup>(static_cast<std::uint8_t>(unicodeCategory) >> 4U);
     const auto value = character.toRawValue();
     auto result = unicodeMaskFor(unicodeCategory);
 
@@ -142,6 +142,22 @@ auto Category::maskFor(const Char character) noexcept -> Mask {
     }
     result |= static_cast<Mask>(AnyDotAll);
     return result;
+}
+
+auto Category::maskFor(const Char character) noexcept -> Mask {
+    constexpr auto cAsciiCharacterCount = std::size_t{128U};
+    static const auto asciiMasks = []() {
+        auto result = std::array<Mask, cAsciiCharacterCount>{};
+        for (auto value = std::size_t{}; value < result.size(); ++value) {
+            result[value] = computeMaskFor(Char{static_cast<char32_t>(value)});
+        }
+        return result;
+    }();
+    const auto value = character.toRawValue();
+    if (value < asciiMasks.size()) {
+        return asciiMasks[value];
+    }
+    return computeMaskFor(character);
 }
 
 auto Category::contains(const Char character) const noexcept -> bool {
@@ -296,16 +312,9 @@ auto Category::fromString(const String &str) -> Category {
 }
 
 auto Category::fromUnprocessedString(const String &str) -> Category {
-    StringEditor normalized;
-    static_cast<void>(str.forEach([&normalized](Char character) -> util::LoopStatus {
-        character = character.caseFolded();
-        if (character >= U'a' && character <= U'z') {
-            normalized.append(character);
-        } else if (character != U'_') {
-            throw err::ParameterError{"Invalid category name."_el, "str"_el};
-        }
-        return util::LoopStatus::Continue;
-    }));
+    const auto normalized = str.transformed([](const Char character) noexcept -> Char {
+        return character == U'_' ? Char::noCodePoint() : character.toAsciiLowercase();
+    });
     if (const auto foundValue = nameToValueMap().get(normalized); foundValue.has_value()) {
         return *foundValue;
     }

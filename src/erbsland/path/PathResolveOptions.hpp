@@ -9,9 +9,10 @@ namespace erbsland::path {
 /// Options for resolving paths.
 class PathResolveOptions final {
 public:
+    /// Create path-resolve options with their default values.
     PathResolveOptions() = default;
     /// Create options from a resolve mode.
-    PathResolveOptions(const PathResolveMode mode) noexcept : _mode{mode} {}
+    PathResolveOptions(const PathResolveMode mode) noexcept : _mode{mode} {} // NOLINT(*-explicit-constructor)
 
 public:
     /// The mode for resolving paths.

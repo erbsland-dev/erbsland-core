@@ -4,14 +4,13 @@
 
 #include "Block.hpp"
 #include "BlockString.hpp"
+#include "BufferViewBase_fwd.hpp"
 
 #include "../bgeo/BlockSize.hpp"
 
 #include <utility>
 
 namespace erbsland::cterm {
-
-class BufferViewBase;
 
 /// Settings controlling how `Terminal::updateScreen()` renders a buffer.
 class UpdateSettings final {

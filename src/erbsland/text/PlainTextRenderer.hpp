@@ -20,8 +20,10 @@ public:
     /// @param document The document to render.
     explicit PlainTextRenderer(const TextDocument &document);
 
-    // defaults
+    /// Destroy the renderer implementation.
     ~PlainTextRenderer();
+
+    // defaults/deletions
     PlainTextRenderer(const PlainTextRenderer &) = delete;
     PlainTextRenderer(PlainTextRenderer &&) noexcept = default;
     auto operator=(const PlainTextRenderer &) -> PlainTextRenderer & = delete;

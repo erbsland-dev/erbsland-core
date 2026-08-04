@@ -49,11 +49,9 @@ public:
     /// Create an offset from a raw value.
     explicit constexpr IntegerUnitOffset(Value value) noexcept : _value{value} {}
 
-    /// Destroy this offset.
+    // defaults
     ~IntegerUnitOffset() = default;
-    /// Copy an offset.
     IntegerUnitOffset(const IntegerUnitOffset &) noexcept = default;
-    /// Copy another offset into this offset.
     auto operator=(const IntegerUnitOffset &) noexcept -> IntegerUnitOffset & = default;
 
 public: // operators
@@ -263,6 +261,7 @@ public: // factory methods
     }
 
 private:
+    /// Convert a scalar to the unit's raw representation.
     template <math::AnyIntegerType T>
     [[nodiscard]] constexpr static auto scalarToRawValue(T scalar) noexcept -> Value {
         using Scalar = math::NativeIntegerOfT<T>;
@@ -280,6 +279,7 @@ private:
     Value _value{0}; ///< The raw value of this offset.
 };
 
+/// Multiply a unit offset by a scalar.
 template <math::AnyIntegerType T, impl::ValidIntegerUnit tIntegerUnit>
 [[nodiscard]] constexpr auto operator*(T scalar, IntegerUnitOffset<tIntegerUnit> offset) noexcept
     -> IntegerUnitOffset<tIntegerUnit> {

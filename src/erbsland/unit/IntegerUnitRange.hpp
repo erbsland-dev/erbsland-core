@@ -53,11 +53,9 @@ public:
     constexpr IntegerUnitRange(Index begin, Index end) noexcept :
         _index{begin}, _length{end < begin ? Length{} : begin.absoluteDistanceTo(end)} {}
 
-    /// Destroy this range.
+    // defaults
     ~IntegerUnitRange() = default;
-    /// Copy a range.
     IntegerUnitRange(const IntegerUnitRange &) noexcept = default;
-    /// Copy another range into this range.
     auto operator=(const IntegerUnitRange &) noexcept -> IntegerUnitRange & = default;
 
 public: // operators

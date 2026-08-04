@@ -84,15 +84,31 @@ Required Documentation
   error case.
 * Move extensive explanations to linked reference or topic documentation.
 * Give every data member and enum member a brief trailing ``///<`` description.
-* Group undocumented, explicitly defaulted or deleted special members under ``// defaults`` or
-  ``// defaults/deletions``.
+* Explicitly defaulted or deleted special members don't need documentation, they must be grouped under ``// defaults``
+  or ``// defaults/deletions`` or a similar block.
 * A trivial getter or setter needs only a one-line description without ``@param`` or ``@return``.
+
+Cryptographic Implementations
+-----------------------------
+
+Cryptographic code must be written for transparent security review as well as functional correctness.
+
+* Keep the implementation in the same logical order as the defining specification wherever practical.
+  Prefer direct, readable transformations over compact or clever formulations.
+* API documentation for an algorithm implementation must name the governing specification and the relevant section.
+* Add inline comments before each substantive algorithm step that identify the corresponding specification section and
+  relate the specification's notation or formula to the variables and operations in the code.
+* Document security-relevant bounds, representation choices, precomputations, and deviations from optional parts of the
+  specification where they are enforced.
+* Keep secret-state lifetime and erasure behavior visible at the point where secret intermediates are created,
+  transferred, or released.
 
 Test Status
 -----------
 
 End every documented class, struct, and namespace-scope function API block with exactly one test-status marker.
 Do not mark constructors, methods, operators, or other members.
+Only use these marker in our primary code base in the ``src`` directory.
 
 * ``@tested{ExampleTest OtherTest}`` lists one or more test-suite class names separated by spaces.
   Names must end in ``Test``; paths and method selectors are invalid.
@@ -134,6 +150,9 @@ Modern C++
   when usable at compile time.
 * Add ``[[nodiscard]]`` when silently discarding a result is likely to be a mistake.
   Add ``noexcept`` only when the operation is guaranteed not to propagate an exception.
+* Do not use ``static_cast<void>(...)`` merely to silence ``[[nodiscard]]``.
+  Select an operation whose contract matches the intended use, handle the result, or remove ``[[nodiscard]]`` when
+  discarding the result is genuinely a normal and safe use of that API.
 * Mark intentionally unused named parameters ``[[maybe_unused]]``; omit an unused private overload-disambiguation tag's
   name.
 * Mark overriding functions ``override`` and classes deliberately closed to extension ``final``.

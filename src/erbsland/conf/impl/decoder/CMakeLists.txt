@@ -7,11 +7,14 @@ target_sources(erbsland-core PRIVATE
         DecodedChar.hpp
         Decoder.cpp
         Decoder.hpp
+        Decoder_fwd.hpp
         DecoderState.hpp
         FastNameDecoder.cpp
         FastNameDecoder.hpp
         TokenDecoder.cpp
         TokenDecoder.hpp
+        TokenDecoder_fwd.hpp
         Transaction.cpp
         Transaction.hpp
+        Transaction_fwd.hpp
 )

@@ -4,18 +4,16 @@
 
 #include "../error/InternalError.hpp"
 
-namespace erbsland::re::impl {
+#include <algorithm>
 
-CharSequence::CharSequence() : _sequence{std::make_shared<std::vector<text::Char>>()} {
-    _sequence->reserve(16);
-}
+namespace erbsland::re::impl {
 
 auto CharSequence::operator==(const CharSequence &other) const noexcept -> bool {
     if (_hash == other._hash) {
-        if (_sequence == other._sequence) {
+        if (_extendedSequence != nullptr && _extendedSequence == other._extendedSequence) {
             return true;
         }
-        return *_sequence == *other._sequence;
+        return std::ranges::equal(sequence(), other.sequence());
     }
     return false;
 }
@@ -25,35 +23,47 @@ auto CharSequence::operator!=(const CharSequence &other) const noexcept -> bool 
 }
 
 auto CharSequence::size() const noexcept -> std::size_t {
-    return _sequence->size();
+    return _extendedSequence != nullptr ? _extendedSequence->size() : _inlineSize;
 }
 
-auto CharSequence::sequence() const noexcept -> const SequencePtr & {
-    return _sequence;
+auto CharSequence::sequence() const noexcept -> std::span<const text::Char> {
+    if (_extendedSequence != nullptr) {
+        return *_extendedSequence;
+    }
+    return {_inlineSequence.data(), _inlineSize};
 }
 
 auto CharSequence::hash() const noexcept -> std::size_t {
     return _hash;
 }
 
-auto CharSequence::begin() const noexcept -> std::vector<text::Char>::const_iterator {
-    return _sequence->begin();
+auto CharSequence::begin() const noexcept -> ConstIterator {
+    return sequence().data();
 }
 
-auto CharSequence::end() const noexcept -> std::vector<text::Char>::const_iterator {
-    return _sequence->end();
+auto CharSequence::end() const noexcept -> ConstIterator {
+    return sequence().data() + size();
 }
 
 void CharSequence::append(const text::Char character) {
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(character.isValidUnicode(), "Cannot append an invalid Unicode character"_el);
-    conditionalDetach();
-    _sequence->push_back(character);
+    if (_extendedSequence != nullptr) {
+        conditionalDetach();
+        _extendedSequence->push_back(character);
+    } else if (_inlineSize < cInlineCapacity) {
+        _inlineSequence[_inlineSize++] = character;
+    } else {
+        _extendedSequence = std::make_shared<std::vector<text::Char>>();
+        _extendedSequence->reserve(cInlineCapacity * 2U);
+        _extendedSequence->insert(_extendedSequence->end(), _inlineSequence.begin(), _inlineSequence.end());
+        _extendedSequence->push_back(character);
+    }
     _hash = util::combineHash(_hash, std::hash<char32_t>{}(character.toRawValue()));
 }
 
 void CharSequence::conditionalDetach() {
-    if (_sequence.use_count() > 1) {
-        _sequence = std::make_shared<std::vector<text::Char>>(*_sequence);
+    if (_extendedSequence.use_count() > 1) {
+        _extendedSequence = std::make_shared<std::vector<text::Char>>(*_extendedSequence);
     }
 }
 

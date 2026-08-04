@@ -30,7 +30,7 @@ public:
     /// Create an empty parser, just for compatibility and tests.
     Parser() : Parser(text::StringCharReader{}, GroupFlags{}) {}
 
-    // defaults: allow move, disallow copy.
+    // defaults/deletions
     Parser(const Parser &) = delete;
     Parser(Parser &&) = default;
     auto operator=(const Parser &) -> Parser & = delete;
@@ -44,10 +44,11 @@ public:
 private:
     /// Pre-flight checks.
     void preFlightChecks() const;
-    /// Check the pattern size.
-    void checkPatternSize() const;
+    /// Handle a hash character in the parser state.
     static void handleHashCharacter(ParserState &state);
+    /// Handle ignorable spacing in the parser state.
     static void handleSpacing(ParserState &state);
+    /// Throw an error for the current unexpected input character.
     [[noreturn]] static void throwUnexpectedCharacterError(ParserState &state);
 
 private:

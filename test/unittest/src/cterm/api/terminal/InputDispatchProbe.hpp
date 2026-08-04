@@ -7,6 +7,8 @@
 #include <chrono>
 #include <string>
 
+/// Test double controlling input-dispatch results and recording calls.
+/// @notest{Test-only probe.}
 class InputDispatchProbe final : public Input {
 public:
     [[nodiscard]] auto mode() const noexcept -> Mode override { return _mode; }

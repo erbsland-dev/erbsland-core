@@ -11,9 +11,11 @@ namespace erbsland::re::impl {
 /// An input that reads from an owning UTF-16 read-only string.
 class U16StringInput final : public Input16 {
 public:
+    /// Create an input that reads the given UTF-16 string.
     [[nodiscard]] static auto create(const text::U16String &text) noexcept -> Input16Ptr {
         return std::make_shared<U16StringInput>(text);
     }
+    /// Create an input that retains a copy of `text`.
     explicit U16StringInput(const text::U16String &text) noexcept : _text{text} {}
 
 public: // implement InputBase

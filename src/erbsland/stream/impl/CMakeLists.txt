@@ -11,11 +11,13 @@ target_sources(erbsland-core PRIVATE
         BufferedByteInputStreamData_fwd.hpp
         BufferedByteOutputStream.cpp
         BufferedByteOutputStream.hpp
+        BufferedByteOutputStream_fwd.hpp
         BufferedByteOutputStreamData.cpp
         BufferedByteOutputStreamData.hpp
         BufferedByteOutputStreamData_fwd.hpp
         EncodedTextInputStream.cpp
         EncodedTextInputStream.hpp
+        EncodedTextInputStream_fwd.hpp
         EncodedTextOutputStream.cpp
         EncodedTextOutputStream.hpp
         InputStreamFactory.cpp
@@ -23,9 +25,15 @@ target_sources(erbsland-core PRIVATE
         IoService.cpp
         IoService.hpp
         NativeByteStream.hpp
+        NativeByteStream_fwd.hpp
         NativeOutputStream.cpp
         NativeOutputStream.hpp
+        NativeOutputStream_fwd.hpp
+        NativeStandardStream.hpp
+        NativeStreamOwnership.hpp
+        PosixNativeOperation.hpp
         PosixNativeStream.hpp
+        PosixNativeStream_fwd.hpp
         PrintContextCommonBuilder.cpp
         PrintContextCommonBuilder.hpp
         PrintContextToBuilder.hpp
@@ -33,6 +41,7 @@ target_sources(erbsland-core PRIVATE
         PrintContextToWrite.hpp
         RetainedTextBuffer.cpp
         RetainedTextBuffer.hpp
+        RetainedTextBuffer_fwd.hpp
         StandardInputStreamProxy.cpp
         StandardInputStreamProxy.hpp
         StandardStreamProxy.cpp
@@ -45,12 +54,17 @@ target_sources(erbsland-core PRIVATE
         StandardStreamSlot.hpp
         StandardTextOutputStream.cpp
         StandardTextOutputStream.hpp
+        StandardTextOutputStreamData.cpp
+        StandardTextOutputStreamData.hpp
+        StandardTextOutputStreamData_fwd.hpp
         StreamBufferSizes.cpp
         StreamBufferSizes.hpp
         StreamErrorDiagnostic.cpp
         StreamErrorDiagnostic.hpp
         TextOutputStreamTraits.hpp
+        WindowsNativeOperation.hpp
         WindowsNativeStream.hpp
+        WindowsNativeStream_fwd.hpp
 )
 
 if(WIN32)
@@ -59,6 +73,7 @@ if(WIN32)
     )
 else()
     target_sources(erbsland-core PRIVATE
+            PosixNativeOperation.cpp
             PosixNativeStream.cpp
     )
 endif()

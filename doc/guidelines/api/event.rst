@@ -10,20 +10,13 @@ Dispatch Model
 
 .. code-block:: text
 
-    post = enqueue a typed event object
-    invoke = enqueue callback execution
     owner loop = one loop that serializes a source's state and callbacks
-    wake = thread-safe notification that new work or native activity is available
-    quit = terminal event-loop request processed in queue order
 
 Subscriptions and Scheduling
 ----------------------------
 
 .. code-block:: text
 
-    subscription = retained connection whose release or disconnection removes all represented callbacks
-    delayed invocation = fire-and-forget callback after a delay
-    timer = retained cancellation handle for one-shot or repeated scheduled work
     fixed delay = next interval starts after callback completion
     fixed rate = callbacks follow a stable cadence
 
@@ -45,7 +38,7 @@ Event Value Types
 
     EventId, EventBackendId // registered event and backend identifiers
     EventData // base for typed event payloads
-    EventSource, EventEditor // event-loop-owned source and retained callback subscription
+    EventSource, EventEditor // event-loop-owned source and source-owned handler editor
     EventIdInfo, EventBackendIdInfo // registered identifier metadata
     EventCallback // callback executed by an event loop
     EventRegistry // application-managed identifier registry
@@ -103,10 +96,10 @@ Subscription Patterns
 
 .. code-block:: text
 
-    o.events() -> T // access an event target or domain event editor
-    o.on❮Event❯(callback) -> T& // add a callback through an editor
-    o.disconnect() // remove all callbacks represented by an editor
-    o.isConnected() -> bool // test whether an editor subscription is active
+    o.events() -> TEventEditor& // access a source-owned editor on the owner loop
+    o.on❮Event❯(callback) -> T& // replace a source-owned handler through an editor
+    o.source() -> EventSourcePtr // retain the source that owns an editor
+    o.target() -> EventsPtr // retain the target that dispatches the callbacks
     o.ownerEvents() -> EventsPtr // access the loop that owns an event source
 
 Event Loop Patterns

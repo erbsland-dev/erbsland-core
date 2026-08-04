@@ -14,7 +14,8 @@ void preserveWrappedContext() {
     output->write("coral"_el);
     output->close();
     try {
-        static_cast<void>(output->write("pez"_el));
+        [[maybe_unused]] const auto status = output->write("pez"_el);
+        // note: real code must handle the returned status.
     } catch (const el::StreamError &error) {
         el::io::printLine("Ruta conservada: "_el, error.path().endsWith("arrecife.txt"_el));
     }

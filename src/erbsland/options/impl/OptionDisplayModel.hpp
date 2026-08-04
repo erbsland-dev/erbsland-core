@@ -3,6 +3,7 @@
 #pragma once
 
 #include "OptionDisplayGroup.hpp"
+#include "OptionDisplayModel_fwd.hpp"
 #include "OptionDisplayRow.hpp"
 
 #include "../Option_fwd.hpp"
@@ -90,22 +91,34 @@ public:
     [[nodiscard]] static auto isVersionOption(const OptionPtr &option) -> bool;
 
 private:
+    /// Append a formatted meta placeholder to text being built.
     static void appendMetaPlaceholder(text::StringEditor &result, const text::String &placeholder);
+    /// Get the display title for an option set.
     [[nodiscard]] static auto optionSetTitle(
         const OptionSetPtr &optionSet, const i18n::DisplayTextMapConstPtr &displayText) -> text::String;
 
+    /// Find a module by its command-line name.
     [[nodiscard]] auto findModule(const text::String &moduleName) const -> OptionModulePtr;
+    /// Test whether the options root defines modules.
     [[nodiscard]] auto hasModules() const noexcept -> bool;
+    /// Test whether an option set is visible in the selected scope.
     [[nodiscard]] auto visibleOptionSet(const OptionSetPtr &optionSet) const noexcept -> bool;
+    /// Test whether an option is visible in the selected output context.
     [[nodiscard]] auto visibleOption(
         const OptionPtr &option, OptionHelpVisibility setVisibility, bool forUsage = false) const noexcept -> bool;
+    /// Test whether an option is an enabled built-in option.
     [[nodiscard]] auto enabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const noexcept
         -> bool;
+    /// Test whether a choice is visible for its inherited help visibility.
     [[nodiscard]] auto visibleChoice(const OptionHelp &help, OptionHelpVisibility optionVisibility) const noexcept
         -> bool;
+    /// Test whether a module is visible in root help.
     [[nodiscard]] auto visibleModule(const OptionHelp &help) const noexcept -> bool;
+    /// Create display rows for an option's choices.
     [[nodiscard]] auto choiceRows(const OptionPtr &option) const -> std::vector<OptionDisplayRow>;
+    /// Create a sortable display key for an option.
     [[nodiscard]] auto optionSortKey(const OptionPtr &option) const -> text::String;
+    /// Resolve custom display text or the default wording.
     [[nodiscard]] static auto resolveDisplayText(const i18n::DisplayTextMapConstPtr &displayText) noexcept
         -> i18n::DisplayTextMapConstPtr;
 

@@ -17,8 +17,11 @@
 
 namespace erbsland::re::impl {
 
+/// Represents one token in a regular-expression diagnostic assembler source.
+/// @tested{AssemblerTokenTest}
 class AssemblerToken {
 public:
+    /// Identifies the lexical kind of an assembler token.
     enum Type : uint8_t {
         Integer,    ///< A positive integer. `0`, `123`, or `0x4000`
         Text,       ///< Double quoted text `"text"`.
@@ -35,9 +38,11 @@ public:
         Comment,    ///< A comment. `; comment`
     };
 
+    /// Defines the value stored by a token.
     using Value = std::variant<text::String, uint32_t, bool, impl::Operation, OperationModifier>;
 
 public:
+    /// Create a token with a type, value, and source column.
     constexpr AssemblerToken(const Type type, Value value, const unit::ColumnIndex column) noexcept :
         _type{type}, _value{std::move(value)}, _column{column} {}
 
@@ -49,10 +54,14 @@ public:
     auto operator=(AssemblerToken &&) -> AssemblerToken & = default;
 
 public: // accessors and tests.
+    /// Get the token type.
     [[nodiscard]] auto type() const noexcept -> Type { return _type; }
+    /// Get the token value.
     [[nodiscard]] auto value() const noexcept -> const Value & { return _value; }
+    /// Get the token's source column.
     [[nodiscard]] auto column() const noexcept -> unit::ColumnIndex { return _column; }
 
+    /// Get the display name of the token type.
     [[nodiscard]] auto typeName() const noexcept -> text::String {
         using namespace text::literals;
         switch (_type) {
@@ -86,6 +95,7 @@ public: // accessors and tests.
         return "<unknown>"_el;
     }
 
+    /// Format this token for diagnostics.
     [[nodiscard]] auto toString() const -> text::String {
         using namespace text::literals;
         auto valueString = text::String{};
@@ -110,35 +120,54 @@ public: // accessors and tests.
         return text::StringFormat{"col={} type={} value={}"}.build(_column, typeName(), valueString);
     }
 
+    /// Test whether this is an operation token.
     [[nodiscard]] auto isOperation() const noexcept -> bool { return _type == Operation; }
+    /// Test whether this is a label token.
     [[nodiscard]] auto isLabel() const noexcept -> bool { return _type == Label; }
+    /// Test whether this is a comma token.
     [[nodiscard]] auto isComma() const noexcept -> bool { return _type == Comma; }
+    /// Test whether this is a minus token.
     [[nodiscard]] auto isMinus() const noexcept -> bool { return _type == Minus; }
+    /// Test whether this is a command token.
     [[nodiscard]] auto isCommand() const noexcept -> bool { return _type == Command; }
+    /// Test whether this is an integer token.
     [[nodiscard]] auto isInteger() const noexcept -> bool { return _type == Integer; }
+    /// Test whether this is a text token.
     [[nodiscard]] auto isText() const noexcept -> bool { return _type == Text; }
+    /// Test whether this is a character token.
     [[nodiscard]] auto isChar() const noexcept -> bool { return _type == Char; }
+    /// Test whether this is a Boolean token.
     [[nodiscard]] auto isBoolean() const noexcept -> bool { return _type == Boolean; }
+    /// Test whether this is a modifier token.
     [[nodiscard]] auto isModifier() const noexcept -> bool { return _type == Modifier; }
+    /// Test whether this is an offset token.
     [[nodiscard]] auto isOffset() const noexcept -> bool { return _type == Offset; }
+    /// Test whether this is an identifier token.
     [[nodiscard]] auto isIdentifier() const noexcept -> bool { return _type == Identifier; }
+    /// Test whether this token can be used as an operation argument.
     [[nodiscard]] auto isArgument() const noexcept -> bool {
         return _type == Integer || _type == Text || _type == Char || _type == Boolean || _type == Label ||
             _type == Identifier || _type == Offset;
     }
 
+    /// Get the token value as text.
     [[nodiscard]] auto getText() const noexcept -> const text::String & { return std::get<text::String>(_value); }
+    /// Get the token value as an integer.
     [[nodiscard]] auto getInteger() const noexcept -> uint32_t { return std::get<std::uint32_t>(_value); }
+    /// Get the token value as a Boolean.
     [[nodiscard]] auto getBoolean() const noexcept -> bool { return std::get<bool>(_value); }
+    /// Get the token value as an operation.
     [[nodiscard]] auto getOperation() const noexcept -> impl::Operation { return std::get<impl::Operation>(_value); }
+    /// Get the token value as an operation modifier.
     [[nodiscard]] auto getModifier() const noexcept -> OperationModifier { return std::get<OperationModifier>(_value); }
 
 private:
-    Type _type;
-    Value _value;
-    unit::ColumnIndex _column;
+    Type _type;                ///< The lexical token type.
+    Value _value;              ///< The token payload.
+    unit::ColumnIndex _column; ///< The source column of the token.
 };
 
+/// Defines a sequence of assembler tokens.
 using AssemblerTokens = std::vector<AssemblerToken>;
 
 }

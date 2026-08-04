@@ -6,8 +6,10 @@
 
 #include "impl/ApplicationData.hpp"
 #include "impl/ApplicationInstanceManager.hpp"
+#include "impl/EventData.hpp"
 #include "impl/LibraryVersion.hpp"
 
+#include "../cryptology/configuration/CryptologyConfiguration.hpp"
 #include "../cterm/Terminal.hpp"
 #include "../cterm/TerminalStream.hpp"
 #include "../err/DiagnosticHelper.hpp"
@@ -27,6 +29,8 @@
 #include "../text/TextDocument.hpp"
 
 #include <algorithm>
+#include <exception>
+#include <memory>
 #include <utility>
 #include <vector>
 
@@ -227,6 +231,10 @@ auto Application::secureRandom() -> random::Random & {
     return *_data->secureRandom();
 }
 
+auto Application::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {
+    return _data->cryptologyConfiguration();
+}
+
 auto Application::userLookup() -> system::UserLookup & {
     auto lock = std::scoped_lock{_data->systemMutex()};
     if (_data->userLookup() == nullptr) {
@@ -266,14 +274,18 @@ auto Application::eventLoop() -> EventLoop & {
 
 auto Application::runEventLoop() -> unit::ExitCode {
     auto &eventData = _data->event();
-    eventData.eventLoop->setErrorHandler([this]([[maybe_unused]] std::exception_ptr error) -> EventLoopErrorAction {
-        quit(unit::ExitCode::failure());
+    const auto loopError = std::make_shared<std::exception_ptr>();
+    eventData.eventLoop->setErrorHandler([loopError](std::exception_ptr error) -> EventLoopErrorAction {
+        if (*loopError == nullptr) {
+            *loopError = std::move(error);
+        }
         return EventLoopErrorAction::Stop;
     });
     {
         auto currentEventsScope = event::impl::CurrentEventsScope{eventData.eventLoop};
         eventData.eventLoop->run();
     }
+    eventData.eventLoop->setErrorHandler({});
     auto exitCode = unit::ExitCode::success();
     auto eventThreads = std::vector<ManagedEventThreadPtr>{};
     {
@@ -292,6 +304,9 @@ auto Application::runEventLoop() -> unit::ExitCode {
     }
     for (const auto &eventThread : eventThreads) {
         eventThread->join();
+    }
+    if (*loopError != nullptr) {
+        std::rethrow_exception(*loopError);
     }
     return exitCode;
 }

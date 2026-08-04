@@ -12,8 +12,9 @@ public:
     void testLibraryVersion() {
         const auto version = el::core::Application::libraryVersion();
 
-        REQUIRE(version >= el::unit::Version{});
-        REQUIRE(el::core::Application::libraryVersion() == version);
+        REQUIRE_GREATER_EQUAL(version, el::unit::Version{});
+        const auto currentVersion = el::core::Application::libraryVersion();
+        REQUIRE_EQUAL(currentVersion, version);
     }
 
     void testLibraryVersionText() {

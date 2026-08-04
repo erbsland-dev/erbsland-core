@@ -9,9 +9,8 @@ template <typename tKey, typename tValue, typename tCompare, typename tSelf>
     std::copyable<tValue>
 auto Map<tKey, tValue, tCompare, tSelf>::toKeySet() const -> Set<Key, Compare> {
     auto result = typename Set<Key, Compare>::Raw{raw().key_comp()};
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(value);
-        result.insert(key);
+    for (const auto &entry : raw()) {
+        result.insert(entry.first);
     }
     return Set<Key, Compare>{std::move(result)};
 }

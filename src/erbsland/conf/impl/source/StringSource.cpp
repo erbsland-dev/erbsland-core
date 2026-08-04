@@ -63,7 +63,7 @@ auto StringSource::codeSnippet(const unit::CodeLocation location) noexcept -> st
         if (splitter.isAtEnd()) {
             return std::nullopt;
         }
-        static_cast<void>(splitter.next());
+        splitter.skip();
         ++lineIndex;
     }
 

@@ -29,12 +29,16 @@ public:
         const auto sensitive = CaseSensitivity{CaseSensitivity::CaseSensitive};
         const auto insensitive = CaseSensitivity{CaseSensitivity::CaseInsensitive};
 
-        REQUIRE(sensitive.comparisonFn() == nullptr);
-        REQUIRE(sensitive.asciiComparisonFn() == nullptr);
-        REQUIRE(String{"A"_el}.compare("a"_el, insensitive.comparisonFn()) == std::strong_ordering::equal);
-        REQUIRE(String{"A"_el}.compare("a"_el, insensitive.asciiComparisonFn()) == std::strong_ordering::equal);
-        REQUIRE(String{"Ä"_el}.compare("ä"_el, insensitive.comparisonFn()) == std::strong_ordering::equal);
-        REQUIRE(String{"Ä"_el}.compare("ä"_el, insensitive.asciiComparisonFn()) != std::strong_ordering::equal);
+        REQUIRE_FALSE(sensitive.comparisonFn());
+        REQUIRE_FALSE(sensitive.asciiComparisonFn());
+        const auto unicodeComparison = String{"A"_el}.compare("a"_el, insensitive.comparisonFn());
+        const auto asciiComparison = String{"A"_el}.compare("a"_el, insensitive.asciiComparisonFn());
+        const auto unicodeUmlautComparison = String{"Ä"_el}.compare("ä"_el, insensitive.comparisonFn());
+        const auto asciiUmlautComparison = String{"Ä"_el}.compare("ä"_el, insensitive.asciiComparisonFn());
+        REQUIRE_EQUAL(unicodeComparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(asciiComparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(unicodeUmlautComparison, std::strong_ordering::equal);
+        REQUIRE_NOT_EQUAL(asciiUmlautComparison, std::strong_ordering::equal);
     }
 
     void testToString() {

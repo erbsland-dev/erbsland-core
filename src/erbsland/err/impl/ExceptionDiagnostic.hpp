@@ -13,6 +13,7 @@ namespace erbsland::err::impl {
 /// Default diagnostic for a plain exception.
 /// @tested{DiagnosticTest}
 class ExceptionDiagnostic final : public Diagnostic {
+    /// A styled label-value field in the diagnostic document.
     struct Field final {
         text::String label;
         text::String value;

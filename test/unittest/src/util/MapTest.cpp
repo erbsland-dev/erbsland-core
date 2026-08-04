@@ -3,7 +3,7 @@
 
 #include "MoveAwareTestValue.hpp"
 
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/LoopStatus.hpp>
 #include <erbsland/util/Map.hpp>
@@ -16,7 +16,7 @@
 #include <utility>
 #include <vector>
 
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::util::LoopStatus;
 
 TESTED_TARGETS(Map)
@@ -26,6 +26,19 @@ public:
     using MoveMap = el::util::Map<erbsland::test::MoveAwareTestValue, erbsland::test::MoveAwareTestValue>;
     using MoveValue = erbsland::test::MoveAwareTestValue;
 
+    void testSharedDefaultStorage() {
+        auto first = IntMap{};
+        const auto second = IntMap{};
+
+        REQUIRE_EQUAL(&first.toRawValue(), &second.toRawValue());
+
+        first.set(1, 10);
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE_EQUAL(first.get(1, 0), 10);
+        REQUIRE(second.count().isZero());
+    }
+
     void testConstructionAndElements() {
         const auto empty = IntMap{};
         REQUIRE(empty.count().isZero());
@@ -33,7 +46,7 @@ public:
         REQUIRE_EQUAL(empty.last(), (std::pair<int, int>{0, 0}));
 
         const auto map = IntMap{{{2, 20}, {1, 10}, {3, 30}}};
-        REQUIRE_EQUAL(map.count(), ElementCount{3});
+        REQUIRE_EQUAL(map.count(), ItemCount{3});
         REQUIRE_EQUAL(map.first(), (std::pair<int, int>{1, 10}));
         REQUIRE_EQUAL(map.last(), (std::pair<int, int>{3, 30}));
         REQUIRE(map.get(2).has_value());
@@ -43,13 +56,20 @@ public:
         REQUIRE_EQUAL(map.toKeyList().toStdVector(), (std::vector<int>{1, 2, 3}));
         REQUIRE_EQUAL(map.toValueList().toStdVector(), (std::vector<int>{10, 20, 30}));
         REQUIRE_EQUAL(map.toList().toStdVector(), (std::vector<std::pair<int, int>>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toRawValue() == (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toStdMap() == (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toStdUnorderedMap() == (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toKeySet().toStdSet() == (std::set<int>{1, 2, 3}));
-        REQUIRE(map.toKeyHashSet().toStdUnorderedSet() == (std::unordered_set<int>{1, 2, 3}));
-        REQUIRE(map.toValueSet().toStdSet() == (std::set<int>{10, 20, 30}));
-        REQUIRE(map.toValueHashSet().toStdUnorderedSet() == (std::unordered_set<int>{10, 20, 30}));
+        const auto rawValue = map.toRawValue();
+        const auto stdMap = map.toStdMap();
+        const auto stdUnorderedMap = map.toStdUnorderedMap();
+        const auto keySet = map.toKeySet().toStdSet();
+        const auto keyHashSet = map.toKeyHashSet().toStdUnorderedSet();
+        const auto valueSet = map.toValueSet().toStdSet();
+        const auto valueHashSet = map.toValueHashSet().toStdUnorderedSet();
+        REQUIRE_EQUAL(rawValue, (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(stdMap, (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(stdUnorderedMap, (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(keySet, (std::set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(keyHashSet, (std::unordered_set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(valueSet, (std::set<int>{10, 20, 30}));
+        REQUIRE_EQUAL(valueHashSet, (std::unordered_set<int>{10, 20, 30}));
         REQUIRE_EQUAL(map.toStdKeyVector(), (std::vector<int>{1, 2, 3}));
         REQUIRE_EQUAL(map.toStdVector(), (std::vector<std::pair<int, int>>{{1, 10}, {2, 20}, {3, 30}}));
     }
@@ -112,7 +132,7 @@ public:
     void testMemoryRemoveAndTake() {
         auto map = IntMap{{{1, 10}, {2, 20}, {3, 30}, {4, 40}}};
         REQUIRE_EQUAL(map.capacity(), map.count());
-        map.reserve(ElementCount{100}).shrinkToFit();
+        map.reserve(ItemCount{100}).shrinkToFit();
         REQUIRE_EQUAL(map.capacity(), map.count());
 
         REQUIRE_EQUAL(map.removed(2).toKeyList().toStdVector(), (std::vector<int>{1, 3, 4}));
@@ -168,7 +188,7 @@ public:
         REQUIRE(map.allOf([](int key, int value) -> bool { return value > key; }));
         REQUIRE(map.anyOf([](int, int value) -> bool { return value == 22; }));
         REQUIRE(map.noneOf([](int, int value) -> bool { return value < 0; }));
-        REQUIRE_EQUAL(map.countIfValue([](int value) -> bool { return value > 20; }), ElementCount{2});
+        REQUIRE_EQUAL(map.countIfValue([](int value) -> bool { return value > 20; }), ItemCount{2});
         REQUIRE(map.compareKeys(IntMap{{{1, 1}, {2, 2}, {3, 3}}}));
         REQUIRE(map.compare(IntMap{{{1, 11}, {2, 22}, {3, 33}}}));
     }

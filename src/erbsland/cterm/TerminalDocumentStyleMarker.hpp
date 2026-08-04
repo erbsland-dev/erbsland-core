@@ -88,6 +88,7 @@ public:
     [[nodiscard]] auto render(std::size_t number, BlockStyle baseStyle) const -> BlockString;
 
 private:
+    /// Combine the marker's configured style with the base style.
     [[nodiscard]] auto markerStyle(BlockStyle baseStyle) const noexcept -> BlockStyle;
 
 private:

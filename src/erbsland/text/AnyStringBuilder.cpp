@@ -25,7 +25,7 @@ namespace erbsland::text {
 
 using unit::ByteLength;
 using unit::CpLength;
-using unit::ElementCount;
+using unit::ItemCount;
 using unit::U16DataLength;
 
 AnyStringBuilder::AnyStringBuilder() : AnyStringBuilder{StringKind::U8} {
@@ -118,7 +118,7 @@ auto AnyStringBuilder::append(const U8String &text) -> AnyStringBuilder & {
     return *this;
 }
 
-auto AnyStringBuilder::append(const U8String &text, const ElementCount count) -> AnyStringBuilder & {
+auto AnyStringBuilder::append(const U8String &text, const ItemCount count) -> AnyStringBuilder & {
     _builder->append(text, count);
     return *this;
 }
@@ -128,7 +128,7 @@ auto AnyStringBuilder::append(const U16String &text) -> AnyStringBuilder & {
     return *this;
 }
 
-auto AnyStringBuilder::append(const U16String &text, const ElementCount count) -> AnyStringBuilder & {
+auto AnyStringBuilder::append(const U16String &text, const ItemCount count) -> AnyStringBuilder & {
     _builder->append(text, count);
     return *this;
 }
@@ -138,7 +138,7 @@ auto AnyStringBuilder::append(const U32String &text) -> AnyStringBuilder & {
     return *this;
 }
 
-auto AnyStringBuilder::append(const U32String &text, const ElementCount count) -> AnyStringBuilder & {
+auto AnyStringBuilder::append(const U32String &text, const ItemCount count) -> AnyStringBuilder & {
     _builder->append(text, count);
     return *this;
 }

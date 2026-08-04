@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Input_fwd.hpp"
 #include "Key.hpp"
 
 #include "../text/StringEditor.hpp"
@@ -9,12 +10,8 @@
 
 #include <chrono>
 #include <cstdint>
-#include <memory>
 
 namespace erbsland::cterm {
-
-class Input;
-using InputPtr = std::shared_ptr<Input>;
 
 /// The input interface.
 class Input {
@@ -28,7 +25,7 @@ public:
     };
 
 public:
-    /// Destroy the input object.
+    // defaults
     virtual ~Input() = default;
 
 public:

@@ -7,5 +7,5 @@
 namespace erbsland::cryptology::impl {
 class PasswordHashData;
 /// A shared pointer to immutable parsed password-hash data.
-using PasswordHashDataPtr = std::shared_ptr<PasswordHashData>;
+using PasswordHashDataPtr = std::shared_ptr<const PasswordHashData>;
 }

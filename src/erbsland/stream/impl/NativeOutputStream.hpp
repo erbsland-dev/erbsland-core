@@ -2,37 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NativeOutputStream_fwd.hpp"
+#include "NativeStandardStream.hpp"
+#include "NativeStreamOwnership.hpp"
+
 #include "../ByteInputStream.hpp"
 #include "../StreamErrorSource.hpp"
 
 #include "../../text/StringEditor.hpp"
 
 #include <cstdint>
-#include <memory>
 #include <span>
 
 namespace erbsland::stream::impl {
-
-class NativeOutputStream;
-using NativeOutputStreamPtr = std::shared_ptr<NativeOutputStream>;
-
-/// The standard output stream to wrap.
-enum class NativeStandardStream : uint8_t {
-    Out, ///< Process standard output.
-    Err, ///< Process standard error.
-};
-
-/// Defines if a native stream wrapper owns the native handle.
-enum class NativeStreamOwnership : uint8_t {
-    Borrowed, ///< Do not close the native handle.
-    Owned,    ///< Close the native handle when the wrapper is destroyed.
-};
 
 /// Base class for native output stream adapters.
 /// @tested{StandardTextOutputStreamTest PosixNativeStreamTest WindowsNativeStreamTest}
 class NativeOutputStream : public virtual StreamErrorSource {
 public:
-    virtual ~NativeOutputStream() = default;
+    // defaults
+    ~NativeOutputStream() override = default;
 
 public:
     /// Write raw bytes to the native stream.

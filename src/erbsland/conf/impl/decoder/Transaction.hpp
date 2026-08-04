@@ -2,7 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Decoder_fwd.hpp"
 #include "DecoderState.hpp"
+#include "Transaction_fwd.hpp"
+
+#include "../utilities/InternalView_fwd.hpp"
 
 #include "../../../text/String.hpp"
 
@@ -11,11 +15,6 @@
 #include <optional>
 
 namespace erbsland::conf::impl {
-
-class InternalView;
-using InternalViewPtr = std::shared_ptr<InternalView>;
-
-class Decoder;
 
 /// A transaction scope that allows backtracking.
 class Transaction final {
@@ -35,7 +34,7 @@ public:
     /// When not committed, roll the transaction back on destruction.
     ~Transaction();
 
-    // Disallow copy and assign.
+    // defaults/deletions
     Transaction(const Transaction &) = delete;
     Transaction(Transaction &&) = delete;
     auto operator=(const Transaction &) -> Transaction & = delete;

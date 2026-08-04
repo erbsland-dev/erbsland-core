@@ -38,14 +38,14 @@ public:
         waitFor(first);
         auto firstValue = first.takeResult();
         REQUIRE(firstValue.has_value());
-        REQUIRE(*firstValue != nullptr);
+        REQUIRE(*firstValue);
         REQUIRE_EQUAL(**firstValue, 4);
 
         auto second = nextValue(generator);
         waitFor(second);
         auto secondValue = second.takeResult();
         REQUIRE(secondValue.has_value());
-        REQUIRE(*secondValue != nullptr);
+        REQUIRE(*secondValue);
         REQUIRE_EQUAL(**secondValue, 5);
 
         auto finished = nextValue(generator);

@@ -2,18 +2,23 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Random.hpp"
 
+#include "../err/OutOfRangeError.hpp"
 #include "../math/SaturatingMath.hpp"
 #include "../mem/impl/SecureErase.hpp"
 #include "../mem/impl/UnsafeByteBlockBuffer.hpp"
 #include "../mem/impl/UnsafeByteBufferAccess.hpp"
 #include "../text/impl/UnsafeU8StringBuffer.hpp"
+#include "../text/Literals.hpp"
 #include "../text/String.hpp"
+#include "../text/u8/impl/U8StringData.hpp"
 #include "../text/u8/impl/U8Writer.hpp"
 
 #include <algorithm>
-#include <stdexcept>
+#include <limits>
 
 namespace erbsland::random {
+
+using namespace text::literals;
 
 auto Random::buildString(const unit::CpLength length, const text::CharSet &characters) -> text::String {
     if (length.isZero() || length.isInfinite() || characters.isEmpty()) {
@@ -26,9 +31,13 @@ auto Random::buildString(const unit::CpLength length, const text::CharSet &chara
     }
     const auto characterCount = length.toSizeTOrThrow();
     if (math::willMultiplyOverflow(characterCount, maximumCharacterSize)) {
-        throw std::length_error{"Random string exceeds size bounds"};
+        throw err::OutOfRangeError{"Random string exceeds size bounds"_el};
     }
-    const auto capacity = unit::ByteLength::fromSizeTOrThrow(characterCount * maximumCharacterSize);
+    const auto capacityValue = characterCount * maximumCharacterSize;
+    if (text::impl::UnsafeU8StringBuffer::wouldExceedCapacity(capacityValue + 1U)) {
+        throw err::OutOfRangeError{"Random string exceeds size bounds"_el};
+    }
+    const auto capacity = unit::ByteLength::fromSizeTOrThrow(capacityValue);
     auto buffer = text::impl::UnsafeU8StringBuffer{capacity, isSecure()};
     auto writer = text::impl::U8Writer{std::span<char>{buffer.data(), capacity.toSizeT()}};
     for (auto i = unit::CpLength{}; i < length; ++i) {
@@ -71,12 +80,12 @@ auto Random::buildByteBuffer(const unit::ByteLength length) -> mem::ByteBuffer {
     return result;
 }
 
-auto Random::selectIndex(const unit::ElementCount count) -> unit::ElementIndex {
+auto Random::selectIndex(const unit::ItemCount count) -> unit::ItemIndex {
     if (count.isZero() || count.isInfinite()) {
-        return unit::ElementIndex::noIndex();
+        return unit::ItemIndex::noIndex();
     }
-    const auto rawIndex = selectInteger<unit::ElementIndex::Value>(0U, count.toRawValue() - 1U);
-    return unit::ElementIndex{rawIndex};
+    const auto rawIndex = selectInteger<unit::ItemIndex::Value>(0U, count.toRawValue() - 1U);
+    return unit::ItemIndex{rawIndex};
 }
 
 }

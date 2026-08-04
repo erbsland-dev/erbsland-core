@@ -5,7 +5,7 @@
 #include "FloatFormat_fwd.hpp"
 #include "LetterCase.hpp"
 
-#include "../unit/ElementCount.hpp"
+#include "../unit/ItemCount.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -49,11 +49,11 @@ public: // accessors
     /// Test if a precision is configured.
     [[nodiscard]] constexpr auto hasPrecision() const noexcept -> bool { return _precision.has_value(); }
     /// Get the configured precision, or zero if no precision is configured.
-    [[nodiscard]] constexpr auto precision() const noexcept -> unit::ElementCount {
-        return _precision.value_or(unit::ElementCount{});
+    [[nodiscard]] constexpr auto precision() const noexcept -> unit::ItemCount {
+        return _precision.value_or(unit::ItemCount{});
     }
     /// Set the precision.
-    constexpr auto setPrecision(unit::ElementCount precision) noexcept -> FloatFormat & {
+    constexpr auto setPrecision(unit::ItemCount precision) noexcept -> FloatFormat & {
         _precision = precision;
         return *this;
     }
@@ -85,9 +85,9 @@ public: // factories
     }
 
 private:
-    Style _style{Style::Default};                   ///< The presentation style.
-    std::optional<unit::ElementCount> _precision{}; ///< The optional precision.
-    LetterCase _letterCase{LetterCase::Lowercase};  ///< The case for ASCII letters.
+    Style _style{Style::Default};                  ///< The presentation style.
+    std::optional<unit::ItemCount> _precision{};   ///< The optional precision.
+    LetterCase _letterCase{LetterCase::Lowercase}; ///< The case for ASCII letters.
 };
 
 }

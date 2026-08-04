@@ -21,10 +21,9 @@ Process Boundaries
 
 .. code-block:: text
 
-    native arguments = borrowed process buffers retained for the application lifetime
-    converted arguments = owning UTF-8 values used by Core APIs
-    sensitive suffix = masked in both native and converted arguments after option parsing
-    application instance = one active instance linked explicitly across static-library DLL boundaries
+    native arguments = borrowed process values retained for the application lifetime
+    converted arguments = owning UTF-8 values used within the application
+    application instance = single active process-wide application object
     library failure = rendered diagnostic and controlled nonzero exit
     foreign failure = outside the handled Core exception boundary
 

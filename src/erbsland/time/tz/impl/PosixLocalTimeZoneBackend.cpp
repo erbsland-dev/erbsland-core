@@ -2,17 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixLocalTimeZoneBackend.hpp"
 
+#include "../../../system/EnvironmentVariables.hpp"
 #include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringList.hpp"
 #include "../../../unit/CpIndex.hpp"
 
-#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <string_view>
 
 namespace erbsland::time::tz::impl {
 
@@ -39,11 +38,11 @@ auto PosixLocalTimeZoneBackend::nameFromPath(const text::String &path) -> text::
 }
 
 auto PosixLocalTimeZoneBackend::nameFromEnvironment() -> text::String {
-    const auto *rawValue = std::getenv("TZ");
-    if (rawValue == nullptr || *rawValue == '\0') {
+    const auto configuredValue = system::EnvironmentVariables{}.get("TZ"_el);
+    if (!configuredValue.has_value() || configuredValue->isEmpty()) {
         return {};
     }
-    auto value = text::String{std::string_view{rawValue}};
+    auto value = *configuredValue;
     if (value.charAt(text::StringSide::Front) == U':') {
         value = value.slice(text::StringSide::Back, unit::CpIndex{1U});
     }
@@ -65,7 +64,7 @@ auto PosixLocalTimeZoneBackend::nameFromEtcTimezone() -> text::String {
     return text::String{nativeValue}.trimmed(text::CharSet{U'\r', U'\n', U' '}, text::StringSide::Back);
 }
 
-auto PosixLocalTimeZoneBackend::timeZone() noexcept -> std::optional<TimeZone> {
+auto PosixLocalTimeZoneBackend::detectedTimeZone() noexcept -> std::optional<TimeZone> {
     try {
         auto name = nameFromEnvironment();
         if (name.isEmpty()) {

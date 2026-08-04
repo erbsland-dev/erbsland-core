@@ -10,6 +10,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathMoveOptions final {
 public:
+    /// Create path-move options with their default values.
     PathMoveOptions() = default;
 
 public:

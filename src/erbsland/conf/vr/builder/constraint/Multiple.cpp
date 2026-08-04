@@ -3,6 +3,9 @@
 #include "Multiple.hpp"
 
 #include "../../../impl/vr/MultipleConstraint.hpp"
+#include "../../../impl/vr/MultipleFloatConstraint.hpp"
+#include "../../../impl/vr/MultipleIntegerConstraint.hpp"
+#include "../../../impl/vr/MultipleMatrixConstraint.hpp"
 
 #include <cmath>
 #include <limits>
@@ -10,7 +13,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void Multiple::operator()(impl::Rule &rule) {
+void Multiple::operator()(Rule &rule) {
     auto constraint = std::visit(
         [&rule](const auto &value) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(value)>;

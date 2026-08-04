@@ -22,6 +22,7 @@ namespace erbsland::options::impl {
 /// @tested{OptionsParserTest}
 class OptionParserStorage final {
 public:
+    // defaults
     OptionParserStorage() = default;
     ~OptionParserStorage() = default;
 
@@ -47,20 +48,31 @@ public:
     [[nodiscard]] auto errorContext() const noexcept -> const std::optional<OptionErrorContext> & { return _error; }
 
 private:
+    /// Create a display title for an option-related error.
     [[nodiscard]] static auto optionTitleForError(const OptionPtr &option) -> text::String;
+    /// Find mutable parsed storage for an option.
     [[nodiscard]] auto findParsedValue(const OptionPtr &option) -> OptionParsedValuePtr;
+    /// Store a parsed integer option value.
     [[nodiscard]] auto storeIntegerValue(const OptionPtr &option, OptionInteger value, unit::ArgumentIndex index)
         -> bool;
+    /// Store a parsed text option value.
     [[nodiscard]] auto storeTextValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index) -> bool;
+    /// Store a parsed sensitive text option value.
     [[nodiscard]] auto storeSensitiveTextValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index)
         -> bool;
+    /// Store the configured default value for an option.
     [[nodiscard]] auto storeDefaultValue(const OptionPtr &option) -> bool;
+    /// Store the configured default integer value for an option.
     [[nodiscard]] auto storeDefaultIntegerValue(const OptionPtr &option, OptionInteger value) -> bool;
+    /// Store the configured default text value for an option.
     [[nodiscard]] auto storeDefaultTextValue(const OptionPtr &option, text::String value) -> bool;
 
+    /// Record a storage error with a default title.
     auto makeError(OptionErrorReason reason, text::String description, unit::ArgumentIndex index) -> bool;
+    /// Record a storage error associated with an option.
     auto makeError(
         OptionErrorReason reason, text::String description, unit::ArgumentIndex index, const OptionPtr &option) -> bool;
+    /// Record a storage error with an explicit title and associated option.
     auto makeError(
         OptionErrorReason reason,
         text::String title,

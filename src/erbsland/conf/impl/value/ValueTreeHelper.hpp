@@ -17,6 +17,7 @@ using namespace text::literals;
 
 /// A helper class to create value trees.
 class ValueTreeHelper {
+    /// Stores one pending value-tree node and its rendering context.
     struct Frame {
         conf::ConstValuePtr frameValue;
         text::String indent;
@@ -24,12 +25,14 @@ class ValueTreeHelper {
     };
 
 public:
+    /// Create a helper for rendering a configuration value tree.
+    /// @param rootValue The root value to render.
+    /// @param format The requested output format.
     ValueTreeHelper(conf::ConstValuePtr rootValue, const TestFormat format) noexcept :
         _rootValue(std::move(rootValue)), _format(format) {}
 
+    // defaults/deletions
     ~ValueTreeHelper() = default;
-
-    // prevent copy and move.
     ValueTreeHelper(const ValueTreeHelper &) = delete;
     ValueTreeHelper(ValueTreeHelper &&) = delete;
     auto operator=(const ValueTreeHelper &) -> ValueTreeHelper & = delete;
@@ -41,16 +44,22 @@ public:
     auto createLines() -> text::StringList;
 
 private:
+    /// Initialize the traversal stack with the root value.
     void initStack() noexcept;
 
+    /// Remove and return the next pending traversal frame.
     auto popFrame() noexcept -> Frame;
 
+    /// Compute the display name for a value.
     [[nodiscard]] static auto computeName(const conf::ConstValuePtr &value) noexcept -> text::String;
 
+    /// Compute the source position text for a value.
     [[nodiscard]] auto computePosition(const conf::ConstValuePtr &value) -> text::String;
 
+    /// Append a value's source identifier to position text.
     auto appendSourceIdentifier(text::StringEditor &positionStr, const conf::ConstValuePtr &value) -> void;
 
+    /// Render one value-tree line.
     void emitLine(
         const conf::ConstValuePtr &value,
         const text::String &name,
@@ -58,8 +67,10 @@ private:
         const text::String &indent,
         const bool isLast);
 
+    /// Push a value's child nodes onto the traversal stack.
     void pushChildren(const conf::ConstValuePtr &value, const text::String &indent, const bool isLast);
 
+    /// Append source labels collected while rendering the tree.
     void appendSourceLabels();
 
 private:

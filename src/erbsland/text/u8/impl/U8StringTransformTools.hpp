@@ -28,12 +28,15 @@ namespace erbsland::text::impl {
 /// @tested{U8StringModifierTest}
 class U8StringTransformTools final {
 public:
+    /// Create transformation tools for `data`.
     explicit constexpr U8StringTransformTools(const U8StringDataView &data, const bool sensitive = false) noexcept :
         _data{data}, _sensitive{sensitive} {}
 
 public:
     /// Call a function for every decoded code point.
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
+    /// @overload
+    auto forEach(const ProcessCharacterWithCpIndexFn &function) const -> util::LoopResult;
     /// Return mapped storage only if the transformation changes decoded text.
     [[nodiscard]] auto transformedIfChanged(TransformCharacterFn function) const
         -> std::optional<U8StringSharedStorage>;
@@ -57,6 +60,7 @@ public: // escaping.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U8StringEditor;
 
 private:
+    /// Create a data view for a UTF-8 range.
     [[nodiscard]] auto dataView(unit::ByteRange range) const -> U8StringDataView;
 
 private:

@@ -181,13 +181,13 @@ void LogViewerApp::updateView(const BlockSize viewSize) noexcept {
 void LogViewerApp::renderLogMessage(const LogMessage &message) {
     static const auto lineBreak = el::CharSet{U'\n'};
     auto lines = el::StringList::fromSplit(message.text, lineBreak);
-    auto index = el::ElementIndex{0};
+    auto index = el::ItemIndex{0};
     if (!lines.isEmpty()) {
-        renderInitialLine(nextTimestamp(), message.level, lines[index]);
+        renderInitialLine(nextTimestamp(), message.level, lines.getRefOrThrow(index));
     }
     ++index;
     while (index.isWithin(lines.count())) {
-        renderContinuationLine(lines[index]);
+        renderContinuationLine(lines.getRefOrThrow(index));
         ++index;
     }
 }

@@ -10,6 +10,7 @@
 
 namespace erbsland::conf::vr {
 
+/// Value object representing a constraint type.
 class ConstraintType {
 public:
     enum Enum : uint8_t {
@@ -112,6 +113,7 @@ public: // enumeration
 
 private:
     Enum _value{Undefined};
+    /// Mapping entry from a constraint type value to text.
     struct ValueToTextEntry {
         Enum value;
         text::String text;

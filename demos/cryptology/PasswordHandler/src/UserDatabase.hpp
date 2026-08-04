@@ -43,6 +43,10 @@ public: // persistence
     void save(const el::Path &path, el::PathCollisionMode collisionMode) const;
 
 private:
+    /// Throw a database-format error associated with its source path.
+    [[noreturn]] static void throwInvalidDatabase(const el::Path &path, const el::String &description);
+
+private:
     el::StringMap<el::String> _users; ///< Canonical hash text by exact username.
 };
 

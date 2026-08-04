@@ -2,22 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "KeyModifier.hpp"
+
 #include "../core/Definitions.hpp"
 
 #include <cstdint>
 #include <type_traits>
 
 namespace erbsland::cterm {
-
-/// A modifier pressed together with a key.
-enum class KeyModifier : uint8_t {
-    /// The Shift key.
-    Shift = 1 << 0,
-    /// The Control key.
-    Control = 1 << 1,
-    /// The Alt key.
-    Alt = 1 << 2,
-};
 
 /// A set of key modifiers.
 class KeyModifiers {
@@ -84,6 +76,7 @@ public: // accessors
     void clear(const KeyModifier modifier) noexcept { _modifiers &= static_cast<Mask>(~static_cast<Mask>(modifier)); }
 
 private:
+    /// Create modifiers from a low-level mask.
     explicit constexpr KeyModifiers(const Mask modifiers) : _modifiers{modifiers} {}
 
 private:

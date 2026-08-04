@@ -33,6 +33,8 @@ public:
 
 public:
     DemoApplication(const int argc, char **argv) : Application(argc, argv) {}
+
+    // defaults
     ~DemoApplication() override = default;
 
 public:

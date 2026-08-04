@@ -4,17 +4,18 @@
 
 #include "CalendarDelta.hpp"
 #include "Date.hpp"
+#include "DateTimeParts.hpp"
 #include "Duration.hpp"
 #include "Time.hpp"
 #include "TimeOccurrenceInFold.hpp"
 #include "TimeWithZone.hpp"
 #include "TimeZone.hpp"
 
+#include "impl/DateTimeEpochs.hpp"
+#include "impl/DateTimeTraits.hpp"
 #include "tz/TimeOffset.hpp"
 
-#include "../text/String.hpp"
-#include "../text/StringConverter.hpp"
-#include "../text/StringEditor.hpp"
+#include "../text/String_fwd.hpp"
 
 #include <compare>
 #include <cstdint>
@@ -23,20 +24,6 @@
 #include <utility>
 
 namespace erbsland::time {
-
-/// A local date/time split into named parts.
-/// @tested{TimeCoreTest}
-struct DateTimeParts {
-    Year year;                      ///< The local year component.
-    Month month;                    ///< The local month component.
-    Day day;                        ///< The local day component.
-    Hour hour;                      ///< The local hour component.
-    Minute minute;                  ///< The local minute component.
-    Second second;                  ///< The local second component.
-    Nanoseconds nanosecondFraction; ///< The local nanosecond fraction.
-
-    friend auto operator==(const DateTimeParts &, const DateTimeParts &) noexcept -> bool = default;
-};
 
 /// A point in time represented as UTC date/time plus display offset information.
 /// @seedoc{/reference/time/date_and_time}
@@ -92,14 +79,19 @@ public:
     auto operator=(DateTime &&) noexcept -> DateTime & = default;
 
 public: // operators
+    /// Compare two date/time values by their instant and display properties.
     [[nodiscard]] auto operator<=>(const DateTime &other) const noexcept -> std::strong_ordering;
     [[nodiscard]] auto operator==(const DateTime &other) const noexcept -> bool = default;
+    /// Return this date/time with a duration added.
     [[nodiscard]] auto operator+(const Duration duration) const noexcept -> DateTime { return added(duration); }
+    /// Add a duration to this date/time.
     auto operator+=(const Duration duration) noexcept -> DateTime & {
         add(duration);
         return *this;
     }
+    /// Return this date/time with a duration subtracted.
     [[nodiscard]] auto operator-(const Duration duration) const noexcept -> DateTime { return subtracted(duration); }
+    /// Subtract a duration from this date/time.
     auto operator-=(const Duration duration) noexcept -> DateTime & {
         subtract(duration);
         return *this;
@@ -108,12 +100,16 @@ public: // operators
     /// @param other The other date/time.
     /// @return The duration from `other` to this.
     [[nodiscard]] auto operator-(const DateTime &other) const noexcept -> Duration { return other.durationTo(*this); }
+    /// Return this date/time with a calendar delta added.
     [[nodiscard]] auto operator+(const CalendarDelta &delta) const noexcept -> DateTime { return added(delta); }
+    /// Add a calendar delta to this date/time.
     auto operator+=(const CalendarDelta &delta) noexcept -> DateTime & {
         add(delta);
         return *this;
     }
+    /// Return this date/time with a calendar delta subtracted.
     [[nodiscard]] auto operator-(const CalendarDelta &delta) const noexcept -> DateTime { return subtracted(delta); }
+    /// Subtract a calendar delta from this date/time.
     auto operator-=(const CalendarDelta &delta) noexcept -> DateTime & {
         subtract(delta);
         return *this;
@@ -254,14 +250,57 @@ public: // conversion
     [[nodiscard]] auto toUtc() const noexcept -> DateTime;
     /// Convert the display time zone, or return an invalid date/time if this date/time is invalid.
     [[nodiscard]] auto toTimeZone(TimeZone timeZone) const noexcept -> DateTime;
-    /// Convert to seconds since the internal epoch, or `-1` for invalid date/times.
-    [[nodiscard]] auto toSecondsSinceEpoch() const noexcept -> Seconds;
     /// Convert to `std::time_t` using the POSIX epoch.
+    /// Fractions of seconds are discarded.
     /// Invalid date/times convert from the internal `-1` seconds sentinel.
     [[nodiscard]] auto toTimeT() const noexcept -> std::time_t;
-    /// Convert to Windows FILETIME 100-nanosecond ticks since 1601-01-01 UTC.
-    /// Returns no value if this date/time is invalid or before the Windows FILETIME epoch.
-    [[nodiscard]] auto toWindowsFileTimeTicks() const noexcept -> std::optional<std::uint64_t>;
+    /// Convert to complete seconds and a nanosecond fraction from an epoch.
+    /// This is the only method that returns the full precision of a date/time value.
+    /// @param epoch The epoch.
+    /// @return The non-negative seconds and fraction, or no value if this date/time precedes the epoch or is invalid.
+    [[nodiscard]] auto toSecondsAndFractions(TimeEpoch epoch = TimeEpoch::Core) const noexcept
+        -> std::optional<std::pair<Seconds, Nanoseconds>>;
+    /// Convert to complete seconds and a nanosecond fraction from an epoch.
+    /// This is the only method that returns the full precision of a date/time value.
+    /// @param epoch The epoch.
+    /// @return The non-negative seconds and fraction.
+    /// @throws err::OutOfRangeError If this date/time precedes the epoch or is invalid.
+    [[nodiscard]] auto toSecondsAndFractionsOrThrow(TimeEpoch epoch = TimeEpoch::Core) const
+        -> std::pair<Seconds, Nanoseconds>;
+    /// Convert to exact ticks in seconds, milliseconds, microseconds or nanoseconds from an epoch.
+    /// Fractions outside the precision of the tick unit are discarded.
+    /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
+    /// @param epoch The epoch.
+    /// @return Exact non-negative ticks, or no value if they cannot represent this date/time.
+    template <typename tUnit>
+        requires impl::DateTimeTickUnit<tUnit>
+    [[nodiscard]] auto toTicks(TimeEpoch epoch = TimeEpoch::Core) const noexcept -> std::optional<tUnit>;
+    /// @overload
+    [[nodiscard]] auto toSeconds(const TimeEpoch epoch = TimeEpoch::Core) const noexcept -> std::optional<Seconds> {
+        return toTicks<Seconds>(epoch);
+    }
+    /// @overload
+    [[nodiscard]] auto toNanoseconds(const TimeEpoch epoch = TimeEpoch::Core) const noexcept
+        -> std::optional<Nanoseconds> {
+        return toTicks<Nanoseconds>(epoch);
+    }
+    /// Convert to exact ticks in seconds, milliseconds, microseconds or nanoseconds from an epoch.
+    /// Fractions outside the precision of the tick unit are discarded.
+    /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
+    /// @param epoch The epoch.
+    /// @return Exact non-negative ticks.
+    /// @throws err::OutOfRangeError If the ticks cannot represent this date/time.
+    template <typename tUnit>
+        requires impl::DateTimeTickUnit<tUnit>
+    [[nodiscard]] auto toTicksOrThrow(TimeEpoch epoch = TimeEpoch::Core) const -> tUnit;
+    /// @overload
+    [[nodiscard]] auto toSecondsOrThrow(const TimeEpoch epoch = TimeEpoch::Core) const -> Seconds {
+        return toTicksOrThrow<Seconds>(epoch);
+    }
+    /// @overload
+    [[nodiscard]] auto toNanosecondsOrThrow(const TimeEpoch epoch = TimeEpoch::Core) const -> Nanoseconds {
+        return toTicksOrThrow<Nanoseconds>(epoch);
+    }
     /// Convert this date/time to an ISO 8601 string.
     /// Invalid date/times return an empty string.
     /// @param flags Formatting flags for date, time, and offset output.
@@ -274,26 +313,66 @@ public: // conversion
 public:
     /// Return the current UTC date/time with nanosecond precision when supported by the platform clock.
     [[nodiscard]] static auto now() noexcept -> DateTime;
-    /// Create a UTC date/time from seconds since the internal epoch.
-    /// Returns an invalid date/time if `seconds` is outside the supported date/time range.
-    [[nodiscard]] static auto fromSecondsSinceEpoch(Seconds seconds, Nanoseconds fractions = Nanoseconds{}) noexcept
-        -> DateTime;
-    /// Create a UTC date/time from a duration since the internal epoch.
-    /// Returns an invalid date/time if the duration is outside the supported date/time range.
-    [[nodiscard]] static auto fromDurationSinceEpoch(const Duration duration) noexcept -> DateTime {
-        return fromSecondsSinceEpoch(duration.toSeconds());
-    }
     /// Create a UTC date/time from a POSIX time value.
     /// Returns an invalid date/time if the value is outside the supported date/time range.
     [[nodiscard]] static auto fromTimeT(std::time_t posixTime) noexcept -> DateTime;
-    /// Create a UTC date/time from POSIX seconds and an optional nanosecond fraction.
-    /// Returns an invalid date/time if the value is outside the supported date/time range or if the fraction is
-    /// invalid.
-    [[nodiscard]] static auto fromPosixTime(Seconds seconds, Nanoseconds fractions = Nanoseconds{}) noexcept
-        -> DateTime;
-    /// Create a UTC date/time from Windows FILETIME 100-nanosecond ticks since 1601-01-01 UTC.
-    /// Returns an invalid date/time if the value is outside the supported date/time range.
-    [[nodiscard]] static auto fromWindowsFileTimeTicks(std::uint64_t ticks) noexcept -> DateTime;
+    /// Create a UTC date/time from exact ticks in seconds, milliseconds, microseconds or nanoseconds since an epoch.
+    /// Fractions outside the precision of the tick unit are discarded.
+    /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
+    /// @param ticks The non-negative ticks.
+    /// @param epoch The epoch.
+    /// @return A date/time, or no value if the ticks cannot be represented.
+    template <typename tUnit>
+        requires impl::DateTimeTickUnit<tUnit>
+    [[nodiscard]] static auto fromTicks(tUnit ticks, TimeEpoch epoch = TimeEpoch::Core) noexcept
+        -> std::optional<DateTime>;
+    /// @overload
+    [[nodiscard]] static auto fromSeconds(const Seconds ticks, const TimeEpoch epoch = TimeEpoch::Core) noexcept
+        -> std::optional<DateTime> {
+        return fromTicks<Seconds>(ticks, epoch);
+    }
+    /// @overload
+    [[nodiscard]] static auto fromNanoseconds(const Nanoseconds ticks, const TimeEpoch epoch = TimeEpoch::Core) noexcept
+        -> std::optional<DateTime> {
+        return fromTicks<Nanoseconds>(ticks, epoch);
+    }
+    /// Create a UTC date/time from exact ticks in seconds, milliseconds, microseconds or nanoseconds since an epoch.
+    /// Fractions outside the precision of the tick unit are discarded.
+    /// @tparam tUnit The tick unit: Nanoseconds, Microseconds, Milliseconds, or Seconds.
+    /// @param ticks The non-negative ticks.
+    /// @param epoch The epoch.
+    /// @return A date/time.
+    /// @throws err::OutOfRangeError If the ticks cannot be represented.
+    template <typename tUnit>
+        requires impl::DateTimeTickUnit<tUnit>
+    [[nodiscard]] static auto fromTicksOrThrow(tUnit ticks, TimeEpoch epoch = TimeEpoch::Core) -> DateTime;
+    /// @overload
+    [[nodiscard]] static auto fromSecondsOrThrow(const Seconds ticks, const TimeEpoch epoch = TimeEpoch::Core)
+        -> DateTime {
+        return fromTicksOrThrow<Seconds>(ticks, epoch);
+    }
+    /// @overload
+    [[nodiscard]] static auto fromNanosecondsOrThrow(const Nanoseconds ticks, const TimeEpoch epoch = TimeEpoch::Core)
+        -> DateTime {
+        return fromTicksOrThrow<Nanoseconds>(ticks, epoch);
+    }
+    /// Create a UTC date/time from complete seconds and a nanosecond fraction since an epoch.
+    /// This is the only method that allows to construct a date/time at it's full range and precision.
+    /// @param seconds The non-negative complete seconds.
+    /// @param fractions The nanosecond fraction in the range 0 to 999999999.
+    /// @param epoch The epoch.
+    /// @return A date/time, or no value if the values cannot be represented.
+    [[nodiscard]] static auto fromTicks(
+        Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) noexcept -> std::optional<DateTime>;
+    /// Create a UTC date/time from complete seconds and a nanosecond fraction since an epoch.
+    /// This is the only method that allows to construct a date/time at it's full range and precision.
+    /// @param seconds The non-negative complete seconds.
+    /// @param fractions The nanosecond fraction in the range 0 to 999999999.
+    /// @param epoch The epoch.
+    /// @return A date/time.
+    /// @throws err::OutOfRangeError If the values cannot be represented.
+    [[nodiscard]] static auto fromTicksOrThrow(
+        Seconds seconds, Nanoseconds fractions, TimeEpoch epoch = TimeEpoch::Core) -> DateTime;
     /// Parse an ISO date/time string.
     /// @param text The text to parse.
     /// @param requiredPrecision The minimum precision required.
@@ -325,22 +404,29 @@ public:
     [[nodiscard]] static auto fromIsoStringOrThrow(
         const text::String &text, TimeZone timeZone, DateTimePrecision requiredPrecision = DateTimePrecision::Second)
         -> DateTime;
-    /// Get the epoch date-time.
-    [[nodiscard]] static auto epoch() noexcept -> DateTime { return DateTime{Date::epoch(), Time{}}; }
+    /// Get an epoch date-time.
+    /// @param epoch The epoch.
+    /// @return The epoch date-time.
+    [[nodiscard]] static auto epoch(TimeEpoch epoch = TimeEpoch::Core) noexcept -> DateTime;
     /// Get the first possible date-time.
     [[nodiscard]] static auto first() noexcept -> DateTime { return epoch(); }
     /// Get the last possible date-time.
     [[nodiscard]] static auto last() noexcept -> DateTime { return DateTime{Date::last(), Time::last()}; }
-    /// Get the POSIX epoch date-time.
-    [[nodiscard]] static auto posixEpoch() noexcept -> DateTime;
 
 private:
+    /// Construct a date-time with an explicitly resolved time-zone offset.
     DateTime(const Date date, const Time time, const tz::TimeOffset offset, PrivateTag) noexcept :
         _date{date}, _time{time}, _offset{offset} {}
+    /// Return the local date and time before applying the stored offset.
     [[nodiscard]] auto localDateTime() const noexcept -> std::pair<Date, Time>;
+    /// Subtract the stored offset from the local date and time.
     void subtractOffset() noexcept;
+    /// Format an ISO UTC offset suffix.
     [[nodiscard]] static auto isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> text::String;
-    [[nodiscard]] static auto posixEpochSecondsDelta() noexcept -> Seconds;
+    /// Throw when a date-time cannot be represented as ticks.
+    [[noreturn]] static void throwDateTimeNotTickConvertible();
+    /// Throw when a tick conversion receives a negative value.
+    [[noreturn]] static void throwTicksMustNotBeNegative();
 
 private:
     Date _date;             ///< The date part
@@ -350,7 +436,4 @@ private:
 
 }
 
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::DateTime> : FormatAs<time::DateTime, String> {
-    [[nodiscard]] auto format(const time::DateTime &value) const -> String { return value.toString(); }
-};
+#include "DateTime.tpp"

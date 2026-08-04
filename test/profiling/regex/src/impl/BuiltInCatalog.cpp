@@ -5,11 +5,11 @@
 
 #include "CorpusDirectory.hpp"
 
-namespace app::regex::impl {
+namespace app::regex::impl::built_in_catalog {
 
 using namespace el::text::literals;
 
-auto BuiltInCatalog::generatedCorpus(const el::String &name) -> std::optional<el::String> {
+auto generatedCorpus(const el::String &name) -> std::optional<el::String> {
     if (name == "empty"_el) {
         return el::String{};
     }
@@ -79,7 +79,7 @@ auto BuiltInCatalog::generatedCorpus(const el::String &name) -> std::optional<el
     return {};
 }
 
-auto BuiltInCatalog::file(const el::String &name) -> std::optional<el::String> {
+auto file(const el::String &name) -> std::optional<el::String> {
     if (name == "shakespeare-text"_el) {
         return (el::Path{el::String{cCorpusDirectory}} / "shakespeare.txt"_el).toString();
     }
@@ -89,7 +89,7 @@ auto BuiltInCatalog::file(const el::String &name) -> std::optional<el::String> {
     return {};
 }
 
-auto BuiltInCatalog::pattern(const el::String &name) -> std::optional<el::String> {
+auto pattern(const el::String &name) -> std::optional<el::String> {
     if (name == "literal-a"_el) {
         return "a"_el;
     }
@@ -129,7 +129,7 @@ auto BuiltInCatalog::pattern(const el::String &name) -> std::optional<el::String
     return {};
 }
 
-auto BuiltInCatalog::repeatCharacter(const el::Char character, const std::size_t count) -> el::String {
+auto repeatCharacter(const el::Char character, const std::size_t count) -> el::String {
     return el::String::fromCharacter(character, el::CpLength::fromSizeTOrThrow(count));
 }
 

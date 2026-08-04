@@ -25,6 +25,7 @@ public:
     using CharacterSet = CharSet;
 
 public:
+    /// Create a character-read tool for `data`.
     explicit constexpr U16StringCharReadTool(const U16StringDataView &data) noexcept : _data{data} {}
 
 public: // read

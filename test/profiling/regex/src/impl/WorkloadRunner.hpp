@@ -24,6 +24,7 @@ using namespace el::text::literals;
 class WorkloadRunner final {
     using Clock = std::chrono::steady_clock;
 
+    /// Collect timing statistics for a scenario.
     struct Statistics {
         double minimum{};
         double median{};
@@ -32,6 +33,7 @@ class WorkloadRunner final {
         double maximum{};
     };
 
+    /// Collect per-worker timing fairness metrics.
     struct Fairness {
         double minimum{};
         double maximum{};
@@ -39,6 +41,7 @@ class WorkloadRunner final {
     };
 
 public:
+    /// Print the configuration without running its scenarios.
     static void printDryRun(const Configuration &configuration) {
         for (const auto &scenario : configuration.scenarios) {
             el::io::printLine(
@@ -50,6 +53,8 @@ public:
                 toString(scenario.useCase),
                 " input="_el,
                 toString(scenario.inputKind),
+                " backend="_el,
+                toString(scenario.backend),
                 " replacement="_el,
                 toString(scenario.replacementMode),
                 " pattern="_el,
@@ -72,11 +77,28 @@ public:
             configuration.scenarios.size(),
             " threads="_el,
             configuration.run.threadCount,
+            " suite="_el,
+            configuration.run.suite,
+            " duration-ns="_el,
+            configuration.run.duration.count(),
+            " seed="_el,
+            configuration.run.seed,
+            " warmup-samples="_el,
+            configuration.run.warmupSamples,
+            " samples="_el,
+            configuration.run.samples,
+            " minimum-sample-time-ns="_el,
+            configuration.run.minimumSampleTime.count(),
+            " memory-limit="_el,
+            configuration.run.memoryLimit,
+            " progress-interval-ns="_el,
+            configuration.run.progressInterval.count(),
             " config-md5="_el,
             el::ByteFormat::compact(),
             configurationDigest(configuration));
     }
 
+    /// Print the API coverage registry.
     static void printCoverage() {
         for (const auto &descriptor : coverageRegistry()) {
             el::io::printLine(
@@ -92,6 +114,7 @@ public:
         el::io::printLine("record=summary action=coverage paths="_el, coverageRegistry().size());
     }
 
+    /// Run the configured profiling scenarios.
     [[nodiscard]] static auto run(const Configuration &configuration) -> el::ExitCode {
         auto workspace = createWorkspace(configuration);
         el::io::printLine(
@@ -142,11 +165,12 @@ public:
             const auto &scenario = prepared[index];
             for (auto warmup = std::uint32_t{}; warmup < configuration.run.warmupSamples; ++warmup) {
                 requireBeforeDeadline(deadline, "The regex profiler deadline was reached during warm-up."_el);
-                static_cast<void>(Execution::runSample(configuration, scenario, warmup, operations[index]));
+                Execution::runSample(configuration, scenario, warmup, operations[index]);
             }
         }
 
         auto completed = std::size_t{};
+        auto comparisons = std::vector<ComparisonResult>{};
         if (configuration.run.mode == RunMode::Benchmark) {
             for (auto index = std::size_t{}; index < prepared.size(); ++index) {
                 auto samples = std::vector<SampleResult>{};
@@ -158,7 +182,8 @@ public:
                     samples.emplace_back(
                         Execution::runSample(configuration, prepared[index], sample + 100U, operations[index]));
                 }
-                printBenchmark(prepared[index], samples);
+                const auto median = printBenchmark(prepared[index], samples);
+                recordComparison(prepared[index], median, comparisons);
                 if (prepared[index].scenario.useCase == UseCase::LazyContendedFirstUse) {
                     printContention(prepared[index], samples);
                 }
@@ -201,18 +226,33 @@ public:
     }
 
 private:
+    /// Collect results that can be compared between profiler backends.
+    struct ComparisonResult {
+        el::String name;
+        std::optional<double> erbslandMedian;
+        std::optional<double> standardMedian;
+        std::optional<std::uint64_t> erbslandSignature;
+        std::optional<std::uint64_t> standardSignature;
+        std::optional<std::uint64_t> erbslandMatches;
+        std::optional<std::uint64_t> standardMatches;
+    };
+
+    /// Raise a workload error with the given message.
     [[noreturn]] static void workloadError(const el::String &message) { throw el::ApplicationError{message}; }
 
+    /// Calculate elapsed nanoseconds since a start time.
     [[nodiscard]] static auto elapsedNanoseconds(const Clock::time_point start) -> std::int64_t {
         return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start).count();
     }
 
+    /// Raise an error when the configured deadline has passed.
     static void requireBeforeDeadline(const Clock::time_point deadline, const el::String &message) {
         if (Clock::now() >= deadline) {
             workloadError(message);
         }
     }
 
+    /// Create the temporary workspace for a profiling run.
     [[nodiscard]] static auto createWorkspace(const Configuration &configuration) -> el::TempDirectoryPtr {
         auto options = el::PathTempDirectoryOptions{};
         options.setPrefix("regex-api-profile-"_el).setRandomLength(el::CpLength{12U});
@@ -233,6 +273,7 @@ private:
         return workspace;
     }
 
+    /// Calculate summary statistics for sample values.
     [[nodiscard]] static auto statistics(std::vector<double> values) -> Statistics {
         std::ranges::sort(values);
         const auto mean = std::accumulate(values.begin(), values.end(), 0.0) / static_cast<double>(values.size());
@@ -244,6 +285,7 @@ private:
             .maximum = values.back()};
     }
 
+    /// Calculate per-worker fairness for sample results.
     [[nodiscard]] static auto fairness(const std::vector<SampleResult> &samples) -> Fairness {
         auto rates = std::vector<double>{};
         for (const auto &sample : samples) {
@@ -266,6 +308,7 @@ private:
             .coefficientOfVariation = mean == 0.0 ? 0.0 : std::sqrt(variance) / mean};
     }
 
+    /// Calculate a stable digest of a profiling configuration.
     [[nodiscard]] static auto configurationDigest(const Configuration &configuration) -> el::ByteBlock {
         auto text = el::StringEditor{};
         text.append(
@@ -293,12 +336,14 @@ private:
                     scenario.subject.length(),
                     scenario.sourceFile,
                     scenario.repetitionCount));
+            text.append(el::StringFormat{" {} {}\n"_el}.build(toString(scenario.backend), scenario.comparisonName));
         }
         auto hasher = el::cryptology::Hasher{el::cryptology::HashAlgorithm::Md5};
         hasher.update(el::String{text});
         return hasher.finalize();
     }
 
+    /// Print one profile sample.
     static void printSample(const PreparedScenario &prepared, const SampleResult &sample) {
         const auto safeOperations = std::max<std::uint64_t>(1U, sample.operations);
         const auto safeTime = std::max<std::int64_t>(1, sample.wallNanoseconds);
@@ -325,7 +370,9 @@ private:
             static_cast<double>(safeOperations) * 1.0e9 / static_cast<double>(safeTime));
     }
 
-    static void printBenchmark(const PreparedScenario &prepared, const std::vector<SampleResult> &samples) {
+    /// Print benchmark statistics and return the median duration.
+    [[nodiscard]] static auto printBenchmark(const PreparedScenario &prepared, const std::vector<SampleResult> &samples)
+        -> double {
         auto nanoseconds = std::vector<double>{};
         auto operationRates = std::vector<double>{};
         auto matchRates = std::vector<double>{};
@@ -361,6 +408,8 @@ private:
             toString(prepared.scenario.useCase),
             " input="_el,
             toString(prepared.scenario.inputKind),
+            " backend="_el,
+            toString(prepared.scenario.backend),
             " replacement="_el,
             toString(prepared.scenario.replacementMode),
             " pattern="_el,
@@ -409,8 +458,62 @@ private:
             workerFairness.maximum,
             " fairness-cv="_el,
             workerFairness.coefficientOfVariation);
+        return timing.median;
     }
 
+    /// Record an Erbsland-to-standard comparison result.
+    static void recordComparison(
+        const PreparedScenario &prepared, const double median, std::vector<ComparisonResult> &comparisons) {
+        if (prepared.scenario.comparisonName.isEmpty()) {
+            return;
+        }
+        auto found = std::ranges::find(comparisons, prepared.scenario.comparisonName, &ComparisonResult::name);
+        if (found == comparisons.end()) {
+            found = comparisons.emplace(
+                comparisons.end(),
+                ComparisonResult{
+                    .name = prepared.scenario.comparisonName,
+                    .erbslandMedian = {},
+                    .standardMedian = {},
+                    .erbslandSignature = {},
+                    .standardSignature = {},
+                    .erbslandMatches = {},
+                    .standardMatches = {}});
+        }
+        if (prepared.scenario.backend == Backend::Erbsland) {
+            found->erbslandMedian = median;
+            found->erbslandSignature = prepared.validationSink;
+            found->erbslandMatches = prepared.validationMatches;
+        } else {
+            found->standardMedian = median;
+            found->standardSignature = prepared.validationSink;
+            found->standardMatches = prepared.validationMatches;
+        }
+        if (!found->erbslandMedian || !found->standardMedian) {
+            return;
+        }
+        const auto parity =
+            found->erbslandSignature == found->standardSignature && found->erbslandMatches == found->standardMatches;
+        const auto ratio = *found->erbslandMedian / *found->standardMedian;
+        const auto fasterOrEqual = ratio <= 1.0;
+        el::io::printLine(
+            "record=comparison name="_el,
+            found->name,
+            " erbsland-median-ns="_el,
+            *found->erbslandMedian,
+            " std-median-ns="_el,
+            *found->standardMedian,
+            " ratio="_el,
+            ratio,
+            " parity="_el,
+            parity ? "yes"_el : "no"_el,
+            " faster-or-equal="_el,
+            fasterOrEqual ? "yes"_el : "no"_el,
+            " pass="_el,
+            parity && fasterOrEqual ? "yes"_el : "no"_el);
+    }
+
+    /// Print contention diagnostics for a prepared scenario.
     static void printContention(const PreparedScenario &prepared, const std::vector<SampleResult> &samples) {
         auto wallTimes = std::vector<double>{};
         auto waiterLatencies = std::vector<double>{};
@@ -437,6 +540,7 @@ private:
             waiters.maximum);
     }
 
+    /// Print progress when its scheduled interval has elapsed.
     static void printProgressIfDue(
         Clock::time_point &nextProgress,
         const std::size_t completed,

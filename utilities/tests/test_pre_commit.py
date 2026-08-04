@@ -7,7 +7,10 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -65,6 +68,28 @@ class PreCommitTest(unittest.TestCase):
         initial_state = self.app.git_local_state()
 
         self.app.require_unchanged_git_state(initial_state)
+
+    def test_anti_pattern_scan_rejects_active_findings(self) -> None:
+        scanner = MagicMock()
+        scanner.active_findings = 3
+        with (
+            patch("dev.pre_commit.AntiPatternsApp", return_value=scanner),
+            redirect_stdout(StringIO()),
+            self.assertRaisesRegex(UtilityError, "3 active finding"),
+        ):
+            self.app.run_anti_patterns()
+
+        scanner.run.assert_called_once_with([])
+
+    def test_anti_pattern_scan_propagates_child_options(self) -> None:
+        self.app.verbose = True
+        self.app.private_config = True
+        scanner = MagicMock()
+        scanner.active_findings = 0
+        with patch("dev.pre_commit.AntiPatternsApp", return_value=scanner), redirect_stdout(StringIO()):
+            self.app.run_anti_patterns()
+
+        scanner.run.assert_called_once_with(["--verbose", "--private-config"])
 
 
 if __name__ == "__main__":

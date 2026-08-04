@@ -7,16 +7,18 @@
 #include "Events_fwd.hpp"
 #include "EventSource_fwd.hpp"
 
-#include <mutex>
-#include <vector>
+#include <memory>
 
 namespace erbsland::event {
 
-/// Base class for event sources owned by one event loop.
+/// Base class for shared event sources owned by one event loop.
+/// Each concrete source owns one stable event editor and exposes it through `events()`. Returning a reference makes
+/// the editor's non-owning role explicit, while `EventEditor::source()` lets generic code retain the source if needed.
 /// @tested{EventSourceTest}
-class EventSource {
+class EventSource : public std::enable_shared_from_this<EventSource> {
 public:
-    virtual ~EventSource();
+    // defaults/deletions
+    virtual ~EventSource() = default;
     EventSource(const EventSource &) = delete;
     EventSource(EventSource &&) = delete;
     auto operator=(const EventSource &) -> EventSource & = delete;
@@ -26,35 +28,24 @@ public: // accessors
     /// Access the event loop that owns this source.
     [[nodiscard]] auto ownerEvents() const noexcept -> const EventsPtr &;
 
+public: // interface
+    /// Access the stable editor owned by this source.
+    /// @return The source-owned editor.
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto events() -> EventEditor & = 0;
+
 protected:
     /// Create an event source owned by an event target.
     explicit EventSource(EventsPtr ownerEvents);
     /// Get the current event target after verifying that it owns this source.
     /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] auto currentOwnerEvents() const -> EventsPtr;
-    /// Register an editor for weak lifetime tracking.
-    void registerEditor(const EventEditorPtr &editor);
-    /// Get connected editors of one type.
-    template <typename T>
-    [[nodiscard]] auto connectedEditors() const -> std::vector<std::shared_ptr<T>> {
-        auto result = std::vector<std::shared_ptr<T>>{};
-        std::scoped_lock lock{_editorMutex};
-        for (const auto &weakEditor : _editors) {
-            const auto editor = weakEditor.lock();
-            if (editor == nullptr || !editor->isConnected()) {
-                continue;
-            }
-            if (const auto typedEditor = std::dynamic_pointer_cast<T>(editor); typedEditor != nullptr) {
-                result.emplace_back(std::move(typedEditor));
-            }
-        }
-        return result;
-    }
+    /// Verify that the current event loop owns this source.
+    /// @throws err::LogicError If called outside the owner event loop.
+    void verifyCurrentOwnerEvents() const;
 
 private:
-    EventsPtr _ownerEvents;                   ///< Owner event target.
-    mutable std::mutex _editorMutex;          ///< Protects editor tracking.
-    std::vector<EventEditorWeakPtr> _editors; ///< Weakly held event editors.
+    EventsPtr _ownerEvents; ///< Owner event target.
 };
 
 }

@@ -33,7 +33,7 @@ using SourceListPtr = std::shared_ptr<SourceList>;
 /// @tested{StringSourceTest TextStreamSourceTest FileSourceTest SourceCreateTest}
 class Source {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~Source() = default;
 
 public: // accessors

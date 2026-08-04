@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PathBackend_fwd.hpp"
+#include "PathInfoData_fwd.hpp"
+
 #include "../Path_fwd.hpp"
 #include "../PathAccessProfile.hpp"
 #include "../PathAttribute.hpp"
@@ -19,20 +22,16 @@
 #include "../../stream/TextOutputStream_fwd.hpp"
 #include "../../text/String_fwd.hpp"
 
-#include <memory>
 #include <optional>
 #include <vector>
 
 namespace erbsland::path::impl {
 
-class PathBackend;
-using PathBackendPtr = std::unique_ptr<PathBackend>;
-class PathInfoData;
-
 /// The abstract base class for all path backends.
 /// It is responsible for implementing OS-specific path handling and validation.
 class PathBackend {
 public:
+    // defaults
     virtual ~PathBackend() = default;
 
 public:

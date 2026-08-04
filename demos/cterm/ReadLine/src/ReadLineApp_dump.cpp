@@ -9,14 +9,12 @@ namespace demo {
 
 using namespace el::text::literals;
 
-namespace {
-
-auto quoted(const el::String &value) -> el::String {
+auto ReadLineApp::quoted(const el::String &value) -> el::String {
     return el::String::fromJoined(
         {"\""_el, value.toEscaped(el::EscapeFormat::Config, el::EscapeAmount::Required), "\""_el});
 }
 
-auto plainText(const el::cterm::BlockString &value) -> el::String {
+auto ReadLineApp::plainText(const el::cterm::BlockString &value) -> el::String {
     auto result = el::StringEditor{};
     for (const auto &block : value) {
         result.append(block.toString());
@@ -24,7 +22,7 @@ auto plainText(const el::cterm::BlockString &value) -> el::String {
     return el::String{result};
 }
 
-auto displayStyleText(const el::cterm::ReadLineDisplayStyle style) -> el::String {
+auto ReadLineApp::displayStyleText(const el::cterm::ReadLineDisplayStyle style) -> el::String {
     switch (style) {
     case el::cterm::ReadLineDisplayStyle::Compact:
         return "compact"_el;
@@ -38,7 +36,7 @@ auto displayStyleText(const el::cterm::ReadLineDisplayStyle style) -> el::String
     return "horizontal-frame"_el;
 }
 
-auto frameStyleText(const el::cterm::FrameStyle style) -> el::String {
+auto ReadLineApp::frameStyleText(const el::cterm::FrameStyle style) -> el::String {
     switch (style) {
     case el::cterm::FrameStyle::None:
         return "none"_el;
@@ -67,17 +65,15 @@ auto frameStyleText(const el::cterm::FrameStyle style) -> el::String {
     }
 }
 
-void appendAssignment(el::StringEditor &result, const el::String &name, const el::String &value) {
+void ReadLineApp::appendAssignment(el::StringEditor &result, const el::String &name, const el::String &value) {
     result.append(name);
     result.append(": "_el);
     result.append(value);
     result.append("\n"_el);
 }
 
-void appendTextAssignment(el::StringEditor &result, const el::String &name, const el::String &value) {
+void ReadLineApp::appendTextAssignment(el::StringEditor &result, const el::String &name, const el::String &value) {
     appendAssignment(result, name, quoted(value));
-}
-
 }
 
 void ReadLineApp::dumpConfiguration(const el::cterm::ReadLineOptions &settings) {

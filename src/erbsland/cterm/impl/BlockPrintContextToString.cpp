@@ -53,24 +53,4 @@ void BlockPrintContextToString::print(const text::U32String &text) noexcept {
     _builder.appendStyled(text, _style);
 }
 
-BlockPrintContextToCursorWriter::BlockPrintContextToCursorWriter(CursorWriter &writer) noexcept :
-    BlockPrintContextToString{writer.style(), true}, _writer{writer} {
-}
-
-void BlockPrintContextToCursorWriter::commit() noexcept {
-    if (!_builder.isEmpty()) {
-        _writer.writeResolved(_builder.takeString());
-    }
-    _writer.setStyle(_style);
-}
-
-BlockPrintContextToBlockString::BlockPrintContextToBlockString(BlockStringEditor &text) noexcept : _text{text} {
-}
-
-void BlockPrintContextToBlockString::commit() noexcept {
-    if (!_builder.isEmpty()) {
-        _text.appendString(_builder.takeString(), {});
-    }
-}
-
 }

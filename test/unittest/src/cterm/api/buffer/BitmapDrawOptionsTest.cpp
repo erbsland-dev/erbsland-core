@@ -15,8 +15,8 @@ public:
         REQUIRE_EQUAL(options.color().color(0), Color(fg::Default, bg::Default));
         REQUIRE_EQUAL(options.colorMode(), BitmapColorMode::OneColor);
         REQUIRE_EQUAL(options.colorAnimationOffset(), static_cast<std::size_t>(0));
-        REQUIRE(options.block16Style() == nullptr);
-        REQUIRE(options.combinationStyle() == nullptr);
+        REQUIRE_EQUAL(options.block16Style(), nullptr);
+        REQUIRE_EQUAL(options.combinationStyle(), nullptr);
         REQUIRE_EQUAL(options.fullBlock(), U'█');
         REQUIRE_EQUAL(options.doubleBlocks().length(), BlockCount{2U});
         REQUIRE_EQUAL(options.doubleBlocks()[BlockIndex{0U}], U'█');
@@ -25,7 +25,8 @@ public:
         REQUIRE_EQUAL(options.halfBlocks()[BlockIndex{0U}], U' ');
         REQUIRE_EQUAL(options.halfBlocks()[BlockIndex{15U}], U'█');
         REQUIRE_EQUAL(options.scaleMode(), BitmapScaleMode::HalfBlock);
-        REQUIRE(&BitmapDrawOptions::defaultOptions() == &options);
+        const auto *defaultOptions = &BitmapDrawOptions::defaultOptions();
+        REQUIRE_EQUAL(defaultOptions, &options);
     }
 
     void testColorSequenceAndSettersReplaceTheConfiguredBaseColors() {
@@ -87,8 +88,8 @@ public:
         options.setDoubleBlocks(BlockStringEditor{"[]"_el});
         options.setHalfBlocks(BlockStringEditor{"abcdefghijklmnop"_el});
 
-        REQUIRE(options.block16Style() == block16Style);
-        REQUIRE(options.combinationStyle() == combinationStyle);
+        REQUIRE_EQUAL(options.block16Style(), block16Style);
+        REQUIRE_EQUAL(options.combinationStyle(), combinationStyle);
         REQUIRE_EQUAL(options.scaleMode(), BitmapScaleMode::DoubleBlock);
         REQUIRE_EQUAL(options.fullBlock(), U'#');
         REQUIRE_EQUAL(options.fullBlock().color(), Color(fg::Green, bg::Black));

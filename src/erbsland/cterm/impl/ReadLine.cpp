@@ -6,7 +6,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/UnicodeCategory.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 
 #include <algorithm>
 #include <utility>
@@ -52,8 +52,8 @@ auto ReadLine::normalizedText(const String &value) const -> U32StringEditor {
     auto source = U32StringEditor{StringConverter{value}.toU32String()};
     const auto lineBreaks = CharSet{Char{U'\n'}};
     source.removeAll(CharSet::from(UnicodeCategory::Control) - lineBreaks);
-    auto lines = U32StringList::fromSplit(U32String{source}, lineBreaks, ElementCount::infinite(), true);
-    const auto maximumLineCount = ElementCount::fromSizeT(options().maximumLines().toSizeT());
+    auto lines = U32StringList::fromSplit(U32String{source}, lineBreaks, ItemCount::infinite(), true);
+    const auto maximumLineCount = ItemCount::fromSizeT(options().maximumLines().toSizeT());
     if (lines.count() > maximumLineCount) {
         lines.resize(maximumLineCount);
     }
@@ -170,7 +170,7 @@ auto ReadLine::selectPreviousHistory() -> bool {
     if (!_historyIndex.has_value()) {
         _historyDraft = _text;
         _historyDraftCursor = cursorIndex();
-        _historyIndex = ElementIndex::end(_history.count()) - ElementCount::one();
+        _historyIndex = ItemIndex::end(_history.count()) - ItemCount::one();
     } else if (!_historyIndex->isZero()) {
         --*_historyIndex;
     } else {
@@ -184,7 +184,7 @@ auto ReadLine::selectNextHistory() -> bool {
     if (!_historyIndex.has_value()) {
         return false;
     }
-    if (*_historyIndex + ElementCount::one() < ElementIndex::end(_history.count())) {
+    if (*_historyIndex + ItemCount::one() < ItemIndex::end(_history.count())) {
         ++*_historyIndex;
         loadHistoryEntry(*_historyIndex);
     } else {
@@ -196,8 +196,8 @@ auto ReadLine::selectNextHistory() -> bool {
     return true;
 }
 
-void ReadLine::loadHistoryEntry(const ElementIndex index) {
-    _text = U32StringEditor{_history[index]};
+void ReadLine::loadHistoryEntry(const ItemIndex index) {
+    _text = U32StringEditor{_history.getRefOrThrow(index)};
     setCursorIndex(CpIndex::end(_text.length()));
     resetPreferredColumn();
 }

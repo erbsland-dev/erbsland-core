@@ -2,12 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/StringTraits.hpp"
+
 namespace erbsland::text {
 
-template <typename T>
+template <impl::AnyStringOrStringEditorType T>
 class StringEncoder;
-
-template <typename T>
-struct StringEncoderTraits;
 
 }

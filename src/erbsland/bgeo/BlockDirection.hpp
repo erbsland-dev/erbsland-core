@@ -45,11 +45,9 @@ public:
     /// Create a direction from an enum value.
     constexpr BlockDirection(const Enum value) noexcept : _value{value} {} // NOLINT(*-explicit-constructor)
 
-    /// Default destructor.
+    // defaults
     ~BlockDirection() = default;
-    /// Default copy constructor.
     BlockDirection(const BlockDirection &) = default;
-    /// Default copy assignment.
     auto operator=(const BlockDirection &) -> BlockDirection & = default;
 
 public: // operators
@@ -116,9 +114,13 @@ private:
     using StringToDirectionEntry = std::tuple<text::StringLiteral, BlockDirection>;
     using StringToDirectionMap = std::array<StringToDirectionEntry, 22>;
 
+    /// Access the mapping from directions to position deltas.
     [[nodiscard]] static auto directionToDeltaMap() noexcept -> const DirectionToDeltaMap &;
+    /// Access the mapping from directions to canonical names.
     [[nodiscard]] static auto directionToStringMap() noexcept -> const DirectionToStringMap &;
+    /// Access the mapping from accepted names to directions.
     [[nodiscard]] static auto stringToDirectionMap() noexcept -> const StringToDirectionMap &;
+    /// Find a direction matching normalized text.
     [[nodiscard]] static auto findStringDirection(const text::String &text, BlockDirection &direction) noexcept -> bool;
 
 private:

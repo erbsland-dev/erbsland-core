@@ -13,6 +13,7 @@ namespace erbsland::path {
 /// @tested{PathWalkerTest PosixPathWalkerTest}
 class PathWalkOptions final {
 public:
+    /// Create path-walk options with their default values.
     PathWalkOptions() = default;
 
 public:

@@ -121,6 +121,8 @@ public:
         REQUIRE(result.isFailure());
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testDiscoveredPathRetainsPrefetchedType() {
         const auto fixture = PathTestFixture{"walker-prefetched-info"};
         const auto file = fixture.child("entry.txt");
@@ -147,5 +149,27 @@ public:
 
         std::this_thread::sleep_for(std::chrono::milliseconds{1100});
         REQUIRE_FALSE(discoveredInfo.exists());
+    }
+
+    void testDiscoveredPathRetainsPrefetchedTypeLight() {
+        const auto fixture = PathTestFixture{"walker-prefetched-info-light"};
+        const auto file = fixture.child("entry.txt");
+        file.content().writeTextOrThrow("data"_el);
+
+        auto discovered = el::path::Path{};
+        REQUIRE(fixture.path()
+                .walker()
+                .walkOrThrow([&](const el::path::Path &path, const el::path::PathInfo &) -> el::path::PathWalkStatus {
+                    if (path.name() == "entry.txt"_el) {
+                        discovered = path;
+                    }
+                    return el::path::PathWalkStatus::Continue;
+                })
+                .isSuccessful());
+        REQUIRE_FALSE(discovered.isEmpty());
+
+        std::filesystem::remove(file.toStdPath());
+        REQUIRE(discovered.info().isRegularFile());
+        REQUIRE_FALSE(el::path::Path{file.toStdPath()}.info().exists());
     }
 };

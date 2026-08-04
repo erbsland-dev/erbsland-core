@@ -56,6 +56,7 @@ Headers     :
     * "bgeo/BlockSize.hpp"
     * "bgeo/BlockDirection.hpp"
     * "bgeo/BlockAnchor.hpp"
+    * "bgeo/BlockAnchorFlag.hpp"
     * "bgeo/BlockAxisMapper.hpp"
     * "bgeo/BlockAlignedSource.hpp"
     * "bgeo/BlockRectangleList.hpp"
@@ -69,6 +70,9 @@ Headers     :
     * "core/Application.hpp"
     * "core/ApplicationInfo.hpp"
     * "core/CommandLineArguments.hpp"
+    * "cryptology/configuration/CryptologyConfiguration.hpp"
+    * "cryptology/tls/TlsConfiguration.hpp"
+    * "cryptology/tls/TlsConfigurationResolution.hpp"
     * "core/MainFn.hpp"
     * "core/InitializeFn.hpp"
     * "unit/ExitCode.hpp"
@@ -108,6 +112,13 @@ Headers     :
     * "i18n/DisplayTextTranslator.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "math/big_integers.rst"
+Title       : "Arbitrary-Precision Integers"
+Headers     :
+    * "math/BigInteger.hpp"
+    * "math/BigUnsignedInteger.hpp"
+
+------------*[ Reference Groups ]
 Page        : "math/integer_bit_operations.rst"
 Title       : "Integer Bit and Byte-Order Operations"
 Headers     :
@@ -141,9 +152,12 @@ Headers     :
     * "mem/ByteBlock.hpp"
     * "mem/ByteBlockEditor.hpp"
     * "mem/ByteIntegerAccess.hpp"
+    * "mem/ByteIntegerFormat.hpp"
     * "mem/ByteRingBuffer.hpp"
     * "mem/ByteReader.hpp"
     * "mem/ByteSpan.hpp"
+    * "mem/ByteTextFormat.hpp"
+    * "mem/ByteTextOptions.hpp"
     * "mem/ByteBuffer.hpp"
     * "mem/ByteWriter.hpp"
     * "mem/Endianness.hpp"
@@ -159,6 +173,8 @@ Headers     :
     * "mem/ReferenceCounter.hpp"
     * "mem/StorageIdentifier.hpp"
     * "mem/SharedArrayData.hpp"
+    * "mem/SharedArrayDataCleanupMethod.hpp"
+    * "mem/SharedArrayDataConstructMethod.hpp"
     * "mem/SharedData.hpp"
     * "mem/SharedDataPointer.hpp"
     * "mem/SharedVirtualData.hpp"
@@ -227,6 +243,7 @@ Headers     :
     * "path/PathInfoParts.hpp"
     * "path/PathMoveOptions.hpp"
     * "path/PathProgress.hpp"
+    * "path/PathProgressStatus.hpp"
     * "path/PathOperations.hpp"
     * "path/PathReadDataOptions.hpp"
     * "path/PathReadTextOptions.hpp"
@@ -253,9 +270,66 @@ Headers     :
     * "cryptology/CryptographicSecurity.hpp"
     * "cryptology/CryptographicStatus.hpp"
     * "cryptology/HashAlgorithm.hpp"
+    * "cryptology/HashSelector.hpp"
     * "cryptology/Hasher.hpp"
     * "cryptology/HashRequirements.hpp"
     * "cryptology/HashThroughput.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/message_authentication.rst"
+Title       : "Message Authentication and Key Derivation"
+Headers     :
+    * "cryptology/Hkdf.hpp"
+    * "cryptology/Hmac.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/key_agreement.rst"
+Title       : "Protected Data and Key Agreement"
+Headers     :
+    * "cryptology/keys/KeyAgreementAlgorithm.hpp"
+    * "cryptology/keys/KeyAgreementPrivateKey.hpp"
+    * "cryptology/keys/KeyAgreementPublicKey.hpp"
+    * "cryptology/keys/KeyAgreementSharedSecret.hpp"
+    * "cryptology/protected_data/ProtectedByteBlock.hpp"
+    * "cryptology/protected_data/ProtectedDataMode.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/signing_keys.rst"
+Title       : "Protected Signing Keys and TLS Server Identities"
+Headers     :
+    * "cryptology/keys/SigningKeyAlgorithm.hpp"
+    * "cryptology/keys/SigningPrivateKey.hpp"
+    * "cryptology/tls/TlsServerIdentity.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/symmetric_encryption.rst"
+Title       : "Symmetric Encryption"
+Headers     :
+    * "cryptology/symmetric/CryptographicDataBlock.hpp"
+    * "cryptology/CryptologyError.hpp"
+    * "cryptology/symmetric/SymmetricCipher.hpp"
+    * "cryptology/symmetric/SymmetricDecryptor.hpp"
+    * "cryptology/symmetric/SymmetricEncryptionRequirements.hpp"
+    * "cryptology/symmetric/SymmetricEncryptionSelector.hpp"
+    * "cryptology/symmetric/SymmetricEncryptionType.hpp"
+    * "cryptology/symmetric/SymmetricEncryptor.hpp"
+    * "cryptology/symmetric/SymmetricIv.hpp"
+    * "cryptology/symmetric/SymmetricKey.hpp"
+    * "cryptology/symmetric/SymmetricNonce.hpp"
+    * "cryptology/symmetric/SymmetricTag.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/tls_record_protection.rst"
+Title       : "TLS 1.3 Record Protection"
+Headers     :
+    * "cryptology/tls/TlsCipherSuite.hpp"
+    * "cryptology/tls_record/TlsRecordContentType.hpp"
+    * "cryptology/tls_record/TlsRecordDecryptor.hpp"
+    * "cryptology/tls_record/TlsRecordEncryptor.hpp"
+    * "cryptology/tls_record/TlsRecordError.hpp"
+    * "cryptology/tls_record/TlsRecordErrorCategory.hpp"
+    * "cryptology/tls_record/TlsRecordPlaintext.hpp"
+    * "cryptology/tls_record/TlsTrafficSecret.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "cryptology/password_hashing.rst"
@@ -269,6 +343,36 @@ Headers     :
     * "cryptology/PasswordVerification.hpp"
     * "cryptology/unsafe/UnsafeCustomPasswordHashParameters.hpp"
     * "cryptology/unsafe/UnsafeNoPasswordHashKey.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/x509_certificates.rst"
+Title       : "X.509 Certificates"
+Headers     :
+    * "cryptology/asn1/Asn1Node.hpp"
+    * "cryptology/asn1/Asn1ObjectIdentifier.hpp"
+    * "cryptology/asn1/Asn1TagClass.hpp"
+    * "cryptology/asn1/Asn1UniversalType.hpp"
+    * "cryptology/keys/PublicKey.hpp"
+    * "cryptology/tls/TlsSignatureScheme.hpp"
+    * "cryptology/x509/X509AlgorithmIdentifier.hpp"
+    * "cryptology/x509/X509BasicConstraints.hpp"
+    * "cryptology/x509/X509Certificate.hpp"
+    * "cryptology/x509/X509CertificateBundle.hpp"
+    * "cryptology/x509/X509CertificateFormat.hpp"
+    * "cryptology/x509/X509CertificateProfileIssue.hpp"
+    * "cryptology/x509/X509CertificateProfileIssueCategory.hpp"
+    * "cryptology/x509/X509CertificateProfileMode.hpp"
+    * "cryptology/x509/X509CertificateValidation.hpp"
+    * "cryptology/x509/X509CertificateValidationFailure.hpp"
+    * "cryptology/x509/X509CertificateValidationFailureCategory.hpp"
+    * "cryptology/x509/X509Extension.hpp"
+    * "cryptology/x509/X509GeneralName.hpp"
+    * "cryptology/x509/X509KeyUsage.hpp"
+    * "cryptology/x509/X509Name.hpp"
+    * "cryptology/x509/X509NameAttribute.hpp"
+    * "cryptology/x509/X509RelativeDistinguishedName.hpp"
+    * "cryptology/x509/X509ServerCertificatePolicy.hpp"
+    * "cryptology/x509/X509Version.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "random/random.rst"
@@ -335,6 +439,21 @@ Headers     :
     * "re/diagnostics/Disassembler.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "system/environment_variables.rst"
+Title       : "Environment Variables"
+Headers     :
+    * "system/EnvironmentVariables.hpp"
+
+------------*[ Reference Groups ]
+Page        : "system/subprocess.rst"
+Title       : "Subprocesses"
+Headers     :
+    * "system/Subprocess.hpp"
+    * "system/SubprocessExitStatus.hpp"
+    * "system/SubprocessOptions.hpp"
+    * "system/SubprocessOutputMode.hpp"
+
+------------*[ Reference Groups ]
 Page        : "system/user_lookup.rst"
 Title       : "User Lookup"
 Headers     :
@@ -381,6 +500,7 @@ Headers     :
     * "stream/TempByteOutputStream.hpp"
     * "stream/TempTextOutputStream.hpp"
     * "stream/TextPrintContext.hpp"
+    * "stream/SensitiveInputScope.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/base_n.rst"
@@ -406,6 +526,15 @@ Headers     :
     * "text/UnicodeCategory.hpp"
     * "text/UnicodeCategoryGroup.hpp"
     * "text/UnicodeVersion.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/punycode.rst"
+Title       : "Punycode and IDNA2008"
+Headers     :
+    * "text/punycode/PunycodeDecoder.hpp"
+    * "text/punycode/PunycodeEncoder.hpp"
+    * "text/punycode/PunycodeMode.hpp"
+    * "text/punycode/PunycodeOptions.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/string_formatter.rst"
@@ -560,6 +689,16 @@ Headers     :
     * "text/u32/U32StringSplitter.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "text/json.rst"
+Title       : "JSON Values"
+Headers     :
+    * "text/json/JsonContainers.hpp"
+    * "text/json/JsonFormatOptions.hpp"
+    * "text/json/JsonParseOptions.hpp"
+    * "text/json/JsonType.hpp"
+    * "text/json/JsonValue.hpp"
+
+------------*[ Reference Groups ]
 Page        : "text/string_tree.rst"
 Title       : "StringEditor Tree"
 Headers     :
@@ -627,6 +766,7 @@ Headers     :
 Page        : "text/string_width_variants.rst"
 Title       : "StringEditor Width Variants"
 Headers     :
+    * "text/NormalizationForm.hpp"
     * "text/u8/U8StringEditor.hpp"
     * "text/u8/U8String.hpp"
     * "text/u16/U16StringEditor.hpp"
@@ -640,9 +780,15 @@ Title       : "Date and Time Types"
 Headers     :
     * "time/Date.hpp"
     * "time/DateTime.hpp"
+    * "time/DateTimeParts.hpp"
     * "time/Time.hpp"
+    * "time/TimeParts.hpp"
+    * "time/TimeWrapResult.hpp"
     * "time/TimeWithZone.hpp"
+    * "time/TimeEpoch.hpp"
     * "time/CalendarParts.hpp"
+    * "time/CalendarPartsTypes.hpp"
+    * "time/CalendarDeltaParts.hpp"
     * "time/Second.hpp"
     * "time/Minute.hpp"
     * "time/Hour.hpp"
@@ -673,6 +819,7 @@ Headers     :
     * "time/TimeDeltaFormat.hpp"
     * "time/TimeDeltaUnit.hpp"
     * "time/TimeUnitTags.hpp"
+    * "time/TimeUnitTypes.hpp"
     * "time/TimePoint.hpp"
 
 ------------*[ Reference Groups ]
@@ -693,6 +840,7 @@ Headers     :
     * "unit/VersionPart.hpp"
     * "unit/VersionRange.hpp"
     * "unit/VersionUnit.hpp"
+    * "unit/VersionUnitTypes.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "util/supporting_utilities.rst"
@@ -784,6 +932,7 @@ Headers     :
     * "network/Host.hpp"
     * "network/HostEndpoint.hpp"
     * "network/HostName.hpp"
+    * "network/HostNameFormat.hpp"
     * "network/IpAddress.hpp"
     * "network/IpEndpoint.hpp"
     * "network/IpNetwork.hpp"
@@ -792,35 +941,81 @@ Headers     :
     * "network/ScopeId.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "network/url.rst"
+Title       : "URLs"
+Headers     :
+    * "network/url/Url.hpp"
+    * "network/url/UrlFormatOptions.hpp"
+    * "network/url/UrlParseOptions.hpp"
+    * "network/url/UrlScheme.hpp"
+
+------------*[ Reference Groups ]
 Page        : "network/facade.rst"
 Title       : "Network Facade"
 Headers     :
+    * "network/source/ConnectionQuota.hpp"
+    * "network/source/ConnectionQuotaLease.hpp"
+    * "network/host_lookup/HostResolvedFn.hpp"
     * "network/Network.hpp"
-    * "network/NetworkCallbacks.hpp"
-    * "network/NetworkError.hpp"
-    * "network/NetworkErrorContext.hpp"
-    * "network/NetworkSendStatus.hpp"
-    * "network/NetworkSourceState.hpp"
-    * "network/SocketBufferLimits.hpp"
-    * "network/UdpDatagram.hpp"
+    * "network/source/NetworkDataFn.hpp"
+    * "network/source/NetworkError.hpp"
+    * "network/source/NetworkErrorContext.hpp"
+    * "network/source/NetworkErrorFn.hpp"
+    * "network/source/NetworkErrorPhase.hpp"
+    * "network/source/NetworkErrorReason.hpp"
+    * "network/source/NetworkEventFn.hpp"
+    * "network/source/NetworkSendStatus.hpp"
+    * "network/source/NetworkSourceState.hpp"
+    * "network/source/SocketBufferLimits.hpp"
+    * "network/tcp/TcpAcceptOptions.hpp"
+    * "network/tcp/TcpConnectOptions.hpp"
+    * "network/tcp/TcpConnectionCloseContext.hpp"
+    * "network/tcp/TcpConnectionCloseFn.hpp"
+    * "network/tcp/TcpConnectionCloseOrigin.hpp"
+    * "network/tcp/TcpConnectionFilterFn.hpp"
+    * "network/tcp/TcpConnectionFilterResult.hpp"
+    * "network/tcp/TcpConnectionFn.hpp"
+    * "network/tcp/TcpConnectionRequestFn.hpp"
+    * "network/tcp/TcpConnectionRequestState.hpp"
+    * "network/tcp/TcpHostResolvedFn.hpp"
+    * "network/tcp/TcpListenerOptions.hpp"
+    * "network/tls/TlsAlertDescription.hpp"
+    * "network/tls/TlsClientConnectOptions.hpp"
+    * "network/tls/TlsClientConnection.hpp"
+    * "network/tls/TlsClientConnectionCloseContext.hpp"
+    * "network/tls/TlsClientConnectionCloseFn.hpp"
+    * "network/tls/TlsClientConnectionCloseOrigin.hpp"
+    * "network/tls/TlsClientConnectionEventEditor.hpp"
+    * "network/tls/TlsClientConnectionState.hpp"
+    * "network/tls/TlsServerAcceptOptions.hpp"
+    * "network/tls/TlsServerConnection.hpp"
+    * "network/tls/TlsServerConnectionCloseContext.hpp"
+    * "network/tls/TlsServerConnectionCloseFn.hpp"
+    * "network/tls/TlsServerConnectionCloseOrigin.hpp"
+    * "network/tls/TlsServerConnectionEventEditor.hpp"
+    * "network/tls/TlsServerConnectionState.hpp"
+    * "network/tls/TlsServerIdentityMapping.hpp"
+    * "network/udp/UdpDatagram.hpp"
+    * "network/udp/UdpDatagramDropContext.hpp"
+    * "network/udp/UdpDatagramDropFn.hpp"
+    * "network/udp/UdpDatagramDropReason.hpp"
+    * "network/udp/UdpDatagramFn.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "network/sources.rst"
 Title       : "Network Event Sources"
 Headers     :
-    * "network/HostLookup.hpp"
-    * "network/HostLookupEvents.hpp"
-    * "network/TcpConnection.hpp"
-    * "network/TcpConnectionAttempt.hpp"
-    * "network/TcpConnectionAttemptEvents.hpp"
-    * "network/TcpConnectionEvents.hpp"
-    * "network/TcpConnectionRequest.hpp"
-    * "network/TcpListener.hpp"
-    * "network/TcpListenerEvents.hpp"
-    * "network/UdpPeer.hpp"
-    * "network/UdpPeerEvents.hpp"
-    * "network/UdpSocket.hpp"
-    * "network/UdpSocketEvents.hpp"
+    * "network/host_lookup/HostLookup.hpp"
+    * "network/host_lookup/HostLookupEventEditor.hpp"
+    * "network/host_lookup/HostLookupOptions.hpp"
+    * "network/tcp/TcpConnection.hpp"
+    * "network/tcp/TcpConnectionEventEditor.hpp"
+    * "network/tcp/TcpConnectionRequest.hpp"
+    * "network/tcp/TcpListener.hpp"
+    * "network/tcp/TcpListenerEventEditor.hpp"
+    * "network/udp/UdpSocket.hpp"
+    * "network/udp/UdpSocketEventEditor.hpp"
+    * "network/udp/UdpSocketOptions.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "conf/parser.rst"

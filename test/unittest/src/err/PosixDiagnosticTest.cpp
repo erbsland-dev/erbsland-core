@@ -20,9 +20,11 @@ public:
         errno = ENOENT;
         const auto capturedErrno = el::system::PosixErrorContext::fromErrno();
         errno = previousErrno;
-        REQUIRE_EQUAL(capturedErrno->errorCode(), ENOENT);
+        const auto errorCode = capturedErrno->errorCode();
+        REQUIRE_EQUAL(errorCode, ENOENT);
         const auto context = el::system::PosixErrorContext::fromErrorCode(2);
-        REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);
+        const auto category = context->category();
+        REQUIRE_EQUAL(category, el::system::PlatformErrorCategory::NotFound);
         REQUIRE_EQUAL(
             el::system::PosixErrorContext{EACCES}.category(), el::system::PlatformErrorCategory::PermissionDenied);
         REQUIRE_EQUAL(
@@ -31,7 +33,9 @@ public:
         const auto error = el::system::PlatformError{"Native lookup failed"_el, context};
         REQUIRE_EQUAL(error.context(), context);
         const auto text = el::text::StringConverter{error.diagnostic()->toTextDocument().toString()}.toStdString();
-        REQUIRE(text.find("Native lookup failed") != std::string::npos);
-        REQUIRE(text.find("errno") != std::string::npos);
+        const auto lookupFailedPosition = text.find("Native lookup failed");
+        const auto errnoPosition = text.find("errno");
+        REQUIRE_NOT_EQUAL(lookupFailedPosition, std::string::npos);
+        REQUIRE_NOT_EQUAL(errnoPosition, std::string::npos);
     }
 };

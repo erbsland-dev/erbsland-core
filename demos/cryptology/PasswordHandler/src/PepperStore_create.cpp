@@ -5,7 +5,6 @@
 #include "StorageFile.hpp"
 
 #include <erbsland/core/Application.hpp>
-#include <erbsland/cryptology/PasswordHashKey.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/path/PathCollisionMode.hpp>
 #include <erbsland/random/Random.hpp>
@@ -25,19 +24,18 @@ using namespace el::text::literals;
 /// The key identifier is public, random, and filename-safe. The 32 random bytes are generated directly in protected
 /// storage. The ELCL file uses a native byte literal and collision-stop creation so an existing key is never silently
 /// replaced.
-void PepperStore::create(const el::Path &path) {
+void PepperStore::create() const {
     constexpr auto pepperLength = el::ByteLength{32U};
     static const auto identifierCharacters = el::CharSet{"abcdefghijklmnopqrstuvwxyz0123456789"_el};
     const auto identifier = el::String::fromJoined(
         {"key-"_el, el::application().secureRandom().buildString(el::CpLength{16U}, identifierCharacters)});
 
-    const auto protectedBytes = el::application().secureRandom().buildByteBlock(pepperLength);
-    const auto activeKey = el::PasswordHashKey::identified(identifier, protectedBytes);
+    auto protectedBytes = el::application().secureRandom().buildByteBlock(pepperLength);
+    protectedBytes.markAsSensitive();
     auto output = el::StringEditor{"@version: \"1.0\"\n\n[Pepper]\n"_el};
     appendElclText(output, "Identifier"_el, identifier);
     output.append(el::StringFormat{"Key: <{}>\n"_el}.build(protectedBytes));
-    static_cast<void>(activeKey);
-    writeStorageFile(path, el::String{output}, el::PathCollisionMode::Stop);
+    writeStorageFile(_path, el::String{output}, el::PathCollisionMode::Stop);
 }
 
 }

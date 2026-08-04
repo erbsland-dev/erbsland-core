@@ -19,7 +19,7 @@
 #include <erbsland/text/TextWalkStatus.hpp>
 #include <erbsland/unit/ColumnCount.hpp>
 #include <erbsland/unit/ColumnIndex.hpp>
-#include <erbsland/unit/ElementIndex.hpp>
+#include <erbsland/unit/ItemIndex.hpp>
 #include <erbsland/unit/LineIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -31,21 +31,6 @@
 
 using namespace el::text::literals;
 
-namespace {
-
-class TestNodeData final : public el::text::TextNodeData {
-public:
-    explicit TestNodeData(el::text::String text) noexcept : _text{std::move(text)} {}
-
-public:
-    [[nodiscard]] auto toString() const -> el::text::String override { return _text; }
-
-private:
-    el::text::String _text;
-};
-
-}
-
 using el::text::AnyStringBuilder;
 using el::text::PlainTextRenderer;
 using el::text::StringConverter;
@@ -54,15 +39,26 @@ using el::text::TextNode;
 using el::text::TextNodeType;
 using el::text::TextWalkResult;
 using el::text::TextWalkStatus;
-using el::unit::ElementIndex;
+using el::unit::ItemIndex;
 
 TESTED_TARGETS(PlainTextRenderer TextDocument TextNode TextNodeType TextWalkResult TextWalkStatus)
 class TextDocumentTest final : public el::UnitTest {
+private:
+    class TestNodeData final : public el::text::TextNodeData {
+    public:
+        explicit TestNodeData(el::text::String text) noexcept : _text{std::move(text)} {}
+
+        [[nodiscard]] auto toString() const -> el::text::String override { return _text; }
+
+    private:
+        el::text::String _text;
+    };
+
 public:
     void testDocumentConstruction() {
         auto document = TextDocument{};
 
-        REQUIRE(document.root() != nullptr);
+        REQUIRE(document.root());
         REQUIRE_EQUAL(document.root()->type(), TextNodeType::Document);
         REQUIRE(!document.root()->hasParent());
         REQUIRE(document.isEmpty());
@@ -84,28 +80,28 @@ public:
         REQUIRE_EQUAL(heading->level(), 2);
         REQUIRE_EQUAL(heading->identifier(), "intro"_el);
         REQUIRE_EQUAL(heading->style(), "lead"_el);
-        REQUIRE(heading->data() != nullptr);
+        REQUIRE(heading->data());
         REQUIRE_EQUAL(heading->data()->toString(), "chapter"_el);
         heading->setData(std::make_shared<TestNodeData>("custom"_el));
         REQUIRE_EQUAL(heading->data()->toString(), "custom"_el);
         REQUIRE(heading->hasChildren());
         REQUIRE_EQUAL(heading->children().count().toSizeT(), std::size_t{1U});
-        REQUIRE_EQUAL(heading->children().get(ElementIndex::zero())->type(), TextNodeType::Text);
-        REQUIRE_EQUAL(heading->children().get(ElementIndex::zero())->text(), "Introduction"_el);
-        REQUIRE(heading->children().get(ElementIndex::zero())->hasParent());
-        REQUIRE_EQUAL(heading->children().get(ElementIndex::zero())->parent(), heading);
+        REQUIRE_EQUAL(heading->children().get(ItemIndex::zero())->type(), TextNodeType::Text);
+        REQUIRE_EQUAL(heading->children().get(ItemIndex::zero())->text(), "Introduction"_el);
+        REQUIRE(heading->children().get(ItemIndex::zero())->hasParent());
+        REQUIRE_EQUAL(heading->children().get(ItemIndex::zero())->parent(), heading);
 
         const auto codeBlock = TextNode::createCodeBlock("cpp"_el);
-        REQUIRE(codeBlock->data() != nullptr);
-        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::CodeBlockData>(codeBlock->data()) != nullptr);
+        REQUIRE(codeBlock->data());
+        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::CodeBlockData>(codeBlock->data()));
         REQUIRE_EQUAL(codeBlock->data()->toString(), "cpp"_el);
-        REQUIRE(TextNode::createCodeBlock()->data() == nullptr);
+        REQUIRE_FALSE(TextNode::createCodeBlock()->data());
 
         const auto link = TextNode::createLink("https://erbsland.dev"_el);
-        REQUIRE(link->data() != nullptr);
-        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::LinkData>(link->data()) != nullptr);
+        REQUIRE(link->data());
+        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::LinkData>(link->data()));
         REQUIRE_EQUAL(link->data()->toString(), "https://erbsland.dev"_el);
-        REQUIRE(TextNode::createLink()->data() == nullptr);
+        REQUIRE_FALSE(TextNode::createLink()->data());
     }
 
     void testTraversal() {
@@ -141,12 +137,12 @@ public:
 
         auto clone = heading->clone();
 
-        REQUIRE(clone != heading);
+        REQUIRE_NOT_EQUAL(clone, heading);
         REQUIRE_EQUAL(clone->type(), TextNodeType::Heading);
         REQUIRE_EQUAL(clone->level(), 2);
         REQUIRE_EQUAL(clone->identifier(), "intro"_el);
         REQUIRE_EQUAL(clone->style(), "lead"_el);
-        REQUIRE(clone->data() != nullptr);
+        REQUIRE(clone->data());
         REQUIRE_EQUAL(clone->data()->toString(), "chapter"_el);
         REQUIRE(!clone->hasParent());
         REQUIRE(clone->contains(TextNodeType::Strong));
@@ -168,14 +164,14 @@ public:
             el::text::StringEditor{std::string_view{el::unittest::th::stdStringFromHex("61 22 5C 1B 62 0A 63 FF")}};
         REQUIRE_EQUAL(&paragraph->addEscapedText(unsafe, el::text::EscapeFormat::Display), paragraph.get());
         REQUIRE_EQUAL(paragraph->children().count(), el::text::TextNodeList::Count{5U});
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{0U}]->type(), TextNodeType::Text);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{0U}]->text(), "a\"\\"_el);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{1U}]->type(), TextNodeType::EscapeSequence);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{1U}]->text(), "\\u{1b}"_el);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{2U}]->text(), "b"_el);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{3U}]->type(), TextNodeType::EscapeSequence);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{3U}]->text(), "\\n"_el);
-        REQUIRE_EQUAL(paragraph->children()[ElementIndex{4U}]->text(), "c�"_el);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{0U})->type(), TextNodeType::Text);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{0U})->text(), "a\"\\"_el);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{1U})->type(), TextNodeType::EscapeSequence);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{1U})->text(), "\\u{1b}"_el);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{2U})->text(), "b"_el);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{3U})->type(), TextNodeType::EscapeSequence);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{3U})->text(), "\\n"_el);
+        REQUIRE_EQUAL(paragraph->children().getRefOrThrow(ItemIndex{4U})->text(), "c�"_el);
 
         const auto childCount = paragraph->children().count();
         paragraph->addEscapedText({}, el::text::EscapeFormat::Display);
@@ -222,17 +218,17 @@ public:
 
     void testListItemBuilderChoosesListKind() {
         auto paragraph = TextNode::createParagraph();
-        REQUIRE(paragraph->addListItem() == nullptr);
+        REQUIRE_FALSE(paragraph->addListItem());
         REQUIRE(!paragraph->hasChildren());
 
         auto bulletList = TextNode::createBulletList(0);
         auto bulletItem = bulletList->addListItem();
-        REQUIRE(bulletItem != nullptr);
+        REQUIRE(bulletItem);
         REQUIRE_EQUAL(bulletItem->type(), TextNodeType::BulletListItem);
 
         auto numberedList = TextNode::createNumberedList(0);
         auto numberedItem = numberedList->addListItem();
-        REQUIRE(numberedItem != nullptr);
+        REQUIRE(numberedItem);
         REQUIRE_EQUAL(numberedItem->type(), TextNodeType::NumberedListItem);
     }
 
@@ -348,18 +344,18 @@ public:
             el::text::CodeSnippet{std::move(lines), el::unit::LineIndex{7U}, "cli"_el}, std::move(markers));
 
         REQUIRE_EQUAL(snippet->type(), TextNodeType::CodeSnippet);
-        REQUIRE(snippet->data() != nullptr);
-        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::CodeSnippetData>(snippet->data()) != nullptr);
+        REQUIRE(snippet->data());
+        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::CodeSnippetData>(snippet->data()));
         REQUIRE_EQUAL(snippet->data()->toString(), "cli"_el);
         REQUIRE_EQUAL(snippet->children().count().toSizeT(), std::size_t{3U});
-        const auto markedLine = snippet->children().get(ElementIndex::one());
+        const auto markedLine = snippet->children().get(ItemIndex::one());
         REQUIRE_EQUAL(markedLine->type(), TextNodeType::CodeLine);
         REQUIRE_EQUAL(markedLine->children().count().toSizeT(), std::size_t{3U});
-        REQUIRE_EQUAL(markedLine->children().get(ElementIndex::zero())->type(), TextNodeType::CodeLineNumber);
-        REQUIRE_EQUAL(markedLine->children().get(ElementIndex::one())->type(), TextNodeType::CodeLineText);
-        const auto marker = markedLine->children().get(ElementIndex{2U});
+        REQUIRE_EQUAL(markedLine->children().get(ItemIndex::zero())->type(), TextNodeType::CodeLineNumber);
+        REQUIRE_EQUAL(markedLine->children().get(ItemIndex::one())->type(), TextNodeType::CodeLineText);
+        const auto marker = markedLine->children().get(ItemIndex{2U});
         REQUIRE_EQUAL(marker->type(), TextNodeType::CodeLineMarker);
-        REQUIRE(marker->data() != nullptr);
+        REQUIRE(marker->data());
         REQUIRE_EQUAL(marker->data()->toString(), "0:5"_el);
         REQUIRE_EQUAL(marker->style(), "error"_el);
 
@@ -394,10 +390,13 @@ public:
         document.addCodeSnippet(el::text::CodeSnippet{std::move(lines)}, std::move(markers));
 
         const auto rendered = StringConverter{document.toString()}.toStdString();
+        const auto ellipsisPosition = rendered.find("\u2026");
+        const auto sourcePosition = rendered.find("   2 │ a?b");
+        const auto markerPosition = rendered.find("     │   ▔");
         REQUIRE(rendered.starts_with("   1 │ "));
-        REQUIRE(rendered.find("\u2026") != std::string::npos);
-        REQUIRE(rendered.find("   2 │ a?b") != std::string::npos);
-        REQUIRE(rendered.find("     │   ▔") != std::string::npos);
+        REQUIRE_NOT_EQUAL(ellipsisPosition, std::string::npos);
+        REQUIRE_NOT_EQUAL(sourcePosition, std::string::npos);
+        REQUIRE_NOT_EQUAL(markerPosition, std::string::npos);
     }
 
     void testEmptyRendering() {

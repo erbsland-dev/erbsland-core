@@ -4,11 +4,14 @@
 
 #include "../err/ParameterError.hpp"
 #include "../text/CharSet.hpp"
+#include "../text/Literals.hpp"
 
 #include <algorithm>
 #include <utility>
 
 namespace erbsland::cterm {
+
+using namespace text::literals;
 
 Keys::Keys(Key key) {
     add(std::move(key));
@@ -104,11 +107,11 @@ auto Keys::contains(const Key &key) const noexcept -> bool {
 void Keys::validateKey(const Key &key) {
     static const auto nullCharacters = text::CharSet{text::Char{}};
     if (!key.valid()) {
-        throw err::ParameterError{"Key binding must be a displayable key.", "key"};
+        throw err::ParameterError{"Key binding must be a displayable key."_el, "key"_el};
     }
     const auto displayText = key.toDisplayText(false);
     if (displayText.isEmpty() || displayText.containsOneOf(nullCharacters)) {
-        throw err::ParameterError{"Key binding must be a displayable key.", "key"};
+        throw err::ParameterError{"Key binding must be a displayable key."_el, "key"_el};
     }
 }
 
@@ -117,7 +120,7 @@ auto Keys::keyFromType(const Key::Type keyType) -> Key {
     case Key::None:
     case Key::Character:
     case Key::Combined:
-        throw err::ParameterError{"Key binding type must be one special key type.", "keyType"};
+        throw err::ParameterError{"Key binding type must be one special key type."_el, "keyType"_el};
     default:
         return Key{keyType};
     }

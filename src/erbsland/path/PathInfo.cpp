@@ -5,6 +5,7 @@
 #include "PathError.hpp"
 
 #include "impl/BackendFactory.hpp"
+#include "impl/PathBackend.hpp"
 
 #include "../core/Application.hpp"
 #include "../system/PlatformError.hpp"

@@ -6,20 +6,22 @@
 
 namespace erbsland::event::impl {
 
-namespace {
-thread_local auto currentEvents = EventsWeakPtr{};
-}
+thread_local EventsWeakPtr CurrentEventsScope::_currentEvents{};
 
-CurrentEventsScope::CurrentEventsScope(EventsPtr events) noexcept : _previousEvents{currentEvents} {
-    currentEvents = std::move(events);
+CurrentEventsScope::CurrentEventsScope(EventsPtr events) noexcept : _previousEvents{_currentEvents} {
+    _currentEvents = std::move(events);
 }
 
 CurrentEventsScope::~CurrentEventsScope() noexcept {
-    currentEvents = std::move(_previousEvents);
+    _currentEvents = std::move(_previousEvents);
+}
+
+auto CurrentEventsScope::currentEventsWeakPtr() noexcept -> EventsWeakPtr {
+    return _currentEvents;
 }
 
 auto currentEventsWeakPtr() noexcept -> EventsWeakPtr {
-    return currentEvents;
+    return CurrentEventsScope::currentEventsWeakPtr();
 }
 
 }

@@ -70,19 +70,19 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
     auto state = _state;
     auto consumedAnySourceCell = false;
     while (state.tokenIndex < _preparedSourceLine.tokens.size()) {
-        auto spacingRun = SpacingRun{0, state.tokenIndex, state.tabStopIndex, SpacingRun::Action::Continue};
+        auto spacingRun = LayoutSpacingRun{0, state.tokenIndex, state.tabStopIndex, LayoutSpacingRun::Action::Continue};
         const auto spacingTabStopIndex = state.tabStopIndex;
         auto wordTokenIndex = state.tokenIndex;
         if (_preparedSourceLine.tokens[state.tokenIndex].type() != LayoutLineToken::Type::Word &&
             _preparedSourceLine.tokens[state.tokenIndex].type() != LayoutLineToken::Type::IndivisibleWord) {
             spacingRun = evaluateSpacingRun(state.tokenIndex, state.tabStopIndex, usedWidth, usedWidth == prefixWidth);
-            if (spacingRun.action == SpacingRun::Action::LineBreak) {
+            if (spacingRun.action == LayoutSpacingRun::Action::LineBreak) {
                 state.tokenIndex = spacingRun.nextTokenIndex;
                 state.tabStopIndex = spacingRun.nextTabStopIndex;
                 consumedAnySourceCell = true;
                 break;
             }
-            if (spacingRun.action == SpacingRun::Action::EndOfTokens) {
+            if (spacingRun.action == LayoutSpacingRun::Action::EndOfTokens) {
                 state.tokenIndex = spacingRun.nextTokenIndex;
                 state.tabStopIndex = spacingRun.nextTabStopIndex;
                 if (!consumedAnySourceCell) {
@@ -174,8 +174,8 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
 
 auto LineBuilder::evaluateSpacingRun(
     const std::size_t tokenIndex, const std::size_t tabStopIndex, int currentColumn, const bool isLineStart) const
-    -> SpacingRun {
-    auto result = SpacingRun{0, tokenIndex, tabStopIndex, SpacingRun::Action::Continue};
+    -> LayoutSpacingRun {
+    auto result = LayoutSpacingRun{0, tokenIndex, tabStopIndex, LayoutSpacingRun::Action::Continue};
     auto ignoreSeparatorSpaces = isLineStart;
     for (auto index = tokenIndex; index < _preparedSourceLine.tokens.size(); ++index) {
         const auto &token = _preparedSourceLine.tokens[index];
@@ -212,11 +212,11 @@ auto LineBuilder::evaluateSpacingRun(
             if (isLineStart && result.width == 0) {
                 continue;
             }
-            result.action = SpacingRun::Action::LineBreak;
+            result.action = LayoutSpacingRun::Action::LineBreak;
             return result;
         }
     }
-    result.action = SpacingRun::Action::EndOfTokens;
+    result.action = LayoutSpacingRun::Action::EndOfTokens;
     return result;
 }
 

@@ -11,13 +11,6 @@
 
 namespace erbsland::time {
 
-namespace {
-constexpr auto cDaysPer400Years = Days{146097};
-constexpr auto cDaysPer100Years = Days{36524};
-constexpr auto cDaysPer4Years = Days{1461};
-constexpr auto cLastValidDay = Days{3652424};
-}
-
 auto Year::isLeapYear() const noexcept -> bool {
     const auto year = toValue();
     return ((year % 4) == 0 && (year % 100) != 0) || (year % 400) == 0;

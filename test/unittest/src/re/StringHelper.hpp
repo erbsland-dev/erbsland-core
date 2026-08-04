@@ -19,6 +19,7 @@ using namespace el::text::literals;
 
 namespace re_test::string_helper {
 
+/// Build an Erbsland string editor from raw UTF-8 bytes.
 inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> StringEditor {
     auto buffer = el::text::impl::UnsafeU8StringBuffer{el::unit::ByteLength::fromSizeT(bytes.size())};
     auto index = std::size_t{};
@@ -29,6 +30,7 @@ inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> St
     return buffer.take();
 }
 
+/// Build a native string from raw bytes.
 inline auto bytesToStdString(const std::initializer_list<std::uint8_t> bytes) -> std::string {
     std::string result;
     result.reserve(bytes.size());
@@ -38,6 +40,7 @@ inline auto bytesToStdString(const std::initializer_list<std::uint8_t> bytes) ->
     return result;
 }
 
+/// Build a native UTF-8 string from raw bytes.
 inline auto bytesToU8String(const std::initializer_list<std::uint8_t> bytes) -> std::u8string {
     std::u8string result;
     result.reserve(bytes.size());
@@ -47,14 +50,16 @@ inline auto bytesToU8String(const std::initializer_list<std::uint8_t> bytes) -> 
     return result;
 }
 
+/// Convert an Erbsland string to a native string for test assertions.
 [[nodiscard]] inline auto toStdString(const String &value) -> std::string {
     return el::text::StringConverter{value}.toStdString();
 }
 
+/// Convert native string views to an Erbsland string list.
 [[nodiscard]] inline auto toStringList(const std::initializer_list<std::string_view> lines) -> el::text::StringList {
     el::text::StringList result;
     for (const auto line : lines) {
-        result.append(StringEditor{line});
+        result.append(String{line});
     }
     return result;
 }

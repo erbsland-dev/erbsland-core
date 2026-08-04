@@ -7,7 +7,7 @@
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
-#include "../unit/ElementCount.hpp"
+#include "../unit/ItemCount.hpp"
 
 namespace erbsland::path {
 
@@ -41,9 +41,9 @@ public:
         return *this;
     }
     /// The maximum number of generated names to try before giving up.
-    [[nodiscard]] auto maximumAttempts() const noexcept -> unit::ElementCount { return _maximumAttempts; }
+    [[nodiscard]] auto maximumAttempts() const noexcept -> unit::ItemCount { return _maximumAttempts; }
     /// Set the maximum number of generated names to try before giving up.
-    auto setMaximumAttempts(const unit::ElementCount value) noexcept -> PathTempFileOptions & {
+    auto setMaximumAttempts(const unit::ItemCount value) noexcept -> PathTempFileOptions & {
         _maximumAttempts = value;
         return *this;
     }
@@ -66,7 +66,7 @@ private:
     text::String _prefix;
     text::String _suffix;
     unit::CpLength _randomLength{24U};
-    unit::ElementCount _maximumAttempts{128U};
+    unit::ItemCount _maximumAttempts{128U};
     bool _removeOnClose{true};
     PathAccessProfile _accessProfile{PathAccessProfile::Default};
 };

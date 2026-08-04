@@ -46,11 +46,33 @@ class CowStorageTest final : public el::UnitTest {
 public:
     void testDefaultStorageHasInstance() {
         const auto storage = ProbeStorage{};
+        const auto other = ProbeStorage{};
 
         REQUIRE_EQUAL(storage.data().value, 0);
         REQUIRE_EQUAL(storage.useCount(), 1L);
         REQUIRE_FALSE(storage.isShared());
         REQUIRE_NOT_EQUAL(storage.storageId(), 0U);
+        REQUIRE_NOT_EQUAL(storage.storageId(), other.storageId());
+    }
+
+    void testSharedDefaultStorage() {
+        CowProbe::resetStats();
+        auto first = ManualProbeStorage::sharedDefault();
+        const auto second = ManualProbeStorage::sharedDefault();
+        const auto sharedStorageId = first.storageId();
+
+        REQUIRE_EQUAL(CowProbe::constructed.load(), 1);
+        REQUIRE_EQUAL(first.storageId(), second.storageId());
+        REQUIRE_EQUAL(first.useCount(), 3L);
+        REQUIRE(first.isShared());
+
+        first.detachedData().value = 9;
+
+        REQUIRE_NOT_EQUAL(first.storageId(), sharedStorageId);
+        REQUIRE_EQUAL(first.data().value, 9);
+        REQUIRE_EQUAL(second.data().value, 0);
+        REQUIRE_FALSE(first.isShared());
+        REQUIRE(second.isShared());
     }
 
     void testFromAndCreate() {

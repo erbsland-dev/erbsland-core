@@ -23,8 +23,8 @@ using el::text::String;
 using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
-using el::unit::ElementIndex;
 using el::unit::ExitCode;
+using el::unit::ItemIndex;
 using namespace el::options;
 using namespace el::text::literals;
 
@@ -47,12 +47,12 @@ public:
                           .setMaximum(ArgumentCount{3U});
 
         REQUIRE(editor.isValid());
-        REQUIRE(options->builtInOptionSet() != nullptr);
+        REQUIRE(options->builtInOptionSet());
         REQUIRE_EQUAL(options->builtInOptionSet()->options().size(), 2U);
         REQUIRE_EQUAL(options->optionSets().size(), 1U);
 
         const auto option = editor.option();
-        REQUIRE(option != nullptr);
+        REQUIRE(option);
         REQUIRE_EQUAL(option->names().size(), 3U);
         REQUIRE(option->names().at(0) == "-v"_el);
         REQUIRE(option->names().at(1) == "--verbose"_el);
@@ -189,7 +189,7 @@ public:
         options->addModule(module);
         optionSet->setFlags(OptionFlag::Required);
 
-        REQUIRE(options->builtInOptionSet() != nullptr);
+        REQUIRE(options->builtInOptionSet());
         REQUIRE_EQUAL(options->optionSets().size(), 1U);
         REQUIRE_EQUAL(options->optionModules().size(), 1U);
         REQUIRE_EQUAL(module->optionSets().size(), 1U);
@@ -308,7 +308,7 @@ public:
         const auto result = manager.parse(args);
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values() != nullptr);
+        REQUIRE(result.values());
 
         auto module = OptionModule::create("remove"_el);
         result.values()->setModuleName("remove"_el);

@@ -7,6 +7,8 @@
 #include "../../../err/ParameterError.hpp"
 #include "../../../text/StringFormat.hpp"
 
+#include <algorithm>
+
 namespace erbsland::re::impl {
 
 using namespace text::literals;
@@ -214,30 +216,35 @@ void Assembler::processAtomic(const AssemblerTokens &arguments, const bool isNeg
 void Assembler::processCounter(const AssemblerTokens &arguments) {
     const auto counterIndex = expectCounterIndex(arguments[0]);
     const auto counterValue = expectCounterValue(arguments[1]);
+    _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(counterIndex) + 1U);
     _writer.writeCounter(counterIndex, counterValue);
 }
 
 void Assembler::processAddCounter(const AssemblerTokens &arguments) {
     const auto counterIndex = expectCounterIndex(arguments[0]);
     const auto counterValue = expectCounterValue(arguments[1]);
+    _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(counterIndex) + 1U);
     _writer.writeAddCounter(counterIndex, counterValue);
 }
 
 void Assembler::processMaximum(const AssemblerTokens &arguments) {
     const auto counterIndex = expectCounterIndex(arguments[0]);
     const auto counterValue = expectCounterValue(arguments[1]);
+    _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(counterIndex) + 1U);
     _writer.writeMaximum(counterIndex, counterValue);
 }
 
 void Assembler::processSkipIfMaximum(const AssemblerTokens &arguments) {
     const auto counterIndex = expectCounterIndex(arguments[0]);
     const auto counterValue = expectCounterValue(arguments[1]);
+    _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(counterIndex) + 1U);
     _writer.writeSkipIfMaximum(counterIndex, counterValue);
 }
 
 void Assembler::processMinimum(const AssemblerTokens &arguments) {
     const auto counterIndex = expectCounterIndex(arguments[0]);
     const auto counterValue = expectCounterValue(arguments[1]);
+    _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(counterIndex) + 1U);
     _writer.writeMinimum(counterIndex, counterValue);
 }
 

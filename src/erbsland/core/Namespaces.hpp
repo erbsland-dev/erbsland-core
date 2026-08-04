@@ -27,6 +27,7 @@ namespace system {}
 namespace text {
 namespace html {}
 namespace pattern {}
+namespace punycode {}
 }
 namespace time {}
 namespace unit {}

@@ -19,6 +19,7 @@ namespace erbsland::event {
 /// @tested{EventBackendTest}
 class EventBackend {
 public:
+    // defaults
     virtual ~EventBackend() = default;
 
 public: // interface

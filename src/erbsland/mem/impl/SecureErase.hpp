@@ -5,6 +5,10 @@
 #include <cstddef>
 #include <span>
 
+#if defined(ERBSLAND_CORE_DEVELOPER_BUILD) || defined(ERBSLAND_UNITTEST_BUILD)
+#include <atomic>
+#endif
+
 namespace erbsland::mem::impl {
 
 /// Erase memory using an optimizer-resistant platform primitive.

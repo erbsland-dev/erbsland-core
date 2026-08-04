@@ -37,6 +37,7 @@ public:
         return *side == StringSide::Front ? Side::Begin : Side::End;
     }
 
+    /// Create trim tools for `data`.
     explicit constexpr U32StringTrimTools(const U32StringDataView &data) noexcept : _data{data} {}
 
 public: // trim

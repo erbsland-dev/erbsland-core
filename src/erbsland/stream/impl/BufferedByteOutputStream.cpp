@@ -5,11 +5,14 @@
 #include "BufferedByteOutputStreamData.hpp"
 #include "IoService.hpp"
 
+#include "../../mem/impl/RingBufferWriter.hpp"
+#include "../../text/impl/StringEncodingWriter.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEncoder.hpp"
 #include "../../time/TimePoint.hpp"
 
 #include <algorithm>
+#include <concepts>
 #include <exception>
 #include <mutex>
 #include <utility>
@@ -167,7 +170,10 @@ auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWr
             const auto frontCount = std::min(bytes.size(), _data->front.capacity().toSizeT());
             const auto backCount = bytes.size() - frontCount;
             if (isSuccessful(_data->back.reserveAdditional(unit::ByteLength::fromSizeT(backCount)))) {
-                static_cast<void>(_data->front.write(mem::ConstByteSpan{bytes.data(), frontCount}));
+                if (_data->front.write(mem::ConstByteSpan{bytes.data(), frontCount}) !=
+                    unit::ByteLength::fromSizeT(frontCount)) {
+                    std::terminate();
+                }
                 if (backCount > 0U) {
                     const auto result =
                         _data->back.writeExact(mem::ConstByteSpan{bytes.data() + frontCount, backCount});
@@ -193,8 +199,7 @@ auto BufferedByteOutputStream::write(const mem::ConstByteSpan bytes) -> StreamWr
 
 template <typename T>
 auto BufferedByteOutputStream::writeEncoded(
-    const text::StringEncoder<T> &encoder, const text::StringEncoding encoding, const text::StringBomMode bomMode)
-    -> StreamWriteStatus {
+    const T &source, const text::StringEncoding encoding, const text::StringBomMode bomMode) -> StreamWriteStatus {
     auto lock = std::unique_lock{_data->mutex};
     const auto deadline = time::TimePoint::inFuture(_data->settings.timeout());
     while (true) {
@@ -211,7 +216,14 @@ auto BufferedByteOutputStream::writeEncoded(
             continue;
         }
         const auto previousLength = _data->back.length();
-        if (isSuccessful(encoder.encodeTo(_data->back, encoding, bomMode))) {
+        const auto result = [&]() -> util::Result {
+            if constexpr (std::same_as<T, text::Char>) {
+                return encodeCharacterToBack(source, encoding, bomMode);
+            } else {
+                return text::StringEncoder{source}.encodeTo(_data->back, encoding, bomMode);
+            }
+        }();
+        if (isSuccessful(result)) {
             _data->logicalPosition.fetch_add((_data->back.length() - previousLength).toRawValue());
             _data->scheduleWrite();
             return StreamWriteStatus::Success;
@@ -227,16 +239,35 @@ auto BufferedByteOutputStream::writeEncoded(
     }
 }
 
+auto BufferedByteOutputStream::encodeCharacterToBack(
+    const text::Char character, const text::StringEncoding encoding, const text::StringBomMode bomMode)
+    -> util::Result {
+    auto length = encoding.bomLength(bomMode);
+    length.addOrThrow(character.encodedBytes(encoding));
+    if (isFailure(_data->back.reserveAdditional(length))) {
+        return util::Result::Failure;
+    }
+    auto ringWriter = mem::impl::RingBufferWriter{_data->back};
+    auto encodingWriter = text::impl::StringEncodingWriter{ringWriter, encoding};
+    if (encoding.writesBom(bomMode)) {
+        encodingWriter.writeBom();
+    }
+    encodingWriter.write(character);
+    ringWriter.commit();
+    return util::Result::Success;
+}
+
 auto BufferedByteOutputStream::writeEncodedText(
     const text::String &source, const text::StringEncoding encoding, const text::StringBomMode bomMode)
     -> StreamWriteStatus {
-    return writeEncoded(text::StringEncoder{source}, encoding, bomMode);
+    return writeEncoded(source, encoding, bomMode);
 }
 
 auto BufferedByteOutputStream::writeEncodedCharacter(
     const text::Char character, const text::StringEncoding encoding, const text::StringBomMode bomMode)
     -> StreamWriteStatus {
-    return writeEncoded(text::StringEncoder{character}, encoding, bomMode);
+    const auto normalized = character.isValidUnicode() ? character : text::Char::replacement();
+    return writeEncoded(normalized, encoding, bomMode);
 }
 
 auto BufferedByteOutputStream::supportsPositioning() const noexcept -> bool {

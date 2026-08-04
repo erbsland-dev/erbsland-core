@@ -3,17 +3,16 @@
 #pragma once
 
 #include "ApplicationData_fwd.hpp"
+#include "EventData_fwd.hpp"
 
 #include "../ApplicationInfo.hpp"
 #include "../CommandLineArguments.hpp"
 #include "../InitializeFn.hpp"
 #include "../MainFn.hpp"
 
+#include "../../cryptology/configuration/CryptologyConfiguration_fwd.hpp"
 #include "../../cterm/Terminal_fwd.hpp"
 #include "../../cterm/TerminalDocumentStyle.hpp"
-#include "../../event/EventRegistry.hpp"
-#include "../../event/EventThread_fwd.hpp"
-#include "../../event/impl/EventLoop.hpp"
 #include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../options/Options.hpp"
 #include "../../options/OptionSensitiveTextLocation.hpp"
@@ -24,9 +23,6 @@
 #include "../../text/TextDocument_fwd.hpp"
 #include "../../unit/ExitCode.hpp"
 
-#include <mutex>
-#include <vector>
-
 namespace erbsland::core::impl {
 
 /// The interface for the internal data of the application.
@@ -35,20 +31,7 @@ namespace erbsland::core::impl {
 /// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
 class ApplicationData {
 public:
-    struct EventData {
-        EventData() :
-            eventLoop{std::make_shared<event::impl::EventLoop>()},
-            eventIdRegistry{event::EventRegistry::PrivateTag{}} {}
-        event::EventLoopPtr eventLoop;
-        event::EventRegistry eventIdRegistry; ///< The event registry.
-        std::mutex mutex;                     ///< Protects managed event system state.
-        bool quitExitCodeSet{false};          ///< True if the application exit code was set by `quit()`.
-        unit::ExitCode quitExitCode;          ///< The first exit code passed to `quit()`.
-        std::vector<event::ManagedEventThreadWeakPtr> eventThreads; ///< The managed event threads.
-    };
-    using EventDataPtr = std::unique_ptr<EventData>;
-
-public:
+    // defaults
     ApplicationData() = default;
     virtual ~ApplicationData() = default;
 
@@ -68,7 +51,9 @@ public:
     virtual void renderSystemOutput(const text::TextDocument &document) = 0;
 
 public: // accessors
+    /// Access the immutable application information.
     [[nodiscard]] virtual auto info() noexcept -> ApplicationInfo & = 0;
+    /// Access the converted command-line arguments.
     [[nodiscard]] virtual auto commandLineArguments() const noexcept -> const CommandLineArguments & = 0;
     /// Access mutable converted arguments exclusively for option parsing and sensitive-text masking.
     [[nodiscard]] virtual auto commandLineArgumentsForParsing() noexcept -> CommandLineArguments & = 0;
@@ -76,30 +61,57 @@ public: // accessors
     /// Existing bytes or code units are replaced with stars; terminators and buffer sizes are preserved.
     /// @param locations The sensitive locations reported by the option parser.
     virtual void maskSensitiveCommandLineText(const options::OptionSensitiveTextLocations &locations) noexcept = 0;
+    /// Access the configured command-line options.
     [[nodiscard]] virtual auto options() noexcept -> const options::OptionsPtr & = 0;
+    /// Set the configured command-line options.
     virtual void setOptions(options::OptionsPtr options) noexcept = 0;
+    /// Access the resolved option values.
     [[nodiscard]] virtual auto optionValues() noexcept -> const options::OptionValuesPtr & = 0;
+    /// Set the resolved option values.
     virtual void setOptionValues(options::OptionValuesPtr optionValues) noexcept = 0;
+    /// Access the style used for system output.
     [[nodiscard]] virtual auto systemOutputStyle() const noexcept -> const cterm::TerminalDocumentStyle & = 0;
+    /// Set the style used for system output.
     virtual void setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexcept = 0;
+    /// Access the application's initialization function.
     [[nodiscard]] virtual auto initializeFn() noexcept -> const InitializeFn & = 0;
+    /// Set the application's initialization function.
     virtual void setInitializeFn(InitializeFn initializeFn) noexcept = 0;
+    /// Access the application's main function.
     [[nodiscard]] virtual auto mainFn() noexcept -> const MainFn & = 0;
+    /// Set the application's main function.
     virtual void setMainFn(MainFn mainFn) noexcept = 0;
+    /// Access the mutex protecting the random generators.
     [[nodiscard]] virtual auto randomMutex() noexcept -> std::mutex & = 0;
+    /// Access the standard random generator.
     [[nodiscard]] virtual auto random() noexcept -> const random::RandomPtr & = 0;
+    /// Set the standard random generator.
     virtual void setRandom(random::RandomPtr random) noexcept = 0;
+    /// Access the cryptographically secure random generator.
     [[nodiscard]] virtual auto secureRandom() noexcept -> const random::RandomPtr & = 0;
+    /// Set the cryptographically secure random generator.
     virtual void setSecureRandom(random::RandomPtr random) noexcept = 0;
+    /// Access the cryptology configuration.
+    [[nodiscard]] virtual auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & = 0;
+    /// Access the mutex protecting system integration state.
     [[nodiscard]] virtual auto systemMutex() noexcept -> std::mutex & = 0;
+    /// Access the application display-text map.
     [[nodiscard]] virtual auto displayText() noexcept -> const i18n::DisplayTextMapConstPtr & = 0;
+    /// Set the application display-text map.
     virtual void setDisplayText(i18n::DisplayTextMapConstPtr displayText) noexcept = 0;
+    /// Access the user lookup service.
     [[nodiscard]] virtual auto userLookup() noexcept -> const system::UserLookupPtr & = 0;
+    /// Set the user lookup service.
     virtual void setUserLookup(system::UserLookupPtr userLookup) noexcept = 0;
+    /// Test whether terminal integration is enabled.
     [[nodiscard]] virtual auto isTerminalEnabled() const noexcept -> bool = 0;
+    /// Enable or disable terminal integration.
     virtual void setTerminalEnabled(bool enabled) noexcept = 0;
+    /// Access the configured terminal.
     [[nodiscard]] virtual auto terminal() noexcept -> const cterm::TerminalPtr & = 0;
+    /// Set the configured terminal.
     virtual void setTerminal(cterm::TerminalPtr terminal) noexcept = 0;
+    /// Set the standard-stream redirect used by the application.
     virtual void setStandardStreamRedirect(stream::StandardStreamRedirect redirect) noexcept = 0;
 };
 

@@ -15,6 +15,7 @@ public:
     [[nodiscard]] static constexpr auto acknowledgeRisk() noexcept -> UnsafeNoPasswordHashKey { return {}; }
 
 private:
+    // defaults
     constexpr UnsafeNoPasswordHashKey() noexcept = default;
 };
 

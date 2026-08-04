@@ -5,6 +5,9 @@
 #include "../RandomError.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
+#include "../../System/PlatformError.hpp"
+#include "../../System/WindowsErrorContext.hpp"
+#include "../../text/Literals.hpp"
 
 #include <bcrypt.h>
 
@@ -12,12 +15,14 @@
 
 namespace erbsland::random::impl {
 
+using namespace text::literals;
+
 void WindowsEntropySource::fillBytes(const std::span<std::byte> destination) {
     if (destination.empty()) {
         return;
     }
     if (destination.size() > std::numeric_limits<ULONG>::max()) {
-        throw random::RandomError{"Requested entropy block is too large"};
+        throw system::PlatformError{"Requested entropy block is too large"_el};
     }
     const auto status = ::BCryptGenRandom(
         nullptr,
@@ -25,7 +30,7 @@ void WindowsEntropySource::fillBytes(const std::span<std::byte> destination) {
         static_cast<ULONG>(destination.size()),
         BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (status < 0) {
-        throw random::RandomError{"System entropy source failed"};
+        throw system::PlatformError{"System entropy source failed"_el, system::WindowsErrorContext::fromLastError()};
     }
 }
 

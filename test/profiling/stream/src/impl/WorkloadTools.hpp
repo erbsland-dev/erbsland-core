@@ -14,13 +14,13 @@
 #include <erbsland/cryptology/HashAlgorithm.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
 #include <erbsland/stream/impl/StreamBufferSizes.hpp>
+#include <erbsland/system/EnvironmentVariables.hpp>
 #include <erbsland/text/StringCharReader.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <barrier>
 #include <cmath>
-#include <cstdlib>
 #include <exception>
 #include <limits>
 #include <mutex>
@@ -28,41 +28,30 @@
 #include <set>
 #include <thread>
 
-namespace app::stream {
+namespace app::stream::impl {
 
 using namespace el::text::literals;
 
-namespace impl {
-
 using Clock = std::chrono::steady_clock;
 
+/// Throw the workload failure with the specified message.
 [[noreturn]] void workloadError(const el::String &message) {
     throw el::ApplicationError{message};
 }
 
+/// Stop the current worker if another worker has failed.
 void requireActive(const std::atomic_bool &cancelled) {
     if (cancelled.load(std::memory_order_relaxed)) {
         workloadError("Workload cancelled after another worker failed."_el);
     }
 }
 
-[[nodiscard]] auto injectWorkerFailure() noexcept -> bool {
-#if defined(_WIN32)
-    auto *value = static_cast<char *>(nullptr);
-    auto size = std::size_t{};
-    const auto status = _dupenv_s(&value, &size, "ERBSLAND_STREAM_PROFILE_TEST_FAIL_WORKER");
-    const auto result = status == 0 && value != nullptr;
-    std::free(value);
-    return result;
-#else
-    return std::getenv("ERBSLAND_STREAM_PROFILE_TEST_FAIL_WORKER") != nullptr;
-#endif
-}
-
+/// Get the elapsed nanoseconds since the specified start time.
 [[nodiscard]] auto elapsedNanoseconds(const Clock::time_point start) -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start).count();
 }
 
+/// Mix a value into a deterministic pseudo-random seed.
 [[nodiscard]] auto mixSeed(std::uint64_t seed, const std::uint64_t value) noexcept -> std::uint64_t {
     seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6U) + (seed >> 2U);
     seed ^= seed >> 30U;
@@ -72,6 +61,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return seed ^ (seed >> 31U);
 }
 
+/// Derive the deterministic seed for a scenario worker slot.
 [[nodiscard]] auto scenarioSeed(
     const std::uint64_t seed, const Scenario &scenario, const std::uint32_t worker, const std::uint32_t slot)
     -> std::uint64_t {
@@ -80,24 +70,28 @@ void requireActive(const std::atomic_bool &cancelled) {
     return mixSeed(result, slot);
 }
 
+/// Calculate the MD5 digest for a byte block.
 [[nodiscard]] auto digest(const el::ByteBlock &bytes) -> el::ByteBlock {
     auto hasher = el::cryptology::Hasher{el::cryptology::HashAlgorithm::Md5};
     hasher.update(bytes);
     return hasher.finalize();
 }
 
+/// Calculate the MD5 digest for text.
 [[nodiscard]] auto digest(const el::String &text) -> el::ByteBlock {
     auto hasher = el::cryptology::Hasher{el::cryptology::HashAlgorithm::Md5};
     hasher.update(text);
     return hasher.finalize();
 }
 
+/// Calculate the MD5 digest of no more than the expected file data.
 [[nodiscard]] auto rawFileDigest(const el::Path &path, const std::uint64_t maximum) -> el::ByteBlock {
     auto options = el::PathReadDataOptions{};
     options.setMaximumByteLength(el::ByteLength{maximum + 16U});
     return digest(path.content().readDataOrThrow(options));
 }
 
+/// Create deterministic text with approximately the requested byte length.
 [[nodiscard]] auto buildText(const std::uint64_t seed, const std::uint64_t targetBytes) -> el::String {
     auto random = el::FastRandom{seed};
     auto result = el::StringEditor{};
@@ -136,6 +130,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return result;
 }
 
+/// Return the text expected after the scenario write method.
 [[nodiscard]] auto expectedWrittenText(const Scenario &scenario, const el::String &source, const std::uint64_t seed)
     -> el::String {
     if (scenario.method != Method::WriteLine) {
@@ -157,6 +152,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return result;
 }
 
+/// Create a fixture and, if requested, its input file.
 [[nodiscard]] auto buildFixture(
     const Scenario &scenario,
     const el::Path &path,
@@ -200,11 +196,13 @@ void requireActive(const std::atomic_bool &cancelled) {
     return result;
 }
 
+/// Select the deterministic file size for a scenario.
 [[nodiscard]] auto selectedFileSize(const Configuration &configuration, const Scenario &scenario) -> std::uint64_t {
     auto random = el::FastRandom{scenarioSeed(configuration.run.seed, scenario, 0U, 0U)};
     return random.getUInt64(scenario.fileSizeMinimum, scenario.fileSizeMaximum);
 }
 
+/// Estimate the encoded physical size required by a scenario file.
 [[nodiscard]] auto estimatedPhysicalFileSize(const Scenario &scenario, const std::uint64_t fileSize) noexcept
     -> std::uint64_t {
     if (scenario.fileType == FileType::Binary) {
@@ -216,6 +214,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return fileSize * 4U + 64U;
 }
 
+/// Calculate the number of file slots that fit in the configured corpus.
 [[nodiscard]] auto slotCount(const Configuration &configuration, const Scenario &scenario, const std::uint64_t fileSize)
     -> std::uint32_t {
     const auto threadCount = configuration.run.threadCount;
@@ -235,6 +234,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return static_cast<std::uint32_t>(std::clamp<std::uint64_t>(configuration.run.corpusLimit / denominator, 1U, 4U));
 }
 
+/// Prepare fixtures and their workspace for one benchmark scenario.
 [[nodiscard]] auto prepareScenario(
     const Configuration &configuration, const Scenario &scenario, const el::TempDirectoryPtr &workspace)
     -> PreparedScenario {
@@ -271,6 +271,7 @@ void requireActive(const std::atomic_bool &cancelled) {
     return result;
 }
 
+/// Add a byte range to the worker's counters and optional digest.
 void addByteResult(WorkerResult &worker, el::cryptology::Hasher *hasher, const el::ConstByteSpan bytes) {
     worker.bytes += bytes.size();
     if (!bytes.empty()) {
@@ -281,6 +282,7 @@ void addByteResult(WorkerResult &worker, el::cryptology::Hasher *hasher, const e
     }
 }
 
+/// Add text to the worker's counters and optional digest.
 void addTextResult(WorkerResult &worker, el::cryptology::Hasher *hasher, const el::String &text) {
     worker.bytes += text.length().toRawValue();
     worker.codePoints += text.characterLength().toRawValue();
@@ -292,6 +294,7 @@ void addTextResult(WorkerResult &worker, el::cryptology::Hasher *hasher, const e
     }
 }
 
+/// Retry a timed output operation until it succeeds or the worker is cancelled.
 template <typename Function>
 void retryWrite(
     Function function, const el::OutputStreamPtr &stream, WorkerResult &result, const std::atomic_bool &cancelled) {
@@ -302,21 +305,29 @@ void retryWrite(
             return;
         }
         ++result.timeouts;
-        static_cast<void>(stream->waitForReady());
+        const auto waitStatus = stream->waitForReady();
+        if (waitStatus.isTimeout()) {
+            continue;
+        }
     }
 }
 
+/// Close an output stream while retrying bounded close attempts.
 void closeOutput(const el::OutputStreamPtr &stream, WorkerResult &result) {
     for (auto attempt = 0U; attempt < 16U; ++attempt) {
         if (stream->close().isClosed()) {
             return;
         }
         ++result.timeouts;
-        static_cast<void>(stream->waitForReady());
+        const auto waitStatus = stream->waitForReady();
+        if (waitStatus.isTimeout()) {
+            continue;
+        }
     }
     workloadError("Output stream did not close after repeated timeout retries."_el);
 }
 
+/// Read a binary fixture according to the scenario and collect its measurements.
 void readBinary(
     const Scenario &scenario,
     const Fixture &fixture,
@@ -425,6 +436,7 @@ void readBinary(
     result.bytes = fixture.rawLength;
 }
 
+/// Write a binary fixture according to the scenario and collect its measurements.
 void writeBinary(
     const Scenario &scenario,
     const Fixture &fixture,
@@ -471,6 +483,7 @@ void writeBinary(
     result.bytes = fixture.rawLength;
 }
 
+/// Read a text fixture according to the scenario and collect its measurements.
 void readText(
     const Scenario &scenario,
     const Fixture &fixture,
@@ -540,6 +553,7 @@ void readText(
     result.bytes = fixture.rawLength;
 }
 
+/// Write a text fixture according to the scenario and collect its measurements.
 void writeText(
     const Scenario &scenario,
     const Fixture &fixture,
@@ -593,6 +607,7 @@ void writeText(
     result.bytes = fixture.rawLength;
 }
 
+/// Execute one worker for a prepared scenario sample.
 [[nodiscard]] auto executeWorker(
     const PreparedScenario &prepared,
     const Configuration &configuration,
@@ -603,9 +618,6 @@ void writeText(
     const auto &workerFixtures = prepared.fixtures[workerIndex];
     const auto fixtureIndex = static_cast<std::size_t>(sampleIndex % workerFixtures.size());
     const auto &fixture = workerFixtures[fixtureIndex];
-    if (injectWorkerFailure() && workerIndex == 0U) {
-        workloadError("Injected worker failure for propagation testing."_el);
-    }
     const auto seed =
         scenarioSeed(configuration.run.seed, prepared.scenario, workerIndex, static_cast<std::uint32_t>(fixtureIndex));
     auto result = WorkerResult{};
@@ -623,6 +635,7 @@ void writeText(
     return result;
 }
 
+/// Verify the output digest for one worker fixture.
 void validateFixtureOutput(const PreparedScenario &prepared, const std::uint32_t worker, const std::uint64_t sample) {
     const auto &fixtures = prepared.fixtures[worker];
     const auto &fixture = fixtures[static_cast<std::size_t>(sample % fixtures.size())];
@@ -634,6 +647,7 @@ void validateFixtureOutput(const PreparedScenario &prepared, const std::uint32_t
     }
 }
 
+/// Verify the output digests of all prepared fixtures.
 void validateAllOutputs(const PreparedScenario &prepared) {
     for (auto worker = std::uint32_t{}; worker < prepared.fixtures.size(); ++worker) {
         for (auto slot = std::size_t{}; slot < prepared.fixtures[worker].size(); ++slot) {
@@ -642,12 +656,15 @@ void validateAllOutputs(const PreparedScenario &prepared) {
     }
 }
 
-[[nodiscard]] auto runSample(
+/// Run one parallel sample and return the aggregated measurements.
+auto runSample(
     const PreparedScenario &prepared,
     const Configuration &configuration,
     const std::uint64_t sampleIndex,
     const bool validate) -> SampleResult {
     const auto threadCount = configuration.run.threadCount;
+    const auto failureVariable = el::system::EnvironmentVariables{}.get("ERBSLAND_STREAM_PROFILE_TEST_FAIL_WORKER"_el);
+    const auto injectWorkerFailure = failureVariable.has_value() && *failureVariable == "1"_el;
     auto result = SampleResult{};
     result.workers.resize(threadCount);
     auto cancelled = std::atomic_bool{false};
@@ -661,6 +678,9 @@ void validateAllOutputs(const PreparedScenario &prepared) {
         threads.emplace_back([&, worker]() -> void {
             startBarrier.arrive_and_wait();
             try {
+                if (injectWorkerFailure && worker == 0U) {
+                    workloadError("Injected worker failure for propagation testing."_el);
+                }
                 result.workers[worker] =
                     executeWorker(prepared, configuration, worker, sampleIndex, validate, cancelled);
             } catch (...) {
@@ -716,6 +736,7 @@ void validateAllOutputs(const PreparedScenario &prepared) {
     return result;
 }
 
+/// Calculate latency statistics from the supplied values.
 [[nodiscard]] auto calculateStatistics(std::vector<std::int64_t> values) -> Statistics {
     std::ranges::sort(values);
     const auto sum = std::accumulate(values.begin(), values.end(), std::int64_t{});
@@ -728,12 +749,14 @@ void validateAllOutputs(const PreparedScenario &prepared) {
     };
 }
 
+/// Convert transferred bytes and elapsed time to MiB per second.
 [[nodiscard]] auto throughput(const std::uint64_t bytes, const std::int64_t nanoseconds) noexcept -> double {
     return nanoseconds > 0
         ? static_cast<double>(bytes) * 1'000'000'000.0 / (static_cast<double>(nanoseconds) * 1024.0 * 1024.0)
         : 0.0;
 }
 
+/// Calculate per-worker throughput fairness across samples.
 [[nodiscard]] auto calculateFairness(const std::vector<SampleResult> &samples, const std::uint32_t threadCount)
     -> WorkerFairness {
     auto workerBytes = std::vector<std::uint64_t>(threadCount);
@@ -764,6 +787,7 @@ void validateAllOutputs(const PreparedScenario &prepared) {
     };
 }
 
+/// Calculate aggregate throughput statistics across samples.
 [[nodiscard]] auto calculateThroughputStatistics(const std::vector<SampleResult> &samples) -> ThroughputStatistics {
     auto values = std::vector<double>{};
     values.reserve(samples.size());
@@ -780,6 +804,7 @@ void validateAllOutputs(const PreparedScenario &prepared) {
     };
 }
 
+/// Print the measurements for one scenario sample.
 void printSample(const Configuration &configuration, const Scenario &scenario, const SampleResult &sample) {
     const auto aggregateThroughput = throughput(sample.bytes, sample.wallNanoseconds);
     const auto bufferSizes = el::stream::impl::streamBufferSizes(scenario.buffering);
@@ -844,6 +869,7 @@ void printSample(const Configuration &configuration, const Scenario &scenario, c
         aggregateThroughput);
 }
 
+/// Print validation coverage for one scenario sample.
 void printCoverage(const Scenario &scenario, const SampleResult &sample) {
     el::io::printLine(
         "record=coverage scenario="_el,
@@ -861,6 +887,7 @@ void printCoverage(const Scenario &scenario, const SampleResult &sample) {
         " validation=md5-ok"_el);
 }
 
+/// Print the aggregate benchmark measurements for a scenario.
 void printBenchmark(
     const Configuration &configuration, const Scenario &scenario, const std::vector<SampleResult> &samples) {
     const auto bufferSizes = el::stream::impl::streamBufferSizes(scenario.buffering);
@@ -962,6 +989,7 @@ void printBenchmark(
         fairness.coefficientOfVariation);
 }
 
+/// Calculate the digest that identifies the effective benchmark configuration.
 [[nodiscard]] auto configurationDigest(const Configuration &configuration) -> el::ByteBlock {
     auto effective = el::StringEditor{};
     effective.append(
@@ -997,8 +1025,6 @@ void printBenchmark(
                 scenario.weight));
     }
     return digest(effective);
-}
-
 }
 
 }

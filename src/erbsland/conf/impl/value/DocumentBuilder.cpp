@@ -5,8 +5,6 @@
 #include "Document.hpp"
 #include "Value.hpp"
 
-#include <stdexcept>
-
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
@@ -92,7 +90,7 @@ void DocumentBuilder::addSectionList(const NamePathLike &namePathLike, const Loc
 void DocumentBuilder::addValue(const NamePathLike &namePathLike, const ValuePtr &value, const Location &location) {
     auto namePath = toNamePath(namePathLike);
     if (value == nullptr) {
-        throw err::ParameterError{"value must not be null.", "value"};
+        throw err::ParameterError{"value must not be null."_el, "value"_el};
     }
     if (value->type().isUndefined()) {
         throw err::LogicError{"Can not add an undefined value."};

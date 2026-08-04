@@ -13,29 +13,21 @@ Interface
 .. doxygenclass:: erbsland::cterm::Bitmap
     :members:
 .. doxygenenum:: erbsland::cterm::BitmapColorMode
-
-.. doxygenenum:: erbsland::cterm::BitmapScaleMode
-
 .. doxygenclass:: erbsland::cterm::BitmapDrawOptions
     :members:
+.. doxygenenum:: erbsland::cterm::BitmapScaleMode
 .. doxygenclass:: erbsland::cterm::Block
     :members:
-.. doxygentypedef:: erbsland::cterm::Block16StylePtr
-
 .. doxygenclass:: erbsland::cterm::Block16Style
     :members:
+
+.. doxygentypedef:: erbsland::cterm::Block16StylePtr
 .. doxygenclass:: erbsland::cterm::BlockAttributes
     :members:
-.. doxygentypedef:: erbsland::cterm::BlockCombinationStylePtr
-
 .. doxygenclass:: erbsland::cterm::BlockCombinationStyle
     :members:
 
-.. doxygenclass:: erbsland::cterm::SimpleBlockCombinationStyle
-    :members:
-
-.. doxygenclass:: erbsland::cterm::MatrixBlockCombinationStyle
-    :members:
+.. doxygentypedef:: erbsland::cterm::BlockCombinationStylePtr
 .. doxygentypedef:: erbsland::cterm::BlockCount
 .. doxygentypedef:: erbsland::cterm::BlockIndex
 .. doxygenclass:: erbsland::cterm::BlockPrintContext
@@ -60,16 +52,14 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cterm::Buffer
     :members:
+.. doxygenclass:: erbsland::cterm::BufferConstRefView
+    :members:
 .. doxygenclass:: erbsland::cterm::BufferDrawOptions
     :members:
 .. doxygenenum:: erbsland::cterm::BufferResizeMode
-.. doxygenclass:: erbsland::cterm::BufferViewBase
-    :members:
-
 .. doxygenclass:: erbsland::cterm::BufferView
     :members:
-
-.. doxygenclass:: erbsland::cterm::BufferConstRefView
+.. doxygenclass:: erbsland::cterm::BufferViewBase
     :members:
 .. doxygenclass:: erbsland::cterm::Color
     :members:
@@ -77,7 +67,6 @@ Interface
 .. doxygentypedef:: erbsland::cterm::ColorList
 .. doxygenclass:: erbsland::cterm::ColorBase
     :members:
-
 .. doxygenclass:: erbsland::cterm::ColorPart
     :members:
 
@@ -97,17 +86,16 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cterm::CursorWriter
     :members:
-.. doxygentypedef:: erbsland::cterm::FontPtr
-
 .. doxygenclass:: erbsland::cterm::Font
     :members:
+
+.. doxygentypedef:: erbsland::cterm::FontPtr
 .. doxygenclass:: erbsland::cterm::FontGlyph
     :members:
 .. doxygenclass:: erbsland::cterm::FrameBorder
     :members:
 .. doxygenenum:: erbsland::cterm::FrameBorderElement
 .. doxygenenum:: erbsland::cterm::FrameColorMode
-
 .. doxygenclass:: erbsland::cterm::FrameDrawOptions
     :members:
 .. doxygenenum:: erbsland::cterm::FrameStyle
@@ -118,10 +106,11 @@ Interface
 .. doxygenclass:: erbsland::cterm::Key
     :members:
 .. doxygenenum:: erbsland::cterm::KeyModifier
-
 .. doxygenclass:: erbsland::cterm::KeyModifiers
     :members:
 .. doxygenclass:: erbsland::cterm::Keys
+    :members:
+.. doxygenclass:: erbsland::cterm::MatrixBlockCombinationStyle
     :members:
 .. doxygenenum:: erbsland::cterm::MoveMode
 .. doxygenenum:: erbsland::cterm::ParagraphBackgroundMode
@@ -135,11 +124,12 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cterm::RemappedBuffer
     :members:
+.. doxygenclass:: erbsland::cterm::SimpleBlockCombinationStyle
+    :members:
 .. doxygenenum:: erbsland::cterm::TabOverflowBehavior
 .. doxygenclass:: erbsland::cterm::Terminal
     :members:
 .. doxygenenum:: erbsland::cterm::TerminalFlag
-
 .. doxygenclass:: erbsland::cterm::TerminalFlags
     :members:
 .. doxygenclass:: erbsland::cterm::TerminalSession
@@ -148,19 +138,20 @@ Interface
     :members:
 .. doxygenclass:: erbsland::cterm::TerminalStreamSynchronization
     :members:
-.. doxygentypedef:: erbsland::cterm::Tile9StylePtr
-
 .. doxygenclass:: erbsland::cterm::Tile9Style
     :members:
+
+.. doxygentypedef:: erbsland::cterm::Tile9StylePtr
+.. doxygenconcept:: erbsland::cterm::PrintableArg
+
+.. doxygenconcept:: erbsland::cterm::CharColorConstructorArgs
 .. doxygenclass:: erbsland::cterm::UpdateSettings
     :members:
 .. doxygenclass:: erbsland::cterm::WritableBuffer
     :members:
-.. doxygenclass:: erbsland::cterm::WriteClippedBufferBase
-    :members:
-
 .. doxygenclass:: erbsland::cterm::WriteClippedBuffer
     :members:
-
+.. doxygenclass:: erbsland::cterm::WriteClippedBufferBase
+    :members:
 .. doxygenclass:: erbsland::cterm::WriteClippedBufferRef
     :members:

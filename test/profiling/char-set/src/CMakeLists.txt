@@ -4,11 +4,12 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(char-set-profile PRIVATE
-        AllocationTracker.cpp
-        AllocationTracker.hpp
-        Application.cpp
+        AllocationMeasurement.hpp
+        AllocationScope.cpp
+        AllocationScope.hpp
         Application.hpp
         Application_fwd.hpp
+        CharSetProfileApplication.cpp
         CharSetFixture.hpp
         CharSetScenarioWorkload.cpp
         CharSetScenarioWorkload.hpp

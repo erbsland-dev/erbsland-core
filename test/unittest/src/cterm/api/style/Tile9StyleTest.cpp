@@ -94,10 +94,12 @@ public:
         const auto utf8Style = Tile9Style::create("ABCDEFGHI"_el);
         const auto utf32Style = Tile9Style::create(U"ABCDEFGHIJKLMNOP"_el);
 
-        REQUIRE(utf8Style != nullptr);
-        REQUIRE(utf32Style != nullptr);
-        REQUIRE_EQUAL(utf8Style->block(bgeo::BlockRectangle{0, 0, 3, 3}, bgeo::BlockPosition{1, 1}), U'E');
-        REQUIRE_EQUAL(utf32Style->block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}), U'P');
+        REQUIRE(utf8Style);
+        REQUIRE(utf32Style);
+        const auto utf8Block = utf8Style->block(bgeo::BlockRectangle{0, 0, 3, 3}, bgeo::BlockPosition{1, 1});
+        const auto utf32Block = utf32Style->block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0});
+        REQUIRE_EQUAL(utf8Block, U'E');
+        REQUIRE_EQUAL(utf32Block, U'P');
     }
 
     void testArrayConstructorsKeepConfiguredTiles() {
@@ -163,10 +165,10 @@ public:
     }
 
     void testForStyleMapsKnownAndUnknownEnumValues() {
-        REQUIRE(Tile9Style::forStyle(FrameStyle::OuterHalfBlock) != nullptr);
-        REQUIRE(Tile9Style::forStyle(FrameStyle::InnerHalfBlock) != nullptr);
-        REQUIRE(Tile9Style::forStyle(FrameStyle::None) == nullptr);
-        REQUIRE(Tile9Style::forStyle(FrameStyle::Light) == nullptr);
-        REQUIRE(Tile9Style::forStyle(static_cast<FrameStyle>(255)) == nullptr);
+        REQUIRE(Tile9Style::forStyle(FrameStyle::OuterHalfBlock));
+        REQUIRE(Tile9Style::forStyle(FrameStyle::InnerHalfBlock));
+        REQUIRE_FALSE(Tile9Style::forStyle(FrameStyle::None));
+        REQUIRE_FALSE(Tile9Style::forStyle(FrameStyle::Light));
+        REQUIRE_FALSE(Tile9Style::forStyle(static_cast<FrameStyle>(255)));
     }
 };

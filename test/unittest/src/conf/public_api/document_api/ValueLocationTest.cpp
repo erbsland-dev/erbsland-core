@@ -24,7 +24,9 @@ public:
         for (const auto &[namePath, value] : doc->toFlatValueMap()) {
             REQUIRE(value->hasLocation());
             REQUIRE(!value->location().codeLocation().isUndefined());
-            REQUIRE_EQUAL(value->location().sourceIdentifier()->name(), el::text::String{"text"_el});
+            const auto location = value->location();
+            const auto sourceName = location.sourceIdentifier()->name();
+            REQUIRE_EQUAL(sourceName, el::text::String{"text"_el});
             REQUIRE(value->location().sourceIdentifier()->path().isEmpty());
         }
         value = doc->valueOrThrow(el::text::String{"main"});

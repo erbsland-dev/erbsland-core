@@ -23,6 +23,7 @@ namespace erbsland::text::impl {
 /// @tested{U8StringModifierTest}
 class U8StringModifyTools final {
 public:
+    /// Create modification tools for the given UTF-8 data.
     explicit constexpr U8StringModifyTools(const U8StringDataView &data, const bool sensitive = false) noexcept :
         _data{data}, _sensitive{sensitive} {}
 
@@ -115,39 +116,51 @@ public:
         -> U8StringSharedStorage;
 
 private:
+    /// Test whether two spans overlap in memory.
     template <typename T>
     [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
+    /// Encode one character into UTF-8 code units.
     [[nodiscard]] static auto characterBytes(Char character) noexcept -> std::array<char, 4>;
+    /// Get the encoded UTF-8 code units for one character.
     [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char, 4> &bytes) noexcept
         -> std::span<const char>;
-
+    /// Return storage with matching characters replaced.
     template <typename Predicate>
     [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char> replacement) const
         -> U8StringSharedStorage;
+    /// Return storage with matching text replaced.
     [[nodiscard]] auto replacedText(
         const U8StringDataView &text, std::span<const char> replacement, CharCompareFn compareFn) const
         -> U8StringSharedStorage;
+    /// Replace matching characters in existing storage.
     template <typename Predicate>
     static auto replaceCharactersInStorage(
         U8StringSharedStorage &storage, Predicate predicate, std::span<const char> replacement)
         -> U8StringSharedStorage &;
+    /// Replace matching text in existing storage.
     static auto replaceTextInStorage(
         U8StringSharedStorage &storage,
         const U8StringDataView &text,
         std::span<const char> replacement,
         CharCompareFn compareFn) -> U8StringSharedStorage &;
+    /// Convert a character range into a byte range.
     [[nodiscard]] static auto byteRangeForCharacterRange(const U8StringDataView &data, unit::CpRange range) noexcept
         -> unit::ByteRange;
+    /// Convert a character index into a byte index.
     [[nodiscard]] static auto byteIndexForCharacterIndex(const U8StringDataView &data, unit::CpIndex index) noexcept
         -> unit::ByteIndex;
+    /// Find the first byte range matching text.
     [[nodiscard]] static auto findFirstTextRange(
         const U8StringDataView &data, const U8StringDataView &text, CharCompareFn compareFn) noexcept
         -> unit::ByteRange;
+    /// Test whether UTF-8 data matches text at an index.
     [[nodiscard]] static auto matchesText(
         std::span<const char> data, unit::ByteIndex start, std::span<const char> text, CharCompareFn compareFn) noexcept
         -> bool;
+    /// Get the byte index immediately after a text match.
     [[nodiscard]] static auto endOfMatch(
         std::span<const char> data, unit::ByteIndex start, std::span<const char> text) noexcept -> unit::ByteIndex;
+    /// Compare two characters using an optional comparison function.
     [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
 
 private:
@@ -156,6 +169,7 @@ private:
 };
 
 template <typename Predicate>
+/// Replace characters selected by a predicate with UTF-8 text.
 auto U8StringModifyTools::replacedCharacters(Predicate predicate, const std::span<const char> replacement) const
     -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
@@ -200,6 +214,7 @@ auto U8StringModifyTools::replacedCharacters(Predicate predicate, const std::spa
 }
 
 template <typename Predicate>
+/// Replace characters selected by a predicate directly in the shared storage.
 auto U8StringModifyTools::replaceCharactersInStorage(
     U8StringSharedStorage &storage, Predicate predicate, const std::span<const char> replacement)
     -> U8StringSharedStorage & {

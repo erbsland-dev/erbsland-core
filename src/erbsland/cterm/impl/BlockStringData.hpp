@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BlockStringData_fwd.hpp"
+
 #include "../Block.hpp"
 #include "../BlockCount.hpp"
 #include "../BlockRange.hpp"

@@ -13,6 +13,7 @@ namespace app::path {
 /// @notest{Covered by manual profiling runs and the PathWalker unit tests.}
 class PathWalkerWorkerWorkload final : public erbsland::profiling::WorkerWorkload {
 public:
+    /// Create a worker workload that traverses `root` with `method`.
     PathWalkerWorkerWorkload(PathWalkMethod method, erbsland::Path root);
 
 public: // implement WorkerWorkload
@@ -20,8 +21,11 @@ public: // implement WorkerWorkload
         -> erbsland::profiling::WorkerMeasurement override;
 
 private:
+    /// Traverse the path using the callback-based walker.
     [[nodiscard]] auto walkPathCallback() const -> std::uint64_t;
+    /// Traverse the path using the information-callback walker.
     [[nodiscard]] auto walkPathInfoCallback() const -> std::uint64_t;
+    /// Traverse the path with the standard recursive iterator.
     [[nodiscard]] auto walkStdRecursive() const -> std::uint64_t;
 
 private:

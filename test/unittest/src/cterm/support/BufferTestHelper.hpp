@@ -13,8 +13,11 @@
 #include <string_view>
 #include <vector>
 
+/// Provides buffer construction, rendering, and assertion helpers for terminal tests.
+/// @notest{This helper is exercised by terminal buffer test suites that inherit from it.}
 class BufferTestHelper : public BlockStringTestHelper {
 public:
+    /// Create a buffer from equal-width text rows.
     auto createBuffer(const std::initializer_list<std::string_view> rows) -> Buffer {
         REQUIRE_FALSE(rows.size() == 0);
         auto width = bgeo::BlockCoordinate{0};
@@ -45,10 +48,12 @@ public:
         return buffer;
     }
 
+    /// Create a shared buffer from equal-width text rows.
     auto createSharedBuffer(const std::initializer_list<std::string_view> rows) -> std::shared_ptr<Buffer> {
         return std::make_shared<Buffer>(createBuffer(rows));
     }
 
+    /// Fill a writable buffer from text rows.
     void fillBufferFromRows(WritableBuffer &buffer, const std::initializer_list<std::string_view> rows) {
         REQUIRE(buffer.size().height() >= bgeo::BlockCoordinate{rows.size()});
         auto y = bgeo::BlockCoordinate{0};
@@ -76,6 +81,7 @@ public:
         }
     }
 
+    /// Render all rows of a readable buffer.
     [[nodiscard]] static auto renderRows(const auto &buffer) -> std::vector<std::string> {
         auto rows = std::vector<std::string>{};
         rows.reserve(buffer.size().height().toSizeT());
@@ -91,6 +97,7 @@ public:
         return rows;
     }
 
+    /// Require buffer rows to equal expected text rows.
     void requireRowsEqual(const auto &buffer, const std::initializer_list<std::string_view> expectedRows) {
         auto expected = std::vector<std::string>{};
         expected.reserve(expectedRows.size());

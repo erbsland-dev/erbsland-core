@@ -72,8 +72,8 @@ replacement, and in-place shuffling.
         el::io::printLine("Accent index : "_el, index.toSizeT());
 
         // Build repeated and unique samples from the same choices.
-        const auto gradient = random.buildElementList(el::ElementCount{5U}, palette);
-        const auto studySet = random.buildUniqueElementList(el::ElementCount{3U}, palette);
+        const auto gradient = random.buildElementList(el::ItemCount{5U}, palette);
+        const auto studySet = random.buildUniqueElementList(el::ItemCount{3U}, palette);
         el::io::printLine("Gradient     : "_el, gradient.join(", "_el));
         el::io::printLine("Study set    : "_el, studySet.join(", "_el));
 
@@ -128,8 +128,8 @@ This is useful when you need to update a second data structure, mark a selected 
 keep the index for later processing.
 
 For zero or infinite counts, :cpp:func:`selectIndex() <erbsland::random::Random::selectIndex>` returns
-``ElementIndex::noIndex()``.
-Check ``ElementIndex::isValid()`` or ``ElementIndex::isNoIndex()`` before using an index that came from a dynamic count.
+``ItemIndex::noIndex()``.
+Check ``ItemIndex::isValid()`` or ``ItemIndex::isNoIndex()`` before using an index that came from a dynamic count.
 
 Sampling with Replacement
 =========================

@@ -8,6 +8,7 @@
 
 namespace erbsland::text::impl {
 
+/// Create a UTF-32 string literal view from static character data.
 constexpr auto createU32StringLiteral(const char32_t *data, const std::size_t size) noexcept -> U32StringLiteral {
     return {data, size};
 }

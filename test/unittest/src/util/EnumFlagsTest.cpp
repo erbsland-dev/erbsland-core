@@ -145,62 +145,62 @@ public:
         const auto write = Flags{Flag::Write};
         const auto execute = Flags{Flag::Execute};
 
-        REQUIRE((read | write) == Flags{Flag::Read, Flag::Write});
-        REQUIRE((read | Flag::Write) == Flags{Flag::Read, Flag::Write});
-        REQUIRE((Flag::Write | read) == Flags{Flag::Read, Flag::Write});
-        REQUIRE((Flag::Read | Flag::Write) == Flags{Flag::Read, Flag::Write});
+        REQUIRE_EQUAL((read | write), (Flags{Flag::Read, Flag::Write}));
+        REQUIRE_EQUAL((read | Flag::Write), (Flags{Flag::Read, Flag::Write}));
+        REQUIRE_EQUAL((Flag::Write | read), (Flags{Flag::Read, Flag::Write}));
+        REQUIRE_EQUAL((Flag::Read | Flag::Write), (Flags{Flag::Read, Flag::Write}));
 
-        REQUIRE(((read | write) & read) == read);
-        REQUIRE(((read | write) & Flag::Read) == read);
-        REQUIRE((Flag::Read & (read | write)) == read);
+        REQUIRE_EQUAL(((read | write) & read), read);
+        REQUIRE_EQUAL(((read | write) & Flag::Read), read);
+        REQUIRE_EQUAL((Flag::Read & (read | write)), read);
 
-        REQUIRE(((read | write) ^ write) == read);
-        REQUIRE((read ^ Flag::Write) == Flags{Flag::Read, Flag::Write});
-        REQUIRE((Flag::Write ^ read) == Flags{Flag::Read, Flag::Write});
+        REQUIRE_EQUAL(((read | write) ^ write), read);
+        REQUIRE_EQUAL((read ^ Flag::Write), (Flags{Flag::Read, Flag::Write}));
+        REQUIRE_EQUAL((Flag::Write ^ read), (Flags{Flag::Read, Flag::Write}));
         REQUIRE((read ^ read).isEmpty());
 
-        REQUIRE((~read) == (write | execute));
+        REQUIRE_EQUAL((~read), (write | execute));
         REQUIRE_EQUAL((~Flags::fromRawValue(0x80U)).toRawValue(), 0x07U);
 
         auto flags = read;
         flags |= Flag::Write;
-        REQUIRE(flags == (read | write));
+        REQUIRE_EQUAL(flags, (read | write));
         flags &= Flag::Read;
-        REQUIRE(flags == read);
+        REQUIRE_EQUAL(flags, read);
         flags ^= Flag::Execute;
-        REQUIRE(flags == (read | execute));
+        REQUIRE_EQUAL(flags, (read | execute));
         flags |= write;
-        REQUIRE(flags == Flags{Flag::Read, Flag::Write, Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Read, Flag::Write, Flag::Execute}));
         flags &= Flags{Flag::Read, Flag::Write};
-        REQUIRE(flags == (read | write));
+        REQUIRE_EQUAL(flags, (read | write));
         flags ^= Flags{Flag::Read, Flag::Execute};
-        REQUIRE(flags == (write | execute));
+        REQUIRE_EQUAL(flags, (write | execute));
     }
 
     void testModificationMethods() {
         auto flags = Flags{};
 
         flags.set(Flag::Read);
-        REQUIRE(flags == Flags{Flag::Read});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Read}));
 
         flags.set(Flags{Flag::Write, Flag::Execute});
-        REQUIRE(flags == Flags{Flag::Read, Flag::Write, Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Read, Flag::Write, Flag::Execute}));
 
         flags.clear(Flag::Write);
-        REQUIRE(flags == Flags{Flag::Read, Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Read, Flag::Execute}));
 
         flags.clear(Flags{Flag::Read, Flag::Write});
-        REQUIRE(flags == Flags{Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Execute}));
 
         flags.clear();
         REQUIRE(flags.isEmpty());
 
         flags = Flags{Flag::Read, Flag::Execute};
         flags.replaceMasked(Flags{Flag::Write}, Flags{Flag::Read, Flag::Write});
-        REQUIRE(flags == Flags{Flag::Write, Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Write, Flag::Execute}));
 
         flags.replaceMasked(Flags::fromRawValue(0x80U), Flags{Flag::Read, Flag::Write});
-        REQUIRE(flags == Flags{Flag::Execute});
+        REQUIRE_EQUAL(flags, (Flags{Flag::Execute}));
     }
 
     void testDerivedType() {
@@ -220,7 +220,7 @@ public:
         REQUIRE_EQUAL(inverted.diagnosticValue(), 0x04U);
 
         auto &assignmentResult = (flags |= Flag::Execute);
-        REQUIRE(&assignmentResult == &flags);
+        REQUIRE_EQUAL(&assignmentResult, &flags);
         REQUIRE_EQUAL(flags.diagnosticValue(), 0x07U);
 
         const auto raw = DerivedFlags::fromRawValue(0x80U);
@@ -230,6 +230,6 @@ public:
     void testHashSupport() {
         REQUIRE(
             std::hash<Flags>{}(Flags{Flag::Read, Flag::Write}) == std::hash<Flags>{}(Flags{Flag::Read, Flag::Write}));
-        REQUIRE(std::hash<Flags>{}(Flags::fromRawValue(0x80U)) == std::hash<uint8_t>{}(0x80U));
+        REQUIRE_EQUAL(std::hash<Flags>{}(Flags::fromRawValue(0x80U)), std::hash<uint8_t>{}(0x80U));
     }
 };

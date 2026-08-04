@@ -2,17 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SignatureSigner_fwd.hpp"
 #include "SignatureSignerData.hpp"
 
 namespace erbsland::conf {
 
-class SignatureSigner;
-using SignatureSignerPtr = std::shared_ptr<SignatureSigner>;
-
 /// The signer interface to create new signatures when signing documents.
 class SignatureSigner {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~SignatureSigner() = default;
 
 public:

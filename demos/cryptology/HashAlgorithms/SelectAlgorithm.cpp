@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/cryptology/HashAlgorithm.hpp>
+#include <erbsland/cryptology/HashSelector.hpp>
 
 namespace demo {
 
-/// `HashAlgorithm` selects a supported algorithm from application requirements.
+/// `HashSelector` selects a supported algorithm from application requirements and current policy.
 ///
 /// Use `recommended()` when your application controls the format and can follow current library policy. Persist the
 /// returned algorithm identifier with the digest because recommendations and metadata can change in later releases.
@@ -16,7 +16,7 @@ void selectAlgorithm() {
         .minimumSecurity = el::CryptographicSecurity::High,
         .minimumThroughput = el::HashThroughput::Medium,
     };
-    const auto algorithm = el::HashAlgorithm::recommended(requirements);
+    const auto algorithm = el::HashSelector{requirements}.recommended();
 
     if (!algorithm.has_value()) {
         el::io::printLine("No supported hash algorithm satisfies the requirements."_el);

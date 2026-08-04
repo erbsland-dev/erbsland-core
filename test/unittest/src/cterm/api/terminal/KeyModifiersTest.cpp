@@ -15,7 +15,8 @@ public:
         REQUIRE_FALSE(modifiers.has(KeyModifier::Shift));
         REQUIRE_FALSE(modifiers.has(KeyModifier::Control));
         REQUIRE_FALSE(modifiers.has(KeyModifier::Alt));
-        REQUIRE_EQUAL(modifiers.mask(), KeyModifiers::Mask{0});
+        const auto mask = modifiers.mask();
+        REQUIRE_EQUAL(mask, KeyModifiers::Mask{0});
     }
 
     void testConstructionAndCombination() {
@@ -25,7 +26,8 @@ public:
         REQUIRE(modifiers.has(KeyModifier::Shift));
         REQUIRE(modifiers.has(KeyModifier::Control));
         REQUIRE(modifiers.has(KeyModifier::Alt));
-        REQUIRE_EQUAL(modifiers, (KeyModifiers{KeyModifier::Shift} | KeyModifier::Control | KeyModifier::Alt));
+        const auto expected = KeyModifiers{KeyModifier::Shift} | KeyModifier::Control | KeyModifier::Alt;
+        REQUIRE_EQUAL(modifiers, expected);
     }
 
     void testSetAndClear() {

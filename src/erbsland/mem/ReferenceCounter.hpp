@@ -77,6 +77,7 @@ public:
     [[nodiscard]] auto useCount() const noexcept -> uint32_t { return _counter.load(std::memory_order_relaxed); }
 
 private:
+    /// Terminate after detecting a reference-counter overflow or underflow.
     [[noreturn]] static void failInvariant() noexcept {
         assert(false && "ReferenceCounter invariant violation.");
         std::terminate();

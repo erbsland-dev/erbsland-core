@@ -11,6 +11,7 @@ add_subdirectory(parser)
 add_subdirectory(text)
 
 target_sources(erbsland-core-unittest PRIVATE
+        InternalErrorTest.cpp
         StdFormatForRegExTest.cpp
         StringHelper.hpp
         TestHelper.hpp

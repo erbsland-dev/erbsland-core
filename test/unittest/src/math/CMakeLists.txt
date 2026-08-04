@@ -6,6 +6,8 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(saturating_math)
 
 target_sources(erbsland-core-unittest PRIVATE
+        BigIntegerTest.cpp
+        BigUnsignedIntegerTest.cpp
         ClampedIntegerTest.cpp
         ConstexprSaturatingMathTest.cpp
         IntegerBitOperationsTest.cpp

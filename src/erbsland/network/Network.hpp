@@ -2,21 +2,22 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Host.hpp"
-#include "HostEndpoint.hpp"
-#include "IpEndpoint.hpp"
 #include "Network_fwd.hpp"
-#include "SocketBufferLimits.hpp"
+
+#include "host_lookup/HostLookup_fwd.hpp"
+#include "tcp/TcpConnection_fwd.hpp"
+#include "tcp/TcpListener_fwd.hpp"
+#include "tls/TlsClientConnection_fwd.hpp"
+#include "tls/TlsServerConnection_fwd.hpp"
+#include "udp/UdpSocket_fwd.hpp"
 
 #include "../event/EventBackendId.hpp"
 #include "../event/EventRegistry.hpp"
 
-#include <cstddef>
-
 namespace erbsland::network {
 
 /// The event-loop frontend for asynchronous DNS and socket operations.
-/// @notest{Abstract frontend; mock and native backend implementations own behavior tests.}
+/// @tested{NetworkFacadeTest NetworkProtocolFacadeTest TlsClientConnectionTest TcpSocketLiveTest UdpSocketLiveTest}
 class Network {
 public:
     // defaults
@@ -30,34 +31,28 @@ public:
     }
 
 public: // factories
-    /// Create an inactive one-shot host lookup.
-    /// @param host The address or unresolved name to resolve.
+    /// Create an inactive reusable host lookup.
     /// @return The new lookup source.
-    [[nodiscard]] virtual auto createHostLookup(Host host) -> HostLookupPtr = 0;
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto createHostLookup() -> HostLookupPtr = 0;
     /// Create an inactive TCP listener.
-    /// @param localEndpoint The local address and port to bind.
-    /// @param backlog The requested pending-connection queue length.
     /// @return The new listener source.
-    [[nodiscard]] virtual auto createTcpListener(IpEndpoint localEndpoint, std::size_t backlog = 128U)
-        -> TcpListenerPtr = 0;
-    /// Create an inactive outgoing TCP connection attempt.
-    /// @param remoteEndpoint The remote address or host name and port.
-    /// @param bufferLimits The send and receive queue limits for the connection.
-    /// @return The new connection-attempt source.
-    [[nodiscard]] virtual auto createTcpConnection(HostEndpoint remoteEndpoint, SocketBufferLimits bufferLimits = {})
-        -> TcpConnectionAttemptPtr = 0;
-    /// Create an inactive unconnected UDP socket.
-    /// @param localEndpoint The local address and port to bind.
-    /// @param bufferLimits The send and receive queue limits.
+    [[nodiscard]] virtual auto createTcpListener() -> TcpListenerPtr = 0;
+    /// Create an inactive TCP connection.
+    /// @return The new connection source.
+    [[nodiscard]] virtual auto createTcpConnection() -> TcpConnectionPtr = 0;
+    /// Create an inactive TLS client connection.
+    /// @return The new one-shot authenticated connection source.
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto createTlsClientConnection() -> TlsClientConnectionPtr = 0;
+    /// Create an inactive accepted TLS server connection.
+    /// @return The new one-shot authenticated server connection source.
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto createTlsServerConnection() -> TlsServerConnectionPtr = 0;
+    /// Create an inactive UDP socket.
     /// @return The new UDP socket source.
-    [[nodiscard]] virtual auto createUdpSocket(IpEndpoint localEndpoint, SocketBufferLimits bufferLimits = {})
-        -> UdpSocketPtr = 0;
-    /// Create an inactive UDP source connected to one peer.
-    /// @param remoteEndpoint The remote address or host name and port.
-    /// @param bufferLimits The send and receive queue limits.
-    /// @return The new UDP peer source.
-    [[nodiscard]] virtual auto createUdpPeer(HostEndpoint remoteEndpoint, SocketBufferLimits bufferLimits = {})
-        -> UdpPeerPtr = 0;
+    /// @throws err::RuntimeError If the backend does not implement UDP sockets.
+    [[nodiscard]] virtual auto createUdpSocket() -> UdpSocketPtr = 0;
 };
 
 }

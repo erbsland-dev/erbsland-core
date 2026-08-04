@@ -8,10 +8,12 @@
 
 namespace app::byte {
 
-/// Load, validate, and expand byte-profiler configuration.
-/// @notest{Covered by byte profiler dry-run and configuration CTest entries.}
-class ConfigurationLoader final {
-public:
+/// A validated and expanded configuration.
+/// @notest{Verified by byte profiler dry-run and smoke CTest entries.}
+struct Configuration {
+    RunSettings run;                   ///< Run settings.
+    std::vector<Scenario> scenarios{}; ///< Expanded scenarios.
+
     /// Load the embedded defaults and an optional overriding ELCL file.
     /// @param path Optional user configuration.
     /// @return The effective expanded configuration.

@@ -8,66 +8,67 @@
 
 using namespace el::conf;
 
-namespace {
-constexpr auto matrixElementCount(const std::size_t value) noexcept -> el::unit::ElementCount {
-    return el::unit::ElementCount::fromSizeT(value);
-}
-
-constexpr auto matrixElementIndex(const std::size_t value) noexcept -> el::unit::ElementIndex {
-    return el::unit::ElementIndex::fromSizeT(value);
-}
-}
-
 TESTED_TARGETS(Matrix)
 class MatrixTest final : public el::UnitTest {
 public:
     void testDefault() {
         const Matrix<int> matrix{};
-        REQUIRE(matrix.rowCount() == matrixElementCount(0));
-        REQUIRE(matrix.columnCount() == matrixElementCount(0));
+        REQUIRE_EQUAL(matrix.rowCount(), matrixItemCount(0));
+        REQUIRE_EQUAL(matrix.columnCount(), matrixItemCount(0));
     }
 
     void testConstruction() {
-        Matrix<int> matrix{matrixElementCount(3), matrixElementCount(3)};
-        matrix.setRow(matrixElementIndex(0), {1, 2, 3});
-        matrix.setRow(matrixElementIndex(1), {4});
-        REQUIRE(matrix.rowCount() == matrixElementCount(3));
-        REQUIRE(matrix.columnCount() == matrixElementCount(3));
-        REQUIRE(matrix.actualColumnCount(matrixElementIndex(0)) == matrixElementCount(3));
-        REQUIRE(matrix.actualColumnCount(matrixElementIndex(1)) == matrixElementCount(1));
-        REQUIRE(matrix.actualColumnCount(matrixElementIndex(2)) == matrixElementCount(0));
+        Matrix<int> matrix{matrixItemCount(3), matrixItemCount(3)};
+        matrix.setRow(matrixItemIndex(0), {1, 2, 3});
+        matrix.setRow(matrixItemIndex(1), {4});
+        REQUIRE_EQUAL(matrix.rowCount(), matrixItemCount(3));
+        REQUIRE_EQUAL(matrix.columnCount(), matrixItemCount(3));
+        REQUIRE_EQUAL(matrix.actualColumnCount(matrixItemIndex(0)), matrixItemCount(3));
+        REQUIRE_EQUAL(matrix.actualColumnCount(matrixItemIndex(1)), matrixItemCount(1));
+        REQUIRE_EQUAL(matrix.actualColumnCount(matrixItemIndex(2)), matrixItemCount(0));
     }
 
     void testAccessDefinedAndDefault() {
-        Matrix<int> matrix{matrixElementCount(3), matrixElementCount(3)};
-        matrix.setRow(matrixElementIndex(0), {1, 2, 3});
-        matrix.setValue(matrixElementIndex(1), matrixElementIndex(0), 4);
-        REQUIRE(matrix.valueOrThrow(matrixElementIndex(0), matrixElementIndex(1)) == 2);
-        REQUIRE(matrix.valueOrThrow(matrixElementIndex(1), matrixElementIndex(0)) == 4);
-        REQUIRE(matrix.value(matrixElementIndex(1), matrixElementIndex(2), 0) == 0);
-        REQUIRE(matrix.isDefined(matrixElementIndex(0), matrixElementIndex(2)));
-        REQUIRE_FALSE(matrix.isDefined(matrixElementIndex(1), matrixElementIndex(1)));
+        Matrix<int> matrix{matrixItemCount(3), matrixItemCount(3)};
+        matrix.setRow(matrixItemIndex(0), {1, 2, 3});
+        matrix.setValue(matrixItemIndex(1), matrixItemIndex(0), 4);
+        const auto firstValue = matrix.valueOrThrow(matrixItemIndex(0), matrixItemIndex(1));
+        const auto secondValue = matrix.valueOrThrow(matrixItemIndex(1), matrixItemIndex(0));
+        const auto defaultValue = matrix.value(matrixItemIndex(1), matrixItemIndex(2), 0);
+        REQUIRE_EQUAL(firstValue, 2);
+        REQUIRE_EQUAL(secondValue, 4);
+        REQUIRE_EQUAL(defaultValue, 0);
+        REQUIRE(matrix.isDefined(matrixItemIndex(0), matrixItemIndex(2)));
+        REQUIRE_FALSE(matrix.isDefined(matrixItemIndex(1), matrixItemIndex(1)));
     }
 
     void testBoundsChecks() {
-        Matrix<int> matrix{matrixElementCount(2), matrixElementCount(2)};
-        REQUIRE(matrix.actualColumnCount(matrixElementIndex(5)) == matrixElementCount(0));
-        REQUIRE_FALSE(matrix.isDefined(matrixElementIndex(3), matrixElementIndex(1)));
-        REQUIRE(matrix.value(matrixElementIndex(0), matrixElementIndex(5), 0) == 0);
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.valueOrThrow(matrixElementIndex(0), matrixElementIndex(5)));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setValue(matrixElementIndex(0), matrixElementIndex(5), 3));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixElementIndex(5), {1}));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixElementIndex(0), {1, 2, 3}));
+        Matrix<int> matrix{matrixItemCount(2), matrixItemCount(2)};
+        REQUIRE_EQUAL(matrix.actualColumnCount(matrixItemIndex(5)), matrixItemCount(0));
+        REQUIRE_FALSE(matrix.isDefined(matrixItemIndex(3), matrixItemIndex(1)));
+        const auto defaultValue = matrix.value(matrixItemIndex(0), matrixItemIndex(5), 0);
+        REQUIRE_EQUAL(defaultValue, 0);
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.valueOrThrow(matrixItemIndex(0), matrixItemIndex(5)));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setValue(matrixItemIndex(0), matrixItemIndex(5), 3));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixItemIndex(5), {1}));
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, matrix.setRow(matrixItemIndex(0), {1, 2, 3}));
     }
 
     void testMaximumSizeIsCheckedBeforeAllocation() {
-        const auto excessiveRowCount = matrixElementCount(Matrix<int>::cMaximumValueCount + 1U);
+        const auto excessiveRowCount = matrixItemCount(Matrix<int>::cMaximumValueCount + 1U);
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, (void)Matrix<int>{excessiveRowCount, el::unit::ItemCount::one()});
         REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError, (void)Matrix<int>{excessiveRowCount, el::unit::ElementCount::one()});
+            el::err::OutOfRangeError, (void)Matrix<int>{matrixItemCount(10'001), matrixItemCount(10'001)});
         REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError, (void)Matrix<int>{matrixElementCount(10'001), matrixElementCount(10'001)});
-        REQUIRE_THROWS_AS(
-            el::err::OutOfRangeError,
-            (void)Matrix<int>{el::unit::ElementCount::infinite(), el::unit::ElementCount::zero()});
+            el::err::OutOfRangeError, (void)Matrix<int>{el::unit::ItemCount::infinite(), el::unit::ItemCount::zero()});
+    }
+
+private:
+    static constexpr auto matrixItemCount(const std::size_t value) noexcept -> el::unit::ItemCount {
+        return el::unit::ItemCount::fromSizeT(value);
+    }
+
+    static constexpr auto matrixItemIndex(const std::size_t value) noexcept -> el::unit::ItemIndex {
+        return el::unit::ItemIndex::fromSizeT(value);
     }
 };

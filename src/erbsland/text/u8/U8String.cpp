@@ -417,6 +417,10 @@ auto U8String::forEach(const ProcessCharacterFn &function) const -> util::LoopRe
     return U8StringTransformTools{dataView()}.forEach(function);
 }
 
+auto U8String::forEach(const ProcessCharacterWithCpIndexFn &function) const -> util::LoopResult {
+    return U8StringTransformTools{dataView()}.forEach(function);
+}
+
 auto U8String::transformed(const TransformCharacterFn function) const -> U8String {
     if (auto result = U8StringTransformTools{dataView(), isSensitive()}.transformedIfChanged(function)) {
         return U8String{std::move(*result)};
@@ -468,6 +472,13 @@ auto U8String::dataView() const noexcept -> U8StringDataView {
         return literal->dataView();
     }
     return {};
+}
+
+auto U8String::isStorageShared() const noexcept -> bool {
+    if (const auto *shared = std::get_if<U8StringSharedStorage>(&_storage)) {
+        return shared->sharedData().isShared();
+    }
+    return false;
 }
 
 }

@@ -17,8 +17,8 @@ Common Principles
 =================
 
 * Guidelines do not use prose to describe a domain. Instead, they rely on compact pattern blocks.
-* Short technical explanations are only allowed when patterns alone are insufficient.
-  Such explanations belong in subsections of the initial **Core Semantics** section.
+* **Core Semantics** contains only compact semantic definitions.
+  Explanations, instructions, API summaries, and implementation details do not belong in this section.
 * Type lists and API patterns are always placed inside ``.. code-block:: text`` blocks.
 
 Main Page Structure
@@ -41,7 +41,7 @@ The page title uses matching ``*`` adornments above and below it.
     Core Semantics
     ==============
 
-    ❮... core semantics ...❯
+    ❮... semantic definitions only ...❯
 
     Primary Types
     =============
@@ -76,25 +76,20 @@ The page title uses matching ``*`` adornments above and below it.
     ❮... additional pattern blocks if necessary ...❯
     ❮... end of document ...❯
 
-* **Core Semantics:** This *optional* initial section defines the fundamental principles of the domain in an extremely
-  compact and technical form.
-  It has at most 60 content lines and may contain at most four subsections using the ``-`` adornment.
-  Less is better. Useful subsections include:
+* **Core Semantics:** This *optional* initial section contains only non-obvious semantic definitions required to
+  interpret the sections that follow.
+  Each entry defines a domain term, state, relation, value interpretation, or invariant.
+  For example, ``rectangle bounds = inclusive top-left and exclusive bottom-right`` defines how the domain interprets
+  bounds.
 
-  - **Vocabulary:** A compact definition list.
-    A vocabulary block only makes sense when terms are ambiguous and can have multiple meanings within the domain.
-    This is not a thesaurus, index, or encyclopedia. Well-known and unambiguous terms do not belong in such a list.
+  Writing an API fact in the form ``name = description`` does not turn it into a semantic definition.
+  Pattern placeholders belong exclusively in **Pattern Definitions**.
+  Type inventories, name relationships, syntax examples, member behavior, procedures, callback sequences,
+  implementation and platform details, capability summaries, and usage advice belong elsewhere or should be omitted.
+  Well-known terms whose ordinary meaning is sufficient are omitted as well.
 
-  - **Special Naming Rules:** Short prose or illustrative text blocks.
-    A good example from the text domain is explaining the relationship between ``StringEditor``, ``U(8/16/32)StringEditor``,
-    ``String``, ``StringEditor``, and their ``U(8/16/32)`` width-specific forms.
-    A simple type list would not adequately explain the API surface and could lead to confusion.
-    By explaining how these names relate, the pattern sections can focus on ``StringEditor`` and ``String``.
-
-  - **Special Placeholders:** Used when the placeholders defined in :doc:`api/common` are not sufficient and introducing additional placeholders improves the readability of the following patterns.
-
-  - **Important Behavior:** Used when behavior cannot be fully derived from naming and common expectations.
-    For example, whether a begin-end range includes or excludes the last element, if that behavior differs from what developers would typically expect.
+  The section has at most 60 content lines and may contain at most four subsections using the ``-`` adornment.
+  Less is better; omit the complete section when the domain needs no special definitions.
 
 * **Type Sections:** One or more sections list the types in the domain.
   The first section is always named **Primary Types**.
@@ -129,7 +124,7 @@ The page title uses matching ``*`` adornments above and below it.
   In that case, replace the word *Secondary* with a more meaningful group name.
 
 * **Pattern Definitions:** This *optional* section defines one- or two-character uppercase shortcuts used in pattern
-  blocks.
+  blocks; it does not define domain semantics.
   It follows all type sections and consists of one ``.. code-block:: text`` without surrounding prose.
 
   .. code-block:: text
@@ -196,9 +191,10 @@ Anti-Patterns
   Capture the patterns that define the domain.
   Minor exceptions and isolated cases can be omitted.
 
-* **Non-semantic Core Content:** Do not place type inventories, member patterns, naming examples, or API summaries in
-  **Core Semantics**. Keep them in type and pattern sections. The only exception is a compact **Special Naming Rules**
-  subsection when the relationship between public names cannot be expressed clearly by the later patterns.
+* **Non-semantic Core Content:** Do not place type inventories, member patterns, naming or syntax examples, API or
+  capability summaries, implementation details, procedures, usage advice, or well-known definitions in
+  **Core Semantics**.
+  A definition-shaped sentence is still non-semantic when it merely disguises one of these kinds of content.
 
 * **Instructions:** Avoid sentences such as "Use ...", "Don't ...", or "Avoid ...".
 

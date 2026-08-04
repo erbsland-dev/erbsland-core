@@ -57,7 +57,7 @@ public:
         buffer.write(Block{U'B', Color{}, explicitNoBold});
 
         REQUIRE(buffer.blockAttributes().isBold());
-        REQUIRE(buffer.supportedBlockAttributes() == BlockAttributes::all());
+        REQUIRE_EQUAL(buffer.supportedBlockAttributes(), BlockAttributes::all());
         REQUIRE(buffer.get(bgeo::BlockPosition{0, 0}).attributes().isBold());
         REQUIRE_FALSE(buffer.get(bgeo::BlockPosition{1, 0}).attributes().isBold());
         REQUIRE(buffer.get(bgeo::BlockPosition{1, 0}).attributes().isUnderline());
@@ -171,7 +171,7 @@ public:
         buffer.moveTo(bgeo::BlockPosition{99, 99});
         buffer.write(Block{U'X'});
 
-        REQUIRE(buffer.get(bgeo::BlockPosition{2, 1}) == U'X');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{2, 1}), U'X');
     }
 
     void testMoveCursorIgnoresExtremeAbsoluteMoves() {
@@ -180,7 +180,7 @@ public:
         buffer.moveCursor(bgeo::BlockPosition{10'001, 0}, MoveMode::Absolute);
         buffer.write(Block{U'X'});
 
-        REQUIRE(buffer.get(bgeo::BlockPosition{0, 0}) == U'X');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 0}), U'X');
     }
 
     void testDeferredWrapMovesTheNextCharacterToTheFollowingLine() {
@@ -229,7 +229,7 @@ public:
         buffer.moveTo(bgeo::BlockPosition{2, 0});
         buffer.write(Block{U'界'});
 
-        REQUIRE(buffer.get(bgeo::BlockPosition{0, 1}) == U'界');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 1}), U'界');
         REQUIRE(buffer.get(bgeo::BlockPosition{1, 1}).isEmpty());
         requireRowsEqual(buffer, {"   ", "界  "});
     }
@@ -241,9 +241,9 @@ public:
         buffer.write(Block{U'界'});
         buffer.write(Block{U'X'});
 
-        REQUIRE(buffer.get(bgeo::BlockPosition{1, 0}) == U'界');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{1, 0}), U'界');
         REQUIRE(buffer.get(bgeo::BlockPosition{2, 0}).isEmpty());
-        REQUIRE(buffer.get(bgeo::BlockPosition{0, 1}) == U'X');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 1}), U'X');
     }
 
     void testWritingAnotherBufferMovesToTheNextLineForEachSourceRow() {
@@ -370,9 +370,9 @@ public:
             buffer.printParagraph(BlockStringEditor{"alpha beta gamma delta epsilon zeta eta theta iota"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 3);
-        REQUIRE(buffer.get(bgeo::BlockPosition{17, 0}) == U'>');
-        REQUIRE(buffer.get(bgeo::BlockPosition{4, 1}) == U'<');
-        REQUIRE(buffer.get(bgeo::BlockPosition{4, 2}) == U'<');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{17, 0}), U'>');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{4, 1}), U'<');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{4, 2}), U'<');
         auto hasEllipsis = false;
         for (auto x = bgeo::BlockCoordinate{0}; x < buffer.size().width(); ++x) {
             if (buffer.get(bgeo::BlockPosition{x, bgeo::BlockCoordinate{2}}) == U'(') {
@@ -392,11 +392,11 @@ public:
         const auto lineCount = buffer.printParagraph(BlockStringEditor{"detail line wraps here"_el}, options);
 
         REQUIRE_EQUAL(lineCount, 2);
-        REQUIRE(buffer.get(bgeo::BlockPosition{4, 0}) == U'd');
-        REQUIRE(buffer.get(bgeo::BlockPosition{4, 1}) == U'w');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{4, 0}), U'd');
+        REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{4, 1}), U'w');
         for (auto x = bgeo::BlockCoordinate{0}; x < 4; ++x) {
-            REQUIRE(buffer.get(bgeo::BlockPosition{x, bgeo::BlockCoordinate{0}}) == U' ');
-            REQUIRE(buffer.get(bgeo::BlockPosition{x, bgeo::BlockCoordinate{1}}) == U' ');
+            REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{x, bgeo::BlockCoordinate{0}}), U' ');
+            REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{x, bgeo::BlockCoordinate{1}}), U' ');
         }
     }
 

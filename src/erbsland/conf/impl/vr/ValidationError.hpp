@@ -2,6 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Rule_fwd.hpp"
+
+#include "../value/Value_fwd.hpp"
+
 #include "../../ConfError.hpp"
 #include "../../Integer.hpp"
 #include "../../vr/RuleType.hpp"
@@ -9,11 +13,6 @@
 #include <set>
 
 namespace erbsland::conf::impl {
-
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
-class Value;
-using ValuePtr = std::shared_ptr<Value>;
 
 /// Throw a validation error.
 template <typename... Args>

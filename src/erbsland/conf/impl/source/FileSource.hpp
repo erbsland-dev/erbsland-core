@@ -21,6 +21,7 @@ public: // Implement stream source.
     [[nodiscard]] auto identifier() const noexcept -> SourceIdentifierPtr override;
 
 public: // Access the underlying path.
+    /// Get the path from which this source reads data.
     [[nodiscard]] auto filePath() const noexcept -> const path::Path & { return _path; }
 
 protected:

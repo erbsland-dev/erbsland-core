@@ -70,13 +70,13 @@ public:
                 createSourceIdentifier(filePath);
             }
         }
-        REQUIRE(documentSourceIdentifier != nullptr);
+        REQUIRE(documentSourceIdentifier);
     }
 
     void expectSuccess(const el::text::String &includeText, const ExpectedSourceList &expected) {
 
         auto resolver = FileSourceResolver::create();
-        REQUIRE(resolver != nullptr);
+        REQUIRE(resolver);
         const SourceResolverContext context{.includeText = includeText, .sourceIdentifier = documentSourceIdentifier};
         const auto basePath = useTestFileDirectory();
         actualSourceList = {};
@@ -100,7 +100,8 @@ public:
                     REQUIRE_FALSE(relSourcePath.empty());
                     REQUIRE_EQUAL(
                         relSourcePath.generic_string(),
-                        el::text::StringConverter{expected[el::unit::ElementIndex::fromSizeT(i)]}.toStdString());
+                        el::text::StringConverter{expected.getRefOrThrow(el::unit::ItemIndex::fromSizeT(i))}
+                            .toStdString());
                 }
             },
             [&]() -> std::string {
@@ -169,7 +170,7 @@ public:
     void expectFailure(
         const el::text::String &includeText, ConfErrorCategory expectedErrorCategory = ConfErrorCategory::Syntax) {
         auto resolver = FileSourceResolver::create();
-        REQUIRE(resolver != nullptr);
+        REQUIRE(resolver);
         const SourceResolverContext context{.includeText = includeText, .sourceIdentifier = documentSourceIdentifier};
         bool caughtError = false;
         runWithContext(
@@ -205,7 +206,7 @@ public:
 
     void testIncorrectInput() {
         auto resolver = FileSourceResolver::create();
-        REQUIRE(resolver != nullptr);
+        REQUIRE(resolver);
         REQUIRE_THROWS(resolver->resolve({}));
         REQUIRE_THROWS(resolver->resolve({.includeText = "test.elcl"_el, .sourceIdentifier = {}}));
         REQUIRE_THROWS(
@@ -236,12 +237,12 @@ public:
         REQUIRE(documentPath.is_absolute());
         REQUIRE(is_regular_file(documentPath));
         createSourceIdentifier(documentPath);
-        REQUIRE(documentSourceIdentifier != nullptr);
-        REQUIRE(documentSourceIdentifier->name() == "file"_el);
+        REQUIRE(documentSourceIdentifier);
+        REQUIRE_EQUAL(documentSourceIdentifier->name(), "file"_el);
         const auto includedFile = createTestFile("config/IncludedFile.elcl");
         REQUIRE(is_regular_file(includedFile));
         const auto resolver = FileSourceResolver::create();
-        REQUIRE(resolver != nullptr);
+        REQUIRE(resolver);
         const auto basePath = el::path::Path{useTestFileDirectory()}.toString();
         REQUIRE(!basePath.isEmpty());
         const SourceResolverContext context{
@@ -250,10 +251,10 @@ public:
         };
         SourceListPtr sourceList;
         REQUIRE_NOTHROW(sourceList = resolver->resolve(context));
-        REQUIRE(sourceList != nullptr);
+        REQUIRE(sourceList);
         REQUIRE_EQUAL(sourceList->size(), 1);
         auto source = sourceList->at(0);
-        REQUIRE(source != nullptr);
+        REQUIRE(source);
         auto pathFromSourceList = source->path();
         auto actualPathOfInclude = el::path::Path{canonical(includedFile)}.toString();
         REQUIRE_EQUAL(actualPathOfInclude, pathFromSourceList);
@@ -266,23 +267,25 @@ public:
         REQUIRE(documentPath.is_absolute());
         REQUIRE(is_regular_file(documentPath));
         createSourceIdentifier(documentPath);
-        REQUIRE(documentSourceIdentifier != nullptr);
-        REQUIRE(documentSourceIdentifier->name() == "file"_el);
+        REQUIRE(documentSourceIdentifier);
+        REQUIRE_EQUAL(documentSourceIdentifier->name(), "file"_el);
         createTestFile("config/file1.elcl");
         createTestFile("config/file2.elcl");
         createTestFile("config/file3.elcl");
         const auto resolver = FileSourceResolver::create();
-        REQUIRE(resolver != nullptr);
+        REQUIRE(resolver);
         const SourceResolverContext context{
             .includeText = "**/*"_el,
             .sourceIdentifier = documentSourceIdentifier,
         };
         SourceListPtr sourceList;
         REQUIRE_NOTHROW(sourceList = resolver->resolve(context));
-        REQUIRE(sourceList != nullptr);
+        REQUIRE(sourceList);
         REQUIRE_EQUAL(sourceList->size(), 4);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testPlainPaths() {
         const auto fileList = FileList{
             "config/MainDocument.elcl",
@@ -313,6 +316,14 @@ public:
         WITH_CONTEXT(expectSuccessVariants(".\\..\\other\\OtherDocument.elcl"_el, {"other/OtherDocument.elcl"_el}));
     }
 
+    void testPlainPathsLight() {
+        setupFileList({"config/MainDocument.elcl", "config/SameDir.elcl", "other/OtherDocument.elcl"});
+        WITH_CONTEXT(expectSuccess("SameDir.elcl"_el, {"config/SameDir.elcl"_el}));
+        WITH_CONTEXT(expectSuccess("../other/OtherDocument.elcl"_el, {"other/OtherDocument.elcl"_el}));
+    }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testFilenameWildcards() {
         const auto fileList = FileList{
             "config/MainDocument.elcl",
@@ -506,6 +517,13 @@ public:
             }));
     }
 
+    void testFilenameWildcardsLight() {
+        setupFileList({"config/MainDocument.elcl", "config/doc001.elcl", "config/readme.txt"});
+        WITH_CONTEXT(expectSuccess("*.elcl"_el, {"config/MainDocument.elcl"_el, "config/doc001.elcl"_el}));
+    }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testDirectoryWildcards() {
         const auto fileList = FileList{
             "config/doc009.elcl",
@@ -623,6 +641,11 @@ public:
                 "config/sub/b/doc003.elcl"_el,
                 "config/sub/b/doc004.elcl"_el,
             }));
+    }
+
+    void testDirectoryWildcardsLight() {
+        setupFileList({"config/main.elcl", "config/sub/document.elcl", "config/sub/readme.txt"});
+        WITH_CONTEXT(expectSuccess("**/*.elcl"_el, {"config/main.elcl"_el, "config/sub/document.elcl"_el}));
     }
 
     void testErrors() {

@@ -2,15 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Rule.hpp"
+#include "Rule_fwd.hpp"
+#include "ValidationContext_fwd.hpp"
 #include "ValidationTarget.hpp"
 
 #include "../../Value.hpp"
 
 namespace erbsland::conf::impl {
-
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
 
 /// The context to validate a constraint.
 class ValidationContext {

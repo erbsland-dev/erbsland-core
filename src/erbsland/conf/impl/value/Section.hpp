@@ -4,14 +4,14 @@
 
 #include "ValueWithChildren.hpp"
 
-#include <stdexcept>
-
 namespace erbsland::conf::impl {
 
 /// A generic base class for all section-like containers.
 /// This base class exists primarily to allow transforming one section type into another.
 class Section : public ValueWithChildren {
 public:
+    /// Creates a section with the specified value type.
+    /// @param valueType The initial section type.
     explicit Section(const ValueType valueType) : _valueType{valueType} {}
 
 public:
@@ -37,24 +37,6 @@ public:
 
 private:
     ValueType _valueType;
-};
-
-/// The value implementation for the section with regular names.
-class SectionWithNames final : public Section {
-public:
-    SectionWithNames() : Section{ValueType::SectionWithNames} {}
-};
-
-/// The value implementation for the section with text names.
-class SectionWithTexts final : public Section {
-public:
-    SectionWithTexts() : Section{ValueType::SectionWithTexts} {}
-};
-
-/// The value implementation for an intermediate section.
-class IntermediateSection final : public Section {
-public:
-    IntermediateSection() : Section{ValueType::IntermediateSection} {}
 };
 
 }

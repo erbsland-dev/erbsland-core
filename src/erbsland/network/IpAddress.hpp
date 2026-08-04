@@ -5,7 +5,6 @@
 #include "IpVersion.hpp"
 
 #include "../mem/ByteArray.hpp"
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringCharReader_fwd.hpp"
 
@@ -104,11 +103,17 @@ private:
     using V4Bytes = mem::ByteArray<4>;
 
 private:
+    /// Parse a dotted-decimal IPv4 address into byte storage.
     [[nodiscard]] static auto parseV4(text::StringCharReader &reader, V4Bytes &bytes) noexcept -> bool;
+    /// Parse an IPv6 address into byte storage.
     [[nodiscard]] static auto parseV6(text::StringCharReader &reader, Bytes &bytes) noexcept -> bool;
+    /// Format an IPv4 byte sequence starting at an optional byte offset.
     [[nodiscard]] static auto formatV4(const Bytes &bytes, std::size_t offset = 0U) -> text::String;
+    /// Test whether bytes encode an IPv4-mapped IPv6 address.
     [[nodiscard]] static auto isV4Mapped(const Bytes &bytes) noexcept -> bool;
+    /// Format an IPv6 byte sequence using its canonical textual notation.
     [[nodiscard]] static auto formatV6(const Bytes &bytes) -> text::String;
+    /// Create an address from its version and network-byte-order storage.
     constexpr IpAddress(IpVersion version, Bytes bytes) noexcept : _bytes{bytes}, _version{version} {}
 
 private:
@@ -121,9 +126,4 @@ private:
 template <>
 struct std::hash<erbsland::network::IpAddress> {
     auto operator()(const erbsland::network::IpAddress &value) const noexcept -> std::size_t { return value.toHash(); }
-};
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::network::IpAddress> : FormatAs<network::IpAddress, String> {
-    [[nodiscard]] auto format(const network::IpAddress &value) const -> String { return value.toString(); }
 };

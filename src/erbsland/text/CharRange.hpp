@@ -106,10 +106,12 @@ public: // factories
 private:
     static constexpr auto cEmptyValue = char32_t{0x110000U};
 
+    /// Clear this range.
     constexpr void clear() noexcept {
         _from = Char{cEmptyValue};
         _to = Char{cEmptyValue};
     }
+    /// Get the next valid Unicode scalar value.
     [[nodiscard]] constexpr static auto nextScalarValue(const char32_t value) noexcept -> char32_t {
         if (value == 0xD7FFU) {
             return 0xE000U;

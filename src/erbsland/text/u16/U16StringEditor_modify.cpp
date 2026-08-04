@@ -40,7 +40,7 @@ auto U16StringEditor::clear() noexcept -> U16StringEditor & {
     return *this;
 }
 
-auto U16StringEditor::append(const U16String &text, const ElementCount count) -> U16StringEditor & {
+auto U16StringEditor::append(const U16String &text, const ItemCount count) -> U16StringEditor & {
     U16StringAppendTools{_storage}.append(text.dataView(), count);
     return *this;
 }
@@ -329,6 +329,10 @@ auto U16StringEditor::withRange(const U16DataRange range) const noexcept -> U16S
 
 auto U16StringEditor::dataView() const noexcept -> U16StringDataView {
     return _storage.dataView();
+}
+
+auto U16StringEditor::isStorageShared() const noexcept -> bool {
+    return _storage.sharedData().isShared();
 }
 
 }

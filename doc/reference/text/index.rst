@@ -10,6 +10,8 @@ Text Processing
     char_range
     format_definitions
     html/index
+    json
+    punycode
     std_compatibility
     string_collections
     string_converter

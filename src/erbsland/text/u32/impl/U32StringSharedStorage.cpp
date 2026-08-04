@@ -106,7 +106,9 @@ auto U32StringSharedStorage::forSize(const std::size_t size) -> U32StringSharedS
 }
 
 void U32StringSharedStorage::validateSize(const std::size_t size) {
-    static_cast<void>(CpLength::fromSizeTOrThrow(size));
+    if (math::willCastOverflow<CpLength::Value>(size)) {
+        throwOverflow("String storage size exceeds bounds");
+    }
 }
 
 auto U32StringSharedStorage::checkedAddSize(

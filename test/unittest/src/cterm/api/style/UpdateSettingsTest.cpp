@@ -20,7 +20,7 @@ public:
         REQUIRE_EQUAL(settings.cropMarkBottomRight(), U'◢');
         REQUIRE_EQUAL(settings.cropMarkBottom(), U'▼');
         REQUIRE(settings.switchToAlternateBuffer());
-        REQUIRE(&UpdateSettings::defaultSettings() == &settings);
+        REQUIRE_EQUAL(&UpdateSettings::defaultSettings(), &settings);
     }
 
     void testSettersUpdateAllStoredValues() {
@@ -38,7 +38,8 @@ public:
 
         REQUIRE_EQUAL(settings.minimumSize(), expectedMinimumSize);
         REQUIRE_EQUAL(settings.minimumSizeBackground(), U'.');
-        REQUIRE_EQUAL(settings.minimumSizeMessage().length(), BlockCount{18U});
+        const auto minimumSizeMessageLength = settings.minimumSizeMessage().length();
+        REQUIRE_EQUAL(minimumSizeMessageLength, BlockCount{18U});
         REQUIRE(settings.showCropMarks());
         REQUIRE_EQUAL(settings.cropMarkRight(), U'>');
         REQUIRE_EQUAL(settings.cropMarkBottomRight(), U'+');

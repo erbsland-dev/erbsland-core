@@ -83,7 +83,7 @@ public:
         const auto applicationScope = ApplicationTestScope<>{};
         auto scope = BackendScope{std::make_unique<TestBackend>()};
         auto options = el::path::PathTempDirectoryOptions{};
-        options.setMaximumAttempts(el::unit::ElementCount{10U});
+        options.setMaximumAttempts(el::unit::ItemCount{10U});
 
         REQUIRE_THROWS_AS(
             el::path::PathError, el::path::Path{"temporary"_el}.operations().createTempDirectoryOrThrow(options));
@@ -95,9 +95,10 @@ public:
         auto scope = BackendScope{std::make_unique<TestBackend>()};
         scope.backend->errorCode = EEXIST;
         auto options = el::path::PathTempDirectoryOptions{};
-        options.setMaximumAttempts(el::unit::ElementCount{3U});
+        options.setMaximumAttempts(el::unit::ItemCount{3U});
 
-        REQUIRE(el::path::Path{"temporary"_el}.operations().createTempDirectory(options) == nullptr);
+        const auto temporaryDirectory = el::path::Path{"temporary"_el}.operations().createTempDirectory(options);
+        REQUIRE_EQUAL(temporaryDirectory, nullptr);
         REQUIRE_EQUAL(scope.backend->createCount, 3);
     }
 };

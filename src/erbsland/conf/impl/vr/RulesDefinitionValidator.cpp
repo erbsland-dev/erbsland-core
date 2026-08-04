@@ -4,6 +4,11 @@
 
 #include "KeyConstraint.hpp"
 #include "MinMaxConstraint.hpp"
+#include "MinMaxDateConstraint.hpp"
+#include "MinMaxDateTimeConstraint.hpp"
+#include "MinMaxFloatConstraint.hpp"
+#include "MinMaxIntegerConstraint.hpp"
+#include "MinMaxMatrixConstraint.hpp"
 #include "ValidationError.hpp"
 
 #include "../utilities/InternalError.hpp"
@@ -34,8 +39,8 @@ void RulesDefinitionValidator::validate() {
 }
 
 void RulesDefinitionValidator::validateRule(const RulePtr &rule) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(rule->type() != vr::RuleType::Undefined, "Unexpected undefined rule type");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(rule->type() != vr::RuleType::Undefined, "Unexpected undefined rule type"_el);
 
     try {
         constexpr std::array testFunctions{
@@ -92,7 +97,7 @@ void RulesDefinitionValidator::testAlternatives(const RulePtr &rule) {
 }
 
 void RulesDefinitionValidator::testVrAny(const RulePtr &rule) {
-    if (rule->ruleName() != vrc::cReservedAny) {
+    if (rule->ruleName() != Name::vrName(Name::VR::ReservedAny)) {
         return;
     }
     if (rule->isOptional()) {
@@ -104,7 +109,7 @@ void RulesDefinitionValidator::testVrAny(const RulePtr &rule) {
 }
 
 void RulesDefinitionValidator::testVrNameMustBeText(const RulePtr &rule) {
-    if (rule->ruleName() == vrc::cReservedName) {
+    if (rule->ruleName() == Name::vrName(Name::VR::ReservedName)) {
         if (rule->type() != vr::RuleType::Text) {
             throwValidationError("The name rule must have a type of 'text'"_el);
         }
@@ -115,12 +120,12 @@ void RulesDefinitionValidator::testSectionList(const RulePtr &rule) {
     if (rule->type() != vr::RuleType::SectionList) {
         return;
     }
-    if (!rule->hasChild(vrc::cReservedEntry)) {
+    if (!rule->hasChild(Name::vrName(Name::VR::ReservedEntry))) {
         throwValidationError("A section list rule must have a 'vr_entry' node-rules definition"_el);
     }
     // also validate its type.
-    const auto entryRule = rule->child(vrc::cReservedEntry);
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null");
+    const auto entryRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null"_el);
     try {
         if (entryRule->type() == vr::RuleType::Alternatives) {
             // if vr_entry is an alternatives rule, validate its children.
@@ -156,11 +161,11 @@ void RulesDefinitionValidator::testValueList(const RulePtr &rule) {
     if (rule->type() != vr::RuleType::ValueList && rule->type() != vr::RuleType::ValueMatrix) {
         return;
     }
-    if (!rule->hasChild(vrc::cReservedEntry)) {
+    if (!rule->hasChild(Name::vrName(Name::VR::ReservedEntry))) {
         throwValidationError("A value list or matrix rule must have a 'vr_entry' node-rules definition"_el);
     }
-    const auto entryRule = rule->child(vrc::cReservedEntry);
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null");
+    const auto entryRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(entryRule != nullptr, "vr_entry must not be null"_el);
     try {
         if (entryRule->type() == vr::RuleType::Alternatives) {
             // if vr_entry is an alternatives rule, validate its children.
@@ -204,7 +209,7 @@ void RulesDefinitionValidator::testVrEntryCommonConstraints(const RulePtr &rule)
 
 void RulesDefinitionValidator::testNoOtherSubsectionInListDefinitions(const RulePtr &rule) {
     for (const auto &child : rule->childrenImpl()) {
-        if (child->ruleName() != vrc::cReservedEntry) {
+        if (child->ruleName() != Name::vrName(Name::VR::ReservedEntry)) {
             throwValidationError(
                 text::StringFormat{"Unexpected sub-node-rules definition in '{}' rule: only 'vr_entry' is permitted"_el}
                     .build(rule->type().toText()),
@@ -246,8 +251,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     }
     const auto minimum = std::dynamic_pointer_cast<MinMaxConstraint>(rule->constraint(vr::ConstraintType::Minimum));
     const auto maximum = std::dynamic_pointer_cast<MinMaxConstraint>(rule->constraint(vr::ConstraintType::Maximum));
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minimum != nullptr, "minimum constraint must be min/max constraint");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maximum != nullptr, "maximum constraint must be min/max constraint");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minimum != nullptr, "minimum constraint must be min/max constraint"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maximum != nullptr, "maximum constraint must be min/max constraint"_el);
     if (minimum->isNegated() || maximum->isNegated()) {
         return;
     }
@@ -264,8 +269,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     case vr::RuleType::SectionWithTexts: {
         const auto minInt = std::dynamic_pointer_cast<MinMaxIntegerConstraint>(minimum);
         const auto maxInt = std::dynamic_pointer_cast<MinMaxIntegerConstraint>(maximum);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minInt != nullptr, "minimum integer constraint type mismatch");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxInt != nullptr, "maximum integer constraint type mismatch");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minInt != nullptr, "minimum integer constraint type mismatch"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxInt != nullptr, "maximum integer constraint type mismatch"_el);
         if (minInt->value() > maxInt->value()) {
             throwInvalidRange();
         }
@@ -274,8 +279,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     case vr::RuleType::Float: {
         const auto minFloat = std::dynamic_pointer_cast<MinMaxFloatConstraint>(minimum);
         const auto maxFloat = std::dynamic_pointer_cast<MinMaxFloatConstraint>(maximum);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minFloat != nullptr, "minimum float constraint type mismatch");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxFloat != nullptr, "maximum float constraint type mismatch");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minFloat != nullptr, "minimum float constraint type mismatch"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxFloat != nullptr, "maximum float constraint type mismatch"_el);
         if (minFloat->value() > maxFloat->value()) {
             throwInvalidRange();
         }
@@ -284,8 +289,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     case vr::RuleType::Date: {
         const auto minDate = std::dynamic_pointer_cast<MinMaxDateConstraint>(minimum);
         const auto maxDate = std::dynamic_pointer_cast<MinMaxDateConstraint>(maximum);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minDate != nullptr, "minimum date constraint type mismatch");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxDate != nullptr, "maximum date constraint type mismatch");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minDate != nullptr, "minimum date constraint type mismatch"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxDate != nullptr, "maximum date constraint type mismatch"_el);
         if (minDate->value() > maxDate->value()) {
             throwInvalidRange();
         }
@@ -294,8 +299,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     case vr::RuleType::DateTime: {
         const auto minDateTime = std::dynamic_pointer_cast<MinMaxDateTimeConstraint>(minimum);
         const auto maxDateTime = std::dynamic_pointer_cast<MinMaxDateTimeConstraint>(maximum);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minDateTime != nullptr, "minimum date-time constraint type mismatch");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxDateTime != nullptr, "maximum date-time constraint type mismatch");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minDateTime != nullptr, "minimum date-time constraint type mismatch"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxDateTime != nullptr, "maximum date-time constraint type mismatch"_el);
         if (minDateTime->value() > maxDateTime->value()) {
             throwInvalidRange();
         }
@@ -304,8 +309,8 @@ void RulesDefinitionValidator::testMinimumMaximumRelation(const RulePtr &rule) {
     case vr::RuleType::ValueMatrix: {
         const auto minMatrix = std::dynamic_pointer_cast<MinMaxMatrixConstraint>(minimum);
         const auto maxMatrix = std::dynamic_pointer_cast<MinMaxMatrixConstraint>(maximum);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minMatrix != nullptr, "minimum matrix constraint type mismatch");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxMatrix != nullptr, "maximum matrix constraint type mismatch");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(minMatrix != nullptr, "minimum matrix constraint type mismatch"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(maxMatrix != nullptr, "maximum matrix constraint type mismatch"_el);
         if (minMatrix->value() > maxMatrix->value() || minMatrix->secondValue() > maxMatrix->secondValue()) {
             throwInvalidRange();
         }
@@ -321,7 +326,7 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
         return;
     }
     if (rule->type() != vr::RuleType::Section) {
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!rule->keyDefinitions().empty(), "key definitions must not be empty");
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!rule->keyDefinitions().empty(), "key definitions must not be empty"_el);
         throwValidationError(
             "ConfKey definitions may only be placed in a section or the document root"_el,
             rule->keyDefinitions().front()->location());
@@ -339,7 +344,7 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                 seenIndexNames.insert(keyDefinition->name());
             }
             for (const auto &key : keyDefinition->keys()) {
-                const auto entryIndex = key.find(vrc::cReservedEntry);
+                const auto entryIndex = key.find(Name::vrName(Name::VR::ReservedEntry));
                 if (entryIndex == NamePath::npos) {
                     throwValidationError(
                         text::StringFormat{"Keys must point to values inside a section list. "
@@ -373,12 +378,12 @@ void RulesDefinitionValidator::testKeyDefinitionPlacement(const RulePtr &rule) {
                     throwValidationError(
                         text::StringFormat{"The key '{}' has no value path after 'vr_entry'"_el}.build(key.toText()));
                 }
-                if (valuePath.find(vrc::cReservedEntry) != NamePath::npos) {
+                if (valuePath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
                     throwValidationError(
                         text::StringFormat{"The key '{}' points to a value in a nested section list"_el}.build(
                             key.toText()));
                 }
-                const auto entryRule = firstListRule->child(vrc::cReservedEntry);
+                const auto entryRule = firstListRule->child(Name::vrName(Name::VR::ReservedEntry));
                 if (entryRule == nullptr || entryRule->type() != vr::RuleType::Section) {
                     throwValidationError(
                         text::StringFormat{
@@ -460,7 +465,7 @@ void RulesDefinitionValidator::validateKeyReference(const RulePtr &rule, const N
                 "The 'vr_key' definition for the reference '{}' was not found in the scope of the constraint"_el}
                 .build(keyReference.toText()));
     }
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(ruleInPath != nullptr, "The root rule must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(ruleInPath != nullptr, "The root rule must not be null"_el);
     constexpr std::size_t allKeys = std::numeric_limits<std::size_t>::max();
     auto index = allKeys;
     if (keyReference.size() > 1) {
@@ -498,7 +503,7 @@ void RulesDefinitionValidator::testKeyReferences(const RulePtr &rule) {
         throwValidationError("ConfKey references can only be used on text or integer values"_el);
     }
     auto constraint = std::dynamic_pointer_cast<KeyConstraint>(rule->constraint(vr::ConstraintType::ConfKey));
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(constraint != nullptr, "ConfKey constraint must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(constraint != nullptr, "ConfKey constraint must not be null"_el);
     try {
         std::unordered_set<NamePath> seenKeyPaths;
         for (const auto &keyReference : constraint->getKeyReferences()) {
@@ -516,9 +521,9 @@ void RulesDefinitionValidator::testKeyReferences(const RulePtr &rule) {
 auto RulesDefinitionValidator::resolveKeyDefinitionType(
     const RulePtr &rule, const KeyDefinitionPtr &keyDefinition, const std::size_t index) -> std::vector<vr::RuleType> {
 
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(index < keyDefinition->keys().size(), "Partial key index out of bounds");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(index < keyDefinition->keys().size(), "Partial key index out of bounds"_el);
     const auto targetRule = rule->child(keyDefinition->keys().at(index));
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(targetRule != nullptr, "A given key definition does not exist");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(targetRule != nullptr, "A given key definition does not exist"_el);
     std::vector<vr::RuleType> result;
     if (targetRule->type() == vr::RuleType::Alternatives) {
         for (const auto &alternative : targetRule->childrenImpl()) {
@@ -527,13 +532,13 @@ auto RulesDefinitionValidator::resolveKeyDefinitionType(
                     result.push_back(alternative->type());
                 }
             }
-            ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!result.empty(), "Unexpected alternative without matching types.");
+            ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!result.empty(), "Unexpected alternative without matching types."_el);
         }
         return result;
     }
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
         targetRule->type() == vr::RuleType::Text || targetRule->type() == vr::RuleType::Integer,
-        "Unexpected rule type");
+        "Unexpected rule type"_el);
     result.emplace_back(targetRule->type());
     return result;
 }
@@ -575,7 +580,7 @@ void RulesDefinitionValidator::validateDependencyPath(const RulePtr &rule, const
     if (dependencyPath.containsIndex() || dependencyPath.containsText()) {
         throwValidationError("The dependency path cannot contain an index or text"_el);
     }
-    if (dependencyPath.find(vrc::cReservedEntry) != NamePath::npos) {
+    if (dependencyPath.find(Name::vrName(Name::VR::ReservedEntry)) != NamePath::npos) {
         throwValidationError(
             text::StringFormat{"The dependency path '{}' points to a value in a section list"_el}.build(
                 dependencyPath.toText()));

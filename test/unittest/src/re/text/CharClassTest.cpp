@@ -92,7 +92,7 @@ public:
 
     void testConstructorNormalizationFromVector() {
         // unsorted, overlapping and adjacent input must normalize and sort
-        std::vector<impl::CharRange> input{
+        std::vector<el::re::impl::CharRange> input{
             {Char{U'd'}, Char{U'f'}},
             {Char{U'a'}, Char{U'c'}},
             {Char{U'b'}, Char{U'e'}},
@@ -110,14 +110,14 @@ public:
         built.add(Char{U'h'}, Char{U'h'});
         built.add(Char{U'g'}, Char{U'g'});
         built.prepareForUse();
-        REQUIRE(fromVec == built);
-        REQUIRE_FALSE(fromVec != built);
+        REQUIRE_EQUAL(fromVec, built);
+        REQUIRE_EQUAL(fromVec, built);
     }
 
     void testSortTieOnFirstUsesLast() {
         // Both ranges start at the same character, but with different ends.
         // After normalization they must merge to the longer one.
-        std::vector<impl::CharRange> input{
+        std::vector<el::re::impl::CharRange> input{
             {Char{U'a'}, Char{U'b'}}, {Char{U'a'}, Char{U'd'}}, {Char{U'f'}, Char{U'f'}}};
         CharClass ranges{std::move(input)};
         ranges.prepareForUse();
@@ -137,8 +137,8 @@ public:
 
         x.prepareForUse();
         y.prepareForUse();
-        REQUIRE(x == y);
-        REQUIRE_FALSE(x != y);
+        REQUIRE_EQUAL(x, y);
+        REQUIRE_EQUAL(x, y);
     }
 
     void testMatchesBoundariesAndGaps() {
@@ -173,16 +173,16 @@ public:
 
         // copy ctor
         CharClass copy{original};
-        REQUIRE(copy == original);
+        REQUIRE_EQUAL(copy, original);
 
         // move ctor
         CharClass moveCtor{std::move(copy)};
-        REQUIRE(moveCtor == original);
+        REQUIRE_EQUAL(moveCtor, original);
 
         // copy assignment
         CharClass assigned;
         assigned = original;
-        REQUIRE(assigned == original);
+        REQUIRE_EQUAL(assigned, original);
 
         // move assignment (content should move; we check the target has expected state)
         CharClass movedTo;
@@ -259,8 +259,8 @@ public:
         digits.add(Char{U'0'}, Char{U'9'});
         digits.prepareForUse();
 
-        REQUIRE_FALSE(letters == digits);
-        REQUIRE(letters != digits);
+        REQUIRE_NOT_EQUAL(letters, digits);
+        REQUIRE_NOT_EQUAL(letters, digits);
     }
 
     void testNullCharacterAndInvalidCharacterBoundary() {
@@ -273,7 +273,7 @@ public:
         REQUIRE_THROWS_AS(RegExError, charClass.add(Char::endOfData()));
         REQUIRE_THROWS_AS(RegExError, charClass.add(Char{0xD800U}, Char{0xE000U}));
 
-        CharClass fromInvalidRange{std::vector<impl::CharRange>{{Char::endOfData(), Char::endOfData()}}};
+        CharClass fromInvalidRange{std::vector<el::re::impl::CharRange>{{Char::endOfData(), Char::endOfData()}}};
         REQUIRE_THROWS_AS(RegExError, fromInvalidRange.prepareForUse());
     }
 };

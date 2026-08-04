@@ -239,7 +239,7 @@ public:
         options.setCreateParents(true);
         const auto stream = backend.openByteOutputStreamOrThrow(Path{"report.bin"_el}, options);
 
-        REQUIRE(stream == backend.lastOutputStream);
+        REQUIRE_EQUAL(stream, backend.lastOutputStream);
         REQUIRE_EQUAL(toStdString(backend.lastOutputPath), "report.bin");
         REQUIRE(backend.lastWriteOptions.createParents());
     }

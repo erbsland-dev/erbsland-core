@@ -3,6 +3,7 @@
 #pragma once
 
 #include "OptionErrorContext_fwd.hpp"
+#include "OptionManager_fwd.hpp"
 #include "OptionResult.hpp"
 #include "Options_fwd.hpp"
 
@@ -12,9 +13,6 @@
 #include "../text/TextDocument.hpp"
 
 namespace erbsland::options {
-
-class OptionManager;
-using OptionManagerPtr = std::shared_ptr<OptionManager>;
 
 /// The option manager orchestrates parsing and validation of command line options.
 ///
@@ -175,6 +173,7 @@ public: // conversion
     [[nodiscard]] static auto convertCommandLineArguments(int argc, wchar_t *argv[]) -> core::CommandLineArguments;
 
 private:
+    /// Render a text document to plain-text output.
     static void renderPlainDocument(const text::TextDocument &document, const stream::TextOutputStreamPtr &output);
 
     OptionsPtr _options;                       ///< The options root.

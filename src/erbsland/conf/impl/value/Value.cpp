@@ -2,16 +2,27 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Value.hpp"
 
+#include "BooleanValue.hpp"
 #include "BytesValue.hpp"
+#include "CalendarDeltaValue.hpp"
+#include "DateTimeValue.hpp"
+#include "DateValue.hpp"
 #include "Document.hpp"
-#include "Section.hpp"
+#include "FloatValue.hpp"
+#include "IntegerValue.hpp"
+#include "IntermediateSection.hpp"
+#include "RegExValue.hpp"
 #include "SectionList.hpp"
+#include "SectionWithNames.hpp"
+#include "SectionWithTexts.hpp"
+#include "TextValue.hpp"
+#include "TimeValue.hpp"
+#include "TimeWithZoneValue.hpp"
 #include "ValueList.hpp"
-#include "ValueWithConvertibleType.hpp"
-#include "ValueWithNativeType.hpp"
 
 #include "../vr/Rule.hpp"
 
+#include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
 
 #include <algorithm>
@@ -205,7 +216,7 @@ void Value::setParent(const conf::ValuePtr &parent) {
 }
 
 void Value::addValue(const ValuePtr &) {
-    throw err::LogicError("Child values are not supported for this type.");
+    throw err::LogicError("Child values are not supported for this type."_el);
 }
 
 auto Value::childrenImpl() const noexcept -> const std::vector<ValuePtr> & {
@@ -278,20 +289,15 @@ auto Value::createBytes(const mem::ByteBlock &value) noexcept -> ValuePtr {
     return std::make_shared<BytesValue>(value);
 }
 
-auto Value::createBytes(mem::ByteBlock &&value) noexcept -> ValuePtr {
-    return std::make_shared<BytesValue>(std::move(value));
-}
-
 auto Value::createCalendarDelta(const time::CalendarDelta &value) noexcept -> ValuePtr {
     return std::make_shared<CalendarDeltaValue>(value);
 }
 
-auto Value::createRegEx(const re::RegExPtr &value) noexcept -> ValuePtr {
+auto Value::createRegEx(const re::RegExPtr &value) -> ValuePtr {
+    if (value == nullptr) {
+        throw err::ParameterError("The regular expression must not be a nullptr"_el, "value"_el);
+    }
     return std::make_shared<RegExValue>(value);
-}
-
-auto Value::createRegEx(re::RegExPtr &&value) noexcept -> ValuePtr {
-    return std::make_shared<RegExValue>(std::move(value));
 }
 
 auto Value::createValueList(std::vector<ValuePtr> &&valueList) noexcept -> ValuePtr {
@@ -314,6 +320,50 @@ auto Value::createSectionWithNames() noexcept -> ValuePtr {
 
 auto Value::createSectionWithTexts() noexcept -> ValuePtr {
     return std::make_shared<SectionWithTexts>();
+}
+
+auto Value::createFromValue(Integer value) noexcept -> ValuePtr {
+    return createInteger(value);
+}
+
+auto Value::createFromValue(bool value) noexcept -> ValuePtr {
+    return createBoolean(value);
+}
+
+auto Value::createFromValue(Float value) noexcept -> ValuePtr {
+    return createFloat(value);
+}
+
+auto Value::createFromValue(text::String value) noexcept -> ValuePtr {
+    return createText(std::move(value));
+}
+
+auto Value::createFromValue(const time::Date &value) noexcept -> ValuePtr {
+    return createDate(value);
+}
+
+auto Value::createFromValue(const time::Time &value) noexcept -> ValuePtr {
+    return createTime(value);
+}
+
+auto Value::createFromValue(const time::TimeWithZone &value) noexcept -> ValuePtr {
+    return createTimeWithZone(value);
+}
+
+auto Value::createFromValue(const time::DateTime &value) noexcept -> ValuePtr {
+    return createDateTime(value);
+}
+
+auto Value::createFromValue(const mem::ByteBlock &value) noexcept -> ValuePtr {
+    return createBytes(value);
+}
+
+auto Value::createFromValue(const time::CalendarDelta &value) noexcept -> ValuePtr {
+    return createCalendarDelta(value);
+}
+
+auto Value::createFromValue(const re::RegExPtr &value) -> ValuePtr {
+    return createRegEx(value);
 }
 
 }

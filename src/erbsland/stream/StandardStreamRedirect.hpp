@@ -19,12 +19,16 @@ public:
     /// Create an inactive guard.
     StandardStreamRedirect() noexcept = default;
 
-    // defaults
+    /// Move the standard-stream redirection into this instance.
+    auto operator=(StandardStreamRedirect &&other) noexcept -> StandardStreamRedirect &;
+
+    /// Restores the standard streams when this guard is active.
     ~StandardStreamRedirect();
+
+    // defaults/deletions
     StandardStreamRedirect(const StandardStreamRedirect &) = delete;
     auto operator=(const StandardStreamRedirect &) -> StandardStreamRedirect & = delete;
     StandardStreamRedirect(StandardStreamRedirect &&other) noexcept;
-    auto operator=(StandardStreamRedirect &&other) noexcept -> StandardStreamRedirect &;
 
 public:
     /// Test if this guard still owns an active replacement.
@@ -39,6 +43,7 @@ private:
     friend auto redirectStandardStreams(TextOutputStreamPtr output, TextOutputStreamPtr error)
         -> StandardStreamRedirect;
 
+    /// Create an active redirect from its shared state.
     explicit StandardStreamRedirect(std::shared_ptr<impl::StandardStreamRedirectData> data) noexcept;
 
 private:

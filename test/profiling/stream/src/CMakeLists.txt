@@ -12,6 +12,6 @@ target_sources(stream-file-profile PRIVATE
         main.cpp
         ProfileTypes.hpp
         ProfileTypes.cpp
-        Workload.cpp
         Workload.hpp
+        WorkloadRunner.cpp
 )

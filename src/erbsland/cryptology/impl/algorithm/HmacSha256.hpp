@@ -2,15 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "HmacAlgorithm.hpp"
 #include "Sha2.hpp"
-
-#include "../SecureEraseGuard.hpp"
 
 #include "../../../err/ParameterError.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/ByteSpan.hpp"
+#include "../../../text/Literals.hpp"
 #include "../../../unit/ByteLength.hpp"
+#include "../../../unit/ByteRange.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -23,6 +24,7 @@ namespace erbsland::cryptology::impl {
 // algorithms are never included in the public API, therefore using these namespaces never leaks.
 using namespace erbsland::unit;
 using namespace erbsland::mem;
+using namespace text::literals;
 
 /// Calculate HMAC-SHA-256.
 ///
@@ -33,60 +35,21 @@ using namespace erbsland::mem;
 /// @param key The secret key bytes.
 /// @param messageParts The message spans, hashed as one concatenated message without creating an ordinary copy.
 /// @return The 32-byte MAC in marked storage.
-/// @tested{PasswordPrimitiveTest}
+/// @tested{PasswordPrimitiveTest HashPrimitiveFullValidationTest}
 [[nodiscard]] inline auto hmacSha256(const ConstByteSpan key, const std::initializer_list<ConstByteSpan> messageParts)
-    -> ByteBlockEditor {
-    // RFC 2104 section 2 defines B=64 for SHA-256. Keys longer than B are replaced by H(K); shorter keys are copied.
-    // The remaining bytes stay zero, yielding the required B-byte K0 value.
-    auto normalizedKey = ByteArray<64U>{};
-    [[maybe_unused]] const auto normalizedKeyErase = SecureEraseGuard{normalizedKey};
-    if (key.size() > 64U) {
-        auto keyHasher = Sha2_256{};
-        [[maybe_unused]] const auto keyHasherErase = SecureEraseGuard{keyHasher};
-        keyHasher.update(key);
-        auto digest = keyHasher.digest();
-        [[maybe_unused]] const auto digestErase = SecureEraseGuard{digest};
-        normalizedKey.overwrite(digest.span());
-    } else {
-        normalizedKey.overwrite(key);
-    }
-
-    // RFC 2104 section 2 defines ipad as byte 0x36 repeated B times and opad as byte 0x5c repeated B times. XORing
-    // K0 with each constant creates two domain-separated, block-sized prefixes.
-    auto innerPad = ByteArray<64U>{};
-    [[maybe_unused]] const auto innerPadErase = SecureEraseGuard{innerPad};
-    auto outerPad = ByteArray<64U>{};
-    [[maybe_unused]] const auto outerPadErase = SecureEraseGuard{outerPad};
-    innerPad.fill(Byte{0x36U});
-    outerPad.fill(Byte{0x5cU});
-    static_cast<void>(innerPad.xorWith(normalizedKey.span()));
-    static_cast<void>(outerPad.xorWith(normalizedKey.span()));
-
-    // Compute H((K0 XOR ipad) || text). Message parts are streamed consecutively so no ordinary contiguous copy of
-    // sensitive inputs is created.
-    auto innerHasher = Sha2_256{};
-    [[maybe_unused]] const auto innerHasherErase = SecureEraseGuard{innerHasher};
-    innerHasher.update(innerPad.span());
+    -> ByteBlock {
+    // SHA-256's 64-bit bit-length field includes the preloaded 64-byte inner pad; reserve that block in the limit.
+    constexpr auto maximumMessageLength = (uint64_t{1U} << 61U) - 65U;
+    auto hmac = HmacAlgorithm<Sha2_256, 64U, maximumMessageLength>{key};
     for (const auto part : messageParts) {
-        innerHasher.update(part);
+        hmac.update(part);
     }
-    auto innerDigest = innerHasher.digest();
-    [[maybe_unused]] const auto innerDigestErase = SecureEraseGuard{innerDigest};
-
-    // Compute H((K0 XOR opad) || innerDigest), the HMAC value defined by RFC 2104 section 2.
-    auto outerHasher = Sha2_256{};
-    [[maybe_unused]] const auto outerHasherErase = SecureEraseGuard{outerHasher};
-    outerHasher.update(outerPad.span());
-    outerHasher.update(innerDigest.span());
-    auto outerDigest = outerHasher.digest();
-    [[maybe_unused]] const auto outerDigestErase = SecureEraseGuard{outerDigest};
-
-    // Move the ordinary fixed-size SHA-256 result into marked storage before erasing stack-resident intermediates.
-    auto result = ByteBlockEditor{outerDigest.length()};
+    auto digest = hmac.finalize();
+    // PBKDF2 treats the HMAC result as secret keying material, so transfer it to marked storage before erasing the
+    // stack-resident digest returned by the generic HMAC core.
+    auto result = ByteBlock{digest};
+    digest.secureErase();
     result.markAsSensitive();
-    result.overwrite(outerDigest.span());
-
-    // Scope guards erase both digests, the streaming hashers, the pads, and the normalized key on every exit path.
     return result;
 }
 
@@ -108,11 +71,11 @@ using namespace erbsland::mem;
     const ConstByteSpan password, const ConstByteSpan salt, const uint32_t iterations, const std::size_t outputLength)
     -> ByteBlockEditor {
     if (iterations == 0U) {
-        throw err::ParameterError{"PBKDF2 iteration count must be positive", "iterations"};
+        throw err::ParameterError{"PBKDF2 iteration count must be positive."_el, "iterations"_el};
     }
     const auto blockCount = (outputLength + 31U) / 32U;
     if (blockCount > std::numeric_limits<uint32_t>::max()) {
-        throw err::ParameterError{"PBKDF2 output length is too large", "outputLength"};
+        throw err::ParameterError{"PBKDF2 output length is too large."_el, "outputLength"_el};
     }
     auto result = ByteBlockEditor{ByteLength::fromSizeT(outputLength)};
     result.markAsSensitive();
@@ -128,7 +91,8 @@ using namespace erbsland::mem;
         // Uj = PRF(P, Uj-1), and T is the XOR of every U value through the configured count c.
         for (auto iteration = uint32_t{1U}; iteration < iterations; ++iteration) {
             current = hmacSha256(password, {current.span()});
-            static_cast<void>(accumulated.xorWith(current.span()));
+            // Both values are one SHA-256 digest; fail rather than partially XOR if that invariant is ever broken.
+            accumulated.xorWithOrThrow(current);
         }
         // Concatenate T1, T2, ... and truncate only the final block to the requested derived-key length.
         const auto offset = static_cast<std::size_t>(block - 1U) * 32U;

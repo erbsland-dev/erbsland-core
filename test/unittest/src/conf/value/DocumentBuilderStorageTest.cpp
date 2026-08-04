@@ -23,17 +23,19 @@ public:
         auto location = Location{
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         section->setName(namePath.at(0));
         storage.addChildValue(nullptr, namePath, location, section);
         // verify its basic get and reset mechanism.
         auto doc1 = storage.getDocumentAndReset();
         auto doc2 = storage.getDocumentAndReset();
-        REQUIRE(doc1 != nullptr);
-        REQUIRE(doc2 != nullptr);
-        REQUIRE(doc1 != doc2);
-        REQUIRE(doc1->value(NamePath::fromText("main"_el)) != nullptr);
-        REQUIRE(doc2->value(NamePath::fromText("main"_el)) == nullptr);
+        REQUIRE_NOT_EQUAL(doc1, nullptr);
+        REQUIRE_NOT_EQUAL(doc2, nullptr);
+        REQUIRE_NOT_EQUAL(doc1, doc2);
+        const auto firstMainValue = doc1->value(NamePath::fromText("main"_el));
+        const auto secondMainValue = doc2->value(NamePath::fromText("main"_el));
+        REQUIRE_NOT_EQUAL(firstMainValue, nullptr);
+        REQUIRE_EQUAL(secondMainValue, nullptr);
     }
 
     void testApiErrors() {
@@ -42,10 +44,10 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("main"_el);
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         section->setName(sectionNamePath.back());
         auto valueNamePath = NamePath::fromText("main.value_1"_el);
-        auto value = impl::Value::createInteger(1);
+        auto value = el::conf::impl::Value::createInteger(1);
         value->setName(valueNamePath.back());
 
         REQUIRE_THROWS(storage.updateLastSection(nullptr, sectionNamePath));
@@ -62,11 +64,11 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("server"_el);
-        auto sectionList = impl::Value::createSectionList();
+        auto sectionList = el::conf::impl::Value::createSectionList();
         sectionList->setName(sectionNamePath.back());
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         auto valueNamePath = NamePath::fromText("server.value_1"_el);
-        auto value = impl::Value::createInteger(1);
+        auto value = el::conf::impl::Value::createInteger(1);
         value->setName(valueNamePath.back());
 
         REQUIRE_NOTHROW(storage.addChildValue(nullptr, sectionNamePath, location, sectionList));
@@ -80,14 +82,14 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("main"_el);
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         section->setName(sectionNamePath.back());
         section->setLocation(location);
         auto value1NamePath = NamePath::fromText("main.value_1"_el);
-        auto value1 = impl::Value::createInteger(1);
+        auto value1 = el::conf::impl::Value::createInteger(1);
         value1->setName(value1NamePath.back());
         auto value2NamePath = NamePath::fromText("main.value_1.value_2"_el);
-        auto value2 = impl::Value::createInteger(1);
+        auto value2 = el::conf::impl::Value::createInteger(1);
         value2->setName(value1NamePath.back());
 
         REQUIRE_NOTHROW(storage.addChildValue(nullptr, sectionNamePath, location, section));
@@ -101,14 +103,14 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("server"_el);
-        auto sectionList = impl::Value::createSectionList();
+        auto sectionList = el::conf::impl::Value::createSectionList();
         sectionList->setName(sectionNamePath.back());
         auto valueNamePath = NamePath::fromText("server.value_1"_el);
 
         REQUIRE_NOTHROW(storage.addChildValue(nullptr, sectionNamePath, location, sectionList));
         // the list is there, but there is no section in the list.
-        impl::ValuePtr result1;
-        impl::ValuePtr result2;
+        el::conf::impl::ValuePtr result1;
+        el::conf::impl::ValuePtr result2;
         REQUIRE_THROWS(result1 = storage.resolveForValue(valueNamePath, location));
         REQUIRE_THROWS(std::tie(result1, result2) = storage.resolveForSection(valueNamePath, location));
     }
@@ -119,18 +121,18 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("main"_el);
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         section->setName(sectionNamePath.back());
         auto valueNamePath = NamePath::fromText("main.value_1"_el);
-        auto value = impl::Value::createInteger(1);
+        auto value = el::conf::impl::Value::createInteger(1);
         value->setName(valueNamePath.back());
 
         REQUIRE(section->location().isUndefined());
         REQUIRE_NOTHROW(storage.addChildValue(nullptr, sectionNamePath, location, section));
-        REQUIRE(section->location() == location);
+        REQUIRE_EQUAL(section->location(), location);
         REQUIRE(value->location().isUndefined());
         REQUIRE_NOTHROW(storage.addChildValue(section, valueNamePath, location, value));
-        REQUIRE(value->location() == location);
+        REQUIRE_EQUAL(value->location(), location);
     }
 
     void testParentIsSetInValue() {
@@ -139,18 +141,18 @@ public:
             SourceIdentifier::createForFile("file.elcl"_el),
             el::unit::CodeLocation{el::unit::LineIndex{0U}, el::unit::ColumnIndex{0U}}};
         auto sectionNamePath = NamePath::fromText("main"_el);
-        auto section = impl::Value::createSectionWithNames();
+        auto section = el::conf::impl::Value::createSectionWithNames();
         section->setName(sectionNamePath.back());
         auto valueNamePath = NamePath::fromText("main.value_1"_el);
-        auto value = impl::Value::createInteger(1);
+        auto value = el::conf::impl::Value::createInteger(1);
         value->setName(valueNamePath.back());
 
-        REQUIRE(section->parent() == nullptr);
+        REQUIRE_EQUAL(section->parent(), nullptr);
         REQUIRE_NOTHROW(storage.addChildValue(nullptr, sectionNamePath, location, section));
-        REQUIRE(section->parent() != nullptr);
+        REQUIRE_NOT_EQUAL(section->parent(), nullptr);
         REQUIRE(section->parent()->isDocument());
-        REQUIRE(value->parent() == nullptr);
+        REQUIRE_EQUAL(value->parent(), nullptr);
         REQUIRE_NOTHROW(storage.addChildValue(section, valueNamePath, location, value));
-        REQUIRE(value->parent() == section);
+        REQUIRE_EQUAL(value->parent(), section);
     }
 };

@@ -275,23 +275,23 @@ public:
 
     void testStringHashes() {
 
-        const auto u8 = U8String{u8"ÄbcK"_el};
+        const auto u8 = String{u8"ÄbcK"_el};
         const auto u16 = U16String{u"ÄbcK"_el};
         const auto u32 = U32String{U"ÄbcK"_el};
 
         REQUIRE_EQUAL(u8.toHash(), u8.toHash());
-        REQUIRE_EQUAL(u8.toHash(), U8String{u8"ÄbcK"_el}.toHash());
+        REQUIRE_EQUAL(u8.toHash(), String{u8"ÄbcK"_el}.toHash());
         REQUIRE_EQUAL(u16.toHash(), U16String{u"ÄbcK"_el}.toHash());
         REQUIRE_EQUAL(u32.toHash(), U32String{U"ÄbcK"_el}.toHash());
         REQUIRE_EQUAL(u8.toHash(), u16.toHash());
         REQUIRE_EQUAL(u8.toHash(), u32.toHash());
-        REQUIRE_EQUAL(u8.toHashCI(), U8String{u8"äbck"_el}.toHashCI());
+        REQUIRE_EQUAL(u8.toHashCI(), String{u8"äbck"_el}.toHashCI());
         REQUIRE_EQUAL(u16.toHashCI(), U16String{u"äbck"_el}.toHashCI());
         REQUIRE_EQUAL(u32.toHashCI(), U32String{U"äbck"_el}.toHashCI());
-        REQUIRE_EQUAL(std::hash<U8StringEditor>{}(U8StringEditor{u8}), u8.toHash());
+        REQUIRE_EQUAL(std::hash<StringEditor>{}(StringEditor{u8}), u8.toHash());
         REQUIRE_EQUAL(std::hash<U16StringEditor>{}(U16StringEditor{u16}), u16.toHash());
         REQUIRE_EQUAL(std::hash<U32StringEditor>{}(U32StringEditor{u32}), u32.toHash());
-        REQUIRE_EQUAL(std::hash<U8String>{}(u8"ÄbcK"_el), u8.toHash());
+        REQUIRE_EQUAL(std::hash<String>{}(u8"ÄbcK"_el), u8.toHash());
         REQUIRE_EQUAL(std::hash<U16String>{}(u"ÄbcK"_el), u16.toHash());
         REQUIRE_EQUAL(std::hash<U32String>{}(U"ÄbcK"_el), u32.toHash());
     }

@@ -133,7 +133,7 @@ auto Block16Style::forStyle(const FrameStyle frameStyle) -> Block16StylePtr {
 
 auto Block16Style::toTiles(const BlockString &tiles) -> std::array<Block, 16> {
     if (tiles.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Block16Style requires exactly 16 terminal characters.", "tiles"};
+        throw err::ParameterError{"Block16Style requires exactly 16 terminal characters."_el, "tiles"_el};
     }
     auto result = std::array<Block, 16>{};
     for (std::size_t index = 0; index < result.size(); ++index) {

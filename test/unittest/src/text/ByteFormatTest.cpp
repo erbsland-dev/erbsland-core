@@ -5,13 +5,13 @@
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/ByteFormat.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u32/U32String.hpp>
-#include <erbsland/text/u8/U8String.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -22,11 +22,11 @@ using el::mem::ByteBlock;
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::CpLength;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using namespace el::text;
 using namespace el::text::literals;
 
-TESTED_TARGETS(ByteFormatFlag ByteFormat AnyStringBuilder U8String U16String U32String)
+TESTED_TARGETS(ByteFormatFlag ByteFormat AnyStringBuilder String U16String U32String)
 class ByteFormatTest final : public el::UnitTest {
 public:
     void testStableEnumValuesAndFlags() {
@@ -73,7 +73,7 @@ public:
 
         auto groupedLines =
             ByteFormat{ByteFormatFlag::Lines | ByteFormatFlag::LineGroups}.setBytesPerLine(ByteLength{2U});
-        groupedLines.setLineGroupSize(ElementCount{2U});
+        groupedLines.setLineGroupSize(ItemCount{2U});
         REQUIRE_EQUAL(format(block, groupedLines), std::string{"ab01\n0203\n\nef\n"});
     }
 
@@ -84,18 +84,18 @@ public:
             ByteFormatFlag::LineGroups};
         format.setBytesPerLine(ByteLength::zero())
             .setByteGroupSize(ByteLength::zero())
-            .setLineGroupSize(ElementCount::zero());
+            .setLineGroupSize(ItemCount::zero());
 
         REQUIRE_EQUAL(format.bytesPerLine(), ByteLength::one());
         REQUIRE_EQUAL(format.byteGroupSize(), ByteLength::one());
-        REQUIRE_EQUAL(format.lineGroupSize(), ElementCount::one());
+        REQUIRE_EQUAL(format.lineGroupSize(), ItemCount::one());
         REQUIRE_EQUAL(ByteFormatTest::format(block, format), std::string{"ab\n\n01\n"});
     }
 
     void testStringWidthFactoriesAndBuilderKind() {
         const auto block = makeBlock({0x12U, 0x34U});
 
-        REQUIRE_EQUAL(StringConverter{U8String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
+        REQUIRE_EQUAL(StringConverter{String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
         REQUIRE_EQUAL(StringConverter{U16String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
         REQUIRE_EQUAL(StringConverter{U32String::fromByteBlock(block)}.toStdString(), std::string{"1234"});
 
@@ -204,6 +204,6 @@ private:
 
     [[nodiscard]] static auto format(const ByteBlock &block, const ByteFormat byteFormat = ByteFormat::defaultFormat())
         -> std::string {
-        return StringConverter{U8String::fromByteBlock(block, byteFormat)}.toStdString();
+        return StringConverter{String::fromByteBlock(block, byteFormat)}.toStdString();
     }
 };

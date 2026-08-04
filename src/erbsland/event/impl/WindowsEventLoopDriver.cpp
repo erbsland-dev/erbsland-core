@@ -13,10 +13,6 @@ namespace erbsland::event::impl {
 
 using namespace text::literals;
 
-namespace {
-constexpr auto cWakeKey = ULONG_PTR{1U};
-}
-
 WindowsEventLoopDriver::WindowsEventLoopDriver() :
     _completionPort{CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 1)} {
     if (_completionPort == nullptr) {
@@ -47,7 +43,8 @@ void WindowsEventLoopDriver::wait(const time::TimeDelta maximumWait) {
 }
 
 void WindowsEventLoopDriver::wake() noexcept {
-    static_cast<void>(PostQueuedCompletionStatus(_completionPort, 0, cWakeKey, nullptr));
+    // Waking is best-effort because the driver contract is noexcept and a failed port cannot be recovered here.
+    PostQueuedCompletionStatus(_completionPort, 0, cWakeKey, nullptr);
 }
 
 auto WindowsEventLoopDriver::registerHandle(HANDLE handle, NativeCompletionCallback callback) -> RegistrationPtr {
@@ -57,9 +54,9 @@ auto WindowsEventLoopDriver::registerHandle(HANDLE handle, NativeCompletionCallb
     if (!callback) {
         throw err::ParameterError{"The native completion callback must not be empty."_el, "callback"_el};
     }
-    for (const auto &[generation, registration] : _registrations) {
-        static_cast<void>(generation);
-        if (registration.handle == handle) {
+    const auto lock = std::scoped_lock{_registrationMutex};
+    for (const auto &entry : _registrations) {
+        if (entry.second.handle == handle) {
             throw err::ParameterError{"The native handle is already registered."_el, "handle"_el};
         }
     }
@@ -73,6 +70,7 @@ auto WindowsEventLoopDriver::registerHandle(HANDLE handle, NativeCompletionCallb
 }
 
 void WindowsEventLoopDriver::unregisterHandle(const ULONG_PTR generation) noexcept {
+    const auto lock = std::scoped_lock{_registrationMutex};
     _registrations.erase(generation);
 }
 
@@ -92,11 +90,15 @@ void WindowsEventLoopDriver::waitInternal(const DWORD timeoutMilliseconds) {
     if (result == 0 && overlapped == nullptr) {
         throw err::RuntimeError{"The IOCP event-loop wait failed."};
     }
-    const auto iterator = _registrations.find(key);
-    if (iterator == _registrations.end()) {
-        return;
+    auto callback = NativeCompletionCallback{};
+    {
+        const auto lock = std::scoped_lock{_registrationMutex};
+        const auto iterator = _registrations.find(key);
+        if (iterator == _registrations.end()) {
+            return;
+        }
+        callback = iterator->second.callback;
     }
-    const auto callback = iterator->second.callback;
     callback(transferred, overlapped, error);
 }
 

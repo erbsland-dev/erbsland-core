@@ -10,8 +10,11 @@
 
 #include <vector>
 
+/// Test helpers for asserting terminal bitmap contents and geometry.
+/// @notest{Used only by bitmap unit tests.}
 class BitmapTestSupport : public TestHelper {
 public:
+    /// Render bitmap pixels as rows of hash and dot characters.
     [[nodiscard]] auto renderRows(const Bitmap &bitmap) -> std::vector<std::string> {
         auto rows = std::vector<std::string>{};
         rows.reserve(bitmap.size().height().toSizeT());
@@ -26,10 +29,12 @@ public:
         return rows;
     }
 
+    /// Require bitmap rows to match expected native-string rows.
     void requireRowsEqual(const Bitmap &bitmap, const std::vector<std::string> &expectedRows) {
         REQUIRE_EQUAL_LINES(renderRows(bitmap), expectedRows);
     }
 
+    /// Require bitmap rows to match expected Erbsland-string rows.
     void requireRowsEqual(const Bitmap &bitmap, const std::initializer_list<erbsland::text::String> expectedRows) {
         auto convertedRows = std::vector<std::string>{};
         convertedRows.reserve(expectedRows.size());
@@ -39,6 +44,7 @@ public:
         REQUIRE_EQUAL_LINES(renderRows(bitmap), convertedRows);
     }
 
+    /// Require two block rectangles to have identical origin and size.
     void requireRectangleEqual(const bgeo::BlockRectangle &actual, const bgeo::BlockRectangle &expected) {
         REQUIRE_EQUAL(actual.topLeft(), expected.topLeft());
         REQUIRE_EQUAL(actual.size(), expected.size());

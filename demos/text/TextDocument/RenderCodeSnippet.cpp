@@ -6,34 +6,30 @@
 
 namespace demo {
 
-namespace {
-const auto cConfigurationLines = el::StringList{{
-    "# A configuration file written in the Erbsland Configuration Language."_el,
-    "--[ Clang Format ]----------------------------------------------------------------------------------------------------"_el,
-    "# Marker file used to remember when clang-format last processed all files."_el,
-    "Marker File    : \".clang-format-last-run\""_el,
-    ""_el,
-    "# The next line contains an intentionally long line, to see it's rendering on small terminals."_el,
-    "Intervals : 1 hour, 2 hours, 10 hours, 12 hours, 16 hours, 21 hours, 26 hours, 28 hours, 29 hours, 31 hours, 32 hours, 34 hours, 45 hours, $49 hours, 57 hours"_el,
-    ""_el,
-    "# The next list has indentations. These need to be preserved."_el,
-    "Extensions     :"_el,
-    "    * \".cpp\""_el,
-    "    * \".hpp\""_el,
-    "    * \".tpp\""_el,
-    ""_el,
-}};
-}
-
 /// `TextNode` can insert a semantic code snippet into structured text.
 /// Renderers add the line-number gutter, crop unmarked context and wrap marked lines while preserving the exact
 /// diagnostic location.
 void renderCodeSnippet() {
+    static const auto cConfigurationLines = el::StringList{{
+        "# A configuration file written in the Erbsland Configuration Language."_el,
+        "--[ Clang Format ]----------------------------------------------------------------------------------------------------"_el,
+        "# Marker file used to remember when clang-format last processed all files."_el,
+        "Marker File    : \".clang-format-last-run\""_el,
+        ""_el,
+        "# The next line contains an intentionally long line, to see it's rendering on small terminals."_el,
+        "Intervals : 1 hour, 2 hours, 10 hours, 12 hours, 16 hours, 21 hours, 26 hours, 28 hours, 29 hours, 31 hours, 32 hours, 34 hours, 45 hours, $49 hours, 57 hours"_el,
+        ""_el,
+        "# The next list has indentations. These need to be preserved."_el,
+        "Extensions     :"_el,
+        "    * \".cpp\""_el,
+        "    * \".hpp\""_el,
+        "    * \".tpp\""_el,
+        ""_el,
+    }};
     el::TextDocument document;
     document.addHeading(1)->addText("Code Snippet"_el);
     document.addCodeSnippet(
-        el::CodeSnippet{
-            cConfigurationLines.slice({el::ElementIndex{0}, el::ElementIndex{12}}), el::LineIndex{0}, "elcl"_el},
+        el::CodeSnippet{cConfigurationLines.slice({el::ItemIndex{0}, el::ItemIndex{12}}), el::LineIndex{0}, "elcl"_el},
         el::CodeSnippetMarkerList{
             el::CodeSnippetMarker{
                 el::LineIndex{3},

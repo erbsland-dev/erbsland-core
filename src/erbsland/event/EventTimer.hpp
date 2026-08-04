@@ -13,6 +13,7 @@ namespace erbsland::event {
 /// @tested{EventTimerTest}
 class EventTimer {
 public:
+    // defaults
     virtual ~EventTimer() = default;
 
 public:

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NativeByteStream_fwd.hpp"
+
 #include "../StreamErrorSource.hpp"
 #include "../StreamPositionOrigin.hpp"
 
@@ -10,13 +12,9 @@
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteOffset.hpp"
 
-#include <memory>
 #include <span>
 
 namespace erbsland::stream::impl {
-
-class NativeByteStream;
-using NativeByteStreamPtr = std::shared_ptr<NativeByteStream>;
 
 /// Internal synchronous adapter for a native byte stream.
 /// Calls may block in the operating system. Only the shared I/O service calls this interface; public stream methods
@@ -24,8 +22,8 @@ using NativeByteStreamPtr = std::shared_ptr<NativeByteStream>;
 /// @notest{Platform adapters and buffered wrappers have dedicated behavior tests.}
 class NativeByteStream : public virtual StreamErrorSource {
 public:
-    /// Destroy the native adapter.
-    virtual ~NativeByteStream() = default;
+    // defaults
+    ~NativeByteStream() override = default;
 
 public:
     /// Test if the native stream supports byte positioning.

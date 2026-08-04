@@ -90,6 +90,12 @@ public:
         return U8StringEditor{U8StringSharedStorage{std::move(data), unit::ByteRange::fromSizeT(size)}};
     }
 
+public:
+    /// Test if a capacity would exceed the maximum capacity.
+    [[nodiscard]] static auto wouldExceedCapacity(const std::size_t capacityValue) noexcept -> bool {
+        return !U8StringData::canAllocateWithCapacity(capacityValue);
+    }
+
 private:
     /// Create exact buffer storage for a full data size, including the null byte.
     [[nodiscard]] static auto createDataForDataSize(const std::size_t dataSize, const bool sensitive)

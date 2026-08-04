@@ -113,9 +113,13 @@ Domain-specific guideline pages should define a finite vocabulary and explicit n
 They define the following sections:
 
 *   **Core Semantics:**
-    Domain specific information that is required to understand the following sections.
+    Only non-obvious semantic definitions required to interpret the following sections.
+    Every entry defines a domain term, state, relation, value interpretation, or invariant.
+    Pattern placeholders belong exclusively in **Pattern Definitions**.
+    Definition-shaped API summaries, naming examples, procedures, implementation details, and usage advice are not
+    semantic definitions.
     Optional, at most 60 lines and four subsections.
-    Compact, minimal/no-prosa, noise-free technical definitions.
+    Compact, prose-free, noise-free technical definitions; omit the section when none are needed.
 *   **Primary Types:**
     Mandatory first type section.
     Text block, plain list of type names with ``// short description``, one line per collapsed type.
@@ -124,7 +128,7 @@ They define the following sections:
     **Secondary Types**.
     Text block, plain list of type names with ``// short description``, one line per collapsed type.
 *   **[Pattern Definitions]:**
-    Optional text block defining compact one- or two-character pattern shortcuts.
+    Optional text block defining compact one- or two-character pattern shortcuts, never domain semantics.
 *   **❮name❯ Patterns**
     Zero to many blocks defining API patterns.
     Text block, plain, collapsed patterns with ``// short description``, one line per collapsed pattern.

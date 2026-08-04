@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PathError_fwd.hpp"
 #include "PathErrorContext.hpp"
 
 #include "../err/RuntimeError.hpp"

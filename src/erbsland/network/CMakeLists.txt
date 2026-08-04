@@ -3,15 +3,22 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(host_lookup)
+add_subdirectory(impl)
+add_subdirectory(source)
+add_subdirectory(tcp)
+add_subdirectory(tls)
+add_subdirectory(udp)
+add_subdirectory(url)
+
 target_sources(erbsland-core PRIVATE
         Host.cpp
         Host.hpp
         HostEndpoint.cpp
         HostEndpoint.hpp
-        HostLookup.hpp
-        HostLookupEvents.hpp
         HostName.cpp
         HostName.hpp
+        HostNameFormat.hpp
         IpAddress.cpp
         IpAddress.hpp
         IpEndpoint.cpp
@@ -21,25 +28,7 @@ target_sources(erbsland-core PRIVATE
         IpVersion.hpp
         Network.hpp
         Network_fwd.hpp
-        NetworkCallbacks.hpp
-        NetworkError.hpp
-        NetworkErrorContext.hpp
-        NetworkSendStatus.hpp
-        NetworkSourceState.hpp
         Port.cpp
         Port.hpp
         ScopeId.hpp
-        SocketBufferLimits.hpp
-        TcpConnection.hpp
-        TcpConnectionAttempt.hpp
-        TcpConnectionAttemptEvents.hpp
-        TcpConnectionEvents.hpp
-        TcpConnectionRequest.hpp
-        TcpListener.hpp
-        TcpListenerEvents.hpp
-        UdpDatagram.hpp
-        UdpPeer.hpp
-        UdpPeerEvents.hpp
-        UdpSocket.hpp
-        UdpSocketEvents.hpp
 )

@@ -18,7 +18,10 @@ namespace erbsland::text::impl {
 /// @tested{StringReaderTest}
 class U32StringReader final : public StringReaderBase {
 public:
+    /// Create a reader that owns `text`.
     explicit U32StringReader(U32String text) noexcept;
+
+    // defaults
     U32StringReader(const U32StringReader &) = default;
     U32StringReader(U32StringReader &&) = default;
     auto operator=(const U32StringReader &) -> U32StringReader & = default;
@@ -44,6 +47,8 @@ public:
         -> util::LoopResult override;
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
+    auto advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> unit::CpLength override;
+    auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> unit::CpLength override;
     void startCapture() noexcept override;
     [[nodiscard]] auto takeCapture() noexcept -> AnyString override;
     void clearBuffer() noexcept override;
@@ -55,15 +60,17 @@ public:
     void appendToBuffer(Char character) override;
     void appendToBuffer(const AnyString &text) override;
     void appendCaptureToBuffer() override;
-    [[nodiscard]] auto readToBuffer() -> Char override;
+    auto readToBuffer() -> Char override;
     [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
     [[nodiscard]] auto readToBufferIf(const CharSet &expected) -> std::optional<Char> override;
     [[nodiscard]] auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum) -> util::LoopResult override;
     [[nodiscard]] auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum) -> util::LoopResult override;
 
 private:
+    /// Read UTF-32 characters until a matching boundary is reached.
     auto readLoop(const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
-        -> util::LoopResult;
+        -> ReadLoopOutcome;
+    /// Read UTF-32 characters into the reader buffer until a matching boundary is reached.
     auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:

@@ -25,6 +25,7 @@
 #include "PathMoveOptions.hpp"
 #include "PathOperations.hpp"
 #include "PathProgress.hpp"
+#include "PathProgressStatus.hpp"
 #include "PathReadDataOptions.hpp"
 #include "PathReadTextOptions.hpp"
 #include "PathRemoveOptions.hpp"

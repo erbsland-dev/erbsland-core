@@ -16,9 +16,8 @@ template <typename tKey, typename tValue, typename tHash, typename tEqual, typen
     std::copyable<tValue>
 auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::toKeyHashSet() const -> HashSet<Key, Hash, Equal> {
     auto result = typename HashSet<Key, Hash, Equal>::Raw{raw().bucket_count(), raw().hash_function(), raw().key_eq()};
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(value);
-        result.insert(key);
+    for (const auto &entry : raw()) {
+        result.insert(entry.first);
     }
     return HashSet<Key, Hash, Equal>{std::move(result)};
 }

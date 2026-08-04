@@ -5,49 +5,32 @@
 #include "String.hpp"
 #include "StringConverter.hpp"
 
+#include "impl/ByteFormatData.hpp"
+
 namespace erbsland::text {
 
 using namespace literals;
 using unit::ByteIndex;
 using unit::ByteLength;
-using unit::ElementCount;
+using unit::ItemCount;
 
-struct ByteFormat::Private {
-    Private() : byteSeparator{" "_el}, offsetSeparator{" | "_el}, lineSuffix{"\n"_el} {}
-
-    ByteFormatFlags flags;                        ///< The active format flags.
-    LetterCase letterCase{LetterCase::Lowercase}; ///< The case for ASCII letters.
-    ByteLength bytesPerLine{ByteLength{32U}};     ///< The number of bytes per line.
-    ByteLength byteGroupSize{ByteLength{4U}};     ///< The number of bytes in a group.
-    ElementCount lineGroupSize{ElementCount{8U}}; ///< The number of lines in a group.
-    String byteSeparator;                         ///< The separator between bytes or byte groups.
-    String offsetSeparator;                       ///< The separator between the offset and bytes.
-    String linePrefix;                            ///< The prefix inserted before each byte-data line.
-    String lineSuffix;                            ///< The suffix inserted after each byte-data line.
-    ByteIndex startOffset{ByteIndex::zero()};     ///< The start offset for the dump.
-    ByteLength maximum{ByteLength::infinite()};   ///< The maximum byte-like output item count.
-    TruncateMode truncateMode{TruncateMode::End}; ///< The truncation mode.
-    String ellipsis;                              ///< The text inserted for omitted bytes.
-};
-
-ByteFormat::ByteFormat() : _p{std::make_unique<Private>()} {
+ByteFormat::ByteFormat() : _p{std::make_unique<impl::ByteFormatData>()} {
 }
 
 ByteFormat::ByteFormat(const ByteFormatFlags flags) : ByteFormat{} {
     _p->flags = flags;
 }
 
-ByteFormat::~ByteFormat() {
-}
+ByteFormat::~ByteFormat() = default;
 
-ByteFormat::ByteFormat(const ByteFormat &other) : _p{std::make_unique<Private>(*other._p)} {
+ByteFormat::ByteFormat(const ByteFormat &other) : _p{std::make_unique<impl::ByteFormatData>(*other._p)} {
 }
 
 auto ByteFormat::operator=(const ByteFormat &other) -> ByteFormat & {
     if (this == &other) {
         return *this;
     }
-    _p = std::make_unique<Private>(*other._p);
+    _p = std::make_unique<impl::ByteFormatData>(*other._p);
     return *this;
 }
 
@@ -91,7 +74,7 @@ auto ByteFormat::byteGroupSize() const noexcept -> ByteLength {
     return _p->byteGroupSize;
 }
 
-auto ByteFormat::lineGroupSize() const noexcept -> ElementCount {
+auto ByteFormat::lineGroupSize() const noexcept -> ItemCount {
     return _p->lineGroupSize;
 }
 
@@ -150,7 +133,7 @@ auto ByteFormat::setByteGroupSize(const ByteLength byteGroupSize) noexcept -> By
     return *this;
 }
 
-auto ByteFormat::setLineGroupSize(const ElementCount lineGroupSize) noexcept -> ByteFormat & {
+auto ByteFormat::setLineGroupSize(const ItemCount lineGroupSize) noexcept -> ByteFormat & {
     _p->lineGroupSize = atLeastOne(lineGroupSize);
     return *this;
 }
@@ -210,8 +193,8 @@ auto ByteFormat::atLeastOne(const ByteLength value) noexcept -> ByteLength {
     return value.isZero() ? ByteLength::one() : value;
 }
 
-auto ByteFormat::atLeastOne(const ElementCount value) noexcept -> ElementCount {
-    return value.isZero() ? ElementCount::one() : value;
+auto ByteFormat::atLeastOne(const ItemCount value) noexcept -> ItemCount {
+    return value.isZero() ? ItemCount::one() : value;
 }
 
 }

@@ -19,6 +19,7 @@ public:
     [[nodiscard]] constexpr static auto backendId() noexcept -> EventBackendId { return id::SchedulerBackend; }
 
 public:
+    // defaults
     virtual ~EventScheduler() = default;
 
 public: // interface

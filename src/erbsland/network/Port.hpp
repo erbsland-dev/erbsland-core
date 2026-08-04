@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 
 #include <compare>
@@ -15,6 +14,8 @@ namespace erbsland::network {
 /// Port zero selects an automatic local port and is invalid as a remote destination.
 /// @tested{NetworkValueTest}
 class Port final {
+    constexpr static auto cMaximumPortNumber = 65535U;
+
 public:
     /// Create the automatic port.
     constexpr Port() noexcept = default;
@@ -55,8 +56,3 @@ private:
 };
 
 }
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::network::Port> : FormatAs<network::Port, String> {
-    [[nodiscard]] auto format(const network::Port &value) const -> String { return value.toString(); }
-};

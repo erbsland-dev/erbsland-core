@@ -22,10 +22,11 @@ public:
         REQUIRE_NOTHROW(random.fillBytes({}));
         for (auto i = 0; i < 20; ++i) {
             const auto value = random.getUInt32(5U, 9U);
-            REQUIRE(value >= 5U);
-            REQUIRE(value <= 9U);
+            REQUIRE_GREATER_EQUAL(value, 5U);
+            REQUIRE_LESS_EQUAL(value, 9U);
         }
-        REQUIRE(random.getDouble(1.0, 2.0) >= 1.0);
+        const auto value = random.getDouble(1.0, 2.0);
+        REQUIRE_GREATER_EQUAL(value, 1.0);
     }
 
     void testEntropySourceFailure() { REQUIRE_THROWS_AS(RandomError, throw RandomError{"test"}); }

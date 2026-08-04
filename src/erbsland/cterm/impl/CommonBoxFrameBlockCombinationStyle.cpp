@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace erbsland::cterm {
+namespace erbsland::cterm::impl {
 
 auto CommonBoxFrameBlockCombinationStyle::combine(const Block &current, const Block &overlay) const noexcept -> Block {
     auto result = overlay;

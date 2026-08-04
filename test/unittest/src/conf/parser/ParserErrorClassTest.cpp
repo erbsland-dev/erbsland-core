@@ -3,6 +3,7 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/re/RegExError.hpp>
@@ -61,10 +62,10 @@ public:
         auto parser = Parser{};
         DocumentPtr document;
         REQUIRE_NOTHROW(document = parser.parseOrThrow(createTestMemorySource("[main]\nvalue: /(/\n"_el)));
-        REQUIRE(document != nullptr);
+        REQUIRE(document);
 
         const auto regex = document->getRegExOrThrow(NamePath::fromText("main.value"_el));
-        REQUIRE(regex != nullptr);
+        REQUIRE(regex);
         REQUIRE_FALSE(regex->isCompiled());
         REQUIRE_THROWS_AS(el::re::RegExError, regex->compileNow());
         REQUIRE_FALSE(regex->isCompiled());
@@ -282,6 +283,8 @@ public:
         WITH_CONTEXT(verifyTestCases(testCases));
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testCharacterVsSyntaxError() {
         // Test where the more specialized character error should be reported instead of a syntax error.
         // As this parser tests for illegal control characters just after UTF-8 decoding,
@@ -328,6 +331,27 @@ public:
             source = createTestMemorySource(el::text::String{newDocument});
             try {
                 parser.parseOrThrow(source);
+                REQUIRE(false);
+            } catch (const ConfError &error) {
+                REQUIRE_EQUAL(error.category(), ConfErrorCategory::Character);
+            }
+        }
+    }
+
+    void testCharacterVsSyntaxErrorLight() {
+        const auto testDocument = el::text::String{"# Comment\n[main]\nv: true\n"_el};
+        auto parser = Parser{};
+        for (
+            const auto index :
+            {std::size_t{0U}, testDocument.length().toSizeT() / 2U, testDocument.length().toSizeT()}) {
+            auto document = el::text::StringEditor{};
+            document.append(
+                testDocument.slice(el::unit::ByteRange{el::unit::ByteIndex{}, el::unit::ByteLength{index}}));
+            document.append("\b"_el);
+            document.append(
+                testDocument.slice(el::unit::ByteRange{el::unit::ByteIndex{index}, el::unit::ByteLength::infinite()}));
+            try {
+                parser.parseOrThrow(createTestMemorySource(el::text::String{document}));
                 REQUIRE(false);
             } catch (const ConfError &error) {
                 REQUIRE_EQUAL(error.category(), ConfErrorCategory::Character);

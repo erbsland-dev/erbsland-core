@@ -20,6 +20,8 @@ Interface
 =========
 
 .. doxygentypedef:: erbsland::text::ProcessCharacterFn
+
+.. doxygentypedef:: erbsland::text::ProcessCharacterWithCpIndexFn
 .. doxygentypedef:: erbsland::text::String
 .. doxygentypedef:: erbsland::text::StringEditor
 .. doxygentypedef:: erbsland::text::TransformCharacterFn

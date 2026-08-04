@@ -40,65 +40,71 @@ This catches invalid rule definitions before application configuration is valida
 Interface
 =========
 
-.. doxygenstruct:: erbsland::conf::vr::builder::Attribute
+.. doxygenclass:: erbsland::conf::vr::builder::Attribute
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::CaseSensitive
+.. doxygenclass:: erbsland::conf::vr::builder::CaseSensitive
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::ConfVersion
+.. doxygenclass:: erbsland::conf::vr::builder::ConfVersion
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::CustomError
+.. doxygenclass:: erbsland::conf::vr::builder::CustomError
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Default
+.. doxygenclass:: erbsland::conf::vr::builder::Default
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Dependency
+.. doxygenclass:: erbsland::conf::vr::builder::Dependency
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Description
+.. doxygenclass:: erbsland::conf::vr::builder::Description
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::IsOptional
+.. doxygenclass:: erbsland::conf::vr::builder::IsOptional
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::IsSecret
+.. doxygenclass:: erbsland::conf::vr::builder::IsSecret
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::KeyIndex
+.. doxygenclass:: erbsland::conf::vr::builder::KeyIndex
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::MaximumVersion
+.. doxygenclass:: erbsland::conf::vr::builder::MaximumVersion
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::MinimumVersion
+.. doxygenclass:: erbsland::conf::vr::builder::MinimumVersion
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Title
+.. doxygenclass:: erbsland::conf::vr::builder::Title
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Type
+.. doxygenclass:: erbsland::conf::vr::builder::Type
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Chars
+.. doxygenclass:: erbsland::conf::vr::builder::Chars
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::ConfKey
+.. doxygenclass:: erbsland::conf::vr::builder::ConfKey
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::ConstraintAttribute
+.. doxygenclass:: erbsland::conf::vr::builder::ConstraintAttribute
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::ConstraintOptions
+.. doxygenclass:: erbsland::conf::vr::builder::ConstraintOptions
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Contains
+.. doxygenclass:: erbsland::conf::vr::builder::Contains
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Ends
+.. doxygenclass:: erbsland::conf::vr::builder::Ends
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Equals
+.. doxygenclass:: erbsland::conf::vr::builder::Equals
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::In
+.. doxygenclass:: erbsland::conf::vr::builder::In
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Matches
+.. doxygenclass:: erbsland::conf::vr::builder::Matches
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Maximum
+.. doxygenclass:: erbsland::conf::vr::builder::Maximum
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Minimum
+.. doxygenclass:: erbsland::conf::vr::builder::Minimum
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Multiple
+.. doxygenclass:: erbsland::conf::vr::builder::Multiple
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::Starts
+.. doxygenclass:: erbsland::conf::vr::builder::Starts
     :members:
-.. doxygenstruct:: erbsland::conf::vr::builder::StringPartConstraint
+.. doxygenclass:: erbsland::conf::vr::builder::StringPartConstraint
     :members:
 .. doxygenclass:: erbsland::conf::vr::Constraint
+    :members:
+.. doxygenclass:: erbsland::conf::vr::ConstraintType
+    :members:
+.. doxygenclass:: erbsland::conf::vr::Rule
     :members:
 .. doxygenclass:: erbsland::conf::vr::Rules
     :members:
 .. doxygenclass:: erbsland::conf::vr::RulesBuilder
+    :members:
+.. doxygenclass:: erbsland::conf::vr::RuleType
     :members:

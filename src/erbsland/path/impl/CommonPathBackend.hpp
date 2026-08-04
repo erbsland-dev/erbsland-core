@@ -20,6 +20,7 @@ protected:
     };
 
 public:
+    // defaults
     ~CommonPathBackend() override = default;
 
 public: // implement PathBackend

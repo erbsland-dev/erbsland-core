@@ -21,7 +21,7 @@
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/SharedVirtualData.hpp"
 #include "../../unit/CpLength.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 
 namespace erbsland::text::impl {
 
@@ -29,6 +29,7 @@ namespace erbsland::text::impl {
 /// @tested{AnyStringBuilderTest}
 class AnyStringBuilderBase : public mem::SharedVirtualData, public StringAppendTools {
 public:
+    // defaults
     AnyStringBuilderBase() = default;
     AnyStringBuilderBase(const AnyStringBuilderBase &) = default;
     AnyStringBuilderBase(AnyStringBuilderBase &&) = default;
@@ -56,17 +57,17 @@ public:
     /// @return The number of code points appended.
     auto append(const U8String &text) -> unit::CpLength override = 0;
     /// Append a UTF-8 read-only string multiple times.
-    virtual void append(const U8String &text, unit::ElementCount count) = 0;
+    virtual void append(const U8String &text, unit::ItemCount count) = 0;
     /// Append a UTF-16 read-only string.
     /// @return The number of code points appended.
     auto append(const U16String &text) -> unit::CpLength override = 0;
     /// Append a UTF-16 read-only string multiple times.
-    virtual void append(const U16String &text, unit::ElementCount count) = 0;
+    virtual void append(const U16String &text, unit::ItemCount count) = 0;
     /// Append a UTF-32 read-only string.
     /// @return The number of code points appended.
     auto append(const U32String &text) -> unit::CpLength override = 0;
     /// Append a UTF-32 read-only string multiple times.
-    virtual void append(const U32String &text, unit::ElementCount count) = 0;
+    virtual void append(const U32String &text, unit::ItemCount count) = 0;
     /// Append a byte block as formatted hexadecimal text.
     virtual void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) = 0;
     /// Create a UTF-8 string copy.

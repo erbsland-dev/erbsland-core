@@ -50,7 +50,7 @@ void WorkloadRunner::printDryRun() const {
         " config-md5="_el,
         ByteFormat::compact(),
         _configuration.digest);
-    static_cast<void>(stdOut()->flush());
+    stdOut()->flush();
 }
 
 void WorkloadRunner::printCoverage() const {
@@ -65,7 +65,7 @@ void WorkloadRunner::printCoverage() const {
     }
     io::printLine(
         "record=summary action=coverage functionalities="_el, _definition.functionalities().count().toRawValue());
-    static_cast<void>(stdOut()->flush());
+    stdOut()->flush();
 }
 
 auto WorkloadRunner::runSample(
@@ -73,7 +73,7 @@ auto WorkloadRunner::runSample(
     -> SampleMeasurement {
     const auto threadCount = _configuration.run.threadCount;
     auto workers = List<WorkerWorkloadPtr>{};
-    workers.reserve(ElementCount{threadCount});
+    workers.reserve(ItemCount{threadCount});
     for (auto worker = std::uint32_t{}; worker < threadCount; ++worker) {
         workers.append(workload.createWorker(worker));
     }
@@ -114,14 +114,14 @@ auto WorkloadRunner::runSample(
         measurement.workers.append(results[worker]);
     }
     const auto metricCount = _definition.metrics().count().toSizeT();
-    measurement.metrics.resize(ElementCount{metricCount}, 0U);
+    measurement.metrics.resize(ItemCount{metricCount}, 0U);
     for (const auto &worker : measurement.workers) {
         if (worker.metrics.count().toSizeT() != metricCount) {
             throw ApplicationError{"A workload returned an unexpected number of metrics."_el};
         }
         for (auto index = std::size_t{}; index < metricCount; ++index) {
             measurement.metrics.set(
-                ElementIndex{index}, measurement.metrics.toRawValue()[index] + worker.metrics.toRawValue()[index]);
+                ItemIndex{index}, measurement.metrics.toRawValue()[index] + worker.metrics.toRawValue()[index]);
         }
     }
     workload.validate(measurement);
@@ -148,11 +148,7 @@ void WorkloadRunner::printSample(const Scenario &scenario, const SampleMeasureme
         measurement.operations,
         " wall-ns="_el,
         measurement.wallTime.toNanoseconds().toRawValue());
-    auto workerRates = List<double>{};
-    for (const auto &worker : measurement.workers) {
-        workerRates.append(Statistics::normalizedRate(worker.operations, worker.elapsed));
-    }
-    io::print(" worker-fairness="_el, Statistics::fairness(workerRates));
+    io::print(" worker-fairness="_el, Statistics::workerFairness(measurement.workers));
     for (auto index = std::size_t{}; index < _definition.metrics().count().toSizeT(); ++index) {
         const auto &metric = _definition.metrics().toRawValue()[index];
         const auto value = measurement.metrics.toRawValue()[index];
@@ -165,49 +161,30 @@ void WorkloadRunner::printSample(const Scenario &scenario, const SampleMeasureme
 }
 
 void WorkloadRunner::printBenchmark(const Scenario &scenario, const List<SampleMeasurement> &measurements) const {
-    auto values = List<double>{};
-    for (const auto &measurement : measurements) {
-        const auto operations = std::max<std::uint64_t>(1U, measurement.operations);
-        values.append(
-            static_cast<double>(measurement.wallTime.toNanoseconds().toRawValue()) / static_cast<double>(operations));
-    }
-    const auto statistics = Statistics::calculate(std::move(values));
+    const auto statistics = Statistics{measurements};
     io::print(
         "record=benchmark scenario="_el,
         scenario.id,
         " samples="_el,
         measurements.count().toRawValue(),
         " min-ns-per-operation="_el,
-        statistics.minimum,
+        statistics.minimum(),
         " median-ns-per-operation="_el,
-        statistics.median,
+        statistics.median(),
         " mean-ns-per-operation="_el,
-        statistics.mean,
+        statistics.mean(),
         " p95-ns-per-operation="_el,
-        statistics.p95,
+        statistics.p95(),
         " max-ns-per-operation="_el,
-        statistics.maximum);
-    auto metricTotals = List<std::uint64_t>{};
-    metricTotals.resize(_definition.metrics().count(), 0U);
-    auto totalElapsed = TimeDelta{};
-    auto workerRates = List<double>{};
-    for (const auto &measurement : measurements) {
-        totalElapsed += measurement.wallTime;
-        for (auto index = std::size_t{}; index < metricTotals.count().toSizeT(); ++index) {
-            metricTotals.set(
-                ElementIndex{index}, metricTotals.toRawValue()[index] + measurement.metrics.toRawValue()[index]);
-        }
-        for (const auto &worker : measurement.workers) {
-            workerRates.append(Statistics::normalizedRate(worker.operations, worker.elapsed));
-        }
-    }
-    io::print(" worker-fairness="_el, Statistics::fairness(workerRates));
+        statistics.maximum());
+    io::print(" worker-fairness="_el, statistics.workerFairness());
     for (auto index = std::size_t{}; index < _definition.metrics().count().toSizeT(); ++index) {
         const auto &metric = _definition.metrics().toRawValue()[index];
-        const auto value = metricTotals.toRawValue()[index];
+        const auto value = statistics.metricTotal(index);
         io::print(" "_el, metric.id, "="_el, value);
         if (metric.reportRate) {
-            io::print(" "_el, metric.id, "-per-second="_el, Statistics::normalizedRate(value, totalElapsed));
+            io::print(
+                " "_el, metric.id, "-per-second="_el, Statistics::normalizedRate(value, statistics.totalElapsed()));
         }
     }
     io::printLine(""_el);
@@ -246,7 +223,7 @@ auto WorkloadRunner::run() -> ExitCode {
         workload->prepare(_configuration.run, scenario);
         const auto operations = calibrate(*workload, scenario);
         for (auto warmup = std::uint32_t{}; warmup < _configuration.run.warmupSamples; ++warmup) {
-            static_cast<void>(runSample(*workload, scenario, warmup + 1U, operations));
+            runSample(*workload, scenario, warmup + 1U, operations);
         }
         if (_configuration.run.mode == RunMode::Benchmark) {
             auto measurements = List<SampleMeasurement>{};
@@ -283,7 +260,7 @@ auto WorkloadRunner::run() -> ExitCode {
         }
     }
     io::printLine("record=summary elapsed-ns="_el, elapsed().toNanoseconds().toRawValue());
-    static_cast<void>(stdOut()->flush());
+    stdOut()->flush();
     return ExitCode::success();
 }
 

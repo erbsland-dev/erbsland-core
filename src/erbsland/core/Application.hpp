@@ -11,6 +11,7 @@
 #include "impl/ApplicationData_fwd.hpp"
 #include "impl/ApplicationInstanceManager_fwd.hpp"
 
+#include "../cryptology/configuration/CryptologyConfiguration_fwd.hpp"
 #include "../cterm/Terminal_fwd.hpp"
 #include "../cterm/TerminalDocumentStyle.hpp"
 #include "../event/EventLoop_fwd.hpp"
@@ -54,8 +55,10 @@ public:
     /// Only create one instance, as the first action in your `main()` function.
     Application(int argc, wchar_t *argv[]);
 
-    // defaults
+    /// Destroys the application after its lifecycle has completed.
     virtual ~Application();
+
+    // defaults/deletions
     Application(const Application &) = delete;
     auto operator=(const Application &) -> Application & = delete;
     Application(Application &&) = delete;
@@ -104,10 +107,11 @@ public:
     /// - `parseCommandLine()`
     /// - `main()`
     /// - `cleanup()`
-    /// If any `err::Exception` is thrown from one of these methods, it will be handled by calling
-    /// `cleanUp()` first, then printing the error to `stdErr()` and exiting the application with an exit code of 1.
+    /// Exceptions thrown from callbacks in the automatically managed main event loop use the same boundary.
+    /// If any `err::Exception` is thrown from one of these methods or callbacks, it will be handled by calling
+    /// `cleanup()` first, then printing the error to `stdErr()` and exiting the application with an exit code of 1.
     /// In case of an `core::ApplicationError`, the exit code from the exception will be used.
-    /// If any non `err::Exception` is thrown, the application will crash.
+    /// Any non-`err::Exception` propagates out of this method.
     [[nodiscard]] auto run() -> int;
     /// Override the initialize function.
     /// Use this to set a custom initialization function without deriving from `Application`.
@@ -135,6 +139,10 @@ public: // random numbers
     [[nodiscard]] auto random() -> random::Random &;
     /// Get the shared secure random generator.
     [[nodiscard]] auto secureRandom() -> random::Random &;
+
+public: // cryptology
+    /// Get the shared cryptology configuration, creating it on first use.
+    [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration &;
 
 public: // system services
     /// Access the application display texts. The returned pointer is always non-null.
@@ -189,7 +197,9 @@ public: // library version
 
 protected: // debugging methods
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+           /// Initialize the application's regular random-number generator.
     virtual void initializeRandom(random::RandomPtr &randomPtr) noexcept;
+    /// Initialize the application's cryptographically secure random-number generator.
     virtual void initializeSecureRandom(random::RandomPtr &randomPtr) noexcept;
 #endif
 

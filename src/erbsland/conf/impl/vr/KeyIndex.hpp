@@ -3,30 +3,15 @@
 #pragma once
 
 #include "ConfKey.hpp"
+#include "KeyIndex_fwd.hpp"
+#include "KeyIndexData_fwd.hpp"
 
 #include "../../../text/CaseSensitivity.hpp"
 #include "../../Name.hpp"
 
-#include <memory>
-#include <unordered_set>
-
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
-
-class KeyIndex;
-using KeyIndexPtr = std::shared_ptr<KeyIndex>;
-using KeyIndexList = std::vector<KeyIndexPtr>;
-
-/// The data interface for the key index.
-class KeyIndexData {
-public:
-    virtual ~KeyIndexData() = default;
-    [[nodiscard]] virtual auto hasKey(const ConfKey &key) const noexcept -> bool = 0;
-    [[nodiscard]] virtual auto hasKeyElement(const text::String &element, std::size_t index) const noexcept -> bool = 0;
-    virtual auto tryAddKey(const ConfKey &key) -> bool = 0;
-};
-using KeyIndexDataPtr = std::unique_ptr<KeyIndexData>;
 
 /// A key index is a collection of keys to validate unique values and references.
 /// Keys can consist of a single element or multiple elements.
@@ -40,7 +25,7 @@ public:
     explicit KeyIndex(Name name, text::CaseSensitivity caseSensitivity, std::size_t elementCount);
 
     // defaults
-    virtual ~KeyIndex() = default;
+    ~KeyIndex();
 
 public:
     /// Access the name of this key index.

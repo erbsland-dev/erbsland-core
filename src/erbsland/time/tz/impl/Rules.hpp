@@ -11,6 +11,9 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Get a generated daylight-saving rule set.
+/// @param index The generated rule-set index.
+/// @return The rule set for the index, or an empty rule set for an invalid index.
 [[nodiscard]] auto ruleSet(uint16_t index) noexcept -> RuleSet;
 
 }

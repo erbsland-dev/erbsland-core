@@ -15,6 +15,7 @@ Calendar Model
     supported civil dates = 0000-01-01 through 9999-12-31
     invalid civil value = special state ordered before valid values
     POSIX epoch = 1970-01-01T00:00:00Z used only at the native POSIX-time boundary
+    RFC 868 timestamp = unsigned 32-bit seconds since 1900-01-01T00:00:00Z in the 1900 era
 
 Time Model
 ----------
@@ -169,9 +170,14 @@ Date-Time Patterns
     o.utcDate()/utcTime() -> T // inspect stored UTC parts
     o.date()/time()/timeZone()/timeOffset() -> T // inspect display-zone parts
     o.toUtc()/toTimeZone(zone) -> DateTime // preserve the instant and change display metadata
-    o.toSecondsSinceEpoch()/toTimeT() -> T // cross internal or POSIX epoch boundaries
-    T::now() -> DateTime // get the current UTC instant
-    T::fromSecondsSinceEpoch/fromTimeT(value) -> DateTime // create from an epoch boundary
+    o.toTicks<U>([epoch]) -> T // convert exact epoch ticks
+    o.toSecondsAndFractions([epoch]) -> V // convert full precision seconds and ns
+    o.toTimeT() -> time_t // convert to the platform POSIX time type
+    T::now() -> T // get the current UTC instant
+    T::fromTicks<U>(value[, epoch]) -> T // create a date/time from ticks since an epoch
+    T::fromTicks(seconds, fractions[, epoch]) -> T // create a date/time from seconds/ns since an epoch
+    T::fromTimeT(value) -> T // create from the platform POSIX time type
+    T::epoch([epoch]) -> T // get a well-known epoch
 
 Time-Zone Patterns
 ==================

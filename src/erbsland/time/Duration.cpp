@@ -8,10 +8,6 @@
 
 namespace erbsland::time {
 
-namespace {
-constexpr auto cSecondsPerDayFloat = 86400.0;
-}
-
 Duration::Duration(Parts parts) noexcept :
     _seconds{
         parts.seconds + parts.minutes.converted<Seconds>() + parts.hours.converted<Seconds>() +

@@ -37,6 +37,7 @@ constexpr auto extremeIntFromMultiplication(tFirst first, tSecond second) noexce
     }
 }
 
+/// Convert a value when the target's maximum is representable by the source.
 template <NativeInteger tTargetType, NativeInteger tSourceType>
 constexpr auto saturatingCast_maxIfTargetLarger(tSourceType value) noexcept -> tTargetType {
     return value > static_cast<tSourceType>(std::numeric_limits<tTargetType>::max())
@@ -44,6 +45,7 @@ constexpr auto saturatingCast_maxIfTargetLarger(tSourceType value) noexcept -> t
         : static_cast<tTargetType>(value);
 }
 
+/// Convert between signed and unsigned integer types with saturation.
 template <NativeInteger tTargetType, NativeInteger tSourceType>
 constexpr auto saturatingCast_mixedSign(tSourceType value) noexcept -> tTargetType {
     if constexpr (std::unsigned_integral<tTargetType>) {
@@ -63,6 +65,7 @@ constexpr auto saturatingCast_mixedSign(tSourceType value) noexcept -> tTargetTy
     }
 }
 
+/// Convert to a narrower integer type with saturation.
 template <NativeInteger tTargetType, NativeInteger tSourceType>
 constexpr auto saturatingCast_downSize(tSourceType value) noexcept -> tTargetType {
     if constexpr (std::signed_integral<tTargetType>) {

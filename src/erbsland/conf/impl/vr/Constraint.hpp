@@ -2,20 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Constraint_fwd.hpp"
+#include "ValidationContext_fwd.hpp"
+
 #include "../../Value.hpp"
 #include "../../vr/Constraint.hpp"
 
 namespace erbsland::conf::impl {
 
-class Constraint;
-using ConstraintPtr = std::shared_ptr<Constraint>;
-using ConstraintList = std::vector<ConstraintPtr>;
-class ValidationContext;
-
 /// The implementation of the constraint interface.
 class Constraint : public vr::Constraint {
 public:
+    /// Create an empty constraint implementation.
     Constraint() = default;
+
+    // defaults
     ~Constraint() override = default;
 
 public: // implement vr::Constraint
@@ -116,6 +117,7 @@ public: // testing
 #ifdef ERBSLAND_CORE_CONF_INTERNAL_VIEWS
     friend auto internalView(const Constraint &constraint) -> InternalViewPtr;
     friend auto internalView(const ConstraintPtr &constraintPtr) -> InternalViewPtr;
+    /// Create a diagnostic view of this constraint's internal state.
     [[nodiscard]] virtual auto internalView() const -> InternalViewPtr;
 #endif
 

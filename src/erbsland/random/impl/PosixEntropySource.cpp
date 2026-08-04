@@ -39,13 +39,11 @@ void PosixEntropySource::fillBytes(const std::span<std::byte> destination) {
                 continue;
             }
             const auto errorCode = errno;
-            auto cause = std::make_exception_ptr(
-                system::PlatformError{
-                    "System entropy source failed"_el, system::PosixErrorContext::fromErrorCode(errorCode)});
-            throw random::RandomError{"System entropy source failed"_el, std::move(cause)};
+            throw system::PlatformError{
+                "System entropy source failed"_el, system::PosixErrorContext::fromErrorCode(errorCode)};
         }
         if (readCount == 0) {
-            throw random::RandomError{"System entropy source ended unexpectedly"};
+            throw system::PlatformError{"System entropy source ended unexpectedly"_el};
         }
         data += readCount;
         remaining -= static_cast<std::size_t>(readCount);

@@ -35,8 +35,9 @@ public:
         border.set(FrameBorderElement::Top, FrameStyle::Light, Color{fg::Green, bg::Black});
         border.set(FrameBorder::Element::VLine, FrameStyle::Heavy, Color{fg::Red, bg::Blue});
 
-        REQUIRE_EQUAL(border.border(FrameBorderElement::Top).style, FrameStyle::Light);
-        REQUIRE_EQUAL(border.border(FrameBorderElement::Top).color, (Color{fg::Green, bg::Black}));
+        const auto topBorder = border.border(FrameBorderElement::Top);
+        REQUIRE_EQUAL(topBorder.style, FrameStyle::Light);
+        REQUIRE_EQUAL(topBorder.color, (Color{fg::Green, bg::Black}));
         REQUIRE_EQUAL(border.style(FrameBorder::Element::VLine), FrameStyle::Heavy);
         REQUIRE_EQUAL(border.color(FrameBorder::Element::VLine), (Color{fg::Red, bg::Blue}));
         REQUIRE_EQUAL(border.style(FrameBorderElement::Bottom), FrameStyle::None);

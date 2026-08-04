@@ -23,7 +23,8 @@ public:
         const auto timer = loop->createTimer([]() -> void {});
 
         REQUIRE_FALSE(timer->isActive());
-        REQUIRE_EQUAL(timer->mode(), EventTimerMode::Inactive);
+        const auto initialMode = timer->mode();
+        REQUIRE_EQUAL(initialMode, EventTimerMode::Inactive);
     }
 
     void testStartOnceFiresOnce() {
@@ -99,7 +100,8 @@ public:
         timer->startFixedDelay(TimeDelta{Milliseconds{50}});
         timer->startOnce(TimeDelta::zero());
 
-        REQUIRE_EQUAL(timer->mode(), EventTimerMode::Once);
+        const auto mode = timer->mode();
+        REQUIRE_EQUAL(mode, EventTimerMode::Once);
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         REQUIRE_EQUAL(count, 1);
         REQUIRE_FALSE(timer->isActive());
@@ -143,7 +145,7 @@ public:
 
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         REQUIRE(loop->hasError());
-        REQUIRE(loop->takeError() != nullptr);
+        REQUIRE(loop->takeError());
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         REQUIRE_EQUAL(count, 2);
         REQUIRE_FALSE(timer->isActive());

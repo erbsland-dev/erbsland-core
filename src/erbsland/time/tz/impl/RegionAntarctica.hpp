@@ -11,11 +11,23 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `Antarctica/Casey` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Casey() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Davis` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Davis() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Mawson` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Mawson() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Rothera` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Rothera() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Troll` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Troll() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Vostok` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Vostok() noexcept -> std::unique_ptr<Info>;
 
 }

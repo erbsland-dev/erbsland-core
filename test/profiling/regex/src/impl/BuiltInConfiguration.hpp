@@ -16,10 +16,15 @@ using namespace el::text::literals;
 /// @notest{Covered by regex profiler CTest entries.}
 class BuiltInConfiguration final {
 public:
+    /// Create the requested deterministic profiling suite.
     [[nodiscard]] static auto suite(const RunSettings &run) -> std::vector<Scenario> {
         auto result = std::vector<Scenario>{};
         if (run.suite == "smoke"_el || run.suite == "coverage"_el) {
             addCoverageSuite(result, run, run.suite);
+            return result;
+        }
+        if (run.suite == "comparison"_el) {
+            addComparisonSuite(result, run);
             return result;
         }
         if (run.suite != "snapshot"_el) {
@@ -34,12 +39,15 @@ public:
     }
 
 private:
+    /// Raise a configuration error with the given message.
     [[noreturn]] static void configError(const el::String &message) { throw el::ApplicationError{message}; }
 
+    /// Create a string consisting of a repeated character.
     [[nodiscard]] static auto repeatCharacter(const el::Char character, const std::size_t count) -> el::String {
         return el::String::fromCharacter(character, el::CpLength::fromSizeTOrThrow(count));
     }
 
+    /// Create a pattern with the requested number of alternatives.
     [[nodiscard]] static auto alternativePattern(const std::size_t count) -> el::String {
         auto result = el::StringEditor{"(?:"_el};
         for (auto index = std::size_t{}; index < count; ++index) {
@@ -52,6 +60,7 @@ private:
         return result;
     }
 
+    /// Create a pattern with the requested nesting depth.
     [[nodiscard]] static auto nestedPattern(const std::size_t depth) -> el::String {
         auto result = el::StringEditor{};
         for (auto index = std::size_t{}; index < depth; ++index) {
@@ -64,6 +73,7 @@ private:
         return result;
     }
 
+    /// Create a pattern with the requested number of captures.
     [[nodiscard]] static auto capturePattern(const std::size_t count) -> el::String {
         auto result = el::StringEditor{};
         for (auto index = std::size_t{}; index < count; ++index) {
@@ -72,6 +82,7 @@ private:
         return result;
     }
 
+    /// Create a pattern with the requested number of counters.
     [[nodiscard]] static auto counterPattern(const std::size_t count) -> el::String {
         auto result = el::StringEditor{};
         for (auto index = std::size_t{}; index < count; ++index) {
@@ -80,6 +91,7 @@ private:
         return result;
     }
 
+    /// Create a character-class pattern with the requested number of ranges.
     [[nodiscard]] static auto classPattern(const std::size_t count) -> el::String {
         auto result = el::StringEditor{"["_el};
         for (auto index = std::size_t{}; index < count; ++index) {
@@ -91,6 +103,7 @@ private:
     }
 
 public:
+    /// Add one profiling scenario to the target collection.
     static void addScenario(
         std::vector<Scenario> &target,
         const el::String &group,
@@ -132,10 +145,13 @@ public:
                 .repetitionCount = repetitionCount,
                 .replacement = replacement,
                 .timeout = timeout,
-                .weight = weight});
+                .weight = weight,
+                .backend = Backend::Erbsland,
+                .comparisonName = {}});
     }
 
 private:
+    /// Add the scenarios that cover the public regular-expression API.
     static void addCoverageSuite(std::vector<Scenario> &target, const RunSettings &run, const el::String &group) {
         const auto patternValue = el::String{"a"_el};
         const auto subject = el::String{"a a"_el};
@@ -158,6 +174,60 @@ private:
         }
     }
 
+    /// Add a pair of equivalent Erbsland and standard-library scenarios.
+    static void addComparisonPair(
+        std::vector<Scenario> &target,
+        const RunSettings &run,
+        const el::String &name,
+        const UseCase useCase,
+        const el::String &pattern,
+        const el::String &subject,
+        const std::uint32_t repetitionCount = 1U) {
+        addScenario(
+            target,
+            "comparison"_el,
+            useCase,
+            InputKind::StringUtf8,
+            name,
+            pattern,
+            name,
+            CorpusSource::Inline,
+            subject,
+            {},
+            ReplacementMode::NotApplicable,
+            "{0}"_el,
+            {},
+            run.regexTimeout,
+            1U,
+            repetitionCount);
+        auto &erbslandScenario = target.back();
+        erbslandScenario.id = el::StringFormat{"comparison:{}:erbsland"_el}.build(name);
+        erbslandScenario.comparisonName = name;
+        auto standardScenario = erbslandScenario;
+        standardScenario.id = el::StringFormat{"comparison:{}:std"_el}.build(name);
+        standardScenario.backend = Backend::Standard;
+        target.emplace_back(std::move(standardScenario));
+    }
+
+    /// Add the scenarios that compare Erbsland and standard-library regular expressions.
+    static void addComparisonSuite(std::vector<Scenario> &target, const RunSettings &run) {
+        addComparisonPair(
+            target, run, "compile-alternatives-8"_el, UseCase::Compile, alternativePattern(8U), "alt0000"_el);
+        addComparisonPair(
+            target,
+            run,
+            "compile-http-request"_el,
+            UseCase::Compile,
+            R"((?:GET|POST|PUT|DELETE) /[a-zA-Z0-9/_\-]+ HTTP/1\.[01])"_el,
+            "GET /index HTTP/1.1"_el);
+        addComparisonPair(target, run, "full-match-4k"_el, UseCase::FullMatch, "a+"_el, repeatCharacter(U'a', 4096U));
+        addComparisonPair(
+            target, run, "find-first-miss-64k"_el, UseCase::FindFirst, "z"_el, repeatCharacter(U'a', 65536U));
+        addComparisonPair(
+            target, run, "find-all-words"_el, UseCase::FindAll, R"(\b[a-zA-Z]+\b)"_el, "alpha beta gamma "_el, 4096U);
+    }
+
+    /// Add scenarios that stress regular-expression compilation.
     static void addCompilerStress(std::vector<Scenario> &target, const RunSettings &run) {
         for (const auto length : std::array{3U, 4U, 255U, 256U, 4096U}) {
             addScenario(
@@ -282,6 +352,7 @@ private:
         }
     }
 
+    /// Add scenarios that stress regular-expression execution.
     static void addRuntimeStress(std::vector<Scenario> &target, const RunSettings &run) {
         struct Stress {
             el::String name;
@@ -324,7 +395,7 @@ private:
                 el::re::Flags{el::re::Flag::Multiline, el::re::Flag::CRLF}},
         };
         for (const auto &stress : stresses) {
-            const auto subject = BuiltInCatalog::generatedCorpus(stress.corpus).value();
+            const auto subject = built_in_catalog::generatedCorpus(stress.corpus).value();
             addScenario(
                 target,
                 "engine-stress"_el,
@@ -350,7 +421,7 @@ private:
             "(?:a+)+b"_el,
             "ambiguous-miss"_el,
             CorpusSource::Inline,
-            BuiltInCatalog::generatedCorpus("ambiguous-miss"_el).value(),
+            built_in_catalog::generatedCorpus("ambiguous-miss"_el).value(),
             {},
             ReplacementMode::NotApplicable,
             "{0}"_el,
@@ -375,6 +446,7 @@ private:
         }
     }
 
+    /// Add scenarios based on representative real-world expressions.
     static void addRealWorld(std::vector<Scenario> &target, const RunSettings &run) {
         struct RealWorld {
             el::String name;
@@ -397,14 +469,14 @@ private:
             {"markdown-link"_el, "shakespeare-text"_el, UseCase::FindFirst, {}},
         };
         for (const auto &entry : entries) {
-            const auto sourceFile = BuiltInCatalog::file(entry.corpus).value();
+            const auto sourceFile = built_in_catalog::file(entry.corpus).value();
             addScenario(
                 target,
                 "real-world"_el,
                 entry.useCase,
                 InputKind::StringUtf8,
                 entry.name,
-                BuiltInCatalog::pattern(entry.name).value(),
+                built_in_catalog::pattern(entry.name).value(),
                 entry.corpus,
                 CorpusSource::File,
                 {},
@@ -421,11 +493,11 @@ private:
                 UseCase::FindAll,
                 input,
                 "toc-capture"_el,
-                BuiltInCatalog::pattern("toc-capture"_el).value(),
+                built_in_catalog::pattern("toc-capture"_el).value(),
                 "shakespeare-html"_el,
                 CorpusSource::File,
                 {},
-                BuiltInCatalog::file("shakespeare-html"_el).value(),
+                built_in_catalog::file("shakespeare-html"_el).value(),
                 ReplacementMode::NotApplicable,
                 "{0}"_el,
                 {},
@@ -433,6 +505,7 @@ private:
         }
     }
 
+    /// Add scenarios that stress regular-expression replacement.
     static void addReplacementStress(std::vector<Scenario> &target, const RunSettings &run) {
         struct Replacement {
             el::String name;

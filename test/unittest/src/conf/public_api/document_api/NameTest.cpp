@@ -23,8 +23,8 @@ public:
         REQUIRE(name.empty());
         REQUIRE(name.isRegular());
         REQUIRE(name.asText().isEmpty());
-        REQUIRE(name.asIndex() == 0);
-        REQUIRE(name.pathTextSize() == 0);
+        REQUIRE_EQUAL(name.asIndex(), 0);
+        REQUIRE_EQUAL(name.pathTextSize(), 0);
         REQUIRE(name.toPathText().isEmpty());
         REQUIRE_EQUAL(name.type(), NameType::Regular);
     }
@@ -32,20 +32,20 @@ public:
     void testCreateRegular() {
         name = Name::createRegular("server"_el);
         REQUIRE(name.isRegular());
-        REQUIRE(name.asText() == el::text::String{"server"_el});
-        REQUIRE(name.asIndex() == 0);
-        REQUIRE(name.pathTextSize() == 6);
-        REQUIRE(name.toPathText() == el::text::String{"server"_el});
+        REQUIRE_EQUAL(name.asText(), el::text::String{"server"_el});
+        REQUIRE_EQUAL(name.asIndex(), 0);
+        REQUIRE_EQUAL(name.pathTextSize(), 6);
+        REQUIRE_EQUAL(name.toPathText(), el::text::String{"server"_el});
         REQUIRE_EQUAL(name.type(), NameType::Regular);
     }
 
     void testCreateRegularMeta() {
         name = Name::createRegular("@version"_el);
         REQUIRE(name.isRegular());
-        REQUIRE(name.asText() == el::text::String{"@version"_el});
-        REQUIRE(name.asIndex() == 0);
-        REQUIRE(name.pathTextSize() == 8);
-        REQUIRE(name.toPathText() == el::text::String{"@version"_el});
+        REQUIRE_EQUAL(name.asText(), el::text::String{"@version"_el});
+        REQUIRE_EQUAL(name.asIndex(), 0);
+        REQUIRE_EQUAL(name.pathTextSize(), 8);
+        REQUIRE_EQUAL(name.toPathText(), el::text::String{"@version"_el});
         REQUIRE_EQUAL(name.type(), NameType::Regular);
     }
 
@@ -53,20 +53,20 @@ public:
         // move
         name = Name::createText("text"_el);
         REQUIRE(name.isText());
-        REQUIRE(name.asText() == el::text::String{"text"_el});
-        REQUIRE(name.asIndex() == 0);
-        REQUIRE(name.pathTextSize() == 6); // "text"
-        REQUIRE(name.toPathText() == el::text::String{"\"text\""_el});
+        REQUIRE_EQUAL(name.asText(), el::text::String{"text"_el});
+        REQUIRE_EQUAL(name.asIndex(), 0);
+        REQUIRE_EQUAL(name.pathTextSize(), 6); // "text"
+        REQUIRE_EQUAL(name.toPathText(), el::text::String{"\"text\""_el});
         REQUIRE_EQUAL(name.type(), NameType::Text);
 
         // copy
         const auto text = el::text::String{"text"_el};
         name = Name::createText(text);
         REQUIRE(name.isText());
-        REQUIRE(name.asText() == el::text::String{"text"_el});
-        REQUIRE(name.asIndex() == 0);
-        REQUIRE(name.pathTextSize() == 6); // "text"
-        REQUIRE(name.toPathText() == el::text::String{"\"text\""_el});
+        REQUIRE_EQUAL(name.asText(), el::text::String{"text"_el});
+        REQUIRE_EQUAL(name.asIndex(), 0);
+        REQUIRE_EQUAL(name.pathTextSize(), 6); // "text"
+        REQUIRE_EQUAL(name.toPathText(), el::text::String{"\"text\""_el});
         REQUIRE_EQUAL(name.type(), NameType::Text);
     }
 
@@ -92,20 +92,33 @@ public:
 
     void testComparison() {
         name = Name::createRegular("server"_el);
-        REQUIRE(name == Name::createRegular("server"_el));
-        REQUIRE(name != Name::createRegular("server1"_el));
-        REQUIRE(name != Name::createRegular("server2"_el));
-        REQUIRE(name != Name::createIndex(42));
-        REQUIRE(name != Name::createText("server"_el));
-        REQUIRE(name != Name::createTextIndex(3));
+        const auto equal = Name::createRegular("server"_el);
+        const auto differentRegular1 = Name::createRegular("server1"_el);
+        const auto differentRegular2 = Name::createRegular("server2"_el);
+        const auto differentIndex = Name::createIndex(42);
+        const auto differentText = Name::createText("server"_el);
+        const auto differentTextIndex = Name::createTextIndex(3);
+        REQUIRE_EQUAL(name, equal);
+        REQUIRE_NOT_EQUAL(name, differentRegular1);
+        REQUIRE_NOT_EQUAL(name, differentRegular2);
+        REQUIRE_NOT_EQUAL(name, differentIndex);
+        REQUIRE_NOT_EQUAL(name, differentText);
+        REQUIRE_NOT_EQUAL(name, differentTextIndex);
     }
 
     void testHash() {
         name = Name::createRegular("server"_el);
-        REQUIRE_EQUAL(name.hash(), Name::createRegular("server"_el).hash());
-        REQUIRE_NOT_EQUAL(name.hash(), Name::createRegular("server1"_el).hash());
+        const auto equal = Name::createRegular("server"_el);
+        const auto different = Name::createRegular("server1"_el);
+        const auto nameHash = name.hash();
+        const auto equalHash = equal.hash();
+        const auto differentHash = different.hash();
+        REQUIRE_EQUAL(nameHash, equalHash);
+        REQUIRE_NOT_EQUAL(nameHash, differentHash);
 
-        REQUIRE_EQUAL(std::hash<Name>{}(name), std::hash<Name>{}(Name::createRegular("server"_el)));
+        const auto stdHash = std::hash<Name>{}(name);
+        const auto expectedStdHash = std::hash<Name>{}(equal);
+        REQUIRE_EQUAL(stdHash, expectedStdHash);
 
         std::unordered_set<Name> names;
         names.insert(Name::createRegular("server"_el));
@@ -137,8 +150,8 @@ public:
         // empty names aren't allowed.
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular(""_el));
         // names must not exceed maximum length.
-        const auto longName =
-            el::text::StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{limits::maxNameLength + 1});
+        const auto longName = el::text::StringEditor::fromCharacter(
+            el::text::Char{U'a'}, el::unit::CpLength{el::conf::impl::limits::maxNameLength + 1});
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular(longName));
         // names must not start with space or underscore.
         REQUIRE_THROWS_AS(ConfError, name = Name::createRegular("_name"_el));
@@ -177,7 +190,7 @@ public:
         // names must not exceed the maximum length.
         const auto longName = el::text::StringEditor::fromCharacter(
             el::text::Char{U'a'},
-            el::unit::CpLength{limits::maxLineLength + 20}); // +20 because of detection tolerance.
+            el::unit::CpLength{el::conf::impl::limits::maxLineLength + 20}); // +20 because of detection tolerance.
         REQUIRE_THROWS_AS(ConfError, name = Name::createText(longName));
         // Illegal code-points: zero is not allowed
         REQUIRE_THROWS_AS(

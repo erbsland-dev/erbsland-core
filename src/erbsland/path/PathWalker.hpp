@@ -26,7 +26,10 @@ public:
     // defaults
     PathWalker(const PathWalker &) = delete;
     PathWalker(PathWalker &&) noexcept;
+
+    // defaults/deletions
     auto operator=(const PathWalker &) -> PathWalker & = delete;
+    /// Move path-walker state into this instance.
     auto operator=(PathWalker &&) noexcept -> PathWalker &;
 
 public: // attributes

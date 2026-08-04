@@ -8,6 +8,7 @@
 #include "PathInfoParts.hpp"
 
 #include "impl/BackendFactory.hpp"
+#include "impl/PathBackend.hpp"
 #include "impl/PathContent.hpp"
 
 #include "../err/Exception.hpp"

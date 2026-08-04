@@ -24,6 +24,7 @@ class StringCharReaderState final {
     friend class impl::StringReaderBase;
 
 public:
+    // defaults
     StringCharReaderState() = default;
     ~StringCharReaderState() = default;
     StringCharReaderState(const StringCharReaderState &) = default;
@@ -43,6 +44,7 @@ public:
     }
 
 private:
+    /// Create a state from reader backend identity and positions.
     constexpr StringCharReaderState(
         impl::StringReaderBackendKind kind,
         mem::StorageIdentifier storageId,
@@ -50,9 +52,13 @@ private:
         unit::CpIndex cpPosition) noexcept :
         _kind{kind}, _storageId{storageId}, _rawPosition{rawPosition}, _cpPosition{cpPosition} {}
 
+    /// Access the associated backend kind.
     [[nodiscard]] constexpr auto kind() const noexcept -> impl::StringReaderBackendKind { return _kind; }
+    /// Access the read-only storage identity.
     [[nodiscard]] constexpr auto storageId() const noexcept -> mem::StorageIdentifier { return _storageId; }
+    /// Access the backend-native position.
     [[nodiscard]] constexpr auto rawPosition() const noexcept -> std::size_t { return _rawPosition; }
+    /// Access the decoded code-point position.
     [[nodiscard]] constexpr auto cpPosition() const noexcept -> unit::CpIndex { return _cpPosition; }
 
 private:

@@ -8,6 +8,7 @@ add_subdirectory(vr)
 
 target_sources(erbsland-core PRIVATE
         AccessCheck.hpp
+        AccessCheck_fwd.hpp
         AccessCheckResult.hpp
         AccessSources.hpp
         ConfError.cpp
@@ -17,11 +18,14 @@ target_sources(erbsland-core PRIVATE
         ConfErrorContext.cpp
         ConfErrorContext.hpp
         Document.hpp
+        Document_fwd.hpp
         DocumentBuilder.hpp
         FileAccessCheck.cpp
         FileAccessCheck.hpp
+        FileAccessCheck_fwd.hpp
         FileSourceResolver.cpp
         FileSourceResolver.hpp
+        FileSourceResolver_fwd.hpp
         Float.hpp
         Integer.hpp
         Location.cpp
@@ -35,8 +39,10 @@ target_sources(erbsland-core PRIVATE
         Parser.cpp
         Parser.hpp
         SignatureSigner.hpp
+        SignatureSigner_fwd.hpp
         SignatureSignerData.hpp
         SignatureValidator.hpp
+        SignatureValidator_fwd.hpp
         SignatureValidatorData.hpp
         SignatureValidatorResult.hpp
         Signer.cpp
@@ -46,7 +52,9 @@ target_sources(erbsland-core PRIVATE
         Source_fwd.hpp
         SourceIdentifier.cpp
         SourceIdentifier.hpp
+        SourceIdentifier_fwd.hpp
         SourceResolver.hpp
+        SourceResolver_fwd.hpp
         SourceResolverContext.hpp
         StdFormat.hpp
         TestFormat.hpp

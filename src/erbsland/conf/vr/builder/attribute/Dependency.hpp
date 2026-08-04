@@ -13,7 +13,13 @@
 namespace erbsland::conf::vr::builder {
 
 /// Adds a dependency relation between source and target paths.
-struct Dependency : Attribute {
+class Dependency : public Attribute {
+public:
+    /// Creates a dependency relation from path collections.
+    /// @param mode The dependency mode.
+    /// @param sources The source paths.
+    /// @param targets The target paths.
+    /// @param errorMessage The optional validation error message.
     Dependency(
         const impl::DependencyMode mode,
         std::vector<NamePathLike> sources,
@@ -24,6 +30,11 @@ struct Dependency : Attribute {
         _targets{std::move(targets)},
         _errorMessage{std::move(errorMessage)} {}
 
+    /// Creates a dependency relation from path lists.
+    /// @param mode The dependency mode.
+    /// @param sources The source paths.
+    /// @param targets The target paths.
+    /// @param errorMessage The optional validation error message.
     Dependency(
         const impl::DependencyMode mode,
         const std::initializer_list<NamePathLike> sources,
@@ -32,7 +43,7 @@ struct Dependency : Attribute {
         Dependency(
             mode, std::vector<NamePathLike>{sources}, std::vector<NamePathLike>{targets}, std::move(errorMessage)) {}
 
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
 
     impl::DependencyMode _mode{impl::DependencyMode::Undefined};
     std::vector<NamePathLike> _sources;

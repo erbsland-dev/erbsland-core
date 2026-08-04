@@ -3,7 +3,7 @@
 #pragma once
 
 #include "BitmapDrawOptions.hpp"
-#include "Block16Style.hpp"
+#include "Block16Style_fwd.hpp"
 #include "BlockCombinationStyle.hpp"
 #include "BlockString.hpp"
 #include "BlockText.hpp"
@@ -13,7 +13,8 @@
 #include "FrameDrawOptions.hpp"
 #include "GridLayout.hpp"
 #include "ReadableBuffer.hpp"
-#include "Tile9Style.hpp"
+#include "Tile9Style_fwd.hpp"
+#include "WritableBuffer_fwd.hpp"
 
 #include "../text/String.hpp"
 #include "../text/u32/U32String.hpp"
@@ -28,6 +29,7 @@ namespace erbsland::cterm {
 /// frames, text, and bitmap rendering. Concrete implementations like `Buffer` provide the actual storage.
 class WritableBuffer : public ReadableBuffer {
 public:
+    // defaults
     ~WritableBuffer() override = default;
 
 public: // abstract API

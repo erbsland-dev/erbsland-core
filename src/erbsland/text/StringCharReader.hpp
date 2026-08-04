@@ -5,10 +5,12 @@
 #include "AnyString_fwd.hpp"
 #include "AnyStringEditor_fwd.hpp"
 #include "Char.hpp"
+#include "CharCompareFn.hpp"
 #include "CharSet.hpp"
 #include "IntegerBase.hpp"
 #include "IntegerParseOptions.hpp"
 #include "ReadIntegerResult.hpp"
+#include "String_fwd.hpp"
 #include "StringCharReader_fwd.hpp"
 #include "StringCharReaderState.hpp"
 
@@ -123,6 +125,14 @@ public:
     /// @param expected The character set to match.
     /// @return `true` if the character matched and the position was advanced, `false` otherwise.
     auto advanceIf(const CharSet &expected) noexcept -> bool;
+    /// Advance if the following decoded characters match an expected UTF-8 string.
+    /// The current position remains unchanged if the complete string does not match. An empty expected string
+    /// succeeds without changing the position. Malformed source and expected text is compared tolerantly as
+    /// replacement characters.
+    /// @param expected The decoded character sequence to match.
+    /// @param compareFn The optional character comparison function.
+    /// @return `true` if the complete string matched and was skipped, `false` otherwise.
+    auto advanceIf(const String &expected, CharCompareFn compareFn = {}) noexcept -> bool;
     /// Advance by decoded characters.
     /// Tolerant decoding rules are used for malformed encoded data.
     /// Returns `false` when no movement was possible, returns `true` if moves at least one character.
@@ -163,16 +173,24 @@ public: // read loops
     auto readUntil(
         const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> util::LoopResult;
-    /// Advance the read position while the character matches `expected`.
-    /// Same as `readWhile` with an empty read function.
-    /// @see `readWhile`
+    /// Advance while decoded characters match `expected`.
+    /// Stops before the first nonmatching character, at the end of data, or after `maximum` characters. Malformed
+    /// encoded data is handled tolerantly like `read()`. The returned count may be ignored when only the skip side
+    /// effect is needed.
+    /// @param expected The expected character set.
+    /// @param maximum The maximum number of characters to advance.
+    /// @return The number of decoded characters skipped.
     auto advanceWhile(const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
-        -> util::LoopResult;
-    /// Advance characters until, but without a character from the given set.
-    /// Same as `readUtil` with an empty read function.
-    /// @see `readUntil`.
+        -> unit::CpLength;
+    /// Advance until, but without consuming, a decoded character from `stopSet`.
+    /// Stops before the first matching character, at the end of data, or after `maximum` characters. Malformed
+    /// encoded data is handled tolerantly like `read()`. The returned count may be ignored when only the skip side
+    /// effect is needed.
+    /// @param stopSet The set with stop characters.
+    /// @param maximum The maximum number of characters to advance.
+    /// @return The number of decoded characters skipped.
     auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
-        -> util::LoopResult;
+        -> unit::CpLength;
 
 public: // read integers
     /// Parse an integer using configurable low-level parse options.
@@ -230,7 +248,7 @@ public: // buffer
     /// Read a character and append it to the buffer.
     /// At the end of data, this returns `Char::endOfData()` and does not change the buffer.
     /// @return The read character, or `Char::endOfData()` if at the end of data.
-    [[nodiscard]] auto readToBuffer() -> Char;
+    auto readToBuffer() -> Char;
     /// Read a character only if it matches and append it to the buffer.
     /// @param expected The character to match.
     /// @return `true` if the character was read, matched, and appended.
@@ -256,9 +274,13 @@ private:
     using ReaderPtr = mem::SharedDataPointer<impl::StringReaderBase>;
 
 private:
+    /// Create a reader backend matching an any-string representation.
     [[nodiscard]] static auto createBackendForAnyString(const AnyString &text) -> impl::StringReaderBase *;
+    /// Scan an integer without throwing for ordinary parse failures.
     [[nodiscard]] auto scanInteger(const IntegerParseOptions &options) -> ReadIntegerResult;
+    /// Scan an integer and throw on failure.
     [[nodiscard]] auto readIntegerResultOrThrow(const IntegerParseOptions &options) -> ReadIntegerResult;
+    /// Throw a numeric-reading error at a source position.
     [[noreturn]] static void throwError(ReadNumberStatus status, unit::CpIndex position);
 
 private:

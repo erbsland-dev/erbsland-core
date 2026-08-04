@@ -7,13 +7,13 @@
 #include <erbsland/text/FloatParseOptions.hpp>
 #include <erbsland/text/impl/FloatConversion.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -24,12 +24,12 @@
 
 using el::err::OverflowError;
 using el::err::ParseError;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(FloatFormat FloatParseFlag FloatParseOptions U8StringEditor U16StringEditor U32StringEditor)
+TESTED_TARGETS(FloatFormat FloatParseFlag FloatParseOptions StringEditor U16StringEditor U32StringEditor)
 class FloatConversionTest final : public el::UnitTest {
 public:
     void testFormatDefaultsAndFactories() {
@@ -37,13 +37,13 @@ public:
 
         REQUIRE_EQUAL(format.style(), FloatFormat::Style::Default);
         REQUIRE_FALSE(format.hasPrecision());
-        REQUIRE_EQUAL(format.precision(), ElementCount{0U});
+        REQUIRE_EQUAL(format.precision(), ItemCount{0U});
         REQUIRE_EQUAL(format.letterCase(), LetterCase::Lowercase);
 
-        format.setStyle(FloatFormat::Style::Fixed).setPrecision(ElementCount{2U}).setLetterCase(LetterCase::Uppercase);
+        format.setStyle(FloatFormat::Style::Fixed).setPrecision(ItemCount{2U}).setLetterCase(LetterCase::Uppercase);
         REQUIRE_EQUAL(format.style(), FloatFormat::Style::Fixed);
         REQUIRE(format.hasPrecision());
-        REQUIRE_EQUAL(format.precision(), ElementCount{2U});
+        REQUIRE_EQUAL(format.precision(), ItemCount{2U});
         REQUIRE_EQUAL(format.letterCase(), LetterCase::Uppercase);
 
         format.clearPrecision();
@@ -88,26 +88,25 @@ public:
     }
 
     void testU8StringFromFloat() {
-        auto fixed = FloatFormat::fixed().setPrecision(ElementCount{2U});
-        REQUIRE_EQUAL(StringConverter{U8String::fromFloat(12.345, fixed)}.toStdString(), std::string{"12.35"});
+        auto fixed = FloatFormat::fixed().setPrecision(ItemCount{2U});
+        REQUIRE_EQUAL(StringConverter{String::fromFloat(12.345, fixed)}.toStdString(), std::string{"12.35"});
 
-        auto scientific = FloatFormat::scientific().setPrecision(ElementCount{1U}).setLetterCase(LetterCase::Uppercase);
-        REQUIRE_EQUAL(StringConverter{U8String::fromFloat(12.345, scientific)}.toStdString(), std::string{"1.2E+01"});
+        auto scientific = FloatFormat::scientific().setPrecision(ItemCount{1U}).setLetterCase(LetterCase::Uppercase);
+        REQUIRE_EQUAL(StringConverter{String::fromFloat(12.345, scientific)}.toStdString(), std::string{"1.2E+01"});
 
-        auto hexadecimal =
-            FloatFormat::hexadecimal().setPrecision(ElementCount{2U}).setLetterCase(LetterCase::Uppercase);
-        REQUIRE_EQUAL(StringConverter{U8String::fromFloat(12.0, hexadecimal)}.toStdString(), std::string{"1.80P+3"});
+        auto hexadecimal = FloatFormat::hexadecimal().setPrecision(ItemCount{2U}).setLetterCase(LetterCase::Uppercase);
+        REQUIRE_EQUAL(StringConverter{String::fromFloat(12.0, hexadecimal)}.toStdString(), std::string{"1.80P+3"});
     }
 
     void testU16AndU32StringFromFloat() {
-        auto fixed = FloatFormat::fixed().setPrecision(ElementCount{1U});
+        auto fixed = FloatFormat::fixed().setPrecision(ItemCount{1U});
 
         REQUIRE_EQUAL(StringConverter{U16String::fromFloat(1.25, fixed)}.toStdString(), std::string{"1.2"});
         REQUIRE_EQUAL(StringConverter{U32String::fromFloat(1.25, fixed)}.toStdString(), std::string{"1.2"});
     }
 
     void testStringBuilderAppendFloat() {
-        auto fixed = FloatFormat::fixed().setPrecision(ElementCount{1U});
+        auto fixed = FloatFormat::fixed().setPrecision(ItemCount{1U});
 
         auto builder = AnyStringBuilder::u8();
         builder.appendFloat(1.25F, fixed).append(U',').appendFloat(2.25, fixed);
@@ -124,18 +123,18 @@ public:
     }
 
     void testParseAllStringKindsAndViews() {
-        const auto u8 = U8StringEditor{"42.5"};
+        const auto u8 = StringEditor{"42.5"};
         const auto u16 = U16StringEditor{std::u16string_view{u"42.5"}};
         const auto u32 = U32StringEditor{std::u32string_view{U"42.5"}};
 
         REQUIRE_EQUAL(u8.toFloat<double>(), 42.5);
-        REQUIRE_EQUAL(U8String{u8}.toFloat<float>(), 42.5F);
+        REQUIRE_EQUAL(String{u8}.toFloat<float>(), 42.5F);
         REQUIRE_EQUAL(u16.toFloat<double>(), 42.5);
         REQUIRE_EQUAL(U16String{u16}.toFloat<float>(), 42.5F);
         REQUIRE_EQUAL(u32.toFloat<double>(), 42.5);
         REQUIRE_EQUAL(U32String{u32}.toFloat<float>(), 42.5F);
 
-        REQUIRE_EQUAL(U8String{u8}.toFloat<double>(), 42.5);
+        REQUIRE_EQUAL(String{u8}.toFloat<double>(), 42.5);
         REQUIRE_EQUAL(u16.toFloat<float>(), 42.5F);
         REQUIRE_EQUAL(U16String{u16}.toFloat<double>(), 42.5);
         REQUIRE_EQUAL(u32.toFloat<float>(), 42.5F);
@@ -144,24 +143,24 @@ public:
 
     void testImplDoubleCore() {
         const auto success = el::text::impl::parseDoubleCore(
-            StringCharReader{U8StringEditor{"12.5"}}, FloatParseOptions::defaultOptions());
+            StringCharReader{StringEditor{"12.5"}}, FloatParseOptions::defaultOptions());
         REQUIRE_EQUAL(success.status, el::text::impl::FloatParseStatus::Success);
         REQUIRE_EQUAL(success.value, 12.5);
 
         const auto empty =
-            el::text::impl::parseDoubleCore(StringCharReader{U8StringEditor{}}, FloatParseOptions::defaultOptions());
+            el::text::impl::parseDoubleCore(StringCharReader{StringEditor{}}, FloatParseOptions::defaultOptions());
         REQUIRE_EQUAL(empty.status, el::text::impl::FloatParseStatus::ParseError);
         REQUIRE_EQUAL(empty.message, std::string_view{"Floating point text is empty"});
 
         const auto trailing = el::text::impl::parseDoubleCore(
-            StringCharReader{U8StringEditor{"12.5m"}}, FloatParseOptions::defaultOptions());
+            StringCharReader{StringEditor{"12.5m"}}, FloatParseOptions::defaultOptions());
         REQUIRE_EQUAL(trailing.status, el::text::impl::FloatParseStatus::ParseError);
         REQUIRE_EQUAL(trailing.message, std::string_view{"Floating point text has trailing characters"});
 
         auto ignoreTrailing = FloatParseOptions{};
         ignoreTrailing.setFlags(FloatParseFlag::IgnoreTrailingChars);
         const auto acceptedTrailing =
-            el::text::impl::parseDoubleCore(StringCharReader{U8StringEditor{"12.5m"}}, ignoreTrailing);
+            el::text::impl::parseDoubleCore(StringCharReader{StringEditor{"12.5m"}}, ignoreTrailing);
         REQUIRE_EQUAL(acceptedTrailing.status, el::text::impl::FloatParseStatus::Success);
         REQUIRE_EQUAL(acceptedTrailing.value, 12.5);
     }
@@ -169,21 +168,21 @@ public:
     void testImplStyleRestrictions() {
         auto fixed = FloatParseOptions{};
         fixed.setStyle(FloatParseOptions::Style::Fixed);
-        const auto fixedResult = el::text::impl::parseDoubleCore(StringCharReader{U8StringEditor{"1.25e2"}}, fixed);
+        const auto fixedResult = el::text::impl::parseDoubleCore(StringCharReader{StringEditor{"1.25e2"}}, fixed);
         REQUIRE_EQUAL(fixedResult.status, el::text::impl::FloatParseStatus::ParseError);
 
         auto scientific = FloatParseOptions{};
         scientific.setStyle(FloatParseOptions::Style::Scientific);
         const auto scientificResult =
-            el::text::impl::parseDoubleCore(StringCharReader{U8StringEditor{"12.5"}}, scientific);
+            el::text::impl::parseDoubleCore(StringCharReader{StringEditor{"12.5"}}, scientific);
         REQUIRE_EQUAL(scientificResult.status, el::text::impl::FloatParseStatus::ParseError);
     }
 
     void testDefaultAndThrowingParseErrors() {
-        REQUIRE_EQUAL(U8StringEditor{"abc"}.toFloat<double>(4.5), 4.5);
+        REQUIRE_EQUAL(StringEditor{"abc"}.toFloat<double>(4.5), 4.5);
 
         try {
-            static_cast<void>(U8StringEditor{"abc"}.toFloatOrThrow<double>());
+            static_cast<void>(StringEditor{"abc"}.toFloatOrThrow<double>());
             REQUIRE(false);
         } catch (const ParseError &) {
             REQUIRE(true);
@@ -191,45 +190,45 @@ public:
     }
 
     void testTrailingCharacters() {
-        REQUIRE_EQUAL(U8StringEditor{"12.5m"}.toFloat<double>(-1.0), -1.0);
+        REQUIRE_EQUAL(StringEditor{"12.5m"}.toFloat<double>(-1.0), -1.0);
 
         auto options = FloatParseOptions{};
         options.setFlags(FloatParseFlag::IgnoreTrailingChars);
-        REQUIRE_EQUAL(U8StringEditor{"12.5m"}.toFloat<double>(-1.0, options), 12.5);
-        REQUIRE_EQUAL(U8StringEditor{"m12.5"}.toFloat<double>(-1.0, options), -1.0);
+        REQUIRE_EQUAL(StringEditor{"12.5m"}.toFloat<double>(-1.0, options), 12.5);
+        REQUIRE_EQUAL(StringEditor{"m12.5"}.toFloat<double>(-1.0, options), -1.0);
     }
 
     void testParseStyles() {
         auto fixed = FloatParseOptions{};
         fixed.setStyle(FloatParseOptions::Style::Fixed);
         REQUIRE_EQUAL(parse<double>("12.5", fixed), 12.5);
-        REQUIRE_EQUAL(U8StringEditor{"1.25e2"}.toFloat<double>(-1.0, fixed), -1.0);
+        REQUIRE_EQUAL(StringEditor{"1.25e2"}.toFloat<double>(-1.0, fixed), -1.0);
 
         auto scientific = FloatParseOptions{};
         scientific.setStyle(FloatParseOptions::Style::Scientific);
         REQUIRE_EQUAL(parse<double>("1.25e2", scientific), 125.0);
-        REQUIRE_EQUAL(U8StringEditor{"12.5"}.toFloat<double>(-1.0, scientific), -1.0);
+        REQUIRE_EQUAL(StringEditor{"12.5"}.toFloat<double>(-1.0, scientific), -1.0);
 
         auto hexadecimal = FloatParseOptions{};
         hexadecimal.setStyle(FloatParseOptions::Style::Hexadecimal);
-        const auto text = U8StringEditor::fromFloat(12.0, FloatFormat::hexadecimal().setPrecision(ElementCount{2U}));
+        const auto text = StringEditor::fromFloat(12.0, FloatFormat::hexadecimal().setPrecision(ItemCount{2U}));
         REQUIRE_EQUAL(text.toFloat<double>(-1.0, hexadecimal), 12.0);
     }
 
     void testParseOverflowAndExceptionKinds() {
-        REQUIRE_EQUAL(U8StringEditor{"1e100"}.toFloat<float>(-1.0F), -1.0F);
-        REQUIRE_EQUAL(U8StringEditor{"1e100"}.toFloat<double>(-1.0), 1e100);
-        REQUIRE_EQUAL(U8StringEditor{"1e9999"}.toFloat<double>(-1.0), -1.0);
+        REQUIRE_EQUAL(StringEditor{"1e100"}.toFloat<float>(-1.0F), -1.0F);
+        REQUIRE_EQUAL(StringEditor{"1e100"}.toFloat<double>(-1.0), 1e100);
+        REQUIRE_EQUAL(StringEditor{"1e9999"}.toFloat<double>(-1.0), -1.0);
 
         try {
-            static_cast<void>(U8StringEditor{"1e100"}.toFloatOrThrow<float>());
+            static_cast<void>(StringEditor{"1e100"}.toFloatOrThrow<float>());
             REQUIRE(false);
         } catch (const OverflowError &) {
             REQUIRE(true);
         }
 
         try {
-            static_cast<void>(U8StringEditor{"12.5m"}.toFloatOrThrow<double>());
+            static_cast<void>(StringEditor{"12.5m"}.toFloatOrThrow<double>());
             REQUIRE(false);
         } catch (const ParseError &) {
             REQUIRE(true);
@@ -247,7 +246,7 @@ public:
     }
 
     void testMalformedInputFailsAsParseError() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("31 C0 32")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("31 C0 32")};
         REQUIRE_EQUAL(invalidUtf8.toFloat<double>(-1.0), -1.0);
         REQUIRE_THROWS(invalidUtf8.toFloatOrThrow<double>());
 
@@ -298,6 +297,6 @@ private:
     template <el::text::impl::AnyFloatType T>
     [[nodiscard]] static auto parse(
         std::string_view text, FloatParseOptions options = FloatParseOptions::defaultOptions()) -> T {
-        return U8StringEditor{text}.toFloatOrThrow<T>(options);
+        return StringEditor{text}.toFloatOrThrow<T>(options);
     }
 };

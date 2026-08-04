@@ -62,7 +62,9 @@ auto PathWalkerWorkerWorkload::walkPathInfoCallback() const -> std::uint64_t {
     options.setTypes(el::PathType::All).setSymlinkMode(el::SymlinkMode::Use);
     const auto result = _root.walker().walkOrThrow(
         [&](const el::Path &, const el::PathInfo &info) -> el::PathWalkStatus {
-            static_cast<void>(info.type());
+            if (info.type() == el::PathType::Unknown) {
+                throw el::ApplicationError{"PathWalker returned an unknown entry type."_el};
+            }
             ++entries;
             return el::PathWalkStatus::Continue;
         },

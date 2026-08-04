@@ -6,6 +6,8 @@
 
 #include <memory>
 
+/// Test double recording readable-buffer dispatch calls.
+/// @notest{Test-only probe.}
 class ReadableBufferDispatchProbe final : public ReadableBuffer {
 public:
     [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _buffer.size(); }

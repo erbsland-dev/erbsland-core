@@ -367,7 +367,7 @@ public:
         WITH_CONTEXT(requireError("The number of bytes must not be equal to 3"));
     }
 
-    void testElementCountInValueList() {
+    void testItemCountInValueList() {
         WITH_CONTEXT(requireOneConstraintPass("equals: 3", vr::RuleType::ValueList));
         WITH_CONTEXT(requirePassLines({
             "[app]",
@@ -380,7 +380,7 @@ public:
         WITH_CONTEXT(requireError("The number of values in this list must be equal to 3"));
     }
 
-    void testNotElementCountInValueList() {
+    void testNotItemCountInValueList() {
         WITH_CONTEXT(requireOneConstraintPass("not_equals: 3", vr::RuleType::ValueList));
         WITH_CONTEXT(requirePassLines({
             "[app]",
@@ -393,7 +393,7 @@ public:
         WITH_CONTEXT(requireError("The number of values in this list must not be equal to 3"));
     }
 
-    void testElementCountInValueMatrix() {
+    void testItemCountInValueMatrix() {
         WITH_CONTEXT(requireOneConstraintPass("equals: 3, 3", vr::RuleType::ValueMatrix));
         WITH_CONTEXT(requirePassLines({
             "[app]",
@@ -426,7 +426,7 @@ public:
         WITH_CONTEXT(requireError("The number of rows must be equal to 3"));
     }
 
-    void testNotElementCountInValueMatrix() {
+    void testNotItemCountInValueMatrix() {
         WITH_CONTEXT(requireOneConstraintPass("not_equals: 3, 3", vr::RuleType::ValueMatrix));
         WITH_CONTEXT(requirePassLines({
             "[app]",

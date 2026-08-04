@@ -8,10 +8,10 @@
 #include "../../../mem/ByteArray.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
+#include "../../../text/Literals.hpp"
 
 #include <algorithm>
 #include <span>
-#include <stdexcept>
 
 namespace erbsland::cryptology::impl {
 
@@ -22,7 +22,7 @@ using namespace erbsland::mem;
 /// A SHA-3 sponge with fixed rate and digest size.
 /// @tparam tRateBytes The sponge rate in bytes.
 /// @tparam tDigestBytes The fixed digest size in bytes.
-/// @tested{Sha3ValidationTest}
+/// @tested{Sha3ValidationTest HashFullValidationTest}
 template <std::size_t tRateBytes, std::size_t tDigestBytes>
 class Sha3 final {
 public:
@@ -50,8 +50,9 @@ public:
     /// @param data A block of data.
     /// @throws err::LogicError If data is added after the digest was calculated.
     void update(const ConstByteSpan data) {
+        using namespace text::literals;
         if (_hasDigest) {
-            throw err::LogicError("Adding more data, via `update()` after calling `digest()` is not allowed.");
+            throw err::LogicError("Adding more data, via `update()` after calling `digest()` is not allowed."_el);
         }
         auto dataPosition = std::size_t{};
         while (dataPosition < data.size()) {

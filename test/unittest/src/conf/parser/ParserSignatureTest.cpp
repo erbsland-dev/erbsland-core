@@ -116,7 +116,8 @@ public:
 
     void testSignatureCycle() {
         // Make sure the premises of this test are correct.
-        REQUIRE(impl::Lexer::hashAlgorithm() == el::cryptology::HashAlgorithm::Sha3_256);
+        const auto hashAlgorithm = el::conf::impl::Lexer::hashAlgorithm();
+        REQUIRE_EQUAL(hashAlgorithm, el::cryptology::HashAlgorithm::Sha3_256);
 
         // Prepare the data
         auto unsignedPath = createTestFile("config/unsigned.elcl", "[main]\nvalue: 123\n"_el);
@@ -145,15 +146,15 @@ public:
         Parser parser;
         // reading the unsigned file should be fine.
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{unsignedPath})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         // reading the signed must fail.
         REQUIRE_THROWS(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{signedPath})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         // setting the validator must reject unsigned documents.
         parser.setSignatureValidator(validator);
         REQUIRE_THROWS(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{unsignedPath})));
         // now, reading the signed document should work as expected.
         REQUIRE_NOTHROW(doc = parser.parseOrThrow(Source::fromFile(el::path::Path{signedPath})));
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
     }
 };

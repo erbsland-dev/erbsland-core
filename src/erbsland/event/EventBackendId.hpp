@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EventRegistry_fwd.hpp"
+
 #include "../core/Definitions.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -10,8 +12,6 @@
 #include <functional>
 
 namespace erbsland::event {
-
-class EventRegistry;
 
 /// Represents an event backend type.
 /// @tested{EventRegistryTest EventBackendTest}
@@ -42,6 +42,8 @@ public: // tests/accessors
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _rawValue; }
 
 private:
+    /// Create an event-backend identifier from its raw value.
+    /// @param rawValue The backend identifier value.
     constexpr explicit EventBackendId(const Value rawValue) noexcept : _rawValue{rawValue} {}
 
 private:

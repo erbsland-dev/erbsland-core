@@ -61,6 +61,7 @@ inline void handleUnicodeChar(ParserState &state) {
     addRegularChar(state, readUnicodeChar(state));
 }
 
+/// Parse a digit-class escape sequence.
 inline void handleDigit(ParserState &state, const bool isNegated) {
     if (state.currentFlags().isSet(GroupFlag::Ascii)) {
         handleOneCharRange(state, Category::DigitAscii, isNegated);
@@ -69,6 +70,7 @@ inline void handleDigit(ParserState &state, const bool isNegated) {
     }
 }
 
+/// Parse a word-class escape sequence.
 inline void handleWord(ParserState &state, const bool isNegated) {
     if (state.currentFlags().isSet(GroupFlag::Ascii)) {
         handleOneCharRange(state, Category::WordAscii, isNegated);
@@ -77,6 +79,7 @@ inline void handleWord(ParserState &state, const bool isNegated) {
     }
 }
 
+/// Parse a whitespace-class escape sequence.
 inline void handleSpace(ParserState &state, const bool isNegated) {
     if (state.currentFlags().isSet(GroupFlag::Ascii)) {
         if (state.currentFlags().isSet(GroupFlag::DotAll)) {
@@ -93,6 +96,7 @@ inline void handleSpace(ParserState &state, const bool isNegated) {
     }
 }
 
+/// Parse a horizontal-whitespace escape sequence.
 inline void handleHorizontalWhiteSpace(ParserState &state, const bool isNegated) {
     if (!state.hasFeature(Feature::EscapeHorizontalSpace)) {
         state.throwParsingError("Horizontal whitespace is not supported"_el);
@@ -104,6 +108,7 @@ inline void handleHorizontalWhiteSpace(ParserState &state, const bool isNegated)
     }
 }
 
+/// Parse a vertical-whitespace escape sequence.
 inline void handleVerticalWhiteSpace(ParserState &state, const bool isNegated) {
     if (!state.hasFeature(Feature::EscapeVerticalSpace)) {
         state.throwParsingError("Vertical whitespace is not supported"_el);
@@ -115,6 +120,7 @@ inline void handleVerticalWhiteSpace(ParserState &state, const bool isNegated) {
     }
 }
 
+/// Parse the escape sequence that matches every character except a newline.
 inline void handleNotNewline(ParserState &state) {
     state.readNext();
     auto charClass = CharClass{std::vector{CharRange{U'\n'}}};
@@ -123,6 +129,7 @@ inline void handleNotNewline(ParserState &state) {
     state.addNode(handleQuantifier(state, newNode));
 }
 
+/// Parse a word-boundary escape sequence.
 inline void handleWordBoundary(ParserState &state, const bool isNegated) {
     if (isNegated) {
         if (state.currentFlags().isSet(GroupFlag::Ascii)) {
@@ -139,10 +146,12 @@ inline void handleWordBoundary(ParserState &state, const bool isNegated) {
     }
 }
 
+/// Parse a PCRE control-character escape sequence.
 inline void handlePcreControlCharacter(ParserState &state) {
     addRegularChar(state, readPcreControlCharacter(state));
 }
 
+/// Parse a quoted literal block escape sequence.
 inline void handleLiteralBlock(ParserState &state) {
     if (!state.hasFeature(Feature::QuotedLiterals)) {
         state.throwParsingError("Quoted literals are not supported"_el);

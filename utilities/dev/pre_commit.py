@@ -13,6 +13,7 @@ from hashlib import sha256
 from pathlib import Path
 
 from dev.api_guidelines import ApiGuidelinesApp
+from dev.anti_patterns import AntiPatternsApp
 from dev.cleanup import CleanupApp
 from dev.fix_include_paths import FixIncludePathsApp
 from dev.reference_doc import ReferenceDocApp
@@ -271,16 +272,29 @@ class PreCommitApp(UtilityApp):
         print(f"Formatted {len(files_to_format)} of {len(cpp_files)} source files.")
         print("clang-format completed.")
 
-    def run_app(self, app: UtilityApp, name: str) -> None:
-        """Run a child utility application."""
-        print(f"Running {name}...")
+    def child_app_arguments(self) -> list[str]:
+        """Build command-line arguments propagated to child utilities."""
         arguments = []
         if self.verbose:
             arguments.append("--verbose")
         if self.private_config:
             arguments.append("--private-config")
-        app.run(arguments)
+        return arguments
+
+    def run_app(self, app: UtilityApp, name: str) -> None:
+        """Run a child utility application."""
+        print(f"Running {name}...")
+        app.run(self.child_app_arguments())
         print(f"{name} completed.")
+
+    def run_anti_patterns(self) -> None:
+        """Run the anti-pattern scanner and reject active findings."""
+        print("Running anti_patterns...")
+        app = AntiPatternsApp()
+        app.run(self.child_app_arguments())
+        if app.active_findings:
+            raise UtilityError(f"Anti-pattern scan found {app.active_findings} active finding(s).")
+        print("anti_patterns completed.")
 
     def run(self, argv=None) -> None:
         """Run all pre-commit tasks."""
@@ -293,6 +307,7 @@ class PreCommitApp(UtilityApp):
             self.run_app(UpdateIncludesApp(), "update_includes")
             self.run_app(FixIncludePathsApp(), "fix_include_paths")
             self.run_app(CleanupApp(), "cleanup")
+            self.run_anti_patterns()
             self.run_app(ApiGuidelinesApp(), "api_guidelines")
             self.run_app(TestStatusApp(), "test_status")
             self.run_app(ReferenceDocApp(), "reference_doc")

@@ -3,10 +3,13 @@
 #include "UnsafeCustomPasswordHashParameters.hpp"
 
 #include "../../err/ParameterError.hpp"
+#include "../../text/Literals.hpp"
 
 #include <limits>
 
 namespace erbsland::cryptology::unsafe {
+
+using namespace text::literals;
 
 UnsafeCustomPasswordHashParameters::UnsafeCustomPasswordHashParameters(
     const PasswordHashAlgorithm algorithm,
@@ -21,7 +24,7 @@ auto UnsafeCustomPasswordHashParameters::argon2id(const uint32_t memoryKiB, cons
     -> UnsafeCustomPasswordHashParameters {
     if (lanes == 0U || lanes > 16U || passes == 0U || passes > 10U || memoryKiB < 8U * lanes ||
         memoryKiB > 1024U * 1024U) {
-        throw err::ParameterError{"Argon2id costs exceed the supported safety bounds", "parameters"};
+        throw err::ParameterError{"Argon2id costs exceed the supported safety bounds"_el, "parameters"_el};
     }
     return {PasswordHashAlgorithm::Argon2id, memoryKiB, passes, lanes, 0U};
 }
@@ -31,12 +34,12 @@ auto UnsafeCustomPasswordHashParameters::scrypt(
     -> UnsafeCustomPasswordHashParameters {
     if (cost <= 1U || (cost & (cost - 1U)) != 0U || blockSize == 0U || parallelization == 0U ||
         blockSize > std::numeric_limits<uint32_t>::max() / 128U) {
-        throw err::ParameterError{"Invalid scrypt costs", "parameters"};
+        throw err::ParameterError{"Invalid scrypt costs"_el, "parameters"_el};
     }
     constexpr auto maximumUnits = uint64_t{1024U} * 1024U;
     if (cost > maximumUnits / blockSize || parallelization > 16U ||
         cost * blockSize > (maximumUnits * 10U) / parallelization) {
-        throw err::ParameterError{"scrypt costs exceed the supported safety bounds", "parameters"};
+        throw err::ParameterError{"scrypt costs exceed the supported safety bounds"_el, "parameters"_el};
     }
     return {PasswordHashAlgorithm::Scrypt, blockSize, parallelization, 0U, cost};
 }

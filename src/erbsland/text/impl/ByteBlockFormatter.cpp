@@ -118,7 +118,7 @@ void ByteBlockFormatter::finishItem(const bool lastItem) {
         appendText(_format.lineSuffix());
         if (_format.hasFlag(ByteFormatFlag::LineGroups) && _currentLine >= _format.lineGroupSize() && !lastItem) {
             appendText(_format.lineSuffix());
-            _currentLine = unit::ElementCount::zero();
+            _currentLine = unit::ItemCount::zero();
         }
     }
 }

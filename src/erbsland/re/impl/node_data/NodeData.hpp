@@ -3,6 +3,7 @@
 #pragma once
 
 #include "../error/InternalError.hpp"
+#include "../parser/PatternNode_fwd.hpp"
 
 #include "../../../text/Literals.hpp"
 #include "../../../text/String.hpp"
@@ -13,15 +14,9 @@
 #include <algorithm>
 #include <cassert>
 #include <cstdint>
-#include <memory>
 #include <ranges>
 #include <span>
 #include <vector>
-
-namespace erbsland::re::impl {
-class PatternNode;
-using PatternNodePtr = std::shared_ptr<PatternNode>;
-}
 
 namespace erbsland::re::impl::node_data {
 

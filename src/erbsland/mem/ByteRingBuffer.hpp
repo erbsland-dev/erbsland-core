@@ -10,6 +10,7 @@
 #include "impl/UnsafeByteArrayAccess.hpp"
 
 #include <concepts>
+#include <exception>
 #include <optional>
 
 namespace erbsland::mem {
@@ -35,7 +36,9 @@ public: // integers
             return std::nullopt;
         }
         auto bytes = ByteArray<sizeof(T)>{};
-        static_cast<void>(read(impl::UnsafeByteArrayAccess{bytes}.writableData()));
+        if (read(impl::UnsafeByteArrayAccess{bytes}.writableData()) != unit::ByteLength::fromSizeT(sizeof(T))) {
+            std::terminate();
+        }
         return bytes.template getInteger<T>(unit::ByteIndex::zero(), _endianness);
     }
     /// Atomically write an integer.

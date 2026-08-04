@@ -3,6 +3,7 @@
 #include "DocumentValidator.hpp"
 
 #include "KeyConstraint.hpp"
+#include "Pass2Frame.hpp"
 #include "ValidationError.hpp"
 
 #include "../utilities/InternalError.hpp"
@@ -23,11 +24,12 @@ using namespace text::literals;
 DocumentValidator::DocumentValidator(RulePtr root, conf::ValuePtr value, const Integer version) :
     _root{std::move(root)}, _value{std::move(value)}, _version{version} {
 
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(_root != nullptr, "The root rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(_value != nullptr, "The value must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(_root->type() == vr::RuleType::Section, "The root rule must be a section");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(_root != nullptr, "The root rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(_value != nullptr, "The value must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(_root->type() == vr::RuleType::Section, "The root rule must be a section"_el);
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
-        _value->isDocument() || _value->isSectionWithNames(), "The value must be a document or a section with names");
+        _value->isDocument() || _value->isSectionWithNames(),
+        "The value must be a document or a section with names"_el);
 }
 
 void DocumentValidator::validate() {
@@ -51,8 +53,8 @@ void DocumentValidator::validatePass1() {
     while (!stack.empty()) {
         auto [value, rule] = stack.back();
         stack.pop_back();
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value node must not be null");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule node must not be null");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value node must not be null"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule node must not be null"_el);
         if (value != _value) { // do not validate the root value.
             const auto valueImpl = getImplValue(value);
             // Drop defaults from previous validations for this node before evaluating constraints and descendants.
@@ -97,21 +99,7 @@ void DocumentValidator::validatePass2() {
         return; // Skip pass 2 if we have no indexes and no dependency checks.
     }
 
-    // for the second pass, scan the value tree and the assigned rules.
-    struct Pass2Frame {
-        conf::ValuePtr value;
-        RulePtr rule;
-        std::size_t addedIndexes{0}; // How many indexes were added to the stack.
-        bool isExit{false};          // if this frame triggers the exit.
-
-        [[nodiscard]] static auto createEnter(conf::ValuePtr valueNode, RulePtr ruleNode) noexcept -> Pass2Frame {
-            return {.value = std::move(valueNode), .rule = std::move(ruleNode)};
-        }
-        [[nodiscard]] auto createExit() const noexcept -> Pass2Frame {
-            return {.value = value, .rule = rule, .addedIndexes = addedIndexes, .isExit = true};
-        }
-    };
-
+    // For the second pass, scan the value tree and the assigned rules.
     std::vector<Pass2Frame> stack;
     stack.reserve(32);
     stack.emplace_back(Pass2Frame::createEnter(_value, _root));
@@ -120,12 +108,13 @@ void DocumentValidator::validatePass2() {
     while (!stack.empty()) {
         auto frame = stack.back();
         stack.pop_back();
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(frame.value != nullptr, "The value node must not be null");
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(frame.rule != nullptr, "The rule node must not be null");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(frame.value != nullptr, "The value node must not be null"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(frame.rule != nullptr, "The rule node must not be null"_el);
 
         if (frame.isExit) {
             if (frame.addedIndexes > 0) {
-                ERBSLAND_CORE_CONF_REQUIRE_SAFETY(keyIndexStack.size() >= frame.addedIndexes, "Index stack mismatch");
+                ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
+                    keyIndexStack.size() >= frame.addedIndexes, "Index stack mismatch"_el);
                 keyIndexStack.resize(keyIndexStack.size() - frame.addedIndexes);
             }
             continue;
@@ -181,19 +170,21 @@ auto DocumentValidator::buildKeyIndexAndValidateUniqueness(
     NamePath listPath;
     std::vector<NamePath> valuePaths;
     for (const auto &key : keyDefinition->keys()) {
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsIndex(), "The key must not contain an index");
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsText(), "The key must not contain text");
-        auto entryIndex = key.find(vrc::cReservedEntry);
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsIndex(), "The key must not contain an index"_el);
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!key.containsText(), "The key must not contain text"_el);
+        auto entryIndex = key.find(Name::vrName(Name::VR::ReservedEntry));
         auto newListPath = key.subPath(0, entryIndex);
         if (listPath.empty()) {
             listPath = newListPath;
         } else {
-            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listPath == newListPath, "The list portion of key paths must be equal");
+            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
+                listPath == newListPath, "The list portion of key paths must be equal"_el);
         }
         auto valuePath = key.subPath(entryIndex + 1);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!valuePath.empty(), "The value path must not be empty");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!valuePath.empty(), "The value path must not be empty"_el);
         ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-            valuePath.find(vrc::cReservedEntry) == NamePath::npos, "A key must not point into nested lists.");
+            valuePath.find(Name::vrName(Name::VR::ReservedEntry)) == NamePath::npos,
+            "A key must not point into nested lists."_el);
         valuePaths.emplace_back(std::move(valuePath));
     }
 
@@ -252,20 +243,21 @@ void DocumentValidator::validateKeyConstraint(
 
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
         value->type() == ValueType::Text || value->type() == ValueType::Integer,
-        "The key constraint can only be applied to text or integer values");
+        "The key constraint can only be applied to text or integer values"_el);
     // Prepare the actual key text that must be found in the index.
     const auto testedKey = value->toTextRepresentation();
     auto keyConstraint = std::dynamic_pointer_cast<KeyConstraint>(rule->constraint(vr::ConstraintType::ConfKey));
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(keyConstraint != nullptr, "Missing key constraint");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(keyConstraint != nullptr, "Missing key constraint"_el);
     auto keyReferences = keyConstraint->getKeyReferences();
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!keyReferences.empty(), "ConfKey references cannot be empty");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!keyReferences.empty(), "ConfKey references cannot be empty"_el);
     bool foundKey = false;
     std::vector<KeyIndexPtr> matchingIndexes;
     matchingIndexes.reserve(keyReferences.size());
     for (const auto &keyReference : keyReferences) {
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!keyReference.empty(), "ConfKey reference cannot be empty");
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(!keyReference.empty(), "ConfKey reference cannot be empty"_el);
         const auto &keyName = keyReference.at(0);
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(keyName.type() == NameType::Regular, "First element must be a regular name");
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
+            keyName.type() == NameType::Regular, "First element must be a regular name"_el);
         KeyIndexPtr keyIndex;
         for (const auto &index : std::ranges::reverse_view(indexStack)) {
             if (index->name() == keyName) {
@@ -273,11 +265,11 @@ void DocumentValidator::validateKeyConstraint(
                 break;
             }
         }
-        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(keyIndex != nullptr, "Missing key index");
+        ERBSLAND_CORE_CONF_REQUIRE_DEBUG(keyIndex != nullptr, "Missing key index"_el);
         matchingIndexes.emplace_back(keyIndex);
         if (keyReference.size() > 1) {
             ERBSLAND_CORE_CONF_REQUIRE_DEBUG(
-                keyReference.at(1).type() == NameType::Index, "Second element must be an index");
+                keyReference.at(1).type() == NameType::Index, "Second element must be an index"_el);
             auto index = keyReference.at(1).asIndex();
             // test for a partial key.
             if (keyIndex->hasKey(testedKey, index)) {

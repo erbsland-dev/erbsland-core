@@ -95,6 +95,7 @@ inline constexpr auto cBinaryBase = IntegerBase{IntegerBase::Binary};
 /// Convenient constant for octal integer conversion.
 inline constexpr auto cOctalBase = IntegerBase{IntegerBase::Octal};
 
+/// Count the digits required to represent an integer in this base.
 template <std::integral T>
 constexpr auto IntegerBase::digitCount(const T value) const noexcept -> std::size_t {
     using Unsigned = std::make_unsigned_t<T>;

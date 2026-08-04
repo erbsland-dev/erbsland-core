@@ -10,6 +10,7 @@ namespace erbsland::util::impl {
 /// @tested{CoTaskTest}
 class CoTaskStateBase {
 public:
+    // defaults
     virtual ~CoTaskStateBase() = default;
 
 public:

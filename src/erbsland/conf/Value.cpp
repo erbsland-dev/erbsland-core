@@ -67,12 +67,11 @@ auto Value::toValueList() noexcept -> ValueList {
     return {};
 }
 
-namespace {
 template <typename tValueMatrix, typename tValue>
-auto toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix {
+auto Value::toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix {
     if (value.type().isScalar()) {
-        tValueMatrix matrix{unit::ElementCount::one(), unit::ElementCount::one()};
-        matrix.setValue(unit::ElementIndex::zero(), unit::ElementIndex::zero(), value.shared_from_this());
+        tValueMatrix matrix{unit::ItemCount::one(), unit::ItemCount::one()};
+        matrix.setValue(unit::ItemIndex::zero(), unit::ItemIndex::zero(), value.shared_from_this());
         return matrix;
     }
     if (value.type() != ValueType::ValueList) {
@@ -84,30 +83,29 @@ auto toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix {
     }
     const std::size_t maxColumns =
         std::ranges::max(valueList | std::views::transform([](const auto &listEntry) -> std::size_t {
-            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listEntry != nullptr, "List entry cannot be null");
+            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listEntry != nullptr, "List entry cannot be null"_el);
             return (listEntry->type() == ValueType::ValueList) ? listEntry->size() : std::size_t{1};
         }));
     if (maxColumns == 0) {
         return {};
     }
-    tValueMatrix matrix{unit::ElementCount::fromSizeT(valueList.size()), unit::ElementCount::fromSizeT(maxColumns)};
+    tValueMatrix matrix{unit::ItemCount::fromSizeT(valueList.size()), unit::ItemCount::fromSizeT(maxColumns)};
     for (std::size_t row = 0; row < valueList.size(); ++row) {
-        const auto rowIndex = unit::ElementIndex::fromSizeT(row);
+        const auto rowIndex = unit::ItemIndex::fromSizeT(row);
         const auto &listEntry = valueList[row];
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listEntry != nullptr, "Matrix entry cannot be null");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(listEntry != nullptr, "Matrix entry cannot be null"_el);
         if (listEntry->type() != ValueType::ValueList) {
-            matrix.setValue(rowIndex, unit::ElementIndex::zero(), listEntry);
+            matrix.setValue(rowIndex, unit::ItemIndex::zero(), listEntry);
             continue;
         }
         const auto rowList = listEntry->asValueList();
         for (std::size_t column = 0; column < rowList.size(); ++column) {
-            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rowList[column] != nullptr, "Matrix entry cannot be null");
+            ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rowList[column] != nullptr, "Matrix entry cannot be null"_el);
             matrix.setValue(
-                rowIndex, unit::ElementIndex::fromSizeT(column), std::const_pointer_cast<Value>(rowList[column]));
+                rowIndex, unit::ItemIndex::fromSizeT(column), std::const_pointer_cast<Value>(rowList[column]));
         }
     }
     return matrix;
-}
 }
 
 auto Value::toValueMatrix() const noexcept -> ConstValueMatrix {

@@ -3,6 +3,7 @@
 #pragma once
 
 #include "NativeOutputStream.hpp"
+#include "StandardTextOutputStreamData_fwd.hpp"
 
 #include "../TextOutputStream.hpp"
 
@@ -19,8 +20,9 @@ public:
     /// @throws stream::StreamError If `nativeOutputStream` is empty.
     explicit StandardTextOutputStream(NativeOutputStreamPtr nativeOutputStream);
 
-    // defaults
     ~StandardTextOutputStream() override { abort(); }
+
+    // defaults/deletions
     StandardTextOutputStream(const StandardTextOutputStream &) = delete;
     StandardTextOutputStream(StandardTextOutputStream &&) = delete;
     auto operator=(const StandardTextOutputStream &) -> StandardTextOutputStream & = delete;
@@ -47,8 +49,7 @@ public:
     using TextOutputStream::writeLine;
 
 private:
-    class Data;
-    std::shared_ptr<Data> _data;
+    std::shared_ptr<StandardTextOutputStreamData> _data;
 };
 
 }

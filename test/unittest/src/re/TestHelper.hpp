@@ -18,8 +18,11 @@
 
 namespace re_test {
 
+/// Provides common assertions and diagnostics for regular-expression tests.
+/// @notest{This helper is exercised by regular-expression test suites that inherit from it.}
 class TestHelper : public el::UnitTest {
 public:
+    // defaults
     ~TestHelper() override = default;
 
 public:
@@ -134,6 +137,7 @@ public:
         }
     }
 
+    /// Right-pad text to a display width using spaces.
     template <typename tText>
     static auto paddedString(const tText &text, std::size_t width) -> std::string {
         const auto characterCount = el::unittest::ConsoleLine::utf8Length(text);
@@ -147,6 +151,7 @@ public:
         return result;
     }
 
+    /// Compare a suffix against a pattern containing question-mark wildcards.
     [[nodiscard]] static auto reverseCompareWithQM(const std::string_view &pattern, const std::string_view &str)
         -> bool {
 
@@ -163,6 +168,7 @@ public:
         return patternIt == pattern.rend();
     }
 
+    /// Compare a string against a question-mark wildcard pattern.
     [[nodiscard]] static auto compareWithQM(
         const std::string_view &pattern, const std::string_view &str, const bool fullMatch) -> bool {
 
@@ -185,6 +191,7 @@ public:
         return true;
     }
 
+    /// Compare a string against an asterisk wildcard pattern.
     [[nodiscard]] static auto compareWithStar(const std::string_view &pattern, const std::string_view &str) -> bool {
         const auto pos = pattern.find('*');
         if (pos == std::string_view::npos) {
@@ -203,10 +210,12 @@ public:
         return reverseCompareWithQM(suffix, str);
     }
 
+    /// Compare Core text against an asterisk wildcard pattern.
     [[nodiscard]] static auto compareWithStar(const std::string_view &pattern, const el::text::String &str) -> bool {
         return compareWithStar(pattern, string_helper::toStdString(str));
     }
 
+    /// Require Core text lines to equal expected lines.
     template <typename tExpected>
         requires std::ranges::range<tExpected>
     void requireLines(const el::text::StringList &actual, const tExpected &expected) {
@@ -218,6 +227,7 @@ public:
         requireLines(standardLines, expected);
     }
 
+    /// Require standard text lines to equal expected lines.
     template <typename tActual, typename tExpected>
         requires std::ranges::range<tActual> && std::ranges::range<tExpected>
     void requireLines(const tActual &actual, const tExpected &expected) {

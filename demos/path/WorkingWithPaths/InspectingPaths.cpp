@@ -23,7 +23,7 @@ void inspectingPaths() {
     el::io::printLine("suffixes ..........: "_el, report.suffixes());
 
     // Public elements include the root for absolute paths.
-    for (auto index = el::ElementIndex{}; index.isWithin(report.elementCount()); ++index) {
+    for (auto index = el::ItemIndex{}; index.isWithin(report.elementCount()); ++index) {
         el::io::printLine("element "_el, index.toSizeT(), " .........: "_el, report.element(index));
     }
 

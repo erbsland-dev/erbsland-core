@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         Argument.cpp
         Argument.hpp
+        ArgumentType.hpp
         Assembler.cpp
         Assembler.hpp
         Assembler_Arguments.cpp
@@ -16,9 +17,11 @@ target_sources(erbsland-core PRIVATE
         DataSection.hpp
         Disassembler.cpp
         Disassembler.hpp
+        DisassemblerFlag.hpp
         DisassemblerFlags.hpp
         GenericProgramReader.hpp
         LabelTarget.hpp
+        LabelTargetWithSource.hpp
         OperationData.cpp
         OperationData.hpp
         OperationModifier.hpp

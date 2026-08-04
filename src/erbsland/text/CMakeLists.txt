@@ -6,7 +6,9 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(base_n)
 add_subdirectory(html)
 add_subdirectory(impl)
+add_subdirectory(json)
 add_subdirectory(pattern)
+add_subdirectory(punycode)
 add_subdirectory(u16)
 add_subdirectory(u32)
 add_subdirectory(u8)
@@ -76,6 +78,7 @@ target_sources(erbsland-core PRIVATE
         IntegerSignMode.hpp
         LetterCase.hpp
         Literals.hpp
+        NormalizationForm.hpp
         ParseNumberError.cpp
         ParseNumberError.hpp
         PlainTextRenderer.cpp
@@ -107,6 +110,7 @@ target_sources(erbsland-core PRIVATE
         StringConverter_fwd.hpp
         StringDecodeBuffer.cpp
         StringDecodeBuffer.hpp
+        StringDecodeBuffer.tpp
         StringDecoder.cpp
         StringDecoder.hpp
         StringDecoder_fwd.hpp

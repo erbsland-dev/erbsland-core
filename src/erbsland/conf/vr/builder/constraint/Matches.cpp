@@ -9,7 +9,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void Matches::operator()(impl::Rule &rule) {
+void Matches::operator()(Rule &rule) {
     requireRuleTypeForConstraint(rule, "matches"_el, {vr::RuleType::Text});
     if (_compiledPattern == nullptr && _pattern.isEmpty()) {
         throwValidationError("The regular expression in 'matches' constraint cannot be empty"_el);

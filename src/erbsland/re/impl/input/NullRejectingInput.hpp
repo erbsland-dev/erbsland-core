@@ -13,6 +13,7 @@ public:
     /// Create a null-rejecting decorator for an input.
     [[nodiscard]] static auto create(InputBasePtr input) -> InputBasePtr;
 
+    /// Create a decorator for `input`.
     explicit NullRejectingInput(InputBasePtr input);
 
 public: // implement InputBase
@@ -21,6 +22,7 @@ public: // implement InputBase
     void skip(unit::CpLength characterCount) override;
 
 private:
+    /// Reject a decoded null character in an input result.
     [[nodiscard]] static auto validate(CharAndPosition result) -> CharAndPosition;
 
 private:

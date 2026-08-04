@@ -4,6 +4,7 @@
 
 #include "Block.hpp"
 #include "Color.hpp"
+#include "FrameBorder_fwd.hpp"
 #include "FrameBorderElement.hpp"
 #include "FrameStyle.hpp"
 
@@ -21,6 +22,7 @@ namespace erbsland::cterm {
 /// @tested{FrameBorderTest}
 class FrameBorder final {
 private:
+    /// Identifies the line style used at a border joint.
     enum class JointStyle : std::uint8_t {
         None,
         Light,
@@ -97,16 +99,23 @@ public:
     [[nodiscard]] auto corner(bgeo::BlockAnchor anchor) const noexcept -> Block;
 
 private:
+    /// Convert a border element to its storage index.
     [[nodiscard]] static constexpr auto indexForElement(Element element) noexcept -> std::size_t {
         return static_cast<std::size_t>(element);
     }
+    /// Convert a frame style to its joint style.
     [[nodiscard]] static auto jointStyle(FrameStyle style) noexcept -> JointStyle;
+    /// Convert a frame style to its joint-table style index.
     [[nodiscard]] static auto jointStyleIndex(FrameStyle style) noexcept -> std::size_t;
+    /// Combine four directed joint-style indices into a table index.
     [[nodiscard]] static auto jointTableIndex(
         std::size_t east, std::size_t south, std::size_t west, std::size_t north) noexcept -> std::size_t;
+    /// Resolve the Unicode code point for four directed frame styles.
     [[nodiscard]] static auto jointCodePoint(
         FrameStyle east, FrameStyle south, FrameStyle west, FrameStyle north) noexcept -> text::Char;
+    /// Apply a border's color over an existing joint color.
     [[nodiscard]] static auto overlayBorderColor(Color currentColor, const Border &border) noexcept -> Color;
+    /// Resolve the color of a joint from four directed borders.
     [[nodiscard]] static auto jointColor(Border east, Border south, Border west, Border north) noexcept -> Color;
 
 private:

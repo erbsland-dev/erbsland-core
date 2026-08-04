@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "PathBackend.hpp"
+#include "PathBackend_fwd.hpp"
 
 namespace erbsland::path::impl {
 

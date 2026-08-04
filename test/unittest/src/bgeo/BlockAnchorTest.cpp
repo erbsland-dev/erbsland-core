@@ -45,9 +45,12 @@ public:
         REQUIRE_EQUAL(BlockAnchor::TopLeft.toRawValue(), BlockAnchorFlag::TopLeft);
         REQUIRE_EQUAL(BlockAnchor::Center.toRawValue(), BlockAnchorFlag::Center);
         REQUIRE_EQUAL(BlockAnchor::BottomRight.toRawValue(), BlockAnchorFlag::BottomRight);
-        REQUIRE_EQUAL(BlockAnchor::Top | BlockAnchor::Left, BlockAnchor::TopLeft);
-        REQUIRE_EQUAL(BlockAnchor::VCenter | BlockAnchor::HCenter, BlockAnchor::Center);
-        REQUIRE_EQUAL(BlockAnchor::Bottom | BlockAnchor::Right, BlockAnchor::BottomRight);
+        const auto topLeft = BlockAnchor::Top | BlockAnchor::Left;
+        const auto center = BlockAnchor::VCenter | BlockAnchor::HCenter;
+        const auto bottomRight = BlockAnchor::Bottom | BlockAnchor::Right;
+        REQUIRE_EQUAL(topLeft, BlockAnchor::TopLeft);
+        REQUIRE_EQUAL(center, BlockAnchor::Center);
+        REQUIRE_EQUAL(bottomRight, BlockAnchor::BottomRight);
     }
 
     void testExclusiveNormalizationAndComponents() {
@@ -59,8 +62,10 @@ public:
             BlockAnchor{BlockAnchorFlags{BlockAnchorFlag::Right, BlockAnchorFlag::HCenter, BlockAnchorFlag::Bottom}};
 
         REQUIRE_EQUAL(conflicting, BlockAnchor::BottomCenter);
-        REQUIRE_EQUAL(BlockAnchor::BottomRight.horizontal(), BlockAnchor::Right);
-        REQUIRE_EQUAL(BlockAnchor::BottomRight.vertical(), BlockAnchor::Bottom);
+        const auto horizontal = BlockAnchor::BottomRight.horizontal();
+        const auto vertical = BlockAnchor::BottomRight.vertical();
+        REQUIRE_EQUAL(horizontal, BlockAnchor::Right);
+        REQUIRE_EQUAL(vertical, BlockAnchor::Bottom);
         REQUIRE(BlockAnchor::Center.isHorizontalCenter());
         REQUIRE(BlockAnchor::Center.isVerticalCenter());
         REQUIRE_FALSE(BlockAnchor::Center.isLeft());
@@ -70,8 +75,9 @@ public:
     void testHashSupport() {
         using el::bgeo::BlockAnchor;
 
-        REQUIRE_EQUAL(std::hash<BlockAnchor>{}(BlockAnchor::Center), BlockAnchor::Center.hash());
-        REQUIRE_NOT_EQUAL(
-            std::hash<BlockAnchor>{}(BlockAnchor::TopLeft), std::hash<BlockAnchor>{}(BlockAnchor::Center));
+        const auto centerHash = std::hash<BlockAnchor>{}(BlockAnchor::Center);
+        const auto topLeftHash = std::hash<BlockAnchor>{}(BlockAnchor::TopLeft);
+        REQUIRE_EQUAL(centerHash, BlockAnchor::Center.hash());
+        REQUIRE_NOT_EQUAL(topLeftHash, centerHash);
     }
 };

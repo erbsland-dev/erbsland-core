@@ -15,8 +15,8 @@ public:
 
         REQUIRE_EQUAL(font.height(), 3);
         REQUIRE_EQUAL(font.glyphs().size(), std::size_t{1});
-        REQUIRE(font.glyph("A"_el) != nullptr);
-        REQUIRE(font.glyph("B"_el) == nullptr);
+        REQUIRE(font.glyph("A"_el));
+        REQUIRE_FALSE(font.glyph("B"_el));
 
         font.setHeight(5);
         font.addGlyph("B"_el, FontGlyph{bgeo::BlockSize{2, 1}});
@@ -24,7 +24,7 @@ public:
 
         REQUIRE_EQUAL(font.height(), 5);
         REQUIRE_EQUAL(font.glyphs().size(), std::size_t{2});
-        REQUIRE(font.glyph("B"_el) != nullptr);
+        REQUIRE(font.glyph("B"_el));
         REQUIRE_EQUAL(font.glyph("B"_el)->size(), expectedGlyphSize);
     }
 };

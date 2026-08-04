@@ -263,7 +263,7 @@ auto ConfigurationLoader::load(const ProfilingDefinition &definition, const std:
     } else {
         const auto *suite = definition.findSuite(result.run.suite);
         if (suite == nullptr) {
-            configurationError(StringFormat{"Unknown profiling suite '{}'."}.build(result.run.suite));
+            configurationError(StringFormat{"Unknown profiling suite '{}'."_el}.build(result.run.suite));
         }
         result.scenarios = suite->scenarios;
     }
@@ -336,7 +336,7 @@ auto ConfigurationLoader::load(const ProfilingDefinition &definition, const std:
     auto ids = std::set<String>{};
     for (const auto &scenario : result.scenarios) {
         if (!ids.emplace(scenario.id).second) {
-            configurationError(StringFormat{"Duplicate expanded scenario ID '{}'."}.build(scenario.id));
+            configurationError(StringFormat{"Duplicate expanded scenario ID '{}'."_el}.build(scenario.id));
         }
     }
     result.digest = configurationDigest(result);

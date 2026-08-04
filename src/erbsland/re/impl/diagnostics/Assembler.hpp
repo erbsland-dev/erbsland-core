@@ -5,6 +5,7 @@
 #include "Argument.hpp"
 #include "AssemblerToken.hpp"
 #include "LabelTarget.hpp"
+#include "LabelTargetWithSource.hpp"
 #include "OperationData.hpp"
 
 #include "../engine/EngineData.hpp"
@@ -29,7 +30,7 @@ namespace erbsland::re::impl {
 using namespace text::literals;
 
 /// The implementation of the assembler.
-///
+/// @tested{AssemblerBasicTest AssemblerFlowTest}
 class Assembler {
     /// The maximum length of labels (and keywords).
     constexpr static std::size_t maxLabelLength = 16U;
@@ -45,16 +46,18 @@ class Assembler {
 
     /// All relevant positions for a label.
     struct LabelOffsets {
-        ProgramCounter programCounter{};
-        SequenceIndex sequenceIndex{};
-        bool sequenceValid{false};
-        CharClassIndex charClassIndex{};
-        bool charClassValid{false};
+        ProgramCounter programCounter{}; ///< Program position for the label.
+        SequenceIndex sequenceIndex{};   ///< Sequence index for the label.
+        bool sequenceValid{false};       ///< If the sequence index has been set.
+        CharClassIndex charClassIndex{}; ///< Character-class index for the label.
+        bool charClassValid{false};      ///< If the character-class index has been set.
     };
 
 public:
     /// Create a new assembler instance.
     Assembler();
+
+    // defaults
     ~Assembler() = default;
 
 public:
@@ -64,59 +67,102 @@ public:
     [[nodiscard]] auto compile(const text::StringList &lines) -> EngineDataPtr;
 
 private:
+    /// Patch all forward references to resolved label offsets.
     void patchLabelOffsets();
+    /// Process one assembler source line.
     void processLine(const text::String &line);
+    /// Tokenize one assembler source line.
     void tokenizeLine(const text::String &line);
+    /// Test whether the current line has an unread token.
     [[nodiscard]] auto hasCurrentToken() const noexcept -> bool;
+    /// Get the current unread token.
     [[nodiscard]] auto currentToken() const noexcept -> const AssemblerToken &;
+    /// Advance to the next token in the current line.
     void nextToken() noexcept;
+    /// Process an operation source line.
     void processOperationLine();
 
+    /// Process an assembler command line.
     void processCommandLine();
+    /// Process a section-selection command.
     void processSectionCommand();
+    /// Process a data-definition command.
     void processDataCommand();
+    /// Process a capture-group count command.
     void processGroupsCommand();
+    /// Process a capture-group name command.
     void processGroupCommand();
+    /// Process a character-class definition command.
     void processClassCommand();
 
     /// Close the current class and convert `_charRanges` to a new character class.
     void closeCurrentClass();
 
+    /// Add the label declared on the current line.
     void addLabel();
 
+    /// Process one operation and its arguments.
     void processOperation(Operation operation, const AssemblerTokens &arguments);
 
+    /// Process a split operation.
     void processSplit(const AssemblerTokens &arguments);
+    /// Process a jump operation.
     void processJump(const AssemblerTokens &arguments);
+    /// Process an anchor operation.
     void processAnchor(const AssemblerTokens &arguments);
+    /// Process a capture operation.
     void processCapture(const AssemblerTokens &arguments, bool isNegated);
+    /// Process an atomic-group operation.
     void processAtomic(const AssemblerTokens &arguments, bool isNegated);
+    /// Process a counter operation.
     void processCounter(const AssemblerTokens &arguments);
+    /// Process an add-counter operation.
     void processAddCounter(const AssemblerTokens &arguments);
+    /// Process a maximum-counter operation.
     void processMaximum(const AssemblerTokens &arguments);
+    /// Process a conditional maximum-counter operation.
     void processSkipIfMaximum(const AssemblerTokens &arguments);
+    /// Process a minimum-counter operation.
     void processMinimum(const AssemblerTokens &arguments);
+    /// Process a character-matching operation.
     void processChar(const AssemblerTokens &arguments, bool isCaseInsensitive, bool isNegated);
+    /// Process a sequence-matching operation.
     void processSequence(const AssemblerTokens &arguments, bool isCaseInsensitive);
+    /// Process a character-category matching operation.
     void processCategory(const AssemblerTokens &arguments, bool isNegated);
+    /// Process a character-category assertion operation.
     void processAssertCategory(const AssemblerTokens &arguments, bool isNegated);
+    /// Process a character-class matching operation.
     void processClass(const AssemblerTokens &arguments, bool isCaseInsensitive, bool isNegated);
 
+    /// Validate an operation's arguments against its definition.
     void validateArgumentTypes(Operation operation, const AssemblerTokens &arguments) const;
+    /// Test whether an argument matches a definition.
     [[nodiscard]] static auto doesArgumentMatch(
         const AssemblerToken &argument, const ArgumentDefinition &definition) noexcept -> bool;
 
+    /// Read an identifier argument or report an assembler error.
     [[nodiscard]] auto expectIdentifier(const AssemblerToken &argument) const -> text::String;
+    /// Read a counter-index argument or report an assembler error.
     [[nodiscard]] auto expectCounterIndex(const AssemblerToken &argument) const -> ArgumentIndex;
+    /// Read a counter-value argument or report an assembler error.
     [[nodiscard]] auto expectCounterValue(const AssemblerToken &argument) const -> uint16_t;
+    /// Read a character argument or report an assembler error.
     [[nodiscard]] auto expectChar(const AssemblerToken &argument) const -> text::Char;
+    /// Read a capture-group argument or report an assembler error.
     [[nodiscard]] auto expectCaptureGroup(const AssemblerToken &argument) const -> std::size_t;
+    /// Read an atomic-group identifier or report an assembler error.
     [[nodiscard]] auto expectAtomicGroupId(const AssemblerToken &argument) const -> AtomicGroupId;
+    /// Read a program-counter argument or report an assembler error.
     [[nodiscard]] auto expectProgramCounter(const AssemblerToken &argument, ArgumentIndex argumentIndex = 0)
         -> ProgramCounter;
+    /// Read a character-class index or report an assembler error.
     [[nodiscard]] auto expectCharClassIndex(const AssemblerToken &argument) -> CharClassIndex;
+    /// Read a sequence index or report an assembler error.
     [[nodiscard]] auto expectSequenceIndex(const AssemblerToken &argument) -> SequenceIndex;
+    /// Read a sequence length or report an assembler error.
     [[nodiscard]] auto expectSequenceLength(const AssemblerToken &argument) -> SequenceLength;
+    /// Throw an assembler error at the current source location.
     [[noreturn]] void throwAssemblerError(
         text::String description, unit::ColumnIndex column = unit::ColumnIndex::noIndex()) const {
         throw RegExError{

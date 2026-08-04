@@ -223,7 +223,7 @@ auto U32StringEditor::clear() noexcept -> U32StringEditor & {
     return *this;
 }
 
-auto U32StringEditor::append(const U32String &text, const ElementCount count) -> U32StringEditor & {
+auto U32StringEditor::append(const U32String &text, const ItemCount count) -> U32StringEditor & {
     U32StringAppendTools{_storage}.append(text.dataView(), count);
     return *this;
 }
@@ -475,6 +475,10 @@ auto U32StringEditor::withRange(const CpRange range) const noexcept -> U32String
 
 auto U32StringEditor::dataView() const noexcept -> U32StringDataView {
     return _storage.dataView();
+}
+
+auto U32StringEditor::isStorageShared() const noexcept -> bool {
+    return _storage.sharedData().isShared();
 }
 
 }

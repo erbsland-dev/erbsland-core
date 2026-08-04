@@ -2,18 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Day_fwd.hpp"
+#include "DayOfYear_fwd.hpp"
 #include "Month_fwd.hpp"
+#include "MonthDayParts_fwd.hpp"
 #include "TimeAmounts.hpp"
+#include "Year_fwd.hpp"
+#include "YearMonthParts_fwd.hpp"
 
 #include "impl/TimePartBases.hpp"
 
 namespace erbsland::time {
-
-class Day;
-class DayOfYear;
-class Year;
-struct MonthDayParts;
-struct YearMonthParts;
 
 /// A month in the Gregorian calendar, range `1..12`.
 ///

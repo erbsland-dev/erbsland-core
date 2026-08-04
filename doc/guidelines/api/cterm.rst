@@ -31,11 +31,11 @@ Terminal Model
 
 .. code-block:: text
 
-    direct output = immediate cursor-oriented writes through the active backend
-    screen update = render a complete buffer using clear, overwrite, or differential refresh
+    direct output = immediate cursor-oriented writes
+    screen update = complete-buffer refresh using clear, overwrite, or differential rendering
     session = scoped ownership of terminal setup and restoration
-    key input = decoded key, text, and modifier information with bounded or blocking reads
-    secret input = fixed protected editing storage with a marked String result after commit
+    key input = decoded key, text, and modifier information
+    secret input = protected line editing whose committed text remains marked as sensitive
 
 Primary Types
 =============

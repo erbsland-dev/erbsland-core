@@ -3,23 +3,20 @@
 #pragma once
 
 #include "Rule.hpp"
+#include "Rules_fwd.hpp"
 
 #include "../Document.hpp"
 #include "../Value.hpp"
 
-#include <memory>
 #include <vector>
 
 namespace erbsland::conf::vr {
-
-class Rules;
-using RulesPtr = std::shared_ptr<Rules>;
 
 /// A set of validation rules.
 /// @tested{VrPublicApiTest VrDocumentModelTest VrVariableNamesTest}
 class Rules {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~Rules() = default;
 
 public:

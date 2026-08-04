@@ -253,7 +253,7 @@ public:
         setupTemplate2("/regex/");
         const auto expected = el::re::RegEx::compile("regex"_el);
         // valid conversion
-        REQUIRE(value->asRegEx() != nullptr);
+        REQUIRE(value->asRegEx());
         REQUIRE_EQUAL(value->asRegEx()->pattern(), expected->pattern());
         REQUIRE_EQUAL(value->asRegExOrThrow()->pattern(), expected->pattern());
         REQUIRE_EQUAL(value->asType<el::re::RegExPtr>()->pattern(), expected->pattern());

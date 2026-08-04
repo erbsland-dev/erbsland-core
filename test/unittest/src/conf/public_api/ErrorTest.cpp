@@ -12,6 +12,7 @@
 
 #include <exception>
 #include <string>
+#include <string_view>
 
 using namespace el::conf;
 using namespace el::text::literals;
@@ -70,12 +71,13 @@ public:
 
         const auto unchanged = error.withCodeSnippet(std::nullopt);
         REQUIRE_FALSE(unchanged.context().codeSnippet().has_value());
-        REQUIRE(unchanged.cause() == cause);
+        REQUIRE_EQUAL(unchanged.cause(), cause);
 
         const auto enriched = error.withCodeSnippet(snippet);
         REQUIRE(enriched.context().codeSnippet().has_value());
-        REQUIRE_EQUAL(enriched.context().codeSnippet()->language, "elcl"_el);
-        REQUIRE(enriched.cause() == cause);
+        const auto snippetLanguage = enriched.context().codeSnippet()->language;
+        REQUIRE_EQUAL(snippetLanguage, "elcl"_el);
+        REQUIRE_EQUAL(enriched.cause(), cause);
         REQUIRE_FALSE(error.context().codeSnippet().has_value());
     }
 
@@ -89,7 +91,7 @@ public:
         REQUIRE_EQUAL(context.location()->line(), el::unit::LineIndex{1U});
         REQUIRE(context.codeSnippet().has_value());
         REQUIRE_EQUAL(context.codeSnippet()->startLine, el::unit::LineIndex::zero());
-        REQUIRE_EQUAL(context.codeSnippet()->lines.count(), el::unit::ElementCount{4U});
+        REQUIRE_EQUAL(context.codeSnippet()->lines.count(), el::unit::ItemCount{4U});
     }
 
     void testExceptionUsesTheTitleAsItsReason() {
@@ -100,7 +102,7 @@ public:
         REQUIRE_EQUAL(error.reason(), "A Configuration Limit Was Exceeded"_el);
         REQUIRE_EQUAL(error.toString(), "A Configuration Limit Was Exceeded"_el);
         REQUIRE_EQUAL(error.description(), "The document contains too many values."_el);
-        REQUIRE(std::string{error.what()}.find("A Configuration Limit Was Exceeded") != std::string::npos);
+        requireContains(std::string{error.what()}, "A Configuration Limit Was Exceeded");
     }
 
     void testPlainTextDiagnosticContainsAllContext() {
@@ -121,15 +123,15 @@ public:
         const auto error = ConfError{std::move(context)};
         const auto rendered = el::text::StringConverter{error.diagnostic()->toString()}.toStdString();
 
-        REQUIRE(rendered.find("Parsing the Configuration Failed") != std::string::npos);
-        REQUIRE(rendered.find("Expected a value, but got an invalid token.") != std::string::npos);
-        REQUIRE(rendered.find("Syntax") != std::string::npos);
-        REQUIRE(rendered.find("main.value") != std::string::npos);
-        REQUIRE(rendered.find("example.elcl") != std::string::npos);
-        REQUIRE(rendered.find("Line:") != std::string::npos);
-        REQUIRE(rendered.find("Column:") != std::string::npos);
-        REQUIRE(rendered.find("2 │ value: ???") != std::string::npos);
-        REQUIRE(rendered.find("▔") != std::string::npos);
+        requireContains(rendered, "Parsing the Configuration Failed");
+        requireContains(rendered, "Expected a value, but got an invalid token.");
+        requireContains(rendered, "Syntax");
+        requireContains(rendered, "main.value");
+        requireContains(rendered, "example.elcl");
+        requireContains(rendered, "Line:");
+        requireContains(rendered, "Column:");
+        requireContains(rendered, "2 │ value: ???");
+        requireContains(rendered, "▔");
     }
 
     void testDiagnosticClipsTheMarkerToTheAvailableLine() {
@@ -140,8 +142,8 @@ public:
             .setCodeSnippet(el::text::CodeSnippet{std::move(lines), el::unit::LineIndex::zero(), "elcl"_el});
         const auto rendered =
             el::text::StringConverter{ConfError{std::move(context)}.diagnostic()->toString()}.toStdString();
-        REQUIRE(rendered.find("1 │ abc") != std::string::npos);
-        REQUIRE(rendered.find("│   ▔") != std::string::npos);
+        requireContains(rendered, "1 │ abc");
+        requireContains(rendered, "│   ▔");
     }
 
     void testGenericDiagnosticHelperAppendsTheCause() {
@@ -150,8 +152,19 @@ public:
             ConfErrorContext{ConfErrorCategory::IO, "Reading the Configuration Failed"_el, "Input failed."_el}, cause};
         const auto rendered =
             el::text::StringConverter{el::err::DiagnosticHelper{error}.toDocument().toString()}.toStdString();
-        REQUIRE(rendered.find("Caused By") != std::string::npos);
-        REQUIRE(rendered.find("The source stream failed.") != std::string::npos);
-        REQUIRE(rendered.find("│") == std::string::npos);
+        requireContains(rendered, "Caused By");
+        requireContains(rendered, "The source stream failed.");
+        requireDoesNotContain(rendered, "│");
+    }
+
+private:
+    void requireContains(const std::string &text, const std::string_view needle) {
+        const auto position = text.find(needle);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+    }
+
+    void requireDoesNotContain(const std::string &text, const std::string_view needle) {
+        const auto position = text.find(needle);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

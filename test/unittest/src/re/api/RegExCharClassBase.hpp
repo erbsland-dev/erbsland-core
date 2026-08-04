@@ -7,6 +7,8 @@
 #include <erbsland/re/StdFormat.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
 
+/// Shared character-class matching test support.
+/// @notest{Used only by regular-expression API tests.}
 class RegExCharClassBase : public RegExBase {
 public:
     String patternFormat;
@@ -118,12 +120,14 @@ public:
         }
     }
 
+    /// A pattern format with its test text formats.
     struct PatternTestCase {
         String patternFormat;
         std::vector<String> textFormats;
     };
     using PatternTestCases = std::vector<PatternTestCase>;
 
+    /// Require every configured character class to match its test text.
     void requireCharClassMatch(
         const CharClassTestCases &charClassTestCases,
         const PatternTestCases &patternTestCases,
@@ -148,6 +152,7 @@ public:
         }
     }
 
+    /// Require every configured character class not to match its test text.
     void requireCharClassNotMatch(
         const CharClassTestCases &charClassTestCases,
         const PatternTestCases &patternTestCases,

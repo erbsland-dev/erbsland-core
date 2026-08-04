@@ -27,23 +27,29 @@ public:
     auto operator=(const TimePoint &) noexcept -> TimePoint & = default;
 
 public:
+    /// Compare two monotonic time points.
     [[nodiscard]] auto operator<=>(const TimePoint &other) const noexcept -> std::strong_ordering {
         return _value <=> other._value;
     }
     [[nodiscard]] auto operator==(const TimePoint &other) const noexcept -> bool = default;
+    /// Calculate the delta between two time points.
     [[nodiscard]] auto operator-(const TimePoint &other) const noexcept -> TimeDelta {
         return TimeDelta{_value - other._value};
     }
+    /// Return a time point offset by a delta.
     [[nodiscard]] auto operator+(TimeDelta delta) const noexcept -> TimePoint {
         return TimePoint{_value + delta.toStdNanoseconds()};
     }
+    /// Offset this time point by a delta.
     auto operator+=(TimeDelta delta) noexcept -> TimePoint & {
         _value += delta.toStdNanoseconds();
         return *this;
     }
+    /// Return a time point offset backwards by a delta.
     [[nodiscard]] auto operator-(TimeDelta delta) const noexcept -> TimePoint {
         return TimePoint{_value - delta.toStdNanoseconds()};
     }
+    /// Offset this time point backwards by a delta.
     auto operator-=(TimeDelta delta) noexcept -> TimePoint & {
         _value -= delta.toStdNanoseconds();
         return *this;

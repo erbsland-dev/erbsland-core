@@ -40,6 +40,7 @@ public: // accessors
     [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
 
 private:
+    /// Add a source-location field to the diagnostic document.
     void addSourceField(const text::String &label, text::String value, const text::String &style);
 
 private:

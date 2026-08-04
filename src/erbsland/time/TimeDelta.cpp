@@ -12,11 +12,6 @@ namespace erbsland::time {
 
 using namespace text::literals;
 
-namespace {
-constexpr auto cNanosecondsPerSecondFloat = 1000000000.0;
-constexpr auto cNanosecondsPerDayFloat = 86400.0 * cNanosecondsPerSecondFloat;
-}
-
 template <typename tTimeUnit>
 auto TimeDelta::createOrThrow(const tTimeUnit value) -> TimeDelta {
     if (value.template wouldConvertSaturate<Nanoseconds>()) {

@@ -82,14 +82,14 @@ public:
     }
 
     void testAmountLinkedPartComparisonAndArithmetic() {
-        REQUIRE(Day{1} == Days{0});
-        REQUIRE(Days{0} == Day{1});
-        REQUIRE(Month{2} > Months{0});
-        REQUIRE(Months{0} < Month{2});
-        REQUIRE(DayOfWeek::sunday() >= Days{6});
-        REQUIRE(Days{6} <= DayOfWeek::sunday());
-        REQUIRE(Hour{3} != Hours{4});
-        REQUIRE(Hours{4} > Hour{3});
+        REQUIRE_EQUAL(Day{1}, Days{0});
+        REQUIRE_EQUAL(Days{0}, Day{1});
+        REQUIRE_GREATER(Month{2}, Months{0});
+        REQUIRE_LESS(Months{0}, Month{2});
+        REQUIRE_GREATER_EQUAL(DayOfWeek::sunday(), Days{6});
+        REQUIRE_LESS_EQUAL(Days{6}, DayOfWeek::sunday());
+        REQUIRE_NOT_EQUAL(Hour{3}, Hours{4});
+        REQUIRE_GREATER(Hours{4}, Hour{3});
 
         REQUIRE_EQUAL(Month::january() + Months{1}, Month::february());
         REQUIRE_EQUAL(Month::december() + Months{1}, Month::december());
@@ -175,8 +175,10 @@ public:
         auto time = Time{};
         const auto days = time.addWithWrap(TimeDelta{Nanoseconds{std::numeric_limits<int64_t>::max()}});
         REQUIRE(days.isPositive());
-        REQUIRE(time.toNanosecondsSinceMidnight() >= Nanoseconds{0});
-        REQUIRE(time.toNanosecondsSinceMidnight() < Days{1}.converted<Nanoseconds>());
+        const auto nanosecondsSinceMidnight = time.toNanosecondsSinceMidnight();
+        const auto dayNanoseconds = Days{1}.converted<Nanoseconds>();
+        REQUIRE_GREATER_EQUAL(nanosecondsSinceMidnight, Nanoseconds{0});
+        REQUIRE_LESS(nanosecondsSinceMidnight, dayNanoseconds);
 
         REQUIRE_EQUAL(
             DateTime::first().added(Duration{Seconds{std::numeric_limits<int64_t>::min()}}), DateTime::first());

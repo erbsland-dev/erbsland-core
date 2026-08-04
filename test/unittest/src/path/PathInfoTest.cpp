@@ -75,7 +75,8 @@ class PathInfoTest final : public el::UnitTest {
                 result.fileSize = el::unit::ByteLength{123U};
             }
             if (parts.isSet(PathInfoPart::Times)) {
-                result.lastModified = el::time::DateTime::fromPosixTime(el::time::Seconds{42});
+                result.lastModified =
+                    el::time::DateTime::fromTicks(el::time::Seconds{42}, el::time::TimeEpoch::Posix).value();
             }
             if (parts.isSet(PathInfoPart::OwnerId)) {
                 result.ownerId = el::system::UserId{"42"_el};
@@ -112,8 +113,11 @@ public:
         const auto info = el::path::PathInfo{};
 
         REQUIRE(info.isEmpty());
-        REQUIRE(&info.path() == &Path::empty());
-        REQUIRE(&info.resolvedPath() == &Path::empty());
+        const auto path = &info.path();
+        const auto resolvedPath = &info.resolvedPath();
+        const auto emptyPath = &Path::empty();
+        REQUIRE_EQUAL(path, emptyPath);
+        REQUIRE_EQUAL(resolvedPath, emptyPath);
     }
 
     void testInitialLoadAndPathInfoAccess() {
@@ -232,6 +236,8 @@ public:
         REQUIRE_EQUAL(scope.backendPtr->loadCount, 2);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testCacheExpiresAfterOneSecond() {
         auto scope = BackendScope{std::make_unique<TestBackend>()};
 

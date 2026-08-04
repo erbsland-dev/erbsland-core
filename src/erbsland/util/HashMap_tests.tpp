@@ -33,9 +33,8 @@ auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::compareKeys(const Self &other)
     if (left.size() != right.size()) {
         return false;
     }
-    for (const auto &[key, value] : left) {
-        static_cast<void>(value);
-        if (right.find(key) == right.end()) {
+    for (const auto &entry : left) {
+        if (right.find(entry.first) == right.end()) {
             return false;
         }
     }

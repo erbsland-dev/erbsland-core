@@ -12,8 +12,9 @@ class ParagraphOptionsTest final : public el::UnitTest {
 public:
     void testDefaultWordSeparatorsUseTheSharedSpaceAndTabSet() {
         const auto options = ParagraphOptions{};
+        const auto expectedWordSeparators = erbsland::text::CharSet{"\t "_el};
 
-        REQUIRE(options.wordSeparatorSet() == erbsland::text::CharSet{"\t "_el});
+        REQUIRE_EQUAL(options.wordSeparatorSet(), expectedWordSeparators);
         REQUIRE_EQUAL(options.wordSeparators(), U"\t "_el);
     }
 
@@ -61,15 +62,16 @@ public:
 
     void testWordSeparatorsAreCanonicalizedAndReuseSharedDefaults() {
         auto options = ParagraphOptions{};
+        const auto defaultWordSeparators = erbsland::text::CharSet{"\t "_el};
 
         options.setWordSeparators(U" \t\t "_el);
 
-        REQUIRE(options.wordSeparatorSet() == erbsland::text::CharSet{"\t "_el});
+        REQUIRE_EQUAL(options.wordSeparatorSet(), defaultWordSeparators);
         REQUIRE_EQUAL(options.wordSeparators(), U"\t "_el);
 
         options.setWordSeparators(U".,.,"_el);
 
-        REQUIRE(options.wordSeparatorSet() != erbsland::text::CharSet{"\t "_el});
+        REQUIRE_NOT_EQUAL(options.wordSeparatorSet(), defaultWordSeparators);
         REQUIRE_EQUAL(options.wordSeparators(), U",."_el);
         REQUIRE(options.wordSeparatorSet().contains(U','));
         REQUIRE(options.wordSeparatorSet().contains(U'.'));

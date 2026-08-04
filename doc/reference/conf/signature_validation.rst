@@ -25,6 +25,8 @@ Interface
 
 .. doxygenclass:: erbsland::conf::SignatureValidator
     :members:
+
+.. doxygentypedef:: erbsland::conf::SignatureValidatorPtr
 .. doxygenstruct:: erbsland::conf::SignatureValidatorData
     :members:
 .. doxygenenum:: erbsland::conf::SignatureValidatorResult

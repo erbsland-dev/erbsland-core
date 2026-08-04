@@ -18,6 +18,7 @@ erbsland_core_add_demo(password-handler
         src/PepperStore.hpp
         src/StorageFile.cpp
         src/StorageFile.hpp
+        src/StoragePaths.hpp
         src/UserDatabase.cpp
         src/UserDatabase.hpp
         src/main.cpp

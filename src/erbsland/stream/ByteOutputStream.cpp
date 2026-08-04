@@ -19,7 +19,7 @@ auto ByteOutputStream::write(const mem::Byte byte) -> StreamWriteStatus {
 }
 
 auto ByteOutputStream::write(const mem::ByteBlock &bytes) -> StreamWriteStatus {
-    return write(mem::impl::UnsafeByteBlockAccess{bytes}.data());
+    return write(mem::impl::UnsafeByteBlockAccess{bytes}.dataView().dataSpan());
 }
 
 auto ByteOutputStream::coWrite(mem::ByteBlock bytes) -> util::CoTask<StreamWriteStatus> {

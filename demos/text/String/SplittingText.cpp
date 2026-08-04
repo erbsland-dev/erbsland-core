@@ -20,12 +20,12 @@ void splittingText() {
 
     el::io::printLine("Rows: "_el, rows.count());
     for (const auto &row : rows) {
-        const auto fields = el::StringList::fromSplit(row, el::CharSet{";"_el}, el::ElementCount::infinite(), true);
+        const auto fields = el::StringList::fromSplit(row, el::CharSet{";"_el}, el::ItemCount::infinite(), true);
         el::io::printLine("  "_el, fields.join(" | "_el));
     }
 
     // A split limit leaves the unsplit remainder in the last part.
-    const auto limited = el::StringList::fromSplit(rows.last(), el::CharSet{";"_el}, el::ElementCount{1U}, true);
+    const auto limited = el::StringList::fromSplit(rows.last(), el::CharSet{";"_el}, el::ItemCount{1U}, true);
     el::io::printLine("Limited split: "_el, limited.join(" / "_el));
 }
 

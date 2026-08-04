@@ -342,8 +342,7 @@ auto U32StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf32::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf32::fastAdvanceChar(data, position);
             newSize = U32StringSharedStorage::checkedAddSize(
                 newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
         }
@@ -363,8 +362,7 @@ auto U32StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf32::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf32::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             std::memcpy(
                 storage.dataForWrite() + writePosition,
@@ -430,8 +428,7 @@ auto U32StringModifyTools::replaceTextInStorage(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf32::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf32::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             if (writePosition != characterStart.toSizeT()) {
                 std::memmove(
@@ -464,8 +461,7 @@ auto U32StringModifyTools::findFirstTextRange(
         if (matchesText(data, start, needle, compareFn)) {
             return CpRange{start, endOfMatch(data, start, needle)};
         }
-        const auto character = utf32::decodeCharOrReplace(data, position);
-        static_cast<void>(character);
+        utf32::fastAdvanceChar(data, position);
     }
     return CpRange::noRange();
 }

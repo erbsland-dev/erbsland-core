@@ -66,7 +66,7 @@ public:
         groups.emplace_back(1, CaptureRange{0, 2}, "a"_el);
         groups.emplace_back(2, CaptureRange{2, 4}, "b"_el);
         const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
-        REQUIRE(match != nullptr);
+        REQUIRE_NOT_EQUAL(match, nullptr);
 
         const CaptureGroupNames groupNames{
             StringEditor{"a"_el},
@@ -88,7 +88,7 @@ public:
         groups.emplace_back(1, CaptureRange{0, 1}, "x"_el);
         groups.emplace_back(2, CaptureRange{1, 2}, "y"_el);
         const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
-        REQUIRE(match != nullptr);
+        REQUIRE_NOT_EQUAL(match, nullptr);
 
         const CaptureGroupNames groupNames{
             StringEditor{"x"_el},
@@ -195,8 +195,10 @@ public:
         }
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testParse_Error_MaxReplacementTextLengthExceeded() {
-        using impl::limits::maximumReplacementTextLength;
+        using el::re::impl::limits::maximumReplacementTextLength;
 
         const auto text = String::fromCharacter(U'a', maximumReplacementTextLength + el::unit::CpLength{2U});
 

@@ -44,11 +44,9 @@ public:
     /// @param value The raw value. Passing cInfinite creates the special infinite length.
     explicit constexpr IntegerUnitAmount(Value value) noexcept : _value{value} {}
 
-    /// Destroy this length.
+    // defaults
     ~IntegerUnitAmount() = default;
-    /// Copy a length.
     IntegerUnitAmount(const IntegerUnitAmount &) noexcept = default;
-    /// Copy another length into this length.
     auto operator=(const IntegerUnitAmount &) noexcept -> IntegerUnitAmount & = default;
 
 public: // operators
@@ -201,6 +199,11 @@ public: // math
         }
         return IntegerUnitAmount{static_cast<Value>(_value - other._value)};
     }
+    /// Test if a multiplication would saturate.
+    template <math::AnyIntegerType T>
+    [[nodiscard]] auto wouldMultiplySaturate(T scalar) const noexcept -> bool {
+        return math::willMultiplyOverflow(_value, scalarToRawValue(scalar));
+    }
     /// Multiply this length by an unsigned scalar with saturation.
     template <math::AnyIntegerType T>
     auto multiply(T scalar) noexcept -> IntegerUnitAmount & {
@@ -315,6 +318,7 @@ public: // factory methods
     }
 
 private:
+    /// Convert a scalar to the unit's raw representation.
     template <math::AnyIntegerType T>
     [[nodiscard]] constexpr static auto scalarToRawValue(T scalar) noexcept -> Value {
         using Scalar = math::NativeIntegerOfT<T>;
@@ -332,6 +336,7 @@ private:
     Value _value{0U}; ///< The raw value of this length.
 };
 
+/// Multiply a unit amount by a scalar.
 template <math::AnyIntegerType T, impl::ValidIntegerUnit tIntegerUnit>
 [[nodiscard]] constexpr auto operator*(T scalar, IntegerUnitAmount<tIntegerUnit> length) noexcept
     -> IntegerUnitAmount<tIntegerUnit> {

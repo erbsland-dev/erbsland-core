@@ -33,6 +33,20 @@ public:
         }
         return left.size() <=> right.size();
     }
+    /// Test if the selected bytes equal another view without content-dependent short-circuiting.
+    /// A length mismatch returns immediately; equal-length inputs always inspect every byte.
+    [[nodiscard]] auto isEqualConstTime(ByteDataView other) const noexcept -> bool {
+        const auto left = _data.dataSpan();
+        const auto right = other.dataSpan();
+        if (left.size() != right.size()) {
+            return false;
+        }
+        auto difference = Byte{};
+        for (auto index = std::size_t{}; index < left.size(); ++index) {
+            difference |= left[index] ^ right[index];
+        }
+        return difference == Byte{};
+    }
     /// Test if the selected bytes start with a sequence.
     [[nodiscard]] auto startsWith(ByteDataView prefix) const noexcept -> bool {
         const auto data = _data.dataSpan();

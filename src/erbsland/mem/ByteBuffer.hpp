@@ -4,14 +4,13 @@
 
 #include "Byte.hpp"
 #include "ByteBuffer_fwd.hpp"
-#include "ByteIntegerAccess.hpp"
 #include "ByteSpan.hpp"
 #include "Endianness.hpp"
 
 #include "impl/ByteBufferData.hpp"
-#include "impl/ByteIntegerAccess.hpp"
-#include "impl/ByteSequenceOperations.hpp"
-#include "impl/Throw.hpp"
+#include "impl/ByteDataView.hpp"
+#include "impl/ByteReadTools.hpp"
+#include "impl/ByteWriteTools.hpp"
 #include "impl/UnsafeByteBufferAccess_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
@@ -52,12 +51,24 @@ public:
     ~ByteBuffer();
     ByteBuffer(const ByteBuffer &other);
     ByteBuffer(ByteBuffer &&other) noexcept;
+    /// Copy another buffer's contents and storage mode.
     auto operator=(const ByteBuffer &other) -> ByteBuffer &;
+    /// Move another buffer's contents and storage mode.
     auto operator=(ByteBuffer &&other) noexcept -> ByteBuffer &;
 
 public: // comparison
+    /// Compare the visible byte contents lexicographically.
     [[nodiscard]] auto operator<=>(const ByteBuffer &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const ByteBuffer &other, other);
+    /// Test equality without content-dependent short-circuiting.
+    /// Equal-length inputs always inspect every byte; a length mismatch returns immediately.
+    /// @param other The byte buffer to compare.
+    /// @return `true` if both buffers have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(const ByteBuffer &other) const noexcept -> bool;
+    /// @overload
+    /// @param other The borrowed byte sequence to compare.
+    /// @return `true` if both sequences have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(ConstByteSpan other) const noexcept -> bool;
 
 public: // accessors
     /// Test if this buffer contains no bytes.
@@ -77,7 +88,7 @@ public: // accessors
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan;
     /// Access a clamped range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteRange range) const noexcept -> ConstByteSpan {
-        return impl::clampedSpan(span(), range);
+        return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
@@ -91,7 +102,7 @@ public: // accessors
     /// Invoke a callback for every byte and its optional index.
     template <typename Function>
     auto forEach(Function function) const -> util::LoopResult {
-        return impl::forEachByte(span(), std::move(function));
+        return impl::ByteReadTools{dataView()}.forEach(std::move(function));
     }
 
 public: // integers
@@ -102,14 +113,14 @@ public: // integers
         const unit::ByteIndex offset,
         const Endianness endianness = Endianness::Little,
         const T defaultOnError = T{}) const noexcept -> T {
-        return mem::getInteger<T>(span(), offset, endianness, defaultOnError);
+        return impl::ByteReadTools{dataView()}.getInteger<T>(offset, endianness, defaultOnError);
     }
     /// Read an integer or throw if its range is invalid.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
         const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const -> T {
-        return mem::getIntegerOrThrow<T>(span(), offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerOrThrow<T>(offset, endianness);
     }
     /// Decode an integer into an existing value.
     template <typename T>
@@ -117,7 +128,7 @@ public: // integers
     auto getIntegerInto(
         T &value, const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const noexcept
         -> bool {
-        return mem::getIntegerInto(span(), value, offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerInto(value, offset, endianness);
     }
 
 public: // write
@@ -136,19 +147,21 @@ public: // write
     auto setInteger(
         const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little) noexcept
         -> bool {
-        return mem::setInteger(writableSpan(), offset, value, endianness);
+        return impl::ByteWriteTools{writableSpan()}.setInteger(offset, value, endianness);
     }
     /// Store an integer or throw if its range is invalid.
     template <typename T>
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     void setIntegerOrThrow(
         const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little) {
-        mem::setIntegerOrThrow(writableSpan(), offset, value, endianness);
+        impl::ByteWriteTools{writableSpan()}.setIntegerOrThrow(offset, value, endianness);
     }
     /// Fill all visible bytes.
-    void fill(Byte value) noexcept { impl::fill(writableSpan(), unit::ByteRange::all(), value); }
+    void fill(Byte value) noexcept { impl::ByteWriteTools{writableSpan()}.fill(unit::ByteRange::all(), value); }
     /// Fill a clamped byte range.
-    void fill(unit::ByteRange targetRange, Byte value) noexcept { impl::fill(writableSpan(), targetRange, value); }
+    void fill(unit::ByteRange targetRange, Byte value) noexcept {
+        impl::ByteWriteTools{writableSpan()}.fill(targetRange, value);
+    }
     /// Overwrite from the beginning with as many source bytes as fit.
     void overwrite(ConstByteSpan source);
     /// Overwrite from an index with as many source bytes as fit.
@@ -158,6 +171,9 @@ public: // write
     /// XOR every byte with an equally sized source.
     /// @return `false` without changing the buffer if the lengths differ.
     auto xorWith(ConstByteSpan source) -> bool;
+    /// XOR every byte with an equally sized source or throw if the lengths differ.
+    /// @throws err::ParameterError If the lengths differ.
+    void xorWithOrThrow(ConstByteSpan source);
     /// XOR a clamped target range with as many source bytes as fit.
     void xorWith(unit::ByteRange targetRange, ConstByteSpan source);
     /// Securely erase the complete allocated capacity while preserving length and capacity.
@@ -174,8 +190,10 @@ public: // storage
     auto clear() noexcept -> ByteBuffer &;
     /// Remove all bytes and release storage.
     void reset() noexcept;
-    /// Append a byte.
-    auto append(Byte value) -> ByteBuffer &;
+    /// Append one or more bytes.
+    /// @param value The byte value to append.
+    /// @param length The number of times to append the value.
+    auto append(Byte value, unit::ByteLength length = unit::ByteLength::one()) -> ByteBuffer &;
     /// Append borrowed bytes.
     auto append(ConstByteSpan bytes) -> ByteBuffer &;
     /// Insert borrowed bytes, clamping out-of-range indexes to the end.
@@ -202,7 +220,11 @@ public: // factories
     [[nodiscard]] static auto fromSpan(std::span<const char> bytes) -> ByteBuffer;
 
 private:
+    /// Access the complete buffer through an internal borrowed view.
+    [[nodiscard]] auto dataView() const noexcept -> impl::ByteDataView;
+    /// Access the complete buffer through a mutable borrowed view.
     [[nodiscard]] auto writableSpan() noexcept -> ByteSpan;
+    /// Exchange the complete buffer state without copying its contents.
     void swap(ByteBuffer &other) noexcept;
 
 private:

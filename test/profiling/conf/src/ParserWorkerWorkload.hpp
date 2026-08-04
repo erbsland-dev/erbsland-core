@@ -12,6 +12,7 @@ namespace app::conf {
 /// @tested{WorkloadRunnerTest}
 class ParserWorkerWorkload final : public erbsland::profiling::WorkerWorkload {
 public:
+    /// Create a parser workload for the supplied documents.
     ParserWorkerWorkload(erbsland::StringList documents, std::uint64_t corpusBytes, bool failWorker);
 
 public: // implement WorkerWorkload

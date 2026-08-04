@@ -5,7 +5,6 @@
 #include "../core/Definitions.hpp"
 
 #include <cstdint>
-#include <optional>
 #include <source_location>
 
 namespace erbsland::stream::io {
@@ -15,11 +14,13 @@ namespace erbsland::stream::io {
 /// @tested{StandardStreamsTest}
 class SensitiveInputToken final {
 public:
+    // defaults/deletions
     SensitiveInputToken() noexcept = default;
     ~SensitiveInputToken() = default;
     SensitiveInputToken(const SensitiveInputToken &) = delete;
     auto operator=(const SensitiveInputToken &) -> SensitiveInputToken & = delete;
     SensitiveInputToken(SensitiveInputToken &&other) noexcept;
+    /// Move another sensitive-input token into this token.
     auto operator=(SensitiveInputToken &&other) noexcept -> SensitiveInputToken &;
 
 public:
@@ -34,6 +35,9 @@ private:
     friend auto startSensitiveInput(std::source_location location) -> SensitiveInputToken;
     friend void stopSensitiveInput(SensitiveInputToken token);
 
+    /// Create a token for an active sensitivity request.
+    /// @param id The request identifier.
+    /// @param sourceLocation The request's diagnostic source location.
     SensitiveInputToken(uint64_t id, std::source_location sourceLocation) noexcept :
         _id{id}, _sourceLocation{sourceLocation} {}
 
@@ -53,26 +57,6 @@ private:
 /// @tested{StandardStreamsTest}
 void stopSensitiveInput(SensitiveInputToken token);
 
-/// A move-only scope that enables secure buffering for process-native standard input.
-/// @tested{StandardStreamsTest}
-class SensitiveInputScope final {
-public:
-    /// Start a sensitivity request at the caller's source location.
-    explicit SensitiveInputScope(std::source_location location = std::source_location::current());
-    ~SensitiveInputScope();
-    SensitiveInputScope(const SensitiveInputScope &) = delete;
-    auto operator=(const SensitiveInputScope &) -> SensitiveInputScope & = delete;
-    SensitiveInputScope(SensitiveInputScope &&other) noexcept;
-    auto operator=(SensitiveInputScope &&other) noexcept -> SensitiveInputScope &;
-
-public:
-    /// Test if this object owns an active request.
-    [[nodiscard]] auto isActive() const noexcept -> bool { return _token.has_value(); }
-    /// Stop the owned request now. Repeated calls have no effect.
-    void reset() noexcept;
-
-private:
-    std::optional<SensitiveInputToken> _token; ///< The owned active request.
-};
-
 }
+
+#include "SensitiveInputScope.hpp"

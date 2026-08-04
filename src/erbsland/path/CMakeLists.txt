@@ -24,6 +24,7 @@ target_sources(erbsland-core PRIVATE
         PathCreateMode.hpp
         PathError.cpp
         PathError.hpp
+        PathError_fwd.hpp
         PathErrorContext.cpp
         PathErrorContext.hpp
         PathFormat.hpp
@@ -36,6 +37,7 @@ target_sources(erbsland-core PRIVATE
         PathOperations.hpp
         PathOperations_fwd.hpp
         PathProgress.hpp
+        PathProgressStatus.hpp
         PathReadDataOptions.hpp
         PathReadTextOptions.cpp
         PathReadTextOptions.hpp

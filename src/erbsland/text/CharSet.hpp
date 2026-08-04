@@ -8,6 +8,7 @@
 #include "StringEditor_fwd.hpp"
 #include "UnicodeCategory.hpp"
 
+#include "impl/CharSetRangeBuilder_fwd.hpp"
 #include "u16/U16String_fwd.hpp"
 #include "u16/U16StringEditor_fwd.hpp"
 #include "u32/U32String_fwd.hpp"
@@ -35,27 +36,32 @@
 
 namespace erbsland::text {
 
-namespace impl {
-class CharSetRangeBuilder;
-}
-
 /// A normalized set of Unicode scalar values.
 /// The set stores up to two ranges inline and uses copy-on-write storage for larger sets. Invalid characters are
 /// ignored.
 /// @seedoc{/reference/text/char_range}
 /// @tested{CharSetTest}
 class CharSet final {
+    friend class impl::CharSetRangeBuilder;
+
+    template <typename>
+    static constexpr auto cIsSupportedForEachFunction = false;
+
 private:
+    /// Store the ranges that fit without allocating shared storage.
     struct InlineRanges {
         std::array<CharRange, 2> values{}; ///< The inline normalized ranges.
     };
 
+    /// Store ranges that do not fit in inline storage.
     using RangeData = mem::SharedArrayData<
         CharRange,
         uint32_t,
         mem::SharedArrayDataConstructMethod::None,
         mem::SharedArrayDataCleanupMethod::None>;
+    /// Hold shared range storage with copy-on-write behavior.
     using RangeDataPtr = mem::SharedDataPointer<RangeData, true>;
+    /// Hold either inline or shared range storage.
     using Storage = std::variant<InlineRanges, RangeDataPtr>;
 
     static_assert(std::is_trivially_copyable_v<CharRange>);
@@ -78,21 +84,35 @@ public:
     ~CharSet();
     CharSet(const CharSet &) noexcept;
     CharSet(CharSet &&other) noexcept;
+    /// Copy another character set into this set.
     auto operator=(const CharSet &) noexcept -> CharSet &;
+    /// Move another character set into this set.
     auto operator=(CharSet &&other) noexcept -> CharSet &;
 
 public: // operators
+    /// Test two character sets for equality.
     auto operator==(const CharSet &other) const noexcept -> bool;
+    /// Test two character sets for inequality.
     auto operator!=(const CharSet &other) const noexcept -> bool { return !operator==(other); }
+    /// Test whether this set is a subset of another set.
     auto operator<=(const CharSet &other) const -> bool { return isSubsetOf(other); }
+    /// Test whether this set is a superset of another set.
     auto operator>=(const CharSet &other) const -> bool { return isSupersetOf(other); }
+    /// Return the union of two character sets.
     auto operator|(const CharSet &other) const -> CharSet { return unitedWith(other); }
+    /// Return the intersection of two character sets.
     auto operator&(const CharSet &other) const -> CharSet { return intersectedWith(other); }
+    /// Return the difference of two character sets.
     auto operator-(const CharSet &other) const -> CharSet { return subtractedBy(other); }
+    /// Return the symmetric difference of two character sets.
     auto operator^(const CharSet &other) const -> CharSet { return symmetricDifferenceWith(other); }
+    /// Add another set to this set.
     auto operator|=(const CharSet &other) -> CharSet &;
+    /// Intersect this set with another set.
     auto operator&=(const CharSet &other) -> CharSet &;
+    /// Remove another set from this set.
     auto operator-=(const CharSet &other) -> CharSet &;
+    /// Apply symmetric difference with another set.
     auto operator^=(const CharSet &other) -> CharSet &;
 
 public: // tests
@@ -201,19 +221,20 @@ public: // factory methods
     [[nodiscard]] static auto fromPattern(const U32String &pattern) -> CharSet;
 
 private:
-    friend class impl::CharSetRangeBuilder;
-
-    template <typename>
-    static constexpr auto cIsSupportedForEachFunction = false;
-
+    /// Invoke a character- or range-iteration callback.
     template <typename Function, typename Value>
     [[nodiscard]] static auto processForEach(Function &function, Value &&value) -> util::LoopStatus;
-
+    /// Access the normalized ranges in their active storage.
     [[nodiscard]] auto rangeSpan() const noexcept -> std::span<const CharRange>;
+    /// Count the populated inline ranges.
     [[nodiscard]] static auto inlineRangeCount(const InlineRanges &ranges) noexcept -> std::size_t;
+    /// Add a range after reserving at least `capacityHint` entries.
     void addWithCapacity(CharRange range, std::size_t capacityHint);
+    /// Ensure that shared storage accommodates `requiredCapacity` entries.
     void ensureSharedCapacity(std::size_t requiredCapacity);
+    /// Get the Unicode scalar value following `character`.
     [[nodiscard]] static auto nextScalar(Char character) noexcept -> std::optional<Char>;
+    /// Get the Unicode scalar value preceding `character`.
     [[nodiscard]] static auto previousScalar(Char character) noexcept -> std::optional<Char>;
 
 private:

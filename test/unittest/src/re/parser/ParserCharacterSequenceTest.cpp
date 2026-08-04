@@ -99,7 +99,7 @@ public:
 
     void testCharacterSequenceMaximumLength() {
         const auto pattern = String::fromCharacter(
-            el::text::Char{U'a'}, el::unit::CpLength{impl::limits::maximumCharacterSequenceLength + 1U});
+            el::text::Char{U'a'}, el::unit::CpLength{el::re::impl::limits::maximumCharacterSequenceLength + 1U});
         parser = Parser{pattern};
         REQUIRE_THROWS(node = parser.parse());
     }

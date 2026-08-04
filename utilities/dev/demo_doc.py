@@ -14,6 +14,7 @@ import struct
 import subprocess
 import tempfile
 import threading
+import textwrap
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -306,9 +307,10 @@ class DemoDocSynchronizer:
     RE_START = re.compile(r"^(?P<indent>\s*)\.\.\s+erbsland-demo::\s*$")
     RE_END = re.compile(r"^\s*\.\.\s+erbsland-demo-end::\s*$")
     RE_OPTION = re.compile(
-        r"^\s+:(?P<name>source|source-sha256|show-cmd-line|exec(?:-\d+)?(?:-exit-code)?):\s*(?P<value>.*)$"
+        r"^\s+:(?P<name>function-blocks(?:-sha256)?|source|source-sha256|show-cmd-line|exec(?:-\d+)?(?:-exit-code)?):\s*(?P<value>.*)$"
     )
     RE_EXEC_OPTION = re.compile(r"^exec(?:-(?P<index>\d+))?$")
+    RE_FUNCTION_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
     def __init__(self, project_dir: Path, *, force: bool = False) -> None:
         self.project_dir = project_dir
@@ -393,7 +395,12 @@ class DemoDocSynchronizer:
             source_hash = self.source_hash(source_option)
         except DemoDocError:
             return True
-        return block.options.get("source-sha256") != source_hash
+        if block.options.get("source-sha256") != source_hash:
+            return True
+        function_blocks = block.options.get("function-blocks", "")
+        if function_blocks:
+            return block.options.get("function-blocks-sha256") != sha256_bytes(function_blocks.encode())
+        return False
 
     def generate_block(self, block: DemoBlock) -> GeneratedBlock:
         """Generate one managed demo block."""
@@ -405,7 +412,9 @@ class DemoDocSynchronizer:
             issues.append("Missing required :source: option.")
         else:
             try:
-                source_hash, display_source_lines = self.load_display_source(source_option)
+                source_hash, display_source_lines = self.load_display_source(
+                    source_option, block.options.get("function-blocks", "")
+                )
             except DemoDocError as error:
                 issues.append(str(error))
 
@@ -413,6 +422,10 @@ class DemoDocSynchronizer:
             f"{block.indent}.. erbsland-demo::",
             f"{block.indent}    :source: {source_option}",
         ]
+        function_blocks = block.options.get("function-blocks", "")
+        if function_blocks:
+            lines.append(f"{block.indent}    :function-blocks: {function_blocks}")
+            lines.append(f"{block.indent}    :function-blocks-sha256: {sha256_bytes(function_blocks.encode())}")
         runs = self.parse_runs(block.options, issues)
         show_cmd_line = "show-cmd-line" in block.options
         for run in runs:
@@ -482,7 +495,7 @@ class DemoDocSynchronizer:
             return
         expected_exit_codes[index] = exit_code
 
-    def load_display_source(self, source_option: str) -> tuple[str, list[str]]:
+    def load_display_source(self, source_option: str, function_blocks: str = "") -> tuple[str, list[str]]:
         """Read and trim the display source for one block."""
         data = self.source_bytes(source_option)
         source_hash = sha256_bytes(data)
@@ -491,6 +504,8 @@ class DemoDocSynchronizer:
         except UnicodeDecodeError:
             raise DemoDocError(f"Demo source is not valid UTF-8: {source_option}") from None
         source_lines = text.splitlines()
+        if function_blocks:
+            return source_hash, self.load_function_blocks(source_lines, function_blocks)
         start_index = next((index for index, line in enumerate(source_lines) if line.lstrip().startswith("///")), None)
         if start_index is None:
             raise DemoDocError(f"Demo source has no /// documentation comment: {source_option}")
@@ -499,6 +514,43 @@ class DemoDocSynchronizer:
             display_lines.pop()
         display_lines = self.remove_display_namespace_tail(source_lines, start_index, display_lines)
         return source_hash, display_lines
+
+    def load_function_blocks(self, source_lines: list[str], function_blocks: str) -> list[str]:
+        """Load and dedent named ``auto`` or ``void`` function bodies from a demo source."""
+        function_names = function_blocks.split()
+        if not function_names:
+            raise DemoDocError("Invalid :function-blocks: value: expected at least one function name.")
+        invalid_name = next((name for name in function_names if self.RE_FUNCTION_NAME.fullmatch(name) is None), None)
+        if invalid_name is not None:
+            raise DemoDocError(f"Invalid :function-blocks: function name: {invalid_name!r}.")
+
+        selected_blocks = [self.find_function_block(source_lines, name) for name in function_names]
+        return textwrap.dedent("\n\n".join("\n".join(block) for block in selected_blocks)).splitlines()
+
+    @classmethod
+    def find_function_block(cls, source_lines: list[str], function_name: str) -> list[str]:
+        """Find one complete named ``auto`` or ``void`` function definition."""
+        function_start = re.compile(
+            rf"^(?P<indent>[ \t]*)(?:auto|void)\s+{re.escape(function_name)}\s*\(", re.MULTILINE
+        )
+        source_text = "\n".join(source_lines)
+        matches = tuple(function_start.finditer(source_text))
+        if not matches:
+            raise DemoDocError(f"Function block not found: {function_name}.")
+        if len(matches) > 1:
+            raise DemoDocError(f"Function block is ambiguous: {function_name}.")
+
+        start_index = source_text[: matches[0].start()].count("\n")
+        depth = 0
+        has_opening_brace = False
+        for end_index in range(start_index, len(source_lines)):
+            line = source_lines[end_index]
+            if "{" in line:
+                has_opening_brace = True
+            depth += cls.brace_delta(line)
+            if has_opening_brace and depth == 0:
+                return source_lines[start_index : end_index + 1]
+        raise DemoDocError(f"Function block has no closing brace: {function_name}.")
 
     @staticmethod
     def remove_display_namespace_tail(source_lines: list[str], start_index: int, display_lines: list[str]) -> list[str]:

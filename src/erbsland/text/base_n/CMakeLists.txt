@@ -10,5 +10,6 @@ target_sources(erbsland-core PRIVATE
         BaseNEncoder.hpp
         BaseNFormat.cpp
         BaseNFormat.hpp
+        BaseNFormat_fwd.hpp
         BaseNFormatFlag.hpp
 )

@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../text/FormatAs.hpp"
+#include "HostNameFormat.hpp"
+
 #include "../text/String.hpp"
 
 #include <compare>
@@ -12,18 +13,23 @@
 
 namespace erbsland::network {
 
-/// An opaque host name accepted by the platform resolver.
+/// A strict IDNA2008 host name with canonical Unicode and ASCII forms.
+/// @seedoc{/reference/network/addressing}
 /// @tested{NetworkValueTest}
 class HostName final {
 public:
-    // deletions
+    // defaults/deletions
     HostName() = delete;
 
 public: // operators
     /// Compare two host names.
     /// @param other The host name to compare with this host name.
     /// @return The strong lexical ordering between the names.
-    [[nodiscard]] auto operator<=>(const HostName &other) const noexcept -> std::strong_ordering = default;
+    [[nodiscard]] auto operator<=>(const HostName &other) const noexcept -> std::strong_ordering {
+        return _name <=> other._name;
+    }
+    /// Test two canonical Unicode host names for equality.
+    [[nodiscard]] auto operator==(const HostName &other) const noexcept -> bool { return _name == other._name; }
 
 public: // accessors
     /// Get the host name.
@@ -32,8 +38,11 @@ public: // accessors
 
 public: // conversion
     /// Get the host name as text.
-    /// @return The retained host name.
-    [[nodiscard]] auto toString() const -> text::String { return _name; }
+    /// @param format The Unicode semantic or IDNA ASCII transport representation.
+    /// @return The selected canonical representation.
+    [[nodiscard]] auto toString(HostNameFormat format = HostNameFormat::Unicode) const -> text::String {
+        return format == HostNameFormat::Unicode ? _name : _idnaAscii;
+    }
     /// Calculate the host-name hash.
     /// @return The hash value.
     [[nodiscard]] auto toHash() const noexcept -> std::size_t { return _name.toHash(); }
@@ -48,10 +57,13 @@ public: // conversion
     [[nodiscard]] static auto fromStringOrThrow(const text::String &text) -> HostName;
 
 private:
-    explicit HostName(text::String name) : _name{std::move(name)} {}
+    /// Create a host name from already validated text.
+    explicit HostName(text::String name, text::String idnaAscii) :
+        _name{std::move(name)}, _idnaAscii{std::move(idnaAscii)} {}
 
 private:
-    text::String _name; ///< The validated host name.
+    text::String _name;      ///< The canonical lowercase NFC Unicode host name.
+    text::String _idnaAscii; ///< The canonical lowercase ASCII transport form.
 };
 
 }
@@ -59,9 +71,4 @@ private:
 template <>
 struct std::hash<erbsland::network::HostName> {
     auto operator()(const erbsland::network::HostName &value) const noexcept -> std::size_t { return value.toHash(); }
-};
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::network::HostName> : FormatAs<network::HostName, String> {
-    [[nodiscard]] auto format(const network::HostName &value) const -> String { return value.toString(); }
 };

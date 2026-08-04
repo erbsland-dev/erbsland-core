@@ -15,22 +15,21 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 
-namespace {
+auto BlockAttributes::attributeFlags() noexcept -> const std::array<Flag, 8> & {
+    static constexpr auto flags = std::array{
+        Bold,
+        Dim,
+        Italic,
+        Underline,
+        Blink,
+        Reverse,
+        Hidden,
+        Strikethrough,
+    };
+    return flags;
+}
 
-constexpr auto cAttributeFlags = std::array{
-    BlockAttributes::Bold,
-    BlockAttributes::Dim,
-    BlockAttributes::Italic,
-    BlockAttributes::Underline,
-    BlockAttributes::Blink,
-    BlockAttributes::Reverse,
-    BlockAttributes::Hidden,
-    BlockAttributes::Strikethrough,
-};
-
-constexpr auto cInheritedKey = 0;
-
-auto attributeFormat() -> const text::impl::NamedKeyFormat & {
+auto BlockAttributes::attributeFormat() -> const text::impl::NamedKeyFormat & {
     static const auto keys = text::impl::NamedKeyFormat::Keys{{
         {"inherited"_el, cInheritedKey},
         {"bold"_el, BlockAttributes::Bold.value},
@@ -50,14 +49,12 @@ auto attributeFormat() -> const text::impl::NamedKeyFormat & {
     return format;
 }
 
-}
-
 auto BlockAttributes::toString() const -> text::String {
     if (_specifiedMask == 0) {
         return "inherited"_el;
     }
     auto result = text::StringEditor{};
-    for (const auto flag : cAttributeFlags) {
+    for (const auto flag : attributeFlags()) {
         if (!isSpecified(flag)) {
             continue;
         }
@@ -92,7 +89,7 @@ auto BlockAttributes::fromStringOrThrow(const text::String &str) -> BlockAttribu
     }
     const auto first = entries.first();
     if (first.keyIndex() == cInheritedKey) {
-        if (entries.count() != unit::ElementCount::one() || !first.prefix().isNoCodePoint()) {
+        if (entries.count() != unit::ItemCount::one() || !first.prefix().isNoCodePoint()) {
             throw err::ParseError{"The inherited attribute state cannot be combined with other attributes."_el};
         }
         return {};

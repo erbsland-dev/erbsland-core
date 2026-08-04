@@ -13,6 +13,7 @@ target_sources(regex-api-profile PRIVATE
         Execution_fwd.hpp
         PreparedScenario.hpp
         PreparedScenario_fwd.hpp
+        ScenarioTemplate.hpp
         WorkloadRunner.hpp
         WorkloadRunner_fwd.hpp
 )

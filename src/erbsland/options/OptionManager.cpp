@@ -122,7 +122,7 @@ auto OptionManager::convertCommandLineArguments(const int argc, char *argv[]) ->
     if (argc <= 0 || argv == nullptr) {
         return result;
     }
-    result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
+    result.reserve(unit::ItemCount{static_cast<unit::ItemCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
             result.append(String{});
@@ -138,7 +138,7 @@ auto OptionManager::convertCommandLineArguments(const int argc, wchar_t *argv[])
     if (argc <= 0 || argv == nullptr) {
         return result;
     }
-    result.reserve(unit::ElementCount{static_cast<unit::ElementCount::Value>(argc)});
+    result.reserve(unit::ItemCount{static_cast<unit::ItemCount::Value>(argc)});
     for (int index = 0; index < argc; ++index) {
         if (argv[index] == nullptr) {
             result.append(String{});

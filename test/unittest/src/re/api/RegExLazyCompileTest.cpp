@@ -20,28 +20,31 @@ public:
     void testEagerCompileState() {
         const auto regex = RegEx::compile("abc"_el);
 
-        REQUIRE(regex != nullptr);
+        REQUIRE_NOT_EQUAL(regex, nullptr);
         REQUIRE(regex->isCompiled());
         REQUIRE_NOTHROW(regex->compileNow());
-        REQUIRE(regex->fullMatch("abc"_el) != nullptr);
+        const auto match = regex->fullMatch("abc"_el);
+        REQUIRE_NOT_EQUAL(match, nullptr);
     }
 
     void testExplicitLazyCompile() {
         const auto regex = RegEx::lazyCompile("abc"_el);
 
-        REQUIRE(regex != nullptr);
+        REQUIRE_NOT_EQUAL(regex, nullptr);
         REQUIRE_FALSE(regex->isCompiled());
         REQUIRE_EQUAL(regex->pattern(), "abc"_el);
         REQUIRE_NOTHROW(regex->compileNow());
         REQUIRE(regex->isCompiled());
-        REQUIRE(regex->fullMatch("abc"_el) != nullptr);
+        const auto match = regex->fullMatch("abc"_el);
+        REQUIRE_NOT_EQUAL(match, nullptr);
     }
 
     void testFirstMatchCompiles() {
         const auto regex = RegEx::lazyCompile("abc"_el);
 
         REQUIRE_FALSE(regex->isCompiled());
-        REQUIRE(regex->findFirst("--abc--"_el) != nullptr);
+        const auto match = regex->findFirst("--abc--"_el);
+        REQUIRE_NOT_EQUAL(match, nullptr);
         REQUIRE(regex->isCompiled());
     }
 
@@ -54,7 +57,8 @@ public:
         REQUIRE_NOTHROW(copy.compileNow());
         REQUIRE(regex->isCompiled());
         REQUIRE(copy.isCompiled());
-        REQUIRE(regex->fullMatch("abc"_el) != nullptr);
+        const auto match = regex->fullMatch("abc"_el);
+        REQUIRE_NOT_EQUAL(match, nullptr);
     }
 
     void testGeneratorCompilesWhenConsumed() {
@@ -73,7 +77,7 @@ public:
     void testInvalidPatternIsDelayedAndRetried() {
         RegExPtr regex;
         REQUIRE_NOTHROW(regex = RegEx::lazyCompile("("_el));
-        REQUIRE(regex != nullptr);
+        REQUIRE_NOT_EQUAL(regex, nullptr);
         REQUIRE_FALSE(regex->isCompiled());
 
         REQUIRE_THROWS_AS(RegExError, regex->compileNow());
@@ -87,7 +91,8 @@ public:
         settings.enableFeature(Feature::EmptyGroups);
         const auto regex = RegEx::lazyCompile("()abc"_el, Flags{Flag::IgnoreCase}, settings);
 
-        REQUIRE(regex->fullMatch("ABC"_el) != nullptr);
+        const auto match = regex->fullMatch("ABC"_el);
+        REQUIRE_NOT_EQUAL(match, nullptr);
         REQUIRE(regex->isCompiled());
     }
 

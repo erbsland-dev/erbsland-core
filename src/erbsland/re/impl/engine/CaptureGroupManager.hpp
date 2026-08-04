@@ -2,19 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CaptureGroupManager_fwd.hpp"
 #include "CaptureGroupNames.hpp"
 #include "CaptureGroupTypes.hpp"
 
 #include "../../CaptureGroup.hpp"
 #include "../../InputPosition.hpp"
 
-#include <memory>
 #include <ranges>
 
 namespace erbsland::re::impl {
-
-class CaptureGroupManager;
-using CaptureGroupManagerPtr = std::unique_ptr<CaptureGroupManager>;
 
 /// The capture group manager.
 ///
@@ -26,10 +23,13 @@ using CaptureGroupManagerPtr = std::unique_ptr<CaptureGroupManager>;
 ///
 class CaptureGroupManager {
 public:
+    // defaults
     virtual ~CaptureGroupManager() = default;
 
 public: // initialize
+    /// Initialize capture-group state for a program run.
     virtual void initialize() = 0;
+    /// Reset capture-group state before the next find operation.
     virtual void resetForNextFind() = 0;
 
 public:

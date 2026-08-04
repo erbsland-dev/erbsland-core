@@ -22,6 +22,8 @@ public:
     /// @param codeLocation The location in the document.
     explicit Location(SourceIdentifierPtr sourceIdentifier, const unit::CodeLocation codeLocation = {}) noexcept :
         _sourceIdentifier{std::move(sourceIdentifier)}, _codeLocation{codeLocation} {}
+
+    // defaults
     /// Default copy constructor.
     Location(const Location &) = default;
     /// Default move constructor.

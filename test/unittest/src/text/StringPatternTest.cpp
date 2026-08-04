@@ -3,14 +3,14 @@
 
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringPattern.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpIndex.hpp>
@@ -142,7 +142,7 @@ public:
 
     void testFrontPatternOperations() {
         const auto pattern = StringPattern{"abc"_el};
-        const auto text = U8String{"abcdef"_el};
+        const auto text = String{"abcdef"_el};
 
         REQUIRE(pattern.matches(text));
         REQUIRE_EQUAL(pattern.trimmed(text), "def"_el);
@@ -158,8 +158,8 @@ public:
         const auto front = StringPattern{"abc*"_el};
         const auto back = StringPattern{"*abc"_el};
         const auto both = StringPattern{"abc*xyz"_el};
-        const auto text = U8String{"abcdefxyz"_el};
-        const auto backText = U8String{"defabc"_el};
+        const auto text = String{"abcdefxyz"_el};
+        const auto backText = String{"defabc"_el};
 
         REQUIRE_EQUAL(front.trimmed(text), "defxyz"_el);
         REQUIRE_EQUAL(front.index(text), ByteIndex{3U});
@@ -191,7 +191,7 @@ public:
 
     void testNativeLengthsAcrossWidths() {
         const auto u8Pattern = StringPattern{u8"\u00E9?*"_el};
-        const auto u8Text = U8String{u8"\u00E9x-rest"_el};
+        const auto u8Text = String{u8"\u00E9x-rest"_el};
         REQUIRE(u8Pattern.matches(u8Text));
         REQUIRE_EQUAL(u8Pattern.index(u8Text), ByteIndex{3U});
         REQUIRE_EQUAL(u8Pattern.length(u8Text), ByteLength{3U});
@@ -235,15 +235,15 @@ public:
     void testTrimMutableText() {
         const auto pattern = StringPattern{"abc*xyz"_el};
 
-        auto view = U8String{"abcdefxyz"_el};
+        auto view = String{"abcdefxyz"_el};
         REQUIRE(pattern.trim(view));
         REQUIRE_EQUAL(view, "def"_el);
 
-        auto text = U8StringEditor{"abcdefxyz"_el};
+        auto text = StringEditor{"abcdefxyz"_el};
         REQUIRE(pattern.trim(text));
         REQUIRE_EQUAL(text, "def"_el);
 
-        auto unchanged = U8StringEditor{"abdefxyz"_el};
+        auto unchanged = StringEditor{"abdefxyz"_el};
         REQUIRE_FALSE(pattern.trim(unchanged));
         REQUIRE_EQUAL(unchanged, "abdefxyz"_el);
     }

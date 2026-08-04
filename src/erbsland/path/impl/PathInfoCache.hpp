@@ -17,6 +17,7 @@ class PathInfoCacheTrust final {};
 /// @tested{PathInfoTest PathWalkerTest}
 class PathInfoCache final {
 public:
+    /// Create an empty path-information cache.
     PathInfoCache() = default;
 
     // defaults/deletions

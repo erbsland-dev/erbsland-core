@@ -11,9 +11,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Sets the descriptive text of a rule.
-struct Description : Attribute {
+class Description : public Attribute {
+public:
+    /// Set descriptive text for a rule.
+    /// @param description The text to move into the attribute.
     explicit Description(text::String description) : _description{std::move(description)} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     text::String _description;
 };
 

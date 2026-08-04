@@ -9,6 +9,7 @@
 namespace erbsland::text::impl {
 
 /// Marker information supplied to the renderer-neutral code snippet layout.
+/// @tested{CodeSnippetLayoutTest}
 struct CodeSnippetLayoutMarker final {
     unit::ColumnRange range; ///< The logical source range.
     String label;            ///< Optional marker label.

@@ -12,15 +12,25 @@
 namespace erbsland::conf::vr::builder {
 
 /// Adds a character-set constraint for text values.
-struct Chars : ConstraintAttribute {
+class Chars : public ConstraintAttribute {
+public:
+    /// Creates a character-set constraint from allowed characters.
+    /// @param values The allowed characters.
+    /// @param options Additional constraint options.
     explicit Chars(text::StringList values, ConstraintOptions options = {}) :
         _values{std::move(values)}, _options{std::move(options)} {}
+    /// Creates a character-set constraint from one allowed character.
+    /// @param value The allowed character.
+    /// @param options Additional constraint options.
     explicit Chars(const text::String &value, ConstraintOptions options = {}) :
         _values{{value}}, _options{std::move(options)} {}
+    /// Creates a character-set constraint from allowed characters.
+    /// @param values The allowed characters.
+    /// @param options Additional constraint options.
     explicit Chars(const std::initializer_list<text::String> values, ConstraintOptions options = {}) :
         _values{values}, _options{std::move(options)} {}
 
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
 
 private:
     text::StringList _values;

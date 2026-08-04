@@ -56,18 +56,18 @@ public:
         TextAnchor end{TextAnchor::End};
 
         // Equal values
-        REQUIRE(def1 == def2);
-        REQUIRE_FALSE(def1 != def2);
+        REQUIRE_EQUAL(def1, def2);
+        REQUIRE_EQUAL(def1, def2);
 
-        REQUIRE(start == otherStart);
-        REQUIRE_FALSE(start != otherStart);
+        REQUIRE_EQUAL(start, otherStart);
+        REQUIRE_EQUAL(start, otherStart);
 
         // Different values
-        REQUIRE(start != end);
-        REQUIRE_FALSE(start == end);
+        REQUIRE_NOT_EQUAL(start, end);
+        REQUIRE_NOT_EQUAL(start, end);
 
-        REQUIRE(def1 != start);
-        REQUIRE_FALSE(def1 == start);
+        REQUIRE_NOT_EQUAL(def1, start);
+        REQUIRE_NOT_EQUAL(def1, start);
     }
 
     void testToStringForMappedValues() {

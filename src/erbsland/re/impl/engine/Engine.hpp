@@ -18,11 +18,13 @@
 #include "../../Input.hpp"
 #include "../../Settings.hpp"
 
+#include <optional>
+
 namespace erbsland::re::impl {
 
 /// The engine for executing regular expressions.
 /// Made for Thompson's construction algorithm.
-class Engine {
+class Engine : public std::enable_shared_from_this<Engine> {
 private:
     struct PrivateTag {};
 
@@ -31,7 +33,17 @@ public:
     /// @param data The engine data.
     /// @param settings The settings.
     explicit Engine(ConstEngineDataPtr data, Settings settings, PrivateTag) :
-        _data{std::move(data)}, _settings{std::move(settings)}, _programDecoder{_data->program} {}
+        _sharedData{std::move(data)},
+        _data{_sharedData.get()},
+        _settings{std::move(settings)},
+        _programDecoder{_data->program} {}
+
+    /// Create a new engine that stores its immutable data in the same allocation.
+    explicit Engine(EngineData data, Settings settings, PrivateTag) :
+        _ownedData{std::move(data)},
+        _data{&*_ownedData},
+        _settings{std::move(settings)},
+        _programDecoder{_data->program} {}
 
     /// Create a new engine with the given data.
     /// @param data The engine data.
@@ -39,6 +51,14 @@ public:
     /// @return A new instance of an engine.
     [[nodiscard]] static auto create(ConstEngineDataPtr data, Settings settings = {}) -> EnginePtr {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(data != nullptr, "Data must not be null"_el);
+        return std::make_shared<Engine>(std::move(data), std::move(settings), PrivateTag{});
+    }
+
+    /// Create a new engine with inline immutable data.
+    /// @param data The completed engine data.
+    /// @param settings The settings.
+    /// @return A new engine instance.
+    [[nodiscard]] static auto create(EngineData data, Settings settings = {}) -> EnginePtr {
         return std::make_shared<Engine>(std::move(data), std::move(settings), PrivateTag{});
     }
 
@@ -51,7 +71,12 @@ public: // configure
 
 public: // accessors
     /// Access the engine data.
-    [[nodiscard]] auto data() const noexcept -> ConstEngineDataPtr { return _data; }
+    [[nodiscard]] auto data() const noexcept -> ConstEngineDataPtr {
+        if (_sharedData) {
+            return _sharedData;
+        }
+        return ConstEngineDataPtr{shared_from_this(), _data};
+    }
     /// Access the sequence data.
     [[nodiscard]] auto sequenceData() const noexcept -> const SequenceData & { return _data->sequenceData; }
     /// Access the character classes data.
@@ -77,7 +102,8 @@ public: // run the engine.
         if (_data->hasAtomicGroups) {
             flags.set(EngineFlag::AtomicGroups);
         }
-        auto state = std::make_unique<EngineState>(std::move(input), captureGroupNames().size() + 1, flags);
+        auto state =
+            std::make_unique<EngineState>(std::move(input), captureGroupNames().size() + 1, flags, _data->counterCount);
         state->initialize();
         if (_settings.timeout() != std::chrono::milliseconds::zero()) {
             state->watchdog.setTimeout(_settings.timeout());
@@ -197,10 +223,12 @@ private:
     [[noreturn]] static void throwError(text::String message);
 
 public:
-    ConstEngineDataPtr _data;      ///< The data for the engine.
-    EngineFlags _initialFlags;     ///< The initial flags for the engine state.
-    Settings _settings;            ///< The settings used when compiling the engine.
-    ProgramReader _programDecoder; ///< The program decoder.
+    ConstEngineDataPtr _sharedData;       ///< Externally owned engine data, if supplied by the assembler/compiler.
+    std::optional<EngineData> _ownedData; ///< Inline data used by allocation-sensitive compiler fast paths.
+    const EngineData *_data;              ///< Active immutable engine data.
+    EngineFlags _initialFlags;            ///< The initial flags for the engine state.
+    Settings _settings;                   ///< The settings used when compiling the engine.
+    ProgramReader _programDecoder;        ///< The program decoder.
 };
 
 }

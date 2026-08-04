@@ -20,6 +20,9 @@ enum class NameType : uint8_t {
     TextIndex,
 };
 
+/// Convert a name type to its descriptive text.
+/// @param nameType The name type to convert.
+/// @return The descriptive text for the name type.
 [[nodiscard]] inline auto toString(const NameType nameType) noexcept -> text::String {
     using namespace text::literals;
     switch (nameType) {

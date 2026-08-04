@@ -14,6 +14,9 @@ function(erbsland_set_required_compiler_options target)
     if(MSVC)
         target_compile_options(${target} PUBLIC /utf-8)
         target_compile_options(${target} PRIVATE /MP /bigobj)
+        if(CMAKE_CXX_COMPILER_ARCHITECTURE_ID MATCHES "^ARM64")
+            target_compile_options(${target} PRIVATE /Gy)
+        endif()
     else()
         target_compile_options(${target} PRIVATE
                 $<$<CONFIG:Debug>:-Wno-trigraphs>

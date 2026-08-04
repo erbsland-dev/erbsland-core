@@ -14,9 +14,9 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const Quantifie
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         node.children().size() == 1, "Quantifiers can only be applied to single child node"_el);
     const auto segmentId = node.children()[0]->id();
-    const auto &childProgram = _segments.at(segmentId);
+    const auto &childProgram = getSegment(segmentId);
     if (childProgram.size() == 0) { // sanity logic / should not happen
-        _segments.erase(segmentId);
+        releaseSegment(segmentId);
         return;
     }
     ProgramCounter programCounter = 0;
@@ -53,7 +53,7 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const Quantifie
     if (data.mode == Quantifier::Mode::Possessive) {
         writer.writeStopAtomic(data.atomicGroupId);
     }
-    _segments.erase(segmentId);
+    releaseSegment(segmentId);
 }
 
 void CodeGenerator::generateFixedCount(ProgramWriter &writer, const Quantifier &data, const Program &childProgram) {

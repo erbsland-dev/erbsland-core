@@ -25,7 +25,8 @@ public:
         REQUIRE_EQUAL(size, (BlockSize{12, 0}));
         REQUIRE_EQUAL(size.coordinate(Orientation::Horizontal), 12);
         REQUIRE_EQUAL(size.coordinate(Orientation::Vertical), 0);
-        REQUIRE_EQUAL((BlockSize{BlockPosition{-2, 10}, BlockPosition{5, 4}}), (BlockSize{7, 6}));
+        const auto fromPositions = BlockSize{BlockPosition{-2, 10}, BlockPosition{5, 4}};
+        REQUIRE_EQUAL(fromPositions, (BlockSize{7, 6}));
     }
 
     void testAnchorsAndAlignmentOffsets() {
@@ -39,7 +40,8 @@ public:
         REQUIRE_EQUAL(size.anchor(BlockAnchor::TopLeft), (BlockPosition{0, 0}));
         REQUIRE_EQUAL(size.anchor(BlockAnchor::Center), (BlockPosition{5, 3}));
         REQUIRE_EQUAL(size.anchor(BlockAnchor::BottomRight), (BlockPosition{10, 6}));
-        REQUIRE_EQUAL(BlockSize{}.anchor(BlockAnchor::BottomRight), (BlockPosition{0, 0}));
+        const auto emptyAnchor = BlockSize{}.anchor(BlockAnchor::BottomRight);
+        REQUIRE_EQUAL(emptyAnchor, (BlockPosition{0, 0}));
         REQUIRE_EQUAL(size.alignmentOffset(BlockSize{5, 3}, Alignment::Center), (BlockPosition{3, 2}));
         REQUIRE_EQUAL(size.alignmentOffset(BlockSize{13, 9}, Alignment::BottomRight), (BlockPosition{-2, -2}));
     }
@@ -55,8 +57,10 @@ public:
         REQUIRE(size.contains(BlockPosition{3, 2}));
         REQUIRE_FALSE(size.contains(BlockPosition{4, 2}));
         REQUIRE_EQUAL(size.clamp(BlockPosition{-5, 7}), (BlockPosition{0, 2}));
-        REQUIRE_EQUAL((BlockSize{0, 3}.clamp(BlockPosition{5, 2})), (BlockPosition{0, 2}));
-        REQUIRE_EQUAL((BlockSize{4, 0}.clamp(BlockPosition{2, 5})), (BlockPosition{2, 0}));
+        const auto zeroWidthClamp = BlockSize{0, 3}.clamp(BlockPosition{5, 2});
+        const auto zeroHeightClamp = BlockSize{4, 0}.clamp(BlockPosition{2, 5});
+        REQUIRE_EQUAL(zeroWidthClamp, (BlockPosition{0, 2}));
+        REQUIRE_EQUAL(zeroHeightClamp, (BlockPosition{2, 0}));
         REQUIRE_EQUAL(size.index(BlockPosition{2, 1}), 6U);
     }
 
@@ -67,9 +71,12 @@ public:
 
         const auto maximum = BlockCoordinate::maximum();
 
-        REQUIRE_EQUAL((BlockSize{2, 3} + BlockSize{4, 5}), (BlockSize{6, 8}));
-        REQUIRE_EQUAL((BlockSize{2, 3} - BlockSize{4, 1}), (BlockSize{0, 2}));
-        REQUIRE_EQUAL((BlockSize{maximum, maximum} + BlockSize{1, 1}), (BlockSize{maximum, maximum}));
+        const auto sum = BlockSize{2, 3} + BlockSize{4, 5};
+        const auto difference = BlockSize{2, 3} - BlockSize{4, 1};
+        const auto saturated = BlockSize{maximum, maximum} + BlockSize{1, 1};
+        REQUIRE_EQUAL(sum, (BlockSize{6, 8}));
+        REQUIRE_EQUAL(difference, (BlockSize{0, 2}));
+        REQUIRE_EQUAL(saturated, (BlockSize{maximum, maximum}));
 
         auto size = BlockSize{2, 3};
         size.subtract(BlockSize{7, 8}, Orientation::Horizontal);
@@ -77,9 +84,12 @@ public:
         size.subtract(BlockSize{7, 8}, Orientation::Vertical);
         REQUIRE_EQUAL(size, (BlockSize{0, 0}));
 
-        REQUIRE_EQUAL((BlockSize{2, 9}.expandedWith(BlockSize{5, 4})), (BlockSize{5, 9}));
-        REQUIRE_EQUAL((BlockSize{2, 9}.limitedWith(BlockSize{5, 4})), (BlockSize{2, 4}));
-        REQUIRE_EQUAL((BlockSize{7, 3}.clampTo(BlockSize{2, 2}, BlockSize{5, 4})), (BlockSize{5, 3}));
+        const auto expanded = BlockSize{2, 9}.expandedWith(BlockSize{5, 4});
+        const auto limited = BlockSize{2, 9}.limitedWith(BlockSize{5, 4});
+        const auto clamped = BlockSize{7, 3}.clampTo(BlockSize{2, 2}, BlockSize{5, 4});
+        REQUIRE_EQUAL(expanded, (BlockSize{5, 9}));
+        REQUIRE_EQUAL(limited, (BlockSize{2, 4}));
+        REQUIRE_EQUAL(clamped, (BlockSize{5, 3}));
     }
 
     void testTransforms() {

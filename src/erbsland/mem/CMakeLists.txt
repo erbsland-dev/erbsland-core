@@ -19,13 +19,20 @@ target_sources(erbsland-core PRIVATE
         ByteBuffer.hpp
         ByteBuffer_fwd.hpp
         ByteIntegerAccess.hpp
+        ByteIntegerFormat.hpp
         ByteReader.cpp
         ByteReader.hpp
+        ByteReader.tpp
+        ByteReader_fwd.hpp
         ByteRingBuffer.hpp
         ByteSpan.cpp
         ByteSpan.hpp
+        ByteTextFormat.hpp
+        ByteTextOptions.hpp
+        ByteTextOptions_fwd.hpp
         ByteWriter.cpp
         ByteWriter.hpp
+        ByteWriter.tpp
         ByteWriter_fwd.hpp
         CowManualStorage.hpp
         CowStorage.hpp
@@ -38,6 +45,8 @@ target_sources(erbsland-core PRIVATE
         SecureErase.hpp
         SharedArrayData.hpp
         SharedArrayData_fwd.hpp
+        SharedArrayDataCleanupMethod.hpp
+        SharedArrayDataConstructMethod.hpp
         SharedData.hpp
         SharedDataPointer.hpp
         SharedVirtualData.hpp

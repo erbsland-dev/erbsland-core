@@ -91,13 +91,17 @@ public:
     void testVersionUnitRuntimeBehavior() {
 
         auto major = Major{7};
-        REQUIRE(major == Major{7});
-        REQUIRE((major++ == Major{7}));
-        REQUIRE(major == Major{8});
-        REQUIRE((++major == Major{9}));
-        REQUIRE((major-- == Major{9}));
-        REQUIRE(major == Major{8});
-        REQUIRE((--major == Major{7}));
+        REQUIRE_EQUAL(major, Major{7});
+        const auto majorBeforeIncrement = major++;
+        REQUIRE_EQUAL(majorBeforeIncrement, Major{7});
+        REQUIRE_EQUAL(major, Major{8});
+        const auto majorAfterIncrement = ++major;
+        REQUIRE_EQUAL(majorAfterIncrement, Major{9});
+        const auto majorBeforeDecrement = major--;
+        REQUIRE_EQUAL(majorBeforeDecrement, Major{9});
+        REQUIRE_EQUAL(major, Major{8});
+        const auto majorAfterDecrement = --major;
+        REQUIRE_EQUAL(majorAfterDecrement, Major{7});
 
         auto maximum = Major::maximum();
         ++maximum;
@@ -111,32 +115,37 @@ public:
     void testVersionRuntimeBehavior() {
 
         auto version = Version{1, 2, 3, 4};
-        REQUIRE(version.major() == Major{1});
-        REQUIRE(version.minor() == Minor{2});
-        REQUIRE(version.revision() == Revision{3});
-        REQUIRE(version.build() == BuildNumber{4});
+        REQUIRE_EQUAL(version.major(), Major{1});
+        REQUIRE_EQUAL(version.minor(), Minor{2});
+        REQUIRE_EQUAL(version.revision(), Revision{3});
+        REQUIRE_EQUAL(version.build(), BuildNumber{4});
 
         version.setMajor(Major{5});
         version.setMinor(Minor{6});
         version.setRevision(Revision{7});
         version.setBuild(BuildNumber{8});
-        REQUIRE(version == Version{5, 6, 7, 8});
+        const auto expected = Version{5, 6, 7, 8};
+        REQUIRE_EQUAL(version, expected);
 
-        REQUIRE(Version{1, 2, 3, 4}.compare(Version{1, 2, 3, 9}, VersionPart::Revision) == std::strong_ordering::equal);
-        REQUIRE(Version{1, 2, 3, 4}.compare(Version{1, 2, 3, 9}, VersionPart::Build) == std::strong_ordering::less);
-        REQUIRE(Version::fromNumber(version.toNumber()) == version);
+        const auto first = Version{1, 2, 3, 4};
+        const auto second = Version{1, 2, 3, 9};
+        const auto revisionComparison = first.compare(second, VersionPart::Revision);
+        const auto buildComparison = first.compare(second, VersionPart::Build);
+        REQUIRE_EQUAL(revisionComparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(buildComparison, std::strong_ordering::less);
+        REQUIRE_EQUAL(Version::fromNumber(version.toNumber()), version);
     }
 
     void testVersionToString() {
 
         const auto version = Version{1, 2, 3, 4};
 
-        REQUIRE(version.toString(VersionPart::Major) == "1"_el);
-        REQUIRE(version.toString(VersionPart::Minor) == "1.2"_el);
-        REQUIRE(version.toString(VersionPart::Revision) == "1.2.3"_el);
-        REQUIRE(version.toString(VersionPart::Build) == "1.2.3.4"_el);
-        REQUIRE(version.toString() == "1.2.3"_el);
-        REQUIRE(Version{}.toString() == "0.0.0"_el);
+        REQUIRE_EQUAL(version.toString(VersionPart::Major), "1"_el);
+        REQUIRE_EQUAL(version.toString(VersionPart::Minor), "1.2"_el);
+        REQUIRE_EQUAL(version.toString(VersionPart::Revision), "1.2.3"_el);
+        REQUIRE_EQUAL(version.toString(VersionPart::Build), "1.2.3.4"_el);
+        REQUIRE_EQUAL(version.toString(), "1.2.3"_el);
+        REQUIRE_EQUAL(Version{}.toString(), "0.0.0"_el);
     }
 
     void testVersionRangeRuntimeBehavior() {
@@ -181,8 +190,8 @@ public:
 
     void testHashSupport() {
 
-        REQUIRE(std::hash<Major>{}(Major{7}) == std::hash<Major>{}(Major{7}));
-        REQUIRE(std::hash<Version>{}(Version{1, 2, 3, 4}) == std::hash<Version>{}(Version{1, 2, 3, 4}));
+        REQUIRE_EQUAL(std::hash<Major>{}(Major{7}), std::hash<Major>{}(Major{7}));
+        REQUIRE_EQUAL(std::hash<Version>{}(Version{1, 2, 3, 4}), std::hash<Version>{}(Version{1, 2, 3, 4}));
         REQUIRE(
             std::hash<VersionRange>{}(VersionRange::exact(Version{1})) ==
             std::hash<VersionRange>{}(VersionRange::exact(Version{1})));

@@ -55,48 +55,67 @@ public:
     auto operator=(ConfErrorContext &&) noexcept -> ConfErrorContext & = default;
 
 public: // accessors
+    /// Get the error title.
     [[nodiscard]] auto title() const noexcept -> const text::String & { return _title; }
+    /// Set the error title.
     auto setTitle(text::String title) noexcept -> ConfErrorContext & {
         _title = std::move(title);
         return *this;
     }
+    /// Get the error description.
     [[nodiscard]] auto description() const noexcept -> const text::String & { return _description; }
+    /// Set the error description.
     auto setDescription(text::String description) noexcept -> ConfErrorContext & {
         _description = std::move(description);
         return *this;
     }
+    /// Get the error category.
     [[nodiscard]] auto category() const noexcept -> ConfErrorCategory { return _category; }
+    /// Set the error category.
     auto setCategory(ConfErrorCategory category) noexcept -> ConfErrorContext & {
         _category = category;
         return *this;
     }
+    /// Get the optional source location.
     [[nodiscard]] auto location() const noexcept -> const std::optional<unit::CodeLocation> & { return _location; }
+    /// Set the source location.
     auto setLocation(unit::CodeLocation location) noexcept -> ConfErrorContext & {
         _location = location;
         return *this;
     }
+    /// Get the optional configuration name path.
     [[nodiscard]] auto namePath() const noexcept -> const std::optional<NamePath> & { return _namePath; }
+    /// Set the configuration name path.
     auto setNamePath(NamePath namePath) noexcept -> ConfErrorContext & {
         _namePath = std::move(namePath);
         return *this;
     }
+    /// Get the optional source file path.
     [[nodiscard]] auto filePath() const noexcept -> const std::optional<path::Path> & { return _filePath; }
+    /// Set the source file path.
     auto setFilePath(path::Path filePath) noexcept -> ConfErrorContext & {
         _filePath = std::move(filePath);
         return *this;
     }
+    /// Get the optional source excerpt.
     [[nodiscard]] auto codeSnippet() const noexcept -> const std::optional<text::CodeSnippet> & { return _codeSnippet; }
+    /// Set the source excerpt.
     auto setCodeSnippet(text::CodeSnippet codeSnippet) noexcept -> ConfErrorContext & {
         _codeSnippet = std::move(codeSnippet);
         return *this;
     }
 
 public: // enrichment
+    /// Return a copy enriched with `location`.
     [[nodiscard]] auto withLocation(const Location &location) const -> ConfErrorContext;
+    /// Return a copy enriched with a name path and location.
     [[nodiscard]] auto withNamePathAndLocation(const NamePath &namePath, const Location &location) const
         -> ConfErrorContext;
+    /// Return a copy whose description has `prefix`.
     [[nodiscard]] auto withDescriptionPrefix(const text::String &prefix) const -> ConfErrorContext;
+    /// Return a copy with `description`.
     [[nodiscard]] auto withDescription(text::String description) const -> ConfErrorContext;
+    /// Return a copy with the optional source excerpt.
     [[nodiscard]] auto withCodeSnippet(const std::optional<text::CodeSnippet> &codeSnippet) const -> ConfErrorContext;
 
 public:
@@ -104,11 +123,23 @@ public:
     [[nodiscard]] static auto defaultTitle(ConfErrorCategory category) noexcept -> text::String;
 
 private:
+    /// Store the optional location by copy.
+    /// @param location The location to inspect.
     void assignOptional(const Location &location) noexcept;
+    /// Store optional values from a temporary location.
+    /// @param location The location to inspect.
     void assignOptional(Location &&location) noexcept { assignOptional(location); }
+    /// Store the optional name path by copy.
+    /// @param namePath The name path to store.
     void assignOptional(const NamePath &namePath) noexcept { _namePath = namePath; }
+    /// Store the optional name path by move.
+    /// @param namePath The name path to store.
     void assignOptional(NamePath &&namePath) noexcept { _namePath = std::move(namePath); }
+    /// Store the optional file path by copy.
+    /// @param filePath The file path to store.
     void assignOptional(const path::Path &filePath) noexcept { _filePath = filePath; }
+    /// Store the optional file path by move.
+    /// @param filePath The file path to store.
     void assignOptional(path::Path &&filePath) noexcept { _filePath = std::move(filePath); }
 
 private:

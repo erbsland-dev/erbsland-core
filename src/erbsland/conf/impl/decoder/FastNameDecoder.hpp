@@ -43,6 +43,7 @@ public:
     /// Check if there is more.
     [[nodiscard]] auto hasNext() const noexcept -> bool { return _readIndex < unit::ByteIndex::end(_buffer.length()); }
 
+    /// Read the next UTF-8 character and update the current decoder state.
     void readCurrentCharacter();
 
 private: // implement Decoder transactions

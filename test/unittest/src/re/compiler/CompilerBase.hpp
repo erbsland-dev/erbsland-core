@@ -20,6 +20,8 @@ using impl::EnginePtr;
 using impl::GroupFlag;
 using impl::GroupFlags;
 
+/// Shared fixture for regular-expression compiler unit tests.
+/// @notest{Used only by compiler unit tests.}
 class CompilerBase : public re_test::TestHelper {
 public:
     String pattern;
@@ -40,6 +42,7 @@ public:
 
     void setUp() override { engine = {}; }
 
+    /// Compile a pattern and generate its disassembly.
     void compileAndDisassemble(
         const String &patternView, const GroupFlags flags = GroupFlags{}, const Settings &settings = Settings{}) {
 

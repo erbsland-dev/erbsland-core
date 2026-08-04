@@ -15,6 +15,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionChoice {
 public:
+    /// Create an empty option choice.
     OptionChoice() = default;
     /// Create a choice with the given text.
     /// @param text Choice text accepted on the command line.

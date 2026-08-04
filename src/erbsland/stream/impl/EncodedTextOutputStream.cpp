@@ -5,6 +5,8 @@
 #include "BufferedByteOutputStream.hpp"
 
 #include "../../mem/ByteBlock.hpp"
+#include "../../mem/ByteWriter.hpp"
+#include "../../text/impl/StringEncodingWriter.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEncoder.hpp"
 
@@ -124,11 +126,22 @@ auto EncodedTextOutputStream::write(const Char character) -> StreamWriteStatus {
     const auto bomMode = bomModeForNextWrite();
     const auto result = _bufferedByteOutputStream != nullptr
         ? _bufferedByteOutputStream->writeEncodedCharacter(normalized, _encoding, bomMode)
-        : _byteOutputStream->write(StringEncoder{normalized}.encode(_encoding, bomMode));
+        : _byteOutputStream->write(encodeCharacter(normalized, bomMode));
     if (result == StreamWriteStatus::Success) {
         _bomWritten = true;
     }
     return result;
+}
+
+auto EncodedTextOutputStream::encodeCharacter(const Char character, const StringBomMode bomMode) const
+    -> mem::ByteBlock {
+    auto writer = mem::ByteWriter{};
+    auto encodingWriter = text::impl::StringEncodingWriter{writer, _encoding};
+    if (_encoding.writesBom(bomMode)) {
+        encodingWriter.writeBom();
+    }
+    encodingWriter.write(character);
+    return writer.toByteBlock();
 }
 
 auto EncodedTextOutputStream::write(const String &text) -> StreamWriteStatus {

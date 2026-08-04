@@ -34,6 +34,7 @@ public:
     }
 
 private:
+    /// Calculate the required glyph width from bit-mask rows.
     template <typename T>
         requires std::is_integral_v<T> && std::is_unsigned_v<T>
     [[nodiscard]] constexpr static auto calculateGlyphWidth(const std::vector<T> &data) noexcept

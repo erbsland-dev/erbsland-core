@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void Type::operator()(impl::Rule &rule) {
+void Type::operator()(Rule &rule) {
     rule.setType(_type);
 }
 

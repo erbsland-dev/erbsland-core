@@ -109,6 +109,14 @@ Their default type is :cpp:enumerator:`OptionType::Text <erbsland::options::Opti
 This definition has no dashed name, so ``path`` receives the next positional command line value.
 The command line does not accept ``--path`` unless you define a separate regular option with that dashed name.
 
+If an active positional argument is required, invoking the command with no arguments produces the normal help output.
+This lets a user see the expected input before encountering a missing-value error.
+Set
+:cpp:enumerator:`OptionParserFlag::ErrorOnEmptyRequiredPositionals <erbsland::options::OptionParserFlag::ErrorOnEmptyRequiredPositionals>`
+to retain an error result for an empty command.
+The behavior applies only to required positional arguments; required regular options continue to report a missing-value
+error.
+
 Choices and Explicit Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 

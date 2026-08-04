@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "InputStream_fwd.hpp"
 #include "InputStreamSettings.hpp"
 #include "StreamCloseStatus.hpp"
 #include "StreamError.hpp"
@@ -11,12 +12,7 @@
 
 #include "../err/LogicError.hpp"
 
-#include <memory>
-
 namespace erbsland::stream {
-
-class InputStream;
-using InputStreamPtr = std::shared_ptr<InputStream>;
 
 /// The common base class for readable streams.
 /// All public operations are bounded by the timeout fixed in the stream settings. Destruction never waits for pending
@@ -24,7 +20,8 @@ using InputStreamPtr = std::shared_ptr<InputStream>;
 /// @tested{AsyncStreamTest}
 class InputStream : public StreamPositioning, public std::enable_shared_from_this<InputStream> {
 public:
-    virtual ~InputStream() = default;
+    // defaults
+    ~InputStream() override = default;
 
 public: // state
     /// Get the immutable settings selected when this stream was created.

@@ -6,15 +6,15 @@
 #include <erbsland/text/AnyStringEditor.hpp>
 #include <erbsland/text/ParseNumberError.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringCharReader.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringKind.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/ByteRange.hpp>
@@ -39,11 +39,15 @@ using el::err::OverflowError;
 using el::text::ParseNumberError;
 using el::util::LoopResult;
 using el::util::LoopStatus;
+using namespace el::text::literals;
 
 namespace th = erbsland::unittest::th;
 
 static_assert(std::is_same_v<decltype(std::declval<StringCharReader &>().takeCapture()), AnyString>);
 static_assert(std::is_same_v<decltype(std::declval<StringCharReader &>().takeBuffer()), AnyString>);
+static_assert(std::is_same_v<
+    decltype(std::declval<StringCharReader &>().advanceWhile(std::declval<const CharSet &>())),
+    CpLength>);
 
 TESTED_TARGETS(
     StorageIdentifier StringCharReader ReadIntegerResult ReadNumberStatus ParseNumberError StringReader
@@ -51,9 +55,9 @@ TESTED_TARGETS(
 class StringCharReaderTest final : public el::UnitTest {
 public:
     void testStorageIdentifier() {
-        const auto text = U8StringEditor{std::string_view{"abcd"}};
+        const auto text = StringEditor{"abcd"_el};
         const auto whole = text.storageId();
-        const auto wholeView = U8String{text}.storageId();
+        const auto wholeView = String{text}.storageId();
         const auto prefix = text.slice(ByteRange{ByteIndex{0U}, ByteLength{2U}}).storageId();
         const auto suffix = text.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}}).storageId();
 
@@ -77,7 +81,7 @@ public:
     }
 
     void testReadUtf8StringAndView() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
         auto reader = StringCharReader{text};
 
         REQUIRE(reader.canRead(CpLength{4U}));
@@ -103,7 +107,7 @@ public:
         REQUIRE_EQUAL(reader.read().toRawValue(), U'A');
 
         const auto sliced = text.slice(ByteRange{ByteIndex{1U}, ByteLength{5U}});
-        auto viewReader = StringCharReader{U8String{sliced}};
+        auto viewReader = StringCharReader{String{sliced}};
 
         REQUIRE_EQUAL(viewReader.read().toRawValue(), U'\u00A2');
         REQUIRE_EQUAL(viewReader.read().toRawValue(), U'\u20AC');
@@ -152,7 +156,7 @@ public:
     }
 
     void testConditionalReadUtf8String() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€"}};
+        const auto text = String{"A¢€"_el};
         auto reader = StringCharReader{text};
 
         REQUIRE_FALSE(reader.readIf(Char{U'B'}));
@@ -217,7 +221,7 @@ public:
     }
 
     void testConditionalAdvanceUtf8String() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€"}};
+        const auto text = String{"A¢€"_el};
         auto reader = StringCharReader{text};
 
         REQUIRE_FALSE(reader.advance(CpLength::zero()));
@@ -268,8 +272,39 @@ public:
         REQUIRE_FALSE(reader.advanceIf(matchingSet()));
     }
 
+    void testConditionalAdvanceString() {
+        auto reader = StringCharReader{String{"Alpha😀tail"_el}};
+        REQUIRE(reader.advanceIf(""_el));
+        REQUIRE(reader.position().isZero());
+        REQUIRE(reader.advanceIf("alpha"_el, static_cast<CharCompareFn>(&Char::compareAsciiFolded)));
+        REQUIRE_EQUAL(reader.position(), CpIndex{5U});
+        REQUIRE(reader.advanceIf("😀"_el));
+        REQUIRE_EQUAL(reader.position(), CpIndex{6U});
+
+        const auto savedPosition = reader.position();
+        REQUIRE_FALSE(reader.advanceIf("tails"_el));
+        REQUIRE_EQUAL(reader.position(), savedPosition);
+        REQUIRE(reader.advanceIf("tail"_el));
+        REQUIRE(reader.isAtEnd());
+    }
+
+    void testConditionalAdvanceStringAcrossSourceWidthsAndMalformedText() {
+        auto utf16Reader = StringCharReader{U16String{u"A😀B"_el}};
+        REQUIRE(utf16Reader.advanceIf("A😀"_el));
+        REQUIRE_EQUAL(utf16Reader.position(), CpIndex{2U});
+        REQUIRE_FALSE(utf16Reader.advanceIf("BC"_el));
+        REQUIRE_EQUAL(utf16Reader.position(), CpIndex{2U});
+        REQUIRE_EQUAL(utf16Reader.peek(), U'B');
+
+        const auto malformed = String{th::stdStringFromHex("41 C0 42")};
+        auto malformedReader = StringCharReader{malformed};
+        REQUIRE(malformedReader.advanceIf(malformed));
+        REQUIRE_EQUAL(malformedReader.position(), CpIndex{3U});
+        REQUIRE(malformedReader.isAtEnd());
+    }
+
     void testReadWhileAcrossEncodings() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}};
+        auto utf8Reader = StringCharReader{String{"ab¢!"_el}};
         auto utf8Text = std::u32string{};
         REQUIRE_EQUAL(utf8Reader.readWhile(collectText(utf8Text), loopTextSet()), LoopResult::Success);
         REQUIRE_EQUAL(utf8Text, std::u32string{U"ab¢"});
@@ -294,7 +329,7 @@ public:
     void testReadUntilAcrossEncodings() {
         const auto stopSet = CharSet{Char{U';'}};
 
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"az¢;tail"}}};
+        auto utf8Reader = StringCharReader{String{"az¢;tail"_el}};
         auto utf8Text = std::u32string{};
         REQUIRE_EQUAL(utf8Reader.readUntil(collectText(utf8Text), stopSet), LoopResult::Success);
         REQUIRE_EQUAL(utf8Text, std::u32string{U"az¢"});
@@ -317,18 +352,18 @@ public:
     }
 
     void testAdvanceWhileAcrossEncodings() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}};
-        REQUIRE_EQUAL(utf8Reader.advanceWhile(loopTextSet()), LoopResult::Success);
+        auto utf8Reader = StringCharReader{String{"ab¢!"_el}};
+        REQUIRE_EQUAL(utf8Reader.advanceWhile(loopTextSet()), CpLength{3U});
         REQUIRE_EQUAL(utf8Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf8Reader.peek().toRawValue(), U'!');
 
         auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{u"A\U0001F600B!"}}};
-        REQUIRE_EQUAL(utf16Reader.advanceWhile(loopTextSet()), LoopResult::Success);
+        REQUIRE_EQUAL(utf16Reader.advanceWhile(loopTextSet()), CpLength{3U});
         REQUIRE_EQUAL(utf16Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf16Reader.peek().toRawValue(), U'!');
 
         auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{U"xy€?"}}};
-        REQUIRE_EQUAL(utf32Reader.advanceWhile(loopTextSet()), LoopResult::Success);
+        REQUIRE_EQUAL(utf32Reader.advanceWhile(loopTextSet()), CpLength{3U});
         REQUIRE_EQUAL(utf32Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf32Reader.peek().toRawValue(), U'?');
     }
@@ -336,18 +371,18 @@ public:
     void testAdvanceUntilAcrossEncodings() {
         const auto stopSet = CharSet{Char{U';'}};
 
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"az¢;tail"}}};
-        REQUIRE_EQUAL(utf8Reader.advanceUntil(stopSet), LoopResult::Success);
+        auto utf8Reader = StringCharReader{String{"az¢;tail"_el}};
+        REQUIRE_EQUAL(utf8Reader.advanceUntil(stopSet), CpLength{3U});
         REQUIRE_EQUAL(utf8Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf8Reader.peek().toRawValue(), U';');
 
         auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{u"A\U0001F600B;tail"}}};
-        REQUIRE_EQUAL(utf16Reader.advanceUntil(stopSet), LoopResult::Success);
+        REQUIRE_EQUAL(utf16Reader.advanceUntil(stopSet), CpLength{3U});
         REQUIRE_EQUAL(utf16Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf16Reader.peek().toRawValue(), U';');
 
         auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{U"xy€;tail"}}};
-        REQUIRE_EQUAL(utf32Reader.advanceUntil(stopSet), LoopResult::Success);
+        REQUIRE_EQUAL(utf32Reader.advanceUntil(stopSet), CpLength{3U});
         REQUIRE_EQUAL(utf32Reader.position(), CpIndex{3U});
         REQUIRE_EQUAL(utf32Reader.peek().toRawValue(), U';');
     }
@@ -355,61 +390,52 @@ public:
     void testAdvanceLoopsLimitEndOfDataAndZeroLimit() {
         const auto stopSet = CharSet{Char{U';'}};
 
-        auto limitWhileReader = StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}};
-        REQUIRE_EQUAL(limitWhileReader.advanceWhile(loopTextSet(), CpLength{2U}), LoopResult::LimitReached);
+        auto limitWhileReader = StringCharReader{String{"ab¢!"_el}};
+        REQUIRE_EQUAL(limitWhileReader.advanceWhile(loopTextSet(), CpLength{2U}), CpLength{2U});
         REQUIRE_EQUAL(limitWhileReader.position(), CpIndex{2U});
         REQUIRE_EQUAL(limitWhileReader.peek().toRawValue(), U'\u00A2');
 
         auto limitUntilReader = StringCharReader{U16StringEditor{std::u16string_view{u"A\U0001F600B;"}}};
-        REQUIRE_EQUAL(limitUntilReader.advanceUntil(stopSet, CpLength{2U}), LoopResult::LimitReached);
+        REQUIRE_EQUAL(limitUntilReader.advanceUntil(stopSet, CpLength{2U}), CpLength{2U});
         REQUIRE_EQUAL(limitUntilReader.position(), CpIndex{2U});
         REQUIRE_EQUAL(limitUntilReader.peek().toRawValue(), U'B');
 
         auto whileEndReader = StringCharReader{U32StringEditor{std::u32string_view{U"xy"}}};
-        REQUIRE_EQUAL(whileEndReader.advanceWhile(loopTextSet()), LoopResult::EndOfData);
+        REQUIRE_EQUAL(whileEndReader.advanceWhile(loopTextSet()), CpLength{2U});
         REQUIRE_EQUAL(whileEndReader.position(), CpIndex{2U});
         REQUIRE(whileEndReader.isAtEnd());
 
-        auto untilEndReader = StringCharReader{U8StringEditor{std::string_view{"xy"}}};
-        REQUIRE_EQUAL(untilEndReader.advanceUntil(stopSet), LoopResult::EndOfData);
+        auto untilEndReader = StringCharReader{StringEditor{"xy"_el}};
+        REQUIRE_EQUAL(untilEndReader.advanceUntil(stopSet), CpLength{2U});
         REQUIRE_EQUAL(untilEndReader.position(), CpIndex{2U});
         REQUIRE(untilEndReader.isAtEnd());
 
-        auto zeroLimitWhileMatchingReader = StringCharReader{U8StringEditor{std::string_view{"abc"}}};
-        REQUIRE_EQUAL(
-            zeroLimitWhileMatchingReader.advanceWhile(loopTextSet(), CpLength::zero()), LoopResult::LimitReached);
+        auto zeroLimitWhileMatchingReader = StringCharReader{StringEditor{"abc"_el}};
+        REQUIRE_EQUAL(zeroLimitWhileMatchingReader.advanceWhile(loopTextSet(), CpLength::zero()), CpLength::zero());
         REQUIRE(zeroLimitWhileMatchingReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitWhileMatchingReader.peek(), U'a');
 
-        auto zeroLimitUntilMatchingReader = StringCharReader{U8StringEditor{std::string_view{"abc"}}};
-        REQUIRE_EQUAL(zeroLimitUntilMatchingReader.advanceUntil(stopSet, CpLength::zero()), LoopResult::LimitReached);
+        auto zeroLimitUntilMatchingReader = StringCharReader{StringEditor{"abc"_el}};
+        REQUIRE_EQUAL(zeroLimitUntilMatchingReader.advanceUntil(stopSet, CpLength::zero()), CpLength::zero());
         REQUIRE(zeroLimitUntilMatchingReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitUntilMatchingReader.peek(), U'a');
 
-        auto zeroLimitWhileStoppedReader = StringCharReader{U8StringEditor{std::string_view{"!abc"}}};
-        REQUIRE_EQUAL(zeroLimitWhileStoppedReader.advanceWhile(loopTextSet(), CpLength::zero()), LoopResult::Success);
+        auto zeroLimitWhileStoppedReader = StringCharReader{StringEditor{"!abc"_el}};
+        REQUIRE_EQUAL(zeroLimitWhileStoppedReader.advanceWhile(loopTextSet(), CpLength::zero()), CpLength::zero());
         REQUIRE(zeroLimitWhileStoppedReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitWhileStoppedReader.peek(), U'!');
 
-        auto zeroLimitUntilStoppedReader = StringCharReader{U8StringEditor{std::string_view{";abc"}}};
-        REQUIRE_EQUAL(zeroLimitUntilStoppedReader.advanceUntil(stopSet, CpLength::zero()), LoopResult::Success);
+        auto zeroLimitUntilStoppedReader = StringCharReader{StringEditor{";abc"_el}};
+        REQUIRE_EQUAL(zeroLimitUntilStoppedReader.advanceUntil(stopSet, CpLength::zero()), CpLength::zero());
         REQUIRE(zeroLimitUntilStoppedReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitUntilStoppedReader.peek(), U';');
     }
 
     void testReadLoopCallbackStopsLeaveCharacterUnread() {
         WITH_CONTEXT(requireReadLoopCallbackResult(
-            StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}},
-            Char{U'\u00A2'},
-            LoopStatus::Stop,
-            LoopResult::Stopped,
-            CpIndex{2U}));
+            StringCharReader{String{"ab¢!"_el}}, Char{U'\u00A2'}, LoopStatus::Stop, LoopResult::Stopped, CpIndex{2U}));
         WITH_CONTEXT(requireReadLoopCallbackResult(
-            StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}},
-            Char{U'\u00A2'},
-            LoopStatus::Error,
-            LoopResult::Error,
-            CpIndex{2U}));
+            StringCharReader{String{"ab¢!"_el}}, Char{U'\u00A2'}, LoopStatus::Error, LoopResult::Error, CpIndex{2U}));
         WITH_CONTEXT(requireReadLoopCallbackResult(
             StringCharReader{U16StringEditor{std::u16string_view{u"A\U0001F600B!"}}},
             Char{U'\U0001F600'},
@@ -437,7 +463,7 @@ public:
     }
 
     void testReadLoopLimitReachedLeavesNextCharacterUnread() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}};
+        auto utf8Reader = StringCharReader{String{"ab¢!"_el}};
         auto utf8Text = std::u32string{};
         REQUIRE_EQUAL(
             utf8Reader.readWhile(collectText(utf8Text), loopTextSet(), CpLength{2U}), LoopResult::LimitReached);
@@ -476,7 +502,7 @@ public:
         REQUIRE_EQUAL(untilEndText, std::u32string{U"xy"});
         REQUIRE(untilEndReader.isAtEnd());
 
-        auto zeroLimitMatchingReader = StringCharReader{U8StringEditor{std::string_view{"abc"}}};
+        auto zeroLimitMatchingReader = StringCharReader{StringEditor{"abc"_el}};
         auto zeroLimitText = std::u32string{};
         REQUIRE_EQUAL(
             zeroLimitMatchingReader.readWhile(collectText(zeroLimitText), loopTextSet(), CpLength::zero()),
@@ -485,21 +511,21 @@ public:
         REQUIRE(zeroLimitMatchingReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitMatchingReader.peek().toRawValue(), U'a');
 
-        auto zeroLimitStoppedReader = StringCharReader{U8StringEditor{std::string_view{"!abc"}}};
+        auto zeroLimitStoppedReader = StringCharReader{StringEditor{"!abc"_el}};
         REQUIRE_EQUAL(
             zeroLimitStoppedReader.readWhile(collectText(zeroLimitText), loopTextSet(), CpLength::zero()),
             LoopResult::Success);
         REQUIRE(zeroLimitStoppedReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitStoppedReader.peek().toRawValue(), U'!');
 
-        auto zeroLimitEndReader = StringCharReader{U8StringEditor{}};
+        auto zeroLimitEndReader = StringCharReader{StringEditor{}};
         REQUIRE_EQUAL(
             zeroLimitEndReader.readWhile(collectText(zeroLimitText), loopTextSet(), CpLength::zero()),
             LoopResult::EndOfData);
     }
 
     void testCaptureAcrossEncodings() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"A¢€!"}}};
+        auto utf8Reader = StringCharReader{String{"A¢€!"_el}};
         REQUIRE(utf8Reader.takeCapture().isEmpty());
         utf8Reader.startCapture();
         REQUIRE(utf8Reader.advance(CpLength{2U}));
@@ -540,7 +566,7 @@ public:
     }
 
     void testBufferManualOperationsAcrossEncodings() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::string_view{"source"}}};
+        auto utf8Reader = StringCharReader{StringEditor{"source"_el}};
         REQUIRE(utf8Reader.isBufferEmpty());
         REQUIRE(utf8Reader.bufferView().isEmpty());
         REQUIRE_EQUAL(utf8Reader.bufferCharacterLength(), CpLength::zero());
@@ -558,7 +584,7 @@ public:
         REQUIRE(utf8Reader.isBufferEmpty());
 
         auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{u"source"}}};
-        const auto utf8Text = U8StringEditor{std::u8string_view{u8"A¢"}};
+        const auto utf8Text = String{"A¢"_el};
         utf16Reader.appendToBuffer(utf8Text);
         utf16Reader.appendToBuffer(Char{U'\U0001F600'});
         WITH_CONTEXT(requireBufferView(utf16Reader.bufferView(), StringKind::U16, U"A¢\U0001F600"));
@@ -566,7 +592,7 @@ public:
         WITH_CONTEXT(requireBuffer(utf16Reader.takeBuffer(), StringKind::U16, U"A¢\U0001F600"));
 
         auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{U"source"}}};
-        const auto azText = U8StringEditor{std::u8string_view{u8"az"}};
+        const auto azText = String{"az"_el};
         const auto euroText = U16StringEditor{std::u16string_view{u"€"}};
         utf32Reader.setBuffer(azText);
         utf32Reader.appendToBuffer(euroText);
@@ -576,7 +602,7 @@ public:
     }
 
     void testReadToBufferConditionalReads() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"A¢€!"}}};
+        auto utf8Reader = StringCharReader{String{"A¢€!"_el}};
         REQUIRE_EQUAL(utf8Reader.readToBuffer().toRawValue(), U'A');
         REQUIRE_FALSE(utf8Reader.readToBufferIf(Char{U'!'}));
         REQUIRE_EQUAL(utf8Reader.position(), CpIndex{1U});
@@ -605,7 +631,7 @@ public:
     }
 
     void testReadToBufferLoopsAcrossEncodings() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"ab¢!"}}};
+        auto utf8Reader = StringCharReader{String{"ab¢!"_el}};
         REQUIRE_EQUAL(utf8Reader.readToBufferWhile(loopTextSet()), LoopResult::Success);
         WITH_CONTEXT(requireBufferView(utf8Reader.bufferView(), StringKind::U8, U"ab¢"));
         REQUIRE_EQUAL(utf8Reader.position(), CpIndex{3U});
@@ -630,14 +656,14 @@ public:
         WITH_CONTEXT(requireBufferView(endReader.bufferView(), StringKind::U16, U"A\U0001F600"));
         REQUIRE(endReader.isAtEnd());
 
-        auto zeroLimitMatchingReader = StringCharReader{U8StringEditor{std::string_view{"abc"}}};
+        auto zeroLimitMatchingReader = StringCharReader{StringEditor{"abc"_el}};
         REQUIRE_EQUAL(
             zeroLimitMatchingReader.readToBufferWhile(loopTextSet(), CpLength::zero()), LoopResult::LimitReached);
         REQUIRE(zeroLimitMatchingReader.isBufferEmpty());
         REQUIRE(zeroLimitMatchingReader.position().isZero());
         REQUIRE_EQUAL(zeroLimitMatchingReader.peek(), U'a');
 
-        auto zeroLimitStoppedReader = StringCharReader{U8StringEditor{std::string_view{"!abc"}}};
+        auto zeroLimitStoppedReader = StringCharReader{StringEditor{"!abc"_el}};
         REQUIRE_EQUAL(zeroLimitStoppedReader.readToBufferWhile(loopTextSet(), CpLength::zero()), LoopResult::Success);
         REQUIRE(zeroLimitStoppedReader.isBufferEmpty());
         REQUIRE(zeroLimitStoppedReader.position().isZero());
@@ -645,7 +671,7 @@ public:
     }
 
     void testCaptureCanBeAppendedToBuffer() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::u8string_view{u8"A¢€!"}}};
+        auto utf8Reader = StringCharReader{String{"A¢€!"_el}};
         utf8Reader.startCapture();
         REQUIRE(utf8Reader.advance(CpLength{2U}));
         utf8Reader.appendCaptureToBuffer();
@@ -668,7 +694,7 @@ public:
     }
 
     void testCopiesHaveIndependentBuffers() {
-        const auto text = U8StringEditor{std::string_view{"abc"}};
+        const auto text = StringEditor{"abc"_el};
         auto first = StringCharReader{text};
         first.appendToBuffer(Char{U'A'});
         auto second = first;
@@ -684,7 +710,7 @@ public:
     }
 
     void testRestoreDoesNotChangeBufferOrCapture() {
-        auto reader = StringCharReader{U8StringEditor{std::string_view{"abcd"}}};
+        auto reader = StringCharReader{StringEditor{"abcd"_el}};
         reader.startCapture();
         REQUIRE(reader.advance(CpLength{2U}));
         const auto state = reader.save();
@@ -704,7 +730,7 @@ public:
     }
 
     void testReadToBufferToleratesMalformedEncoding() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}}};
+        auto utf8Reader = StringCharReader{String{th::stdStringFromHex("41 C0 42")}};
         REQUIRE_EQUAL(utf8Reader.readToBuffer().toRawValue(), U'A');
         REQUIRE(utf8Reader.readToBuffer().isReplacement());
         REQUIRE_EQUAL(utf8Reader.readToBuffer().toRawValue(), U'B');
@@ -726,7 +752,7 @@ public:
     }
 
     void testCopiesHaveIndependentPositions() {
-        const auto text = U8StringEditor{std::string_view{"abc"}};
+        const auto text = StringEditor{"abc"_el};
         auto first = StringCharReader{text};
         auto second = first;
 
@@ -740,12 +766,12 @@ public:
     }
 
     void testRestoreRejectsWrongKindAndOutOfRange() {
-        const auto longText = U8StringEditor{std::string_view{"abcd"}};
+        const auto longText = StringEditor{"abcd"_el};
         auto longUtf8Reader = StringCharReader{longText};
         REQUIRE(longUtf8Reader.advance(CpLength{3U}));
         const auto longUtf8State = longUtf8Reader.save();
 
-        auto shortUtf8Reader = StringCharReader{U8StringEditor{std::string_view{"a"}}};
+        auto shortUtf8Reader = StringCharReader{StringEditor{"a"_el}};
         REQUIRE_FALSE(shortUtf8Reader.restore(longUtf8State));
         REQUIRE_EQUAL(shortUtf8Reader.read().toRawValue(), U'a');
 
@@ -768,7 +794,7 @@ public:
     }
 
     void testParseIntegerBasics() {
-        auto decimalReader = StringCharReader{U8StringEditor{std::string_view{"123abc"}}};
+        auto decimalReader = StringCharReader{StringEditor{"123abc"_el}};
         const auto decimal = decimalReader.parseInteger(integerOptions(IntegerBase::Decimal, CpLength{3U}));
         REQUIRE_EQUAL(decimal.status, ReadNumberStatus::Success);
         REQUIRE_EQUAL(decimal.value, std::uint64_t{123U});
@@ -778,7 +804,7 @@ public:
         REQUIRE_EQUAL(decimalReader.position(), CpIndex{3U});
         REQUIRE_EQUAL(decimalReader.peek(), U'a');
 
-        auto hexadecimalReader = StringCharReader{U8StringEditor{std::string_view{"1fZ"}}};
+        auto hexadecimalReader = StringCharReader{StringEditor{"1fZ"_el}};
         const auto hexadecimal = hexadecimalReader.parseInteger(integerOptions(IntegerBase::Hexadecimal, CpLength{3U}));
         REQUIRE_EQUAL(hexadecimal.status, ReadNumberStatus::Success);
         REQUIRE_EQUAL(hexadecimal.value, std::uint64_t{31U});
@@ -786,24 +812,24 @@ public:
         REQUIRE_EQUAL(hexadecimal.base, IntegerBase::Hexadecimal);
         REQUIRE_EQUAL(hexadecimalReader.peek(), U'Z');
 
-        auto noDigitsReader = StringCharReader{U8StringEditor{std::string_view{"abc"}}};
+        auto noDigitsReader = StringCharReader{StringEditor{"abc"_el}};
         const auto noDigits = noDigitsReader.parseInteger(integerOptions(IntegerBase::Decimal, CpLength{3U}));
         REQUIRE_EQUAL(noDigits.status, ReadNumberStatus::NoDigits);
         REQUIRE(noDigitsReader.position().isZero());
 
-        auto tooManyDigitsReader = StringCharReader{U8StringEditor{std::string_view{"1234"}}};
+        auto tooManyDigitsReader = StringCharReader{StringEditor{"1234"_el}};
         const auto tooManyDigits = tooManyDigitsReader.parseInteger(integerOptions(IntegerBase::Decimal, CpLength{3U}));
         REQUIRE_EQUAL(tooManyDigits.status, ReadNumberStatus::TooManyDigits);
         REQUIRE(tooManyDigitsReader.position().isZero());
 
-        auto overflowReader = StringCharReader{U8StringEditor{std::string_view{"18446744073709551616"}}};
+        auto overflowReader = StringCharReader{StringEditor{"18446744073709551616"_el}};
         const auto overflow = overflowReader.parseInteger(integerOptions(IntegerBase::Decimal, CpLength{20U}));
         REQUIRE_EQUAL(overflow.status, ReadNumberStatus::Overflow);
         REQUIRE(overflowReader.position().isZero());
     }
 
     void testParseIntegerSignsAndPrefixes() {
-        auto negativeHexReader = StringCharReader{U8StringEditor{std::string_view{"-0x1f!"}}};
+        auto negativeHexReader = StringCharReader{StringEditor{"-0x1f!"_el}};
         auto signedOptions = IntegerParseOptions::parserDefault();
         signedOptions.addFlags(IntegerParseFlag::AcceptMinusSign);
         const auto negativeHex = negativeHexReader.parseInteger(signedOptions);
@@ -813,7 +839,7 @@ public:
         REQUIRE_EQUAL(negativeHex.base, IntegerBase::Hexadecimal);
         REQUIRE_EQUAL(negativeHexReader.peek(), U'!');
 
-        auto plusReader = StringCharReader{U8StringEditor{std::string_view{"+123"}}};
+        auto plusReader = StringCharReader{StringEditor{"+123"_el}};
         auto plusOptions = integerOptions(IntegerBase::Decimal);
         plusOptions.addFlags(IntegerParseFlag::IgnorePlusSign);
         const auto plus = plusReader.parseInteger(plusOptions);
@@ -821,24 +847,24 @@ public:
         REQUIRE_EQUAL(plus.value, std::uint64_t{123U});
         REQUIRE_FALSE(plus.isNegative);
 
-        auto rejectedPlusReader = StringCharReader{U8StringEditor{std::string_view{"+123"}}};
+        auto rejectedPlusReader = StringCharReader{StringEditor{"+123"_el}};
         const auto rejectedPlus = rejectedPlusReader.parseInteger(integerOptions(IntegerBase::Decimal));
         REQUIRE_EQUAL(rejectedPlus.status, ReadNumberStatus::ParseError);
         REQUIRE(rejectedPlusReader.position().isZero());
 
-        auto rejectedMinusReader = StringCharReader{U8StringEditor{std::string_view{"-123"}}};
+        auto rejectedMinusReader = StringCharReader{StringEditor{"-123"_el}};
         const auto rejectedMinus = rejectedMinusReader.parseInteger(integerOptions(IntegerBase::Decimal));
         REQUIRE_EQUAL(rejectedMinus.status, ReadNumberStatus::ParseError);
         REQUIRE(rejectedMinusReader.position().isZero());
 
-        auto fixedBasePrefixReader = StringCharReader{U8StringEditor{std::string_view{"0xff"}}};
+        auto fixedBasePrefixReader = StringCharReader{StringEditor{"0xff"_el}};
         const auto fixedBasePrefix = fixedBasePrefixReader.parseInteger(integerOptions(IntegerBase::Hexadecimal));
         REQUIRE_EQUAL(fixedBasePrefix.status, ReadNumberStatus::ParseError);
         REQUIRE(fixedBasePrefixReader.position().isZero());
     }
 
     void testParseIntegerDigitModes() {
-        auto limitedReader = StringCharReader{U8StringEditor{std::string_view{"1234"}}};
+        auto limitedReader = StringCharReader{StringEditor{"1234"_el}};
         auto limitedOptions = integerOptions(IntegerBase::Decimal, CpLength{3U});
         limitedOptions.addFlags(IntegerParseFlag::StopAtMaximum);
         const auto limited = limitedReader.parseInteger(limitedOptions);
@@ -847,21 +873,21 @@ public:
         REQUIRE_EQUAL(limited.digitCount, CpLength{3U});
         REQUIRE_EQUAL(limitedReader.peek(), U'4');
 
-        auto fixedReader = StringCharReader{U8StringEditor{std::string_view{"1234"}}};
+        auto fixedReader = StringCharReader{StringEditor{"1234"_el}};
         const auto fixedOptions = IntegerParseOptions::fixedDecimal(CpLength{3U});
         const auto fixed = fixedReader.parseInteger(fixedOptions);
         REQUIRE_EQUAL(fixed.status, ReadNumberStatus::Success);
         REQUIRE_EQUAL(fixed.value, std::uint64_t{123U});
         REQUIRE_EQUAL(fixedReader.peek(), U'4');
 
-        auto tooFewReader = StringCharReader{U8StringEditor{std::string_view{"12x"}}};
+        auto tooFewReader = StringCharReader{StringEditor{"12x"_el}};
         const auto tooFew = tooFewReader.parseInteger(fixedOptions);
         REQUIRE_EQUAL(tooFew.status, ReadNumberStatus::TooFewDigits);
         REQUIRE(tooFewReader.position().isZero());
     }
 
     void testParseIntegerSeparators() {
-        auto separatedReader = StringCharReader{U8StringEditor{std::string_view{"1_234x"}}};
+        auto separatedReader = StringCharReader{StringEditor{"1_234x"_el}};
         auto separatorOptions = integerOptions(IntegerBase::Decimal);
         separatorOptions.addFlags(IntegerParseFlag::AllowSeparator).setSeparator(U'_');
         const auto separated = separatedReader.parseInteger(separatorOptions);
@@ -870,19 +896,19 @@ public:
         REQUIRE_EQUAL(separated.digitCount, CpLength{4U});
         REQUIRE_EQUAL(separatedReader.peek(), U'x');
 
-        auto leadingReader = StringCharReader{U8StringEditor{std::string_view{"_123"}}};
+        auto leadingReader = StringCharReader{StringEditor{"_123"_el}};
         REQUIRE_EQUAL(leadingReader.parseInteger(separatorOptions).status, ReadNumberStatus::ParseError);
         REQUIRE(leadingReader.position().isZero());
 
-        auto trailingReader = StringCharReader{U8StringEditor{std::string_view{"123_"}}};
+        auto trailingReader = StringCharReader{StringEditor{"123_"_el}};
         REQUIRE_EQUAL(trailingReader.parseInteger(separatorOptions).status, ReadNumberStatus::ParseError);
         REQUIRE(trailingReader.position().isZero());
 
-        auto doubledReader = StringCharReader{U8StringEditor{std::string_view{"12__3"}}};
+        auto doubledReader = StringCharReader{StringEditor{"12__3"_el}};
         REQUIRE_EQUAL(doubledReader.parseInteger(separatorOptions).status, ReadNumberStatus::ParseError);
         REQUIRE(doubledReader.position().isZero());
 
-        auto tooManyReader = StringCharReader{U8StringEditor{std::string_view{"12_3"}}};
+        auto tooManyReader = StringCharReader{StringEditor{"12_3"_el}};
         auto tooManyOptions = separatorOptions;
         tooManyOptions.setMaximumDigits(CpLength{2U});
         REQUIRE_EQUAL(tooManyReader.parseInteger(tooManyOptions).status, ReadNumberStatus::TooManyDigits);
@@ -890,23 +916,23 @@ public:
     }
 
     void testReadIntegerOrThrow() {
-        auto decimalReader = StringCharReader{U8StringEditor{std::string_view{"123abc"}}};
+        auto decimalReader = StringCharReader{StringEditor{"123abc"_el}};
         REQUIRE_EQUAL(decimalReader.readIntegerOrThrow<std::int32_t>(integerOptions(IntegerBase::Decimal)), 123);
         REQUIRE_EQUAL(decimalReader.position(), CpIndex{3U});
         REQUIRE_EQUAL(decimalReader.peek(), U'a');
 
-        auto signedReader = StringCharReader{U8StringEditor{std::string_view{"-128!"}}};
+        auto signedReader = StringCharReader{StringEditor{"-128!"_el}};
         auto signedOptions = integerOptions(IntegerBase::Decimal);
         signedOptions.addFlags(IntegerParseFlag::AcceptMinusSign);
         REQUIRE_EQUAL(signedReader.readIntegerOrThrow<std::int8_t>(signedOptions), std::int8_t{-128});
         REQUIRE_EQUAL(signedReader.peek(), U'!');
 
-        auto fixedDecimalReader = StringCharReader{U8StringEditor{std::string_view{"2026-06-05"}}};
+        auto fixedDecimalReader = StringCharReader{StringEditor{"2026-06-05"_el}};
         REQUIRE_EQUAL(
             fixedDecimalReader.readIntegerOrThrow<std::int32_t>(IntegerParseOptions::fixedDecimal(CpLength{4U})), 2026);
         REQUIRE_EQUAL(fixedDecimalReader.peek(), U'-');
 
-        auto fixedHexReader = StringCharReader{U8StringEditor{std::string_view{"ff:"}}};
+        auto fixedHexReader = StringCharReader{StringEditor{"ff:"_el}};
         REQUIRE_EQUAL(
             fixedHexReader.readIntegerOrThrow<std::uint8_t>(IntegerParseOptions::fixedHex(CpLength{2U})),
             std::uint8_t{255U});
@@ -926,12 +952,12 @@ public:
     }
 
     void testReadIntegerOrThrow2() {
-        auto targetOverflowReader = StringCharReader{U8StringEditor{std::string_view{"128!"}}};
+        auto targetOverflowReader = StringCharReader{StringEditor{"128!"_el}};
         try {
             static_cast<void>(
                 targetOverflowReader.readIntegerOrThrow<std::int8_t>(integerOptions(IntegerBase::Decimal)));
             REQUIRE(false);
-        } catch (const OverflowError &error) {
+        } catch (const ParseNumberError &error) {
             REQUIRE(targetOverflowReader.position().isZero());
         } catch (const erbsland::unittest::AssertFailed &) {
             throw;
@@ -939,19 +965,19 @@ public:
     }
 
     void testReadIntegerOrThrow3() {
-        auto unsignedNegativeReader = StringCharReader{U8StringEditor{std::string_view{"-1!"}}};
+        auto unsignedNegativeReader = StringCharReader{StringEditor{"-1!"_el}};
         try {
             auto signedOptions = integerOptions(IntegerBase::Decimal);
             signedOptions.addFlags(IntegerParseFlag::AcceptMinusSign);
             static_cast<void>(unsignedNegativeReader.readIntegerOrThrow<std::uint32_t>(signedOptions));
             REQUIRE(false);
-        } catch (const OverflowError &error) {
+        } catch (const ParseNumberError &error) {
             REQUIRE(unsignedNegativeReader.position().isZero());
         }
     }
 
     void testReadIntegerOrThrow4() {
-        auto invalidReader = StringCharReader{U8StringEditor{std::string_view{th::stdStringFromHex("31 C0 32")}}};
+        auto invalidReader = StringCharReader{String{th::stdStringFromHex("31 C0 32")}};
         try {
             static_cast<void>(
                 invalidReader.readIntegerOrThrow<std::int32_t>(IntegerParseOptions::fixedDecimal(CpLength{2U})));
@@ -962,7 +988,7 @@ public:
     }
 
     void testInvalidEncodingIsTolerant() {
-        auto utf8Reader = StringCharReader{U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}}};
+        auto utf8Reader = StringCharReader{String{th::stdStringFromHex("41 C0 42")}};
         REQUIRE_EQUAL(utf8Reader.read().toRawValue(), U'A');
         REQUIRE(utf8Reader.peek().isReplacement());
         REQUIRE(utf8Reader.read().isReplacement());
@@ -1061,13 +1087,13 @@ private:
 
     void requireReadIntegerNumberError(
         std::string_view text, IntegerParseOptions options, ReadNumberStatus status, CpIndex position) {
-        auto reader = StringCharReader{U8StringEditor{text}};
+        auto reader = StringCharReader{StringEditor{text}};
         try {
             static_cast<void>(reader.readIntegerOrThrow<std::uint64_t>(options));
             REQUIRE(false);
         } catch (const ParseNumberError &error) {
             REQUIRE_EQUAL(error.status(), status);
-            REQUIRE_EQUAL(error.position(), position);
+            REQUIRE_EQUAL(error.codePointIndex(), position);
             REQUIRE(reader.position().isZero());
         } catch (const OverflowError &error) {
             REQUIRE_EQUAL(status, ReadNumberStatus::Overflow);

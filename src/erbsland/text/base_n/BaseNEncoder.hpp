@@ -37,6 +37,7 @@ public: // conversion
     [[nodiscard]] auto toU32String() const -> U32String;
 
 private:
+    /// Build the encoded text using the requested string kind.
     [[nodiscard]] auto build(StringKind kind) const -> AnyString;
 
 private:

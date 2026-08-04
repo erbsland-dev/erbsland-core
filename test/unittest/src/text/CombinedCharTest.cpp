@@ -45,7 +45,7 @@ public:
     }
 
     void testConstructionFromUtf8AndUtf32Text() {
-        const auto utf8 = StringEditor{std::string_view{th::stdStringFromHex("65 CC 81")}};
+        const auto utf8 = String{th::stdStringFromHex("65 CC 81")};
         const auto fromUtf8 = CombinedChar{utf8};
         const auto fromUtf32 = CombinedChar{U"e\u0301"_el};
 
@@ -91,9 +91,7 @@ public:
             CombinedChar::fromString(U32StringEditor{std::u32string_view{invalidUtf32.data(), invalidUtf32.size()}})
                 .first(),
             Char::replacement());
-        REQUIRE_EQUAL(
-            CombinedChar::fromString(StringEditor{std::string_view{th::stdStringFromHex("C3")}}).first(),
-            Char::replacement());
+        REQUIRE_EQUAL(CombinedChar::fromString(String{th::stdStringFromHex("C3")}).first(), Char::replacement());
         REQUIRE_EQUAL(
             CombinedChar::fromString(U"a\u0301\u0302\u0303"_el).characters(),
             (CombinedChar::Storage{U'a', U'\u0301', U'\u0302'}));
@@ -104,9 +102,9 @@ public:
         const auto combined = CombinedChar{U"e\u0301"_el};
         const auto equalCombined = CombinedChar::fromString(U"e\u0301"_el);
 
-        REQUIRE(base == U'e');
-        REQUIRE_FALSE(combined == U'e');
-        REQUIRE(combined == equalCombined);
+        REQUIRE_EQUAL(base, U'e');
+        REQUIRE_NOT_EQUAL(combined, U'e');
+        REQUIRE_EQUAL(combined, equalCombined);
         REQUIRE_NOT_EQUAL(base.hash(), combined.hash());
         REQUIRE_EQUAL(combined.hash(), std::hash<CombinedChar>{}(combined));
     }

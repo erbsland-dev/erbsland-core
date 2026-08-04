@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PosixSignalDispatcher_fwd.hpp"
+
 #include <signal.h>
 
 #include <array>
@@ -29,8 +31,10 @@ public:
     /// Create and activate the signal-forwarding helper.
     /// @param onSignal Callback invoked on the watcher thread for a received signal.
     explicit PosixSignalDispatcher(SignalCallback onSignal);
+    /// Release the POSIX signal dispatcher.
     ~PosixSignalDispatcher();
 
+    // defaults/deletions
     PosixSignalDispatcher(const PosixSignalDispatcher &) = delete;
     auto operator=(const PosixSignalDispatcher &) -> PosixSignalDispatcher & = delete;
     PosixSignalDispatcher(PosixSignalDispatcher &&) = delete;

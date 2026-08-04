@@ -18,6 +18,10 @@ StringDecoder::StringDecoder(const mem::ByteBlockEditor &data) noexcept : _data{
 StringDecoder::StringDecoder(const mem::ByteBlock &data) noexcept : _data{data} {
 }
 
+void StringDecoder::validateOrThrow(const StringEncoding encoding, const StringBomMode bomMode) const {
+    impl::StringConversionTools::validateEncodedData(_data, encoding, bomMode);
+}
+
 auto StringDecoder::decode(const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode) const
     -> String {
     return toU8String(encoding, bomMode, mode);

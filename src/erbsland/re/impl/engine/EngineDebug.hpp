@@ -21,6 +21,7 @@
 
 namespace erbsland::re::impl {
 
+/// Categorize recorded regex-engine debug messages.
 enum class EDMType : uint8_t {
     Run,       ///< State at `run()`
     Match,     ///< State at `MATCH`
@@ -32,12 +33,14 @@ enum class EDMType : uint8_t {
 
 using EngineDebugMessages = std::list<std::pair<EDMType, text::StringEditor>>;
 
+/// Access the process-local debug-message buffer.
 [[nodiscard]] inline auto engineDebugMessages() -> EngineDebugMessages & {
     static EngineDebugMessages messages;
     return messages;
 }
 
 template <typename Fwd>
+/// Append one debug message, retaining a bounded history.
 void addEngineDebugMessage(EDMType type, Fwd &&message) {
     engineDebugMessages().emplace_back(type, std::forward<Fwd>(message));
     if (engineDebugMessages().size() > 10'000) {
@@ -45,6 +48,7 @@ void addEngineDebugMessage(EDMType type, Fwd &&message) {
     }
 }
 
+/// Print selected recorded debug messages.
 inline void printEngineDebugMessages(EDMType type = EDMType::All) {
     for (const auto &[msgType, message] : engineDebugMessages()) {
         if (type == EDMType::All || msgType == type) {

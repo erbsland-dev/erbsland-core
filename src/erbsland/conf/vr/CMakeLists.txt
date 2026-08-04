@@ -7,11 +7,14 @@ add_subdirectory(builder)
 
 target_sources(erbsland-core PRIVATE
         Constraint.hpp
+        Constraint_fwd.hpp
         ConstraintType.cpp
         ConstraintType.hpp
         Rule.hpp
+        Rule_fwd.hpp
         Rules.cpp
         Rules.hpp
+        Rules_fwd.hpp
         RulesBuilder.cpp
         RulesBuilder.hpp
         RuleType.cpp

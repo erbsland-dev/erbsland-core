@@ -34,7 +34,8 @@ public:
                 SOURCE_LOCATION(),
                 [&]() {
                     setupTemplate2(data.valueText);
-                    REQUIRE_EQUAL(value->toTextRepresentation(), data.expectedText);
+                    const auto actualText = value->toTextRepresentation();
+                    REQUIRE_EQUAL(actualText, data.expectedText);
                 },
                 [&]() -> std::string {
                     return std::format(
@@ -73,7 +74,8 @@ public:
                 SOURCE_LOCATION(),
                 [&]() {
                     setupTemplate2(data.valueText);
-                    REQUIRE_EQUAL(value->toTestText(), data.expectedText);
+                    const auto actualText = value->toTestText();
+                    REQUIRE_EQUAL(actualText, data.expectedText);
                 },
                 [&]() -> std::string {
                     return std::format(

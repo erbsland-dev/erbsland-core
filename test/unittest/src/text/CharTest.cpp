@@ -34,10 +34,10 @@ public:
         static_assert(a == U'A');
         static_assert(U'A' == a);
         static_assert(U'B' > a);
-        REQUIRE(a < b);
-        REQUIRE(a == U'A');
-        REQUIRE(U'A' == a);
-        REQUIRE(U'B' > a);
+        REQUIRE_LESS(a, b);
+        REQUIRE_EQUAL(a, U'A');
+        REQUIRE_EQUAL(U'A', a);
+        REQUIRE_GREATER(U'B', a);
     }
 
     void testUnicodeValidity() {
@@ -137,12 +137,12 @@ public:
         REQUIRE_FALSE(Char{0xFEFFU}.isByteOrderMark());
         REQUIRE_FALSE(error.isEndOfData());
         REQUIRE_FALSE(error.isNoCodePoint());
-        REQUIRE(endOfData == CharSignal::EndOfData);
-        REQUIRE(endOfData != CharSignal::NoCodePoint);
-        REQUIRE(noCodePoint == CharSignal::NoCodePoint);
-        REQUIRE(noCodePoint != CharSignal::EndOfData);
-        REQUIRE(error == CharSignal::Error);
-        REQUIRE(byteOrderMark == CharSignal::ByteOrderMark);
+        REQUIRE_EQUAL(endOfData, CharSignal::EndOfData);
+        REQUIRE_NOT_EQUAL(endOfData, CharSignal::NoCodePoint);
+        REQUIRE_EQUAL(noCodePoint, CharSignal::NoCodePoint);
+        REQUIRE_NOT_EQUAL(noCodePoint, CharSignal::EndOfData);
+        REQUIRE_EQUAL(error, CharSignal::Error);
+        REQUIRE_EQUAL(byteOrderMark, CharSignal::ByteOrderMark);
         REQUIRE_FALSE(endOfData.isValidUnicode());
         REQUIRE_FALSE(noCodePoint.isValidUnicode());
         REQUIRE_FALSE(error.isValidUnicode());

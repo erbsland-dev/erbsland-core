@@ -20,8 +20,13 @@ public:
     /// @param last The last character of the range.
     constexpr CharRange(const text::Char first, const text::Char last) noexcept :
         _first{last < first ? last : first}, _last{last < first ? first : last} {}
+    /// Create a character range from raw Unicode scalar values.
+    /// @param first The first character of the range.
+    /// @param last The last character of the range.
     constexpr CharRange(const char32_t first, const char32_t last) noexcept :
         CharRange{text::Char{first}, text::Char{last}} {}
+    /// Create a single-character range from a raw Unicode scalar value.
+    /// @param character The character in the range.
     constexpr explicit CharRange(const char32_t character) noexcept :
         CharRange{text::Char{character}, text::Char{character}} {}
 
@@ -32,20 +37,27 @@ public:
     auto operator=(const CharRange &) noexcept -> CharRange & = default;
 
 public: // comparison operators
+    /// Test if two character ranges contain identical bounds.
     constexpr auto operator==(const CharRange &other) const noexcept -> bool {
         return _first == other._first && _last == other._last;
     }
+    /// Test if two character ranges have different bounds.
     constexpr auto operator!=(const CharRange &other) const noexcept -> bool {
         return _first != other._first || _last != other._last;
     }
+    /// Test if this range precedes another range.
     constexpr auto operator<(const CharRange &other) const noexcept -> bool {
         return _first == other._first ? _last < other._last : _first < other._first;
     }
+    /// Test if this range does not follow another range.
     constexpr auto operator<=(const CharRange &other) const noexcept -> bool { return *this == other || *this < other; }
+    /// Test if this range follows another range.
     constexpr auto operator>(const CharRange &other) const noexcept -> bool {
         return _first == other._first ? _last > other._last : _first > other._first;
     }
+    /// Test if this range does not precede another range.
     constexpr auto operator>=(const CharRange &other) const noexcept -> bool { return *this == other || *this > other; }
+    /// Order character ranges by their lower then upper bounds.
     constexpr auto operator<=>(const CharRange &other) const noexcept -> std::strong_ordering {
         return _first <=> other._first != 0 ? _first <=> other._first : _last <=> other._last;
     }
@@ -88,11 +100,9 @@ private:
 
 }
 
-namespace std {
 template <>
-struct hash<erbsland::re::impl::CharRange> {
+struct std::hash<erbsland::re::impl::CharRange> {
     auto operator()(const erbsland::re::impl::CharRange &range) const noexcept -> std::size_t {
         return erbsland::util::createHash(range.first().toRawValue(), range.last().toRawValue());
     }
 };
-}

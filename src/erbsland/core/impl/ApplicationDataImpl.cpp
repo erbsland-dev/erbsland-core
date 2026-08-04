@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationDataImpl.hpp"
 
+#include "EventData.hpp"
+
+#include "../../cryptology/configuration/CryptologyConfiguration.hpp"
 #include "../../cterm/BlockStyle.hpp"
 #include "../../cterm/Terminal.hpp"
 #include "../../cterm/TerminalDocumentRenderer.hpp"
@@ -26,10 +29,8 @@ namespace erbsland::core::impl {
 
 using namespace text::literals;
 
-namespace {
-
 template <typename Char>
-void maskNativeArguments(
+void ApplicationDataImpl::maskNativeArguments(
     const int argumentCount, Char **arguments, const options::OptionSensitiveTextLocations &locations) noexcept {
     if (argumentCount <= 0 || arguments == nullptr) {
         return;
@@ -51,8 +52,6 @@ void maskNativeArguments(
             arguments[argumentIndex][index] = static_cast<Char>('*');
         }
     }
-}
-
 }
 
 ApplicationDataImpl::ApplicationDataImpl() : _options{options::Options::create()} {
@@ -205,6 +204,14 @@ void ApplicationDataImpl::setSecureRandom(random::RandomPtr random) noexcept {
     _secureRandom = std::move(random);
 }
 
+auto ApplicationDataImpl::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {
+    const auto lock = std::scoped_lock{_cryptologyMutex};
+    if (_cryptologyConfiguration == nullptr) {
+        _cryptologyConfiguration = std::make_unique<cryptology::CryptologyConfiguration>();
+    }
+    return *_cryptologyConfiguration;
+}
+
 auto ApplicationDataImpl::systemMutex() noexcept -> std::mutex & {
     return _systemMutex;
 }
@@ -257,5 +264,4 @@ auto ApplicationDataImpl::plainSystemOutputStream(const text::TextDocument &docu
     const auto isErrorDocument = root->style() == "error"_el;
     return isErrorDocument ? stream::stdErr() : stream::stdOut();
 }
-
 }

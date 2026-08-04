@@ -19,6 +19,12 @@ class RegisteredUtility:
 
 
 REGISTERED_UTILITIES = {
+    "anti_patterns": RegisteredUtility(
+        "Anti-Patterns",
+        "dev.anti_patterns",
+        "AntiPatternsApp",
+        help="Scan first-party C++ sources for documented anti-patterns.",
+    ),
     "api_guidelines": RegisteredUtility(
         "API Guidelines",
         "dev.api_guidelines",
@@ -109,6 +115,18 @@ REGISTERED_UTILITIES = {
         "GenerateUnicodeLightDataApp",
         help="Generate the compact Unicode Light data tables from local UCD files.",
     ),
+    "generate_unicode_normalization_data": RegisteredUtility(
+        "Generate Unicode Normalization Data",
+        "dev.generate_unicode_normalization_data",
+        "GenerateUnicodeNormalizationDataApp",
+        help="Generate the compact Unicode normalization data tables from local UCD files.",
+    ),
+    "generate_idna_data": RegisteredUtility(
+        "Generate IDNA Data",
+        "dev.generate_idna_data",
+        "GenerateIdnaDataApp",
+        help="Generate compact Unicode 17 IDNA2008 property tables from local UCD files.",
+    ),
     "generate_time_zone_data": RegisteredUtility(
         "Generate Time Zone Data",
         "dev.generate_time_zone_data",
@@ -150,6 +168,12 @@ REGISTERED_UTILITIES = {
         "test.generate_time_tests",
         "GenerateTimeTestsApp",
         help="Regenerate generated date/time unit-test source files.",
+    ),
+    "import_cryptology_vectors": RegisteredUtility(
+        "Import Cryptology Vectors",
+        "test.import_cryptology_vectors",
+        "ImportCryptologyVectorsApp",
+        help="Import pinned official cryptology vector archives into deterministic unit-test fixtures.",
     ),
 }
 

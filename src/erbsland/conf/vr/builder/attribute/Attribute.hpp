@@ -3,19 +3,24 @@
 #pragma once
 
 #include "../../../../text/String.hpp"
-
-namespace erbsland::conf::impl {
-class Rule;
-}
+#include "../../../impl/vr/KeyConstraint_fwd.hpp"
+#include "../../../impl/vr/Rule_fwd.hpp"
+#include "../../../impl/vr/VersionMask_fwd.hpp"
 
 namespace erbsland::conf::vr::builder {
 
 /// Base interface for all rule builder attributes.
-struct Attribute {
+class Attribute {
+public:
+    using Rule = impl::Rule;
+
+    // defaults
     virtual ~Attribute() = default;
-    virtual void operator()(impl::Rule &rule) = 0;
+    /// Apply this attribute to a rule.
+    virtual void operator()(Rule &rule) = 0;
 
 protected:
+    /// Throw an error that explains invalid attribute data.
     [[noreturn]] static void throwValidationError(text::String message);
 };
 

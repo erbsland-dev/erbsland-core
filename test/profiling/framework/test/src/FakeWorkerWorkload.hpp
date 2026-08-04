@@ -13,6 +13,7 @@
 /// @tested{WorkloadRunnerTest}
 class FakeWorkerWorkload final : public erbsland::profiling::WorkerWorkload {
 public:
+    /// Create a deterministic worker workload with a shared execution counter.
     FakeWorkerWorkload(std::shared_ptr<std::atomic<std::uint64_t>> executions, bool fail);
 
 public: // implement WorkerWorkload

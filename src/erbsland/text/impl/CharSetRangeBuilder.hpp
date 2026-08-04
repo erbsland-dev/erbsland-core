@@ -2,27 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "CharSetRangeBuilder_fwd.hpp"
+
 #include "../CharSet.hpp"
 
 #include <cstddef>
 
 namespace erbsland::text::impl {
-
-/// Counts normalized ranges supplied in ascending order.
-/// @tested{CharSetTest}
-class CharSetRangeCounter final {
-public:
-    /// Add the next range in ascending order.
-    /// @param range The next normalized or unnormalized range.
-    void add(CharRange range) noexcept;
-    /// Return the number of normalized ranges seen so far.
-    /// @return The normalized range count.
-    [[nodiscard]] auto count() const noexcept -> std::size_t { return _count; }
-
-private:
-    CharRange _lastRange{}; ///< The last normalized range.
-    std::size_t _count{};   ///< The number of normalized ranges.
-};
 
 /// Builds a character set from ranges supplied in ascending order.
 /// @tested{CharSetTest}
@@ -31,9 +17,10 @@ public:
     /// Create a builder with an upper bound for the final number of ranges.
     /// @param maximumRangeCount The maximum number of normalized ranges that can be emitted.
     explicit CharSetRangeBuilder(std::size_t maximumRangeCount) noexcept;
+    /// default dtor
+    ~CharSetRangeBuilder();
 
     // defaults/deletions
-    ~CharSetRangeBuilder();
     CharSetRangeBuilder(const CharSetRangeBuilder &) = delete;
     CharSetRangeBuilder(CharSetRangeBuilder &&) = delete;
     auto operator=(const CharSetRangeBuilder &) -> CharSetRangeBuilder & = delete;
@@ -48,9 +35,13 @@ public:
     [[nodiscard]] auto take() -> CharSet;
 
 private:
+    /// Return the current number of collected ranges.
     [[nodiscard]] auto count() const noexcept -> std::size_t;
+    /// Access the final collected range.
     [[nodiscard]] auto last() noexcept -> CharRange &;
+    /// Append one unmerged range.
     void append(CharRange range);
+    /// Promote inline ranges to shared range storage.
     void promote();
 
 private:

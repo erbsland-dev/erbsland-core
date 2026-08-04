@@ -12,7 +12,7 @@
 #include <erbsland/text/u32/U32StringList.hpp>
 #include <erbsland/text/u8/U8StringEditorList.hpp>
 #include <erbsland/text/u8/U8StringList.hpp>
-#include <erbsland/unit/ElementIndex.hpp>
+#include <erbsland/unit/ItemIndex.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <compare>
@@ -22,8 +22,8 @@
 
 using namespace el::text::literals;
 
-using el::unit::ElementCount;
-using el::unit::ElementIndex;
+using el::unit::ItemCount;
+using el::unit::ItemIndex;
 using namespace el::text;
 
 static_assert(std::is_same_v<StringList::Element, String>);
@@ -38,36 +38,34 @@ class StringListTest final : public el::UnitTest {
 public:
     void testU8StringListOperations() {
         const auto list = U8StringEditorList{
-            U8StringEditor{std::string_view{"Beta"}},
-            U8StringEditor{},
-            U8StringEditor{std::string_view{"alpha"}},
-            U8StringEditor{std::string_view{"ALPHA"}},
+            StringEditor{"Beta"_el},
+            StringEditor{},
+            StringEditor{"alpha"_el},
+            StringEditor{"ALPHA"_el},
         };
 
         REQUIRE_EQUAL(
             list.compare(
                 U8StringEditorList{
-                    U8StringEditor{std::string_view{"beta"}},
-                    U8StringEditor{},
-                    U8StringEditor{std::string_view{"Alpha"}},
-                    U8StringEditor{std::string_view{"alpha"}},
+                    StringEditor{"beta"_el},
+                    StringEditor{},
+                    StringEditor{"Alpha"_el},
+                    StringEditor{"alpha"_el},
                 },
                 Char::compareCaseFolded),
             std::strong_ordering::equal);
-        REQUIRE_EQUAL(
-            list.findFirst(U8StringEditor{std::string_view{"ALPHA"}}, Char::compareCaseFolded), ElementIndex{2});
-        REQUIRE_EQUAL(
-            list.findLast(U8StringEditor{std::string_view{"alpha"}}, Char::compareCaseFolded), ElementIndex{3});
-        REQUIRE(list.contains(U8StringEditor{std::string_view{"BETA"}}, Char::compareCaseFolded));
+        REQUIRE_EQUAL(list.findFirst(StringEditor{"ALPHA"_el}, Char::compareCaseFolded), ItemIndex{2});
+        REQUIRE_EQUAL(list.findLast(StringEditor{"alpha"_el}, Char::compareCaseFolded), ItemIndex{3});
+        REQUIRE(list.contains(StringEditor{"BETA"_el}, Char::compareCaseFolded));
         REQUIRE_EQUAL(list.removedEmpty().count().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(
-            StringConverter{list.removedEmpty().join(U8StringEditor{std::string_view{"|"}})}.toStdString(),
+            StringConverter{list.removedEmpty().join(StringEditor{"|"_el})}.toStdString(),
             std::string{"Beta|alpha|ALPHA"});
         REQUIRE_EQUAL(
-            StringConverter{list.removedEmpty().sort().join(U8StringEditor{std::string_view{"|"}})}.toStdString(),
+            StringConverter{list.removedEmpty().sort().join(StringEditor{"|"_el})}.toStdString(),
             std::string{"ALPHA|Beta|alpha"});
         REQUIRE_EQUAL(
-            StringConverter{list.removedEmpty().sorted().join(U8StringEditor{std::string_view{"|"}})}.toStdString(),
+            StringConverter{list.removedEmpty().sorted().join(StringEditor{"|"_el})}.toStdString(),
             std::string{"ALPHA|Beta|alpha"});
         REQUIRE_EQUAL(
             StringConverter{list.removedEmpty().sort(Char::compareCaseFolded).first()}.toStdString(),
@@ -77,7 +75,7 @@ public:
     void testU8StringListJoinKeepsStorageAlive() {
 
         const auto parts =
-            StringList::fromSplit("A,,b"_el, CharSet{","_el}, ElementCount::infinite(), true).removedEmpty();
+            StringList::fromSplit("A,,b"_el, CharSet{","_el}, ItemCount::infinite(), true).removedEmpty();
         const auto joined = parts.join("|"_el);
 
         REQUIRE_EQUAL(StringConverter{joined}.toStdString(), std::string{"A|b"});
@@ -86,26 +84,26 @@ public:
     void testFromSplitOptions() {
 
         const auto parts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el});
-        const auto keptParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ElementCount::infinite(), true);
-        const auto zeroSplitParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ElementCount::zero(), true);
-        const auto limitedParts = StringList::fromSplit("a,b,c"_el, CharSet{","_el}, ElementCount{2U});
-        const auto limitedKeptParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ElementCount{2U}, true);
-        const auto limitedDroppedParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ElementCount{2U}, false);
+        const auto keptParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ItemCount::infinite(), true);
+        const auto zeroSplitParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ItemCount::zero(), true);
+        const auto limitedParts = StringList::fromSplit("a,b,c"_el, CharSet{","_el}, ItemCount{2U});
+        const auto limitedKeptParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ItemCount{2U}, true);
+        const auto limitedDroppedParts = StringList::fromSplit(",a,,b,"_el, CharSet{","_el}, ItemCount{2U}, false);
         const auto owningParts = StringEditorList::fromSplit("a,b"_el, CharSet{","_el});
 
         REQUIRE_EQUAL(parts.count().toSizeT(), std::size_t{2U});
         REQUIRE_EQUAL(keptParts.count().toSizeT(), std::size_t{5U});
         REQUIRE_EQUAL(zeroSplitParts.count().toSizeT(), std::size_t{1U});
-        REQUIRE_EQUAL(zeroSplitParts[ElementIndex::zero()], ",a,,b,"_el);
+        REQUIRE_EQUAL(zeroSplitParts.getRefOrThrow(ItemIndex::zero()), ",a,,b,"_el);
         REQUIRE_EQUAL(limitedParts.count().toSizeT(), std::size_t{3U});
-        REQUIRE_EQUAL(limitedParts[ElementIndex{2U}], "c"_el);
+        REQUIRE_EQUAL(limitedParts.getRefOrThrow(ItemIndex{2U}), "c"_el);
         REQUIRE_EQUAL(limitedKeptParts.count().toSizeT(), std::size_t{3U});
-        REQUIRE_EQUAL(limitedKeptParts[ElementIndex::zero()], ""_el);
-        REQUIRE_EQUAL(limitedKeptParts[ElementIndex{1U}], "a"_el);
-        REQUIRE_EQUAL(limitedKeptParts[ElementIndex{2U}], ",b,"_el);
+        REQUIRE_EQUAL(limitedKeptParts.getRefOrThrow(ItemIndex::zero()), ""_el);
+        REQUIRE_EQUAL(limitedKeptParts.getRefOrThrow(ItemIndex{1U}), "a"_el);
+        REQUIRE_EQUAL(limitedKeptParts.getRefOrThrow(ItemIndex{2U}), ",b,"_el);
         REQUIRE_EQUAL(limitedDroppedParts.count().toSizeT(), std::size_t{2U});
-        REQUIRE_EQUAL(limitedDroppedParts[ElementIndex::zero()], "a"_el);
-        REQUIRE_EQUAL(limitedDroppedParts[ElementIndex{1U}], ",b,"_el);
+        REQUIRE_EQUAL(limitedDroppedParts.getRefOrThrow(ItemIndex::zero()), "a"_el);
+        REQUIRE_EQUAL(limitedDroppedParts.getRefOrThrow(ItemIndex{1U}), ",b,"_el);
         REQUIRE_EQUAL(StringConverter{owningParts.join()}.toStdString(), std::string{"ab"});
     }
 

@@ -6,10 +6,12 @@
 
 namespace erbsland::re::impl::node_data {
 
+/// Node data for a sequence of regular-expression nodes.
 class Sequence : public NodeData {
 public:
     /// Default constructor for fast zero-initialization.
     Sequence() = default;
+    // defaults
     ~Sequence() = default;
 
 public:

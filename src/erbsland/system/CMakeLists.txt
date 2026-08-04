@@ -7,6 +7,9 @@ add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
         all.hpp
+        EnvironmentVariables.cpp
+        EnvironmentVariables.hpp
+        EnvironmentVariables_fwd.hpp
         GroupId.hpp
         GroupName.cpp
         GroupName.hpp
@@ -18,6 +21,13 @@ target_sources(erbsland-core PRIVATE
         PlatformErrorContext_fwd.hpp
         PosixErrorContext.cpp
         PosixErrorContext.hpp
+        Subprocess.cpp
+        Subprocess.hpp
+        Subprocess_fwd.hpp
+        SubprocessExitStatus.hpp
+        SubprocessOptions.hpp
+        SubprocessOptions_fwd.hpp
+        SubprocessOutputMode.hpp
         UserId.hpp
         UserLookup.cpp
         UserLookup.hpp

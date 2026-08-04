@@ -218,6 +218,7 @@ public:
     [[nodiscard]] static auto splitStyleTokens(const text::String &value) -> TokenList;
 
 private:
+    /// Get the characters that separate style tokens.
     [[nodiscard]] static auto styleTokenSeparators() -> const text::CharSet &;
 
     text::TextNodeType _nodeType{text::TextNodeType::Paragraph}; ///< The node type to match.

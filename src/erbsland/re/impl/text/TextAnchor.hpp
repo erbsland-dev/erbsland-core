@@ -35,7 +35,9 @@ public:
     auto operator=(const TextAnchor &) -> TextAnchor & = default;
 
 public: // operators
+    /// Compare two anchors for equality.
     [[nodiscard]] auto operator==(const TextAnchor &other) const noexcept -> bool { return _value == other._value; }
+    /// Compare two anchors for inequality.
     [[nodiscard]] auto operator!=(const TextAnchor &other) const noexcept -> bool { return _value != other._value; }
 
 public:
@@ -53,6 +55,7 @@ public:
 
 private:
     using ValueToNameList = std::vector<std::pair<Value, text::String>>;
+    /// Get the mapping from anchor values to their names.
     [[nodiscard]] static auto valueToNameList() noexcept -> const ValueToNameList &;
 
 private:

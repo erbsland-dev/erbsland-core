@@ -6,7 +6,7 @@ namespace erbsland::util {
 
 template <typename tKey, typename tCompare, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
-Set<tKey, tCompare, tSelf>::Set() : _storage{} {
+Set<tKey, tCompare, tSelf>::Set() : _storage{defaultStorage()} {
 }
 
 template <typename tKey, typename tCompare, typename tSelf>
@@ -98,6 +98,16 @@ template <typename tKey, typename tCompare, typename tSelf>
     requires std::default_initializable<tKey> && std::copyable<tKey>
 auto Set<tKey, tCompare, tSelf>::makeSelf(Raw raw) -> Self {
     return Self{std::move(raw)};
+}
+
+template <typename tKey, typename tCompare, typename tSelf>
+    requires std::default_initializable<tKey> && std::copyable<tKey>
+auto Set<tKey, tCompare, tSelf>::defaultStorage() -> Storage {
+    if constexpr (std::is_empty_v<Compare>) {
+        return Storage::sharedDefault();
+    } else {
+        return Storage{};
+    }
 }
 
 template <typename tKey, typename tCompare, typename tSelf>

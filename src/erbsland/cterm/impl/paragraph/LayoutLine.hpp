@@ -9,6 +9,7 @@ namespace erbsland::cterm::impl::paragraph {
 /// One rendered physical line in the final paragraph layout.
 class LayoutLine final {
 public:
+    // defaults/deletions
     LayoutLine() = default;
     ~LayoutLine() = default;
     LayoutLine(const LayoutLine &) = delete;

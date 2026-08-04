@@ -9,6 +9,7 @@
 #include "PathCopyOptions.hpp"
 #include "PathCreateDirectoryOptions.hpp"
 #include "PathCreateFileOptions.hpp"
+#include "PathError_fwd.hpp"
 #include "PathMoveOptions.hpp"
 #include "PathOperations_fwd.hpp"
 #include "PathProgress.hpp"
@@ -26,8 +27,6 @@
 
 namespace erbsland::path {
 
-class PathError;
-
 /// A class for performing operations on paths.
 /// @tested{PathOperationsTest PathTemporaryTest}
 class PathOperations final {
@@ -39,10 +38,13 @@ public:
     /// dtor
     ~PathOperations();
 
-    // defaults
+    // defaults/deletions
     PathOperations(const PathOperations &) = delete;
     PathOperations(PathOperations &&) noexcept;
+
+    // defaults/deletions
     auto operator=(const PathOperations &) -> PathOperations & = delete;
+    /// Move another path-operations instance into this instance.
     auto operator=(PathOperations &&) noexcept -> PathOperations &;
 
 public: // attributes
@@ -170,6 +172,7 @@ public:
     void clearAttributesOrThrow(PathAttributes attributes, PathChangeOptions options = {}) const;
 
 private:
+    /// Test whether an error reports an existing path.
     [[nodiscard]] static auto isAlreadyExistsError(const PathError &error) noexcept -> bool;
 
 private:

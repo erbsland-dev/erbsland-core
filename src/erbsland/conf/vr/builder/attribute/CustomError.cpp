@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void CustomError::operator()(impl::Rule &rule) {
+void CustomError::operator()(Rule &rule) {
     rule.setErrorMessage(std::move(_errorMessage));
 }
 

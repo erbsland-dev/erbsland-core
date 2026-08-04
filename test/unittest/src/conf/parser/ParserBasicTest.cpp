@@ -30,12 +30,12 @@ public:
     /// Test if the source was used as expected, with one open and one close and no unnecessary reads.
     void verifySequentialRead() {
         REQUIRE_EQUAL(source->actions.count().toSizeT(), source->lines.size() + 2);
-        REQUIRE(source->actions.first() == "open"_el);
-        REQUIRE(source->actions.last() == "close"_el);
+        REQUIRE_EQUAL(source->actions.first(), "open"_el);
+        REQUIRE_EQUAL(source->actions.last(), "close"_el);
         auto actionIndex = std::size_t{0};
         for (const auto &action : source->actions) {
             if (actionIndex > 0 && actionIndex + 1 < source->actions.count().toSizeT()) {
-                REQUIRE(action == "readLine"_el);
+                REQUIRE_EQUAL(action, "readLine"_el);
             }
             ++actionIndex;
         }
@@ -56,7 +56,7 @@ public:
         parser = std::make_shared<Parser>();
         REQUIRE_NOTHROW(doc = parser->parseOrThrow(source));
         WITH_CONTEXT(verifySequentialRead());
-        REQUIRE(doc != nullptr);
+        REQUIRE_NOT_EQUAL(doc, nullptr);
         REQUIRE(doc->empty());
         const auto location = doc->location();
         REQUIRE_FALSE(location.isUndefined());
@@ -69,7 +69,7 @@ public:
         parser = std::make_shared<Parser>();
         REQUIRE_NOTHROW(doc = parser->parseOrThrow(source));
         WITH_CONTEXT(verifySequentialRead());
-        REQUIRE(doc != nullptr);
+        REQUIRE_NOT_EQUAL(doc, nullptr);
         REQUIRE(doc->empty());
     }
 
@@ -78,7 +78,7 @@ public:
         parser = std::make_shared<Parser>();
         REQUIRE_NOTHROW(doc = parser->parseOrThrow(source));
         WITH_CONTEXT(verifySequentialRead());
-        REQUIRE(doc != nullptr);
+        REQUIRE_NOT_EQUAL(doc, nullptr);
         REQUIRE(doc->empty());
     }
 

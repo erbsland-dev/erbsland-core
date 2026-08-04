@@ -4,6 +4,7 @@
 
 #include "StringPattern_fwd.hpp"
 
+#include "impl/StringPatternData_fwd.hpp"
 #include "pattern/AnyElement.hpp"
 #include "u16/U16String.hpp"
 #include "u16/U16StringEditor.hpp"
@@ -27,12 +28,6 @@
 #include <utility>
 
 namespace erbsland::text {
-
-namespace impl {
-
-class StringPatternData;
-
-}
 
 /// A lightweight decoded-character string pattern.
 /// @seedoc{/reference/text/string_pattern}

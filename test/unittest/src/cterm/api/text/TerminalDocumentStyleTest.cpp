@@ -22,9 +22,9 @@ public:
 
         using TokenList = TerminalDocumentStyleSelector::TokenList;
         REQUIRE_EQUAL(tokens.count(), TokenList::Count{3U});
-        REQUIRE_EQUAL(tokens[TokenList::Index{0U}], "alpha"_el);
-        REQUIRE_EQUAL(tokens[TokenList::Index{1U}], "beta"_el);
-        REQUIRE_EQUAL(tokens[TokenList::Index{2U}], "key"_el);
+        REQUIRE_EQUAL(tokens.getRefOrThrow(TokenList::Index{0U}), "alpha"_el);
+        REQUIRE_EQUAL(tokens.getRefOrThrow(TokenList::Index{1U}), "beta"_el);
+        REQUIRE_EQUAL(tokens.getRefOrThrow(TokenList::Index{2U}), "key"_el);
     }
 
     void testCowCopyKeepsOriginalStyleUnchanged() {
@@ -34,7 +34,7 @@ public:
         copy.setBaseTextStyle(BlockStyle{fg::Red});
         copy.edit(TerminalDocumentStyleSelector::paragraph()).setMargins(bgeo::BlockMargins{1});
 
-        REQUIRE(original.baseTextStyle() != copy.baseTextStyle());
+        REQUIRE_NOT_EQUAL(original.baseTextStyle(), copy.baseTextStyle());
         REQUIRE_EQUAL(original.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), bgeo::BlockMargins{0});
         REQUIRE_EQUAL(copy.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), bgeo::BlockMargins{1});
     }
@@ -85,7 +85,7 @@ public:
             tokens,
             {text::TextNodeType::Document, text::TextNodeType::Section, text::TextNodeType::Blockquote});
 
-        REQUIRE(withoutAncestor.textStyle() != BlockStyle{fg::Green});
+        REQUIRE_NOT_EQUAL(withoutAncestor.textStyle(), BlockStyle{fg::Green});
         REQUIRE_EQUAL(withDeepAncestor.textStyle(), BlockStyle{fg::Green});
     }
 

@@ -84,6 +84,7 @@ public:
     std::vector<LayoutLineToken> tokens; ///< The extracted tokens of the source line.
 
 private:
+    /// Append pending spacing tokens after the line has gained a word token.
     void flushPendingTokens() noexcept {
         if (!_hasWordToken) {
             for (const auto &token : _pendingTokens) {

@@ -24,6 +24,7 @@ public:
     /// Abort pending work without waiting for native I/O.
     ~BufferedByteInputStream() override;
 
+    // defaults/deletions
     BufferedByteInputStream(const BufferedByteInputStream &) = delete;
     BufferedByteInputStream(BufferedByteInputStream &&) = delete;
     auto operator=(const BufferedByteInputStream &) -> BufferedByteInputStream & = delete;
@@ -49,8 +50,11 @@ protected: // implement ByteInputStream
     auto moveSourcePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> StreamPositionStatus override;
 
 private:
+    /// Begin a serialized source-positioning operation.
     [[nodiscard]] auto beginPositioning(std::unique_lock<std::mutex> &lock, ReadDeadline deadline) -> bool;
+    /// Complete a source-positioning operation at the given position.
     void completePositioning(unit::ByteIndex position);
+    /// Cancel an in-progress source-positioning operation.
     void cancelPositioning() noexcept;
 
 private:

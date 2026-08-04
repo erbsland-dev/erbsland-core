@@ -9,6 +9,7 @@
 #include "../text/CharRange.hpp"
 #include "../text/CharSequence.hpp"
 
+#include <algorithm>
 #include <unordered_map>
 
 namespace erbsland::re::impl {
@@ -26,7 +27,7 @@ public:
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(_data != nullptr, "Engine data must not be null"_el);
     }
 
-    // defaults and disable copy and move.
+    // defaults/deletions
     ~DataCollector() = default;
     auto operator=(const DataCollector &) -> DataCollector & = delete;
     auto operator=(DataCollector &&) -> DataCollector & = delete;
@@ -104,6 +105,7 @@ private:
             }
         } else if (node.isQuantifier()) {
             auto &data = std::get<node_data::Quantifier>(node.data());
+            _data->counterCount = std::max(_data->counterCount, static_cast<std::size_t>(data.counterIndex) + 1U);
             if (data.atomicGroupId != cNoAtomicGroupId) {
                 _data->hasAtomicGroups = true;
             }

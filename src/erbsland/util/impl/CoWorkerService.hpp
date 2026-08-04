@@ -25,16 +25,22 @@ public:
     /// @param work The work callback.
     static void submit(std::function<void()> work);
 
+    // defaults/deletions
     CoWorkerService(const CoWorkerService &) = delete;
     CoWorkerService(CoWorkerService &&) = delete;
     auto operator=(const CoWorkerService &) -> CoWorkerService & = delete;
     auto operator=(CoWorkerService &&) -> CoWorkerService & = delete;
 
 private:
+    /// Create the process-wide coroutine worker service.
     CoWorkerService();
+    /// Access the process-wide co-worker service.
     [[nodiscard]] static auto service() -> CoWorkerService &;
+    /// Queue work for a worker thread.
     void submitWork(std::function<void()> work);
+    /// Start one worker thread.
     void addWorker();
+    /// Execute queued work in a worker thread.
     void run();
 
 private:

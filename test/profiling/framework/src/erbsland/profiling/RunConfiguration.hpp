@@ -11,11 +11,13 @@
 
 namespace erbsland::profiling {
 
+using namespace text::literals;
+
 /// Settings shared by a complete profiling run.
 /// @tested{ConfigurationLoaderTest WorkloadRunnerTest}
 struct RunConfiguration {
     RunMode mode{RunMode::Benchmark};                         ///< Execution mode.
-    String suite{"snapshot"};                                 ///< Selected built-in suite.
+    String suite{"snapshot"_el};                              ///< Selected built-in suite.
     TimeDelta duration{TimeDelta::minutes(5)};                ///< Hard run deadline.
     std::uint32_t threadCount{4U};                            ///< Workload worker count.
     std::uint64_t seed{0x455242534c414e44ULL};                ///< Global deterministic seed.

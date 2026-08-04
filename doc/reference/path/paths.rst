@@ -104,10 +104,9 @@ Interface
     :members:
 .. doxygenclass:: erbsland::path::PathOperations
     :members:
-.. doxygenenum:: erbsland::path::PathProgressStatus
-
 .. doxygenstruct:: erbsland::path::PathProgress
     :members:
+.. doxygenenum:: erbsland::path::PathProgressStatus
 .. doxygenclass:: erbsland::path::PathReadDataOptions
     :members:
 .. doxygenclass:: erbsland::path::PathReadTextOptions

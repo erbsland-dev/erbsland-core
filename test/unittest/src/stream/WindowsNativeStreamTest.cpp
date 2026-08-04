@@ -138,15 +138,15 @@ public:
     void testOwnedHandleClose() {
         auto pipe = Pipe{};
         auto ownedHandle = HANDLE{};
-        REQUIRE(
-            DuplicateHandle(
-                GetCurrentProcess(),
-                pipe.writeHandle(),
-                GetCurrentProcess(),
-                &ownedHandle,
-                0,
-                FALSE,
-                DUPLICATE_SAME_ACCESS) != 0);
+        const auto duplicateSucceeded = DuplicateHandle(
+            GetCurrentProcess(),
+            pipe.writeHandle(),
+            GetCurrentProcess(),
+            &ownedHandle,
+            0,
+            FALSE,
+            DUPLICATE_SAME_ACCESS);
+        REQUIRE_NOT_EQUAL(duplicateSucceeded, 0);
 
         auto stream =
             el::stream::impl::WindowsNativeStream{ownedHandle, el::stream::impl::NativeStreamOwnership::Owned};
@@ -155,21 +155,16 @@ public:
 
         const auto text = std::string{"x"};
         REQUIRE_THROWS_AS(StreamError, stream.writeBytes(std::span<const char>{text.data(), text.size()}));
-        REQUIRE(CloseHandle(ownedHandle) == 0);
+        const auto closeSucceeded = CloseHandle(ownedHandle);
+        REQUIRE_EQUAL(closeSucceeded, 0);
     }
 
     void testAbortCancelsBlockedSynchronousRead() {
         auto pipe = Pipe{};
         auto ownedHandle = HANDLE{};
-        REQUIRE(
-            DuplicateHandle(
-                GetCurrentProcess(),
-                pipe.readHandle(),
-                GetCurrentProcess(),
-                &ownedHandle,
-                0,
-                FALSE,
-                DUPLICATE_SAME_ACCESS) != 0);
+        const auto duplicateSucceeded = DuplicateHandle(
+            GetCurrentProcess(), pipe.readHandle(), GetCurrentProcess(), &ownedHandle, 0, FALSE, DUPLICATE_SAME_ACCESS);
+        REQUIRE_NOT_EQUAL(duplicateSucceeded, 0);
         auto stream =
             el::stream::impl::WindowsNativeStream{ownedHandle, el::stream::impl::NativeStreamOwnership::Owned};
         auto future = std::async(std::launch::async, [&stream]() -> void {
@@ -193,7 +188,7 @@ public:
         const auto path = createTemporaryPath();
         auto handle = CreateFileW(
             path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-        REQUIRE(handle != INVALID_HANDLE_VALUE);
+        REQUIRE_NOT_EQUAL(handle, INVALID_HANDLE_VALUE);
 
         auto stream = el::stream::impl::WindowsNativeStream{handle, el::stream::impl::NativeStreamOwnership::Owned};
         REQUIRE(stream.fileSize().isZero());
@@ -210,7 +205,7 @@ public:
         const auto path = createTemporaryPath();
         auto handle = CreateFileW(
             path.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-        REQUIRE(handle != INVALID_HANDLE_VALUE);
+        REQUIRE_NOT_EQUAL(handle, INVALID_HANDLE_VALUE);
         auto stream = el::stream::impl::WindowsNativeStream{handle, el::stream::impl::NativeStreamOwnership::Owned};
 
         REQUIRE(stream.supportsPositioning());
@@ -224,7 +219,7 @@ public:
 
         auto restrictedHandle =
             CreateFileW(path.c_str(), GENERIC_WRITE, 0, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-        REQUIRE(restrictedHandle != INVALID_HANDLE_VALUE);
+        REQUIRE_NOT_EQUAL(restrictedHandle, INVALID_HANDLE_VALUE);
         auto restricted = el::stream::impl::WindowsNativeStream{
             restrictedHandle, el::stream::impl::NativeStreamOwnership::Owned, {}, false};
         REQUIRE_FALSE(restricted.supportsPositioning());

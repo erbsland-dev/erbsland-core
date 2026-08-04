@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PosixSignalDispatcher_fwd.hpp"
+
 #include "../Backend.hpp"
 
 #include <termios.h>
@@ -15,8 +17,7 @@
 
 namespace erbsland::cterm::impl {
 
-class PosixSignalDispatcher;
-
+/// POSIX terminal backend implementation.
 class PosixBackend final : public Backend {
     using clock = std::chrono::steady_clock;
     constexpr static auto cMinimumDelayBetweenScreenSizeDetection = std::chrono::milliseconds{100};
@@ -25,10 +26,13 @@ class PosixBackend final : public Backend {
     constexpr static auto cMaximumInputReadSize = 64;
 
 public:
+    /// Result of attempting to detect the terminal size.
     enum class SizeDetectionResult : uint8_t { NoTerminalAttached, NoTerminalSize, Success };
     using OptionalTimeout = std::optional<std::chrono::milliseconds>;
 
 public:
+    /// Create a POSIX terminal backend with requested flags.
+    /// @param terminalFlags The requested terminal features.
     explicit PosixBackend(TerminalFlags terminalFlags); // must never be called directly
     ~PosixBackend() override;
 

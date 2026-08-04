@@ -19,6 +19,37 @@ public:
             }));
     }
 
+    void testLiteralAlternativeForms() {
+        const auto expected = std::vector<std::string>{
+            ".section &sequence",
+            "$0000: .data \"hello\"",
+            "$0005: .data \"world\"",
+            ".section &program",
+            "$0000: SPLIT $0002, $0004",
+            "$0002: SEQUENCE $0000, $05",
+            "$0003: JUMP $0005",
+            "$0004: SEQUENCE $0005, $05",
+            "$0005: MATCH",
+        };
+
+        WITH_CONTEXT(compileAndDisassemble("hello|world"_el));
+        WITH_CONTEXT(requireLines(lines, expected));
+        WITH_CONTEXT(compileAndDisassemble("(?:hello|world)"_el));
+        WITH_CONTEXT(requireLines(lines, expected));
+    }
+
+    void testLiteralFastPathRespectsCompilerLimits() {
+        auto settings = Settings{};
+        settings.setMaximumPatternLength(el::unit::CpLength{5U});
+        REQUIRE_THROWS(compileAndDisassemble("hello"_el, {}, settings));
+
+        settings = Settings{};
+        settings.setMaximumAlternativeCount(1U);
+        REQUIRE_THROWS(compileAndDisassemble("hello|world"_el, {}, settings));
+
+        REQUIRE_THROWS(compileAndDisassemble("hello"_el, GroupFlag::Atomic));
+    }
+
     void testRootAlternationTwo() {
         WITH_CONTEXT(compileAndDisassemble("a|b"_el));
         WITH_CONTEXT(requireLines(

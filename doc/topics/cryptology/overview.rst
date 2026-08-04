@@ -62,6 +62,18 @@ recommendation from application requirements.
 See :doc:`using_hash_algorithms` to learn how to hash data, select an algorithm, persist digests, and defend code that
 processes untrusted input.
 
+Reading X.509 Certificates
+==========================
+
+:cpp:class:`X509Certificate <erbsland::cryptology::X509Certificate>` reads a single certificate from PEM, DER, or a
+file and exposes its names, validity period, public-key container, extensions, signature bytes, and exact encoded form.
+:cpp:class:`X509CertificateBundle <erbsland::cryptology::X509CertificateBundle>` handles ordered PEM files containing
+multiple certificates.
+Parsing verifies canonical encoding and the supported certificate profile, but does not establish trust, validate a
+signature, match a hostname, or decide whether a certificate is acceptable for a connection.
+See :doc:`/reference/cryptology/x509_certificates` for formats, strict and compatible parsing, resource limits, and the
+typed field API.
+
 Supported Hash Algorithms
 =========================
 

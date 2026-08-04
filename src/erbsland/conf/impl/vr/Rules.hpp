@@ -2,23 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "Rule.hpp"
+#include "DocumentValidator_fwd.hpp"
+#include "Rule_fwd.hpp"
+#include "Rules_fwd.hpp"
 
 #include "../../vr/Rules.hpp"
 
 namespace erbsland::conf::impl {
 
-class Rules;
-using RulesPtr = std::shared_ptr<Rules>;
-
-class DocumentValidator;
-
 /// A set of validation rules.
 class Rules : public vr::Rules {
 public:
+    /// Create an empty set of rules.
     Rules();
 
-    /// Default destructor.
+    // defaults
     ~Rules() override = default;
 
 public: // public interface

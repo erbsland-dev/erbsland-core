@@ -93,7 +93,7 @@ private:
 public:
     /// Test `Category::contains()` against a large, data-driven sample
     /// built from the Unicode Character Database.
-    void testContainsAgainstUnicodeData() {
+    void requireContainsAgainstUnicodeData(const std::size_t sampleStep) {
         // All primary character category values; aliases (C, L, ...) share
         // the same underlying value and are therefore not listed here
         // individually.
@@ -151,6 +151,9 @@ public:
             if (line.empty() || line[0] == '#') {
                 continue; // comment or empty line
             }
+            if (lineNumber % sampleStep != 0U) {
+                continue;
+            }
 
             const auto sepPos = line.find(';');
             REQUIRE_NOT_EQUAL(sepPos, std::string::npos);
@@ -194,6 +197,12 @@ public:
                 });
         }
     }
+
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
+    void testContainsAgainstUnicodeData() { requireContainsAgainstUnicodeData(1U); }
+
+    void testContainsAgainstUnicodeDataLight() { requireContainsAgainstUnicodeData(256U); }
 
     /// Explicit tests for invalid characters (surrogates and values
     /// beyond the Unicode scalar range). `Category::contains()` must

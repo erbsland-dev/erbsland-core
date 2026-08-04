@@ -34,7 +34,7 @@ public:
     RulesFromDocument(RulesPtr rules, DocumentPtr document) :
         _rules{std::move(rules)}, _document(std::move(document)) {}
 
-    // defaults and deletions
+    // defaults/deletions
     ~RulesFromDocument() = default;
     RulesFromDocument(const RulesFromDocument &) = delete;
     auto operator=(const RulesFromDocument &) -> RulesFromDocument & = delete;
@@ -142,18 +142,29 @@ private:
     static void appendRegularNames(NamePath &result, const NamePath &namePath, std::size_t startIndex);
 
 public: // constraint handlers.
+    /// Create the default-value constraint.
     static auto handleDefault(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the description constraint.
     static auto handleDescription(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the custom-error constraint.
     static auto handleError(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the optional-value constraint.
     static auto handleIsOptional(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the secret-value constraint.
     static auto handleIsSecret(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the title constraint.
     static auto handleTitle(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the version constraint.
     static auto handleVersion(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the minimum-version constraint.
     static auto handleMinimumVersion(const ConstraintHandlerContext &context) -> ConstraintPtr;
+    /// Create the maximum-version constraint.
     static auto handleMaximumVersion(const ConstraintHandlerContext &context) -> ConstraintPtr;
 
 private:
+    /// Resolve a constraint name to its handler definition.
     [[nodiscard]] static auto resolveConstraintHandler(const text::String &name) -> const ConstraintHandler &;
+    /// Get the table of supported constraint handlers.
     [[nodiscard]] static auto constraintHandlerTable() -> const ConstraintHandlers &;
 
 private:

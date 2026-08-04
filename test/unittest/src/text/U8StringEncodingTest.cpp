@@ -4,15 +4,15 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteReader.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/impl/U16Encoding.hpp>
 #include <erbsland/text/u32/impl/U32Encoding.hpp>
 #include <erbsland/text/u8/impl/U8Encoding.hpp>
 #include <erbsland/text/u8/impl/U8StringEncodingTools.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -23,8 +23,9 @@ using el::mem::ByteReader;
 using el::mem::Endianness;
 using namespace el::text;
 using namespace el::unit;
+using namespace el::text::literals;
 
-TESTED_TARGETS(U8StringEditor U8String U8StringEncodingTools StringEncoding StringBomMode)
+TESTED_TARGETS(StringEditor String U8StringEncodingTools StringEncoding StringBomMode)
 class U8StringEncodingTest final : public el::UnitTest {
 public:
     void testEncodeUtf8AndBomModes() {
@@ -180,8 +181,8 @@ public:
     }
 
     void testEncodeEntryPointsAndSlices() {
-        const auto source = U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}};
-        const auto view = U8String{source}.slice(ByteRange{ByteIndex{2U}, ByteLength{10U}});
+        const auto source = String{"xxA¢€😀yy"_el};
+        const auto view = String{source}.slice(ByteRange{ByteIndex{2U}, ByteLength{10U}});
         const auto charView = source.slice(CpRange{CpIndex{2U}, CpLength{4U}});
 
         REQUIRE_EQUAL(
@@ -215,7 +216,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto sampleText() -> U8StringEditor { return U8StringEditor{std::u8string_view{u8"A¢€😀"}}; }
+    [[nodiscard]] static auto sampleText() -> String { return String{"A¢€😀"_el}; }
 
     [[nodiscard]] static auto sampleU32() -> std::u32string { return std::u32string{U"A¢€😀"}; }
 

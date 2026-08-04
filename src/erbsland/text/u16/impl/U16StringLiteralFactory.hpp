@@ -8,6 +8,7 @@
 
 namespace erbsland::text::impl {
 
+/// Create a UTF-16 string literal view from static character data.
 constexpr auto createU16StringLiteral(const char16_t *data, const std::size_t size) noexcept -> U16StringLiteral {
     return {data, size};
 }

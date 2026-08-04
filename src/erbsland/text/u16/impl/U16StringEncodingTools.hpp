@@ -38,6 +38,7 @@ public:
     };
 
 public:
+    /// Create encoding tools for `data`.
     explicit constexpr U16StringEncodingTools(const U16StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -82,6 +83,7 @@ private:
     U16StringDataView _data;
 };
 
+/// Decode characters supplied by a callback into a UTF-16 editor.
 template <typename Function>
 auto U16StringEncodingTools::decodeFromCharacters(Function function) -> U16StringEditor {
     auto reservedSize = unit::U16DataLength::zero();

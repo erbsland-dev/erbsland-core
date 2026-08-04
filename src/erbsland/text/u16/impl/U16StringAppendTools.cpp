@@ -65,7 +65,7 @@ auto U16StringAppendTools::append(const U16StringDataView &text) -> CpLength {
     return appendedLength;
 }
 
-auto U16StringAppendTools::append(const U16StringDataView &text, const ElementCount count) -> CpLength {
+auto U16StringAppendTools::append(const U16StringDataView &text, const ItemCount count) -> CpLength {
     if (count.isZero()) {
         return CpLength::zero();
     }
@@ -109,7 +109,7 @@ auto U16StringAppendTools::append(const U8StringDataView &text) -> CpLength {
     return summary.characterCount;
 }
 
-auto U16StringAppendTools::append(const U8StringDataView &text, const ElementCount count) -> CpLength {
+auto U16StringAppendTools::append(const U8StringDataView &text, const ItemCount count) -> CpLength {
     if (count.isZero()) {
         return CpLength::zero();
     }
@@ -155,7 +155,7 @@ auto U16StringAppendTools::append(const U32StringDataView &text) -> CpLength {
     return summary.characterCount;
 }
 
-auto U16StringAppendTools::append(const U32StringDataView &text, const ElementCount count) -> CpLength {
+auto U16StringAppendTools::append(const U32StringDataView &text, const ItemCount count) -> CpLength {
     if (count.isZero()) {
         return CpLength::zero();
     }

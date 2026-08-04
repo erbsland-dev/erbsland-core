@@ -9,6 +9,7 @@
 
 namespace erbsland::conf::impl {
 
+/// Concrete mutable implementation of a configuration document.
 class Document final : public conf::Document, public Container {
 public:
     // defaults

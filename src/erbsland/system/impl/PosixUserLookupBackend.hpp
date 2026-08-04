@@ -9,6 +9,7 @@ namespace erbsland::system::impl {
 /// POSIX implementation for user and group lookups.
 class PosixUserLookupBackend final : public UserLookupBackend {
 public:
+    /// Create a POSIX user-lookup backend.
     PosixUserLookupBackend() = default;
 
 public: // implement UserLookupBackend
@@ -18,7 +19,9 @@ public: // implement UserLookupBackend
     [[nodiscard]] auto groupIdForName(const GroupName &name) -> GroupId override;
 
 private:
+    /// Throw an error for a failed POSIX account lookup.
     [[noreturn]] static void throwLookupError(text::String reason, int status);
+    /// Parse a POSIX user or group identifier.
     [[nodiscard]] static auto parseId(const text::String &id, const text::String &kind) -> unsigned long;
 };
 

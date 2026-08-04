@@ -48,6 +48,7 @@ public:
     void writeBom() { write(Char::byteOrderMark()); }
 
 private:
+    /// Write the byte-order mark corresponding to the selected encoding.
     void writeBomSignal() {
         switch (_encoding.effectiveEncoding().toRawValue()) {
         case StringEncoding::Utf8:

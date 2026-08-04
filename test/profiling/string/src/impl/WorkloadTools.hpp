@@ -10,6 +10,7 @@
 
 #include <erbsland/cryptology/HashAlgorithm.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/system/EnvironmentVariables.hpp>
 #include <erbsland/text/impl/UnsafeU16StringBuffer.hpp>
 #include <erbsland/text/impl/UnsafeU8StringBuffer.hpp>
 #include <erbsland/text/u16/U16StringConstIterator.hpp>
@@ -20,33 +21,34 @@
 #include <atomic>
 #include <barrier>
 #include <cmath>
-#include <cstdlib>
 #include <exception>
 #include <limits>
 #include <numeric>
 #include <thread>
 #include <type_traits>
 
-namespace app::string {
+namespace app::string::impl {
 
 using namespace el::text::literals;
 
-namespace impl {
-
 using Clock = std::chrono::steady_clock;
 
+/// Report a workload validation error.
 [[noreturn]] void workloadError(const el::String &message) {
     throw el::ApplicationError{message};
 }
 
+/// Convert a raw value into a code-point index.
 [[nodiscard]] auto cpIndex(const std::uint64_t value) -> el::CpIndex {
     return el::CpIndex::fromSizeT(static_cast<std::size_t>(value));
 }
 
+/// Convert a raw value into a code-point length.
 [[nodiscard]] auto cpLength(const std::uint64_t value) -> el::CpLength {
     return el::CpLength::fromSizeT(static_cast<std::size_t>(value));
 }
 
+/// Mix a value into a deterministic random seed.
 [[nodiscard]] auto mixSeed(std::uint64_t seed, const std::uint64_t value) noexcept -> std::uint64_t {
     seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6U) + (seed >> 2U);
     seed ^= seed >> 30U;
@@ -56,6 +58,7 @@ using Clock = std::chrono::steady_clock;
     return seed ^ (seed >> 31U);
 }
 
+/// Create the deterministic seed for a benchmark worker sample.
 [[nodiscard]] auto workerSeed(
     const Configuration &configuration,
     const Scenario &scenario,
@@ -66,21 +69,25 @@ using Clock = std::chrono::steady_clock;
     return mixSeed(result, sample);
 }
 
+/// Calculate the elapsed time since a start point in nanoseconds.
 [[nodiscard]] auto elapsedNanoseconds(const Clock::time_point start) -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start).count();
 }
 
+/// Calculate the digest of a string.
 [[nodiscard]] auto digest(const el::U8String &text) -> el::ByteBlock {
     auto hasher = el::cryptology::Hasher{el::cryptology::HashAlgorithm::Md5};
     hasher.update(text);
     return hasher.finalize();
 }
 
+/// Convert a string value to canonical UTF-8 text.
 template <typename T>
 [[nodiscard]] auto canonicalString(const T &value) -> el::U8String {
     return el::StringConverter{value}.toU8String();
 }
 
+/// Apply the selected sensitivity mode to a string value.
 template <typename T>
 void setSensitive(T &value, const SensitiveMode mode) {
     if constexpr (std::same_as<T, el::U8String> || std::same_as<T, el::U8StringEditor>) {
@@ -90,6 +97,7 @@ void setSensitive(T &value, const SensitiveMode mode) {
     }
 }
 
+/// Validate the generated source string for a scenario.
 template <typename Traits>
 void validateSource(const typename Traits::String &value, const Scenario &scenario) {
     const auto expectedUnits =
@@ -106,6 +114,7 @@ void validateSource(const typename Traits::String &value, const Scenario &scenar
     }
 }
 
+/// Create a deterministic source character for a content profile.
 [[nodiscard]] auto sourceCharacter(el::FastRandom &random, const ContentProfile profile, const std::uint64_t index)
     -> el::Char {
     if (profile == ContentProfile::Ascii || profile == ContentProfile::MalformedSparse ||
@@ -133,6 +142,7 @@ void validateSource(const typename Traits::String &value, const Scenario &scenar
     return el::Char{static_cast<char32_t>(0x1f300U + random.getUInt32(0U, 0x34fU))};
 }
 
+/// Create a valid string for a requested string width.
 template <typename Traits>
 [[nodiscard]] auto makeValidString(const std::uint64_t count, const ContentProfile profile, const std::uint64_t seed) ->
     typename Traits::String {
@@ -151,6 +161,7 @@ template <typename Traits>
     }
 }
 
+/// Create a deliberately malformed string for a requested string width.
 template <typename Traits>
 [[nodiscard]] auto makeMalformedString(
     const std::uint64_t count, const ContentProfile profile, const std::uint64_t seed) -> typename Traits::String {
@@ -183,6 +194,7 @@ template <typename Traits>
     }
 }
 
+/// Create the source string for a workload scenario.
 template <typename Traits>
 [[nodiscard]] auto makeString(const Scenario &scenario, const std::uint64_t seed) -> typename Traits::String {
     if (scenario.contentProfile == ContentProfile::MalformedSparse ||
@@ -192,6 +204,7 @@ template <typename Traits>
     return makeValidString<Traits>(scenario.size, scenario.contentProfile, seed);
 }
 
+/// Create the operand string for a workload scenario.
 template <typename Traits>
 [[nodiscard]] auto makeOperand(const Scenario &scenario, const std::uint64_t seed) -> typename Traits::String {
     auto operandScenario = scenario;
@@ -200,6 +213,7 @@ template <typename Traits>
     return makeString<Traits>(operandScenario, seed);
 }
 
+/// Select the search needle for a workload scenario.
 template <typename Traits>
 [[nodiscard]] auto makeNeedle(const typename Traits::String &source, const Scenario &scenario) ->
     typename Traits::String {
@@ -226,18 +240,22 @@ template <typename Traits>
     return source.slice(el::CpRange{cpIndex(start), cpLength(count)});
 }
 
+/// Return a character without changing it.
 [[nodiscard]] auto identityTransform(const el::Char character) noexcept -> el::Char {
     return character;
 }
 
+/// Transform the designated character to a different character.
 [[nodiscard]] auto changedTransform(const el::Char character) noexcept -> el::Char {
     return character == U'a' ? el::Char{U'A'} : character;
 }
 
+/// Mix a character into the benchmark result sink.
 void consumeChar(std::uint64_t &sink, const el::Char value) noexcept {
     sink = mixSeed(sink, value.toRawValue());
 }
 
+/// Execute read-focused operations for one string width.
 template <typename Traits, typename Value>
 [[nodiscard]] auto executeReadable(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
@@ -393,10 +411,11 @@ template <typename Traits, typename Value>
                     consumeChar(sink, character);
                 }
             } else {
-                static_cast<void>(value.forEach([&](const el::Char character) {
+                const auto loopResult = value.forEach([&](const el::Char character) {
                     consumeChar(sink, character);
                     return el::LoopStatus::Continue;
-                }));
+                });
+                sink = mixSeed(sink, static_cast<std::uint8_t>(loopResult));
             }
             break;
         case UseCase::Compare:
@@ -493,6 +512,7 @@ template <typename Traits, typename Value>
         .digest = digest(canonicalString(finalText))};
 }
 
+/// Apply mutation operations to a string editor.
 template <typename Traits>
 void mutateEditor(
     typename Traits::Editor &value,
@@ -623,6 +643,7 @@ void mutateEditor(
     }
 }
 
+/// Execute mutation operations for a string editor.
 template <typename Traits>
 [[nodiscard]] auto executeEditorMutation(
     const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations) -> WorkerResult {
@@ -689,12 +710,14 @@ template <typename Traits>
         .digest = digest(canonicalString(finalText))};
 }
 
+/// Test whether a use case mutates a string editor.
 [[nodiscard]] auto isEditorMutation(const UseCase useCase) noexcept -> bool {
     return useCase == UseCase::Storage || useCase == UseCase::Append || useCase == UseCase::Insert ||
         useCase == UseCase::Replace || useCase == UseCase::RemoveKeep || useCase == UseCase::Trim ||
         useCase == UseCase::Truncate || useCase == UseCase::CowStress || useCase == UseCase::EditStress;
 }
 
+/// Execute the workload with the selected string width.
 template <typename Traits>
 [[nodiscard]] auto executeForWidth(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
@@ -708,6 +731,7 @@ template <typename Traits>
     return executeReadable<Traits, typename Traits::String>(scenario, seed, operations);
 }
 
+/// Execute the requested string workload.
 [[nodiscard]] auto executeWorkload(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
     switch (scenario.width) {
@@ -721,6 +745,7 @@ template <typename Traits>
     workloadError("Unsupported string width."_el);
 }
 
+/// Determine the largest permitted operation count for a scenario.
 [[nodiscard]] auto maximumOperations(const Configuration &configuration, const Scenario &scenario) -> std::uint64_t {
     constexpr auto absoluteMaximum = std::uint64_t{4096U};
     if (scenario.type == StringType::String || !isEditorMutation(scenario.useCase)) {
@@ -733,6 +758,7 @@ template <typename Traits>
     return std::max<std::uint64_t>(1U, std::min(absoluteMaximum, perWorkerLimit / fixtureBytes));
 }
 
+/// Calibrate the operation count for one scenario.
 [[nodiscard]] auto calibrateOperations(const Configuration &configuration, const Scenario &scenario) -> std::uint64_t {
     const auto maximum = maximumOperations(configuration, scenario);
     auto operations = std::uint64_t{1U};
@@ -749,25 +775,15 @@ template <typename Traits>
     return operations;
 }
 
-[[nodiscard]] auto injectWorkerFailure() noexcept -> bool {
-#if defined(_WIN32)
-    auto *value = static_cast<char *>(nullptr);
-    auto size = std::size_t{};
-    const auto status = _dupenv_s(&value, &size, "ERBSLAND_STRING_PROFILE_TEST_FAIL_WORKER");
-    const auto result = status == 0 && value != nullptr;
-    std::free(value);
-    return result;
-#else
-    return std::getenv("ERBSLAND_STRING_PROFILE_TEST_FAIL_WORKER") != nullptr;
-#endif
-}
-
-[[nodiscard]] auto runSample(
+/// Execute one benchmark sample.
+auto runSample(
     const Configuration &configuration,
     const Scenario &scenario,
     const std::uint64_t sampleIndex,
     const std::uint64_t operations) -> SampleResult {
     const auto threadCount = configuration.run.threadCount;
+    const auto failureVariable = el::system::EnvironmentVariables{}.get("ERBSLAND_STRING_PROFILE_TEST_FAIL_WORKER"_el);
+    const auto injectWorkerFailure = failureVariable.has_value() && *failureVariable == "1"_el;
     auto results = std::vector<WorkerResult>(threadCount);
     auto failures = std::vector<std::exception_ptr>(threadCount);
     auto startBarrier = std::barrier{static_cast<std::ptrdiff_t>(threadCount + 1U)};
@@ -778,7 +794,7 @@ template <typename Traits>
         threads.emplace_back([&, worker]() {
             try {
                 startBarrier.arrive_and_wait();
-                if (injectWorkerFailure() && worker == threadCount - 1U) {
+                if (injectWorkerFailure && worker == threadCount - 1U) {
                     workloadError("Injected string profiler worker failure."_el);
                 }
                 results[worker] =
@@ -811,6 +827,7 @@ template <typename Traits>
     return result;
 }
 
+/// Calculate statistics for recorded sample values.
 [[nodiscard]] auto statistics(std::vector<double> values) -> Statistics {
     std::ranges::sort(values);
     const auto mean = std::accumulate(values.begin(), values.end(), 0.0) / static_cast<double>(values.size());
@@ -822,6 +839,7 @@ template <typename Traits>
         .maximum = values.back()};
 }
 
+/// Calculate the fairness information for benchmark samples.
 [[nodiscard]] auto fairness(const std::vector<SampleResult> &samples) -> Fairness {
     auto rates = std::vector<double>{};
     for (const auto &sample : samples) {
@@ -844,6 +862,7 @@ template <typename Traits>
         .coefficientOfVariation = mean == 0.0 ? 0.0 : std::sqrt(variance) / mean};
 }
 
+/// Calculate a digest that identifies a benchmark configuration.
 [[nodiscard]] auto configurationDigest(const Configuration &configuration) -> el::ByteBlock {
     auto text = el::StringEditor{};
     text.append(
@@ -874,6 +893,7 @@ template <typename Traits>
     return digest(el::String{text});
 }
 
+/// Print one benchmark sample.
 void printSample(const Scenario &scenario, const SampleResult &sample) {
     const auto safeTime = static_cast<double>(std::max<std::int64_t>(1, sample.wallNanoseconds));
     const auto safeOperations = static_cast<double>(std::max<std::uint64_t>(1U, sample.operations));
@@ -919,6 +939,7 @@ void printSample(const Scenario &scenario, const SampleResult &sample) {
         static_cast<double>(sample.logicalNativeBytes) * 1.0e9 / safeTime / (1024.0 * 1024.0));
 }
 
+/// Print the results of a benchmark scenario.
 void printBenchmark(const Scenario &scenario, const std::vector<SampleResult> &samples) {
     auto nsPerOperation = std::vector<double>{};
     auto operationsPerSecond = std::vector<double>{};
@@ -1002,8 +1023,6 @@ void printBenchmark(const Scenario &scenario, const std::vector<SampleResult> &s
         workerFairness.maximum,
         " fairness-cv="_el,
         workerFairness.coefficientOfVariation);
-}
-
 }
 
 }

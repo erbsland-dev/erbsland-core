@@ -72,12 +72,11 @@ Interface
 
 .. doxygenstruct:: erbsland::bgeo::BlockAlignedSource
     :members:
+.. doxygenclass:: erbsland::bgeo::BlockAnchor
+    :members:
 .. doxygenenum:: erbsland::bgeo::BlockAnchorFlag
 
 .. doxygentypedef:: erbsland::bgeo::BlockAnchorFlags
-
-.. doxygenclass:: erbsland::bgeo::BlockAnchor
-    :members:
 .. doxygenclass:: erbsland::bgeo::BlockAxisMapper
     :members:
 .. doxygentypedef:: erbsland::bgeo::BlockCoordinate

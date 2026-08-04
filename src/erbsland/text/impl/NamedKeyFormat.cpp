@@ -89,7 +89,7 @@ auto NamedKeyFormat::setValueListAllowed(const bool enabled) noexcept -> NamedKe
     return *this;
 }
 
-auto NamedKeyFormat::setMaximumValues(const unit::ElementCount maximum) noexcept -> NamedKeyFormat & {
+auto NamedKeyFormat::setMaximumValues(const unit::ItemCount maximum) noexcept -> NamedKeyFormat & {
     _maximumValues = maximum;
     return *this;
 }

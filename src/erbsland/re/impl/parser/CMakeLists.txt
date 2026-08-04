@@ -6,10 +6,10 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         AnchorAndSpecialHandler.hpp
         CharacterClassHandler.hpp
-        CharacterClassState.cpp
         CharacterClassState.hpp
-        CharacterClassStateEscape.cpp
-        CharacterClassStatePosix.cpp
+        CharClassHandlerState.cpp
+        CharClassHandlerState_escape.cpp
+        CharClassHandlerState_posix.cpp
         EscapeSequenceHandler.hpp
         EscapeSequences.hpp
         GroupHandler.hpp
@@ -18,6 +18,9 @@ target_sources(erbsland-core PRIVATE
         ParserState.hpp
         PatternNode.cpp
         PatternNode.hpp
+        PatternNode_fwd.hpp
+        PatternNodeAllocator.hpp
+        PatternNodeArena.hpp
         QuantifierHandler.hpp
         RegularCharHandler.hpp
 )

@@ -15,6 +15,7 @@ namespace app::cryptology {
 /// @notest{Covered by the cryptology profiling smoke tests.}
 class HashWorkerWorkload final : public erbsland::profiling::WorkerWorkload {
 public:
+    /// Create a hashing workload for shared input data.
     HashWorkerWorkload(
         erbsland::cryptology::HashAlgorithm algorithm,
         std::shared_ptr<const erbsland::ByteBuffer> input,

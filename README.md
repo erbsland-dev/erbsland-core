@@ -9,7 +9,11 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 - Safe and reliable regular expression engine.
 - Filesystem paths, path infos, file and directory operations, and file streams
 - Full features command-line option parsing including formatted help and version output.
+- Networking with event-based TCP and UDP connection, host name resolution, and more.
+- Erbsland Configuration Language implementation, with support for validation rules.
 - Application framework to minimize boilerplate.
+- Extensive cryptography layer that is fully independent of other libraries.
+- Implementation of TLS 1.3 network layer over TCP. 
 - Terminal output with colors, styles, formatting, cursor movement, terminal size detection, and more.
 - Reliable date and time types, durations, system-independent time-zone calculation.
 - Safe numeric utilities, saturating math/integers, safe numeric conversions, and more.
@@ -21,15 +25,17 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 
 ## Alpha Status
 
-Erbsland Core is in early alpha. Its public API may change without a compatibility period, so pin the Git revision
-used by your project and expect migrations when updating. Major unfinished areas are:
+Erbsland Core is in alpha state. Its public API may change without a compatibility period, so pin the Git revision
+used by your project and expect migrations when updating. Some of the unfinished areas are:
 
-- Configuration
 - Logging
-- Networking
-- Cryptography
 - Application component lifecycle
-- Remaining asynchronous facilities
+
+**Use the cryptography API at your own risk!**
+
+We do our best to review the cryptography implementations while we build this library.
+But an independent review will be done earliest when the library reaches maturity.
+Therefore, be warned: **do not** use TLS connections for public networks.
 
 ## Documentation
 

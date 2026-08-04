@@ -14,6 +14,7 @@ namespace erbsland::cterm::impl::paragraph {
 /// Print a shared paragraph layout sequentially to a cursor writer.
 class Printer final : public RendererBase {
 public:
+    /// Create a paragraph printer for a cursor writer.
     Printer(
         CursorWriter &writer,
         const int x1,
@@ -43,10 +44,15 @@ public:
     [[nodiscard]] auto print() -> int;
 
 private:
+    /// Resolve the background fill color for an output color.
     [[nodiscard]] auto backgroundFillColor(Color color) const noexcept -> Color;
+    /// Write one resolved layout line.
     [[nodiscard]] auto writeResolved(const LayoutLine &line) -> std::optional<Color>;
+    /// Write one resolved layout fragment.
     [[nodiscard]] auto writeResolved(const LayoutFragment &fragment) -> std::optional<Color>;
+    /// Write one resolved terminal block.
     [[nodiscard]] auto writeResolvedBlock(const Block &character) -> std::optional<Color>;
+    /// Write filled spaces with a color.
     void writeSpaces(int count, Color color);
 
 private:

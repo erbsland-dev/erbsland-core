@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Option.hpp"
 #include "Option_fwd.hpp"
 #include "OptionCallback.hpp"
 #include "OptionChoices_fwd.hpp"
@@ -22,6 +23,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionEditor {
 public:
+    /// Create an empty option editor.
     OptionEditor() = default;
     /// Create an editor for an option.
     explicit OptionEditor(OptionPtr option) noexcept;
@@ -93,7 +95,19 @@ public:
     /// Clear the default value.
     auto clearDefaultValue() -> OptionEditor &;
     /// Set the validation callback.
+    /// @param fn The new value validation callback `(OptionValuePtr valueToValidate, OptionValuesPtr values) -> void`
+    ///    The callback must throw an `el::OptionError` on failure.
     auto setValidateFn(OptionValidateFn fn) -> OptionEditor &;
+    /// Setup a value validation for a type that parses text.
+    /// The submitted type must have one of these methods:
+    /// - a static `fromStringOrThrow(String)` method that throws an `err::ParseError` on failure.
+    /// - a static `isValidString(String)` method that returns `false` on failure.
+    /// - a static `fromString(String)` method that returns `std::nullopt` on failure.
+    /// The methods are used in in the order shown above.
+    /// @tparam tValueType The type to validate.
+    /// @param errorTitle The error title to use in the error message.
+    template <typename tValueType>
+    auto setValidateTextValue(text::String errorTitle = {}) -> OptionEditor &;
 
 public: // convenience methods
     /// Set the option as required.
@@ -104,3 +118,5 @@ private:
 };
 
 }
+
+#include "OptionEditor.tpp"

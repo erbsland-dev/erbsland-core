@@ -76,12 +76,14 @@ Interface
 
 .. doxygenclass:: erbsland::unit::Version
     :members:
+
+.. doxygenstruct:: std::hash
+    :members:
 .. doxygenenum:: erbsland::unit::VersionPart
 .. doxygenclass:: erbsland::unit::VersionRange
     :members:
 .. doxygenstruct:: erbsland::unit::VersionUnit
     :members:
-
 .. doxygenstruct:: erbsland::unit::MajorUnit
     :members:
 

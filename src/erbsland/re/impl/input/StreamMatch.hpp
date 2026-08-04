@@ -13,6 +13,7 @@ namespace erbsland::re::impl {
 /// @tested{RegExStreamInputTest}
 class StreamMatch final : public Match {
 public:
+    /// Create a match from captured `content`.
     StreamMatch(CaptureGroupList captureGroupList, std::vector<text::String> content) :
         Match{std::move(captureGroupList)}, _content{std::move(content)} {}
 

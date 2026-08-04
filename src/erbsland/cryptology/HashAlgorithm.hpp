@@ -3,14 +3,11 @@
 #pragma once
 
 #include "CryptographicSecurity.hpp"
-#include "CryptographicStatus.hpp"
-#include "HashRequirements.hpp"
 #include "HashThroughput.hpp"
 
 #include "../text/String_fwd.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
-#include "../util/List_fwd.hpp"
 
 #include <cstdint>
 #include <optional>
@@ -56,21 +53,11 @@ public: // operators
     ERBSLAND_CORE_CONSTEXPR_COMPARE_MEMBER(_value, const Value value, value);
     ERBSLAND_CORE_CONSTEXPR_COMPARE_FRIEND(const Value value, const HashAlgorithm &other, value, other._value);
 
-public: // tests
-    /// Test if this algorithm is acceptable with at least standard security.
-    [[nodiscard]] auto isSafe() const noexcept -> bool;
-    /// Test if this algorithm satisfies a set of requirements.
-    /// @param requirements The selection requirements.
-    /// @return `true` if every requirement is satisfied.
-    [[nodiscard]] auto matches(const HashRequirements &requirements) const noexcept -> bool;
-
 public: // accessors
     /// Get the raw algorithm value.
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _value; }
     /// Get the length of the generated digest.
     [[nodiscard]] auto digestSize() const noexcept -> unit::ByteLength;
-    /// Get the current usability status.
-    [[nodiscard]] auto status() const noexcept -> CryptographicStatus;
     /// Get the current coarse security level.
     [[nodiscard]] auto security() const noexcept -> CryptographicSecurity;
     /// Get the relative throughput of the bundled implementation.
@@ -92,18 +79,6 @@ public: // factories
     [[nodiscard]] static auto fromStringOrThrow(const text::String &text) -> HashAlgorithm;
     /// Get all supported hash algorithms in stable preference order.
     [[nodiscard]] static auto all() noexcept -> std::span<const HashAlgorithm>;
-    /// Get all algorithms currently acceptable with at least standard security.
-    [[nodiscard]] static auto allSafe() noexcept -> std::span<const HashAlgorithm>;
-    /// Get all algorithms that satisfy a set of requirements.
-    /// @param requirements The selection requirements.
-    /// @return The matching algorithms in stable preference order.
-    [[nodiscard]] static auto matching(const HashRequirements &requirements) -> util::List<HashAlgorithm>;
-    /// Get the recommended algorithm for a set of requirements.
-    /// Selection prefers throughput, then security, then stable declaration order.
-    /// @param requirements The selection requirements.
-    /// @return The preferred matching algorithm, or no value if no algorithm matches.
-    [[nodiscard]] static auto recommended(const HashRequirements &requirements = {}) noexcept
-        -> std::optional<HashAlgorithm>;
 
 private:
     Value _value{Sha3_256}; ///< The raw algorithm value.

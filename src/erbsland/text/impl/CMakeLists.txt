@@ -11,17 +11,25 @@ target_sources(erbsland-core PRIVATE
         BooleanConversion.hpp
         ByteBlockFormatter.cpp
         ByteBlockFormatter.hpp
+        ByteFormatData.cpp
+        ByteFormatData.hpp
+        ByteFormatData_fwd.hpp
         CharSetFromPattern.hpp
         CharSetRangeBuilder.cpp
         CharSetRangeBuilder.hpp
+        CharSetRangeBuilder_fwd.hpp
+        CharSetRangeCounter.cpp
+        CharSetRangeCounter.hpp
         CodeBlockData.hpp
         CodeLineMarkerData.cpp
         CodeLineMarkerData.hpp
         CodeSnippetData.hpp
         CodeSnippetLayout.cpp
         CodeSnippetLayout.hpp
+        CodeSnippetLayoutCell.cpp
         CodeSnippetLayoutCell.hpp
         CodeSnippetLayoutMarker.hpp
+        CodeSnippetLayoutRow.cpp
         CodeSnippetLayoutRow.hpp
         ConfigEscapeFormatter.cpp
         ConfigEscapeFormatter.hpp
@@ -34,11 +42,12 @@ target_sources(erbsland-core PRIVATE
         DynamicStringPatternData.hpp
         EscapeFormatter.cpp
         EscapeFormatter.hpp
+        EscapeFormatter_fwd.hpp
         FloatConversion.cpp
         FloatConversion.hpp
         FloatTraits.hpp
-        FormatAsDefaults.hpp
         FormatData.hpp
+        FormatDefaultArgument.hpp
         FormatEngine.cpp
         FormatEngine.hpp
         FormatMakeArguments.hpp
@@ -48,6 +57,7 @@ target_sources(erbsland-core PRIVATE
         FormatPartKind.hpp
         FormatPresentation.hpp
         FormatSpec.hpp
+        FormatSpecTypes.hpp
         FormatTraits.hpp
         FormatWriter.cpp
         FormatWriter.hpp
@@ -64,8 +74,11 @@ target_sources(erbsland-core PRIVATE
         NamedFormatParser.cpp
         NamedFormatParser.hpp
         NamedKeyEntry.hpp
+        NamedKeyEntry_fwd.hpp
+        NamedKeyEntryKind.hpp
         NamedKeyFormat.cpp
         NamedKeyFormat.hpp
+        NamedKeyFormat_fwd.hpp
         NamedKeyParser.cpp
         NamedKeyParser.hpp
         NoneEscapeFormatter.cpp
@@ -85,21 +98,26 @@ target_sources(erbsland-core PRIVATE
         StringConversionTools.cpp
         StringConversionTools.hpp
         StringConversionTools_fwd.hpp
-        StringDecodeBuffer.tpp
         StringEncodingWriter.hpp
         StringHashMap.hpp
         StringHashMap_fwd.hpp
         StringHashSet.hpp
         StringHashSet_fwd.hpp
         StringKey.hpp
+        StringKey_fwd.hpp
+        StringKeyTraits.hpp
         StringList.hpp
         StringList.tpp
         StringList_fwd.hpp
         StringMap.hpp
         StringMap_fwd.hpp
+        StringNormalizationTools.hpp
+        StringNormalizationTools_fwd.hpp
         StringPatternData.cpp
         StringPatternData.hpp
         StringPatternData.tpp
+        StringPatternData_fwd.hpp
+        StringPatternElementKind.hpp
         StringPatternFactory.cpp
         StringPatternFactory.hpp
         StringReaderBackendKind.hpp
@@ -111,13 +129,23 @@ target_sources(erbsland-core PRIVATE
         StringSplitter.hpp
         StringSplitter.tpp
         StringSplitter_fwd.hpp
+        StringStorageKind.cpp
+        StringStorageKind.hpp
+        StringTraits.hpp
         StringTreeData.hpp
+        StringTreeData_fwd.hpp
+        StringTreeDataTypes.hpp
         ThrowHelper.cpp
         ThrowHelper.hpp
         UnicodeData.cpp
         UnicodeData.hpp
+        UnicodeNormalizationData.cpp
+        UnicodeNormalizationData.hpp
+        UnicodeNormalizer.cpp
+        UnicodeNormalizer.hpp
         UnicodeVersion.cpp
         UnsafeDecodeBufferAccess.hpp
+        UnsafeDecodeBufferAccess_fwd.hpp
         UnsafeU16StringAccess.hpp
         UnsafeU16StringAccess_fwd.hpp
         UnsafeU16StringBuffer.cpp

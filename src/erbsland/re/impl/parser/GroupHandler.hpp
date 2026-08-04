@@ -9,11 +9,13 @@
 
 namespace erbsland::re::impl::parser {
 
+/// Test if parsing is at the beginning of the top-level pattern.
 inline auto isAtPatternStart(ParserState &state) noexcept -> bool {
     return state.currentGroup() == state.rootNode() && state.currentGroup()->size() == 1U &&
         state.currentSequence()->isEmpty();
 }
 
+/// Parse inline or scoped group flags.
 inline void handleGroupFlags(ParserState &state) {
     auto flags = state.inheritGroupFlags();
     bool isMinus = false;
@@ -96,11 +98,13 @@ inline void handleGroupFlags(ParserState &state) {
     }
 }
 
+/// Parse an atomic group after its marker.
 inline void handleAtomicGroup(ParserState &state) {
     state.readNext(); // consume '>'
     state.pushGroup(node_data::Group::createAtomic(state.inheritGroupFlags(), state.nextAtomicGroupId()));
 }
 
+/// Skip a group comment after its marker.
 inline void handleGroupComment(ParserState &state) {
     while (state.currentChar() != U')') {
         if (state.isAtEnd()) {
@@ -118,15 +122,18 @@ inline void handleGroupComment(ParserState &state) {
     state.readNext(); // consume the closing ')'
 }
 
+/// Parse a non-capturing group after its marker.
 inline void handleNonCapturingGroup(ParserState &state) {
     state.readNext(); // consume ':'
     state.pushGroup(node_data::Group::createNonCapturing(state.inheritGroupFlags()));
 }
 
+/// Begin an ordinary capturing group.
 inline void handleCapturingGroup(ParserState &state) {
     state.pushGroup(node_data::Group::createCapture(state.inheritGroupFlags(), state.nextCaptureGroupIndex()));
 }
 
+/// Parse a named capturing group.
 inline void handleNamedGroup(ParserState &state) {
     const auto openChar = state.readNextAndExchange();
     if (state.currentChar().isDigitValue(text::IntegerBase::Decimal)) {
@@ -155,6 +162,7 @@ inline void handleNamedGroup(ParserState &state) {
     state.pushGroup(node_data::Group::createCapture(state.inheritGroupFlags(), state.nextCaptureGroupIndex(), name));
 }
 
+/// Parse an opening group parenthesis.
 inline void handleGroupOpen(ParserState &state) {
     state.readNext(); // consume the open parenthesis
     // check if this is an advanced group.
@@ -218,6 +226,7 @@ inline void handleGroupOpen(ParserState &state) {
     handleCapturingGroup(state);
 }
 
+/// Parse an alternative separator.
 inline void handleAlternative(ParserState &state) {
     state.checkEmptyAlternative();
 
@@ -230,6 +239,7 @@ inline void handleAlternative(ParserState &state) {
     state.addSequence();
 }
 
+/// Parse a closing group parenthesis.
 inline void handleGroupClose(ParserState &state) {
     state.checkEmptyGroup();
     state.checkEmptyAlternative(true);

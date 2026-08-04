@@ -3,19 +3,19 @@
 
 #include <erbsland/text/AnyStringBuilder.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u16/U16StringLiteral.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u32/U32StringLiteral.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/text/u8/U8StringLiteral.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unit/U16DataIndex.hpp>
 #include <erbsland/unit/U16DataLength.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -30,15 +30,16 @@
 using el::unit::ByteLength;
 using el::unit::CpIndex;
 using el::unit::CpLength;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::unit::U16DataIndex;
 using el::unit::U16DataLength;
 using namespace el::text;
+using namespace el::text::literals;
 
 namespace th = erbsland::unittest::th;
 
-static_assert(std::is_same_v<String, U8String>);
-static_assert(std::is_same_v<StringEditor, U8StringEditor>);
+static_assert(std::is_same_v<String, String>);
+static_assert(std::is_same_v<StringEditor, StringEditor>);
 static_assert(std::is_same_v<decltype(std::declval<const AnyStringBuilder &>().toString()), String>);
 static_assert(std::is_same_v<decltype(std::declval<const AnyStringBuilder &>().toAnyString()), AnyString>);
 static_assert(std::is_same_v<decltype(std::declval<AnyStringBuilder &>().takeString()), String>);
@@ -79,9 +80,12 @@ public:
         const auto u16Capacity = U16DataLength{8U};
         const auto u32Capacity = CpLength{6U};
 
-        REQUIRE(AnyStringBuilder::u8(u8Capacity).takeU8StringEditor().capacity() >= u8Capacity);
-        REQUIRE(AnyStringBuilder::u16(u16Capacity).takeU16StringEditor().capacity() >= u16Capacity);
-        REQUIRE(AnyStringBuilder::u32(u32Capacity).takeU32StringEditor().capacity() >= u32Capacity);
+        const auto u8Editor = AnyStringBuilder::u8(u8Capacity).takeU8StringEditor();
+        const auto u16Editor = AnyStringBuilder::u16(u16Capacity).takeU16StringEditor();
+        const auto u32Editor = AnyStringBuilder::u32(u32Capacity).takeU32StringEditor();
+        REQUIRE_GREATER_EQUAL(u8Editor.capacity(), u8Capacity);
+        REQUIRE_GREATER_EQUAL(u16Editor.capacity(), u16Capacity);
+        REQUIRE_GREATER_EQUAL(u32Editor.capacity(), u32Capacity);
     }
 
     void testGenericCapacityFactory() {
@@ -97,24 +101,27 @@ public:
     }
 
     void testBasedOnAndTemplateConversion() {
-        const auto u8Initial = U8StringEditor{std::u8string_view{u8"A"}};
+        const auto u8Initial = String{"A"_el};
         const auto u16Initial = U16StringEditor{std::u16string_view{u"β"}};
         const auto u32Initial = U32StringEditor{std::u32string_view{U"中"}};
 
-        auto u8Builder = AnyStringBuilder::basedOn(U8String{u8Initial}, ByteLength{8U});
+        auto u8Builder = AnyStringBuilder::basedOn(String{u8Initial}, ByteLength{8U});
         auto u16Builder = AnyStringBuilder::basedOn(U16String{u16Initial}, U16DataLength{6U});
         auto u32Builder = AnyStringBuilder::basedOn(U32String{u32Initial}, CpLength{4U});
 
-        u8Builder.append(U8String{U8StringEditor{std::u8string_view{u8"!"}}});
+        u8Builder.append(String{String{"!"_el}});
         u16Builder.append(U16String{U16StringEditor{std::u16string_view{u"!"}}});
         u32Builder.append(U32String{U32StringEditor{std::u32string_view{U"!"}}});
 
-        REQUIRE_EQUAL(StringConverter{u8Builder.toEditor<U8StringEditor>()}.toStdString(), std::string{"A!"});
+        REQUIRE_EQUAL(StringConverter{u8Builder.toEditor<StringEditor>()}.toStdString(), std::string{"A!"});
         REQUIRE_EQUAL(StringConverter{u16Builder.toEditor<U16StringEditor>()}.toStdU16String(), std::u16string{u"β!"});
         REQUIRE_EQUAL(StringConverter{u32Builder.toEditor<U32StringEditor>()}.toStdU32String(), std::u32string{U"中!"});
-        REQUIRE(u8Builder.toEditor<U8StringEditor>().capacity() >= ByteLength{9U});
-        REQUIRE(u16Builder.toEditor<U16StringEditor>().capacity() >= U16DataLength{7U});
-        REQUIRE(u32Builder.toEditor<U32StringEditor>().capacity() >= CpLength{5U});
+        const auto u8Editor = u8Builder.toEditor<StringEditor>();
+        const auto u16Editor = u16Builder.toEditor<U16StringEditor>();
+        const auto u32Editor = u32Builder.toEditor<U32StringEditor>();
+        REQUIRE_GREATER_EQUAL(u8Editor.capacity(), ByteLength{9U});
+        REQUIRE_GREATER_EQUAL(u16Editor.capacity(), U16DataLength{7U});
+        REQUIRE_GREATER_EQUAL(u32Editor.capacity(), CpLength{5U});
     }
 
     void testAppendCharacters() {
@@ -150,19 +157,19 @@ public:
     }
 
     void testAppendViewsToAllKinds() {
-        const auto u8Text = U8StringEditor{std::u8string_view{u8"Aé"}};
+        const auto u8Text = String{"Aé"_el};
         const auto u16Text = U16StringEditor{std::u16string_view{u"β😀"}};
         const auto u32Text = U32StringEditor{std::u32string_view{U"中"}};
 
         for (const auto kind : {StringKind::U8, StringKind::U16, StringKind::U32}) {
             auto builder = AnyStringBuilder{kind};
-            builder.append(U8String{u8Text});
+            builder.append(String{u8Text});
             builder.append(U16String{u16Text});
             builder.append(U32String{u32Text});
-            builder.append(U8String{u8Text}, ElementCount{2U});
-            builder.append(U16String{u16Text}, ElementCount::zero());
-            builder.append(U16String{u16Text}, ElementCount{2U});
-            builder.append(U32String{u32Text}, ElementCount{2U});
+            builder.append(String{u8Text}, ItemCount{2U});
+            builder.append(U16String{u16Text}, ItemCount::zero());
+            builder.append(U16String{u16Text}, ItemCount{2U});
+            builder.append(U32String{u32Text}, ItemCount{2U});
 
             REQUIRE_EQUAL(builder.length(), CpLength{15U});
             REQUIRE_EQUAL(
@@ -188,10 +195,10 @@ public:
     }
 
     void testSameEncodingAppendPreservesExistingBehavior() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         auto u8Builder = AnyStringBuilder{StringKind::U8};
 
-        u8Builder.append(U8String{invalidUtf8});
+        u8Builder.append(String{invalidUtf8});
         const auto u8Result = u8Builder.takeU8String();
         REQUIRE_EQUAL(u8Result.length(), ByteLength{3U});
         REQUIRE_EQUAL(StringConverter{u8Result}.toStdU32String(), std::u32string{U"A\uFFFDB"});
@@ -214,10 +221,10 @@ public:
     }
 
     void testCrossEncodingAppendReplacesMalformedInput() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         auto u16Builder = AnyStringBuilder{StringKind::U16};
 
-        u16Builder.append(U8String{invalidUtf8});
+        u16Builder.append(String{invalidUtf8});
         const auto u16Result = u16Builder.takeU16String();
         REQUIRE_EQUAL(StringConverter{u16Result}.toStdU32String(), std::u32string{U"A\uFFFDB"});
         REQUIRE_EQUAL(StringConverter{u16Result}.toStdU16String(), std::u16string{u"A\uFFFDB"});
@@ -243,7 +250,7 @@ public:
 
     void testTakeStringResetsBuilder() {
         auto builder = AnyStringBuilder{StringKind::U32};
-        builder.append(U8StringEditor{std::u8string_view{u8"Salut"}}).append(U'!');
+        builder.append(String{"Salut"_el}).append(U'!');
 
         const auto result = builder.takeU8String();
 
@@ -258,7 +265,7 @@ public:
 
     void testCopiesAreIndependent() {
         auto first = AnyStringBuilder{StringKind::U8};
-        first.append(U8StringEditor{std::string_view{"ab"}});
+        first.append(StringEditor{"ab"_el});
         auto second = first;
 
         second.append(U'c');

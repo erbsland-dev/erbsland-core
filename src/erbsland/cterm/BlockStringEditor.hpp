@@ -7,10 +7,15 @@
 #include "BlockIndex.hpp"
 #include "BlockPrintContext.hpp"
 #include "BlockRange.hpp"
+#include "BlockString_fwd.hpp"
+#include "BlockStringEditor_fwd.hpp"
+#include "BlockTextOptions_fwd.hpp"
 #include "ParagraphSpacing.hpp"
+#include "TypeTraits.hpp"
 
+#include "impl/BlockPrintContextToBlockString_fwd.hpp"
+#include "impl/BlockStringBuilder_fwd.hpp"
 #include "impl/BlockStringData.hpp"
-#include "impl/TypeTraits.hpp"
 
 #include "../bgeo/BlockSize.hpp"
 #include "../text/CharSet.hpp"
@@ -22,14 +27,6 @@
 #include <vector>
 
 namespace erbsland::cterm {
-
-class BlockString;
-class BlockTextOptions;
-
-namespace impl {
-class BlockPrintContextToBlockString;
-class BlockStringBuilder;
-}
 
 /// A terminal string represented as a sequence of `Block` values.
 ///
@@ -84,13 +81,19 @@ public:
     ~BlockStringEditor() = default;
     BlockStringEditor(const BlockStringEditor &) = default;
     BlockStringEditor(BlockStringEditor &&other) noexcept;
+
+    // defaults
     auto operator=(const BlockStringEditor &) -> BlockStringEditor & = default;
+    /// Move another terminal string into this string.
     auto operator=(BlockStringEditor &&other) noexcept -> BlockStringEditor &;
 
 public: // operators
     /// Compare two strings.
     /// Two strings are only equal, if all characters and styles are equal.
     auto operator==(const BlockStringEditor &other) const noexcept -> bool;
+    /// Compare two strings for inequality.
+    /// @param other The string to compare.
+    /// @return `true` if the strings differ in characters or styles.
     auto operator!=(const BlockStringEditor &other) const noexcept -> bool { return !operator==(other); }
     /// Access one character without bounds checking.
     /// @param index The character index.
@@ -394,22 +397,58 @@ private:
     friend class impl::BlockPrintContextToBlockString;
     friend class impl::BlockStringBuilder;
 
+    /// Create an editor over a shared string range.
+    /// @param data The shared string storage.
+    /// @param range The visible range in the storage.
     explicit BlockStringEditor(impl::BlockStringDataPtr data, BlockRange range) noexcept;
+    /// Create an editor owning character storage.
+    /// @param chars The character storage.
     explicit BlockStringEditor(Storage chars) noexcept;
+    /// Create a string from storage with a known display width.
+    /// @param chars The owned character storage.
+    /// @param displayWidth The precomputed display width.
+    /// @return The string over the supplied storage.
     [[nodiscard]] static auto fromStorageWithDisplayWidth(Storage chars, int displayWidth) noexcept
         -> BlockStringEditor;
 
+    /// Split UTF-8 text into terminal character blocks.
+    /// @param str The UTF-8 text to split.
+    /// @param color The base color for split characters.
+    /// @param attributes The base attributes for split characters.
+    /// @return The resulting character storage.
     [[nodiscard]] static auto splitCharacters(
         const text::String &str, Color color = {}, BlockAttributes attributes = {}) -> Storage;
+    /// Split UTF-32 text into terminal character blocks.
+    /// @param str The UTF-32 text to split.
+    /// @param color The base color for split characters.
+    /// @param attributes The base attributes for split characters.
+    /// @return The resulting character storage.
     [[nodiscard]] static auto splitCharacters(
         const text::U32String &str, Color color = {}, BlockAttributes attributes = {}) -> Storage;
+    /// Create the print context used by variadic append operations.
+    /// @return The initialized print context.
     [[nodiscard]] auto createPrintContext() noexcept -> BlockPrintContextPtr;
+    /// Append a read-only string while resolving inherited style components.
+    /// @param view The string to append.
+    /// @param style The style to resolve against.
     void appendString(const BlockString &view, BlockStyle style) noexcept;
+    /// Append a read-only string while applying a base style.
+    /// @param view The string to append.
+    /// @param style The base style to apply.
     void appendStringWithBaseStyle(const BlockString &view, BlockStyle style) noexcept;
+    /// Ensure this editor has unique mutable backing storage.
     void detach();
+    /// Synchronize the visible range with the backing storage length.
     void syncRangeWithStorage() noexcept;
+    /// Access a character, returning a discarded block when out of bounds.
+    /// @param index The character index.
+    /// @return The character reference or the discarded block.
     [[nodiscard]] auto characterAt(BlockIndex index) const noexcept -> const Block &;
+    /// Return the mutable discarded block for invalid mutable access.
+    /// @return The discarded block.
     [[nodiscard]] static auto ignoredMutableCharacter() noexcept -> Block &;
+    /// Get the default set of characters removed by trim operations.
+    /// @return The default trim character set.
     [[nodiscard]] static auto defaultTrimCharacters() -> const text::CharSet &;
 
 private:

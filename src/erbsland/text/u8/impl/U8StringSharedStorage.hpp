@@ -5,6 +5,7 @@
 #include "U8StringData.hpp"
 #include "U8StringDataView.hpp"
 #include "U8StringLiteralStorage.hpp"
+#include "U8StringSharedStorage_fwd.hpp"
 
 #include "../../../mem/StorageIdentifier.hpp"
 #include "../../../mem/UnsafeCharPtr.hpp"
@@ -107,6 +108,7 @@ private:
     [[nodiscard]] auto isFullRange(std::size_t dataSize) const noexcept -> bool;
     /// Materialize the visible string value into standalone full-range storage with the requested capacity.
     void rematerialize(std::size_t reservedCapacity);
+    /// Test if this string has shared or literal storage.
 
 private:
     U8StringDataPtr _data;                            ///< The COW string data.

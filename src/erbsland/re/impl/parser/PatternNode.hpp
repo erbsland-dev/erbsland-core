@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PatternNode_fwd.hpp"
+#include "PatternNodeAllocator.hpp"
+
 #include "../error/InternalError.hpp"
 #include "../node_data/Anchor.hpp"
 #include "../node_data/CharacterCategory.hpp"
@@ -94,6 +97,100 @@ public: // helper methods
     void replaceLastChild(const PatternNodePtr &node);
     /// Append a character to this character sequence.
     void addCharacter(text::Char character);
+    /// Traverse the node tree in pre-order without type-erased callbacks.
+    template <typename Visitor>
+    void traverse(Visitor &&visitor) {
+        struct StackItem {
+            PatternNode *node;
+            int depth;
+        };
+        auto stack = std::vector<StackItem>{};
+        stack.reserve(32U);
+        stack.push_back({.node = this, .depth = 0});
+        while (!stack.empty()) {
+            auto [node, depth] = stack.back();
+            stack.pop_back();
+            std::invoke(visitor, *node, depth);
+            for (const auto &child : std::ranges::reverse_view(node->children())) {
+                stack.push_back({.node = child.get(), .depth = depth + 1});
+            }
+        }
+    }
+    /// Traverse the node tree in pre-order without type-erased callbacks.
+    template <typename Visitor>
+    void traverse(Visitor &&visitor) const {
+        struct StackItem {
+            const PatternNode *node;
+            int depth;
+        };
+        auto stack = std::vector<StackItem>{};
+        stack.reserve(32U);
+        stack.push_back({.node = this, .depth = 0});
+        while (!stack.empty()) {
+            auto [node, depth] = stack.back();
+            stack.pop_back();
+            std::invoke(visitor, *node, depth);
+            for (const auto &child : std::ranges::reverse_view(node->children())) {
+                stack.push_back({.node = child.get(), .depth = depth + 1});
+            }
+        }
+    }
+    /// Traverse the node tree in enter/exit order without type-erased callbacks.
+    template <typename EnterVisitor, typename ExitVisitor>
+    void traverse(EnterVisitor &&onEnter, ExitVisitor &&onExit) {
+        struct StackItem {
+            PatternNode *node;
+            std::size_t depth;
+            std::size_t nextChildIndex;
+            bool entered;
+        };
+        auto stack = std::vector<StackItem>{};
+        stack.reserve(32U);
+        stack.push_back({.node = this, .depth = 0U, .nextChildIndex = 0U, .entered = false});
+        while (!stack.empty()) {
+            auto &item = stack.back();
+            if (!item.entered) {
+                item.entered = true;
+                std::invoke(onEnter, *item.node, static_cast<int>(item.depth));
+            }
+            const auto children = item.node->children();
+            if (item.nextChildIndex < children.size()) {
+                auto *child = children[item.nextChildIndex++].get();
+                stack.push_back({.node = child, .depth = item.depth + 1U, .nextChildIndex = 0U, .entered = false});
+            } else {
+                std::invoke(onExit, *item.node, static_cast<int>(item.depth));
+                stack.pop_back();
+            }
+        }
+    }
+    /// Traverse the node tree in enter/exit order without type-erased callbacks.
+    template <typename EnterVisitor, typename ExitVisitor>
+    void traverse(EnterVisitor &&onEnter, ExitVisitor &&onExit) const {
+        struct StackItem {
+            const PatternNode *node;
+            std::size_t depth;
+            std::size_t nextChildIndex;
+            bool entered;
+        };
+        auto stack = std::vector<StackItem>{};
+        stack.reserve(32U);
+        stack.push_back({.node = this, .depth = 0U, .nextChildIndex = 0U, .entered = false});
+        while (!stack.empty()) {
+            auto &item = stack.back();
+            if (!item.entered) {
+                item.entered = true;
+                std::invoke(onEnter, *item.node, static_cast<int>(item.depth));
+            }
+            const auto children = item.node->children();
+            if (item.nextChildIndex < children.size()) {
+                const auto *child = children[item.nextChildIndex++].get();
+                stack.push_back({.node = child, .depth = item.depth + 1U, .nextChildIndex = 0U, .entered = false});
+            } else {
+                std::invoke(onExit, *item.node, static_cast<int>(item.depth));
+                stack.pop_back();
+            }
+        }
+    }
     /// Traverse the node-tree and call the given function for each node.
     void traverse(const std::function<void(PatternNode &, int)> &visitor);
     /// Traverse the node-tree and call the given function for each node.

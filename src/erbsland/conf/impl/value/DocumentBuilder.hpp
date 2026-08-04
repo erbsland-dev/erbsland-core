@@ -27,7 +27,7 @@ public:
     DocumentBuilder() = default;
     ~DocumentBuilder() = default;
 
-    // Disable copy and assign
+    // defaults/deletions
     DocumentBuilder(const DocumentBuilder &) = delete;
     auto operator=(const DocumentBuilder &) -> DocumentBuilder & = delete;
     DocumentBuilder(DocumentBuilder &&) = delete;
@@ -72,17 +72,20 @@ public:
     [[nodiscard]] auto getDocumentAndReset() noexcept -> std::shared_ptr<Document>;
 
 public: // methods for the public interface.
+    /// Reject unsupported value types passed through the public builder interface.
     template <typename T>
     void addValueT(const NamePathLike &, const T &) {
         static_assert(always_false_v<T>, "addValue is not implemented for this type.");
     }
 
+    /// Add an integral value through the public builder interface.
     template <typename T>
         requires(std::is_integral_v<T>)
     void addValueT(const NamePathLike &namePath, const T &value) {
         addValue(namePath, Value::createInteger(static_cast<Integer>(value)));
     }
 
+    /// Add a floating-point value through the public builder interface.
     template <typename T>
         requires(std::is_floating_point_v<T>)
     void addValueT(const NamePathLike &namePath, const T &value) {
@@ -93,50 +96,60 @@ private:
     DocumentBuilderStorage _storage;
 };
 
+/// Add a text value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<text::String>(const NamePathLike &namePath, const text::String &value) {
     addValue(namePath, Value::createText(value));
 }
 
+/// Add a Boolean value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<bool>(const NamePathLike &namePath, const bool &value) {
     addValue(namePath, Value::createBoolean(value));
 }
 
+/// Add a date value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<time::Date>(const NamePathLike &namePath, const time::Date &value) {
     addValue(namePath, Value::createDate(value));
 }
 
+/// Add a time value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<time::Time>(const NamePathLike &namePath, const time::Time &value) {
     addValue(namePath, Value::createTime(value));
 }
 
+/// Add a time-with-zone value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<time::TimeWithZone>(
     const NamePathLike &namePath, const time::TimeWithZone &value) {
     addValue(namePath, Value::createTimeWithZone(value));
 }
 
+/// Add a date-time value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<time::DateTime>(const NamePathLike &namePath, const time::DateTime &value) {
     addValue(namePath, Value::createDateTime(value));
 }
 
+/// Add a byte-block value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<mem::ByteBlock>(const NamePathLike &namePath, const mem::ByteBlock &value) {
     addValue(namePath, Value::createBytes(value));
 }
 
+/// Add a regular-expression value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<re::RegExPtr>(const NamePathLike &namePath, const re::RegExPtr &value) {
     if (value == nullptr) {
-        throw err::ParameterError{"The regular expression cannot be null.", "value"};
+        using namespace text::literals;
+        throw err::ParameterError{"The regular expression cannot be null."_el, "value"_el};
     }
     addValue(namePath, Value::createRegEx(value));
 }
 
+/// Add a calendar-delta value through the public builder interface.
 template <>
 inline void DocumentBuilder::addValueT<time::CalendarDelta>(
     const NamePathLike &namePath, const time::CalendarDelta &value) {

@@ -17,7 +17,7 @@ public:
     /// reference to the string builder that is part of the calling instance.
     explicit PrintContextToBuilder(text::AnyStringBuilder &builder) : _builder{builder} {}
 
-    // defaults / prevent copy and move
+    // defaults/deletions
     ~PrintContextToBuilder() override = default;
     PrintContextToBuilder(const PrintContextToBuilder &) = delete;
     PrintContextToBuilder(PrintContextToBuilder &&) = delete;

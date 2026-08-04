@@ -51,11 +51,9 @@ public:
     /// @param value The raw value. Passing cRawNoIndex creates the special no-index value if the unit supports it.
     explicit constexpr IntegerUnitIndex(Value value) noexcept : _value{value} {}
 
-    /// Destroy this index.
+    // defaults
     ~IntegerUnitIndex() = default;
-    /// Copy an index.
     IntegerUnitIndex(const IntegerUnitIndex &) noexcept = default;
-    /// Copy another index into this index.
     auto operator=(const IntegerUnitIndex &) noexcept -> IntegerUnitIndex & = default;
 
 public: // operators

@@ -28,9 +28,9 @@ public:
     void testReadResultTransportsDataAndStatus() {
         const auto result = el::stream::StreamReadResult<std::string>{el::stream::StreamReadStatus::Data, "text"};
 
-        REQUIRE(result == el::stream::StreamReadStatus::Data);
+        REQUIRE_EQUAL(result, el::stream::StreamReadStatus::Data);
         REQUIRE(result.hasData());
-        REQUIRE(result.status() == el::stream::StreamReadStatus::Data);
+        REQUIRE_EQUAL(result.status(), el::stream::StreamReadStatus::Data);
         REQUIRE(isSuccessful(result));
         REQUIRE_EQUAL(result.data(), std::string{"text"});
 

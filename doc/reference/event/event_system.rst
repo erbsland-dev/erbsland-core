@@ -14,11 +14,35 @@ Use ``Events::invokeAfter`` for fire-and-forget delayed callbacks.
 Use ``EventTimer`` when the caller needs to keep a cancellation object for one-shot or repeated scheduled work.
 Keep the returned ``EventTimer`` pointer for as long as the scheduled work shall remain active.
 Use ``currentEvents()`` from domain event editors to attach to the event loop currently running on the thread.
-Retaining an ``EventEditor`` retains its complete callback subscription; releasing or disconnecting it removes that
-subscription.
 ``EventLoopDriver`` provides the single native wait and wake path and can be injected for tests or custom reactors.
 Use ``ManagedEventThread`` for application-owned worker event loops and ``UnmanagedEventThread`` for standalone worker
 event loops.
+
+Source-Owned Event Editors
+==========================
+
+An ``EventSource`` owns its handlers and one stable ``EventEditor``.
+Call the source's ``events()`` method on its owner loop and use the typed ``on...()`` methods to replace handlers.
+Passing an empty callback clears the corresponding handler.
+The returned reference is borrowed and remains valid only while the source remains alive.
+
+Returning a reference makes the editor's management role explicit: it is neither a callback subscription nor an
+independently retained object.
+It also keeps fluent setup natural, for example ``lookup->events().onResolved(...).onError(...)``.
+An implementation can construct its editor together with the source or lazily on the first ``events()`` call, but every
+call returns the same editor.
+
+``EventEditor::source()`` and ``EventEditor::target()`` form the small common interface needed by generic code that
+works with different editor types.
+``source()`` returns a shared pointer so such code can deliberately keep the source alive.
+The common implementation stores that source weakly to avoid a source/editor ownership cycle and treats an expired
+source as an internal logic error.
+``target()`` retains the event collection that dispatches the callbacks.
+Most application code does not need either accessor and works directly with the typed editor methods.
+
+The name ``events()`` also appears on ``Application`` and ``EventThread``, where it returns an ``EventsPtr`` event-loop
+target.
+Those classes are not event sources, so there is no editor involved and the existing name keeps its distinct meaning.
 
 Interface
 =========
@@ -49,6 +73,12 @@ Interface
     :members:
 .. doxygenenum:: erbsland::event::EventLoopErrorAction
 .. doxygentypedef:: erbsland::event::EventLoopErrorHandler
+.. doxygenclass:: erbsland::event::EventPipe
+    :members:
+.. doxygenclass:: erbsland::event::EventPipeReceiver
+    :members:
+.. doxygenclass:: erbsland::event::EventPipeSender
+    :members:
 .. doxygenclass:: erbsland::event::EventRegistry
     :members:
 .. doxygenclass:: erbsland::event::Events

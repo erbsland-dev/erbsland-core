@@ -67,10 +67,11 @@ void Assembler::processDataCommand() {
     }
     if (_currentSection == DataSection::Sequence) {
         if (currentToken().isText()) {
-            static_cast<void>(currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
+            // The callback always continues, so the loop result cannot carry additional information.
+            currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
                 _data->sequenceData.emplace_back(character);
                 return util::LoopStatus::Continue;
-            }));
+            });
         } else {
             _data->sequenceData.emplace_back(static_cast<char32_t>(currentToken().getInteger()));
         }
@@ -80,10 +81,11 @@ void Assembler::processDataCommand() {
         nextToken();
     } else { // class
         if (currentToken().isText()) {
-            static_cast<void>(currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
+            // The callback always continues, so the loop result cannot carry additional information.
+            currentToken().getText().forEach([this](const text::Char character) -> util::LoopStatus {
                 _charRanges.emplace_back(character, character);
                 return util::LoopStatus::Continue;
-            }));
+            });
             nextToken();
         } else {
             const auto startCharacter = currentToken().getInteger();

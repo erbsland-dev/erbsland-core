@@ -17,7 +17,7 @@ namespace erbsland::stream::impl {
 /// @tested{StandardTextOutputStreamTest AnyStringBuilderStreamTest}
 class PrintContextCommonBuilder : public TextPrintContext {
 public:
-    // defaults / prevent copy and move
+    // defaults/deletions
     PrintContextCommonBuilder() = default;
     ~PrintContextCommonBuilder() override = default;
     PrintContextCommonBuilder(const PrintContextCommonBuilder &) = delete;
@@ -57,6 +57,7 @@ public:
     void print(text::FloatFormat newFormat) override;
 
 private:
+    /// Convert a value to the selected string kind and append it to the builder.
     template <typename T>
     static void convertAndAppendToBuilder(text::AnyStringBuilder &builder, T text);
 

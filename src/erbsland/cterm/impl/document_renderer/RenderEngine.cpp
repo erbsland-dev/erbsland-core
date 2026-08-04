@@ -160,7 +160,6 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
     auto number = String{};
     auto source = String{};
     auto markerNodes = std::vector<TextNodePtr>{};
-    auto markerLabels = std::vector<String>{};
     auto markers = std::vector<text::impl::CodeSnippetLayoutMarker>{};
     for (const auto &child : line.children()) {
         if (child->type() == TextNodeType::CodeLineNumber) {
@@ -171,8 +170,7 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
             if (const auto markerData = std::dynamic_pointer_cast<const text::impl::CodeLineMarkerData>(child->data());
                 markerData != nullptr) {
                 markerNodes.push_back(child);
-                markerLabels.push_back(nodeText(*child));
-                markers.push_back(text::impl::CodeSnippetLayoutMarker{markerData->range(), markerLabels.back()});
+                markers.push_back(text::impl::CodeSnippetLayoutMarker{markerData->range(), nodeText(*child)});
             }
         }
     }
@@ -186,11 +184,12 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
     const auto margins = lineIndents.margins();
     const auto availableWidth = std::max(
         _width - frameWidth() - positive(margins.left()) - positive(margins.right()) - gutter.displayWidth(), 1);
-    const auto rows = text::impl::CodeSnippetLayout::build(source, markers, availableWidth);
+    const auto layout = text::impl::CodeSnippetLayout{source, markers, availableWidth};
+    const auto &rows = layout.rows();
     for (auto rowIndex = std::size_t{0}; rowIndex < rows.size(); ++rowIndex) {
         _blockBuilder.clear();
         _blockBuilder.append(rowIndex == 0 ? BlockString{gutter} : BlockString{markerGutter});
-        for (const auto &cell : rows[rowIndex].cells) {
+        for (const auto &cell : rows[rowIndex].cells()) {
             auto cellStyle = sourceStyle;
             if (cell.isEllipsis) {
                 cellStyle = cellStyle.withOverlay(BlockStyle{fg::BrightBlack});
@@ -203,32 +202,25 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
 
         for (auto markerIndex = std::size_t{0}; markerIndex < markers.size(); ++markerIndex) {
             const auto &marker = markers[markerIndex];
-            if (!text::impl::CodeSnippetLayout::markerIntersects(rows[rowIndex], marker)) {
+            const auto placement = rows[rowIndex].markerPlacement(marker.range);
+            if (!placement.has_value()) {
                 continue;
             }
             const auto markerStyle =
                 context.resolvedTextStyle(_style.baseTextStyle(), ruleFor(*markerNodes[markerIndex]));
             _blockBuilder.clear();
             _blockBuilder.append(markerGutter);
-            const auto start = text::impl::CodeSnippetLayout::markerStart(rows[rowIndex], marker);
-            for (auto index = 0; index < start; ++index) {
+            for (auto index = 0; index < placement->start; ++index) {
                 _blockBuilder.append(Block{Char{U' '}, sourceStyle});
             }
             const auto point = marker.range.isEmpty();
-            const auto length = text::impl::CodeSnippetLayout::markerLength(rows[rowIndex], marker);
-            for (auto index = 0; index < length; ++index) {
+            for (auto index = 0; index < placement->length; ++index) {
                 _blockBuilder.append(Block{Char{point ? U'↑' : U'▔'}, markerStyle});
             }
-            auto isLastMarkerRow = true;
-            for (auto following = rowIndex + 1; following < rows.size(); ++following) {
-                if (text::impl::CodeSnippetLayout::markerIntersects(rows[following], marker)) {
-                    isLastMarkerRow = false;
-                    break;
-                }
-            }
-            const auto label = markerLabels[markerIndex];
-            const auto annotationWidth = static_cast<std::size_t>(start) + static_cast<std::size_t>(length);
-            if (isLastMarkerRow && !label.isEmpty() &&
+            const auto &label = marker.label;
+            const auto annotationWidth =
+                static_cast<std::size_t>(placement->start) + static_cast<std::size_t>(placement->length);
+            if (layout.isLastMarkerRow(rowIndex, marker.range) && !label.isEmpty() &&
                 annotationWidth + label.characterLength().toSizeT() + 3U <= static_cast<std::size_t>(availableWidth)) {
                 _blockBuilder.appendStyled(" ("_el, markerStyle);
                 _blockBuilder.appendStyled(label, markerStyle);

@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void Title::operator()(impl::Rule &rule) {
+void Title::operator()(Rule &rule) {
     rule.setTitle(std::move(_title));
 }
 

@@ -29,6 +29,7 @@ namespace erbsland::text::impl {
 /// @tested{U16StringTest}
 class U16StringTransformTools final {
 public:
+    /// Create transformation tools for `data`.
     explicit constexpr U16StringTransformTools(const U16StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -58,6 +59,7 @@ public: // escaping.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U16StringEditor;
 
 private:
+    /// Create a data view for a UTF-16 range.
     [[nodiscard]] auto dataView(unit::U16DataRange range) const -> U16StringDataView;
 
 private:

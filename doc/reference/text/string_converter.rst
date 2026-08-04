@@ -46,6 +46,7 @@ String Decoder
 
     auto text = el::StringDecoder{bytes}.decode(el::StringEncoding::Utf8);
     auto utf16 = el::StringDecoder{bytes}.toU16String(el::StringEncoding::Utf16);
+    el::StringDecoder{bytes}.validateOrThrow(el::StringEncoding::Utf8);
 
 The decoder accepts :cpp:class:`StringEncoding <erbsland::text::StringEncoding>`,
 :cpp:enum:`StringBomMode <erbsland::text::StringBomMode>`, and
@@ -53,6 +54,10 @@ The decoder accepts :cpp:class:`StringEncoding <erbsland::text::StringEncoding>`
 Only an encoded ``U+FEFF`` signature at the start of the byte input is interpreted as a BOM.
 A repeated or embedded ``U+FEFF`` is invalid content and follows ``EncodingMode``; it is never returned as a character
 in the decoded string.
+
+Use ``validateOrThrow()`` when encoded bytes must be checked without constructing a decoded string.
+It applies strict validation together with the selected encoding and BOM policy, traverses the input once, and allocates
+no output storage.
 
 String Encoder
 --------------
@@ -83,8 +88,7 @@ internal text must be detected.
 An ordinary ``Char{0xFEFF}`` in source content is never interpreted as a signature; during transcoding it becomes a
 replacement character like other invalid content.
 
-Extension libraries can support additional Erbsland-compatible source types by specializing
-:cpp:struct:`StringEncoderTraits <erbsland::text::StringEncoderTraits>`.
+``StringEncoder`` accepts the read-only string and editor types for all three supported string widths.
 
 String Kind
 -----------
@@ -156,6 +160,8 @@ Interface
 .. doxygenclass:: erbsland::text::StringEncoding
     :members:
 .. doxygenenum:: erbsland::text::StringKind
+
+.. doxygenfunction:: erbsland::text::toString(StringKind kind) -> String
 .. doxygenfunction:: erbsland::text::toString(const String &value) -> String
 
 .. doxygenfunction:: erbsland::text::toString(bool value, BooleanFormat format = BooleanFormat::defaultFormat()) -> String

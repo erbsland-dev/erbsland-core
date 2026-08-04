@@ -6,6 +6,7 @@
 #include "Tile9Style.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 #include <algorithm>
 #include <array>
@@ -14,6 +15,7 @@
 
 namespace erbsland::cterm {
 
+using namespace text::literals;
 using namespace bgeo;
 
 Buffer::Buffer() : _size{1, 1}, _data(1U, Block{U' '}) {
@@ -133,7 +135,7 @@ void Buffer::setAndResizeFrom(const ReadableBuffer &other) {
 
 auto Buffer::fromLinesInString(const BlockString &text) -> Buffer {
     if (text.isEmpty()) {
-        throw err::ParameterError{"Text must not be empty.", "text"};
+        throw err::ParameterError{"Text must not be empty."_el, "text"_el};
     }
     auto lines = BlockStringLines{};
     for (const auto &line : text.splitLines()) {
@@ -144,7 +146,7 @@ auto Buffer::fromLinesInString(const BlockString &text) -> Buffer {
 
 auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
     if (lines.empty()) {
-        throw err::ParameterError{"Lines must not be empty.", "lines"};
+        throw err::ParameterError{"Lines must not be empty."_el, "lines"_el};
     }
     BlockSize size{BlockCoordinate{1}, BlockCoordinate{lines.size()}};
     for (const auto &line : lines) {
@@ -163,10 +165,10 @@ auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
 
 auto Buffer::validatedBufferSize(const BlockSize size) -> BlockSize {
     if (size.width() < 1 || size.height() < 1) {
-        throw err::ParameterError{"Buffer size must be at least 1x1.", "size"};
+        throw err::ParameterError{"Buffer size must be at least 1x1."_el, "size"_el};
     }
     if (!size.fitsInto(cMaximumSize)) {
-        throw err::ParameterError{"Buffer size must not exceed 10'000x10'000.", "size"};
+        throw err::ParameterError{"Buffer size must not exceed 10'000x10'000."_el, "size"_el};
     }
     return size;
 }

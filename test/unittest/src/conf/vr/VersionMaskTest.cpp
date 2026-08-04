@@ -19,38 +19,38 @@ class VersionMaskTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 public:
     void testVersionRangeDefault() {
         ConfVersionRange r; // default constructed
-        REQUIRE(r.first == 0);
-        REQUIRE(r.last == 0);
+        REQUIRE_EQUAL(r.first, 0);
+        REQUIRE_EQUAL(r.last, 0);
     }
 
     void testVersionRangeSingleValue() {
         ConfVersionRange r{5};
-        REQUIRE(r.first == 5);
-        REQUIRE(r.last == 5);
+        REQUIRE_EQUAL(r.first, 5);
+        REQUIRE_EQUAL(r.last, 5);
 
         ConfVersionRange rn{-3};
-        REQUIRE(rn.first == 0);
-        REQUIRE(rn.last == 0);
+        REQUIRE_EQUAL(rn.first, 0);
+        REQUIRE_EQUAL(rn.last, 0);
     }
 
     void testVersionRangeTwoValues() {
         ConfVersionRange r1{10, 3};
-        REQUIRE(r1.first == 3);
-        REQUIRE(r1.last == 10);
+        REQUIRE_EQUAL(r1.first, 3);
+        REQUIRE_EQUAL(r1.last, 10);
 
         ConfVersionRange r2{-5, 2};
-        REQUIRE(r2.first == 0);
-        REQUIRE(r2.last == 2);
+        REQUIRE_EQUAL(r2.first, 0);
+        REQUIRE_EQUAL(r2.last, 2);
 
         ConfVersionRange r3{-5, -1};
-        REQUIRE(r3.first == 0);
-        REQUIRE(r3.last == 0);
+        REQUIRE_EQUAL(r3.first, 0);
+        REQUIRE_EQUAL(r3.last, 0);
     }
 
     void testVersionRangeAll() {
         ConfVersionRange all = ConfVersionRange::all();
-        REQUIRE(all.first == 0);
-        REQUIRE(all.last == std::numeric_limits<Integer>::max());
+        REQUIRE_EQUAL(all.first, 0);
+        REQUIRE_EQUAL(all.last, std::numeric_limits<Integer>::max());
     }
 
     void testMaskDefaultMatchesAll() {
@@ -172,17 +172,17 @@ public:
         VersionMask e = VersionMask::empty();
         REQUIRE(e.isEmpty());
         REQUIRE_FALSE(e.isAny());
-        REQUIRE(e.toText() == "none"_el);
+        REQUIRE_EQUAL(e.toText(), "none"_el);
 
         // Any mask (default constructed)
         VersionMask any;
         REQUIRE(any.isAny());
         REQUIRE_FALSE(any.isEmpty());
-        REQUIRE(any.toText() == "any"_el);
+        REQUIRE_EQUAL(any.toText(), "any"_el);
 
         // <=N form
         VersionMask le = VersionMask::fromRanges({ConfVersionRange{0, 5}});
-        REQUIRE(le.toText() == "<=5"_el);
+        REQUIRE_EQUAL(le.toText(), "<=5"_el);
         REQUIRE(le.matches(0));
         REQUIRE(le.matches(5));
         REQUIRE_FALSE(le.matches(6));
@@ -190,21 +190,21 @@ public:
         // >=M form
         const auto maxI = std::numeric_limits<Integer>::max();
         VersionMask ge = VersionMask::fromRanges({ConfVersionRange{7, maxI}});
-        REQUIRE(ge.toText() == ">=7"_el);
+        REQUIRE_EQUAL(ge.toText(), ">=7"_el);
         REQUIRE_FALSE(ge.matches(6));
         REQUIRE(ge.matches(7));
         REQUIRE(ge.matches(maxI));
 
         // Singleton
         VersionMask single = VersionMask::fromRanges({ConfVersionRange{5, 5}});
-        REQUIRE(single.toText() == "5"_el);
+        REQUIRE_EQUAL(single.toText(), "5"_el);
         REQUIRE_FALSE(single.matches(4));
         REQUIRE(single.matches(5));
         REQUIRE_FALSE(single.matches(6));
 
         // General list formatting
         VersionMask list = VersionMask::fromRanges({ConfVersionRange{1, 3}, ConfVersionRange{7, 10}});
-        REQUIRE(list.toText() == "1-3, 7-10"_el);
+        REQUIRE_EQUAL(list.toText(), "1-3, 7-10"_el);
     }
 
     void testIdentityOperators() {
@@ -213,7 +213,10 @@ public:
         VersionMask a = VersionMask::fromRanges({ConfVersionRange{2, 4}});
 
         // empty | a == a
-        REQUIRE((e | a).ranges().size() == a.ranges().size());
+        const auto unionMask = e | a;
+        const auto unionRangeCount = unionMask.ranges().size();
+        const auto expectedRangeCount = a.ranges().size();
+        REQUIRE_EQUAL(unionRangeCount, expectedRangeCount);
         REQUIRE((e | a).matches(3));
         // empty & a == empty
         REQUIRE((e & a).isEmpty());
@@ -247,7 +250,7 @@ public:
         // Range [0, max] is any
         auto any2 = VersionMask::fromRanges({ConfVersionRange{0, maxI}});
         REQUIRE(any2.isAny());
-        REQUIRE(any2.toText() == "any"_el);
+        REQUIRE_EQUAL(any2.toText(), "any"_el);
         REQUIRE(any2.matches(0));
         REQUIRE(any2.matches(maxI));
 
@@ -274,11 +277,11 @@ public:
     void testRangesAccessorNormalization() {
         VersionMask m = VersionMask::fromIntegers({0, 2, 1, 3, 4, 10});
         const auto &rs = m.ranges();
-        REQUIRE(rs.size() == 2);
-        REQUIRE(rs[0].first == 0);
-        REQUIRE(rs[0].last == 4);
-        REQUIRE(rs[1].first == 10);
-        REQUIRE(rs[1].last == 10);
+        REQUIRE_EQUAL(rs.size(), 2);
+        REQUIRE_EQUAL(rs[0].first, 0);
+        REQUIRE_EQUAL(rs[0].last, 4);
+        REQUIRE_EQUAL(rs[1].first, 10);
+        REQUIRE_EQUAL(rs[1].last, 10);
     }
 
     void testConstructorCornerCases() {
@@ -314,7 +317,7 @@ public:
         REQUIRE(c1.matches(6));
         REQUIRE(c1.matches(maxI));
         // textual form should be ">=6"
-        REQUIRE(c1.toText() == ">=6"_el);
+        REQUIRE_EQUAL(c1.toText(), ">=6"_el);
 
         // Complement of [5, max] -> [0,4]
         VersionMask from5 = VersionMask::fromRanges({ConfVersionRange{5, maxI}});
@@ -322,7 +325,7 @@ public:
         REQUIRE(c2.matches(0));
         REQUIRE(c2.matches(4));
         REQUIRE_FALSE(c2.matches(5));
-        REQUIRE(c2.toText() == "<=4"_el);
+        REQUIRE_EQUAL(c2.toText(), "<=4"_el);
 
         // Complement of (1-3, 7-10) -> (0-0, 4-6, 11-max)
         VersionMask complex = VersionMask::fromRanges({ConfVersionRange{1, 3}, ConfVersionRange{7, 10}});

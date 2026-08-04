@@ -4,6 +4,8 @@
 
 #include "HashAlgorithm.hpp"
 
+#include "symmetric/SymmetricEncryptionType.hpp"
+
 #include "../text/StdFormat.hpp"
 
 #include <format>
@@ -13,6 +15,15 @@ struct std::formatter<erbsland::cryptology::HashAlgorithm> : std::formatter<erbs
     using Base = std::formatter<erbsland::text::String>;
 
     auto format(const erbsland::cryptology::HashAlgorithm value, std::format_context &ctx) const {
+        return Base::format(value.toString(), ctx);
+    }
+};
+
+template <>
+struct std::formatter<erbsland::cryptology::SymmetricEncryptionType> : std::formatter<erbsland::text::String> {
+    using Base = std::formatter<erbsland::text::String>;
+
+    auto format(const erbsland::cryptology::SymmetricEncryptionType value, std::format_context &ctx) const {
         return Base::format(value.toString(), ctx);
     }
 };

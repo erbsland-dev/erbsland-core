@@ -30,8 +30,8 @@ void elementSampling() {
     el::io::printLine("Accent index : "_el, index.toSizeT());
 
     // Build repeated and unique samples from the same choices.
-    const auto gradient = random.buildElementList(el::ElementCount{5U}, palette);
-    const auto studySet = random.buildUniqueElementList(el::ElementCount{3U}, palette);
+    const auto gradient = random.buildElementList(el::ItemCount{5U}, palette);
+    const auto studySet = random.buildUniqueElementList(el::ItemCount{3U}, palette);
     el::io::printLine("Gradient     : "_el, gradient.join(", "_el));
     el::io::printLine("Study set    : "_el, studySet.join(", "_el));
 

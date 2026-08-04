@@ -12,28 +12,28 @@ Format Argument
 ---------------
 
 :cpp:class:`FormatArgument <erbsland::text::FormatArgument>` is the internal runtime payload used by the formatter
-engine after public :cpp:struct:`FormatAs <erbsland::text::FormatAs>` adapters have converted user values to supported
-argument types.
+engine after direct values have been converted to supported argument types.
 User code should extend formatting with
 :cpp:struct:`FormatAs <erbsland::text::FormatAs>` instead of constructing this type directly.
 
 Format As
 ---------
 
-The :cpp:struct:`FormatAs <erbsland::text::FormatAs>` templates are the public extension point for adapting user values
-to the formatter system.
-Specialize exactly one ``FormatAs*`` template for a custom type and return one of the supported argument payloads.
-``ByteBlock`` uses ``FormatAsBytes`` and is stored as an owning runtime argument.
+The :cpp:struct:`FormatAs <erbsland::text::FormatAs>` template is the public extension point for formatting a custom
+value.
+Values with ``toString() const -> String`` are automatically formatted as UTF-8 text.
+Specialize ``FormatAs`` only when formatting needs a different representation; it takes precedence over ``toString()``.
+Built-in values, including integers, floating-point values, text, characters, and ``ByteBlock``, are handled directly.
 
-Integer Example
-~~~~~~~~~~~~~~~
+Example
+~~~~~~~
 
 .. code-block:: cpp
 
     template <>
-    struct erbsland::text::FormatAsInt64<MyIndex> : erbsland::text::FormatAs<MyIndex, int64_t> {
-        [[nodiscard]] auto format(const MyIndex &value) const -> int64_t {
-            return value.toRawValue();
+    struct erbsland::text::FormatAs<MyIndex> {
+        [[nodiscard]] auto format(const MyIndex &value) const -> erbsland::text::String {
+            return value.toString();
         }
     };
 
@@ -163,36 +163,6 @@ Interface
     :members:
 .. doxygenenum:: erbsland::text::FormatArgumentKind
 .. doxygenstruct:: erbsland::text::FormatAs
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsInt64
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsUInt64
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsDouble
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsBool
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsChar
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsText
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsU8Text
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsU16Text
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsU32Text
-    :members:
-
-.. doxygenstruct:: erbsland::text::FormatAsBytes
     :members:
 .. doxygenclass:: erbsland::text::FormatError
     :members:

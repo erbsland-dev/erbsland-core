@@ -9,10 +9,14 @@
 namespace erbsland::conf::vr::builder {
 
 /// Restricts a rule to versions smaller than or equal to a maximum.
-struct MaximumVersion : Attribute {
+class MaximumVersion : public Attribute {
+public:
+    /// Set the maximum permitted version.
+    /// @param version The version bound.
+    /// @param isNegated Whether to negate the version condition.
     explicit MaximumVersion(const Integer version, const bool isNegated = false) :
         _version{version}, _isNegated{isNegated} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     Integer _version;
     bool _isNegated{false};
 };

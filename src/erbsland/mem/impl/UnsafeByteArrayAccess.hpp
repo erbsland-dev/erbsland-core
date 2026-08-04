@@ -29,7 +29,7 @@ public:
 
 public:
     /// Access the complete writable array storage.
-    [[nodiscard]] auto writableData() noexcept -> FixedByteSpan<N> { return _array.writableSpan(); }
+    [[nodiscard]] auto writableData() noexcept -> FixedByteSpan<N> { return FixedByteSpan<N>{_array.writableSpan()}; }
 
 private:
     ByteArray<N> &_array; ///< The borrowed fixed byte array.

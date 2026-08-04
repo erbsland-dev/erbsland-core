@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "AllocationTracker.hpp"
+#include "AllocationScope.hpp"
 #include "CharSetFixture.hpp"
 #include "CharSetWorkerWorkload_fwd.hpp"
 #include "Operation.hpp"
@@ -27,6 +27,7 @@ public: // implement WorkerWorkload
         -> erbsland::profiling::WorkerMeasurement override;
 
 private:
+    /// Measure repeated operation invocations until completion is requested.
     template <typename Function>
     [[nodiscard]] auto measure(const erbsland::profiling::WorkerExecutionContext &context, Function function)
         -> erbsland::profiling::WorkerMeasurement {
@@ -49,9 +50,13 @@ private:
             .sink = sink};
     }
 
+    /// Mix a character-set result into the measurement sink.
     static void consumeSet(std::uint64_t &sink, const el::CharSet &value) noexcept;
+    /// Mix a Boolean result into the measurement sink.
     static void consumeBoolean(std::uint64_t &sink, bool value) noexcept;
+    /// Mix a size result into the measurement sink.
     static void consumeSize(std::uint64_t &sink, std::uint64_t value) noexcept;
+    /// Multiply two counters while saturating at the unsigned maximum.
     [[nodiscard]] static auto saturatedMultiply(std::uint64_t first, std::uint64_t second) noexcept -> std::uint64_t;
 
 private:

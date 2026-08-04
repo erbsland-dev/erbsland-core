@@ -92,7 +92,7 @@ public:
 
     void testTooLong() {
         NameLexer lexer{el::text::StringEditor::fromCharacter(
-            el::text::Char{U'a'}, el::unit::CpLength{limits::maxLineLength + 100})};
+            el::text::Char{U'a'}, el::unit::CpLength{el::conf::impl::limits::maxLineLength + 100})};
         REQUIRE_THROWS_AS(ConfError, lexer.initialize());
     }
 

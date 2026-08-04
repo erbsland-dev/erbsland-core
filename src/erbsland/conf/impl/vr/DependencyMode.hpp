@@ -47,6 +47,8 @@ public:
     /// Create a dependency mode from an enum value.
     /// @param value The enum value.
     DependencyMode(const Enum value) : _value(value) {} // NOLINT(*-explicit-constructor)
+
+    // defaults
     /// Default copy constructor.
     DependencyMode(const DependencyMode &) = default;
     /// Default destructor.
@@ -90,6 +92,7 @@ public:
 
 private:
     using TextToValueMap = std::vector<std::pair<text::String, Enum>>;
+    /// Get the static mapping between normalized text and enum values.
     [[nodiscard]] static auto textToValueMap() noexcept -> const TextToValueMap &;
 
 private:

@@ -183,7 +183,7 @@ class BufferedStreamTest final : public el::UnitTest {
     void requireRemainsClosed(const T &stream) {
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds{50};
         while (std::chrono::steady_clock::now() < deadline) {
-            REQUIRE(stream.state() == el::stream::StreamState::Closed);
+            REQUIRE_EQUAL(stream.state(), el::stream::StreamState::Closed);
             std::this_thread::yield();
         }
     }
@@ -195,7 +195,8 @@ public:
         ordinaryNative->allowReads();
         const auto ordinary = el::stream::impl::createBufferedByteInputStream(ordinaryNative, inputSettings());
         REQUIRE_FALSE(ordinary->inputSettings().isSensitive());
-        REQUIRE(ordinary->waitForReady().isReady());
+        const auto ordinaryWait = ordinary->waitForReady();
+        REQUIRE(ordinaryWait.isReady());
         REQUIRE_EQUAL(ordinary->readByte().data(), Byte{1U});
 
         auto settings = inputSettings();
@@ -205,9 +206,10 @@ public:
         sensitiveNative->allowReads();
         const auto sensitive = el::stream::impl::createBufferedByteInputStream(sensitiveNative, settings);
         REQUIRE(sensitive->inputSettings().isSensitive());
-        REQUIRE(sensitive->waitForReady().isReady());
+        const auto sensitiveWait = sensitive->waitForReady();
+        REQUIRE(sensitiveWait.isReady());
         const auto sensitiveData = sensitive->read(ByteLength{1U}).data();
-        REQUIRE(sensitiveData == el::mem::ByteBlock({2U}));
+        REQUIRE_EQUAL(sensitiveData, el::mem::ByteBlock({2U}));
         REQUIRE(sensitiveData.isSensitive());
     }
 
@@ -236,11 +238,13 @@ public:
         auto stream = el::stream::impl::BufferedByteInputStream{native, inputSettings()};
         auto bytes = std::array<Byte, 4>{};
 
-        REQUIRE(stream.read(el::mem::ByteSpan{bytes}) == StreamReadStatus::Timeout);
+        const auto timeout = stream.read(el::mem::ByteSpan{bytes});
+        REQUIRE_EQUAL(timeout, StreamReadStatus::Timeout);
         native->allowReads();
-        REQUIRE(stream.waitForReady() == StreamWaitStatus::Ready);
+        const auto wait = stream.waitForReady();
+        REQUIRE_EQUAL(wait, StreamWaitStatus::Ready);
         const auto result = stream.read(el::mem::ByteSpan{bytes});
-        REQUIRE(result == StreamReadStatus::Data);
+        REQUIRE_EQUAL(result, StreamReadStatus::Data);
         REQUIRE_EQUAL(result.data(), ByteLength{3U});
         REQUIRE_EQUAL(bytes[0], Byte{1U});
     }
@@ -252,18 +256,23 @@ public:
         const auto back =
             el::mem::ByteArray{Byte{5U}, Byte{6U}, Byte{7U}, Byte{8U}, Byte{9U}, Byte{10U}, Byte{11U}, Byte{12U}};
 
-        REQUIRE(stream.write(front.span()) == StreamWriteStatus::Success);
-        REQUIRE(stream.write(back.span()) == StreamWriteStatus::Success);
+        const auto frontWrite = stream.write(front.span());
+        const auto backWrite = stream.write(back.span());
+        REQUIRE_EQUAL(frontWrite, StreamWriteStatus::Success);
+        REQUIRE_EQUAL(backWrite, StreamWriteStatus::Success);
         REQUIRE_FALSE(stream.isReady());
-        REQUIRE(stream.write(Byte{13U}) == StreamWriteStatus::Timeout);
-        REQUIRE(stream.close() == StreamCloseStatus::Timeout);
+        const auto finalWrite = stream.write(Byte{13U});
+        const auto timedOutClose = stream.close();
+        REQUIRE_EQUAL(finalWrite, StreamWriteStatus::Timeout);
+        REQUIRE_EQUAL(timedOutClose, StreamCloseStatus::Timeout);
 
         native->allowWrites();
         const auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds{500};
         while (stream.state() != el::stream::StreamState::Closed && std::chrono::steady_clock::now() < deadline) {
             std::this_thread::yield();
         }
-        REQUIRE(stream.close() == StreamCloseStatus::Closed);
+        const auto closed = stream.close();
+        REQUIRE_EQUAL(closed, StreamCloseStatus::Closed);
         REQUIRE_EQUAL(native->output.size(), std::size_t{12U});
     }
 
@@ -311,6 +320,20 @@ public:
                     Byte{0x00U},
                     Byte{0x0aU},
                     Byte{0x00U}}));
+    }
+
+    void testBufferedCharacterCapacityFailureIsAtomic() {
+        const auto native = std::make_shared<NativeStream>();
+        auto settings = outputSettings();
+        settings.setBackBufferLimit(ByteLength{3U});
+        const auto byteStream = std::make_shared<el::stream::impl::BufferedByteOutputStream>(native, settings);
+        auto stream = el::stream::impl::EncodedTextOutputStream{
+            byteStream, el::text::StringEncoding::Utf32, el::text::StringBomMode::Reject};
+
+        REQUIRE_THROWS_AS(el::stream::StreamError, stream.write(el::text::Char{U'😀'}));
+        native->allowWrites();
+        REQUIRE(stream.close().isClosed());
+        REQUIRE(native->output.empty());
     }
 
     void testInputPositionIgnoresReadAheadAndResetsBuffers() {
@@ -370,7 +393,8 @@ public:
 
         REQUIRE_THROWS_AS(el::stream::StreamError, stream.write(tooLarge.span()));
         native->allowWrites();
-        REQUIRE(stream.close() == StreamCloseStatus::Closed);
+        const auto closed = stream.close();
+        REQUIRE_EQUAL(closed, StreamCloseStatus::Closed);
         REQUIRE(native->output.empty());
     }
 

@@ -30,6 +30,7 @@ public:
     void close() noexcept override { _isOpen = false; }
 
 private:
+    /// Throw an error for a source line exceeding the configured maximum length.
     [[noreturn]] void throwLineLengthExceeded();
 
 private:

@@ -54,8 +54,8 @@ public:
                 lastProgress = progress;
             });
         REQUIRE(std::filesystem::is_regular_file(fixture.stdPath() / "copy/sub/b.txt"));
-        REQUIRE_EQUAL(lastProgress.total, el::unit::ElementCount{4U});
-        REQUIRE_EQUAL(lastProgress.processed, el::unit::ElementCount{4U});
+        REQUIRE_EQUAL(lastProgress.total, el::unit::ItemCount{4U});
+        REQUIRE_EQUAL(lastProgress.processed, el::unit::ItemCount{4U});
 
         copyOptions.setCollisionMode(el::path::PathCollisionMode::Skip);
         REQUIRE(fixture.child("source").operations().copyTo(fixture.child("copy"), copyOptions).isSuccessful());

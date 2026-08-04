@@ -25,6 +25,7 @@ class EventTimer final : public event::EventTimer, public std::enable_shared_fro
     friend class TimerEventData;
 
 public:
+    /// A callback ready to execute with its scheduling generation.
     struct CallbackExecution {
         EventCallback callback;
         EventTimerMode mode{EventTimerMode::Inactive};
@@ -70,7 +71,9 @@ public:
     void finishCallback(const CallbackExecution &execution, time::TimePoint now) noexcept;
 
 private:
+    /// Start the timer with the requested scheduling mode and interval.
     void start(EventTimerMode mode, time::TimeDelta interval);
+    /// Ask the backend to schedule this timer's next wake-up.
     void scheduleSelf();
 
 private:

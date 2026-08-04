@@ -8,7 +8,8 @@
 
 namespace app::conf {
 
-/// The embedded parser profiling corpus.
-extern const std::array<EmbeddedDocument, 4> cEmbeddedDocuments;
+/// Return the lazily initialized embedded parser profiling corpus.
+/// @notest{Used by the parser profiling workload.}
+[[nodiscard]] auto embeddedDocuments() -> const std::array<EmbeddedDocument, 4> &;
 
 }

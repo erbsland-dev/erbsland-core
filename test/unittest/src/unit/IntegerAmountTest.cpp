@@ -73,16 +73,18 @@ public:
         REQUIRE_EQUAL(Seconds{23}.toValue(), SatInt64{23});
         REQUIRE_EQUAL(SmallSeconds{int64_t{40000}}.toRawValue(), std::numeric_limits<int16_t>::max());
         REQUIRE_EQUAL(SmallSeconds{SatInt64{-40000}}.toRawValue(), std::numeric_limits<int16_t>::min());
-        REQUIRE(Seconds{1} < Seconds{2});
+        const auto oneSecond = Seconds{1};
+        const auto twoSeconds = Seconds{2};
+        REQUIRE_LESS(oneSecond, twoSeconds);
         REQUIRE_EQUAL(Seconds{3}.compare(Seconds{3}), std::strong_ordering::equal);
     }
 
     void testSaturatingArithmetic() {
         REQUIRE_EQUAL(Seconds{2} + Seconds{3}, Seconds{5});
         REQUIRE_EQUAL(Seconds{2} - Seconds{5}, Seconds{-3});
-        REQUIRE(Seconds::maximum() + Seconds{1} == Seconds::maximum());
-        REQUIRE(Seconds::minimum() - Seconds{1} == Seconds::minimum());
-        REQUIRE(-Seconds::minimum() == Seconds::maximum());
+        REQUIRE_EQUAL(Seconds::maximum() + Seconds{1}, Seconds::maximum());
+        REQUIRE_EQUAL(Seconds::minimum() - Seconds{1}, Seconds::minimum());
+        REQUIRE_EQUAL(-Seconds::minimum(), Seconds::maximum());
 
         auto value = Seconds{1};
         REQUIRE_EQUAL((value++), Seconds{1});
@@ -100,8 +102,8 @@ public:
         REQUIRE_EQUAL(int64_t{4} * Seconds{-5}, Seconds{-20});
         REQUIRE_EQUAL(Seconds{7} / int64_t{2}, Seconds{3});
         REQUIRE_EQUAL(Seconds{-7} / int64_t{2}, Seconds{-3});
-        REQUIRE(Seconds::maximum() * int64_t{2} == Seconds::maximum());
-        REQUIRE(Seconds::minimum() / int64_t{-1} == Seconds::maximum());
+        REQUIRE_EQUAL(Seconds::maximum() * int64_t{2}, Seconds::maximum());
+        REQUIRE_EQUAL(Seconds::minimum() / int64_t{-1}, Seconds::maximum());
 
         auto value = Seconds{-12};
         value.negate();

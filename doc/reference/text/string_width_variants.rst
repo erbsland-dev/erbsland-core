@@ -1,5 +1,7 @@
 .. index::
     single: String Width Variants
+    single: Unicode Normalization
+    single: NormalizationForm
 
 *********************
 String Width Variants
@@ -76,6 +78,23 @@ It does not perform line layout, grapheme-cluster shaping, bidirectional reorder
 terminal/font-specific corrections.
 For text containing line breaks, the result is usually not the width of any rendered line.
 
+Unicode Normalization
+=====================
+
+The read-only and editor types for all three widths support NFC, NFD, NFKC, and NFKD normalization through an explicit
+:cpp:enum:`NormalizationForm <erbsland::text::NormalizationForm>` argument.
+Read :doc:`/topics/strings/normalizing_strings` for guidance about choosing a form, compatibility-changing behavior,
+malformed input, storage reuse, and concatenation.
+
+``normalized(form)`` returns a value or editor of the same width.
+Editors additionally provide ``normalize(form)`` for in-place operation.
+When valid text is already in the requested form, these methods preserve the original shared allocation; the in-place
+operation also leaves capacity and aliases unchanged.
+Normalization uses constant bounded working memory and creates replacement storage only after the first changed
+sequence.
+After decomposition, a canonical sequence with more than 30 consecutive non-starters is replaced completely with one
+U+FFFD as a defensive input limit.
+
 Sensitive UTF-8 Storage
 =======================
 
@@ -110,6 +129,7 @@ Empty input, surrounding whitespace, partial matches, and all other text are inv
 Interface
 =========
 
+.. doxygenenum:: erbsland::text::NormalizationForm
 .. doxygenclass:: erbsland::text::U16String
     :members:
 .. doxygenclass:: erbsland::text::U16StringEditor

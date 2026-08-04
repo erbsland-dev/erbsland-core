@@ -11,7 +11,7 @@ namespace erbsland::random::impl {
 /// @tested{SecureRandomTest}
 class EntropySource {
 public:
-    /// Destroy this entropy source.
+    // defaults
     virtual ~EntropySource() = default;
 
     // defaults

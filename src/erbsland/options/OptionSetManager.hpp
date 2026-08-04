@@ -17,11 +17,18 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionSetManager {
 public:
+    // defaults
+    /// Create an empty option-set manager.
     OptionSetManager() = default;
+    /// Destroy the option-set manager polymorphically.
     virtual ~OptionSetManager() = default;
+    /// Copy the option-set manager base state.
     OptionSetManager(const OptionSetManager &) = default;
+    /// Copy-assign the option-set manager base state.
     auto operator=(const OptionSetManager &) -> OptionSetManager & = default;
+    /// Move the option-set manager base state.
     OptionSetManager(OptionSetManager &&) = default;
+    /// Move-assign the option-set manager base state.
     auto operator=(OptionSetManager &&) -> OptionSetManager & = default;
 
 public:

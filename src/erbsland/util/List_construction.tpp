@@ -5,7 +5,7 @@
 namespace erbsland::util {
 
 template <typename tElement, typename tSelf>
-List<tElement, tSelf>::List() : _storage{} {
+List<tElement, tSelf>::List() : _storage{defaultStorage()} {
 }
 
 template <typename tElement, typename tSelf>
@@ -13,7 +13,7 @@ List<tElement, tSelf>::List(std::initializer_list<Element> values) : _storage{St
 }
 
 template <typename tElement, typename tSelf>
-List<tElement, tSelf>::List(Element value) {
+List<tElement, tSelf>::List(Element value) : _storage{defaultStorage()} {
     auto raw = Raw{};
     raw.push_back(std::move(value));
     _storage.setData(std::move(raw));
@@ -69,11 +69,6 @@ auto List<tElement, tSelf>::operator+=(Element &&value) -> Self & {
 }
 
 template <typename tElement, typename tSelf>
-auto List<tElement, tSelf>::operator[](const Index index) const -> Element {
-    return get(index);
-}
-
-template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::operator<=>(const Self &other) const -> std::strong_ordering {
     return compare(other);
 }
@@ -122,6 +117,11 @@ auto List<tElement, tSelf>::self() const noexcept -> const Self & {
 template <typename tElement, typename tSelf>
 auto List<tElement, tSelf>::makeSelf(Raw raw) -> Self {
     return Self{std::move(raw)};
+}
+
+template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::defaultStorage() -> Storage {
+    return Storage::sharedDefault();
 }
 
 template <typename tElement, typename tSelf>

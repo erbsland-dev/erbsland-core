@@ -192,7 +192,16 @@ auto TimeZone::fromNameOrThrow(const String &name) -> TimeZone {
 }
 
 auto TimeZone::local() noexcept -> TimeZone {
-    static const auto instance = tz::impl::localTimeZoneFromSystem();
+    static const auto instance = []() noexcept -> TimeZone {
+        try {
+            if (auto backend = tz::impl::createLocalTimeZoneBackend(); backend != nullptr) {
+                return backend->localTimeZone();
+            }
+        } catch (...) {}
+        auto fallback = TimeZone{};
+        fallback.markAsLocalTime();
+        return fallback;
+    }();
     return instance;
 }
 

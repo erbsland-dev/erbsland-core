@@ -13,6 +13,7 @@ namespace erbsland::core {
 /// @tested{ApplicationOptionsTest OptionDocumentTest}
 class ApplicationInfo {
 public:
+    // defaults
     ApplicationInfo() = default;
     ~ApplicationInfo() = default;
     ApplicationInfo(const ApplicationInfo &) = default;

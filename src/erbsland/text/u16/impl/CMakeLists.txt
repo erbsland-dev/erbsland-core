@@ -35,6 +35,7 @@ target_sources(erbsland-core PRIVATE
         U16StringReadTools.hpp
         U16StringSharedStorage.cpp
         U16StringSharedStorage.hpp
+        U16StringSharedStorage_fwd.hpp
         U16StringStorage.hpp
         U16StringTraits.hpp
         U16StringTransformTools.cpp

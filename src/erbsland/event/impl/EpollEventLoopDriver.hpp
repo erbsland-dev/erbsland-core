@@ -21,6 +21,7 @@ namespace erbsland::event::impl {
 /// @tested{EventLoopDriverTest}
 class EpollEventLoopDriver final : public EventLoopDriver {
 public:
+    /// Create an epoll-based event-loop driver.
     EpollEventLoopDriver();
     ~EpollEventLoopDriver() override;
 
@@ -42,10 +43,17 @@ public: // native source interface
         -> RegistrationPtr;
 
 private:
+    static constexpr auto cWakeGeneration = uint64_t{1U}; ///< Generation reserved for wake events.
+    static constexpr auto cMaximumEvents = 32;            ///< Maximum native events read in one wait.
+
+    /// Wait for native events with a millisecond timeout.
     void waitInternal(int timeoutMilliseconds);
+    /// Drain pending wake-event notifications.
     void drainWake() noexcept;
+    /// Remove a descriptor registration by generation.
     void unregisterDescriptor(uint64_t generation) noexcept;
 
+    /// Native descriptor callback registration.
     struct Registration {
         int descriptor;
         NativeEventCallback callback;

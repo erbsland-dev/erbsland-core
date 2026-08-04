@@ -27,11 +27,13 @@
 #include "../impl/IntegerAppend.hpp"
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
+#include "../impl/StringNormalizationTools_fwd.hpp"
 #include "../impl/StringReaderBase_fwd.hpp"
 #include "../impl/UnsafeU16StringAccess_fwd.hpp"
 #include "../IntegerFormat.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
+#include "../NormalizationForm.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringCharReader.hpp"
@@ -51,7 +53,7 @@
 #include "../../unit/CpIndex.hpp"
 #include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../unit/U16DataIndex.hpp"
 #include "../../unit/U16DataLength.hpp"
 #include "../../unit/U16DataRange.hpp"
@@ -75,13 +77,15 @@ namespace erbsland::text {
 /// Copy, move, slicing, trimming are fast and copy-free operations.
 /// Use `String` for most use cases and `U16String` only if you need random access to code points or require
 /// UTF-16 encoding.
-/// @tested{U16StringTest BooleanConversionTest}
+/// @tested{U16StringTest BooleanConversionTest UnicodeNormalizationTest}
 class U16String final {
-    friend class debug::impl::StringDebugAccess;
+    friend class debug::impl::StringDebugAccess<U16String>;
     friend class U16StringEditor;
     friend class U16StringConstIterator;
     friend class impl::StringReaderBase;
     friend class impl::StringConversionTools;
+    template <typename>
+    friend class impl::StringNormalizationTools;
     friend class impl::U16StringBuilder;
     friend class impl::U16StringReader;
     friend class impl::U8StringBuilder;
@@ -143,7 +147,7 @@ public: // tests
     [[nodiscard]] auto contains(const U16String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// Count non-overlapping occurrences of another string.
     /// Empty text counts as zero occurrences.
-    [[nodiscard]] auto count(const U16String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto count(const U16String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ItemCount;
     /// Test if this string contains any character from the given set.
     /// Malformed UTF-16 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
@@ -384,6 +388,8 @@ public: // transform and copy-modify
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
     /// Return a string where every decoded code point is mapped through the given function.
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U16String;
+    /// @copydoc erbsland::text::U8String::normalized(NormalizationForm) const
+    [[nodiscard]] auto normalized(NormalizationForm form) const -> U16String;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const -> U16String;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
@@ -477,6 +483,8 @@ private:
     [[nodiscard]] auto dataView() const noexcept -> impl::U16StringDataView;
     /// Create a new string with the given storage.
     explicit U16String(impl::U16StringStorage storage) : _storage(std::move(storage)) {}
+    /// Test if the string storage is shared.
+    [[nodiscard]] auto isStorageShared() const noexcept -> bool;
 
 private:
     impl::U16StringStorage _storage; ///< Either literal or shared string data.

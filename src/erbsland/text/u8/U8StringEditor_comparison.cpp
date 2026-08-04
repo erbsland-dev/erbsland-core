@@ -29,7 +29,7 @@ auto U8StringEditor::contains(const U8String &other, const CharCompareFn compare
     return impl::U8StringComparisonTools{dataView()}.contains(other.dataView(), compareFn);
 }
 
-auto U8StringEditor::count(const U8String &text, const CharCompareFn compareFn) const noexcept -> unit::ElementCount {
+auto U8StringEditor::count(const U8String &text, const CharCompareFn compareFn) const noexcept -> unit::ItemCount {
     return impl::U8StringComparisonTools{dataView()}.count(text.dataView(), compareFn);
 }
 

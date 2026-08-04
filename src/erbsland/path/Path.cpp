@@ -9,6 +9,7 @@
 #include "PathWalker.hpp"
 
 #include "impl/BackendFactory.hpp"
+#include "impl/PathBackend.hpp"
 #include "impl/PathNameTools.hpp"
 #include "impl/PathParser.hpp"
 
@@ -29,9 +30,9 @@ using text::CharCompareFn;
 using text::String;
 using text::StringConverter;
 using text::StringList;
-using unit::ElementCount;
-using unit::ElementIndex;
-using unit::ElementRange;
+using unit::ItemCount;
+using unit::ItemIndex;
+using unit::ItemRange;
 
 Path::Path(const String &path) noexcept {
     try {
@@ -101,11 +102,11 @@ auto Path::format() const noexcept -> PathFormat {
     return isEmpty() ? PathFormat::Generic : _data->format();
 }
 
-auto Path::elementCount() const noexcept -> ElementCount {
-    return isEmpty() ? ElementCount::zero() : _data->publicElementCount();
+auto Path::elementCount() const noexcept -> ItemCount {
+    return isEmpty() ? ItemCount::zero() : _data->publicItemCount();
 }
 
-auto Path::element(const ElementIndex index) const noexcept -> String {
+auto Path::element(const ItemIndex index) const noexcept -> String {
     if (isEmpty() || !index.isValid() || !index.isWithin(elementCount())) {
         return {};
     }
@@ -113,7 +114,7 @@ auto Path::element(const ElementIndex index) const noexcept -> String {
         if (index.isZero()) {
             return _data->root();
         }
-        return _data->elements().get(index - ElementCount::one());
+        return _data->elements().get(index - ItemCount::one());
     }
     return _data->elements().get(index);
 }
@@ -133,7 +134,7 @@ auto Path::parent() const noexcept -> Path {
         return {};
     }
     return Path{PathData::create(
-        _data->format(), _data->root(), _data->elements().prefix(_data->elements().count() - ElementCount::one()))};
+        _data->format(), _data->root(), _data->elements().prefix(_data->elements().count() - ItemCount::one()))};
 }
 
 auto Path::parents() const noexcept -> PathList {
@@ -180,7 +181,7 @@ auto Path::withName(const String &newName) const noexcept -> Path {
     if (elements.count().isZero()) {
         return {};
     }
-    elements.set(ElementIndex::zero() + (elements.count() - ElementCount::one()), newName);
+    elements.set(ItemIndex::zero() + (elements.count() - ItemCount::one()), newName);
     return Path{PathData::create(_data->format(), _data->root(), std::move(elements))};
 }
 
@@ -222,7 +223,7 @@ auto Path::joined(const String &other) const noexcept -> Path {
     return joined(Path{other});
 }
 
-auto Path::slice(const ElementRange range) const noexcept -> Path {
+auto Path::slice(const ItemRange range) const noexcept -> Path {
     if (isEmpty()) {
         return {};
     }
@@ -239,7 +240,7 @@ auto Path::slice(const ElementRange range) const noexcept -> Path {
         std::move(nonRootElements))};
 }
 
-auto Path::splitAfter(const ElementCount count) const noexcept -> std::pair<Path, Path> {
+auto Path::splitAfter(const ItemCount count) const noexcept -> std::pair<Path, Path> {
     if (isEmpty()) {
         return {{}, {}};
     }
@@ -250,8 +251,8 @@ auto Path::splitAfter(const ElementCount count) const noexcept -> std::pair<Path
         return {*this, currentElement()};
     }
     return {
-        slice({ElementIndex::zero(), count}),
-        slice({ElementIndex::end(count), ElementCount::infinite()}),
+        slice({ItemIndex::zero(), count}),
+        slice({ItemIndex::end(count), ItemCount::infinite()}),
     };
 }
 

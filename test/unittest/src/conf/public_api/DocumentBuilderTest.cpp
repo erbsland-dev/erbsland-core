@@ -56,7 +56,7 @@ public:
 
     void verifyValueMap(const ExpectedValueMap &expectedValueMap) {
         doc = builder.getDocumentAndReset();
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         auto flatMap = doc->toFlatValueMap();
         // First, convert and verify all name paths.
         auto actualValues = std::map<el::text::String, el::text::String>{};
@@ -105,8 +105,11 @@ public:
         builder.addSectionMap("main"_el);
         builder.addValue("main.value_1"_el, 1);
         auto doc = builder.getDocumentAndReset();
-        REQUIRE(doc != nullptr);
-        REQUIRE(doc->value(NamePath::fromText("main.value_1"_el))->type() == ValueType::Integer);
+        REQUIRE(doc);
+        const auto value = doc->value(NamePath::fromText("main.value_1"_el));
+        REQUIRE(value);
+        const auto type = value->type();
+        REQUIRE_EQUAL(type, ValueType::Integer);
     }
 
     void testBasics() {

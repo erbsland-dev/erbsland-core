@@ -59,7 +59,7 @@ auto U8StringBuilder::append(const U8String &text) -> unit::CpLength {
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U8String &text, const unit::ElementCount count) {
+void U8StringBuilder::append(const U8String &text, const unit::ItemCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
@@ -69,7 +69,7 @@ auto U8StringBuilder::append(const U16String &text) -> unit::CpLength {
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U16String &text, const unit::ElementCount count) {
+void U8StringBuilder::append(const U16String &text, const unit::ItemCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 
@@ -79,7 +79,7 @@ auto U8StringBuilder::append(const U32String &text) -> unit::CpLength {
     return appendedLength;
 }
 
-void U8StringBuilder::append(const U32String &text, const unit::ElementCount count) {
+void U8StringBuilder::append(const U32String &text, const unit::ItemCount count) {
     _length += U8StringAppendTools{_text._storage}.append(text.dataView(), count);
 }
 

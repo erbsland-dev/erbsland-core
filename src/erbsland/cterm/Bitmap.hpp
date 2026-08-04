@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Bitmap_fwd.hpp"
+
 #include "../bgeo/BlockMargins.hpp"
 #include "../bgeo/BlockPosition.hpp"
 #include "../bgeo/BlockRectangle.hpp"
@@ -177,6 +179,10 @@ protected:
     Data _data;
 };
 
+/// Draw bit-mask rows at the given position.
+/// @tparam T The unsigned integer type storing each row.
+/// @param position The top-left corner where to draw.
+/// @param data The rows to draw.
 template <typename T>
     requires std::is_integral_v<T> && std::is_unsigned_v<T>
 void Bitmap::draw(const bgeo::BlockPosition position, const std::vector<T> &data) noexcept {

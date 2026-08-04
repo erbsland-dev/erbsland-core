@@ -90,8 +90,7 @@ When you search inside a UTF-8 string, functions such as
 You can pass these indexes directly to :cpp:class:`ByteRange <erbsland::unit::IntegerUnitRange>` and
 :cpp:func:`slice(ByteRange) <erbsland::text::U8String::slice>`.
 
-For :cpp:type:`String <erbsland::text::String>`, byte-range slicing creates another view into the same backing
-text.
+For :cpp:type:`String <erbsland::text::String>`, byte-range slicing creates another view into the same backing text.
 No text bytes are copied.
 This makes byte ranges a good fit for parsing records, protocol fields, identifiers, and other text where separators
 were found by the string API.
@@ -217,8 +216,8 @@ small labels, fixed-format tokens, and tests.
 For UTF-8 and UTF-16 strings, a code-point index is not a native storage position.
 The string has to be scanned to find the matching byte or code-unit position.
 Avoid code-point range slicing inside loops over large text.
-When you already have byte indexes from :cpp:func:`find() <erbsland::text::U8String::find>` or related operations,
-use byte ranges instead.
+When you already have byte indexes from :cpp:func:`find() <erbsland::text::U8String::find>` or related operations, use
+byte ranges instead.
 
 .. erbsland-demo::
     :source: text/String/CodePointRangeSlicing.cpp
@@ -328,8 +327,8 @@ It is copy-free and keeps the backing text alive.
 :cpp:func:`kept() <erbsland::text::U8String::kept>` returns an editable
 :cpp:type:`StringEditor <erbsland::text::StringEditor>` that contains a copy of the selected range.
 
-For :cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:func:`slice() <erbsland::text::U8String::slice>` narrows the
-string to the selected range and can keep sharing the same backing store.
+For :cpp:type:`StringEditor <erbsland::text::StringEditor>`, :cpp:func:`slice() <erbsland::text::U8String::slice>`
+narrows the string to the selected range and can keep sharing the same backing store.
 :cpp:func:`kept() <erbsland::text::U8String::kept>` materializes the selected range into independent storage.
 
 This distinction matters when you load a large text and only need a small part of it.
@@ -390,9 +389,8 @@ Empty parts are dropped by default, which is convenient for word splitting and w
 Pass ``keepEmpty = true`` when empty fields are meaningful, for example in table data.
 
 The split limit is the maximum number of split points to apply.
-``ElementCount::infinite()`` is the default and uses all split points.
-``ElementCount::zero()`` applies no split points and returns one unsplit
-element.
+``ItemCount::infinite()`` is the default and uses all split points.
+``ItemCount::zero()`` applies no split points and returns one unsplit element.
 A finite limit of ``n`` produces at most ``n + 1`` parts.
 
 .. erbsland-demo::
@@ -419,13 +417,13 @@ A finite limit of ``n`` produces at most ``n + 1`` parts.
         el::io::printLine("Rows: "_el, rows.count());
         for (const auto &row : rows) {
             const auto fields = el::StringList::fromSplit(
-                row, el::CharSet{";"_el}, el::ElementCount::infinite(), true);
+                row, el::CharSet{";"_el}, el::ItemCount::infinite(), true);
             el::io::printLine("  "_el, fields.join(" | "_el));
         }
 
         // A split limit leaves the unsplit remainder in the last part.
         const auto limited = el::StringList::fromSplit(
-            rows.last(), el::CharSet{";"_el}, el::ElementCount{1U}, true);
+            rows.last(), el::CharSet{";"_el}, el::ItemCount{1U}, true);
         el::io::printLine("Limited split: "_el, limited.join(" / "_el));
     }
 
@@ -447,8 +445,7 @@ Use ``join()`` to combine a list of strings.
 The separator is optional.
 An empty separator joins entries directly.
 
-``join()`` is the natural counterpart to
-``fromSplit()``.
+``join()`` is the natural counterpart to ``fromSplit()``.
 It calculates the final size, reserves the required storage, and then copies the pieces into the result.
 This is both clearer and more efficient than appending repeatedly in application code.
 

@@ -12,6 +12,9 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for an IANA time-zone identifier.
+/// @param id The time-zone identifier.
+/// @return The generated information, or no value for an invalid identifier.
 [[nodiscard]] auto info(ZoneId id) noexcept -> std::unique_ptr<Info>;
 
 }

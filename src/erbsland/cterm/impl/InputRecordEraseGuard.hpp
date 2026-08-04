@@ -6,9 +6,8 @@
 #error "InputRecordEraseGuard is only available on Windows."
 #endif
 
+#include "../../core/impl/WindowsApi.hpp"
 #include "../../mem/impl/SecureErase.hpp"
-
-#include <windows.h>
 
 #include <span>
 
@@ -18,9 +17,13 @@ namespace erbsland::cterm::impl {
 /// @tested{WindowsBackendTest}
 class InputRecordEraseGuard final {
 public:
+    /// Guard a console record for secure erasure at scope exit.
+    /// @param record The mutable console record to erase.
     explicit InputRecordEraseGuard(INPUT_RECORD &record) noexcept : _record{record} {}
+    /// Securely erase the guarded console record.
     ~InputRecordEraseGuard() { mem::impl::secureErase(std::as_writable_bytes(std::span{&_record, 1U})); }
 
+    // defaults/deletions
     InputRecordEraseGuard(const InputRecordEraseGuard &) = delete;
     InputRecordEraseGuard(InputRecordEraseGuard &&) = delete;
     auto operator=(const InputRecordEraseGuard &) -> InputRecordEraseGuard & = delete;

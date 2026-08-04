@@ -12,7 +12,7 @@ Cryptographic Hashing
 *********************
 
 :cpp:class:`HashAlgorithm <erbsland::cryptology::HashAlgorithm>` describes a fixed-output hash and its current
-selection metadata.
+intrinsic metadata.
 :cpp:class:`Hasher <erbsland::cryptology::Hasher>` calculates a digest incrementally with copy-on-write state.
 
 Algorithm Selection
@@ -20,6 +20,13 @@ Algorithm Selection
 
 :cpp:struct:`HashRequirements <erbsland::cryptology::HashRequirements>` combines status, security, and throughput
 requirements for selecting a :cpp:class:`HashAlgorithm <erbsland::cryptology::HashAlgorithm>`.
+:cpp:class:`HashSelector <erbsland::cryptology::HashSelector>` applies these requirements to one coherent snapshot of
+the application-wide cryptology policy.
+Its ``status()``, ``isSafe()``, ``allAccepted()``, ``matching()``, and ``recommended()`` operations always observe the
+current policy.
+Configured status limits are ceilings: they can downgrade an algorithm, but never promote a library status.
+Explicit :cpp:class:`Hasher <erbsland::cryptology::Hasher>` construction remains available for protocols and migration
+work even when selection policy disallows the algorithm.
 See :doc:`/topics/cryptology/using_hash_algorithms` for selection and persistence workflows and
 :doc:`/topics/cryptology/supported_hash_algorithms` for the algorithm catalog and current safety guidance.
 
@@ -48,5 +55,7 @@ Interface
 .. doxygenclass:: erbsland::cryptology::Hasher
     :members:
 .. doxygenstruct:: erbsland::cryptology::HashRequirements
+    :members:
+.. doxygenclass:: erbsland::cryptology::HashSelector
     :members:
 .. doxygenenum:: erbsland::cryptology::HashThroughput

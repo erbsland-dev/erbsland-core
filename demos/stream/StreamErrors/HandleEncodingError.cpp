@@ -16,7 +16,8 @@ void handleEncodingError() {
     options.setEncodingMode(el::EncodingMode::Strict);
 
     try {
-        static_cast<void>(path.content().openTextInputStream(options)->readAll());
+        [[maybe_unused]] const auto input = path.content().openTextInputStream(options)->readAll();
+        // ... do something with the input ...
     } catch (const el::EncodingError &) {
         el::io::printLine("The malformed UTF-8 sequence was rejected."_el);
     }

@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "MoveAwareTestValue.hpp"
+#include "MoveAwareTestValueHash.hpp"
 
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashMap.hpp>
 
@@ -15,7 +16,24 @@
 #include <utility>
 #include <vector>
 
-using el::unit::ElementCount;
+using el::unit::ItemCount;
+
+class HashMapTestHash final {
+public:
+    HashMapTestHash() : _identifier{++_nextIdentifier} {}
+
+public:
+    [[nodiscard]] auto identifier() const noexcept -> int { return _identifier; }
+
+public: // operators
+    [[nodiscard]] auto operator()(const int value) const noexcept -> std::size_t {
+        return static_cast<std::size_t>(value);
+    }
+
+private:
+    int _identifier;
+    inline static int _nextIdentifier{0};
+};
 
 TESTED_TARGETS(HashMap)
 class HashMapTest final : public el::UnitTest {
@@ -26,25 +44,52 @@ public:
         erbsland::test::MoveAwareTestValue,
         erbsland::test::MoveAwareTestValueHash>;
     using MoveValue = erbsland::test::MoveAwareTestValue;
+    using StatefulHashMap = el::util::HashMap<int, int, HashMapTestHash>;
+
+    void testSharedDefaultStorage() {
+        auto first = IntHashMap{};
+        const auto second = IntHashMap{};
+
+        REQUIRE_EQUAL(&first.toRawValue(), &second.toRawValue());
+
+        first.set(1, 10);
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE_EQUAL(first.get(1, 0), 10);
+        REQUIRE(second.count().isZero());
+    }
+
+    void testStatefulPolicyUsesUniqueDefaultStorage() {
+        auto first = StatefulHashMap{};
+        const auto second = StatefulHashMap{};
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE_NOT_EQUAL(
+            first.toRawValue().hash_function().identifier(), second.toRawValue().hash_function().identifier());
+
+        first.set(1, 10);
+        REQUIRE_EQUAL(first.get(1, 0), 10);
+        REQUIRE(second.count().isZero());
+    }
 
     void testConstructionAndElements() {
         const auto map = IntHashMap{{{1, 10}, {2, 20}, {3, 30}}};
 
-        REQUIRE_EQUAL(map.count(), ElementCount{3});
+        REQUIRE_EQUAL(map.count(), ItemCount{3});
         REQUIRE(map.get(2).has_value());
         REQUIRE_EQUAL(map.get(2).value(), 20);
         REQUIRE_EQUAL(map.get(9, 90), 90);
         REQUIRE(map.contains(1));
         REQUIRE(map.compareKeys(IntHashMap{{{3, 0}, {2, 0}, {1, 0}}}));
         REQUIRE(map.compare(IntHashMap{{{3, 30}, {2, 20}, {1, 10}}}));
-        REQUIRE(map.first().second != 0);
-        REQUIRE(map.toRawValue() == (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toStdMap() == (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toStdUnorderedMap() == (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
-        REQUIRE(map.toKeySet().toStdSet() == (std::set<int>{1, 2, 3}));
-        REQUIRE(map.toKeyHashSet().toStdUnorderedSet() == (std::unordered_set<int>{1, 2, 3}));
-        REQUIRE(map.toValueSet().toStdSet() == (std::set<int>{10, 20, 30}));
-        REQUIRE(map.toValueHashSet().toStdUnorderedSet() == (std::unordered_set<int>{10, 20, 30}));
+        REQUIRE_NOT_EQUAL(map.first().second, 0);
+        REQUIRE_EQUAL(map.toRawValue(), (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(map.toStdMap(), (std::map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(map.toStdUnorderedMap(), (std::unordered_map<int, int>{{1, 10}, {2, 20}, {3, 30}}));
+        REQUIRE_EQUAL(map.toKeySet().toStdSet(), (std::set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(map.toKeyHashSet().toStdUnorderedSet(), (std::unordered_set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(map.toValueSet().toStdSet(), (std::set<int>{10, 20, 30}));
+        REQUIRE_EQUAL(map.toValueHashSet().toStdUnorderedSet(), (std::unordered_set<int>{10, 20, 30}));
 
         auto keys = map.toStdKeyVector();
         std::sort(keys.begin(), keys.end());
@@ -59,7 +104,7 @@ public:
         auto first = IntHashMap{{{1, 10}, {2, 20}}};
         auto second = first;
 
-        second.reserve(ElementCount{32}).set(2, 22).set(3, 30);
+        second.reserve(ItemCount{32}).set(2, 22).set(3, 30);
 
         REQUIRE(second.capacity().toSizeT() >= 32U);
         REQUIRE_EQUAL(first.get(2, 0), 20);

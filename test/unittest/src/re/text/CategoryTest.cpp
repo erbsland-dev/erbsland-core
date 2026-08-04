@@ -26,13 +26,13 @@ public:
 
         // Equality / inequality operators
         Category otherDef{};
-        REQUIRE(def == otherDef);
-        REQUIRE_FALSE(def != otherDef);
+        REQUIRE_EQUAL(def, otherDef);
+        REQUIRE_EQUAL(def, otherDef);
 
         Category letter{Category::Letter};
         Category number{Category::Number};
-        REQUIRE(letter != number);
-        REQUIRE_FALSE(letter == number);
+        REQUIRE_NOT_EQUAL(letter, number);
+        REQUIRE_NOT_EQUAL(letter, number);
     }
 
     void testFromStringKnownAndUnknown() {

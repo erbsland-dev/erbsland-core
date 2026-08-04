@@ -7,6 +7,7 @@ target_sources(regex-api-profile PRIVATE
         Application.hpp
         Application_fwd.hpp
         BuildIdentity.hpp.in
+        Configuration.cpp
         CorpusDirectory.hpp.in
         DefaultConfiguration.hpp.in
         main.cpp

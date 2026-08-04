@@ -16,7 +16,7 @@ public:
     void testDefaultConstructor() {
         Location loc;
         REQUIRE(loc.isUndefined());
-        REQUIRE(loc.sourceIdentifier() == nullptr);
+        REQUIRE_EQUAL(loc.sourceIdentifier(), nullptr);
         REQUIRE(loc.codeLocation().isUndefined());
     }
 
@@ -25,8 +25,8 @@ public:
         Location loc(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{41U}, el::unit::ColumnIndex{9U}});
         REQUIRE_FALSE(loc.isUndefined());
         REQUIRE(SourceIdentifier::areEqual(loc.sourceIdentifier(), sourceIdentifier));
-        REQUIRE(loc.codeLocation().line() == el::unit::LineIndex{41U});
-        REQUIRE(loc.codeLocation().column() == el::unit::ColumnIndex{9U});
+        REQUIRE_EQUAL(loc.codeLocation().line(), el::unit::LineIndex{41U});
+        REQUIRE_EQUAL(loc.codeLocation().column(), el::unit::ColumnIndex{9U});
     }
 
     void testEqualityOperators() {
@@ -34,36 +34,36 @@ public:
         Location loc2; // Undefined
 
         // Two undefined locations should be equal
-        REQUIRE(loc1 == loc2);
+        REQUIRE_EQUAL(loc1, loc2);
 
         // Two undefined locations should not be unequal
-        REQUIRE_FALSE(loc1 != loc2);
+        REQUIRE_EQUAL(loc1, loc2);
 
         const auto sourceIdentifier = SourceIdentifier::createForFile("file.elcl"_el);
         Location loc3(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{19U}});
         Location loc4(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{19U}});
 
         // Locations with the same data should be equal
-        REQUIRE(loc3 == loc4);
+        REQUIRE_EQUAL(loc3, loc4);
 
         // Locations with the same data should not be unequal
-        REQUIRE_FALSE(loc3 != loc4);
+        REQUIRE_EQUAL(loc3, loc4);
 
         Location loc5(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{20U}});
 
         // Locations with different columns should be unequal
-        REQUIRE(loc3 != loc5);
+        REQUIRE_NOT_EQUAL(loc3, loc5);
 
         Location loc6(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{10U}, el::unit::ColumnIndex{19U}});
 
         // Locations with different lines should be unequal
-        REQUIRE(loc3 != loc6);
+        REQUIRE_NOT_EQUAL(loc3, loc6);
 
         const auto sourceIdentifier2 = SourceIdentifier::createForFile("another_file.elcl"_el);
         Location loc7(sourceIdentifier2, el::unit::CodeLocation{el::unit::LineIndex{9U}, el::unit::ColumnIndex{19U}});
 
         // Locations with different source identifiers should be unequal
-        REQUIRE(loc3 != loc7);
+        REQUIRE_NOT_EQUAL(loc3, loc7);
     }
 
     void testCopyConstructor() {
@@ -73,7 +73,7 @@ public:
         Location copy = original;
 
         // The copied location should be equal to the original
-        REQUIRE(copy == original);
+        REQUIRE_EQUAL(copy, original);
     }
 
     void testMoveConstructor() {
@@ -83,14 +83,14 @@ public:
         Location moved = std::move(original);
 
         // Moved location should retain the source identifier
-        REQUIRE(moved.sourceIdentifier()->name() == "file"_el);
-        REQUIRE(moved.sourceIdentifier()->path() == "file.elcl"_el);
+        REQUIRE_EQUAL(moved.sourceIdentifier()->name(), "file"_el);
+        REQUIRE_EQUAL(moved.sourceIdentifier()->path(), "file.elcl"_el);
 
         // Moved location should retain the line number
-        REQUIRE(moved.codeLocation().line() == el::unit::LineIndex{49U});
+        REQUIRE_EQUAL(moved.codeLocation().line(), el::unit::LineIndex{49U});
 
         // Moved location should retain the column number
-        REQUIRE(moved.codeLocation().column() == el::unit::ColumnIndex{59U});
+        REQUIRE_EQUAL(moved.codeLocation().column(), el::unit::ColumnIndex{59U});
 
         // Note: The state of 'original' after move is unspecified
     }
@@ -102,7 +102,7 @@ public:
         loc2 = loc1;
 
         // After copy assignment, loc2 should be equal to loc1
-        REQUIRE(loc2 == loc1);
+        REQUIRE_EQUAL(loc2, loc1);
     }
 
     void testMoveAssignment() {
@@ -112,13 +112,13 @@ public:
         loc2 = std::move(loc1);
 
         // Move-assigned location should have the correct source identifier
-        REQUIRE(loc2.sourceIdentifier()->path() == "file2.elcl"_el);
+        REQUIRE_EQUAL(loc2.sourceIdentifier()->path(), "file2.elcl"_el);
 
         // Move-assigned location should have the correct line number
-        REQUIRE(loc2.codeLocation().line() == el::unit::LineIndex{89U});
+        REQUIRE_EQUAL(loc2.codeLocation().line(), el::unit::LineIndex{89U});
 
         // Move-assigned location should have the correct column number
-        REQUIRE(loc2.codeLocation().column() == el::unit::ColumnIndex{99U});
+        REQUIRE_EQUAL(loc2.codeLocation().column(), el::unit::ColumnIndex{99U});
     }
 
     void testAccessors() {
@@ -126,13 +126,13 @@ public:
         Location loc(sourceIdentifier, el::unit::CodeLocation{el::unit::LineIndex{14U}, el::unit::ColumnIndex{24U}});
 
         // Check sourceIdentifier accessor
-        REQUIRE(loc.sourceIdentifier()->path() == "source.elcl"_el);
+        REQUIRE_EQUAL(loc.sourceIdentifier()->path(), "source.elcl"_el);
 
         // Check line accessor
-        REQUIRE(loc.codeLocation().line() == el::unit::LineIndex{14U});
+        REQUIRE_EQUAL(loc.codeLocation().line(), el::unit::LineIndex{14U});
 
         // Check column accessor
-        REQUIRE(loc.codeLocation().column() == el::unit::ColumnIndex{24U});
+        REQUIRE_EQUAL(loc.codeLocation().column(), el::unit::ColumnIndex{24U});
     }
 
     void testToText() {
@@ -141,11 +141,11 @@ public:
         el::text::String expected = "file:config.elcl:5:10"_el;
 
         // Check if toText returns the correct formatted string
-        REQUIRE(loc.toText() == expected);
+        REQUIRE_EQUAL(loc.toText(), expected);
 
         Location undefinedLoc;
 
         // Check if toText correctly represents an undefined location
-        REQUIRE(undefinedLoc.toText() == "<unknown>"_el);
+        REQUIRE_EQUAL(undefinedLoc.toText(), "<unknown>"_el);
     }
 };

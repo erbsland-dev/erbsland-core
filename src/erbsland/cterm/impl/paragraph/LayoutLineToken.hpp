@@ -4,16 +4,11 @@
 
 #include "../../BlockCount.hpp"
 #include "../../BlockIndex.hpp"
+#include "../../BlockString_fwd.hpp"
 
 #include <cassert>
 #include <cstdint>
 #include <optional>
-
-namespace erbsland::cterm {
-
-class BlockString;
-
-}
 
 namespace erbsland::cterm::impl::paragraph {
 
@@ -81,6 +76,7 @@ public:
         -> std::optional<SplitResult>;
 
 private:
+    /// Test whether this token represents either kind of word.
     [[nodiscard]] auto isWord() const noexcept -> bool { return _type == Type::Word || _type == Type::IndivisibleWord; }
 
 private:

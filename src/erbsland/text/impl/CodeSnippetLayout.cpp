@@ -2,61 +2,47 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CodeSnippetLayout.hpp"
 
-#include "../Char.hpp"
 #include "../Literals.hpp"
 #include "../StringCharReader.hpp"
-#include "../StringEditor.hpp"
 
 #include "../../unit/ColumnCount.hpp"
 #include "../../unit/ColumnIndex.hpp"
+#include "../../unit/CpIndex.hpp"
+#include "../../unit/CpLength.hpp"
+#include "../../unit/CpRange.hpp"
 
 #include <algorithm>
-#include <ranges>
+#include <utility>
 
 namespace erbsland::text::impl {
 
 using namespace literals;
 
-namespace {
-
-constexpr auto cMaximumMarkedRows = std::size_t{5};
-
-}
-
-auto CodeSnippetLayoutCell::ellipsis() -> CodeSnippetLayoutCell {
-    return {String::fromCharacter(Char{U'…'}), {}, 1, {}, true};
-}
-
-auto CodeSnippetLayoutCell::overlaps(const unit::ColumnRange other) const noexcept -> bool {
-    return !isEllipsis && !other.isEmpty() && range.index() < other.endIndex() && other.index() < range.endIndex();
-}
-
-auto CodeSnippetLayoutCell::containsOrFollows(const unit::ColumnIndex point) const noexcept -> bool {
-    return !isEllipsis && (point <= range.index() || range.contains(point));
-}
-
-auto CodeSnippetLayout::build(
-    const String &source, const std::vector<CodeSnippetLayoutMarker> &markers, const int requestedWidth)
-    -> std::vector<CodeSnippetLayoutRow> {
+CodeSnippetLayout::CodeSnippetLayout(
+    const String &source, const std::vector<CodeSnippetLayoutMarker> &markers, const int requestedWidth) {
     const auto width = std::max(requestedWidth, 1);
     auto cells = sourceCells(source);
     applyMarkers(cells, markers);
     if (markers.empty()) {
         auto row = CodeSnippetLayoutRow{std::move(cells)};
-        cropRow(row, width, false, rowWidth(row) > width);
-        return {std::move(row)};
+        if (row.displayWidth() > width) {
+            row.cropTrailing(width);
+        }
+        _rows.push_back(std::move(row));
+        return;
     }
 
     auto rows = wrap(cells, width);
     if (rows.size() <= cMaximumMarkedRows) {
-        return rows;
+        _rows = std::move(rows);
+        return;
     }
 
     auto firstMarkerRow = std::size_t{0};
     auto foundMarker = false;
     for (auto rowIndex = std::size_t{0}; rowIndex < rows.size() && !foundMarker; ++rowIndex) {
         for (const auto &marker : markers) {
-            if (markerIntersects(rows[rowIndex], marker)) {
+            if (rows[rowIndex].markerPlacement(marker.range).has_value()) {
                 firstMarkerRow = rowIndex;
                 foundMarker = true;
                 break;
@@ -65,68 +51,25 @@ auto CodeSnippetLayout::build(
     }
     const auto firstRow = firstMarkerRow > 0 ? firstMarkerRow - 1 : 0;
     const auto lastRow = std::min(firstRow + cMaximumMarkedRows, rows.size());
-    auto result = std::vector<CodeSnippetLayoutRow>{
+    _rows = std::vector<CodeSnippetLayoutRow>{
         rows.begin() + static_cast<std::vector<CodeSnippetLayoutRow>::difference_type>(firstRow),
         rows.begin() + static_cast<std::vector<CodeSnippetLayoutRow>::difference_type>(lastRow)};
     if (firstRow > 0) {
-        cropRow(result.front(), width, true, false);
+        _rows.front().cropLeading(width);
     }
     if (lastRow < rows.size()) {
-        cropRow(result.back(), width, false, true);
+        _rows.back().cropTrailing(width);
     }
-    return result;
 }
 
-auto CodeSnippetLayout::markerIntersects(
-    const CodeSnippetLayoutRow &row, const CodeSnippetLayoutMarker &marker) noexcept -> bool {
-    if (marker.range.isEmpty()) {
-        if (row.cells.empty()) {
-            return marker.range.index().isZero();
-        }
-        const auto first = std::ranges::find_if(row.cells, [](const auto &cell) -> bool { return !cell.isEllipsis; });
-        const auto last = std::ranges::find_if(
-            row.cells.rbegin(), row.cells.rend(), [](const auto &cell) -> bool { return !cell.isEllipsis; });
-        if (first == row.cells.end() || last == row.cells.rend()) {
+auto CodeSnippetLayout::isLastMarkerRow(const std::size_t rowIndex, const unit::ColumnRange markerRange) const noexcept
+    -> bool {
+    for (auto following = rowIndex + 1; following < _rows.size(); ++following) {
+        if (_rows[following].markerPlacement(markerRange).has_value()) {
             return false;
         }
-        const auto point = marker.range.index();
-        return point >= first->range.index() && point <= last->range.endIndex();
     }
-    return std::ranges::any_of(row.cells, [&marker](const auto &cell) -> bool { return cell.overlaps(marker.range); });
-}
-
-auto CodeSnippetLayout::markerStart(const CodeSnippetLayoutRow &row, const CodeSnippetLayoutMarker &marker) noexcept
-    -> int {
-    auto result = 0;
-    for (const auto &cell : row.cells) {
-        if ((marker.range.isEmpty() && cell.containsOrFollows(marker.range.index())) || cell.overlaps(marker.range)) {
-            return result;
-        }
-        result += cell.width;
-    }
-    return result;
-}
-
-auto CodeSnippetLayout::markerLength(const CodeSnippetLayoutRow &row, const CodeSnippetLayoutMarker &marker) noexcept
-    -> int {
-    if (marker.range.isEmpty()) {
-        return 1;
-    }
-    auto result = 0;
-    for (const auto &cell : row.cells) {
-        if (cell.overlaps(marker.range)) {
-            result += cell.width;
-        }
-    }
-    return result;
-}
-
-auto CodeSnippetLayout::rowWidth(const CodeSnippetLayoutRow &row) noexcept -> int {
-    auto result = 0;
-    for (const auto &cell : row.cells) {
-        result += cell.width;
-    }
-    return result;
+    return true;
 }
 
 auto CodeSnippetLayout::sourceCells(const String &source) -> std::vector<CodeSnippetLayoutCell> {
@@ -170,41 +113,21 @@ void CodeSnippetLayout::applyMarkers(
 auto CodeSnippetLayout::wrap(const std::vector<CodeSnippetLayoutCell> &cells, const int width)
     -> std::vector<CodeSnippetLayoutRow> {
     auto result = std::vector<CodeSnippetLayoutRow>{};
-    auto row = CodeSnippetLayoutRow{};
+    auto rowCells = std::vector<CodeSnippetLayoutCell>{};
     auto rowWidth = 0;
     for (const auto &cell : cells) {
-        if (!row.cells.empty() && rowWidth + cell.width > width) {
-            result.push_back(std::move(row));
-            row = {};
+        if (!rowCells.empty() && rowWidth + cell.width > width) {
+            result.emplace_back(std::move(rowCells));
+            rowCells = {};
             rowWidth = 0;
         }
-        row.cells.push_back(cell);
+        rowCells.push_back(cell);
         rowWidth += cell.width;
     }
-    if (!row.cells.empty() || cells.empty()) {
-        result.push_back(std::move(row));
+    if (!rowCells.empty() || cells.empty()) {
+        result.emplace_back(std::move(rowCells));
     }
     return result;
-}
-
-void CodeSnippetLayout::cropRow(CodeSnippetLayoutRow &row, const int width, const bool leading, const bool trailing) {
-    const auto ellipsisCount = static_cast<int>(leading) + static_cast<int>(trailing);
-    const auto contentWidth = std::max(width - ellipsisCount, 0);
-    while (!row.cells.empty() && rowWidth(row) > contentWidth) {
-        if (leading) {
-            row.cells.erase(row.cells.begin());
-        } else {
-            row.cells.pop_back();
-        }
-    }
-    if (leading) {
-        row.cells.insert(row.cells.begin(), CodeSnippetLayoutCell::ellipsis());
-        row.hasLeadingEllipsis = true;
-    }
-    if (trailing) {
-        row.cells.push_back(CodeSnippetLayoutCell::ellipsis());
-        row.hasTrailingEllipsis = true;
-    }
 }
 
 }

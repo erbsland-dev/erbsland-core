@@ -31,12 +31,6 @@ target_sources(erbsland-core PRIVATE
         CpRange.hpp
         CpRange_fwd.hpp
         CpUnit.hpp
-        ElementCount.hpp
-        ElementCount_fwd.hpp
-        ElementIndex.hpp
-        ElementOffset.hpp
-        ElementRange.hpp
-        ElementUnit.hpp
         ExitCode.hpp
         IntegerAmount.hpp
         IntegerAmount_fwd.hpp
@@ -50,6 +44,12 @@ target_sources(erbsland-core PRIVATE
         IntegerUnitOffset_fwd.hpp
         IntegerUnitRange.hpp
         IntegerUnitRange_fwd.hpp
+        ItemCount.hpp
+        ItemCount_fwd.hpp
+        ItemIndex.hpp
+        ItemOffset.hpp
+        ItemRange.hpp
+        ItemUnit.hpp
         LineCount.hpp
         LineIndex.hpp
         LineOffset.hpp
@@ -68,4 +68,5 @@ target_sources(erbsland-core PRIVATE
         VersionRange.hpp
         VersionRange_fwd.hpp
         VersionUnit.hpp
+        VersionUnitTypes.hpp
 )

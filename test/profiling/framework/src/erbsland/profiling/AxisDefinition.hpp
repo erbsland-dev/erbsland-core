@@ -30,9 +30,13 @@ public:
     [[nodiscard]] auto hasValue(const String &id) const -> bool;
 
 public: // attributes
+    /// Access the stable internal identifier.
     [[nodiscard]] auto id() const -> const String & { return _id; }
+    /// Access the ELCL configuration field name.
     [[nodiscard]] auto configurationName() const -> const String & { return _configurationName; }
+    /// Access the command-line filter name.
     [[nodiscard]] auto optionName() const -> const String & { return _optionName; }
+    /// Access the supported axis values.
     [[nodiscard]] auto values() const -> const List<AxisValue> & { return _values; }
 
 private:

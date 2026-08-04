@@ -18,7 +18,9 @@ struct UnicodeData final {
     using CodePoint = char32_t;
     using DeltaIndex = uint8_t;
 
+    /// Create an empty Unicode data entry.
     constexpr UnicodeData() noexcept = default;
+    /// Create a Unicode data entry for a compressed character range.
     constexpr UnicodeData(
         const CodePoint start,
         const UnicodeCategory category,
@@ -98,6 +100,7 @@ struct UnicodeDelta final {
     return table[index];
 }
 
+/// Test whether a Unicode range has a selected mapping delta.
 template <typename DeltaIndexSelector>
 [[nodiscard]] inline auto unicodeContainsMappableCharacters(
     UnicodeData::CodePoint begin, UnicodeData::CodePoint end, DeltaIndexSelector deltaSelector) noexcept -> bool {

@@ -126,7 +126,7 @@ public:
         REQUIRE_EQUAL(loop->runUntilIdle(), std::size_t{1});
         REQUIRE(loop->hasError());
         const auto error = loop->takeError();
-        REQUIRE(error != nullptr);
+        REQUIRE(error);
         REQUIRE_FALSE(loop->hasError());
 
         auto caught = false;
@@ -177,8 +177,8 @@ public:
         loop->invoke([]() -> void { throw std::runtime_error{"boom"}; });
 
         REQUIRE_EQUAL(loop->runUntilIdle(), std::size_t{1});
-        REQUIRE(loop->takeError() != nullptr);
-        REQUIRE(loop->takeError() != nullptr);
+        REQUIRE(loop->takeError());
+        REQUIRE(loop->takeError());
         REQUIRE_FALSE(loop->hasError());
     }
 
@@ -194,7 +194,7 @@ public:
         timer->startOnce(TimeDelta::zero());
 
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
-        REQUIRE(timer != nullptr);
+        REQUIRE(timer);
         REQUIRE(handlerCalled);
         REQUIRE(loop->hasError());
     }
@@ -275,7 +275,7 @@ public:
 
         REQUIRE(loop->runOnce(TimeDelta::zero()));
         REQUIRE_EQUAL(count, 0);
-        REQUIRE(timer != nullptr);
+        REQUIRE(timer);
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         REQUIRE_EQUAL(count, 1);
     }

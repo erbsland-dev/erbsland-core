@@ -75,6 +75,7 @@ public: // tests
     [[nodiscard]] auto empty() const noexcept -> bool { return _sequenceLength == 0; }
 
 private:
+    /// Get the color at an index after applying sequence repetition rules.
     [[nodiscard]] auto colorAtEffectiveIndex(std::size_t index) const noexcept -> Color;
 
 private:

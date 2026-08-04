@@ -20,11 +20,16 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
+/// Implement membership checking for typed validation constraints.
+/// @tparam T The constrained value type.
 template <typename T>
 class InConstraint : public Constraint {
 public:
     using Values = std::conditional_t<std::is_same_v<T, text::String>, text::StringList, std::vector<T>>;
 
+    /// Creates a membership constraint from its allowed values.
+    /// @tparam Fwd A forwarding reference to the allowed-values collection.
+    /// @param values The allowed values.
     template <typename Fwd>
         requires(std::is_same_v<std::remove_cvref_t<Fwd>, Values>)
     explicit InConstraint(Fwd &&values) : _values(std::forward<Fwd>(values)) {
@@ -32,6 +37,10 @@ public:
     }
 
 public:
+    /// Test whether a collection contains equivalent duplicate values.
+    /// @param values The values to inspect.
+    /// @param cs The text comparison case sensitivity.
+    /// @return `true` if two values compare equal.
     [[nodiscard]] static auto hasDuplicate(const Values &values, const text::CaseSensitivity cs) -> bool {
         for (auto first = values.begin(); first != values.end(); ++first) {
             for (auto other = std::next(first); other != values.end(); ++other) {
@@ -44,10 +53,20 @@ public:
     }
 
 protected:
+    /// Compare two values using the active rule's case-sensitivity setting.
+    /// @param a The left value.
+    /// @param b The right value.
+    /// @param context The active validation context.
+    /// @return `true` if the values compare equal.
     [[nodiscard]] auto isEqual(const T &a, const T &b, const ValidationContext &context) const -> bool {
         return areEqual(a, b, context.rule->caseSensitivity());
     }
 
+    /// Compare two values using explicitly supplied case sensitivity.
+    /// @param a The left value.
+    /// @param b The right value.
+    /// @param cs The text comparison case sensitivity.
+    /// @return `true` if the values compare equal.
     [[nodiscard]] static auto areEqual(const T &a, const T &b, const text::CaseSensitivity cs) -> bool {
         if constexpr (std::is_same_v<T, text::String>) {
             return a.compare(b, cs.asciiComparisonFn()) == std::strong_ordering::equal;
@@ -60,6 +79,10 @@ protected:
         }
     }
 
+    /// Test whether the allowed values contain a value.
+    /// @param value The value to find.
+    /// @param context The active validation context.
+    /// @return `true` if the value is allowed.
     [[nodiscard]] auto contains(const T &value, const ValidationContext &context) const -> bool {
         for (const auto &v : _values) {
             if (isEqual(v, value, context)) {
@@ -69,6 +92,10 @@ protected:
         return false;
     }
 
+    /// Test whether a value violates this membership constraint.
+    /// @param validatedValue The value being validated.
+    /// @param context The active validation context.
+    /// @return `true` if validation must fail.
     [[nodiscard]] auto isNotValid(const T &validatedValue, const ValidationContext &context) const -> bool {
         if (isNegated()) {
             // invalid if it is in the list when negated
@@ -78,6 +105,8 @@ protected:
         return !contains(validatedValue, context);
     }
 
+    /// Get the comparison phrase for a membership or non-membership constraint.
+    /// @return The comparison phrase.
     [[nodiscard]] auto comparisonText() const -> const text::String & {
         static const text::String inText = "must be one of"_el;
         static const text::String notInText = "must not be one of"_el;
@@ -88,38 +117,9 @@ protected:
     Values _values;
 };
 
-class InIntegerConstraint final : public InConstraint<Integer> {
-public:
-    explicit InIntegerConstraint(const std::vector<Integer> &values) : InConstraint(values) {}
-
-protected:
-    void validateInteger(const ValidationContext &context, Integer value) const override;
-};
-
-class InFloatConstraint final : public InConstraint<Float> {
-public:
-    explicit InFloatConstraint(const std::vector<Float> &values) : InConstraint(values) {}
-
-protected:
-    void validateFloat(const ValidationContext &context, Float value) const override;
-};
-
-class InTextConstraint final : public InConstraint<text::String> {
-public:
-    explicit InTextConstraint(const text::StringList &values) : InConstraint(values) {}
-
-protected:
-    void validateText(const ValidationContext &context, const text::String &value) const override;
-};
-
-class InBytesConstraint final : public InConstraint<mem::ByteBlock> {
-public:
-    explicit InBytesConstraint(const std::vector<mem::ByteBlock> &values) : InConstraint(values) {}
-
-protected:
-    void validateBytes(const ValidationContext &context, const mem::ByteBlock &value) const override;
-};
-
+/// Create a membership constraint from a parsed constraint node.
+/// @param context The parsed constraint and rule context.
+/// @return The created membership constraint.
 auto handleInConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr;
 
 }

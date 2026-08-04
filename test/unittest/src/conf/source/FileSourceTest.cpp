@@ -26,8 +26,8 @@ public:
     void testConstructionAndState() {
         const auto filePath = createTestFile("[main]"_el);
         source = Source::fromFile(el::path::Path{filePath});
-        REQUIRE(source != nullptr);
-        REQUIRE(source->name() == "file"_el);
+        REQUIRE(source);
+        REQUIRE_EQUAL(source->name(), "file"_el);
         REQUIRE_FALSE(source->isOpen());
         REQUIRE_FALSE(source->atEnd());
 
@@ -113,10 +113,10 @@ public:
     }
 
     void testByteLengthBoundaries() {
-        WITH_CONTEXT(requireLengthAccepted(limits::maxLineLength, false));
-        WITH_CONTEXT(requireLengthAccepted(limits::maxLineLength, true));
-        WITH_CONTEXT(requireLengthRejected(limits::maxLineLength + 1, false));
-        WITH_CONTEXT(requireLengthRejected(limits::maxLineLength + 1, true));
+        WITH_CONTEXT(requireLengthAccepted(el::conf::impl::limits::maxLineLength, false));
+        WITH_CONTEXT(requireLengthAccepted(el::conf::impl::limits::maxLineLength, true));
+        WITH_CONTEXT(requireLengthRejected(el::conf::impl::limits::maxLineLength + 1, false));
+        WITH_CONTEXT(requireLengthRejected(el::conf::impl::limits::maxLineLength + 1, true));
     }
 
     void testBomIsConsumed() {

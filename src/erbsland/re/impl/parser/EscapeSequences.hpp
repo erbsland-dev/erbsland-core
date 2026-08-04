@@ -144,6 +144,7 @@ inline auto readUnicodeProperty(ParserState &state) -> std::tuple<Category, bool
     return {characterClass, isNegated};
 }
 
+/// Parse a PCRE-style control-character escape.
 inline auto readPcreControlCharacter(ParserState &state) -> text::Char {
     if (!state.hasFeature(Feature::EscapeControl)) {
         state.throwParsingError("This legacy escape sequence is not supported"_el);

@@ -98,14 +98,17 @@ public: // operators
     /// Compare against a single code point.
     /// This requires `type()` == `Character` and `unicode()` == `other`.
     [[nodiscard]] auto operator==(text::Char other) const noexcept -> bool;
+    /// Test if this key differs from a single code point.
     [[nodiscard]] auto operator!=(text::Char other) const noexcept -> bool;
     /// Compare against a combined key
     /// This requires `type()` == `Combined` and `combined()` == `other`.
     [[nodiscard]] auto operator==(const text::U32String &other) const noexcept -> bool;
+    /// Test if this key differs from combined Unicode text.
     [[nodiscard]] auto operator!=(const text::U32String &other) const noexcept -> bool;
     /// Compare against a special key.
     /// This requires `type()` == `type` and `type` != `Character`|`Combined`.
     [[nodiscard]] auto operator==(Type type) const noexcept -> bool;
+    /// Test if this key differs from a special key type.
     [[nodiscard]] auto operator!=(Type type) const noexcept -> bool;
 
 public: // accessors
@@ -154,12 +157,14 @@ public: // conversion
     [[nodiscard]] auto toDisplayText(bool useBrackets = true) const -> text::String;
 
 private:
+    /// Defines a canonical text representation for a key.
     struct KeyTextDefinition final {
         Type type;
         text::StringLiteral text;
         text::StringLiteral displayText;
     };
 
+    /// Defines an accepted alias for a key text representation.
     struct KeyAliasDefinition final {
         text::StringLiteral text;
         Type type;

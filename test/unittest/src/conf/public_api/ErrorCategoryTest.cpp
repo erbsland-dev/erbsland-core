@@ -50,54 +50,57 @@ public:
 
     void testDefaultConstruction() {
         ConfErrorCategory const ec;
-        REQUIRE(ec == ConfErrorCategory::Internal);
+        REQUIRE_EQUAL(ec, ConfErrorCategory::Internal);
     }
 
     void testConstructor() {
         for (const auto &[value, text] : cEnumValues) {
             ConfErrorCategory const ec{value};
-            REQUIRE(ec == value);
-            REQUIRE(ec == ConfErrorCategory{value});
+            REQUIRE_EQUAL(ec, value);
+            const auto expected = ConfErrorCategory{value};
+            REQUIRE_EQUAL(ec, expected);
         }
     }
 
     void testEnumAssignment() {
         ec = ConfErrorCategory::IO;
-        REQUIRE(ec == ConfErrorCategory::IO);
+        REQUIRE_EQUAL(ec, ConfErrorCategory::IO);
 
         ec = ConfErrorCategory::Encoding;
-        REQUIRE(ec == ConfErrorCategory::Encoding);
+        REQUIRE_EQUAL(ec, ConfErrorCategory::Encoding);
     }
 
     void testToText() {
         for (const auto &[value, text] : cEnumValues) {
             ec = value;
-            REQUIRE(ec.toText() == text);
+            REQUIRE_EQUAL(ec.toText(), text);
         }
     }
 
     void testToCode() {
         ec = ConfErrorCategory::IO;
-        REQUIRE(ec.toCode() == 1);
+        REQUIRE_EQUAL(ec.toCode(), 1);
 
         ec = ConfErrorCategory::Signature;
-        REQUIRE(ec.toCode() == 10);
+        REQUIRE_EQUAL(ec.toCode(), 10);
     }
 
     void testCopyAndAssignment() {
         const ConfErrorCategory ec1 = ConfErrorCategory::UnexpectedEnd;
         const ConfErrorCategory ec2 = ec1; // Copy constructor
-        REQUIRE(ec1 == ec2);
+        REQUIRE_EQUAL(ec1, ec2);
 
         ConfErrorCategory ec3;
         ec3 = ec1; // Assignment operator
-        REQUIRE(ec3 == ec1);
+        REQUIRE_EQUAL(ec3, ec1);
     }
 
     void testCast() {
         ec = ConfErrorCategory::UnexpectedEnd;
-        REQUIRE(static_cast<ConfErrorCategory::Enum>(ec) == ConfErrorCategory::UnexpectedEnd);
-        REQUIRE(static_cast<int>(ec) == 3);
+        const auto value = static_cast<ConfErrorCategory::Enum>(ec);
+        const auto code = static_cast<int>(ec);
+        REQUIRE_EQUAL(value, ConfErrorCategory::UnexpectedEnd);
+        REQUIRE_EQUAL(code, 3);
     }
 
     void testOperators() {

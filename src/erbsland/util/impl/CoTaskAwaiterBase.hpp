@@ -35,6 +35,7 @@ public:
         }
     }
 
+    // defaults/deletions
     CoTaskAwaiterBase(const CoTaskAwaiterBase &) = delete;
     CoTaskAwaiterBase(CoTaskAwaiterBase &&) = delete;
     auto operator=(const CoTaskAwaiterBase &) -> CoTaskAwaiterBase & = delete;

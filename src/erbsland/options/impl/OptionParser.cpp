@@ -8,6 +8,7 @@
 #include "../Options.hpp"
 #include "../OptionValues.hpp"
 
+#include "../../err/LogicError.hpp"
 #include "../../i18n/DisplayTextMap.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
@@ -35,7 +36,7 @@ OptionParser::~OptionParser() {
 }
 
 auto OptionParser::parse() -> OptionResult {
-    if (_args.count() > unit::ElementCount{5'000U}) {
+    if (_args.count() > unit::ItemCount{5'000U}) {
         makeError(
             OptionErrorReason::SyntaxError,
             "Too many command-line arguments"_el,
@@ -43,9 +44,12 @@ auto OptionParser::parse() -> OptionResult {
             {});
         return finishError();
     }
+    if (_options == nullptr) {
+        throw err::LogicError{"parse() was called without an options object"};
+    }
 
     auto status = OptionResultStatus::Success;
-    if (_options != nullptr && !_options->optionModules().empty()) {
+    if (!_options->optionModules().empty()) {
         if (!prepareModuleParsing()) {
             return finishError();
         }
@@ -62,6 +66,14 @@ auto OptionParser::parse() -> OptionResult {
         _argumentIndex = unit::ArgumentIndex::one();
     }
     _activeOptionSets = collectActiveOptionSets();
+    if (_args.count() <= unit::ItemCount::one() &&
+        !_options->parserFlags().isSet(OptionParserFlag::ErrorOnEmptyRequiredPositionals)) {
+        for (const auto &option : positionalOptions()) {
+            if (option->flags().isSet(OptionFlag::Required)) {
+                return finishStatus(OptionResultStatus::DisplayHelp);
+            }
+        }
+    }
     if (!runActiveOptionSetPreCallbacks()) {
         return finishError();
     }
@@ -144,7 +156,7 @@ auto OptionParser::storeValue(
     const unit::ByteIndex startIndex) -> bool {
     if (option != nullptr && option->type() == OptionType::SensitiveText) {
         if (!argumentIndex.isNoIndex()) {
-            const auto elementIndex = unit::ElementIndex::fromSizeT(argumentIndex.toSizeT());
+            const auto elementIndex = unit::ItemIndex::fromSizeT(argumentIndex.toSizeT());
             if (elementIndex.toSizeT() < _args.count().toSizeT()) {
                 auto source = _args.get(elementIndex);
                 source.markAsSensitive();
@@ -163,7 +175,7 @@ void OptionParser::cleanupSensitiveText() {
         if (location.argumentIndex().isNoIndex() || location.startIndex().isNoIndex()) {
             continue;
         }
-        const auto argumentIndex = unit::ElementIndex::fromSizeT(location.argumentIndex().toSizeT());
+        const auto argumentIndex = unit::ItemIndex::fromSizeT(location.argumentIndex().toSizeT());
         if (argumentIndex.toSizeT() >= _args.count().toSizeT()) {
             continue;
         }

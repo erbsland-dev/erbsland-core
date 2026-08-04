@@ -15,6 +15,7 @@ public:
     [[nodiscard]] auto escapeSize(Char character, StringKind stringKind) const noexcept -> std::size_t override;
 
 public:
+    /// Get the shared display-escape formatter instance.
     [[nodiscard]] static auto instance() noexcept -> const EscapeFormatterPtr &;
 };
 

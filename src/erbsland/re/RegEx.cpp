@@ -13,16 +13,9 @@
 
 namespace erbsland::re {
 
-struct RegEx::LazyState final {
-    explicit LazyState(const Flags sourceFlags, Settings sourceSettings) noexcept :
-        flags{sourceFlags}, settings{std::move(sourceSettings)} {}
-
-    Flags flags;
-    Settings settings;
-    impl::ConstEnginePtr engine;
-    std::once_flag compileOnce;
-    std::atomic_bool isCompiled{false};
-};
+RegEx::LazyState::LazyState(const Flags sourceFlags, Settings sourceSettings) noexcept :
+    flags{sourceFlags}, settings{std::move(sourceSettings)} {
+}
 
 auto RegEx::compile(text::AnyString pattern, const Flags flags, const Settings &settings) -> RegExPtr {
     auto engine = buildEngine(pattern, flags, settings);
@@ -45,21 +38,27 @@ auto RegEx::buildEngine(const text::AnyString &pattern, const Flags flags, const
 }
 
 void RegEx::compileNow() const {
-    static_cast<void>(engine());
+    ensureEngineCompiled();
 }
 
 auto RegEx::isCompiled() const noexcept -> bool {
     return _lazyState == nullptr || _lazyState->isCompiled.load(std::memory_order_acquire);
 }
 
-auto RegEx::engine() const -> const impl::ConstEnginePtr & {
+void RegEx::ensureEngineCompiled() const {
     if (_lazyState != nullptr) {
         const auto &state = _lazyState;
         std::call_once(state->compileOnce, [this, &state]() -> void {
             state->engine = buildEngine(_pattern, state->flags, state->settings);
             state->isCompiled.store(true, std::memory_order_release);
         });
-        return state->engine;
+    }
+}
+
+auto RegEx::engine() const -> const impl::ConstEnginePtr & {
+    ensureEngineCompiled();
+    if (_lazyState != nullptr) {
+        return _lazyState->engine;
     }
     return _engine;
 }

@@ -56,10 +56,6 @@ public:
     explicit constexpr IntegerAmount(Value value) noexcept : _value{value} {}
     /// Create an amount from a native signed integer value.
     explicit constexpr IntegerAmount(NativeValue value) noexcept : _value{value} {}
-    /// Do not create signed amounts from unsigned integer operands.
-    template <math::AnyIntegerType tOther>
-        requires std::unsigned_integral<math::NativeIntegerOfT<tOther>>
-    explicit IntegerAmount(tOther value) noexcept = delete;
     /// Create an amount from another signed integer operand, saturating if needed.
     template <impl::SignedIntegerAmountOperand tOther>
         requires(
@@ -67,9 +63,12 @@ public:
             !std::same_as<std::remove_cvref_t<tOther>, NativeValue>)
     explicit constexpr IntegerAmount(tOther value) noexcept : _value{valueFromInteger(value)} {}
 
-    // defaults
+    // defaults/deletions
     ~IntegerAmount() = default;
     IntegerAmount(const IntegerAmount &) noexcept = default;
+    template <math::AnyIntegerType tOther>
+        requires std::unsigned_integral<math::NativeIntegerOfT<tOther>>
+    explicit IntegerAmount(tOther value) noexcept = delete;
     auto operator=(const IntegerAmount &) noexcept -> IntegerAmount & = default;
     IntegerAmount(IntegerAmount &&) noexcept = default;
     auto operator=(IntegerAmount &&) noexcept -> IntegerAmount & = default;
@@ -177,6 +176,19 @@ public: // tests
     [[nodiscard]] constexpr auto isMinimum() const noexcept -> bool { return _value.isMinimum(); }
     /// Test if this amount has the maximum representable value.
     [[nodiscard]] constexpr auto isMaximum() const noexcept -> bool { return _value.isMaximum(); }
+    /// Test if adding would saturate.
+    [[nodiscard]] constexpr auto wouldAddSaturate(const IntegerAmount &other) const noexcept -> bool {
+        return _value.wouldAddSaturate(other.toValue());
+    }
+    /// Test if subtracting would saturate.
+    [[nodiscard]] constexpr auto wouldSubtractSaturate(const IntegerAmount &other) const noexcept -> bool {
+        return _value.wouldSubtractSaturate(other.toValue());
+    }
+    /// Test if multiplying would saturate.
+    template <impl::SignedIntegerAmountOperand tFactor>
+    [[nodiscard]] constexpr auto wouldMultiplySaturate(const tFactor &other) const noexcept -> bool {
+        return _value.wouldMultiplySaturate(other);
+    }
 
 public: // accessors
     /// Access the raw native signed integer value.
@@ -303,6 +315,7 @@ public: // factory methods
     }
 
 private:
+    /// Convert an integer operand into this amount's internal value.
     template <impl::SignedIntegerAmountOperand tOther>
     [[nodiscard]] static constexpr auto valueFromInteger(tOther value) noexcept -> Value {
         return Value{value};

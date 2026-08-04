@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Lexer_fwd.hpp"
 #include "LexerToken.hpp"
 #include "TokenGenerator.hpp"
 
@@ -12,9 +13,6 @@
 
 namespace erbsland::conf::impl {
 
-class Lexer;
-using LexerPtr = std::shared_ptr<Lexer>;
-
 /// This lexer returns a low-level stream with tokens of the document syntax.
 /// Each token contains the raw text of the document with the start and end positions, including tokens for
 /// spacing, comments, and line-breaks. This is intentionally done to allow using this lexer for syntax highlighting.
@@ -22,6 +20,8 @@ using LexerPtr = std::shared_ptr<Lexer>;
 /// token makes sure that the exception that occurs after the last actual text is correctly propagated to the caller.
 /// The method `tokens()` can only be called once.
 class Lexer final {
+    class PrivateTag {};
+
 public:
     /// Create a new lexer, using the given decoder.
     /// @param decoder The decoder to use.
@@ -63,6 +63,7 @@ public:
     void close() noexcept;
 
 private:
+    /// Access the active token decoder.
     [[nodiscard]] auto decoder() const noexcept -> TokenDecoder & { return *_decoder; }
 
 public: // testing

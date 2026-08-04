@@ -11,6 +11,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathCreateFileOptions final {
 public:
+    /// Create file-creation options with their default values.
     PathCreateFileOptions() = default;
 
 public:

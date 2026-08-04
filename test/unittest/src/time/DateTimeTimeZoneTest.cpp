@@ -101,13 +101,14 @@ public:
         const auto flags = IsoTimeFormatFlags{IsoTimeFormat::Extended} | IsoTimeFormat::TimeShift |
             IsoTimeFormat::TimeShiftUpToSeconds;
 
-        REQUIRE_EQUAL(StringConverter{dateTime.toIsoString(flags)}.toStdString(), "2026-05-20 12:30:00+01:02:03");
-        REQUIRE_EQUAL(
-            StringConverter{DateTime::posixEpoch().toIsoString(
-                                IsoTimeFormatFlags{IsoTimeFormat::Extended} | IsoTimeFormat::TimeShift |
-                                IsoTimeFormat::TimeShiftAlwaysComplete)}
-                .toStdString(),
-            "1970-01-01 00:00:00+00:00");
+        auto timeStdStr = StringConverter{dateTime.toIsoString(flags)}.toStdString();
+        REQUIRE_EQUAL(timeStdStr, "2026-05-20 12:30:00+01:02:03");
+        auto timeStr = StringConverter{DateTime::epoch(TimeEpoch::Posix)
+                                           .toIsoString(
+                                               IsoTimeFormatFlags{IsoTimeFormat::Extended} | IsoTimeFormat::TimeShift |
+                                               IsoTimeFormat::TimeShiftAlwaysComplete)}
+                           .toStdString();
+        REQUIRE_EQUAL(timeStr, "1970-01-01 00:00:00+00:00");
     }
 
     void testLocalMarkerLifecycle() {
@@ -133,6 +134,7 @@ public:
         REQUIRE(utc.toTimeZone(localZone).isLocalTime());
 
         const auto forcedFlags = IsoTimeFormatFlags{IsoTimeFormat::Extended} | IsoTimeFormat::TimeShift;
-        REQUIRE_FALSE(local.toIsoString(forcedFlags) == "2026-07-01 12:30:00"_el);
+        const auto forcedText = local.toIsoString(forcedFlags);
+        REQUIRE_NOT_EQUAL(forcedText, "2026-07-01 12:30:00"_el);
     }
 };

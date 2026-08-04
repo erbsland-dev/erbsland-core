@@ -22,8 +22,8 @@ public:
 
     void testConstructionAndState() {
         source = Source::fromString(el::text::String{"test"});
-        REQUIRE(source != nullptr);
-        REQUIRE(source->name() == "text"_el);
+        REQUIRE_NOT_EQUAL(source, nullptr);
+        REQUIRE_EQUAL(source->name(), "text"_el);
         REQUIRE(source->path().isEmpty());
         REQUIRE_FALSE(source->isOpen());
         REQUIRE_FALSE(source->atEnd());
@@ -38,10 +38,14 @@ public:
     void testLineEndingsAndFinalLine() {
         source = Source::fromString(el::text::String{"one\ntwo\r\n\nfour"});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE_EQUAL(source->readLine(), el::text::String{"one\n"});
-        REQUIRE_EQUAL(source->readLine(), el::text::String{"two\r\n"});
-        REQUIRE_EQUAL(source->readLine(), el::text::String{"\n"});
-        REQUIRE_EQUAL(source->readLine(), el::text::String{"four"});
+        const auto firstLine = source->readLine();
+        const auto secondLine = source->readLine();
+        const auto thirdLine = source->readLine();
+        const auto fourthLine = source->readLine();
+        REQUIRE_EQUAL(firstLine, el::text::String{"one\n"});
+        REQUIRE_EQUAL(secondLine, el::text::String{"two\r\n"});
+        REQUIRE_EQUAL(thirdLine, el::text::String{"\n"});
+        REQUIRE_EQUAL(fourthLine, el::text::String{"four"});
         REQUIRE(source->atEnd());
         REQUIRE_FALSE(source->isOpen());
         REQUIRE(source->readLine().isEmpty());
@@ -50,7 +54,8 @@ public:
     void testEmptyInput() {
         source = Source::fromString(el::text::String{});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE(source->readLine().isEmpty());
+        const auto line = source->readLine();
+        REQUIRE(line.isEmpty());
         REQUIRE(source->atEnd());
         REQUIRE_FALSE(source->isOpen());
     }
@@ -59,24 +64,27 @@ public:
         source = Source::fromString(el::text::String{"line\nnext\n"});
         REQUIRE_THROWS_AS(ConfError, source->readLine());
         REQUIRE_NOTHROW(source->open());
-        REQUIRE_EQUAL(source->readLine(), el::text::String{"line\n"});
+        const auto line = source->readLine();
+        REQUIRE_EQUAL(line, el::text::String{"line\n"});
         source->close();
         REQUIRE_THROWS_AS(ConfError, source->readLine());
     }
 
     void testByteLengthBoundaries() {
-        auto valid = std::string(limits::maxLineLength, 'a');
+        auto valid = std::string(el::conf::impl::limits::maxLineLength, 'a');
         source = Source::fromString(el::text::String{valid});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE_EQUAL(source->readLine().length().toSizeT(), limits::maxLineLength);
+        const auto validLine = source->readLine();
+        REQUIRE_EQUAL(validLine.length().toSizeT(), el::conf::impl::limits::maxLineLength);
 
-        auto validWithEnding = std::string(limits::maxLineLength - 1, 'b');
+        auto validWithEnding = std::string(el::conf::impl::limits::maxLineLength - 1, 'b');
         validWithEnding.push_back('\n');
         source = Source::fromString(el::text::String{validWithEnding});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE_EQUAL(source->readLine().length().toSizeT(), limits::maxLineLength);
+        const auto validLineWithEnding = source->readLine();
+        REQUIRE_EQUAL(validLineWithEnding.length().toSizeT(), el::conf::impl::limits::maxLineLength);
 
-        auto invalid = std::string(limits::maxLineLength, 'c');
+        auto invalid = std::string(el::conf::impl::limits::maxLineLength, 'c');
         invalid.push_back('\n');
         source = Source::fromString(el::text::String{invalid});
         REQUIRE_NOTHROW(source->open());
@@ -90,10 +98,11 @@ public:
             valid.append(u8"€");
         }
         valid.push_back(u8'\n');
-        REQUIRE_EQUAL(valid.size(), limits::maxLineLength);
+        REQUIRE_EQUAL(valid.size(), el::conf::impl::limits::maxLineLength);
         source = Source::fromString(el::text::String{std::u8string_view{valid}});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE_EQUAL(source->readLine().length().toSizeT(), limits::maxLineLength);
+        const auto line = source->readLine();
+        REQUIRE_EQUAL(line.length().toSizeT(), el::conf::impl::limits::maxLineLength);
 
         auto invalid = valid;
         invalid.insert(invalid.end() - 1, u8'!');
@@ -130,15 +139,15 @@ public:
         REQUIRE(first.has_value());
         REQUIRE_EQUAL(first->startLine, el::unit::LineIndex::zero());
         REQUIRE_EQUAL(first->language, "elcl"_el);
-        REQUIRE_EQUAL(first->lines.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(first->lines.get(el::unit::ElementIndex::zero()), "zero"_el);
-        REQUIRE_EQUAL(first->lines.get(el::unit::ElementIndex{2U}), "two"_el);
+        REQUIRE_EQUAL(first->lines.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(first->lines.get(el::unit::ItemIndex::zero()), "zero"_el);
+        REQUIRE_EQUAL(first->lines.get(el::unit::ItemIndex{2U}), "two"_el);
 
         const auto last = source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{4U}});
         REQUIRE(last.has_value());
         REQUIRE_EQUAL(last->startLine, el::unit::LineIndex{2U});
-        REQUIRE_EQUAL(last->lines.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(last->lines.get(el::unit::ElementIndex{2U}), "four"_el);
+        REQUIRE_EQUAL(last->lines.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(last->lines.get(el::unit::ItemIndex{2U}), "four"_el);
     }
 
     void testCodeSnippetMiddleAndInvalidLocations() {
@@ -146,9 +155,9 @@ public:
         const auto middle = source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{3U}});
         REQUIRE(middle.has_value());
         REQUIRE_EQUAL(middle->startLine, el::unit::LineIndex{1U});
-        REQUIRE_EQUAL(middle->lines.count(), el::unit::ElementCount{5U});
-        REQUIRE_EQUAL(middle->lines.get(el::unit::ElementIndex::zero()), "one"_el);
-        REQUIRE_EQUAL(middle->lines.get(el::unit::ElementIndex{4U}), "five"_el);
+        REQUIRE_EQUAL(middle->lines.count(), el::unit::ItemCount{5U});
+        REQUIRE_EQUAL(middle->lines.get(el::unit::ItemIndex::zero()), "one"_el);
+        REQUIRE_EQUAL(middle->lines.get(el::unit::ItemIndex{4U}), "five"_el);
 
         REQUIRE_FALSE(source->codeSnippet(el::unit::CodeLocation{}).has_value());
         REQUIRE_FALSE(source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{99U}}).has_value());

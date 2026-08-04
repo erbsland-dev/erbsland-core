@@ -4,12 +4,12 @@
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/List.hpp>
 #include <erbsland/util/LoopResult.hpp>
@@ -28,8 +28,8 @@ using namespace el::text::literals;
 
 using el::text::AsciiCategory;
 using el::text::CharSet;
-using el::text::U8String;
-using el::text::U8StringEditor;
+using el::text::String;
+using el::text::StringEditor;
 using el::text::UnicodeCategory;
 using el::util::LoopResult;
 using el::util::LoopStatus;
@@ -142,9 +142,10 @@ public:
         REQUIRE_EQUAL((left & right).toList().toStdVector(), std::vector<Char>({Char{U'B'}, Char{U'C'}}));
         REQUIRE_EQUAL((left - right).toList().toStdVector(), std::vector<Char>({Char{U'A'}}));
         REQUIRE_EQUAL((left ^ right).toList().toStdVector(), std::vector<Char>({Char{U'A'}, Char{U'D'}}));
-        REQUIRE(CharSet{Char{U'B'}} <= left);
-        REQUIRE(left >= CharSet{Char{U'B'}});
-        REQUIRE_FALSE(left <= CharSet{Char{U'B'}});
+        const auto singleB = CharSet{Char{U'B'}};
+        REQUIRE_LESS_EQUAL(singleB, left);
+        REQUIRE_GREATER_EQUAL(left, singleB);
+        REQUIRE_NOT_EQUAL(left, singleB);
 
         auto mutated = left;
         mutated &= right;
@@ -281,8 +282,8 @@ public:
         auto data = std::string{"A"};
         data.push_back(static_cast<char>(0xC0U));
         data.push_back('B');
-        const auto text = U8StringEditor{std::string_view{data}};
-        const auto set = CharSet{U8String{text}};
+        const auto text = StringEditor{std::string_view{data}};
+        const auto set = CharSet{String{text}};
 
         REQUIRE(set.contains(Char{U'A'}));
         REQUIRE(set.contains(Char::replacement()));
@@ -337,7 +338,7 @@ private:
         return result;
     }
 
-    void requireEqual(const CharSet &actual, const ReferenceSet &expected) {
+    void requireEqualToSet(const CharSet &actual, const ReferenceSet &expected) {
         REQUIRE_EQUAL(actual.toSet().toStdSet(), expected);
         for (auto codePoint = char32_t{U'`'}; codePoint <= U'i'; ++codePoint) {
             const auto character = Char{codePoint};
@@ -353,24 +354,24 @@ private:
 
         auto unionReference = leftReference;
         unionReference.insert(rightReference.begin(), rightReference.end());
-        WITH_CONTEXT(requireEqual(left | right, unionReference));
+        WITH_CONTEXT(requireEqualToSet(left | right, unionReference));
 
         auto intersectionReference = ReferenceSet{};
         std::ranges::set_intersection(
             leftReference, rightReference, std::inserter(intersectionReference, intersectionReference.end()));
-        WITH_CONTEXT(requireEqual(left & right, intersectionReference));
+        WITH_CONTEXT(requireEqualToSet(left & right, intersectionReference));
 
         auto subtractionReference = ReferenceSet{};
         std::ranges::set_difference(
             leftReference, rightReference, std::inserter(subtractionReference, subtractionReference.end()));
-        WITH_CONTEXT(requireEqual(left - right, subtractionReference));
+        WITH_CONTEXT(requireEqualToSet(left - right, subtractionReference));
 
         auto symmetricDifferenceReference = ReferenceSet{};
         std::ranges::set_symmetric_difference(
             leftReference,
             rightReference,
             std::inserter(symmetricDifferenceReference, symmetricDifferenceReference.end()));
-        WITH_CONTEXT(requireEqual(left ^ right, symmetricDifferenceReference));
+        WITH_CONTEXT(requireEqualToSet(left ^ right, symmetricDifferenceReference));
 
         REQUIRE_EQUAL(left.isSubsetOf(right), std::ranges::includes(rightReference, leftReference));
         REQUIRE_EQUAL(left.isSupersetOf(right), std::ranges::includes(leftReference, rightReference));

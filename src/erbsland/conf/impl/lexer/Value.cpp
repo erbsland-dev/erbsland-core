@@ -15,6 +15,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/Literals.hpp"
+
 namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
@@ -127,7 +129,7 @@ auto expectValueOrValueList(TokenDecoder &decoder, const NextLine nextLine, cons
                 EL_YIELD_FROM(expectMultiLineBytes(decoder));
                 break;
             default:
-                throw err::LogicError("Unexpected token type after opening bracket.");
+                throw err::LogicError("Unexpected token type after opening bracket."_el);
             }
             co_return;
         }

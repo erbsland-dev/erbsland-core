@@ -39,24 +39,43 @@ public:
     [[nodiscard]] auto parse() -> FormatDataPtr;
 
 private:
+    /// Append accumulated literal text to the parsed format data.
     void flushStaticText();
+    /// Throw if the number of fields exceeds its limit.
     void requireFieldLimit() const;
+    /// Read an optional explicit argument index.
     [[nodiscard]] auto readIndex() -> std::optional<unit::ArgumentIndex>;
+    /// Get the current pattern character.
     [[nodiscard]] auto currentChar() const noexcept -> Char;
+    /// Consume and return the current pattern character.
     auto consumeChar() noexcept -> Char;
+    /// Consume one character from a format specification.
     auto consumeSpecificationChar() -> Char;
+    /// Read a decimal value subject to its supported digit limit.
     [[nodiscard]] auto readLimitedDecimal(const StringLiteral &tooLargeMessage) -> unit::CpLength;
+    /// Parse a field format specification.
     [[nodiscard]] auto parseSpecification() -> FormatSpec;
+    /// Parse a legacy field format specification.
     [[nodiscard]] auto parseLegacySpecification() -> LegacyFormatSpec;
+    /// Parse legacy alignment into `spec`.
     void parseAlignment(LegacyFormatSpec &spec);
+    /// Parse legacy sign handling into `spec`.
     void parseSign(LegacyFormatSpec &spec);
+    /// Parse legacy width into `spec`.
     void parseWidth(LegacyFormatSpec &spec);
+    /// Parse legacy precision into `spec`.
     void parsePrecision(LegacyFormatSpec &spec);
+    /// Parse legacy presentation into `spec`.
     void parsePresentation(LegacyFormatSpec &spec);
+    /// Parse escaped legacy presentation into `spec`.
     void parseEscapedPresentation(LegacyFormatSpec &spec);
+    /// Resolve an optional explicit argument index.
     [[nodiscard]] auto resolveArgumentIndex(std::optional<unit::ArgumentIndex> explicitIndex) -> unit::ArgumentIndex;
+    /// Record an argument index as used.
     void markArgumentIndex(unit::ArgumentIndex argumentIndex);
+    /// Parse one replacement field.
     void parseField();
+    /// Finish parsing and return the compiled format data.
     [[nodiscard]] auto finish() -> FormatDataPtr;
 
 private:

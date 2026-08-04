@@ -25,7 +25,7 @@ static_assert(std::is_same_v<decltype(toString(std::declval<const String &>())),
 static_assert(std::is_same_v<decltype(toString(std::declval<const StringEditor &>())), String>);
 static_assert(std::is_same_v<decltype(toString(42)), String>);
 
-TESTED_TARGETS(toString BooleanFormat Capitalization U8StringEditor)
+TESTED_TARGETS(toString BooleanFormat Capitalization StringEditor)
 class ToStringTest final : public el::UnitTest {
 public:
     void testStringsAndBooleans() {

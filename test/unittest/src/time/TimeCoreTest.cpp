@@ -94,7 +94,7 @@ public:
         REQUIRE_EQUAL(Second{-5}, Second{0});
         REQUIRE_EQUAL(Month::january(), Month{1});
         REQUIRE_EQUAL(Month::december(), Month{12});
-        REQUIRE(Month::february().hasFixedLength() == false);
+        REQUIRE_FALSE(Month::february().hasFixedLength());
         REQUIRE(Month::march().hasFixedLength());
     }
 
@@ -313,10 +313,10 @@ public:
     }
 
     void testStdCompatibilityAndClamping() {
-        const auto posixEpoch = DateTime::posixEpoch();
+        const auto posixEpoch = DateTime::epoch(TimeEpoch::Posix);
         REQUIRE_EQUAL(posixEpoch.toTimeT(), 0);
         REQUIRE_EQUAL(DateTime::fromTimeT(0), posixEpoch);
-        REQUIRE_EQUAL(posixEpoch.toSecondsSinceEpoch(), Days{719528}.converted<Seconds>());
+        REQUIRE_EQUAL(posixEpoch.toSecondsAndFractions().value().first, Days{719528}.converted<Seconds>());
 
         REQUIRE_EQUAL(DateTime::first().subtracted(Duration{Seconds{1}}), DateTime::first());
         REQUIRE(DateTime::first().wouldSubtractSaturate(Duration{Seconds{1}}));
@@ -345,7 +345,7 @@ public:
 
         const auto withOffset = DateTime::fromIsoString("1970-01-01T01:00:00+01:00"_el);
         REQUIRE(withOffset.isValid());
-        REQUIRE_EQUAL(withOffset.toUtc(), DateTime::posixEpoch());
+        REQUIRE_EQUAL(withOffset.toUtc(), DateTime::epoch(TimeEpoch::Posix));
         REQUIRE_EQUAL(
             StringConverter{DateTime::fromIsoString("2026-05-20"_el, DateTimePrecision::Day).toIsoString()}
                 .toStdString(),

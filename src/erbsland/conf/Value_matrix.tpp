@@ -23,8 +23,8 @@ auto Value::asMatrixOrThrow() const -> Matrix<T> {
     const auto rowCount = valueList.rowCount();
     const auto columnCount = valueList.columnCount();
     Matrix<T> result{rowCount, columnCount};
-    for (unit::ElementIndex row = {}; row.isWithin(rowCount); ++row) {
-        for (unit::ElementIndex column = {}; column.isWithin(valueList.actualColumnCount(row)); ++column) {
+    for (unit::ItemIndex row = {}; row.isWithin(rowCount); ++row) {
+        for (unit::ItemIndex column = {}; column.isWithin(valueList.actualColumnCount(row)); ++column) {
             const auto &value = valueList.valueOrThrow(row, column);
             if (!value) {
                 throw ConfError(

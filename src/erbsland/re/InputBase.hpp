@@ -16,6 +16,7 @@ namespace erbsland::re {
 /// @tested{InputBaseTest}
 class InputBase : public std::enable_shared_from_this<InputBase> {
 public:
+    // defaults/deletions
     InputBase() = default;
     virtual ~InputBase() = default;
     InputBase(const InputBase &) = delete;

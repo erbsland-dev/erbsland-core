@@ -61,6 +61,7 @@ public:
     void reset() noexcept { _flags.reset(); }
 
 private:
+    /// Convert a cardinal direction to its backing flag index.
     [[nodiscard]] auto indexFromDirection(const bgeo::BlockDirection direction) const noexcept -> std::size_t {
         return std::min(static_cast<std::size_t>(direction) - 1, _flags.size());
     }

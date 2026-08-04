@@ -7,7 +7,6 @@
 #include "../text/StringEditor.hpp"
 
 #include <algorithm>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::conf {

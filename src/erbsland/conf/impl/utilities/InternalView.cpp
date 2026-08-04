@@ -71,7 +71,7 @@ auto InternalView::toString(const std::size_t indent) const noexcept -> text::St
 
 auto InternalView::toLines(const std::size_t indent) const noexcept -> text::StringList {
     text::StringList lines;
-    lines.reserve(unit::ElementCount::fromSizeT(_values.size()));
+    lines.reserve(unit::ItemCount::fromSizeT(_values.size()));
     text::StringEditor indentEditor;
     indentEditor.append(U' ', unit::CpLength::fromSizeT(indent));
     const text::String indentString = indentEditor;

@@ -22,6 +22,7 @@ public:
     void renderTo(CursorWriter &writer, const text::TextNode &node);
 
 private:
+    /// Get the writable display width after accounting for the writer state.
     [[nodiscard]] static auto effectiveWidth(const CursorWriter &writer) noexcept -> int;
 
 private:

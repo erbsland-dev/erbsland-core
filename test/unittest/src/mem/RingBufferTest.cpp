@@ -16,54 +16,28 @@
 using el::mem::Byte;
 using el::unit::ByteLength;
 
-namespace {
-
-struct RingEraseEvent final {
-    std::size_t size{};
-    bool isZero{};
-};
-
-std::vector<RingEraseEvent> gRingEraseEvents;
-
-void observeRingErase(const std::span<const std::byte> bytes) noexcept {
-    gRingEraseEvents.push_back(
-        {bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) { return value == std::byte{}; })});
-}
-
-class RingEraseObserverGuard final {
-public:
-    RingEraseObserverGuard() {
-        gRingEraseEvents.clear();
-        el::mem::impl::setSecureEraseObserver(observeRingErase);
-    }
-    ~RingEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
-};
-
-[[nodiscard]] auto hasEraseOfSize(const std::size_t size) -> bool {
-    return std::ranges::any_of(
-        gRingEraseEvents, [size](const RingEraseEvent &event) { return event.size == size && event.isZero; });
-}
-
-}
-
 TESTED_TARGETS(RingBuffer ByteRingBuffer UnsafeRingBufferAccess)
 class RingBufferTest final : public el::UnitTest {
 public:
     void testSafeWrapAround() {
         auto buffer = el::mem::RingBuffer{ByteLength{4U}};
         const auto first = el::mem::ByteArray{Byte{1U}, Byte{2U}, Byte{3U}};
-        REQUIRE_EQUAL(buffer.write(first.span()), ByteLength{3U});
+        const auto firstWriteLength = buffer.write(first.span());
+        REQUIRE_EQUAL(firstWriteLength, ByteLength{3U});
 
         auto read = std::array<Byte, 2>{};
-        REQUIRE_EQUAL(buffer.read(el::mem::ByteSpan{read}), ByteLength{2U});
+        const auto firstReadLength = buffer.read(el::mem::ByteSpan{read});
+        REQUIRE_EQUAL(firstReadLength, ByteLength{2U});
         const auto second = el::mem::ByteArray{Byte{4U}, Byte{5U}, Byte{6U}};
-        REQUIRE_EQUAL(buffer.write(second.span()), ByteLength{3U});
+        const auto secondWriteLength = buffer.write(second.span());
+        REQUIRE_EQUAL(secondWriteLength, ByteLength{3U});
 
         auto result = std::array<Byte, 4>{};
-        REQUIRE_EQUAL(buffer.read(el::mem::ByteSpan{result}), ByteLength{4U});
-        REQUIRE_EQUAL(
-            std::vector<uint8_t>({result[0].toUInt8(), result[1].toUInt8(), result[2].toUInt8(), result[3].toUInt8()}),
-            std::vector<uint8_t>({3U, 4U, 5U, 6U}));
+        const auto resultReadLength = buffer.read(el::mem::ByteSpan{result});
+        REQUIRE_EQUAL(resultReadLength, ByteLength{4U});
+        const auto resultBytes =
+            std::vector<uint8_t>({result[0].toUInt8(), result[1].toUInt8(), result[2].toUInt8(), result[3].toUInt8()});
+        REQUIRE_EQUAL(resultBytes, std::vector<uint8_t>({3U, 4U, 5U, 6U}));
     }
 
     void testGrowingWriteIsAtomic() {
@@ -95,7 +69,8 @@ public:
         auto buffer = el::mem::ByteRingBuffer{ByteLength{8U}};
         buffer.setEndianness(el::mem::Endianness::Big);
         REQUIRE(isSuccessful(buffer.writeInteger<uint32_t>(0x12345678U)));
-        REQUIRE_EQUAL(buffer.readInteger<uint32_t>().value(), uint32_t{0x12345678U});
+        const auto readValue = buffer.readInteger<uint32_t>().value();
+        REQUIRE_EQUAL(readValue, uint32_t{0x12345678U});
     }
 
     void testSensitiveConsumptionWrapAndUnsafeAccess() {
@@ -103,14 +78,17 @@ public:
         auto buffer = el::mem::RingBuffer{ByteLength{4U}};
         buffer.setSensitive(true);
         REQUIRE(buffer.isSensitive());
-        REQUIRE_EQUAL(buffer.write(el::mem::ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span()), ByteLength{3U});
+        const auto initialWriteLength = buffer.write(el::mem::ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span());
+        REQUIRE_EQUAL(initialWriteLength, ByteLength{3U});
 
         auto first = std::array<Byte, 2>{};
-        REQUIRE_EQUAL(buffer.read(el::mem::ByteSpan{first}), ByteLength{2U});
+        const auto firstReadLength = buffer.read(el::mem::ByteSpan{first});
+        REQUIRE_EQUAL(firstReadLength, ByteLength{2U});
         REQUIRE(hasEraseOfSize(2U));
-        REQUIRE_EQUAL(buffer.write(el::mem::ByteArray{Byte{4U}, Byte{5U}, Byte{6U}}.span()), ByteLength{3U});
+        const auto wrappingWriteLength = buffer.write(el::mem::ByteArray{Byte{4U}, Byte{5U}, Byte{6U}}.span());
+        REQUIRE_EQUAL(wrappingWriteLength, ByteLength{3U});
 
-        gRingEraseEvents.clear();
+        _eraseEvents.clear();
         {
             auto access = el::mem::impl::UnsafeRingBufferAccess{buffer};
             access.consumeRead(ByteLength{3U});
@@ -127,7 +105,7 @@ public:
         REQUIRE(isSuccessful(buffer.writeExact(el::mem::ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span())));
         REQUIRE(hasEraseOfSize(2U));
 
-        gRingEraseEvents.clear();
+        _eraseEvents.clear();
         buffer.clear();
         REQUIRE(buffer.isEmpty());
         REQUIRE(hasEraseOfSize(buffer.capacity().toSizeT()));
@@ -135,13 +113,14 @@ public:
         REQUIRE(isSuccessful(buffer.writeExact(el::mem::ByteArray{Byte{4U}, Byte{5U}, Byte{6U}}.span())));
         const auto grownCapacity = buffer.capacity();
         static_cast<void>(buffer.read(ByteLength::infinite()));
-        gRingEraseEvents.clear();
+        _eraseEvents.clear();
         buffer.shrinkToInitial();
         REQUIRE_EQUAL(buffer.capacity(), ByteLength{2U});
         REQUIRE(hasEraseOfSize(grownCapacity.toSizeT()));
 
-        REQUIRE_EQUAL(buffer.write(el::mem::ByteArray{Byte{7U}}.span()), ByteLength{1U});
-        gRingEraseEvents.clear();
+        const auto finalWriteLength = buffer.write(el::mem::ByteArray{Byte{7U}}.span());
+        REQUIRE_EQUAL(finalWriteLength, ByteLength{1U});
+        _eraseEvents.clear();
         buffer.secureErase();
         REQUIRE(buffer.isEmpty());
         REQUIRE(buffer.isSensitive());
@@ -154,22 +133,51 @@ public:
             auto first = el::mem::RingBuffer{ByteLength{3U}};
             auto second = el::mem::RingBuffer{ByteLength{5U}};
             first.setSensitive(true);
-            REQUIRE_EQUAL(first.write(el::mem::ByteArray{Byte{1U}, Byte{2U}}.span()), ByteLength{2U});
+            const auto firstWriteLength = first.write(el::mem::ByteArray{Byte{1U}, Byte{2U}}.span());
+            REQUIRE_EQUAL(firstWriteLength, ByteLength{2U});
             first.swap(second);
             REQUIRE_FALSE(first.isSensitive());
             REQUIRE(second.isSensitive());
             REQUIRE_EQUAL(second.length(), ByteLength{2U});
 
-            gRingEraseEvents.clear();
+            _eraseEvents.clear();
             second.setSensitive(false);
             REQUIRE_FALSE(second.isSensitive());
             REQUIRE(second.isEmpty());
             REQUIRE(hasEraseOfSize(3U));
 
             second.setSensitive(true);
-            REQUIRE_EQUAL(second.write(el::mem::ByteArray{Byte{9U}}.span()), ByteLength{1U});
-            gRingEraseEvents.clear();
+            const auto secondWriteLength = second.write(el::mem::ByteArray{Byte{9U}}.span());
+            REQUIRE_EQUAL(secondWriteLength, ByteLength{1U});
+            _eraseEvents.clear();
         }
         REQUIRE(hasEraseOfSize(3U));
+    }
+
+private:
+    struct RingEraseEvent final {
+        std::size_t size{};
+        bool isZero{};
+    };
+
+    class RingEraseObserverGuard final {
+    public:
+        RingEraseObserverGuard() {
+            _eraseEvents.clear();
+            el::mem::impl::setSecureEraseObserver(observeRingErase);
+        }
+        ~RingEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+    };
+
+    static inline std::vector<RingEraseEvent> _eraseEvents;
+
+    static void observeRingErase(const std::span<const std::byte> bytes) noexcept {
+        _eraseEvents.push_back(
+            {bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) { return value == std::byte{}; })});
+    }
+
+    [[nodiscard]] static auto hasEraseOfSize(const std::size_t size) -> bool {
+        return std::ranges::any_of(
+            _eraseEvents, [size](const RingEraseEvent &event) { return event.size == size && event.isZero; });
     }
 };

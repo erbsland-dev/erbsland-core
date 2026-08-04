@@ -11,9 +11,11 @@ namespace erbsland::re::impl {
 /// An extension to the program reader with a generic interface for the disassembler.
 class GenericProgramReader : public ProgramReader {
 public:
+    /// Create a generic reader for `program`.
     explicit GenericProgramReader(const Program &program) noexcept : ProgramReader{program} {}
 
 public:
+    /// Read the operation at a program counter and its decoded arguments.
     [[nodiscard]] auto readOperation(ProgramCounter &programCounter) const noexcept -> std::pair<Operation, Arguments> {
         auto operation = peekOperation(programCounter);
         switch (operation.raw()) {

@@ -94,7 +94,7 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
         el::stream::StreamState _state{el::stream::StreamState::Open};
     };
 
-    class TestSource final : public impl::TextStreamSource {
+    class TestSource final : public el::conf::impl::TextStreamSource {
     public:
         explicit TestSource(el::stream::TextInputStreamPtr stream) : _stream{std::move(stream)} {}
 
@@ -108,7 +108,7 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
         SourceIdentifierPtr _identifier{SourceIdentifier::createForText()};
     };
 
-    class FailingOpenSource final : public impl::TextStreamSource {
+    class FailingOpenSource final : public el::conf::impl::TextStreamSource {
     public:
         [[nodiscard]] auto identifier() const noexcept -> SourceIdentifierPtr override { return _identifier; }
 
@@ -202,18 +202,18 @@ public:
         REQUIRE_EQUAL(source->readLine(), "zero\r\n"_el);
         const auto early = source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex::zero()});
         REQUIRE(early.has_value());
-        REQUIRE_EQUAL(early->lines.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(early->lines.get(el::unit::ElementIndex::zero()), "zero"_el);
-        REQUIRE_EQUAL(early->lines.get(el::unit::ElementIndex::one()), "one"_el);
-        REQUIRE_EQUAL(early->lines.get(el::unit::ElementIndex{2U}), "two"_el);
+        REQUIRE_EQUAL(early->lines.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(early->lines.get(el::unit::ItemIndex::zero()), "zero"_el);
+        REQUIRE_EQUAL(early->lines.get(el::unit::ItemIndex::one()), "one"_el);
+        REQUIRE_EQUAL(early->lines.get(el::unit::ItemIndex{2U}), "two"_el);
 
         REQUIRE_EQUAL(source->readLine(), "three\n"_el);
         REQUIRE_EQUAL(source->readLine(), "four\n"_el);
         const auto middle = source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{3U}});
         REQUIRE(middle.has_value());
         REQUIRE_EQUAL(middle->startLine, el::unit::LineIndex{1U});
-        REQUIRE_EQUAL(middle->lines.count(), el::unit::ElementCount{5U});
-        REQUIRE_EQUAL(middle->lines.get(el::unit::ElementIndex{4U}), "five"_el);
+        REQUIRE_EQUAL(middle->lines.count(), el::unit::ItemCount{5U});
+        REQUIRE_EQUAL(middle->lines.get(el::unit::ItemIndex{4U}), "five"_el);
         REQUIRE_FALSE(source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex::zero()}).has_value());
 
         source->close();

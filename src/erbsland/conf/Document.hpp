@@ -2,14 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Document_fwd.hpp"
+
 #include "impl/value/Value.hpp"
 
 #include <map>
 
 namespace erbsland::conf {
-
-class Document;
-using DocumentPtr = std::shared_ptr<Document>;
 
 /// A configuration document.
 class Document : public Value {
@@ -19,7 +18,7 @@ public:
     using FlatValueMap = std::map<NamePath, ConstValuePtr>;
 
 public:
-    /// Default destructor.
+    // defaults
     ~Document() override = default;
 
 public:

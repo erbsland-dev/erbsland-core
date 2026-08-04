@@ -3,12 +3,11 @@
 #pragma once
 
 #include "PasswordHash.hpp"
+#include "PasswordHasher_fwd.hpp"
 
 #include <optional>
 
 namespace erbsland::cryptology {
-
-class PasswordHasher;
 
 /// The explicit result of password verification.
 /// This type deliberately has no boolean conversion, so callers must name the accepted/rejected state. An accepted
@@ -29,6 +28,7 @@ public: // accessors
     [[nodiscard]] auto replacementHash() const noexcept -> const std::optional<PasswordHash> & { return _replacement; }
 
 private:
+    /// Create a verification result with an optional replacement hash.
     explicit PasswordVerification(bool accepted, std::optional<PasswordHash> replacement = {}) noexcept;
 
 private:

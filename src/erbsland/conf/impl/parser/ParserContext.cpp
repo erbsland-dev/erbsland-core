@@ -2,10 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParserContext.hpp"
 
+#include "../../../text/Literals.hpp"
+
 #include <limits>
-#include <stdexcept>
 
 namespace erbsland::conf::impl {
+
+using namespace text::literals;
 
 ParserContext::ParserContext(const std::size_t includeLevel, SourcePtr source, PrivateTag /*pt*/) noexcept :
     _includeLevel{static_cast<uint8_t>(includeLevel)},
@@ -22,7 +25,7 @@ auto ParserContext::create(const std::size_t includeLevel, SourcePtr source) -> 
 
 void ParserContext::initialize() {
     if (_initialized) {
-        throw err::LogicError("ParserContext::initialize() called twice.");
+        throw err::LogicError("ParserContext::initialize() called twice."_el);
     }
     if (!_source->isOpen()) {
         _source->open();

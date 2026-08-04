@@ -97,20 +97,20 @@ public:
     TESTED_TARGETS(value)
     void testValue() {
         setupTemplate1("1");
-        REQUIRE(doc->value(el::text::String{"main"}) != nullptr);
+        REQUIRE(doc->value(el::text::String{"main"}));
 
-        REQUIRE(doc->value(el::text::String{"main"_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main"_el}) != nullptr);
-        REQUIRE(doc->value(Name::createRegular("main"_el)) != nullptr);
-        REQUIRE(doc->value(NamePath{Name::createRegular("main"_el)}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"_el}) != nullptr);
-        REQUIRE((value = doc->value(Name::createRegular("main"_el))) != nullptr);
-        REQUIRE((value = value->value(Name::createRegular("sub"_el))) != nullptr);
-        REQUIRE((value = value->value(Name::createRegular("sub"_el))) != nullptr);
-        REQUIRE((value = value->value(Name::createRegular("a"_el))) != nullptr);
-        REQUIRE((value = value->value(Name::createRegular("value"_el))) != nullptr);
+        REQUIRE(doc->value(el::text::String{"main"_el}));
+        REQUIRE(doc->value(el::text::String{"main"_el}));
+        REQUIRE(doc->value(Name::createRegular("main"_el)));
+        REQUIRE(doc->value(NamePath{Name::createRegular("main"_el)}));
+        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"}));
+        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"_el}));
+        REQUIRE(doc->value(el::text::String{"main.sub.sub.a.value"_el}));
+        REQUIRE((value = doc->value(Name::createRegular("main"_el))));
+        REQUIRE((value = value->value(Name::createRegular("sub"_el))));
+        REQUIRE((value = value->value(Name::createRegular("sub"_el))));
+        REQUIRE((value = value->value(Name::createRegular("a"_el))));
+        REQUIRE((value = value->value(Name::createRegular("value"_el))));
         const auto namePath = NamePath{{
             Name::createRegular("main"_el),
             Name::createRegular("sub"_el),
@@ -118,53 +118,53 @@ public:
             Name::createRegular("a"_el),
             Name::createRegular("value"_el),
         }};
-        REQUIRE(doc->value(namePath) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list[2]"_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_matrix[2][2]"_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"second\""_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"\"[1]"_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.sub_text.\"second\""_el}) != nullptr);
-        REQUIRE(doc->value(el::text::String{"main.sub_text.\"\"[1]"_el}) != nullptr);
+        REQUIRE(doc->value(namePath));
+        REQUIRE(doc->value(el::text::String{"main.value_list[2]"_el}));
+        REQUIRE(doc->value(el::text::String{"main.value_matrix[2][2]"_el}));
+        REQUIRE(doc->value(el::text::String{"main.text.\"second\""_el}));
+        REQUIRE(doc->value(el::text::String{"main.text.\"\"[1]"_el}));
+        REQUIRE(doc->value(el::text::String{"main.sub_text.\"second\""_el}));
+        REQUIRE(doc->value(el::text::String{"main.sub_text.\"\"[1]"_el}));
 
         // not found
-        REQUIRE(doc->value(el::text::String{""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list.unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list.\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list.\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list[1].unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list[1].\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_list[1].\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_matrix[1][2].unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_matrix[1][2].\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.value_matrix[1][2].\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"first\".unknown"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"first\".\"unknown\""_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"first\".\"\"[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main.text.\"first\".[0]"_el}) == nullptr);
-        REQUIRE(doc->value(el::text::String{"main..value1"_el}) == nullptr);
+        REQUIRE_FALSE(doc->value(el::text::String{""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list.unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list.\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list.\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list[1].unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list[1].\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_list[1].\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_matrix[1][2].unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_matrix[1][2].\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.value_matrix[1][2].\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.text.\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.text.\"first\".unknown"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.text.\"first\".\"unknown\""_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.text.\"first\".\"\"[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main.text.\"first\".[0]"_el}));
+        REQUIRE_FALSE(doc->value(el::text::String{"main..value1"_el}));
     }
 
     TESTED_TARGETS(hasValue)
     void testHasValue() {
         setupTemplate1("1");
-        REQUIRE(doc->hasValue(el::text::String{"main"}) == true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main"}), true);
 
-        REQUIRE(doc->hasValue(el::text::String{"main"_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main"_el}) == true);
-        REQUIRE(doc->hasValue(Name::createRegular("main"_el)) == true);
-        REQUIRE(doc->hasValue(NamePath{Name::createRegular("main"_el)}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.sub.sub.a.value"}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.sub.sub.a.value"_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.sub.sub.a.value"_el}) == true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(Name::createRegular("main"_el)), true);
+        REQUIRE_EQUAL(doc->hasValue(NamePath{Name::createRegular("main"_el)}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.sub.sub.a.value"}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.sub.sub.a.value"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.sub.sub.a.value"_el}), true);
         const auto namePath = NamePath{{
             Name::createRegular("main"_el),
             Name::createRegular("sub"_el),
@@ -172,39 +172,39 @@ public:
             Name::createRegular("a"_el),
             Name::createRegular("value"_el),
         }};
-        REQUIRE(doc->hasValue(namePath) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list[2]"_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_matrix[2][2]"_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"second\""_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"\"[1]"_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.sub_text.\"second\""_el}) == true);
-        REQUIRE(doc->hasValue(el::text::String{"main.sub_text.\"\"[1]"_el}) == true);
+        REQUIRE_EQUAL(doc->hasValue(namePath), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list[2]"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_matrix[2][2]"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"second\""_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"\"[1]"_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.sub_text.\"second\""_el}), true);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.sub_text.\"\"[1]"_el}), true);
 
         // not found
-        REQUIRE(doc->hasValue(el::text::String{""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list.unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list.\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list.\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list[1].unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list[1].\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_list[1].\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_matrix[1][2].unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_matrix[1][2].\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.value_matrix[1][2].\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"first\".unknown"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"first\".\"unknown\""_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"first\".\"\"[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main.text.\"first\".[0]"_el}) == false);
-        REQUIRE(doc->hasValue(el::text::String{"main..value1"_el}) == false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list.unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list.\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list.\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list[1].unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list[1].\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_list[1].\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_matrix[1][2].unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_matrix[1][2].\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.value_matrix[1][2].\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"first\".unknown"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"first\".\"unknown\""_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"first\".\"\"[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main.text.\"first\".[0]"_el}), false);
+        REQUIRE_EQUAL(doc->hasValue(el::text::String{"main..value1"_el}), false);
     }
 
     TESTED_TARGETS(size)
@@ -240,18 +240,18 @@ public:
     void testBeginAndEnd() {
         setupTemplate1("1");
         auto it = doc->begin();
-        REQUIRE(it != doc->end());
+        REQUIRE_NOT_EQUAL(it, doc->end());
         REQUIRE_EQUAL(it->name(), Name::createRegular("main"_el));
         REQUIRE_EQUAL(it->size(), 11);
         ++it;
-        REQUIRE(it != doc->end());
+        REQUIRE_NOT_EQUAL(it, doc->end());
         REQUIRE_EQUAL(it->name(), Name::createRegular("list"_el));
         ++it;
-        REQUIRE(it == doc->end());
+        REQUIRE_EQUAL(it, doc->end());
 
         value = doc->valueOrThrow(el::text::String{"main.value1"});
         it = value->begin();
-        REQUIRE(it == value->end());
+        REQUIRE_EQUAL(it, value->end());
     }
 
     void testEmpty() {
@@ -286,25 +286,25 @@ public:
     void testFirstAndLastValue() {
         setupTemplate1("1", "2", "3");
         value = doc->valueOrThrow(el::text::String{"main"});
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         value = value->firstValue();
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         REQUIRE_EQUAL(value->toTestText(), el::text::String{"Integer(1)"_el});
 
         value = doc->valueOrThrow(el::text::String{"main.value_list"});
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         value = value->lastValue();
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         REQUIRE_EQUAL(value->toTestText(), el::text::String{"Integer(3)"_el});
 
         value = doc->valueOrThrow(el::text::String{"main.value1"});
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         value = value->firstValue();
-        REQUIRE(value == nullptr);
+        REQUIRE_FALSE(value);
 
         value = doc->valueOrThrow(el::text::String{"main.value1"});
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         value = value->lastValue();
-        REQUIRE(value == nullptr);
+        REQUIRE_FALSE(value);
     }
 };

@@ -6,7 +6,7 @@
 #include "U8StringSharedStorage.hpp"
 
 #include "../../../unit/CpLength.hpp"
-#include "../../../unit/ElementCount.hpp"
+#include "../../../unit/ItemCount.hpp"
 #include "../../Char.hpp"
 #include "../../impl/StringAppendTools.hpp"
 #include "../../u16/impl/U16StringDataView_fwd.hpp"
@@ -21,6 +21,7 @@ namespace erbsland::text::impl {
 /// @tested{U8StringModifierTest}
 class U8StringAppendTools final : public StringAppendTools {
 public:
+    /// Create append tools for `storage`.
     explicit U8StringAppendTools(U8StringSharedStorage &storage) noexcept : _storage{storage} {}
 
     // defaults
@@ -31,15 +32,15 @@ public:
     /// Append UTF-8 bytes from a data view.
     auto append(const U8StringDataView &text) -> unit::CpLength;
     /// Append UTF-8 bytes from a data view multiple times.
-    auto append(const U8StringDataView &text, unit::ElementCount count) -> unit::CpLength;
+    auto append(const U8StringDataView &text, unit::ItemCount count) -> unit::CpLength;
     /// Append UTF-16 text decoded with replacement.
     auto append(const U16StringDataView &text) -> unit::CpLength;
     /// Append UTF-16 text decoded with replacement multiple times.
-    auto append(const U16StringDataView &text, unit::ElementCount count) -> unit::CpLength;
+    auto append(const U16StringDataView &text, unit::ItemCount count) -> unit::CpLength;
     /// Append UTF-32 text decoded with replacement.
     auto append(const U32StringDataView &text) -> unit::CpLength;
     /// Append UTF-32 text decoded with replacement multiple times.
-    auto append(const U32StringDataView &text, unit::ElementCount count) -> unit::CpLength;
+    auto append(const U32StringDataView &text, unit::ItemCount count) -> unit::CpLength;
     /// Append one Unicode code point.
     auto append(Char character) -> unit::CpLength override;
     /// Append one Unicode code point multiple times.
@@ -51,12 +52,15 @@ public: // implement StringAppendTools
     auto append(const U32String &text) -> unit::CpLength override;
 
 private:
+    /// Encoded and character lengths resulting from one append operation.
     struct AppendSummary {
         std::size_t encodedLength{};
         unit::CpLength characterCount{};
     };
 
+    /// Summarize UTF-16 source converted to UTF-8.
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char16_t> source) -> AppendSummary;
+    /// Summarize UTF-32 source converted to UTF-8.
     [[nodiscard]] static auto summarizeForUtf8(std::span<const char32_t> source) -> AppendSummary;
 
 private:

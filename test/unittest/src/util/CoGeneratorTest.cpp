@@ -83,12 +83,12 @@ public:
 
         auto first = generator.next();
         REQUIRE(first.has_value());
-        REQUIRE(*first != nullptr);
+        REQUIRE(*first);
         REQUIRE_EQUAL(**first, 4);
 
         auto second = generator.next();
         REQUIRE(second.has_value());
-        REQUIRE(*second != nullptr);
+        REQUIRE(*second);
         REQUIRE_EQUAL(**second, 5);
 
         REQUIRE_FALSE(generator.next().has_value());
@@ -153,10 +153,11 @@ public:
         auto copy = iterator;
 
         ++iterator;
-        REQUIRE(iterator == generator.end());
+        const auto end = generator.end();
+        REQUIRE_EQUAL(iterator, end);
 
         ++copy;
-        REQUIRE(copy == generator.end());
+        REQUIRE_EQUAL(copy, end);
     }
 
     void testInvalidIteratorAccessThrows() {

@@ -10,6 +10,7 @@
 
 #include "../err/LogicError.hpp"
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -17,6 +18,8 @@
 #include <utility>
 
 namespace erbsland::mem {
+
+using namespace text::literals;
 
 using unit::ByteLength;
 
@@ -28,11 +31,11 @@ RingBuffer::RingBuffer(const ByteLength initialCapacity, const ByteLength maximu
     _initialCapacity{initialCapacity.toSizeTOrThrow()},
     _maximumCapacity{maximumCapacity.toSizeTOrThrow()} {
     if (_initialCapacity == 0U) {
-        throw err::ParameterError{"Ring buffer capacity must not be zero.", "initialCapacity"};
+        throw err::ParameterError{"Ring buffer capacity must not be zero."_el, "initialCapacity"_el};
     }
     if (_maximumCapacity < _initialCapacity) {
         throw err::ParameterError{
-            "Ring buffer maximum capacity is smaller than its initial capacity.", "maximumCapacity"};
+            "Ring buffer maximum capacity is smaller than its initial capacity."_el, "maximumCapacity"_el};
     }
 }
 
@@ -82,8 +85,8 @@ auto RingBuffer::reserveAdditional(const ByteLength length) -> util::Result {
         return util::Result::Success;
     }
 
-    const auto bestCapacity = impl::bestGrowthCapacity<impl::RingBufferStorageTraits>(
-        _storage.size(), required, impl::BestGrowthStrategy::Geometric);
+    const auto bestCapacity = impl::BestGrowth{_storage.size(), required}.bestGrowth<impl::RingBufferStorageTraits>(
+        impl::BestGrowthStrategy::Geometric);
     const auto newCapacity = std::min(bestCapacity, _maximumCapacity);
     auto newStorage = std::vector<Byte>(newCapacity);
     const auto readable = readableSpans();
@@ -151,7 +154,9 @@ auto RingBuffer::read(const ByteLength maximum) -> ByteBlock {
     verifySafeAccess();
     const auto readLength = maximum.isInfinite() ? _length : std::min(maximum.toSizeT(), _length);
     auto buffer = impl::UnsafeByteBlockBuffer{ByteLength::fromSizeT(readLength), _sensitive};
-    static_cast<void>(read(buffer.data()));
+    if (read(buffer.data()) != ByteLength::fromSizeT(readLength)) {
+        std::terminate();
+    }
     return buffer.take(ByteLength::fromSizeT(readLength));
 }
 
@@ -224,14 +229,14 @@ auto RingBuffer::writableSpans() noexcept -> std::array<ByteSpan, 2> {
 
 void RingBuffer::commitWritten(const std::size_t length) {
     if (length > _storage.size() - _length) {
-        throw err::ParameterError{"Committed byte count exceeds ring buffer space.", "length"};
+        throw err::ParameterError{"Committed byte count exceeds ring buffer space."_el, "length"_el};
     }
     _length += length;
 }
 
 void RingBuffer::consumeRead(const std::size_t length) {
     if (length > _length) {
-        throw err::ParameterError{"Consumed byte count exceeds readable ring buffer data.", "length"};
+        throw err::ParameterError{"Consumed byte count exceeds readable ring buffer data."_el, "length"_el};
     }
     if (_sensitive) {
         eraseReadablePrefix(length);
@@ -258,7 +263,7 @@ void RingBuffer::eraseReadablePrefix(const std::size_t length) noexcept {
 
 void RingBuffer::beginUnsafeAccess() {
     if (_unsafeAccessActive) {
-        throw err::LogicError{"Ring buffer already has an active unsafe access lease."};
+        throw err::LogicError{"Ring buffer already has an active unsafe access lease."_el};
     }
     _unsafeAccessActive = true;
 }
@@ -269,7 +274,7 @@ void RingBuffer::endUnsafeAccess() noexcept {
 
 void RingBuffer::verifySafeAccess() const {
     if (_unsafeAccessActive) {
-        throw err::LogicError{"Safe ring buffer access is not allowed while an unsafe access lease is active."};
+        throw err::LogicError{"Safe ring buffer access is not allowed while an unsafe access lease is active."_el};
     }
 }
 

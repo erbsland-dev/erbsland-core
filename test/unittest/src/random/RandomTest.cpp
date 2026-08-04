@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/err/OutOfRangeError.hpp>
 #include <erbsland/math/IntegerRange.hpp>
 #include <erbsland/mem/impl/ByteBlockData.hpp>
 #include <erbsland/mem/impl/SecureErase.hpp>
@@ -12,7 +13,7 @@
 #include <erbsland/text/u8/impl/U8StringData.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/HashSet.hpp>
 #include <erbsland/util/List.hpp>
@@ -34,7 +35,7 @@ using el::text::String;
 using el::text::StringList;
 using el::unit::ByteLength;
 using el::unit::CpLength;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::util::HashSet;
 using el::util::List;
 using el::util::Set;
@@ -155,17 +156,17 @@ public:
         REQUIRE_EQUAL(random.selectInteger<int>(12, 10), 11);
         REQUIRE_EQUAL(random.selectInteger(IntegerRange<int>{20, 22}), 22);
 
-        const auto list = random.buildIntegerList(ElementCount{4}, 3, 5);
+        const auto list = random.buildIntegerList(ItemCount{4}, 3, 5);
         REQUIRE_EQUAL(list.toStdVector(), (std::vector<int>{3, 4, 5, 3}));
     }
 
     void testEmptyInputs() {
         auto random = CountingRandom{};
 
-        REQUIRE(random.selectIndex(ElementCount::zero()).isNoIndex());
-        REQUIRE(random.selectIndex(ElementCount::infinite()).isNoIndex());
+        REQUIRE(random.selectIndex(ItemCount::zero()).isNoIndex());
+        REQUIRE(random.selectIndex(ItemCount::infinite()).isNoIndex());
         REQUIRE_EQUAL(random.selectElement(std::vector<int>{}, 99), 99);
-        REQUIRE(random.buildIntegerList(ElementCount::zero(), 1, 3).count().isZero());
+        REQUIRE(random.buildIntegerList(ItemCount::zero(), 1, 3).count().isZero());
         REQUIRE(random.buildString(CpLength{4}, CharSet{}).isEmpty());
         REQUIRE(random.buildString(CpLength::zero(), CharSet::fromPattern("A-Z"_el)).isEmpty());
         REQUIRE(random.buildByteBlock(ByteLength::zero()).isEmpty());
@@ -181,7 +182,7 @@ public:
         auto random = CountingRandom{};
 
         const auto text = random.buildString(CpLength{3}, CharSet::fromPattern("A-C"_el));
-        REQUIRE(text == "ABC"_el);
+        REQUIRE_EQUAL(text, "ABC"_el);
 
         const auto block = random.buildByteBlock(ByteLength{4});
         REQUIRE_EQUAL(block.length(), ByteLength{4});
@@ -192,6 +193,12 @@ public:
         const auto buffer = random.buildByteBuffer(ByteLength{4});
         REQUIRE_EQUAL(buffer.length(), ByteLength{4});
         REQUIRE_EQUAL(buffer.toUInt8Vector(), (std::vector<uint8_t>{7U, 8U, 9U, 10U}));
+    }
+
+    void testStringRejectsUnrepresentableCapacity() {
+        auto random = CountingRandom{};
+
+        REQUIRE_THROWS_AS(el::err::OutOfRangeError, random.buildString(CpLength::maximum(), CharSet{"🦊"_el}));
     }
 
     void testSecureStringAndBytesUseProtectedAllocations() {
@@ -270,32 +277,36 @@ public:
         REQUIRE(hashSetChoices.contains(random.selectElement(hashSetChoices)));
 
         auto listRandom = CountingRandom{};
-        REQUIRE_EQUAL(
-            listRandom.buildElementList(ElementCount{4}, choices).toStdVector(), (std::vector<int>{1, 2, 3, 1}));
-        REQUIRE_EQUAL(random.buildElementList(ElementCount{2}, hashSetChoices).count(), ElementCount{2});
+        REQUIRE_EQUAL(listRandom.buildElementList(ItemCount{4}, choices).toStdVector(), (std::vector<int>{1, 2, 3, 1}));
+        REQUIRE_EQUAL(random.buildElementList(ItemCount{2}, hashSetChoices).count(), ItemCount{2});
 
-        const auto unique = random.buildUniqueElementList(ElementCount{2}, choices);
-        REQUIRE_EQUAL(unique.count(), ElementCount{2});
-        REQUIRE(unique.toStdSet().size() == 2U);
-        REQUIRE_EQUAL(random.buildUniqueElementList(ElementCount{2}, hashSetChoices).count(), ElementCount{2});
+        const auto unique = random.buildUniqueElementList(ItemCount{2}, choices);
+        REQUIRE_EQUAL(unique.count(), ItemCount{2});
+        const auto uniqueSet = unique.toStdSet();
+        REQUIRE_EQUAL(uniqueSet.size(), 2U);
+        REQUIRE_EQUAL(random.buildUniqueElementList(ItemCount{2}, hashSetChoices).count(), ItemCount{2});
     }
 
     void testDerivedListElementSelection() {
         auto choices = StringList{"red"_el, "green"_el, "blue"_el};
 
         auto random = CountingRandom{};
-        REQUIRE(random.selectElement(choices) == "red"_el);
-        REQUIRE(random.selectElement(StringList{}, String{"white"_el}) == "white"_el);
+        const auto selected = random.selectElement(choices);
+        const auto defaultSelected = random.selectElement(StringList{}, String{"white"_el});
+        REQUIRE_EQUAL(selected, "red"_el);
+        REQUIRE_EQUAL(defaultSelected, "white"_el);
 
         auto listRandom = CountingRandom{};
-        auto sample = listRandom.buildElementList(ElementCount{4}, choices);
+        auto sample = listRandom.buildElementList(ItemCount{4}, choices);
         static_assert(std::is_same_v<decltype(sample), StringList>);
-        REQUIRE(sample.join("|"_el) == "red|green|blue|red"_el);
+        const auto sampleText = sample.join("|"_el);
+        REQUIRE_EQUAL(sampleText, "red|green|blue|red"_el);
 
         auto uniqueRandom = CountingRandom{};
-        auto unique = uniqueRandom.buildUniqueElementList(ElementCount{2}, choices);
+        auto unique = uniqueRandom.buildUniqueElementList(ItemCount{2}, choices);
         static_assert(std::is_same_v<decltype(unique), StringList>);
-        REQUIRE(unique.join("|"_el) == "blue|green"_el);
+        const auto uniqueText = unique.join("|"_el);
+        REQUIRE_EQUAL(uniqueText, "blue|green"_el);
     }
 
     void testShuffle() {
@@ -314,6 +325,7 @@ public:
         auto palette = StringList{"red"_el, "green"_el, "blue"_el};
         auto paletteRandom = CountingRandom{};
         paletteRandom.shuffle(palette);
-        REQUIRE(palette.join("|"_el) == "blue|green|red"_el);
+        const auto paletteText = palette.join("|"_el);
+        REQUIRE_EQUAL(paletteText, "blue|green|red"_el);
     }
 };

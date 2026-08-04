@@ -11,63 +11,179 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `Asia/Almaty` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Almaty() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Amman` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Amman() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Aqtau` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Aqtau() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Aqtobe` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Aqtobe() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Ashgabat` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Ashgabat() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Atyrau` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Atyrau() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Baghdad` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Baghdad() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Baku` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Baku() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Bangkok` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Bangkok() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Beirut` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Beirut() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Bishkek` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Bishkek() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Colombo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Colombo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Damascus` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Damascus() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Dhaka` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Dhaka() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Dili` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Dili() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Dubai` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Dubai() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Dushanbe` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Dushanbe() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Famagusta` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Famagusta() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Gaza` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Gaza() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Hebron` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Hebron() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Ho_Chi_Minh` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_HoChiMinh() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Hong_Kong` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_HongKong() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Hovd` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Hovd() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Jakarta` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Jakarta() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Jayapura` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Jayapura() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Jerusalem` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Jerusalem() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Kabul` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Kabul() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Karachi` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Karachi() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Kathmandu` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Kathmandu() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Kolkata` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Kolkata() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Kuching` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Kuching() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Macau` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Macau() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Makassar` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Makassar() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Manila` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Manila() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Nicosia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Nicosia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Oral` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Oral() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Pontianak` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Pontianak() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Pyongyang` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Pyongyang() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Qatar` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Qatar() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Qostanay` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Qostanay() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Qyzylorda` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Qyzylorda() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Riyadh` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Riyadh() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Samarkand` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Samarkand() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Seoul` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Seoul() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Shanghai` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Shanghai() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Singapore` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Singapore() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Taipei` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Taipei() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Tashkent` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Tashkent() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Tbilisi` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Tbilisi() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Tehran` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Tehran() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Thimphu` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Thimphu() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Tokyo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Tokyo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Ulaanbaatar` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Ulaanbaatar() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Urumqi` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Urumqi() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Yangon` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Yangon() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Asia/Yerevan` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAsia_Yerevan() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Indian/Chagos` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoIndian_Chagos() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Indian/Maldives` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoIndian_Maldives() noexcept -> std::unique_ptr<Info>;
 
 }

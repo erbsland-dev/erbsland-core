@@ -28,11 +28,13 @@ public:
     using Part = std::variant<StaticText, CaptureGroup>;
 
 public:
+    // defaults
     Replacement() = default;
     Replacement(const Replacement &) = default;
     Replacement(Replacement &&) = default;
     Replacement &operator=(const Replacement &) = default;
     Replacement &operator=(Replacement &&) = default;
+    // defaults
     ~Replacement() = default;
 
 public: // setup

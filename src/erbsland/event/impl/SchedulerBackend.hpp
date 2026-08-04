@@ -18,11 +18,13 @@ namespace erbsland::event::impl {
 /// Backend for scheduled timer callbacks.
 /// @tested{EventTimerTest EventBackendTest}
 class SchedulerBackend final : public EventBackend, public EventScheduler {
+    /// Stores a callback scheduled for a future time.
     struct DelayedInvocation {
         time::TimePoint dueTime; ///< Time when this callback shall be queued.
         EventCallback callback;  ///< Callback to execute on the target event loop.
     };
 
+    /// Stores scheduler state shared with timer objects.
     struct State {
         mutable std::mutex mutex;                          ///< Protects backend state.
         EventBackendTargetWeakPtr target;                  ///< Target for scheduler events.
@@ -31,7 +33,10 @@ class SchedulerBackend final : public EventBackend, public EventScheduler {
     };
 
 public:
+    /// Create a scheduler backend with empty shared state.
     SchedulerBackend();
+
+    // defaults
     ~SchedulerBackend() override = default;
 
 public: // implement EventBackend
@@ -53,7 +58,9 @@ public:
     [[nodiscard]] auto hasTarget() const noexcept -> bool;
 
 private:
+    /// Schedule a timer against shared backend state.
     static void schedule(const std::shared_ptr<State> &state, const impl::EventTimerPtr &timer);
+    /// Wake the attached target after scheduler state changes.
     static void wakeAttachedTarget(const std::shared_ptr<State> &state) noexcept;
 
 private:

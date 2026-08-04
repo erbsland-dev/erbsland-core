@@ -9,6 +9,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/Literals.hpp"
+
 #include <utility>
 
 namespace erbsland::conf::impl::lexer {
@@ -70,7 +72,7 @@ auto expectMultiLineText(TokenDecoder &decoder, const TokenType openTokenType) -
                 decoder, nc::backslash, parseRegularExpressionEscapeSequence, TokenType::MultiLineRegex));
             break;
         default:
-            throw err::LogicError("Unexpected open token type.");
+            throw err::LogicError("Unexpected open token type."_el);
         }
         // if the following line starts with spacing, expect the correct indentation pattern.
         if (decoder.character() == CharClass::Spacing) {

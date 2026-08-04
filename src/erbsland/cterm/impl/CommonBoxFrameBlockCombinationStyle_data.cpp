@@ -11,7 +11,7 @@
 
 #include <array>
 
-namespace erbsland::cterm {
+namespace erbsland::cterm::impl {
 
 auto CommonBoxFrameBlockCombinationStyle::boxOffsetToCharacterIndex() noexcept -> std::span<const uint8_t> {
     static constexpr std::array<uint8_t, 128U> data{{

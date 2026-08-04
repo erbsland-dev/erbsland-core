@@ -8,5 +8,6 @@ target_sources(erbsland-core PRIVATE
         Parser.hpp
         ParserContext.cpp
         ParserContext.hpp
+        ParserContext_fwd.hpp
         ParserSettings.hpp
 )

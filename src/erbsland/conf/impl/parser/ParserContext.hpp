@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ParserContext_fwd.hpp"
+
 #include "../assignment/AssignmentStream.hpp"
 #include "../decoder/TokenDecoder.hpp"
 #include "../lexer/Lexer.hpp"
-#include "../utilities/PrivateTag.hpp"
 
 #include "../../Source.hpp"
 
@@ -13,24 +14,22 @@
 
 namespace erbsland::conf::impl {
 
-class ParserContext;
-using ParserContextPtr = std::shared_ptr<ParserContext>;
-using ParserContextStack = std::vector<ParserContextPtr>;
-
 /// Parsing context for a single document source.
 /// @needtest{Covered indirectly by parser integration tests.}
 class ParserContext final {
+    class PrivateTag {};
+
 public:
     /// Construct a new parsing context.
     /// @param includeLevel The include level for this source.
     /// @param source Source from which tokens are read.
-    explicit ParserContext(const std::size_t includeLevel, SourcePtr source, PrivateTag /*pt*/) noexcept;
+    explicit ParserContext(std::size_t includeLevel, SourcePtr source, PrivateTag /*pt*/) noexcept;
 
     /// Create a new context instance.
     /// @param includeLevel The include level for this source.
     /// @param source Source from which tokens are read.
     /// @return Shared-pointer to the new context.
-    [[nodiscard]] static auto create(const std::size_t includeLevel, SourcePtr source) -> ParserContextPtr;
+    [[nodiscard]] static auto create(std::size_t includeLevel, SourcePtr source) -> ParserContextPtr;
 
     // defaults
     ~ParserContext() = default;

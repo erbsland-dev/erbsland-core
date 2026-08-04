@@ -4,6 +4,7 @@
 
 #include "impl/CharSetFromPattern.hpp"
 #include "impl/CharSetRangeBuilder.hpp"
+#include "impl/CharSetRangeCounter.hpp"
 #include "impl/ThrowHelper.hpp"
 #include "u16/U16String.hpp"
 #include "u16/U16StringEditor.hpp"

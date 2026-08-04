@@ -16,6 +16,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionHelp {
 public:
+    /// Create empty option help metadata.
     OptionHelp() = default;
     /// Create help text from a description.
     /// @param description User-facing description text for generated help output.

@@ -10,7 +10,6 @@ Operation Model
 
 .. code-block:: text
 
-    interface families = input or output crossed with byte or text data
     bounded operation = completes within the configured timeout
     blocking operation = repeated bounded work until a terminal result
     readiness = observation without waiting or native input/output
@@ -37,9 +36,7 @@ Text and Sensitivity
 
     tolerant decoding = replace malformed input
     strict decoding = report an encoding error
-    text output = tolerant encoding from every supported string width
     sensitive input = protected runtime buffers and marked generic owning results
-    native standard input = stable proxy whose implementation can enter protected mode
     redirected input = independent target unaffected by native protected-input scopes
 
 Primary Types

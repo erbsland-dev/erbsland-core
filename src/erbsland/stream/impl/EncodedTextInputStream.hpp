@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EncodedTextInputStream_fwd.hpp"
+#include "RetainedTextBuffer_fwd.hpp"
+
 #include "../ByteInputStream.hpp"
 #include "../TextInputStream.hpp"
 
@@ -14,8 +17,6 @@
 #include <optional>
 
 namespace erbsland::stream::impl {
-
-class RetainedTextBuffer;
 
 /// Text input stream that selects the decoding storage mode from its byte stream settings.
 /// @tested{EncodedTextStreamTest}
@@ -36,7 +37,10 @@ public:
         text::StringBomMode bomMode = text::StringBomMode::Automatic,
         text::EncodingMode mode = text::EncodingMode::Tolerant);
 
+    /// dtor, calling abort on the stream.
     ~EncodedTextInputStream() override;
+
+    // defaults/deletions
     EncodedTextInputStream(const EncodedTextInputStream &) = delete;
     EncodedTextInputStream(EncodedTextInputStream &&) = delete;
     auto operator=(const EncodedTextInputStream &) -> EncodedTextInputStream & = delete;
@@ -76,19 +80,33 @@ public:
     void setSensitive(bool sensitive) noexcept;
 
 private:
+    /// Get the read deadline derived from the stream settings.
     [[nodiscard]] auto deadlineFromNow() const -> ReadDeadline;
+    /// Prepare decoded input up to a maximum character count.
     [[nodiscard]] auto prepareChunk(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    /// Prepare decoded input through one line ending.
     [[nodiscard]] auto prepareLine(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    /// Prepare all remaining decoded input.
     [[nodiscard]] auto prepareAll(unit::CpLength maximum, ReadDeadline deadline) -> StreamReadStatus;
+    /// Decode and append one source chunk.
     [[nodiscard]] auto appendDecoded(unit::CpLength maximum, bool stopAtLineEnd) -> bool;
+    /// Fill the decoder from the byte stream before a deadline.
     [[nodiscard]] auto fillDecodeBuffer(ReadDeadline deadline) -> StreamReadStatus;
+    /// Test whether the decoder contains no input.
     [[nodiscard]] auto decoderIsEmpty() const noexcept -> bool;
+    /// Test whether the decoder has a complete character.
     [[nodiscard]] auto decoderHasCharacter() const noexcept -> bool;
+    /// Finish the decoder after end of byte input.
     void finishDecoder();
+    /// Reset the decoder for an optional continuation encoding.
     void resetDecoder(std::optional<text::StringEncoding> continuationEncoding = std::nullopt);
+    /// Get the current byte position while holding the stream lock.
     [[nodiscard]] auto positionLocked() const -> unit::ByteIndex;
+    /// Test whether decoding can continue from a nonzero byte position.
     [[nodiscard]] auto canContinueAtNonzeroPosition() const noexcept -> bool;
+    /// Reset decoding state after setting a byte position.
     void resetAfterPositioning(unit::ByteIndex position, text::StringEncoding effectiveEncoding);
+    /// Return a read result from retained decoded text.
     [[nodiscard]] auto takeResult(StreamReadStatus status, unit::CpLength maximum, bool line)
         -> StreamReadResult<text::String>;
 

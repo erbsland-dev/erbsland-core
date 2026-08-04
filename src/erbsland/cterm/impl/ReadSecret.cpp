@@ -7,6 +7,7 @@
 #include "../../err/ParameterError.hpp"
 #include "../../mem/impl/SecureErase.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
+#include "../../text/Literals.hpp"
 #include "../../text/u8/impl/U8Encoding.hpp"
 #include "../../text/u8/impl/U8Writer.hpp"
 
@@ -16,6 +17,7 @@
 
 namespace erbsland::cterm::impl {
 
+using namespace text::literals;
 using unit::CpIndex;
 using unit::CpLength;
 
@@ -35,10 +37,10 @@ ReadSecret::~ReadSecret() {
 
 auto ReadSecret::prepareOptions(ReadLineOptions options) -> PreparedOptions {
     if (!options.history().isEmpty()) {
-        throw err::ParameterError{"Secret input does not support history.", "history"};
+        throw err::ParameterError{"Secret input does not support history."_el, "history"_el};
     }
     if (!options.currentText().isEmpty()) {
-        throw err::ParameterError{"Secret input does not support initial text.", "currentText"};
+        throw err::ParameterError{"Secret input does not support initial text."_el, "currentText"_el};
     }
     const auto maximumLength = std::min(options.maximumLength(), cterm::ReadSecret::cMaximumLength);
     options.setMaximumLength(maximumLength);

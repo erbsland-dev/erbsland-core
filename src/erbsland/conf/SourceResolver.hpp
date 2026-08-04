@@ -3,20 +3,16 @@
 #pragma once
 
 #include "Source.hpp"
+#include "SourceResolver_fwd.hpp"
 #include "SourceResolverContext.hpp"
 
-#include <memory>
-
 namespace erbsland::conf {
-
-class SourceResolver;
-using SourceResolverPtr = std::shared_ptr<SourceResolver>;
 
 /// The interface for any source resolver implementation.
 /// @tested{ParserIncludeTest FileSourceResolverTest}
 class SourceResolver {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~SourceResolver() = default;
 
 public:

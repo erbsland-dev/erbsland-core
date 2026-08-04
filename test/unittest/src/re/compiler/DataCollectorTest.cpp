@@ -66,29 +66,29 @@ public:
         root->addChild(seq3);
 
         const auto engineData = std::make_shared<EngineData>();
-        impl::DataCollector collector{root, engineData};
+        el::re::impl::DataCollector collector{root, engineData};
         collector.collect();
 
         // Validate collected data buffer
         const auto &data = engineData->sequenceData;
         // expected order: "abcd" + "xyz12" + "wxyz" (duplicate "abcd" is folded, "hi" ignored)
         REQUIRE_EQUAL(data.size(), std::size_t{4 + 5 + 4});
-        REQUIRE(data[0] == Char{U'a'});
-        REQUIRE(data[1] == Char{U'b'});
-        REQUIRE(data[2] == Char{U'c'});
-        REQUIRE(data[3] == Char{U'd'});
-        REQUIRE(data[4] == Char{U'x'});
-        REQUIRE(data[5] == Char{U'y'});
-        REQUIRE(data[6] == Char{U'z'});
-        REQUIRE(data[7] == Char{U'1'});
-        REQUIRE(data[8] == Char{U'2'});
-        REQUIRE(data[9] == Char{U'w'});
-        REQUIRE(data[10] == Char{U'x'});
-        REQUIRE(data[11] == Char{U'y'});
-        REQUIRE(data[12] == Char{U'z'});
+        REQUIRE_EQUAL(data[0], Char{U'a'});
+        REQUIRE_EQUAL(data[1], Char{U'b'});
+        REQUIRE_EQUAL(data[2], Char{U'c'});
+        REQUIRE_EQUAL(data[3], Char{U'd'});
+        REQUIRE_EQUAL(data[4], Char{U'x'});
+        REQUIRE_EQUAL(data[5], Char{U'y'});
+        REQUIRE_EQUAL(data[6], Char{U'z'});
+        REQUIRE_EQUAL(data[7], Char{U'1'});
+        REQUIRE_EQUAL(data[8], Char{U'2'});
+        REQUIRE_EQUAL(data[9], Char{U'w'});
+        REQUIRE_EQUAL(data[10], Char{U'x'});
+        REQUIRE_EQUAL(data[11], Char{U'y'});
+        REQUIRE_EQUAL(data[12], Char{U'z'});
 
         // Validate indices on nodes
-        const auto maxShort = impl::limits::minimumCharacterSequenceLength; // 3
+        const auto maxShort = el::re::impl::limits::minimumCharacterSequenceLength; // 3
         REQUIRE_EQUAL(maxShort, std::size_t{3});
 
         // "abcd" first occurrence starts at index 0
@@ -135,14 +135,14 @@ public:
         root->addChild(seq3);
 
         const auto engineData = std::make_shared<EngineData>();
-        impl::DataCollector collector{root, engineData};
+        el::re::impl::DataCollector collector{root, engineData};
         collector.collect();
 
         const auto &rangesData = engineData->charClassData;
         REQUIRE_EQUAL(rangesData.size(), std::size_t{3});
-        REQUIRE(rangesData[0] == r1);
-        REQUIRE(rangesData[1] == r2);
-        REQUIRE(rangesData[2] == r4);
+        REQUIRE_EQUAL(rangesData[0], r1);
+        REQUIRE_EQUAL(rangesData[1], r2);
+        REQUIRE_EQUAL(rangesData[2], r4);
 
         // Validate indices on nodes
         REQUIRE_EQUAL(std::get<CharacterClass>(n_r1->data()).dataIndex, 0);
@@ -150,5 +150,21 @@ public:
         REQUIRE_EQUAL(std::get<CharacterClass>(n_r1_dup_neg->data()).dataIndex, 0);
         REQUIRE_EQUAL(std::get<CharacterClass>(n_r4->data()).dataIndex, 2);
         REQUIRE_EQUAL(std::get<CharacterClass>(n_r2_dup->data()).dataIndex, 1);
+    }
+
+    void testCounterCountCollection() {
+        auto content = makeCharSeqNode(U"a");
+        auto quantifier =
+            std::make_shared<PatternNode>(nextTestNodeId(), Quantifier{content, 3U, 1U, 5U, Quantifier::Mode::Greedy});
+        content->setParent(quantifier);
+        auto root = std::make_shared<PatternNode>(nextTestNodeId(), Group{});
+        root->addChild(quantifier);
+
+        const auto engineData = std::make_shared<EngineData>();
+        engineData->counterCount = 0U;
+        el::re::impl::DataCollector collector{root, engineData};
+        collector.collect();
+
+        REQUIRE_EQUAL(engineData->counterCount, std::size_t{4U});
     }
 };

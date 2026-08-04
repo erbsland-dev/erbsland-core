@@ -222,6 +222,67 @@ class DemoDocTest(unittest.TestCase):
         self.assertIn(".. code-block:: cpp\n", updated_text)
         self.assertNotIn("intentionally stale body", updated_text)
 
+    def test_function_blocks_select_and_dedent_named_functions(self) -> None:
+        function_source_path = self.demo_source_dir / "Functions.cpp"
+        function_source_path.write_text(
+            "namespace demo {\n"
+            "\n"
+            "    void first() {\n"
+            "        runFirst();\n"
+            "    }\n"
+            "\n"
+            "    auto second() -> void {\n"
+            "        if (isEnabled()) {\n"
+            "            runSecond();\n"
+            "        }\n"
+            "    }\n"
+            "\n"
+            "}\n",
+            encoding="utf-8",
+        )
+        text = (
+            ".. erbsland-demo::\n"
+            "    :source: text/Functions.cpp\n"
+            "    :function-blocks: second first\n"
+            "\n"
+            ".. erbsland-demo-end::\n"
+        )
+
+        updated_text, issues = self.synchronizer().process_text(self.project_dir / "doc.rst", text)
+
+        self.assertEqual((), issues)
+        self.assertIn("    :function-blocks: second first\n", updated_text)
+        self.assertIn("    :function-blocks-sha256: ", updated_text)
+        self.assertIn("    auto second() -> void {\n", updated_text)
+        self.assertIn("        runSecond();\n", updated_text)
+        self.assertIn("    void first() {\n", updated_text)
+        self.assertNotIn("        auto second", updated_text)
+        self.assertLess(updated_text.index("auto second"), updated_text.index("void first"))
+
+        changed_text = updated_text.replace(":function-blocks: second first", ":function-blocks: first")
+        regenerated_text, regenerated_issues = self.synchronizer().process_text(
+            self.project_dir / "doc.rst", changed_text
+        )
+
+        self.assertEqual((), regenerated_issues)
+        self.assertIn("    :function-blocks: first\n", regenerated_text)
+        self.assertNotIn("auto second", regenerated_text)
+
+    def test_unknown_function_block_reports_issue(self) -> None:
+        text = (
+            ".. erbsland-demo::\n"
+            "    :source: text/Sample.cpp\n"
+            "    :function-blocks: missing\n"
+            "\n"
+            ".. erbsland-demo-end::\n"
+        )
+
+        updated_text, issues = self.synchronizer().process_text(self.project_dir / "doc.rst", text)
+
+        self.assertEqual(1, len(issues))
+        self.assertIn("Function block not found: missing.", issues[0])
+        self.assertIn(".. note::\n", updated_text)
+
     def test_multiple_blocks_are_processed(self) -> None:
         text = (
             ".. erbsland-demo::\n"

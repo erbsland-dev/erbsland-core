@@ -15,6 +15,7 @@
 #include "../../../mem/ByteIntegerAccess.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
+#include "../../../text/Literals.hpp"
 #include "../../../unit/ByteLength.hpp"
 
 #include <algorithm>
@@ -27,6 +28,7 @@
 namespace erbsland::cryptology::impl {
 
 // algorithms are never included in the public API, therefore using these namespaces never leaks.
+using namespace text::literals;
 using namespace erbsland::unit;
 using namespace erbsland::mem;
 
@@ -96,7 +98,7 @@ private:
     [[nodiscard]] static auto variableHash(const ConstByteSpan input, const std::size_t outputLength)
         -> ByteBlockEditor {
         if (outputLength == 0U || outputLength > std::numeric_limits<uint32_t>::max()) {
-            throw err::ParameterError{"Invalid Argon2 output length", "outputLength"};
+            throw err::ParameterError{"Invalid Argon2 output length"_el, "outputLength"_el};
         }
         // RFC 9106 section 3.3 prefixes every H' input with LE32(T).
         auto prefixed = ByteBlockEditor{};
@@ -215,7 +217,7 @@ private:
             if (withXor) {
                 value ^= output.getInteger<uint64_t>(offset);
             }
-            static_cast<void>(output.setInteger(offset, value));
+            output.setIntegerOrThrow(offset, value);
         }
         mem::impl::secureErase(std::as_writable_bytes(std::span{original}));
         mem::impl::secureErase(std::as_writable_bytes(std::span{words}));
@@ -282,7 +284,7 @@ private:
             _parameters.passes > 10U || _parameters.memoryKiB < 8U * _parameters.lanes ||
             _parameters.memoryKiB > 1024U * 1024U || _parameters.outputLength < 4U ||
             _parameters.outputLength > std::numeric_limits<uint32_t>::max()) {
-            throw err::ParameterError{"Invalid or unsafe Argon2id parameters", "parameters"};
+            throw err::ParameterError{"Invalid or unsafe Argon2id parameters"_el, "parameters"_el};
         }
     }
 
@@ -432,7 +434,7 @@ private:
         [[maybe_unused]] const auto finalBlockErase = SecureEraseGuard{finalBlock};
         for (auto lane = uint32_t{1U}; lane < _parameters.lanes; ++lane) {
             const auto offset = (static_cast<std::size_t>(lane) * _laneLength + _laneLength - 1U) * 1024U;
-            static_cast<void>(finalBlock.xorWith(memory.span(ByteIndex::fromSizeT(offset), ByteLength{1024U})));
+            finalBlock.xorWithOrThrow(memory.span(ByteIndex::fromSizeT(offset), ByteLength{1024U}));
         }
         // Step 8 applies H'^T(C) to produce the requested tag.
         return variableHash(finalBlock.span(), _parameters.outputLength);

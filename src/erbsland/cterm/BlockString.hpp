@@ -5,8 +5,11 @@
 #include "BlockCount.hpp"
 #include "BlockIndex.hpp"
 #include "BlockRange.hpp"
+#include "BlockString_fwd.hpp"
 #include "BlockStringEditor.hpp"
 #include "ParagraphSpacing.hpp"
+
+#include "impl/BlockStringData_fwd.hpp"
 
 #include "../text/Char.hpp"
 #include "../text/CharSet.hpp"
@@ -16,13 +19,8 @@
 
 namespace erbsland::cterm {
 
-class BlockString;
 /// A sequence of completed terminal text lines.
 using BlockStringLines = std::vector<BlockString>;
-
-namespace impl {
-class BlockStringData;
-}
 
 /// An owning read-only terminal string value backed by shared storage.
 class BlockString final {
@@ -57,7 +55,10 @@ public:
     ~BlockString() = default;
     BlockString(const BlockString &) = default;
     BlockString(BlockString &&other) noexcept;
+
+    // defaults
     auto operator=(const BlockString &) -> BlockString & = default;
+    /// Move another terminal string into this string.
     auto operator=(BlockString &&other) noexcept -> BlockString &;
 
 public: // operators
@@ -215,9 +216,14 @@ public: // conversion
 private:
     friend class BlockStringEditor;
 
+    /// Create a string view over shared storage and range.
+    /// @param data The shared string storage.
+    /// @param range The visible range.
     BlockString(impl::BlockStringDataPtr data, BlockRange range) noexcept;
 
+    /// Access a character relative to this string's visible range.
     [[nodiscard]] auto characterAt(BlockIndex localIndex) const noexcept -> const Block &;
+    /// Get the characters trimmed by the default trim operations.
     [[nodiscard]] static auto defaultTrimCharacters() -> const text::CharSet &;
 
 private:

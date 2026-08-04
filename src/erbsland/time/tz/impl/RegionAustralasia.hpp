@@ -11,44 +11,122 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `Antarctica/Macquarie` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Macquarie() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Adelaide` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Adelaide() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Brisbane` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Brisbane() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Broken_Hill` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_BrokenHill() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Darwin` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Darwin() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Eucla` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Eucla() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Hobart` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Hobart() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Lindeman` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Lindeman() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Lord_Howe` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_LordHowe() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Melbourne` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Melbourne() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Perth` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Perth() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Australia/Sydney` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAustralia_Sydney() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Apia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Apia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Auckland` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Auckland() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Bougainville` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Bougainville() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Chatham` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Chatham() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Efate` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Efate() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Fakaofo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Fakaofo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Fiji` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Fiji() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Gambier` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Gambier() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Guadalcanal` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Guadalcanal() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Guam` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Guam() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Kanton` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Kanton() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Kiritimati` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Kiritimati() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Kosrae` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Kosrae() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Kwajalein` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Kwajalein() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Marquesas` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Marquesas() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Nauru` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Nauru() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Niue` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Niue() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Norfolk` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Norfolk() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Noumea` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Noumea() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Pago_Pago` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_PagoPago() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Palau` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Palau() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Pitcairn` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Pitcairn() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Port_Moresby` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_PortMoresby() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Rarotonga` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Rarotonga() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Tahiti` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Tahiti() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Tarawa` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Tarawa() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Tongatapu` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Tongatapu() noexcept -> std::unique_ptr<Info>;
 
 }

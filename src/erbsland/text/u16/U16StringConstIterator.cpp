@@ -2,45 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "U16StringConstIterator.hpp"
 
-#include "U16String.hpp"
-
 namespace erbsland::text {
 
-struct U16StringConstIterator::Private {
-    U16String string;         ///< The string accessed by this iterator
-    unit::U16DataIndex index; ///< The current byte index within the storage
-};
+U16StringConstIterator::U16StringConstIterator() = default;
 
-U16StringConstIterator::U16StringConstIterator() : _p{nullptr} {
-}
-
-U16StringConstIterator::U16StringConstIterator(const U16String &string, unit::U16DataIndex index) :
-    _p{std::make_unique<Private>(string, index)} {
-}
-
-U16StringConstIterator::U16StringConstIterator(const U16StringConstIterator &other) :
-    _p{other._p == nullptr ? nullptr : std::make_unique<Private>(*other._p)} {
-}
-
-U16StringConstIterator::U16StringConstIterator(U16StringConstIterator &&other) noexcept : _p{std::move(other._p)} {
-}
-
-U16StringConstIterator::~U16StringConstIterator() = default;
-
-auto U16StringConstIterator::operator=(const U16StringConstIterator &other) -> U16StringConstIterator & {
-    if (this == &other) {
-        return *this;
-    }
-    _p = other._p == nullptr ? nullptr : std::make_unique<Private>(*other._p);
-    return *this;
-}
-
-auto U16StringConstIterator::operator=(U16StringConstIterator &&other) noexcept -> U16StringConstIterator & {
-    if (this == &other) {
-        return *this;
-    }
-    _p = std::move(other._p);
-    return *this;
+U16StringConstIterator::U16StringConstIterator(const U16String &string, const unit::U16DataIndex index) :
+    _string{string}, _index{index} {
 }
 
 auto U16StringConstIterator::operator==(const U16StringConstIterator &other) const noexcept -> bool {
@@ -50,10 +17,10 @@ auto U16StringConstIterator::operator==(const U16StringConstIterator &other) con
     if (!isValid() || !other.isValid()) {
         return false;
     }
-    if (_p->string.storageId() != other._p->string.storageId()) {
+    if (_string.storageId() != other._string.storageId()) {
         return false;
     }
-    return _p->index == other._p->index;
+    return _index == other._index;
 }
 
 auto U16StringConstIterator::operator!=(const U16StringConstIterator &other) const noexcept -> bool {
@@ -61,21 +28,21 @@ auto U16StringConstIterator::operator!=(const U16StringConstIterator &other) con
 }
 
 auto U16StringConstIterator::isValid() const noexcept -> bool {
-    return _p != nullptr && !_p->string.isEmpty() && !_p->index.isNoIndex();
+    return !_string.isEmpty() && !_index.isNoIndex();
 }
 
 auto U16StringConstIterator::operator*() const -> Char {
     if (!isValid()) {
         return Char::null();
     }
-    return _p->string.charAt(_p->index);
+    return _string.charAt(_index);
 }
 
 auto U16StringConstIterator::operator++() -> U16StringConstIterator & {
     if (!isValid()) {
         return *this;
     }
-    _p->string.advance(_p->index);
+    _string.advance(_index);
     return *this;
 }
 
@@ -84,7 +51,7 @@ auto U16StringConstIterator::operator++(int) -> U16StringConstIterator {
         return *this;
     }
     const auto result = *this;
-    _p->string.advance(_p->index);
+    _string.advance(_index);
     return result;
 }
 
@@ -92,7 +59,7 @@ auto U16StringConstIterator::operator->() const -> const Char * {
     if (!isValid()) {
         return nullptr;
     }
-    if (_p->index.isNoIndex()) {
+    if (_index.isNoIndex()) {
         return nullptr;
     }
     _currentChar = operator*();

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/OutOfRangeError.hpp>
+#include <erbsland/err/ParameterError.hpp>
 #include <erbsland/mem/ByteArray.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
@@ -54,21 +55,26 @@ private:
         requires(T &value) { requires std::same_as<decltype(value.span()), el::mem::ByteSpan>; };
 
     template <typename T>
-    inline static constexpr bool hasCommonByteRead =
-        requires(const T &value, const ByteIndex index, const ByteLength length, const ByteRange range) {
-            { value.isEmpty() } -> std::same_as<bool>;
-            { value.length() } -> std::same_as<ByteLength>;
-            { value.endIndex() } -> std::same_as<ByteIndex>;
-            { value.get(index) } -> std::same_as<Byte>;
-            { value.getOrThrow(index) } -> std::same_as<Byte>;
-            { value.template getInteger<uint32_t>(index) } -> std::same_as<uint32_t>;
-            { value.span() } -> std::convertible_to<ConstByteSpan>;
-            { value.span(range) } -> std::same_as<ConstByteSpan>;
-            { value.span(index, length) } -> std::same_as<ConstByteSpan>;
-            {
-                value.forEach([](const Byte, const ByteIndex) {})
-            } -> std::same_as<el::util::LoopResult>;
-        };
+    inline static constexpr bool hasCommonByteRead = requires(
+        const T &value,
+        const ByteIndex index,
+        const ByteLength length,
+        const ByteRange range,
+        const ConstByteSpan source) {
+        { value.isEmpty() } -> std::same_as<bool>;
+        { value.length() } -> std::same_as<ByteLength>;
+        { value.endIndex() } -> std::same_as<ByteIndex>;
+        { value.isEqualConstTime(source) } -> std::same_as<bool>;
+        { value.get(index) } -> std::same_as<Byte>;
+        { value.getOrThrow(index) } -> std::same_as<Byte>;
+        { value.template getInteger<uint32_t>(index) } -> std::same_as<uint32_t>;
+        { value.span() } -> std::convertible_to<ConstByteSpan>;
+        { value.span(range) } -> std::same_as<ConstByteSpan>;
+        { value.span(index, length) } -> std::same_as<ConstByteSpan>;
+        {
+            value.forEach([](const Byte, const ByteIndex) {})
+        } -> std::same_as<el::util::LoopResult>;
+    };
 
     template <typename T>
     inline static constexpr bool hasCommonByteWrite = requires(
@@ -167,11 +173,28 @@ public:
         REQUIRE_EQUAL(ByteBuffer{fixed.span()}.toUInt8Vector(), std::vector<uint8_t>({4U, 5U}));
     }
 
+    void testConstantTimeEquality() {
+        const auto bytes = ByteBuffer{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto same = ByteBuffer{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto differentFirst = ByteBuffer{Byte{9U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto differentMiddle = ByteBuffer{Byte{1U}, Byte{2U}, Byte{9U}, Byte{4U}};
+        const auto differentLast = ByteBuffer{Byte{1U}, Byte{2U}, Byte{3U}, Byte{9U}};
+
+        REQUIRE(bytes.isEqualConstTime(same));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentFirst));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentMiddle));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentLast));
+        REQUIRE(bytes.isEqualConstTime(same.span()));
+        REQUIRE_FALSE(bytes.isEqualConstTime(same.span().first(3U)));
+        REQUIRE(ByteBuffer{}.isEqualConstTime(ByteBuffer{}));
+        REQUIRE(ByteBuffer{}.isEqualConstTime(ConstByteSpan{}));
+    }
+
     void testStorageManagement() {
         auto bytes = ByteBuffer{ByteLength{3U}, Byte{7U}};
         bytes.reserve(ByteLength{32U});
         const auto capacity = bytes.capacity();
-        REQUIRE(capacity >= ByteLength{32U});
+        REQUIRE_GREATER_EQUAL(capacity, ByteLength{32U});
 
         bytes.resize(ByteLength{5U});
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({7U, 7U, 7U, 0U, 0U}));
@@ -222,7 +245,8 @@ public:
         REQUIRE_EQUAL(result, el::util::LoopResult::Stopped);
         REQUIRE_EQUAL(indexes, std::vector<std::size_t>({0U, 1U, 2U}));
 
-        REQUIRE_EQUAL(bytes.span(ByteIndex{10U}, ByteLength{9U}).size(), std::size_t{2U});
+        const auto shortenedSpanSize = bytes.span(ByteIndex{10U}, ByteLength{9U}).size();
+        REQUIRE_EQUAL(shortenedSpanSize, std::size_t{2U});
         REQUIRE(bytes.span(ByteRange::noRange()).empty());
     }
 
@@ -262,6 +286,13 @@ public:
         REQUIRE_EQUAL(xorOverlap.toUInt8Vector(), std::vector<uint8_t>({1U, 3U, 6U, 12U, 24U}));
         xorOverlap.xorWith(ByteRange{ByteIndex{0U}, ByteLength{4U}}, xorOverlap.span(ByteIndex{1U}, ByteLength{4U}));
         REQUIRE_EQUAL(xorOverlap.toUInt8Vector(), std::vector<uint8_t>({2U, 5U, 10U, 20U, 24U}));
+
+        auto strict = ByteBuffer{Byte{0xf0U}, Byte{0x0fU}};
+        strict.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
+        REQUIRE_EQUAL(strict.toUInt8Vector(), std::vector<uint8_t>({0x5aU, 0x5aU}));
+        const auto strictSnapshot = strict;
+        REQUIRE_THROWS_AS(el::err::ParameterError, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
+        REQUIRE_EQUAL(strict, strictSnapshot);
     }
 
     void testEditOperations() {
@@ -389,7 +420,8 @@ public:
         REQUIRE_EQUAL(bytes.capacity(), capacity);
         REQUIRE_EQUAL(bytes.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U}));
         REQUIRE_EQUAL(eraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(eraseEvents.front().size, capacity.toSizeT());
+        const auto erasedSize = eraseEvents.front().size;
+        REQUIRE_EQUAL(erasedSize, capacity.toSizeT());
         REQUIRE(eraseEvents.front().isZero);
     }
 };

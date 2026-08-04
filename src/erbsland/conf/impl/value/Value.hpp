@@ -3,30 +3,29 @@
 #pragma once
 
 #include "Container.hpp"
+#include "Value_fwd.hpp"
 
 #include "../lexer/Content.hpp"
+#include "../vr/Rule_fwd.hpp"
+
+#include "../../../text/Literals.hpp"
 
 #include <utility>
 #include <vector>
 
 namespace erbsland::conf::impl {
 
-class Value;
-using ValuePtr = std::shared_ptr<Value>;
-using ConstValuePtr = std::shared_ptr<const Value>;
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
-
 /// Internal implementation of the public `conf::Value` interface.
 /// The parser creates instances of this class and its derived types while building the value tree for a
 /// configuration document.
+/// @tested{ValueAsMethodsTest ValueGetMethodsTest}
 class Value : public conf::Value, public Container {
 public:
     // defaults
     Value() = default;
     ~Value() override = default;
 
-    // disable copy and assign.
+    // defaults/deletions
     Value(const Value &) = delete;
     auto operator=(const Value &) -> Value & = delete;
     Value(Value &&) = delete;
@@ -92,7 +91,10 @@ public: // modification
 
     /// Transform a value type into another.
     /// @param targetType The target type for the transformation.
-    virtual void transform([[maybe_unused]] ValueType targetType) { throw err::LogicError("Conversion not possible."); }
+    virtual void transform([[maybe_unused]] ValueType targetType) {
+        using namespace text::literals;
+        throw err::LogicError("Conversion not possible."_el);
+    }
 
     /// Create a deep copy of this value.
     /// This creates a deep copy of this value, without the original parent and without a name.
@@ -104,25 +106,60 @@ public: // modification
 
 public: // factory methods
     /// @{
-    /// Factory method to create a value.
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createInteger(Integer value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createBoolean(bool value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createFloat(Float value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createText(text::String value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createDate(const time::Date &value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createTime(const time::Time &value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createTimeWithZone(const time::TimeWithZone &value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createDateTime(const time::DateTime &value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createBytes(const mem::ByteBlock &value) noexcept -> ValuePtr;
-    [[nodiscard]] static auto createBytes(mem::ByteBlock &&value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
     [[nodiscard]] static auto createCalendarDelta(const time::CalendarDelta &value) noexcept -> ValuePtr;
-    [[nodiscard]] static auto createRegEx(const re::RegExPtr &value) noexcept -> ValuePtr;
-    [[nodiscard]] static auto createRegEx(re::RegExPtr &&value) noexcept -> ValuePtr;
+    /// Create a value of the matching type.
+    [[nodiscard]] static auto createRegEx(const re::RegExPtr &value) -> ValuePtr;
+    /// Create a list value from the supplied values.
     [[nodiscard]] static auto createValueList(std::vector<ValuePtr> &&valueList) noexcept -> ValuePtr;
+    /// Create an empty section-list value.
     [[nodiscard]] static auto createSectionList() noexcept -> ValuePtr;
+    /// Create an intermediate section used to build nested paths.
     [[nodiscard]] static auto createIntermediateSection() noexcept -> ValuePtr;
+    /// Create an empty named section.
     [[nodiscard]] static auto createSectionWithNames() noexcept -> ValuePtr;
+    /// Create an empty textual section.
     [[nodiscard]] static auto createSectionWithTexts() noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(Integer value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(bool value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(Float value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(text::String value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const time::Date &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const time::Time &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const time::TimeWithZone &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const time::DateTime &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const mem::ByteBlock &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const time::CalendarDelta &value) noexcept -> ValuePtr;
+    /// Create a value by overload detection (only used in vr construction).
+    [[nodiscard]] static auto createFromValue(const re::RegExPtr &value) -> ValuePtr;
     /// @}
 
 public: // implement `Container`
@@ -137,8 +174,10 @@ public: // helper methods.
     /// Remove default values from direct children.
     virtual void removeDefaultValues() {}
 
+    /// Throw a type-mismatch exception for this value.
     [[noreturn]] static void throwAsTypeMismatch(const conf::Value &thisValue, ValueType expectedType);
 
+    /// Throw a configuration error annotated with the resolved value path.
     template <typename MessageFwd>
     [[noreturn]] static void throwErrorWithPath(
         const ConfErrorCategory errorCategory,
@@ -151,11 +190,14 @@ public: // helper methods.
         throw ConfError(errorCategory, std::forward<MessageFwd>(message), std::move(path));
     }
 
+    /// Throw a not-found exception for a value path.
     [[noreturn]] static void throwValueNotFound(const conf::Value &thisValue, const NamePathLike &namePath);
 
+    /// Throw a type-mismatch exception for a value path.
     [[noreturn]] static void throwTypeMismatch(
         const conf::Value &thisValue, ValueType expectedType, ValueType actualType, const NamePathLike &namePath);
 
+    /// Get a child value or throw on a missing path or mismatched type.
     template <ValueType::Enum tValueType>
     [[nodiscard]] static auto getterOrThrow(const conf::Value &thisValue, const NamePathLike &namePath)
         -> conf::ValuePtr {
@@ -170,6 +212,7 @@ public: // helper methods.
         return valuePtr;
     }
 
+    /// Get a typed child value or throw on a missing path or mismatched type.
     template <typename ReturnType, ValueType::Enum tValueType>
     [[nodiscard]] static auto valueGetterOrThrow(const conf::Value &thisValue, const NamePathLike &namePath)
         -> ReturnType {
@@ -178,6 +221,7 @@ public: // helper methods.
         return valuePtr->template asType<ReturnType>();
     }
 
+    /// Get a section child or return `nullptr` when its path or type does not match.
     template <ValueType::Enum tValueType>
     [[nodiscard]] static auto sectionGetter(const conf::Value &thisValue, const NamePathLike &namePath) noexcept
         -> conf::ValuePtr {
@@ -192,6 +236,7 @@ public: // helper methods.
         return valuePtr;
     }
 
+    /// Get a typed child value or return the supplied default when its path or type does not match.
     template <typename T>
     [[nodiscard]] static auto valueGetter(
         const conf::Value &thisValue, const NamePathLike &namePath, const T &defaultValue) noexcept -> T {
@@ -206,6 +251,7 @@ public: // helper methods.
         return valuePtr->asType<T>();
     }
 
+    /// Get a converted typed child value or return the converted supplied default on a mismatch.
     template <typename T, typename U>
     [[nodiscard]] static auto valueGetterWithDefaultToConvert(
         const conf::Value &thisValue, const NamePathLike &namePath, const U &defaultValue) noexcept -> T {

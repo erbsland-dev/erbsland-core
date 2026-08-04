@@ -59,7 +59,7 @@ auto U32StringBuilder::append(const U8String &text) -> unit::CpLength {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U8String &text, const unit::ElementCount count) {
+void U32StringBuilder::append(const U8String &text, const unit::ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU8StringAccess{text}.dataView(), count);
 }
 
@@ -67,7 +67,7 @@ auto U32StringBuilder::append(const U16String &text) -> unit::CpLength {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U16String &text, const unit::ElementCount count) {
+void U32StringBuilder::append(const U16String &text, const unit::ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU16StringAccess{text}.dataView(), count);
 }
 
@@ -75,7 +75,7 @@ auto U32StringBuilder::append(const U32String &text) -> unit::CpLength {
     return U32StringAppendTools{_text._storage}.append(text);
 }
 
-void U32StringBuilder::append(const U32String &text, const unit::ElementCount count) {
+void U32StringBuilder::append(const U32String &text, const unit::ItemCount count) {
     U32StringAppendTools{_text._storage}.append(UnsafeU32StringAccess{text}.dataView(), count);
 }
 

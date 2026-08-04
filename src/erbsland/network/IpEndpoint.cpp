@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "IpEndpoint.hpp"
 
+#include "impl/CommonHostTests.hpp"
+
 #include "../err/ParseError.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/IntegerBase.hpp"
@@ -10,8 +12,8 @@
 #include "../text/StringEditor.hpp"
 #include "../text/StringList.hpp"
 #include "../unit/CpLength.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
 #include "../util/HashHelper.hpp"
 
 #include <limits>
@@ -47,62 +49,58 @@ auto IpEndpoint::toHash() const noexcept -> std::size_t {
 
 auto IpEndpoint::fromString(const String &text) noexcept -> std::optional<IpEndpoint> {
     try {
-        auto addressText = String{};
-        auto portText = String{};
-        auto scopeId = ScopeId{};
-        const auto isBracketed = text.charAt(StringSide::Front) == U'[';
-        if (isBracketed) {
-            const auto bracketParts = StringList::fromSplit(text, CharSet{U']'}, ElementCount{1U}, true);
-            if (bracketParts.count() != ElementCount{2U}) {
-                return std::nullopt;
-            }
-            const auto &bracketedAddress = bracketParts.get(ElementIndex::zero());
-            const auto &afterBracket = bracketParts.get(ElementIndex{1U});
-            if (bracketedAddress.charAt(StringSide::Front) != U'[' || afterBracket.charAt(StringSide::Front) != U':' ||
-                afterBracket.contains("]"_el)) {
-                return std::nullopt;
-            }
-            addressText = bracketedAddress.slice(StringSide::Back, CpIndex{1U});
-            portText = afterBracket.slice(StringSide::Back, CpIndex{1U});
-            const auto scopeParts = StringList::fromSplit(addressText, CharSet{U'%'}, ElementCount::infinite(), true);
-            if (scopeParts.count() > ElementCount{2U}) {
-                return std::nullopt;
-            }
-            if (scopeParts.count() == ElementCount{2U}) {
-                auto options = IntegerParseOptions{};
-                options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
-                const auto scopeValue = scopeParts.get(ElementIndex{1U}).toInteger<uint64_t>(0U, options);
-                if (scopeValue == 0U || scopeValue > std::numeric_limits<uint32_t>::max()) {
-                    return std::nullopt;
-                }
-                scopeId = ScopeId{static_cast<uint32_t>(scopeValue)};
-                addressText = scopeParts.get(ElementIndex::zero());
-            }
-        } else {
-            const auto parts = StringList::fromSplit(text, CharSet{U':'}, ElementCount::infinite(), true);
-            if (parts.count() != ElementCount{2U}) {
-                return std::nullopt;
-            }
-            addressText = parts.get(ElementIndex::zero());
-            portText = parts.get(ElementIndex{1U});
-        }
-        const auto address = IpAddress::fromString(addressText);
-        const auto port = Port::fromString(portText);
-        if (!address.has_value() || !port.has_value() || (isBracketed != address->isV6()) ||
-            (scopeId.isSpecified() && !address->isV6())) {
-            return std::nullopt;
-        }
-        return IpEndpoint{*address, *port, scopeId};
-    } catch (...) {
+        return fromStringOrThrow(text);
+    } catch (const err::ParseError &) {
         return std::nullopt;
     }
 }
 
 auto IpEndpoint::fromStringOrThrow(const String &text) -> IpEndpoint {
-    if (const auto result = fromString(text); result.has_value()) {
-        return *result;
+    impl::testCommonHostText(text, "IP-endpoint"_el);
+    auto addressText = String{};
+    auto portText = String{};
+    auto scopeId = ScopeId{};
+    const auto isBracketed = text.charAt(StringSide::Front) == U'[';
+    if (isBracketed) {
+        const auto bracketParts = StringList::fromSplit(text, CharSet{U']'}, ItemCount{1U}, true);
+        if (bracketParts.count() != ItemCount{2U}) {
+            throw err::ParseError{"A bracketed IP endpoint requires one closing bracket."_el};
+        }
+        const auto &bracketedAddress = bracketParts.get(ItemIndex::zero());
+        const auto &afterBracket = bracketParts.get(ItemIndex{1U});
+        if (bracketedAddress.charAt(StringSide::Front) != U'[' || afterBracket.charAt(StringSide::Front) != U':' ||
+            afterBracket.contains("]"_el)) {
+            throw err::ParseError{"A bracketed IP endpoint must use [address]:port syntax."_el};
+        }
+        addressText = bracketedAddress.slice(StringSide::Back, CpIndex{1U});
+        portText = afterBracket.slice(StringSide::Back, CpIndex{1U});
+        const auto scopeParts = StringList::fromSplit(addressText, CharSet{U'%'}, ItemCount::infinite(), true);
+        if (scopeParts.count() > ItemCount{2U}) {
+            throw err::ParseError{"An IPv6 scope identifier may contain only one percent sign."_el};
+        }
+        if (scopeParts.count() == ItemCount{2U}) {
+            auto options = IntegerParseOptions{};
+            options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
+            const auto scopeValue = scopeParts.get(ItemIndex{1U}).toIntegerOrThrow<uint64_t>(options);
+            if (scopeValue == 0U || scopeValue > std::numeric_limits<uint32_t>::max()) {
+                throw err::ParseError{"The IPv6 scope identifier must be between 1 and 4,294,967,295."_el};
+            }
+            scopeId = ScopeId{static_cast<uint32_t>(scopeValue)};
+            addressText = scopeParts.get(ItemIndex::zero());
+        }
+    } else {
+        const auto parts = StringList::fromSplit(text, CharSet{U':'}, ItemCount::infinite(), true);
+        if (parts.count() != ItemCount{2U}) {
+            throw err::ParseError{"An unbracketed IP endpoint must use IPv4-address:port syntax."_el};
+        }
+        addressText = parts.get(ItemIndex::zero());
+        portText = parts.get(ItemIndex{1U});
     }
-    throw err::ParseError{"The text is not a valid resolved IP endpoint."_el};
+    const auto address = IpAddress::fromStringOrThrow(addressText);
+    if (isBracketed != address.isV6()) {
+        throw err::ParseError{"IPv6 addresses must be bracketed and IPv4 addresses must not be bracketed."_el};
+    }
+    return IpEndpoint{address, Port::fromStringOrThrow(portText), scopeId};
 }
 
 }

@@ -3,10 +3,10 @@
 #include "DateTime.hpp"
 
 #include "impl/IsoDateTimeParser.hpp"
-#include "impl/PosixTimeConverter.hpp"
-#include "impl/WindowsTimeConverter.hpp"
 
+#include "../err/OutOfRangeError.hpp"
 #include "../err/OverflowError.hpp"
+#include "../err/ParameterError.hpp"
 #include "../err/ParseError.hpp"
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
@@ -21,10 +21,6 @@ using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
 using text::StringEditor;
-
-namespace {
-constexpr auto cLastValidSecond = Seconds{315569519999};
-}
 
 using namespace text::literals;
 
@@ -133,7 +129,7 @@ auto DateTime::subtractedOrThrow(const Duration duration) const -> DateTime {
 }
 
 auto DateTime::durationTo(const DateTime &other) const noexcept -> Duration {
-    return Duration{other.toSecondsSinceEpoch() - toSecondsSinceEpoch()};
+    return Duration{other.toTicksOrThrow<Seconds>() - toTicksOrThrow<Seconds>()};
 }
 
 auto DateTime::timeDeltaTo(const DateTime &other) const noexcept -> TimeDelta {
@@ -166,19 +162,37 @@ auto DateTime::toTimeZone(TimeZone timeZone) const noexcept -> DateTime {
     return DateTime{_date, _time, timeZone.timeOffsetAtUtc(_date, _time), PrivateTag{}};
 }
 
-auto DateTime::toSecondsSinceEpoch() const noexcept -> Seconds {
+auto DateTime::toSecondsAndFractions(const TimeEpoch epoch) const noexcept
+    -> std::optional<std::pair<Seconds, Nanoseconds>> {
     if (!isValid()) {
-        return Seconds{-1};
+        return std::nullopt;
     }
-    return _date.toDaysSinceEpoch().converted<Seconds>() + _time.toSecondsSinceMidnight();
+    auto seconds = _date.toDaysSinceEpoch().converted<Seconds>() + _time.toSecondsSinceMidnight();
+    seconds -= impl::secondsSinceCoreEpoch(epoch);
+    if (seconds.isNegative()) {
+        return std::nullopt;
+    }
+    return std::pair{seconds, _time.nanosecondFraction()};
+}
+
+auto DateTime::toSecondsAndFractionsOrThrow(const TimeEpoch epoch) const -> std::pair<Seconds, Nanoseconds> {
+    const auto result = toSecondsAndFractions(epoch);
+    if (!result.has_value()) {
+        throw err::OutOfRangeError{"This date/time cannot be represented as ticks from this epoch"};
+    }
+    return *result;
 }
 
 auto DateTime::toTimeT() const noexcept -> std::time_t {
-    return impl::PosixTimeConverter::toTimeT(*this);
-}
-
-auto DateTime::toWindowsFileTimeTicks() const noexcept -> std::optional<std::uint64_t> {
-    return impl::WindowsTimeConverter::toFileTimeTicks(*this);
+    const auto seconds = toTicks<Seconds>();
+    if (!seconds.has_value()) {
+        return std::time_t{-1};
+    }
+    const auto posixSeconds = *seconds - impl::secondsSinceCoreEpoch(TimeEpoch::Posix);
+    if (posixSeconds.isNegative() || math::willCastOverflow<std::time_t>(posixSeconds.toRawValue())) {
+        return std::time_t{-1};
+    }
+    return static_cast<std::time_t>(posixSeconds.toRawValue());
 }
 
 auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision) const -> String {
@@ -186,7 +200,7 @@ auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision
         return {};
     }
     const auto datePrecision = precision < DateTimePrecision::Day ? precision : DateTimePrecision::Day;
-    const auto dateText = date().toIsoString(flags, datePrecision);
+    auto dateText = date().toIsoString(flags, datePrecision);
     if (precision < DateTimePrecision::Hour) {
         return dateText;
     }
@@ -200,33 +214,53 @@ auto DateTime::toIsoString(IsoTimeFormatFlags flags, DateTimePrecision precision
 }
 
 auto DateTime::now() noexcept -> DateTime {
-    const auto now = std::chrono::system_clock::now();
-    const auto seconds = std::chrono::duration_cast<std::chrono::seconds>(now.time_since_epoch()).count();
-    const auto ns =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(now.time_since_epoch()).count() - seconds * 1000000000LL;
-    return fromSecondsSinceEpoch(posixEpochSecondsDelta() + Seconds{seconds}, Nanoseconds{ns});
+    using namespace std::chrono;
+    const auto now = system_clock::now();
+    const auto s = duration_cast<seconds>(now.time_since_epoch()).count();
+    const auto ns = duration_cast<nanoseconds>(now.time_since_epoch()).count() % 1000000000LL;
+    return fromTicks(Seconds{s}, Nanoseconds{ns}, TimeEpoch::Posix).value_or(DateTime{});
 }
 
-auto DateTime::fromSecondsSinceEpoch(Seconds seconds, Nanoseconds fractions) noexcept -> DateTime {
-    if (seconds < Seconds::zero() || seconds > cLastValidSecond) {
+auto DateTime::fromTicks(const Seconds seconds, const Nanoseconds fractions, const TimeEpoch epoch) noexcept
+    -> std::optional<DateTime> {
+    try {
+        return fromTicksOrThrow(seconds, fractions, epoch);
+    } catch (const err::Exception &) {
+        return std::nullopt;
+    }
+}
+
+auto DateTime::fromTicksOrThrow(const Seconds seconds, const Nanoseconds fractions, const TimeEpoch epoch) -> DateTime {
+    constexpr auto cNanosecondsPerSecond = Nanoseconds{1'000'000'000};
+    if (seconds.isNegative()) {
+        throw err::ParameterError("Negative values are now allowed"_el, "seconds"_el);
+    }
+    if (fractions.isNegative()) {
+        throw err::ParameterError("Negative values are now allowed"_el, "fractions"_el);
+    }
+    if (fractions >= cNanosecondsPerSecond) {
+        throw err::ParameterError("Fractions must be less than a second"_el, "fractions"_el);
+    }
+    const auto epochSeconds = impl::secondsSinceCoreEpoch(epoch);
+    if (epochSeconds.wouldAddSaturate(seconds)) {
+        throwDateTimeNotTickConvertible();
+    }
+    auto secondOfDay = epochSeconds + seconds;
+    const auto days = secondOfDay.extract<Days>();
+    const auto date = Date::fromDaysSinceEpoch(days);
+    if (!date.isValid()) {
+        throwDateTimeNotTickConvertible();
+    }
+    return DateTime{date, Time::fromDurationSinceMidnight(TimeDelta{secondOfDay} + TimeDelta{fractions})};
+}
+
+auto DateTime::fromTimeT(const std::time_t posixTime) noexcept -> DateTime {
+    const auto posixSeconds = Seconds{static_cast<int64_t>(posixTime)};
+    const auto epochSeconds = impl::secondsSinceCoreEpoch(TimeEpoch::Posix);
+    if (epochSeconds.toValue().wouldAddSaturate(posixSeconds.toValue())) {
         return {};
     }
-    auto secondOfDay = seconds;
-    const auto days = secondOfDay.extract<Days>();
-    return DateTime{
-        Date::fromDaysSinceEpoch(days), Time::fromDurationSinceMidnight(TimeDelta{secondOfDay} + TimeDelta{fractions})};
-}
-
-auto DateTime::fromTimeT(std::time_t posixTime) noexcept -> DateTime {
-    return impl::PosixTimeConverter::fromTimeT(posixTime);
-}
-
-auto DateTime::fromPosixTime(const Seconds seconds, const Nanoseconds fractions) noexcept -> DateTime {
-    return impl::PosixTimeConverter::fromPosixTime(seconds, fractions);
-}
-
-auto DateTime::fromWindowsFileTimeTicks(const std::uint64_t ticks) noexcept -> DateTime {
-    return impl::WindowsTimeConverter::fromFileTimeTicks(ticks);
+    return fromTicks(epochSeconds + posixSeconds).value_or(DateTime{});
 }
 
 auto DateTime::fromIsoString(const String &text, DateTimePrecision requiredPrecision) noexcept -> DateTime {
@@ -299,12 +333,16 @@ auto DateTime::isoTimeShiftString(Seconds offset, IsoTimeFormatFlags flags) -> S
             includeSeconds ? String::fromInteger(seconds.toValue(), digitFormat) : String{}});
 }
 
-auto DateTime::posixEpochSecondsDelta() noexcept -> Seconds {
-    return Days{719528}.converted<Seconds>();
+void DateTime::throwDateTimeNotTickConvertible() {
+    throw err::OutOfRangeError{"Ticks are out of the representable date/time range"_el};
 }
 
-auto DateTime::posixEpoch() noexcept -> DateTime {
-    return DateTime{Date::fromDaysSinceEpoch(Days{719528}), Time{}};
+void DateTime::throwTicksMustNotBeNegative() {
+    throw err::ParameterError("Negative values are now allowed"_el, "ticks"_el);
+}
+
+auto DateTime::epoch(const TimeEpoch epoch) noexcept -> DateTime {
+    return fromTicks(impl::secondsSinceCoreEpoch(epoch)).value_or(DateTime{});
 }
 
 auto DateTime::localDateTime() const noexcept -> std::pair<Date, Time> {

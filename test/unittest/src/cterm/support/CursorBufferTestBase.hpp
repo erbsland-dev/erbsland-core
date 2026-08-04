@@ -13,6 +13,8 @@
 #include <string_view>
 #include <vector>
 
+/// Shared fixture for cursor-buffer unit tests.
+/// @notest{Used only by cursor-buffer unit tests.}
 class CursorBufferTestBase : public el::UnitTest {
 public:
     using Lines = std::vector<std::string>;
@@ -21,6 +23,7 @@ public:
     CursorBuffer buffer{bgeo::BlockSize{20, 5}, CursorBuffer::OverflowMode::Wrap};
 
 public:
+    /// Get the buffer contents as raw test lines.
     [[nodiscard]] auto rawLinesFromBuffer() const -> Lines {
         std::vector<std::string> lines;
         for (int y = 0; y < buffer.size().height().toRawValue(); ++y) {

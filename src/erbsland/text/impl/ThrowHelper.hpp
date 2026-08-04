@@ -38,28 +38,25 @@ namespace erbsland::text::impl {
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the format error.
 [[noreturn]] void throwFormatError(std::string_view reason);
-/// @overload
-[[noreturn]] void throwFormatError(String reason);
 
 /// Throw an out-of-range error with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the out-of-range error.
 [[noreturn]] void throwOutOfRange(std::string_view reason);
-/// @overload
-[[noreturn]] void throwOutOfRange(String reason);
 
 /// Throw an OverflowError with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the overflow error.
 [[noreturn]] void throwOverflow(std::string_view reason);
-/// @overload
-[[noreturn]] void throwOverflow(String reason);
 
 /// Throw a ParseError with the given reason.
 /// This method exists to resolve circular dependency issues and as convenience.
 /// @param reason The reason for the parse error.
 [[noreturn]] void throwParseError(std::string_view reason);
-/// @overload
-[[noreturn]] void throwParseError(String reason);
+
+/// Throw a ParseNumberError with the given reason and state
+/// @param reason The reason for the parse error.
+/// @param status The status of the number parsing.
+[[noreturn]] void throwParseNumberError(std::string_view reason, ReadNumberStatus status);
 
 }

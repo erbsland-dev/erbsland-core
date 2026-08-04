@@ -12,7 +12,8 @@ String Char Reader
 ------------------
 
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` is a sequential reader for decoded Unicode code points.
-It accepts :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /:cpp:class:`U8String <erbsland::text::U8String>`,
+It accepts :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /:cpp:class:`U8String
+<erbsland::text::U8String>`,
 :cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>` /:cpp:class:`U16String <erbsland::text::U16String>`, and
 :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` /:cpp:class:`U32String <erbsland::text::U32String>` and
 exposes the same read API for all encodings.
@@ -39,7 +40,17 @@ needed.
 Use :cpp:func:`readIf() <erbsland::text::StringCharReader::readIf>` and
 :cpp:func:`advanceIf() <erbsland::text::StringCharReader::advanceIf>` for optional grammar characters.
 They leave the cursor unchanged when the next character does not match.
+The string overload of ``advanceIf()`` matches a complete UTF-8 token by decoded character and restores the starting
+position after a partial match or insufficient input.
+Its optional character-comparison function supports cases such as ASCII-insensitive grammar tokens without converting
+the source text.
 The ``OrThrow`` variants reject end-of-data and malformed encoding before matching.
+
+``readWhile()`` and ``readUntil()`` invoke a callback and return ``LoopResult`` because the callback can stop or report
+an error.
+``advanceWhile()`` and ``advanceUntil()`` have no callback and instead return the ``unit::CpLength`` actually skipped.
+They leave the boundary character unread and stop at the configured maximum or end-of-data.
+The count can be ignored when only the skip operation matters, for example when discarding optional whitespace.
 
 ``parseInteger()`` parses a low-level integer token with
 :cpp:class:`IntegerParseOptions <erbsland::text::IntegerParseOptions>`.

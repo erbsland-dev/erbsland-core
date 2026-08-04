@@ -11,7 +11,9 @@
 #include <erbsland/path/PathInfo.hpp>
 #include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
+
+#include <utility>
 
 namespace demo {
 
@@ -21,13 +23,12 @@ auto PasswordHandlerApp::listUsers(const el::OptionValuesPtr &values) -> el::Exi
     const auto paths = storagePaths(values);
     initializeStorage(paths);
     const auto database = UserDatabase::load(paths.database);
-    if (database.users().count() == el::ElementCount{0U}) {
+    if (database.users().count() == el::ItemCount{0U}) {
         el::io::printLine("No users are stored."_el);
         return el::ExitCode::success();
     }
-    for (const auto &[username, passwordHash] : database.users()) {
-        static_cast<void>(passwordHash);
-        el::io::printLine(displayUsername(username));
+    for (const auto &entry : database.users()) {
+        el::io::printLine(displayUsername(entry.first));
     }
     return el::ExitCode::success();
 }
@@ -57,11 +58,14 @@ auto PasswordHandlerApp::setPassword(const el::OptionValuesPtr &values) -> el::E
         throw el::ApplicationError{"The exact username does not exist."_el};
     }
 
-    const auto password = PasswordPrompt::readNewPassword(terminal());
+    const auto password = PasswordPrompt{terminal()}.readNewPassword();
     initializeStorage(paths);
-    auto hasher = PepperStore::loadHasher(paths.pepper);
+    auto pepperStore = PepperStore{std::move(paths.pepper)};
+    auto hasher = pepperStore.loadHasher();
     const auto passwordHash = hasher.hash(password);
-    static_cast<void>(database.trySetPassword(username, passwordHash.toString()));
+    if (!database.trySetPassword(username, passwordHash.toString())) {
+        throw el::ApplicationError{"The exact username no longer exists."_el};
+    }
     database.save(paths.database, el::PathCollisionMode::Overwrite);
     el::io::printLine("Password replaced for: "_el, displayUsername(username));
     return el::ExitCode::success();

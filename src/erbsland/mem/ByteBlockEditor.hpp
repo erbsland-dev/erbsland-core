@@ -8,15 +8,14 @@
 #include "ByteBlock_fwd.hpp"
 #include "ByteBlockEditor_fwd.hpp"
 #include "ByteBuffer.hpp"
-#include "ByteIntegerAccess.hpp"
 #include "ByteSpan.hpp"
 #include "Endianness.hpp"
 
 #include "impl/ByteBlockData_fwd.hpp"
 #include "impl/ByteDataView.hpp"
 #include "impl/ByteIntegerAccess.hpp"
-#include "impl/ByteSequenceOperations.hpp"
-#include "impl/UnsafeByteBlockAccess_fwd.hpp"
+#include "impl/ByteReadTools.hpp"
+#include "impl/ByteWriteTools.hpp"
 #include "impl/UnsafeByteBlockBuffer_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
@@ -41,7 +40,6 @@ namespace erbsland::mem {
 /// @tested{ByteBlockTest}
 class ByteBlockEditor final {
     friend class ByteBlock;
-    friend class impl::UnsafeByteBlockAccess;
     friend class impl::UnsafeByteBlockBuffer;
 
 public:
@@ -60,6 +58,7 @@ public:
     /// @param block The visible byte sequence to copy.
     explicit ByteBlockEditor(const ByteBlock &block);
 
+    // defaults
     ByteBlockEditor();
     ~ByteBlockEditor();
     ByteBlockEditor(const ByteBlockEditor &);
@@ -109,8 +108,10 @@ public: // main operations
     auto insert(unit::ByteIndex index, FixedConstByteSpan<N> bytes) -> ByteBlockEditor & {
         return insert(index, ConstByteSpan{bytes});
     }
-    /// Append a single byte.
-    auto append(Byte value) -> ByteBlockEditor &;
+    /// Append one or more bytes.
+    /// @param value The byte value to append.
+    /// @param length The number of times to append the value.
+    auto append(Byte value, unit::ByteLength length = unit::ByteLength::one()) -> ByteBlockEditor &;
     /// Append a byte sequence.
     auto append(const ByteBlock &bytes) -> ByteBlockEditor &;
     /// Append a borrowed byte span.
@@ -129,7 +130,7 @@ public: // main operations
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     auto appendInteger(const T value, const Endianness endianness = Endianness::Little) -> ByteBlockEditor & {
         const auto offset = appendZeroed(unit::ByteLength{sizeof(T)});
-        mem::setIntegerOrThrow(dataSpanForWrite(), offset, value, endianness);
+        impl::ByteWriteTools{writableSpan()}.setIntegerOrThrow(offset, value, endianness);
         return *this;
     }
     /// Overwrite a clamped destination range with as many block bytes as fit.
@@ -152,6 +153,9 @@ public: // main operations
     auto xorWithOrThrow(const ByteBlock &bytes) -> ByteBlockEditor &;
     /// XOR every byte with an equally sized borrowed source.
     [[nodiscard]] auto xorWith(ConstByteSpan bytes) -> bool;
+    /// XOR every byte with an equally sized borrowed source.
+    /// @throws err::ParameterError If the lengths differ.
+    auto xorWithOrThrow(ConstByteSpan bytes) -> ByteBlockEditor &;
     /// XOR a clamped destination range with as many source bytes as fit.
     auto xorWith(unit::ByteRange range, ConstByteSpan bytes) -> ByteBlockEditor &;
     /// Return a copy with a range removed.
@@ -162,10 +166,21 @@ public: // main operations
     [[nodiscard]] auto join(std::initializer_list<ByteBlock> parts) const -> ByteBlockEditor;
 
 public: // comparison
+    /// Compare this editor with another editor.
     [[nodiscard]] auto operator<=>(const ByteBlockEditor &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const ByteBlockEditor &other, other);
+    /// Compare this editor with an immutable byte block.
     [[nodiscard]] auto operator<=>(const ByteBlock &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const ByteBlock &other, other);
+    /// Test equality without content-dependent short-circuiting.
+    /// Equal-length inputs always inspect every byte; a length mismatch returns immediately.
+    /// @param other The byte block to compare.
+    /// @return `true` if both blocks have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(const ByteBlock &other) const noexcept -> bool;
+    /// @overload
+    /// @param other The borrowed byte sequence to compare.
+    /// @return `true` if both sequences have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(ConstByteSpan other) const noexcept -> bool;
 
 public: // tests
     /// Test if this block contains no bytes.
@@ -218,7 +233,7 @@ public: // read
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan { return dataView().dataSpan(); }
     /// Access a clamped visible range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteRange range) const noexcept -> ConstByteSpan {
-        return impl::clampedSpan(span(), range);
+        return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped visible range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
@@ -227,7 +242,7 @@ public: // read
     /// Invoke a callback for every visible byte and its optional index.
     template <typename Function>
     auto forEach(Function function) const -> util::LoopResult {
-        return impl::forEachByte(span(), std::move(function));
+        return impl::ByteReadTools{dataView()}.forEach(std::move(function));
     }
 
 public: // integers
@@ -243,7 +258,7 @@ public: // integers
         const unit::ByteIndex offset,
         const Endianness endianness = Endianness::Little,
         const T defaultOnError = T{}) const noexcept -> T {
-        return mem::getInteger<T>(span(), offset, endianness, defaultOnError);
+        return impl::ByteReadTools{dataView()}.getInteger<T>(offset, endianness, defaultOnError);
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -255,7 +270,7 @@ public: // integers
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
         const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const -> T {
-        return mem::getIntegerOrThrow<T>(span(), offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerOrThrow<T>(offset, endianness);
     }
     /// Decode an integer into an existing value, leaving it unchanged for an invalid range.
     /// @tparam T A non-boolean native integer type.
@@ -268,7 +283,7 @@ public: // integers
     [[nodiscard]] auto getIntegerInto(
         T &value, const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const noexcept
         -> bool {
-        return mem::getIntegerInto(span(), value, offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerInto(value, offset, endianness);
     }
 
 public: // write
@@ -295,8 +310,7 @@ public: // write
         if (!offset.isValid() || !impl::isIntegerByteRangeValid<T>(offset.toSizeT(), length().toSizeT())) {
             return false;
         }
-        static_cast<void>(mem::setInteger(dataSpanForWrite(), offset, value, endianness));
-        return true;
+        return impl::ByteWriteTools{writableSpan()}.setInteger(offset, value, endianness);
     }
     /// Store an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -392,7 +406,7 @@ private:
     /// Access the visible bytes through an internal borrowed view.
     [[nodiscard]] auto dataView() const noexcept -> impl::ByteDataView;
     /// Access the visible bytes for internal writes after detaching.
-    [[nodiscard]] auto dataSpanForWrite() -> ByteSpan;
+    [[nodiscard]] auto writableSpan() -> ByteSpan;
     /// Append zero-filled bytes and return the index of the first appended byte.
     [[nodiscard]] auto appendZeroed(unit::ByteLength length) -> unit::ByteIndex;
 

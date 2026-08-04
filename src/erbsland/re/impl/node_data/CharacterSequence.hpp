@@ -16,13 +16,15 @@ public:
     /// Fast constructor.
     /// @param character Create a single character sequence (will be merged later.)
     explicit CharacterSequence(const text::Char character) noexcept { chars.append(character); }
+
+    // defaults
     ~CharacterSequence() = default;
 
 public:
     /// Create a stable string used for validating node trees in tests.
     [[nodiscard]] auto toTestString() const -> text::String {
         text::StringEditor safeString;
-        std::ranges::for_each(*chars.sequence(), [&safeString](const auto character) -> void {
+        std::ranges::for_each(chars.sequence(), [&safeString](const auto character) -> void {
             appendToSafeString(safeString, character);
         });
         return text::StringFormat{"CharacterSequence(\"{}\")"}.build(safeString);

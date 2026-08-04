@@ -3,6 +3,7 @@
 #include "PosixNativeStream.hpp"
 
 #include "BufferedByteInputStream.hpp"
+#include "PosixNativeOperation.hpp"
 
 #include "../StreamError.hpp"
 
@@ -28,19 +29,6 @@ using namespace text::literals;
 using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;
-
-PosixNativeStream::Operation::Operation(const PosixNativeStream &stream) : _stream{stream} {
-    const auto lock = std::scoped_lock{_stream._operationMutex};
-    _fileDescriptor = _stream._fileDescriptor.load();
-    if (_fileDescriptor < 0) {
-        _stream.throwError("Failed to access the native stream."_el, "The POSIX native stream is closed."_el);
-    }
-    ++_stream._operationCount;
-}
-
-PosixNativeStream::Operation::~Operation() {
-    _stream.finishOperation();
-}
 
 auto PosixNativeStream::createErrorContext() const noexcept -> StreamErrorContext {
     auto context = StreamErrorSource::createErrorContext();
@@ -83,7 +71,7 @@ PosixNativeStream::~PosixNativeStream() {
 }
 
 void PosixNativeStream::writeBytes(const std::span<const char> bytes) {
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     auto position = std::size_t{0};
     while (position < bytes.size()) {
         const auto result = ::write(operation.fileDescriptor(), bytes.data() + position, bytes.size() - position);
@@ -121,7 +109,7 @@ auto PosixNativeStream::position() const -> ByteIndex {
         throwError(
             "Failed to get the native stream position."_el, "The POSIX native stream does not support positioning."_el);
     }
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     const auto result = ::lseek(operation.fileDescriptor(), 0, SEEK_CUR);
     if (result < 0) {
         throwErrorFromErrno("Failed to get the native stream position."_el, "The POSIX position lookup failed."_el);
@@ -138,7 +126,7 @@ auto PosixNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
         position.toRawValue() > static_cast<ByteIndex::Value>(std::numeric_limits<off_t>::max())) {
         throw err::ParameterError{"Stream position is outside POSIX file-offset bounds.", "position"};
     }
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     const auto result = ::lseek(operation.fileDescriptor(), static_cast<off_t>(position.toRawValue()), SEEK_SET);
     if (result < 0) {
         throwErrorFromErrno(
@@ -165,7 +153,7 @@ auto PosixNativeStream::movePosition(const StreamPositionOrigin origin, const By
         whence = SEEK_END;
         break;
     }
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     const auto result = ::lseek(operation.fileDescriptor(), static_cast<off_t>(offset.toRawValue()), whence);
     if (result < 0) {
         const auto error = errno;
@@ -204,12 +192,13 @@ void PosixNativeStream::abort() noexcept {
         }
     }
     if (_ownership == NativeStreamOwnership::Owned && fileDescriptor >= 0) {
-        static_cast<void>(::close(fileDescriptor));
+        // Abort is noexcept and a close failure cannot safely be retried after descriptor invalidation.
+        ::close(fileDescriptor);
     }
 }
 
 auto PosixNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     if (destination.empty()) {
         return ByteLength::zero();
     }
@@ -230,7 +219,7 @@ void PosixNativeStream::write(const mem::ConstByteSpan bytes) {
 }
 
 auto PosixNativeStream::fileSize() const -> ByteLength {
-    const auto operation = Operation{*this};
+    const auto operation = PosixNativeOperation{*this};
     struct stat info{};
     if (::fstat(operation.fileDescriptor(), &info) != 0) {
         throwErrorFromErrno("Failed to get the native stream size."_el, "The POSIX file-size lookup failed."_el);
@@ -254,7 +243,8 @@ void PosixNativeStream::finishOperation() const noexcept {
         }
     }
     if (fileDescriptor >= 0) {
-        static_cast<void>(::close(fileDescriptor));
+        // Deferred noexcept cleanup cannot report failure or safely retry a possibly invalidated descriptor.
+        ::close(fileDescriptor);
     }
 }
 

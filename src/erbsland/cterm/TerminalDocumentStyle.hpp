@@ -90,20 +90,30 @@ public: // defaults
     [[nodiscard]] static auto defaultSystemOutput() noexcept -> const TerminalDocumentStyle &;
 
 private:
+    /// Detach shared style data before modifying it.
     void detach();
+    /// Initialize this style with plain built-in defaults.
     void initializePlainDefaults();
+    /// Get the built-in default rule for a node type and optional level.
     [[nodiscard]] auto defaultRuleFor(text::TextNodeType nodeType, const std::optional<int> &level) const noexcept
         -> TerminalDocumentStyleRule;
+    /// Find the mutable entry with an exact selector.
     [[nodiscard]] auto findEntry(const TerminalDocumentStyleSelector &selector) noexcept
         -> impl::TerminalDocumentStyleData::EntryList::Index;
+    /// Find the immutable entry with an exact selector.
     [[nodiscard]] auto findEntry(const TerminalDocumentStyleSelector &selector) const noexcept
         -> impl::TerminalDocumentStyleData::EntryList::Index;
+    /// Create the compact colored built-in style.
     [[nodiscard]] static auto createSimpleDefaultStyle() -> TerminalDocumentStyle;
+    /// Create the decorative colored built-in style.
     [[nodiscard]] static auto createStyledDefaultStyle() -> TerminalDocumentStyle;
+    /// Create the built-in system-output style.
     [[nodiscard]] static auto createSystemOutputDefaultStyle() -> TerminalDocumentStyle;
+    /// Combine selector and contextual tokens without duplicates.
     [[nodiscard]] static auto combinedTokens(
         const TerminalDocumentStyleSelector &selector, const TerminalDocumentStyleSelector::TokenList &contextTokens)
         -> TerminalDocumentStyleSelector::TokenList;
+    /// Test if all required tokens are included in contextual tokens.
     [[nodiscard]] static auto tokensMatch(
         const TerminalDocumentStyleSelector::TokenList &requiredTokens,
         const TerminalDocumentStyleSelector::TokenList &contextTokens) noexcept -> bool;

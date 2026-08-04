@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "AccessCheck.hpp"
+#include "AccessCheck_fwd.hpp"
 #include "Document.hpp"
 #include "SignatureValidator.hpp"
 #include "Source.hpp"
@@ -20,9 +20,10 @@ namespace erbsland::conf {
 /// @tested{ParserBasicTest ParserConvenienceTest ParserIncludeTest ParserSignatureTest}
 class Parser final {
 public:
-    /// Default constructor.
+    /// Create a new parser with the default settings.
     Parser() = default;
-    /// Default destructor.
+
+    // defaults
     ~Parser() = default;
 
 public:

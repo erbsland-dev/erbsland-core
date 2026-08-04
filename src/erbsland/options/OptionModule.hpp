@@ -18,6 +18,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionModule : public OptionSetManager {
 public:
+    /// Create an empty option module.
     OptionModule() = default;
     /// Create a module with a command line name.
     explicit OptionModule(const text::String &name);
@@ -48,7 +49,9 @@ public:
     void addSet(OptionSetPtr optionSet);
 
 public: // implement OptionsManager
+    /// Add an option with one or more names.
     auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    /// Edit an option selected by one of its names.
     auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
@@ -93,6 +96,7 @@ public: // accessors
     void setMainFn(ModuleMainFn fn) { _mainFn = std::move(fn); }
 
 private:
+    /// Get or create the option set used for direct module options.
     [[nodiscard]] auto defaultOptionSet() -> OptionSetPtr;
 
 private:

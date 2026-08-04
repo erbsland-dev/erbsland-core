@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "SignatureSigner.hpp"
+#include "SignatureSigner_fwd.hpp"
 
 #include "../path/Path.hpp"
 
@@ -15,7 +15,8 @@ public:
     /// Create a new signer tool using the given implementation.
     /// @param signatureSigner The signature signer implementation to use.
     explicit Signer(SignatureSignerPtr signatureSigner);
-    /// Default destructor.
+
+    // defaults
     ~Signer() = default;
 
 public:

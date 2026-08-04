@@ -5,16 +5,16 @@
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u8/U8StringList.hpp>
 #include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ElementCount.hpp>
-#include <erbsland/unit/ElementIndex.hpp>
+#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/unit/ItemIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/LoopResult.hpp>
@@ -36,17 +36,16 @@ using el::util::LoopStatus;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(
-    U8StringEditor U8String U8StringAppendTools U8StringModifyTools U8StringTransformTools U8StringSharedStorage)
+TESTED_TARGETS(StringEditor String U8StringAppendTools U8StringModifyTools U8StringTransformTools U8StringSharedStorage)
 class U8StringModifierTest final : public el::UnitTest {
 public:
     void testAppendReusesCapacityAndKeepsNullTerminator() {
 
-        auto text = U8StringEditor{std::string_view{"Hi"}};
+        auto text = StringEditor{"Hi"_el};
         text.reserve(ByteLength{16U});
         const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
 
-        text.append(", "_el).append(Char{U'X'}).append(Char{U'!'}, CpLength{2U}).append("?"_el, ElementCount{2U});
+        text.append(", "_el).append(Char{U'X'}).append(Char{U'!'}, CpLength{2U}).append("?"_el, ItemCount{2U});
 
         REQUIRE_EQUAL(text, "Hi, X!!??"_el);
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), data);
@@ -56,7 +55,7 @@ public:
 
     void testAppendMaterializesSharedAndSlicedStorage() {
 
-        auto base = U8StringEditor{std::string_view{"abcdef"}};
+        auto base = StringEditor{"abcdef"_el};
         auto text = base.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
         const auto copy = text;
         const auto *copyData = el::text::impl::UnsafeU8StringEditorAccess{copy}.data();
@@ -72,7 +71,7 @@ public:
 
     void testRemoveKeepAndCopyVariants() {
 
-        auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        auto text = StringEditor{"A¢€😀"_el};
 
         REQUIRE_EQUAL(
             StringConverter{text.removed(ByteRange{ByteIndex{1U}, ByteLength{5U}})}.toStdU8String(),
@@ -100,7 +99,7 @@ public:
 
     void testInPlaceRemoveKeepReuseUniqueFullRangeStorage() {
 
-        auto rangeText = U8StringEditor{std::string_view{"abcdef"}};
+        auto rangeText = StringEditor{"abcdef"_el};
         rangeText.reserve(ByteLength{16U});
         const auto *rangeData = el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data();
 
@@ -110,7 +109,7 @@ public:
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data(), rangeData);
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data()[rangeText.length().toSizeT()], '\0');
 
-        auto setText = U8StringEditor{std::string_view{"axbxcx"}};
+        auto setText = StringEditor{"axbxcx"_el};
         setText.reserve(ByteLength{16U});
         const auto *setData = el::text::impl::UnsafeU8StringEditorAccess{setText}.data();
 
@@ -120,7 +119,7 @@ public:
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{setText}.data(), setData);
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{setText}.data()[setText.length().toSizeT()], '\0');
 
-        auto needleText = U8StringEditor{std::string_view{"abcabc"}};
+        auto needleText = StringEditor{"abcabc"_el};
         needleText.reserve(ByteLength{16U});
         const auto *needleData = el::text::impl::UnsafeU8StringEditorAccess{needleText}.data();
 
@@ -131,7 +130,7 @@ public:
         REQUIRE_EQUAL(
             el::text::impl::UnsafeU8StringEditorAccess{needleText}.data()[needleText.length().toSizeT()], '\0');
 
-        auto keepText = U8StringEditor{std::string_view{"abcdef"}};
+        auto keepText = StringEditor{"abcdef"_el};
         keepText.reserve(ByteLength{16U});
         const auto *keepData = el::text::impl::UnsafeU8StringEditorAccess{keepText}.data();
 
@@ -144,7 +143,7 @@ public:
 
     void testInsertReplaceAndFirstModifiers() {
 
-        auto text = U8StringEditor{std::string_view{"abef"}};
+        auto text = StringEditor{"abef"_el};
         text.reserve(ByteLength{16U});
         const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
 
@@ -158,7 +157,7 @@ public:
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), data);
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data()[text.length().toSizeT()], '\0');
 
-        auto codePointText = U8StringEditor{std::u8string_view{u8"A😀"}};
+        auto codePointText = StringEditor{"A😀"_el};
         codePointText.insert(CpIndex{1U}, u8"¢"_el);
         codePointText.replace(CpRange{CpIndex{1U}, CpLength{1U}}, u8"€"_el);
 
@@ -166,42 +165,42 @@ public:
         REQUIRE_EQUAL(codePointText.inserted(CpIndex{1U}, u8"¢"_el), u8"A¢€😀"_el);
         REQUIRE_EQUAL(codePointText.replaced(CpRange{CpIndex{1U}, CpLength{1U}}, u8"¢"_el), u8"A¢😀"_el);
 
-        auto firstText = U8StringEditor{std::string_view{"one one"}};
+        auto firstText = StringEditor{"one one"_el};
         firstText.removeFirst("one"_el);
         REQUIRE_EQUAL(firstText, " one"_el);
         firstText.replaceFirst("ONE"_el, "two"_el, Char::compareCaseFolded);
         REQUIRE_EQUAL(firstText, " two"_el);
 
-        const auto source = U8StringEditor{std::string_view{"one one"}};
+        const auto source = StringEditor{"one one"_el};
         REQUIRE_EQUAL(source.removedFirst("one"_el), " one"_el);
         REQUIRE_EQUAL(source.replacedFirst("one"_el, "two"_el), "two one"_el);
-        REQUIRE_EQUAL(source.removedFirst(U8String{}), source);
+        REQUIRE_EQUAL(source.removedFirst(String{}), source);
     }
 
     void testAliasingSlicedAndMalformedNativeEditing() {
 
-        auto insertAlias = U8StringEditor{std::string_view{"abcdef"}};
+        auto insertAlias = StringEditor{"abcdef"_el};
         insertAlias.reserve(ByteLength{16U});
-        const auto insertView = U8String{insertAlias}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        const auto insertView = String{insertAlias}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
         insertAlias.insert(ByteIndex{3U}, insertView);
 
         REQUIRE_EQUAL(insertAlias, "abcbcddef"_el);
 
-        auto replaceAlias = U8StringEditor{std::string_view{"abcdef"}};
+        auto replaceAlias = StringEditor{"abcdef"_el};
         replaceAlias.reserve(ByteLength{16U});
-        const auto replaceView = U8String{replaceAlias}.slice(ByteRange{ByteIndex{1U}, ByteLength{4U}});
+        const auto replaceView = String{replaceAlias}.slice(ByteRange{ByteIndex{1U}, ByteLength{4U}});
         replaceAlias.replace(ByteRange{ByteIndex{2U}, ByteLength{2U}}, replaceView);
 
         REQUIRE_EQUAL(replaceAlias, "abbcdeef"_el);
 
-        auto base = U8StringEditor{std::string_view{"xxabcdefyy"}};
+        auto base = StringEditor{"xxabcdefyy"_el};
         auto sliced = base.slice(ByteRange{ByteIndex{2U}, ByteLength{6U}});
         sliced.insert(ByteIndex{3U}, "!"_el);
 
         REQUIRE_EQUAL(sliced, "abc!def"_el);
         REQUIRE_EQUAL(base, "xxabcdefyy"_el);
 
-        auto malformed = U8StringEditor{std::string_view{invalidUtf8Data()}};
+        auto malformed = StringEditor{std::string_view{invalidUtf8Data()}};
         malformed.replace(ByteRange{ByteIndex{1U}, ByteLength{1U}}, "?"_el);
         malformed.insert(ByteIndex{99U}, "!"_el);
 
@@ -210,7 +209,7 @@ public:
 
     void testRemoveAndReplaceCharacterSets() {
 
-        auto text = U8StringEditor{std::u8string_view{u8"axbxcx"}};
+        auto text = StringEditor{"axbxcx"_el};
 
         REQUIRE_EQUAL(text.removedAll(CharSet{"x"_el}), "abc"_el);
         REQUIRE_EQUAL(text.replacedAll(CharSet{"x"_el}, Char{U'-'}), "a-b-c-"_el);
@@ -223,16 +222,16 @@ public:
 
     void testRemoveAndReplaceTextNeedles() {
 
-        const auto text = U8StringEditor{std::string_view{"aaaa"}};
+        const auto text = StringEditor{"aaaa"_el};
 
         REQUIRE(text.removedAll("aa"_el).isEmpty());
         REQUIRE_EQUAL(text.replacedAll("aa"_el, "b"_el), "bb"_el);
-        REQUIRE_EQUAL(text.replacedAll(U8String{}, "x"_el), "aaaa"_el);
+        REQUIRE_EQUAL(text.replacedAll(String{}, "x"_el), "aaaa"_el);
     }
 
     void testCaseInsensitiveModifiers() {
 
-        auto text = U8StringEditor{std::u8string_view{u8"ÄxxK"}};
+        auto text = String{"ÄxxK"_el};
 
         REQUIRE_EQUAL(text.removedAll(CharSet{u8"Ää"_el}), u8"xxK"_el);
         REQUIRE_EQUAL(text.removedAll(u8"äX"_el, Char::compareCaseFolded), u8"xK"_el);
@@ -242,8 +241,8 @@ public:
 
     void testViewAndCodePointCopyModifiers() {
 
-        const auto text = U8StringEditor{std::string_view{"--alpha--"}};
-        const auto view = U8String{text}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}});
+        const auto text = StringEditor{"--alpha--"_el};
+        const auto view = String{text}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}});
         const auto charView = view;
 
         REQUIRE_EQUAL(view.replacedAll(CharSet{"a"_el}, "A"_el), "AlphA"_el);
@@ -265,13 +264,13 @@ public:
 
     void testSplitAndJoin() {
 
-        const auto text = U8StringEditor{std::string_view{",a,,b,"}};
+        const auto text = StringEditor{",a,,b,"_el};
         const auto parts = U8StringList::fromSplit(text, CharSet{","_el});
-        const auto keptParts = U8StringList::fromSplit(text, CharSet{","_el}, ElementCount::infinite(), true);
+        const auto keptParts = U8StringList::fromSplit(text, CharSet{","_el}, ItemCount::infinite(), true);
 
         REQUIRE_EQUAL(parts.count().toSizeT(), std::size_t{2U});
-        REQUIRE_EQUAL(parts[ElementIndex{0}], "a"_el);
-        REQUIRE_EQUAL(parts[ElementIndex{1}], "b"_el);
+        REQUIRE_EQUAL(parts.getRefOrThrow(ItemIndex{0}), "a"_el);
+        REQUIRE_EQUAL(parts.getRefOrThrow(ItemIndex{1}), "b"_el);
         REQUIRE_EQUAL(keptParts.count().toSizeT(), std::size_t{5U});
         REQUIRE_EQUAL(U8StringList::fromSplit(text, CharSet{","_el}).count().toSizeT(), std::size_t{2U});
         REQUIRE_EQUAL(parts.join("|"_el), "a|b"_el);
@@ -281,14 +280,14 @@ public:
 
     void testForEachTransformAndJustify() {
 
-        const auto text = U8StringEditor{std::u8string_view{u8"Ab¢"}};
+        const auto text = String{"Ab¢"_el};
         _seenCharacters.clear();
 
         const auto completed = text.forEach(collectUntilLowerB);
 
         REQUIRE_EQUAL(completed, LoopResult::Stopped);
         REQUIRE_EQUAL(_seenCharacters, std::u32string{U"Ab"});
-        REQUIRE_EQUAL(text.forEach(nullptr), LoopResult::Success);
+        REQUIRE_EQUAL(text.forEach(ProcessCharacterFn{}), LoopResult::Success);
         REQUIRE_EQUAL(text.transformed(lowerUpperA), u8"ab¢"_el);
         REQUIRE_EQUAL(text.transformed(nullptr), text);
         REQUIRE_EQUAL(text.transformed(stopAtLowerB), "A"_el);
@@ -298,7 +297,7 @@ public:
     }
 
     void testUnchangedImmutableTransformKeepsStorage() {
-        const auto source = U8String{std::string_view{"xabcx"}};
+        const auto source = String{std::string_view{"xabcx"}};
         const auto text = source.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
 
         const auto unchanged = text.transformed(Char::toAsciiLowercase);
@@ -312,7 +311,7 @@ public:
 
     void testInvalidUtf8ModifierBehavior() {
 
-        const auto text = U8StringEditor{std::string_view{invalidUtf8Data()}};
+        const auto text = StringEditor{std::string_view{invalidUtf8Data()}};
 
         REQUIRE_EQUAL(rawBytes(text.removedAll(CharSet{"x"_el})), invalidUtf8Data());
         REQUIRE_EQUAL(rawBytes(text.replacedAll("x"_el, "?"_el)), invalidUtf8Data());
@@ -328,7 +327,7 @@ public:
     }
 
 private:
-    [[nodiscard]] static auto rawBytes(const U8StringEditor &text) -> std::string {
+    [[nodiscard]] static auto rawBytes(const StringEditor &text) -> std::string {
         return std::string{el::text::impl::UnsafeU8StringEditorAccess{text}.data(), text.length().toSizeT()};
     }
 

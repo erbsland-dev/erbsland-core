@@ -19,7 +19,8 @@ public:
 
         writer.setStyle(BlockStyle{Color{fg::Red, bg::Blue}, attributes});
 
-        REQUIRE_EQUAL(writer.style().color(), Color(fg::Red, bg::Blue));
+        const auto color = writer.style().color();
+        REQUIRE_EQUAL(color, Color(fg::Red, bg::Blue));
         REQUIRE(writer.style().attributes().isUnderline());
 
         writer.setDefaultColor();

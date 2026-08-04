@@ -46,10 +46,13 @@ public:
     }
 
     void testFormat() {
-        REQUIRE_EQUAL(std::format("{}", ArgumentType::Text), "Text");
-        REQUIRE_EQUAL(std::format("{}", ArgumentType::Integer), "Integer");
-        REQUIRE_EQUAL(std::format("{}", ArgumentType::Boolean), "Boolean");
-
-        REQUIRE_EQUAL(std::format("{}", ArgumentKind::ProgramCounter), "Program Counter");
+        const auto text = std::format("{}", ArgumentType::Text);
+        const auto integer = std::format("{}", ArgumentType::Integer);
+        const auto boolean = std::format("{}", ArgumentType::Boolean);
+        const auto programCounter = std::format("{}", ArgumentKind::ProgramCounter);
+        REQUIRE_EQUAL(text, "Text");
+        REQUIRE_EQUAL(integer, "Integer");
+        REQUIRE_EQUAL(boolean, "Boolean");
+        REQUIRE_EQUAL(programCounter, "Program Counter");
     }
 };

@@ -39,6 +39,7 @@ public: // accessors
     [[nodiscard]] constexpr auto range(const std::size_t index) const noexcept -> CharRange { return _ranges[index]; }
 
 private:
+    /// Append a non-empty character range to this set.
     constexpr void add(const CharRange range) {
         if (range.isEmpty()) {
             return;

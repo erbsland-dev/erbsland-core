@@ -198,8 +198,7 @@ auto U16StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf16::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf16::fastAdvanceChar(data, position);
             newSize = U16StringSharedStorage::checkedAddSize(
                 newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
         }
@@ -219,8 +218,7 @@ auto U16StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf16::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf16::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             std::memcpy(
                 storage.dataForWrite() + writePosition,
@@ -286,8 +284,7 @@ auto U16StringModifyTools::replaceTextInStorage(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf16::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf16::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             if (writePosition != characterStart.toSizeT()) {
                 std::memmove(
@@ -349,8 +346,7 @@ auto U16StringModifyTools::findFirstTextRange(
         if (matchesText(data, start, needle, compareFn)) {
             return U16DataRange{start, endOfMatch(data, start, needle)};
         }
-        const auto character = utf16::decodeCharOrReplace(data, position);
-        static_cast<void>(character);
+        utf16::fastAdvanceChar(data, position);
     }
     return U16DataRange::noRange();
 }

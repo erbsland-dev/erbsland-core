@@ -3,6 +3,7 @@
 #include "PosixPathBackend.hpp"
 
 #include "PathInfoData.hpp"
+#include "PosixDirectoryCloser.hpp"
 
 #include "../Path.hpp"
 #include "../PathError.hpp"
@@ -29,18 +30,6 @@ namespace erbsland::path::impl {
 
 using namespace text::literals;
 
-namespace {
-
-struct DirectoryCloser final {
-    void operator()(DIR *directory) const noexcept {
-        if (directory != nullptr) {
-            static_cast<void>(::closedir(directory));
-        }
-    }
-};
-
-}
-
 auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const -> std::vector<Path> {
     const auto pathText = pathTextOrThrow(resolvedPath);
     const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
@@ -52,7 +41,7 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &res
             path,
             errno);
     }
-    auto closeDirectory = std::unique_ptr<DIR, DirectoryCloser>{directory};
+    auto closeDirectory = std::unique_ptr<DIR, PosixDirectoryCloser>{directory};
     auto result = std::vector<Path>{};
     const auto refreshTime = time::TimePoint::now();
     const auto logicalPathIsResolved = path == resolvedPath;
@@ -113,7 +102,8 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
     if (profile != PathAccessProfile::Default &&
         ::chmod(pathAccess.data(), profileMode(profile, PathType::Directory)) != 0) {
         const auto error = errno;
-        static_cast<void>(::rmdir(pathAccess.data()));
+        // Rollback is best-effort; preserve the permission error that caused the operation to fail.
+        ::rmdir(pathAccess.data());
         throwSystemError(
             "Directory permissions could not be applied"_el,
             "The directory was created, but its requested permissions could not be applied."_el,
@@ -155,7 +145,8 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
     const auto destinationDescriptor = ::open(destinationAccess.data(), O_WRONLY | O_CREAT | O_EXCL, 0666);
     if (destinationDescriptor < 0) {
         const auto error = errno;
-        static_cast<void>(::close(sourceDescriptor));
+        // Preserve the destination error; a close failure cannot safely be retried.
+        ::close(sourceDescriptor);
         throwSystemError(
             "File could not be copied"_el,
             "The destination file could not be created for copying."_el,
@@ -197,15 +188,19 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
             }
         }
     } catch (...) {
-        static_cast<void>(::close(sourceDescriptor));
-        static_cast<void>(::close(destinationDescriptor));
-        static_cast<void>(::unlink(destinationAccess.data()));
+        // Preserve the copy error; descriptor cleanup cannot safely be retried.
+        ::close(sourceDescriptor);
+        ::close(destinationDescriptor);
+        // Removing the incomplete destination is best-effort while preserving the copy error.
+        ::unlink(destinationAccess.data());
         throw;
     }
-    static_cast<void>(::close(sourceDescriptor));
+    // The source was read successfully; a read-only close failure is not actionable or safely retryable.
+    ::close(sourceDescriptor);
     if (::close(destinationDescriptor) != 0) {
         const auto error = errno;
-        static_cast<void>(::unlink(destinationAccess.data()));
+        // Removing the incomplete destination is best-effort while preserving the finalization error.
+        ::unlink(destinationAccess.data());
         throwSystemError(
             "File could not be copied"_el,
             "The destination file could not be finalized."_el,

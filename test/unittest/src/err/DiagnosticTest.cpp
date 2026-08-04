@@ -32,7 +32,7 @@ public:
         const auto error = el::err::Exception{"Broken value"_el};
         const auto diagnostic = error.diagnostic();
 
-        REQUIRE(diagnostic != nullptr);
+        REQUIRE(diagnostic);
         REQUIRE_EQUAL(toStdString(diagnostic->toString()), std::string{"Broken value"});
         REQUIRE_EQUAL(toStdString(diagnostic->toTextDocument().toString()), std::string{"Error: Broken value"});
         REQUIRE(diagnostic->sourceName().isEmpty());
@@ -44,7 +44,7 @@ public:
         const auto error = el::err::ParseError{"Invalid integer"_el, el::unit::CpIndex{4U}};
         const auto diagnostic = error.diagnostic();
 
-        REQUIRE(diagnostic != nullptr);
+        REQUIRE(diagnostic);
         REQUIRE_EQUAL(diagnostic->location().position(), el::unit::CpIndex{4U});
         REQUIRE_EQUAL(toStdString(diagnostic->toString()), std::string{"Invalid integer at code point 4"});
     }
@@ -55,7 +55,7 @@ public:
                 "/tmp/missing.txt"_el)};
         const auto diagnostic = error.diagnostic();
 
-        REQUIRE(diagnostic != nullptr);
+        REQUIRE(diagnostic);
         REQUIRE_EQUAL(toStdString(diagnostic->sourcePath()), std::string{"/tmp/missing.txt"});
         const auto document = diagnostic->toTextDocument();
         const auto text = toStdString(document.toString());
@@ -84,7 +84,7 @@ public:
         WITH_CONTEXT(requireContains(text, "The file is unavailable."));
         WITH_CONTEXT(requireContains(text, "path"));
         WITH_CONTEXT(requireContains(text, "/tmp/missing.txt"));
-        REQUIRE(text.find("Caused By") == std::string::npos);
+        WITH_CONTEXT(requireMissing(text, "Caused By"));
         WITH_CONTEXT(requireContains(text, "Paths:"));
         WITH_CONTEXT(requireContains(text, "Platform Error:"));
         WITH_CONTEXT(requireContains(text, "errno"));
@@ -115,15 +115,15 @@ public:
     void testPathContextNoPathAndTargetOnlyLabels() {
         const auto noPath = el::path::PathError{el::path::PathErrorContext{"Path operation failed"_el}};
         const auto noPathText = toStdString(noPath.diagnostic()->toTextDocument().toString());
-        REQUIRE(noPathText.find("target path") == std::string::npos);
-        REQUIRE(noPathText.find("source path") == std::string::npos);
+        WITH_CONTEXT(requireMissing(noPathText, "target path"));
+        WITH_CONTEXT(requireMissing(noPathText, "source path"));
 
         const auto targetOnly = el::path::PathError{
             el::path::PathErrorContext{"Output could not be created"_el}.setTargetPath("/tmp/output"_el)};
         const auto targetText = toStdString(targetOnly.diagnostic()->toTextDocument().toString());
         WITH_CONTEXT(requireContains(targetText, "target path"));
         WITH_CONTEXT(requireContains(targetText, "/tmp/output"));
-        REQUIRE(targetText.find("source path") == std::string::npos);
+        WITH_CONTEXT(requireMissing(targetText, "source path"));
     }
 
     void testPathContextCanKeepIndependentCause() {
@@ -159,7 +159,7 @@ public:
         WITH_CONTEXT(requireContains(text, "/tmp/output.dat"));
         WITH_CONTEXT(requireContains(text, "Platform Error:"));
         WITH_CONTEXT(requireContains(text, "Permission denied"));
-        REQUIRE(text.find("Caused By") == std::string::npos);
+        WITH_CONTEXT(requireMissing(text, "Caused By"));
         REQUIRE(document.root()->contains(el::text::TextNodeType::Separator));
     }
 
@@ -176,9 +176,9 @@ public:
         const auto text = toStdString(document.toString());
 
         REQUIRE(document.root()->contains(el::text::TextNodeType::EscapeSequence));
-        REQUIRE(text.find('\x1b') == std::string::npos);
-        REQUIRE(text.find("\\u{1b}") != std::string::npos);
-        REQUIRE(text.find("bad\\nmessage") != std::string::npos);
+        WITH_CONTEXT(requireMissing(text, '\x1b'));
+        WITH_CONTEXT(requireContains(text, "\\u{1b}"));
+        WITH_CONTEXT(requireContains(text, "bad\\nmessage"));
     }
 
     void testForeignExceptionTextIsEscaped() {
@@ -188,8 +188,8 @@ public:
         const auto error = std::runtime_error{message};
         const auto text = toStdString(el::err::DiagnosticHelper{error}.toDocument().toString());
 
-        REQUIRE(text.find('\x1b') == std::string::npos);
-        REQUIRE(text.find("foreign\\u{1b}message") != std::string::npos);
+        WITH_CONTEXT(requireMissing(text, '\x1b'));
+        WITH_CONTEXT(requireContains(text, "foreign\\u{1b}message"));
     }
 
     void testCauseHeadingUsesDisplayTextMap() {
@@ -213,18 +213,18 @@ public:
         const auto &rootChildren = document.root()->children();
         using NodeIndex = el::text::TextNodeList::Index;
 
-        REQUIRE(rootChildren.count() >= el::text::TextNodeList::Count{3U});
-        REQUIRE_EQUAL(rootChildren[NodeIndex{1U}]->type(), el::text::TextNodeType::Heading);
-        REQUIRE(rootChildren[NodeIndex{1U}]->style().contains("diagnostic-cause"_el));
-        REQUIRE_EQUAL(rootChildren[NodeIndex{2U}]->type(), el::text::TextNodeType::Blockquote);
-        REQUIRE(rootChildren[NodeIndex{2U}]->style().contains("diagnostic-cause"_el));
+        REQUIRE_GREATER_EQUAL(rootChildren.count(), el::text::TextNodeList::Count{3U});
+        REQUIRE_EQUAL(rootChildren.getRefOrThrow(NodeIndex{1U})->type(), el::text::TextNodeType::Heading);
+        REQUIRE(rootChildren.getRefOrThrow(NodeIndex{1U})->style().contains("diagnostic-cause"_el));
+        REQUIRE_EQUAL(rootChildren.getRefOrThrow(NodeIndex{2U})->type(), el::text::TextNodeType::Blockquote);
+        REQUIRE(rootChildren.getRefOrThrow(NodeIndex{2U})->style().contains("diagnostic-cause"_el));
 
-        const auto &quoteChildren = rootChildren[NodeIndex{2U}]->children();
-        REQUIRE(quoteChildren.count() >= el::text::TextNodeList::Count{3U});
-        REQUIRE_EQUAL(quoteChildren[NodeIndex{1U}]->type(), el::text::TextNodeType::Heading);
-        REQUIRE(quoteChildren[NodeIndex{1U}]->style().contains("diagnostic-cause"_el));
-        REQUIRE_EQUAL(quoteChildren[NodeIndex{2U}]->type(), el::text::TextNodeType::Blockquote);
-        REQUIRE(quoteChildren[NodeIndex{2U}]->style().contains("diagnostic-cause"_el));
+        const auto &quoteChildren = rootChildren.getRefOrThrow(NodeIndex{2U})->children();
+        REQUIRE_GREATER_EQUAL(quoteChildren.count(), el::text::TextNodeList::Count{3U});
+        REQUIRE_EQUAL(quoteChildren.getRefOrThrow(NodeIndex{1U})->type(), el::text::TextNodeType::Heading);
+        REQUIRE(quoteChildren.getRefOrThrow(NodeIndex{1U})->style().contains("diagnostic-cause"_el));
+        REQUIRE_EQUAL(quoteChildren.getRefOrThrow(NodeIndex{2U})->type(), el::text::TextNodeType::Blockquote);
+        REQUIRE(quoteChildren.getRefOrThrow(NodeIndex{2U})->style().contains("diagnostic-cause"_el));
     }
 
 private:
@@ -233,6 +233,17 @@ private:
     }
 
     void requireContains(const std::string &text, const std::string &needle) {
-        REQUIRE(text.find(needle) != std::string::npos);
+        const auto position = text.find(needle);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+    }
+
+    void requireMissing(const std::string &text, const std::string &needle) {
+        const auto position = text.find(needle);
+        REQUIRE_EQUAL(position, std::string::npos);
+    }
+
+    void requireMissing(const std::string &text, const char needle) {
+        const auto position = text.find(needle);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

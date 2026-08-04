@@ -5,14 +5,13 @@
 #include "DayOfYear_fwd.hpp"
 #include "Month_fwd.hpp"
 #include "Year_fwd.hpp"
+#include "YearDayOfYearParts_fwd.hpp"
 
 #include "impl/TimePartBases.hpp"
 
 #include <array>
 
 namespace erbsland::time {
-
-struct YearDayOfYearParts;
 
 /// A Gregorian calendar year in the supported range `0...9999`.
 /// @tested{YearTest}
@@ -65,8 +64,14 @@ public: // factory
     [[nodiscard]] static auto extractFromEpoch(Days days) noexcept -> YearDayOfYearParts;
 
 private:
+    constexpr static auto cDaysPer400Years = Days{146'097};
+    constexpr static auto cDaysPer100Years = Days{36'524};
+    constexpr static auto cDaysPer4Years = Days{1'461};
+    constexpr static auto cLastValidDay = Days{3'652'424};
+
     using StartDayArray = std::array<Days, 13>;
 
+    /// Get the cached start day for each month of this year.
     [[nodiscard]] auto startDayArray() const noexcept -> const StartDayArray &;
 };
 

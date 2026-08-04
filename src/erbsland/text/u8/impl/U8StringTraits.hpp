@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U8StringData_fwd.hpp"
+#include "U8StringSharedStorage_fwd.hpp"
 
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ByteLength.hpp"
@@ -20,6 +21,7 @@ namespace erbsland::text::impl {
 /// @tested{U8StringDataTest}
 struct U8StringTraits final {
     using CodeUnit = char;
+    using SharedStorage = U8StringSharedStorage;
     using StorageData = U8StringData;
     using StoragePtr = U8StringDataPtr;
     using StandardView = std::string_view;

@@ -15,10 +15,14 @@
 
 namespace erbsland::text::impl {
 
+/// Create runtime pattern data from UTF-8 text.
 [[nodiscard]] auto createStringPatternData(const U8String &pattern) -> StringPatternDataPtr;
+/// Create runtime pattern data from UTF-16 text.
 [[nodiscard]] auto createStringPatternData(const U16String &pattern) -> StringPatternDataPtr;
+/// Create runtime pattern data from UTF-32 text.
 [[nodiscard]] auto createStringPatternData(const U32String &pattern) -> StringPatternDataPtr;
 
+/// Create static pattern data from pattern elements.
 template <pattern::AnyElement... Args>
 [[nodiscard]] auto createStaticStringPatternData(const Args &...elements) -> StringPatternDataPtr {
     using Data = StaticStringPatternData<pattern::cMaximumStaticElements, pattern::cMaximumStaticRanges>;

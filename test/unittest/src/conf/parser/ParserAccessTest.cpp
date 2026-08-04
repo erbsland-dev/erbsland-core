@@ -5,6 +5,8 @@
 
 #include <erbsland/conf/StdFormat.hpp>
 
+#include <array>
+
 using namespace el::text::literals;
 
 TESTED_TARGETS(Parser FileAccessCheck)
@@ -101,6 +103,8 @@ public:
         }
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testIncludeGranted() {
         const auto testData = std::vector<TestData>{
             // Establish the baseline, with all default settings.
@@ -162,6 +166,17 @@ public:
                 [&]() -> std::string { return std::format("Failed for test case {}", index); });
             cleanUpTestFileDirectory();
             index += 1;
+        }
+    }
+
+    void testIncludeGrantedLight() {
+        const auto testData = std::array<TestData, 2>{
+            TestData{TestFile::ParentDirectory, {}, {}, false},
+            TestData{TestFile::SameDirectory, {}, {}, true},
+        };
+        for (const auto &data : testData) {
+            WITH_CONTEXT(verifyAccess(data));
+            cleanUpTestFileDirectory();
         }
     }
 

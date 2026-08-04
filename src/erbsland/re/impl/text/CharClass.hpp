@@ -14,6 +14,7 @@ namespace erbsland::re::impl {
 class CharClass {
     using RangeVector = std::vector<CharRange>;
     using RangesPtr = std::shared_ptr<RangeVector>;
+    /// Shared state that permits copy-on-write character ranges.
     struct Data {
         RangesPtr ranges;         ///< The shared vector of ranges.
         std::size_t hash = 0;     ///< The hash of this object.
@@ -28,6 +29,7 @@ public:
         requires std::constructible_from<std::vector<CharRange>, Fwd>
     explicit CharClass(Fwd &&ranges) :
         _data{std::make_shared<Data>(std::make_shared<RangeVector>(std::forward<Fwd>(ranges)))} {}
+    /// Create an empty character class.
     CharClass() : _data{std::make_shared<Data>(std::make_shared<RangeVector>(std::vector<CharRange>()))} {}
 
     // defaults
@@ -36,9 +38,14 @@ public:
     CharClass(CharClass &&) noexcept = default;
     auto operator=(const CharClass &) noexcept -> CharClass & = default;
     auto operator=(CharClass &&) noexcept -> CharClass & = default;
+
+public: // operators
+    /// Test whether two character classes contain identical ranges.
     auto operator==(const CharClass &) const -> bool;
+    /// Test whether two character classes contain different ranges.
     auto operator!=(const CharClass &) const -> bool;
 
+public: // factory methods
     /// Create and prepare a hash for use.
     template <typename Fwd>
         requires std::constructible_from<std::vector<CharRange>, Fwd>
@@ -84,6 +91,7 @@ private:
     /// Build the hash for this object.
     void buildHash() noexcept;
     /// Create a new copy of the ranges vector if necessary.
+    /// Detach the range storage before a mutating operation when it is shared.
     void conditionalDetach();
 
 private:

@@ -17,6 +17,7 @@ namespace erbsland::cterm::impl::document_renderer {
 /// @tested{TerminalDocumentRendererTest}
 class InlineContent final {
 public:
+    /// Create an empty inline content text.
     InlineContent() = default;
     /// Create metadata-free content from styled text.
     /// @param text The styled text.

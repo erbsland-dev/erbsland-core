@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Buffer_fwd.hpp"
 #include "WritableBuffer.hpp"
 
 #include "../text/String.hpp"
@@ -9,9 +10,6 @@
 #include <vector>
 
 namespace erbsland::cterm {
-
-class Buffer;
-using BufferPtr = std::shared_ptr<Buffer>;
 
 /// A mutable 2D buffer storing characters and colors for rendering.
 ///

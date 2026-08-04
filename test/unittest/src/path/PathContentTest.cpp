@@ -38,7 +38,7 @@ public:
         const auto emptyContent = PathContent{};
         REQUIRE(emptyContent.isEmpty());
         REQUIRE(emptyContent.path().isEmpty());
-        REQUIRE(&emptyContent.path() == &Path::empty());
+        REQUIRE_EQUAL(&emptyContent.path(), &Path::empty());
 
         const auto fixture = Fixture{"access"};
         const auto path = pathFromStd(fixture.path() / "report.txt");

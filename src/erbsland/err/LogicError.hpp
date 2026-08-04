@@ -12,6 +12,7 @@ namespace erbsland::err {
 class LogicError : public Exception {
 public:
     using Exception::Exception;
+    // defaults
     ~LogicError() override = default;
 };
 

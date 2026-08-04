@@ -17,6 +17,7 @@ namespace erbsland::profiling {
 /// @tested{WorkloadRunnerTest}
 class ScenarioWorkload {
 public:
+    // defaults
     virtual ~ScenarioWorkload() = default;
 
 public:

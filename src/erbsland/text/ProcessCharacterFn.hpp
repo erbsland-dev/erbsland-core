@@ -4,6 +4,7 @@
 
 #include "Char_fwd.hpp"
 
+#include "../unit/CpIndex_fwd.hpp"
 #include "../util/LoopStatus.hpp"
 
 #include <functional>
@@ -14,5 +15,7 @@ namespace erbsland::text {
 /// Return `LoopStatus::Continue` to continue iteration, `LoopStatus::Stop` to stop early, or `LoopStatus::Error`
 /// to report an error.
 using ProcessCharacterFn = std::function<util::LoopStatus(Char character)>;
+/// @overload
+using ProcessCharacterWithCpIndexFn = std::function<util::LoopStatus(Char character, unit::CpIndex index)>;
 
 }

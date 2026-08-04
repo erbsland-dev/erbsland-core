@@ -11,6 +11,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathCreateDirectoryOptions final {
 public:
+    /// Create directory-creation options with their default values.
     PathCreateDirectoryOptions() = default;
 
 public:

@@ -16,8 +16,9 @@ class VrDocumentModelTest final : public UNITTEST_SUBCLASS(VrBase) {
 public:
     void requireNodeMarkedNotValidated(const std::string_view namePath) {
         auto value = document->valueOrThrow(el::text::String{namePath});
-        REQUIRE(value->validationRule() != nullptr);
-        REQUIRE_EQUAL(value->validationRule()->type(), vr::RuleType::NotValidated);
+        const auto validationRule = value->validationRule();
+        REQUIRE_NOT_EQUAL(validationRule, nullptr);
+        REQUIRE_EQUAL(validationRule->type(), vr::RuleType::NotValidated);
     }
 
     void testValidDocument() {

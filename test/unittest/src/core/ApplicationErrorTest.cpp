@@ -18,7 +18,8 @@ public:
     void testReasonConstructorPreservesDiagnosticTitle() {
         const auto error = el::core::ApplicationError{"Startup failed"_el};
         REQUIRE_EQUAL(error.title(), "Startup failed"_el);
-        REQUIRE(error.diagnostic()->toTextDocument().toString().contains("Startup failed"_el));
+        const auto text = error.diagnostic()->toTextDocument().toString();
+        REQUIRE(text.contains("Startup failed"_el));
     }
 
     void testContextRendersAllDetails() {
@@ -41,21 +42,24 @@ public:
 
     void testCustomAndResetApplicationDisplayText() {
         auto scope = ApplicationTestScope<>{};
-        REQUIRE(scope.app().displayText() != nullptr);
+        REQUIRE(scope.app().displayText());
         auto map = scope.app().displayText()->clone();
         map->set("UnknownError"_el, "Unbekannter Fehler"_el);
         scope.app().setDisplayTextMap(map);
 
-        REQUIRE_EQUAL(scope.app().displayText()->text("UnknownError"_el), "Unbekannter Fehler"_el);
+        const auto localizedText = scope.app().displayText()->text("UnknownError"_el);
+        REQUIRE_EQUAL(localizedText, "Unbekannter Fehler"_el);
         scope.app().setDisplayTextMap(nullptr);
-        REQUIRE(scope.app().displayText() != nullptr);
-        REQUIRE_EQUAL(scope.app().displayText()->text("UnknownError"_el), "Unknown Error"_el);
+        REQUIRE(scope.app().displayText());
+        const auto defaultText = scope.app().displayText()->text("UnknownError"_el);
+        REQUIRE_EQUAL(defaultText, "Unknown Error"_el);
     }
 
     void testEmptyTitleUsesProvidedDisplayText() {
         auto map = el::i18n::DisplayTextMap::defaultMap()->clone();
         map->set("UnknownError"_el, "Unspecified"_el);
         const auto error = el::core::ApplicationError{el::core::ApplicationErrorContext{}, {}};
-        REQUIRE(error.diagnostic()->toTextDocument(map).toString().contains("Unspecified"_el));
+        const auto text = error.diagnostic()->toTextDocument(map).toString();
+        REQUIRE(text.contains("Unspecified"_el));
     }
 };

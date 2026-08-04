@@ -4,6 +4,7 @@
 
 namespace erbsland::re::impl {
 
+/// Result that controls a running matching-engine thread.
 enum class EngineResult : bool {
     Continue = false, ///< Continue.
     Stop = true,      ///< Stop the thread or process.

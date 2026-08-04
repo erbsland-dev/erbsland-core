@@ -30,13 +30,14 @@ public:
     void verifyFileSource(const ConfErrorContext &context, const std::filesystem::path &path) {
         const auto expectedPath = el::path::Path{std::filesystem::absolute(path)}.toString();
         REQUIRE(context.filePath().has_value());
-        REQUIRE_EQUAL(context.filePath()->toString(), expectedPath);
+        const auto actualPath = context.filePath()->toString();
+        REQUIRE_EQUAL(actualPath, expectedPath);
         REQUIRE(context.location().has_value());
         REQUIRE(context.codeSnippet().has_value());
     }
 
     void requireTextSourceAfterError() {
-        REQUIRE(doc == nullptr);
+        REQUIRE_EQUAL(doc, nullptr);
         error = std::make_unique<ConfError>(parser.lastError());
         verifyTextSource(error->context());
     }
@@ -71,7 +72,7 @@ public:
     void testParseFileUsesFileSourceAndParse() {
         const auto filePath = createTestFile("config/invalid.elcl", "["_el);
         REQUIRE_NOTHROW(doc = parser.parseFile(el::path::Path{filePath}));
-        REQUIRE(doc == nullptr);
+        REQUIRE_EQUAL(doc, nullptr);
         error = std::make_unique<ConfError>(parser.lastError());
         verifyFileSource(error->context(), filePath);
     }
@@ -87,9 +88,11 @@ public:
     }
 
     void testSuccessfulParseClearsLastErrorContext() {
-        REQUIRE(parser.parseText("["_el) == nullptr);
+        const auto failedDocument = parser.parseText("["_el);
+        REQUIRE_EQUAL(failedDocument, nullptr);
         REQUIRE_FALSE(parser.lastError().title().isEmpty());
-        REQUIRE(parser.parseText({}) != nullptr);
+        const auto successfulDocument = parser.parseText({});
+        REQUIRE_NOT_EQUAL(successfulDocument, nullptr);
         REQUIRE(parser.lastError().title().isEmpty());
         REQUIRE(parser.lastError().description().isEmpty());
     }

@@ -32,30 +32,43 @@ class SharedByteDataWithFlag final : public SharedData {
         std::is_trivially_destructible_v<tDataType>, "SharedByteDataWithFlag requires trivially destructible data.");
 
 public:
+    /// Define the stored byte-sized element type.
     using DataType = tDataType;
+    /// Define the allocation size and capacity type.
     using SizeType = std::uint32_t;
 
+    /// Mark an allocation whose contents must be erased on destruction.
     static constexpr auto cSensitiveFlag = std::uint8_t{0x01};
 
 public: // access
+    /// Get the number of stored elements.
     [[nodiscard]] auto size() const noexcept -> SizeType { return _size; }
+    /// Set the number of initialized elements.
     void setSize(SizeType newSize) noexcept {
         if (newSize > _capacity) {
             std::terminate();
         }
         _size = newSize;
     }
+    /// Get the number of elements accommodated by the allocation.
     [[nodiscard]] auto capacity() const noexcept -> SizeType { return _capacity; }
+    /// Access the mutable element storage.
     [[nodiscard]] auto data() noexcept -> DataType * { return reinterpret_cast<DataType *>(this + 1); }
+    /// Access the element storage.
     [[nodiscard]] auto data() const noexcept -> const DataType * {
         return reinterpret_cast<const DataType *>(this + 1);
     }
+    /// Get the allocation flags.
     [[nodiscard]] auto flags() const noexcept -> std::uint8_t { return _flags; }
+    /// Replace the allocation flags.
     void setFlags(std::uint8_t flags) noexcept { _flags = flags; }
+    /// Mark this allocation as sensitive.
     void setSensitive() const noexcept { _flags |= cSensitiveFlag; }
+    /// Test whether this allocation is sensitive.
     [[nodiscard]] auto isSensitive() const noexcept -> bool { return (_flags & cSensitiveFlag) != 0; }
 
 public: // lifetime
+    /// Allocate storage with `size`, `capacity`, and allocation `flags`.
     [[nodiscard]] static auto create(SizeType size, SizeType capacity, std::uint8_t flags = 0)
         -> SharedByteDataWithFlag * {
         if (size > capacity || !canAllocateWithCapacity(capacity)) {
@@ -65,11 +78,13 @@ public: // lifetime
         auto *memory = ::operator new(allocationSize);
         return new (memory) SharedByteDataWithFlag{size, capacity, flags};
     }
+    /// Allocate a copy of this storage.
     [[nodiscard]] auto clone() const -> SharedByteDataWithFlag * {
         auto *copy = create(_size, _capacity, _flags);
         std::memcpy(copy->data(), data(), static_cast<std::size_t>(_size));
         return copy;
     }
+    /// Destroy and deallocate `data`, erasing it when sensitive.
     static void destroy(SharedByteDataWithFlag *data) noexcept {
         if (data == nullptr) {
             return;
@@ -84,6 +99,7 @@ public: // lifetime
     }
 
 public: // allocation tools
+    /// Test whether `capacity` can be represented and allocated.
     template <std::integral T>
     [[nodiscard]] static constexpr auto canAllocateWithCapacity(T capacity) noexcept -> bool {
         if constexpr (std::signed_integral<T>) {
@@ -109,9 +125,11 @@ public: // allocation tools
         return static_cast<std::size_t>(capacityValue) <=
             std::numeric_limits<std::size_t>::max() - allocationOverhead();
     }
+    /// Get the allocation overhead before element storage.
     [[nodiscard]] static constexpr auto allocationOverhead() noexcept -> std::size_t {
         return sizeof(SharedByteDataWithFlag);
     }
+    /// Get the allocation size needed for `capacity` elements.
     template <std::integral T>
     [[nodiscard]] static constexpr auto allocationSizeForCapacity(T capacity) noexcept -> std::size_t {
         if (!canAllocateWithCapacity(capacity)) {
@@ -121,6 +139,7 @@ public: // allocation tools
     }
 
 private:
+    /// Create flagged shared byte data with the supplied storage metadata.
     SharedByteDataWithFlag(SizeType size, SizeType capacity, std::uint8_t flags) noexcept :
         _size(size), _capacity(capacity), _flags(flags) {}
 
@@ -134,23 +153,27 @@ private:
     mutable std::uint8_t _flags;
 };
 
+/// Access the mutable reference counter of flagged shared byte data.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::referenceCounter(Type *data) noexcept
     -> ReferenceCounter & {
     return data->_referenceCount;
 }
 
+/// Access the immutable reference counter of flagged shared byte data.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::referenceCounter(const Type *data) noexcept
     -> const ReferenceCounter & {
     return data->_referenceCount;
 }
 
+/// Clone flagged shared byte data into a separate allocation.
 template <typename tDataType>
 auto SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::clone(const Type *data) -> Type * {
     return data->clone();
 }
 
+/// Destroy a flagged shared-byte-data allocation.
 template <typename tDataType>
 void SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>>::destroy(Type *data) noexcept {
     Type::destroy(data);

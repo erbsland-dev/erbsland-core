@@ -38,6 +38,7 @@ public: // diagnostics
     }
 
 public: // helpers
+    /// Get every supported regular-expression flag in stable order.
     [[nodiscard]] constexpr static auto all() noexcept -> std::array<Flag, 6> {
         return std::array<Flag, 6>{
             Flag::IgnoreCase, Flag::Multiline, Flag::DotAll, Flag::Ascii, Flag::Verbose, Flag::CRLF};

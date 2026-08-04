@@ -12,6 +12,6 @@ target_sources(byte-types-profile PRIVATE
         main.cpp
         ProfileTypes.cpp
         ProfileTypes.hpp
-        Workload.cpp
         Workload.hpp
+        WorkloadRunner.cpp
 )

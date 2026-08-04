@@ -69,8 +69,8 @@ public:
 
     void testDateTimeIsoParsingAndFormatting() {
 
-        const auto posixEpoch = DateTime::posixEpoch();
-        REQUIRE_EQUAL(posixEpoch.toSecondsSinceEpoch(), Days{719528}.converted<Seconds>());
+        const auto posixEpoch = DateTime::epoch(TimeEpoch::Posix);
+        REQUIRE_EQUAL(posixEpoch.toSecondsAndFractions().value().first, Days{719528}.converted<Seconds>());
         REQUIRE_EQUAL(posixEpoch.toTimeT(), 0);
         REQUIRE_EQUAL(DateTime::fromTimeT(0), posixEpoch);
 

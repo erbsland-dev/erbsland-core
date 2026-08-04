@@ -3,14 +3,17 @@
 #include "In.hpp"
 
 #include "../../../../text/StringFormat.hpp"
-#include "../../../impl/vr/InConstraint.hpp"
+#include "../../../impl/vr/InBytesConstraint.hpp"
+#include "../../../impl/vr/InFloatConstraint.hpp"
+#include "../../../impl/vr/InIntegerConstraint.hpp"
+#include "../../../impl/vr/InTextConstraint.hpp"
 
 #include <ranges>
 #include <type_traits>
 
 namespace erbsland::conf::vr::builder {
 
-void In::operator()(impl::Rule &rule) {
+void In::operator()(Rule &rule) {
     auto constraint = std::visit(
         [&rule](const auto &values) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(values)>;

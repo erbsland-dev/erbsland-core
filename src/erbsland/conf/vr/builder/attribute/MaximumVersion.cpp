@@ -10,7 +10,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void MaximumVersion::operator()(impl::Rule &rule) {
+void MaximumVersion::operator()(Rule &rule) {
     if (_version < 0) {
         throw conf::ConfError{ConfErrorCategory::Validation, "The maximum version must be non-negative"_el};
     }

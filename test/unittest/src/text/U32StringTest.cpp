@@ -6,17 +6,17 @@
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u32/U32StringList.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ElementCount.hpp>
-#include <erbsland/unit/ElementIndex.hpp>
+#include <erbsland/unit/ItemCount.hpp>
+#include <erbsland/unit/ItemIndex.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -30,8 +30,8 @@ using namespace el::text::literals;
 using el::unit::CpIndex;
 using el::unit::CpLength;
 using el::unit::CpRange;
-using el::unit::ElementCount;
-using el::unit::ElementIndex;
+using el::unit::ItemCount;
+using el::unit::ItemIndex;
 using namespace el::text;
 
 TESTED_TARGETS(U32StringEditor U32String U32StringLiteral U32StringEncodingTools U32StringModifyTools BooleanFormat)
@@ -87,7 +87,7 @@ public:
         const auto view = U32String{source}.slice(CpRange{CpIndex{1U}, CpLength{2U}});
 
         auto repeatedText = U32StringEditor{};
-        repeatedText.append(view, ElementCount{2U});
+        repeatedText.append(view, ItemCount{2U});
         REQUIRE_EQUAL(StringConverter{repeatedText}.toStdU32String(), std::u32string{U"A\U0001F600A\U0001F600"});
         REQUIRE_EQUAL(repeatedText.length(), CpLength{4U});
 
@@ -105,16 +105,16 @@ public:
             std::u32string{U"prefix-A\U0001F600-suffix"});
 
         auto appended = U32StringEditor{std::u32string_view{U">"}};
-        appended.append(view, ElementCount{2U}).append(Char{U'!'}, CpLength{2U});
+        appended.append(view, ItemCount{2U}).append(Char{U'!'}, CpLength{2U});
         REQUIRE_EQUAL(StringConverter{appended}.toStdU32String(), std::u32string{U">A\U0001F600A\U0001F600!!"});
         REQUIRE_EQUAL(appended.length(), CpLength{7U});
 
-        REQUIRE(U32StringEditor{}.append(view, ElementCount::zero()).isEmpty());
-        REQUIRE(U32StringEditor{}.append(U32String{}, ElementCount{5U}).isEmpty());
+        REQUIRE(U32StringEditor{}.append(view, ItemCount::zero()).isEmpty());
+        REQUIRE(U32StringEditor{}.append(U32String{}, ItemCount{5U}).isEmpty());
         REQUIRE(U32StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
         REQUIRE(U32StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
         REQUIRE(U32StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
-        REQUIRE_THROWS(U32StringEditor{}.append(view, ElementCount::infinite()));
+        REQUIRE_THROWS(U32StringEditor{}.append(view, ItemCount::infinite()));
         REQUIRE_THROWS(U32StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
     }
 
@@ -304,7 +304,7 @@ public:
         const auto text = U32String{std::u32string_view{textData}};
 
         REQUIRE_EQUAL(text.find(needle), CpIndex{4033U});
-        REQUIRE_EQUAL(text.count(needle), ElementCount{1U});
+        REQUIRE_EQUAL(text.count(needle), ItemCount{1U});
 
         needleData.back() = U'c';
         REQUIRE(text.find(U32String{std::u32string_view{needleData}}).isNoIndex());
@@ -364,8 +364,8 @@ public:
         REQUIRE_EQUAL(
             StringConverter{U32String{invalid}.transformed(Char::toAsciiLowercase)}.toStdU32String(),
             std::u32string{U"a\uFFFDb"});
-        REQUIRE_EQUAL(invalid.count(U"\uFFFD"_el), ElementCount{1U});
-        REQUIRE_EQUAL(U32String{invalid}.count(U"\uFFFD"_el, Char::compareCaseFolded), ElementCount{1U});
+        REQUIRE_EQUAL(invalid.count(U"\uFFFD"_el), ItemCount{1U});
+        REQUIRE_EQUAL(U32String{invalid}.count(U"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
     }
 
     void testSliceTrimFindSplitAndJoin() {
@@ -377,7 +377,7 @@ public:
 
         REQUIRE_EQUAL(StringConverter{trimmed}.toStdString(), std::string{"Alpha,Beta,Gamma"});
         REQUIRE_EQUAL(parts.count().toSizeT(), std::size_t{3});
-        REQUIRE_EQUAL(StringConverter{parts[ElementIndex{1}]}.toStdString(), std::string{"Beta"});
+        REQUIRE_EQUAL(StringConverter{parts.getRefOrThrow(ItemIndex{1})}.toStdString(), std::string{"Beta"});
         REQUIRE_EQUAL(U32StringList::fromSplit(trimmed, CharSet{Char{U','}}).count().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(StringConverter{joined}.toStdString(), std::string{"Alpha+Beta+Gamma"});
         REQUIRE_EQUAL(trimmed.find(U"Beta"_el), CpIndex{6});
@@ -582,17 +582,17 @@ public:
 
         REQUIRE(text.containsOnly(CharSet::fromPattern(U"A\u00A2\U0001F600"_el)));
         REQUIRE(view.containsOnly(CharSet::fromPattern(U"A\u00A2\U0001F600"_el)));
-        REQUIRE_EQUAL(text.count(U"\U0001F600"_el), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(U"\u00A2\U0001F600"_el), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(U"A"_el), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(U32String{}), ElementCount::zero());
-        REQUIRE_EQUAL(U32String{U"aaaa"_el}.count(U"aa"_el), ElementCount{2U});
+        REQUIRE_EQUAL(text.count(U"\U0001F600"_el), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(U"\u00A2\U0001F600"_el), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(U"A"_el), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(U32String{}), ItemCount::zero());
+        REQUIRE_EQUAL(U32String{U"aaaa"_el}.count(U"aa"_el), ItemCount{2U});
         REQUIRE_FALSE(text.containsOnly(CharSet::fromPattern(U"A\u00A2"_el)));
         REQUIRE_FALSE(view.containsOnly(CharSet{}));
         REQUIRE(text.containsOnly(CharSet::fromPattern(U"Aa\u00A2\U0001F600"_el)));
-        REQUIRE_EQUAL(text.count(U"a"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(U"a"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(U32String{}, Char::compareCaseFolded), ElementCount::zero());
+        REQUIRE_EQUAL(text.count(U"a"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(U"a"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(U32String{}, Char::compareCaseFolded), ItemCount::zero());
     }
 
     void testConversionAndEncodeDecode() {

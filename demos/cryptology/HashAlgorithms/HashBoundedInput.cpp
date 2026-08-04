@@ -3,6 +3,7 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/cryptology/HashSelector.hpp>
 
 #include <algorithm>
 #include <array>
@@ -16,7 +17,7 @@ auto hashBoundedStream(el::ByteInputStream &input, el::HashAlgorithm algorithm, 
 /// Hash a file through a bounded stream and current algorithm policy.
 ///
 /// Open the file once, process its bytes incrementally, and keep both the memory use and total accepted input bounded.
-/// Check `HashAlgorithm::isSafe()` before processing data that names its own algorithm.
+/// Check `HashSelector::isSafe()` before processing data that names its own algorithm.
 void hashBoundedInput() {
     auto directoryOptions = el::PathTempDirectoryOptions{};
     directoryOptions.setPrefix("forêt-"_el).setSuffix("-hash-demo"_el);
@@ -32,13 +33,13 @@ void hashBoundedInput() {
 
     el::io::printLine("Digest bytes: "_el, digest.length().toSizeT());
     el::io::printLine(
-        "MD5 rejected: "_el, el::BooleanFormat::yesNo(), !el::HashAlgorithm{el::HashAlgorithm::Md5}.isSafe());
+        "MD5 rejected: "_el, el::BooleanFormat::yesNo(), !el::HashSelector{}.isSafe(el::HashAlgorithm::Md5));
 }
 
 /// Hash an untrusted stream without collecting it in memory or accepting unlimited input.
 auto hashBoundedStream(el::ByteInputStream &input, const el::HashAlgorithm algorithm, const std::size_t maximumBytes)
     -> el::ByteBlock {
-    if (!algorithm.isSafe()) {
+    if (!el::HashSelector{}.isSafe(algorithm)) {
         throw el::RuntimeError{"The selected hash algorithm is not acceptable."_el};
     }
 

@@ -14,14 +14,20 @@
 #include <string_view>
 #include <vector>
 
+/// Recording terminal backend used by terminal unit tests.
+/// @notest{Used only by terminal unit tests.}
 class TerminalTestBackend final : public Backend {
 public:
     using CursorMove = TerminalTestCursorMove;
 
 public: // implement Backend
+    /// Record platform initialization.
     void initializePlatform() override { _initializePlatformCallCount += 1; }
+    /// Record platform restoration.
     void restorePlatform() override { _restorePlatformCallCount += 1; }
+    /// Report whether color-code support is enabled for the test.
     [[nodiscard]] auto supportsColorCodes() const noexcept -> bool override { return _supportsColorCodes; }
+    /// Report whether cursor-code support is enabled for the test.
     [[nodiscard]] auto supportsCursorCodes() const noexcept -> bool override { return _supportsCursorCodes; }
     [[nodiscard]] auto supportsCursorVisibilityCodes() const noexcept -> bool override {
         return _supportsCursorVisibilityCodes;
@@ -62,6 +68,7 @@ public: // implement Backend
         _setInputModeCallCount += 1;
         _inputMode = mode;
     }
+    /// Record a key-read request and return its configured result.
     [[nodiscard]] auto readKey(const std::chrono::milliseconds timeout = {}) -> Key override {
         _readKeyCallCount += 1;
         _readKeyTimeouts.push_back(timeout);
@@ -92,6 +99,7 @@ public: // implement Backend
     }
 
 public:
+    /// Return the text emitted by the backend.
     [[nodiscard]] auto output() const -> std::string {
         auto result = std::string{};
         for (const auto &segment : _emittedText) {
@@ -100,8 +108,10 @@ public:
         return result;
     }
 
+    /// Clear the recorded emitted text.
     void clearOutput() { _emittedText.clear(); }
 
+    /// Clear all recorded backend operations and results.
     void clearRecordedOperations() {
         _emittedText.clear();
         _emittedColors.clear();

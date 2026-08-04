@@ -336,50 +336,66 @@ private:
 
     template <typename Result, typename First, typename Second>
     void requireAdd(First first, Second second, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingAddBounded(first, second, minimum, maximum) == expected);
-        REQUIRE(willAddBoundedSaturate(first, second, minimum, maximum) == saturated);
+        const auto actual = saturatingAddBounded(first, second, minimum, maximum);
+        const auto didSaturate = willAddBoundedSaturate(first, second, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename First, typename Second>
     void requireSubtract(First first, Second second, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingSubtractBounded(first, second, minimum, maximum) == expected);
-        REQUIRE(willSubtractBoundedSaturate(first, second, minimum, maximum) == saturated);
+        const auto actual = saturatingSubtractBounded(first, second, minimum, maximum);
+        const auto didSaturate = willSubtractBoundedSaturate(first, second, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename Value>
     void requireNegate(Value value, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingNegateBounded(value, minimum, maximum) == expected);
-        REQUIRE(willNegateBoundedSaturate(value, minimum, maximum) == saturated);
+        const auto actual = saturatingNegateBounded(value, minimum, maximum);
+        const auto didSaturate = willNegateBoundedSaturate(value, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename Value>
     void requireIncrement(Value value, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingIncrementBounded(value, minimum, maximum) == expected);
-        REQUIRE(willAddBoundedSaturate(value, Result{1}, minimum, maximum) == saturated);
+        const auto actual = saturatingIncrementBounded(value, minimum, maximum);
+        const auto didSaturate = willAddBoundedSaturate(value, Result{1}, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename Value>
     void requireDecrement(Value value, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingDecrementBounded(value, minimum, maximum) == expected);
-        REQUIRE(willSubtractBoundedSaturate(value, Result{1}, minimum, maximum) == saturated);
+        const auto actual = saturatingDecrementBounded(value, minimum, maximum);
+        const auto didSaturate = willSubtractBoundedSaturate(value, Result{1}, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename First, typename Second>
     void requireMultiply(First first, Second second, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingMultiplyBounded(first, second, minimum, maximum) == expected);
-        REQUIRE(willMultiplyBoundedSaturate(first, second, minimum, maximum) == saturated);
+        const auto actual = saturatingMultiplyBounded(first, second, minimum, maximum);
+        const auto didSaturate = willMultiplyBoundedSaturate(first, second, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename First, typename Second>
     void requireDivide(First first, Second second, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingDivideBounded(first, second, minimum, maximum) == expected);
-        REQUIRE(willDivideBoundedSaturate(first, second, minimum, maximum) == saturated);
+        const auto actual = saturatingDivideBounded(first, second, minimum, maximum);
+        const auto didSaturate = willDivideBoundedSaturate(first, second, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <typename Result, typename First, typename Second>
     void requireModulo(First first, Second second, Result minimum, Result maximum, Result expected, bool saturated) {
-        REQUIRE(saturatingModuloBounded(first, second, minimum, maximum) == expected);
-        REQUIRE(willModuloBoundedSaturate(first, second, minimum, maximum) == saturated);
+        const auto actual = saturatingModuloBounded(first, second, minimum, maximum);
+        const auto didSaturate = willModuloBoundedSaturate(first, second, minimum, maximum);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE_EQUAL(didSaturate, saturated);
     }
 
     template <std::signed_integral T>

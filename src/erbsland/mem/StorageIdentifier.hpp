@@ -55,6 +55,7 @@ public:
     }
 
 private:
+    /// Create an identifier from its mixed storage values.
     constexpr explicit StorageIdentifier(const std::array<uint64_t, 2> values) noexcept : _values{values} {}
 
 private:

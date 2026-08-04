@@ -4,6 +4,7 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockAccess.hpp>
@@ -15,12 +16,17 @@
 
 using namespace el::conf;
 
+/// Provides reusable document parsing and assertion helpers.
+/// @notest{This helper is exercised by parser test suites that inherit from it.}
 class ParserTestHelper : public ConfTestHelper {
 public:
     using ExpectedValueMap = std::map<el::text::String, el::text::String>;
 
+    /// Provides an in-memory configuration source for parser tests.
+    /// @notest{Used by parser test cases.}
     class MockSource final : public Source {
     public:
+        // defaults
         MockSource() = default;
         ~MockSource() override = default;
         [[nodiscard]] auto identifier() const noexcept -> SourceIdentifierPtr override {
@@ -41,7 +47,7 @@ public:
                 line = std::get<el::text::String>(lines[currentLine]);
             } else {
                 const auto &bytes = std::get<el::mem::ByteBlock>(lines[currentLine]);
-                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{bytes}.data();
+                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{bytes}.dataView().dataSpan();
                 line = el::text::String{
                     std::string_view{reinterpret_cast<const char *>(byteSpan.data()), byteSpan.size()}};
             }
@@ -69,6 +75,7 @@ public:
     using MockSourcePtr = std::shared_ptr<MockSource>;
 
 public:
+    /// Verify the parsed document's flat values against expected text.
     void verifyValueMap(const ExpectedValueMap &expectedValueMap) {
         auto flatMap = doc->toFlatValueMap();
         // First, convert and verify all name paths.
@@ -115,6 +122,7 @@ public:
         }
     }
 
+    /// Create a text file in the test-file directory.
     auto createTestFile(const std::filesystem::path &relativePath, const el::text::String &text)
         -> std::filesystem::path {
 

@@ -23,11 +23,11 @@ public:
         const auto name = Name::createRegular("my_index"_el);
         const KeyIndex index{name, CaseSensitivity::CaseInsensitive, 2};
 
-        REQUIRE(index.name() == name);
-        REQUIRE(index.caseSensitivity() == CaseSensitivity::CaseInsensitive);
+        REQUIRE_EQUAL(index.name(), name);
+        REQUIRE_EQUAL(index.caseSensitivity(), CaseSensitivity::CaseInsensitive);
     }
 
-    void testConstructorRejectsZeroElementCount() {
+    void testConstructorRejectsZeroItemCount() {
         REQUIRE_THROWS_AS(ConfError, KeyIndex(Name::createRegular("index"_el), CaseSensitivity::CaseSensitive, 0));
     }
 
@@ -113,7 +113,7 @@ public:
         REQUIRE(index.hasKey("BeTa"_el, 1));
     }
 
-    void testTryAddKeyRejectsMismatchingElementCount() {
+    void testTryAddKeyRejectsMismatchingItemCount() {
         KeyIndex index{Name::createRegular("count_check"_el), CaseSensitivity::CaseSensitive, 2};
 
         REQUIRE_THROWS_AS(ConfError, index.tryAddKey(ConfKey{}));
@@ -121,7 +121,7 @@ public:
         REQUIRE_THROWS_AS(ConfError, index.tryAddKey(ConfKey{el::text::StringList{"one"_el, "two"_el, "three"_el}}));
     }
 
-    void testHasKeyStringWithMismatchingElementCount() {
+    void testHasKeyStringWithMismatchingItemCount() {
         KeyIndex index{Name::createRegular("string_count"_el), CaseSensitivity::CaseSensitive, 3};
         REQUIRE(index.tryAddKey(ConfKey{el::text::StringList{"a"_el, "b"_el, "c"_el}}));
 

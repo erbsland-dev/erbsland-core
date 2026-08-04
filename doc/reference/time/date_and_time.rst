@@ -41,7 +41,12 @@ Date Time
 
 :cpp:class:`DateTime <erbsland::time::DateTime>` represents an instant as UTC date and time plus display offset
 information.
-It converts to and from ISO text, ``std::time_t``, fixed offsets, and supported named time zones.
+It converts to and from ISO text, ``std::time_t``, exact typed ticks from the Core, POSIX, Windows, and RFC 868 epochs,
+fixed offsets, and supported named time zones.
+Tick conversion accepts nanoseconds, microseconds, milliseconds, or seconds; a conversion fails when it would lose
+fractional precision, precedes the selected epoch, or exceeds the selected unit's range.
+Use the split seconds-and-nanoseconds conversion for external formats that need their own fractional representation,
+such as Windows ``FILETIME``.
 The value is stored internally as a UTC instant; local accessors and
 :cpp:func:`parts() <erbsland::time::DateTime::parts>` use the display offset or named time zone.
 
@@ -101,6 +106,8 @@ Default string formatting omits the zone for local-origin values.
 Interface
 =========
 
+.. doxygenstruct:: erbsland::time::CalendarDeltaParts
+    :members:
 .. doxygenstruct:: erbsland::time::YearDayOfYearParts
     :members:
 
@@ -114,10 +121,9 @@ Interface
     :members:
 .. doxygenclass:: erbsland::time::Date
     :members:
-.. doxygenstruct:: erbsland::time::DateTimeParts
-    :members:
-
 .. doxygenclass:: erbsland::time::DateTime
+    :members:
+.. doxygenstruct:: erbsland::time::DateTimeParts
     :members:
 .. doxygenenum:: erbsland::time::DateTimePrecision
 .. doxygenclass:: erbsland::time::Day
@@ -138,16 +144,15 @@ Interface
     :members:
 .. doxygenclass:: erbsland::time::Second
     :members:
-.. doxygenstruct:: erbsland::time::TimeParts
-    :members:
-
 .. doxygenclass:: erbsland::time::Time
     :members:
-
-.. doxygenstruct:: erbsland::time::TimeWrapResult
-    :members:
+.. doxygenenum:: erbsland::time::TimeEpoch
 .. doxygenenum:: erbsland::time::TimeOccurrenceInFold
+.. doxygenstruct:: erbsland::time::TimeParts
+    :members:
 .. doxygenclass:: erbsland::time::TimeWithZone
+    :members:
+.. doxygenstruct:: erbsland::time::TimeWrapResult
     :members:
 .. doxygenclass:: erbsland::time::TimeZone
     :members:

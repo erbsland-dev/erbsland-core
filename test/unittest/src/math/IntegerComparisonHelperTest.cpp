@@ -66,14 +66,16 @@ public:
         static_assert(Probe{1} >= std::uint8_t{0});
 
         const auto probe = Probe{-1};
-        REQUIRE((probe <=> std::uint64_t{std::numeric_limits<std::uint64_t>::max()}) == std::strong_ordering::less);
-        REQUIRE(probe == std::int8_t{-1});
-        REQUIRE_FALSE(probe == std::uint8_t{0});
-        REQUIRE(probe != std::uint8_t{0});
-        REQUIRE(probe < std::uint8_t{0});
-        REQUIRE(probe <= std::int8_t{-1});
-        REQUIRE_FALSE(probe > std::uint8_t{0});
-        REQUIRE_FALSE(probe >= std::uint8_t{0});
+        const auto maximumUInt64 = std::numeric_limits<std::uint64_t>::max();
+        const auto comparison = probe <=> maximumUInt64;
+        REQUIRE_EQUAL(comparison, std::strong_ordering::less);
+        REQUIRE_EQUAL(probe, std::int8_t{-1});
+        REQUIRE_NOT_EQUAL(probe, std::uint8_t{0});
+        REQUIRE_NOT_EQUAL(probe, std::uint8_t{0});
+        REQUIRE_LESS(probe, std::uint8_t{0});
+        REQUIRE_LESS_EQUAL(probe, std::int8_t{-1});
+        REQUIRE_LESS_EQUAL(probe, std::uint8_t{0});
+        REQUIRE_LESS(probe, std::uint8_t{0});
     }
 
     void testFriendComparisonContracts() {
@@ -101,13 +103,15 @@ public:
         static_assert(std::uint8_t{0} >= Probe{0});
 
         const auto probe = Probe{-1};
-        REQUIRE((std::uint64_t{std::numeric_limits<std::uint64_t>::max()} <=> probe) == std::strong_ordering::greater);
-        REQUIRE(std::int8_t{-1} == probe);
-        REQUIRE_FALSE(std::uint8_t{0} == probe);
-        REQUIRE(std::uint8_t{0} != probe);
-        REQUIRE_FALSE(std::uint8_t{0} < probe);
-        REQUIRE_FALSE(std::uint8_t{0} <= probe);
-        REQUIRE(std::uint8_t{0} > probe);
-        REQUIRE(std::uint8_t{0} >= probe);
+        const auto maximumUInt64 = std::numeric_limits<std::uint64_t>::max();
+        const auto comparison = maximumUInt64 <=> probe;
+        REQUIRE_EQUAL(comparison, std::strong_ordering::greater);
+        REQUIRE_EQUAL(std::int8_t{-1}, probe);
+        REQUIRE_NOT_EQUAL(std::uint8_t{0}, probe);
+        REQUIRE_NOT_EQUAL(std::uint8_t{0}, probe);
+        REQUIRE_GREATER_EQUAL(std::uint8_t{0}, probe);
+        REQUIRE_GREATER(std::uint8_t{0}, probe);
+        REQUIRE_GREATER(std::uint8_t{0}, probe);
+        REQUIRE_GREATER_EQUAL(std::uint8_t{0}, probe);
     }
 };

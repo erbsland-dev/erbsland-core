@@ -1,0 +1,175 @@
+# Configuration for the anti-pattern source scanner.
+
+--[ Main ]------------------------------------------------------------------------------------------------------------
+Source Directories  :
+    * "src"
+    * "demos"
+    * "test/unittest"
+    * "test/profiling"
+    * "test/adapter"
+    * "test/fuzzing"
+
+File Suffixes       :
+    * ".cpp"
+    * ".hpp"
+    * ".tpp"
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "demos"
+Reason              : "Demos are allowed to keep example-local types with their complete examples."
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "test/unittest"
+Reason              : "Unit tests are allowed to keep test-local types with the tests that exercise them."
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "test/fuzzing"
+Reason              : "Fuzz targets are allowed to keep input-local types beside the fuzzing entry point."
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "test/profiling"
+Reason              : "Profiling tests are allowed to keep test-local types with the tests that exercise them."
+
+--*[ Rule . implementation_in_wrong_unit ]*---------------------------------------------------------------------------
+Excluded Path       : "demos"
+Reason              : "Demos are allowed to organize implementations around complete examples."
+
+--*[ Rule . implementation_in_wrong_unit ]*---------------------------------------------------------------------------
+Excluded Path       : "test/unittest"
+Reason              : "Unit tests are allowed to organize implementations around their test fixtures."
+
+--*[ Rule . implementation_in_wrong_unit ]*---------------------------------------------------------------------------
+Excluded Path       : "**/*Windows*"
+Reason              : "Windows integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . implementation_in_wrong_unit ]*---------------------------------------------------------------------------
+Excluded Path       : "**/*Posix*"
+Reason              : "POSIX integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "**/Windows*.cpp"
+Reason              : "Windows integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . namespace_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "**/Posix*.cpp"
+Reason              : "POSIX integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . namespace_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "**/Windows*.cpp"
+Reason              : "Windows integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . type_in_wrong_unit ]*-------------------------------------------------------------------------------------
+Excluded Path       : "**/Posix*.cpp"
+Reason              : "POSIX integration units may implement a platform-neutral base-class factory."
+
+--*[ Rule . static_cast_void ]*---------------------------------------------------------------------------------------
+Excluded Path       : "test/unittest/src"
+Reason              : "The guideline explicitly permits this construct in unit tests."
+
+--*[ Rule . static_cast_void ]*---------------------------------------------------------------------------------------
+Excluded Path       : "test/fuzzing"
+Reason              : "Fuzz targets conventionally discard parser and verifier results because only failures matter."
+
+--*[ Rule . nested_namespace ]*---------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/core/Namespaces.hpp"
+Reason              : "This namespace catalog intentionally groups API namespace declarations under erbsland."
+
+--*[ Rule . nested_namespace ]*---------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/event/EventRegistry.hpp"
+Reason              : "The public id namespace groups constants that are defined from and belong to EventRegistry."
+
+--*[ Rule . nested_namespace ]*---------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/stream/StandardStreams.hpp"
+Reason              : "The public io convenience namespace groups helpers around the enclosing standard-stream API."
+
+--*[ Rule . oversized_nested_type ]*----------------------------------------------------------------------------------
+Excluded Path       : "test/unittest/src"
+Reason              : "Encapsulating types has a higher priority, over readability in unit tests."
+
+--*[ Rule . static_only_class ]*--------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/unit/*Unit.hpp"
+Reason              : "These unit traits define compile-time representation mappings."
+
+--*[ Rule . static_only_class ]*--------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/impl/StringConversionTools.hpp"
+Reason              : "This private friend preserves zero-copy access to string storage."
+
+--*[ Rule . forward_declaration ]*------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/FormatAs.hpp"
+Reason              : "This is a type trait that is used to implement the FormatAs functionality."
+
+--*[ Rule . static_only_class ]*--------------------------------------------------------------------------------------
+Excluded Path       : "**/*Traits.hpp"
+Reason              : "Traits are compile-time type mappings and have no meaningful instances."
+
+--*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
+Excluded Path       : "**/*Traits.hpp"
+Reason              : "Collecting multiple traits types in a header is a common pattern."
+
+--*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
+Excluded Path       : "**/*Types.hpp"
+Reason              : "The filename ending in Types.hpp is a convention for grouping micro-types in a header."
+
+--*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/cryptology/impl/algorithm/Sha2.hpp"
+Reason              : "The SHA-256 and SHA-64 implementations form one internal SHA-2 algorithm family."
+
+--*[ Rule . missing_api_documentation ]*------------------------------------------------------------------------------
+Excluded Path       : "demos"
+Reason              : "Demos have special rules for API documentation blocks."
+
+--*[ Rule . oversized_nested_type ]*----------------------------------------------------------------------------------
+Excluded Path       : "demos"
+Reason              : "Demos may require special formatting to demonstrate a concept."
+
+--*[ Rule . multiple_types_in_header ]*-------------------------------------------------------------------------------
+Excluded Path       : "demos"
+Reason              : "Demos are allowed to have multiple types in a header to allow showing complete examples."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "**/*Windows*"
+Reason              : "Files named Windows integrate native Windows APIs where narrow C strings are expected."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "**/*Posix*"
+Reason              : "Files named Posix integrate native POSIX APIs where narrow C strings are expected."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "demos/text/String/StdVsCore*"
+Reason              : "These comparison demos intentionally use standard-library strings to contrast them with Core APIs."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/u*/impl/*"
+Reason              : "Error messages in the text domain require regular string literals to prevent circular dependencies."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/u*/U*"
+Reason              : "Error messages in the text domain require regular string literals to prevent circular dependencies."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/impl/FloatConversion.cpp"
+Reason              : "The standard float backend requires std::string and std::string_view literals."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/impl/StaticStringPatternData.tpp"
+Reason              : "Constexpr pattern validation reports narrow string views without depending on String."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/impl/StringNormalizationTools.hpp"
+Reason              : "Generic storage bounds checks accept std::string_view messages without String dependencies."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/pattern/impl/Require.hpp"
+Reason              : "Constexpr pattern validation throws a narrow literal before the String layer is available."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/text/pattern/PatternSet.hpp"
+Reason              : "Constexpr pattern validation accepts a narrow string view without depending on String."
+
+--*[ Rule . regular_string_literal ]*---------------------------------------------------------------------------------
+Excluded Path       : "test/unittest/src"
+Reason              : "The test framework requires std::string."
+
+--*[ Rule . namespace_in_wrong_unit ]*--------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/core/Namespaces.hpp"
+Reason              : "This file contains only the namespace forward declarations."

@@ -4,14 +4,6 @@
 
 #include "../EventLoop.hpp"
 
-namespace erbsland::event {
-
-auto UnmanagedEventThread::create() -> UnmanagedEventThreadPtr {
-    return std::make_shared<impl::UnmanagedEventThread>();
-}
-
-}
-
 namespace erbsland::event::impl {
 
 UnmanagedEventThread::~UnmanagedEventThread() noexcept {

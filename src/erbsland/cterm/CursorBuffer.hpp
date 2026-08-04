@@ -52,7 +52,7 @@ public:
     /// Create a new cursor buffer with a default size of 80x25 and overflow mode `Shift`.
     CursorBuffer() : CursorBuffer{bgeo::BlockSize{80, 25}, OverflowMode::Shift} {}
 
-    // default
+    // defaults
     ~CursorBuffer() override = default;
     CursorBuffer(const CursorBuffer &) = default;
     CursorBuffer(CursorBuffer &&) = default;
@@ -107,7 +107,9 @@ protected:
     auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override;
 
 private:
+    /// Validate a block used for fill operations.
     static void validateFillChar(const Block &fillChar);
+    /// Write a block after resolving cursor state.
     void writeResolvedBlock(const Block &character) noexcept;
 
 private:

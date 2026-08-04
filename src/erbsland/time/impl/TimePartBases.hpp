@@ -4,20 +4,15 @@
 
 #include "TimePartWithAmount.hpp"
 
+#include "../Day_fwd.hpp"
+#include "../DayOfWeek_fwd.hpp"
+#include "../DayOfYear_fwd.hpp"
+#include "../Hour_fwd.hpp"
+#include "../Minute_fwd.hpp"
+#include "../Month_fwd.hpp"
+#include "../Second_fwd.hpp"
 #include "../TimeAmounts.hpp"
-
-namespace erbsland::time {
-
-class Year;
-class Month;
-class Day;
-class DayOfWeek;
-class DayOfYear;
-class Hour;
-class Minute;
-class Second;
-
-}
+#include "../Year_fwd.hpp"
 
 namespace erbsland::time::impl {
 

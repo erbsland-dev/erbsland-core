@@ -7,6 +7,8 @@
 #include <optional>
 #include <vector>
 
+/// Test double recording cursor-writer calls and state.
+/// @notest{Test-only probe.}
 class CursorWriterProbe final : public CursorWriter {
 public:
     [[nodiscard]] auto color() const noexcept -> Color override { return _color; }

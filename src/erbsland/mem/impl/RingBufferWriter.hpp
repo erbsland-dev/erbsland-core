@@ -8,6 +8,7 @@
 #include "../Endianness.hpp"
 
 #include "../../err/LogicError.hpp"
+#include "../../text/Literals.hpp"
 #include "../../unit/ByteIndex.hpp"
 #include "../../unit/ByteLength.hpp"
 
@@ -19,6 +20,8 @@
 #include <type_traits>
 
 namespace erbsland::mem::impl {
+
+using namespace text::literals;
 
 /// A transactional sequential writer over the currently writable spans of a ring buffer.
 /// The caller must reserve enough space before construction. Written bytes remain invisible until `commit()`.
@@ -51,7 +54,7 @@ public: // write
             _spanPosition = 0U;
         }
         if (_spanIndex >= _spans.size()) {
-            throw err::LogicError{"Ring buffer writer exceeded the reserved storage."};
+            throw err::LogicError{"Ring buffer writer exceeded the reserved storage."_el};
         }
         _spans[_spanIndex][_spanPosition] = value;
         ++_spanPosition;
@@ -78,7 +81,7 @@ public: // write
     /// Commit all bytes written in this transaction.
     void commit() {
         if (_committed) {
-            throw err::LogicError{"Ring buffer writer transaction was already committed."};
+            throw err::LogicError{"Ring buffer writer transaction was already committed."_el};
         }
         _access.commitWritten(unit::ByteLength::fromSizeT(_position));
         _committed = true;

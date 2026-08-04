@@ -2,16 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../U16StringLiteral_fwd.hpp"
+
 #include <cstddef>
 
-namespace erbsland::text {
-
-class U16StringLiteral;
-
-namespace impl {
+namespace erbsland::text::impl {
 
 constexpr auto createU16StringLiteral(const char16_t *data, std::size_t size) noexcept -> U16StringLiteral;
-
-}
 
 }

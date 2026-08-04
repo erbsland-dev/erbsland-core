@@ -6,6 +6,7 @@
 #include "EngineCharacterState.hpp"
 #include "EngineDebug.hpp"
 #include "EngineFlags.hpp"
+#include "EngineState_fwd.hpp"
 #include "EngineThread.hpp"
 #include "EngineWork.hpp"
 #include "Watchdog.hpp"
@@ -25,18 +26,26 @@ namespace erbsland::re::impl {
 
 using namespace text::literals;
 
-class EngineState;
-using EngineStatePtr = std::unique_ptr<EngineState>;
-
 /// The state of the engine.
 class EngineState final {
 public:
     /// Create a new state for the given input.
     explicit EngineState(
-        InputBasePtr input, const std::size_t captureGroupCount, const EngineFlags flags = EngineFlags{}) :
+        InputBasePtr input,
+        const std::size_t captureGroupCount,
+        const EngineFlags flags = EngineFlags{},
+        const std::size_t counterCount = limits::maximumCounterCount) :
         _flags{flags},
         _input{std::move(input)},
-        _captureGroupManager{CaptureGroupManager::create(captureGroupCount, flags.isSet(EngineFlag::AtomicGroups))} {}
+        _captureGroupManager{
+            captureGroupCount > 1U || flags.isSet(EngineFlag::AtomicGroups)
+                ? CaptureGroupManager::create(captureGroupCount, flags.isSet(EngineFlag::AtomicGroups))
+                : nullptr},
+        _counterCount{counterCount} {
+
+        ERBSLAND_CORE_RE_REQUIRE_SAFETY(
+            _counterCount <= limits::maximumCounterCount, "Counter count exceeds maximum"_el);
+    }
 
     /// Default constructor for unit tests.
     /// @note Do not use this in production code, it is only for testing purposes.
@@ -54,7 +63,9 @@ public: // Initialize
     /// Called *once* when the state is created.
     void initialize() {
         // tools
-        _captureGroupManager->initialize();
+        if (_captureGroupManager) {
+            _captureGroupManager->initialize();
+        }
 
         // watchdog
         watchdog.reset();
@@ -73,6 +84,7 @@ public: // Initialize
 
         // match
         _bestMatch = cNoCaptureGroup;
+        _hasDirectMatch = false;
         _endRequested = false;
 
         // work
@@ -82,7 +94,9 @@ public: // Initialize
     /// Reset the state to start the next *find first*.
     void resetForNextFind() {
         // tools
-        _captureGroupManager->resetForNextFind();
+        if (_captureGroupManager) {
+            _captureGroupManager->resetForNextFind();
+        }
 
         // watchdog
         watchdog.reset();
@@ -90,6 +104,7 @@ public: // Initialize
         // match
         _bestMatchThreadIndex = 0;
         _bestMatch = cNoCaptureGroup;
+        _hasDirectMatch = false;
         _endRequested = false;
 
         // work
@@ -102,6 +117,7 @@ public: // engine flags
     /// Set a flag.
     void setFlag(const EngineFlag flag) noexcept { _flags.set(flag); }
 
+    /// Test whether an engine flag is set.
     [[nodiscard]] constexpr auto isFlagSet(const EngineFlag flag) const noexcept -> bool { return _flags.isSet(flag); }
 
 public: // input handling
@@ -146,7 +162,12 @@ public: // threads
     /// @return The new thread.
     [[nodiscard]] auto createNewThread(const InputPosition startPosition) noexcept -> EngineThread {
         auto initialThread = EngineThread{0};
-        initialThread.captureGroupSet = _captureGroupManager->createGroupSet(startPosition);
+        if (_captureGroupManager) {
+            initialThread.captureGroupSet = _captureGroupManager->createGroupSet(startPosition);
+        } else {
+            initialThread.captureGroupSet = cNoCaptureGroup;
+            initialThread.matchStart = startPosition;
+        }
         return initialThread;
     }
 
@@ -212,8 +233,10 @@ public: // threads
     void addNextThread(EngineThread thread, const bool isCaseInsensitiveOperation) {
         // fold equal threads as they will result in equal outcomes.
         for (auto &existingThread : next.threads) {
-            if (existingThread == thread) { // merge is possible?
-                _captureGroupManager->release(thread.captureGroupSet);
+            if (existingThread.hasSameExecutionState(thread, _counterCount)) { // merge is possible?
+                if (_captureGroupManager) {
+                    _captureGroupManager->release(thread.captureGroupSet);
+                }
                 return;
             }
         }
@@ -233,18 +256,33 @@ public: // threads
     /// @param thread The thread to clone.
     /// @return The cloned thread.
     [[nodiscard]] auto cloneThread(const EngineThread &thread) noexcept -> EngineThread {
-        _captureGroupManager->allocate(thread.captureGroupSet);
+        if (_captureGroupManager) {
+            _captureGroupManager->allocate(thread.captureGroupSet);
+        }
         return thread;
     }
 
     /// End a thread.
     /// @param thread The thread to end.
-    void endThreadWithoutMatch(const EngineThread &thread) { _captureGroupManager->release(thread.captureGroupSet); }
+    void endThreadWithoutMatch(const EngineThread &thread) {
+        if (_captureGroupManager) {
+            _captureGroupManager->release(thread.captureGroupSet);
+        }
+    }
 
     /// Update the state when a thread was successful.
     /// @param thread The successful thread.
     /// @param threadIndex The thread index of the successful thread (for priority check).
     void endThreadWithMatch(EngineThread &thread, const std::size_t threadIndex) {
+        if (!_captureGroupManager) {
+            if (!hasMatch() || threadIndex <= _bestMatchThreadIndex) {
+                _bestMatchThreadIndex = threadIndex;
+                _bestMatchStart = thread.matchStart;
+                _bestMatchEnd = next.position;
+                _hasDirectMatch = true;
+            }
+            return;
+        }
         if (!hasMatch() || threadIndex <= _bestMatchThreadIndex) {
             _bestMatchThreadIndex = threadIndex;
             // we write the new end position into the group, only if we have a new best match
@@ -299,17 +337,24 @@ public: // threads
 
 public: // capture groups and result.
     /// Test if we had a successful match
-    [[nodiscard]] auto hasMatch() const noexcept -> bool { return _bestMatch != cNoCaptureGroup; }
+    [[nodiscard]] auto hasMatch() const noexcept -> bool {
+        return _captureGroupManager ? _bestMatch != cNoCaptureGroup : _hasDirectMatch;
+    }
 
     /// Access the capture manager.
     [[nodiscard]] auto captureGroupManager() noexcept -> CaptureGroupManager & { return *_captureGroupManager; }
     /// Create capture groups from the current state after a successful match.
     /// @param names The capture group names.
     [[nodiscard]] auto createCaptureGroups(const CaptureGroupNames &names) const -> CaptureGroupList {
+        if (!_captureGroupManager) {
+            ERBSLAND_CORE_RE_REQUIRE_SAFETY(names.empty(), "Direct matches cannot contain capture groups"_el);
+            return CaptureGroupList{CaptureGroup{0U, CaptureRange{_bestMatchStart, _bestMatchEnd}, text::String{}}};
+        }
         return _captureGroupManager->createCaptureGroupList(_bestMatch, names);
     }
 
 #ifdef ERBSLAND_RE_ENGINE_DEBUG_ENABLED
+    /// Convert the state to diagnostic text.
     [[nodiscard]] auto toDebugString() -> text::String {
         return text::StringFormat{"State(\n"
                                   "  Current: {}\n"
@@ -334,11 +379,15 @@ private:
     InputBasePtr _input; ///< The input the engine is operating on.
 
     // tools
-    CaptureGroupManagerPtr _captureGroupManager; ///< The capture group manager.
+    CaptureGroupManagerPtr _captureGroupManager;            ///< The capture group manager.
+    std::size_t _counterCount{limits::maximumCounterCount}; ///< Number of counters used by the compiled program.
 
     // match
     std::size_t _bestMatchThreadIndex{0};   ///< The thread index of the best match.
     CaptureGroupSetReference _bestMatch{0}; ///< The best match so far.
+    InputPosition _bestMatchStart{};        ///< Whole-match start when no capture manager is required.
+    InputPosition _bestMatchEnd{};          ///< Whole-match end when no capture manager is required.
+    bool _hasDirectMatch{false};            ///< Whether the direct whole-match range is valid.
     bool _endRequested = false;             ///< Flag if no further paths shall be explored.
 
 public:                                     // parts of this state.

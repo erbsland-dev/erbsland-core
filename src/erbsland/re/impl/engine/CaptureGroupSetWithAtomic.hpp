@@ -14,6 +14,7 @@ class CaptureGroupSetWithAtomic : public CaptureGroupSet<tGroupCount> {
     using Base = CaptureGroupSet<tGroupCount>;
 
 public:
+    /// Create an empty capture-group set.
     explicit CaptureGroupSetWithAtomic() = default;
 
 public:

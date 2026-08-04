@@ -13,7 +13,6 @@
 #include "TimeAmounts.hpp"
 #include "Year.hpp"
 
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
 #include "../text/StringEditor.hpp"
@@ -263,6 +262,9 @@ public:
     [[nodiscard]] static auto last() noexcept -> Date;
 
 private:
+    constexpr static auto cLastValidDay = Days{3'652'424};
+    constexpr static auto cLastMonthSinceEpoch = Months{9'999LL * 12LL + 11LL};
+
     /// Create a date from raw days since epoch.
     Date(const math::SatInt32 rawDays, PrivateTag) noexcept : _days{rawDays} {}
     /// Test if the given parts represent a valid date.
@@ -275,8 +277,3 @@ private:
 };
 
 }
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::Date> : FormatAs<time::Date, String> {
-    [[nodiscard]] auto format(const time::Date &value) const -> String { return value.toString(); }
-};

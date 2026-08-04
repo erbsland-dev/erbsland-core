@@ -28,6 +28,7 @@ public:
         -> std::optional<ParsedIsoDateTime>;
 
 private:
+    /// Create a parser for `text`.
     explicit IsoDateTimeParser(const text::String &text) noexcept;
 
     /// Parse the date/time string.

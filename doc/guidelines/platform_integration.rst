@@ -49,6 +49,20 @@ Native Event Reactors
 6.  Keep socket and resolver policy in domain backends; native drivers only multiplex readiness, completion and wake
     notifications.
 
+Protected Data
+==============
+
+1.  Keep native protected-data handles and envelope formats inside provider implementations.
+2.  Resolve the provider through application data; portable protected blocks store only opaque ciphertext and length.
+3.  Self-test a provider before lock-in. Automatic fallback is allowed only while selecting the initial provider.
+4.  macOS uses a Secure Enclave P-256 key with Security framework ECIES/AES-GCM.
+5.  Windows uses DPAPI-NG with an application-held logon-local protection descriptor.
+6.  The Windows provider loads ``ncrypt.dll`` from the system directory only when selected and resolves its required
+    DPAPI-NG entry points explicitly. Do not add a static Ncrypt import dependency.
+7.  Linux uses the internal userspace AES-256-GCM provider. Do not probe or use AF_ALG, kernel keyrings, TPM services,
+    or desktop key stores for this feature.
+8.  Release or delete native key references and securely erase application-owned keys during application destruction.
+
 Tests
 =====
 

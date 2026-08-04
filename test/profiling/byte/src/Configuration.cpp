@@ -15,7 +15,7 @@ namespace app::byte {
 
 using namespace el::text::literals;
 
-auto ConfigurationLoader::load(const std::optional<el::Path> &path) -> Configuration {
+auto Configuration::load(const std::optional<el::Path> &path) -> Configuration {
     auto parser = el::conf::Parser{};
     auto run = RunSettings{};
     auto templates = std::vector<impl::ScenarioTemplate>{};
@@ -43,7 +43,7 @@ auto ConfigurationLoader::load(const std::optional<el::Path> &path) -> Configura
     return result;
 }
 
-void ConfigurationLoader::writeTemplate(const el::Path &path) {
+void Configuration::writeTemplate(const el::Path &path) {
     auto options = el::PathWriteTextOptions{el::StringEncoding::Utf8};
     options.setCreateParents(true).setBomMode(el::StringBomMode::Reject);
     path.content().writeTextOrThrow(el::String{cDefaultConfigurationText}, options);

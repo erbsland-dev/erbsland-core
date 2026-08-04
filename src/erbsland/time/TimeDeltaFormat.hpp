@@ -33,32 +33,44 @@ public:
     auto operator=(TimeDeltaFormat &&) noexcept -> TimeDeltaFormat & = default;
 
 public: // accessors
+    /// Get the style used to render unit names.
     [[nodiscard]] auto unitStyle() const noexcept -> UnitStyle { return _unitStyle; }
+    /// Set the style used to render unit names.
     auto setUnitStyle(UnitStyle value) noexcept -> TimeDeltaFormat & {
         _unitStyle = value;
         return *this;
     }
+    /// Get the separator placed between a value and its unit name.
     [[nodiscard]] auto valueSeparator() const noexcept -> const text::String & { return _valueSeparator; }
+    /// Set the separator placed between a value and its unit name.
     auto setValueSeparator(text::String value) noexcept -> TimeDeltaFormat & {
         _valueSeparator = std::move(value);
         return *this;
     }
+    /// Get the separator placed between formatted time-delta components.
     [[nodiscard]] auto unitSeparator() const noexcept -> const text::String & { return _unitSeparator; }
+    /// Set the separator placed between formatted time-delta components.
     auto setUnitSeparator(text::String value) noexcept -> TimeDeltaFormat & {
         _unitSeparator = std::move(value);
         return *this;
     }
+    /// Get the smallest unit included in the formatted result.
     [[nodiscard]] auto smallestUnit() const noexcept -> TimeDeltaUnit { return _smallestUnit; }
+    /// Set the smallest unit included in the formatted result.
     auto setSmallestUnit(TimeDeltaUnit value) noexcept -> TimeDeltaFormat & {
         _smallestUnit = value;
         return *this;
     }
+    /// Test if fractional values are included in the formatted result.
     [[nodiscard]] auto showFractions() const noexcept -> bool { return _showFractions; }
+    /// Set whether fractional values are included in the formatted result.
     auto setShowFractions(bool value) noexcept -> TimeDeltaFormat & {
         _showFractions = value;
         return *this;
     }
+    /// Get the maximum number of fractional digits.
     [[nodiscard]] auto maximumFractionDigits() const noexcept -> uint8_t { return _maximumFractionDigits; }
+    /// Set the maximum number of fractional digits, limited to nine.
     auto setMaximumFractionDigits(uint8_t value) noexcept -> TimeDeltaFormat &;
     /// Test if ELCL-specific short aliases are selected.
     [[nodiscard]] auto usesElclUnitNames() const noexcept -> bool { return _usesElclUnitNames; }

@@ -18,14 +18,15 @@ TESTED_TARGETS(Parser)
 class ValueTreeWalkerTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 private:
     static el::text::StringList collectPreorder(
-        const DocumentPtr &doc, const impl::ValueTreeWalker::Filter &filter = {}) {
+        const DocumentPtr &doc, const el::conf::impl::ValueTreeWalker::Filter &filter = {}) {
         el::text::StringList out;
-        impl::ValueTreeWalker walker;
+        el::conf::impl::ValueTreeWalker walker;
         auto root = std::dynamic_pointer_cast<el::conf::Value>(doc);
         walker.setRoot(root);
-        if (filter)
+        if (filter) {
             walker.setFilter(filter);
-        walker.walk([&out](const el::conf::ConstValuePtr &node) {
+        }
+        walker.walk([&out](const el::conf::ConstValuePtr &node) -> void {
             const auto np = node->namePath().toText();
             out.append(np.isEmpty() ? el::text::String{"<root>"_el} : np);
         });
@@ -33,13 +34,14 @@ private:
     }
 
     static el::text::StringList collectPreorder(
-        const el::conf::ValuePtr &root, const impl::ValueTreeWalker::Filter &filter = {}) {
+        const el::conf::ValuePtr &root, const el::conf::impl::ValueTreeWalker::Filter &filter = {}) {
         el::text::StringList out;
-        impl::ValueTreeWalker walker;
+        el::conf::impl::ValueTreeWalker walker;
         walker.setRoot(root);
-        if (filter)
+        if (filter) {
             walker.setFilter(filter);
-        walker.walk([&out](const el::conf::ConstValuePtr &node) {
+        }
+        walker.walk([&out](const el::conf::ConstValuePtr &node) -> void {
             const auto np = node->namePath().toText();
             out.append(np.isEmpty() ? el::text::String{"<root>"_el} : np);
         });
@@ -61,11 +63,12 @@ c = 3
         auto source = createTestMemorySource(text);
         Parser parser;
         auto doc = parser.parseOrThrow(source);
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
 
         // Collect visited name paths in order, pruning "main.sub".
-        const auto visited = collectPreorder(
-            doc, [](const el::conf::ConstValuePtr &node) { return node->namePath().toText() != "main.sub"_el; });
+        const auto visited = collectPreorder(doc, [](const el::conf::ConstValuePtr &node) -> bool {
+            return node->namePath().toText() != "main.sub"_el;
+        });
 
         // Expect preorder in declaration order, with "main.sub" and its child pruned.
         const auto expected = el::text::StringList{
@@ -79,7 +82,7 @@ c = 3
 
         // Also verify that starting from the Value overload yields the same order when not pruning.
         const auto asValue = std::dynamic_pointer_cast<el::conf::Value>(doc);
-        REQUIRE(asValue != nullptr);
+        REQUIRE(asValue);
         const auto visitedFull = collectPreorder(asValue);
 
         // Now we expect the full tree (no pruning).
@@ -161,19 +164,30 @@ port = 5432
             }
             return visited.count().toSizeT();
         };
-        REQUIRE(indexOf("<root>"_el) == 0);
-        REQUIRE(indexOf("app"_el) < indexOf("app.name"_el));
-        REQUIRE(indexOf("app"_el) < indexOf("app.version"_el));
-        REQUIRE(indexOf("app"_el) < indexOf("app.ui"_el));
-        REQUIRE(indexOf("app.ui"_el) < indexOf("app.ui.theme"_el));
+        const auto rootIndex = indexOf("<root>"_el);
+        const auto appIndex = indexOf("app"_el);
+        const auto appNameIndex = indexOf("app.name"_el);
+        const auto appVersionIndex = indexOf("app.version"_el);
+        const auto appUiIndex = indexOf("app.ui"_el);
+        const auto appUiThemeIndex = indexOf("app.ui.theme"_el);
+        const auto primaryColorIndex = indexOf("app.ui.colors.primary"_el);
+        const auto moduleAIndex = indexOf("app.modules.A.enabled"_el);
+        const auto moduleBIndex = indexOf("app.modules.B.level"_el);
+        const auto dbHostIndex = indexOf("db.host"_el);
+        const auto dbPortIndex = indexOf("db.port"_el);
+        REQUIRE_EQUAL(rootIndex, 0);
+        REQUIRE_LESS(appIndex, appNameIndex);
+        REQUIRE_LESS(appIndex, appVersionIndex);
+        REQUIRE_LESS(appIndex, appUiIndex);
+        REQUIRE_LESS(appUiIndex, appUiThemeIndex);
         // Accept either implicit or explicit colors section node.
-        REQUIRE(indexOf("app.ui"_el) < indexOf("app.ui.colors.primary"_el));
+        REQUIRE_LESS(appUiIndex, primaryColorIndex);
         // Modules ordering
-        REQUIRE(indexOf("app"_el) < indexOf("app.modules.A.enabled"_el));
-        REQUIRE(indexOf("app"_el) < indexOf("app.modules.B.level"_el));
+        REQUIRE_LESS(appIndex, moduleAIndex);
+        REQUIRE_LESS(appIndex, moduleBIndex);
         // DB ordering
-        REQUIRE(indexOf("db.host"_el) > indexOf("<root>"_el));
-        REQUIRE(indexOf("db.port"_el) > indexOf("<root>"_el));
+        REQUIRE_GREATER(dbHostIndex, rootIndex);
+        REQUIRE_GREATER(dbPortIndex, rootIndex);
     }
 
     void testExceptionPropagationFromVisit() {
@@ -187,7 +201,7 @@ a = 1
         struct Boom {};
         bool thrown = false;
         try {
-            impl::ValueTreeWalker walker;
+            el::conf::impl::ValueTreeWalker walker;
             auto root = std::dynamic_pointer_cast<el::conf::Value>(doc);
             walker.setRoot(root);
             walker.walk([](const el::conf::ConstValuePtr &node) {
@@ -212,7 +226,7 @@ a = 1
         struct MyError {};
         bool thrown = false;
         try {
-            impl::ValueTreeWalker walker;
+            el::conf::impl::ValueTreeWalker walker;
             auto root = std::dynamic_pointer_cast<el::conf::Value>(doc);
             walker.setRoot(root);
             walker.setFilter([](const el::conf::ConstValuePtr &node) -> bool {
@@ -221,7 +235,7 @@ a = 1
                 }
                 return true;
             });
-            walker.walk(impl::ValueTreeWalker::Visit{});
+            walker.walk(el::conf::impl::ValueTreeWalker::Visit{});
         } catch (const MyError &) {
             thrown = true;
         }

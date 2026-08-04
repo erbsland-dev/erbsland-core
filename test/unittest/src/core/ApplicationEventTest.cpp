@@ -4,9 +4,17 @@
 #include "ApplicationTestScope.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/core/ApplicationError.hpp>
+#include <erbsland/err/RuntimeError.hpp>
 #include <erbsland/event/CurrentEvents.hpp>
+#include <erbsland/event/EventLoop.hpp>
+#include <erbsland/event/Events.hpp>
 #include <erbsland/event/ManagedEventThread.hpp>
 #include <erbsland/event/UnmanagedEventThread.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
+#include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unit/ExitCode.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -17,6 +25,7 @@ using el::core::Application;
 using el::event::ManagedEventThreadPtr;
 using el::event::UnmanagedEventThread;
 using el::unit::ExitCode;
+using namespace el::text::literals;
 
 TESTED_TARGETS(Application EventLoop ManagedEventThread UnmanagedEventThread)
 class ApplicationEventTest final : public el::UnitTest {
@@ -42,13 +51,42 @@ public:
         REQUIRE_EQUAL(app.run(), 17);
     }
 
-    void testMainLoopExceptionQuitsWithFailure() {
+    void testMainLoopErbslandExceptionIsReported() {
+        const auto errorOutput = el::stream::AnyStringBuilderStream::create();
+        auto errorRedirect = el::stream::redirectStdErr(errorOutput);
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+
+        app.events()->invoke([]() -> void { throw el::err::RuntimeError{"event callback failed"_el}; });
+
+        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        const auto text = el::text::StringConverter{errorOutput->toU8String()}.toStdString();
+        const auto errorPosition = text.find("event callback failed");
+        REQUIRE_NOT_EQUAL(errorPosition, std::string::npos);
+    }
+
+    void testMainLoopApplicationErrorControlsExitCode() {
+        const auto errorOutput = el::stream::AnyStringBuilderStream::create();
+        auto errorRedirect = el::stream::redirectStdErr(errorOutput);
+        auto scope = ApplicationTestScope<Application>{};
+        auto &app = scope.app();
+
+        app.events()->invoke(
+            []() -> void { throw el::core::ApplicationError{"event application failure"_el, ExitCode{17}}; });
+
+        REQUIRE_EQUAL(app.run(), 17);
+        const auto text = el::text::StringConverter{errorOutput->toU8String()}.toStdString();
+        const auto errorPosition = text.find("event application failure");
+        REQUIRE_NOT_EQUAL(errorPosition, std::string::npos);
+    }
+
+    void testMainLoopForeignExceptionEscapesRun() {
         auto scope = ApplicationTestScope<Application>{};
         auto &app = scope.app();
 
         app.events()->invoke([]() -> void { throw std::runtime_error{"boom"}; });
 
-        REQUIRE_EQUAL(app.run(), ExitCode::failure().toRawValue());
+        REQUIRE_THROWS_AS(std::runtime_error, app.run());
     }
 
     void testManagedThreadQuitsWithApplication() {

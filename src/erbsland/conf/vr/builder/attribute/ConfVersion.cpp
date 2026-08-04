@@ -12,7 +12,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void ConfVersion::operator()(impl::Rule &rule) {
+void ConfVersion::operator()(Rule &rule) {
     auto mask = toVersionMask(_versions);
     if (_isNegated) {
         mask = !mask;

@@ -15,7 +15,7 @@ public:
     void testAlias() {
         // Float should be a double precision floating point type
         REQUIRE(std::is_same_v<Float, double>);
-        REQUIRE(sizeof(Float) == sizeof(double));
+        REQUIRE_EQUAL(sizeof(Float), sizeof(double));
         REQUIRE(std::numeric_limits<Float>::is_iec559);
     }
 };

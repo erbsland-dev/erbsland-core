@@ -3,12 +3,17 @@
 #include "Minimum.hpp"
 
 #include "../../../impl/vr/MinMaxConstraint.hpp"
+#include "../../../impl/vr/MinMaxDateConstraint.hpp"
+#include "../../../impl/vr/MinMaxDateTimeConstraint.hpp"
+#include "../../../impl/vr/MinMaxFloatConstraint.hpp"
+#include "../../../impl/vr/MinMaxIntegerConstraint.hpp"
+#include "../../../impl/vr/MinMaxMatrixConstraint.hpp"
 
 #include <type_traits>
 
 namespace erbsland::conf::vr::builder {
 
-void Minimum::operator()(impl::Rule &rule) {
+void Minimum::operator()(Rule &rule) {
     auto constraint = std::visit(
         [&rule](const auto &value) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(value)>;

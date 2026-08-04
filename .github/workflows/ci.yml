@@ -51,11 +51,11 @@ jobs:
 
       - name: Configure (Windows)
         if: runner.os == 'Windows'
-        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
+        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DERBSLAND_CORE_ENABLE_DEMOS=OFF -DCMAKE_UNITY_BUILD=ON -DCMAKE_C_COMPILER=cl -DCMAKE_CXX_COMPILER=cl
 
       - name: Configure (non-Windows)
         if: runner.os != 'Windows'
-        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DCMAKE_UNITY_BUILD=ON
+        run: cmake -S . -B cmake-build -G Ninja -DCMAKE_BUILD_TYPE=Debug -DERBSLAND_CORE_ENABLE_TESTS=ON -DERBSLAND_CORE_ENABLE_DEMOS=OFF -DCMAKE_UNITY_BUILD=ON
 
       - name: Build
         run: cmake --build cmake-build --parallel

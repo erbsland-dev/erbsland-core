@@ -8,7 +8,7 @@
 #include "Set.hpp"
 
 #include "../mem/CowManualStorage.hpp"
-#include "../unit/ElementCount.hpp"
+#include "../unit/ItemCount.hpp"
 
 #include <concepts>
 #include <functional>
@@ -40,7 +40,7 @@ public:
     using Compare = tCompare;                                                       ///< The key comparison type.
     using Raw = std::map<Key, Value, Compare>;                                      ///< The wrapped standard container.
     using Storage = mem::CowManualStorage<Raw>;                                     ///< The COW storage type.
-    using Count = unit::ElementCount;                                               ///< The element count type.
+    using Count = unit::ItemCount;                                                  ///< The element count type.
     using Self =
         std::conditional_t<std::is_void_v<tSelf>, Map<Key, Value, Compare>, tSelf>; ///< The fluent return type.
     using key_type = Key;                                                           ///< Standard container key type.
@@ -367,6 +367,9 @@ protected:
     [[nodiscard]] static auto makeSelf(Raw raw) -> Self;
 
 private:
+    /// Create the default map storage.
+    [[nodiscard]] static auto defaultStorage() -> Storage;
+    /// Convert an item count to a storage size.
     [[nodiscard]] static auto countToSize(Count count) -> std::size_t;
 
 private:

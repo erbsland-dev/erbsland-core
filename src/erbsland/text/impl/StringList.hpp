@@ -9,7 +9,7 @@
 #include "../CharCompareFn.hpp"
 #include "../CharSet.hpp"
 
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../util/List.hpp"
 
 #include <compare>
@@ -27,30 +27,28 @@ public:
     using Element = Base::Element;
     using Index = Base::Index;
     using ReadOnly = typename StringTypes<Element>::ReadOnly;
-    using Count = unit::ElementCount;
+    using Count = unit::ItemCount;
     using NativeIndex = decltype(std::declval<ReadOnly>().findFirstOf(std::declval<const CharSet &>()));
     using NativeLength = typename NativeIndex::Length;
 
 public:
-    /// Inherit the standard list constructors.
     using Base::Base;
+
     /// Create an empty string list.
     StringList() = default;
-    /// Destroy the string list.
+
+    // defaults
     ~StringList() = default;
-    /// Create a copy that shares storage until one copy is modified.
     StringList(const StringList &) noexcept = default;
-    /// Move a string list.
     StringList(StringList &&) noexcept = default;
-    /// Assign a string list, sharing storage until one copy is modified.
     auto operator=(const StringList &) noexcept -> StringList & = default;
-    /// Move-assign a string list.
     auto operator=(StringList &&) noexcept -> StringList & = default;
 
 public:
     using Base::compare;
     using Base::operator<=>;
     using Base::operator==;
+    /// Compare two string lists by their stored strings.
     auto operator<=>(const StringList &other) const noexcept -> std::strong_ordering { return compare(other); }
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const StringList &other, other);
 

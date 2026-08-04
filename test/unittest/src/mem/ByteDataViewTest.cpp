@@ -3,14 +3,18 @@
 
 #include <erbsland/mem/ByteArray.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/mem/Endianness.hpp>
 #include <erbsland/mem/impl/ByteComparisonTools.hpp>
 #include <erbsland/mem/impl/ByteDataView.hpp>
 #include <erbsland/mem/impl/ByteReadTools.hpp>
+#include <erbsland/mem/impl/ByteWriteTools.hpp>
 #include <erbsland/mem/impl/UnsafeByteBlockBuffer.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+
+#include <array>
 
 using el::mem::Byte;
 using el::mem::ByteArray;
@@ -19,12 +23,13 @@ using el::mem::ConstByteSpan;
 using el::mem::impl::ByteComparisonTools;
 using el::mem::impl::ByteDataView;
 using el::mem::impl::ByteReadTools;
+using el::mem::impl::ByteWriteTools;
 using el::mem::impl::UnsafeByteBlockBuffer;
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
 
-TESTED_TARGETS(ByteDataView ByteReadTools ByteComparisonTools UnsafeByteBlockBuffer)
+TESTED_TARGETS(ByteDataView ByteReadTools ByteComparisonTools ByteWriteTools UnsafeByteBlockBuffer)
 class ByteDataViewTest final : public el::UnitTest {
 public:
     void testRangeSelection() {
@@ -67,9 +72,56 @@ public:
         REQUIRE_EQUAL(compare.find(needle), ByteIndex{1U});
         REQUIRE_EQUAL(compare.find(needle, ByteIndex{2U}), ByteIndex{3U});
         REQUIRE_EQUAL(compare.findLast(needle), ByteIndex{3U});
-        REQUIRE(compare.compare(ByteDataView{ConstByteSpan{storage.span()}}) == std::strong_ordering::equal);
-        REQUIRE(compare.compare(ByteDataView{ByteArray{Byte{1U}, Byte{2U}, Byte{4U}}.span()}) < 0);
-        REQUIRE(compare.compare(ByteDataView{ByteArray{Byte{1U}, Byte{2U}}.span()}) > 0);
+        const auto sameComparison = compare.compare(ByteDataView{ConstByteSpan{storage.span()}});
+        const auto greaterComparison = compare.compare(ByteDataView{ByteArray{Byte{1U}, Byte{2U}, Byte{4U}}.span()});
+        const auto lessComparison = compare.compare(ByteDataView{ByteArray{Byte{1U}, Byte{2U}}.span()});
+        REQUIRE_EQUAL(sameComparison, std::strong_ordering::equal);
+        REQUIRE_LESS(greaterComparison, 0);
+        REQUIRE_GREATER(lessComparison, 0);
+
+        const auto differentFirst = ByteArray{Byte{9U}, Byte{2U}, Byte{3U}, Byte{2U}, Byte{3U}};
+        const auto differentMiddle = ByteArray{Byte{1U}, Byte{2U}, Byte{9U}, Byte{2U}, Byte{3U}};
+        const auto differentLast = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{2U}, Byte{9U}};
+        REQUIRE(compare.isEqualConstTime(ByteDataView{ConstByteSpan{storage.span()}}));
+        REQUIRE_FALSE(compare.isEqualConstTime(ByteDataView{ConstByteSpan{differentFirst.span()}}));
+        REQUIRE_FALSE(compare.isEqualConstTime(ByteDataView{ConstByteSpan{differentMiddle.span()}}));
+        REQUIRE_FALSE(compare.isEqualConstTime(ByteDataView{ConstByteSpan{differentLast.span()}}));
+        REQUIRE_FALSE(compare.isEqualConstTime(ByteDataView{ConstByteSpan{needleStorage.span()}}));
+        REQUIRE(ByteComparisonTools{ByteDataView{ConstByteSpan{}}}.isEqualConstTime(ByteDataView{ConstByteSpan{}}));
+    }
+
+    void testWriteTools() {
+        auto storage = std::array{Byte{0U}, Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}, Byte{5U}};
+        auto write = ByteWriteTools{el::mem::ByteSpan{storage}};
+
+        write.set(ByteIndex{0U}, Byte{9U});
+        write.set(ByteIndex::noIndex(), Byte{8U});
+        write.xorAt(ByteIndex{1U}, Byte{0xffU});
+        REQUIRE_THROWS(write.setOrThrow(ByteIndex{99U}, Byte{}));
+        REQUIRE_THROWS(write.xorAtOrThrow(ByteIndex::noIndex(), Byte{}));
+        REQUIRE_EQUAL(storage[0], Byte{9U});
+        REQUIRE_EQUAL(storage[1], Byte{0xfeU});
+
+        write.fill(ByteRange{ByteIndex{2U}, ByteLength{2U}}, Byte{0xaaU});
+        REQUIRE_EQUAL(storage[2], Byte{0xaaU});
+        REQUIRE_EQUAL(storage[3], Byte{0xaaU});
+
+        const auto overlappingSource = ByteDataView{el::mem::ConstByteSpan{storage}.first(4U)};
+        static_cast<void>(write.overwrite(ByteRange{ByteIndex{1U}, ByteLength{4U}}, overlappingSource));
+        const auto expectedAfterOverwrite =
+            std::array{Byte{9U}, Byte{9U}, Byte{0xfeU}, Byte{0xaaU}, Byte{0xaaU}, Byte{5U}};
+        REQUIRE_EQUAL(storage, expectedAfterOverwrite);
+
+        const auto xorSource = ByteDataView{el::mem::ConstByteSpan{storage}.subspan(0U, 3U)};
+        write.xorWith(ByteRange{ByteIndex{1U}, ByteLength{3U}}, xorSource);
+        REQUIRE_EQUAL(storage[1], Byte{0U});
+        REQUIRE_EQUAL(storage[2], Byte{0xf7U});
+        REQUIRE_EQUAL(storage[3], Byte{0x54U});
+
+        REQUIRE(write.setInteger(ByteIndex{2U}, uint16_t{0x1234U}, el::mem::Endianness::Big));
+        const auto read = ByteReadTools{ByteDataView{el::mem::ConstByteSpan{storage}}};
+        REQUIRE_EQUAL(read.getInteger<uint16_t>(ByteIndex{2U}, el::mem::Endianness::Big), uint16_t{0x1234U});
+        REQUIRE_EQUAL(read.span(ByteRange{ByteIndex{4U}, ByteLength{99U}}).size(), std::size_t{2U});
     }
 
     void testUnsafeGrowingBuffer() {

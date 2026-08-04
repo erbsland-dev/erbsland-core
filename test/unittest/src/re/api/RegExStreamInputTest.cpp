@@ -125,17 +125,17 @@ public:
         const auto expression = RegEx::compile("(a)(b)"_el);
 
         const auto match = expression->match(createStream("ab!"_el));
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         REQUIRE_EQUAL(match->content(), "ab"_el);
         REQUIRE_EQUAL(match->content(1), "a"_el);
         REQUIRE_EQUAL(match->content(2), "b"_el);
 
         const auto fullMatch = expression->fullMatch(createStream("ab"_el));
-        REQUIRE(fullMatch != nullptr);
+        REQUIRE(fullMatch);
         REQUIRE_EQUAL(fullMatch->content(), "ab"_el);
 
         const auto first = expression->findFirst(createStream("!ab!"_el));
-        REQUIRE(first != nullptr);
+        REQUIRE(first);
         REQUIRE_EQUAL(first->begin(), 1U);
         REQUIRE_EQUAL(first->end(), 3U);
 
@@ -150,7 +150,7 @@ public:
         const auto stream = createStream("a-a-a"_el);
         auto count = 0U;
         for (const auto &match : expression->findAll(stream)) {
-            REQUIRE(match != nullptr);
+            REQUIRE(match);
             REQUIRE_EQUAL(match->content(), "a"_el);
             count += 1U;
         }
@@ -161,7 +161,7 @@ public:
         const auto expression = RegEx::compile("(é)"_el);
         const auto match = expression->findFirst(createStream("xé!"_el));
 
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         REQUIRE_EQUAL(match->begin(), 1U);
         REQUIRE_EQUAL(match->end(), 3U);
         REQUIRE_EQUAL(match->content(), "é"_el);
@@ -171,7 +171,7 @@ public:
         const auto expression = RegEx::compile("(a)(b)"_el);
         const auto stream = createStream("ab"_el);
         const auto match = expression->fullMatch(stream);
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
 
         REQUIRE_EQUAL(stream->setPosition({}), el::stream::StreamPositionStatus::Success);
         REQUIRE_EQUAL(stream->readChar().data(), el::text::Char{U'a'});
@@ -194,7 +194,7 @@ public:
         auto text = el::text::StringEditor{};
         text.append(el::text::Char{U'\0'});
 
-        REQUIRE(expression->fullMatch(createStream(text)) != nullptr);
+        REQUIRE(expression->fullMatch(createStream(text)));
 
         auto strictSettings = patternSettings;
         strictSettings.disableFeature(Feature::AcceptNullInInput);

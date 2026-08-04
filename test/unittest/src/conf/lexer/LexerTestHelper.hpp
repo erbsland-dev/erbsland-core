@@ -23,6 +23,8 @@ using impl::LexerToken;
 using impl::TokenGenerator;
 using impl::TokenType;
 
+/// Provide fixtures and assertions for lexer tests.
+/// @notest{Shared unit-test helper.}
 class LexerTestHelper : public ConfTestHelper {
 public:
     std::variant<el::text::String, std::filesystem::path> testContentSource;
@@ -79,6 +81,7 @@ public:
         cleanUpTestFileDirectory();
     }
 
+    /// Set up a lexer for text content.
     void setupLexer(const el::text::String &content) {
         testContentSource = content;
         source = createTestMemorySource(content);
@@ -90,6 +93,7 @@ public:
         REQUIRE(lexer != nullptr);
     }
 
+    /// Set up a lexer for byte content stored in a file.
     void setupLexer(const el::mem::ByteBlock &content) {
         auto path = createTestFile(content);
         testContentSource = path;
@@ -102,12 +106,14 @@ public:
         REQUIRE(lexer != nullptr);
     }
 
+    /// Set up a token generator for the given content.
     template <typename T>
     void setupTokenGenerator(const T &content) {
         setupLexer(content);
         tokenGenerator = lexer->tokens();
     }
 
+    /// Set up a token generator without diagnostic test content.
     void setupTokenGeneratorFast(const el::text::String &content) {
         testContentSource = {};
         testContents = {};
@@ -118,6 +124,7 @@ public:
         tokenGenerator = lexer->tokens();
     }
 
+    /// Read the next token into the current token field.
     void readNextToken() {
         auto nextToken = std::optional<LexerToken>{};
         REQUIRE_NOTHROW(nextToken = tokenGenerator.next());
@@ -125,6 +132,7 @@ public:
         token = std::move(*nextToken);
     }
 
+    /// Require the next token to have the expected metadata.
     void requireNextToken(
         TokenType expectedTokenType,
         const std::optional<el::text::String> &expectedRaw = std::nullopt,
@@ -150,6 +158,7 @@ public:
         }
     }
 
+    /// Require the next token to have the expected typed value.
     template <typename T>
     void requireNextValueToken(
         const TokenType expectedTokenType, const T &expectedValue, const std::optional<el::text::String> &expectedRaw) {
@@ -166,6 +175,7 @@ public:
         }
     }
 
+    /// Require the next token to contain the expected string.
     void requireNextStringToken(
         const TokenType expectedTokenType,
         const el::text::String &expectedString,
@@ -174,6 +184,7 @@ public:
         requireNextValueToken<el::text::String>(expectedTokenType, expectedString, expectedRaw);
     }
 
+    /// Require the next token to contain the expected integer.
     void requireNextIntegerToken(
         const TokenType expectedTokenType,
         const Integer expectedValue,
@@ -182,6 +193,7 @@ public:
         requireNextValueToken<Integer>(expectedTokenType, expectedValue, expectedRaw);
     }
 
+    /// Require the next token to contain the expected bytes.
     void requireNextBytesToken(
         const TokenType expectedTokenType,
         const el::mem::ByteBlock &expectedValue,
@@ -190,6 +202,7 @@ public:
         requireNextValueToken<el::mem::ByteBlock>(expectedTokenType, expectedValue, expectedRaw);
     }
 
+    /// Require the next token read to raise the expected error.
     void requireError(
         ConfErrorCategory expectedErrorCategory,
         const std::optional<el::unit::CodeLocation> &expectedPosition = std::nullopt) {
@@ -204,6 +217,7 @@ public:
         }
     }
 
+    /// Require the next token read to raise one of the expected errors.
     void requireError(std::initializer_list<ConfErrorCategory> expectedErrorCategories) {
         try {
             static_cast<void>(tokenGenerator.next());
@@ -214,6 +228,7 @@ public:
         }
     }
 
+    /// Require that token generation has reached end of data.
     void requireEndOfData() {
         readNextToken();
         REQUIRE(token.type() == TokenType::EndOfData);
@@ -224,6 +239,7 @@ public:
     }
 };
 
+/// Require the next lexer token to contain the expected floating-point value.
 template <>
 inline void LexerTestHelper::requireNextValueToken<Float>(
     const TokenType expectedTokenType, const Float &expectedValue, const std::optional<el::text::String> &expectedRaw) {

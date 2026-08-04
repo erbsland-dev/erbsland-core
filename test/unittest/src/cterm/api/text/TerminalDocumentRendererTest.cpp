@@ -131,9 +131,9 @@ public:
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         const auto result = renderDocument(renderer, document);
 
-        REQUIRE(result.find("Path:") != std::string::npos);
-        REQUIRE(result.find("/tmp/report.txt") != std::string::npos);
-        REQUIRE(result.find("Code:") != std::string::npos);
+        requireContains(result, "Path:");
+        requireContains(result, "/tmp/report.txt");
+        requireContains(result, "Code:");
     }
 
     void testFieldListAlignsAtFirstAvailableColumn() {
@@ -150,8 +150,8 @@ public:
         auto buffer = CursorBuffer{bgeo::BlockSize{80, 2}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
         const auto lines = rawLinesFromBuffer(buffer);
-        REQUIRE(lines[0].find("errno:   2") != std::string::npos);
-        REQUIRE(lines[1].find("message: No such file or directory") != std::string::npos);
+        requireContains(lines[0], "errno:   2");
+        requireContains(lines[1], "message: No such file or directory");
     }
 
     void testContainerDecorationsSurroundAndPrefixContent() {
@@ -200,8 +200,8 @@ public:
         auto renderer = TerminalDocumentRenderer{};
         const auto rendered = renderDocument(renderer, document);
 
-        REQUIRE(rendered.find("level 0") != std::string::npos);
-        REQUIRE(rendered.find("level 9") != std::string::npos);
+        requireContains(rendered, "level 0");
+        requireContains(rendered, "level 9");
         REQUIRE_EQUAL(std::count(rendered.begin(), rendered.end(), '\n'), 9);
     }
 
@@ -249,7 +249,8 @@ public:
         REQUIRE_EQUAL(oversizedWriter._writtenStrings.size(), std::size_t{2});
         REQUIRE_EQUAL(render(oversizedWriter._writtenStrings[0]), std::string(70, 'e'));
         REQUIRE_EQUAL(render(oversizedWriter._writtenStrings[1]), std::string{"tail"});
-        REQUIRE(renderDocument(renderer, separatorDocument, 60).find("\u200b") == std::string::npos);
+        const auto separatorOutput = renderDocument(renderer, separatorDocument, 60);
+        requireNotContains(separatorOutput, "\u200b");
     }
 
     void testEffectiveWidthSnapshotsUseOneLayoutAlgorithm() {
@@ -337,7 +338,7 @@ public:
                         "    --long value  Long only.\n"
                         "    --flag        Flag only.\n"
                         "    input         Positional."});
-        REQUIRE(rendered.find('\t') == std::string::npos);
+        requireNotContains(rendered, '\t');
     }
 
     void testShortOptionRowsEnableLongOnlyFlagIndent() {
@@ -395,9 +396,9 @@ public:
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         const auto rendered = renderDocument(renderer, document);
-        REQUIRE(rendered.find("  13 \u2502   padded value") != std::string::npos);
-        REQUIRE(rendered.find("     \u2502   \u2594\u2594\u2594\u2594\u2594\u2594") != std::string::npos);
-        REQUIRE(rendered.find("  14 \u2502 next") != std::string::npos);
+        requireContains(rendered, "  13 \u2502   padded value");
+        requireContains(rendered, "     \u2502   \u2594\u2594\u2594\u2594\u2594\u2594");
+        requireContains(rendered, "  14 \u2502 next");
 
         auto buffer = CursorBuffer{bgeo::BlockSize{40, 6}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
@@ -406,11 +407,11 @@ public:
         while (markerY < rawLines.size() && rawLines[markerY].find("\u2594") == std::string::npos) {
             ++markerY;
         }
-        REQUIRE(markerY < rawLines.size());
+        REQUIRE_LESS(markerY, rawLines.size());
         const auto gutterX = rawLines[markerY].find("\u2502");
         const auto markerX = rawLines[markerY].find("\u2594");
-        REQUIRE(gutterX != std::string::npos);
-        REQUIRE(markerX != std::string::npos);
+        REQUIRE_NOT_EQUAL(gutterX, std::string::npos);
+        REQUIRE_NOT_EQUAL(markerX, std::string::npos);
         REQUIRE_EQUAL(
             buffer.get(bgeo::BlockPosition{static_cast<int>(gutterX), static_cast<int>(markerY)}).style().fg(),
             fg::BrightBlack);
@@ -435,8 +436,8 @@ public:
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         const auto rendered = renderDocument(renderer, document);
-        REQUIRE(rendered.find("A\u754cB") != std::string::npos);
-        REQUIRE(rendered.find("\u2594\u2594") != std::string::npos);
+        requireContains(rendered, "A\u754cB");
+        requireContains(rendered, "\u2594\u2594");
 
         auto buffer = CursorBuffer{bgeo::BlockSize{16, 12}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
@@ -497,7 +498,7 @@ public:
         REQUIRE(lines[3].starts_with("      --dry-run            Preview"));
         REQUIRE(lines[4].starts_with("      <target>             Target"));
         const auto descriptionColumn = lines[0].find("Configuration");
-        REQUIRE(descriptionColumn != std::string::npos);
+        REQUIRE_NOT_EQUAL(descriptionColumn, std::string::npos);
         REQUIRE_EQUAL(descriptionColumn, std::size_t{27});
         REQUIRE_EQUAL(descriptionColumn, lines[1].find("Workspace"));
         REQUIRE_EQUAL(descriptionColumn, lines[2].find("Increase"));
@@ -562,7 +563,7 @@ public:
         renderer.renderTo(buffer, document);
 
         const auto lines = rawLinesFromBuffer(buffer);
-        REQUIRE(lines[0].find("very-long-option-name-that-overflows") != std::string::npos);
+        requireContains(lines[0], "very-long-option-name-that-overflows");
         REQUIRE_EQUAL(lines[1].find("Description"), std::size_t{20});
     }
 
@@ -621,7 +622,8 @@ public:
         REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{2});
         const auto &line = writer._writtenStrings[0];
         REQUIRE(writer._writtenStrings[1].isEmpty());
-        REQUIRE(render(line).starts_with("      --config <path>  Use path."));
+        const auto renderedLine = render(line);
+        REQUIRE(renderedLine.starts_with("      --config <path>  Use path."));
         REQUIRE_EQUAL(line[BlockIndex{6U}].style().fg(), fg::BrightCyan);
         REQUIRE_EQUAL(line[BlockIndex{15U}].style().fg(), fg::BrightBlack);
         REQUIRE_EQUAL(line[BlockIndex{16U}].style().fg(), fg::BrightGreen);
@@ -667,5 +669,21 @@ public:
         builder.reset();
         builder.appendDecoration(decoration, BlockStyle{}, false);
         REQUIRE_EQUAL(render(builder.takeString()), std::string{"beta"});
+    }
+
+private:
+    void requireContains(const std::string &text, const std::string_view expected) {
+        const auto position = text.find(expected);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+    }
+
+    void requireNotContains(const std::string &text, const std::string_view unexpected) {
+        const auto position = text.find(unexpected);
+        REQUIRE_EQUAL(position, std::string::npos);
+    }
+
+    void requireNotContains(const std::string &text, const char unexpected) {
+        const auto position = text.find(unexpected);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

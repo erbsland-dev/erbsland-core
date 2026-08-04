@@ -4,27 +4,37 @@
 
 #include "Attribute.hpp"
 
+#include "../../../impl/vr/VersionMask_fwd.hpp"
 #include "../../../Integer.hpp"
 
 #include <vector>
 
-namespace erbsland::conf::impl {
-class VersionMask;
-}
-
 namespace erbsland::conf::vr::builder {
 
 /// Restricts a rule to specific versions.
-struct ConfVersion : Attribute {
+class ConfVersion : public Attribute {
+public:
+    /// Creates a configuration-version attribute from a version list.
+    /// @param versions The accepted configuration versions.
+    /// @param isNegated `true` to reject the listed versions.
     explicit ConfVersion(std::vector<Integer> versions, const bool isNegated = false) :
         _versions{std::move(versions)}, _isNegated{isNegated} {}
+    /// Creates a configuration-version attribute from a version list.
+    /// @param versions The accepted configuration versions.
+    /// @param isNegated `true` to reject the listed versions.
     explicit ConfVersion(const std::initializer_list<Integer> versions, const bool isNegated = false) :
         _versions{versions}, _isNegated{isNegated} {}
+    /// Creates a configuration-version attribute from one version.
+    /// @param version The accepted configuration version.
+    /// @param isNegated `true` to reject the version.
     explicit ConfVersion(const Integer version, const bool isNegated = false) :
         _versions{version}, _isNegated{isNegated} {}
 
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
 
+    /// Convert a list of configuration versions into a validation bit mask.
+    /// @param versions The configuration versions to convert.
+    /// @return The corresponding version mask.
     [[nodiscard]] static auto toVersionMask(const std::vector<Integer> &versions) -> impl::VersionMask;
 
     std::vector<Integer> _versions;

@@ -37,7 +37,7 @@ auto TerminalDocumentStyle::definition(const TerminalDocumentStyleSelector &sele
     if (index.isNoIndex()) {
         return std::nullopt;
     }
-    return _data->definitions.toRawValue()[index.toSizeT()].rule;
+    return _data->definitions.getRefOrThrow(index).rule;
 }
 
 auto TerminalDocumentStyle::edit(const TerminalDocumentStyleSelector &selector) -> TerminalDocumentStyleRule & {

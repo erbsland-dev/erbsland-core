@@ -12,6 +12,8 @@
 #include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
 
+#include <utility>
+
 namespace demo {
 
 using namespace el::text::literals;
@@ -32,11 +34,14 @@ auto PasswordHandlerApp::addUser(const el::OptionValuesPtr &values) -> el::ExitC
         throw el::ApplicationError{"The exact username already exists."_el};
     }
 
-    const auto password = PasswordPrompt::readNewPassword(terminal());
+    const auto password = PasswordPrompt{terminal()}.readNewPassword();
     initializeStorage(paths);
-    auto hasher = PepperStore::loadHasher(paths.pepper);
+    auto pepperStore = PepperStore{std::move(paths.pepper)};
+    auto hasher = pepperStore.loadHasher();
     const auto passwordHash = hasher.hash(password);
-    static_cast<void>(database.tryAdd(username, passwordHash.toString()));
+    if (!database.tryAdd(username, passwordHash.toString())) {
+        throw el::ApplicationError{"The exact username already exists."_el};
+    }
     database.save(paths.database, el::PathCollisionMode::Overwrite);
     el::io::printLine("User added: "_el, displayUsername(username));
     return el::ExitCode::success();

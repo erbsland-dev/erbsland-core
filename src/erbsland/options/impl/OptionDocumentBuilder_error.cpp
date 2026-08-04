@@ -35,8 +35,8 @@ auto OptionDocumentBuilder::lineIndexFromArgumentIndex(const ArgumentIndex index
     return LineIndex::fromSizeT(index.toSizeT());
 }
 
-auto OptionDocumentBuilder::elementIndexFromLineIndex(const LineIndex index) noexcept -> ElementIndex {
-    return ElementIndex::fromSizeT(index.toSizeT());
+auto OptionDocumentBuilder::elementIndexFromLineIndex(const LineIndex index) noexcept -> ItemIndex {
+    return ItemIndex::fromSizeT(index.toSizeT());
 }
 
 auto OptionDocumentBuilder::markerLength(const String &text) noexcept -> ColumnCount {

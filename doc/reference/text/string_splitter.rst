@@ -31,6 +31,8 @@ Sequential State
 
 ``isAtEnd()`` distinguishes an empty part from the end of the sequence.
 Calling ``next()`` after the end safely returns an empty string.
+Calling ``skip()`` consumes the same next part as ``next()`` without constructing its shared slice; calling it after the
+end has no effect.
 ``remaining()`` returns the unread suffix as another shared slice, and ``reset()`` restarts the splitter at the
 beginning.
 

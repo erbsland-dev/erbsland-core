@@ -31,6 +31,8 @@ Interface
 
 .. doxygenclass:: erbsland::conf::SignatureSigner
     :members:
+
+.. doxygentypedef:: erbsland::conf::SignatureSignerPtr
 .. doxygenstruct:: erbsland::conf::SignatureSignerData
     :members:
 .. doxygenclass:: erbsland::conf::Signer

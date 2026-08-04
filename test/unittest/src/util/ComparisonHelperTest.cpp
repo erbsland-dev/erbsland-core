@@ -68,21 +68,24 @@ public:
         const auto anotherOne = RuntimeComparisonProbe{1};
         const auto two = RuntimeComparisonProbe{2};
 
-        REQUIRE((one <=> anotherOne) == std::strong_ordering::equal);
-        REQUIRE((one <=> two) == std::strong_ordering::less);
-        REQUIRE((two <=> one) == std::strong_ordering::greater);
+        const auto oneComparedToAnotherOne = one <=> anotherOne;
+        const auto oneComparedToTwo = one <=> two;
+        const auto twoComparedToOne = two <=> one;
+        REQUIRE_EQUAL(oneComparedToAnotherOne, std::strong_ordering::equal);
+        REQUIRE_EQUAL(oneComparedToTwo, std::strong_ordering::less);
+        REQUIRE_EQUAL(twoComparedToOne, std::strong_ordering::greater);
 
-        REQUIRE(one == anotherOne);
-        REQUIRE_FALSE(one != anotherOne);
-        REQUIRE(one != two);
-        REQUIRE(one < two);
-        REQUIRE(one <= anotherOne);
-        REQUIRE(one <= two);
-        REQUIRE(two > one);
-        REQUIRE(two >= anotherOne);
-        REQUIRE(two >= one);
-        REQUIRE_FALSE(two < one);
-        REQUIRE_FALSE(one > two);
+        REQUIRE_EQUAL(one, anotherOne);
+        REQUIRE_EQUAL(one, anotherOne);
+        REQUIRE_NOT_EQUAL(one, two);
+        REQUIRE_LESS(one, two);
+        REQUIRE_LESS_EQUAL(one, anotherOne);
+        REQUIRE_LESS_EQUAL(one, two);
+        REQUIRE_GREATER(two, one);
+        REQUIRE_GREATER_EQUAL(two, anotherOne);
+        REQUIRE_GREATER_EQUAL(two, one);
+        REQUIRE_GREATER_EQUAL(two, one);
+        REQUIRE_LESS_EQUAL(one, two);
     }
 
     void testConstexprMemberComparison() {
@@ -101,14 +104,15 @@ public:
         static_assert(noexcept(ConstexprComparisonProbe{7} < 8));
 
         const auto probe = ConstexprComparisonProbe{7};
-        REQUIRE((probe <=> 7) == std::strong_ordering::equal);
-        REQUIRE(probe == 7);
-        REQUIRE_FALSE(probe != 7);
-        REQUIRE(probe != 8);
-        REQUIRE(probe < 8);
-        REQUIRE(probe <= 7);
-        REQUIRE(probe > 6);
-        REQUIRE(probe >= 7);
+        const auto comparison = probe <=> 7;
+        REQUIRE_EQUAL(comparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(probe, 7);
+        REQUIRE_EQUAL(probe, 7);
+        REQUIRE_NOT_EQUAL(probe, 8);
+        REQUIRE_LESS(probe, 8);
+        REQUIRE_LESS_EQUAL(probe, 7);
+        REQUIRE_GREATER(probe, 6);
+        REQUIRE_GREATER_EQUAL(probe, 7);
     }
 
     void testConstexprFriendComparison() {
@@ -125,14 +129,15 @@ public:
         static_assert(noexcept(6 < ConstexprComparisonProbe{7}));
 
         const auto probe = ConstexprComparisonProbe{7};
-        REQUIRE((7 <=> probe) == std::strong_ordering::equal);
-        REQUIRE(7 == probe);
-        REQUIRE_FALSE(6 == probe);
-        REQUIRE(6 != probe);
-        REQUIRE(6 < probe);
-        REQUIRE(7 <= probe);
-        REQUIRE(8 > probe);
-        REQUIRE(7 >= probe);
+        const auto comparison = 7 <=> probe;
+        REQUIRE_EQUAL(comparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(7, probe);
+        REQUIRE_NOT_EQUAL(6, probe);
+        REQUIRE_NOT_EQUAL(6, probe);
+        REQUIRE_LESS(6, probe);
+        REQUIRE_LESS_EQUAL(7, probe);
+        REQUIRE_GREATER(8, probe);
+        REQUIRE_GREATER_EQUAL(7, probe);
     }
 
     void testConstexprComparisonFromSpaceship() {
@@ -148,11 +153,11 @@ public:
         const auto seven = ConstexprSpaceshipProbe{7};
         const auto anotherSeven = ConstexprSpaceshipProbe{7};
         const auto eight = ConstexprSpaceshipProbe{8};
-        REQUIRE(seven == anotherSeven);
-        REQUIRE_FALSE(seven != anotherSeven);
-        REQUIRE(seven < eight);
-        REQUIRE(seven <= anotherSeven);
-        REQUIRE(eight > seven);
-        REQUIRE(eight >= anotherSeven);
+        REQUIRE_EQUAL(seven, anotherSeven);
+        REQUIRE_EQUAL(seven, anotherSeven);
+        REQUIRE_LESS(seven, eight);
+        REQUIRE_LESS_EQUAL(seven, anotherSeven);
+        REQUIRE_GREATER(eight, seven);
+        REQUIRE_GREATER_EQUAL(eight, anotherSeven);
     }
 };

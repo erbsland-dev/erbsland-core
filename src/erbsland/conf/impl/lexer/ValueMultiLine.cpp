@@ -7,6 +7,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/Literals.hpp"
+
 namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
@@ -54,7 +56,7 @@ auto scanMultiLineClose(TokenDecoder &decoder, TokenType openTokenType) -> std::
         expectedChar = nc::greaterThan;
         break;
     default:
-        throw err::LogicError("Unexpected open token type.");
+        throw err::LogicError("Unexpected open token type."_el);
     }
     return scanRepeatingCharacters(decoder, expectedChar, false);
 }

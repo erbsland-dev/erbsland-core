@@ -20,7 +20,7 @@ public:
     void testAssemblerCompile() {
         Assembler assembler;
         auto regEx = assembler.compile(el::text::StringList{"None"_el, "Match"_el});
-        REQUIRE(regEx != nullptr);
+        REQUIRE(regEx);
     }
 
     void testAssemblerError() {
@@ -30,7 +30,7 @@ public:
 
     void testDisassembler() {
         auto regEx = RegEx::compile("a|b"_el);
-        REQUIRE(regEx != nullptr);
+        REQUIRE(regEx);
 
         Disassembler disassembler{regEx};
         auto lines = disassembler.disassemble();
@@ -51,7 +51,7 @@ public:
     void testAssemblerAndDisassembler() {
         Assembler assembler;
         auto regEx = assembler.compile(el::text::StringList{"Char 'x'"_el, "Match"_el});
-        REQUIRE(regEx != nullptr);
+        REQUIRE(regEx);
 
         Disassembler disassembler{regEx};
         auto lines = disassembler.disassemble();

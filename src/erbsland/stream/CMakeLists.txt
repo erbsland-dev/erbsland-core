@@ -8,6 +8,7 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         AnyStringBuilderStream.cpp
         AnyStringBuilderStream.hpp
+        AnyStringBuilderStream_fwd.hpp
         ByteInputStream.cpp
         ByteInputStream.hpp
         ByteInputStream_fwd.hpp
@@ -15,12 +16,16 @@ target_sources(erbsland-core PRIVATE
         ByteOutputStream.hpp
         ByteOutputStream_fwd.hpp
         InputStream.hpp
+        InputStream_fwd.hpp
         InputStreamSettings.hpp
         OutputStream.hpp
+        OutputStream_fwd.hpp
         OutputStreamSettings.cpp
         OutputStreamSettings.hpp
-        SensitiveInput.cpp
         SensitiveInput.hpp
+        SensitiveInputScope.cpp
+        SensitiveInputScope.hpp
+        SensitiveInputToken.cpp
         StandardStreamRedirect.cpp
         StandardStreamRedirect.hpp
         StandardStreams.cpp
@@ -55,4 +60,5 @@ target_sources(erbsland-core PRIVATE
         TextOutputStream.hpp
         TextOutputStream_fwd.hpp
         TextPrintContext.hpp
+        TextPrintContext_fwd.hpp
 )

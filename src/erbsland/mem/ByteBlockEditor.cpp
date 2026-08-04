@@ -10,12 +10,14 @@
 
 #include "../err/OutOfRangeError.hpp"
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 #include <algorithm>
 #include <utility>
 
 namespace erbsland::mem {
 
+using namespace text::literals;
 using impl::ByteBlockDataPtr;
 using impl::ByteModifyTools;
 using unit::ByteIndex;
@@ -37,8 +39,8 @@ auto ByteBlockEditor::operator=(ByteBlockEditor &&) noexcept -> ByteBlockEditor 
 ByteBlockEditor::ByteBlockEditor(const ByteLength length, const Byte value) :
     _data{ByteModifyTools<>::createData(length.toSizeTOrThrow(), length.toSizeTOrThrow())} {
     if (!_data.isNull()) {
-        impl::fill(
-            ByteSpan{_data.get()->data(), static_cast<std::size_t>(_data.get()->size())}, ByteRange::all(), value);
+        impl::ByteWriteTools{ByteSpan{_data.get()->data(), static_cast<std::size_t>(_data.get()->size())}}.fill(
+            ByteRange::all(), value);
     }
 }
 
@@ -69,6 +71,14 @@ auto ByteBlockEditor::operator<=>(const ByteBlock &other) const noexcept -> std:
 
 auto ByteBlockEditor::operator<=>(const ByteBlockEditor &other) const noexcept -> std::strong_ordering {
     return impl::ByteComparisonTools{dataView()}.compare(other.dataView());
+}
+
+auto ByteBlockEditor::isEqualConstTime(const ByteBlock &other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(other.dataView());
+}
+
+auto ByteBlockEditor::isEqualConstTime(const ConstByteSpan other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(impl::ByteDataView{other});
 }
 
 auto ByteBlockEditor::startsWith(const ByteBlock &other) const noexcept -> bool {
@@ -123,28 +133,28 @@ void ByteBlockEditor::set(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
         return;
     }
-    dataSpanForWrite()[index.toSizeT()] = value;
+    impl::ByteWriteTools{writableSpan()}.set(index, value);
 }
 
 void ByteBlockEditor::setOrThrow(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
         throw err::OutOfRangeError{"Write position out of range"};
     }
-    set(index, value);
+    impl::ByteWriteTools{writableSpan()}.setOrThrow(index, value);
 }
 
 void ByteBlockEditor::xorAt(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
         return;
     }
-    dataSpanForWrite()[index.toSizeT()] ^= value;
+    impl::ByteWriteTools{writableSpan()}.xorAt(index, value);
 }
 
 void ByteBlockEditor::xorAtOrThrow(const ByteIndex index, const Byte value) {
     if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
         throw err::OutOfRangeError{"Write position out of range"};
     }
-    xorAt(index, value);
+    impl::ByteWriteTools{writableSpan()}.xorAtOrThrow(index, value);
 }
 
 auto ByteBlockEditor::slice(const ByteRange range) const noexcept -> ByteBlock {
@@ -247,8 +257,8 @@ auto ByteBlockEditor::insert(const ByteIndex index, const ConstByteSpan bytes) -
     return *this;
 }
 
-auto ByteBlockEditor::append(const Byte value) -> ByteBlockEditor & {
-    ByteModifyTools{_data}.append(value);
+auto ByteBlockEditor::append(const Byte value, const ByteLength length) -> ByteBlockEditor & {
+    ByteModifyTools{_data}.append(value, length);
     return *this;
 }
 
@@ -295,13 +305,20 @@ auto ByteBlockEditor::xorWith(const ByteBlock &bytes) -> bool {
 
 auto ByteBlockEditor::xorWithOrThrow(const ByteBlock &bytes) -> ByteBlockEditor & {
     if (!xorWith(bytes)) {
-        throw err::ParameterError{"XOR operands must have equal lengths", "bytes"};
+        throw err::ParameterError{"XOR operands must have equal lengths"_el, "bytes"_el};
     }
     return *this;
 }
 
 auto ByteBlockEditor::xorWith(const ConstByteSpan bytes) -> bool {
     return ByteModifyTools{_data}.xorWith(impl::ByteDataView{bytes}, false);
+}
+
+auto ByteBlockEditor::xorWithOrThrow(const ConstByteSpan bytes) -> ByteBlockEditor & {
+    if (!xorWith(bytes)) {
+        throw err::ParameterError{"XOR operands must have equal lengths."_el, "bytes"_el};
+    }
+    return *this;
 }
 
 auto ByteBlockEditor::xorWith(const ByteRange range, const ConstByteSpan bytes) -> ByteBlockEditor & {
@@ -411,7 +428,7 @@ auto ByteBlockEditor::dataView() const noexcept -> impl::ByteDataView {
         ByteRange::fromSizeT(static_cast<std::size_t>(data->size()))};
 }
 
-auto ByteBlockEditor::dataSpanForWrite() -> ByteSpan {
+auto ByteBlockEditor::writableSpan() -> ByteSpan {
     return ByteModifyTools{_data}.writableData();
 }
 

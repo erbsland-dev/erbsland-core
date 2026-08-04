@@ -5,6 +5,7 @@
 
 #include <erbsland/core/impl/WindowsApi.hpp>
 #include <erbsland/path/impl/BackendFactory.hpp>
+#include <erbsland/path/impl/PathBackend.hpp>
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/system/PlatformErrorCategory.hpp>
@@ -56,7 +57,7 @@ public:
         } catch (const el::path::PathError &error) {
             const auto context =
                 std::dynamic_pointer_cast<const el::system::WindowsErrorContext>(error.platformContext());
-            REQUIRE(context != nullptr);
+            REQUIRE(context);
             REQUIRE_EQUAL(context->errorCode(), static_cast<DWORD>(ERROR_PRIVILEGE_NOT_HELD));
             return;
         }
@@ -71,7 +72,7 @@ public:
 private:
     void requireNotFoundError(const el::path::PathError &error) {
         const auto context = std::dynamic_pointer_cast<const el::system::WindowsErrorContext>(error.platformContext());
-        REQUIRE(context != nullptr);
+        REQUIRE(context);
         REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);
     }
 };

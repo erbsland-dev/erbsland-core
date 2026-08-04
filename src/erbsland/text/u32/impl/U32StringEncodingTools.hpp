@@ -38,6 +38,7 @@ public:
     };
 
 public:
+    /// Create encoding tools for `data`.
     explicit constexpr U32StringEncodingTools(const U32StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -82,6 +83,7 @@ private:
     U32StringDataView _data;
 };
 
+/// Decode characters supplied by a callback into a UTF-32 editor.
 template <typename Function>
 auto U32StringEncodingTools::decodeFromCharacters(Function function) -> U32StringEditor {
     auto reservedSize = unit::CpLength::zero();

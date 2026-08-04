@@ -3,6 +3,7 @@
 #include "BlockString.hpp"
 
 #include "BlockTextOptions.hpp"
+#include "Font.hpp"
 
 #include "impl/BlockStringData.hpp"
 #include "impl/BlockStringRangeView.hpp"

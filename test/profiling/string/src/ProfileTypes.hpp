@@ -12,6 +12,8 @@
 
 namespace app::string {
 
+using namespace el::text::literals;
+
 /// The profiler execution mode.
 enum class RunMode : std::uint8_t { Profile, Benchmark };
 /// A profiled string width.
@@ -72,7 +74,7 @@ struct UseCaseDescriptor {
 /// @notest{Verified by string profiler configuration and smoke CTest entries.}
 struct RunSettings {
     RunMode mode{RunMode::Benchmark};                                          ///< The execution mode.
-    el::String suite{"snapshot"};                                              ///< The built-in suite.
+    el::String suite{"snapshot"_el};                                           ///< The built-in suite.
     std::chrono::nanoseconds duration{std::chrono::minutes{5}};                ///< Hard run deadline.
     std::uint32_t threadCount{4U};                                             ///< Workload thread count.
     std::uint64_t seed{0x535452494e475052ULL};                                 ///< Global deterministic seed.
@@ -92,7 +94,7 @@ struct Scenario {
     StringWidth width{StringWidth::U8};                        ///< The string width.
     StringType type{StringType::String};                       ///< The value category.
     UseCase useCase{UseCase::Create};                          ///< The use case.
-    el::String variant{"copy-source"};                         ///< The implementation-path variant.
+    el::String variant{"copy-source"_el};                      ///< The implementation-path variant.
     ContentProfile contentProfile{ContentProfile::Mixed};      ///< The source-text profile.
     SizeMode sizeMode{SizeMode::Fixed};                        ///< The source size-expansion mode.
     SensitiveMode sensitiveMode{SensitiveMode::NotApplicable}; ///< Effective sensitive-storage state.
@@ -100,13 +102,6 @@ struct Scenario {
     std::uint64_t operandSize{64U};                            ///< Secondary decoded code-point count.
     std::uint32_t weight{1U};                                  ///< Profile-mode repetition weight.
     WorkUnit workUnit{WorkUnit::CodePoints};                   ///< Measurement normalization unit.
-};
-
-/// A validated and expanded configuration.
-/// @notest{Verified by string profiler configuration CTest entries.}
-struct Configuration {
-    RunSettings run;                   ///< Run settings.
-    std::vector<Scenario> scenarios{}; ///< Expanded scenarios.
 };
 
 /// One worker's measured result.

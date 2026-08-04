@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AcceptedNameEnd.hpp"
 #include "LexerToken.hpp"
 
 #include "../decoder/TokenDecoder.hpp"
@@ -12,12 +13,6 @@ namespace erbsland::conf::impl::lexer {
 struct NameResult {
     bool isMetaName;
     text::String name;
-};
-
-/// What kind of characters are accepted ending a name.
-enum class AcceptedNameEnd : uint8_t {
-    NamePath, ///< Accept `.`, `[`, and end-of-data.
-    Section,  ///< Accept `.` and `]` and end marks.
 };
 
 /// Expects and reads a regular name or a metaname.

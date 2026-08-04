@@ -2,11 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "SecureRandom.hpp"
 
+#include "RandomError.hpp"
+
+#include "../system/PlatformError.hpp"
+
 #include <array>
 #include <bit>
 #include <limits>
 
 namespace erbsland::random {
+
+using namespace text::literals;
 
 SecureRandom::SecureRandom() : _entropySource{std::make_unique<impl::SystemEntropySource>()} {
 }
@@ -45,7 +51,11 @@ auto SecureRandom::getBool() -> bool {
 }
 
 void SecureRandom::fillBytes(const std::span<std::byte> destination) {
-    _entropySource->fillBytes(destination);
+    try {
+        _entropySource->fillBytes(destination);
+    } catch (const system::PlatformError &) {
+        throw RandomError{"System entropy source failed"_el, std::current_exception()};
+    }
 }
 
 auto SecureRandom::randomUInt64() -> uint64_t {

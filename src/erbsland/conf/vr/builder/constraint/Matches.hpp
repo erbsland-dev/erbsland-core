@@ -13,17 +13,26 @@
 namespace erbsland::conf::vr::builder {
 
 /// Adds a regular-expression constraint for text values.
-struct Matches : ConstraintAttribute {
+class Matches : public ConstraintAttribute {
+public:
+    /// Creates a regular-expression constraint from a pattern.
+    /// @param pattern The regular-expression pattern.
+    /// @param isVerbose `true` to enable verbose pattern syntax.
+    /// @param options Additional constraint options.
     explicit Matches(const text::String &pattern, const bool isVerbose = false, ConstraintOptions options = {}) :
         _pattern{pattern}, _isVerbose{isVerbose}, _options{std::move(options)} {}
+    /// Creates a regular-expression constraint from a compiled expression.
+    /// @param pattern The compiled regular expression.
+    /// @param options Additional constraint options.
     explicit Matches(re::RegExPtr pattern, ConstraintOptions options = {}) :
         _compiledPattern{std::move(pattern)}, _options{std::move(options)} {
         if (_compiledPattern == nullptr) {
-            throw err::ParameterError{"The regular expression cannot be null.", "pattern"};
+            using namespace text::literals;
+            throw err::ParameterError{"The regular expression cannot be null."_el, "pattern"_el};
         }
     }
 
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
 
     text::String _pattern;
     re::RegExPtr _compiledPattern;

@@ -16,16 +16,26 @@ using namespace text::literals;
 
 /// Internal helper base for string-part constraints.
 template <typename TImplConstraint>
-struct StringPartConstraint : ConstraintAttribute {
+class StringPartConstraint : public ConstraintAttribute {
+public:
+    /// Creates a string-part constraint from expected text parts.
+    /// @param values The expected text parts.
+    /// @param options Additional constraint options.
     explicit StringPartConstraint(text::StringList values, ConstraintOptions options = {}) :
         _values{std::move(values)}, _options{std::move(options)} {}
 
+    /// Creates a string-part constraint from one expected text part.
+    /// @param value The expected text part.
+    /// @param options Additional constraint options.
     explicit StringPartConstraint(const text::String &value, ConstraintOptions options = {}) :
         _values{{value}}, _options{std::move(options)} {}
+    /// Creates a string-part constraint from expected text parts.
+    /// @param values The expected text parts.
+    /// @param options Additional constraint options.
     explicit StringPartConstraint(const std::initializer_list<text::String> values, ConstraintOptions options = {}) :
         _values{values}, _options{std::move(options)} {}
 
-    void operator()(impl::Rule &rule) override {
+    void operator()(Rule &rule) override {
         requireRuleTypeForConstraint(rule, _name, {vr::RuleType::Text});
         if (_values.isEmpty()) {
             throwValidationError(

@@ -171,6 +171,8 @@ Let Application Report the Final Error
 application.
 It catches :cpp:class:`Exception <erbsland::err::Exception>`, calls ``cleanup()``, builds a diagnostic document
 including causes, and renders it through the application's system output.
+A callback exception from the automatically managed main event loop stops that loop, shuts down managed event threads,
+and then reaches this same boundary.
 A foreign ``std::exception`` is not caught directly by ``run()``, but it is rendered when preserved as the cause of an
 Erbsland exception.
 

@@ -68,11 +68,11 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
     }
 
     auto countMatchesIn(const String &text) -> std::size_t {
-        this->text = StringEditor{text};
-        REQUIRE(regex != nullptr);
+        this->text = String{text};
+        REQUIRE(regex);
         std::size_t matchCount = 0;
         for (const auto &match : regex->findAll(text)) {
-            REQUIRE(match != nullptr);
+            REQUIRE(match);
             matchCount += 1;
         }
         return matchCount;
@@ -83,18 +83,19 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
         -> std::vector<std::string> {
 
         requireCompile(pattern, flags);
-        this->text = StringEditor{text};
-        REQUIRE(regex != nullptr);
+        this->text = String{text};
+        REQUIRE(regex);
 
         auto lines = std::vector<std::string>{};
         for (const auto &match : regex->findAll(text)) {
-            REQUIRE(match != nullptr);
+            REQUIRE(match);
             lastMatch = match;
 
             auto line = std::string{};
             for (std::size_t i = 0; i < groupIndices.size(); ++i) {
                 const auto groupIndex = groupIndices[i];
-                REQUIRE(groupIndex < match->groupCount());
+                const auto groupCount = match->groupCount();
+                REQUIRE_LESS(groupIndex, groupCount);
                 if (i != 0) {
                     line += "|";
                 }
@@ -107,16 +108,22 @@ class RegExRealWorldTest final : public UNITTEST_SUBCLASS(RegExBase) {
     }
 
 public:
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testAllWords() {
         requireCompile(R"(\b\w+\b)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 229192);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testCapitalizedWords() {
         requireCompile(R"(\b[A-Z][a-z]*\b)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 38760);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testEmailAddresses() {
         requireCompile(R"(([a-zA-Z0-9\._%\+\-]+)@([a-zA-Z0-9\.\-]+\.[a-zA-Z]{2,}))"_el);
         // Sanity test: Make sure the pattern works.
@@ -125,16 +132,22 @@ public:
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 0);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testURLs() {
         requireCompile(R"(https?://([a-zA-Z0-9\.]+))"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 2);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testHtmlTags() {
         requireCompile(R"(<[a-z1-6]+[^>]*>)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeareHtml()), 27588);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testExtractTocLinksCaptureGroups() {
         const auto pattern = R"re(<a href="#(chap([0-9]{2}))" class="pginternal">([^<]+)</a>)re"_el;
         const auto groupIndices = std::vector<std::size_t>{1, 2, 3};
@@ -144,6 +157,8 @@ public:
         requireLines(actualLines, expectedLines);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testExtractLicenseDivCaptureGroups() {
         const auto pattern = R"re(<div id="(([^-\"]+)-([^-\"]+)-([^"]+))">([^<]+)</div>)re"_el;
         const auto groupIndices = std::vector<std::size_t>{1, 2, 3, 4, 5};
@@ -153,6 +168,8 @@ public:
         requireLines(actualLines, expectedLines);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testExtractTocLinksPossessiveQuantifiersCaptureGroups() {
         const auto pattern = R"re(<a href=\"#(chap([0-9]{2}))\" class=\"pginternal\">([^<]++)</a>)re"_el;
         const auto groupIndices = std::vector<std::size_t>{1, 2, 3};
@@ -162,6 +179,8 @@ public:
         requireLines(actualLines, expectedLines);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testDotPlus() {
         requireCompile(R"(.+)"_el, Flag::CRLF);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 34916);
@@ -170,26 +189,36 @@ public:
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 1);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testSimpleWord() {
         requireCompile(R"(simple)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 32);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testSimpleWordAtStart() {
         requireCompile(R"((?m)^This)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 150);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testSimpleWordInMiddle() {
         requireCompile(R"(contains)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 2);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testSimpleWordWithBoundary() {
         requireCompile(R"(\bsimple\b)"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 28);
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testComplexMarkdownLinks() {
         requireCompile(R"(\[([^\]]+)\]\(([^\)]+)\))"_el);
         REQUIRE_EQUAL(countMatchesIn(shakespeare()), 0);

@@ -16,8 +16,6 @@ using namespace el::time;
 TESTED_TARGETS(Date)
 class DateValuesTest final : public UNITTEST_SUBCLASS(TimeDataTestBase) {
 public:
-    auto additionalErrorMessages() noexcept -> std::string override { return _context; }
-
     void testEpochValues() {
         const auto path = std::string_view{"data/time/date_epoch.txt"};
         const auto lines = fh::readDataLines(path);
@@ -32,20 +30,27 @@ public:
             const auto dateFields = parseDateFields(fields, 1);
             const auto dayOfYear = parseInt(fields[4]);
             const auto dayOfWeek = parseInt(fields[5]);
-            _context = std::format("date epoch line={} days={}", lineNumber, days.toRawValue());
             const auto date = dateFromFields(dateFields);
-            REQUIRE(date.isValid());
-            REQUIRE_EQUAL(date.toDaysSinceEpoch(), days);
-            REQUIRE_EQUAL(Date::fromDaysSinceEpoch(days), date);
-            REQUIRE_EQUAL(date.year().toRawValue(), dateFields.year);
-            REQUIRE_EQUAL(date.month().toRawValue(), dateFields.month);
-            REQUIRE_EQUAL(date.day().toRawValue(), dateFields.day);
-            REQUIRE_EQUAL(date.dayOfYear().toRawValue(), dayOfYear);
-            REQUIRE_EQUAL(date.dayOfWeek().toRawValue(), dayOfWeek);
-            const auto parts = date.parts();
-            REQUIRE_EQUAL(parts.year.toRawValue(), dateFields.year);
-            REQUIRE_EQUAL(parts.month.toRawValue(), dateFields.month);
-            REQUIRE_EQUAL(parts.day.toRawValue(), dateFields.day);
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE(date.isValid());
+                    REQUIRE_EQUAL(date.toDaysSinceEpoch(), days);
+                    const auto dateFromDays = Date::fromDaysSinceEpoch(days);
+                    REQUIRE_EQUAL(dateFromDays, date);
+                    REQUIRE_EQUAL(date.year().toRawValue(), dateFields.year);
+                    REQUIRE_EQUAL(date.month().toRawValue(), dateFields.month);
+                    REQUIRE_EQUAL(date.day().toRawValue(), dateFields.day);
+                    REQUIRE_EQUAL(date.dayOfYear().toRawValue(), dayOfYear);
+                    REQUIRE_EQUAL(date.dayOfWeek().toRawValue(), dayOfWeek);
+                    const auto parts = date.parts();
+                    REQUIRE_EQUAL(parts.year.toRawValue(), dateFields.year);
+                    REQUIRE_EQUAL(parts.month.toRawValue(), dateFields.month);
+                    REQUIRE_EQUAL(parts.day.toRawValue(), dateFields.day);
+                },
+                [&]() -> std::string {
+                    return std::format("date epoch line={} days={}", lineNumber, days.toRawValue());
+                });
         }
     }
 
@@ -63,8 +68,6 @@ public:
             const auto unit = fields[3];
             const auto amount = parseInt64(fields[4]);
             const auto expected = dateFromFields(parseDateFields(fields, 5));
-            _context = std::format(
-                "date manipulation line={} unit={} base={}", lineNumber, unit, base.toDaysSinceEpoch().toRawValue());
             auto result = Date{};
             auto inPlace = base;
             if (unit == "days") {
@@ -79,8 +82,19 @@ public:
             } else {
                 throw std::runtime_error{std::format("{}:{}: unknown unit {}", path, lineNumber, unit)};
             }
-            REQUIRE_EQUAL(result, expected);
-            REQUIRE_EQUAL(inPlace, expected);
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE_EQUAL(result, expected);
+                    REQUIRE_EQUAL(inPlace, expected);
+                },
+                [&]() -> std::string {
+                    return std::format(
+                        "date manipulation line={} unit={} base={}",
+                        lineNumber,
+                        unit,
+                        base.toDaysSinceEpoch().toRawValue());
+                });
         }
     }
 
@@ -97,12 +111,17 @@ public:
             const auto source = dateFromFields(parseDateFields(fields, 0));
             const auto target = dateFromFields(parseDateFields(fields, 3));
             const auto expected = Days{parseInt64(fields[6])};
-            _context = std::format(
-                "daysTo line={} source={} target={}",
-                lineNumber,
-                source.toDaysSinceEpoch().toRawValue(),
-                target.toDaysSinceEpoch().toRawValue());
-            REQUIRE_EQUAL(source.daysTo(target), expected);
+            const auto actual = source.daysTo(target);
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void { REQUIRE_EQUAL(actual, expected); },
+                [&]() -> std::string {
+                    return std::format(
+                        "daysTo line={} source={} target={}",
+                        lineNumber,
+                        source.toDaysSinceEpoch().toRawValue(),
+                        target.toDaysSinceEpoch().toRawValue());
+                });
         }
     }
 
@@ -124,14 +143,12 @@ public:
             }
             values.emplace_back(date, parseInt(fields[4]));
         }
-        requireComparisonRows(values, _context, "Date");
+        requireComparisonRows(values, "Date");
     }
 
     void testStringConversion() {
-        REQUIRE_EQUAL(Date::fromYearMonthDay(2026, 7, 4).toString(), "2026-07-04"_el);
+        const auto text = Date::fromYearMonthDay(2026, 7, 4).toString();
+        REQUIRE_EQUAL(text, "2026-07-04"_el);
         REQUIRE(Date{}.toString().isEmpty());
     }
-
-private:
-    std::string _context;
 };

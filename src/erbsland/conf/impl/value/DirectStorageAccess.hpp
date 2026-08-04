@@ -2,14 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BooleanValue.hpp"
 #include "BytesValue.hpp"
-#include "ValueWithConvertibleType.hpp"
-#include "ValueWithNativeType.hpp"
+#include "CalendarDeltaValue.hpp"
+#include "DateTimeValue.hpp"
+#include "DateValue.hpp"
+#include "FloatValue.hpp"
+#include "IntegerValue.hpp"
+#include "RegExValue.hpp"
+#include "TextValue.hpp"
+#include "TimeValue.hpp"
+#include "TimeWithZoneValue.hpp"
 
 #include "../utilities/TypeTraits.hpp"
 
 namespace erbsland::conf::impl {
 
+/// Access the matching scalar value's storage without copying it.
+/// @param value The scalar configuration value.
+/// @return A reference to the matching stored value.
 template <typename T>
 [[nodiscard]] auto directStorageAccess(const conf::ValuePtr &value) noexcept -> const T & {
     if constexpr (std::is_same_v<T, Integer>) {

@@ -2,19 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "TerminalStream.hpp"
 
-#include "Terminal.hpp"
+#include "impl/TerminalStreamData.hpp"
 
-#include "../stream/impl/IoService.hpp"
 #include "../stream/impl/StreamBufferSizes.hpp"
 #include "../text/Literals.hpp"
 #include "../time/TimePoint.hpp"
 
-#include <atomic>
-#include <chrono>
-#include <condition_variable>
-#include <cstddef>
-#include <cstdint>
-#include <deque>
 #include <exception>
 #include <mutex>
 #include <utility>
@@ -27,137 +20,6 @@ using text::Char;
 using text::String;
 using text::StringEncoding;
 
-class TerminalStream::Data final : public std::enable_shared_from_this<Data> {
-public:
-    struct Command final {
-        String text;
-        BlockStyle style;
-        bool lineBreak{false};
-    };
-
-public:
-    Data(
-        TerminalPtr streamTerminal,
-        BlockStyle streamStyle,
-        TerminalStreamSynchronizationPtr streamSynchronization,
-        OutputStreamSettings streamSettings) :
-        terminal{std::move(streamTerminal)},
-        style{streamStyle},
-        synchronization{std::move(streamSynchronization)},
-        settings{streamSettings} {
-        if (terminal == nullptr) {
-            streamState.store(StreamState::Closed);
-        }
-    }
-
-    void schedule() {
-        if (workInProgress || aborted.load()) {
-            return;
-        }
-        if (queue.empty()) {
-            if (streamState.load() == StreamState::Closing) {
-                scheduleFlush(true, 0U);
-            }
-            return;
-        }
-        workInProgress = true;
-        auto self = shared_from_this();
-        auto command = queue.front();
-        stream::impl::IoService::submitIoWork(
-            [self = std::move(self), command = std::move(command)]() -> void { self->performWrite(command); });
-    }
-
-    void performWrite(const Command &command) {
-        auto failure = std::exception_ptr{};
-        try {
-            const auto terminalLock = std::scoped_lock{synchronization->_mutex};
-            terminal->setStyle(command.style);
-            try {
-                if (!command.text.isEmpty()) {
-                    terminal->write(command.text);
-                }
-                if (command.lineBreak) {
-                    terminal->writeLineBreak();
-                }
-                terminal->setStyle(BlockStyle::reset());
-            } catch (...) {
-                terminal->setStyle(BlockStyle::reset());
-                throw;
-            }
-        } catch (...) {
-            failure = std::current_exception();
-        }
-        {
-            const auto lock = std::scoped_lock{mutex};
-            workInProgress = false;
-            if (failure) {
-                error = failure;
-                streamState.store(StreamState::Failed);
-            } else if (!aborted.load()) {
-                pendingBytes -= commandLength(command);
-                queue.pop_front();
-                schedule();
-            }
-        }
-        condition.notify_all();
-    }
-
-    void scheduleFlush(const bool closeAfterFlush, const uint64_t generation) {
-        if (workInProgress || aborted.load()) {
-            return;
-        }
-        workInProgress = true;
-        auto self = shared_from_this();
-        stream::impl::IoService::submitIoWork([self = std::move(self), closeAfterFlush, generation]() -> void {
-            self->performFlush(closeAfterFlush, generation);
-        });
-    }
-
-    void performFlush(const bool closeAfterFlush, const uint64_t generation) {
-        auto failure = std::exception_ptr{};
-        try {
-            const auto terminalLock = std::scoped_lock{synchronization->_mutex};
-            terminal->flush();
-        } catch (...) {
-            failure = std::current_exception();
-        }
-        {
-            const auto lock = std::scoped_lock{mutex};
-            workInProgress = false;
-            if (failure) {
-                error = failure;
-                streamState.store(StreamState::Failed);
-            } else if (closeAfterFlush) {
-                streamState.store(StreamState::Closed);
-            } else {
-                completedFlushGeneration = generation;
-                schedule();
-            }
-        }
-        condition.notify_all();
-    }
-
-    [[nodiscard]] static auto commandLength(const Command &command) noexcept -> std::size_t {
-        return command.text.length().toSizeT() + (command.lineBreak ? 1U : 0U);
-    }
-
-public:
-    TerminalPtr terminal;
-    BlockStyle style;
-    TerminalStreamSynchronizationPtr synchronization;
-    OutputStreamSettings settings;
-    mutable std::mutex mutex;
-    std::condition_variable condition;
-    std::deque<Command> queue;
-    std::size_t pendingBytes{0U};
-    std::atomic<StreamState> streamState{StreamState::Open};
-    std::atomic<bool> aborted{false};
-    bool workInProgress{false};
-    uint64_t flushGeneration{0U};
-    uint64_t completedFlushGeneration{0U};
-    std::exception_ptr error;
-};
-
 TerminalStream::TerminalStream(
     TerminalPtr terminal,
     const BlockStyle style,
@@ -167,7 +29,7 @@ TerminalStream::TerminalStream(
     if (synchronization == nullptr) {
         synchronization = createSynchronization();
     }
-    _data = std::make_shared<Data>(_terminal, style, std::move(synchronization), settings);
+    _data = std::make_shared<impl::TerminalStreamData>(_terminal, style, std::move(synchronization), settings);
 }
 
 auto TerminalStream::createSynchronization() -> TerminalStreamSynchronizationPtr {
@@ -284,10 +146,10 @@ auto TerminalStream::write(const Char character) -> StreamWriteStatus {
 }
 
 auto TerminalStream::write(const String &text) -> StreamWriteStatus {
-    auto command = Data::Command{text, {}, false};
+    auto command = impl::TerminalStreamData::Command{text, {}, false};
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
-    const auto byteLength = Data::commandLength(command);
+    const auto byteLength = impl::TerminalStreamData::commandLength(command);
     const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
         _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {
@@ -318,10 +180,10 @@ auto TerminalStream::writeLine() -> StreamWriteStatus {
 }
 
 auto TerminalStream::writeLine(const String &text) -> StreamWriteStatus {
-    auto command = Data::Command{text, {}, true};
+    auto command = impl::TerminalStreamData::Command{text, {}, true};
     auto lock = std::unique_lock{_data->mutex};
     command.style = _data->style;
-    const auto byteLength = Data::commandLength(command);
+    const auto byteLength = impl::TerminalStreamData::commandLength(command);
     const auto capacity = stream::impl::streamBufferSizes(_data->settings.buffering()).ioRing.toSizeTOrThrow() +
         _data->settings.backBufferLimit().toSizeTOrThrow();
     if (byteLength > capacity) {

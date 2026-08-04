@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../Key.hpp"
+#include "KeyCodePointParseResult.hpp"
+#include "KeyParseResult.hpp"
 
-#include "../../text/Char.hpp"
 #include "../../text/CombinedChar.hpp"
 #include "../../text/String.hpp"
 #include "../../unit/ByteIndex.hpp"
@@ -12,81 +12,12 @@
 #include <array>
 #include <cstdint>
 #include <optional>
-#include <utility>
 #include <vector>
 
 namespace erbsland::cterm::impl {
 
-/// The status for a decoded terminal key prefix.
-enum class KeyParseStatus : uint8_t {
-    Invalid,      ///< No valid key prefix was found.
-    NeedMoreData, ///< The current bytes are a valid prefix, but need more input.
-    Parsed,       ///< A full key was parsed.
-};
-
 /// Decode one key from a UTF-8 console input buffer.
 class KeyDecoder final {
-public:
-    /// Result from parsing one UTF-8 code point prefix.
-    class CharParseResult final {
-    public:
-        /// Create an invalid or incomplete character parse result.
-        CharParseResult(
-            const KeyParseStatus status = KeyParseStatus::Invalid,
-            const unit::ByteIndex consumedByteCount = unit::ByteIndex{}) noexcept :
-            _status{status}, _consumedByteCount{consumedByteCount} {}
-
-        /// Create a parsed character result.
-        CharParseResult(
-            const KeyParseStatus status, const text::Char character, const unit::ByteIndex consumedByteCount) noexcept :
-            _status{status}, _character{character}, _consumedByteCount{consumedByteCount} {}
-
-    public:
-        /// Access the parse status.
-        [[nodiscard]] auto status() const noexcept -> KeyParseStatus { return _status; }
-        /// Access the parsed character.
-        [[nodiscard]] auto character() const noexcept -> text::Char { return _character; }
-        /// Access the consumed byte count.
-        [[nodiscard]] auto consumedByteCount() const noexcept -> unit::ByteIndex { return _consumedByteCount; }
-
-    private:
-        KeyParseStatus _status{KeyParseStatus::Invalid}; ///< The parsing status.
-        text::Char _character{};                         ///< The parsed character for `Parsed`.
-        unit::ByteIndex _consumedByteCount{};            ///< Number of bytes consumed.
-    };
-
-    /// Result of parsing one key from the beginning of a byte stream.
-    class ParseResult final {
-    public:
-        /// Create one parse result without a decoded key.
-        /// @param status The parsing status.
-        /// @param consumedByteCount The number of bytes consumed.
-        ParseResult(
-            const KeyParseStatus status = KeyParseStatus::Invalid,
-            const unit::ByteIndex consumedByteCount = unit::ByteIndex{}) noexcept :
-            _status{status}, _consumedByteCount{consumedByteCount} {}
-
-        /// Create one parse result with a decoded key.
-        /// @param status The parsing status.
-        /// @param key The decoded key.
-        /// @param consumedByteCount The number of bytes consumed.
-        ParseResult(const KeyParseStatus status, Key key, const unit::ByteIndex consumedByteCount) noexcept :
-            _status{status}, _key{key}, _consumedByteCount{consumedByteCount} {}
-
-    public:
-        /// Access the parsing status.
-        [[nodiscard]] auto status() const noexcept -> KeyParseStatus { return _status; }
-        /// Access the parsed key for `Parsed`.
-        [[nodiscard]] auto key() const noexcept -> const Key & { return _key; }
-        /// Access the number of bytes consumed.
-        [[nodiscard]] auto consumedByteCount() const noexcept -> unit::ByteIndex { return _consumedByteCount; }
-
-    private:
-        KeyParseStatus _status{KeyParseStatus::Invalid}; ///< The parsing status.
-        Key _key;                                        ///< The parsed key for `Parsed`.
-        unit::ByteIndex _consumedByteCount{};            ///< Number of bytes consumed.
-    };
-
 public:
     /// Create a decoder for the given input bytes.
     /// @param text The input bytes to decode.
@@ -97,8 +28,8 @@ public:
         }
     }
 
+    // defaults/deletions
     ~KeyDecoder() = default;
-
     KeyDecoder(const KeyDecoder &) = delete;
     KeyDecoder(KeyDecoder &&) = delete;
     auto operator=(const KeyDecoder &) -> KeyDecoder & = delete;
@@ -107,29 +38,40 @@ public:
 public:
     /// Parse one key from the beginning of the configured input bytes.
     /// @return The parsing result for the leading bytes.
-    [[nodiscard]] auto parseConsoleInputPrefix() const noexcept -> ParseResult;
+    [[nodiscard]] auto parseConsoleInputPrefix() const noexcept -> KeyParseResult;
     /// Decode exactly one full console input item.
     /// @return The decoded key, or an invalid key if the text is unsupported or incomplete.
     [[nodiscard]] auto decodeConsoleInput() const noexcept -> Key;
 
 private:
+    /// Defines one fixed terminal escape sequence and its key type.
     struct SimpleSequenceDefinition final {
         text::String sequence;
         Key::Type type;
     };
 
 private:
+    /// Create a key for a decoded combined character.
     [[nodiscard]] static auto createCharacterKey(const text::CombinedChar &character) noexcept -> Key;
+    /// Get definitions for fixed terminal escape sequences.
     [[nodiscard]] static auto simpleSequenceDefinitions() noexcept -> const std::array<SimpleSequenceDefinition, 6> &;
+    /// Convert a CSI modifier parameter into key modifiers.
     [[nodiscard]] static auto parseModifierParameter(int value) noexcept -> std::optional<KeyModifiers>;
+    /// Parse the numeric parameters of a CSI sequence.
     [[nodiscard]] static auto parseCsiParameters(const text::String &text) noexcept -> std::optional<std::vector<int>>;
+    /// Find the final byte of a CSI sequence.
     [[nodiscard]] static auto findCsiFinalByte(const text::String &text) noexcept -> std::optional<unit::ByteIndex>;
+    /// Convert a CSI final byte into a key type.
     [[nodiscard]] static auto keyFromCsiFinal(text::Char finalByte) noexcept -> Key::Type;
+    /// Convert a CSI tilde parameter into a key type.
     [[nodiscard]] static auto keyFromCsiTildeParameter(int parameter) noexcept -> Key::Type;
-    [[nodiscard]] static auto decodeCsi(const text::String &text) noexcept -> ParseResult;
-    [[nodiscard]] static auto decodeSs3(const text::String &text) noexcept -> ParseResult;
+    /// Decode one control-sequence-introducer key sequence.
+    [[nodiscard]] static auto decodeCsi(const text::String &text) noexcept -> KeyParseResult;
+    /// Decode one SS3 key sequence.
+    [[nodiscard]] static auto decodeSs3(const text::String &text) noexcept -> KeyParseResult;
+    /// Decode one UTF-8 code-point prefix at an input offset.
     [[nodiscard]] static auto decodeCodePointPrefix(const text::String &text, unit::ByteIndex offset) noexcept
-        -> CharParseResult;
+        -> KeyCodePointParseResult;
 
 private:
     text::String _text;

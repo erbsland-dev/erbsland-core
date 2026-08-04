@@ -17,9 +17,9 @@
 #include "../text/CharCompareFn.hpp"
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
-#include "../unit/ElementRange.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
+#include "../unit/ItemRange.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
 #include "../util/List.hpp"
 
@@ -125,11 +125,11 @@ public: // path element accessors
     /// Get the format of this path.
     [[nodiscard]] auto format() const noexcept -> PathFormat;
     /// Get the number of path elements.
-    [[nodiscard]] auto elementCount() const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto elementCount() const noexcept -> unit::ItemCount;
     /// Access a single element of the path.
     /// @param index The index of the element to access.
     /// @return The element at the given index or an empty string if the index is out of range.
-    [[nodiscard]] auto element(unit::ElementIndex index) const noexcept -> text::String;
+    [[nodiscard]] auto element(unit::ItemIndex index) const noexcept -> text::String;
     /// Access the individual path elements.
     [[nodiscard]] auto elements() const noexcept -> text::StringList;
     /// Get the parent path.
@@ -205,7 +205,7 @@ public: // path element tools
     /// @param range The range of elements to return.
     /// @return A new path containing the specified elements, clamped to the available tail. Returns empty if the start
     /// index is out of bounds.
-    [[nodiscard]] auto slice(unit::ElementRange range) const noexcept -> Path;
+    [[nodiscard]] auto slice(unit::ItemRange range) const noexcept -> Path;
     /// Split the path after a given number of elements.
     /// For an absolute path, if the front contains a root, the front is absolute.
     /// There are several special cases:
@@ -215,7 +215,7 @@ public: // path element tools
     /// and back contains a `.` path.
     /// @param count The number of front elements for the split.
     /// @return The front and back part of the path.
-    [[nodiscard]] auto splitAfter(unit::ElementCount count) const noexcept -> std::pair<Path, Path>;
+    [[nodiscard]] auto splitAfter(unit::ItemCount count) const noexcept -> std::pair<Path, Path>;
 
 public: // path resolving
     /// Resolve this path into a canonical absolute path.
@@ -350,6 +350,7 @@ public: // factory methods
     [[nodiscard]] static auto parentElement() noexcept -> Path;
 
 private:
+    /// Create a path from its shared implementation data.
     explicit Path(impl::PathDataPtr data) noexcept;
 
 private:

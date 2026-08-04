@@ -11,51 +11,143 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `America/Araguaina` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Araguaina() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Buenos_Aires` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_BuenosAires() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Catamarca` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Catamarca() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Cordoba` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Cordoba() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Jujuy` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Jujuy() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/La_Rioja` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_LaRioja() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Mendoza` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Mendoza() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Rio_Gallegos` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_RioGallegos() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Salta` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Salta() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/San_Juan` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_SanJuan() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/San_Luis` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_SanLuis() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Tucuman` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Tucuman() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Argentina/Ushuaia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Argentina_Ushuaia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Asuncion` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Asuncion() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Bahia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Bahia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Belem` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Belem() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Boa_Vista` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_BoaVista() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Bogota` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Bogota() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Campo_Grande` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_CampoGrande() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Caracas` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Caracas() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Cayenne` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Cayenne() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Coyhaique` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Coyhaique() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Cuiaba` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Cuiaba() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Eirunepe` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Eirunepe() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Fortaleza` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Fortaleza() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Guayaquil` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Guayaquil() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Guyana` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Guyana() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/La_Paz` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_LaPaz() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Lima` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Lima() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Maceio` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Maceio() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Manaus` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Manaus() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Montevideo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Montevideo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Noronha` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Noronha() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Paramaribo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Paramaribo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Porto_Velho` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_PortoVelho() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Punta_Arenas` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_PuntaArenas() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Recife` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Recife() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Rio_Branco` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_RioBranco() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Santarem` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Santarem() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Santiago` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_Santiago() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `America/Sao_Paulo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAmerica_SaoPaulo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Antarctica/Palmer` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAntarctica_Palmer() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Atlantic/South_Georgia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAtlantic_SouthGeorgia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Atlantic/Stanley` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAtlantic_Stanley() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Easter` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Easter() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Pacific/Galapagos` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoPacific_Galapagos() noexcept -> std::unique_ptr<Info>;
 
 }

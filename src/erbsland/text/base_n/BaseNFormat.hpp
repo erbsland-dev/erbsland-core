@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BaseNFormat_fwd.hpp"
 #include "BaseNFormatFlag.hpp"
 
 #include "../Char.hpp"
@@ -102,6 +103,7 @@ public: // factories
     [[nodiscard]] static auto base64Pem() -> BaseNFormat;
 
 private:
+    /// Create a base-N format from normalized encoding options.
     BaseNFormat(
         U32String alphabet,
         std::optional<Char> padding,
@@ -109,7 +111,9 @@ private:
         BaseNFormatFlags flags,
         unit::CpLength lineLength,
         U32String lineSeparator);
+    /// Validate base-N formatting options.
     void validate() const;
+    /// Rebuild the ASCII digit lookup table.
     void rebuildAsciiLookup() noexcept;
 
 private:

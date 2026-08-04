@@ -11,25 +11,30 @@
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/LineCount.hpp>
 
+#include <utility>
+
 namespace demo {
 
 using namespace el::text::literals;
 
-auto PasswordPrompt::readPassword(const el::cterm::TerminalPtr &terminal) -> el::String {
-    return read(terminal, "Enter password"_el);
+PasswordPrompt::PasswordPrompt(el::cterm::TerminalPtr terminal) : _terminal{std::move(terminal)} {
+}
+
+auto PasswordPrompt::readPassword() const -> el::String {
+    return read("Enter password"_el);
 }
 
 /// Read a new password twice and compare the protected values.
 ///
 /// New passwords require at least 15 Unicode code points. Spaces and Unicode are accepted exactly as entered without
 /// trimming, case folding, composition rules, or normalization.
-auto PasswordPrompt::readNewPassword(const el::cterm::TerminalPtr &terminal) -> el::String {
-    auto password = read(terminal, "Enter new password"_el);
+auto PasswordPrompt::readNewPassword() const -> el::String {
+    auto password = read("Enter new password"_el);
     if (password.characterLength() < el::CpLength{15U}) {
         throw el::ApplicationError{el::core::ApplicationErrorContext{
             "Password is too short"_el, "New passwords must contain at least 15 Unicode code points."_el}};
     }
-    const auto confirmation = read(terminal, "Confirm new password"_el);
+    const auto confirmation = read("Confirm new password"_el);
     if (password != confirmation) {
         throw el::ApplicationError{el::core::ApplicationErrorContext{
             "Passwords do not match"_el, "Enter the same password in both prompts."_el}};
@@ -38,9 +43,9 @@ auto PasswordPrompt::readNewPassword(const el::cterm::TerminalPtr &terminal) -> 
 }
 
 /// Read one masked password through a fresh blocking `ReadSecret`.
-auto PasswordPrompt::read(const el::cterm::TerminalPtr &terminal, const el::String &title) -> el::String {
+auto PasswordPrompt::read(const el::String &title) const -> el::String {
     auto options = el::cterm::ReadLineOptions{}.setTitle(title).setPlaceholder("Password"_el);
-    const auto editor = el::cterm::ReadSecret::create(terminal, options);
+    const auto editor = el::cterm::ReadSecret::create(_terminal, options);
     auto result = editor->waitForInput();
     if (!result.isCommitted()) {
         throw el::ApplicationError{el::core::ApplicationErrorContext{

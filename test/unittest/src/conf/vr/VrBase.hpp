@@ -4,6 +4,7 @@
 
 #include "../ConfTestHelper.hpp"
 
+#include <erbsland/conf/Document.hpp>
 #include <erbsland/conf/impl/vr/Rules.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/StdFormat.hpp>
@@ -19,14 +20,17 @@ using namespace el::conf;
 using namespace el::text::literals;
 using el::text::CaseSensitivity;
 
+/// Provides common state and assertions for validation-rules tests.
+/// @notest{Provides shared test infrastructure.}
 class VrBase : public el::UnitTest {
 public:
-    el::text::String failedText;
-    DocumentPtr vrDocument;
-    vr::RulesPtr rules;
-    DocumentPtr document;
-    el::text::String lastError;
+    el::text::String failedText; ///< Input text that failed to parse.
+    DocumentPtr vrDocument;      ///< The parsed validation-rules document.
+    vr::RulesPtr rules;          ///< The compiled validation rules.
+    DocumentPtr document;        ///< The document being validated.
+    el::text::String lastError;  ///< The most recent diagnostic text.
 
+    /// Store a configuration error as diagnostic text.
     void setLastError(const ConfError &error) { lastError = el::err::DiagnosticHelper{error}.toDocument().toString(); }
 
     void setUp() override {
@@ -49,7 +53,7 @@ public:
                 result += std::format(
                     "VR document:\n{}\n", el::text::StringConverter{vrDocument->toTestValueTree()}.toStdString());
             }
-            auto rulesImpl = std::dynamic_pointer_cast<impl::Rules>(rules);
+            auto rulesImpl = std::dynamic_pointer_cast<el::conf::impl::Rules>(rules);
             if (rulesImpl == nullptr) {
                 result += "Validated rules: <null>\n";
             } else {
@@ -74,6 +78,7 @@ public:
         }
     }
 
+    /// Join source lines into configuration text.
     [[nodiscard]] static auto linesToString(const std::vector<std::string_view> &lines) -> el::text::String {
         el::text::StringEditor result;
         for (const auto &line : lines) {
@@ -83,6 +88,7 @@ public:
         return result;
     }
 
+    /// Require that validation rules compile successfully.
     void requireRulesPass(const el::text::String &text) {
         lastError = {};
         try {
@@ -103,13 +109,17 @@ public:
         REQUIRE(rules != nullptr);
     }
 
+    /// Require that validation rules compile from standard text.
     void requireRulesPass(const std::string_view text) { requireRulesPass(el::text::String{text}); }
 
+    /// Require that validation rules compile from UTF-8 text.
     void requireRulesPass(const std::u8string_view text) { requireRulesPass(el::text::String{text}); }
 
+    /// Require that validation rules compile from source lines.
     void requireRulesPassLines(const std::vector<std::string_view> &lines) { requireRulesPass(linesToString(lines)); }
 
     /// Test if compiling *rules* fail. Expects a valid configuration document.
+    /// Require that compiling validation rules fails.
     void requireRulesFail(const el::text::String &text) {
         lastError = {};
         try {
@@ -129,13 +139,17 @@ public:
         }
     }
 
+    /// Require that compiling validation rules from standard text fails.
     void requireRulesFail(const std::string_view text) { requireRulesFail(el::text::String{text}); }
 
+    /// Require that compiling validation rules from UTF-8 text fails.
     void requireRulesFail(const std::u8string_view text) { requireRulesFail(el::text::String{text}); }
 
     /// Test if compiling *rules* fail. Expects a valid configuration document.
+    /// Require that compiling validation rules from source lines fails.
     void requireRulesFailLines(const std::vector<std::string_view> &lines) { requireRulesFail(linesToString(lines)); }
 
+    /// Require that a document passes the compiled validation rules.
     void requirePass(const el::text::String &text, const Integer version = 0) {
         lastError = {};
         Parser docParser;
@@ -155,18 +169,22 @@ public:
         }
     }
 
+    /// Require that standard text passes the compiled validation rules.
     void requirePass(const std::string_view text, const Integer version = 0) {
         requirePass(el::text::String{text}, version);
     }
 
+    /// Require that UTF-8 text passes the compiled validation rules.
     void requirePass(const std::u8string_view text, const Integer version = 0) {
         requirePass(el::text::String{text}, version);
     }
 
+    /// Require that source lines pass the compiled validation rules.
     void requirePassLines(const std::vector<std::string_view> &lines, const Integer version = 0) {
         requirePass(linesToString(lines), version);
     }
 
+    /// Require that a document fails the compiled validation rules.
     void requireFail(const el::text::String &text, const Integer version = 0) {
         lastError = {};
         Parser docParser;
@@ -182,30 +200,37 @@ public:
         }
     }
 
+    /// Require that standard text fails the compiled validation rules.
     void requireFail(const std::string_view text, const Integer version = 0) {
         requireFail(el::text::String{text}, version);
     }
 
+    /// Require that UTF-8 text fails the compiled validation rules.
     void requireFail(const std::u8string_view text, const Integer version = 0) {
         requireFail(el::text::String{text}, version);
     }
 
+    /// Require that source lines fail the compiled validation rules.
     void requireFailLines(const std::vector<std::string_view> &lines, const Integer version = 0) {
         requireFail(linesToString(lines), version);
     }
 
+    /// Require that the last diagnostic contains standard text.
     void requireError(const std::string_view partialMatch) {
         REQUIRE(lastError.contains(el::text::String{partialMatch}, el::text::cCaseInsensitive.asciiComparisonFn()));
     }
 
+    /// Require that the last diagnostic contains UTF-8 text.
     void requireError(const std::u8string_view partialMatch) {
         REQUIRE(lastError.contains(el::text::String{partialMatch}, el::text::cCaseInsensitive.asciiComparisonFn()));
     }
 
+    /// Require that the last diagnostic contains text.
     void requireError(const el::text::String &partialMatch) {
         REQUIRE(lastError.contains(partialMatch, el::text::cCaseInsensitive.asciiComparisonFn()));
     }
 
+    /// Create a minimal document that defines one validation constraint.
     [[nodiscard]] static auto buildOneConstraintDoc(
         const std::string &constraintLine, const vr::RuleType ruleType, bool caseSensitive = false)
         -> el::text::String {
@@ -234,18 +259,21 @@ public:
         return linesToString(lines);
     }
 
+    /// Require that one constraint compiles for a rule type.
     void requireOneConstraintPass(
         const std::string &constraintLine, const vr::RuleType ruleType, bool caseSensitive = false) {
 
         WITH_CONTEXT(requireRulesPass(buildOneConstraintDoc(constraintLine, ruleType, caseSensitive)))
     }
 
+    /// Require that one constraint fails to compile for a rule type.
     void requireOneConstraintFail(
         const std::string &constraintLine, const vr::RuleType ruleType, bool caseSensitive = false) {
 
         WITH_CONTEXT(requireRulesFail(buildOneConstraintDoc(constraintLine, ruleType, caseSensitive)))
     }
 
+    /// Require that a constraint is valid for exactly the supplied rule types.
     void requireConstraintValidForRuleTypes(
         const std::string &constraintLine, const std::set<vr::RuleType> &validRuleTypes) {
 

@@ -41,7 +41,7 @@ public:
         groups.emplace_back(1, CaptureRange{0, 2}, String{});
         groups.emplace_back(2, CaptureRange{2, 4}, String{});
         const auto match = std::make_shared<MockStringMatch>(std::move(groups), text);
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
 
         Replacement replacement;
         replacement.addStaticText(StringEditor{"<"_el});
@@ -51,7 +51,8 @@ public:
         replacement.addStaticText(StringEditor{"-"_el});
         replacement.addCaptureGroup(0);
 
-        REQUIRE_EQUAL(replacement.length(match), el::unit::ByteLength{1U + 2U + 2U + 2U + 1U + 4U});
+        const auto replacementLength = replacement.length(match);
+        REQUIRE_EQUAL(replacementLength, el::unit::ByteLength{1U + 2U + 2U + 2U + 1U + 4U});
 
         StringEditor out;
         replacement.appendTo(out, match);

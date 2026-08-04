@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DateParts_fwd.hpp"
+#include "Day_fwd.hpp"
 #include "Month_fwd.hpp"
 #include "Year_fwd.hpp"
 
 #include "impl/TimePartBases.hpp"
 
 namespace erbsland::time {
-
-struct DateParts;
 
 /// A day within a month, range `1..31`.
 ///

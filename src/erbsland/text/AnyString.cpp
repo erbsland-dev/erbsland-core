@@ -5,6 +5,7 @@
 #include "AnyStringEditor.hpp"
 
 #include "impl/AnyStringComparison.hpp"
+#include "impl/StringTraits.hpp"
 
 #include <type_traits>
 
@@ -29,7 +30,7 @@ auto AnyString::compare(const AnyString &other, const CharCompareFn compareFn) c
             const tLeft &left, const tRight &right) noexcept -> std::strong_ordering {
             using Left = std::remove_cvref_t<tLeft>;
             using Right = std::remove_cvref_t<tRight>;
-            if constexpr (!AnyStringType<Left> || !AnyStringType<Right>) {
+            if constexpr (!impl::AnyStringType<Left> || !impl::AnyStringType<Right>) {
                 return std::strong_ordering::equal; // Empty values were handled before the visit.
             } else if constexpr (std::is_same_v<Left, Right>) {
                 return left.compare(right, compareFn);

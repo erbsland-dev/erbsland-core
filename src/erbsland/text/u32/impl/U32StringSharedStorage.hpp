@@ -5,6 +5,7 @@
 #include "U32StringData_fwd.hpp"
 #include "U32StringDataView.hpp"
 #include "U32StringLiteralStorage.hpp"
+#include "U32StringSharedStorage_fwd.hpp"
 
 #include "../../../mem/StorageIdentifier.hpp"
 #include "../../../unit/ByteLength.hpp"
@@ -37,7 +38,9 @@ public: // defaults
     ~U32StringSharedStorage();
     U32StringSharedStorage(const U32StringSharedStorage &);
     U32StringSharedStorage(U32StringSharedStorage &&) noexcept;
+    /// Copy another UTF-32 shared storage object.
     auto operator=(const U32StringSharedStorage &) -> U32StringSharedStorage &;
+    /// Move another UTF-32 shared storage object.
     auto operator=(U32StringSharedStorage &&) noexcept -> U32StringSharedStorage &;
 
 public: // tests

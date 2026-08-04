@@ -22,6 +22,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionValues {
 public:
+    /// Create an empty parsed option-value set.
     OptionValues() = default;
 
     // defaults

@@ -48,11 +48,9 @@ public:
     constexpr Alignment(const AlignmentFlags value) noexcept : // NOLINT(*-explicit-constructor)
         _value{makeExclusive(value)} {}
 
-    /// Default destructor.
+    // defaults
     ~Alignment() = default;
-    /// Default copy constructor.
     Alignment(const Alignment &) = default;
-    /// Default copy assignment.
     auto operator=(const Alignment &) -> Alignment & = default;
 
 public: // operators

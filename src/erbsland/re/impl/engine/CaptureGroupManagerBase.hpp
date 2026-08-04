@@ -23,6 +23,7 @@ namespace erbsland::re::impl {
 template <std::size_t tGroupCount, typename GroupSet = CaptureGroupSet<tGroupCount>>
 class CaptureGroupManagerBase : public CaptureGroupManager {
 public:
+    // defaults
     CaptureGroupManagerBase() = default;
 
 public: // initialize
@@ -116,12 +117,14 @@ public:
         throwInternalError("CaptureGroupSetReferenceList() called on group manager with no atomic groups"_el);
     }
 
+    /// Access the capture-group set for a validated reference.
     [[nodiscard]] auto groupSet(const CaptureGroupSetReference reference) const noexcept -> const GroupSet & {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(reference < _captureGroupSets.size(), "groupSet: reference out of bounds"_el);
         return _captureGroupSets[reference];
     }
 
 protected:
+    /// Detach a shared group set when a caller needs to modify it.
     [[nodiscard]] auto setForModification(CaptureGroupSetReference reference)
         -> std::tuple<CaptureGroupSetReference, GroupSet &> {
 
@@ -137,6 +140,7 @@ protected:
         return {newReference, _captureGroupSets[newReference]};
     }
 
+    /// Store a capture-group set and return its reference.
     [[nodiscard]] auto addSet(GroupSet captureGroupSet) -> CaptureGroupSetReference {
         captureGroupSet.setReferenceCount(1);
 
@@ -165,6 +169,7 @@ protected:
 private:
     static constexpr auto cNoSlot = std::numeric_limits<CaptureGroupSetReference>::max();
 
+    /// Reserve a bounded initial number of capture-group sets.
     void reserveInitialCapacity() {
         // Reserve by bytes instead of tying the initial capacity to the number of capture groups.
         // This keeps the initial allocation within a predictable size range and automatically
@@ -179,6 +184,7 @@ private:
         _captureGroupSets.reserve(reserveCount);
     }
 
+    /// Find the first reusable, unreferenced capture-group-set slot.
     [[nodiscard]] auto findFirstFreeSlot() const -> CaptureGroupSetReference {
         for (std::size_t i = _firstFreeSlot; i < _captureGroupSets.size(); ++i) {
             if (_captureGroupSets[i].referenceCount() == 0) {

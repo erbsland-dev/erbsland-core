@@ -11,25 +11,65 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `Africa/Abidjan` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Abidjan() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Algiers` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Algiers() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Bissau` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Bissau() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Cairo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Cairo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Casablanca` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Casablanca() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/El_Aaiun` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_ElAaiun() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Johannesburg` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Johannesburg() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Juba` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Juba() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Khartoum` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Khartoum() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Lagos` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Lagos() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Maputo` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Maputo() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Monrovia` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Monrovia() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Nairobi` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Nairobi() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Ndjamena` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Ndjamena() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Sao_Tome` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_SaoTome() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Tripoli` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Tripoli() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Tunis` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Tunis() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Africa/Windhoek` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAfrica_Windhoek() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Atlantic/Cape_Verde` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoAtlantic_CapeVerde() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Indian/Mauritius` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoIndian_Mauritius() noexcept -> std::unique_ptr<Info>;
 
 }

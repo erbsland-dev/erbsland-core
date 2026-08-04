@@ -29,14 +29,15 @@ using impl::LexerPtr;
 using std::filesystem::path;
 using namespace el::text::literals;
 
+/// Provide assertions and diagnostics for assignment-stream tests.
 class AssignmentStreamHelper : public ConfTestHelper {
 public:
-    path testFilePath;
-    SourcePtr source;
-    LexerPtr lexer;
-    AssignmentStreamPtr stream;
-    AssignmentGenerator generator;
-    Assignment assignment;
+    path testFilePath;             ///< The current assignment-stream test file.
+    SourcePtr source;              ///< The opened test source.
+    LexerPtr lexer;                ///< The lexer over the test source.
+    AssignmentStreamPtr stream;    ///< The assignment stream under test.
+    AssignmentGenerator generator; ///< The active assignment generator.
+    Assignment assignment;         ///< The most recently asserted assignment.
 
     auto additionalErrorMessages() -> std::string override {
         try {
@@ -51,6 +52,8 @@ public:
         }
     }
 
+    /// Open a fixture and initialize its assignment stream.
+    /// @param fileName The fixture filename.
     void setupAssignmentStream(const std::string &fileName) {
         using std::filesystem::path;
         testFilePath = path(unitTestExecutablePath()).parent_path() / "data" / "conf" / "assignment_stream" / fileName;
@@ -61,12 +64,16 @@ public:
         generator = stream->assignments();
     }
 
+    /// Read and require the next assignment from the generator.
     void requireAssignment() {
         auto nextAssignment = generator.next();
         REQUIRE(nextAssignment.has_value());
         assignment = std::move(*nextAssignment);
     }
 
+    /// Require that the next assignment is a value of the expected type.
+    /// @param expectedNamePath The expected assignment name path.
+    /// @param expectedValueType The expected value type.
     void requireValue(const el::text::String &expectedNamePath, const ValueType expectedValueType) {
 
         requireAssignment();
@@ -75,6 +82,11 @@ public:
         REQUIRE_EQUAL(assignment.value()->type(), expectedValueType);
     }
 
+    /// Require that the next assignment contains the expected typed value.
+    /// @tparam T The expected value type.
+    /// @param expectedNamePath The expected assignment name path.
+    /// @param expectedValueType The expected value type.
+    /// @param expectedValue The expected value.
     template <typename T>
     void requireValue(
         const el::text::String &expectedNamePath, const ValueType expectedValueType, const T &expectedValue) {
@@ -93,6 +105,9 @@ public:
         }
     }
 
+    /// Compare floating-point values using the test suite's special-value rules.
+    /// @param actual The actual value.
+    /// @param expected The expected value.
     auto compareFloat(double actual, double expected) {
         if (std::isnan(expected)) {
             REQUIRE(std::isnan(actual));
@@ -104,6 +119,9 @@ public:
         }
     }
 
+    /// Require that the next assignment contains the expected floating-point value.
+    /// @param expectedNamePath The expected assignment name path.
+    /// @param expectedValue The expected floating-point value.
     void requireFloat(const el::text::String &expectedNamePath, double expectedValue) {
 
         requireAssignment();
@@ -119,11 +137,15 @@ public:
             });
     }
 
+    /// Describe one expected entry in a configuration value list.
     struct ExpectedListEntry {
-        ValueType type;
-        impl::Content content;
+        ValueType type;                  ///< The expected value type.
+        el::conf::impl::Content content; ///< The expected value content.
     };
 
+    /// Require that the next assignment contains the expected value list.
+    /// @param expectedNamePath The expected assignment name path.
+    /// @param expectedList The expected list entries.
     void requireList(const el::text::String &expectedNamePath, const std::vector<ExpectedListEntry> &expectedList) {
 
         // sanity checks for the unit test
@@ -145,7 +167,7 @@ public:
                     REQUIRE_EQUAL(value->type(), expectedType);
                     std::visit(
                         [&]<typename T>(const T &expectedValue) -> void {
-                            if constexpr (std::is_same_v<T, impl::NoContent>) {
+                            if constexpr (std::is_same_v<T, el::conf::impl::NoContent>) {
                                 // ignore no content
                             } else if constexpr (std::is_same_v<T, el::re::RegExPtr>) {
                                 const auto actualValue = value->asType<T>();
@@ -163,6 +185,11 @@ public:
         }
     }
 
+    /// Require that the next assignment contains the expected typed meta-value.
+    /// @tparam T The expected value type.
+    /// @param expectedNamePath The expected assignment name path.
+    /// @param expectedValueType The expected value type.
+    /// @param expectedValue The expected value.
     template <typename T>
     void requireMetaValue(
         const el::text::String &expectedNamePath, const ValueType expectedValueType, const T &expectedValue) {
@@ -181,6 +208,8 @@ public:
         }
     }
 
+    /// Require that the next assignment opens a section map.
+    /// @param expectedNamePath The expected assignment name path.
     void requireSectionMap(const el::text::String &expectedNamePath) {
 
         requireAssignment();
@@ -189,6 +218,8 @@ public:
         REQUIRE(assignment.value() == nullptr);
     }
 
+    /// Require that the next assignment opens a section list.
+    /// @param expectedNamePath The expected assignment name path.
     void requireSectionList(const el::text::String &expectedNamePath) {
 
         requireAssignment();
@@ -197,6 +228,7 @@ public:
         REQUIRE(assignment.value() == nullptr);
     }
 
+    /// Require the document-end assignment and generator exhaustion.
     void requireEnd() {
         requireAssignment();
         REQUIRE_EQUAL(assignment.type(), AssignmentType::EndOfDocument);

@@ -13,6 +13,7 @@ namespace app::path {
 /// @notest{Covered by manual profiling runs and the PathWalker unit tests.}
 class PathWalkerScenarioWorkload final : public erbsland::profiling::ScenarioWorkload {
 public:
+    /// Create a scenario workload for `method`.
     explicit PathWalkerScenarioWorkload(PathWalkMethod method) noexcept;
 
 public: // implement ScenarioWorkload

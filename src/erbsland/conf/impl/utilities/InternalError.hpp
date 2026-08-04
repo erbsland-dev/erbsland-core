@@ -29,10 +29,9 @@ inline void require(const bool condition) {
 /// Require an expression to be true.
 /// @param condition The condition that must be true.
 /// @param message The message in case the condition is false.
-template <std::size_t N>
-inline void require(const bool condition, const char (&message)[N]) {
+inline void require(const bool condition, const text::U8StringLiteral<char> &message) {
     if (!condition) {
-        throwInternalError(text::impl::createU8StringLiteral(message, N - 1));
+        throwInternalError(message);
     }
 }
 

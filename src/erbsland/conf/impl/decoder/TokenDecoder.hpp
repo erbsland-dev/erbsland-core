@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Decoder.hpp"
+#include "TokenDecoder_fwd.hpp"
 #include "Transaction.hpp"
 
 #include "../char/CharStream.hpp"
@@ -13,17 +14,17 @@
 
 namespace erbsland::conf::impl {
 
-class TokenDecoder;
-using TokenDecoderPtr = std::shared_ptr<TokenDecoder>;
-
 /// A wrapper around a decoder tailored for decoding tokens.
 /// - Adding transactions
 /// - Adding exception helpers.
 /// - Adding indentation states.
 class TokenDecoder final : public Decoder {
 public:
+    /// Create a token decoder for a character stream.
     static auto create(CharStreamPtr decoder) noexcept -> TokenDecoderPtr;
 
+    /// Create a token decoder around a character stream.
+    /// @param decoder The character stream to decode.
     explicit TokenDecoder(CharStreamPtr decoder) noexcept;
 
     // defaults
@@ -104,9 +105,13 @@ public: // create tokens from captured content
     [[nodiscard]] auto createEndOfDataToken() -> LexerToken;
 
 public: // indentation handling.
+    /// Test if a reusable indentation pattern is configured.
     [[nodiscard]] auto hasIndentationPattern() const noexcept -> bool { return !_currentIndentationPattern.isEmpty(); }
+    /// Get the reusable indentation pattern.
     [[nodiscard]] auto indentationPattern() const noexcept -> text::String { return _currentIndentationPattern; }
+    /// Set the reusable indentation pattern.
     void setIndentationPattern(text::String pattern) noexcept { _currentIndentationPattern = std::move(pattern); }
+    /// Clear the reusable indentation pattern.
     void clearIndentationPattern() noexcept { _currentIndentationPattern = {}; }
 
 public: // testing

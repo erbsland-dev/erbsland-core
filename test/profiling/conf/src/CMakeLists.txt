@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 target_sources(conf-parser-profile PRIVATE
-        Application.cpp
         Application.hpp
         Application_fwd.hpp
+        ConfParserProfileApplication.cpp
         DefaultConfiguration.hpp.in
         EmbeddedDocument.hpp
         EmbeddedDocument_fwd.hpp

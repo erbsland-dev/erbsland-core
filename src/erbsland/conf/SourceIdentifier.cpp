@@ -4,7 +4,6 @@
 
 #include "impl/constants/Defaults.hpp"
 #include "impl/utilities/InternalView.hpp"
-#include "impl/utilities/PrivateTag.hpp"
 
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
@@ -16,22 +15,22 @@ namespace erbsland::conf {
 
 using namespace text::literals;
 
-SourceIdentifier::SourceIdentifier(text::String name, text::String path, impl::PrivateTag) noexcept :
+SourceIdentifier::SourceIdentifier(text::String name, text::String path, PrivateTag) noexcept :
     _name{std::move(name)}, _path{std::move(path)} {
 }
 
 auto SourceIdentifier::create(text::String name, text::String path) noexcept -> SourceIdentifierPtr {
-    return std::make_shared<SourceIdentifier>(std::move(name), std::move(path), impl::PrivateTag{});
+    return std::make_shared<SourceIdentifier>(std::move(name), std::move(path), PrivateTag{});
 }
 
 auto SourceIdentifier::createForFile(text::String path) noexcept -> SourceIdentifierPtr {
     return std::make_shared<SourceIdentifier>(
-        text::String{impl::defaults::fileSourceIdentifier}, std::move(path), impl::PrivateTag{});
+        text::String{impl::defaults::fileSourceIdentifier}, std::move(path), PrivateTag{});
 }
 
 auto SourceIdentifier::createForText() noexcept -> SourceIdentifierPtr {
     return std::make_shared<SourceIdentifier>(
-        text::String{impl::defaults::textSourceIdentifier}, text::String{}, impl::PrivateTag{});
+        text::String{impl::defaults::textSourceIdentifier}, text::String{}, PrivateTag{});
 }
 
 auto SourceIdentifier::toText() const noexcept -> text::String {

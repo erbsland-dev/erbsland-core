@@ -19,9 +19,9 @@ public:
     void testDefaultConstructor() {
         RuleType ruleType;
 
-        REQUIRE(ruleType == RuleType::Undefined);
+        REQUIRE_EQUAL(ruleType, RuleType::Undefined);
         REQUIRE(ruleType.isUndefined());
-        REQUIRE(ruleType.raw() == RuleType::Undefined);
+        REQUIRE_EQUAL(ruleType.raw(), RuleType::Undefined);
     }
 
     void testParameterizedConstructor() {
@@ -29,9 +29,9 @@ public:
         RuleType ruleTypeSection{RuleType::Section};
         RuleType ruleTypeAlternatives{RuleType::Alternatives};
 
-        REQUIRE(ruleTypeInteger == RuleType::Integer);
-        REQUIRE(ruleTypeSection == RuleType::Section);
-        REQUIRE(ruleTypeAlternatives == RuleType::Alternatives);
+        REQUIRE_EQUAL(ruleTypeInteger, RuleType::Integer);
+        REQUIRE_EQUAL(ruleTypeSection, RuleType::Section);
+        REQUIRE_EQUAL(ruleTypeAlternatives, RuleType::Alternatives);
     }
 
     void testAcceptsDefaults() {
@@ -156,7 +156,7 @@ public:
         for (const auto &mapping : mappings) {
             RuleType ruleType(mapping.ruleType);
             REQUIRE_EQUAL(ruleType.toText(), mapping.text);
-            REQUIRE(ruleType.toValueType() == mapping.valueType);
+            REQUIRE_EQUAL(ruleType.toValueType(), mapping.valueType);
             REQUIRE_EQUAL(ruleType.expectedValueTypeText(), mapping.expectedValueTypeText);
         }
     }
@@ -178,12 +178,16 @@ public:
             Mapping{el::text::String{"regex"_el}, RuleType::RegEx}};
 
         for (const auto &mapping : mappings) {
-            REQUIRE(RuleType::fromText(mapping.text) == mapping.ruleType);
+            const auto ruleType = RuleType::fromText(mapping.text);
+            REQUIRE_EQUAL(ruleType, mapping.ruleType);
         }
 
-        REQUIRE(RuleType::fromText(el::text::String{}) == RuleType::Undefined);
-        REQUIRE(RuleType::fromText(el::text::String{"unknown"_el}) == RuleType::Undefined);
-        REQUIRE(RuleType::fromText(el::text::String{"123456789012345678901"_el}) == RuleType::Undefined);
+        const auto empty = RuleType::fromText(el::text::String{});
+        const auto unknown = RuleType::fromText(el::text::String{"unknown"_el});
+        const auto oversized = RuleType::fromText(el::text::String{"123456789012345678901"_el});
+        REQUIRE_EQUAL(empty, RuleType::Undefined);
+        REQUIRE_EQUAL(unknown, RuleType::Undefined);
+        REQUIRE_EQUAL(oversized, RuleType::Undefined);
     }
 
     void testAllEnumeration() {
@@ -210,7 +214,7 @@ public:
         const auto &values = RuleType::all();
         REQUIRE_EQUAL(values.size(), expected.size());
         for (size_t i = 0; i < expected.size(); ++i) {
-            REQUIRE(values[i] == expected[i]);
+            REQUIRE_EQUAL(values[i], expected[i]);
         }
     }
 };

@@ -11,11 +11,15 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
+/// Provide the common behavior for minimum and maximum constraints.
+/// @tested{VrMinimumTest VrMaximumTest VrBuilderApiTest}
 class MinMaxConstraint : public Constraint {
 public:
+    /// Select whether a constraint is a minimum or maximum.
     enum MinOrMax : uint8_t { Min, Max };
 
 public:
+    /// Create a minimum or maximum constraint.
     explicit MinMaxConstraint(const MinOrMax minOrMax) {
         if (minOrMax == Min) {
             setType(vr::ConstraintType::Minimum);
@@ -24,6 +28,7 @@ public:
         }
     }
 
+    /// Compare two values according to this constraint's direction.
     template <typename T>
     [[nodiscard]] auto compare(const T &a, const T &b) const -> bool {
         if (type() == vr::ConstraintType::Minimum) {
@@ -32,7 +37,17 @@ public:
         return a > b;
     }
 
-    auto comparisonText() const -> const text::String & {
+    /// Create a typed minimum or maximum constraint for a rule.
+    /// @param minOrMax Selects the minimum or maximum constraint.
+    /// @param rule The rule that owns the constraint.
+    /// @param node The configuration value for the constraint.
+    /// @return The created constraint.
+    /// @throws ConfError If the value type does not match the rule.
+    [[nodiscard]] static auto createForRule(MinOrMax minOrMax, const RulePtr &rule, const conf::ValuePtr &node)
+        -> ConstraintPtr;
+
+    /// Get the comparison text that describes this constraint.
+    [[nodiscard]] auto comparisonText() const -> const text::String & {
         static const text::String lessThan = "less than"_el;
         static const text::String atLeast = "at least"_el;
         static const text::String atMost = "at most"_el;
@@ -42,92 +57,17 @@ public:
         }
         return isNegated() ? greaterThan : atMost;
     }
-};
-
-template <typename T>
-class TypedMinMaxConstraint : public MinMaxConstraint {
-public:
-    explicit TypedMinMaxConstraint(const MinOrMax minOrMax, const T value) :
-        MinMaxConstraint{minOrMax}, _value{value} {}
-
-    [[nodiscard]] auto value() const -> const T & { return _value; }
-
-protected:
-    [[nodiscard]] auto isNotValid(const T validatedValue) const -> bool {
-        if (isNegated()) {
-            return !compare(validatedValue, _value);
-        }
-        return compare(validatedValue, _value);
-    }
-
-protected:
-    T _value;
-};
-
-class MinMaxIntegerConstraint final : public TypedMinMaxConstraint<Integer> {
-public:
-    explicit MinMaxIntegerConstraint(const MinOrMax minOrMax, Integer value) : TypedMinMaxConstraint{minOrMax, value} {}
-
-protected:
-    void validateInteger(const ValidationContext &context, Integer value) const override;
-    void validateText(const ValidationContext &context, const text::String &value) const override;
-    void validateBytes(const ValidationContext &context, const mem::ByteBlock &value) const override;
-    void validateValueList(const ValidationContext &context) const override;
-    void validateSectionList(const ValidationContext &context) const override;
-    void validateSectionWithNames(const ValidationContext &context) const override;
-    void validateSectionWithTexts(const ValidationContext &context) const override;
-};
-
-class MinMaxFloatConstraint final : public TypedMinMaxConstraint<Float> {
-public:
-    explicit MinMaxFloatConstraint(const MinOrMax minOrMax, Float value) : TypedMinMaxConstraint{minOrMax, value} {}
-
-protected:
-    void validateFloat(const ValidationContext &context, Float value) const override;
-};
-
-class MinMaxMatrixConstraint final : public TypedMinMaxConstraint<Integer> {
-public:
-    explicit MinMaxMatrixConstraint(const MinOrMax minOrMax, Integer first, Integer second) :
-        TypedMinMaxConstraint{minOrMax, first}, _second{second} {}
-
-    [[nodiscard]] auto secondValue() const -> Integer { return _second; }
-
-protected:
-    [[nodiscard]] auto isSecondNotValid(Integer validatedValue) const -> bool;
-    void validateValueList(const ValidationContext &context) const override;
 
 private:
-    Integer _second;
+    /// Throw an error for a constraint value that does not match its rule type.
+    [[noreturn]] static void throwValueTypeError(const RulePtr &rule, const conf::ValuePtr &node, ValueType expected);
 };
 
-class MinMaxDateConstraint final : public TypedMinMaxConstraint<time::Date> {
-public:
-    explicit MinMaxDateConstraint(const MinOrMax minOrMax, const time::Date &date) :
-        TypedMinMaxConstraint{minOrMax, date} {}
-
-protected:
-    void validateDate(const ValidationContext &context, const time::Date &value) const override;
-    void validateDateTime(const ValidationContext &context, const time::DateTime &value) const override;
-
-private:
-    time::Date _date;
-};
-
-class MinMaxDateTimeConstraint final : public TypedMinMaxConstraint<time::DateTime> {
-public:
-    explicit MinMaxDateTimeConstraint(const MinOrMax minOrMax, const time::DateTime &dateTime) :
-        TypedMinMaxConstraint{minOrMax, dateTime} {}
-
-protected:
-    void validateDate(const ValidationContext &context, const time::Date &value) const override;
-    void validateDateTime(const ValidationContext &context, const time::DateTime &value) const override;
-
-private:
-    time::DateTime _dateTime;
-};
-
+/// Handle a minimum-constraint configuration entry.
+/// @tested{VrMinimumTest}
 auto handleMinimumConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr;
+/// Handle a maximum-constraint configuration entry.
+/// @tested{VrMaximumTest}
 auto handleMaximumConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr;
 
 }

@@ -10,17 +10,24 @@ target_sources(erbsland-core PRIVATE
         all.hpp
         CalendarDelta.cpp
         CalendarDelta.hpp
+        CalendarDeltaParts.hpp
         CalendarParts.hpp
+        CalendarPartsTypes.hpp
         Date.cpp
         Date.hpp
+        DateParts_fwd.hpp
         DateTime.cpp
         DateTime.hpp
+        DateTime.tpp
         DateTime_calendar.cpp
+        DateTimeParts.hpp
         DateTimePrecision.hpp
         Day.cpp
         Day.hpp
+        Day_fwd.hpp
         DayOfWeek.cpp
         DayOfWeek.hpp
+        DayOfWeek_fwd.hpp
         DayOfWeekFormat.hpp
         DayOfYear.cpp
         DayOfYear.hpp
@@ -31,31 +38,44 @@ target_sources(erbsland-core PRIVATE
         DurationPart.hpp
         ElapsedTimer.hpp
         Hour.hpp
+        Hour_fwd.hpp
         IsoTimeFormat.hpp
         Literals.hpp
         Minute.hpp
+        Minute_fwd.hpp
         Month.cpp
         Month.hpp
         Month_fwd.hpp
+        MonthDayParts_fwd.hpp
         Second.hpp
+        Second_fwd.hpp
         StdFormat.hpp
         Time.cpp
         Time.hpp
+        Time_fwd.hpp
         TimeAmounts.hpp
         TimeDelta.cpp
         TimeDelta.hpp
+        TimeDelta_fwd.hpp
         TimeDeltaFormat.cpp
         TimeDeltaFormat.hpp
         TimeDeltaUnit.hpp
+        TimeEpoch.hpp
         TimeOccurrenceInFold.hpp
+        TimeParts.hpp
         TimePoint.hpp
         TimeUnitTags.hpp
+        TimeUnitTypes.hpp
         TimeWithZone.cpp
         TimeWithZone.hpp
+        TimeWrapResult.hpp
+        TimeWrapResult_fwd.hpp
         TimeZone.cpp
         TimeZone.hpp
         TimeZoneId.hpp
         Year.cpp
         Year.hpp
         Year_fwd.hpp
+        YearDayOfYearParts_fwd.hpp
+        YearMonthParts_fwd.hpp
 )

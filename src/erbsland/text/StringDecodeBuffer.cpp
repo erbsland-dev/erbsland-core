@@ -108,8 +108,7 @@ auto StringDecodeBuffer::decodeToU8(const CpLength maximum, const bool stopAtLin
     auto buffer =
         impl::UnsafeU8StringBuffer{ByteLength::fromSizeT(range.characterLength.toSizeTOrThrow()) * 4U, isSensitive()};
     auto writer = impl::U8Writer{std::span<char>{buffer.data(), buffer.capacity().toSizeT()}};
-    static_cast<void>(
-        forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); }));
+    forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); });
     return {U8String{buffer.take(ByteLength::fromSizeT(writer.position()))}, range.characterLength};
 }
 
@@ -118,8 +117,7 @@ auto StringDecodeBuffer::decodeToU16(const CpLength maximum, const bool consumeD
     auto buffer =
         impl::UnsafeU16StringBuffer{unit::U16DataLength::fromSizeT(range.characterLength.toSizeTOrThrow()) * 2U};
     auto writer = impl::U16Writer{std::span<char16_t>{buffer.data(), buffer.capacity().toSizeT()}};
-    static_cast<void>(
-        forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); }));
+    forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { writer.write(character); });
     return U16String{buffer.take(writer.position())};
 }
 
@@ -127,8 +125,7 @@ auto StringDecodeBuffer::decodeToU32(const CpLength maximum, const bool consumeD
     const auto range = decodedRange(maximum, false);
     auto result = U32StringEditor{};
     result.reserve(range.characterLength);
-    static_cast<void>(forEachDecodedCharacter(
-        range, consumeDecoded, [&](const Char character) -> void { result.append(character); }));
+    forEachDecodedCharacter(range, consumeDecoded, [&](const Char character) -> void { result.append(character); });
     return U32String{result};
 }
 

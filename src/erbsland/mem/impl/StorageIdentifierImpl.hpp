@@ -15,15 +15,18 @@ private:
     static constexpr auto mask2 = 0x1a0ad4762b12f62f; // fixed random number with no meaning.
 
 public:
+    /// Create a mixed identifier from the bounds of a memory range.
     constexpr StorageIdentifierMix(const void *begin, const void *end) : _begin{begin}, _end{end} {}
-    ~StorageIdentifierMix() = default;
 
+    // defaults/deletions
+    ~StorageIdentifierMix() = default;
     StorageIdentifierMix(const StorageIdentifierMix &) = delete;
     StorageIdentifierMix(StorageIdentifierMix &&) = delete;
     auto operator=(const StorageIdentifierMix &) -> StorageIdentifierMix & = delete;
     auto operator=(StorageIdentifierMix &&) -> StorageIdentifierMix & = delete;
 
 public:
+    /// Get the identifier as two 64-bit values.
     [[nodiscard]] auto toValues() const noexcept -> std::array<uint64_t, 2> {
         const auto beginId = pointerToId(_begin);
         const auto endId = pointerToId(_end);
@@ -31,6 +34,7 @@ public:
     }
 
 private:
+    /// Convert a pointer to its stable identifier component.
     [[nodiscard]] static auto pointerToId(const void *ptr) noexcept -> std::uint64_t {
         return static_cast<std::uint64_t>(reinterpret_cast<std::uintptr_t>(ptr));
     }

@@ -19,7 +19,7 @@ auto OptionParser::runSelectedModulePreCallback() -> bool {
     }
     try {
         _selectedModule->preParsingFn()(_selectedModule);
-    } catch (const options::OptionError &error) {
+    } catch (const OptionError &error) {
         return makeCallbackError(error.context(), OptionErrorReason::None);
     }
     return true;
@@ -32,7 +32,7 @@ auto OptionParser::runActiveOptionSetPreCallbacks() -> bool {
         }
         try {
             optionSet->preParsingFn()(optionSet);
-        } catch (const options::OptionError &error) {
+        } catch (const OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::None, optionSet);
         }
     }
@@ -51,7 +51,7 @@ auto OptionParser::runValidators() -> bool {
             }
             try {
                 option->validateFn()(optionValue, _values);
-            } catch (const options::OptionError &error) {
+            } catch (const OptionError &error) {
                 return makeValidatorError(error.context(), optionSet, option);
             }
         }
@@ -66,14 +66,14 @@ auto OptionParser::runPostCallbacks() -> bool {
         }
         try {
             optionSet->postParsingFn()(_values);
-        } catch (const options::OptionError &error) {
+        } catch (const OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::ValidationError, optionSet);
         }
     }
     if (_selectedModule != nullptr && _selectedModule->postParsingFn()) {
         try {
             _selectedModule->postParsingFn()(_values);
-        } catch (const options::OptionError &error) {
+        } catch (const OptionError &error) {
             return makeCallbackError(error.context(), OptionErrorReason::ValidationError);
         }
     }

@@ -30,6 +30,7 @@ __pycache__
 utilities/_conf
 utilities/_logs
 utilities/conf/reference_doc.draft.elcl
+/*.log
 
 # Hosting and building
 .clang-format-last-run

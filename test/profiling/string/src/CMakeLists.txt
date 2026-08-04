@@ -8,10 +8,11 @@ target_sources(string-types-profile PRIVATE
         Application_fwd.hpp
         Configuration.cpp
         Configuration.hpp
+        RunOverrides.hpp
         DefaultConfiguration.hpp.in
         main.cpp
         ProfileTypes.cpp
         ProfileTypes.hpp
-        Workload.cpp
         Workload.hpp
+        WorkloadRunner.cpp
 )

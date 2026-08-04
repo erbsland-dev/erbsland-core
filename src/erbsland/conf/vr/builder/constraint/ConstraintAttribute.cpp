@@ -10,15 +10,13 @@ namespace erbsland::conf::vr::builder {
 using namespace text::literals;
 
 void ConstraintAttribute::requireRuleTypeForConstraint(
-    const impl::Rule &rule,
-    const text::String &constraintName,
-    const std::initializer_list<vr::RuleType> supportedTypes) {
+    const Rule &rule, const text::String &constraintName, const std::initializer_list<vr::RuleType> supportedTypes) {
     if (!hasRuleType(rule, supportedTypes)) {
         throwUnsupportedConstraint(rule, constraintName);
     }
 }
 
-auto ConstraintAttribute::hasRuleType(const impl::Rule &rule, const std::initializer_list<vr::RuleType> supportedTypes)
+auto ConstraintAttribute::hasRuleType(const Rule &rule, const std::initializer_list<vr::RuleType> supportedTypes)
     -> bool {
     for (const auto supportedType : supportedTypes) {
         if (rule.type() == supportedType) {
@@ -28,7 +26,7 @@ auto ConstraintAttribute::hasRuleType(const impl::Rule &rule, const std::initial
     return false;
 }
 
-void ConstraintAttribute::throwUnsupportedConstraint(const impl::Rule &rule, const text::String &constraintName) {
+void ConstraintAttribute::throwUnsupportedConstraint(const Rule &rule, const text::String &constraintName) {
     throwValidationError(
         text::StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
             constraintName, rule.type().toText()));

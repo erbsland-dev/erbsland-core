@@ -13,9 +13,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace erbsland::re::impl {
-
-namespace ch {
+namespace erbsland::re::impl::ch {
 /// The mask type for the category.
 using Mask = uint32_t;
 
@@ -32,24 +30,31 @@ constexpr static std::size_t cUnicodeCategoryBaseBit = cUnicodeSubCategoryBaseBi
 constexpr static std::size_t cReSubCategoryBaseBit = cUnicodeCategoryBaseBit + cUnicodeCategoryBitCount;
 constexpr static std::size_t cReCategoryBaseBit = cReSubCategoryBaseBit + cReSubcategoryBitCount;
 
+/// Create a mask for a one-letter Unicode category.
 constexpr static auto ucValue(const std::size_t categoryIndex) noexcept -> Mask {
     return static_cast<Mask>(1U) << (categoryIndex + cUnicodeCategoryBaseBit);
 }
+/// Create a mask for a two-letter Unicode category.
 constexpr static auto ucValue(const std::size_t categoryIndex, const std::size_t subcategoryIndex) noexcept -> Mask {
     return ucValue(categoryIndex) | static_cast<Mask>(1U) << (subcategoryIndex + cUnicodeSubCategoryBaseBit);
 }
+/// Create a mask for a regular-expression category.
 constexpr static auto reValue(const std::size_t categoryIndex, bool isAscii) noexcept -> Mask {
     return static_cast<Mask>(1U) << (categoryIndex + cReCategoryBaseBit) |
         static_cast<Mask>(isAscii ? 1U : 0U) << cReSubCategoryBaseBit;
 }
+/// Create a mask for an ASCII regular-expression category.
 constexpr static auto reAsciiValue(const std::size_t categoryIndex) noexcept -> Mask {
     return reValue(categoryIndex, true); // Ascii is more limited than Unicode, ASCII flag must be set.
 }
+/// Create a mask for a Unicode regular-expression category.
 constexpr static auto reUnicodeValue(const std::size_t categoryIndex) noexcept -> Mask {
     return reValue(categoryIndex, false); // Unicode variant includes all ASCII characters.
 }
 
 }
+
+namespace erbsland::re::impl {
 
 /// A named character category.
 /// All Unicode categories and extensions.
@@ -198,7 +203,7 @@ public: // conversion
     /// Get a character class for a given unprocessed name.
     /// @param str The unprocessed string.
     /// @return The category.
-    /// @throws std::out_of_bounds if the category is unknown.
+    /// @throws err::ParameterError If the category is unknown.
     [[nodiscard]] static auto fromUnprocessedString(const text::String &str) -> Category;
 
     /// Return a long string for the given character category.
@@ -225,18 +230,25 @@ public: // helper methods.
     static void normalizeList(std::vector<Category> &list) noexcept;
 
 private:
+    /// Convert a Unicode category to its regular-expression mask.
     [[nodiscard]] static constexpr auto unicodeMaskFor(text::UnicodeCategory category) noexcept -> Mask;
+    /// Compute the complete category mask for a Unicode scalar value.
+    [[nodiscard]] static auto computeMaskFor(text::Char character) noexcept -> Mask;
+    /// Add an ASCII and Unicode regular-expression category to a mask.
     static constexpr void addRegexMask(
         Mask &mask, bool unicodeMatches, bool asciiMatches, Value unicodeValue, Value asciiValue) noexcept;
 
 private:
     using NameToValueMap = text::StringHashMap<Value>;
+    /// Stores long and short names for one category value.
     struct Names {
         text::String unicodeShort;
         text::String unicodeLong;
     };
     using ValueToNameMap = std::unordered_map<Value, Names>;
+    /// Get the lookup map from a category name to its value.
     [[nodiscard]] static auto nameToValueMap() noexcept -> const NameToValueMap &;
+    /// Get the lookup map from a category value to its names.
     [[nodiscard]] static auto valueToNameMap() noexcept -> const ValueToNameMap &;
 
 private:

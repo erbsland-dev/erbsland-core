@@ -17,6 +17,8 @@ using namespace el::cterm;
 class TerminalApplication : public el::Application {
 public:
     using el::Application::Application;
+
+    // defaults
     ~TerminalApplication() override = default;
 
 protected: // implement el::Application

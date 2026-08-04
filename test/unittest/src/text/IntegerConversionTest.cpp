@@ -8,14 +8,15 @@
 #include <erbsland/text/IntegerFormat.hpp>
 #include <erbsland/text/IntegerParseOptions.hpp>
 #include <erbsland/text/IntegerSignMode.hpp>
+#include <erbsland/text/ParseNumberError.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -31,6 +32,7 @@ using el::err::ParseError;
 using el::math::AnyIntegerType;
 using el::math::SatInt16;
 using el::math::SatUInt16;
+using el::text::ParseNumberError;
 using el::unit::CpLength;
 using namespace el::text;
 using namespace el::text::literals;
@@ -160,15 +162,17 @@ public:
     void testParseErrorPosition() {
         const auto withoutPosition = ParseError{"Invalid integer"};
         REQUIRE_FALSE(withoutPosition.hasPosition());
-        REQUIRE(withoutPosition.position().isNoIndex());
+        REQUIRE(std::holds_alternative<std::monostate>(withoutPosition.position()));
         REQUIRE_EQUAL(StringConverter{withoutPosition.toString()}.toStdString(), std::string{"Invalid integer"});
 
         const auto withPosition = ParseError{"Invalid integer", el::unit::CpIndex{4U}};
         REQUIRE(withPosition.hasPosition());
-        REQUIRE_EQUAL(withPosition.position(), el::unit::CpIndex{4U});
+        REQUIRE_EQUAL(withPosition.codePointIndex(), el::unit::CpIndex{4U});
         const auto message = StringConverter{withPosition.toString()}.toStdString();
-        REQUIRE(message.find("Invalid integer") != std::string::npos);
-        REQUIRE(message.find("4") != std::string::npos);
+        const auto invalidIntegerPosition = message.find("Invalid integer");
+        const auto positionPosition = message.find("4");
+        REQUIRE_NOT_EQUAL(invalidIntegerPosition, std::string::npos);
+        REQUIRE_NOT_EQUAL(positionPosition, std::string::npos);
     }
 
     void testSetFormatFromBasePrefix() {
@@ -296,91 +300,94 @@ public:
         REQUIRE_EQUAL(parse<std::uint32_t>("0o755"), 493U);
         REQUIRE_EQUAL(parse<std::uint32_t>("0O755"), 493U);
 
-        REQUIRE_EQUAL(U8StringEditor{"-1"}.toInteger<std::uint32_t>(77U), 77U);
-        REQUIRE_THROWS(U8StringEditor{"-1"}.toIntegerOrThrow<std::uint32_t>());
+        REQUIRE_EQUAL(StringEditor{"-1"}.toInteger<std::uint32_t>(77U), 77U);
+        REQUIRE_THROWS(StringEditor{"-1"}.toIntegerOrThrow<std::uint32_t>());
     }
 
     void testParseFixedBasesAndPrefixes() {
         auto hex = IntegerParseOptions{};
         hex.setFixedBase(IntegerBase::Hexadecimal);
         REQUIRE_EQUAL(parse<std::uint32_t>("ff", hex), 255U);
-        REQUIRE_EQUAL(U8StringEditor{"0xff"}.toInteger<std::int32_t>(-1, hex), -1);
+        REQUIRE_EQUAL(StringEditor{"0xff"}.toInteger<std::int32_t>(-1, hex), -1);
 
         auto binary = IntegerParseOptions{};
         binary.setFixedBase(IntegerBase::Binary);
         REQUIRE_EQUAL(parse<std::uint32_t>("1111", binary), 15U);
-        REQUIRE_EQUAL(U8StringEditor{"0b1111"}.toInteger<std::int32_t>(-1, binary), -1);
+        REQUIRE_EQUAL(StringEditor{"0b1111"}.toInteger<std::int32_t>(-1, binary), -1);
 
         auto octal = IntegerParseOptions{};
         octal.setFixedBase(IntegerBase::Octal);
         REQUIRE_EQUAL(parse<std::uint32_t>("755", octal), 493U);
-        REQUIRE_EQUAL(U8StringEditor{"0o755"}.toInteger<std::int32_t>(-1, octal), -1);
+        REQUIRE_EQUAL(StringEditor{"0o755"}.toInteger<std::int32_t>(-1, octal), -1);
 
         auto decimal = IntegerParseOptions{};
         decimal.setFixedBase(IntegerBase::Decimal);
-        REQUIRE_EQUAL(U8StringEditor{"0x10"}.toInteger<std::int32_t>(-1, decimal), -1);
+        REQUIRE_EQUAL(StringEditor{"0x10"}.toInteger<std::int32_t>(-1, decimal), -1);
     }
 
     void testParseTrailingAndSeparators() {
-        REQUIRE_EQUAL(U8StringEditor{"1'234"}.toInteger<std::int32_t>(-1), -1);
+        REQUIRE_EQUAL(StringEditor{"1'234"}.toInteger<std::int32_t>(-1), -1);
 
         auto separators = IntegerParseOptions{};
         separators.setFlags(IntegerParseFlag::AllowSeparator);
         REQUIRE_EQUAL(parse<std::int32_t>("1'234", separators), 1234);
-        REQUIRE_EQUAL(U8StringEditor{"'1234"}.toInteger<std::int32_t>(-1, separators), -1);
-        REQUIRE_EQUAL(U8StringEditor{"1234'"}.toInteger<std::int32_t>(-1, separators), -1);
-        REQUIRE_EQUAL(U8StringEditor{"12''34"}.toInteger<std::int32_t>(-1, separators), -1);
-        REQUIRE_EQUAL(U8StringEditor{"0x'1234"}.toInteger<std::int32_t>(-1, separators), -1);
+        REQUIRE_EQUAL(StringEditor{"'1234"}.toInteger<std::int32_t>(-1, separators), -1);
+        REQUIRE_EQUAL(StringEditor{"1234'"}.toInteger<std::int32_t>(-1, separators), -1);
+        REQUIRE_EQUAL(StringEditor{"12''34"}.toInteger<std::int32_t>(-1, separators), -1);
+        REQUIRE_EQUAL(StringEditor{"0x'1234"}.toInteger<std::int32_t>(-1, separators), -1);
 
-        REQUIRE_EQUAL(U8StringEditor{"123abc"}.toInteger<std::int32_t>(-1), -1);
+        REQUIRE_EQUAL(StringEditor{"123abc"}.toInteger<std::int32_t>(-1), -1);
         auto trailing = IntegerParseOptions{};
         trailing.setFlags(IntegerParseFlag::IgnoreTrailingChars);
         REQUIRE_EQUAL(parse<std::int32_t>("123abc", trailing), 123);
 
         auto both = IntegerParseOptions{};
         both.setFlags(IntegerParseFlag::AllowSeparator | IntegerParseFlag::IgnoreTrailingChars);
-        REQUIRE_EQUAL(U8StringEditor{"123'abc"}.toInteger<std::int32_t>(-1, both), -1);
+        REQUIRE_EQUAL(StringEditor{"123'abc"}.toInteger<std::int32_t>(-1, both), -1);
 
         auto customSeparator = IntegerParseOptions::stringDefault();
         customSeparator.setFlags(
             IntegerParseFlag::AllowSeparator | IntegerParseFlag::AcceptMinusSign | IntegerParseFlag::IgnorePlusSign);
         customSeparator.setSeparator(U'_');
         REQUIRE_EQUAL(parse<std::int32_t>("1_234", customSeparator), 1234);
-        REQUIRE_EQUAL(U8StringEditor{"1__234"}.toInteger<std::int32_t>(-1, customSeparator), -1);
+        REQUIRE_EQUAL(StringEditor{"1__234"}.toInteger<std::int32_t>(-1, customSeparator), -1);
     }
 
     void testParseStringAndParserDefaults() {
-        REQUIRE_EQUAL(U8StringEditor{"+123"}.toInteger<std::int32_t>(), 123);
-        REQUIRE_EQUAL(U8StringEditor{"-123"}.toInteger<std::int32_t>(), -123);
-        REQUIRE_EQUAL(U8StringEditor{"+123"}.toInteger<std::int32_t>(-1, IntegerParseOptions::parserDefault()), -1);
-        REQUIRE_EQUAL(U8StringEditor{"-123"}.toInteger<std::int32_t>(-1, IntegerParseOptions::parserDefault()), -1);
+        REQUIRE_EQUAL(StringEditor{"+123"}.toInteger<std::int32_t>(), 123);
+        REQUIRE_EQUAL(StringEditor{"-123"}.toInteger<std::int32_t>(), -123);
+        REQUIRE_EQUAL(StringEditor{"+123"}.toInteger<std::int32_t>(-1, IntegerParseOptions::parserDefault()), -1);
+        REQUIRE_EQUAL(StringEditor{"-123"}.toInteger<std::int32_t>(-1, IntegerParseOptions::parserDefault()), -1);
     }
 
     void testParseOverflowAndExceptionKinds() {
-        REQUIRE_EQUAL(U8StringEditor{"128"}.toInteger<std::int8_t>(std::int8_t{-1}), std::int8_t{-1});
-
+        REQUIRE_EQUAL(StringEditor{"128"}.toInteger<std::int8_t>(std::int8_t{-1}), std::int8_t{-1});
         try {
-            static_cast<void>(U8StringEditor{"128"}.toIntegerOrThrow<std::int8_t>());
+            static_cast<void>(StringEditor{"128"}.toIntegerOrThrow<std::int8_t>());
             REQUIRE(false);
-        } catch (const OverflowError &) {
-            REQUIRE(true);
+        } catch (const ParseNumberError &error) {
+            REQUIRE_EQUAL(error.status(), ReadNumberStatus::Overflow);
+        } catch (...) {
+            REQUIRE(false);
         }
 
         try {
-            static_cast<void>(U8StringEditor{"abc"}.toIntegerOrThrow<std::int32_t>());
+            static_cast<void>(StringEditor{"abc"}.toIntegerOrThrow<std::int32_t>());
             REQUIRE(false);
-        } catch (const ParseError &) {
-            REQUIRE(true);
+        } catch (const ParseNumberError &error) {
+            REQUIRE_EQUAL(error.status(), ReadNumberStatus::NoDigits);
+        } catch (...) {
+            REQUIRE(false);
         }
     }
 
     void testAllStringKindsAndViews() {
-        const auto u8 = U8StringEditor{"42"};
+        const auto u8 = StringEditor{"42"};
         const auto u16 = U16StringEditor{std::u16string_view{u"42"}};
         const auto u32 = U32StringEditor{std::u32string_view{U"42"}};
 
         REQUIRE_EQUAL(u8.toInteger<std::int32_t>(), 42);
-        REQUIRE_EQUAL(U8String{u8}.toInteger<std::int32_t>(), 42);
+        REQUIRE_EQUAL(String{u8}.toInteger<std::int32_t>(), 42);
         REQUIRE_EQUAL(u16.toInteger<std::int32_t>(), 42);
         REQUIRE_EQUAL(U16String{u16}.toInteger<std::int32_t>(), 42);
         REQUIRE_EQUAL(u32.toInteger<std::int32_t>(), 42);
@@ -392,17 +399,17 @@ public:
 
     void testSmallIntegerRoundTrips() {
         for (auto value = -128; value <= 127; ++value) {
-            const auto text = U8String::fromInteger(static_cast<std::int8_t>(value));
+            const auto text = String::fromInteger(static_cast<std::int8_t>(value));
             REQUIRE_EQUAL(static_cast<int>(text.toInteger<std::int8_t>()), value);
         }
         for (auto value = 0; value <= 255; ++value) {
-            const auto text = U8String::fromInteger(static_cast<std::uint8_t>(value));
+            const auto text = String::fromInteger(static_cast<std::uint8_t>(value));
             REQUIRE_EQUAL(static_cast<unsigned int>(text.toInteger<std::uint8_t>()), static_cast<unsigned int>(value));
         }
     }
 
     void testMalformedInputFailsAsParseError() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("31 C0 32")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("31 C0 32")};
         REQUIRE_EQUAL(invalidUtf8.toInteger<std::int32_t>(-1), -1);
         REQUIRE_THROWS(invalidUtf8.toIntegerOrThrow<std::int32_t>());
 
@@ -418,12 +425,12 @@ public:
 private:
     template <AnyIntegerType T>
     [[nodiscard]] static auto format(T value, IntegerFormat format = IntegerFormat::defaultFormat()) -> std::string {
-        return StringConverter{U8String::fromInteger(value, format)}.toStdString();
+        return StringConverter{String::fromInteger(value, format)}.toStdString();
     }
 
     template <AnyIntegerType T>
     [[nodiscard]] static auto parse(
         std::string_view text, IntegerParseOptions options = IntegerParseOptions::stringDefault()) -> T {
-        return U8StringEditor{text}.toIntegerOrThrow<T>(options);
+        return StringEditor{text}.toIntegerOrThrow<T>(options);
     }
 };

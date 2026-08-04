@@ -114,13 +114,16 @@ With shared storage, one alias cannot erase data still visible through another a
 The invoking value receives zero-filled replacement storage, while the original marked allocation remains available to
 its other owners and is erased after the final owner releases it.
 
-Comparisons Are Ordinary
-========================
+Comparison Timing
+=================
 
 Marked byte blocks use the same equality and ordering operations as ordinary byte blocks.
 These comparisons are not constant-time.
-Do not use byte-block equality as a cryptographic verification primitive.
-Use a higher-level password, message-authentication, signature, or protocol verification API.
+Byte arrays, blocks, block editors, and buffers provide ``isEqualConstTime()`` for explicit equality checks without
+content-dependent short-circuiting.
+For equal-length operands, this operation inspects every byte.
+A length mismatch returns immediately, so operand lengths remain observable.
+Where available, prefer a higher-level password, message-authentication, signature, or protocol verification API.
 
 String comparisons are also ordinary and do not provide a constant-time guarantee.
 

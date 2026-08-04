@@ -124,16 +124,19 @@ public:
         }
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testLargeDeterministicRoundTrips() {
-        auto values = std::vector<uint8_t>(64U * 1024U);
-        auto state = uint32_t{0x6d2b79f5U};
-        for (auto &value : values) {
-            state ^= state << 13U;
-            state ^= state >> 17U;
-            state ^= state << 5U;
-            value = static_cast<uint8_t>(state);
+        const auto data = deterministicData(64U * 1024U);
+        for (
+            const auto &format :
+            {BaseNFormat::base16(), BaseNFormat::base32(), BaseNFormat::base64(), BaseNFormat::base64Pem()}) {
+            WITH_CONTEXT(requireRoundTrip(data, format));
         }
-        const auto data = el::mem::ByteBlock::fromVector(values);
+    }
+
+    void testLargeDeterministicRoundTripsLight() {
+        const auto data = deterministicData(1024U);
         for (
             const auto &format :
             {BaseNFormat::base16(), BaseNFormat::base32(), BaseNFormat::base64(), BaseNFormat::base64Pem()}) {
@@ -207,6 +210,18 @@ public:
     }
 
 private:
+    static auto deterministicData(const std::size_t size) -> el::mem::ByteBlock {
+        auto values = std::vector<uint8_t>(size);
+        auto state = uint32_t{0x6d2b79f5U};
+        for (auto &value : values) {
+            state ^= state << 13U;
+            state ^= state >> 17U;
+            state ^= state << 5U;
+            value = static_cast<uint8_t>(state);
+        }
+        return el::mem::ByteBlock::fromVector(values);
+    }
+
     static auto block(const std::string_view text) -> el::mem::ByteBlock {
         return el::mem::ByteBlock::fromSpan(std::span<const char>{text});
     }

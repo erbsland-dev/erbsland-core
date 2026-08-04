@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
         HashWorker.hpp
+        HashWorker_fwd.hpp
         HashWorkerAdapter.hpp
         HashWorkerFactory.cpp
         HashWorkerFactory.hpp

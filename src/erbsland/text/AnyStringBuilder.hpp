@@ -28,7 +28,7 @@
 #include "../mem/SharedDataPointer.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
-#include "../unit/ElementCount.hpp"
+#include "../unit/ItemCount.hpp"
 #include "../unit/U16DataLength.hpp"
 
 #include <cstddef>
@@ -48,6 +48,7 @@ public:
     /// Create an empty string builder for the requested string kind.
     explicit AnyStringBuilder(StringKind kind);
 
+    // defaults
     ~AnyStringBuilder() = default;
     AnyStringBuilder(const AnyStringBuilder &) = default;
     AnyStringBuilder(AnyStringBuilder &&) = default;
@@ -76,15 +77,15 @@ public: // modifiers
     /// Append a UTF-8 read-only string.
     auto append(const U8String &text) -> AnyStringBuilder &;
     /// Append a UTF-8 read-only string multiple times.
-    auto append(const U8String &text, unit::ElementCount count) -> AnyStringBuilder &;
+    auto append(const U8String &text, unit::ItemCount count) -> AnyStringBuilder &;
     /// Append a UTF-16 read-only string.
     auto append(const U16String &text) -> AnyStringBuilder &;
     /// Append a UTF-16 read-only string multiple times.
-    auto append(const U16String &text, unit::ElementCount count) -> AnyStringBuilder &;
+    auto append(const U16String &text, unit::ItemCount count) -> AnyStringBuilder &;
     /// Append a UTF-32 read-only string.
     auto append(const U32String &text) -> AnyStringBuilder &;
     /// Append a UTF-32 read-only string multiple times.
-    auto append(const U32String &text, unit::ElementCount count) -> AnyStringBuilder &;
+    auto append(const U32String &text, unit::ItemCount count) -> AnyStringBuilder &;
     /// Append a UTF-8 `char` string literal.
     auto append(const U8StringLiteral<char> &text) -> AnyStringBuilder &;
     /// Append a UTF-8 `char8_t` string literal.
@@ -188,14 +189,14 @@ private:
     BuilderPtr _builder; ///< The shared builder backend.
 };
 
-template <>
 /// Convert this builder to a UTF-8 string.
+template <>
 [[nodiscard]] auto AnyStringBuilder::toEditor<U8StringEditor>() const -> U8StringEditor;
-template <>
 /// Convert this builder to a UTF-16 string.
-[[nodiscard]] auto AnyStringBuilder::toEditor<U16StringEditor>() const -> U16StringEditor;
 template <>
+[[nodiscard]] auto AnyStringBuilder::toEditor<U16StringEditor>() const -> U16StringEditor;
 /// Convert this builder to a UTF-32 string.
+template <>
 [[nodiscard]] auto AnyStringBuilder::toEditor<U32StringEditor>() const -> U32StringEditor;
 
 }

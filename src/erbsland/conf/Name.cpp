@@ -21,20 +21,20 @@ namespace erbsland::conf {
 using namespace text::literals;
 
 auto Name::createRegular(text::String name) -> Name {
-    return Name{NameType::Regular, normalize(std::move(name)), impl::PrivateTag{}};
+    return Name{NameType::Regular, normalize(std::move(name)), PrivateTag{}};
 }
 
 auto Name::createText(text::String text) -> Name {
     validateText(text);
-    return Name{NameType::Text, std::move(text), impl::PrivateTag{}};
+    return Name{NameType::Text, std::move(text), PrivateTag{}};
 }
 
 auto Name::createIndex(std::size_t index) -> Name {
-    return Name{NameType::Index, index, impl::PrivateTag{}};
+    return Name{NameType::Index, index, PrivateTag{}};
 }
 
 auto Name::createTextIndex(std::size_t index) -> Name {
-    return Name{NameType::TextIndex, index, impl::PrivateTag{}};
+    return Name{NameType::TextIndex, index, PrivateTag{}};
 }
 
 auto Name::isReservedValidationRule() const noexcept -> bool {
@@ -56,7 +56,7 @@ auto Name::withReservedVRPrefixRemoved() const noexcept -> Name {
     return Name{
         _type,
         text.slice(unit::ByteRange{unit::ByteIndex::fromSizeT(prefixLength.toSizeT()), text.length() - prefixLength}),
-        impl::PrivateTag{}};
+        PrivateTag{}};
 }
 
 auto Name::asText() const noexcept -> text::String {
@@ -93,56 +93,50 @@ auto Name::toPathText() const noexcept -> text::String {
     }
 }
 
-auto Name::normalize(text::String inputText) -> text::String {
+auto Name::normalize(const text::String &inputText) -> text::String {
     if (inputText.isEmpty()) {
         throw ConfError{ConfErrorCategory::Syntax, "Regular names must not be empty."_el};
     }
-    if (inputText.length().toSizeT() > limits::maxNameLength) {
+    if (inputText.length().toSizeT() > impl::limits::maxNameLength) {
         // As regular names must contain only 7-bit characters, this size check is enough.
         // It may give a confusing error message if an API user uses multibyte characters.
         throw ConfError{ConfErrorCategory::LimitExceeded, "The given name is too long."_el};
     }
-    auto reader = text::StringCharReader{inputText};
-    text::StringEditor result;
-    result.reserve(inputText.length());
-    std::size_t characterCount = 0;
-    bool lastWasWordSeparator = false;
-    while (!reader.isAtEnd()) {
-        const auto character = reader.read();
-        // No "if (characterCount >= limits::maxNameLength) { ... }", as the initial size check is sufficient.
-        if (character == impl::nc::space || character == impl::nc::underscore) {
-            if (result.isEmpty()) {
+    // transform the text as efficient as possible, ideally, this is a zero copy operation.
+    auto result = inputText.transformed(text::Char::toIdentifierNormalized);
+    // check the syntax, for later checks, remove any meta `@`.
+    auto resultNamePart = result;
+    if (result.startsWith("@"_el)) {
+        resultNamePart = result.slice({unit::CpIndex::one(), unit::CpLength::infinite()});
+        if (resultNamePart.isEmpty()) {
+            throw ConfError{ConfErrorCategory::Syntax, "A meta-name requires at least one letter."_el};
+        }
+    }
+    // using a forEach with index is the simplest and fastest scan for syntax and used characters.
+    text::Char lastChar;
+    resultNamePart.forEach([&](const text::Char character, const unit::CpIndex index) -> util::LoopStatus {
+        if (character != U'_' && !character.isAsciiAlphanumeric()) {
+            throw ConfError{
+                ConfErrorCategory::Syntax, text::StringFormat{"Invalid character at position {}"_el}.build(index)};
+        }
+        if (character == U'_') {
+            if (index.isZero()) {
                 throw ConfError{ConfErrorCategory::Syntax, "A name must not start with space or underscore."_el};
             }
-            if (lastWasWordSeparator) {
+            if (lastChar == U'_') {
                 throw ConfError{
                     ConfErrorCategory::Syntax,
                     "Two subsequent word separators (space, underscore) are not allowed."_el};
             }
-            lastWasWordSeparator = true;
-        } else if (character == impl::CharClass::DecimalDigit) {
-            if (result.isEmpty() ||
-                (result.characterLength() == unit::CpLength::one() && result.charAt(text::StringSide::Front) == U'@')) {
-                throw ConfError{ConfErrorCategory::Syntax, "A name must not start with a number."_el};
-            }
-            lastWasWordSeparator = false;
-        } else if (character == impl::CharClass::Letter) {
-            lastWasWordSeparator = false;
-        } else if (characterCount == 0 && character == impl::nc::at) {
-            lastWasWordSeparator = false; // Allow the `@` as a first character to create meta-names.
-        } else {
-            throw ConfError{
-                ConfErrorCategory::Syntax,
-                text::StringFormat{"Invalid character at position {}"_el}.build(characterCount)};
         }
-        result.append(character.toIdentifierNormalized());
-        characterCount++;
-    }
-    if (result.charAt(text::StringSide::Back) == U'_') {
+        if (index.isZero() && character.isAsciiDigit()) {
+            throw ConfError{ConfErrorCategory::Syntax, "A name must not start with a number."_el};
+        }
+        lastChar = character;
+        return util::LoopStatus::Continue;
+    });
+    if (lastChar == U'_') {
         throw ConfError{ConfErrorCategory::Syntax, "A name must not end with a space or underscore."_el};
-    }
-    if (result == "@"_el) {
-        throw ConfError{ConfErrorCategory::Syntax, "A meta-name requires at least one letter."_el};
     }
     return result;
 }
@@ -151,7 +145,7 @@ void Name::validateText(const text::String &inputText) {
     if (inputText.isEmpty()) {
         throw ConfError{ConfErrorCategory::Syntax, "Text-names must not be empty."_el};
     }
-    if (inputText.length().toSizeT() > limits::maxLineLength) {
+    if (inputText.length().toSizeT() > impl::limits::maxLineLength) {
         throw ConfError{ConfErrorCategory::LimitExceeded, "The given text-name exceeds the size limit."_el};
     }
     auto reader = text::StringCharReader{inputText};
@@ -165,7 +159,7 @@ void Name::validateText(const text::String &inputText) {
 }
 
 auto Name::meta(Meta metaName) -> const Name & {
-    if (static_cast<std::size_t>(metaName) > allMetaNames().size()) {
+    if (static_cast<std::size_t>(metaName) >= static_cast<std::size_t>(Meta::_count)) {
         throw err::LogicError{"Unknown meta-name."};
     }
     return allMetaNames()[static_cast<std::size_t>(metaName)];
@@ -190,10 +184,10 @@ auto Name::metaFeatures() -> const Name & {
 auto Name::allMetaNames() -> const MetaNameArray & {
     // the order of these meta-names must match the enum `Meta`.
     const static auto metaNames = MetaNameArray{
-        createRegular("@version"_el),
-        createRegular("@signature"_el),
-        createRegular("@include"_el),
-        createRegular("@features"_el),
+        Name(NameType::Regular, "@version"_el, PrivateTag{}),
+        Name(NameType::Regular, "@signature"_el, PrivateTag{}),
+        Name(NameType::Regular, "@include"_el, PrivateTag{}),
+        Name(NameType::Regular, "@features"_el, PrivateTag{}),
     };
     return metaNames;
 }
@@ -201,6 +195,35 @@ auto Name::allMetaNames() -> const MetaNameArray & {
 auto Name::emptyInstance() noexcept -> const Name & {
     static const auto empty = Name{};
     return empty;
+}
+
+auto Name::vrName(VR vrName) -> const Name & {
+    if (static_cast<std::size_t>(vrName) >= static_cast<std::size_t>(VR::_count)) {
+        throw err::LogicError{"Unknown VR name."};
+    }
+    return allVrNames()[static_cast<std::size_t>(vrName)];
+}
+
+auto Name::allVrNames() -> const VrNameArray & {
+    // the order of these names must match the enum `VR`.
+    const static auto vrNames = VrNameArray{
+        Name(NameType::Regular, "vr_any"_el, PrivateTag{}),
+        Name(NameType::Regular, "vr_template"_el, PrivateTag{}),
+        Name(NameType::Regular, "vr_name"_el, PrivateTag{}),
+        Name(NameType::Regular, "vr_entry"_el, PrivateTag{}),
+        Name(NameType::Regular, "vr_key"_el, PrivateTag{}),
+        Name(NameType::Regular, "vr_dependency"_el, PrivateTag{}),
+        Name(NameType::Regular, "use_template"_el, PrivateTag{}),
+        Name(NameType::Regular, "type"_el, PrivateTag{}),
+        Name(NameType::Regular, "case_sensitive"_el, PrivateTag{}),
+        Name(NameType::Regular, "name"_el, PrivateTag{}),
+        Name(NameType::Regular, "key"_el, PrivateTag{}),
+        Name(NameType::Regular, "mode"_el, PrivateTag{}),
+        Name(NameType::Regular, "source"_el, PrivateTag{}),
+        Name(NameType::Regular, "target"_el, PrivateTag{}),
+        Name(NameType::Regular, "error"_el, PrivateTag{}),
+    };
+    return vrNames;
 }
 
 auto Name::indexDigitCount() const noexcept -> std::size_t {

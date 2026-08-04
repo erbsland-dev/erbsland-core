@@ -11,9 +11,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Sets the default validation error message for a rule.
-struct CustomError : Attribute {
+class CustomError : public Attribute {
+public:
+    /// Set a custom validation error message.
+    /// @param errorMessage The message to move into the attribute.
     explicit CustomError(text::String errorMessage) : _errorMessage{std::move(errorMessage)} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     text::String _errorMessage;
 };
 

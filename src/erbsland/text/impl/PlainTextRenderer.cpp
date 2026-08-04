@@ -157,39 +157,29 @@ void PlainTextRenderer::renderCodeSnippet(AnyStringBuilder &builder, const TextN
         }
         const auto sourceWidth =
             std::max(cPlainCodeSnippetWidth - static_cast<int>(gutter.characterLength().toSizeT()), 1);
-        const auto rows = CodeSnippetLayout::build(source, markers, sourceWidth);
+        const auto layout = CodeSnippetLayout{source, markers, sourceWidth};
+        const auto &rows = layout.rows();
         for (auto rowIndex = std::size_t{0}; rowIndex < rows.size(); ++rowIndex) {
             auto rowBuilder = AnyStringBuilder{};
-            for (const auto &cell : rows[rowIndex].cells) {
+            for (const auto &cell : rows[rowIndex].cells()) {
                 rowBuilder.append(cell.text);
             }
             appendLine(builder, rowIndex == 0 ? gutter : markerGutter, rowBuilder.toString());
 
             for (auto markerIndex = std::size_t{0}; markerIndex < markers.size(); ++markerIndex) {
                 const auto &marker = markers[markerIndex];
-                if (!CodeSnippetLayout::markerIntersects(rows[rowIndex], marker)) {
+                const auto placement = rows[rowIndex].markerPlacement(marker.range);
+                if (!placement.has_value()) {
                     continue;
                 }
                 auto markerBuilder = AnyStringBuilder{};
-                markerBuilder.append(
-                    Char{U' '},
-                    CpLength::fromSizeT(
-                        static_cast<std::size_t>(CodeSnippetLayout::markerStart(rows[rowIndex], marker))));
+                markerBuilder.append(Char{U' '}, CpLength::fromSizeT(static_cast<std::size_t>(placement->start)));
                 const auto point = marker.range.isEmpty();
                 markerBuilder.append(
-                    Char{point ? U'↑' : U'▔'},
-                    CpLength::fromSizeT(
-                        static_cast<std::size_t>(CodeSnippetLayout::markerLength(rows[rowIndex], marker))));
-                auto isLastMarkerRow = true;
-                for (auto following = rowIndex + 1; following < rows.size(); ++following) {
-                    if (CodeSnippetLayout::markerIntersects(rows[following], marker)) {
-                        isLastMarkerRow = false;
-                        break;
-                    }
-                }
+                    Char{point ? U'↑' : U'▔'}, CpLength::fromSizeT(static_cast<std::size_t>(placement->length)));
                 const auto label = marker.label;
                 const auto labelWidth = label.characterLength().toSizeT() + 3U;
-                if (isLastMarkerRow && !label.isEmpty() &&
+                if (layout.isLastMarkerRow(rowIndex, marker.range) && !label.isEmpty() &&
                     markerBuilder.length().toSizeT() + labelWidth <= static_cast<std::size_t>(sourceWidth)) {
                     markerBuilder.append(" ("_el).append(label).append(")"_el);
                 }

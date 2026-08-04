@@ -15,10 +15,13 @@
 
 namespace erbsland::conf::impl {
 
+/// Constraint that restricts the characters allowed in text.
 class CharsConstraint final : public Constraint {
     using NamedRange = std::pair<text::String, text::CharSet>;
 
 public:
+    /// Create a character constraint from expected range definitions.
+    /// @param expectedValue The configured character-range definitions.
     explicit CharsConstraint(const text::StringList &expectedValue) {
         _charSet = parseTextRanges(expectedValue);
         setType(vr::ConstraintType::Chars);
@@ -48,6 +51,7 @@ private:
     text::CharSet _charSet;
 };
 
+/// Create a character restriction constraint from its parsed definition.
 auto handleCharsConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr;
 
 }

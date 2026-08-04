@@ -62,7 +62,7 @@ Concrete Unit Types
     ByteIndex, ByteLength, ByteOffset, ByteRange // UTF-8, memory, and stream byte units
     U16DataIndex, U16DataLength, U16DataOffset, U16DataRange // UTF-16 storage units
     CpIndex, CpLength, CpOffset, CpRange // Unicode code-point units
-    ElementIndex, ElementCount, ElementOffset, ElementRange // generic container units
+    ItemIndex, ItemCount, ItemOffset, ItemRange // generic container units
     ArgumentIndex, ArgumentCount // command-line and format argument units
     LineIndex, LineCount, LineOffset, LineRange // diagnostic source-line units
     ColumnIndex, ColumnCount, ColumnOffset, ColumnRange // diagnostic source-column units
@@ -82,7 +82,7 @@ Supporting Types
 .. code-block:: text
 
     IntegerUnit // base tag for index, amount, offset, and range families
-    ByteUnit, U16DataUnit, CpUnit, ElementUnit, ArgumentUnit // storage and collection unit tags
+    ByteUnit, U16DataUnit, CpUnit, ItemUnit, ArgumentUnit // storage and collection unit tags
     LineUnit, ColumnUnit // diagnostic source-position unit tags
     VersionPart // selected version comparison precision
     Major, Minor, Revision, BuildNumber // strongly typed version parts

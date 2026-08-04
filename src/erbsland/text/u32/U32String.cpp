@@ -398,4 +398,11 @@ auto U32String::dataView() const noexcept -> U32StringDataView {
     return {};
 }
 
+auto U32String::isStorageShared() const noexcept -> bool {
+    if (const auto *shared = std::get_if<U32StringSharedStorage>(&_storage)) {
+        return shared->sharedData().isShared();
+    }
+    return false;
+}
+
 }

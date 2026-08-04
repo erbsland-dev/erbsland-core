@@ -19,32 +19,27 @@ using namespace text::literals;
     throw RegExError{ErrorCategory::Internal, "Internal regular-expression failure"_el, std::move(message)};
 }
 
-/// Require an expression to be true.
-/// @param condition The condition that must be true.
-inline void require(const bool condition) {
-    if (!condition) {
-        throwInternalError("Assertion failed"_el);
-    }
-}
-
-/// Require an expression to be true.
-/// @param condition The condition that must be true.
-/// @param message The message in case the condition is false.
-inline void require(const bool condition, text::String message) {
-    if (!condition) {
-        throwInternalError(std::move(message));
-    }
-}
-
 // A test that is performed at runtime.
 // We perform these tests at places where we want to ensure correctness for safety reasons.
-#define ERBSLAND_CORE_RE_REQUIRE_SAFETY(condition, message) ::erbsland::re::impl::require(condition, message)
+#define ERBSLAND_CORE_RE_REQUIRE_SAFETY(condition, message)                                                            \
+    do {                                                                                                               \
+        if (!(condition)) [[unlikely]] {                                                                               \
+            ::erbsland::re::impl::throwInternalError(message);                                                         \
+        }                                                                                                              \
+    } while (false)
 // A test that is only performed in debug and unit-test builds.
 // We perform these tests just to get better debugging information, but the program would fail safely otherwise.
 #if defined(_DEBUG) || !defined(NDEBUG) || defined(ERBSLAND_UNITTEST_BUILD)
-#define ERBSLAND_CORE_RE_REQUIRE_DEBUG(condition, message) ::erbsland::re::impl::require(condition, message)
+#define ERBSLAND_CORE_RE_REQUIRE_DEBUG(condition, message)                                                             \
+    do {                                                                                                               \
+        if (!(condition)) [[unlikely]] {                                                                               \
+            ::erbsland::re::impl::throwInternalError(message);                                                         \
+        }                                                                                                              \
+    } while (false)
 #else
-#define ERBSLAND_CORE_RE_REQUIRE_DEBUG(condition, message)
+#define ERBSLAND_CORE_RE_REQUIRE_DEBUG(condition, message)                                                             \
+    do {                                                                                                               \
+    } while (false)
 #endif
 
 }

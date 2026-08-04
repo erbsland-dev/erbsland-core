@@ -4,6 +4,7 @@
 
 #include "NativeByteStream.hpp"
 #include "NativeOutputStream.hpp"
+#include "PosixNativeStream_fwd.hpp"
 
 #include "../StreamErrorContext.hpp"
 
@@ -17,24 +18,7 @@ namespace erbsland::stream::impl {
 /// Native byte stream wrapper for POSIX file descriptors.
 /// @tested{PosixNativeStreamTest}
 class PosixNativeStream final : public NativeOutputStream, public NativeByteStream {
-    class Operation final {
-    public:
-        explicit Operation(const PosixNativeStream &stream);
-        ~Operation();
-
-        // deletions
-        Operation(const Operation &) = delete;
-        Operation(Operation &&) = delete;
-        auto operator=(const Operation &) -> Operation & = delete;
-        auto operator=(Operation &&) -> Operation & = delete;
-
-    public: // accessors
-        [[nodiscard]] auto fileDescriptor() const noexcept -> int { return _fileDescriptor; }
-
-    private:
-        const PosixNativeStream &_stream;
-        int _fileDescriptor{-1};
-    };
+    friend class PosixNativeOperation;
 
 public:
     /// Create a POSIX native stream wrapper.
@@ -43,8 +27,9 @@ public:
     /// @param path The path represented by the descriptor, if available.
     explicit PosixNativeStream(int fileDescriptor, NativeStreamOwnership ownership, text::String path = {});
 
-    // defaults
     ~PosixNativeStream() override;
+
+    // defaults/deletions
     PosixNativeStream(const PosixNativeStream &) = delete;
     PosixNativeStream(PosixNativeStream &&) = delete;
     auto operator=(const PosixNativeStream &) -> PosixNativeStream & = delete;
@@ -68,6 +53,7 @@ public: // implement NativeByteStream
     void write(mem::ConstByteSpan bytes) override;
 
 public:
+    /// Test whether the stream still owns an open descriptor.
     [[nodiscard]] auto isOpen() const noexcept -> bool;
 
 public:
@@ -77,9 +63,12 @@ public:
     [[nodiscard]] auto fileSize() const -> unit::ByteLength;
 
 private:
+    /// Throw a stream error with a POSIX error code.
     [[noreturn]] void throwError(
         text::String title, text::String description, system::PosixErrorContext::ErrorCode errorCode) const;
+    /// Throw a stream error using the current errno value.
     [[noreturn]] void throwErrorFromErrno(text::String title, text::String description) const;
+    /// Complete a native operation.
     void finishOperation() const noexcept;
 
 private:

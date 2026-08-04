@@ -5,13 +5,15 @@
 
 namespace erbsland::profiling {
 
+using namespace text::literals;
+
 AxisDefinition::AxisDefinition(String id, String configurationName, String optionName) :
     _id{std::move(id)}, _configurationName{std::move(configurationName)}, _optionName{std::move(optionName)} {
 }
 
 auto AxisDefinition::addValue(AxisValue value) -> AxisDefinition & {
     if (hasValue(value.id)) {
-        throw ApplicationError{StringFormat{"Duplicate profiling axis value '{}'."}.build(value.id)};
+        throw ApplicationError{StringFormat{"Duplicate profiling axis value '{}'."_el}.build(value.id)};
     }
     _values.append(std::move(value));
     return *this;

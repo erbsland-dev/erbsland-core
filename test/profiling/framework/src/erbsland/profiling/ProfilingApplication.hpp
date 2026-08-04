@@ -26,11 +26,15 @@ protected:
     [[nodiscard]] virtual auto executeProfiling() -> ExitCode = 0;
 
 protected: // implement Application
+    /// Initialize the profiling definition and runtime.
     void initialize() final;
+    /// Register common and tool-specific profiling options.
     void registerCommandLineOptions(const OptionsPtr &options) final;
+    /// Run the configured profiler.
     [[nodiscard]] auto main() -> ExitCode final;
 
 protected: // access
+    /// Access the configured profiling definition.
     [[nodiscard]] auto profilingDefinition() const -> const ProfilingDefinition & { return _definition; }
     /// Execute the declaratively registered scenarios with common options.
     [[nodiscard]] auto runRegisteredProfiling() -> ExitCode;

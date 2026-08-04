@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/PasswordHashData_fwd.hpp"
+
 #include "../mem/ByteBlock.hpp"
 #include "../text/String.hpp"
 
@@ -9,15 +11,13 @@
 
 namespace erbsland::cryptology {
 
-class PasswordHasher;
-
 /// A system/application key used as a password-hash pepper.
 /// Key material must contain at least 32 bytes. Keep it outside the password database, preferably in a secret manager
 /// or operating-system protected key store.
 /// @seedoc{/reference/cryptology/password_hashing}
 /// @tested{PasswordHasherTest}
 class PasswordHashKey final {
-    friend class PasswordHasher;
+    friend class impl::PasswordHashData;
 
 public:
     /// Create the normal unnamed application key.
@@ -50,7 +50,10 @@ public: // factory
     [[nodiscard]] static auto identified(text::String identifier, mem::ByteBlock key) -> PasswordHashKey;
 
 private:
+    /// Create a validated password-hash key with its optional identifier.
     PasswordHashKey(std::optional<text::String> identifier, mem::ByteBlock key);
+    /// Test whether an identifier meets the public rotation-identifier requirements.
+    [[nodiscard]] static auto isValidIdentifier(const text::String &identifier) noexcept -> bool;
 
 private:
     std::optional<text::String> _identifier; ///< The optional public rotation identifier.

@@ -15,9 +15,11 @@ namespace erbsland::err {
 /// @tested{DiagnosticTest}
 class Diagnostic : public std::enable_shared_from_this<Diagnostic> {
 protected:
+    // defaults
     Diagnostic() = default;
 
 public:
+    // defaults/deletions
     virtual ~Diagnostic() = default;
     Diagnostic(const Diagnostic &) = delete;
     Diagnostic(Diagnostic &&) = delete;

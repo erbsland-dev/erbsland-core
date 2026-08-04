@@ -2,10 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BlockAttributes_fwd.hpp"
+
 #include "impl/HashHelper.hpp"
 
+#include "../text/impl/NamedKeyFormat.hpp"
 #include "../text/String.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -42,6 +46,12 @@ public:
 
 private:
     constexpr static auto cAllMask = uint8_t{0xFFU};
+    constexpr static auto cInheritedKey = 0;
+
+    /// Access all supported attribute flags in display order.
+    [[nodiscard]] static auto attributeFlags() noexcept -> const std::array<Flag, 8> &;
+    /// Access the parser and formatter for named attributes.
+    [[nodiscard]] static auto attributeFormat() -> const text::impl::NamedKeyFormat &;
 
 public:
     /// Create attributes with no explicitly specified flags.
@@ -230,8 +240,10 @@ public: // deprecated methods
     }
 
 private:
+    /// Create attributes from low-level enabled and specified masks.
     constexpr BlockAttributes(const uint8_t enabledMask, const uint8_t specifiedMask) noexcept :
         _enabledMask{enabledMask}, _specifiedMask{specifiedMask} {}
+    /// Set or clear an explicit attribute flag.
     constexpr void setFlag(const Flag flag, const bool enabled) noexcept {
         _specifiedMask |= flag.value;
         if (enabled) {
@@ -240,6 +252,7 @@ private:
             _enabledMask &= static_cast<uint8_t>(~flag.value);
         }
     }
+    /// Mark an attribute flag as inherited.
     constexpr void setInheritedFlag(const Flag flag) noexcept {
         _specifiedMask &= static_cast<uint8_t>(~flag.value);
         _enabledMask &= static_cast<uint8_t>(~flag.value);

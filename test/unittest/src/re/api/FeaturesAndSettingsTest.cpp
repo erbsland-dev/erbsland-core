@@ -23,16 +23,19 @@ class FeaturesAndSettingsTest final : public el::UnitTest {
 public:
     void testFeatureToStringAndFormatter() {
         REQUIRE_EQUAL(toString(Feature::EscapeBell), "EscapeBell"_el);
-        REQUIRE_EQUAL(std::format("{}", Feature::EscapeBell), std::string{"EscapeBell"});
+        const auto escapeBell = std::format("{}", Feature::EscapeBell);
+        REQUIRE_EQUAL(escapeBell, std::string{"EscapeBell"});
     }
 
     void testFeaturesToStringAndFormatter() {
-        REQUIRE_EQUAL(Features{}.toString(), StringEditor{});
-        REQUIRE_EQUAL(std::format("{}", Features{}), std::string{});
+        REQUIRE_EQUAL(Features{}.toString(), String{});
+        const auto emptyFeatures = std::format("{}", Features{});
+        REQUIRE_EQUAL(emptyFeatures, std::string{});
 
         const auto features = Features{Feature::EscapeBell, Feature::PosixClasses, Feature::AnchorLowercaseZ};
         REQUIRE_EQUAL(features.toString(), "EscapeBell, PosixClasses, AnchorLowercaseZ"_el);
-        REQUIRE_EQUAL(std::format("{}", features), std::string{"EscapeBell, PosixClasses, AnchorLowercaseZ"});
+        const auto formattedFeatures = std::format("{}", features);
+        REQUIRE_EQUAL(formattedFeatures, std::string{"EscapeBell, PosixClasses, AnchorLowercaseZ"});
     }
 
     void testCoreFlagIntegration() {

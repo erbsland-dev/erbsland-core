@@ -37,9 +37,13 @@ public: // implement Random
     void fillBytes(std::span<std::byte> destination) override;
 
 private:
+    /// Obtain an unbiased random 64-bit value from the entropy source.
     [[nodiscard]] auto randomUInt64() -> uint64_t;
+    /// Obtain an unbiased value in an inclusive unsigned range.
     [[nodiscard]] auto randomBoundedUInt64(uint64_t minimum, uint64_t maximum) -> uint64_t;
+    /// Map a signed 64-bit value to unsigned ordering.
     [[nodiscard]] static auto toOrderedInt64(int64_t value) noexcept -> uint64_t;
+    /// Map an ordered unsigned value back to a signed value.
     [[nodiscard]] static auto fromOrderedInt64(uint64_t value) noexcept -> int64_t;
 
 private:

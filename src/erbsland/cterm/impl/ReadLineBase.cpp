@@ -31,10 +31,10 @@ ReadLineBase::ReadLineBase(TerminalPtr terminal, ReadLineOptions options) :
 ReadLineBase::ReadLineBase(TerminalPtr terminal, ReadLineOptions options, NowFn nowFn) :
     _terminal{std::move(terminal)}, _options{std::move(options)}, _nowFn{std::move(nowFn)} {
     if (_terminal == nullptr) {
-        throw err::ParameterError{"The line-editor terminal must not be null.", "terminal"};
+        throw err::ParameterError{"The line-editor terminal must not be null."_el, "terminal"_el};
     }
     if (!_nowFn) {
-        throw err::ParameterError{"The line-editor clock function must not be empty.", "nowFn"};
+        throw err::ParameterError{"The line-editor clock function must not be empty."_el, "nowFn"_el};
     }
     validateOptions();
 }
@@ -47,21 +47,21 @@ void ReadLineBase::validateOptions() const {
     case ReadLineDisplayStyle::Frame:
         break;
     default:
-        throw err::ParameterError{"The read-line display style is invalid.", "displayStyle"};
+        throw err::ParameterError{"The read-line display style is invalid."_el, "displayStyle"_el};
     }
     if (!_options.commitKey().valid() || !_options.newLineKey().valid() || !_options.cancelKey().valid()) {
-        throw err::ParameterError{"Read-line key bindings must contain valid keys.", "keyBindings"};
+        throw err::ParameterError{"Read-line key bindings must contain valid keys."_el, "keyBindings"_el};
     }
     if (_options.commitKey() == _options.newLineKey() || _options.commitKey() == _options.cancelKey() ||
         _options.newLineKey() == _options.cancelKey()) {
-        throw err::ParameterError{"Read-line key bindings must be distinct.", "keyBindings"};
+        throw err::ParameterError{"Read-line key bindings must be distinct."_el, "keyBindings"_el};
     }
     if (_options.maximumLines().isZero() || _options.maximumDisplayLines().isZero()) {
-        throw err::ParameterError{"Read-line line limits must be at least one.", "lineLimits"};
+        throw err::ParameterError{"Read-line line limits must be at least one."_el, "lineLimits"_el};
     }
     if (_options.timeout().isNegative() || _options.timeoutDisplayThreshold().isNegative() ||
         !_options.blinkInterval().isPositive()) {
-        throw err::ParameterError{"Read-line timing values are invalid.", "timing"};
+        throw err::ParameterError{"Read-line timing values are invalid."_el, "timing"_el};
     }
 }
 
@@ -230,10 +230,10 @@ auto ReadLineBase::handleKey(const Key &key) -> bool {
     case Key::Down:
         return handleNavigationKey(key);
     case Key::Backspace:
-        static_cast<void>(eraseBeforeCursor());
+        eraseBeforeCursor();
         return true;
     case Key::Delete:
-        static_cast<void>(eraseAtCursor());
+        eraseAtCursor();
         return true;
     default:
         break;

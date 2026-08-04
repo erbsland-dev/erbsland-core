@@ -19,6 +19,7 @@ namespace erbsland::text::impl {
 /// All syntax errors are reported as positioned `err::ParseError` exceptions.
 /// @tested{NamedKeyParserTest}
 class NamedKeyParser final {
+    /// Identifies the entry mode selected by the first parsed entry.
     enum class Mode : uint8_t {
         Undetermined, ///< No entry kind has been selected.
         Keys,         ///< Named-key entries are active.
@@ -43,15 +44,24 @@ public:
     [[nodiscard]] auto readAllEntries() -> util::List<NamedKeyEntry>;
 
 private:
+    /// Test if the reader is at the list terminator.
     [[nodiscard]] auto isAtTerminator() const noexcept -> bool;
+    /// Read and validate the terminal entry.
     [[nodiscard]] auto readEnd() -> NamedKeyEntry;
+    /// Capture one raw encoded entry.
     [[nodiscard]] auto captureRawEntry() -> String;
+    /// Parse one raw entry according to the active mode.
     [[nodiscard]] auto parseRawEntry(const String &raw, unit::CpIndex position) -> NamedKeyEntry;
+    /// Parse a named-key entry.
     [[nodiscard]] auto parseKeyEntry(StringCharReader &reader, Char prefix, int keyIndex, unit::CpIndex position)
         -> NamedKeyEntry;
+    /// Parse a positional-value entry.
     [[nodiscard]] auto parsePositionalValue(const String &raw, unit::CpIndex position) -> NamedKeyEntry;
+    /// Validate a decoded entry value.
     void validateValue(const String &value, unit::CpIndex position) const;
+    /// Record a key as seen or report a duplicate.
     void markKeySeen(int keyIndex, unit::CpIndex position);
+    /// Throw a positioned parse error.
     [[noreturn]] static void throwError(std::string_view reason, unit::CpIndex position);
 
 private:
@@ -60,7 +70,7 @@ private:
     std::optional<util::Set<int>> _allowedKeys;
     util::Set<int> _seenKeys;
     Mode _mode{Mode::Undetermined};
-    unit::ElementCount _valueCount{};
+    unit::ItemCount _valueCount{};
     bool _firstEntry{true};
     bool _ended{false};
 };

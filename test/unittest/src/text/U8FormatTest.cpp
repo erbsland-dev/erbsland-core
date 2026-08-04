@@ -6,11 +6,11 @@
 #include <erbsland/text/FormatError.hpp>
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/U8Format.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -20,6 +20,7 @@
 
 using el::unit::ArgumentCount;
 using namespace el::text;
+using namespace el::text::literals;
 
 TESTED_TARGETS(U8Format FormatError)
 class U8FormatTest final : public el::UnitTest {
@@ -48,7 +49,7 @@ public:
     }
 
     void testTextArguments() {
-        const auto u8Text = U8StringEditor{std::string_view{"u8"}};
+        const auto u8Text = StringEditor{"u8"_el};
         const auto u16Text = U16StringEditor{std::u16string_view{u"u16"}};
         const auto u32Text = U32StringEditor{std::u32string_view{U"u32"}};
         const auto stdText = std::string{"std"};
@@ -65,7 +66,7 @@ public:
     }
 
     void testEscapedTextArguments() {
-        const auto u8Text = U8StringEditor{std::string_view{"<&>"}};
+        const auto u8Text = StringEditor{"<&>"_el};
         const auto u16Text = U16StringEditor{std::u16string_view{u"\"x\""}};
         const auto u32Text = U32StringEditor{std::u32string_view{U"a+b"}};
 
@@ -78,7 +79,7 @@ public:
     }
 
     void testEscapedTextAmountSuffixes() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A\né"}};
+        const auto text = String{"A\né"_el};
         const auto format = U8Format{"{:/json}|{:/json-}|{:/json=}|{:/json+}|{:/json*}"};
 
         REQUIRE_EQUAL(
@@ -157,9 +158,7 @@ public:
         REQUIRE_EQUAL(StringConverter{U8Format{"{:text:fill==,width=3}"}.build("x")}.toStdString(), std::string{"x=="});
 
         const auto escaped = U8Format{"{:text:escape=json,escape-amount=required}"};
-        REQUIRE_EQUAL(
-            StringConverter{escaped.build(U8StringEditor{std::u8string_view{u8"A\né"}})}.toStdString(),
-            std::string{"A\\né"});
+        REQUIRE_EQUAL(StringConverter{escaped.build(String{"A\né"_el})}.toStdString(), std::string{"A\\né"});
         REQUIRE_EQUAL(StringConverter{U8Format{"{:text:}"}.build(Char{U'✓'})}.toStdString(), std::string{"✓"});
     }
 

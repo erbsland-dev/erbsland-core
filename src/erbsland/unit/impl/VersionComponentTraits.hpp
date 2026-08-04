@@ -11,11 +11,13 @@
 
 namespace erbsland::unit::impl {
 
+/// Traits for converting a version component to and from text.
 template <typename T>
 struct VersionComponentTraits {
     static constexpr auto cIsVersionComponent = false; ///< Whether the type is a version component.
 };
 
+/// Version-component traits for integer unit indexes.
 template <ValidIntegerUnit tIntegerUnit>
     requires(std::derived_from<tIntegerUnit, VersionUnit> && requires { tIntegerUnit::cPart; })
 struct VersionComponentTraits<IntegerUnitIndex<tIntegerUnit>> {

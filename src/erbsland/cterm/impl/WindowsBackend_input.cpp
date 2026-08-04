@@ -7,13 +7,13 @@
 #include "WindowsBackendPrivate.hpp"
 #include "WindowsSignalDispatcher.hpp"
 
+#include "../../core/impl/WindowsApi.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../unit/CpLength.hpp"
 
 #include <conio.h>
 #include <fcntl.h>
-#include <windows.h>
 
 #include <chrono>
 #include <iostream>

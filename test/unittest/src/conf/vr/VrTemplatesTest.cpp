@@ -34,7 +34,8 @@ public:
             "[server.interface]",
             "address: \"localhost\"",
         }));
-        REQUIRE_EQUAL(document->getOrThrow<Integer>(el::text::String{"server.interface.port"}), 443);
+        const auto serverPort = document->getOrThrow<Integer>(el::text::String{"server.interface.port"});
+        REQUIRE_EQUAL(serverPort, 443);
 
         // "vr_template" must only appear at the document root.
         WITH_CONTEXT(requireRulesFailLines({
@@ -127,13 +128,15 @@ public:
             "[client.interface]",
             "address: \"localhost\"",
         }));
-        REQUIRE_EQUAL(document->getOrThrow<Integer>(el::text::String{"server.interface.port"}), 443);
-        REQUIRE_EQUAL(document->getOrThrow<Integer>(el::text::String{"client.interface.port"}), 443);
+        const auto serverPort = document->getOrThrow<Integer>(el::text::String{"server.interface.port"});
+        const auto clientPort = document->getOrThrow<Integer>(el::text::String{"client.interface.port"});
+        REQUIRE_EQUAL(serverPort, 443);
+        REQUIRE_EQUAL(clientPort, 443);
         // to validate the copy, compare the validation-rule instances.
         auto serverInterface = document->valueOrThrow(el::text::String{"server.interface"});
         auto clientInterface = document->valueOrThrow(el::text::String{"client.interface"});
-        REQUIRE(serverInterface->validationRule() != nullptr);
-        REQUIRE(clientInterface->validationRule() != nullptr);
+        REQUIRE_NOT_EQUAL(serverInterface->validationRule(), nullptr);
+        REQUIRE_NOT_EQUAL(clientInterface->validationRule(), nullptr);
         REQUIRE_NOT_EQUAL(serverInterface->validationRule(), clientInterface->validationRule());
     }
 

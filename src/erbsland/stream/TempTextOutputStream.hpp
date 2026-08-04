@@ -64,6 +64,7 @@ private:
     TempTextOutputStream(path::Path path, TextOutputStreamPtr stream, bool removeOnClose);
 
 private:
+    /// Throw a stream error with the captured platform context.
     [[noreturn]] void throwError(
         text::String title, text::String description, system::PlatformErrorContextConstPtr platformContext) const;
 

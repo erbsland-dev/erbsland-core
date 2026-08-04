@@ -24,6 +24,7 @@ target_sources(erbsland-core-unittest PRIVATE
 
 if(WIN32)
     target_sources(erbsland-core-unittest PRIVATE
+            WindowsTimeConverterTest.cpp
             WindowsTimeZoneMapTest.cpp
     )
 elseif(UNIX)

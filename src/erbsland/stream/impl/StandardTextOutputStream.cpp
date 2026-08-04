@@ -2,18 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StandardTextOutputStream.hpp"
 
-#include "IoService.hpp"
+#include "StandardTextOutputStreamData.hpp"
 #include "StreamBufferSizes.hpp"
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../time/TimePoint.hpp"
 
-#include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <cstdint>
-#include <deque>
 #include <exception>
 #include <iterator>
 #include <mutex>
@@ -26,100 +23,8 @@ using text::Char;
 using text::String;
 using text::StringEncoding;
 
-class StandardTextOutputStream::Data final : public std::enable_shared_from_this<Data> {
-public:
-    explicit Data(NativeOutputStreamPtr output) : native{std::move(output)} {}
-
-    void schedule() {
-        if (workInProgress || aborted.load()) {
-            return;
-        }
-        if (queue.empty()) {
-            if (streamState.load() == StreamState::Closing) {
-                scheduleFlush(true, 0U);
-            }
-            return;
-        }
-        workInProgress = true;
-        auto self = shared_from_this();
-        auto text = queue.front();
-        IoService::submitIoWork(
-            [self = std::move(self), text = std::move(text)]() -> void { self->performWrite(text); });
-    }
-
-    void performWrite(const String &text) {
-        auto failure = std::exception_ptr{};
-        try {
-            native->writeText(text);
-        } catch (...) {
-            failure = std::current_exception();
-        }
-        {
-            const auto lock = std::scoped_lock{mutex};
-            workInProgress = false;
-            if (failure) {
-                error = failure;
-                streamState.store(StreamState::Failed);
-            } else if (!aborted.load()) {
-                pendingBytes -= text.length().toSizeT();
-                queue.pop_front();
-                schedule();
-            }
-        }
-        condition.notify_all();
-    }
-
-    void scheduleFlush(const bool closeAfterFlush, const uint64_t generation) {
-        if (workInProgress || aborted.load()) {
-            return;
-        }
-        workInProgress = true;
-        auto self = shared_from_this();
-        IoService::submitIoWork([self = std::move(self), closeAfterFlush, generation]() -> void {
-            self->performFlush(closeAfterFlush, generation);
-        });
-    }
-
-    void performFlush(const bool closeAfterFlush, const uint64_t generation) {
-        auto failure = std::exception_ptr{};
-        try {
-            native->flush();
-        } catch (...) {
-            failure = std::current_exception();
-        }
-        {
-            const auto lock = std::scoped_lock{mutex};
-            workInProgress = false;
-            if (failure) {
-                error = failure;
-                streamState.store(StreamState::Failed);
-            } else if (closeAfterFlush) {
-                streamState.store(StreamState::Closed);
-            } else {
-                completedFlushGeneration = generation;
-                schedule();
-            }
-        }
-        condition.notify_all();
-    }
-
-public:
-    NativeOutputStreamPtr native;
-    OutputStreamSettings settings;
-    mutable std::mutex mutex;
-    std::condition_variable condition;
-    std::deque<String> queue;
-    std::size_t pendingBytes{0U};
-    std::atomic<StreamState> streamState{StreamState::Open};
-    std::atomic<bool> aborted{false};
-    bool workInProgress{false};
-    uint64_t flushGeneration{0U};
-    uint64_t completedFlushGeneration{0U};
-    std::exception_ptr error;
-};
-
 StandardTextOutputStream::StandardTextOutputStream(NativeOutputStreamPtr nativeOutputStream) :
-    _data{std::make_shared<Data>(std::move(nativeOutputStream))} {
+    _data{std::make_shared<StandardTextOutputStreamData>(std::move(nativeOutputStream))} {
     if (!_data->native) {
         throw StreamError{StreamErrorContext{
             "Failed to create the standard text output stream."_el,

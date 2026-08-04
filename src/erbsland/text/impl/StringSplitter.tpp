@@ -26,13 +26,32 @@ auto StringSplitter<tString>::next() noexcept -> String {
         return {};
     }
 
+    auto partRange = Range{};
+    advanceToNextPart(&partRange);
+    return _text.slice(partRange);
+}
+
+template <typename tString>
+void StringSplitter<tString>::skip() noexcept {
+    advanceToNextPart(nullptr);
+}
+
+template <typename tString>
+void StringSplitter<tString>::advanceToNextPart(Range *const partRange) noexcept {
+    if (_isAtEnd) {
+        return;
+    }
+
     const auto partStart = _position;
     const auto textEnd = Index::end(_text.length());
     const auto separatorPosition = _text.findFirstOf(_separators, partStart);
     if (separatorPosition.isNoIndex()) {
         _position = textEnd;
         _isAtEnd = true;
-        return _text.slice(Range{partStart, textEnd});
+        if (partRange != nullptr) {
+            *partRange = Range{partStart, textEnd};
+        }
+        return;
     }
 
     auto nextPosition = separatorPosition;
@@ -40,9 +59,14 @@ auto StringSplitter<tString>::next() noexcept -> String {
     _position = nextPosition;
     if (_mode == StringSplitMode::KeepSeparator) {
         _isAtEnd = nextPosition >= textEnd;
-        return _text.slice(Range{partStart, nextPosition});
+        if (partRange != nullptr) {
+            *partRange = Range{partStart, nextPosition};
+        }
+        return;
     }
-    return _text.slice(Range{partStart, separatorPosition});
+    if (partRange != nullptr) {
+        *partRange = Range{partStart, separatorPosition};
+    }
 }
 
 template <typename tString>

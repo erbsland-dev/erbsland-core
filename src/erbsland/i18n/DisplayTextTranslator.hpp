@@ -14,9 +14,11 @@ namespace erbsland::i18n {
 /// @tested{DisplayTextMapTest}
 class DisplayTextTranslator {
 protected:
+    // defaults
     DisplayTextTranslator() = default;
 
 public:
+    // defaults/deletions
     virtual ~DisplayTextTranslator() = default;
     DisplayTextTranslator(const DisplayTextTranslator &) = delete;
     DisplayTextTranslator(DisplayTextTranslator &&) = delete;

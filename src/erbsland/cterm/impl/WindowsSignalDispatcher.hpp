@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "WindowsSignalDispatcher_fwd.hpp"
+
 #include "../../core/impl/WindowsApi.hpp"
 
 #include <atomic>
@@ -31,8 +33,10 @@ public:
     /// Create and activate the signal-forwarding helper.
     /// @param onSignal Callback invoked on the watcher thread for a received event.
     explicit WindowsSignalDispatcher(SignalCallback onSignal);
+    /// Release the Windows signal dispatcher.
     ~WindowsSignalDispatcher();
 
+    // defaults/deletions
     WindowsSignalDispatcher(const WindowsSignalDispatcher &) = delete;
     auto operator=(const WindowsSignalDispatcher &) -> WindowsSignalDispatcher & = delete;
     WindowsSignalDispatcher(WindowsSignalDispatcher &&) = delete;

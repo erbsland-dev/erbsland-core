@@ -31,11 +31,14 @@ public:
     [[nodiscard]] auto run() -> ExitCode;
 
 private:
-    [[nodiscard]] auto runSample(
-        ScenarioWorkload &workload, const Scenario &scenario, std::uint64_t sample, std::uint64_t operations)
+    /// Execute one calibrated sample.
+    auto runSample(ScenarioWorkload &workload, const Scenario &scenario, std::uint64_t sample, std::uint64_t operations)
         -> SampleMeasurement;
+    /// Determine the operation count for one scenario sample.
     [[nodiscard]] auto calibrate(ScenarioWorkload &workload, const Scenario &scenario) -> std::uint64_t;
+    /// Print one measured scenario sample.
     void printSample(const Scenario &scenario, const SampleMeasurement &measurement) const;
+    /// Print the aggregate result of scenario samples.
     void printBenchmark(const Scenario &scenario, const List<SampleMeasurement> &measurements) const;
 
 private:

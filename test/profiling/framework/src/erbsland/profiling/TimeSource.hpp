@@ -12,6 +12,7 @@ namespace erbsland::profiling {
 /// @tested{WorkloadRunnerTest}
 class TimeSource {
 public:
+    /// Destroy this time source.
     virtual ~TimeSource();
 
 public:

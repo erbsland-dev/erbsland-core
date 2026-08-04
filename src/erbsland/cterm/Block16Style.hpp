@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Block.hpp"
+#include "Block16Style_fwd.hpp"
 #include "BlockString.hpp"
 #include "FrameStyle.hpp"
 
@@ -10,13 +11,8 @@
 #include "../text/u32/U32String.hpp"
 
 #include <array>
-#include <memory>
 
 namespace erbsland::cterm {
-
-class Block16Style;
-/// Shared pointer for Block16Style
-using Block16StylePtr = std::shared_ptr<Block16Style>;
 
 /// Defines a style for drawing tiles.
 class Block16Style {
@@ -84,6 +80,7 @@ public:
     [[nodiscard]] static auto forStyle(FrameStyle frameStyle) -> Block16StylePtr;
 
 private:
+    /// Split a block string into the sixteen tiles of this style.
     [[nodiscard]] static auto toTiles(const BlockString &tiles) -> std::array<Block, 16>;
 
 private:

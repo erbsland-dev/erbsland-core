@@ -9,6 +9,7 @@
 #include "AlignmentFlags.hpp"
 #include "BlockAlignedSource.hpp"
 #include "BlockAnchor.hpp"
+#include "BlockAnchorFlag.hpp"
 #include "BlockAxisMapper.hpp"
 #include "BlockCoordinate.hpp"
 #include "BlockDirection.hpp"

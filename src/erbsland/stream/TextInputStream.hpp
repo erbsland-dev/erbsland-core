@@ -26,6 +26,7 @@ public:
     static constexpr auto cDefaultTextReadMaximum = unit::CpLength{10U * 1024U * 1024U};
 
 public:
+    // defaults
     ~TextInputStream() override = default;
 
 public: // accessors

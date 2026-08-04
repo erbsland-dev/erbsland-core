@@ -3,6 +3,7 @@
 #include "CharSet.hpp"
 
 #include "impl/CharSetRangeBuilder.hpp"
+#include "impl/CharSetRangeCounter.hpp"
 #include "impl/UnicodeData.hpp"
 
 namespace erbsland::text {

@@ -2,14 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/HtmlParser_fwd.hpp"
+
 #include "../AnyString.hpp"
 #include "../TextDocument.hpp"
 
 #include <memory>
-
-namespace erbsland::text::html::impl {
-class HtmlParser;
-}
 
 namespace erbsland::text::html {
 
@@ -21,12 +19,16 @@ public:
     /// @param html The HTML fragment or document to parse.
     explicit HtmlParser(AnyString html);
 
-    // defaults
-    ~HtmlParser();
+    /// Move parser state into this instance.
+    auto operator=(HtmlParser &&) noexcept -> HtmlParser &;
+
+    // defaults/deletions
     HtmlParser(const HtmlParser &) = delete;
     HtmlParser(HtmlParser &&) noexcept;
+    ~HtmlParser();
+
+    // defaults/deletions
     auto operator=(const HtmlParser &) -> HtmlParser & = delete;
-    auto operator=(HtmlParser &&) noexcept -> HtmlParser &;
 
 public:
     /// Parse the HTML text into a document.

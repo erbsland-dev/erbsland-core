@@ -30,12 +30,13 @@ public:
         auto source = createTestMemorySource(content);
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE_NOT_EQUAL(decoder, nullptr);
         decodedChar = decoder->next();
         while (!decodedChar.character().isEndOfData()) {
             decodedChar = decoder->next();
         }
-        REQUIRE_EQUAL(decoder->digest(), expectedDigest);
+        const auto actualDigest = decoder->digest();
+        REQUIRE_EQUAL(actualDigest, expectedDigest);
     }
 
     void testNoHash() {
@@ -44,7 +45,7 @@ public:
 
     void testWithHash() {
         // verify the used algorithm.
-        REQUIRE(el::conf::impl::defaults::documentHashAlgorithm == el::cryptology::HashAlgorithm::Sha3_256);
+        REQUIRE_EQUAL(el::conf::impl::defaults::documentHashAlgorithm, el::cryptology::HashAlgorithm::Sha3_256);
         WITH_CONTEXT(verifyHash(
             "@signature \"...\"\n[main]\nvalue: 123\nanother value: \"example\"\n"_el,
             bytesFromHex("b352bf8f49d930ec1267659eddaee1a1a6f38840e7d67ef5733ca2cee83f6633"_el)));

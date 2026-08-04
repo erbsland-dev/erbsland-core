@@ -4,6 +4,8 @@
 
 #include "Value_fwd.hpp"
 
+#include "impl/value/Value_fwd.hpp"
+
 #include "../core/Definitions.hpp"
 
 #include <iterator>
@@ -11,11 +13,6 @@
 #include <vector>
 
 namespace erbsland::conf {
-
-namespace impl {
-class Value;
-using ValuePtr = std::shared_ptr<Value>;
-}
 
 /// Const iterator for the `Value` class.
 /// This is a simple wrapper around the iterator of the internally used container.
@@ -43,17 +40,12 @@ public:
     /// @param it The iterator to wrap.
     constexpr explicit ValueIterator(WrappedIterator it) : _current{it} {}
 
-    /// Default constructor.
+    // defaults
     ValueIterator() = default;
-    /// Default destructor.
     ~ValueIterator() = default;
-    /// Default copy constructor.
     ValueIterator(const ValueIterator &) = default;
-    /// Default move constructor.
     ValueIterator(ValueIterator &&) noexcept = default;
-    /// Default copy assignment.
     auto operator=(const ValueIterator &) -> ValueIterator & = default;
-    /// Default move assignment.
     auto operator=(ValueIterator &&) noexcept -> ValueIterator & = default;
     /// @}
 

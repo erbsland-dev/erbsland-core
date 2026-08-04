@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U16String_fwd.hpp"
+#include "U16String.hpp"
 #include "U16StringConstIterator_fwd.hpp"
 #include "U16StringEditor_fwd.hpp"
 
@@ -11,14 +11,12 @@
 #include "../../unit/U16DataIndex.hpp"
 
 #include <cstddef>
-#include <memory>
 
 namespace erbsland::text {
 
 /// A minimal const iterator for UTF-16 encoded strings.
 /// @tested{U16StringTest}
 class U16StringConstIterator final {
-    struct Private;
     friend class U16StringEditor;
     friend class U16String;
 
@@ -37,18 +35,12 @@ public: // iterator traits
 public:
     /// Create an invalid iterator that does not point to any string.
     U16StringConstIterator();
-    /// Create a copy of another iterator.
-    U16StringConstIterator(const U16StringConstIterator &other);
-    /// Move another iterator into this iterator.
-    U16StringConstIterator(U16StringConstIterator &&other) noexcept;
-    /// Assign a copy of another iterator.
-    auto operator=(const U16StringConstIterator &other) -> U16StringConstIterator &;
-    /// Move another iterator into this iterator.
-    auto operator=(U16StringConstIterator &&other) noexcept -> U16StringConstIterator &;
-
     // defaults
-    /// Destroy the iterator.
-    ~U16StringConstIterator();
+    ~U16StringConstIterator() = default;
+    U16StringConstIterator(const U16StringConstIterator &) = default;
+    U16StringConstIterator(U16StringConstIterator &&) noexcept = default;
+    auto operator=(const U16StringConstIterator &) -> U16StringConstIterator & = default;
+    auto operator=(U16StringConstIterator &&) noexcept -> U16StringConstIterator & = default;
 
 public:
     /// Test if this iterator points to the same position as another iterator.
@@ -75,8 +67,9 @@ private:
     U16StringConstIterator(const U16String &view, unit::U16DataIndex index);
 
 private:
-    std::unique_ptr<Private> _p; ///< Private implementation
-    mutable Char _currentChar;   ///< Current character cache for pointer semantics
+    U16String _string;                                        ///< The string accessed by this iterator.
+    unit::U16DataIndex _index{unit::U16DataIndex::noIndex()}; ///< The current UTF-16 unit index within the storage.
+    mutable Char _currentChar;                                ///< Current character cache for pointer semantics.
 };
 
 }

@@ -7,11 +7,11 @@
 #include <erbsland/path/PathWalker.hpp>
 #include <erbsland/StdFormat.hpp>
 #include <erbsland/String.hpp>
-#include <erbsland/StringConverter.hpp>
+#include <erbsland/system/EnvironmentVariables.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
+#include <erbsland/util/List.hpp>
 
 #include <atomic>
-#include <cstdlib>
 #include <exception>
 #include <format>
 #include <stdexcept>
@@ -56,20 +56,21 @@ public:
     }
 
     void runTestFiles(const el::List<Path> &paths) {
-        const auto &rawPaths = paths.toRawValue();
+        using PathIndex = el::List<Path>::Index;
+
         auto nextIndex = std::atomic_size_t{};
-        auto failures = std::vector<std::exception_ptr>(rawPaths.size());
+        auto failures = std::vector<std::exception_ptr>(paths.count().toSizeT());
         auto workers = std::vector<std::jthread>{};
         workers.reserve(cWorkerCount);
         for (auto workerIndex = std::size_t{}; workerIndex < cWorkerCount; ++workerIndex) {
-            workers.emplace_back([&rawPaths, &nextIndex, &failures]() -> void {
+            workers.emplace_back([&paths, &nextIndex, &failures]() -> void {
                 while (true) {
                     const auto index = nextIndex.fetch_add(1, std::memory_order_relaxed);
-                    if (index >= rawPaths.size()) {
+                    if (index >= paths.count().toSizeT()) {
                         return;
                     }
                     try {
-                        const auto &path = rawPaths[index];
+                        const auto &path = paths.getRefOrThrow(PathIndex::fromSizeT(index));
                         validateTestFile(path, path.name().contains("PASS"_el));
                     } catch (...) {
                         failures[index] = std::current_exception();
@@ -82,17 +83,19 @@ public:
         }
         for (auto index = std::size_t{}; index < failures.size(); ++index) {
             if (failures[index] != nullptr) {
-                testFilePath = rawPaths[index];
+                testFilePath = paths.getRefOrThrow(PathIndex::fromSizeT(index));
                 std::rethrow_exception(failures[index]);
             }
         }
     }
 
+    TAGS(FullRun)
+    SKIP_BY_DEFAULT()
     void testPassOrFail() {
-        const auto testSuiteEnvPtr = std::getenv(el::StringConverter{cTestSuiteEnv}.toStdString().c_str());
-        const bool suiteExplicitlyConfigured = (testSuiteEnvPtr != nullptr);
-        if (testSuiteEnvPtr != nullptr) {
-            testSuitePath = Path(el::String{std::string_view{testSuiteEnvPtr}});
+        const auto testSuiteEnvironment = el::system::EnvironmentVariables{}.get(cTestSuiteEnv);
+        const auto suiteExplicitlyConfigured = testSuiteEnvironment.has_value();
+        if (testSuiteEnvironment.has_value()) {
+            testSuitePath = Path(*testSuiteEnvironment);
         } else {
             // If no environment variable is set, the unittest wasn't started using CTest.
             // In this case, we make a guess about the location, assuming this unittest runs in an IDE
@@ -134,5 +137,38 @@ public:
             },
             el::PathWalkOptions{}.setTypes(el::PathType::RegularFile));
         WITH_CONTEXT(runTestFiles(paths));
+    }
+
+    void testPassOrFailLight() {
+        const auto testSuiteEnvironment = el::system::EnvironmentVariables{}.get(cTestSuiteEnv);
+        const auto suiteExplicitlyConfigured = testSuiteEnvironment.has_value();
+        if (testSuiteEnvironment.has_value()) {
+            testSuitePath = Path(*testSuiteEnvironment);
+        } else {
+            auto guessedPath = Path(unitTestExecutablePath()).parent();
+            auto maxDepth = 5;
+            while (guessedPath.info().isDirectory() && maxDepth-- > 0) {
+                const auto candidatePath = guessedPath / cTestSuiteDir;
+                if (candidatePath.info().isDirectory()) {
+                    testSuitePath = candidatePath;
+                    break;
+                }
+                guessedPath = guessedPath.parent();
+            }
+        }
+        if (testSuitePath.isEmpty() || !testSuitePath.info().isDirectory()) {
+            if (suiteExplicitlyConfigured) {
+                REQUIRE(false);
+            }
+            return;
+        }
+
+        testSuitePath /= cTestSuiteSubdir;
+        const auto passPath = testSuitePath / "byte-data/30_examples/0300-PASS-example_1.elcl"_el;
+        const auto failPath = testSuitePath / "byte-data/03_control/0001-FAIL-ctrl_in_empty.elcl"_el;
+        REQUIRE(passPath.info().isRegularFile());
+        REQUIRE(failPath.info().isRegularFile());
+        WITH_CONTEXT(validateTestFile(passPath, true));
+        WITH_CONTEXT(validateTestFile(failPath, false));
     }
 };

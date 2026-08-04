@@ -17,7 +17,7 @@ namespace erbsland::conf::impl {
 using namespace text::literals;
 
 void RulesFromDocument::handleTypeOrTemplate(const conf::ValuePtr &node, const RulePtr &rule) {
-    if (const auto value = node->value(vrc::cType); value != nullptr) {
+    if (const auto value = node->value(Name::vrName(Name::VR::Type)); value != nullptr) {
         if (value->type() != ValueType::Text) {
             throwValidationError("The 'type' value must be a text"_el, value->namePath(), value->location());
         }
@@ -25,12 +25,13 @@ void RulesFromDocument::handleTypeOrTemplate(const conf::ValuePtr &node, const R
         if (ruleType == vr::RuleType::Undefined) {
             throwValidationError("Unknown rule type"_el, value->namePath(), value->location());
         }
-        const auto useTemplateValue = node->value(vrc::cUseTemplate);
+        const auto useTemplateValue = node->value(Name::vrName(Name::VR::UseTemplate));
         if (useTemplateValue != nullptr && !useTemplateValue->type().isStructural()) {
             throwValidationError("The section cannot have both a 'type' and a 'use_template' value"_el);
         }
         rule->setType(ruleType);
-    } else if (const auto useTemplateValue = node->value(vrc::cUseTemplate); useTemplateValue != nullptr) {
+    } else if (
+        const auto useTemplateValue = node->value(Name::vrName(Name::VR::UseTemplate)); useTemplateValue != nullptr) {
         // Process the template first.
         processTemplate(node, useTemplateValue, rule);
     } else {
@@ -39,7 +40,7 @@ void RulesFromDocument::handleTypeOrTemplate(const conf::ValuePtr &node, const R
 }
 
 void RulesFromDocument::handleCaseSensitive(const conf::ValuePtr &node, const RulePtr &rule) {
-    if (auto caseSensitive = node->value(vrc::cCaseSensitive); caseSensitive != nullptr) {
+    if (auto caseSensitive = node->value(Name::vrName(Name::VR::CaseSensitive)); caseSensitive != nullptr) {
         if (caseSensitive->type() != ValueType::Boolean) {
             throwValidationError("The 'case_sensitive' value must be boolean"_el);
         }
@@ -51,8 +52,8 @@ void RulesFromDocument::handleCaseSensitive(const conf::ValuePtr &node, const Ru
 void RulesFromDocument::processTemplate(
     const conf::ValuePtr &node, const conf::ValuePtr &useTemplateValue, const RulePtr &rule) {
 
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(useTemplateValue != nullptr, "useTemplateValue must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "rule must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(useTemplateValue != nullptr, "useTemplateValue must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "rule must not be null"_el);
     try {
         if (useTemplateValue->type() != ValueType::Text) {
             throwValidationError("The 'use_template' value must be a text"_el);
@@ -62,7 +63,8 @@ void RulesFromDocument::processTemplate(
         }
         NamePath templateNamePath;
         try {
-            templateNamePath = NamePath{{vrc::cReservedTemplate, Name::createRegular(useTemplateValue->asText())}};
+            templateNamePath =
+                NamePath{{Name::vrName(Name::VR::ReservedTemplate), Name::createRegular(useTemplateValue->asText())}};
         } catch (const ConfError &error) {
             throwValidationError(
                 text::StringFormat{"The name specified in 'use_template' is not a valid template name: {}"_el}.build(
@@ -106,14 +108,14 @@ void RulesFromDocument::processTemplate(
 
 void RulesFromDocument::processImplicitRules(const conf::ValuePtr &node, const RulePtr &rule) {
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-        node->type() == ValueType::IntermediateSection, "Expected intermediate section node");
+        node->type() == ValueType::IntermediateSection, "Expected intermediate section node"_el);
     // For intermediate sections, create a rule that expects a section but do not add any constraints.
     rule->setLocation(node->location());
     rule->setType(vr::RuleType::Section);
 }
 
 void RulesFromDocument::processAlternatives(const conf::ValuePtr &node, const RulePtr &rule) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(node->type() == ValueType::SectionList, "Expected section list node");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(node->type() == ValueType::SectionList, "Expected section list node"_el);
     // For section lists, create a rule with alternatives. As we traverse the whole node tree,
     // the alternatives will be automatically created later.
     rule->setLocation(node->location());
@@ -140,7 +142,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
         throwValidationError("Dependency 'vr_dependency' node-rules definitions must be section lists"_el);
     }
     const auto parentRule = getParentRuleForNode(node);
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentRule != nullptr, "Expected parent rule for key node");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentRule != nullptr, "Expected parent rule for key node"_el);
     // Process the individual dependency definitions.
     for (const auto &dependencyNode : getImplValue(node)->childrenImpl()) {
         if (dependencyNode->type() != ValueType::SectionWithNames) {
@@ -154,7 +156,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
         text::String errorMessage;
         for (const auto &child : dependencyNode->childrenImpl()) {
             try {
-                if (child->name() == vrc::depMode) {
+                if (child->name() == Name::vrName(Name::VR::DepMode)) {
                     if (child->type() != ValueType::Text) {
                         throwValidationError("The 'mode' value in 'vr_dependency' must be a text value"_el);
                     }
@@ -164,7 +166,9 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                             "The 'mode' value in 'vr_dependency' must be one of: 'if', 'if_not', 'or', 'xnor', "_el
                             "'xor'"_el);
                     }
-                } else if (child->name() == vrc::depSource || child->name() == vrc::depTarget) {
+                } else if (
+                    child->name() == Name::vrName(Name::VR::DepSource) ||
+                    child->name() == Name::vrName(Name::VR::DepTarget)) {
                     auto namePathTexts = child->asList<text::String>();
                     if (namePathTexts.empty()) {
                         throwValidationError(
@@ -189,14 +193,14 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                         }
                         paths.emplace_back(std::move(path));
                     }
-                    if (child->name() == vrc::depSource) {
+                    if (child->name() == Name::vrName(Name::VR::DepSource)) {
                         sourcePaths = std::move(paths);
                         sourceSpecified = true;
                     } else {
                         targetPaths = std::move(paths);
                         targetSpecified = true;
                     }
-                } else if (child->name() == vrc::depError) {
+                } else if (child->name() == Name::vrName(Name::VR::DepError)) {
                     if (child->type() != ValueType::Text) {
                         throwValidationError("The 'error' value in 'vr_dependency' must be a text value"_el);
                     }
@@ -231,11 +235,11 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
         throwValidationError("ConfKey 'vr_key' node-rules definitions must be section lists"_el);
     }
     const auto parentRule = getParentRuleForNode(node);
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentRule != nullptr, "Expected parent rule for key node");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentRule != nullptr, "Expected parent rule for key node"_el);
     // Assign the individual keys
     for (const auto &child : getImplValue(node)->childrenImpl()) {
         Name name;
-        const auto nameValue = child->value(vrc::keyName);
+        const auto nameValue = child->value(Name::vrName(Name::VR::KeyName));
         if (nameValue != nullptr) {
             if (nameValue->type() != ValueType::Text) {
                 throwValidationError("The 'name' in 'vr_key' must be a text value with a regular name"_el);
@@ -250,7 +254,7 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
                     nameValue->location());
             }
         }
-        const auto keyPathValue = child->value(vrc::keyKey);
+        const auto keyPathValue = child->value(Name::vrName(Name::VR::KeyKey));
         if (keyPathValue == nullptr) {
             throwValidationError("A 'vr_key' definition must have a 'key' value"_el);
         }
@@ -271,7 +275,7 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
             }
         }
         auto caseSensitivity = text::CaseSensitivity::CaseInsensitive;
-        const auto caseSensitiveValue = child->value(vrc::cCaseSensitive);
+        const auto caseSensitiveValue = child->value(Name::vrName(Name::VR::CaseSensitive));
         if (caseSensitiveValue != nullptr) {
             if (caseSensitiveValue->type() != ValueType::Boolean) {
                 throwValidationError("The 'case_sensitive' value must be boolean"_el);
@@ -295,8 +299,9 @@ void RulesFromDocument::processKey(const conf::ValuePtr &node) {
 
         // scan for additional unwanted elements.
         for (const auto &subChild : *child) {
-            if (subChild->name() != vrc::keyKey && subChild->name() != vrc::keyName &&
-                subChild->name() != vrc::cCaseSensitive) {
+            if (subChild->name() != Name::vrName(Name::VR::KeyKey) &&
+                subChild->name() != Name::vrName(Name::VR::KeyName) &&
+                subChild->name() != Name::vrName(Name::VR::CaseSensitive)) {
                 throwValidationError("Unexpected element in 'vr_key'"_el, subChild->namePath(), subChild->location());
             }
         }
@@ -318,7 +323,7 @@ auto RulesFromDocument::createRuleNamePath(const NamePath &namePath) const -> Na
     if (namePath.empty() || _pathForTemplate.empty()) {
         return namePath;
     }
-    if (namePath.front() == vrc::cReservedTemplate) {
+    if (namePath.front() == Name::vrName(Name::VR::ReservedTemplate)) {
         auto result = _pathForTemplate;
         auto it = namePath.begin();
         ++it;     // skip "vr_template"
@@ -337,7 +342,7 @@ auto RulesFromDocument::createTargetNamePath(const NamePath &namePath) const -> 
     NamePath result;
     std::size_t startIndex = 0;
     if (isTemplatePath(namePath)) {
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!_pathForTemplate.empty(), "Expected non-empty _pathForTemplate");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!_pathForTemplate.empty(), "Expected non-empty _pathForTemplate"_el);
         result = _pathForTemplate;
         startIndex = 2; // skip "vr_template.<template-name>"
     }
@@ -346,7 +351,7 @@ auto RulesFromDocument::createTargetNamePath(const NamePath &namePath) const -> 
 }
 
 auto RulesFromDocument::isTemplatePath(const NamePath &namePath) -> bool {
-    return !namePath.empty() && namePath.front() == vrc::cReservedTemplate;
+    return !namePath.empty() && namePath.front() == Name::vrName(Name::VR::ReservedTemplate);
 }
 
 void RulesFromDocument::appendRegularNames(NamePath &result, const NamePath &namePath, const std::size_t startIndex) {

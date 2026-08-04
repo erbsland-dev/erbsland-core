@@ -117,12 +117,11 @@ private:
     template <std::integral First, std::integral Second>
     void requireCompare(First first, Second second) {
         const auto expected = expectedCompare(first, second);
+        const auto actual = mixedIntegerCompare(first, second);
         runWithContext(
             SOURCE_LOCATION(),
-            [&]() -> void { REQUIRE(mixedIntegerCompare(first, second) == expected); },
-            [&]() -> std::string {
-                return createCompareDiagnostic(first, second, mixedIntegerCompare(first, second), expected);
-            });
+            [&]() -> void { REQUIRE_EQUAL(actual, expected); },
+            [&]() -> std::string { return createCompareDiagnostic(first, second, actual, expected); });
     }
 
     template <std::integral First, std::integral Second>
@@ -153,12 +152,11 @@ private:
 
     template <std::integral T>
     void requireToUnsignedAbsolute(T value, std::make_unsigned_t<T> expected) {
+        const auto actual = toUnsignedAbsolute(value);
         runWithContext(
             SOURCE_LOCATION(),
-            [&]() -> void { REQUIRE(toUnsignedAbsolute(value) == expected); },
-            [&]() -> std::string {
-                return createToUnsignedAbsoluteDiagnostic(value, toUnsignedAbsolute(value), expected);
-            });
+            [&]() -> void { REQUIRE_EQUAL(actual, expected); },
+            [&]() -> std::string { return createToUnsignedAbsoluteDiagnostic(value, actual, expected); });
     }
 
     template <std::signed_integral T>
@@ -182,10 +180,11 @@ private:
 
     template <std::integral T>
     void requireToIntegerNormal(T value, T expected) {
+        const auto actual = toIntegerNormal(value);
         runWithContext(
             SOURCE_LOCATION(),
-            [&]() -> void { REQUIRE(toIntegerNormal(value) == expected); },
-            [&]() -> std::string { return createToIntegerNormalDiagnostic(value, toIntegerNormal(value), expected); });
+            [&]() -> void { REQUIRE_EQUAL(actual, expected); },
+            [&]() -> std::string { return createToIntegerNormalDiagnostic(value, actual, expected); });
     }
 
     template <std::integral First, std::integral Second>

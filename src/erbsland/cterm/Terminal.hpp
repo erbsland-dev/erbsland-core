@@ -11,12 +11,12 @@
 #include "ParagraphOptions.hpp"
 #include "Terminal_fwd.hpp"
 #include "TerminalFlags.hpp"
+#include "TypeTraits.hpp"
 #include "UpdateSettings.hpp"
 #include "WritableBuffer.hpp"
 
 #include "impl/InputBackend.hpp"
 #include "impl/LineBuffer.hpp"
-#include "impl/TypeTraits.hpp"
 
 #include "../bgeo/BlockSize.hpp"
 
@@ -24,9 +24,6 @@
 #include <memory>
 
 namespace erbsland::cterm {
-
-class Terminal;
-using TerminalPtr = std::shared_ptr<Terminal>;
 
 /// High-level terminal interface for screen control, color output, and key input.
 class Terminal final : public CursorWriter {

@@ -24,10 +24,7 @@ Filesystem Model
 .. code-block:: text
 
     information = snapshot cached on Path and shared by its value copies, refreshed explicitly or after expiry
-    content = complete file data or an opened byte or text stream
-    operation = filesystem mutation with explicit collision, link, and progress policy
     temporary resource = owned cleanup lease releasable to the caller
-    traversal = ordered directory-tree visit with explicit recursion and link policy
 
 Primary Types
 =============

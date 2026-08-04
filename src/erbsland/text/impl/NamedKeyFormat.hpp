@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NamedKeyFormat_fwd.hpp"
+
 #include "../Char.hpp"
 #include "../CharSet.hpp"
 #include "../String.hpp"
 
 #include "../../unit/CpLength.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../util/List.hpp"
 
 #include <initializer_list>
@@ -76,9 +78,9 @@ public: // policy
     /// Test if a positional value list is allowed.
     [[nodiscard]] auto valueListAllowed() const noexcept -> bool { return _valueListAllowed; }
     /// Set the maximum number of positional values.
-    auto setMaximumValues(unit::ElementCount maximum) noexcept -> NamedKeyFormat &;
+    auto setMaximumValues(unit::ItemCount maximum) noexcept -> NamedKeyFormat &;
     /// Get the maximum number of positional values.
-    [[nodiscard]] auto maximumValues() const noexcept -> unit::ElementCount { return _maximumValues; }
+    [[nodiscard]] auto maximumValues() const noexcept -> unit::ItemCount { return _maximumValues; }
     /// Set the maximum value length in code points.
     auto setMaximumValueLength(unit::CpLength maximum) noexcept -> NamedKeyFormat &;
     /// Get the maximum value length in code points.
@@ -118,19 +120,19 @@ public: // validation
     void validate() const;
 
 private:
-    Keys _keys;                                                        ///< Normalized key aliases.
-    bool _uniqueKeysRequired{true};                                    ///< Require unique semantic keys.
-    bool _keysWithoutValuesAllowed{true};                              ///< Allow bare keys.
-    bool _valuesAllowed{true};                                         ///< Allow keyed values.
-    bool _valueListAllowed{true};                                      ///< Allow positional values.
-    unit::ElementCount _maximumValues{unit::ElementCount::infinite()}; ///< Maximum positional value count.
-    unit::CpLength _maximumValueLength{200U};                          ///< Maximum value length.
-    Char _listSeparator{U','};                                         ///< Entry-list separator.
-    Char _valueSeparator{U'='};                                        ///< Key/value separator.
-    Char _stopCharacter{Char::endOfData()};                            ///< Required stop character.
-    CharSet _allowedKeyPrefixes;                                       ///< Optional key prefixes.
-    CharSet _allowedValueChars;                                        ///< Allowed value characters.
-    CharSet _valueWithoutKeySeparatorChars;                            ///< Compact-value start characters.
+    Keys _keys;                                                  ///< Normalized key aliases.
+    bool _uniqueKeysRequired{true};                              ///< Require unique semantic keys.
+    bool _keysWithoutValuesAllowed{true};                        ///< Allow bare keys.
+    bool _valuesAllowed{true};                                   ///< Allow keyed values.
+    bool _valueListAllowed{true};                                ///< Allow positional values.
+    unit::ItemCount _maximumValues{unit::ItemCount::infinite()}; ///< Maximum positional value count.
+    unit::CpLength _maximumValueLength{200U};                    ///< Maximum value length.
+    Char _listSeparator{U','};                                   ///< Entry-list separator.
+    Char _valueSeparator{U'='};                                  ///< Key/value separator.
+    Char _stopCharacter{Char::endOfData()};                      ///< Required stop character.
+    CharSet _allowedKeyPrefixes;                                 ///< Optional key prefixes.
+    CharSet _allowedValueChars;                                  ///< Allowed value characters.
+    CharSet _valueWithoutKeySeparatorChars;                      ///< Compact-value start characters.
 };
 
 }

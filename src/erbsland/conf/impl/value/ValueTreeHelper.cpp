@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ValueTreeHelper.hpp"
 
+#include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../../text/StringFormat.hpp"
-
-#include <stdexcept>
 
 namespace erbsland::conf::impl {
 
@@ -13,7 +12,7 @@ using namespace text::literals;
 
 auto ValueTreeHelper::createLines() -> text::StringList {
     if (!_lines.isEmpty()) {
-        throw err::LogicError("ValueTreeHelper::createLines() called twice.");
+        throw err::LogicError("ValueTreeHelper::createLines() called twice."_el);
     }
     initStack();
     while (!_stack.empty()) {

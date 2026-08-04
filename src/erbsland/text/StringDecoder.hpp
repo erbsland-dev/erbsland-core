@@ -28,6 +28,11 @@ public:
     StringDecoder(const mem::ByteBlock &data) noexcept; // NOLINT(*-explicit-constructor)
 
 public:
+    /// Validate that the byte data is strictly encoded text without creating a string.
+    /// @param encoding The expected encoding.
+    /// @param bomMode How an initial byte order mark is handled.
+    /// @throws EncodingError If the byte order mark or encoded text is invalid.
+    void validateOrThrow(StringEncoding encoding, StringBomMode bomMode = StringBomMode::Automatic) const;
     /// Decode to the default UTF-8 string type.
     [[nodiscard]] auto decode(
         StringEncoding encoding,

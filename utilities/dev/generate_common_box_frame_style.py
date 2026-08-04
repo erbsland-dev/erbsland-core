@@ -54,7 +54,12 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
     def handle_command_line_args(self, args: argparse.Namespace) -> None:
         self.check = args.check
         self.output_path = (
-            self.project_directory / "src" / "erbsland" / "cterm" / "impl" / "CommonBoxFrameCombinationStyle_data.cpp"
+            self.project_directory
+            / "src"
+            / "erbsland"
+            / "cterm"
+            / "impl"
+            / "CommonBoxFrameBlockCombinationStyle_data.cpp"
         )
 
     @classmethod
@@ -166,11 +171,11 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
             ),
         ]
         body_lines = [
-            '#include "CommonBoxFrameCombinationStyle.hpp"',
+            '#include "CommonBoxFrameBlockCombinationStyle.hpp"',
             "",
             "#include <array>",
             "",
-            "namespace erbsland::cterm {",
+            "namespace erbsland::cterm::impl {",
             "",
         ]
         body_lines.extend(
@@ -185,7 +190,7 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
         body_lines.extend(
             render_data_function(
                 "characters",
-                "CommonBoxFrameCombinationStyle::CodePointData",
+                "CommonBoxFrameBlockCombinationStyle::CodePointData",
                 [ord(character) for character in characters],
                 entries_per_line=8,
                 width=4,
@@ -194,7 +199,7 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
         body_lines.extend(
             render_data_function(
                 "attributes",
-                "CommonBoxFrameCombinationStyle::AttributeData",
+                "CommonBoxFrameBlockCombinationStyle::AttributeData",
                 packed_attributes,
                 entries_per_line=8,
                 width=7,
@@ -203,7 +208,7 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
         body_lines.extend(
             render_data_function(
                 "exactAttributes",
-                "CommonBoxFrameCombinationStyle::AttributeData",
+                "CommonBoxFrameBlockCombinationStyle::AttributeData",
                 [entry[0] for entry in exact_entries],
                 entries_per_line=8,
                 width=7,
@@ -212,7 +217,7 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
         body_lines.extend(
             render_data_function(
                 "exactCharacters",
-                "CommonBoxFrameCombinationStyle::CodePointData",
+                "CommonBoxFrameBlockCombinationStyle::CodePointData",
                 [entry[1] for entry in exact_entries],
                 entries_per_line=8,
                 width=4,
@@ -230,7 +235,7 @@ class GenerateCommonBoxFrameStyleApp(UtilityApp):
         body_lines.extend(
             render_data_function(
                 "specialCodePoints",
-                "CommonBoxFrameCombinationStyle::CodePointData",
+                "CommonBoxFrameBlockCombinationStyle::CodePointData",
                 [ord(character) for character, _ in special_entries],
                 entries_per_line=8,
                 width=4,

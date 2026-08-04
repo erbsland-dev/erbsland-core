@@ -10,7 +10,9 @@ namespace erbsland::time::tz::impl {
 /// @tested{TimeOffsetTest}
 class WindowsLocalTimeZoneBackend final : public LocalTimeZoneBackend {
 public:
-    [[nodiscard]] auto timeZone() noexcept -> std::optional<TimeZone> override;
+    /// Detect the configured local IANA time zone.
+    /// @return The detected time zone, or no value if detection fails.
+    [[nodiscard]] auto detectedTimeZone() noexcept -> std::optional<TimeZone> override;
 };
 
 }

@@ -7,13 +7,13 @@ namespace erbsland::util {
 template <typename tKey, typename tValue, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
     std::copyable<tValue>
-HashMap<tKey, tValue, tHash, tEqual, tSelf>::HashMap() : _storage{} {
+HashMap<tKey, tValue, tHash, tEqual, tSelf>::HashMap() : _storage{defaultStorage()} {
 }
 
 template <typename tKey, typename tValue, typename tHash, typename tEqual, typename tSelf>
     requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
     std::copyable<tValue>
-HashMap<tKey, tValue, tHash, tEqual, tSelf>::HashMap(std::initializer_list<Entry> values) {
+HashMap<tKey, tValue, tHash, tEqual, tSelf>::HashMap(std::initializer_list<Entry> values) : _storage{defaultStorage()} {
     auto data = Raw{};
     for (const auto &[key, value] : values) {
         data[key] = value;
@@ -71,9 +71,8 @@ template <typename tKey, typename tValue, typename tHash, typename tEqual, typen
 auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::toStdKeyVector() const -> std::vector<Key> {
     auto result = std::vector<Key>{};
     result.reserve(raw().size());
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(value);
-        result.push_back(key);
+    for (const auto &entry : raw()) {
+        result.push_back(entry.first);
     }
     return result;
 }
@@ -116,6 +115,17 @@ template <typename tKey, typename tValue, typename tHash, typename tEqual, typen
     std::copyable<tValue>
 auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::makeSelf(Raw raw) -> Self {
     return Self{std::move(raw)};
+}
+
+template <typename tKey, typename tValue, typename tHash, typename tEqual, typename tSelf>
+    requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
+    std::copyable<tValue>
+auto HashMap<tKey, tValue, tHash, tEqual, tSelf>::defaultStorage() -> Storage {
+    if constexpr (std::is_empty_v<Hash> && std::is_empty_v<Equal>) {
+        return Storage::sharedDefault();
+    } else {
+        return Storage{};
+    }
 }
 
 template <typename tKey, typename tValue, typename tHash, typename tEqual, typename tSelf>

@@ -28,7 +28,7 @@ auto U8String::contains(const U8String &other, const CharCompareFn compareFn) co
     return impl::U8StringComparisonTools{dataView()}.contains(other.dataView(), compareFn);
 }
 
-auto U8String::count(const U8String &text, const CharCompareFn compareFn) const noexcept -> unit::ElementCount {
+auto U8String::count(const U8String &text, const CharCompareFn compareFn) const noexcept -> unit::ItemCount {
     return impl::U8StringComparisonTools{dataView()}.count(text.dataView(), compareFn);
 }
 

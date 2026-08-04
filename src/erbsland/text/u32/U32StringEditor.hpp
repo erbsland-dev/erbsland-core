@@ -25,9 +25,11 @@
 #include "../impl/FloatTraits.hpp"
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
+#include "../impl/StringNormalizationTools_fwd.hpp"
 #include "../IntegerFormat.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
+#include "../NormalizationForm.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringBomMode.hpp"
@@ -48,7 +50,7 @@
 #include "../../unit/CpIndex.hpp"
 #include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
 #include "../../util/LoopResult.hpp"
 
@@ -70,13 +72,15 @@ namespace erbsland::text {
 /// Use `StringEditor` for most use cases and `U32StringEditor` only if you need random access to code points or require
 /// UTF-32 encoding.
 /// @seedoc{/reference/text/string_width_variants}
-/// @tested{U32StringTest StringEscapingTest BooleanConversionTest}
+/// @tested{U32StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
 class U32StringEditor {
-    friend class debug::impl::StringDebugAccess;
+    friend class debug::impl::StringDebugAccess<U32StringEditor>;
     friend class U32String;
     friend class impl::U32StringBuilder;
     friend class impl::U32StringEncodingTools;
     friend class impl::StringConversionTools;
+    template <typename>
+    friend class impl::StringNormalizationTools;
 
 public:
     /// Create a copy of the given UTF-32 string.
@@ -90,6 +94,7 @@ public:
     /// @param view The read-only string to copy.
     explicit U32StringEditor(const U32String &view);
 
+    // defaults
     U32StringEditor() = default;
     ~U32StringEditor() = default;
     U32StringEditor(const U32StringEditor &) = default;
@@ -125,7 +130,7 @@ public: // tests
     /// @copydoc erbsland::text::U32String::contains(const U32String &, CharCompareFn) const
     [[nodiscard]] auto contains(const U32String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// @copydoc erbsland::text::U32String::count(const U32String &, CharCompareFn) const
-    [[nodiscard]] auto count(const U32String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto count(const U32String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ItemCount;
     /// @copydoc erbsland::text::U32String::containsOneOf(const CharSet &) const
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// @copydoc erbsland::text::U32String::containsOnly(const CharSet &) const
@@ -216,7 +221,7 @@ public: // modifiers
     /// Reset the string to its initial state, clearing all characters and resetting capacity to default.
     void reset() noexcept;
     /// Append a UTF-32 read-only string one or more times.
-    auto append(const U32String &text, unit::ElementCount count = unit::ElementCount::one()) -> U32StringEditor &;
+    auto append(const U32String &text, unit::ItemCount count = unit::ItemCount::one()) -> U32StringEditor &;
     /// Append one Unicode code point one or more times.
     auto append(Char character, unit::CpLength count = unit::CpLength::one()) -> U32StringEditor &;
     /// Remove a character-based range.
@@ -277,6 +282,10 @@ public: // transform
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
     /// Return a string where every decoded code point is mapped through the given function.
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U32StringEditor;
+    /// @copydoc erbsland::text::U8StringEditor::normalize(NormalizationForm)
+    auto normalize(NormalizationForm form) -> U32StringEditor &;
+    /// @copydoc erbsland::text::U8StringEditor::normalized(NormalizationForm) const
+    [[nodiscard]] auto normalized(NormalizationForm form) const -> U32StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const
         -> U32StringEditor;
@@ -386,6 +395,8 @@ private:
     [[nodiscard]] auto dataView() const noexcept -> impl::U32StringDataView;
     /// Create a new string with the given storage.
     explicit U32StringEditor(impl::U32StringSharedStorage storage) : _storage{std::move(storage)} {}
+    /// Test if the string storage is shared.
+    [[nodiscard]] auto isStorageShared() const noexcept -> bool;
 
 private:
     impl::U32StringSharedStorage _storage; ///< The string storage.

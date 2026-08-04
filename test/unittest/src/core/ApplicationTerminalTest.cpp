@@ -90,10 +90,12 @@ public:
             backend = application.backend;
 
             application.enableTerminal();
-            REQUIRE_EQUAL(backend->output(), std::string{});
+            const auto output = backend->output();
+            REQUIRE_EQUAL(output, std::string{});
         }
 
-        REQUIRE_EQUAL(backend->output(), std::string{});
+        const auto output = backend->output();
+        REQUIRE_EQUAL(output, std::string{});
     }
 
     void testPlainSystemOutputUsesRootErrorStyleOnly() {
@@ -179,10 +181,12 @@ private:
     }
 
     void requireContains(const std::string &text, const std::string &needle) {
-        REQUIRE(text.find(needle) != std::string::npos);
+        const auto position = text.find(needle);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
     }
 
     void requireMissing(const std::string &text, const std::string &needle) {
-        REQUIRE(text.find(needle) == std::string::npos);
+        const auto position = text.find(needle);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 };

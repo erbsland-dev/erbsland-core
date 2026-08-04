@@ -2,8 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ReadLineBase.hpp"
 
+#include "ReadLineLayoutTypes.hpp"
+
+#include "../Block.hpp"
+#include "../BlockString.hpp"
 #include "../BlockStringEditor.hpp"
+#include "../BlockStyle.hpp"
 #include "../Buffer.hpp"
+#include "../FrameBorder.hpp"
 #include "../Terminal.hpp"
 
 #include "../../bgeo/BlockAnchor.hpp"
@@ -24,59 +30,24 @@ using bgeo::BlockCoordinate;
 using bgeo::BlockPosition;
 using bgeo::BlockSize;
 
-struct ReadLineBase::Cell final {
-    int column{0};
-    unit::CpIndex startIndex;
-    unit::CpIndex endIndex;
-    Block block;
-};
-
-struct ReadLineBase::Boundary final {
-    int column{0};
-    unit::CpIndex index;
-};
-
-struct ReadLineBase::LayoutRow final {
-    std::vector<Cell> cells;
-    std::vector<Boundary> boundaries;
-};
-
-struct ReadLineBase::Layout final {
-    struct CursorPosition final {
-        std::size_t row{0U};
-        int column{0};
-    };
-
-    int terminalWidth{1};
-    int contentLeft{0};
-    int contentRight{1};
-    int promptWidth{0};
-    int textColumn{0};
-    int editWidth{1};
-    std::vector<LayoutRow> rows;
-    std::vector<CursorPosition> cursorPositions;
-};
-
-namespace {
-
-auto horizontalBlock(const FrameBorder &border, const FrameBorder::Element element) noexcept -> Block {
+auto ReadLineBase::horizontalBlock(const FrameBorder &border, const FrameBorder::Element element) noexcept -> Block {
     const auto line = border.border(element);
     return FrameBorder::cornerChar(line, {}, line, {});
 }
 
-auto verticalBlock(const FrameBorder &border, const FrameBorder::Element element) noexcept -> Block {
+auto ReadLineBase::verticalBlock(const FrameBorder &border, const FrameBorder::Element element) noexcept -> Block {
     const auto line = border.border(element);
     return FrameBorder::cornerChar({}, line, {}, line);
 }
 
-void setClipped(Buffer &buffer, const int x, const int y, const Block &block) noexcept {
+void ReadLineBase::setClipped(Buffer &buffer, const int x, const int y, const Block &block) noexcept {
     if (x < 0 || y < 0 || x >= buffer.size().width().toRawValue() || y >= buffer.size().height().toRawValue()) {
         return;
     }
     buffer.set(BlockPosition{x, y}, block);
 }
 
-void drawBlockString(
+void ReadLineBase::drawBlockString(
     Buffer &buffer, int x, const int y, const int maximumWidth, const BlockString &text, const BlockStyle style) {
     const auto endX = x + std::max(0, maximumWidth);
     for (const auto &sourceBlock : text) {
@@ -93,7 +64,7 @@ void drawBlockString(
     }
 }
 
-auto titleWithCountdown(const ReadLineOptions &options, const std::int64_t countdown) -> BlockString {
+auto ReadLineBase::titleWithCountdown(const ReadLineOptions &options, const std::int64_t countdown) -> BlockString {
     auto result = BlockStringEditor{options.title()};
     if (!options.timeoutDisplayThreshold().isZero() && countdown >= 0 &&
         countdown <= options.timeoutDisplayThreshold().toRawValue()) {
@@ -108,10 +79,8 @@ auto titleWithCountdown(const ReadLineOptions &options, const std::int64_t count
     return result;
 }
 
-}
-
-auto ReadLineBase::createLayout() const -> Layout {
-    auto result = Layout{};
+auto ReadLineBase::createLayout() const -> ReadLineLayout {
+    auto result = ReadLineLayout{};
     result.terminalWidth = std::max(1, _terminal->size().width().toRawValue());
     const auto hasVerticalFrame = _options.displayStyle() == ReadLineDisplayStyle::Frame;
     const auto frameInset = hasVerticalFrame && result.terminalWidth >= 2 ? 1 : 0;
@@ -127,15 +96,15 @@ auto ReadLineBase::createLayout() const -> Layout {
     const auto textEnd = unit::CpIndex::end(textValue.length());
     result.cursorPositions.resize(textValue.length().toSizeT() + 1U);
     result.rows.emplace_back();
-    result.rows.back().boundaries.push_back(Boundary{0, {}});
-    result.cursorPositions[0U] = Layout::CursorPosition{0U, 0};
+    result.rows.back().boundaries.push_back(ReadLineBoundary{0, {}});
+    result.cursorPositions[0U] = ReadLineLayout::CursorPosition{0U, 0};
 
     auto rowIndex = std::size_t{0U};
     auto column = 0;
     auto index = unit::CpIndex{};
     const auto addBoundary = [&](const unit::CpIndex boundaryIndex, const int boundaryColumn) -> void {
-        result.rows[rowIndex].boundaries.push_back(Boundary{boundaryColumn, boundaryIndex});
-        result.cursorPositions[boundaryIndex.toSizeT()] = Layout::CursorPosition{rowIndex, boundaryColumn};
+        result.rows[rowIndex].boundaries.push_back(ReadLineBoundary{boundaryColumn, boundaryIndex});
+        result.cursorPositions[boundaryIndex.toSizeT()] = ReadLineLayout::CursorPosition{rowIndex, boundaryColumn};
     };
     const auto startRow = [&](const unit::CpIndex boundaryIndex) -> void {
         result.rows.emplace_back();
@@ -164,8 +133,8 @@ auto ReadLineBase::createLayout() const -> Layout {
         if (column > 0 && column + width > result.editWidth) {
             startRow(index);
         }
-        result.rows[rowIndex].cells.push_back(Cell{column, index, endIndex, block});
-        result.cursorPositions[index.toSizeT()] = Layout::CursorPosition{rowIndex, column};
+        result.rows[rowIndex].cells.push_back(ReadLineCell{column, index, endIndex, block});
+        result.cursorPositions[index.toSizeT()] = ReadLineLayout::CursorPosition{rowIndex, column};
         column += width;
         index = endIndex;
         addBoundary(index, column);
@@ -176,7 +145,7 @@ auto ReadLineBase::createLayout() const -> Layout {
     return result;
 }
 
-auto ReadLineBase::closestBoundary(const LayoutRow &row, const int column) const noexcept -> unit::CpIndex {
+auto ReadLineBase::closestBoundary(const ReadLineLayoutRow &row, const int column) noexcept -> unit::CpIndex {
     auto result = row.boundaries.front().index;
     auto bestDistance = std::numeric_limits<int>::max();
     for (const auto &boundary : row.boundaries) {
@@ -189,15 +158,15 @@ auto ReadLineBase::closestBoundary(const LayoutRow &row, const int column) const
     return result;
 }
 
-auto ReadLineBase::cursorRow(const Layout &layout) const noexcept -> std::size_t {
+auto ReadLineBase::cursorRow(const ReadLineLayout &layout) const noexcept -> std::size_t {
     return layout.cursorPositions[std::min(_cursorIndex.toSizeT(), layout.cursorPositions.size() - 1U)].row;
 }
 
-auto ReadLineBase::cursorColumn(const Layout &layout) const noexcept -> int {
+auto ReadLineBase::cursorColumn(const ReadLineLayout &layout) const noexcept -> int {
     return layout.cursorPositions[std::min(_cursorIndex.toSizeT(), layout.cursorPositions.size() - 1U)].column;
 }
 
-auto ReadLineBase::moveHome(const Layout &layout) noexcept -> bool {
+auto ReadLineBase::moveHome(const ReadLineLayout &layout) noexcept -> bool {
     const auto row = cursorRow(layout);
     const auto target = layout.rows[row].boundaries.front().index;
     if (target == _cursorIndex) {
@@ -208,7 +177,7 @@ auto ReadLineBase::moveHome(const Layout &layout) noexcept -> bool {
     return true;
 }
 
-auto ReadLineBase::moveEnd(const Layout &layout) noexcept -> bool {
+auto ReadLineBase::moveEnd(const ReadLineLayout &layout) noexcept -> bool {
     const auto row = cursorRow(layout);
     const auto target = layout.rows[row].boundaries.back().index;
     if (target == _cursorIndex) {
@@ -219,7 +188,7 @@ auto ReadLineBase::moveEnd(const Layout &layout) noexcept -> bool {
     return true;
 }
 
-auto ReadLineBase::moveUp(const Layout &layout) -> bool {
+auto ReadLineBase::moveUp(const ReadLineLayout &layout) -> bool {
     const auto row = cursorRow(layout);
     if (row == 0U) {
         return selectPreviousHistory();
@@ -230,7 +199,7 @@ auto ReadLineBase::moveUp(const Layout &layout) -> bool {
     return true;
 }
 
-auto ReadLineBase::moveDown(const Layout &layout) -> bool {
+auto ReadLineBase::moveDown(const ReadLineLayout &layout) -> bool {
     const auto row = cursorRow(layout);
     if (row + 1U >= layout.rows.size()) {
         return selectNextHistory();
@@ -245,22 +214,22 @@ auto ReadLineBase::handleNavigationKey(const Key &key) -> bool {
     const auto layout = createLayout();
     switch (key.type()) {
     case Key::Left:
-        static_cast<void>(moveLeft());
+        moveLeft();
         return true;
     case Key::Right:
-        static_cast<void>(moveRight());
+        moveRight();
         return true;
     case Key::Home:
-        static_cast<void>(moveHome(layout));
+        moveHome(layout);
         return true;
     case Key::End:
-        static_cast<void>(moveEnd(layout));
+        moveEnd(layout);
         return true;
     case Key::Up:
-        static_cast<void>(moveUp(layout));
+        moveUp(layout);
         return true;
     case Key::Down:
-        static_cast<void>(moveDown(layout));
+        moveDown(layout);
         return true;
     default:
         return false;

@@ -21,10 +21,11 @@ class FontTest final : public el::UnitTest {
 public:
     void testDefaultAsciiContainsLatinAndPunctuationGlyphs() {
         const auto font = Font::defaultAscii();
-        REQUIRE_EQUAL(font->height(), 8);
+        const auto height = font->height();
+        REQUIRE_EQUAL(height, 8);
 
-        REQUIRE(font->glyph("A"_el) != nullptr);
-        REQUIRE(font->glyph("\u00c4"_el) != nullptr);
+        REQUIRE(font->glyph("A"_el));
+        REQUIRE(font->glyph("\u00c4"_el));
         const auto punctuation = std::array<std::string_view, 23>{
             "!",
             "?",
@@ -53,10 +54,10 @@ public:
             const auto name = punctuation[index];
             runWithContext(
                 SOURCE_LOCATION(),
-                [&]() { REQUIRE(font->glyph(erbsland::text::StringEditor{name}) != nullptr); },
+                [&]() { REQUIRE(font->glyph(erbsland::text::StringEditor{name})); },
                 [&]() -> std::string { return std::format("index = {} / glyph = \"{}\"", index, name); });
         }
-        REQUIRE(font->glyph("\u3042"_el) == nullptr);
+        REQUIRE_FALSE(font->glyph("\u3042"_el));
     }
 
     void testDefaultFontFactoriesReturnIndependentInstances() {
@@ -65,7 +66,7 @@ public:
 
         first->addGlyph("~"_el, FontGlyph{std::vector<uint64_t>{0x00, 0x00, 0x14, 0x2a, 0x00, 0x00, 0x00, 0x00}});
 
-        REQUIRE(first->glyph("~"_el) != nullptr);
-        REQUIRE(second->glyph("~"_el) == nullptr);
+        REQUIRE(first->glyph("~"_el));
+        REQUIRE_FALSE(second->glyph("~"_el));
     }
 };

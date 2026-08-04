@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Constraint.hpp"
+#include "Rule_fwd.hpp"
 #include "RuleType.hpp"
 
 #include "../NamePath.hpp"
@@ -10,15 +11,12 @@
 #include "../../text/CaseSensitivity.hpp"
 #include "../../text/String.hpp"
 
-#include <memory>
-
 namespace erbsland::conf::vr {
 
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
-
+/// Base interface for a validation rule.
 class Rule {
 public:
+    // defaults
     virtual ~Rule() = default;
 
 public:

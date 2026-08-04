@@ -80,9 +80,9 @@ public:
         auto different = left;
         different.setBoldInherited();
 
-        REQUIRE(left == equal);
-        REQUIRE_FALSE(left != equal);
-        REQUIRE_FALSE(left == different);
+        REQUIRE_EQUAL(left, equal);
+        REQUIRE_EQUAL(left, equal);
+        REQUIRE_NOT_EQUAL(left, different);
         REQUIRE_EQUAL(left.hash(), std::hash<BlockAttributes>{}(left));
         REQUIRE_NOT_EQUAL(left.hash(), different.hash());
     }

@@ -8,9 +8,7 @@
 
 namespace erbsland::mem::impl {
 
-namespace {
-
-[[nodiscard]] auto alignUp(const std::size_t value, const std::size_t alignment) noexcept -> std::size_t {
+auto BestGrowth::alignUp(const std::size_t value, const std::size_t alignment) noexcept -> std::size_t {
     const auto remainder = value % alignment;
     if (remainder == 0U) {
         return value;
@@ -22,7 +20,7 @@ namespace {
     return value + increment;
 }
 
-[[nodiscard]] auto compactGrowth(const unit::ByteLength requestedAllocationSize) noexcept -> unit::ByteLength {
+auto BestGrowth::compactGrowth(const unit::ByteLength requestedAllocationSize) noexcept -> unit::ByteLength {
     const auto requestedSize = requestedAllocationSize.toSizeT();
     const auto maximumBlockSize = cMaximumGrowthBlock.toSizeT();
     if (requestedAllocationSize > cMaximumGrowthBlock) {
@@ -46,7 +44,7 @@ namespace {
     return unit::ByteLength::fromSizeT(result);
 }
 
-[[nodiscard]] auto geometricGrowth(
+auto BestGrowth::geometricGrowth(
     const unit::ByteLength currentAllocationSize, const unit::ByteLength requestedAllocationSize) noexcept
     -> unit::ByteLength {
     const auto pageSize = cAllocationPageSize.toSizeT();
@@ -62,12 +60,9 @@ namespace {
     return unit::ByteLength::fromSizeT(result);
 }
 
-}
-
-auto bestGrowth(
-    const unit::ByteLength currentAllocationSize,
-    const unit::ByteLength requestedAllocationSize,
-    const BestGrowthStrategy strategy) noexcept -> unit::ByteLength {
+auto BestGrowth::bestGrowth(const BestGrowthStrategy strategy) const noexcept -> unit::ByteLength {
+    const auto currentAllocationSize = unit::ByteLength::fromSizeT(_current);
+    const auto requestedAllocationSize = unit::ByteLength::fromSizeT(_requested);
     if (requestedAllocationSize <= currentAllocationSize) {
         return currentAllocationSize;
     }

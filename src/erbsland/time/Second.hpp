@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Second_fwd.hpp"
+
 #include "impl/TimePartBases.hpp"
 
 namespace erbsland::time {

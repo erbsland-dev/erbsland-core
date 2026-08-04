@@ -9,7 +9,6 @@
 #include "../../../text/StringFormat.hpp"
 
 #include <ranges>
-#include <stdexcept>
 
 namespace erbsland::conf::impl {
 

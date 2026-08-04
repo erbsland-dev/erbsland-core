@@ -129,7 +129,7 @@ public:
     void testOwnedDescriptorClose() {
         auto pipe = Pipe{};
         const auto ownedDescriptor = ::dup(pipe.writeDescriptor());
-        REQUIRE(ownedDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(ownedDescriptor, 0);
 
         auto stream =
             el::stream::impl::PosixNativeStream{ownedDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
@@ -146,7 +146,7 @@ public:
     void testAbortDefersCloseUntilBlockedReadFinishes() {
         auto pipe = Pipe{};
         const auto ownedDescriptor = ::dup(pipe.readDescriptor());
-        REQUIRE(ownedDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(ownedDescriptor, 0);
         auto stream =
             el::stream::impl::PosixNativeStream{ownedDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
         auto future = std::async(std::launch::async, [&stream]() -> ByteLength {
@@ -156,7 +156,8 @@ public:
         REQUIRE_EQUAL(future.wait_for(std::chrono::milliseconds{50}), std::future_status::timeout);
 
         stream.abort();
-        REQUIRE(::fcntl(ownedDescriptor, F_GETFD) >= 0);
+        const auto descriptorFlags = ::fcntl(ownedDescriptor, F_GETFD);
+        REQUIRE_GREATER_EQUAL(descriptorFlags, 0);
 
         pipe.closeWrite();
         REQUIRE_EQUAL(future.wait_for(std::chrono::milliseconds{500}), std::future_status::ready);
@@ -169,7 +170,7 @@ public:
     void testFileSize() {
         const auto path = createTemporaryPath();
         const auto fileDescriptor = ::open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, static_cast<mode_t>(0600));
-        REQUIRE(fileDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(fileDescriptor, 0);
 
         auto stream =
             el::stream::impl::PosixNativeStream{fileDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
@@ -186,7 +187,7 @@ public:
     void testFilePositioningAndAppendRestriction() {
         const auto path = createTemporaryPath();
         const auto fileDescriptor = ::open(path.c_str(), O_CREAT | O_TRUNC | O_RDWR, static_cast<mode_t>(0600));
-        REQUIRE(fileDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(fileDescriptor, 0);
         auto stream =
             el::stream::impl::PosixNativeStream{fileDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
 
@@ -200,7 +201,7 @@ public:
         stream.close();
 
         const auto appendDescriptor = ::open(path.c_str(), O_WRONLY | O_APPEND);
-        REQUIRE(appendDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(appendDescriptor, 0);
         auto append =
             el::stream::impl::PosixNativeStream{appendDescriptor, el::stream::impl::NativeStreamOwnership::Owned};
         REQUIRE_FALSE(append.supportsPositioning());
@@ -212,7 +213,7 @@ public:
     void testNativeFailureHasFlatContextAndPath() {
         const auto path = createTemporaryPath();
         const auto fileDescriptor = ::open(path.c_str(), O_CREAT | O_TRUNC | O_RDONLY, static_cast<mode_t>(0600));
-        REQUIRE(fileDescriptor >= 0);
+        REQUIRE_GREATER_EQUAL(fileDescriptor, 0);
         const auto pathText = el::text::StringEditor{std::string_view{path.string()}};
 
         {
@@ -224,7 +225,7 @@ public:
                 REQUIRE(false);
             } catch (const StreamError &error) {
                 REQUIRE_FALSE(error.hasCause());
-                REQUIRE(error.platformContext() != nullptr);
+                REQUIRE(error.platformContext());
                 REQUIRE_EQUAL(error.path(), pathText);
             }
         }

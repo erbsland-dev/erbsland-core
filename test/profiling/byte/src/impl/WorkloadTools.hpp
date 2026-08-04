@@ -10,12 +10,12 @@
 #include <erbsland/cryptology/HashAlgorithm.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
 #include <erbsland/mem/impl/UnsafeByteBufferAccess.hpp>
+#include <erbsland/system/EnvironmentVariables.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <barrier>
 #include <cmath>
-#include <cstdlib>
 #include <exception>
 #include <limits>
 #include <memory>
@@ -24,18 +24,18 @@
 #include <set>
 #include <thread>
 
-namespace app::byte {
+namespace app::byte::impl {
 
 using namespace el::text::literals;
 
-namespace impl {
-
 using Clock = std::chrono::steady_clock;
 
+/// Report a workload validation error.
 [[noreturn]] void workloadError(const el::String &message) {
     throw el::ApplicationError{message};
 }
 
+/// Mix a value into a deterministic random seed.
 [[nodiscard]] auto mixSeed(std::uint64_t seed, const std::uint64_t value) noexcept -> std::uint64_t {
     seed ^= value + 0x9e3779b97f4a7c15ULL + (seed << 6U) + (seed >> 2U);
     seed ^= seed >> 30U;
@@ -45,6 +45,7 @@ using Clock = std::chrono::steady_clock;
     return seed ^ (seed >> 31U);
 }
 
+/// Create the deterministic seed for a benchmark worker sample.
 [[nodiscard]] auto workerSeed(
     const Configuration &configuration,
     const Scenario &scenario,
@@ -55,21 +56,25 @@ using Clock = std::chrono::steady_clock;
     return mixSeed(result, sample);
 }
 
+/// Create deterministic source bytes of the requested size.
 [[nodiscard]] auto makeBytes(const std::uint64_t size, const std::uint64_t seed) -> el::ByteBuffer {
     auto random = el::FastRandom{seed};
     return random.buildByteBuffer(el::ByteLength{size});
 }
 
+/// Calculate the digest of byte data.
 [[nodiscard]] auto digest(const el::ConstByteSpan bytes) -> el::ByteBlock {
     auto hasher = el::cryptology::Hasher{el::cryptology::HashAlgorithm::Md5};
     hasher.update(el::ByteBlock::fromSpan(bytes));
     return hasher.finalize();
 }
 
+/// Calculate the elapsed time since a start point in nanoseconds.
 [[nodiscard]] auto elapsedNanoseconds(const Clock::time_point start) -> std::int64_t {
     return std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - start).count();
 }
 
+/// Select the byte index for an iteration.
 [[nodiscard]] auto indexFor(const std::uint64_t iteration, const std::size_t size, const bool random) -> el::ByteIndex {
     if (size == 0U) {
         return el::ByteIndex::zero();
@@ -78,6 +83,7 @@ using Clock = std::chrono::steady_clock;
     return el::ByteIndex::fromSizeT(static_cast<std::size_t>(index));
 }
 
+/// Select the byte range for a workload variant.
 [[nodiscard]] auto rangeFor(
     const std::size_t size, const std::size_t operand, const el::String &variant, const std::uint64_t iteration = 0U)
     -> el::ByteRange {
@@ -94,14 +100,17 @@ using Clock = std::chrono::steady_clock;
     return el::ByteRange{el::ByteIndex::fromSizeT(start), el::ByteLength::fromSizeT(count)};
 }
 
+/// Mix a byte into the benchmark result sink.
 void consumeByte(std::uint64_t &sink, const el::Byte value) noexcept {
     sink = mixSeed(sink, value.toUInt8());
 }
 
+/// Mix a byte index into the benchmark result sink.
 void consumeIndex(std::uint64_t &sink, const el::ByteIndex value) noexcept {
     sink = mixSeed(sink, value.isValid() ? value.toRawValue() : std::numeric_limits<std::uint64_t>::max());
 }
 
+/// Calculate the number of bytes processed by a workload.
 [[nodiscard]] auto operationByteCount(const Scenario &scenario, const std::uint64_t operations) noexcept
     -> std::uint64_t {
     if (scenario.workUnit == WorkUnit::Operations) {
@@ -119,6 +128,7 @@ void consumeIndex(std::uint64_t &sink, const el::ByteIndex value) noexcept {
         : perOperation * operations;
 }
 
+/// Execute a fixed-size byte-array workload.
 template <std::size_t N>
 [[nodiscard]] auto executeArray(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
@@ -178,7 +188,9 @@ template <std::size_t N>
             break;
         case UseCase::Traverse:
             if (scenario.variant == "for-each"_el) {
-                static_cast<void>(first.forEach([&](const el::Byte value) { consumeByte(sink, value); }));
+                sink = mixSeed(
+                    sink,
+                    static_cast<std::uint8_t>(first.forEach([&](const el::Byte value) { consumeByte(sink, value); })));
             } else {
                 for (const auto value : first.span()) {
                     consumeByte(sink, value);
@@ -198,13 +210,16 @@ template <std::size_t N>
             break;
         case UseCase::IntegerWrite:
             if constexpr (N >= sizeof(std::uint64_t)) {
-                static_cast<void>(first.template setInteger<std::uint64_t>(
-                    el::ByteIndex::zero(),
-                    i,
-                    scenario.variant == "big"_el ? el::Endianness::Big : el::Endianness::Little));
+                if (!first.template setInteger<std::uint64_t>(
+                        el::ByteIndex::zero(),
+                        i,
+                        scenario.variant == "big"_el ? el::Endianness::Big : el::Endianness::Little)) {
+                    workloadError("Fixed byte integer write unexpectedly failed."_el);
+                }
             } else if constexpr (N > 0U) {
-                static_cast<void>(
-                    first.template setInteger<std::uint8_t>(el::ByteIndex::zero(), static_cast<std::uint8_t>(i)));
+                if (!first.template setInteger<std::uint8_t>(el::ByteIndex::zero(), static_cast<std::uint8_t>(i))) {
+                    workloadError("Fixed byte integer write unexpectedly failed."_el);
+                }
             }
             break;
         case UseCase::Compare:
@@ -224,7 +239,9 @@ template <std::size_t N>
             if (scenario.variant == "range"_el) {
                 first.xorWith(rangeFor(N, source.span().size(), "middle"_el), source.span());
             } else {
-                static_cast<void>(first.xorWith(source.span()));
+                if (!first.xorWith(source.span())) {
+                    workloadError("Fixed byte XOR unexpectedly failed."_el);
+                }
             }
             break;
         case UseCase::SecureErase: {
@@ -279,6 +296,7 @@ template <std::size_t N>
         .digest = digest(first.span())};
 }
 
+/// Dispatch a fixed-size byte-array workload.
 [[nodiscard]] auto executeArrayDispatch(
     const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations) -> WorkerResult {
 #define ERBSLAND_PROFILE_ARRAY_CASE(N)                                                                                 \
@@ -315,6 +333,7 @@ template <std::size_t N>
 #undef ERBSLAND_PROFILE_ARRAY_CASE
 }
 
+/// Select the search needle for a workload scenario.
 [[nodiscard]] auto findNeedle(const el::ByteBuffer &source, const Scenario &scenario) -> el::ByteBlock {
     const auto count =
         static_cast<std::size_t>(std::max<std::uint64_t>(1U, std::min(scenario.operandSize, scenario.size)));
@@ -325,6 +344,7 @@ template <std::size_t N>
     return el::ByteBlock::fromSpan(source.span(range));
 }
 
+/// Execute a byte-block workload.
 [[nodiscard]] auto executeBlock(
     const Scenario &scenario,
     const std::uint64_t seed,
@@ -384,7 +404,9 @@ template <std::size_t N>
             break;
         case UseCase::Traverse:
             if (scenario.variant == "for-each"_el) {
-                static_cast<void>(source.forEach([&](const el::Byte value) { consumeByte(sink, value); }));
+                sink = mixSeed(
+                    sink,
+                    static_cast<std::uint8_t>(source.forEach([&](const el::Byte value) { consumeByte(sink, value); })));
             } else {
                 for (const auto value : source.span()) {
                     consumeByte(sink, value);
@@ -442,27 +464,32 @@ template <std::size_t N>
         .digest = digest(finalValue.span())};
 }
 
+/// Apply the selected sensitivity mode to a byte-block editor.
 void setSensitive(el::ByteBlockEditor &value, const SensitiveMode mode) {
     if (mode == SensitiveMode::Sensitive) {
         value.markAsSensitive();
     }
 }
 
+/// Apply the selected sensitivity mode to a byte buffer.
 void setSensitive(el::ByteBuffer &value, const SensitiveMode mode) {
     value.setSensitive(mode == SensitiveMode::Sensitive);
 }
 
+/// Get the current capacity of a dynamic byte value.
 template <typename T>
 [[nodiscard]] auto currentCapacity(const T &value) -> std::uint64_t {
     return value.capacity().toRawValue();
 }
 
+/// Mix the observable state of a dynamic byte value into the result sink.
 template <typename T>
 void consumeReadable(std::uint64_t &sink, const T &value, const Scenario &scenario, const std::uint64_t iteration) {
     const auto index = indexFor(iteration, value.span().size(), scenario.variant == "random"_el);
     consumeByte(sink, value.get(index));
 }
 
+/// Apply the common mutation operations to a dynamic byte value.
 template <typename T>
 void mutateCommon(T &value, const el::ByteBuffer &source, const Scenario &scenario, const std::uint64_t iteration) {
     const auto range =
@@ -475,10 +502,12 @@ void mutateCommon(T &value, const el::ByteBuffer &source, const Scenario &scenar
             value.set(index, el::Byte::fromCroppedUInt64(iteration));
         }
     } else if (scenario.useCase == UseCase::IntegerWrite) {
-        static_cast<void>(value.template setInteger<std::uint64_t>(
-            el::ByteIndex::zero(),
-            iteration,
-            scenario.variant == "big"_el ? el::Endianness::Big : el::Endianness::Little));
+        if (!value.template setInteger<std::uint64_t>(
+                el::ByteIndex::zero(),
+                iteration,
+                scenario.variant == "big"_el ? el::Endianness::Big : el::Endianness::Little)) {
+            workloadError("Dynamic byte integer write unexpectedly failed."_el);
+        }
     } else if (scenario.useCase == UseCase::Fill) {
         if (scenario.variant == "whole"_el) {
             value.fill(el::Byte::fromCroppedUInt64(iteration));
@@ -494,7 +523,9 @@ void mutateCommon(T &value, const el::ByteBuffer &source, const Scenario &scenar
         }
     } else if (scenario.useCase == UseCase::Xor) {
         if (scenario.variant == "whole"_el) {
-            static_cast<void>(value.xorWith(source.span()));
+            if (!value.xorWith(source.span())) {
+                workloadError("Dynamic byte XOR unexpectedly failed."_el);
+            }
         } else {
             value.xorWith(
                 range, source.span(el::ByteRange{el::ByteIndex::zero(), el::ByteLength{scenario.operandSize}}));
@@ -502,13 +533,18 @@ void mutateCommon(T &value, const el::ByteBuffer &source, const Scenario &scenar
     }
 }
 
+/// Apply editor-specific operations to a dynamic byte value.
 template <typename T>
 void editDynamic(T &value, const el::ByteBuffer &source, const Scenario &scenario, const std::uint64_t iteration) {
     const auto operand = source.span(el::ByteRange{el::ByteIndex::zero(), el::ByteLength{scenario.operandSize}});
     const auto range =
         rangeFor(value.span().size(), static_cast<std::size_t>(scenario.operandSize), scenario.variant, iteration);
     if (scenario.useCase == UseCase::ClearReset) {
-        scenario.variant == "clear"_el ? static_cast<void>(value.clear()) : value.reset();
+        if (scenario.variant == "clear"_el) {
+            value.clear();
+        } else {
+            value.reset();
+        }
     } else if (scenario.useCase == UseCase::ReserveShrink) {
         scenario.variant == "reserve"_el ? value.reserve(el::ByteLength{scenario.size + scenario.operandSize})
                                          : value.shrinkToFit();
@@ -541,7 +577,11 @@ void editDynamic(T &value, const el::ByteBuffer &source, const Scenario &scenari
             value.replace(range, operand);
         }
     } else if (scenario.useCase == UseCase::RemoveKeep) {
-        scenario.variant == "keep"_el ? static_cast<void>(value.keep(range)) : static_cast<void>(value.remove(range));
+        if (scenario.variant == "keep"_el) {
+            value.keep(range);
+        } else {
+            value.remove(range);
+        }
     } else if (scenario.useCase == UseCase::EditStress) {
         value.append(operand);
         value.insert(el::ByteIndex::zero(), operand);
@@ -551,6 +591,7 @@ void editDynamic(T &value, const el::ByteBuffer &source, const Scenario &scenari
     }
 }
 
+/// Execute a dynamic byte workload for a selected container type.
 template <typename T>
 [[nodiscard]] auto executeDynamic(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
@@ -635,7 +676,9 @@ template <typename T>
             break;
         case UseCase::Traverse:
             if (scenario.variant == "for-each"_el) {
-                static_cast<void>(value.forEach([&](const el::Byte byte) { consumeByte(sink, byte); }));
+                sink = mixSeed(
+                    sink,
+                    static_cast<std::uint8_t>(value.forEach([&](const el::Byte byte) { consumeByte(sink, byte); })));
             } else {
                 for (const auto byte : value.span()) {
                     consumeByte(sink, byte);
@@ -735,16 +778,19 @@ template <typename T>
         .digest = digest(finalValue.span())};
 }
 
+/// Execute a byte-block-editor workload.
 [[nodiscard]] auto executeEditor(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
     return executeDynamic<el::ByteBlockEditor>(scenario, seed, operations);
 }
 
+/// Execute a byte-buffer workload.
 [[nodiscard]] auto executeBuffer(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
     return executeDynamic<el::ByteBuffer>(scenario, seed, operations);
 }
 
+/// Execute a byte-ring workload.
 [[nodiscard]] auto executeRing(const Scenario &scenario, const std::uint64_t seed, const std::uint64_t operations)
     -> WorkerResult {
     const auto capacity = std::max<std::uint64_t>(1U, scenario.size);
@@ -791,26 +837,40 @@ template <typename T>
             }
             break;
         case UseCase::RingOwnedRead:
-            static_cast<void>(ring.writeExact(source.span()));
+            if (ring.writeExact(source.span()).isFailure()) {
+                workloadError("Ring setup write unexpectedly failed."_el);
+            }
             finalBytes = ring.read(el::ByteLength{operandSize});
             sink = mixSeed(sink, finalBytes.length().toRawValue());
             break;
         case UseCase::RingWrappedCycle: {
             const auto first = std::max<std::uint64_t>(1U, capacity - operandSize / 2U);
-            static_cast<void>(ring.write(source.span(el::ByteRange{el::ByteIndex::zero(), el::ByteLength{first}})));
-            static_cast<void>(ring.read(writableDestination.first(static_cast<std::size_t>(first / 2U))));
-            static_cast<void>(ring.write(operand));
+            if (ring.write(source.span(el::ByteRange{el::ByteIndex::zero(), el::ByteLength{first}})) !=
+                el::ByteLength{first}) {
+                workloadError("Ring wrap setup write unexpectedly failed."_el);
+            }
+            if (ring.read(writableDestination.first(static_cast<std::size_t>(first / 2U))) !=
+                el::ByteLength{first / 2U}) {
+                workloadError("Ring wrap setup read unexpectedly failed."_el);
+            }
+            if (ring.write(operand) != el::ByteLength::fromSizeT(operand.size())) {
+                workloadError("Ring wrapped write unexpectedly failed."_el);
+            }
             finalBytes = ring.read(el::ByteLength::infinite());
             sink = mixSeed(sink, finalBytes.length().toRawValue());
             break;
         }
         case UseCase::RingInteger:
             ring.setEndianness(scenario.variant == "big"_el ? el::Endianness::Big : el::Endianness::Little);
-            static_cast<void>(ring.writeInteger<std::uint64_t>(seed + i));
+            if (ring.writeInteger<std::uint64_t>(seed + i).isFailure()) {
+                workloadError("Ring integer write unexpectedly failed."_el);
+            }
             sink = mixSeed(sink, ring.readInteger<std::uint64_t>().value_or(0U));
             break;
         case UseCase::RingClearShrinkSwap:
-            static_cast<void>(ring.writeExact(operand));
+            if (ring.writeExact(operand).isFailure()) {
+                workloadError("Ring setup write unexpectedly failed."_el);
+            }
             if (scenario.variant == "clear"_el) {
                 ring.clear();
             } else if (scenario.variant == "shrink"_el) {
@@ -824,9 +884,13 @@ template <typename T>
             break;
         case UseCase::EditStress:
             for (auto cycle = 0U; cycle < 8U; ++cycle) {
-                static_cast<void>(ring.write(operand));
-                static_cast<void>(
-                    ring.read(writableDestination.first(static_cast<std::size_t>(operandSize / 2U + 1U))));
+                if (ring.write(operand) != el::ByteLength::fromSizeT(operand.size())) {
+                    workloadError("Ring stress write unexpectedly failed."_el);
+                }
+                const auto readDestination = writableDestination.first(static_cast<std::size_t>(operandSize / 2U + 1U));
+                if (ring.read(readDestination) != el::ByteLength::fromSizeT(readDestination.size())) {
+                    workloadError("Ring stress read unexpectedly failed."_el);
+                }
             }
             finalBytes = ring.read(el::ByteLength::infinite());
             sink = mixSeed(sink, finalBytes.length().toRawValue());
@@ -852,6 +916,7 @@ template <typename T>
         .digest = digest(finalBytes.span())};
 }
 
+/// Execute the requested byte workload.
 [[nodiscard]] auto executeWorkload(
     const Scenario &scenario,
     const std::uint64_t seed,
@@ -872,6 +937,7 @@ template <typename T>
     workloadError("Unsupported byte profiler type."_el);
 }
 
+/// Determine the largest permitted operation count for a scenario.
 [[nodiscard]] auto maximumOperations(const Configuration &configuration, const Scenario &scenario) noexcept
     -> std::uint64_t {
     const auto perWorkerMemory = configuration.run.memoryLimit / configuration.run.threadCount;
@@ -879,6 +945,7 @@ template <typename T>
     return std::clamp<std::uint64_t>(perWorkerMemory / footprint, 1U, 1'000'000U);
 }
 
+/// Calibrate the operation count for one scenario.
 [[nodiscard]] auto calibrateOperations(const Configuration &configuration, const Scenario &scenario) -> std::uint64_t {
     const auto maximum = maximumOperations(configuration, scenario);
     auto operations = std::uint64_t{1U};
@@ -894,25 +961,15 @@ template <typename T>
     }
 }
 
-[[nodiscard]] auto injectWorkerFailure() noexcept -> bool {
-#if defined(_WIN32)
-    auto *value = static_cast<char *>(nullptr);
-    auto size = std::size_t{};
-    const auto status = _dupenv_s(&value, &size, "ERBSLAND_BYTE_PROFILE_TEST_FAIL_WORKER");
-    const auto result = status == 0 && value != nullptr;
-    std::free(value);
-    return result;
-#else
-    return std::getenv("ERBSLAND_BYTE_PROFILE_TEST_FAIL_WORKER") != nullptr;
-#endif
-}
-
-[[nodiscard]] auto runSample(
+/// Execute one benchmark sample.
+auto runSample(
     const Configuration &configuration,
     const Scenario &scenario,
     const std::uint64_t sampleIndex,
     const std::uint64_t operations) -> SampleResult {
     const auto threadCount = configuration.run.threadCount;
+    const auto failureVariable = el::system::EnvironmentVariables{}.get("ERBSLAND_BYTE_PROFILE_TEST_FAIL_WORKER"_el);
+    const auto injectWorkerFailure = failureVariable.has_value() && *failureVariable == "1"_el;
     auto sharedSource = el::ByteBlock{};
     if (scenario.type == ByteType::Block) {
         sharedSource =
@@ -931,7 +988,7 @@ template <typename T>
         threads.emplace_back([&, worker]() {
             try {
                 startBarrier.arrive_and_wait();
-                if (injectWorkerFailure() && worker == threadCount - 1U) {
+                if (injectWorkerFailure && worker == threadCount - 1U) {
                     workloadError("Injected byte profiler worker failure."_el);
                 }
                 results[worker] = executeWorkload(
@@ -966,6 +1023,7 @@ template <typename T>
     return result;
 }
 
+/// Calculate statistics for recorded sample values.
 [[nodiscard]] auto statistics(std::vector<double> values) -> Statistics {
     std::ranges::sort(values);
     const auto mean = std::accumulate(values.begin(), values.end(), 0.0) / static_cast<double>(values.size());
@@ -977,6 +1035,7 @@ template <typename T>
         .maximum = values.back()};
 }
 
+/// Calculate the fairness information for benchmark samples.
 [[nodiscard]] auto fairness(const std::vector<SampleResult> &samples) -> Fairness {
     auto rates = std::vector<double>{};
     for (const auto &sample : samples) {
@@ -999,6 +1058,7 @@ template <typename T>
         .coefficientOfVariation = mean == 0.0 ? 0.0 : std::sqrt(variance) / mean};
 }
 
+/// Calculate a digest that identifies a benchmark configuration.
 [[nodiscard]] auto configurationDigest(const Configuration &configuration) -> el::ByteBlock {
     auto text = el::StringEditor{};
     text.append(
@@ -1029,6 +1089,7 @@ template <typename T>
     return hasher.finalize();
 }
 
+/// Print one benchmark sample.
 void printSample(const Scenario &scenario, const SampleResult &sample) {
     const auto nanosecondsPerOperation = static_cast<double>(sample.wallNanoseconds) /
         static_cast<double>(std::max<std::uint64_t>(1U, sample.operations));
@@ -1067,6 +1128,7 @@ void printSample(const Scenario &scenario, const SampleResult &sample) {
         mibPerSecond);
 }
 
+/// Print the results of a benchmark scenario.
 void printBenchmark(const Scenario &scenario, const std::vector<SampleResult> &samples) {
     auto nsPerOperation = std::vector<double>{};
     auto operationsPerSecond = std::vector<double>{};
@@ -1134,8 +1196,6 @@ void printBenchmark(const Scenario &scenario, const std::vector<SampleResult> &s
         workerFairness.maximum,
         " fairness-cv="_el,
         workerFairness.coefficientOfVariation);
-}
-
 }
 
 }

@@ -24,6 +24,8 @@ namespace erbsland::cterm::impl {
 /// The private implementation of the WindowsBackend.
 class WindowsBackendPrivate {
 public:
+    /// Create private Windows backend state.
+    /// @param flags The requested terminal features.
     explicit WindowsBackendPrivate(const TerminalFlags flags) : _terminalFlags{flags} {}
 
 public:

@@ -12,7 +12,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void MinimumVersion::operator()(impl::Rule &rule) {
+void MinimumVersion::operator()(Rule &rule) {
     if (_version < 0) {
         throw conf::ConfError{ConfErrorCategory::Validation, "The minimum version must be non-negative"_el};
     }

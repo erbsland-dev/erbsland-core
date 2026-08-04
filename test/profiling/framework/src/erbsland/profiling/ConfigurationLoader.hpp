@@ -32,12 +32,17 @@ public:
     static void updateDigest(ProfilingConfiguration &configuration);
 
 private:
+    /// Throw a configuration error with contextual text.
     [[noreturn]] static void configurationError(const String &message);
+    /// Require that a value belongs to a known set of names.
     static void requireKnown(const conf::ValuePtr &value, const StringList &known);
+    /// Parse one run configuration from a document value.
     static void parseRun(const conf::ValuePtr &value, RunConfiguration &run);
+    /// Parse a profiling document into optional scenarios.
     [[nodiscard]] static auto parseDocument(
         const ProfilingDefinition &definition, const conf::ValuePtr &document, RunConfiguration &run)
         -> std::optional<List<Scenario>>;
+    /// Produce the stable digest of an effective configuration.
     [[nodiscard]] static auto configurationDigest(const ProfilingConfiguration &configuration) -> ByteBlock;
 };
 

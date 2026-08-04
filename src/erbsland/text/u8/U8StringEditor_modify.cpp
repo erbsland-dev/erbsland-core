@@ -39,7 +39,7 @@ auto U8StringEditor::clear() noexcept -> U8StringEditor & {
     return *this;
 }
 
-auto U8StringEditor::append(const U8String &text, const ElementCount count) -> U8StringEditor & {
+auto U8StringEditor::append(const U8String &text, const ItemCount count) -> U8StringEditor & {
     U8StringAppendTools{_storage}.append(text.dataView(), count);
     return *this;
 }
@@ -349,6 +349,10 @@ auto U8StringEditor::withRange(const ByteRange range) const noexcept -> U8String
 
 auto U8StringEditor::dataView() const noexcept -> U8StringDataView {
     return _storage.dataView();
+}
+
+auto U8StringEditor::isStorageShared() const noexcept -> bool {
+    return _storage.sharedData().isShared();
 }
 
 }

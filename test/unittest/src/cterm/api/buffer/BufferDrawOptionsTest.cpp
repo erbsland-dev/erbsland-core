@@ -16,7 +16,7 @@ public:
         REQUIRE(options.isTargetPosition());
         REQUIRE_EQUAL(options.sourceRect(), expectedRect);
         REQUIRE(options.useFullSource());
-        REQUIRE(options.combinationStyle() == nullptr);
+        REQUIRE_EQUAL(options.combinationStyle(), nullptr);
         REQUIRE_FALSE(options.overwriteColors());
     }
 
@@ -51,7 +51,7 @@ public:
         REQUIRE_FALSE(options.isTargetPosition());
         REQUIRE_EQUAL(options.sourceRect(), (bgeo::BlockRectangle{6, 5, 4, 3}));
         REQUIRE_FALSE(options.useFullSource());
-        REQUIRE(options.combinationStyle() == combinationStyle);
+        REQUIRE_EQUAL(options.combinationStyle(), combinationStyle);
         REQUIRE(options.overwriteColors());
     }
 };

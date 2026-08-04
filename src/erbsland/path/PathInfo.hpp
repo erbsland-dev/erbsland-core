@@ -63,12 +63,16 @@ public:
     /// @param parts The parts to initially request and cache.
     explicit PathInfo(const Path &path, PathInfoParts parts = PathInfoPart::Default) noexcept;
 
-    // defaults
+    /// Move cached path information from another instance.
+    auto operator=(PathInfo &&other) noexcept -> PathInfo &;
+
+    // defaults/deletions
     ~PathInfo() = default;
     PathInfo(const PathInfo &) = default;
     PathInfo(PathInfo &&other) noexcept;
+
+    // defaults
     auto operator=(const PathInfo &) -> PathInfo & = default;
-    auto operator=(PathInfo &&other) noexcept -> PathInfo &;
 
 public: // main attributes
     /// Test if the path behind this info is empty.
@@ -200,13 +204,20 @@ public:
     void reload(PathInfoParts parts);
 
 private:
+    /// Create path information from a directory-scan cache entry.
     PathInfo(const Path &path, PathInfoParts parts, impl::PathInfoCacheTrustWeakPtr cacheTrust) noexcept;
+    /// Create path information from directory-scan data.
     [[nodiscard]] static auto fromDirectoryScan(
         const Path &path, PathInfoParts parts, const impl::PathInfoCacheTrustPtr &cacheTrust) noexcept -> PathInfo;
+    /// Ensure requested information parts are cached when possible.
     void ensureParts(PathInfoParts parts) const noexcept;
+    /// Ensure requested information parts are cached or throw.
     void ensurePartsOrThrow(PathInfoParts parts) const;
+    /// Reload requested information parts or throw.
     void reloadPartsOrThrow(PathInfoParts parts) const;
+    /// Refresh cached path information or throw.
     void refreshDataOrThrow(impl::PathInfoData &data, bool trustResolvedPath) const;
+    /// Resolve cached owner and group names.
     void resolveNames(PathInfoParts parts, impl::PathInfoData &data) const;
 
 private:

@@ -174,7 +174,7 @@ auto ByteInputStream::readUntil(const mem::ByteSpan destination, const ReadDeadl
 
 auto ByteInputStream::read(const ByteLength maximumLength) -> StreamReadResult<ByteBlock> {
     if (maximumLength.isInfinite()) {
-        throw err::ParameterError{"The maximum byte read length must be finite.", "maximumLength"};
+        throw err::ParameterError{"The maximum byte read length must be finite."_el, "maximumLength"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -187,7 +187,7 @@ auto ByteInputStream::read(const ByteLength maximumLength) -> StreamReadResult<B
 
 auto ByteInputStream::readExact(const ByteLength length) -> StreamReadResult<ByteBlock> {
     if (length.isInfinite()) {
-        throw err::ParameterError{"The exact byte read length must be finite.", "length"};
+        throw err::ParameterError{"The exact byte read length must be finite."_el, "length"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -211,7 +211,7 @@ auto ByteInputStream::readAll() -> StreamReadResult<ByteBlock> {
 
 auto ByteInputStream::readAll(const ByteLength maximumLength) -> StreamReadResult<ByteBlock> {
     if (maximumLength.isInfinite()) {
-        throw err::ParameterError{"The maximum aggregate byte length must be finite.", "maximumLength"};
+        throw err::ParameterError{"The maximum aggregate byte length must be finite."_el, "maximumLength"_el};
     }
     const auto lock = std::unique_lock{_readMutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -253,7 +253,8 @@ auto ByteInputStream::coReadBlocks() -> util::CoAsyncGenerator<StreamReadResult<
 auto ByteInputStream::coReadBlocks(const ByteLength maximumLength)
     -> util::CoAsyncGenerator<StreamReadResult<ByteBlock>> {
     if (maximumLength.isInfinite() || maximumLength.isZero()) {
-        throw err::ParameterError{"The coroutine byte-block length must be positive and finite.", "maximumLength"};
+        throw err::ParameterError{
+            "The coroutine byte-block length must be positive and finite."_el, "maximumLength"_el};
     }
     while (true) {
         auto result = co_await coRead(maximumLength);

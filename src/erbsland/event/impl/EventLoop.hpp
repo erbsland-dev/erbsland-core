@@ -25,7 +25,10 @@ class EventLoop final : public event::EventLoop,
                         public event::EventBackendTarget,
                         public std::enable_shared_from_this<EventLoop> {
 public:
+    /// Create an event loop with the default driver.
     EventLoop();
+    /// Create an event loop with a supplied driver.
+    /// @param driver The native wait and wake driver.
     explicit EventLoop(EventLoopDriverPtr driver);
 
 public: // implement Events
@@ -55,23 +58,41 @@ private:
     [[nodiscard]] auto getBackend(EventBackendId backendId) -> EventBackend & override;
 
 private:
-    [[nodiscard]] auto registerBackendInternal(EventBackendPtr backend) -> EventBackend &;
+    /// Register `backend` and return its stable reference.
+    auto registerBackendInternal(EventBackendPtr backend) -> EventBackend &;
+    /// Create the fundamental backend identified by `backendId`.
     [[nodiscard]] auto createFundamentalBackend(EventBackendId backendId) -> EventBackendPtr;
+    /// Attach all registered backends to this event loop.
     void ensureBackendsAttached();
+    /// Queue an event, optionally after quit was requested.
     void postInternal(Event event, bool allowAfterQuit);
+    /// Process events and backends once with an optional wait limit.
     [[nodiscard]] auto runOnceImpl(std::optional<time::TimeDelta> maximumWait) -> bool;
+    /// Take the next queued event, if any.
     [[nodiscard]] auto takeNextEvent() -> std::optional<Event>;
+    /// Remove all queued events.
     void clearQueuedEvents() noexcept;
+    /// Process one queued event.
     void processEvent(const Event &event);
+    /// Process one invocation event.
     void processInvocationEvent(const Event &event);
-    [[nodiscard]] auto dispatchBackendEvent(const Event &event) -> bool;
+    /// Dispatch an event to its target backend.
+    auto dispatchBackendEvent(const Event &event) -> bool;
+    /// Store one callback error.
     void captureError(std::exception_ptr error) noexcept;
+    /// Send one callback error to the configured handler.
     void handleError(std::exception_ptr error) noexcept;
+    /// Test whether a stop request is pending.
     [[nodiscard]] auto isStopRequested() const noexcept -> bool;
+    /// Snapshot raw backend pointers while holding the mutex.
     [[nodiscard]] auto backendSnapshot() const -> std::vector<EventBackend *>;
+    /// Poll all backends at `now`.
     void pollBackends(time::TimePoint now);
+    /// Get the next time a backend requests to wake.
     [[nodiscard]] auto nextBackendWakeTime() const -> std::optional<time::TimePoint>;
+    /// Wait until an event-loop wake notification.
     void waitForWake();
+    /// Wait for a wake notification or `waitTime`.
     void waitForWake(time::TimeDelta waitTime);
 
 private:

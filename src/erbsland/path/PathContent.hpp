@@ -31,11 +31,16 @@ public:
     /// Create a new instance for the given path.
     explicit PathContent(const Path &path);
 
-    // defaults
+    /// Release the state used for path-content operations.
     ~PathContent();
+
+    // defaults/deletions
     PathContent(const PathContent &) = delete;
     PathContent(PathContent &&) noexcept;
+
+    // defaults/deletions
     auto operator=(const PathContent &) -> PathContent & = delete;
+    /// Move path-content state into this instance.
     auto operator=(PathContent &&) noexcept -> PathContent &;
 
 public: // attributes

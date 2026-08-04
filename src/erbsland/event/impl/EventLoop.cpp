@@ -10,6 +10,7 @@
 
 #include "../../err/LogicError.hpp"
 #include "../../err/ParameterError.hpp"
+#include "../../network/impl/NetworkBackend.hpp"
 #include "../../text/Literals.hpp"
 
 #include <utility>
@@ -242,7 +243,7 @@ void EventLoop::registerBackend(EventBackendPtr backend) {
                 throw err::ParameterError{"A backend with this identifier is already registered."_el, "backend"_el};
             }
         }
-        static_cast<void>(registerBackendInternal(std::move(backend)));
+        registerBackendInternal(std::move(backend));
     }
 }
 
@@ -278,6 +279,9 @@ auto EventLoop::registerBackendInternal(EventBackendPtr backend) -> EventBackend
 auto EventLoop::createFundamentalBackend(const EventBackendId backendId) -> EventBackendPtr {
     if (backendId == id::SchedulerBackend) {
         return std::make_unique<SchedulerBackend>();
+    }
+    if (backendId == id::NetworkBackend) {
+        return std::make_unique<network::impl::NetworkBackend>();
     }
     return {};
 }
@@ -384,7 +388,7 @@ void EventLoop::processEvent(const Event &event) {
         processInvocationEvent(event);
         return;
     }
-    static_cast<void>(dispatchBackendEvent(event));
+    dispatchBackendEvent(event);
 }
 
 void EventLoop::processInvocationEvent(const Event &event) {

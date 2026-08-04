@@ -19,29 +19,37 @@ protected:
     using RefCountType = uint32_t;
 
 public:
+    // defaults
     explicit CaptureGroupSet() = default;
 
 public: // reference counting.
+    /// Increment the number of references to this capture-group set.
     void increaseReferenceCount() {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(
             _referenceCount < std::numeric_limits<RefCountType>::max(),
             "CaptureGroupSet::increaseReferenceCount: overflow"_el);
         _referenceCount += 1;
     }
+    /// Decrement the number of references to this capture-group set.
     void decreaseReferenceCount() {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(_referenceCount > 0, "CaptureGroupSet::decreaseReferenceCount: underflow"_el);
         _referenceCount -= 1;
     }
+    /// Get the number of references to this capture-group set.
     [[nodiscard]] auto referenceCount() const noexcept -> RefCountType { return _referenceCount; }
+    /// Set the number of references to this capture-group set.
     void setReferenceCount(const RefCountType referenceCount) noexcept { _referenceCount = referenceCount; }
 
 public: // Access the ranges.
+    /// Get the capture ranges in this set.
     [[nodiscard]] auto ranges() const noexcept -> const std::array<CaptureRange, tGroupCount> & { return _ranges; }
+    /// Set the starting position of one capture range.
     void setBegin(const std::size_t captureGroup, const InputPosition inputPosition) {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(
             captureGroup < tGroupCount, "CaptureGroupSet::setBegin: captureGroup out of bounds"_el);
         _ranges[captureGroup].setBegin(inputPosition);
     }
+    /// Set the ending position of one capture range.
     void setEnd(const std::size_t captureGroup, const InputPosition inputPosition) {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(
             captureGroup < tGroupCount, "CaptureGroupSet::setEnd: captureGroup out of bounds"_el);

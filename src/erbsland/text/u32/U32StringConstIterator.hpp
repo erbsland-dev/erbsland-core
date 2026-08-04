@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "U32String_fwd.hpp"
+#include "U32String.hpp"
 #include "U32StringConstIterator_fwd.hpp"
 #include "U32StringEditor_fwd.hpp"
 
@@ -11,14 +11,12 @@
 #include "../../unit/CpIndex.hpp"
 
 #include <cstddef>
-#include <memory>
 
 namespace erbsland::text {
 
 /// A minimal const iterator for UTF-32 encoded strings.
 /// @tested{U32StringTest}
 class U32StringConstIterator final {
-    struct Private;
     friend class U32StringEditor;
     friend class U32String;
 
@@ -37,18 +35,12 @@ public: // iterator traits
 public:
     /// Create an invalid iterator that does not point to any string.
     U32StringConstIterator();
-    /// Create a copy of another iterator.
-    U32StringConstIterator(const U32StringConstIterator &other);
-    /// Move another iterator into this iterator.
-    U32StringConstIterator(U32StringConstIterator &&other) noexcept;
-    /// Assign a copy of another iterator.
-    auto operator=(const U32StringConstIterator &other) -> U32StringConstIterator &;
-    /// Move another iterator into this iterator.
-    auto operator=(U32StringConstIterator &&other) noexcept -> U32StringConstIterator &;
-
     // defaults
-    /// Destroy the iterator.
-    ~U32StringConstIterator();
+    ~U32StringConstIterator() = default;
+    U32StringConstIterator(const U32StringConstIterator &) = default;
+    U32StringConstIterator(U32StringConstIterator &&) noexcept = default;
+    auto operator=(const U32StringConstIterator &) -> U32StringConstIterator & = default;
+    auto operator=(U32StringConstIterator &&) noexcept -> U32StringConstIterator & = default;
 
 public:
     /// Test if this iterator points to the same position as another iterator.
@@ -75,8 +67,9 @@ private:
     U32StringConstIterator(const U32String &view, unit::CpIndex index);
 
 private:
-    std::unique_ptr<Private> _p; ///< Private implementation
-    mutable Char _currentChar;   ///< Current character cache for pointer semantics
+    U32String _string;                              ///< The string accessed by this iterator.
+    unit::CpIndex _index{unit::CpIndex::noIndex()}; ///< The current code-point index within the storage.
+    mutable Char _currentChar;                      ///< Current character cache for pointer semantics.
 };
 
 }

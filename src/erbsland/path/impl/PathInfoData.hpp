@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PathInfoData_fwd.hpp"
+
 #include "../Path.hpp"
 #include "../PathAccessInfo.hpp"
 #include "../PathAttribute.hpp"
@@ -23,6 +25,7 @@ namespace erbsland::path::impl {
 /// @tested{PathInfoTest PosixPathInfoTest WindowsPathInfoTest}
 class PathInfoData final {
 public:
+    /// Create empty path information.
     PathInfoData() = default;
 
     // defaults

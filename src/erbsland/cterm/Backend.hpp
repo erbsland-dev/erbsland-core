@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Backend_fwd.hpp"
 #include "BlockAttributes.hpp"
 #include "Color.hpp"
 #include "Input.hpp"
@@ -17,14 +18,12 @@
 
 namespace erbsland::cterm {
 
-class Backend;
-using BackendPtr = std::shared_ptr<Backend>;
-
 /// The interface to the underlying platform.
 /// This library expects that the platform implementation correctly handles UTF-8 encoding and
 /// VT100 ANSI control codes.
 class Backend : public std::enable_shared_from_this<Backend> {
 public:
+    // defaults
     virtual ~Backend() = default;
 
 public:

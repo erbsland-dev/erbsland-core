@@ -65,9 +65,9 @@ public:
         REQUIRE(!testFile.empty());
         source = FileSource::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());
-        REQUIRE(source != nullptr);
+        REQUIRE(source);
         decoder = TokenDecoder::create(CharStream::create(source));
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         decoder->initialize();
     }
 
@@ -75,26 +75,26 @@ public:
         source = Source::fromString(std::move(content));
         REQUIRE_NOTHROW(source->open());
         decoder = TokenDecoder::create(CharStream::create(source));
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         decoder->initialize();
     }
 
     void requireAndNext(char32_t expectedUnicode) {
-        REQUIRE(decoder->character() == expectedUnicode);
+        REQUIRE_EQUAL(decoder->character(), expectedUnicode);
         decoder->next();
     }
 
     void requireEndOfLine() {
-        REQUIRE(decoder->character() == CharClass::LineBreak);
+        REQUIRE_EQUAL(decoder->character(), CharClass::LineBreak);
         auto token = decoder->createEndOfLineToken();
-        REQUIRE(token.type() == TokenType::LineBreak);
-        REQUIRE(token.rawText() == el::text::String{"\n"_el});
+        REQUIRE_EQUAL(token.type(), TokenType::LineBreak);
+        REQUIRE_EQUAL(token.rawText(), el::text::String{"\n"_el});
     }
 
     void requireEndOfData() {
         REQUIRE(decoder->character().isEndOfData());
         auto token = decoder->createEndOfDataToken();
-        REQUIRE(token.type() == TokenType::EndOfData);
+        REQUIRE_EQUAL(token.type(), TokenType::EndOfData);
         REQUIRE(token.rawText().isEmpty());
         REQUIRE(token.begin().isUndefined());
         REQUIRE(token.end().isUndefined());
@@ -102,7 +102,7 @@ public:
 
     void testEmptyFile() {
         setupDecoder(el::text::String{});
-        REQUIRE(decoder->location().sourceIdentifier() == source->identifier());
+        REQUIRE_EQUAL(decoder->location().sourceIdentifier(), source->identifier());
         WITH_CONTEXT(requireLocation(0U, 0U));
         REQUIRE(decoder->character().isEndOfData());
     }
@@ -117,12 +117,12 @@ public:
         WITH_CONTEXT(requireAndNext(U'c'));
         WITH_CONTEXT(requireLocation(0U, 3U));
         auto token = decoder->createToken(TokenType::Text, ""_el);
-        REQUIRE(token.rawText() == el::text::String{"abc"_el});
+        REQUIRE_EQUAL(token.rawText(), el::text::String{"abc"_el});
         WITH_CONTEXT(requireEndOfLine());
         WITH_CONTEXT(requireAndNext(U'😀'));
         WITH_CONTEXT(requireLocation(1U, 1U));
         token = decoder->createToken(TokenType::Text, ""_el);
-        REQUIRE(token.rawText() == el::text::String{"😀"_el});
+        REQUIRE_EQUAL(token.rawText(), el::text::String{"😀"_el});
         WITH_CONTEXT(requireEndOfLine());
         WITH_CONTEXT(requireAndNext(U'x'));
         WITH_CONTEXT(requireLocation(2U, 1U));
@@ -131,7 +131,7 @@ public:
         WITH_CONTEXT(requireAndNext(U'z'));
         WITH_CONTEXT(requireLocation(2U, 3U));
         token = decoder->createToken(TokenType::Text, ""_el);
-        REQUIRE(token.rawText() == el::text::String{"xyz"_el});
+        REQUIRE_EQUAL(token.rawText(), el::text::String{"xyz"_el});
         WITH_CONTEXT(requireEndOfData());
     }
 
@@ -202,7 +202,7 @@ public:
             WITH_CONTEXT(requireAndNext(U'a'));
             WITH_CONTEXT(requireAndNext(U'b'));
             WITH_CONTEXT(requireAndNext(U'c'));
-            REQUIRE(decoder->character() == CharClass::LineBreak);
+            REQUIRE_EQUAL(decoder->character(), CharClass::LineBreak);
             REQUIRE_EQUAL(transaction.capturedString(), "abc"_el);
         }
         WITH_CONTEXT(requireLocation(0U, 0U));
@@ -282,23 +282,23 @@ public:
             auto transaction1 = el::conf::impl::Transaction{*decoder};
             WITH_CONTEXT(requireAndNext(U'a'));
             WITH_CONTEXT(requireAndNext(U'b'));
-            REQUIRE(transaction1.capturedString() == "ab"_el);
+            REQUIRE_EQUAL(transaction1.capturedString(), "ab"_el);
             {
                 auto transaction2 = el::conf::impl::Transaction{*decoder};
                 WITH_CONTEXT(requireAndNext(U'c'));
                 WITH_CONTEXT(requireAndNext(U'd'));
-                REQUIRE(transaction2.capturedString() == "cd"_el);
+                REQUIRE_EQUAL(transaction2.capturedString(), "cd"_el);
                 {
                     auto transaction3 = el::conf::impl::Transaction{*decoder};
                     WITH_CONTEXT(requireAndNext(U'e'));
                     WITH_CONTEXT(requireAndNext(U'f'));
-                    REQUIRE(transaction3.capturedString() == "ef"_el);
+                    REQUIRE_EQUAL(transaction3.capturedString(), "ef"_el);
                     transaction3.commit();
                 }
-                REQUIRE(transaction2.capturedString() == "cdef"_el);
+                REQUIRE_EQUAL(transaction2.capturedString(), "cdef"_el);
                 transaction2.commit();
             }
-            REQUIRE(transaction1.capturedString() == "abcdef"_el);
+            REQUIRE_EQUAL(transaction1.capturedString(), "abcdef"_el);
             transaction1.commit();
         }
         WITH_CONTEXT(requireEndOfData());
@@ -310,20 +310,20 @@ public:
             auto transaction1 = el::conf::impl::Transaction{*decoder};
             WITH_CONTEXT(requireAndNext(U'a'));
             WITH_CONTEXT(requireAndNext(U'b'));
-            REQUIRE(transaction1.capturedString() == "ab"_el);
+            REQUIRE_EQUAL(transaction1.capturedString(), "ab"_el);
             {
                 auto transaction2 = el::conf::impl::Transaction{*decoder};
                 WITH_CONTEXT(requireAndNext(U'c'));
                 WITH_CONTEXT(requireAndNext(U'd'));
-                REQUIRE(transaction2.capturedString() == "cd"_el);
+                REQUIRE_EQUAL(transaction2.capturedString(), "cd"_el);
                 {
                     auto transaction3 = el::conf::impl::Transaction{*decoder};
                     WITH_CONTEXT(requireAndNext(U'e'));
                     WITH_CONTEXT(requireAndNext(U'f'));
-                    REQUIRE(transaction3.capturedString() == "ef"_el);
+                    REQUIRE_EQUAL(transaction3.capturedString(), "ef"_el);
                     transaction3.commit();
                 }
-                REQUIRE(transaction2.capturedString() == "cdef"_el);
+                REQUIRE_EQUAL(transaction2.capturedString(), "cdef"_el);
                 // ROLLBACK
             }
             WITH_CONTEXT(requireAndNext(U'c'));
@@ -332,12 +332,12 @@ public:
                 auto transaction2 = el::conf::impl::Transaction{*decoder};
                 WITH_CONTEXT(requireAndNext(U'e'));
                 WITH_CONTEXT(requireAndNext(U'f'));
-                REQUIRE(transaction2.capturedString() == "ef"_el);
+                REQUIRE_EQUAL(transaction2.capturedString(), "ef"_el);
                 // ROLLBACK
             }
             WITH_CONTEXT(requireAndNext(U'e'));
             WITH_CONTEXT(requireAndNext(U'f'));
-            REQUIRE(transaction1.capturedString() == "abcdef"_el);
+            REQUIRE_EQUAL(transaction1.capturedString(), "abcdef"_el);
             transaction1.commit();
         }
         WITH_CONTEXT(requireEndOfData());
@@ -345,7 +345,7 @@ public:
 
     void testDocumentWithDigest() {
         // verify the used algorithm.
-        REQUIRE(el::conf::impl::defaults::documentHashAlgorithm == el::cryptology::HashAlgorithm::Sha3_256);
+        REQUIRE_EQUAL(el::conf::impl::defaults::documentHashAlgorithm, el::cryptology::HashAlgorithm::Sha3_256);
         setupDecoder("@signature: \"...\"\n[main]\nvalue: 123\nanother value: \"example\"\n"_el);
         while (!decoder->character().isEndOfData()) {
             decoder->next();
@@ -368,7 +368,7 @@ public:
             speculativeDigest = decoder->digest();
             REQUIRE_FALSE(speculativeDigest.isEmpty());
         }
-        REQUIRE(decoder->character() == U'v');
+        REQUIRE_EQUAL(decoder->character(), U'v');
         while (!decoder->character().isEndOfData()) {
             decoder->next();
         }

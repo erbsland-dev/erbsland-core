@@ -14,15 +14,23 @@ public:
     /// @param events The events interface to expose via `currentEvents()`.
     explicit CurrentEventsScope(EventsPtr events) noexcept;
 
-    // defaults
+    /// Restore the previously current event set.
     ~CurrentEventsScope() noexcept;
+
+    // defaults/deletions
     CurrentEventsScope(const CurrentEventsScope &) = delete;
     auto operator=(const CurrentEventsScope &) -> CurrentEventsScope & = delete;
     CurrentEventsScope(CurrentEventsScope &&) = delete;
     auto operator=(CurrentEventsScope &&) -> CurrentEventsScope & = delete;
 
+    /// Get the current thread-local events pointer.
+    /// @return The weak pointer registered for the current thread.
+    [[nodiscard]] static auto currentEventsWeakPtr() noexcept -> EventsWeakPtr;
+
 private:
-    EventsWeakPtr _previousEvents; ///< The previous thread-local events binding.
+    static thread_local EventsWeakPtr _currentEvents; ///< The current thread-local events binding.
+
+    EventsWeakPtr _previousEvents;                    ///< The previous thread-local events binding.
 };
 
 /// Access the current thread-local events pointer.

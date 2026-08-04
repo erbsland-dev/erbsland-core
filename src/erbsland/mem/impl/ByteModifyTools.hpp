@@ -5,12 +5,14 @@
 #include "BestGrowth.hpp"
 #include "ByteBlockData.hpp"
 #include "ByteDataView.hpp"
-#include "ByteSequenceOperations.hpp"
+#include "ByteWriteTools.hpp"
 #include "SecureErase.hpp"
 #include "Throw.hpp"
 
 #include "../ByteSpan.hpp"
 
+#include "../../err/OutOfRangeError.hpp"
+#include "../../text/Literals.hpp"
 #include "../../unit/ByteIndex.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteRange.hpp"
@@ -22,10 +24,11 @@
 #include <cstring>
 #include <limits>
 #include <span>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::mem::impl {
+
+using namespace text::literals;
 
 /// Implements dynamic byte-storage mutations for shared and unique ownership.
 /// Source views borrow their storage for the duration of each call. Potentially aliased raw spans are copied only
@@ -117,10 +120,8 @@ public: // storage
         if (isShared()) {
             auto replacement = createData(length().toSizeT(), capacity().toSizeT(), isSensitive());
             auto *replacementData = mutableData(replacement);
-            impl::fill(
-                ByteSpan{replacementData->data(), static_cast<std::size_t>(replacementData->capacity())},
-                unit::ByteRange::all(),
-                Byte{});
+            ByteWriteTools{ByteSpan{replacementData->data(), static_cast<std::size_t>(replacementData->capacity())}}
+                .fill(unit::ByteRange::all(), Byte{});
             _data = std::move(replacement);
             return;
         }
@@ -150,8 +151,7 @@ public: // modification
         }
         ensureCapacity(newLength);
         auto *data = mutableData();
-        impl::fill(
-            ByteSpan{data->data(), newLength},
+        ByteWriteTools{ByteSpan{data->data(), newLength}}.fill(
             unit::ByteRange{unit::ByteIndex::fromSizeT(oldLength), unit::ByteLength::fromSizeT(newLength - oldLength)},
             Byte{});
         data->setSize(static_cast<typename Data::SizeType>(newLength));
@@ -242,20 +242,24 @@ public: // modification
         data->setSize(static_cast<typename Data::SizeType>(newLength));
     }
     /// Insert bytes at an index clamped to the end.
-    void insert(unit::ByteIndex index, ByteDataView source, bool sourceIsSensitive) {
+    void insert(const unit::ByteIndex index, const ByteDataView &source, const bool sourceIsSensitive) {
         if (!index.isValid()) {
             return;
         }
         const auto position = std::min(index.toSizeT(), length().toSizeT());
         replace(unit::ByteRange::emptyAt(unit::ByteIndex::fromSizeT(position)), source, sourceIsSensitive);
     }
-    /// Append one byte.
-    void append(Byte value) {
-        const auto oldLength = length().toSizeT();
-        const auto newLength = checkedCombinedLength(oldLength, 1U);
+    /// Append one or more bytes.
+    void append(const Byte value, const unit::ByteLength length) {
+        const auto oldLength = this->length().toSizeT();
+        const auto newLength = checkedCombinedLength(oldLength, length.toSizeT());
         ensureCapacity(newLength);
         auto *data = mutableData();
-        data->data()[oldLength] = value;
+        if (length.isOne()) {
+            data->data()[oldLength] = value;
+        } else {
+            std::fill_n(data->data() + oldLength, length.toSizeT(), value);
+        }
         data->setSize(static_cast<typename Data::SizeType>(newLength));
     }
     /// Append source bytes.
@@ -287,7 +291,7 @@ public: // modification
         if (clamped.isEmpty()) {
             return;
         }
-        impl::fill(writableData(), clamped, value);
+        ByteWriteTools{writableData()}.fill(clamped, value);
     }
     /// Overwrite the largest possible part of a clamped destination range.
     void overwrite(unit::ByteRange range, ByteDataView sourceView, bool sourceIsSensitive) {
@@ -302,7 +306,7 @@ public: // modification
         if (sourceIsSensitive) {
             markAsSensitive();
         }
-        static_cast<void>(impl::overwrite(writableData(), clamped, sourceBytes));
+        ByteWriteTools{writableData()}.overwrite(clamped, ByteDataView{sourceBytes});
     }
     /// XOR visible bytes with an equal-length source.
     [[nodiscard]] auto xorWith(ByteDataView sourceView, bool sourceIsSensitive) -> bool {
@@ -316,7 +320,7 @@ public: // modification
         if (sourceIsSensitive) {
             markAsSensitive();
         }
-        static_cast<void>(impl::xorWith(writableData(), unit::ByteRange::all(), sourceBytes));
+        ByteWriteTools{writableData()}.xorWith(unit::ByteRange::all(), ByteDataView{sourceBytes});
         return true;
     }
     /// XOR the largest possible part of a clamped destination range.
@@ -332,7 +336,7 @@ public: // modification
         if (sourceIsSensitive) {
             markAsSensitive();
         }
-        static_cast<void>(impl::xorWith(writableData(), clamped, sourceBytes));
+        ByteWriteTools{writableData()}.xorWith(clamped, ByteDataView{sourceBytes});
     }
     /// Append zero-filled bytes and return their first index.
     [[nodiscard]] auto appendZeroed(unit::ByteLength appendedLength) -> unit::ByteIndex {
@@ -351,6 +355,7 @@ public: // factories
         return result;
     }
     /// Create storage with a visible size and capacity.
+    /// @throws err::OutOfRangeError If `size` or `capacity` exceeds the supported storage limit.
     [[nodiscard]] static auto createData(std::size_t size, std::size_t capacity, bool sensitive = false) -> DataOwner {
         if constexpr (!std::same_as<DataOwner, Data>) {
             if (size == 0U && capacity == 0U) {
@@ -358,7 +363,7 @@ public: // factories
             }
         }
         if (size > capacity || !Data::canAllocateWithCapacity(capacity)) {
-            throw std::length_error{"Byte storage size exceeds the supported limit"};
+            throw err::OutOfRangeError{"Byte storage size exceeds the supported limit"_el};
         }
         if constexpr (std::same_as<DataOwner, Data>) {
             return Data::create(
@@ -376,13 +381,15 @@ public: // factories
 private:
     inline static constexpr bool cSupportsSharedOwnership = requires(const DataOwner &data) { data.isShared(); };
 
+    /// Return a combined length or throw when it exceeds storage limits.
     [[nodiscard]] static auto checkedCombinedLength(std::size_t first, std::size_t second) -> std::size_t {
         constexpr auto cMaximumLength = static_cast<std::size_t>(std::numeric_limits<typename Data::SizeType>::max());
-        if (first > cMaximumLength || second > cMaximumLength - first) {
-            throw std::length_error{"Byte block size exceeds the supported limit"};
+        if (math::willAddOverflow(first, second) || first + second > cMaximumLength) {
+            throw err::OutOfRangeError{"Byte block size exceeds the supported limit"_el};
         }
         return first + second;
     }
+    /// Detach shared storage before modifying it.
     void ensureUnique() {
         if (!isNull()) {
             if constexpr (requires { _data.detach(); }) {
@@ -390,23 +397,25 @@ private:
             }
         }
     }
+    /// Ensure that storage has the requested capacity.
     void ensureCapacity(std::size_t requestedCapacity) {
         const auto oldLength = length().toSizeT();
         if (!Data::canAllocateWithCapacity(requestedCapacity)) {
-            throw std::length_error{"Byte storage capacity exceeds the supported limit"};
+            throw err::OutOfRangeError{"Byte storage capacity exceeds the supported limit"_el};
         }
         const auto *oldData = constData();
         const auto oldCapacity = oldData == nullptr ? std::size_t{} : static_cast<std::size_t>(oldData->capacity());
         if (oldData != nullptr && !isShared() && requestedCapacity <= oldCapacity) {
             return;
         }
-        const auto newCapacity = bestGrowthCapacity<Data>(oldCapacity, std::max(oldLength, requestedCapacity));
+        const auto newCapacity = BestGrowth{oldCapacity, std::max(oldLength, requestedCapacity)}.bestGrowth<Data>();
         auto replacement = createData(oldLength, newCapacity, isSensitive());
         if (oldData != nullptr && oldLength != 0U) {
             std::memcpy(mutableData(replacement)->data(), oldData->data(), oldLength * sizeof(Byte));
         }
         _data = std::move(replacement);
     }
+    /// Copy an overlapping source into stable temporary storage.
     [[nodiscard]] auto stableSource(ConstByteSpan source, DataOwner &snapshot) const -> ConstByteSpan {
         if (source.empty() || !overlapsStorage(source)) {
             return source;
@@ -415,6 +424,7 @@ private:
         const auto *data = constData(snapshot);
         return {data->data(), static_cast<std::size_t>(data->size())};
     }
+    /// Test whether a source span overlaps the current storage.
     [[nodiscard]] auto overlapsStorage(ConstByteSpan source) const noexcept -> bool {
         if (isNull() || source.empty()) {
             return false;
@@ -426,13 +436,16 @@ private:
         const auto sourceEnd = sourceBegin + source.size() * sizeof(Byte);
         return sourceBegin < storageEnd && sourceEnd > storageBegin;
     }
+    /// Test whether the current storage is sensitive.
     [[nodiscard]] auto isSensitive() const noexcept -> bool { return !isNull() && constData()->isSensitive(); }
+    /// Mark the current storage as sensitive.
     void markAsSensitive() noexcept {
         if (!isNull()) {
             constData()->setSensitive();
         }
     }
 
+    /// Test whether storage is null.
     [[nodiscard]] auto isNull() const noexcept -> bool {
         if constexpr (requires { _data.isNull(); }) {
             return _data.isNull();
@@ -442,6 +455,7 @@ private:
             return _data == nullptr;
         }
     }
+    /// Test whether storage is shared.
     [[nodiscard]] auto isShared() const noexcept -> bool {
         if constexpr (requires { _data.isShared(); }) {
             return _data.isShared();
@@ -449,7 +463,9 @@ private:
             return false;
         }
     }
+    /// Access the current immutable storage data.
     [[nodiscard]] auto constData() const noexcept -> const Data * { return constData(_data); }
+    /// Access immutable data from a storage owner.
     [[nodiscard]] static auto constData(const DataOwner &data) noexcept -> const Data * {
         if constexpr (requires { data.constGet(); }) {
             return data.constGet();
@@ -459,7 +475,9 @@ private:
             return data.get();
         }
     }
+    /// Access the current mutable storage data.
     [[nodiscard]] auto mutableData() noexcept -> Data * { return mutableData(_data); }
+    /// Access mutable data from a storage owner.
     [[nodiscard]] static auto mutableData(DataOwner &data) noexcept -> Data * {
         if constexpr (std::same_as<DataOwner, Data>) {
             return &data;

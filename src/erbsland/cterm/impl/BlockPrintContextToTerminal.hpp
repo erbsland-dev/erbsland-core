@@ -14,7 +14,7 @@ public:
     /// Create a new print context for a terminal.
     explicit BlockPrintContextToTerminal(Terminal &terminal) noexcept : _terminal{terminal} {}
 
-    // defaults / prevent copy and move
+    // defaults/deletions
     ~BlockPrintContextToTerminal() override = default;
     BlockPrintContextToTerminal(const BlockPrintContextToTerminal &) = delete;
     BlockPrintContextToTerminal(BlockPrintContextToTerminal &&) = delete;

@@ -58,11 +58,12 @@ public:
         fresh.update(raw(message));
         const auto freshDigest = ByteBlock{fresh.digest()};
         REQUIRE_EQUAL(erasedDigest.length(), ByteLength{32U});
-        REQUIRE(erasedDigest == freshDigest);
+        REQUIRE_EQUAL(erasedDigest, freshDigest);
 
         erased.secureErase();
         erased.update(raw(message));
-        REQUIRE(ByteBlock{erased.digest()} == freshDigest);
+        const auto erasedDigestAfterReset = ByteBlock{erased.digest()};
+        REQUIRE_EQUAL(erasedDigestAfterReset, freshDigest);
     }
 
     void testHmacSha256RfcVector() {
@@ -75,7 +76,7 @@ public:
         REQUIRE(actual.isSensitive());
         const auto expected =
             ByteBlock{bytesFromHex("b0344c61d8db38535ca8afceaf0bf12b881dc200c9833da726e9376c2e32cff7")};
-        REQUIRE(actual == expected);
+        REQUIRE_EQUAL(actual, expected);
     }
 
     void testPbkdf2HmacSha256Vectors() {
@@ -99,7 +100,8 @@ public:
             "044b2181a2fd337dfd7b1c6396682f29"
             "b4393168e3c9e6bcfe6bc5b7a06d96ba"
             "e424cc102c91745c24ad673dc7618f81");
-        REQUIRE(el::mem::ByteBlock{block} == expected);
+        const auto actual = el::mem::ByteBlock{block};
+        REQUIRE_EQUAL(actual, expected);
     }
 
     void testScryptRfcVector() {
@@ -111,7 +113,7 @@ public:
             "f16b4844e3074ae8dfdffa3fede21442"
             "fcd0069ded0948f8326a753a0fc81f17"
             "e8d3e0fb2e0d3628cf35e20c38d18906")};
-        REQUIRE(actual == expected);
+        REQUIRE_EQUAL(actual, expected);
     }
 
     void testArgon2idRfcVector() {
@@ -124,7 +126,7 @@ public:
         REQUIRE(actual.isSensitive());
         const auto expected =
             ByteBlock{bytesFromHex("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659")};
-        REQUIRE(actual == expected);
+        REQUIRE_EQUAL(actual, expected);
     }
 
 private:
@@ -133,7 +135,7 @@ private:
         const auto actual = ByteBlock{Blake2b{ByteLength{64U}}.digest(raw(input))};
         REQUIRE(actual.isSensitive());
         const auto expected = ByteBlock{bytesFromHex(expectedHex)};
-        REQUIRE(actual == expected);
+        REQUIRE_EQUAL(actual, expected);
     }
 
     void requirePbkdf2(
@@ -144,7 +146,7 @@ private:
         const auto actual = ByteBlock{pbkdf2HmacSha256(raw(password), raw(salt), iterations, 32U)};
         REQUIRE(actual.isSensitive());
         const auto expected = ByteBlock{bytesFromHex(expectedHex)};
-        REQUIRE(actual == expected);
+        REQUIRE_EQUAL(actual, expected);
     }
 
     [[nodiscard]] static auto sensitiveBytes(const std::string_view text) -> ByteBlock {

@@ -35,7 +35,7 @@ public:
             REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{1, 1}).color(), Color(fg::Green, bg::Black));
 
             const auto clone = buffer.clone();
-            REQUIRE(clone != nullptr);
+            REQUIRE_NOT_EQUAL(clone, nullptr);
             clone->set(bgeo::BlockPosition{2, 0}, Block{U'Z', fg::Red, bg::Black});
 
             REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{2, 0}), U'X');
@@ -56,11 +56,15 @@ public:
             scramble(buffer, model);
             buffer.resize(bgeo::BlockSize{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(bgeo::BlockSize{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
-            requireMatches(buffer, model, std::format("resize preserve expand {}", orientationName(orientation)));
+            requireMatches(buffer, model, [&]() {
+                return std::format("resize preserve expand {}", orientationName(orientation));
+            });
 
             buffer.resize(bgeo::BlockSize{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(bgeo::BlockSize{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
-            requireMatches(buffer, model, std::format("resize preserve shrink {}", orientationName(orientation)));
+            requireMatches(buffer, model, [&]() {
+                return std::format("resize preserve shrink {}", orientationName(orientation));
+            });
         });
     }
 
@@ -74,13 +78,15 @@ public:
                 orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{4, 5} : bgeo::BlockSize{5, 4};
             buffer.resize(expandedSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(expandedSize, BufferResizeMode::PreserveContent, Block{U'.'});
-            requireMatches(buffer, model, std::format("primary-axis expand {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("primary-axis expand {}", orientationName(orientation)); });
 
             const auto shrunkSize =
                 orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{4, 3} : bgeo::BlockSize{3, 4};
             buffer.resize(shrunkSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(shrunkSize, BufferResizeMode::PreserveContent, Block{U'.'});
-            requireMatches(buffer, model, std::format("primary-axis shrink {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("primary-axis shrink {}", orientationName(orientation)); });
         });
     }
 
@@ -94,7 +100,8 @@ public:
                 orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{5, 3} : bgeo::BlockSize{4, 4};
             buffer.resize(changedCrossAxisSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(changedCrossAxisSize, BufferResizeMode::PreserveContent, Block{U'.'});
-            requireMatches(buffer, model, std::format("primary-axis fallback {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("primary-axis fallback {}", orientationName(orientation)); });
         });
     }
 
@@ -109,7 +116,8 @@ public:
 
             buffer.fill(Block{U'.', fg::White, bg::Black});
             fillPattern(buffer);
-            requireMatches(buffer, model, std::format("fast resize refill {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("fast resize refill {}", orientationName(orientation)); });
         });
     }
 
@@ -120,27 +128,32 @@ public:
 
             buffer.shift(bgeo::BlockDirection::NorthEast, Block{U'.'}, 1);
             model.shift(bgeo::BlockDirection::NorthEast, Block{U'.'}, 1);
-            requireMatches(buffer, model, std::format("shift northeast {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("shift northeast {}", orientationName(orientation)); });
 
             buffer.rotate(bgeo::BlockDirection::SouthWest, 2);
             model.rotate(bgeo::BlockDirection::SouthWest, 2);
-            requireMatches(buffer, model, std::format("rotate southwest {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("rotate southwest {}", orientationName(orientation)); });
 
             buffer.insertRows(blockCoordinate(1), Block{U'+'}, 2);
             model.insertRows(blockCoordinate(1), Block{U'+'}, 2);
-            requireMatches(buffer, model, std::format("insert rows {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("insert rows {}", orientationName(orientation)); });
 
             buffer.eraseColumns(blockCoordinate(2), Block{U'-'}, 2);
             model.eraseColumns(blockCoordinate(2), Block{U'-'}, 2);
-            requireMatches(buffer, model, std::format("erase columns {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("erase columns {}", orientationName(orientation)); });
 
             buffer.moveRows(blockCoordinate(1), 2, blockCoordinate(-1), Block{U'#'});
             model.moveRows(blockCoordinate(1), 2, blockCoordinate(-1), Block{U'#'});
-            requireMatches(buffer, model, std::format("move rows {}", orientationName(orientation)));
+            requireMatches(buffer, model, [&]() { return std::format("move rows {}", orientationName(orientation)); });
 
             buffer.moveColumns(blockCoordinate(1), 2, blockCoordinate(2), Block{U'!'});
             model.moveColumns(blockCoordinate(1), 2, blockCoordinate(2), Block{U'!'});
-            requireMatches(buffer, model, std::format("move columns {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("move columns {}", orientationName(orientation)); });
         });
     }
 
@@ -151,11 +164,14 @@ public:
 
             buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(-2), Block{U'^'});
             model.moveRows(blockCoordinate(1), 3, blockCoordinate(-2), Block{U'^'});
-            requireMatches(buffer, model, std::format("move rows overflow up {}", orientationName(orientation)));
+            requireMatches(
+                buffer, model, [&]() { return std::format("move rows overflow up {}", orientationName(orientation)); });
 
             buffer.moveColumns(blockCoordinate(0), 3, blockCoordinate(3), Block{U'v'});
             model.moveColumns(blockCoordinate(0), 3, blockCoordinate(3), Block{U'v'});
-            requireMatches(buffer, model, std::format("move columns overflow right {}", orientationName(orientation)));
+            requireMatches(buffer, model, [&]() {
+                return std::format("move columns overflow right {}", orientationName(orientation));
+            });
         });
     }
 
@@ -168,7 +184,9 @@ public:
                     blockCoordinate(0), buffer.size().height().toRawValue(), -buffer.size().height(), Block{U'^'});
                 model.moveRows(
                     blockCoordinate(0), model.size().height().toRawValue(), -model.size().height(), Block{U'^'});
-                requireMatches(buffer, model, std::format("move all rows above {}", orientationName(orientation)));
+                requireMatches(buffer, model, [&]() {
+                    return std::format("move all rows above {}", orientationName(orientation));
+                });
             }
             {
                 auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
@@ -177,7 +195,9 @@ public:
                     blockCoordinate(0), buffer.size().height().toRawValue(), buffer.size().height(), Block{U'v'});
                 model.moveRows(
                     blockCoordinate(0), model.size().height().toRawValue(), model.size().height(), Block{U'v'});
-                requireMatches(buffer, model, std::format("move all rows below {}", orientationName(orientation)));
+                requireMatches(buffer, model, [&]() {
+                    return std::format("move all rows below {}", orientationName(orientation));
+                });
             }
             {
                 auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
@@ -186,7 +206,9 @@ public:
                     blockCoordinate(0), buffer.size().width().toRawValue(), -buffer.size().width(), Block{U'<'});
                 model.moveColumns(
                     blockCoordinate(0), model.size().width().toRawValue(), -model.size().width(), Block{U'<'});
-                requireMatches(buffer, model, std::format("move all columns left {}", orientationName(orientation)));
+                requireMatches(buffer, model, [&]() {
+                    return std::format("move all columns left {}", orientationName(orientation));
+                });
             }
             {
                 auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
@@ -195,7 +217,9 @@ public:
                     blockCoordinate(0), buffer.size().width().toRawValue(), buffer.size().width(), Block{U'>'});
                 model.moveColumns(
                     blockCoordinate(0), model.size().width().toRawValue(), model.size().width(), Block{U'>'});
-                requireMatches(buffer, model, std::format("move all columns right {}", orientationName(orientation)));
+                requireMatches(buffer, model, [&]() {
+                    return std::format("move all columns right {}", orientationName(orientation));
+                });
             }
         });
     }
@@ -320,7 +344,9 @@ public:
                 default:
                     REQUIRE(false);
                 }
-                requireMatches(buffer, model, std::format("stress step {} {}", step, orientationName(orientation)));
+                requireMatches(buffer, model, [&]() {
+                    return std::format("stress step {} {}", step, orientationName(orientation));
+                });
             }
         });
     }

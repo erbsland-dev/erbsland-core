@@ -5,14 +5,15 @@
 #include "Byte.hpp"
 #include "ByteArray_fwd.hpp"
 #include "ByteBuffer.hpp"
-#include "ByteIntegerAccess.hpp"
 #include "ByteSpan.hpp"
 #include "Endianness.hpp"
 
-#include "impl/ByteIntegerAccess.hpp"
-#include "impl/ByteSequenceOperations.hpp"
+#include "impl/ByteArrayErrors.hpp"
+#include "impl/ByteComparisonTools.hpp"
+#include "impl/ByteDataView.hpp"
+#include "impl/ByteReadTools.hpp"
+#include "impl/ByteWriteTools.hpp"
 #include "impl/SecureErase.hpp"
-#include "impl/Throw.hpp"
 #include "impl/UnsafeByteArrayAccess_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
@@ -25,6 +26,7 @@
 #include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <type_traits>
 #include <utility>
 
@@ -60,6 +62,20 @@ public:
 
 public: // comparison
     ERBSLAND_CORE_CONSTEXPR_COMPARE_MEMBER(_bytes, const ByteArray &other, other._bytes);
+    /// Test equality without content-dependent short-circuiting.
+    /// Both arrays always have the same length and every byte is inspected.
+    /// @param other The byte array to compare.
+    /// @return `true` if both arrays contain the same bytes.
+    [[nodiscard]] auto isEqualConstTime(const ByteArray &other) const noexcept -> bool {
+        return impl::ByteComparisonTools{dataView()}.isEqualConstTime(other.dataView());
+    }
+    /// Test equality with a borrowed sequence without content-dependent short-circuiting.
+    /// Equal-length inputs always inspect every byte; a length mismatch returns immediately.
+    /// @param other The borrowed byte sequence to compare.
+    /// @return `true` if both sequences have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(ConstByteSpan other) const noexcept -> bool {
+        return impl::ByteComparisonTools{dataView()}.isEqualConstTime(impl::ByteDataView{other});
+    }
 
 public: // operators
     /// Compute the element-wise bitwise OR.
@@ -142,54 +158,38 @@ public: // access
     /// @param defaultValue The value returned for an invalid index.
     /// @return The stored byte or `defaultValue`.
     [[nodiscard]] constexpr auto get(const unit::ByteIndex index, const Byte defaultValue = {}) const noexcept -> Byte {
-        return index.isValid() && index.toSizeT() < N ? _bytes[index.toSizeT()] : defaultValue;
+        return impl::ByteReadTools{dataView()}.get(index, defaultValue);
     }
     /// Get a byte or throw if `index` is out of range.
     /// @param index The zero-based byte index.
     /// @return The stored byte.
     /// @throws err::OutOfRangeError If `index` is out of range.
     [[nodiscard]] auto getOrThrow(const unit::ByteIndex index) const -> Byte {
-        if (!index.isValid()) {
-            impl::throwOutOfRange("Byte array index out of range");
-        }
-        if (index.toSizeT() >= N) {
-            impl::throwOutOfRange("Byte array index out of range");
-        }
-        return _bytes[index.toSizeT()];
+        return impl::ByteReadTools{dataView()}.getOrThrow(index);
     }
     /// Invoke a callback for every byte and its optional index.
     template <typename Function>
     auto forEach(Function function) const -> util::LoopResult {
-        return impl::forEachByte(span(), std::move(function));
+        return impl::ByteReadTools{dataView()}.forEach(std::move(function));
     }
 
 public: // modifiers
     /// Set a byte, ignoring invalid indexes.
     constexpr void set(const unit::ByteIndex index, const Byte value) noexcept {
-        if (index.isValid() && index.toSizeT() < N) {
-            _bytes[index.toSizeT()] = value;
-        }
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.set(index, value);
     }
     /// Set a byte or throw if its index is invalid.
     constexpr void setOrThrow(const unit::ByteIndex index, const Byte value) {
-        if (!index.isValid() || index.toSizeT() >= N) {
-            impl::throwOutOfRange("Byte array index out of range");
-        }
-        _bytes[index.toSizeT()] = value;
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.setOrThrow(index, value);
     }
     /// XOR a byte value at an index, ignoring invalid indexes.
     constexpr void xorAt(const unit::ByteIndex index, const Byte value) noexcept {
-        if (index.isValid() && index.toSizeT() < N) {
-            _bytes[index.toSizeT()] ^= value;
-        }
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorAt(index, value);
     }
     /// XOR a byte value at an index or throw if its index is invalid.
     /// @throws err::OutOfRangeError If `index` is invalid or outside this array.
     constexpr void xorAtOrThrow(const unit::ByteIndex index, const Byte value) {
-        if (!index.isValid() || index.toSizeT() >= N) {
-            impl::throwOutOfRange("Byte array index out of range");
-        }
-        _bytes[index.toSizeT()] ^= value;
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorAtOrThrow(index, value);
     }
     /// Fill the array with a byte value.
     /// @param value The byte value.
@@ -200,32 +200,39 @@ public: // modifiers
     }
     /// Fill a clamped byte range.
     void fill(const unit::ByteRange targetRange, const Byte value) noexcept {
-        impl::fill(writableSpan(), targetRange, value);
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.fill(targetRange, value);
     }
     /// Overwrite from the beginning with as many source bytes as fit.
     void overwrite(const ConstByteSpan source) noexcept {
-        static_cast<void>(impl::overwrite(writableSpan(), unit::ByteRange::all(), source));
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.overwrite(unit::ByteRange::all(), impl::ByteDataView{source});
     }
     /// Overwrite from an index with as many source bytes as fit.
     void overwrite(const unit::ByteIndex index, const ConstByteSpan source) noexcept {
-        static_cast<void>(
-            impl::overwrite(writableSpan(), unit::ByteRange{index, unit::ByteLength::infinite()}, source));
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.overwrite(
+            unit::ByteRange{index, unit::ByteLength::infinite()}, impl::ByteDataView{source});
     }
     /// Overwrite a clamped target range with as many source bytes as fit.
     void overwrite(const unit::ByteRange targetRange, const ConstByteSpan source) noexcept {
-        static_cast<void>(impl::overwrite(writableSpan(), targetRange, source));
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.overwrite(targetRange, impl::ByteDataView{source});
     }
     /// XOR every byte with an equally sized source.
     [[nodiscard]] auto xorWith(const ConstByteSpan source) noexcept -> bool {
         if (source.size() != N) {
             return false;
         }
-        static_cast<void>(impl::xorWith(writableSpan(), unit::ByteRange::all(), source));
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorWith(unit::ByteRange::all(), impl::ByteDataView{source});
         return true;
+    }
+    /// XOR every byte with an equally sized source or throw if the lengths differ.
+    /// @throws err::ParameterError If the lengths differ.
+    void xorWithOrThrow(const ConstByteSpan source) {
+        if (!xorWith(source)) {
+            impl::throwByteArrayWrongLength();
+        }
     }
     /// XOR a clamped range with as many source bytes as fit.
     void xorWith(const unit::ByteRange targetRange, const ConstByteSpan source) noexcept {
-        static_cast<void>(impl::xorWith(writableSpan(), targetRange, source));
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.xorWith(targetRange, impl::ByteDataView{source});
     }
 
 public: // whole-array bit operations
@@ -381,7 +388,7 @@ public: // integers
         const unit::ByteIndex offset,
         const Endianness endianness = Endianness::Little,
         const T defaultOnError = T{}) const noexcept -> T {
-        return mem::getInteger<T>(span(), offset, endianness, defaultOnError);
+        return impl::ByteReadTools{dataView()}.getInteger<T>(offset, endianness, defaultOnError);
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -393,7 +400,7 @@ public: // integers
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
         const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const -> T {
-        return mem::getIntegerOrThrow<T>(span(), offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerOrThrow<T>(offset, endianness);
     }
     /// Decode an integer into an existing value.
     /// The output remains unchanged if the byte range is invalid.
@@ -407,7 +414,7 @@ public: // integers
     [[nodiscard]] constexpr auto getIntegerInto(
         T &value, const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const noexcept
         -> bool {
-        return mem::getIntegerInto(span(), value, offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerInto(value, offset, endianness);
     }
     /// Store an integer in this array.
     /// The array remains unchanged if the byte range is invalid.
@@ -421,7 +428,7 @@ public: // integers
     [[nodiscard]] constexpr auto setInteger(
         const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little) noexcept
         -> bool {
-        return mem::setInteger(writableSpan(), offset, value, endianness);
+        return impl::ByteWriteTools{ByteSpan{writableSpan()}}.setInteger(offset, value, endianness);
     }
     /// Store an integer in this array or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -433,7 +440,7 @@ public: // integers
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     constexpr void setIntegerOrThrow(
         const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little) {
-        mem::setIntegerOrThrow(writableSpan(), offset, value, endianness);
+        impl::ByteWriteTools{ByteSpan{writableSpan()}}.setIntegerOrThrow(offset, value, endianness);
     }
 
 public: // operations
@@ -449,7 +456,7 @@ public: // accessors
     /// @param range The byte range to access.
     /// @return The clamped span, or an empty span for an invalid range.
     [[nodiscard]] constexpr auto span(const unit::ByteRange range) const noexcept -> ConstByteSpan {
-        return impl::clampedSpan(ConstByteSpan{_bytes}, range);
+        return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped range as a read-only byte span.
     /// @param begin The first byte index.
@@ -462,8 +469,37 @@ public: // accessors
     /// Copy the bytes into a dynamic byte buffer.
     [[nodiscard]] auto toByteBuffer() const -> ByteBuffer { return ByteBuffer{span()}; }
 
+public: // factories
+    /// Create an array by copying a borrowed span with exactly the required size.
+    /// A length mismatch is rejected without copying any bytes.
+    /// @param bytes The bytes to copy.
+    /// @return The copied array, or no value if `bytes` does not contain exactly `N` bytes.
+    [[nodiscard]] static auto fromSpan(const ConstByteSpan bytes) noexcept -> std::optional<ByteArray> {
+        if (bytes.size() != N) {
+            return std::nullopt;
+        }
+        auto result = ByteArray{};
+        result.overwrite(bytes);
+        return result;
+    }
+    /// Create an array by copying a borrowed span with exactly the required size.
+    /// @param bytes The bytes to copy.
+    /// @return The copied array.
+    /// @throws err::ParameterError If `bytes` does not contain exactly `N` bytes.
+    [[nodiscard]] static auto fromSpanOrThrow(const ConstByteSpan bytes) -> ByteArray {
+        if (const auto result = fromSpan(bytes); result.has_value()) {
+            return *result;
+        }
+        impl::throwByteArrayWrongLength();
+    }
+
 private:
-    [[nodiscard]] constexpr auto writableSpan() noexcept -> FixedByteSpan<N> { return FixedByteSpan<N>{_bytes}; }
+    /// Access the complete array through an internal borrowed view.
+    [[nodiscard]] constexpr auto dataView() const noexcept -> impl::ByteDataView {
+        return impl::ByteDataView{ConstByteSpan{_bytes}};
+    }
+    /// Access the complete mutable byte sequence.
+    [[nodiscard]] constexpr auto writableSpan() noexcept -> ByteSpan { return ByteSpan{_bytes}; }
     /// Get the number of bits in this array.
     [[nodiscard]] static constexpr auto bitCount() noexcept -> std::size_t { return N * 8U; }
     /// Normalize a requested rotation into a left-rotation amount.

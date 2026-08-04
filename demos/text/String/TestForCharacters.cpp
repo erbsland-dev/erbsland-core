@@ -21,7 +21,7 @@ void validateEmailAddress(const el::String &emailAddress) {
     if (!emailAddress.contains(requiredAt)) {
         throw ValidationError{"Email address must contain '@' character."_el};
     }
-    if (emailAddress.count(requiredAt) > el::ElementCount{1}) {
+    if (emailAddress.count(requiredAt) > el::ItemCount{1}) {
         throw ValidationError{"Email address can only contain one '@' character."_el};
     }
     const auto indexOfAt = emailAddress.find(requiredAt);

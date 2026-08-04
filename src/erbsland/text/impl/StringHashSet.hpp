@@ -36,22 +36,31 @@ public:
     using Base::remove;
     using Base::removed;
     using Base::tryRemove;
-    StringHashSet() = default;
-    explicit StringHashSet(std::initializer_list<Key> values) {
+
+    /// Creates a set from initial keys.
+    /// @param values The initial keys.
+    StringHashSet(std::initializer_list<Key> values) {
         for (const auto &key : values) {
             insert(key);
         }
     }
+    /// Creates a set by copying its raw representation.
+    /// @param raw The raw set to copy.
     explicit StringHashSet(const Raw &raw) {
         for (const auto &key : raw) {
             insert(key);
         }
     }
+    /// Creates a set from its raw representation.
+    /// @param raw The raw set to move keys from.
     explicit StringHashSet(Raw &&raw) {
         for (const auto &key : raw) {
             insert(key);
         }
     }
+
+    // defaults
+    StringHashSet() = default;
     ~StringHashSet() = default;
     StringHashSet(const StringHashSet &) noexcept = default;
     StringHashSet(StringHashSet &&) noexcept = default;
@@ -94,7 +103,10 @@ public: // key changes
     }
     /// Insert a string key.
     auto insert(const Key &key) -> StringHashSet & {
-        static_cast<void>(tryInsert(key));
+        auto &data = this->mutableRaw();
+        if (data.find(key) == data.end()) {
+            data.insert(key.copy());
+        }
         return *this;
     }
     /// Try to insert a string key.

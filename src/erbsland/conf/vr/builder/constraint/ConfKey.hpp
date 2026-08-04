@@ -13,15 +13,25 @@
 namespace erbsland::conf::vr::builder {
 
 /// Adds a key-reference constraint to a named key index.
-struct ConfKey : ConstraintAttribute {
+class ConfKey : public ConstraintAttribute {
+public:
+    /// Creates a key-reference constraint for one index path.
+    /// @param reference The referenced index path.
+    /// @param options Additional constraint options.
     explicit ConfKey(const NamePathLike &reference, ConstraintOptions options = {}) :
         _references{{reference}}, _options{std::move(options)} {}
+    /// Creates a key-reference constraint for index paths.
+    /// @param references The referenced index paths.
+    /// @param options Additional constraint options.
     explicit ConfKey(std::vector<NamePathLike> references, ConstraintOptions options = {}) :
         _references{std::move(references)}, _options{std::move(options)} {}
+    /// Creates a key-reference constraint for index paths.
+    /// @param references The referenced index paths.
+    /// @param options Additional constraint options.
     explicit ConfKey(const std::initializer_list<NamePathLike> references, ConstraintOptions options = {}) :
         _references{references}, _options{std::move(options)} {}
 
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
 
     std::vector<NamePathLike> _references;
     ConstraintOptions _options;

@@ -8,5 +8,6 @@ target_sources(erbsland-core PRIVATE
         AssignmentGenerator.hpp
         AssignmentStream.cpp
         AssignmentStream.hpp
+        AssignmentStream_fwd.hpp
         AssignmentType.hpp
 )

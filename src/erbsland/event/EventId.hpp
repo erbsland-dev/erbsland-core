@@ -41,6 +41,8 @@ public: // tests/accessors
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _rawValue; }
 
 private:
+    /// Create an event identifier from its raw value.
+    /// @param rawValue The event identifier value.
     constexpr explicit EventId(const Value rawValue) noexcept : _rawValue{rawValue} {}
 
 private:

@@ -39,11 +39,11 @@ concept EnumFlagsEnumWithAll = EnumFlagsEnum<tType> && requires {
     { tType::All } -> std::same_as<tType>;
 };
 
-template <EnumFlagsEnum tEnum>
 /// Convert an enum flag to its raw underlying value.
 /// @tparam tEnum The enum type.
 /// @param value The enum flag value.
 /// @return The raw underlying value.
+template <EnumFlagsEnum tEnum>
 [[nodiscard]] constexpr auto enumFlagsRawValue(tEnum value) noexcept -> typename EnumFlagsTraits<tEnum>::Value {
     return static_cast<typename EnumFlagsTraits<tEnum>::Value>(value);
 }

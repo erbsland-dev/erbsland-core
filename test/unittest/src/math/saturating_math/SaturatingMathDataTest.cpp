@@ -132,16 +132,15 @@ private:
     void checkCast(const CastRow &row) {
         const auto value = parseInteger<Source>(row.value);
         const auto expected = parseInteger<Target>(row.expected);
+        const auto actual = saturatingCast<Target>(value);
+        const auto overflow = willCastOverflow<Target>(value);
         runWithContext(
             SOURCE_LOCATION(),
             [&]() -> void {
-                REQUIRE(saturatingCast<Target>(value) == expected);
-                REQUIRE(willCastOverflow<Target>(value) == row.overflow);
+                REQUIRE_EQUAL(actual, expected);
+                REQUIRE_EQUAL(overflow, row.overflow);
             },
-            [&]() -> std::string {
-                return createCastDiagnosticFromRow(
-                    row, saturatingCast<Target>(value), expected, willCastOverflow<Target>(value));
-            });
+            [&]() -> std::string { return createCastDiagnosticFromRow(row, actual, expected, overflow); });
     }
     void dispatchArithmetic(const ArithmeticRow &row, Operation operation) {
         switch (row.firstType) {
@@ -205,19 +204,16 @@ private:
         const auto first = parseInteger<First>(row.first);
         const auto second = parseInteger<Second>(row.second);
         const auto expected = parseInteger<First>(row.expected);
+        const auto actual = arithmeticResult(first, second, operation);
+        const auto overflow = arithmeticOverflow(first, second, operation);
         runWithContext(
             SOURCE_LOCATION(),
             [&]() -> void {
-                REQUIRE(arithmeticResult(first, second, operation) == expected);
-                REQUIRE(arithmeticOverflow(first, second, operation) == row.overflow);
+                REQUIRE_EQUAL(actual, expected);
+                REQUIRE_EQUAL(overflow, row.overflow);
             },
             [&]() -> std::string {
-                return createArithmeticDiagnosticFromRow(
-                    row,
-                    operationName(operation),
-                    arithmeticResult(first, second, operation),
-                    expected,
-                    arithmeticOverflow(first, second, operation));
+                return createArithmeticDiagnosticFromRow(row, operationName(operation), actual, expected, overflow);
             });
     }
     template <std::integral First, std::integral Second>

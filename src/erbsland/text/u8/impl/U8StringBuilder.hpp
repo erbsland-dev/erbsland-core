@@ -14,8 +14,11 @@ namespace erbsland::text::impl {
 /// @tested{AnyStringBuilderTest}
 class U8StringBuilder final : public AnyStringBuilderBase {
 public:
-    U8StringBuilder() = default;
+    /// Create a builder with initial `capacity`.
     explicit U8StringBuilder(unit::ByteLength capacity);
+
+    // defaults
+    U8StringBuilder() = default;
     U8StringBuilder(const U8StringBuilder &) = default;
     U8StringBuilder(U8StringBuilder &&) = default;
     auto operator=(const U8StringBuilder &) -> U8StringBuilder & = default;
@@ -31,11 +34,11 @@ public:
     auto append(Char character) -> unit::CpLength override;
     void append(Char character, unit::CpLength count) override;
     auto append(const U8String &text) -> unit::CpLength override;
-    void append(const U8String &text, unit::ElementCount count) override;
+    void append(const U8String &text, unit::ItemCount count) override;
     auto append(const U16String &text) -> unit::CpLength override;
-    void append(const U16String &text, unit::ElementCount count) override;
+    void append(const U16String &text, unit::ItemCount count) override;
     auto append(const U32String &text) -> unit::CpLength override;
-    void append(const U32String &text, unit::ElementCount count) override;
+    void append(const U32String &text, unit::ItemCount count) override;
     void appendByteBlock(const mem::ByteBlock &bytes, const ByteFormat &format) override;
     [[nodiscard]] auto toU8StringEditor() const -> U8StringEditor override;
     [[nodiscard]] auto toU16StringEditor() const -> U16StringEditor override;

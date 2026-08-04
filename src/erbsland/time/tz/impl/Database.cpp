@@ -46,15 +46,15 @@ auto Database::zoneIdFromName(const String &zoneName) const noexcept -> ZoneId {
     if (zoneName.isEmpty()) {
         return cZoneIdNotFound;
     }
-    const auto parts = StringList::fromSplit(zoneName, separatorCharacters, unit::ElementCount{3U}, true);
-    if (parts.isEmpty() || parts.count() > unit::ElementCount{3U}) {
+    const auto parts = StringList::fromSplit(zoneName, separatorCharacters, unit::ItemCount{3U}, true);
+    if (parts.isEmpty() || parts.count() > unit::ItemCount{3U}) {
         return cZoneIdNotFound;
     }
-    const auto text1 = indexFromText(parts.get(unit::ElementIndex::zero()));
+    const auto text1 = indexFromText(parts.get(unit::ItemIndex::zero()));
     const auto text2 =
-        parts.count() < unit::ElementCount{2U} ? cEmptyTextId : indexFromText(parts.get(unit::ElementIndex{1U}));
+        parts.count() < unit::ItemCount{2U} ? cEmptyTextId : indexFromText(parts.get(unit::ItemIndex{1U}));
     const auto text3 =
-        parts.count() < unit::ElementCount{3U} ? cEmptyTextId : indexFromText(parts.get(unit::ElementIndex{2U}));
+        parts.count() < unit::ItemCount{3U} ? cEmptyTextId : indexFromText(parts.get(unit::ItemIndex{2U}));
     if (text1 == cEmptyTextId) {
         return cZoneIdNotFound;
     }

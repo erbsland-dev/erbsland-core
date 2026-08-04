@@ -5,19 +5,19 @@
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -33,11 +33,11 @@ using namespace el::unit;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(U8StringEditor U8String U8StringLiteral U8StringComparisonTools BooleanFormat)
+TESTED_TARGETS(StringEditor String U8StringLiteral U8StringComparisonTools BooleanFormat)
 class U8StringEditorTest final : public el::UnitTest {
 public:
     void testDefaultStringIsEmpty() {
-        const auto text = U8StringEditor{};
+        const auto text = StringEditor{};
 
         REQUIRE(text.isEmpty());
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{});
@@ -58,20 +58,20 @@ public:
     }
 
     void testStringFromStdString() {
-        static_assert(std::is_constructible_v<U8StringEditor, std::string_view>);
-        static_assert(!std::is_convertible_v<std::string_view, U8StringEditor>);
+        static_assert(std::is_constructible_v<StringEditor, std::string_view>);
+        static_assert(!std::is_convertible_v<std::string_view, StringEditor>);
 
-        const auto text = U8StringEditor{std::string_view{"Hello"}};
+        const auto text = StringEditor{"Hello"_el};
 
         REQUIRE_FALSE(text.isEmpty());
         REQUIRE_EQUAL(text, "Hello"_el);
     }
 
     void testStringFromStdU8String() {
-        static_assert(std::is_constructible_v<U8StringEditor, std::u8string_view>);
-        static_assert(!std::is_convertible_v<std::u8string_view, U8StringEditor>);
+        static_assert(std::is_constructible_v<StringEditor, std::u8string_view>);
+        static_assert(!std::is_convertible_v<std::u8string_view, StringEditor>);
 
-        const auto text = U8StringEditor{std::u8string_view{u8"Hello"}};
+        const auto text = String{"Hello"_el};
 
         REQUIRE_FALSE(text.isEmpty());
         REQUIRE_EQUAL(text, u8"Hello"_el);
@@ -87,49 +87,49 @@ public:
 
     void testRepeatedAppend() {
 
-        const auto source = U8StringEditor{std::u8string_view{u8"xA¢"}};
-        const auto view = U8String{source}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
+        const auto source = String{"xA¢"_el};
+        const auto view = String{source}.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}});
 
-        auto repeatedText = U8StringEditor{};
-        repeatedText.append(view, ElementCount{3U});
+        auto repeatedText = StringEditor{};
+        repeatedText.append(view, ItemCount{3U});
         REQUIRE_EQUAL(StringConverter{repeatedText}.toStdU8String(), std::u8string{u8"A¢A¢A¢"});
         REQUIRE_EQUAL(repeatedText.length(), ByteLength{9U});
         REQUIRE_EQUAL(repeatedText.characterLength(), CpLength{6U});
 
-        auto repeatedCharacter = U8StringEditor{};
+        auto repeatedCharacter = StringEditor{};
         repeatedCharacter.append(Char{U'\u20AC'}, CpLength{3U});
         REQUIRE_EQUAL(StringConverter{repeatedCharacter}.toStdU8String(), std::u8string{u8"€€€"});
         REQUIRE_EQUAL(repeatedCharacter.length(), ByteLength{9U});
         REQUIRE_EQUAL(repeatedCharacter.characterLength(), CpLength{3U});
-        REQUIRE_EQUAL(U8StringEditor::fromCharacter(Char{U'\u20AC'}, CpLength{3U}), repeatedCharacter);
-        REQUIRE_EQUAL(U8StringEditor::fromCharacter(Char{U'A'}), "A"_el);
+        REQUIRE_EQUAL(StringEditor::fromCharacter(Char{U'\u20AC'}, CpLength{3U}), repeatedCharacter);
+        REQUIRE_EQUAL(StringEditor::fromCharacter(Char{U'A'}), "A"_el);
 
-        REQUIRE(U8StringEditor{}.append(view, ElementCount::zero()).isEmpty());
-        REQUIRE(U8StringEditor{}.append(""_el, ElementCount{5U}).isEmpty());
-        REQUIRE(U8StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
-        REQUIRE(U8StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
-        REQUIRE(U8StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
-        REQUIRE(U8StringEditor::fromJoined({}).isEmpty());
-        REQUIRE_EQUAL(U8StringEditor::fromJoined({"solo"_el}), "solo"_el);
-        REQUIRE_EQUAL(U8StringEditor::fromJoined({"prefix-"_el, ""_el, view, "-suffix"_el}), u8"prefix-A¢-suffix"_el);
-        REQUIRE_THROWS(U8StringEditor{}.append("x"_el, ElementCount::infinite()));
-        REQUIRE_THROWS(U8StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
+        REQUIRE(StringEditor{}.append(view, ItemCount::zero()).isEmpty());
+        REQUIRE(StringEditor{}.append(""_el, ItemCount{5U}).isEmpty());
+        REQUIRE(StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
+        REQUIRE(StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
+        REQUIRE(StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
+        REQUIRE(StringEditor::fromJoined({}).isEmpty());
+        REQUIRE_EQUAL(StringEditor::fromJoined({"solo"_el}), "solo"_el);
+        REQUIRE_EQUAL(StringEditor::fromJoined({"prefix-"_el, ""_el, view, "-suffix"_el}), u8"prefix-A¢-suffix"_el);
+        REQUIRE_THROWS(StringEditor{}.append("x"_el, ItemCount::infinite()));
+        REQUIRE_THROWS(StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
     }
 
     void testBooleanConversion() {
 
-        REQUIRE_EQUAL(U8StringEditor::fromBoolean(true), "true"_el);
+        REQUIRE_EQUAL(StringEditor::fromBoolean(true), "true"_el);
         REQUIRE_EQUAL(
-            U8StringEditor::fromBoolean(false, BooleanFormat::yesNo().setCapitalization(Capitalization::Uppercase)),
+            StringEditor::fromBoolean(false, BooleanFormat::yesNo().setCapitalization(Capitalization::Uppercase)),
             "NO"_el);
         REQUIRE_EQUAL(
-            U8StringEditor::fromBoolean(
+            StringEditor::fromBoolean(
                 true, BooleanFormat::enabledDisabled().setCapitalization(Capitalization::Titlecase)),
             "Enabled"_el);
     }
 
     void testClear() {
-        auto text = U8StringEditor{std::string_view{"Hello"}};
+        auto text = StringEditor{"Hello"_el};
         text.reserve(ByteLength{8U});
 
         text.clear();
@@ -141,7 +141,7 @@ public:
     }
 
     void testResetReleasesReservedStorage() {
-        auto text = U8StringEditor{std::string_view{"Hello"}};
+        auto text = StringEditor{"Hello"_el};
         text.reserve(ByteLength{8U});
 
         text.reset();
@@ -152,7 +152,7 @@ public:
     }
 
     void testByteIndexedRead() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
 
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{10});
         REQUIRE_EQUAL(text.characterLength(), CpLength{4});
@@ -170,19 +170,19 @@ public:
             REQUIRE_EQUAL(StringConverter{remaining}.toStdU8String(), std::u8string{u8"A¢€"});
         }
         {
-            const auto view = U8String{text};
+            const auto view = String{text};
             const auto [character, remaining] = view.slice(StringSide::Front);
             REQUIRE_EQUAL(character.toRawValue(), U'A');
             REQUIRE_EQUAL(StringConverter{remaining}.toStdU8String(), std::u8string{u8"¢€😀"});
         }
         {
-            const auto charView = U8String{text};
+            const auto charView = String{text};
             const auto [character, remaining] = charView.slice(StringSide::Back);
             REQUIRE_EQUAL(character.toRawValue(), U'\U0001F600');
             REQUIRE_EQUAL(StringConverter{remaining}.toStdU8String(), std::u8string{u8"A¢€"});
         }
         {
-            const auto single = U8StringEditor{std::u8string_view{u8"€"}};
+            const auto single = String{"€"_el};
             const auto [character, remaining] = single.slice(StringSide::Front);
             REQUIRE_EQUAL(character.toRawValue(), U'\u20AC');
             REQUIRE(remaining.isEmpty());
@@ -213,7 +213,7 @@ public:
     }
 
     void testIndexedSequentialRead() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
         auto index = ByteIndex::zero();
 
         REQUIRE_EQUAL(text.readCharAndAdvance(index).toRawValue(), U'A');
@@ -251,7 +251,7 @@ public:
         REQUIRE(text.readCharAndRetreat(index).isNoCodePoint());
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{11});
 
-        const auto view = U8String{text};
+        const auto view = String{text};
         index = ByteIndex::zero();
         REQUIRE_EQUAL(view.readCharAndAdvance(index).toRawValue(), U'A');
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{1});
@@ -259,7 +259,7 @@ public:
         REQUIRE_EQUAL(view.readCharAndRetreat(index).toRawValue(), U'\U0001F600');
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{6});
 
-        const auto invalid = U8StringEditor{std::string_view{invalidUtf8Data()}};
+        const auto invalid = StringEditor{std::string_view{invalidUtf8Data()}};
         index = ByteIndex{1U};
         REQUIRE(invalid.readCharAndAdvance(index).isReplacement());
         REQUIRE_EQUAL(index.toSizeT(), std::size_t{2});
@@ -269,7 +269,7 @@ public:
 
     void testCaseMapping() {
 
-        const auto mixed = U8StringEditor{std::u8string_view{u8"AÄΣςK"}};
+        const auto mixed = String{"AÄΣςK"_el};
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::caseFolded)}.toStdU32String(), std::u32string{U"aäσσk"});
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::toLowercase)}.toStdU32String(), std::u32string{U"aäσςk"});
         REQUIRE_EQUAL(StringConverter{mixed.transformed(Char::toUppercase)}.toStdU32String(), std::u32string{U"AÄΣΣK"});
@@ -278,21 +278,21 @@ public:
         REQUIRE_EQUAL(
             StringConverter{mixed.transformed(Char::toAsciiUppercase)}.toStdU32String(), std::u32string{U"AÄΣςK"});
 
-        const auto empty = U8StringEditor{};
+        const auto empty = StringEditor{};
         REQUIRE(empty.transformed(Char::toLowercase).isEmpty());
         REQUIRE(empty.transformed(Char::toAsciiUppercase).isEmpty());
-        REQUIRE(U8String{}.transformed(Char::caseFolded).isEmpty());
+        REQUIRE(String{}.transformed(Char::caseFolded).isEmpty());
         REQUIRE_EQUAL(mixed.transformed(nullptr), mixed);
 
-        const auto unchanged = U8StringEditor{std::string_view{"abc"}};
+        const auto unchanged = StringEditor{"abc"_el};
         REQUIRE_EQUAL(unchanged.transformed(Char::toAsciiLowercase).storageId(), unchanged.storageId());
         REQUIRE_EQUAL(unchanged.transformed(Char::caseFolded).storageId(), unchanged.storageId());
 
-        const auto sharedView = U8String{unchanged};
+        const auto sharedView = String{unchanged};
         REQUIRE_EQUAL(
             StringConverter{sharedView.transformed(Char::toAsciiLowercase)}.toStdString(), std::string{"abc"});
 
-        const auto literalView = U8String{"abc"_el};
+        const auto literalView = String{"abc"_el};
         REQUIRE_EQUAL(
             StringConverter{literalView.transformed(Char::toAsciiLowercase)}.toStdString(), std::string{"abc"});
 
@@ -307,26 +307,26 @@ public:
 
         auto invalidOnlyBytes = std::string{"1"};
         invalidOnlyBytes.push_back(static_cast<char>(0xC0U));
-        const auto invalidOnly = U8StringEditor{std::string_view{invalidOnlyBytes}};
+        const auto invalidOnly = StringEditor{std::string_view{invalidOnlyBytes}};
         REQUIRE_EQUAL(invalidOnly.transformed(Char::toAsciiLowercase).storageId(), invalidOnly.storageId());
         REQUIRE_EQUAL(
-            StringConverter{U8String{invalidOnly}.transformed(Char::toAsciiLowercase)}.toStdString(),
+            StringConverter{String{invalidOnly}.transformed(Char::toAsciiLowercase)}.toStdString(),
             th::stdStringFromHex("31 EF BF BD"));
 
         auto invalidBytes = std::string{"A"};
         invalidBytes.push_back(static_cast<char>(0xC0U));
         invalidBytes.push_back('B');
-        const auto invalid = U8StringEditor{std::string_view{invalidBytes}};
+        const auto invalid = StringEditor{std::string_view{invalidBytes}};
         REQUIRE_EQUAL(
             StringConverter{invalid.transformed(Char::toAsciiLowercase)}.toStdString(),
             th::stdStringFromHex("61 EF BF BD 62"));
         REQUIRE_EQUAL(
-            StringConverter{U8String{invalid}.transformed(Char::toAsciiLowercase)}.toStdString(),
+            StringConverter{String{invalid}.transformed(Char::toAsciiLowercase)}.toStdString(),
             th::stdStringFromHex("61 EF BF BD 62"));
     }
 
     void testAdvance() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
         auto index = ByteIndex::zero();
 
         REQUIRE(text.advance(index));
@@ -359,7 +359,7 @@ public:
     }
 
     void testRetreat() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
         auto index = ByteIndex{5};
 
         REQUIRE_FALSE(text.retreat(index, CpLength::zero()));
@@ -378,7 +378,7 @@ public:
     }
 
     void testIndexConversions() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
 
         REQUIRE_EQUAL(text.indexAt(CpIndex{0}), ByteIndex{0});
         REQUIRE_EQUAL(text.indexAt(CpIndex{1}), ByteIndex{1});
@@ -402,7 +402,7 @@ public:
 
     void testInvalidUtf8Read() {
         const auto data = invalidUtf8Data();
-        const auto text = U8StringEditor{std::string_view{data}};
+        const auto text = StringEditor{std::string_view{data}};
 
         REQUIRE_FALSE(text.isValidUtf8());
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{3});
@@ -425,7 +425,7 @@ public:
     }
 
     void testSlice() {
-        const auto text = U8StringEditor{std::string_view{"abcdef"}};
+        const auto text = StringEditor{"abcdef"_el};
 
         REQUIRE_EQUAL(StringConverter{text.slice(ByteRange{ByteIndex{2}, ByteLength{3}})}.toStdString(), "cde");
         REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteLength{2})}.toStdString(), "ab");
@@ -455,7 +455,7 @@ public:
         REQUIRE_EQUAL(StringConverter{text.slice(StringSide::Front, ByteIndex{99})}.toStdString(), "abcdef");
         REQUIRE(text.slice(StringSide::Back, ByteIndex{99}).isEmpty());
 
-        const auto unicode = U8StringEditor{std::u8string_view{u8"A¢€😀BC"}};
+        const auto unicode = String{"A¢€😀BC"_el};
         const auto charView = unicode;
         const auto range = CpRange{CpIndex{1}, CpLength{3}};
 
@@ -539,7 +539,7 @@ public:
     }
 
     void testNestedSlice() {
-        const auto text = U8StringEditor{std::string_view{"abcdef"}};
+        const auto text = StringEditor{"abcdef"_el};
         const auto first = text.slice(ByteRange{ByteIndex{1}, ByteLength{4}});
         const auto second = first.slice(ByteRange{ByteIndex{1}, ByteLength{2}});
 
@@ -548,7 +548,7 @@ public:
     }
 
     void testSliceThroughUtf8Sequence() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€"}};
+        const auto text = String{"A¢€"_el};
         const auto slice = text.slice(ByteRange{ByteIndex{2}, ByteLength{2}});
 
         REQUIRE_EQUAL(th::toStdU32String(StringConverter{slice}.toStdString()), std::u32string{U"\uFFFD\uFFFD"});
@@ -558,25 +558,24 @@ public:
 
     void testPredicateChecks() {
 
-        const auto text =
-            U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
 
         REQUIRE(text.startsWith(u8"A¢"_el));
         REQUIRE(text.startsWith(u8"A"_el));
-        REQUIRE(text.startsWith(U8String{}));
+        REQUIRE(text.startsWith(String{}));
         REQUIRE_FALSE(text.startsWith(u8"¢"_el));
         REQUIRE(text.endsWith(u8"😀"_el));
-        REQUIRE(text.endsWith(U8String{}));
+        REQUIRE(text.endsWith(String{}));
         REQUIRE_FALSE(text.endsWith(u8"€"_el));
         REQUIRE(text.contains(u8"¢€"_el));
         REQUIRE(text.contains(u8"€"_el));
-        REQUIRE(text.contains(U8String{}));
+        REQUIRE(text.contains(String{}));
         REQUIRE_FALSE(text.contains(u8"€¢"_el));
-        REQUIRE_EQUAL(text.count(u8"¢€"_el), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(u8"€"_el), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(U8String{}), ElementCount::zero());
-        REQUIRE_EQUAL(U8String{u8"¢€¢€"_el}.count(u8"¢€"_el), ElementCount{2U});
-        REQUIRE_EQUAL(String{"aaaa"_el}.count("aa"_el), ElementCount{2U});
+        REQUIRE_EQUAL(text.count(u8"¢€"_el), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(u8"€"_el), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(String{}), ItemCount::zero());
+        REQUIRE_EQUAL(String{u8"¢€¢€"_el}.count(u8"¢€"_el), ItemCount{2U});
+        REQUIRE_EQUAL(String{"aaaa"_el}.count("aa"_el), ItemCount{2U});
         REQUIRE(text.containsOneOf(CharSet{u8"z😀"_el}));
         REQUIRE(text.containsOneOf(CharSet{Char{0x20ACU}}));
         REQUIRE_FALSE(text.containsOneOf(CharSet{"xyz"_el}));
@@ -588,10 +587,10 @@ public:
 
     void testComparisonChecks() {
 
-        const auto first = U8StringEditor{std::u8string_view{u8"A¢"}};
-        const auto same = U8StringEditor{std::u8string_view{u8"A¢"}};
-        const auto greater = U8StringEditor{std::u8string_view{u8"A€"}};
-        const auto view = U8String{same};
+        const auto first = String{"A¢"_el};
+        const auto same = String{"A¢"_el};
+        const auto greater = String{"A€"_el};
+        const auto view = String{same};
         const auto charView = view;
         const auto asciiFoldedCompare =
             CharCompareFn{[](const Char left, const Char right) noexcept -> std::strong_ordering {
@@ -604,22 +603,24 @@ public:
         REQUIRE_EQUAL(first.compare(view), std::strong_ordering::equal);
         REQUIRE_EQUAL(first.compare(u8"a¢"_el, asciiFoldedCompare), std::strong_ordering::equal);
         REQUIRE_EQUAL(view.compare(u8"a¢"_el, asciiFoldedCompare), std::strong_ordering::equal);
-        REQUIRE_EQUAL(U8String{u8"a"_el}.compare(u8"b"_el, reverseCompare), std::strong_ordering::greater);
-        REQUIRE(first.compare(greater) < 0);
-        REQUIRE(view.compare(first) == std::strong_ordering::equal);
+        REQUIRE_EQUAL(String{u8"a"_el}.compare(u8"b"_el, reverseCompare), std::strong_ordering::greater);
+        const auto firstGreaterComparison = first.compare(greater);
+        const auto viewFirstComparison = view.compare(first);
+        REQUIRE_EQUAL(firstGreaterComparison, std::strong_ordering::less);
+        REQUIRE_EQUAL(viewFirstComparison, std::strong_ordering::equal);
         REQUIRE(charView.startsWith(u8"A"_el));
         REQUIRE(charView.endsWith(u8"¢"_el));
         REQUIRE(charView.contains(u8"A¢"_el));
 
-        const auto invalid = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
-        const auto replacement = U8StringEditor{std::u8string_view{u8"A\uFFFDB"}};
+        const auto invalid = String{th::stdStringFromHex("41 C0 42")};
+        const auto replacement = String{"A\uFFFDB"_el};
         REQUIRE_EQUAL(invalid.compare(replacement), std::strong_ordering::equal);
     }
 
     void testCaseInsensitiveComparisonChecks() {
 
-        const auto text = U8StringEditor{std::u8string_view{u8"ÄbcK"}};
-        const auto view = U8String{text};
+        const auto text = String{"ÄbcK"_el};
+        const auto view = String{text};
         const auto charView = view;
 
         REQUIRE_EQUAL(text.compare(u8"äbcK"_el, Char::compareCaseFolded), std::strong_ordering::equal);
@@ -628,11 +629,11 @@ public:
         REQUIRE(text.startsWith(u8"ä"_el, Char::compareCaseFolded));
         REQUIRE(text.endsWith(u8"k"_el, Char::compareCaseFolded));
         REQUIRE(text.contains(u8"BC"_el, Char::compareCaseFolded));
-        REQUIRE_EQUAL(text.count(u8"BC"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(u8"k"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(U8String{}, Char::compareCaseFolded), ElementCount::zero());
-        REQUIRE_EQUAL(view.count(u8"ä"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(u8"X"_el, Char::compareCaseFolded), ElementCount::zero());
+        REQUIRE_EQUAL(text.count(u8"BC"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(u8"k"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(String{}, Char::compareCaseFolded), ItemCount::zero());
+        REQUIRE_EQUAL(view.count(u8"ä"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(u8"X"_el, Char::compareCaseFolded), ItemCount::zero());
         REQUIRE(charView.startsWith(u8"äB"_el, Char::compareCaseFolded));
         REQUIRE(charView.endsWith(u8"k"_el, Char::compareCaseFolded));
         REQUIRE(charView.contains(u8"BC"_el, Char::compareCaseFolded));
@@ -642,12 +643,12 @@ public:
     void testInvalidUtf8PredicateChecks() {
 
         const auto data = invalidUtf8Data();
-        const auto text = U8StringEditor{std::string_view{data}};
+        const auto text = StringEditor{std::string_view{data}};
 
         REQUIRE_FALSE(text.isValidUtf8());
         REQUIRE(text.contains(u8"\uFFFD"_el));
-        REQUIRE_EQUAL(text.count(u8"\uFFFD"_el), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(u8"\uFFFD"_el, Char::compareCaseFolded), ElementCount{1U});
+        REQUIRE_EQUAL(text.count(u8"\uFFFD"_el), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(u8"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE(text.containsOneOf(CharSet{Char::replacement()}));
         REQUIRE_FALSE(text.startsWith(u8"\uFFFD"_el));
         REQUIRE_FALSE(text.endsWith(u8"\uFFFD"_el));
@@ -655,11 +656,10 @@ public:
 
     void testForwardFind() {
 
-        const auto text =
-            U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
 
         REQUIRE_EQUAL(text.find(u8"¢€"_el), ByteIndex{1U});
-        REQUIRE_EQUAL(text.find(U8String{}, ByteIndex{3U}), ByteIndex{3U});
+        REQUIRE_EQUAL(text.find(String{}, ByteIndex{3U}), ByteIndex{3U});
         REQUIRE(text.find(u8"A"_el, ByteIndex::noIndex()).isNoIndex());
         REQUIRE(text.find(u8"€¢"_el).isNoIndex());
         REQUIRE_EQUAL(text.findFirstOf(CharSet{Char{0x20ACU}}), ByteIndex{3U});
@@ -675,8 +675,7 @@ public:
 
     void testReverseFind() {
 
-        const auto text =
-            U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
 
         REQUIRE_EQUAL(text.findLastOf(CharSet{Char{0x20ACU}}), ByteIndex{3U});
         REQUIRE_EQUAL(text.findLastOf(CharSet{Char{0x20ACU}}, ByteIndex{6U}), ByteIndex{3U});
@@ -692,7 +691,7 @@ public:
 
     void testInvalidUtf8ForwardFind() {
         const auto data = invalidUtf8Data();
-        const auto text = U8StringEditor{std::string_view{data}};
+        const auto text = StringEditor{std::string_view{data}};
 
         REQUIRE_EQUAL(text.findFirstOf(CharSet{Char::replacement()}), ByteIndex{1U});
         REQUIRE_EQUAL(text.findFirstNotOf(CharSet{Char{0x41U}}), ByteIndex{1U});
@@ -700,14 +699,14 @@ public:
 
     void testInvalidUtf8ReverseFind() {
         const auto data = invalidUtf8Data();
-        const auto text = U8StringEditor{std::string_view{data}};
+        const auto text = StringEditor{std::string_view{data}};
 
         REQUIRE_EQUAL(text.findLastOf(CharSet{Char::replacement()}), ByteIndex{1U});
         REQUIRE_EQUAL(text.findLastNotOf(CharSet{Char{0x42U}}), ByteIndex{1U});
     }
 
     void testDetach() {
-        auto first = U8StringEditor{std::string_view{"Hello"}};
+        auto first = StringEditor{"Hello"_el};
         const auto second = first;
         const auto *firstData = el::text::impl::UnsafeU8StringEditorAccess{first}.data();
         const auto *secondData = el::text::impl::UnsafeU8StringEditorAccess{second}.data();
@@ -723,7 +722,7 @@ public:
     }
 
     void testReserveOnEmptyStringCreatesCapacity() {
-        auto text = U8StringEditor{};
+        auto text = StringEditor{};
 
         text.reserve(ByteLength{7U});
 
@@ -733,7 +732,7 @@ public:
     }
 
     void testReserveOnNonEmptyStringGrowsCapacityWithoutChangingText() {
-        auto text = U8StringEditor{std::string_view{"Hello"}};
+        auto text = StringEditor{"Hello"_el};
         const auto *originalData = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
 
         text.reserve(ByteLength{9U});
@@ -749,7 +748,7 @@ public:
     }
 
     void testReserveOnSliceMaterializesStandaloneStorage() {
-        auto text = U8StringEditor{std::string_view{"abcdef"}}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
+        auto text = StringEditor{"abcdef"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
 
         text.reserve(ByteLength{6U});
 
@@ -759,7 +758,7 @@ public:
     }
 
     void testShrinkToFitReleasesUnusedCapacity() {
-        auto text = U8StringEditor{std::string_view{"Hello"}};
+        auto text = StringEditor{"Hello"_el};
         text.reserve(ByteLength{9U});
 
         text.shrinkToFit();
@@ -770,7 +769,7 @@ public:
     }
 
     void testShrinkToFitMaterializesSliceToExactSize() {
-        auto text = U8StringEditor{std::string_view{"abcdef"}}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
+        auto text = StringEditor{"abcdef"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
 
         text.shrinkToFit();
 
@@ -780,9 +779,8 @@ public:
     }
 
     void testStdConversions() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
-        const auto slice =
-            U8StringEditor{std::u8string_view{u8"xxA¢€😀yy"}}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
+        const auto text = String{"A¢€😀"_el};
+        const auto slice = String{"xxA¢€😀yy"_el}.slice(ByteRange{ByteIndex{2}, ByteLength{10}});
 
         REQUIRE_EQUAL(StringConverter{text}.toStdU16String(), th::stdU16StringFromHex("0041 00A2 20AC D83D DE00"));
         REQUIRE_EQUAL(StringConverter{text}.toStdU32String(), std::u32string{U"A¢€😀"});
@@ -797,7 +795,7 @@ public:
     }
 
     void testStdConversionsOnInvalidUtf8() {
-        const auto text = U8StringEditor{std::string_view{invalidUtf8Data()}};
+        const auto text = StringEditor{std::string_view{invalidUtf8Data()}};
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), th::stdStringFromHex("41 EF BF BD 42"));
         REQUIRE_EQUAL(StringConverter{text}.toStdU8String(), std::u8string{u8"A\uFFFDB"});

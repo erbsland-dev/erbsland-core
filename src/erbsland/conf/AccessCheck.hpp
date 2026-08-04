@@ -2,21 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AccessCheck_fwd.hpp"
 #include "AccessCheckResult.hpp"
 #include "AccessSources.hpp"
 
-#include <memory>
-
 namespace erbsland::conf {
-
-class AccessCheck;
-using AccessCheckPtr = std::shared_ptr<AccessCheck>;
 
 /// The interface to access check implementations.
 /// @tested{ParserAccessTest}
 class AccessCheck {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~AccessCheck() = default;
 
 public:

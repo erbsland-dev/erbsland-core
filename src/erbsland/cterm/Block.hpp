@@ -2,10 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Block_fwd.hpp"
 #include "BlockStyle.hpp"
+#include "TypeTraits.hpp"
 
 #include "impl/BlockTextUtil.hpp"
-#include "impl/TypeTraits.hpp"
 
 #include "../text/Char.hpp"
 #include "../text/CombinedChar.hpp"
@@ -245,6 +246,7 @@ public: // predefined characters.
     [[nodiscard]] static auto emptyBlock(BlockStyle style) noexcept -> Block;
 
 private:
+    /// Create a block from a combined character and style.
     Block(const text::CombinedChar character, const BlockStyle style) noexcept : _character{character}, _style{style} {}
 
 private:

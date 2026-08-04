@@ -13,8 +13,8 @@
 #include "../text/StringEditor.hpp"
 #include "../unit/ByteLength.hpp"
 #include "../unit/CpLength.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
 #include "../util/HashSet.hpp"
 #include "../util/List.hpp"
 #include "../util/Set.hpp"
@@ -34,10 +34,10 @@ namespace erbsland::random {
 /// @tested{RandomTest}
 class Random {
 public:
+    // defaults/deletions
     /// Destroy this random generator.
     virtual ~Random() = default;
 
-    // defaults
     Random(const Random &) = delete;
     auto operator=(const Random &) -> Random & = delete;
 
@@ -62,11 +62,12 @@ public:
     /// @param maximum The upper inclusive bound. Reversed bounds are ordered automatically.
     /// @return A list with `count` random integers, or an empty list.
     template <math::NativeInteger T>
-    [[nodiscard]] auto buildIntegerList(unit::ElementCount count, T minimum, T maximum) -> util::List<T>;
+    [[nodiscard]] auto buildIntegerList(unit::ItemCount count, T minimum, T maximum) -> util::List<T>;
     /// Create a random UTF-8 string with characters from the given set.
     /// @param length The number of Unicode code points to build. Zero or infinite lengths return an empty string.
     /// @param characters The character choices. An empty set returns an empty string.
     /// @return A random UTF-8 string, or an empty string.
+    /// @throws err::OutOfRangeError If the length exceeds the maximum possible value.
     [[nodiscard]] auto buildString(unit::CpLength length, const text::CharSet &characters) -> text::String;
     /// Create a block of random bytes.
     /// @param length The number of bytes to build. Zero or infinite lengths return an empty block.
@@ -79,8 +80,8 @@ public:
     [[nodiscard]] auto buildByteBuffer(unit::ByteLength length) -> mem::ByteBuffer;
     /// Select a valid element index for a container with `count` elements.
     /// @param count The number of available elements.
-    /// @return A random index in `[0, count)`, or `ElementIndex::noIndex()` for zero or infinite counts.
-    [[nodiscard]] auto selectIndex(unit::ElementCount count) -> unit::ElementIndex;
+    /// @return A random index in `[0, count)`, or `ItemIndex::noIndex()` for zero or infinite counts.
+    [[nodiscard]] auto selectIndex(unit::ItemCount count) -> unit::ItemIndex;
 
 public: // element selection
     /// Select one random element from the given choices.
@@ -138,7 +139,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with sampled elements, or an empty list.
     template <typename T>
-    [[nodiscard]] auto buildElementList(unit::ElementCount count, std::span<const T> choices) -> util::List<T>;
+    [[nodiscard]] auto buildElementList(unit::ItemCount count, std::span<const T> choices) -> util::List<T>;
     /// Build a list by sampling elements with replacement.
     /// @tparam T The element type.
     /// @tparam Self The list CRTP type.
@@ -146,7 +147,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A matching list with sampled elements, or an empty list.
     template <typename T, typename Self>
-    [[nodiscard]] auto buildElementList(unit::ElementCount count, const util::List<T, Self> &choices) ->
+    [[nodiscard]] auto buildElementList(unit::ItemCount count, const util::List<T, Self> &choices) ->
         typename util::List<T, Self>::Self;
     /// Build a list by sampling elements with replacement.
     /// @tparam T The element type.
@@ -156,7 +157,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with sampled elements, or an empty list.
     template <typename T, typename Compare, typename Self>
-    [[nodiscard]] auto buildElementList(unit::ElementCount count, const util::Set<T, Compare, Self> &choices)
+    [[nodiscard]] auto buildElementList(unit::ItemCount count, const util::Set<T, Compare, Self> &choices)
         -> util::List<T>;
     /// Build a list by sampling elements with replacement.
     /// @tparam T The element type.
@@ -167,7 +168,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with sampled elements, or an empty list.
     template <typename T, typename Hash, typename Equal, typename Self>
-    [[nodiscard]] auto buildElementList(unit::ElementCount count, const util::HashSet<T, Hash, Equal, Self> &choices)
+    [[nodiscard]] auto buildElementList(unit::ItemCount count, const util::HashSet<T, Hash, Equal, Self> &choices)
         -> util::List<T>;
     /// Build a list by sampling elements without replacement.
     /// @tparam T The element type.
@@ -175,7 +176,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with unique sampled elements. The list is capped to the number of choices.
     template <typename T>
-    [[nodiscard]] auto buildUniqueElementList(unit::ElementCount count, std::span<const T> choices) -> util::List<T>;
+    [[nodiscard]] auto buildUniqueElementList(unit::ItemCount count, std::span<const T> choices) -> util::List<T>;
     /// Build a list by sampling elements without replacement.
     /// @tparam T The element type.
     /// @tparam Self The list CRTP type.
@@ -183,7 +184,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A matching list with unique sampled elements. The list is capped to the number of choices.
     template <typename T, typename Self>
-    [[nodiscard]] auto buildUniqueElementList(unit::ElementCount count, const util::List<T, Self> &choices) ->
+    [[nodiscard]] auto buildUniqueElementList(unit::ItemCount count, const util::List<T, Self> &choices) ->
         typename util::List<T, Self>::Self;
     /// Build a list by sampling elements without replacement.
     /// @tparam T The element type.
@@ -193,7 +194,7 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with unique sampled elements. The list is capped to the number of choices.
     template <typename T, typename Compare, typename Self>
-    [[nodiscard]] auto buildUniqueElementList(unit::ElementCount count, const util::Set<T, Compare, Self> &choices)
+    [[nodiscard]] auto buildUniqueElementList(unit::ItemCount count, const util::Set<T, Compare, Self> &choices)
         -> util::List<T>;
     /// Build a list by sampling elements without replacement.
     /// @tparam T The element type.
@@ -204,8 +205,8 @@ public: // element selection
     /// @param choices The choices to sample from. Empty choices return an empty list.
     /// @return A list with unique sampled elements. The list is capped to the number of choices.
     template <typename T, typename Hash, typename Equal, typename Self>
-    [[nodiscard]] auto buildUniqueElementList(
-        unit::ElementCount count, const util::HashSet<T, Hash, Equal, Self> &choices) -> util::List<T>;
+    [[nodiscard]] auto buildUniqueElementList(unit::ItemCount count, const util::HashSet<T, Hash, Equal, Self> &choices)
+        -> util::List<T>;
 
 public: // shuffling
     /// Shuffle a random-access span in place.
@@ -266,185 +267,6 @@ protected:
     Random() = default;
 };
 
-template <math::NativeInteger T>
-auto Random::selectInteger(T minimum, T maximum) -> T {
-    using Value = std::remove_cv_t<T>;
-    if constexpr (sizeof(Value) <= 4U) {
-        if constexpr (std::is_signed_v<Value>) {
-            return static_cast<T>(getInt32(static_cast<int32_t>(minimum), static_cast<int32_t>(maximum)));
-        } else {
-            return static_cast<T>(getUInt32(static_cast<uint32_t>(minimum), static_cast<uint32_t>(maximum)));
-        }
-    } else {
-        if constexpr (std::is_signed_v<Value>) {
-            return static_cast<T>(getInt64(static_cast<int64_t>(minimum), static_cast<int64_t>(maximum)));
-        } else {
-            return static_cast<T>(getUInt64(static_cast<uint64_t>(minimum), static_cast<uint64_t>(maximum)));
-        }
-    }
 }
 
-template <math::NativeInteger T>
-auto Random::selectInteger(const math::IntegerRange<T> range) -> T {
-    return selectInteger(range.minimum(), range.maximum());
-}
-
-template <math::NativeInteger T>
-auto Random::buildIntegerList(const unit::ElementCount count, const T minimum, const T maximum) -> util::List<T> {
-    if (count.isZero() || count.isInfinite()) {
-        return {};
-    }
-    auto result = util::List<T>{};
-    result.reserve(count);
-    for (auto i = unit::ElementCount{}; i < count; ++i) {
-        result.append(selectInteger(minimum, maximum));
-    }
-    return result;
-}
-
-template <typename T>
-auto Random::selectElement(const std::span<const T> choices, const T &valueIfEmpty) -> T {
-    if (choices.empty()) {
-        return valueIfEmpty;
-    }
-    const auto index = selectInteger<std::size_t>(0U, choices.size() - 1U);
-    return choices[index];
-}
-
-template <typename T>
-auto Random::selectElement(const std::vector<T> &choices, const T &valueIfEmpty) -> T {
-    return selectElement(std::span<const T>{choices}, valueIfEmpty);
-}
-
-template <typename T>
-auto Random::selectElement(const std::initializer_list<T> choices, const T &valueIfEmpty) -> T {
-    return selectElement(std::span<const T>{choices.begin(), choices.size()}, valueIfEmpty);
-}
-
-template <typename T, typename Self>
-auto Random::selectElement(const util::List<T, Self> &choices, const T &valueIfEmpty) -> T {
-    if (choices.count().isZero()) {
-        return valueIfEmpty;
-    }
-    const auto index = selectIndex(choices.count());
-    return choices.get(index, valueIfEmpty);
-}
-
-template <typename T, typename Compare, typename Self>
-auto Random::selectElement(const util::Set<T, Compare, Self> &choices, const T &valueIfEmpty) -> T {
-    return selectElement(choices.toList(), valueIfEmpty);
-}
-
-template <typename T, typename Hash, typename Equal, typename Self>
-auto Random::selectElement(const util::HashSet<T, Hash, Equal, Self> &choices, const T &valueIfEmpty) -> T {
-    return selectElement(choices.toList(), valueIfEmpty);
-}
-
-template <typename T>
-auto Random::buildElementList(const unit::ElementCount count, const std::span<const T> choices) -> util::List<T> {
-    if (count.isZero() || count.isInfinite() || choices.empty()) {
-        return {};
-    }
-    auto result = util::List<T>{};
-    result.reserve(count);
-    for (auto i = unit::ElementCount{}; i < count; ++i) {
-        result.append(selectElement(choices));
-    }
-    return result;
-}
-
-template <typename T, typename Self>
-auto Random::buildElementList(const unit::ElementCount count, const util::List<T, Self> &choices) ->
-    typename util::List<T, Self>::Self {
-    using Result = typename util::List<T, Self>::Self;
-    if (count.isZero() || count.isInfinite() || choices.count().isZero()) {
-        return {};
-    }
-    auto result = Result{};
-    result.reserve(count);
-    for (auto i = unit::ElementCount{}; i < count; ++i) {
-        result.append(selectElement(choices));
-    }
-    return result;
-}
-
-template <typename T, typename Compare, typename Self>
-auto Random::buildElementList(const unit::ElementCount count, const util::Set<T, Compare, Self> &choices)
-    -> util::List<T> {
-    return buildElementList(count, choices.toList());
-}
-
-template <typename T, typename Hash, typename Equal, typename Self>
-auto Random::buildElementList(const unit::ElementCount count, const util::HashSet<T, Hash, Equal, Self> &choices)
-    -> util::List<T> {
-    return buildElementList(count, choices.toList());
-}
-
-template <typename T>
-auto Random::buildUniqueElementList(const unit::ElementCount count, const std::span<const T> choices) -> util::List<T> {
-    if (count.isZero() || count.isInfinite() || choices.empty()) {
-        return {};
-    }
-    auto values = std::vector<T>{choices.begin(), choices.end()};
-    shuffle(values);
-    const auto resultCount = std::min(count.toSizeT(), values.size());
-    auto result = util::List<T>{};
-    result.reserve(unit::ElementCount::fromSizeT(resultCount));
-    for (auto i = std::size_t{0}; i < resultCount; ++i) {
-        result.append(values[i]);
-    }
-    return result;
-}
-
-template <typename T, typename Self>
-auto Random::buildUniqueElementList(const unit::ElementCount count, const util::List<T, Self> &choices) ->
-    typename util::List<T, Self>::Self {
-    using Result = typename util::List<T, Self>::Self;
-    if (count.isZero() || count.isInfinite() || choices.count().isZero()) {
-        return {};
-    }
-    auto values = choices.toStdVector();
-    shuffle(values);
-    const auto resultCount = std::min(count.toSizeT(), values.size());
-    auto result = Result{};
-    result.reserve(unit::ElementCount::fromSizeT(resultCount));
-    for (auto i = std::size_t{0}; i < resultCount; ++i) {
-        result.append(values[i]);
-    }
-    return result;
-}
-
-template <typename T, typename Compare, typename Self>
-auto Random::buildUniqueElementList(const unit::ElementCount count, const util::Set<T, Compare, Self> &choices)
-    -> util::List<T> {
-    return buildUniqueElementList(count, choices.toList());
-}
-
-/// @copydoc buildUniqueElementList(unit::ElementCount, const util::HashSet<T, Hash, Equal, Self> &)
-template <typename T, typename Hash, typename Equal, typename Self>
-auto Random::buildUniqueElementList(const unit::ElementCount count, const util::HashSet<T, Hash, Equal, Self> &choices)
-    -> util::List<T> {
-    return buildUniqueElementList(count, choices.toList());
-}
-
-template <typename T>
-void Random::shuffle(const std::span<T> values) {
-    for (auto i = values.size(); i > 1U; --i) {
-        using std::swap;
-        swap(values[i - 1U], values[selectInteger<std::size_t>(0U, i - 1U)]);
-    }
-}
-
-template <typename T>
-void Random::shuffle(std::vector<T> &values) {
-    shuffle(std::span<T>{values});
-}
-
-template <typename T, typename Self>
-void Random::shuffle(util::List<T, Self> &values) {
-    auto raw = values.toStdVector();
-    shuffle(raw);
-    values = util::List<T, Self>{std::move(raw)};
-}
-
-}
+#include "Random.tpp"

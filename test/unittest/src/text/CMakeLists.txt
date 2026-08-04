@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(base_n)
+add_subdirectory(punycode)
 
 target_sources(erbsland-core-unittest PRIVATE
         AnyStringBuilderTest.cpp
@@ -14,6 +15,7 @@ target_sources(erbsland-core-unittest PRIVATE
         CharRangeTest.cpp
         CharSetTest.cpp
         CharTest.cpp
+        CodeSnippetLayoutTest.cpp
         CombinedCharTest.cpp
         EncodingModeTest.cpp
         FloatConversionTest.cpp
@@ -21,6 +23,8 @@ target_sources(erbsland-core-unittest PRIVATE
         HtmlParserTest.cpp
         HtmlTokenizerTest.cpp
         IntegerConversionTest.cpp
+        JsonParserTest.cpp
+        JsonValueTest.cpp
         NamedKeyParserTest.cpp
         StdFormatForTextTest.cpp
         StringCharReaderTest.cpp
@@ -69,6 +73,8 @@ target_sources(erbsland-core-unittest PRIVATE
         U8StringTest.cpp
         U8StringTrimTest.cpp
         U8WriterTest.cpp
+        UnicodeNormalizationConformanceTest.cpp
+        UnicodeNormalizationTest.cpp
         UnicodeTest.cpp
         UnsafeU16StringEditorAccessTest.cpp
         UnsafeU8StringEditorAccessTest.cpp

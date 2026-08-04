@@ -48,10 +48,15 @@ public: // construction
     auto operator=(LexerToken &&) -> LexerToken & = default;
 
 public: // accessors
+    /// Get the token type.
     [[nodiscard]] constexpr auto type() const noexcept -> TokenType { return _type; }
+    /// Get the source location at the start of the token.
     [[nodiscard]] constexpr auto begin() const noexcept -> unit::CodeLocation { return _begin; }
+    /// Get the source location at the end of the token.
     [[nodiscard]] constexpr auto end() const noexcept -> unit::CodeLocation { return _end; }
+    /// Get the raw source text of the token.
     [[nodiscard]] auto rawText() const noexcept -> text::String { return _rawText; }
+    /// Get the parsed token content.
     [[nodiscard]] constexpr auto content() const noexcept -> const Content & { return _content; }
 
 public:

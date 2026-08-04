@@ -62,7 +62,7 @@ public:
                            .setCancelKey(Key::F7)
                            .setCleanupEnabled(false);
 
-        REQUIRE(&result == &options);
+        REQUIRE_EQUAL(&result, &options);
         REQUIRE_EQUAL(options.displayStyle(), ReadLineDisplayStyle::Frame);
         REQUIRE_EQUAL(options.padding(), bgeo::BlockMargins(0, 3, 0, 1));
         REQUIRE_EQUAL(render(options.title()), std::string{"Title"});
@@ -71,7 +71,8 @@ public:
         REQUIRE_EQUAL(options.maximumLength(), erbsland::unit::CpLength{27U});
         REQUIRE_EQUAL(options.maximumLines(), erbsland::unit::LineCount{3U});
         REQUIRE_EQUAL(options.maximumDisplayLines(), erbsland::unit::LineCount{2U});
-        REQUIRE_EQUAL(options.history().count().toSizeT(), std::size_t{2U});
+        const auto historyCount = options.history().count().toSizeT();
+        REQUIRE_EQUAL(historyCount, std::size_t{2U});
         REQUIRE_EQUAL(options.currentText(), "draft"_el);
         REQUIRE_EQUAL(options.timeout(), erbsland::time::Seconds{12});
         REQUIRE_EQUAL(options.timeoutDisplayThreshold(), erbsland::time::Seconds{7});

@@ -14,12 +14,16 @@ namespace erbsland::cterm::impl {
 /// @tested{ReadSecretTest}
 class ReadSecret final : public ReadLineBase, public cterm::ReadSecret {
 private:
+    /// Stores sanitized secret-line options and the capped length.
     struct PreparedOptions final {
         ReadLineOptions options;
         unit::CpLength maximumLength;
     };
 
 public:
+    /// Create a protected terminal secret editor.
+    /// @param terminal The terminal used for input and display.
+    /// @param options The secret editor options.
     ReadSecret(TerminalPtr terminal, ReadLineOptions options);
     ~ReadSecret() override;
 
@@ -31,7 +35,11 @@ public: // implement cterm::ReadSecret
     [[nodiscard]] auto isActive() const noexcept -> bool override { return isActiveBase(); }
 
 private:
+    /// Create a protected editor from sanitized options.
+    /// @param terminal The terminal used for input and display.
+    /// @param prepared The validated secret editor options.
     ReadSecret(TerminalPtr terminal, PreparedOptions prepared);
+    /// Validate and sanitize options for protected secret input.
     [[nodiscard]] static auto prepareOptions(ReadLineOptions options) -> PreparedOptions;
 
 private: // implement ReadLineBase storage
@@ -46,8 +54,11 @@ private: // implement ReadLineBase storage
     [[nodiscard]] auto nextUnitEnd(unit::CpIndex index) const noexcept -> unit::CpIndex override;
 
 private:
+    /// Erase a character range from protected storage.
     void eraseCharacters(std::size_t begin, std::size_t count) noexcept;
+    /// Build a result with the current committed secret.
     [[nodiscard]] auto result(ReadLineStatus status) const -> ReadLineResult;
+    /// Discard pending terminal input after a secret operation.
     void purgePendingInput() noexcept;
 
 private:

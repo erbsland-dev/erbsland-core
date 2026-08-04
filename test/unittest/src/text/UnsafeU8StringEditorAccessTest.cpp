@@ -5,7 +5,7 @@
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -13,20 +13,21 @@
 #include <string>
 #include <string_view>
 
-using el::text::U8StringEditor;
+using el::text::StringEditor;
 using el::unit::ByteLength;
+using namespace el::text::literals;
 
 TESTED_TARGETS(UnsafeU8StringEditorAccess UnsafeU8StringBuffer)
 class UnsafeU8StringEditorAccessTest final : public el::UnitTest {
 public:
     void testEmptyStringReturnsNullPointer() {
-        const auto text = U8StringEditor{};
+        const auto text = StringEditor{};
 
         REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), nullptr);
     }
 
     void testStringReturnsNullTerminatedData() {
-        const auto text = U8StringEditor{std::string_view{"Hello"}};
+        const auto text = StringEditor{"Hello"_el};
         const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
 
         REQUIRE_NOT_EQUAL(data, nullptr);

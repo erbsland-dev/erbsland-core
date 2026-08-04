@@ -13,7 +13,9 @@ target_sources(erbsland-core-unittest PRIVATE
         HashSetTest.cpp
         ListTest.cpp
         MapTest.cpp
+        MoveAwareTestCounts.hpp
         MoveAwareTestValue.hpp
+        MoveAwareTestValueHash.hpp
         ResultWithDataTest.cpp
         SetTest.cpp
 )

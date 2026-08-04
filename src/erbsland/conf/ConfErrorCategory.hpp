@@ -45,11 +45,9 @@ public:
     /// @param value The error category enum.
     constexpr ConfErrorCategory(Enum value) noexcept : _value{value} {} // NOLINT(*-explicit-constructor)
 
-    /// Default destructor.
+    // defaults
     ~ConfErrorCategory() = default;
-    /// Default copy constructor.
     ConfErrorCategory(const ConfErrorCategory &) = default;
-    /// Default copy assignment.
     auto operator=(const ConfErrorCategory &) -> ConfErrorCategory & = default;
 
 public: // operators

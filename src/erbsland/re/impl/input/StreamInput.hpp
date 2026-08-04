@@ -18,6 +18,7 @@ public:
     /// Create an input for a seekable text stream.
     [[nodiscard]] static auto create(const stream::TextInputStreamPtr &stream) -> InputPtr;
 
+    /// Create an input that owns `stream`.
     explicit StreamInput(stream::TextInputStreamPtr stream);
 
 public: // implement Input
@@ -27,8 +28,11 @@ public: // implement Input
     [[nodiscard]] auto createMatch(CaptureGroupList captureGroupList) -> MatchPtr override;
 
 private:
+    /// Read the next character and its source position from the stream.
     [[nodiscard]] auto readFromStream() -> CharAndPosition;
+    /// Read the text covered by a capture range.
     [[nodiscard]] auto readCapture(const CaptureRange &range) -> text::String;
+    /// Seek the stream to a byte position.
     void setPosition(unit::ByteIndex position);
 
 private:

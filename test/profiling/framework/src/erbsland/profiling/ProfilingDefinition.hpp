@@ -39,23 +39,37 @@ public:
     auto setCompatibility(std::function<bool(const Scenario &)> value) -> ProfilingDefinition &;
 
 public: // lookup
+    /// Find an axis by its identifier.
     [[nodiscard]] auto findAxis(const String &id) const -> const AxisDefinition *;
+    /// Find a parameter by its identifier.
     [[nodiscard]] auto findParameter(const String &id) const -> const ParameterDefinition *;
+    /// Find a functionality by its identifier.
     [[nodiscard]] auto findFunctionality(const String &id) const -> const FunctionalityDefinition *;
+    /// Find a suite by its identifier.
     [[nodiscard]] auto findSuite(const String &id) const -> const SuiteDefinition *;
     /// Test whether an expanded scenario is compatible with domain rules.
     [[nodiscard]] auto isCompatible(const Scenario &scenario) const -> bool;
 
 public: // attributes
+    /// Access the application name.
     [[nodiscard]] auto applicationName() const -> const String & { return _applicationName; }
+    /// Access the application version.
     [[nodiscard]] auto applicationVersion() const noexcept -> Version { return _applicationVersion; }
+    /// Access the help title.
     [[nodiscard]] auto helpTitle() const -> const String & { return _helpTitle; }
+    /// Access the help description.
     [[nodiscard]] auto helpDescription() const -> const String & { return _helpDescription; }
+    /// Access the embedded default configuration.
     [[nodiscard]] auto defaultConfiguration() const -> const String & { return _defaultConfiguration; }
+    /// Access the defined axes.
     [[nodiscard]] auto axes() const -> const List<AxisDefinition> & { return _axes; }
+    /// Access the defined parameters.
     [[nodiscard]] auto parameters() const -> const List<ParameterDefinition> & { return _parameters; }
+    /// Access the defined functionalities.
     [[nodiscard]] auto functionalities() const -> const List<FunctionalityDefinition> & { return _functionalities; }
+    /// Access the defined suites.
     [[nodiscard]] auto suites() const -> const List<SuiteDefinition> & { return _suites; }
+    /// Access the defined metrics.
     [[nodiscard]] auto metrics() const -> const List<MetricDefinition> & { return _metrics; }
 
 private:

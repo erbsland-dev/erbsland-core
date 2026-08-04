@@ -19,7 +19,7 @@ TESTED_TARGETS(FastNameDecoder)
 class FastNameDecoderTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 public:
     void requireAndNext(FastNameDecoder &decoder, const char32_t expectedUnicode) {
-        REQUIRE(decoder.character() == expectedUnicode);
+        REQUIRE_EQUAL(decoder.character(), expectedUnicode);
         decoder.next();
     }
 
@@ -100,13 +100,15 @@ public:
             WITH_CONTEXT(requireAndNext(decoder, U'😀'));
             REQUIRE_EQUAL(transaction.capturedString(), u8"A😀"_el);
             REQUIRE_EQUAL(transaction.capturedSize(), std::size_t{2U});
-            REQUIRE_EQUAL(decoder.location().codeLocation().column(), el::unit::ColumnIndex{2U});
+            const auto column = decoder.location().codeLocation().column();
+            REQUIRE_EQUAL(column, el::unit::ColumnIndex{2U});
             WITH_CONTEXT(requireAndNext(decoder, U'β'));
             WITH_CONTEXT(requireEndOfData(decoder));
             REQUIRE_EQUAL(transaction.capturedString(), u8"A😀β"_el);
             REQUIRE_EQUAL(transaction.capturedSize(), std::size_t{3U});
         }
-        REQUIRE_EQUAL(decoder.location().codeLocation().column(), el::unit::ColumnIndex::zero());
+        const auto column = decoder.location().codeLocation().column();
+        REQUIRE_EQUAL(column, el::unit::ColumnIndex::zero());
         WITH_CONTEXT(requireAndNext(decoder, U'A'));
         WITH_CONTEXT(requireAndNext(decoder, U'😀'));
         WITH_CONTEXT(requireAndNext(decoder, U'β'));

@@ -32,8 +32,6 @@ class TimeUnitsTest final : public UNITTEST_SUBCLASS(TimeDataTestBase) {
     };
 
 public:
-    auto additionalErrorMessages() noexcept -> std::string override { return _context; }
-
     void testComparisons() {
         const auto rows = readComparisonRows();
         requireAmountComparison<Nanoseconds>(rows, "Nanoseconds");
@@ -104,7 +102,7 @@ private:
     template <typename tAmount>
     void requireAmountComparison(const std::map<std::string, std::vector<ComparisonRow>> &rows, std::string_view type) {
         const auto values = amountComparisonValues<tAmount>(rows, type);
-        requireComparisonRows(values, _context, type);
+        requireComparisonRows(values, type);
     }
 
     template <typename tAmount>
@@ -132,7 +130,7 @@ private:
         for (const auto &row : iterator->second) {
             result.emplace_back(tPart{static_cast<typename tPart::Value>(row.value)}, row.order);
         }
-        requireComparisonRows(result, _context, type);
+        requireComparisonRows(result, type);
     }
 
     void requireTimeDeltaComparison(const std::map<std::string, std::vector<ComparisonRow>> &rows) {
@@ -144,7 +142,7 @@ private:
         for (const auto &row : iterator->second) {
             result.emplace_back(TimeDelta{Nanoseconds{row.value}}, row.order);
         }
-        requireComparisonRows(result, _context, "TimeDelta");
+        requireComparisonRows(result, "TimeDelta");
     }
 
     void requireDurationComparison(const std::map<std::string, std::vector<ComparisonRow>> &rows) {
@@ -156,7 +154,7 @@ private:
         for (const auto &row : iterator->second) {
             result.emplace_back(Duration{Seconds{row.value}}, row.order);
         }
-        requireComparisonRows(result, _context, "Duration");
+        requireComparisonRows(result, "Duration");
     }
 
     void dispatchConversionSource(const ConversionRow &row) {
@@ -208,9 +206,10 @@ private:
     void checkConversion(const ConversionRow &row) {
         const auto source = tSource{row.value};
         const auto expected = tTarget{row.expected};
+        const auto actual = source.template converted<tTarget>();
         runWithContext(
             SOURCE_LOCATION(),
-            [&]() -> void { REQUIRE_EQUAL(source.template converted<tTarget>(), expected); },
+            [&]() -> void { REQUIRE_EQUAL(actual, expected); },
             [&]() -> std::string {
                 return std::format(
                     "conversion line={} {} value={} to {} expected={} actual={}",
@@ -219,10 +218,7 @@ private:
                     row.value,
                     row.targetType,
                     expected.toRawValue(),
-                    source.template converted<tTarget>().toRawValue());
+                    actual.toRawValue());
             });
     }
-
-private:
-    std::string _context;
 };

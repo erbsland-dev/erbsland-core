@@ -124,18 +124,46 @@ public: // conversion
     [[nodiscard]] static auto fromString(const U32String &text) noexcept -> CombinedChar;
 
 private:
+    /// Decode UTF-8 text into normalized character storage.
+    /// @param text The UTF-8 text to decode.
+    /// @return The normalized storage.
     [[nodiscard]] static auto decodeUtf8(const String &text) noexcept -> Storage;
+    /// Decode UTF-32 text into normalized character storage.
+    /// @param text The UTF-32 text to decode.
+    /// @return The normalized storage.
     [[nodiscard]] static auto decodeUtf32(const U32String &text) noexcept -> Storage;
+    /// Normalize a decoded code point for terminal-character storage.
+    /// @param codePoint The decoded code point.
+    /// @return The normalized code point.
     [[nodiscard]] static auto normalizeTextCodePoint(Char codePoint) noexcept -> Char;
+    /// Normalize decoded UTF-32 text into one visible character.
+    /// @param text The decoded text.
+    /// @return The normalized storage.
     [[nodiscard]] static auto normalizeDecodedText(const U32String &text) noexcept -> Storage;
+    /// Get storage containing the replacement character.
+    /// @return The replacement-character storage.
     [[nodiscard]] static auto replacementStorage() noexcept -> Storage;
+    /// Apply one decoded code point to normalized character storage.
+    /// @param result The storage being assembled.
+    /// @param combiningCount The number of stored combining code points.
+    /// @param hasBaseCodePoint Whether a visible base code point was found.
+    /// @param mustReplace Whether invalid input requires replacement storage.
+    /// @param codePoint The decoded code point.
     static void normalizeDecodedTextCodePoint(
         Storage &result,
         std::size_t &combiningCount,
         bool &hasBaseCodePoint,
         bool &mustReplace,
         Char codePoint) noexcept;
+    /// Count populated code points in fixed character storage.
+    /// @param codePoints The storage to inspect.
+    /// @return The populated code-point count.
     [[nodiscard]] constexpr static auto countCodePoints(const Storage &codePoints) noexcept -> std::size_t;
+    /// Combine three code points into a stable hash value.
+    /// @param first The first code point.
+    /// @param second The second code point.
+    /// @param third The third code point.
+    /// @return The combined hash value.
     [[nodiscard]] constexpr static auto hashCreate(char32_t first, char32_t second, char32_t third) noexcept
         -> std::size_t;
 
@@ -143,6 +171,9 @@ private:
     Storage _characters{}; ///< The stored base and combining code points.
 };
 
+/// Count populated code points in fixed character storage.
+/// @param codePoints The storage to inspect.
+/// @return The populated code-point count.
 constexpr auto CombinedChar::countCodePoints(const Storage &codePoints) noexcept -> std::size_t {
     for (std::size_t index = 0; index < codePoints.size(); ++index) {
         if (codePoints[index].isNull()) {
@@ -152,6 +183,11 @@ constexpr auto CombinedChar::countCodePoints(const Storage &codePoints) noexcept
     return codePoints.size();
 }
 
+/// Combine three code points into a stable hash value.
+/// @param first The first code point.
+/// @param second The second code point.
+/// @param third The third code point.
+/// @return The combined hash value.
 constexpr auto CombinedChar::hashCreate(const char32_t first, const char32_t second, const char32_t third) noexcept
     -> std::size_t {
     auto hash = std::size_t{0};

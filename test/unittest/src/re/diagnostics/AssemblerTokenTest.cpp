@@ -92,6 +92,7 @@ public:
 
     void testFormat() {
         const AssemblerToken token{AssemblerToken::Integer, 123U, el::unit::ColumnIndex{7U}};
-        REQUIRE_EQUAL(std::format("{}", token), "col=7 type=Integer value=123");
+        const auto formatted = std::format("{}", token);
+        REQUIRE_EQUAL(formatted, "col=7 type=Integer value=123");
     }
 };

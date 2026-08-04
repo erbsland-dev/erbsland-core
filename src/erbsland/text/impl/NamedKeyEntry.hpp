@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "NamedKeyEntry_fwd.hpp"
+#include "NamedKeyEntryKind.hpp"
+
 #include "../Char.hpp"
 #include "../String.hpp"
 
@@ -9,14 +12,6 @@
 #include <utility>
 
 namespace erbsland::text::impl {
-
-/// The kind of one parsed named-key entry.
-enum class NamedKeyEntryKind : uint8_t {
-    Key,          ///< A key without a value.
-    KeyWithValue, ///< A key with an explicit or compact value.
-    Value,        ///< A positional value.
-    End,          ///< The configured end of the entry list.
-};
 
 /// One entry produced by `NamedKeyParser`.
 /// @tested{NamedKeyParserTest}

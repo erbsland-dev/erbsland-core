@@ -19,20 +19,16 @@ auto Port::toString() const -> String {
 }
 
 auto Port::fromString(const String &text) noexcept -> std::optional<Port> {
-    auto options = IntegerParseOptions{};
-    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
-    const auto value = text.toInteger<uint32_t>(65536U, options);
-    if (value > 65535U) {
+    try {
+        return fromStringOrThrow(text);
+    } catch (const err::ParseError &) {
         return std::nullopt;
     }
-    return Port{static_cast<uint16_t>(value)};
 }
 
 auto Port::fromStringOrThrow(const String &text) -> Port {
-    if (const auto result = fromString(text); result.has_value()) {
-        return *result;
-    }
-    throw err::ParseError{"The text is not a valid network port."_el};
+    const auto options = IntegerParseOptions{}.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
+    return Port{text.toIntegerOrThrow<uint16_t>(options)};
 }
 
 }

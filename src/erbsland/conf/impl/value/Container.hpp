@@ -2,20 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Container_fwd.hpp"
+#include "Value_fwd.hpp"
+
 #include "../../Value.hpp"
 
-#include <memory>
-
 namespace erbsland::conf::impl {
-
-class Container;
-using ContainerPtr = std::shared_ptr<Container>;
-class Value;
-using ValuePtr = std::shared_ptr<Value>;
 
 /// The interface for container classes.
 class Container {
 public:
+    // defaults
     virtual ~Container() = default;
 
 public:

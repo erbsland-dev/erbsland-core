@@ -3,7 +3,7 @@
 
 #include "MoveAwareTestValue.hpp"
 
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/List.hpp>
 #include <erbsland/util/LoopStatus.hpp>
@@ -14,8 +14,23 @@
 #include <utility>
 #include <vector>
 
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::util::LoopStatus;
+
+class SetTestCompare final {
+public:
+    SetTestCompare() : _identifier{++_nextIdentifier} {}
+
+public:
+    [[nodiscard]] auto identifier() const noexcept -> int { return _identifier; }
+
+public: // operators
+    [[nodiscard]] auto operator()(const int left, const int right) const noexcept -> bool { return left < right; }
+
+private:
+    int _identifier;
+    inline static int _nextIdentifier{0};
+};
 
 TESTED_TARGETS(Set)
 class SetTest final : public el::UnitTest {
@@ -24,6 +39,32 @@ public:
     using IntSet = el::util::Set<int>;
     using MoveSet = el::util::Set<erbsland::test::MoveAwareTestValue>;
     using MoveValue = erbsland::test::MoveAwareTestValue;
+    using StatefulSet = el::util::Set<int, SetTestCompare>;
+
+    void testSharedDefaultStorage() {
+        auto first = IntSet{};
+        const auto second = IntSet{};
+
+        REQUIRE_EQUAL(&first.toRawValue(), &second.toRawValue());
+
+        first.insert(1);
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE(first.contains(1));
+        REQUIRE(second.count().isZero());
+    }
+
+    void testStatefulPolicyUsesUniqueDefaultStorage() {
+        auto first = StatefulSet{};
+        const auto second = StatefulSet{};
+
+        REQUIRE_NOT_EQUAL(&first.toRawValue(), &second.toRawValue());
+        REQUIRE_NOT_EQUAL(first.toRawValue().key_comp().identifier(), second.toRawValue().key_comp().identifier());
+
+        first.insert(2).insert(1);
+        REQUIRE_EQUAL(first.toStdVector(), (std::vector<int>{1, 2}));
+        REQUIRE(second.count().isZero());
+    }
 
     void testConstructionAndElements() {
         const auto empty = IntSet{};
@@ -32,12 +73,14 @@ public:
         REQUIRE_EQUAL(empty.last(), 0);
 
         const auto set = IntSet{{3, 1, 2, 1}};
-        REQUIRE_EQUAL(set.count(), ElementCount{3});
+        REQUIRE_EQUAL(set.count(), ItemCount{3});
         REQUIRE_EQUAL(set.first(), 1);
         REQUIRE_EQUAL(set.last(), 3);
         REQUIRE_EQUAL(set.toStdVector(), (std::vector<int>{1, 2, 3}));
-        REQUIRE(set.toStdSet() == (std::set<int>{1, 2, 3}));
-        REQUIRE(set.toStdUnorderedSet() == (std::unordered_set<int>{1, 2, 3}));
+        const auto stdSet = set.toStdSet();
+        const auto stdUnorderedSet = set.toStdUnorderedSet();
+        REQUIRE_EQUAL(stdSet, (std::set<int>{1, 2, 3}));
+        REQUIRE_EQUAL(stdUnorderedSet, (std::unordered_set<int>{1, 2, 3}));
         const auto fromList = IntSet::fromList(IntList{{2, 2, 1}});
         REQUIRE_EQUAL(fromList.toStdVector(), (std::vector<int>{1, 2}));
         REQUIRE_EQUAL(fromList.toList().toStdVector(), (std::vector<int>{1, 2}));
@@ -47,7 +90,7 @@ public:
         auto first = IntSet{{1, 2}};
         auto second = first;
 
-        second.reserve(ElementCount{32}).insert(3).remove(1).shrinkToFit();
+        second.reserve(ItemCount{32}).insert(3).remove(1).shrinkToFit();
 
         REQUIRE_EQUAL(first.toStdVector(), (std::vector<int>{1, 2}));
         REQUIRE_EQUAL(second.toStdVector(), (std::vector<int>{2, 3}));
@@ -94,7 +137,7 @@ public:
         auto reverseVisited = std::vector<int>{};
         constSet.forEachReverse([&](int key) { reverseVisited.push_back(key); });
         REQUIRE_EQUAL(reverseVisited, (std::vector<int>{3, 1}));
-        REQUIRE_EQUAL(set.countIf([](int key) -> bool { return key > 1; }), ElementCount{1});
+        REQUIRE_EQUAL(set.countIf([](int key) -> bool { return key > 1; }), ItemCount{1});
     }
 
     void testSetOperationsAndPredicates() {

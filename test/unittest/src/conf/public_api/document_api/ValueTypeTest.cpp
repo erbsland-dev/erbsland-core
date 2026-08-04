@@ -22,8 +22,8 @@ public:
         ValueType vt;
 
         // The default unit should be Undefined
-        REQUIRE(vt == ValueType::Undefined);
-        REQUIRE_FALSE(vt != ValueType::Undefined);
+        REQUIRE_EQUAL(vt, ValueType::Undefined);
+        REQUIRE_EQUAL(vt, ValueType::Undefined);
         REQUIRE(vt.isUndefined());
     }
 
@@ -46,22 +46,22 @@ public:
         ValueType vtSectionWithTexts(ValueType::SectionWithTexts);
 
         // Verify each constructed ValueType
-        REQUIRE(vtUndefined == ValueType::Undefined);
-        REQUIRE(vtInteger == ValueType::Integer);
-        REQUIRE(vtBoolean == ValueType::Boolean);
-        REQUIRE(vtFloat == ValueType::Float);
-        REQUIRE(vtText == ValueType::Text);
-        REQUIRE(vtDate == ValueType::Date);
-        REQUIRE(vtTime == ValueType::Time);
-        REQUIRE(vtDateTime == ValueType::DateTime);
-        REQUIRE(vtBytes == ValueType::Bytes);
-        REQUIRE(vtTimeDelta == ValueType::TimeDelta);
-        REQUIRE(vtRegEx == ValueType::RegEx);
-        REQUIRE(vtValueList == ValueType::ValueList);
-        REQUIRE(vtSectionList == ValueType::SectionList);
-        REQUIRE(vtIntermediateSection == ValueType::IntermediateSection);
-        REQUIRE(vtSectionWithNames == ValueType::SectionWithNames);
-        REQUIRE(vtSectionWithTexts == ValueType::SectionWithTexts);
+        REQUIRE_EQUAL(vtUndefined, ValueType::Undefined);
+        REQUIRE_EQUAL(vtInteger, ValueType::Integer);
+        REQUIRE_EQUAL(vtBoolean, ValueType::Boolean);
+        REQUIRE_EQUAL(vtFloat, ValueType::Float);
+        REQUIRE_EQUAL(vtText, ValueType::Text);
+        REQUIRE_EQUAL(vtDate, ValueType::Date);
+        REQUIRE_EQUAL(vtTime, ValueType::Time);
+        REQUIRE_EQUAL(vtDateTime, ValueType::DateTime);
+        REQUIRE_EQUAL(vtBytes, ValueType::Bytes);
+        REQUIRE_EQUAL(vtTimeDelta, ValueType::TimeDelta);
+        REQUIRE_EQUAL(vtRegEx, ValueType::RegEx);
+        REQUIRE_EQUAL(vtValueList, ValueType::ValueList);
+        REQUIRE_EQUAL(vtSectionList, ValueType::SectionList);
+        REQUIRE_EQUAL(vtIntermediateSection, ValueType::IntermediateSection);
+        REQUIRE_EQUAL(vtSectionWithNames, ValueType::SectionWithNames);
+        REQUIRE_EQUAL(vtSectionWithTexts, ValueType::SectionWithTexts);
     }
 
     void testAssignmentFromEnum() {
@@ -69,8 +69,8 @@ public:
         vt = ValueType::Float;
 
         // The unit should now be Float
-        REQUIRE(vt == ValueType::Float);
-        REQUIRE_FALSE(vt != ValueType::Float);
+        REQUIRE_EQUAL(vt, ValueType::Float);
+        REQUIRE_EQUAL(vt, ValueType::Float);
     }
 
     void testAssignmentToEnum() {
@@ -78,7 +78,7 @@ public:
         ValueType::Enum enumVal = vt;
 
         // The enum value should match
-        REQUIRE(enumVal == ValueType::Boolean);
+        REQUIRE_EQUAL(enumVal, ValueType::Boolean);
     }
 
     void testOperators() {
@@ -134,7 +134,7 @@ public:
         ValueType vtText(ValueType::Text);
         ValueType::Enum enumVal = static_cast<ValueType::Enum>(vtText);
 
-        REQUIRE(enumVal == ValueType::Text);
+        REQUIRE_EQUAL(enumVal, ValueType::Text);
     }
 
     void testIsUndefined() {
@@ -225,22 +225,22 @@ public:
         ValueType vtSectionWithTexts(ValueType::SectionWithTexts);
 
         // Verify toText() returns correct string representations
-        REQUIRE(vtUndefined.toText() == "Undefined"_el);
-        REQUIRE(vtInteger.toText() == "Integer"_el);
-        REQUIRE(vtBoolean.toText() == "Boolean"_el);
-        REQUIRE(vtFloat.toText() == "Float"_el);
-        REQUIRE(vtText.toText() == "Text"_el);
-        REQUIRE(vtDate.toText() == "Date"_el);
-        REQUIRE(vtTime.toText() == "Time"_el);
-        REQUIRE(vtDateTime.toText() == "DateTime"_el);
-        REQUIRE(vtBytes.toText() == "Bytes"_el);
-        REQUIRE(vtTimeDelta.toText() == "TimeDelta"_el);
-        REQUIRE(vtRegEx.toText() == "RegEx"_el);
-        REQUIRE(vtValueList.toText() == "ValueList"_el);
-        REQUIRE(vtSectionList.toText() == "SectionList"_el);
-        REQUIRE(vtIntermediateSection.toText() == "IntermediateSection"_el);
-        REQUIRE(vtSectionWithNames.toText() == "SectionWithNames"_el);
-        REQUIRE(vtSectionWithTexts.toText() == "SectionWithTexts"_el);
+        REQUIRE_EQUAL(vtUndefined.toText(), "Undefined"_el);
+        REQUIRE_EQUAL(vtInteger.toText(), "Integer"_el);
+        REQUIRE_EQUAL(vtBoolean.toText(), "Boolean"_el);
+        REQUIRE_EQUAL(vtFloat.toText(), "Float"_el);
+        REQUIRE_EQUAL(vtText.toText(), "Text"_el);
+        REQUIRE_EQUAL(vtDate.toText(), "Date"_el);
+        REQUIRE_EQUAL(vtTime.toText(), "Time"_el);
+        REQUIRE_EQUAL(vtDateTime.toText(), "DateTime"_el);
+        REQUIRE_EQUAL(vtBytes.toText(), "Bytes"_el);
+        REQUIRE_EQUAL(vtTimeDelta.toText(), "TimeDelta"_el);
+        REQUIRE_EQUAL(vtRegEx.toText(), "RegEx"_el);
+        REQUIRE_EQUAL(vtValueList.toText(), "ValueList"_el);
+        REQUIRE_EQUAL(vtSectionList.toText(), "SectionList"_el);
+        REQUIRE_EQUAL(vtIntermediateSection.toText(), "IntermediateSection"_el);
+        REQUIRE_EQUAL(vtSectionWithNames.toText(), "SectionWithNames"_el);
+        REQUIRE_EQUAL(vtSectionWithTexts.toText(), "SectionWithTexts"_el);
     }
 
     // Test the hash specialization by using ValueType as a key in unordered_map
@@ -257,18 +257,21 @@ public:
         for (const auto &enumVal : ValueType::all()) {
             ValueType vt(enumVal);
             auto it = vtMap.find(vt);
-            REQUIRE(it != vtMap.end());
-            REQUIRE(it->second == el::text::StringConverter{vt.toText()}.toStdString());
+            REQUIRE_NOT_EQUAL(it, vtMap.end());
+            const auto expectedText = el::text::StringConverter{vt.toText()}.toStdString();
+            REQUIRE_EQUAL(it->second, expectedText);
         }
 
         // Verify specific entries
         ValueType vtInteger(ValueType::Integer);
-        REQUIRE(vtMap.find(vtInteger) != vtMap.end());
-        REQUIRE(vtMap[vtInteger] == "Integer");
+        const auto integerIt = vtMap.find(vtInteger);
+        REQUIRE_NOT_EQUAL(integerIt, vtMap.end());
+        REQUIRE_EQUAL(integerIt->second, "Integer");
 
         ValueType vtSectionWithTexts(ValueType::SectionWithTexts);
-        REQUIRE(vtMap.find(vtSectionWithTexts) != vtMap.end());
-        REQUIRE(vtMap[vtSectionWithTexts] == "SectionWithTexts");
+        const auto sectionWithTextsIt = vtMap.find(vtSectionWithTexts);
+        REQUIRE_NOT_EQUAL(sectionWithTextsIt, vtMap.end());
+        REQUIRE_EQUAL(sectionWithTextsIt->second, "SectionWithTexts");
     }
 
     void testEnumerationCompleteness() {

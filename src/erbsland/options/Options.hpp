@@ -19,6 +19,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest OptionsParserTest}
 class Options : public OptionSetManager {
 public:
+    /// Create an options root with its built-in option sets.
     Options();
 
     // defaults
@@ -42,7 +43,9 @@ public:
     void addModule(OptionModulePtr optionModule);
 
 public: // implement OptionsManager
+    /// Add an option with one or more names.
     auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    /// Edit an option selected by one of its names.
     auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
@@ -93,7 +96,9 @@ public: // accessors
     void clearParserFlag(OptionParserFlag flag) noexcept { _parserFlags.clear(flag); }
 
 private:
+    /// Get or create the root option set used for direct root options.
     [[nodiscard]] auto defaultOptionSet() -> OptionSetPtr;
+    /// Create the option set containing help and version options.
     [[nodiscard]] static auto createBuiltInOptionSet() -> OptionSetPtr;
 
 private:

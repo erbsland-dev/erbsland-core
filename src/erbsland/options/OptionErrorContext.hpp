@@ -22,6 +22,12 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionErrorContext {
 public:
+    /// Create a new option error context with a given title and description.
+    /// @param title The title of the error.
+    /// @param description The description of the error.
+    OptionErrorContext(text::String title, text::String description = {}) noexcept : // NOLINT(*-explicit-constructor)
+        _title{std::move(title)}, _description{std::move(description)} {}
+
     // defaults
     OptionErrorContext() = default;
     ~OptionErrorContext() = default;

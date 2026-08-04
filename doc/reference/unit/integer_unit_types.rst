@@ -55,12 +55,6 @@ Interface
 .. doxygentypedef:: erbsland::unit::CpRange
 .. doxygenstruct:: erbsland::unit::CpUnit
     :members:
-.. doxygentypedef:: erbsland::unit::ElementCount
-.. doxygentypedef:: erbsland::unit::ElementIndex
-.. doxygentypedef:: erbsland::unit::ElementOffset
-.. doxygentypedef:: erbsland::unit::ElementRange
-.. doxygenstruct:: erbsland::unit::ElementUnit
-    :members:
 .. doxygenclass:: erbsland::unit::IntegerAmount
     :members:
 .. doxygenstruct:: erbsland::unit::IntegerUnit
@@ -72,6 +66,12 @@ Interface
 .. doxygenclass:: erbsland::unit::IntegerUnitOffset
     :members:
 .. doxygenclass:: erbsland::unit::IntegerUnitRange
+    :members:
+.. doxygentypedef:: erbsland::unit::ItemCount
+.. doxygentypedef:: erbsland::unit::ItemIndex
+.. doxygentypedef:: erbsland::unit::ItemOffset
+.. doxygentypedef:: erbsland::unit::ItemRange
+.. doxygenstruct:: erbsland::unit::ItemUnit
     :members:
 .. doxygentypedef:: erbsland::unit::LineCount
 .. doxygentypedef:: erbsland::unit::LineIndex

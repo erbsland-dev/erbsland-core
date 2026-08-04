@@ -24,6 +24,22 @@ public:
 
     void testConstruction() { REQUIRE_EQUAL(program->size(), 0U); }
 
+    void testCodeEncodingAndDecoding() {
+        constexpr auto code = 0x12abcd34U;
+        REQUIRE_EQUAL(Program::extractLowerWord(code), 0xcd34U);
+        REQUIRE_EQUAL(Program::codeLowerWord(0xabcdU), 0x0000abcdU);
+        REQUIRE_EQUAL(Program::extractProgramCounter(code), 0xcd34U);
+        REQUIRE_EQUAL(Program::codeProgramCounter(0xabcdU), 0x0000abcdU);
+        REQUIRE_EQUAL(Program::extractByte<0>(code), 0x34U);
+        REQUIRE_EQUAL(Program::extractByte<1>(code), 0xcdU);
+        REQUIRE_EQUAL(Program::extractByte<2>(code), 0xabU);
+        REQUIRE_EQUAL(Program::extractByte<3>(code), 0x12U);
+        REQUIRE_EQUAL(Program::extractHigherByte(code), 0xabU);
+        REQUIRE_EQUAL(Program::codeHigherByte(0xabU), 0x00ab0000U);
+        REQUIRE_EQUAL(Program::extractLower24bits(code), 0x00abcd34U);
+        REQUIRE_EQUAL(Program::codeLower24bits(code), 0x00abcd34U);
+    }
+
     void testSize() {
         REQUIRE_EQUAL(program->size(), 0U);
         program->writeCode(0x00000000U, programCounter);

@@ -53,9 +53,11 @@ public:
             Operation op{v};
             auto code = op.toCode();
             // pure round trip
-            REQUIRE_EQUAL(Operation::fromCode(code), op);
+            const auto roundTripped = Operation::fromCode(code);
+            REQUIRE_EQUAL(roundTripped, op);
             // lower 24 bits ignored
-            REQUIRE_EQUAL(Operation::fromCode(code | 0x00ffffffU), op);
+            const auto maskedRoundTripped = Operation::fromCode(code | 0x00ffffffU);
+            REQUIRE_EQUAL(maskedRoundTripped, op);
         }
     }
 
@@ -63,8 +65,8 @@ public:
         Operation a{Operation::Jump};
         Operation b{Operation::Jump};
         Operation c{Operation::Split};
-        REQUIRE(a == b);
-        REQUIRE(a != c);
+        REQUIRE_EQUAL(a, b);
+        REQUIRE_NOT_EQUAL(a, c);
     }
 
     void testMasksAndKinds() {

@@ -9,6 +9,7 @@ target_sources(erbsland-core PRIVATE
         CharacterClass.hpp
         CharacterSequence.hpp
         Group.hpp
+        GroupFlag.hpp
         GroupFlags.hpp
         NodeData.hpp
         Quantifier.hpp

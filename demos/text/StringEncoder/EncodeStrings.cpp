@@ -14,7 +14,7 @@ void encodeStrings() {
     const auto encodedObservation =
         el::StringEncoder{observation}.encode(el::StringEncoding::Utf32LittleEndian, el::StringBomMode::Require);
 
-    el::io::printLine("Observation: \"", observation, "\"");
+    el::io::printLine("Observation: \""_el, observation, "\""_el);
     el::io::printLine("Encoded as UTF-32 little-endian with BOM:");
     el::io::printLine(el::ByteFormat::memoryDump(), encodedObservation);
 }

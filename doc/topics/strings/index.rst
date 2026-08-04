@@ -15,8 +15,10 @@ Strings
     comparing_strings
     conversion
     editing_strings
+    encoding_internationalized_names
     finding_text_positions
     memory_management
+    normalizing_strings
     slicing_splitting_and_joining
     string_attributes
     using_string_format

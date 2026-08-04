@@ -8,10 +8,14 @@
 #include "impl/ByteModifyTools.hpp"
 #include "impl/ByteReadTools.hpp"
 
+#include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
+
 #include <utility>
 
 namespace erbsland::mem {
 
+using namespace text::literals;
 using ModifyTools = impl::ByteModifyTools<impl::ByteBufferData, impl::ByteBufferData>;
 using unit::ByteIndex;
 using unit::ByteLength;
@@ -56,7 +60,15 @@ auto ByteBuffer::operator=(ByteBuffer &&other) noexcept -> ByteBuffer & {
 }
 
 auto ByteBuffer::operator<=>(const ByteBuffer &other) const noexcept -> std::strong_ordering {
-    return impl::ByteComparisonTools{impl::ByteDataView{span()}}.compare(impl::ByteDataView{other.span()});
+    return impl::ByteComparisonTools{dataView()}.compare(other.dataView());
+}
+
+auto ByteBuffer::isEqualConstTime(const ByteBuffer &other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(other.dataView());
+}
+
+auto ByteBuffer::isEqualConstTime(const ConstByteSpan other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(impl::ByteDataView{other});
 }
 
 auto ByteBuffer::isEmpty() const noexcept -> bool {
@@ -72,15 +84,15 @@ auto ByteBuffer::capacity() const noexcept -> ByteLength {
 }
 
 auto ByteBuffer::span() const noexcept -> ConstByteSpan {
-    return ConstByteSpan{_data.data(), _data.size()};
+    return dataView().dataSpan();
 }
 
 auto ByteBuffer::get(const ByteIndex index, const Byte defaultValue) const noexcept -> Byte {
-    return impl::ByteReadTools{impl::ByteDataView{span()}}.get(index, defaultValue);
+    return impl::ByteReadTools{dataView()}.get(index, defaultValue);
 }
 
 auto ByteBuffer::getOrThrow(const ByteIndex index) const -> Byte {
-    return impl::ByteReadTools{impl::ByteDataView{span()}}.getOrThrow(index);
+    return impl::ByteReadTools{dataView()}.getOrThrow(index);
 }
 
 void ByteBuffer::setSensitive(const bool sensitive) noexcept {
@@ -97,29 +109,19 @@ void ByteBuffer::setSensitive(const bool sensitive) noexcept {
 }
 
 void ByteBuffer::set(const ByteIndex index, const Byte value) noexcept {
-    if (index.isValid() && index.toSizeT() < length().toSizeT()) {
-        _data.data()[index.toSizeT()] = value;
-    }
+    impl::ByteWriteTools{writableSpan()}.set(index, value);
 }
 
 void ByteBuffer::setOrThrow(const ByteIndex index, const Byte value) {
-    if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
-        impl::throwOutOfRange("Byte buffer index out of range");
-    }
-    _data.data()[index.toSizeT()] = value;
+    impl::ByteWriteTools{writableSpan()}.setOrThrow(index, value);
 }
 
 void ByteBuffer::xorAt(const ByteIndex index, const Byte value) noexcept {
-    if (index.isValid() && index.toSizeT() < length().toSizeT()) {
-        _data.data()[index.toSizeT()] ^= value;
-    }
+    impl::ByteWriteTools{writableSpan()}.xorAt(index, value);
 }
 
 void ByteBuffer::xorAtOrThrow(const ByteIndex index, const Byte value) {
-    if (!index.isValid() || index.toSizeT() >= length().toSizeT()) {
-        impl::throwOutOfRange("Byte buffer index out of range");
-    }
-    _data.data()[index.toSizeT()] ^= value;
+    impl::ByteWriteTools{writableSpan()}.xorAtOrThrow(index, value);
 }
 
 void ByteBuffer::overwrite(const ConstByteSpan source) {
@@ -136,6 +138,12 @@ void ByteBuffer::overwrite(const ByteRange targetRange, const ConstByteSpan sour
 
 auto ByteBuffer::xorWith(const ConstByteSpan source) -> bool {
     return ModifyTools{_data}.xorWith(impl::ByteDataView{source}, false);
+}
+
+void ByteBuffer::xorWithOrThrow(const ConstByteSpan source) {
+    if (!xorWith(source)) {
+        throw err::ParameterError{"XOR operands must have equal lengths."_el, "source"_el};
+    }
 }
 
 void ByteBuffer::xorWith(const ByteRange targetRange, const ConstByteSpan source) {
@@ -168,8 +176,8 @@ void ByteBuffer::reset() noexcept {
     _data.reset();
 }
 
-auto ByteBuffer::append(const Byte value) -> ByteBuffer & {
-    ModifyTools{_data}.append(value);
+auto ByteBuffer::append(const Byte value, const unit::ByteLength length) -> ByteBuffer & {
+    ModifyTools{_data}.append(value, length);
     return *this;
 }
 
@@ -199,11 +207,11 @@ auto ByteBuffer::keep(const ByteRange range) -> ByteBuffer & {
 }
 
 auto ByteBuffer::toUInt8Vector() const -> std::vector<uint8_t> {
-    return impl::ByteReadTools{impl::ByteDataView{span()}}.toUInt8Vector();
+    return impl::ByteReadTools{dataView()}.toUInt8Vector();
 }
 
 auto ByteBuffer::toCharVector() const -> std::vector<char> {
-    return impl::ByteReadTools{impl::ByteDataView{span()}}.toCharVector();
+    return impl::ByteReadTools{dataView()}.toCharVector();
 }
 
 auto ByteBuffer::fromSpan(const std::span<const std::byte> bytes) -> ByteBuffer {
@@ -216,6 +224,10 @@ auto ByteBuffer::fromSpan(const std::span<const uint8_t> bytes) -> ByteBuffer {
 
 auto ByteBuffer::fromSpan(const std::span<const char> bytes) -> ByteBuffer {
     return ByteBuffer{toConstByteSpan(bytes)};
+}
+
+auto ByteBuffer::dataView() const noexcept -> impl::ByteDataView {
+    return impl::ByteDataView{ConstByteSpan{_data.data(), _data.size()}};
 }
 
 auto ByteBuffer::writableSpan() noexcept -> ByteSpan {

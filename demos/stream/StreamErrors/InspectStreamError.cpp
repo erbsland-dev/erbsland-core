@@ -11,7 +11,8 @@ void inspectStreamError() {
     auto input = ScriptedByteInputStream{{1U}};
     input.setFailure(true);
     try {
-        static_cast<void>(input.readByte());
+        [[maybe_unused]] const auto byte = input.readByte();
+        // ... process the byte ...
     } catch (const el::StreamError &error) {
         el::io::printLine("Title: "_el, error.title());
         el::io::printLine("Description: "_el, error.description());

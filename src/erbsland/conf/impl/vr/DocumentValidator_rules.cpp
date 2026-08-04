@@ -43,8 +43,8 @@ auto DocumentValidator::validate(const RulePtr &rule, const ValuePtr &value) -> 
 }
 
 void DocumentValidator::handleMissingValues(const RulePtr &rule, const conf::ValuePtr &parentValue) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null"_el);
     if (rule->type() == vr::RuleType::NotValidated || !rule->versionMask().matches(_version) ||
         rule->ruleName().isReservedValidationRule() || rule->isOptional()) {
         return; // ignore values that do not need to exit.
@@ -76,8 +76,8 @@ void DocumentValidator::handleMissingValues(const RulePtr &rule, const conf::Val
 }
 
 void DocumentValidator::copyDefaultValue(const RulePtr &rule, const conf::ValuePtr &parentValue) {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(parentValue != nullptr, "The parent value must not be null"_el);
     const auto defaultValue = rule->defaultValue()->deepCopy();
     defaultValue->setName(rule->targetName());
     defaultValue->setParent(parentValue);
@@ -92,8 +92,8 @@ void DocumentValidator::copyDefaultValue(const RulePtr &rule, const conf::ValueP
 }
 
 auto DocumentValidator::handleNotValidatedValues(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null"_el);
     // Mark the whole branch in the value-tree as not-validated.
     ValueTreeWalker treeWalker;
     treeWalker.setRoot(value);
@@ -105,8 +105,8 @@ auto DocumentValidator::handleNotValidatedValues(const RulePtr &rule, const Valu
 }
 
 auto DocumentValidator::handleAlternatives(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null"_el);
     // validate all alternatives and return the first matching rule.
     std::vector<RulePtr> matchingRules;
     matchingRules.reserve(rule->childrenImpl().size());
@@ -137,15 +137,15 @@ auto DocumentValidator::handleAlternatives(const RulePtr &rule, const ValuePtr &
     }
     // if no matching rule was found, throw an error
     if (matchingRule == nullptr) {
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(firstError.has_value(), "Expected having an error to throw");
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(firstError.has_value(), "Expected having an error to throw"_el);
         throw ConfError{firstError.value()};
     }
     return matchingRule;
 }
 
 auto DocumentValidator::handleSectionLists(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null"_el);
     if (value->type() != ValueType::SectionList) {
         throwExpectedVsActual(rule, value);
     }
@@ -155,8 +155,8 @@ auto DocumentValidator::handleSectionLists(const RulePtr &rule, const ValuePtr &
 
 auto DocumentValidator::handleValueListOrMatrixPreCheck(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
 
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(rule != nullptr, "The rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(value != nullptr, "The value must not be null"_el);
     // Check the constraints for the list's size.
     validateValueConstraints(rule, value);
     // Make sure we actually got a list of values or scalar.
@@ -166,18 +166,18 @@ auto DocumentValidator::handleValueListOrMatrixPreCheck(const RulePtr &rule, con
                 value->type().toValueDescription(true)));
     }
     // If this is true, we are sure that the value can be converted into a value list.
-    const auto valueRule = rule->child(vrc::cReservedEntry);
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(valueRule != nullptr, "Missing 'vr_entry' rule for list rule");
+    const auto valueRule = rule->child(Name::vrName(Name::VR::ReservedEntry));
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(valueRule != nullptr, "Missing 'vr_entry' rule for list rule"_el);
     return valueRule;
 }
 
 void DocumentValidator::validateListOrMatrixValue(const RulePtr &valueRule, const ValuePtr &value) {
 
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(valueRule != nullptr, "The value rule must not be null");
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(value != nullptr, "The value must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(valueRule != nullptr, "The value rule must not be null"_el);
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(value != nullptr, "The value must not be null"_el);
     ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
         valueRule->type().isScalar() || valueRule->type() == vr::RuleType::Alternatives,
-        "Unexpected rule type for 'vr_entry'");
+        "Unexpected rule type for 'vr_entry'"_el);
 
     // Use the regular handlers to validate the list/matrix values.
     RulePtr validatedRule;
@@ -201,8 +201,8 @@ auto DocumentValidator::handleValueLists(const RulePtr &rule, const ValuePtr &va
 auto DocumentValidator::handleValueMatrix(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
     const auto valueRule = handleValueListOrMatrixPreCheck(rule, value);
     const auto valueMatrix = value->toValueMatrix();
-    for (unit::ElementIndex row; row.isWithin(valueMatrix.rowCount()); ++row) {
-        for (unit::ElementIndex column; column.isWithin(valueMatrix.columnCount()); ++column) {
+    for (unit::ItemIndex row; row.isWithin(valueMatrix.rowCount()); ++row) {
+        for (unit::ItemIndex column; column.isWithin(valueMatrix.columnCount()); ++column) {
             if (valueMatrix.isDefined(row, column)) {
                 validateListOrMatrixValue(valueRule, getImplValue(valueMatrix.value(row, column)));
             }
@@ -225,8 +225,8 @@ auto DocumentValidator::nextRuleForValue(const RulePtr &parentRule, const ValueP
     if (name.isIndex()) {
         // An index as the name means that this is an entry of a list.
         // therefore, the vr_entry rule is used to validate the list entry.
-        auto entryRule = parentRule->child(vrc::cReservedEntry);
-        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(entryRule != nullptr, "Missing entry rule for list rule");
+        auto entryRule = parentRule->child(Name::vrName(Name::VR::ReservedEntry));
+        ERBSLAND_CORE_CONF_REQUIRE_SAFETY(entryRule != nullptr, "Missing entry rule for list rule"_el);
         return entryRule;
     }
     RulePtr anyRule = {};
@@ -234,7 +234,7 @@ auto DocumentValidator::nextRuleForValue(const RulePtr &parentRule, const ValueP
         if (!childRule->versionMask().matches(_version)) {
             continue; // ignore all rules that do not match the current version
         }
-        if (childRule->ruleName() == vrc::cReservedAny) {
+        if (childRule->ruleName() == Name::vrName(Name::VR::ReservedAny)) {
             anyRule = childRule; // store the "any" rule for later. It is evaluated if no other rule matches.
             continue;
         }

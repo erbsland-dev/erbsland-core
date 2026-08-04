@@ -18,6 +18,7 @@ protected:
     using MatchBase::MatchBase;
 
 public:
+    // defaults
     ~Match32() override = default;
 
 public:

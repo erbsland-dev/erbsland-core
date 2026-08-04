@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "BitmapPainter.hpp"
 
+#include "../Bitmap.hpp"
+#include "../Block16Style.hpp"
+
 namespace erbsland::cterm::impl {
 
 using namespace bgeo;

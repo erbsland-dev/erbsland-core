@@ -12,6 +12,7 @@ namespace erbsland::path {
 /// @tested{PathOperationsTest}
 class PathRemoveOptions final {
 public:
+    /// Create path-removal options with their default values.
     PathRemoveOptions() = default;
 
 public:

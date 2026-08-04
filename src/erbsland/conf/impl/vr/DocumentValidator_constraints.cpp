@@ -21,7 +21,7 @@ void DocumentValidator::validateNameConstraints(const RulePtr &rule, const Value
             "Expected a named value, but got a list entry or text index"_el, value->namePath(), value->location());
     }
     const auto nameRule = rule->nameConstraints();
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(nameRule != nullptr, "Unexpected missing name rule");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(nameRule != nullptr, "Unexpected missing name rule"_el);
     const auto validationContext = ValidationContext{
         .target = ValidationTarget::Name,
         .value = value,
@@ -42,9 +42,9 @@ void DocumentValidator::validateValueConstraints(const RulePtr &rule, const Valu
 void DocumentValidator::validateConstraints(const RulePtr &rule, const ValidationContext &validationContext) {
     for (const auto &constraint : rule->constraintsImpl()) {
         ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-            constraint->type() != vr::ConstraintType::Undefined, "Unexpected constraint type");
+            constraint->type() != vr::ConstraintType::Undefined, "Unexpected constraint type"_el);
         ERBSLAND_CORE_CONF_REQUIRE_SAFETY(
-            constraint->type() != vr::ConstraintType::ConfVersion, "Unexpected constraint type");
+            constraint->type() != vr::ConstraintType::ConfVersion, "Unexpected constraint type"_el);
         if (constraint->type() == vr::ConstraintType::ConfKey) {
             continue; // ignore key constraints for now.
         }

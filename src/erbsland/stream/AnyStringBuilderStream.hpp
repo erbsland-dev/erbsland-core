@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "AnyStringBuilderStream_fwd.hpp"
 #include "TextOutputStream.hpp"
 
 #include "../text/AnyStringBuilder.hpp"
@@ -10,16 +11,15 @@
 
 namespace erbsland::stream {
 
-class AnyStringBuilderStream;
-using AnyStringBuilderStreamPtr = std::shared_ptr<AnyStringBuilderStream>;
-
 /// A stream to build strings.
 /// @tested{AnyStringBuilderStreamTest}
 class AnyStringBuilderStream : public TextOutputStream {
 private:
+    /// Restricts stream construction to its factory.
     class ConstructionToken final {
         friend class AnyStringBuilderStream;
 
+        /// Create a private construction token.
         ConstructionToken() = default;
     };
 
@@ -29,8 +29,9 @@ public:
     /// @param token The private factory token.
     explicit AnyStringBuilderStream(text::StringKind stringKind, ConstructionToken token);
 
-    // defaults
     ~AnyStringBuilderStream() override { abort(); }
+
+    // defaults/deletions
     AnyStringBuilderStream(const AnyStringBuilderStream &) = delete;
     AnyStringBuilderStream(AnyStringBuilderStream &&) = delete;
     auto operator=(const AnyStringBuilderStream &) -> AnyStringBuilderStream & = delete;

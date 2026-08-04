@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/ResultValue.hpp"
+
 #include "../core/Definitions.hpp"
 
 #include <cstdint>
@@ -20,27 +22,7 @@ namespace erbsland::util {
 class Result {
 protected:
     /// The internal numeric type for all result values.
-    class Value {
-        constexpr explicit Value(const uint8_t value) : value{value} {}
-
-    public:
-        /// Create a success value.
-        template <uint8_t N>
-        constexpr static auto success() noexcept -> Value {
-            static_assert(N < uint8_t{0x80U});
-            return Value{N};
-        }
-        /// Create a failure value.
-        template <uint8_t N>
-        constexpr static auto failure() noexcept -> Value {
-            static_assert(N < uint8_t{0x80U});
-            return Value{static_cast<std::uint8_t>(0xFFU - N)};
-        }
-
-    public:
-        /// Raw byte representation of the result state.
-        uint8_t value{};
-    };
+    using Value = impl::ResultValue;
 
 public:
     /// Create a new result.
@@ -53,7 +35,9 @@ public:
     auto operator=(const Result &) -> Result & = default;
 
 public: // operators
+    /// Compare result values for equality.
     auto operator==(const Result &other) const -> bool { return _value.value == other._value.value; }
+    /// Compare result values for inequality.
     auto operator!=(const Result &other) const -> bool { return _value.value != other._value.value; }
 
 public: // tests

@@ -135,6 +135,10 @@ auto toString(const ReplacementMode value) -> el::String {
     return {};
 }
 
+auto toString(const Backend value) -> el::String {
+    return value == Backend::Erbsland ? "erbsland"_el : "std"_el;
+}
+
 auto parseUseCase(const el::String &value) -> std::optional<UseCase> {
     for (
         const auto candidate : std::array{

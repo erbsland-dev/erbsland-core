@@ -314,7 +314,7 @@ auto OptionParser::getArgAt(const unit::ArgumentIndex index) const -> text::Stri
     if (!isIndexInArgs(index)) {
         return {};
     }
-    return _args.get(unit::ElementIndex::fromSizeT(index.toSizeT()));
+    return _args.get(unit::ItemIndex::fromSizeT(index.toSizeT()));
 }
 
 }

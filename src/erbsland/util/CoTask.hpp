@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "CoTask_fwd.hpp"
-
 #include "impl/CoTaskAwaiter.hpp"
 #include "impl/CoTaskCompletion.hpp"
+#include "impl/CoTaskPromise.hpp"
+#include "impl/CoTaskPromise_fwd.hpp"
 #include "impl/CoWorkAwaiter.hpp"
 
 #include "../err/LogicError.hpp"
@@ -36,64 +36,22 @@ class CoTask {
 private:
     using State = impl::CoTaskState<tValue>;
 
+    friend class impl::CoTaskPromise<tValue>;
+
 public:
     /// Coroutine promise that owns the shared state of a task with a result.
     /// @tested{CoTaskTest}
-    struct promise_type {
-    private:
-        struct FinalAwaiter final {
-            [[nodiscard]] auto await_ready() const noexcept -> bool { return false; }
-            void await_suspend(const std::coroutine_handle<promise_type> handle) const noexcept {
-                auto state = handle.promise()._state;
-                handle.destroy();
-                impl::completeCoTask(state);
-            }
-            void await_resume() const noexcept {}
-        };
-
-    public:
-        /// Create promise state for a new task.
-        promise_type() : _state{std::make_shared<State>()} {}
-        /// Create the public task connected to this promise.
-        /// @return The eagerly started task.
-        auto get_return_object() -> CoTask { return CoTask{_state}; }
-        /// Start executing the coroutine immediately.
-        /// @return An awaiter that does not suspend.
-        auto initial_suspend() noexcept -> std::suspend_never { return {}; }
-        /// Complete shared task state at the final suspension point.
-        /// @return The final completion awaiter.
-        auto final_suspend() noexcept -> FinalAwaiter { return {}; }
-        /// Store the value returned by the coroutine.
-        /// @tparam tResult The returned expression type.
-        /// @param value The value used to construct the task result.
-        template <typename tResult>
-            requires std::constructible_from<tValue, tResult>
-        void return_value(tResult &&value) {
-            _state->value.emplace(std::forward<tResult>(value));
-        }
-        /// Store an exception that escaped the coroutine body.
-        void unhandled_exception() noexcept { _state->exception = std::current_exception(); }
-        /// Access task cancellation state for Erbsland coroutine awaiters.
-        /// @return Shared cancellation state for this task.
-        [[nodiscard]] auto cancellationState() const noexcept -> std::shared_ptr<impl::CoTaskStateBase> {
-            return _state;
-        }
-
-    private:
-        std::shared_ptr<State> _state;
-    };
+    using promise_type = impl::CoTaskPromise<tValue>;
 
 public:
     /// Create an empty task.
     CoTask() = default;
-    /// Request cancellation when this task is still incomplete.
-    ~CoTask() { cancel(); }
-
-    CoTask(const CoTask &) = delete;
-    auto operator=(const CoTask &) -> CoTask & = delete;
     /// Move ownership from another task.
     /// @param other The task whose state is transferred.
     CoTask(CoTask &&other) noexcept : _state{std::move(other._state)} {}
+    /// Request cancellation when this task is still incomplete.
+    ~CoTask() { cancel(); }
+    /// Move task ownership from another task.
     auto operator=(CoTask &&other) noexcept -> CoTask & {
         if (this != &other) {
             cancel();
@@ -101,6 +59,10 @@ public:
         }
         return *this;
     }
+
+    // defaults/deletions
+    CoTask(const CoTask &) = delete;
+    auto operator=(const CoTask &) -> CoTask & = delete;
 
 public:
     /// Run a callable on the coroutine worker service.
@@ -182,61 +144,27 @@ public:
     }
 
 private:
+    /// Create a task retaining shared coroutine state.
+    /// @param state The shared coroutine state.
     explicit CoTask(std::shared_ptr<State> state) : _state{std::move(state)} {}
 
 private:
     std::shared_ptr<State> _state;
 };
 
-/**
- * @brief An eagerly started, single-consumer coroutine task without a result value.
- * @tested{CoTaskTest}
- */
+/// An eagerly started, single-consumer coroutine task without a result value.
+/// @tested{CoTaskTest}
 template <>
 class CoTask<void> {
 private:
     using State = impl::CoTaskState<void>;
 
+    friend class impl::CoTaskPromise<void>;
+
 public:
     /// Coroutine promise that owns the shared state of a task without a result.
     /// @tested{CoTaskTest}
-    struct promise_type {
-    private:
-        struct FinalAwaiter final {
-            [[nodiscard]] auto await_ready() const noexcept -> bool { return false; }
-            void await_suspend(const std::coroutine_handle<promise_type> handle) const noexcept {
-                auto state = handle.promise()._state;
-                handle.destroy();
-                impl::completeCoTask(state);
-            }
-            void await_resume() const noexcept {}
-        };
-
-    public:
-        /// Create promise state for a new task.
-        promise_type() : _state{std::make_shared<State>()} {}
-        /// Create the public task connected to this promise.
-        /// @return The eagerly started task.
-        auto get_return_object() -> CoTask { return CoTask{_state}; }
-        /// Start executing the coroutine immediately.
-        /// @return An awaiter that does not suspend.
-        auto initial_suspend() noexcept -> std::suspend_never { return {}; }
-        /// Complete shared task state at the final suspension point.
-        /// @return The final completion awaiter.
-        auto final_suspend() noexcept -> FinalAwaiter { return {}; }
-        /// Complete the coroutine without storing a value.
-        void return_void() noexcept {}
-        /// Store an exception that escaped the coroutine body.
-        void unhandled_exception() noexcept { _state->exception = std::current_exception(); }
-        /// Access task cancellation state for Erbsland coroutine awaiters.
-        /// @return Shared cancellation state for this task.
-        [[nodiscard]] auto cancellationState() const noexcept -> std::shared_ptr<impl::CoTaskStateBase> {
-            return _state;
-        }
-
-    private:
-        std::shared_ptr<State> _state;
-    };
+    using promise_type = impl::CoTaskPromise<void>;
 
 public:
     /// Create an empty task.
@@ -244,11 +172,13 @@ public:
     /// Request cancellation when this task is still incomplete.
     ~CoTask() { cancel(); }
 
+    // defaults/deletions
     CoTask(const CoTask &) = delete;
     auto operator=(const CoTask &) -> CoTask & = delete;
     /// Move ownership from another task.
     /// @param other The task whose state is transferred.
     CoTask(CoTask &&other) noexcept : _state{std::move(other._state)} {}
+    /// Move task ownership from another task.
     auto operator=(CoTask &&other) noexcept -> CoTask & {
         if (this != &other) {
             cancel();
@@ -311,13 +241,28 @@ public:
     }
 
 private:
+    /// Prevent consuming a result from a void task.
     void takeResult() = delete;
 
 private:
+    /// Create a task from its shared coroutine state.
     explicit CoTask(std::shared_ptr<State> state) : _state{std::move(state)} {}
 
 private:
     std::shared_ptr<State> _state;
 };
+
+template <typename tValue>
+/// Create the public task connected to this promise.
+/// @return The eagerly started task.
+auto impl::CoTaskPromise<tValue>::get_return_object() -> CoTask<tValue> {
+    return CoTask<tValue>{_state};
+}
+
+/// Create the public task connected to this void promise.
+/// @return The eagerly started task.
+inline auto impl::CoTaskPromise<void>::get_return_object() -> CoTask<void> {
+    return CoTask<void>{_state};
+}
 
 }

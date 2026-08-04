@@ -17,11 +17,6 @@ namespace erbsland::event::impl {
 
 using namespace text::literals;
 
-namespace {
-constexpr auto cWakeIdentifier = uintptr_t{1U};
-constexpr auto cMaximumEvents = 32;
-}
-
 KqueueEventLoopDriver::KqueueEventLoopDriver() : _queue{::kqueue()} {
     if (_queue < 0) {
         throw err::RuntimeError{"Failed to create the kqueue event-loop driver."};
@@ -57,7 +52,8 @@ void KqueueEventLoopDriver::wait(const time::TimeDelta maximumWait) {
 void KqueueEventLoopDriver::wake() noexcept {
     struct kevent change{};
     EV_SET(&change, cWakeIdentifier, EVFILT_USER, 0, NOTE_TRIGGER, 0, nullptr);
-    static_cast<void>(::kevent(_queue, &change, 1, nullptr, 0, nullptr));
+    // Waking is best-effort because the driver contract is noexcept and a failed queue cannot be recovered here.
+    ::kevent(_queue, &change, 1, nullptr, 0, nullptr);
 }
 
 auto KqueueEventLoopDriver::registerDescriptor(
@@ -71,9 +67,8 @@ auto KqueueEventLoopDriver::registerDescriptor(
     if (!callback) {
         throw err::ParameterError{"The native event callback must not be empty."_el, "callback"_el};
     }
-    for (const auto &[generation, registration] : _registrations) {
-        static_cast<void>(generation);
-        if (registration.descriptor == descriptor) {
+    for (const auto &entry : _registrations) {
+        if (entry.second.descriptor == descriptor) {
             throw err::ParameterError{"The native descriptor is already registered."_el, "descriptor"_el};
         }
     }
@@ -135,7 +130,8 @@ void KqueueEventLoopDriver::unregisterDescriptor(const uint64_t generation) noex
             0,
             nullptr);
     }
-    static_cast<void>(::kevent(_queue, changes.data(), changeCount, nullptr, 0, nullptr));
+    // Removal is best-effort: closing the descriptor removes its filters, and this noexcept cleanup cannot report.
+    ::kevent(_queue, changes.data(), changeCount, nullptr, 0, nullptr);
     _registrations.erase(iterator);
 }
 

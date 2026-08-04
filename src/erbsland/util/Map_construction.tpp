@@ -7,13 +7,13 @@ namespace erbsland::util {
 template <typename tKey, typename tValue, typename tCompare, typename tSelf>
     requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
     std::copyable<tValue>
-Map<tKey, tValue, tCompare, tSelf>::Map() : _storage{} {
+Map<tKey, tValue, tCompare, tSelf>::Map() : _storage{defaultStorage()} {
 }
 
 template <typename tKey, typename tValue, typename tCompare, typename tSelf>
     requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
     std::copyable<tValue>
-Map<tKey, tValue, tCompare, tSelf>::Map(std::initializer_list<Entry> values) {
+Map<tKey, tValue, tCompare, tSelf>::Map(std::initializer_list<Entry> values) : _storage{defaultStorage()} {
     auto data = Raw{};
     for (const auto &[key, value] : values) {
         data[key] = value;
@@ -72,9 +72,8 @@ template <typename tKey, typename tValue, typename tCompare, typename tSelf>
 auto Map<tKey, tValue, tCompare, tSelf>::toStdKeyVector() const -> std::vector<Key> {
     auto result = std::vector<Key>{};
     result.reserve(raw().size());
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(value);
-        result.push_back(key);
+    for (const auto &entry : raw()) {
+        result.push_back(entry.first);
     }
     return result;
 }
@@ -117,6 +116,17 @@ template <typename tKey, typename tValue, typename tCompare, typename tSelf>
     std::copyable<tValue>
 auto Map<tKey, tValue, tCompare, tSelf>::makeSelf(Raw raw) -> Self {
     return Self{std::move(raw)};
+}
+
+template <typename tKey, typename tValue, typename tCompare, typename tSelf>
+    requires std::default_initializable<tKey> && std::default_initializable<tValue> && std::copyable<tKey> &&
+    std::copyable<tValue>
+auto Map<tKey, tValue, tCompare, tSelf>::defaultStorage() -> Storage {
+    if constexpr (std::is_empty_v<Compare>) {
+        return Storage::sharedDefault();
+    } else {
+        return Storage{};
+    }
 }
 
 template <typename tKey, typename tValue, typename tCompare, typename tSelf>

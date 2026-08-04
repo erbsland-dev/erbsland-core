@@ -35,6 +35,10 @@ CMake Options
         - On
         - Off
         - Configures the Core demo applications as explicit targets.
+    *   - ``ERBSLAND_CORE_ENABLE_INTEROP_TESTS``
+        - Off
+        - Off
+        - Configures standalone interoperability executables and their external-language counterparts.
     *   - ``ERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS``
         - On
         - Off
@@ -48,7 +52,7 @@ CMake Options
         - Off
         - Enables debug-only developer hooks and development build settings.
 
-All five defaults derive from CMake's ``PROJECT_IS_TOP_LEVEL`` value.
+Options whose top-level and embedded defaults differ derive from CMake's ``PROJECT_IS_TOP_LEVEL`` value.
 Set an option before ``add_subdirectory(erbsland)`` or pass it on the configure command line:
 
 .. code-block:: console
@@ -72,6 +76,19 @@ Tests are part of a top-level Core development build and can be run through CTes
     $ cmake -S erbsland/core -B cmake-build-core -G Ninja -DCMAKE_BUILD_TYPE=Debug
     $ cmake --build cmake-build-core
     $ ctest --test-dir cmake-build-core --output-on-failure
+
+Interoperability tests are intentionally separate from unit tests because they launch subprocesses.
+Enable and run the system and network suites manually.
+The network suite requires a Rust toolchain and builds the pinned rustls counterpart through Cargo:
+
+.. code-block:: console
+
+    $ cmake -S erbsland/core -B cmake-build-interop -G Ninja -DCMAKE_BUILD_TYPE=Debug \
+        -DERBSLAND_CORE_ENABLE_INTEROP_TESTS=ON
+    $ cmake --build cmake-build-interop \
+        --target erbsland-core-system-interop erbsland-core-network-interop
+    $ cmake-build-interop/test/interop/system/erbsland-core-system-interop
+    $ cmake-build-interop/test/interop/network/erbsland-core-network-interop
 
 Demos are configured but excluded from the default build.
 Build all registered demos explicitly with:

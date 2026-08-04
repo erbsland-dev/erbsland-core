@@ -6,9 +6,9 @@
 #include "LoopResult.hpp"
 
 #include "../mem/CowManualStorage.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
-#include "../unit/ElementRange.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
+#include "../unit/ItemRange.hpp"
 
 #include <compare>
 #include <concepts>
@@ -31,9 +31,9 @@ public:
     using Element = tElement;                                                     ///< The stored element type.
     using Raw = std::vector<Element>;                                             ///< The wrapped standard container.
     using Storage = mem::CowManualStorage<Raw>;                                   ///< The COW storage type.
-    using Index = unit::ElementIndex;                                             ///< The element index type.
-    using Count = unit::ElementCount;                                             ///< The element count type.
-    using Range = unit::ElementRange;                                             ///< The element range type.
+    using Index = unit::ItemIndex;                                                ///< The element index type.
+    using Count = unit::ItemCount;                                                ///< The element count type.
+    using Range = unit::ItemRange;                                                ///< The element range type.
     using Self = std::conditional_t<std::is_void_v<tSelf>, List<Element>, tSelf>; ///< The fluent return type.
     using value_type = Element;                                                   ///< Standard container value type.
     using const_iterator = Raw::const_iterator;                                   ///< Standard const iterator type.
@@ -90,10 +90,6 @@ public: // operators
     /// @param value The element to append.
     /// @return A reference to this list.
     auto operator+=(Element &&value) -> Self &;
-    /// Access an element by index.
-    /// @param index The element index.
-    /// @return A copy of the element at the given index.
-    [[nodiscard]] auto operator[](Index index) const -> Element;
     /// Compare two lists lexicographically.
     /// @param other The list to compare with.
     /// @return A three-way comparison result.
@@ -151,6 +147,19 @@ public: // elements
     /// @param defaultValue The value to return if the index is out of range.
     /// @return The element, or the default value.
     [[nodiscard]] auto get(Index index, const Element &defaultValue) const -> Element;
+    /// Get a const reference to an element or a shared default element.
+    /// A stored-element reference remains valid only until this list is modified or destroyed. The immutable default
+    /// element returned for an invalid index has static lifetime.
+    /// @param index The element index.
+    /// @return A const reference to the element, or to a default-constructed element if `index` is invalid.
+    [[nodiscard]] auto getRef(Index index) const -> const Element &;
+    /// Get a const reference to an element by index.
+    /// The returned reference is borrowed from this list and remains valid only until this list is modified or
+    /// destroyed.
+    /// @param index The element index.
+    /// @return A const reference to the element.
+    /// @throws err::OutOfRangeError If `index` is invalid or outside this list.
+    [[nodiscard]] auto getRefOrThrow(Index index) const -> const Element &;
     /// Get the first element.
     /// @return A copy of the first element.
     [[nodiscard]] auto first() const -> Element;
@@ -467,8 +476,13 @@ protected:
     [[nodiscard]] static auto makeSelf(Raw raw) -> Self;
 
 private:
+    /// Create empty copy-on-write list storage.
+    [[nodiscard]] static auto defaultStorage() -> Storage;
+    /// Convert an item count to a native container size.
     [[nodiscard]] static auto countToSize(Count count) -> std::size_t;
+    /// Test whether an index addresses an element in a native size.
     [[nodiscard]] static auto validIndex(Index index, std::size_t size) noexcept -> bool;
+    /// Clamp a range to a list length.
     [[nodiscard]] static auto clampedRange(Range range, Count bounds) noexcept -> Range;
 
 private:

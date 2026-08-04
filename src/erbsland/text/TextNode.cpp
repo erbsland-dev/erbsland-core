@@ -16,7 +16,7 @@
 #include "impl/LinkData.hpp"
 
 #include "../err/ParameterError.hpp"
-#include "../unit/ElementIndex.hpp"
+#include "../unit/ItemIndex.hpp"
 #include "../unit/LineIndex.hpp"
 
 #include <memory>
@@ -120,7 +120,7 @@ auto TextNode::createCodeSnippet(CodeSnippet snippet, CodeSnippetMarkerList mark
         if (!snippet.startLine.isNoIndex()) {
             line->add(Type::CodeLineNumber)->addText(String::fromInteger(lineIndex.toSizeT() + 1U));
         }
-        line->add(Type::CodeLineText)->addText(snippet.lines.get(unit::ElementIndex::fromSizeT(localIndex)));
+        line->add(Type::CodeLineText)->addText(snippet.lines.get(unit::ItemIndex::fromSizeT(localIndex)));
         for (const auto &marker : markers) {
             if (marker.line() == lineIndex && !marker.column().isNoIndex()) {
                 line->add(Type::CodeLineMarker)

@@ -15,6 +15,7 @@ namespace erbsland::conf::vr {
 /// @tested{VrBuilderApiTest VrManualConstructionTest}
 class RulesBuilder {
 public:
+    // defaults/deletions
     RulesBuilder() = default;
     ~RulesBuilder() = default;
     RulesBuilder(const RulesBuilder &) = delete;

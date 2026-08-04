@@ -53,12 +53,16 @@ public:
         const auto expectedText =
             erbsland::text::StringConverter{erbsland::text::U32String{U"ae\u0301b"_el}}.toString();
         const auto expected = erbsland::text::String{expectedText};
+        const auto actual = result.data();
+        const auto output = testTerminal.backend->output();
+        const auto visibleAePosition = output.find("ae");
+        const auto visibleBPosition = output.find("b");
 
         REQUIRE(result.isCommitted());
-        REQUIRE(result.data() == expected);
-        REQUIRE(result.data().isSensitive());
-        REQUIRE(testTerminal.backend->output().find("ae") == std::string::npos);
-        REQUIRE(testTerminal.backend->output().find("b") == std::string::npos);
+        REQUIRE_EQUAL(actual, expected);
+        REQUIRE(actual.isSensitive());
+        REQUIRE_EQUAL(visibleAePosition, std::string::npos);
+        REQUIRE_EQUAL(visibleBPosition, std::string::npos);
         REQUIRE_FALSE(editor->isActive());
     }
 
@@ -70,9 +74,10 @@ public:
             testTerminal.backend->_readKeyResults.push(key);
             const auto result = editor->update();
             if (key == Key::Enter) {
+                const auto actual = result.data();
                 REQUIRE(result.isCommitted());
-                REQUIRE(result.data() == erbsland::text::String{"ac"});
-                REQUIRE(result.data().isSensitive());
+                REQUIRE_EQUAL(actual, erbsland::text::String{"ac"});
+                REQUIRE(actual.isSensitive());
             }
         }
         editor->stop();
@@ -87,6 +92,8 @@ public:
         editor->stop();
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testMaximumLengthIsCappedAt1024CodePoints() {
         auto testTerminal = createTerminal();
         auto options = ReadLineOptions{};
@@ -98,6 +105,21 @@ public:
         testTerminal.backend->_readKeyResults.push(Key::Enter);
         const auto result = editor->waitForInput();
         REQUIRE(result.isCommitted());
-        REQUIRE_EQUAL(result.data().characterLength(), erbsland::unit::CpLength{1024U});
+        const auto characterLength = result.data().characterLength();
+        REQUIRE_EQUAL(characterLength, erbsland::unit::CpLength{1024U});
+    }
+
+    void testMaximumLengthIsCappedAt1024CodePointsLight() {
+        auto testTerminal = createTerminal();
+        auto options = ReadLineOptions{};
+        options.setMaximumLength(erbsland::unit::CpLength{4U});
+        const auto editor = ReadSecret::create(testTerminal.terminal, options);
+        for (auto i = std::size_t{}; i < 5U; ++i) {
+            testTerminal.backend->_readKeyResults.push(Key{U'x'});
+        }
+        testTerminal.backend->_readKeyResults.push(Key::Enter);
+        const auto result = editor->waitForInput();
+        REQUIRE(result.isCommitted());
+        REQUIRE_EQUAL(result.data().characterLength(), erbsland::unit::CpLength{4U});
     }
 };

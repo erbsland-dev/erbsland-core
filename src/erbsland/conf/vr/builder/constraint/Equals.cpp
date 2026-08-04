@@ -2,13 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Equals.hpp"
 
-#include "../../../impl/vr/EqualsConstraint.hpp"
+#include "../../../impl/vr/EqualsBooleanConstraint.hpp"
+#include "../../../impl/vr/EqualsBytesConstraint.hpp"
+#include "../../../impl/vr/EqualsFloatConstraint.hpp"
+#include "../../../impl/vr/EqualsIntegerConstraint.hpp"
+#include "../../../impl/vr/EqualsMatrixConstraint.hpp"
+#include "../../../impl/vr/EqualsTextConstraint.hpp"
 
 #include <type_traits>
 
 namespace erbsland::conf::vr::builder {
 
-void Equals::operator()(impl::Rule &rule) {
+void Equals::operator()(Rule &rule) {
     auto constraint = std::visit(
         [&rule](const auto &value) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(value)>;

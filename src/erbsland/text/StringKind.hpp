@@ -12,6 +12,7 @@ namespace erbsland::text {
 /// The indexes of this enum are used as type indices for std::variant.
 enum class StringKind : uint8_t { U8 = 0, U16 = 1, U32 = 2 };
 
+/// Convert a string kind to its descriptive text.
 auto toString(StringKind kind) -> String;
 
 }

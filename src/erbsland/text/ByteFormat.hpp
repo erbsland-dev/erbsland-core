@@ -8,9 +8,11 @@
 #include "String_fwd.hpp"
 #include "TruncateMode.hpp"
 
+#include "impl/ByteFormatData_fwd.hpp"
+
 #include "../unit/ByteIndex.hpp"
 #include "../unit/ByteLength.hpp"
-#include "../unit/ElementCount.hpp"
+#include "../unit/ItemCount.hpp"
 
 #include <memory>
 
@@ -19,20 +21,23 @@ namespace erbsland::text {
 /// Options for byte block hexadecimal text formatting.
 /// @tested{ByteFormatTest}
 class ByteFormat final {
-    struct Private;
-
 public:
     /// Create the default compact byte format.
     ByteFormat();
     /// Create a byte format with the given flags.
     ByteFormat(ByteFormatFlags flags); // NOLINT(*-explicit-constructor)
 
-    // defaults
+    /// Destroy this byte format.
     ~ByteFormat();
-    /// Copy this byte format.
+    /// Copy another byte format.
     ByteFormat(const ByteFormat &);
+
+    // defaults
     ByteFormat(ByteFormat &&) = default;
+    /// Copy another byte format into this byte format.
     auto operator=(const ByteFormat &) -> ByteFormat &;
+
+    // defaults
     auto operator=(ByteFormat &&) -> ByteFormat & = default;
 
 public: // accessors
@@ -59,9 +64,9 @@ public: // accessors
     /// Set the number of bytes per group.
     auto setByteGroupSize(unit::ByteLength byteGroupSize) noexcept -> ByteFormat &;
     /// Get the number of lines per group.
-    [[nodiscard]] auto lineGroupSize() const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto lineGroupSize() const noexcept -> unit::ItemCount;
     /// Set the number of lines per group.
-    auto setLineGroupSize(unit::ElementCount lineGroupSize) noexcept -> ByteFormat &;
+    auto setLineGroupSize(unit::ItemCount lineGroupSize) noexcept -> ByteFormat &;
     /// Get the byte or byte group separator.
     [[nodiscard]] auto byteSeparator() const noexcept -> const String &;
     /// Set the byte or byte group separator.
@@ -108,11 +113,13 @@ public: // factories
     [[nodiscard]] static auto forDiagnostic() -> ByteFormat;
 
 private:
+    /// Clamp a byte length to at least one.
     [[nodiscard]] static auto atLeastOne(unit::ByteLength value) noexcept -> unit::ByteLength;
-    [[nodiscard]] static auto atLeastOne(unit::ElementCount value) noexcept -> unit::ElementCount;
+    /// Clamp an item count to at least one.
+    [[nodiscard]] static auto atLeastOne(unit::ItemCount value) noexcept -> unit::ItemCount;
 
 private:
-    std::unique_ptr<Private> _p; ///< The private implementation details.
+    std::unique_ptr<impl::ByteFormatData> _p; ///< The private implementation details.
 };
 
 }

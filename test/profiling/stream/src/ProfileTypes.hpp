@@ -11,6 +11,8 @@
 
 namespace app::stream {
 
+using namespace el::text::literals;
+
 /// The measurement mode.
 enum class RunMode : std::uint8_t { Profile, Benchmark };
 /// The stream transfer direction.
@@ -44,7 +46,7 @@ enum class Method : std::uint8_t {
 /// @notest{Covered through command-line dry runs and profiler smoke tests.}
 struct RunSettings {
     RunMode mode{RunMode::Profile};                                      ///< The measurement mode.
-    el::String suite{"cover-all"};                                       ///< The built-in suite name.
+    el::String suite{"cover-all"_el};                                    ///< The built-in suite name.
     std::chrono::nanoseconds duration{std::chrono::minutes{8}};          ///< Total target duration.
     std::uint32_t threadCount{4U};                                       ///< Workload thread count.
     std::uint64_t seed{0x455242534c414e44ULL};                           ///< Global deterministic seed.
@@ -71,13 +73,6 @@ struct Scenario {
     el::StreamBuffering buffering{el::StreamBuffering::Balanced}; ///< Stream buffering intention.
     std::uint64_t backBufferLimit{}; ///< Explicit output back-buffer limit, or zero for the preset default.
     std::uint32_t weight{1U};        ///< Relative profile repetition weight.
-};
-
-/// The effective validated and expanded configuration.
-/// @notest{Covered through command-line dry runs and profiler smoke tests.}
-struct Configuration {
-    RunSettings run;                 ///< Complete run settings.
-    std::vector<Scenario> scenarios; ///< Expanded scenarios.
 };
 
 /// The measurements and validation state produced by one workload thread.

@@ -5,14 +5,14 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/SafeStringFlag.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/TruncateMode.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -30,13 +30,13 @@ using namespace el::text;
 namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(
-    U8StringEditor U8String U16StringEditor U16String U32StringEditor U32String TruncateMode SafeStringFlag
-        SafeStringFlags SafeStringEscapeTools)
+    StringEditor String U16StringEditor U16String U32StringEditor U32String TruncateMode SafeStringFlag SafeStringFlags
+        SafeStringEscapeTools)
 class StringTransformTest final : public el::UnitTest {
 public:
     void testU8TruncationModes() {
 
-        auto text = U8StringEditor{std::u8string_view{u8"A¢€😀Z"}};
+        auto text = StringEditor{"A¢€😀Z"_el};
 
         REQUIRE_EQUAL(StringConverter{text.truncated(CpLength{3U})}.toStdU8String(), std::u8string{u8"A¢€"});
         REQUIRE_EQUAL(
@@ -62,9 +62,9 @@ public:
 
     void testNativeTruncationApis() {
 
-        const auto u8Text = U8StringEditor{std::u8string_view{u8"A¢€😀Z"}};
+        const auto u8Text = String{"A¢€😀Z"_el};
         REQUIRE_EQUAL(
-            StringConverter{U8String{u8Text}.truncated(CpLength{4U}, TruncateMode::End, "."_el)}.toStdU8String(),
+            StringConverter{String{u8Text}.truncated(CpLength{4U}, TruncateMode::End, "."_el)}.toStdU8String(),
             std::u8string{u8"A¢€."});
 
         const auto u16Text = U16StringEditor{std::u16string_view{u"A¢€😀Z"}};
@@ -85,7 +85,7 @@ public:
     }
 
     void testAlignment() {
-        const auto text = U8StringEditor{std::u8string_view{u8"Ab¢"}};
+        const auto text = String{"Ab¢"_el};
 
         REQUIRE_EQUAL(
             StringConverter{text.aligned(CpLength{6U}, Alignment::Left, U'.')}.toStdU8String(),
@@ -119,7 +119,7 @@ public:
 
     void testChangingTransformFunctionCannotOverflowReservation() {
         _changingTransformCall = 0U;
-        auto u8Source = U8String{u8"Ab"_el};
+        auto u8Source = String{u8"Ab"_el};
         u8Source.markAsSensitive();
         const auto u8Result = u8Source.transformed(changingTransform);
         REQUIRE_EQUAL(StringConverter{u8Result}.toStdU32String(), std::u32string{U"😀😀"});
@@ -135,7 +135,7 @@ public:
     }
 
     void testSafeString() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A\né Z"}};
+        const auto text = String{"A\né Z"_el};
 
         REQUIRE_EQUAL(
             StringConverter{text.toSafeString(CpLength{100U})}.toStdU8String(), std::u8string{u8"\"A\\né Z\""});
@@ -147,12 +147,12 @@ public:
                 .toStdU8String(),
             std::u8string{u8"\"A\\n\\u00E9 Z\""});
 
-        const auto longText = U8StringEditor{std::string_view{"abcdefghijklmnopqrstuvwxyz"}};
+        const auto longText = StringEditor{"abcdefghijklmnopqrstuvwxyz"_el};
         REQUIRE_EQUAL(
             StringConverter{longText.toSafeString(CpLength{20U})}.toStdString(), std::string{"\"abcd(... +22 more)\""});
         REQUIRE_EQUAL(StringConverter{longText.toSafeString(CpLength{3U})}.toStdString(), std::string{"abc"});
 
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         REQUIRE_EQUAL(
             StringConverter{invalidUtf8.toSafeString(
                                 CpLength{20U}, SafeStringFlags{SafeStringFlag::OnlyAscii, SafeStringFlag::AutoQuotes})}

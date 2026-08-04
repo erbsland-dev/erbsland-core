@@ -6,6 +6,8 @@
 
 namespace erbsland::math::impl {
 
+/// Throw an overflow error (slow, reson copy).
+/// Only use from template methods to avoid circular include dependency.
 [[noreturn]] void throwOverflow(std::string_view reason);
 
 }

@@ -38,7 +38,8 @@ Sensitive Data
     borrowed view = carries no sensitivity metadata and does not mark a destination
     secure erasure = optimizer-resistant overwrite of complete owned capacity
     ordinary conversion = explicit unmarked copy unless its owning-type contract propagates sensitivity
-    comparison = ordinary byte comparison without a constant-time guarantee
+    ordinary comparison = equality and ordering without a constant-time guarantee
+    constant-time equality = explicit comparison without content-dependent short-circuiting for equal lengths
 
 Primary Types
 =============
@@ -58,6 +59,8 @@ Secondary Types
 .. code-block:: text
 
     Endianness // little- or big-endian integer byte order
+    ByteIntegerFormat // explicit signed or unsigned static/variable integer wire format
+    ByteTextFormat, ByteTextOptions // dynamic or padded text framing definition
     ByteBlockEditor // explicit mutable copy-on-write byte value
     RingBuffer, ByteRingBuffer // bounded FIFO bytes with optional integer operations
     ByteReader, ByteWriter // sequential byte and integer reader and writer
@@ -77,6 +80,22 @@ Pattern Definitions
 
     B = ByteArray❮size❯/ByteBuffer/ByteBlock/ByteBlockEditor // owning byte sequence
     S = ByteSpan/ConstByteSpan/FixedByteSpan❮size❯/FixedConstByteSpan❮size❯ // borrowed byte sequence
+
+Internal Byte Tool Patterns
+===========================
+
+.. code-block:: text
+
+    o.dataView() -> impl::ByteDataView // private raw view shared by contiguous byte owners
+    byteReadTools(view) // bind ByteReadTools for read, iteration, conversion, slicing, and integer algorithms
+    byteComparisonTools(view) // bind ByteComparisonTools for comparison and search algorithms
+    o.writableSpan() -> ByteSpan // private fixed-size mutation boundary for writable owners
+    byteWriteTools(span) // bind ByteWriteTools for raw set, fill, overwrite, XOR, and integer writes
+    byteModifyTools(owner) // bind ByteModifyTools for COW, aliasing, sensitivity, allocation, and resizing
+    operationalTools(dataOrService) // bind operational tools to the data or service they operate on
+    staticHelper(...) // allow static helpers only as subordinate details of a stateful tool
+    o.validateWrite(...) // reject ineffective writes before requesting a span that can detach or reallocate
+    algorithm(view) // do not repeatedly traverse shared storage or create another owning byte object
 
 Byte Value Patterns
 ===================
@@ -100,6 +119,7 @@ Byte Sequence Read Patterns
     o.get(index[, fallback]) -> Byte // tolerant indexed access
     o.getOrThrow(index) -> Byte // strict indexed access
     o.span([range]) -> ConstByteSpan // borrow complete or clamped visible bytes
+    o.isEqualConstTime(bytes) -> bool // compare every byte when lengths match; lengths remain observable
     o.startsWith/endsWith/contains(bytes) -> bool // test byte-sequence membership
     o.find/findLast(bytes[, start]) -> unit::ByteIndex // locate a byte sequence
     o.forEach(function) -> util::LoopResult // visit bytes with an optional index
@@ -111,12 +131,15 @@ Mutable Byte Sequence Patterns
 .. code-block:: text
 
     T(length[, value])/T(bytes) // create owned byte storage
-    T::fromSpan(span) -> T // explicitly copy borrowed bytes
+    T::fromSpan(span) -> T // explicitly copy borrowed bytes for dynamic owners
+    T::fromSpan(span) -> std::optional❮T❯ // copy exact-size bytes into a fixed array, or reject a mismatch
+    T::fromSpanOrThrow(span) -> T // strictly copy an exactly sized borrowed sequence into a fixed array
     o.set/setOrThrow(index, byte) // tolerant or strict indexed write
     o.fill([range], byte) // fill complete or clamped visible storage
     o.overwrite([range], bytes) // copy the largest fitting source prefix without resizing
     o.xorAt/xorAtOrThrow(index, byte) // tolerant or strict indexed XOR
     o.xorWith([range], bytes) -> T // apply bulk XOR with type-specific size behavior
+    o.xorWithOrThrow(bytes) -> T // require equal lengths for whole-sequence XOR
     o.append/insert/replace(position, bytes) -> T& // resize and add or replace bytes
     o.remove/keep(range) -> T& // remove or retain a clamped range
     o.resize/reserve/shrinkToFit(capacity) // manage visible length and capacity
@@ -157,8 +180,15 @@ Sequential Read and Write Patterns
     o.setPosition/advance(amount) // move within clamped bounds
     o.readByte/peekByte([fallback]) -> Byte // tolerant advancing or non-advancing read
     o.readByteOrThrow/peekByteOrThrow() -> Byte // strict advancing or non-advancing read
-    o.readInteger❮T❯([fallback])/readIntegerOrThrow❮T❯() -> T // tolerant or strict integer read
-    o.writeByte/writeInteger(value) -> ByteWriter& // append and advance
+    o.readInteger❮T❯([fallback])/readIntegerOrThrow❮T❯() -> T // compatibility native-width integer read
+    o.readInteger❮T❯(format) -> optional❮T❯ // transactional formatted integer read
+    o.readIntegerOrThrow❮T❯(format) -> T // strict formatted integer read
+    o.readBytes(length) -> optional❮ByteBlock❯ // transactional exact byte read
+    o.readBytesOrThrow(length) -> ByteBlock // strict exact byte read
+    o.readText(options) -> optional❮String❯ // transactional structured text read
+    o.readTextOrThrow(options) -> String // strict structured text read
+    o.writeByte/writeInteger(value)/writeIntegerOrThrow(value, format) -> ByteWriter& // append and advance
+    o.writeText(text, options)/writeTextOrThrow(text, options) -> ByteWriter& // truncating or strict text frame
     o.toByteBlock() -> ByteBlock // materialize written bytes
 
 Ring Buffer Patterns

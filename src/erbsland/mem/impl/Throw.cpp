@@ -3,11 +3,16 @@
 #include "Throw.hpp"
 
 #include "../../err/OutOfRangeError.hpp"
+#include "../../err/OverflowError.hpp"
 
 namespace erbsland::mem::impl {
 
 void throwOutOfRange(const std::string_view reason) {
     throw err::OutOfRangeError{reason};
+}
+
+void throwOverflow(const std::string_view reason) {
+    throw err::OverflowError{reason};
 }
 
 }

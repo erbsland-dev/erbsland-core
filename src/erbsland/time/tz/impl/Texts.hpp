@@ -13,9 +13,17 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Get the generated text entry table.
+/// @return The generated text entries.
 [[nodiscard]] auto textEntries() noexcept -> const std::array<Text, 780> &;
+/// Get the generated text storage block.
+/// @return The generated text block.
 [[nodiscard]] auto textBlock() noexcept -> std::string_view;
+/// Get all generated IANA time-zone names.
+/// @return The generated time-zone names.
 [[nodiscard]] auto zoneNames() noexcept -> const std::array<ZoneName, 597> &;
+/// Get the generated primary IANA time-zone names.
+/// @return The generated primary time-zone names.
 [[nodiscard]] auto primaryZoneNames() noexcept -> const std::array<ZoneName, 340> &;
 
 }

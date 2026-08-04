@@ -8,6 +8,7 @@
 #include "StringConverter.hpp"
 #include "StringKind.hpp"
 
+#include "impl/StringTraits.hpp"
 #include "u16/U16String.hpp"
 #include "u16/U16StringEditor.hpp"
 #include "u32/U32String.hpp"
@@ -20,15 +21,10 @@
 
 #include <compare>
 #include <optional>
-#include <type_traits>
 #include <utility>
 #include <variant>
 
 namespace erbsland::text {
-
-template <typename tString>
-concept AnyStringType =
-    std::is_same_v<tString, U8String> || std::is_same_v<tString, U16String> || std::is_same_v<tString, U32String>;
 
 /// A wrapper that stores a read-only string of any supported width.
 /// @tested{AnyStringTest}
@@ -39,7 +35,7 @@ public:
     /// Create an empty string of an undefined type.
     AnyString() = default;
     /// Create a string of the given type.
-    template <AnyStringType tString>
+    template <impl::AnyStringType tString>
     AnyString(tString str) noexcept : // NOLINT(*-explicit-constructor)
         _value(str.isEmpty() ? Value{} : std::move(str)) {}
     /// Create a read-only string sharing a narrow UTF-8 literal.
@@ -77,26 +73,32 @@ public: // operators
     /// Compare two strings by decoded code point.
     [[nodiscard]] auto operator<=>(const AnyString &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const AnyString &other, other);
+    /// Copy UTF-8 string storage into this value.
     auto operator=(const U8String &str) -> AnyString & {
         _value = str;
         return *this;
     }
+    /// Move UTF-8 string storage into this value.
     auto operator=(U8String &&str) -> AnyString & {
         _value = std::move(str);
         return *this;
     }
+    /// Copy UTF-16 string storage into this value.
     auto operator=(const U16String &str) -> AnyString & {
         _value = str;
         return *this;
     }
+    /// Move UTF-16 string storage into this value.
     auto operator=(U16String &&str) -> AnyString & {
         _value = std::move(str);
         return *this;
     }
+    /// Copy UTF-32 string storage into this value.
     auto operator=(const U32String &str) -> AnyString & {
         _value = str;
         return *this;
     }
+    /// Move UTF-32 string storage into this value.
     auto operator=(U32String &&str) -> AnyString & {
         _value = std::move(str);
         return *this;
@@ -179,7 +181,7 @@ public: // conversion
                 using ValueType = std::remove_cvref_t<T>;
                 if constexpr (std::is_same_v<ValueType, U8String>) {
                     return value;
-                } else if constexpr (AnyStringType<ValueType>) {
+                } else if constexpr (impl::AnyStringType<ValueType>) {
                     return StringConverter{value}.toU8String();
                 } else {
                     return {};
@@ -196,7 +198,7 @@ public: // conversion
                 using ValueType = std::remove_cvref_t<T>;
                 if constexpr (std::is_same_v<ValueType, U16String>) {
                     return value;
-                } else if constexpr (AnyStringType<ValueType>) {
+                } else if constexpr (impl::AnyStringType<ValueType>) {
                     return StringConverter{value}.toU16String();
                 } else {
                     return {};
@@ -211,7 +213,7 @@ public: // conversion
                 using ValueType = std::remove_cvref_t<T>;
                 if constexpr (std::is_same_v<ValueType, U32String>) {
                     return value;
-                } else if constexpr (AnyStringType<ValueType>) {
+                } else if constexpr (impl::AnyStringType<ValueType>) {
                     return StringConverter{value}.toU32String();
                 } else {
                     return {};

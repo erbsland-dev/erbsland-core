@@ -229,7 +229,7 @@ public:
 
         REQUIRE_EQUAL(toString(storage.dataView()), std::string{"cd!"});
         REQUIRE_EQUAL(storage.range(), ByteRange::fromSizeT(3U));
-        REQUIRE(storage.capacity() >= ByteLength{8U});
+        REQUIRE_GREATER_EQUAL(storage.capacity(), ByteLength{8U});
         REQUIRE_EQUAL(storage.data()[3], '\0');
     }
 

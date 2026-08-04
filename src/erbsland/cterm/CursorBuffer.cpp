@@ -8,8 +8,11 @@
 #include "impl/paragraph/Printer.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
+
+using namespace text::literals;
 
 using bgeo::BlockCoordinate;
 using bgeo::BlockDirection;
@@ -18,7 +21,7 @@ using bgeo::BlockSize;
 
 void CursorBuffer::validateFillChar(const Block &fillChar) {
     if (fillChar.displayWidth() != 1) {
-        throw err::ParameterError{"fillChar must be a single-width character.", "fillChar"};
+        throw err::ParameterError{"fillChar must be a single-width character."_el, "fillChar"_el};
     }
 }
 

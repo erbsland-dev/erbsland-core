@@ -17,6 +17,7 @@ namespace erbsland::text {
 /// @tested{TextDocumentTest}
 class CodeSnippetMarker final {
 public:
+    /// Create an empty code-snippet marker.
     CodeSnippetMarker() = default;
     /// Create a marker for a snippet line.
     /// @param line The original zero-based line index.

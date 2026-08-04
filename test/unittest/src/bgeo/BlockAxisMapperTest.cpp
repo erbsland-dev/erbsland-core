@@ -24,9 +24,12 @@ public:
 
         const auto mapper = BlockAxisMapper{Orientation::Horizontal};
 
-        REQUIRE_EQUAL(mapper.size(12, 5), BlockSize(12, 5));
-        REQUIRE_EQUAL(mapper.position(7, 2), BlockPosition(7, 2));
-        REQUIRE_EQUAL(mapper.position(7), BlockPosition(7, 0));
+        const auto size = mapper.size(12, 5);
+        const auto position = mapper.position(7, 2);
+        const auto axisPosition = mapper.position(7);
+        REQUIRE_EQUAL(size, BlockSize(12, 5));
+        REQUIRE_EQUAL(position, BlockPosition(7, 2));
+        REQUIRE_EQUAL(axisPosition, BlockPosition(7, 0));
         REQUIRE_EQUAL(mapper.horizontalValue(11, 22), 11);
         REQUIRE_EQUAL(mapper.verticalValue(11, 22), 22);
     }
@@ -35,9 +38,12 @@ public:
 
         const auto mapper = BlockAxisMapper{Orientation::Vertical};
 
-        REQUIRE_EQUAL(mapper.size(12, 5), BlockSize(5, 12));
-        REQUIRE_EQUAL(mapper.position(7, 2), BlockPosition(2, 7));
-        REQUIRE_EQUAL(mapper.position(7), BlockPosition(0, 7));
+        const auto size = mapper.size(12, 5);
+        const auto position = mapper.position(7, 2);
+        const auto axisPosition = mapper.position(7);
+        REQUIRE_EQUAL(size, BlockSize(5, 12));
+        REQUIRE_EQUAL(position, BlockPosition(2, 7));
+        REQUIRE_EQUAL(axisPosition, BlockPosition(0, 7));
         REQUIRE_EQUAL(mapper.horizontalValue(11, 22), 22);
         REQUIRE_EQUAL(mapper.verticalValue(11, 22), 11);
     }

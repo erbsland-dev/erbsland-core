@@ -9,17 +9,6 @@ namespace erbsland::debug::impl {
 using namespace text::literals;
 using namespace text;
 
-auto storageKindText(const StringStorageKind kind) noexcept -> String {
-    switch (kind) {
-    case StringStorageKind::Shared:
-        return "shared"_el;
-    case StringStorageKind::Literal:
-        return "literal"_el;
-    default:
-        return "empty"_el;
-    }
-}
-
 auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> String {
     if (storageId.isEmpty()) {
         return "empty"_el;

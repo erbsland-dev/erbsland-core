@@ -20,23 +20,23 @@ public:
     void testFromFileWithPath() {
         auto filePath = createTestFile("test"_el);
         auto source = Source::fromFile(el::path::Path{filePath});
-        REQUIRE(source != nullptr);
+        REQUIRE(source);
         REQUIRE_EQUAL(source->name(), "file"_el);
         REQUIRE_EQUAL(source->path(), el::path::Path{filePath}.toString());
         auto expectedIdentifier = el::text::StringEditor{"file:"_el};
         expectedIdentifier.append(source->path().toSafeString(el::unit::CpLength{200}));
         REQUIRE_EQUAL(source->identifier()->toText(), el::text::String{expectedIdentifier});
         REQUIRE_FALSE(source->isOpen());
-        REQUIRE(dynamic_cast<impl::FileSource *>(source.get()) != nullptr);
+        REQUIRE(dynamic_cast<el::conf::impl::FileSource *>(source.get()));
     }
 
     void testFromStringWithCoreString() {
         auto source = Source::fromString(el::text::String{"abc"});
-        REQUIRE(source != nullptr);
-        REQUIRE(source->name() == "text"_el);
+        REQUIRE(source);
+        REQUIRE_EQUAL(source->name(), "text"_el);
         REQUIRE(source->path().isEmpty());
-        REQUIRE(source->identifier()->toText() == "text"_el);
+        REQUIRE_EQUAL(source->identifier()->toText(), "text"_el);
         REQUIRE_FALSE(source->isOpen());
-        REQUIRE(dynamic_cast<impl::StringSource *>(source.get()) != nullptr);
+        REQUIRE(dynamic_cast<el::conf::impl::StringSource *>(source.get()));
     }
 };

@@ -5,22 +5,20 @@ Text Domain API Guidelines
 Core Semantics
 ==============
 
-String and Character Model
---------------------------
+Character Model
+---------------
 
 .. code-block:: text
 
-    String/U❮width❯String = owning read-only value, slice, key, parameter, or completed output
-    StringEditor/U❮width❯StringEditor = explicit mutable storage and mutable handoff
-    StringLiteral/U❮width❯StringLiteral = compile-time literal created with the _el suffix
-    AnyString/AnyStringEditor = runtime-width read-only or mutable value
-    unqualified String names = UTF-8 aliases
     character = Unicode code point, not grapheme, glyph, or byte
     UTF-8 native position = byte index or length
     UTF-16 native position = char16 data index or length
     UTF-32 native position = code-point index or length
     cross-width position = code-point index or length
     signal = explicit non-character result from tolerant character access
+    normalization = explicit NFC/NFD/NFKC/NFKD with malformed input replaced
+    normalization non-starter limit = after decomposition, replace starter plus more than 30 non-starters with U+FFFD
+    compatibility normalization = NFKC/NFKD may discard compatibility distinctions
 
 Comparison
 ----------
@@ -39,23 +37,10 @@ Sensitive UTF-8 Storage
 .. code-block:: text
 
     marked allocation = one-way sensitivity metadata shared by every UTF-8 alias
-    same-width result = copy, slice, trim, detach, and same-string modification preserve the mark
+    same-width derived value = preserves the allocation mark
     conversion boundary = other widths, encoded bytes, formatting, escaping, and standard text are unmarked
     comparison = ordinary string comparison without a constant-time guarantee
     release = complete allocation erased after its final alias is released
-
-Typed Formatting
-----------------
-
-.. code-block:: text
-
-    field = {[index]:selector:options}
-    selector colon = mandatory even without options
-    selector = runtime argument domain such as text, number, boolean, or bytes
-    options = named and comma-separated
-    option alias = globally unique stable ASCII identifier
-    enum-value alias = unique within its option
-    identifier matching = ASCII case-insensitive
 
 Primary Types
 =============
@@ -77,6 +62,7 @@ Processing Types
     StringSplitter, U8StringSplitter, U16StringSplitter, U32StringSplitter // owning sequential splitters
     CharRange, CharSet, CombinedChar, CharSignal // code-point range, set, combined value, and access signal
     UnicodeCategory, UnicodeCategoryGroup, AsciiCategory // character classifications
+    NormalizationForm // NFC, NFD, NFKC, and NFKD Unicode normalization selection
     StringKind, StringSide, StringSplitMode, CaseSensitivity // width, position, splitting, and comparison policies
     StringConverter // explicit Erbsland and standard string conversion entry point
     StringDecoder, StringEncoder, StringDecodeBuffer // byte codecs and bounded incremental decoding
@@ -88,7 +74,7 @@ Formatting and Parsing Types
 .. code-block:: text
 
     StringFormat, U8Format, U16Format, U32Format // typed formatters for each output width
-    FormatArgument, FormatArgumentKind, FormatAs❮Type❯ // erased arguments and typed formatting adapters
+    FormatArgument, FormatArgumentKind, FormatAs // erased arguments and text formatting adapters
     BooleanFormat, ByteFormat, IntegerFormat, FloatFormat // scalar formatting policies
     IntegerParseOptions, FloatParseOptions // numeric parsing policies
     ReadIntegerResult, ReadNumberStatus // incremental numeric parsing result and status
@@ -121,6 +107,9 @@ Document Types
     PlainTextRenderer // semantic document to plain-text renderer
     CodeSnippet, CodeSnippetMarker // indexed source excerpt and annotation
     html::HtmlParser // tolerant HTML-to-document parser
+    json::JsonValue, json::JsonType // copy-on-write JSON value tree and semantic type
+    json::JsonArray, json::JsonObject // ordered JSON containers
+    json::JsonParseOptions, json::JsonFormatOptions // JSON limits and output controls
 
 Codec Types
 ===========
@@ -130,6 +119,8 @@ Codec Types
     base_n::BaseNFormat // alphabet, padding, whitespace, and line-wrapping policy
     base_n::BaseNEncoder, base_n::BaseNDecoder // binary-to-text and text-to-binary codecs
     base_n::BaseNFormatFlag, base_n::BaseNFormatFlags // padding and wrapping flags
+    punycode::PunycodeEncoder, punycode::PunycodeDecoder // Unicode/Punycode and optional strict IDNA2008 conversion
+    punycode::PunycodeOptions, punycode::PunycodeMode // pure, label, or domain processing policy
 
 Pattern Definitions
 ===================
@@ -155,6 +146,7 @@ String Value Patterns
     o.forEach(function) -> util::LoopResult // visit decoded code points
     o.splitAt(index) -> std::pair❮S❯ // split into read-only values
     o.trimmed/transformed([arguments]) -> S // return processed read-only text
+    o.normalized(form) -> S // explicitly normalize and share storage when already normalized
     o.toEscaped/toSafeString([options]) -> S // create escaped or bounded diagnostic text
 
 String Editing Patterns
@@ -166,6 +158,8 @@ String Editing Patterns
     o.append/insert/replace(position, text) -> E& // add or replace text in place
     o.remove/trim(range-or-characters) -> E& // remove text in place
     o.slice/trimmed(range-or-characters) -> E // return an editable result
+    o.normalize(form) -> E& // normalize in place
+    o.normalized(form) -> E // return an editable normalized result
     o.clear()/reset() // empty while retaining or releasing storage
     o.reserve(capacity)/detach() // prepare storage or ensure exclusive ownership
     o.toString/takeString() -> String // copy or move completed UTF-8 text
@@ -179,6 +173,9 @@ Reader and Split Patterns
     T(text[, separator, mode]) // create an owning reader or splitter
     o.isAtEnd()/position()/remaining() -> T // inspect sequential state
     o.next()/peek() -> T // consume or inspect the next character or slice
+    o.advanceIf(character-or-string[, compare]) -> bool // transactionally skip an optional token
+    o.advanceWhile/advanceUntil(set[, maximum]) -> unit::CpLength // skip and optionally inspect the count
+    o.skip() // discard the next splitter part without creating a slice
     o.reset([state]) // restart or restore retained reader state
 
 Conversion and Encoding Patterns
@@ -190,6 +187,7 @@ Conversion and Encoding Patterns
     o.toString/toU❮width❯String/toStdString([mode]) -> T // convert with tolerant or strict decoding
     o.toAnyString() -> AnyString // preserve runtime-selected width
     o.decode([mode]) -> S // decode owned bytes to the requested width
+    o.validateOrThrow(encoding[, bom-mode]) // strictly validate encoded bytes without creating a string
     o.encode() -> mem::ByteBlock // tolerantly encode text into owned bytes
     o.encodedLength() -> unit::ByteLength // calculate encoded byte length
     o.encodeTo(ring) -> util::Result // atomically encode into a byte ring
@@ -232,6 +230,21 @@ Document Patterns
     T(document) // create a plain-text renderer for a document
     o.build() -> String // explicitly render a document
 
+JSON Value Patterns
+===================
+
+.. code-block:: text
+
+    T() // create JSON null
+    T(primitive-or-array-or-object) // create a JSON value
+    o.type()/is(type)/isPrimitive() -> T // inspect the semantic type
+    o.get(index-or-key)/getOrThrow(index-or-key) -> JsonValue // access a child value
+    o.get<U>([fallback])/getOrThrow<U>() -> U // access a checked native representation
+    o.set(index-or-key, value)/append(value) -> T& // detach and mutate an array or object
+    o.toString([options]) -> String // serialize deterministic JSON
+    T::fromString(text[, options]) -> optional<T> // parse with empty failure reporting
+    T::fromStringOrThrow(text[, options]) -> T // parse or throw ParseError
+
 Base-N Codec Patterns
 =====================
 
@@ -241,3 +254,18 @@ Base-N Codec Patterns
     T(input[, format]) // create an encoder from bytes or decoder from text
     o.encode() -> AnyString // encode into the configured output width
     o.decode/decodeOrThrow() -> mem::ByteBlock // decode with empty or throwing failure reporting
+
+Punycode and IDNA Patterns
+==========================
+
+.. code-block:: text
+
+    T(text[, options]) // create a Punycode encoder or decoder
+    o.encode() -> std::optional<String> // encode with empty failure reporting
+    o.decode() -> std::optional<String> // decode with empty failure reporting
+    o.encodeOrThrow() -> String // encode or throw err::ParseError
+    o.decodeOrThrow() -> String // decode or throw err::ParseError
+    T() // create pure RFC 3492 options without prefix, domain, normalization, or filtering policy
+    T::idna2008Label() -> PunycodeOptions // create strict IDNA2008 label options
+    T::idna2008Domain() -> PunycodeOptions // create strict IDNA2008 domain options
+    T::network() -> PunycodeOptions // create the strict network-domain policy

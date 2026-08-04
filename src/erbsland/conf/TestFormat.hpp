@@ -43,18 +43,14 @@ public:
         static_assert(sizeof...(flags) <= _flagCount);
         (_flags.set(flags), ...);
     }
-    /// Destructor
+    // defaults
     ~TestFormat() = default;
-    /// Assign
     auto operator=(const TestFormat &) -> TestFormat & = default;
-    /// Move
     auto operator=(TestFormat &&) -> TestFormat & = default;
-    /// Copy
     TestFormat(const TestFormat &) = default;
-    /// Move
     TestFormat(TestFormat &&) = default;
 
-public:
+public: // operators
     /// Compare for equality.
     auto operator==(const TestFormat &) const -> bool = default;
     /// Compare for unequality.
@@ -85,6 +81,8 @@ public:
     [[nodiscard]] auto isSet(const Flag flag) const noexcept -> bool { return _flags.test(flag); }
 
 private:
+    /// Create a format from an internal flag bit set.
+    /// @param flags The flags to retain.
     explicit TestFormat(const std::bitset<_flagCount> &flags) : _flags(flags) {}
 
 private:
@@ -93,6 +91,7 @@ private:
 
 }
 
+/// Combine two test-format flags.
 [[nodiscard]] inline auto operator|(
     const erbsland::conf::TestFormat::Flag left, const erbsland::conf::TestFormat::Flag right) noexcept
     -> erbsland::conf::TestFormat {
@@ -101,6 +100,7 @@ private:
     return value;
 }
 
+/// Add a test-format flag to a format value.
 [[nodiscard]] inline auto operator|(
     const erbsland::conf::TestFormat::Flag left, const erbsland::conf::TestFormat right) noexcept
     -> erbsland::conf::TestFormat {

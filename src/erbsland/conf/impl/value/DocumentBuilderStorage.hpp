@@ -11,6 +11,7 @@ namespace erbsland::conf::impl {
 /// distinct layers that are individually testable.
 class DocumentBuilderStorage {
 public:
+    // defaults
     DocumentBuilderStorage() = default;
     ~DocumentBuilderStorage() = default;
 
@@ -53,8 +54,11 @@ public:
         const ValuePtr &containerValue, const NamePath &namePath, const Location &location, const ValuePtr &value);
 
 private:
+    /// Validate the arguments accepted by an add operation.
     void validateAddArguments(const NamePath &namePath, const ValuePtr &value) const;
+    /// Apply rules governing a value added at the document root.
     void applyRootRules(const NamePath &namePath, const Location &location, const ValuePtr &value);
+    /// Apply rules governing a value added to a container.
     void applyContainerRules(
         const ValuePtr &container, const NamePath &namePath, const Location &location, const ValuePtr &value);
 

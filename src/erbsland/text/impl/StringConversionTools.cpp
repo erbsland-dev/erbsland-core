@@ -30,10 +30,8 @@
 
 namespace erbsland::text::impl {
 
-namespace {
-
 template <typename T>
-[[nodiscard]] auto isMatchingRepresentation(const StringEncoding encoding) noexcept -> bool {
+[[nodiscard]] auto StringConversionTools::isMatchingRepresentation(const StringEncoding encoding) noexcept -> bool {
     if constexpr (std::same_as<T, char>) {
         return encoding.isUtf8();
     } else if constexpr (std::same_as<T, char16_t>) {
@@ -50,19 +48,20 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] auto asByteSpan(const std::span<const T> source) noexcept -> mem::ConstByteSpan {
+[[nodiscard]] auto StringConversionTools::asByteSpan(const std::span<const T> source) noexcept -> mem::ConstByteSpan {
     return {reinterpret_cast<const mem::Byte *>(source.data()), source.size_bytes()};
 }
 
 template <typename T>
-[[nodiscard]] auto rawEncodedLength(
+[[nodiscard]] auto StringConversionTools::rawEncodedLength(
     const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> unit::ByteLength {
     auto result = encoding.bomLength(bomMode);
     result.addOrThrow(unit::ByteLength::fromSizeT(source.size_bytes()));
     return result;
 }
 
-void copyBytes(mem::ByteSpan destination, std::size_t &offset, const mem::ConstByteSpan source) noexcept {
+void StringConversionTools::copyBytes(
+    const mem::ByteSpan destination, std::size_t &offset, const mem::ConstByteSpan source) noexcept {
     if (!source.empty()) {
         std::memcpy(destination.data() + offset, source.data(), source.size());
         offset += source.size();
@@ -70,7 +69,7 @@ void copyBytes(mem::ByteSpan destination, std::size_t &offset, const mem::ConstB
 }
 
 template <typename T>
-[[nodiscard]] auto encodeRaw(
+[[nodiscard]] auto StringConversionTools::encodeRaw(
     const std::span<const T> source, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
     const auto length = rawEncodedLength(source, encoding, bomMode);
     auto buffer = mem::impl::UnsafeByteBlockBuffer{length};
@@ -81,7 +80,7 @@ template <typename T>
 }
 
 template <typename T>
-[[nodiscard]] auto encodeRawTo(
+[[nodiscard]] auto StringConversionTools::encodeRawTo(
     const std::span<const T> source,
     mem::RingBuffer &buffer,
     const StringEncoding encoding,
@@ -114,8 +113,8 @@ template <typename T>
 }
 
 template <typename tData, typename tTools, typename tDataView>
-[[nodiscard]] auto encodeString(const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode)
-    -> mem::ByteBlock {
+[[nodiscard]] auto StringConversionTools::encodeString(
+    const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> mem::ByteBlock {
     if (isMatchingRepresentation<tData>(encoding)) {
         return encodeRaw<tData>(dataView.dataSpan(), encoding, bomMode);
     }
@@ -123,7 +122,7 @@ template <typename tData, typename tTools, typename tDataView>
 }
 
 template <typename tData, typename tTools, typename tDataView>
-[[nodiscard]] auto encodedStringLength(
+[[nodiscard]] auto StringConversionTools::encodedStringLength(
     const tDataView dataView, const StringEncoding encoding, const StringBomMode bomMode) -> unit::ByteLength {
     if (isMatchingRepresentation<tData>(encoding)) {
         return rawEncodedLength<tData>(dataView.dataSpan(), encoding, bomMode);
@@ -132,15 +131,13 @@ template <typename tData, typename tTools, typename tDataView>
 }
 
 template <typename tData, typename tTools, typename tDataView>
-[[nodiscard]] auto encodeStringTo(
+[[nodiscard]] auto StringConversionTools::encodeStringTo(
     const tDataView dataView, mem::RingBuffer &buffer, const StringEncoding encoding, const StringBomMode bomMode)
     -> util::Result {
     if (isMatchingRepresentation<tData>(encoding)) {
         return encodeRawTo<tData>(dataView.dataSpan(), buffer, encoding, bomMode);
     }
     return tTools{dataView}.encodeTo(buffer, encoding, bomMode);
-}
-
 }
 
 auto StringConversionTools::toU8StringEditor(const std::string_view str, const EncodingMode mode) -> U8StringEditor {
@@ -556,6 +553,11 @@ auto StringConversionTools::decodeU32String(
     const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode, const EncodingMode mode)
     -> U32StringEditor {
     return U32StringEncodingTools::decode(data, encoding, bomMode, mode);
+}
+
+void StringConversionTools::validateEncodedData(
+    const mem::ByteBlock &data, const StringEncoding encoding, const StringBomMode bomMode) {
+    U8StringEncodingTools::validate(data, encoding, bomMode);
 }
 
 }

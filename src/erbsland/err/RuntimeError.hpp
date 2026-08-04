@@ -11,6 +11,7 @@ namespace erbsland::err {
 class RuntimeError : public Exception {
 public:
     using Exception::Exception;
+    // defaults
     ~RuntimeError() override = default;
 };
 

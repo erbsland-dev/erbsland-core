@@ -21,12 +21,15 @@ namespace erbsland::cterm::impl::paragraph {
 /// Shared paragraph layout for wrapped terminal text.
 class Layout final {
 public:
+    /// Create paragraph layout state for terminal text.
     Layout(
         const BlockString &text,
         int width,
         const ParagraphOptions &options,
         LayoutNewlineMode newlineMode,
         const LayoutSemantics *semantics = nullptr) noexcept;
+
+    // defaults/deletions
     ~Layout() = default;
     Layout(const Layout &) = delete;
     Layout(Layout &&) = delete;
@@ -38,10 +41,14 @@ public:
     [[nodiscard]] auto build() -> LayoutResult;
 
 private:
+    /// Split the source text into newline-delimited ranges.
     [[nodiscard]] auto splitIntoSourceLines() const -> std::vector<BlockRange>;
+    /// Lay out all source lines into visual paragraph lines.
     [[nodiscard]] auto layoutParagraph(const std::vector<BlockRange> &sourceLines, std::vector<LayoutLine> &lines)
         -> bool;
+    /// Lay out a single source line into visual lines.
     [[nodiscard]] auto layoutSourceLine(BlockRange sourceLine, std::vector<LayoutLine> &lines) -> bool;
+    /// Prepare source-line data for wrapping.
     [[nodiscard]] auto prepareSourceLine(BlockRange sourceLine) const -> LayoutPreparedSourceLine;
 
 private:

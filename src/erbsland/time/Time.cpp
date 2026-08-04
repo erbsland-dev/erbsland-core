@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Time.hpp"
 
+#include "TimeWrapResult.hpp"
+
 #include "../text/IntegerFormat.hpp"
 #include "../text/Literals.hpp"
 #include "../text/StringEditor.hpp"
@@ -12,12 +14,6 @@ namespace erbsland::time {
 using text::IntegerFormat;
 using text::IntegerFormatFlag;
 using text::String;
-
-namespace {
-constexpr auto cNanosecondsPerSecond = int64_t{1000000000};
-constexpr auto cSecondsPerDay = int64_t{86400};
-constexpr auto cNanosecondsPerDay = cNanosecondsPerSecond * cSecondsPerDay;
-}
 
 using namespace text::literals;
 

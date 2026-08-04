@@ -161,7 +161,7 @@ public:
 
         auto length = ByteLength{2};
         length += ByteLength{3};
-        REQUIRE(length == ByteLength{5});
+        REQUIRE_EQUAL(length, ByteLength{5});
         length -= ByteLength{10};
         REQUIRE(length.isZero());
         --length;
@@ -199,7 +199,7 @@ public:
 
         auto length = ByteLength{2};
         length.addOrThrow(ByteLength{3});
-        REQUIRE(length == ByteLength{5});
+        REQUIRE_EQUAL(length, ByteLength{5});
         REQUIRE_THROWS(ByteLength::maximum().addOrThrow(ByteLength::one()));
         REQUIRE_THROWS(ByteLength::infinite().addedOrThrow(ByteLength::one()));
         REQUIRE_THROWS(ByteLength{2}.subtractOrThrow(ByteLength{3}));
@@ -209,13 +209,14 @@ public:
 
         auto offset = ByteOffset{2};
         offset += ByteOffset{3};
-        REQUIRE(offset == ByteOffset{5});
+        REQUIRE_EQUAL(offset, ByteOffset{5});
         offset -= ByteOffset{8};
-        REQUIRE(offset == ByteOffset{-3});
-        REQUIRE((-offset) == ByteOffset{3});
-        REQUIRE((offset++ == ByteOffset{-3}));
-        REQUIRE(offset == ByteOffset{-2});
-        REQUIRE((--offset) == ByteOffset{-3});
+        REQUIRE_EQUAL(offset, ByteOffset{-3});
+        REQUIRE_EQUAL((-offset), ByteOffset{3});
+        const auto offsetBeforeIncrement = offset++;
+        REQUIRE_EQUAL(offsetBeforeIncrement, ByteOffset{-3});
+        REQUIRE_EQUAL(offset, ByteOffset{-2});
+        REQUIRE_EQUAL((--offset), ByteOffset{-3});
 
         REQUIRE(ByteOffset::maximum().added(ByteOffset::one()).isMaximum());
         REQUIRE(ByteOffset::minimum().subtracted(ByteOffset::one()).isMinimum());
@@ -252,14 +253,14 @@ public:
 
         auto index = ByteIndex{5};
         index.advanceOrThrow(ByteLength{3});
-        REQUIRE(index == ByteIndex{8});
+        REQUIRE_EQUAL(index, ByteIndex{8});
         index.retreatOrThrow(ByteLength{4});
-        REQUIRE(index == ByteIndex{4});
+        REQUIRE_EQUAL(index, ByteIndex{4});
         index.moveOrThrow(ByteOffset{-2});
-        REQUIRE(index == ByteIndex{2});
+        REQUIRE_EQUAL(index, ByteIndex{2});
 
-        REQUIRE(index.offsetFromZeroOrThrow() == ByteOffset{2});
-        REQUIRE(index.offsetToOrThrow(ByteIndex{5}) == ByteOffset{3});
+        REQUIRE_EQUAL(index.offsetFromZeroOrThrow(), ByteOffset{2});
+        REQUIRE_EQUAL(index.offsetToOrThrow(ByteIndex{5}), ByteOffset{3});
         REQUIRE_THROWS(ByteIndex::noIndex().advanceOrThrow(ByteLength::one()));
         REQUIRE_THROWS(ByteIndex{2}.retreatOrThrow(ByteLength{3}));
         REQUIRE_THROWS(ByteIndex::maximum().advanceOrThrow(ByteLength::one()));
@@ -272,12 +273,12 @@ public:
 
         static constexpr auto cInt64Max = static_cast<uint64_t>(std::numeric_limits<int64_t>::max());
         REQUIRE(!ByteIndex{cInt64Max}.wouldOffsetFromZeroSaturate());
-        REQUIRE(ByteIndex{cInt64Max}.offsetFromZero() == ByteOffset::maximum());
+        REQUIRE_EQUAL(ByteIndex{cInt64Max}.offsetFromZero(), ByteOffset::maximum());
         REQUIRE(ByteIndex{cInt64Max + 1U}.wouldOffsetFromZeroSaturate());
         REQUIRE(ByteIndex{cInt64Max + 1U}.offsetFromZero().isMaximum());
 
         REQUIRE(!CpIndex{5}.wouldOffsetToSaturate(CpIndex{2}));
-        REQUIRE(CpIndex{5}.offsetTo(CpIndex{2}) == CpOffset{-3});
+        REQUIRE_EQUAL(CpIndex{5}.offsetTo(CpIndex{2}), CpOffset{-3});
         REQUIRE(!CpIndex{0x80000000U}.wouldOffsetToSaturate(CpIndex{0}));
         REQUIRE(CpIndex{0x80000000U}.offsetTo(CpIndex{0}).isMinimum());
         REQUIRE(CpIndex{0x80000001U}.wouldOffsetToSaturate(CpIndex{0}));
@@ -296,13 +297,13 @@ public:
         REQUIRE(!range.isWithin(ByteLength{6}));
 
         range.move(ByteOffset{-2});
-        REQUIRE(range.index() == ByteIndex{2});
-        REQUIRE(range.endIndex() == ByteIndex{5});
+        REQUIRE_EQUAL(range.index(), ByteIndex{2});
+        REQUIRE_EQUAL(range.endIndex(), ByteIndex{5});
         range += ByteOffset{2};
-        REQUIRE(range.index() == ByteIndex{4});
-        REQUIRE((range - ByteOffset{2}).index() == ByteIndex{2});
-        REQUIRE(range.clampedTo(ByteLength{6}) == ByteRange{ByteIndex{4}, ByteLength{2}});
-        REQUIRE(range.withOrigin(ByteIndex{10}) == ByteRange{ByteIndex{14}, ByteLength{3}});
+        REQUIRE_EQUAL(range.index(), ByteIndex{4});
+        REQUIRE_EQUAL((range - ByteOffset{2}).index(), ByteIndex{2});
+        REQUIRE_EQUAL(range.clampedTo(ByteLength{6}), (ByteRange{ByteIndex{4}, ByteLength{2}}));
+        REQUIRE_EQUAL(range.withOrigin(ByteIndex{10}), (ByteRange{ByteIndex{14}, ByteLength{3}}));
 
         auto noRange = ByteRange::noRange();
         REQUIRE(!noRange.isValid());

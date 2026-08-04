@@ -3,6 +3,7 @@
 #include "Terminal.hpp"
 
 #include "Buffer.hpp"
+#include "BufferConstRefView.hpp"
 #include "BufferView.hpp"
 
 #include "impl/AnsiSequence.hpp"
@@ -70,7 +71,7 @@ void Terminal::updateScreen(const ReadableBuffer &buffer, const UpdateSettings &
         setAlternateScreen(true);
     }
     {
-        impl::LineBuffer::EmitLockGuard guard(_lineBuffer);
+        impl::LineBufferEmitLockGuard guard(_lineBuffer);
         updateSizeTooSmallBuffer(settings);
         refreshScreen();
         setAutoWrap(false); // disable auto wrapping.
@@ -217,7 +218,7 @@ auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> 
     if (_backBuffer == nullptr) {
         throw err::RuntimeError{"Back buffer is not initialized."};
     }
-    impl::LineBuffer::EmitLockGuard guard(_lineBuffer);
+    impl::LineBufferEmitLockGuard guard(_lineBuffer);
     auto lastWriteCursor = BlockPosition{0, 0};
     view.size().forEach([&](const BlockPosition pos) -> void {
         const auto &newCharacter = view.get(pos);

@@ -7,15 +7,15 @@
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/StringDecoder.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
 #include <erbsland/unit/CpRange.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unit/U16DataIndex.hpp>
 #include <erbsland/unit/U16DataLength.hpp>
 #include <erbsland/unit/U16DataRange.hpp>
@@ -91,7 +91,7 @@ public:
         const auto view = U16String{source}.slice(U16DataRange{U16DataIndex{1U}, U16DataLength{3U}});
 
         auto repeatedText = U16StringEditor{};
-        repeatedText.append(view, ElementCount{2U});
+        repeatedText.append(view, ItemCount{2U});
         REQUIRE_EQUAL(StringConverter{repeatedText}.toStdU16String(), std::u16string{u"A\U0001F600A\U0001F600"});
         REQUIRE_EQUAL(repeatedText.length(), U16DataLength{6U});
         REQUIRE_EQUAL(repeatedText.characterLength(), CpLength{4U});
@@ -106,12 +106,12 @@ public:
         REQUIRE_EQUAL(U16StringEditor::fromCharacter(Char{U'A'}), u"A"_el);
 
         auto appended = U16StringEditor{std::u16string_view{u">"}};
-        appended.append(view, ElementCount{2U}).append(Char{U'!'}, CpLength{2U});
+        appended.append(view, ItemCount{2U}).append(Char{U'!'}, CpLength{2U});
         REQUIRE_EQUAL(StringConverter{appended}.toStdU16String(), std::u16string{u">A\U0001F600A\U0001F600!!"});
         REQUIRE_EQUAL(appended.characterLength(), CpLength{7U});
 
-        REQUIRE(U16StringEditor{}.append(view, ElementCount::zero()).isEmpty());
-        REQUIRE(U16StringEditor{}.append(U16String{}, ElementCount{5U}).isEmpty());
+        REQUIRE(U16StringEditor{}.append(view, ItemCount::zero()).isEmpty());
+        REQUIRE(U16StringEditor{}.append(U16String{}, ItemCount{5U}).isEmpty());
         REQUIRE(U16StringEditor{}.append(Char::noCodePoint(), CpLength{5U}).isEmpty());
         REQUIRE(U16StringEditor::fromCharacter(Char{U'A'}, CpLength::zero()).isEmpty());
         REQUIRE(U16StringEditor::fromCharacter(Char::noCodePoint(), CpLength{5U}).isEmpty());
@@ -120,7 +120,7 @@ public:
         REQUIRE_EQUAL(
             StringConverter{U16StringEditor::fromJoined({u"prefix-"_el, u""_el, view, u"-suffix"_el})}.toStdU32String(),
             std::u32string{U"prefix-A\U0001F600-suffix"});
-        REQUIRE_THROWS(U16StringEditor{}.append(view, ElementCount::infinite()));
+        REQUIRE_THROWS(U16StringEditor{}.append(view, ItemCount::infinite()));
         REQUIRE_THROWS(U16StringEditor::fromCharacter(Char{U'A'}, CpLength::infinite()));
     }
 
@@ -295,8 +295,8 @@ public:
         REQUIRE_EQUAL(text.length().toSizeT(), std::size_t{3});
         REQUIRE_EQUAL(text.characterLength(), CpLength{3});
         REQUIRE_EQUAL(U16String{text}.characterLength(), CpLength{3});
-        REQUIRE_EQUAL(text.count(u"\uFFFD"_el), ElementCount{1U});
-        REQUIRE_EQUAL(U16String{text}.count(u"\uFFFD"_el, Char::compareCaseFolded), ElementCount{1U});
+        REQUIRE_EQUAL(text.count(u"\uFFFD"_el), ItemCount{1U});
+        REQUIRE_EQUAL(U16String{text}.count(u"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE_EQUAL(text.charAt(U16DataIndex{0}).toRawValue(), U'A');
         REQUIRE(text.charAt(U16DataIndex{1}).isReplacement());
         REQUIRE_EQUAL(text.charAt(U16DataIndex{2}).toRawValue(), U'B');
@@ -339,7 +339,7 @@ public:
         const auto text = U16String{std::u16string_view{textData}};
 
         REQUIRE_EQUAL(text.find(needle), U16DataIndex{4033U});
-        REQUIRE_EQUAL(text.count(needle), ElementCount{1U});
+        REQUIRE_EQUAL(text.count(needle), ItemCount{1U});
 
         needleData.back() = u'c';
         REQUIRE(text.find(U16String{std::u16string_view{needleData}}).isNoIndex());
@@ -576,11 +576,11 @@ public:
         REQUIRE(text.containsOnly(CharSet::fromPattern(u"A\u00A2\U0001F600"_el)));
         REQUIRE(view.containsOnly(CharSet::fromPattern(u"A\u00A2\U0001F600"_el)));
         REQUIRE(chars.containsOnly(CharSet::fromPattern(u"A\u00A2\U0001F600"_el)));
-        REQUIRE_EQUAL(text.count(u"\U0001F600"_el), ElementCount{1U});
-        REQUIRE_EQUAL(text.count(u"\u00A2\U0001F600"_el), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(u"A"_el), ElementCount{1U});
-        REQUIRE_EQUAL(view.count(U16String{}), ElementCount::zero());
-        REQUIRE_EQUAL(U16String{u"aaaa"_el}.count(u"aa"_el), ElementCount{2U});
+        REQUIRE_EQUAL(text.count(u"\U0001F600"_el), ItemCount{1U});
+        REQUIRE_EQUAL(text.count(u"\u00A2\U0001F600"_el), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(u"A"_el), ItemCount{1U});
+        REQUIRE_EQUAL(view.count(U16String{}), ItemCount::zero());
+        REQUIRE_EQUAL(U16String{u"aaaa"_el}.count(u"aa"_el), ItemCount{2U});
         REQUIRE_FALSE(text.containsOnly(CharSet::fromPattern(u"A\u00A2"_el)));
         REQUIRE_FALSE(chars.containsOnly(CharSet{}));
 
@@ -588,10 +588,10 @@ public:
         const auto mixedView = U16String{mixed};
         REQUIRE(mixed.containsOnly(CharSet::fromPattern(u"\u00C4\u00E4xXkK"_el)));
         REQUIRE(mixedView.containsOnly(CharSet::fromPattern(u"\u00C4\u00E4xXkK"_el)));
-        REQUIRE_EQUAL(mixed.count(u"\u00E4"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(mixed.count(u"k"_el, Char::compareCaseFolded), ElementCount{1U});
-        REQUIRE_EQUAL(mixed.count(U16String{}, Char::compareCaseFolded), ElementCount::zero());
-        REQUIRE_EQUAL(mixedView.count(u"X"_el, Char::compareCaseFolded), ElementCount{1U});
+        REQUIRE_EQUAL(mixed.count(u"\u00E4"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(mixed.count(u"k"_el, Char::compareCaseFolded), ItemCount{1U});
+        REQUIRE_EQUAL(mixed.count(U16String{}, Char::compareCaseFolded), ItemCount::zero());
+        REQUIRE_EQUAL(mixedView.count(u"X"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE(mixed.containsOnly(CharSet::fromPattern(u"\u00C4\u00E4xXkK"_el)));
         REQUIRE_FALSE(mixed.containsOnly(CharSet::fromPattern(u"\u00C4\u00E4xX"_el)));
     }

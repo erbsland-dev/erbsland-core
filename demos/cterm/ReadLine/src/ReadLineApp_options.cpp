@@ -10,91 +10,6 @@ namespace demo {
 
 using namespace el::text::literals;
 
-namespace {
-
-constexpr auto cStyleNames = std::array{
-    "background-style"_el,
-    "title-style"_el,
-    "prompt-style"_el,
-    "placeholder-style"_el,
-    "text-style"_el,
-    "cursor-style"_el,
-};
-
-constexpr auto cFrameOptionNames = std::array{
-    "frame-top"_el,
-    "frame-bottom"_el,
-    "frame-left"_el,
-    "frame-right"_el,
-    "frame-h-line"_el,
-    "frame-v-line"_el,
-};
-
-constexpr auto cFrameElements = std::array{
-    el::cterm::FrameBorder::Element::Top,
-    el::cterm::FrameBorder::Element::Bottom,
-    el::cterm::FrameBorder::Element::Left,
-    el::cterm::FrameBorder::Element::Right,
-    el::cterm::FrameBorder::Element::HLine,
-    el::cterm::FrameBorder::Element::VLine,
-};
-
-constexpr auto cScalarConfigurationPaths = std::array{
-    "readline.title"_el,
-    "readline.prompt"_el,
-    "readline.placeholder"_el,
-    "readline.maximum_length"_el,
-    "readline.maximum_lines"_el,
-    "readline.maximum_display_lines"_el,
-    "readline.history"_el,
-    "readline.current_text"_el,
-    "readline.timeout"_el,
-    "readline.timeout_display_threshold"_el,
-    "readline.blink_interval"_el,
-    "readline.cursor_block"_el,
-    "readline.commit_key"_el,
-    "readline.new_line_key"_el,
-    "readline.cancel_key"_el,
-    "readline.cleanup_enabled"_el,
-    "readline.display_style"_el,
-    "readline.padding_left"_el,
-    "readline.padding_right"_el,
-    "readline.styles.background"_el,
-    "readline.styles.title"_el,
-    "readline.styles.prompt"_el,
-    "readline.styles.placeholder"_el,
-    "readline.styles.text"_el,
-    "readline.styles.cursor"_el,
-    "readline.frame.style"_el,
-    "readline.frame.color"_el,
-    "readline.frame.top.style"_el,
-    "readline.frame.top.color"_el,
-    "readline.frame.bottom.style"_el,
-    "readline.frame.bottom.color"_el,
-    "readline.frame.left.style"_el,
-    "readline.frame.left.color"_el,
-    "readline.frame.right.style"_el,
-    "readline.frame.right.color"_el,
-    "readline.frame.h_line.style"_el,
-    "readline.frame.h_line.color"_el,
-    "readline.frame.v_line.style"_el,
-    "readline.frame.v_line.color"_el,
-};
-
-constexpr auto cConfigurationSectionPaths = std::array{
-    "readline"_el,
-    "readline.styles"_el,
-    "readline.frame"_el,
-    "readline.frame.top"_el,
-    "readline.frame.bottom"_el,
-    "readline.frame.left"_el,
-    "readline.frame.right"_el,
-    "readline.frame.h_line"_el,
-    "readline.frame.v_line"_el,
-};
-
-}
-
 void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
     options->setHelpTitle("ReadLine Demo"_el);
     options->setHelpDescription(
@@ -196,6 +111,14 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setType(el::OptionType::Text)
         .setValueName("character"_el)
         .setHelpDescription("One-cell block displayed as the cursor over empty space."_el);
+    constexpr auto cStyleNames = std::array{
+        "background-style"_el,
+        "title-style"_el,
+        "prompt-style"_el,
+        "placeholder-style"_el,
+        "text-style"_el,
+        "cursor-style"_el,
+    };
     for (const auto &name : cStyleNames) {
         appearanceOptions->addOption({el::String::fromJoined({"--"_el, name}), name})
             .setType(el::OptionType::Text)
@@ -224,6 +147,14 @@ void ReadLineApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setType(el::OptionType::Text)
         .setValueName("color"_el)
         .setHelpDescription("Uniform frame color."_el);
+    constexpr auto cFrameOptionNames = std::array{
+        "frame-top"_el,
+        "frame-bottom"_el,
+        "frame-left"_el,
+        "frame-right"_el,
+        "frame-h-line"_el,
+        "frame-v-line"_el,
+    };
     for (const auto &name : cFrameOptionNames) {
         frameOptions->addOption({el::String::fromJoined({"--"_el, name}), name})
             .setType(el::OptionType::Text)
@@ -317,23 +248,23 @@ void ReadLineApp::applyCommandLine(el::cterm::ReadLineOptions &settings) {
         settings.setCancelKey(parseKey(values->getText("cancel-key"_el)));
     }
 
-    if (hasCommandLineValue(cStyleNames[0])) {
-        settings.setBackgroundStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[0])));
+    if (hasCommandLineValue("background-style"_el)) {
+        settings.setBackgroundStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("background-style"_el)));
     }
-    if (hasCommandLineValue(cStyleNames[1])) {
-        settings.setTitleStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[1])));
+    if (hasCommandLineValue("title-style"_el)) {
+        settings.setTitleStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("title-style"_el)));
     }
-    if (hasCommandLineValue(cStyleNames[2])) {
-        settings.setPromptStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[2])));
+    if (hasCommandLineValue("prompt-style"_el)) {
+        settings.setPromptStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("prompt-style"_el)));
     }
-    if (hasCommandLineValue(cStyleNames[3])) {
-        settings.setPlaceholderStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[3])));
+    if (hasCommandLineValue("placeholder-style"_el)) {
+        settings.setPlaceholderStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("placeholder-style"_el)));
     }
-    if (hasCommandLineValue(cStyleNames[4])) {
-        settings.setTextStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[4])));
+    if (hasCommandLineValue("text-style"_el)) {
+        settings.setTextStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("text-style"_el)));
     }
-    if (hasCommandLineValue(cStyleNames[5])) {
-        settings.setCursorStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText(cStyleNames[5])));
+    if (hasCommandLineValue("cursor-style"_el)) {
+        settings.setCursorStyle(el::cterm::BlockStyle::fromStringOrThrow(values->getText("cursor-style"_el)));
     }
 
     auto border = settings.frameBorder();
@@ -343,6 +274,22 @@ void ReadLineApp::applyCommandLine(el::cterm::ReadLineOptions &settings) {
     if (hasCommandLineValue("frame-color"_el)) {
         applyUniformFrameColor(border, el::cterm::Color::fromStringOrThrow(values->getText("frame-color"_el)));
     }
+    constexpr auto cFrameOptionNames = std::array{
+        "frame-top"_el,
+        "frame-bottom"_el,
+        "frame-left"_el,
+        "frame-right"_el,
+        "frame-h-line"_el,
+        "frame-v-line"_el,
+    };
+    constexpr auto cFrameElements = std::array{
+        el::cterm::FrameBorder::Element::Top,
+        el::cterm::FrameBorder::Element::Bottom,
+        el::cterm::FrameBorder::Element::Left,
+        el::cterm::FrameBorder::Element::Right,
+        el::cterm::FrameBorder::Element::HLine,
+        el::cterm::FrameBorder::Element::VLine,
+    };
     for (auto index = std::size_t{0}; index < cFrameOptionNames.size(); ++index) {
         if (hasCommandLineValue(cFrameOptionNames[index])) {
             applyFrameStyle(border, cFrameElements[index], values->getText(cFrameOptionNames[index]));
@@ -357,6 +304,58 @@ auto ReadLineApp::configurationValue(const el::conf::DocumentPtr &document, cons
 }
 
 void ReadLineApp::validateConfigurationKeys(const el::conf::DocumentPtr &document) const {
+    constexpr auto cScalarConfigurationPaths = std::array{
+        "readline.title"_el,
+        "readline.prompt"_el,
+        "readline.placeholder"_el,
+        "readline.maximum_length"_el,
+        "readline.maximum_lines"_el,
+        "readline.maximum_display_lines"_el,
+        "readline.history"_el,
+        "readline.current_text"_el,
+        "readline.timeout"_el,
+        "readline.timeout_display_threshold"_el,
+        "readline.blink_interval"_el,
+        "readline.cursor_block"_el,
+        "readline.commit_key"_el,
+        "readline.new_line_key"_el,
+        "readline.cancel_key"_el,
+        "readline.cleanup_enabled"_el,
+        "readline.display_style"_el,
+        "readline.padding_left"_el,
+        "readline.padding_right"_el,
+        "readline.styles.background"_el,
+        "readline.styles.title"_el,
+        "readline.styles.prompt"_el,
+        "readline.styles.placeholder"_el,
+        "readline.styles.text"_el,
+        "readline.styles.cursor"_el,
+        "readline.frame.style"_el,
+        "readline.frame.color"_el,
+        "readline.frame.top.style"_el,
+        "readline.frame.top.color"_el,
+        "readline.frame.bottom.style"_el,
+        "readline.frame.bottom.color"_el,
+        "readline.frame.left.style"_el,
+        "readline.frame.left.color"_el,
+        "readline.frame.right.style"_el,
+        "readline.frame.right.color"_el,
+        "readline.frame.h_line.style"_el,
+        "readline.frame.h_line.color"_el,
+        "readline.frame.v_line.style"_el,
+        "readline.frame.v_line.color"_el,
+    };
+    constexpr auto cConfigurationSectionPaths = std::array{
+        "readline"_el,
+        "readline.styles"_el,
+        "readline.frame"_el,
+        "readline.frame.top"_el,
+        "readline.frame.bottom"_el,
+        "readline.frame.left"_el,
+        "readline.frame.right"_el,
+        "readline.frame.h_line"_el,
+        "readline.frame.v_line"_el,
+    };
     for (const auto &[namePath, value] : document->toFlatValueMap()) {
         const auto path = namePath.toText();
         const auto isSection = std::ranges::any_of(

@@ -2,22 +2,24 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "BuiltInCatalog_fwd.hpp"
-
 #include "../ProfileTypes.hpp"
 
-namespace app::regex::impl {
+namespace app::regex::impl::built_in_catalog {
 
-/// Stores named built-in patterns and corpus sources.
+/// Return the generated corpus named by `name`.
 /// @notest{Covered by regex profiler configuration CTest entries.}
-class BuiltInCatalog final {
-public:
-    [[nodiscard]] static auto generatedCorpus(const el::String &name) -> std::optional<el::String>;
-    [[nodiscard]] static auto file(const el::String &name) -> std::optional<el::String>;
-    [[nodiscard]] static auto pattern(const el::String &name) -> std::optional<el::String>;
+[[nodiscard]] auto generatedCorpus(const el::String &name) -> std::optional<el::String>;
 
-private:
-    [[nodiscard]] static auto repeatCharacter(el::Char character, std::size_t count) -> el::String;
-};
+/// Return the corpus-file path named by `name`.
+/// @notest{Covered by regex profiler configuration CTest entries.}
+[[nodiscard]] auto file(const el::String &name) -> std::optional<el::String>;
+
+/// Return the regular-expression pattern named by `name`.
+/// @notest{Covered by regex profiler configuration CTest entries.}
+[[nodiscard]] auto pattern(const el::String &name) -> std::optional<el::String>;
+
+/// Build a string containing `count` copies of `character`.
+/// @notest{Covered by regex profiler configuration CTest entries.}
+[[nodiscard]] auto repeatCharacter(el::Char character, std::size_t count) -> el::String;
 
 }

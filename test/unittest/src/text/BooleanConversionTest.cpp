@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/ParseError.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -21,7 +21,7 @@ using namespace el::text;
 using namespace el::text::literals;
 using namespace el::unit;
 
-TESTED_TARGETS(U8String U8StringEditor U16String U16StringEditor U32String U32StringEditor)
+TESTED_TARGETS(String StringEditor U16String U16StringEditor U32String U32StringEditor)
 class BooleanConversionTest final : public el::UnitTest {
 private:
     template <typename T>
@@ -38,8 +38,8 @@ private:
     }
 
     void requireValueForAllWidths(const String &text, const bool expected) {
-        WITH_CONTEXT(requireValue(U8String{text}, expected));
-        WITH_CONTEXT(requireValue(U8StringEditor{text}, expected));
+        WITH_CONTEXT(requireValue(String{text}, expected));
+        WITH_CONTEXT(requireValue(StringEditor{text}, expected));
         const auto u16Text = StringConverter{text}.toU16String();
         WITH_CONTEXT(requireValue(u16Text, expected));
         WITH_CONTEXT(requireValue(U16StringEditor{u16Text}, expected));
@@ -49,8 +49,8 @@ private:
     }
 
     void requireInvalidForAllWidths(const String &text) {
-        WITH_CONTEXT(requireInvalid(U8String{text}));
-        WITH_CONTEXT(requireInvalid(U8StringEditor{text}));
+        WITH_CONTEXT(requireInvalid(String{text}));
+        WITH_CONTEXT(requireInvalid(StringEditor{text}));
         const auto u16Text = StringConverter{text}.toU16String();
         WITH_CONTEXT(requireInvalid(u16Text));
         WITH_CONTEXT(requireInvalid(U16StringEditor{u16Text}));
@@ -121,9 +121,8 @@ public:
     }
 
     void testBooleanLiteralsInSlices() {
-        WITH_CONTEXT(requireValue(U8String{"--TrUe++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{4U}}), true));
-        WITH_CONTEXT(
-            requireValue(U8StringEditor{"--FaLsE++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}}), false));
+        WITH_CONTEXT(requireValue(String{"--TrUe++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{4U}}), true));
+        WITH_CONTEXT(requireValue(StringEditor{"--FaLsE++"_el}.slice(ByteRange{ByteIndex{2U}, ByteLength{5U}}), false));
         WITH_CONTEXT(
             requireValue(U16String{u"--EnAbLeD++"_el}.slice(U16DataRange{U16DataIndex{2U}, U16DataLength{7U}}), true));
         WITH_CONTEXT(requireValue(
@@ -133,9 +132,9 @@ public:
     }
 
     void testMalformedEncodingIsInvalid() {
-        const auto u8Text = U8StringEditor{std::string_view{el::unittest::th::stdStringFromHex("74 72 C0 65")}};
+        const auto u8Text = StringEditor{std::string_view{el::unittest::th::stdStringFromHex("74 72 C0 65")}};
         WITH_CONTEXT(requireInvalid(u8Text));
-        WITH_CONTEXT(requireInvalid(U8String{u8Text}));
+        WITH_CONTEXT(requireInvalid(String{u8Text}));
 
         const auto u16Text = U16StringEditor{std::u16string{u't', u'r', char16_t{0xD800U}, u'e'}};
         WITH_CONTEXT(requireInvalid(u16Text));

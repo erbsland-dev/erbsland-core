@@ -191,19 +191,19 @@ auto BaseNFormat::base64Pem() -> BaseNFormat {
 void BaseNFormat::validate() const {
     const auto alphabetLength = _alphabet.length().toRawValue();
     if (alphabetLength != 16U && alphabetLength != 32U && alphabetLength != 64U) {
-        throw err::ParameterError{"The alphabet must contain exactly 16, 32, or 64 characters.", "alphabet"};
+        throw err::ParameterError{"The alphabet must contain exactly 16, 32, or 64 characters."_el, "alphabet"_el};
     }
     for (std::size_t i = 0; i < alphabetLength; ++i) {
         const auto character = _alphabet.charAt(unit::CpIndex::fromSizeT(i));
         if (!character.isValidUnicode()) {
-            throw err::ParameterError{"The alphabet contains an invalid Unicode character.", "alphabet"};
+            throw err::ParameterError{"The alphabet contains an invalid Unicode character."_el, "alphabet"_el};
         }
         if (_whitespace.contains(character)) {
-            throw err::ParameterError{"An alphabet character is also accepted as whitespace.", "whitespace"};
+            throw err::ParameterError{"An alphabet character is also accepted as whitespace."_el, "whitespace"_el};
         }
         for (std::size_t j = 0; j < i; ++j) {
             if (_alphabet.charAt(unit::CpIndex::fromSizeT(j)) == character) {
-                throw err::ParameterError{"The alphabet contains duplicate characters.", "alphabet"};
+                throw err::ParameterError{"The alphabet contains duplicate characters."_el, "alphabet"_el};
             }
         }
     }
@@ -213,29 +213,29 @@ void BaseNFormat::validate() const {
             paddingInAlphabet = paddingInAlphabet || _alphabet.charAt(unit::CpIndex::fromSizeT(i)) == _padding.value();
         }
         if (!_padding->isValidUnicode() || paddingInAlphabet) {
-            throw err::ParameterError{"The padding character is invalid or part of the alphabet.", "padding"};
+            throw err::ParameterError{"The padding character is invalid or part of the alphabet."_el, "padding"_el};
         }
         if (_whitespace.contains(_padding.value())) {
-            throw err::ParameterError{"The padding character is also accepted as whitespace.", "whitespace"};
+            throw err::ParameterError{"The padding character is also accepted as whitespace."_el, "whitespace"_el};
         }
     }
     if ((_flags.contains(BaseNFormatFlag::EmitPadding) || _flags.contains(BaseNFormatFlag::RequirePadding)) &&
         !_padding.has_value()) {
-        throw err::ParameterError{"Padding flags require a padding character.", "flags"};
+        throw err::ParameterError{"Padding flags require a padding character."_el, "flags"_el};
     }
     if (_flags.contains(BaseNFormatFlag::WrapLines)) {
         if (!_lineLength.isFinite() || _lineLength.isZero()) {
-            throw err::ParameterError{"Wrapped lines require a finite non-zero line length.", "lineLength"};
+            throw err::ParameterError{"Wrapped lines require a finite non-zero line length."_el, "lineLength"_el};
         }
         if (_lineSeparator.isEmpty()) {
-            throw err::ParameterError{"Wrapped lines require a line separator.", "lineSeparator"};
+            throw err::ParameterError{"Wrapped lines require a line separator."_el, "lineSeparator"_el};
         }
         auto index = unit::CpIndex{};
         for (std::size_t i = 0; i < _lineSeparator.length().toSizeT(); ++i) {
             const auto character = _lineSeparator.readCharAndAdvance(index);
             if (!_whitespace.contains(character)) {
                 throw err::ParameterError{
-                    "Every line-separator character must be accepted as whitespace.", "lineSeparator"};
+                    "Every line-separator character must be accepted as whitespace."_el, "lineSeparator"_el};
             }
         }
     }

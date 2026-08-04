@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "HashWorker_fwd.hpp"
+
 #include "../../../mem/ByteBlock_fwd.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../HashAlgorithm.hpp"

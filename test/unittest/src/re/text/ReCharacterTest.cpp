@@ -67,9 +67,12 @@ public:
     }
 
     void testComparison() {
-        REQUIRE(compareCharacters(el::text::Char{U'A'}, el::text::Char{U'a'}, false) == std::strong_ordering::less);
-        REQUIRE(compareCharacters(el::text::Char{U'A'}, el::text::Char{U'a'}, true) == std::strong_ordering::equal);
-        REQUIRE(
-            compareCharacters(el::text::Char{0x03A3U}, el::text::Char{0x03C2U}, true) == std::strong_ordering::equal);
+        const auto caseSensitive = compareCharacters(el::text::Char{U'A'}, el::text::Char{U'a'}, false);
+        const auto caseInsensitive = compareCharacters(el::text::Char{U'A'}, el::text::Char{U'a'}, true);
+        const auto sigmaComparison = compareCharacters(el::text::Char{0x03A3U}, el::text::Char{0x03C2U}, true);
+
+        REQUIRE_EQUAL(caseSensitive, std::strong_ordering::less);
+        REQUIRE_EQUAL(caseInsensitive, std::strong_ordering::equal);
+        REQUIRE_EQUAL(sigmaComparison, std::strong_ordering::equal);
     }
 };

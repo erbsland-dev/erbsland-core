@@ -2,18 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DependencyDefinition_fwd.hpp"
 #include "DependencyMode.hpp"
 
 #include "../../Location.hpp"
 #include "../../NamePath.hpp"
 
-#include <memory>
-
 namespace erbsland::conf::impl {
-
-class DependencyDefinition;
-using DependencyDefinitionPtr = std::shared_ptr<DependencyDefinition>;
-using DependencyDefinitionList = std::vector<DependencyDefinitionPtr>;
 
 /// A dependency definition.
 class DependencyDefinition {
@@ -25,8 +20,11 @@ public:
     /// @param errorMessage An optional custom error message. Empty for no custom message.
     DependencyDefinition(
         DependencyMode mode, NamePathList sources, NamePathList targets, text::String errorMessage) noexcept;
+
+    // defaults
     virtual ~DependencyDefinition() = default;
 
+public:
     /// Create a new dependency definition.
     /// @param mode The dependency mode.
     /// @param sources The source paths.

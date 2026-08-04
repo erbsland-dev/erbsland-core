@@ -14,7 +14,7 @@ namespace demo {
 void byteOrder() {
     // Encode a marine biology text in both UTF-16 byte orders.
     const auto oceanText = el::String{u8"🐋 Meerjungfrau 🌊"_el};
-    el::io::printLine("Marine text: \"", oceanText, "\"\n");
+    el::io::printLine("Marine text: \""_el, oceanText, "\"\n"_el);
 
     // Encode as UTF-16 little-endian (least significant byte first).
     auto bytes = el::StringEncoder{oceanText}.encode(el::StringEncoding::Utf16LittleEndian, el::StringBomMode::Reject);

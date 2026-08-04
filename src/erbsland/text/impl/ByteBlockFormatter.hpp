@@ -27,11 +27,17 @@ public:
     auto format() -> unit::CpLength;
 
 private:
+    /// Get the effective truncation mode for the configured format.
     [[nodiscard]] auto effectiveTruncateMode() const noexcept -> TruncateMode;
+    /// Append a formatted range of source bytes.
     void appendByteRange(unit::ByteIndex begin, unit::ByteIndex end, unit::ByteLength itemCount);
+    /// Append one text-formatted byte item.
     void appendTextItem(const String &text, unit::ByteIndex sourceIndex, bool lastItem);
+    /// Append formatted text to the sink.
     void appendText(const String &text);
+    /// Begin formatting one output item.
     void beginItem(unit::ByteIndex sourceIndex);
+    /// Finish formatting one output item.
     void finishItem(bool lastItem);
 
 private:
@@ -42,7 +48,7 @@ private:
     IntegerFormat _offsetFormat;
     unit::ByteLength _currentColumn;
     unit::ByteLength _currentGroupByte;
-    unit::ElementCount _currentLine;
+    unit::ItemCount _currentLine;
     unit::ByteIndex _itemIndex;
     unit::CpLength _appendedLength;
 };

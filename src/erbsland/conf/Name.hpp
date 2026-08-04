@@ -4,6 +4,7 @@
 
 #include "NameType.hpp"
 
+#include "impl/lexer/NameLexer_fwd.hpp"
 #include "impl/utilities/InternalView.hpp"
 
 #include "../text/String.hpp"
@@ -19,6 +20,9 @@ namespace erbsland::conf {
 /// - An index-name is neither normalized nor range checked.
 /// @tested{NameTest}
 class Name {
+    friend class impl::NameLexer;
+    class PrivateTag {};
+
 public:
     /// @private
     /// The storage type of this name (depends on the name type).
@@ -34,7 +38,8 @@ public:
         Signature,
         Include,
         Features,
-        _count
+
+        _count,
     };
 
     /// @private
@@ -43,7 +48,33 @@ public:
     /// The array-type to return all meta-names.
     using MetaNameArray = std::array<const Name, metaNameCount>;
 
+    /// An enum to address validation-rules constants
+    enum class VR : uint8_t {
+        ReservedAny = 0,
+        ReservedTemplate,
+        ReservedName,
+        ReservedEntry,
+        ReservedKey,
+        ReservedDependency,
+        UseTemplate,
+        Type,
+        CaseSensitive,
+        KeyName,
+        KeyKey,
+        DepMode,
+        DepSource,
+        DepTarget,
+        DepError,
+
+        _count,
+    };
+    /// The array-type to return all VR names.
+    using VrNameArray = std::array<const Name, static_cast<std::size_t>(VR::_count)>;
+
 public:
+    /// Create an empty regular name that can be used as a placeholder.
+    Name() : _hash{util::createHash(_type, _value)} {}
+
     /// @private
     /// Create a new unchecked name with the given type.
     /// @note For user code: Please use `createRegular()`, `createText()` and
@@ -52,15 +83,11 @@ public:
     /// @param storage The text or index of the name.
     template <typename StorageFwd>
         requires std::is_convertible_v<StorageFwd, Storage>
-    Name(const NameType type, StorageFwd &&storage, impl::PrivateTag /*pt*/) noexcept :
+    Name(const NameType type, StorageFwd &&storage, PrivateTag /*pt*/) noexcept :
         _type{type}, _value{std::forward<StorageFwd>(storage)}, _hash{util::createHash(_type, _value)} {}
 
-    /// Default constructor.
-    Name() : _hash{util::createHash(_type, _value)} {}
-    /// Default destructor.
-    ~Name() = default;
-
     // defaults
+    ~Name() = default;
     Name(const Name &) = default;
     Name(Name &&) = default;
     auto operator=(const Name &) -> Name & = default;
@@ -148,7 +175,7 @@ public:
     /// - Tests if the name does not exceed the length limit.
     /// @throws ConfError (Syntax, LimitExceeded, Encoding) in case of any problem.
     /// @return The normalized name.
-    [[nodiscard]] static auto normalize(text::String text) -> text::String;
+    [[nodiscard]] static auto normalize(const text::String &text) -> text::String;
     /// Verifies a text name.
     /// - Test for encoding errors and not allowed zero code-points.
     /// - Test if the text exceeds the size limit.
@@ -158,6 +185,7 @@ public:
     /// @name Predefined Meta-Names
     /// @{
 
+    /// Access a predefined mena-name.
     /// @param metaName The meta-name enum.
     static auto meta(Meta metaName) -> const Name &;
     /// Get the "version" meta-name.
@@ -174,6 +202,12 @@ public:
     static auto allMetaNames() -> const MetaNameArray &;
     /// Return an empty instance of a name.
     [[nodiscard]] static auto emptyInstance() noexcept -> const Name &;
+
+public: // constants for VR
+    /// Access a predefined VR name.
+    static auto vrName(VR vrName) -> const Name &;
+    /// Access a list with all VR names.
+    static auto allVrNames() -> const VrNameArray &;
 
 private:
     /// Get the decimal digit-count of the index.

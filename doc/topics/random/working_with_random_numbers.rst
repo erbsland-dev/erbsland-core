@@ -73,7 +73,7 @@ draws, floating-point values, booleans, byte blocks, and random strings.
         const auto chamber = random.getUInt32(1U, 6U);
         const auto chargeRange = el::IntegerRange<int>{12, 30};
         const auto charge = random.selectInteger(chargeRange);
-        const auto pulseLevels = random.buildIntegerList(el::ElementCount{5U}, 1, 4);
+        const auto pulseLevels = random.buildIntegerList(el::ItemCount{5U}, 1, 4);
 
         el::io::printLine("Artifact chamber   : "_el, chamber);
         el::io::printLine("Runic charge       : "_el, charge);

@@ -15,6 +15,7 @@ namespace erbsland::core::impl {
 /// The manager for the global application instance.
 class ApplicationInstanceManager {
 public:
+    // defaults
     ApplicationInstanceManager() = default;
     virtual ~ApplicationInstanceManager() = default;
 

@@ -14,8 +14,11 @@
 #include <string_view>
 #include <vector>
 
+/// Provide CSV parsing helpers for saturating-math tests.
+/// @notest{Shared unit-test helper.}
 class SaturatingMathTestBase : public el::UnitTest {
 public:
+    /// Identify a supported integer type.
     enum class TypeId {
         I8,
         U8,
@@ -27,6 +30,7 @@ public:
         U64,
     };
 
+    /// Store one saturating-cast test row.
     struct CastRow {
         TypeId targetType;
         TypeId sourceType;
@@ -36,6 +40,7 @@ public:
         std::size_t lineNumber{};
     };
 
+    /// Store one saturating-arithmetic test row.
     struct ArithmeticRow {
         TypeId firstType;
         TypeId secondType;
@@ -47,10 +52,12 @@ public:
     };
 
 protected:
+    /// Test whether a CSV line is empty or a comment.
     static auto shouldSkipLine(const std::string &line) -> bool {
         const auto view = trim(line);
         return view.empty() || view.front() == '#';
     }
+    /// Split a whitespace-separated CSV row into fields.
     static auto splitFields(const std::string &line) -> std::vector<std::string_view> {
         std::vector<std::string_view> result;
         std::string_view view{line};
@@ -69,6 +76,7 @@ protected:
         }
         return result;
     }
+    /// Parse an integer type identifier.
     static auto parseType(std::string_view text) -> TypeId {
         if (text == "i8") {
             return TypeId::I8;
@@ -96,6 +104,7 @@ protected:
         }
         throw std::runtime_error{"Unknown integer type."};
     }
+    /// Parse a boolean field.
     static auto parseBool(std::string_view text) -> bool {
         if (text == "0") {
             return false;
@@ -106,6 +115,7 @@ protected:
         throw std::runtime_error{"Invalid boolean value."};
     }
     template <std::integral T>
+    /// Parse an integer field of the requested type.
     static auto parseInteger(std::string_view text) -> T {
         if (text.empty()) {
             throw std::runtime_error{"Empty integer value."};
@@ -133,6 +143,7 @@ protected:
             return static_cast<T>(value);
         }
     }
+    /// Parse a saturating-cast test row.
     static auto parseCastRow(const std::string &line, std::size_t lineNumber) -> CastRow {
         const auto fields = splitFields(line);
         if (fields.size() != 5) {
@@ -147,6 +158,7 @@ protected:
             .lineNumber = lineNumber,
         };
     }
+    /// Parse a saturating-arithmetic test row.
     static auto parseArithmeticRow(const std::string &line, std::size_t lineNumber) -> ArithmeticRow {
         const auto fields = splitFields(line);
         if (fields.size() != 6) {
@@ -162,6 +174,7 @@ protected:
             .lineNumber = lineNumber,
         };
     }
+    /// Convert an integer type identifier into its text name.
     static auto typeName(TypeId type) -> std::string_view {
         switch (type) {
         case TypeId::I8:
@@ -185,7 +198,9 @@ protected:
     }
 
 private:
+    /// Test whether a character is whitespace.
     static auto isSpace(char ch) -> bool { return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n'; }
+    /// Trim leading and trailing whitespace.
     static auto trim(const std::string &line) -> std::string_view {
         std::string_view view{line};
         while (!view.empty() && isSpace(view.front())) {
@@ -197,6 +212,7 @@ private:
         return view;
     }
     template <std::integral T>
+    /// Parse an integer field into an existing value.
     static void parseChars(std::string_view text, T &value) {
         const auto *begin = text.data();
         const auto *end = begin + text.size();

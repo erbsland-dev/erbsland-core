@@ -6,6 +6,6 @@
 #include <erbsland/unittest/UnitTest.hpp>
 
 auto main(int argc, char *argv[]) -> int {
-    ApplicationTestScopeBase::installApplicationInstanceManagerOverride();
+    ApplicationTestScope<>::installApplicationInstanceManagerOverride();
     return erbsland::unittest::Controller::instance()->main(argc, argv);
 };

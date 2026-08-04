@@ -70,7 +70,7 @@ public:
 
         // Line too long
         std::string longLine{";"};
-        longLine += std::string(impl::limits::maximumAssemblerLineLength.toSizeT() + 1U, 'A');
+        longLine += std::string(el::re::impl::limits::maximumAssemblerLineLength.toSizeT() + 1U, 'A');
         WITH_CONTEXT(requireCompilerError({longLine}, "Line too long"));
     }
 

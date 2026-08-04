@@ -191,8 +191,7 @@ auto U8StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf8::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf8::fastAdvanceChar(data, position);
             newSize = U8StringSharedStorage::checkedAddSize(
                 newSize, position.toSizeT() - characterStart.toSizeT(), "Modified string exceeds size bounds");
         }
@@ -211,8 +210,7 @@ auto U8StringModifyTools::replacedText(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf8::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf8::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             std::memcpy(storage.dataForWrite() + writePosition, data.data() + characterStart.toSizeT(), characterSize);
             writePosition = U8StringSharedStorage::checkedAddSize(
@@ -267,8 +265,7 @@ auto U8StringModifyTools::replaceTextInStorage(
             position = endOfMatch(data, position, needle);
         } else {
             const auto characterStart = position;
-            const auto character = utf8::decodeCharOrReplace(data, position);
-            static_cast<void>(character);
+            utf8::fastAdvanceChar(data, position);
             const auto characterSize = position.toSizeT() - characterStart.toSizeT();
             if (writePosition != characterStart.toSizeT()) {
                 std::memmove(
@@ -327,8 +324,7 @@ auto U8StringModifyTools::findFirstTextRange(
         if (matchesText(data, start, needle, compareFn)) {
             return ByteRange{start, endOfMatch(data, start, needle)};
         }
-        const auto character = utf8::decodeCharOrReplace(data, position);
-        static_cast<void>(character);
+        utf8::fastAdvanceChar(data, position);
     }
     return ByteRange::noRange();
 }

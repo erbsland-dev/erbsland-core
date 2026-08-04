@@ -10,6 +10,7 @@ namespace erbsland::cterm::impl {
 /// The input implementation, using the platform backend.
 class InputBackend : public Input {
 public:
+    // defaults
     InputBackend() = default;
     ~InputBackend() override = default;
 

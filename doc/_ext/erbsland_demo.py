@@ -17,6 +17,8 @@ class ErbslandDemoDirective(Directive):
     option_spec = dict(
         {
             "source": directives.unchanged_required,
+            "function-blocks": directives.unchanged_required,
+            "function-blocks-sha256": directives.unchanged,
             "exec": directives.unchanged,
             "exec-exit-code": directives.nonnegative_int,
             "show-cmd-line": directives.flag,

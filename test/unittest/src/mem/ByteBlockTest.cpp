@@ -38,79 +38,76 @@ using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
 
-namespace {
-
-template <typename T>
-concept HasPublicBytes = requires(const T &value) { value.bytes(); };
-
-template <typename T>
-concept HasPublicToSpan = requires(T &value) { value.toSpan(); };
-
-template <typename T>
-concept HasSpanConstructor = std::constructible_from<T, ConstByteSpan>;
-
-template <typename T>
-concept HasReadSpan = requires(const T &value) {
-    { value.span() } -> std::same_as<ConstByteSpan>;
-};
-
-template <typename T>
-concept HasSpanSearch = requires(const T &value, const ConstByteSpan bytes) {
-    value.startsWith(bytes);
-    value.find(bytes);
-};
-
-template <typename T>
-concept HasSpanAppend = requires(T &value, const ConstByteSpan bytes) { value.append(bytes); };
-
-template <typename T>
-concept HasSpanOverwrite =
-    requires(T &value, const ConstByteSpan bytes) { value.overwrite(ByteRange::empty(), bytes); };
-
-template <typename T>
-concept HasUnmarkSensitive = requires(T &value) { value.unmarkAsSensitive(); };
-
-static_assert(!HasPublicBytes<ByteBlock>);
-static_assert(!HasPublicBytes<ByteBlockEditor>);
-static_assert(!HasPublicToSpan<ByteBlock>);
-static_assert(!HasPublicToSpan<ByteBlockEditor>);
-static_assert(!HasSpanConstructor<ByteBlock>);
-static_assert(!HasSpanConstructor<ByteBlockEditor>);
-static_assert(HasReadSpan<ByteBlock>);
-static_assert(HasReadSpan<ByteBlockEditor>);
-static_assert(HasSpanSearch<ByteBlock>);
-static_assert(HasSpanSearch<ByteBlockEditor>);
-static_assert(HasSpanAppend<ByteBlockEditor>);
-static_assert(HasSpanOverwrite<ByteBlockEditor>);
-static_assert(!HasUnmarkSensitive<ByteBlock>);
-static_assert(!HasUnmarkSensitive<ByteBlockEditor>);
-
-struct ByteBlockEraseEvent final {
-    std::size_t size{};
-    bool isZero{};
-};
-
-std::vector<ByteBlockEraseEvent> gByteBlockEraseEvents;
-
-void observeByteBlockErase(const std::span<const std::byte> bytes) noexcept {
-    gByteBlockEraseEvents.push_back(
-        {bytes.size(),
-            std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool { return value == std::byte{}; })});
-}
-
-class ByteBlockEraseObserverGuard final {
-public:
-    ByteBlockEraseObserverGuard() {
-        gByteBlockEraseEvents.clear();
-        el::mem::impl::setSecureEraseObserver(observeByteBlockErase);
-    }
-    ~ByteBlockEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
-};
-
-}
-
 TESTED_TARGETS(Byte ByteBlock ByteBlockEditor)
 class ByteBlockTest final : public el::UnitTest {
+private:
+    template <typename T>
+    static constexpr bool HasPublicBytes = requires(const T &value) { value.bytes(); };
+
+    template <typename T>
+    static constexpr bool HasPublicToSpan = requires(T &value) { value.toSpan(); };
+
+    template <typename T>
+    static constexpr bool HasSpanConstructor = std::constructible_from<T, ConstByteSpan>;
+
+    template <typename T>
+    static constexpr bool HasReadSpan = requires(const T &value) {
+        { value.span() } -> std::same_as<ConstByteSpan>;
+    };
+
+    template <typename T>
+    static constexpr bool HasSpanSearch = requires(const T &value, const ConstByteSpan bytes) {
+        value.startsWith(bytes);
+        value.find(bytes);
+    };
+
+    template <typename T>
+    static constexpr bool HasSpanAppend = requires(T &value, const ConstByteSpan bytes) { value.append(bytes); };
+
+    template <typename T>
+    static constexpr bool HasSpanOverwrite =
+        requires(T &value, const ConstByteSpan bytes) { value.overwrite(ByteRange::empty(), bytes); };
+
+    template <typename T>
+    static constexpr bool HasUnmarkSensitive = requires(T &value) { value.unmarkAsSensitive(); };
+
+    static_assert(!HasPublicBytes<ByteBlock>);
+    static_assert(!HasPublicBytes<ByteBlockEditor>);
+    static_assert(!HasPublicToSpan<ByteBlock>);
+    static_assert(!HasPublicToSpan<ByteBlockEditor>);
+    static_assert(!HasSpanConstructor<ByteBlock>);
+    static_assert(!HasSpanConstructor<ByteBlockEditor>);
+    static_assert(HasReadSpan<ByteBlock>);
+    static_assert(HasReadSpan<ByteBlockEditor>);
+    static_assert(HasSpanSearch<ByteBlock>);
+    static_assert(HasSpanSearch<ByteBlockEditor>);
+    static_assert(HasSpanAppend<ByteBlockEditor>);
+    static_assert(HasSpanOverwrite<ByteBlockEditor>);
+    static_assert(!HasUnmarkSensitive<ByteBlock>);
+    static_assert(!HasUnmarkSensitive<ByteBlockEditor>);
+
+    struct ByteBlockEraseEvent final {
+        std::size_t size{};
+        bool isZero{};
+    };
+
+    class ByteBlockEraseObserverGuard final {
+    public:
+        ByteBlockEraseObserverGuard() {
+            _eraseEvents.clear();
+            el::mem::impl::setSecureEraseObserver(observeByteBlockErase);
+        }
+        ~ByteBlockEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+    };
+
+    static inline std::vector<ByteBlockEraseEvent> _eraseEvents;
+
+    static void observeByteBlockErase(const std::span<const std::byte> bytes) noexcept {
+        _eraseEvents.push_back({bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool {
+                                    return value == std::byte{};
+                                })});
+    }
+
 public:
     void testByteHelpers() {
         const auto byte = Byte{0b10101100U};
@@ -201,7 +198,7 @@ public:
     void testMemoryManagementAndCow() {
         auto editor = makeEditor({1U, 2U, 3U});
         editor.reserve(ByteLength{10U});
-        const auto reservedCapacity = el::mem::impl::bestGrowthCapacity<el::mem::impl::ByteBlockData>(3U, 10U);
+        const auto reservedCapacity = el::mem::impl::BestGrowth{3U, 10U}.bestGrowth<el::mem::impl::ByteBlockData>();
         REQUIRE_EQUAL(editor.capacity(), ByteLength::fromSizeT(reservedCapacity));
         editor.resize(ByteLength{5U});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 0U, 0U}));
@@ -308,34 +305,33 @@ public:
     void testRejectsSizesBeyondSharedByteLimit() {
         if constexpr (sizeof(std::size_t) > sizeof(std::uint32_t)) {
             const auto tooLarge = static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) + 1U;
-            REQUIRE_THROWS_AS(std::length_error, ByteBlockEditor{ByteLength::fromSizeT(tooLarge)});
+            REQUIRE_THROWS_AS(el::err::OutOfRangeError, ByteBlockEditor{ByteLength::fromSizeT(tooLarge)});
             auto editor = ByteBlockEditor{};
-            REQUIRE_THROWS_AS(std::length_error, editor.reserve(ByteLength::fromSizeT(tooLarge)));
+            REQUIRE_THROWS_AS(el::err::OutOfRangeError, editor.reserve(ByteLength::fromSizeT(tooLarge)));
         }
     }
 
     void testSensitiveAllocationErasure() {
         const auto guard = ByteBlockEraseObserverGuard{};
         const auto expectedCapacity =
-            el::mem::impl::bestGrowthCapacity<el::mem::impl::ByteBlockData>(4U, std::size_t{128U});
+            el::mem::impl::BestGrowth{4U, std::size_t{128U}}.bestGrowth<el::mem::impl::ByteBlockData>();
         {
             auto editor = makeEditor({1U, 2U, 3U, 4U});
             editor.markAsSensitive();
             editor.resize(ByteLength{2U});
             editor.clear();
-            REQUIRE(gByteBlockEraseEvents.empty());
+            REQUIRE(_eraseEvents.empty());
             editor.resize(ByteLength{4U});
             editor.reserve(ByteLength{128U});
-            REQUIRE_EQUAL(gByteBlockEraseEvents.size(), std::size_t{1U});
-            REQUIRE(gByteBlockEraseEvents.front().isZero);
-            gByteBlockEraseEvents.clear();
+            REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+            REQUIRE(_eraseEvents.front().isZero);
+            _eraseEvents.clear();
             REQUIRE_EQUAL(editor.capacity(), ByteLength::fromSizeT(expectedCapacity));
         }
-        REQUIRE_EQUAL(gByteBlockEraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
         REQUIRE_EQUAL(
-            gByteBlockEraseEvents.front().size,
-            el::mem::impl::ByteBlockData::allocationSizeForCapacity(expectedCapacity));
-        REQUIRE(gByteBlockEraseEvents.front().isZero);
+            _eraseEvents.front().size, el::mem::impl::ByteBlockData::allocationSizeForCapacity(expectedCapacity));
+        REQUIRE(_eraseEvents.front().isZero);
     }
 
     void testGetSetAndThrowingAccess() {
@@ -387,7 +383,10 @@ public:
         const auto before = editor.toByteBuffer();
         REQUIRE_FALSE(editor.setInteger(ByteIndex{11U}, uint16_t{0xffffU}));
         REQUIRE_FALSE(editor.setInteger(ByteIndex::noIndex(), uint16_t{0xffffU}));
+        editor.set(ByteIndex::noIndex(), Byte{0xffU});
+        editor.xorAt(ByteIndex{99U}, Byte{0xffU});
         REQUIRE_EQUAL(editor.toByteBuffer(), before);
+        REQUIRE_EQUAL(editor.span().data(), sharedSnapshot.span().data());
         editor.set(ByteIndex{0U}, Byte{0U});
         REQUIRE_EQUAL(sharedSnapshot.toByteBuffer(), before);
 
@@ -451,7 +450,7 @@ public:
 
         auto aliasing = ByteBlockEditor({1U, 2U, 3U});
         aliasing.shrinkToFit();
-        const auto aliasedSpan = el::mem::impl::UnsafeByteBlockAccess{aliasing}.data().subspan(1U);
+        const auto aliasedSpan = aliasing.span().subspan(1U);
         aliasing.append(aliasedSpan);
         REQUIRE_EQUAL(aliasing.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 2U, 3U}));
     }
@@ -470,15 +469,19 @@ public:
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({9U, 8U, 7U, 7U, 6U, 4U}));
 
         const auto shared = ByteBlock{editor};
-        const auto sharedData = el::mem::impl::UnsafeByteBlockAccess{shared}.data().data();
+        const auto sharedData = el::mem::impl::UnsafeByteBlockAccess{shared}.dataView().dataSpan().data();
         editor.overwrite(ByteRange::noRange(), ByteArray{Byte{1U}, Byte{2U}}.span());
-        REQUIRE(el::mem::impl::UnsafeByteBlockAccess{editor}.data().data() == sharedData);
+        auto editorData = editor.span().data();
+        REQUIRE_EQUAL(editorData, sharedData);
         editor.overwrite(ByteRange::all(), ConstByteSpan{});
-        REQUIRE(el::mem::impl::UnsafeByteBlockAccess{editor}.data().data() == sharedData);
+        editorData = editor.span().data();
+        REQUIRE_EQUAL(editorData, sharedData);
         editor.fill(ByteRange::noRange(), Byte{0xffU});
-        REQUIRE(el::mem::impl::UnsafeByteBlockAccess{editor}.data().data() == sharedData);
+        editorData = editor.span().data();
+        REQUIRE_EQUAL(editorData, sharedData);
         editor.xorWith(ByteRange::noRange(), ByteArray{Byte{0xffU}}.span());
-        REQUIRE(el::mem::impl::UnsafeByteBlockAccess{editor}.data().data() == sharedData);
+        editorData = editor.span().data();
+        REQUIRE_EQUAL(editorData, sharedData);
         editor.overwrite({ByteIndex{5U}, ByteLength{2U}}, ByteArray{Byte{1U}, Byte{2U}}.span());
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({9U, 8U, 7U, 7U, 6U, 1U}));
         editor.overwrite({ByteIndex{0U}, ByteLength{2U}}, ByteArray{Byte{2U}}.span());
@@ -505,6 +508,11 @@ public:
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), xorBeforeFailure);
         REQUIRE_THROWS_AS(el::err::ParameterError, xorEditor.xorWithOrThrow(makeBlock({1U})));
         REQUIRE_EQUAL(xorEditor.toUInt8Vector(), xorBeforeFailure);
+        xorEditor.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
+        REQUIRE_EQUAL(xorEditor.toUInt8Vector(), std::vector<uint8_t>({0xf0U, 0x0fU}));
+        REQUIRE_THROWS_AS(
+            el::err::ParameterError, xorEditor.xorWithOrThrow(ByteArray{Byte{1U}, Byte{2U}, Byte{3U}}.span()));
+        REQUIRE_EQUAL(xorEditor.toUInt8Vector(), std::vector<uint8_t>({0xf0U, 0x0fU}));
     }
 
     void testCopyVariantsJoinAndComparison() {
@@ -523,8 +531,42 @@ public:
         const auto concatenated = ByteBlockEditor::fromJoined({makeBlock({1U}), makeBlock({2U, 3U})});
         REQUIRE_EQUAL(concatenated.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U}));
 
-        REQUIRE(makeBlock({1U, 2U}) < makeBlock({1U, 3U}));
-        REQUIRE(makeEditor({1U, 2U}) == makeBlock({1U, 2U}));
+        const auto lowerBlock = makeBlock({1U, 2U});
+        const auto higherBlock = makeBlock({1U, 3U});
+        const auto matchingEditor = makeEditor({1U, 2U});
+        REQUIRE_LESS(lowerBlock, higherBlock);
+        REQUIRE_EQUAL(matchingEditor, lowerBlock);
+    }
+
+    void testConstantTimeEquality() {
+        const auto block = makeBlock({1U, 2U, 3U, 4U});
+        const auto same = makeBlock({1U, 2U, 3U, 4U});
+        const auto differentFirst = makeBlock({9U, 2U, 3U, 4U});
+        const auto differentMiddle = makeBlock({1U, 2U, 9U, 4U});
+        const auto differentLast = makeBlock({1U, 2U, 3U, 9U});
+        const auto shorter = makeBlock({1U, 2U, 3U});
+        const auto editor = makeEditor({1U, 2U, 3U, 4U});
+
+        REQUIRE(block.isEqualConstTime(same));
+        REQUIRE_FALSE(block.isEqualConstTime(differentFirst));
+        REQUIRE_FALSE(block.isEqualConstTime(differentMiddle));
+        REQUIRE_FALSE(block.isEqualConstTime(differentLast));
+        REQUIRE_FALSE(block.isEqualConstTime(shorter));
+        REQUIRE(block.isEqualConstTime(same.span()));
+        REQUIRE_FALSE(block.isEqualConstTime(shorter.span()));
+
+        REQUIRE(editor.isEqualConstTime(same));
+        REQUIRE_FALSE(editor.isEqualConstTime(differentFirst));
+        REQUIRE_FALSE(editor.isEqualConstTime(differentMiddle));
+        REQUIRE_FALSE(editor.isEqualConstTime(differentLast));
+        REQUIRE_FALSE(editor.isEqualConstTime(shorter));
+        REQUIRE(editor.isEqualConstTime(same.span()));
+        REQUIRE_FALSE(editor.isEqualConstTime(shorter.span()));
+
+        REQUIRE(ByteBlock{}.isEqualConstTime(ByteBlock{}));
+        REQUIRE(ByteBlock{}.isEqualConstTime(ConstByteSpan{}));
+        REQUIRE(ByteBlockEditor{}.isEqualConstTime(ByteBlock{}));
+        REQUIRE(ByteBlockEditor{}.isEqualConstTime(ConstByteSpan{}));
     }
 
     void testEditorToReadOnlySnapshot() {
@@ -551,29 +593,18 @@ public:
 
     void testUnsafeAccess() {
         auto editor = makeEditor({1U, 2U, 3U, 4U});
-        const auto &reader = editor;
-        const auto readRange = el::mem::impl::UnsafeByteBlockAccess{reader}.data<2>(ByteIndex{1U});
-        static_assert(decltype(readRange)::extent == 2U);
+        const auto snapshot = ByteBlock{editor};
+        const auto access = el::mem::impl::UnsafeByteBlockAccess{snapshot};
+        const auto view = access.dataView();
+        const auto readRange = view.dataSpan().subspan(1U, 2U);
+        REQUIRE_EQUAL(view.length(), ByteLength{4U});
         REQUIRE_EQUAL(readRange[0], Byte{2U});
         REQUIRE_EQUAL(readRange[1], Byte{3U});
 
-        const auto snapshot = ByteBlock{editor};
-        const auto sharedData = el::mem::impl::UnsafeByteBlockAccess{editor}.data().data();
-        auto access = el::mem::impl::UnsafeByteBlockAccess{editor};
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, access.writableData<2>(ByteIndex{3U}));
-        REQUIRE(el::mem::impl::UnsafeByteBlockAccess{editor}.data().data() == sharedData);
-
-        auto writableRange = access.writableData<2>(ByteIndex{1U});
-        writableRange[0] = Byte{9U};
-        writableRange[1] = Byte{8U};
+        editor.set(ByteIndex{1U}, Byte{9U});
+        editor.set(ByteIndex{2U}, Byte{8U});
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 9U, 8U, 4U}));
         REQUIRE_EQUAL(snapshot.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U}));
-
-        const auto block = ByteBlock{editor};
-        const auto blockAccess = el::mem::impl::UnsafeByteBlockAccess{block};
-        REQUIRE(blockAccess.data<0>(block.endIndex()).empty());
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, blockAccess.data<2>(ByteIndex{3U}));
-        REQUIRE_THROWS_AS(el::err::OutOfRangeError, blockAccess.data<1>(ByteIndex::noIndex()));
     }
 
     void testSecureErase() {
@@ -584,47 +615,47 @@ public:
         const auto uniqueCapacity = uniqueEditor.capacity();
         auto uniqueBlock = ByteBlock{uniqueEditor};
         uniqueEditor.reset();
-        gByteBlockEraseEvents.clear();
+        _eraseEvents.clear();
         uniqueBlock.secureErase();
         REQUIRE_EQUAL(uniqueBlock.length(), ByteLength{4U});
         REQUIRE_EQUAL(uniqueBlock.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U, 0U}));
-        REQUIRE_EQUAL(gByteBlockEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gByteBlockEraseEvents.front().size, uniqueCapacity.toSizeT());
-        REQUIRE(gByteBlockEraseEvents.front().isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents.front().size, uniqueCapacity.toSizeT());
+        REQUIRE(_eraseEvents.front().isZero);
 
         auto sharedBlock = makeBlock({5U, 6U, 7U, 8U});
         const auto sharedAlias = sharedBlock;
         const auto sharedSlice = sharedBlock.slice(ByteIndex{1U}, ByteLength{2U});
-        gByteBlockEraseEvents.clear();
+        _eraseEvents.clear();
         sharedBlock.secureErase();
         REQUIRE_EQUAL(sharedBlock.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U, 0U}));
         REQUIRE_EQUAL(sharedAlias.toUInt8Vector(), std::vector<uint8_t>({5U, 6U, 7U, 8U}));
         REQUIRE_EQUAL(sharedSlice.toUInt8Vector(), std::vector<uint8_t>({6U, 7U}));
-        REQUIRE(gByteBlockEraseEvents.empty());
+        REQUIRE(_eraseEvents.empty());
 
         auto editor = makeEditor({9U, 10U, 11U});
         editor.reserve(ByteLength{24U});
         const auto capacity = editor.capacity();
-        gByteBlockEraseEvents.clear();
+        _eraseEvents.clear();
         editor.secureErase();
         REQUIRE_EQUAL(editor.length(), ByteLength{3U});
         REQUIRE_EQUAL(editor.capacity(), capacity);
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U}));
-        REQUIRE_EQUAL(gByteBlockEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gByteBlockEraseEvents.front().size, capacity.toSizeT());
-        REQUIRE(gByteBlockEraseEvents.front().isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents.front().size, capacity.toSizeT());
+        REQUIRE(_eraseEvents.front().isZero);
 
         auto sharedEditor = makeEditor({12U, 13U, 14U});
         sharedEditor.reserve(ByteLength{20U});
         const auto sharedCapacity = sharedEditor.capacity();
         const auto editorAlias = ByteBlock{sharedEditor};
-        gByteBlockEraseEvents.clear();
+        _eraseEvents.clear();
         sharedEditor.secureErase();
         REQUIRE_EQUAL(sharedEditor.length(), ByteLength{3U});
         REQUIRE_EQUAL(sharedEditor.capacity(), sharedCapacity);
         REQUIRE_EQUAL(sharedEditor.toUInt8Vector(), std::vector<uint8_t>({0U, 0U, 0U}));
         REQUIRE_EQUAL(editorAlias.toUInt8Vector(), std::vector<uint8_t>({12U, 13U, 14U}));
-        REQUIRE(gByteBlockEraseEvents.empty());
+        REQUIRE(_eraseEvents.empty());
 
         auto emptyBlock = ByteBlock{};
         auto emptyEditor = ByteBlockEditor{};
@@ -633,9 +664,9 @@ public:
         emptyBlock.secureErase();
         emptyEditor.secureErase();
         REQUIRE_EQUAL(emptyEditor.capacity(), emptyCapacity);
-        REQUIRE_EQUAL(gByteBlockEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gByteBlockEraseEvents.front().size, emptyCapacity.toSizeT());
-        REQUIRE(gByteBlockEraseEvents.front().isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents.front().size, emptyCapacity.toSizeT());
+        REQUIRE(_eraseEvents.front().isZero);
     }
 
 private:

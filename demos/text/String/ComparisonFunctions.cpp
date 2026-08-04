@@ -5,15 +5,6 @@
 
 namespace demo {
 
-namespace {
-
-// Print a comparison result with a compact label.
-void printComparison(const el::String &label, const auto ordering) {
-    el::io::printLine(label, el::toString(ordering));
-}
-
-}
-
 /// `compare()` accepts character comparison functions for specialized matching rules.
 /// Use `Char::compareCaseFolded` for Unicode-aware case-insensitive text, use
 /// `Char::compareAsciiFolded` when ASCII-only folding is enough, and use
@@ -28,25 +19,27 @@ void comparisonFunctions() {
     const auto normalizedIdentifier = el::String{"arctic_fox_trail"_el};
 
     // Regular comparison is exact and uses decoded code points.
-    printComparison("snowyOwl.compare(snowyOwlLower) .........................: "_el, snowyOwl.compare(snowyOwlLower));
+    el::io::printLine(
+        "snowyOwl.compare(snowyOwlLower) .........................: "_el,
+        el::toString(snowyOwl.compare(snowyOwlLower)));
 
     // Unicode case folding handles non-ASCII letters such as `Ě` and `ě`.
-    printComparison(
+    el::io::printLine(
         "snowyOwl.compare(..., Char::compareCaseFolded) ..........: "_el,
-        snowyOwl.compare(snowyOwlLower, el::Char::compareCaseFolded));
+        el::toString(snowyOwl.compare(snowyOwlLower, el::Char::compareCaseFolded)));
 
     // ASCII folding is small and fast, but only changes A-Z to a-z.
-    printComparison(
+    el::io::printLine(
         "asciiLabel.compare(..., Char::compareAsciiFolded) .......: "_el,
-        asciiLabel.compare(asciiLabelLower, el::Char::compareAsciiFolded));
-    printComparison(
+        el::toString(asciiLabel.compare(asciiLabelLower, el::Char::compareAsciiFolded)));
+    el::io::printLine(
         "snowyOwl.compare(..., Char::compareAsciiFolded) .........: "_el,
-        snowyOwl.compare(snowyOwlLower, el::Char::compareAsciiFolded));
+        el::toString(snowyOwl.compare(snowyOwlLower, el::Char::compareAsciiFolded)));
 
     // Identifier comparison is useful for normalized keys or configuration-style names.
-    printComparison(
+    el::io::printLine(
         "identifier.compare(..., Char::compareIdentifier) ........: "_el,
-        identifier.compare(normalizedIdentifier, el::Char::compareIdentifier));
+        el::toString(identifier.compare(normalizedIdentifier, el::Char::compareIdentifier)));
 }
 
 }

@@ -12,7 +12,6 @@
 
 #include <algorithm>
 #include <ranges>
-#include <stdexcept>
 
 namespace erbsland::conf::impl {
 
@@ -43,11 +42,11 @@ auto Rules::isDefinitionValidated() const -> bool {
 
 auto Rules::addRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
-        throw err::ParameterError{"Cannot add a null rule", "rule"};
+        throw err::ParameterError{"Cannot add a null rule"_el, "rule"_el};
     }
     auto parentRule = _root;                 // the parent rule where the given one should be added.
     const auto &path = rule->ruleNamePath(); // The original name path of the rule.
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty"_el);
     if (path.size() > 1) {
         parentRule = ruleForNamePath(path, path.size() - 1);
         if (parentRule == nullptr) {
@@ -56,7 +55,7 @@ auto Rules::addRule(const RulePtr &rule) -> void {
                     .build(path.back().asText()));
         }
     }
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null"_el);
     rule->setParent(parentRule);
     parentRule->addChild(rule);
     _isDefinitionValidated = false;
@@ -64,11 +63,11 @@ auto Rules::addRule(const RulePtr &rule) -> void {
 
 auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
-        throw err::ParameterError{"Cannot add a null rule", "rule"};
+        throw err::ParameterError{"Cannot add a null rule"_el, "rule"_el};
     }
     auto parentRule = _root;                 // the parent rule where the given one should be added.
     const auto &path = rule->ruleNamePath(); // The original name path of the rule.
-    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty");
+    ERBSLAND_CORE_CONF_REQUIRE_SAFETY(!path.empty(), "The name-path of a rule must not be empty"_el);
     if (path.size() > 1) {
         parentRule = ruleForNamePath(path, path.size() - 1);
         if (parentRule == nullptr) {
@@ -77,7 +76,7 @@ auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
                     .build(path.back().asText()));
         }
     }
-    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null");
+    ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null"_el);
     auto alternativeRule = parentRule->child(path.back());
     if (alternativeRule == nullptr) {
         alternativeRule = std::make_shared<Rule>();

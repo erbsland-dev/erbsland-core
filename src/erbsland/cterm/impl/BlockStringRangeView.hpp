@@ -104,7 +104,9 @@ public:
     [[nodiscard]] auto naturalBlockTextSize() const noexcept -> bgeo::BlockSize;
 
 private:
+    /// Get the number of blocks in the visible range.
     [[nodiscard]] auto rawSize() const noexcept -> std::size_t { return length().toSizeT(); }
+    /// Convert a local index to its backing-storage index.
     [[nodiscard]] auto rawStorageIndex(BlockIndex localIndex) const noexcept -> std::size_t;
 
 private:

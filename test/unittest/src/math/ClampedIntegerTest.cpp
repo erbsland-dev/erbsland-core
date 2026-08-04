@@ -115,10 +115,13 @@ private:
         REQUIRE_EQUAL(raw(Clamp::maximum().toRawValue()), raw(maximum));
         REQUIRE(Clamp{minimum}.isMinimum());
         REQUIRE(Clamp{maximum}.isMaximum());
-        REQUIRE(Clamp{minimum} < Clamp{maximum});
-        REQUIRE(Clamp{minimum}.compare(minimum) == std::strong_ordering::equal);
-        REQUIRE(Clamp{minimum} == minimum);
-        REQUIRE(Clamp{maximum} >= maximum);
+        const auto minimumClamp = Clamp{minimum};
+        const auto maximumClamp = Clamp{maximum};
+        const auto minimumComparison = minimumClamp.compare(minimum);
+        REQUIRE_LESS(minimumClamp, maximumClamp);
+        REQUIRE_EQUAL(minimumComparison, std::strong_ordering::equal);
+        REQUIRE_EQUAL(minimumClamp, minimum);
+        REQUIRE_GREATER_EQUAL(maximumClamp, maximum);
         REQUIRE_EQUAL(raw(Clamp{minimum}.toValue().toRawValue()), raw(minimum));
 
         auto value = Clamp{maximum};

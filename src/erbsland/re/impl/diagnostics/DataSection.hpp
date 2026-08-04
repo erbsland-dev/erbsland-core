@@ -16,6 +16,7 @@ enum class DataSection : uint8_t {
     Class,    ///< Character classes.
 };
 
+/// Convert a diagnostic data-section name to its enum value.
 [[nodiscard]] inline auto toDataSection(const text::String &section) noexcept -> DataSection {
     using namespace text::literals;
     if (section == "program"_el) {
@@ -30,6 +31,7 @@ enum class DataSection : uint8_t {
     return DataSection::Program;
 }
 
+/// Convert a diagnostic data-section enum value to text.
 [[nodiscard]] inline auto toString(const DataSection section) noexcept -> text::String {
     using namespace text::literals;
     switch (section) {

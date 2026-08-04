@@ -19,9 +19,9 @@ namespace erbsland::stream::impl {
 /// @tested{StandardStreamsTest}
 class StandardStreamRegistry final {
 public:
+    // defaults
     StandardStreamRegistry() = default;
 
-    // defaults
     ~StandardStreamRegistry() = default;
     StandardStreamRegistry(const StandardStreamRegistry &) = delete;
     auto operator=(const StandardStreamRegistry &) -> StandardStreamRegistry & = delete;
@@ -57,6 +57,7 @@ public:
     void stopSensitiveInput(uint64_t id);
 
 private:
+    /// Get the native standard-input target while the registry mutex is held.
     [[nodiscard]] auto nativeInputTargetLocked() -> TextInputStreamPtr;
 
 private:

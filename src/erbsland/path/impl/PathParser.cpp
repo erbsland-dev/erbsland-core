@@ -279,11 +279,11 @@ void PathParser::appendCapturedElement() {
 }
 
 void PathParser::appendElement(String element) {
-    auto publicElementCount = _elements.count();
+    auto publicItemCount = _elements.count();
     if (!_root.isEmpty()) {
-        ++publicElementCount;
+        ++publicItemCount;
     }
-    if (publicElementCount >= cMaximumPathElements) {
+    if (publicItemCount >= cMaximumPathElements) {
         throwParseError("Path exceeds the maximum element count"_el);
     }
     _elements.append(std::move(element));

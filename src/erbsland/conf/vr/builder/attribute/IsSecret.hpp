@@ -7,9 +7,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Marks a rule value as secret.
-struct IsSecret : Attribute {
+class IsSecret : public Attribute {
+public:
+    /// Set whether a rule value is secret.
+    /// @param isSecret `true` to mark the value secret.
     explicit IsSecret(const bool isSecret = true) : _isSecret{isSecret} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     bool _isSecret{true};
 };
 

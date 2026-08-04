@@ -98,7 +98,7 @@ following floating-point values:
 
 .. code-block:: cpp
 
-    auto fixed = el::FloatFormat::fixed().setPrecision(el::ElementCount{2U});
+    auto fixed = el::FloatFormat::fixed().setPrecision(el::ItemCount{2U});
     el::io::printLine("height: "_el, fixed, 18.756, " m"_el);
 
 Float Parse Flag

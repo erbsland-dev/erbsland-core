@@ -36,7 +36,8 @@ public:
             requireValue("main.value_10"_el, ValueType::TimeDelta, el::time::CalendarDelta{el::time::Weeks{10}}));
         WITH_CONTEXT(requireValue("main.value_11"_el, ValueType::RegEx, el::re::RegEx::compile("regex"_el)));
         REQUIRE_FALSE(assignment.value()->asRegEx()->isCompiled());
-        REQUIRE(assignment.value()->asRegEx()->fullMatch("regex"_el) != nullptr);
+        const auto firstMatch = assignment.value()->asRegEx()->fullMatch("regex"_el);
+        REQUIRE_NOT_EQUAL(firstMatch, nullptr);
 
         WITH_CONTEXT(requireValue("main.value_12"_el, ValueType::Integer, Integer{12345}));
         WITH_CONTEXT(requireValue("main.value_13"_el, ValueType::Text, el::text::String{"This is Text"_el}));
@@ -73,7 +74,8 @@ public:
             ValueType::RegEx,
             el::re::RegEx::compile("\n^\\w+\\.[Ee][Ll][Cc][Ll]$\n"_el, el::re::Flags{el::re::Flag::Verbose})));
         REQUIRE_FALSE(assignment.value()->asRegEx()->isCompiled());
-        REQUIRE(assignment.value()->asRegEx()->fullMatch("config.ELCL"_el) != nullptr);
+        const auto secondMatch = assignment.value()->asRegEx()->fullMatch("config.ELCL"_el);
+        REQUIRE_NOT_EQUAL(secondMatch, nullptr);
         WITH_CONTEXT(requireValue(
             "regex.value_3"_el,
             ValueType::RegEx,

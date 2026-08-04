@@ -4,12 +4,8 @@
 
 #include "../core/Definitions.hpp"
 
-#include <memory>
-
 namespace erbsland::event {
 
 class EventEditor;
-using EventEditorPtr = std::shared_ptr<EventEditor>;
-using EventEditorWeakPtr = std::weak_ptr<EventEditor>;
 
 }

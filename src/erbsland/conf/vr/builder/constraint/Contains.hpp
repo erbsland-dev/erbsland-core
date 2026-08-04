@@ -4,7 +4,7 @@
 
 #include "StringPartConstraint.hpp"
 
-#include "../../../impl/vr/StringPartConstraint.hpp"
+#include "../../../impl/vr/ContainsConstraint.hpp"
 
 #include <utility>
 
@@ -13,17 +13,27 @@ namespace erbsland::conf::vr::builder {
 using namespace text::literals;
 
 /// Adds a contains text constraint.
-struct Contains final : StringPartConstraint<impl::ContainsConstraint> {
+class Contains final : public StringPartConstraint<impl::ContainsConstraint> {
+public:
+    /// Creates a contains constraint from expected text parts.
+    /// @param values The expected text parts.
+    /// @param options Additional constraint options.
     explicit Contains(text::StringList values, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::ContainsConstraint>(std::move(values), std::move(options)) {
+        StringPartConstraint(std::move(values), std::move(options)) {
         _name = "contains"_el;
     }
+    /// Creates a contains constraint from one expected text part.
+    /// @param value The expected text part.
+    /// @param options Additional constraint options.
     explicit Contains(const text::String &value, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::ContainsConstraint>(value, std::move(options)) {
+        StringPartConstraint(value, std::move(options)) {
         _name = "contains"_el;
     }
+    /// Creates a contains constraint from expected text parts.
+    /// @param values The expected text parts.
+    /// @param options Additional constraint options.
     explicit Contains(const std::initializer_list<text::String> values, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::ContainsConstraint>(values, std::move(options)) {
+        StringPartConstraint(values, std::move(options)) {
         _name = "contains"_el;
     }
 };

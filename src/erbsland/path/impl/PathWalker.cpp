@@ -3,6 +3,7 @@
 #include "PathWalker.hpp"
 
 #include "BackendFactory.hpp"
+#include "PathBackend.hpp"
 
 #include "../PathError.hpp"
 #include "../PathResolveMode.hpp"

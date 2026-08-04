@@ -4,9 +4,14 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        BooleanValue.hpp
         BytesValue.cpp
         BytesValue.hpp
+        CalendarDeltaValue.hpp
         Container.hpp
+        Container_fwd.hpp
+        DateTimeValue.hpp
+        DateValue.hpp
         DirectStorageAccess.hpp
         Document.cpp
         Document.hpp
@@ -14,10 +19,20 @@ target_sources(erbsland-core PRIVATE
         DocumentBuilder.hpp
         DocumentBuilderStorage.cpp
         DocumentBuilderStorage.hpp
+        FloatValue.hpp
+        IntegerValue.hpp
+        IntermediateSection.hpp
+        RegExValue.hpp
         Section.hpp
         SectionList.hpp
+        SectionWithNames.hpp
+        SectionWithTexts.hpp
+        TextValue.hpp
+        TimeValue.hpp
+        TimeWithZoneValue.hpp
         Value.cpp
         Value.hpp
+        Value_fwd.hpp
         ValueHelper.hpp
         ValueList.hpp
         ValueMap.cpp

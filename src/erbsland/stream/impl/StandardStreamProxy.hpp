@@ -14,9 +14,10 @@ class StandardStreamProxy final : public TextOutputStream {
 public:
     /// Create a proxy for the given stream slot.
     explicit StandardStreamProxy(StandardStreamSlot slot);
-
-    // defaults
+    /// dtor, aborts any pending inputs.
     ~StandardStreamProxy() override { abort(); }
+
+    // defaults/deletions
     StandardStreamProxy(const StandardStreamProxy &) = delete;
     auto operator=(const StandardStreamProxy &) -> StandardStreamProxy & = delete;
     StandardStreamProxy(StandardStreamProxy &&) = delete;
@@ -38,6 +39,7 @@ public: // implement TextOutputStream
     auto writeLine(const text::String &text) -> StreamWriteStatus override;
 
 private:
+    /// Get the current proxied standard output stream.
     [[nodiscard]] auto target() const -> TextOutputStreamPtr;
 
 private:

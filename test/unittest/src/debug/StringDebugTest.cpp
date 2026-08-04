@@ -4,36 +4,35 @@
 #include <erbsland/debug/StringDebug.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 #include <string_view>
 
-using namespace el::text::literals;
-
 using el::debug::DebugViewDetail;
 using el::debug::toDebugString;
 using el::text::String;
 using el::text::StringConverter;
+using el::text::StringEditor;
 using el::text::U16StringEditor;
 using el::text::U32StringEditor;
-using el::text::U8StringEditor;
 using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
+using namespace el::text::literals;
 
 TESTED_TARGETS(DebugViewDetail DebugViewDetails StringDebug)
 class StringDebugTest final : public el::UnitTest {
 public:
     void testContentsPreview() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A\né"}};
+        const auto text = String{"A\né"_el};
         const auto details = DebugViewDetail::ContentInTitle | DebugViewDetail::CoreDetails;
         const auto output = StringConverter{toDebugString(text, details)}.toStdString();
 
-        REQUIRE(containsText(output, "U8StringEditor(\"A\\né\")"));
+        REQUIRE(containsText(output, "String(\"A\\né\")"));
         REQUIRE(containsText(output, "isEmpty: false"));
         REQUIRE(containsText(output, "isEncodingValid: true"));
         REQUIRE_FALSE(containsText(output, "backingStorageId"));

@@ -4,10 +4,11 @@
 
 #include "BlockPrintContext.hpp"
 #include "BlockString.hpp"
+#include "CursorWriter_fwd.hpp"
 #include "MoveMode.hpp"
 #include "ParagraphOptions.hpp"
-
-#include "impl/TypeTraits.hpp"
+#include "ReadableBuffer_fwd.hpp"
+#include "TypeTraits.hpp"
 
 #include "../bgeo/BlockPosition.hpp"
 #include "../bgeo/BlockSize.hpp"
@@ -17,7 +18,6 @@
 #include "../text/u32/U32StringEditor.hpp"
 
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -26,13 +26,10 @@
 
 namespace erbsland::cterm {
 
-class CursorWriter;
-using CursorWriterPtr = std::shared_ptr<CursorWriter>;
-class ReadableBuffer;
-
 /// The shared interface for buffers/terminals that support cursor-based output.
 class CursorWriter {
 public:
+    // defaults
     virtual ~CursorWriter() = default;
 
 public: // cursor state

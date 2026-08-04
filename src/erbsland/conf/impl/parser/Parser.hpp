@@ -20,11 +20,15 @@ using namespace text::literals;
 /// @tested{ParserBasicTest ParserIncludeTest}
 class Parser {
 public:
+    /// Create a parser for a configuration source.
+    /// @param documentSource The source to parse.
+    /// @param settings The parser settings retained for this parse.
     Parser(SourcePtr documentSource, const ParserSettings &settings);
 
+    // defaults
     ~Parser() = default;
 
-    // prevent copy and assign.
+    // defaults/deletions
     Parser(const Parser &) = delete;
     auto operator=(const Parser &) -> Parser & = delete;
 
@@ -55,8 +59,10 @@ private:
     /// Process an assignment
     void processAssignment(const Assignment &assignment);
 
+    /// Process a meta-value assignment.
     void processMetaValue(const Assignment &assignment);
 
+    /// Add source context to a value while parsing.
     void addSourceContext(
         const std::size_t includeLevel,
         const SourcePtr &source,

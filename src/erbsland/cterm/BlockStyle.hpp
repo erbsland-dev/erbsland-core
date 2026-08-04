@@ -3,6 +3,7 @@
 #pragma once
 
 #include "BlockAttributes.hpp"
+#include "BlockStyle_fwd.hpp"
 #include "Color.hpp"
 
 #include <functional>

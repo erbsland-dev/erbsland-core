@@ -40,7 +40,7 @@ auto ensureSharedArrayCapacity(
     }
 
     const auto requestedCapacity = std::max(usedSize, requiredCapacity);
-    const auto newCapacity = bestGrowthCapacity<Data>(oldCapacity, requestedCapacity);
+    const auto newCapacity = BestGrowth{oldCapacity, requestedCapacity}.bestGrowth<Data>();
     auto newData = tSharedArrayDataPointer{Data::create(
         static_cast<typename Data::SizeType>(usedSize), static_cast<typename Data::SizeType>(newCapacity))};
     std::forward<tCopyCallback>(copyCallback)(oldData, newData.get());

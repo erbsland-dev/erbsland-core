@@ -10,6 +10,7 @@
 #include "StringEditor.hpp"
 #include "StringEncoding.hpp"
 
+#include "impl/UnsafeDecodeBufferAccess_fwd.hpp"
 #include "u16/U16StringEditor.hpp"
 #include "u32/U32StringEditor.hpp"
 #include "u8/U8StringEditor.hpp"
@@ -32,10 +33,6 @@
 #include <utility>
 #include <vector>
 
-namespace erbsland::text::impl {
-class UnsafeDecodeBufferAccess;
-}
-
 namespace erbsland::text {
 
 /// A bounded byte buffer for incrementally decoding encoded string data.
@@ -54,6 +51,7 @@ public:
     };
 
 private:
+    /// The result of scanning one encoded code point.
     struct ScanResult final {
         CodePointStatus status{CodePointStatus::NeedMoreData}; ///< Boundary status.
         unit::ByteLength byteLength{};                         ///< Bytes covered by this result.
@@ -170,44 +168,75 @@ public: // take
     [[nodiscard]] auto takeU32String(unit::CpLength maximum = unit::CpLength::infinite()) -> U32String;
 
 private:
+    /// Get the writable portion of ring storage.
     [[nodiscard]] auto writableSpan() noexcept -> mem::ByteSpan;
+    /// Record newly written input bytes.
     void commitWritten(unit::ByteLength length);
+    /// Get the total number of consumed input bytes.
     [[nodiscard]] auto consumedByteLength() const noexcept -> unit::ByteLength { return _consumedByteLength; }
+    /// Test whether the byte order mark has been resolved.
     [[nodiscard]] auto isBomResolved() const noexcept -> bool { return _bomResolved; }
+    /// Reset state for a continued stream with an effective encoding.
     void resetForContinuation(StringEncoding effectiveEncoding) noexcept;
+    /// Decode a default string and its character count.
     [[nodiscard]] auto takeStringWithLength(unit::CpLength maximum, bool stopAtLineEnd)
         -> std::pair<String, unit::CpLength>;
+    /// Get the byte length of available decodable data.
     [[nodiscard]] auto decodableByteLength(
         unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+    /// Get the byte length of a decodable line.
     [[nodiscard]] auto lineByteLength(
         unit::CpLength maximum, unit::CpLength *characterCount = nullptr, bool *isValid = nullptr) -> unit::ByteLength;
+    /// Select the decoded range for one operation.
     [[nodiscard]] auto decodedRange(unit::CpLength maximum, bool stopAtLineEnd) -> DecodedRange;
+    /// Invoke a function for each decoded character in a range.
     template <typename Function>
-    auto forEachDecodedCharacter(DecodedRange range, bool consumeDecoded, Function function) -> unit::CpLength;
+    void forEachDecodedCharacter(DecodedRange range, bool consumeDecoded, Function function);
+    /// Copy a decoded range into UTF-8 storage.
     void copyUtf8Range(DecodedRange range, std::span<char> destination, bool consumeDecoded);
+    /// Consume bytes from the front of ring storage.
     void consume(unit::ByteLength length) noexcept;
+    /// Get the ring-storage index where writing starts.
     [[nodiscard]] auto writeIndex() const noexcept -> unit::ByteIndex;
+    /// Get the byte at a ring-storage index.
     [[nodiscard]] auto byteAt(unit::ByteIndex index) const noexcept -> mem::Byte;
+    /// Test whether buffered input starts with a byte prefix.
     [[nodiscard]] auto byteMatches(mem::ConstByteSpan prefix) const noexcept -> bool;
+    /// Test whether available input starts with a complete byte prefix.
     [[nodiscard]] auto byteMatchesAvailable(mem::ConstByteSpan prefix) const noexcept -> bool;
+    /// Erase a prefix from ring storage.
     void erasePrefix(unit::ByteLength length) noexcept;
+    /// Resolve an initial byte order mark when possible.
     [[nodiscard]] auto ensureBomResolved() -> bool;
+    /// Scan the code point at a byte index.
     [[nodiscard]] auto scanCodePoint(unit::ByteIndex index) const noexcept -> ScanResult;
+    /// Decode a scanned character.
     [[nodiscard]] auto decodeCharacter(unit::ByteIndex index, unit::ByteLength byteLength) const noexcept -> Char;
+    /// Scan a UTF-8 code point.
     [[nodiscard]] auto scanUtf8(unit::ByteIndex index) const noexcept -> ScanResult;
+    /// Scan a UTF-16 code point.
     [[nodiscard]] auto scanUtf16(unit::ByteIndex index) const noexcept -> ScanResult;
+    /// Scan a UTF-32 code point.
     [[nodiscard]] auto scanUtf32(unit::ByteIndex index) const noexcept -> ScanResult;
+    /// Read a UTF-16 value from ring storage.
     [[nodiscard]] auto readUInt16(unit::ByteIndex index) const noexcept -> char16_t;
+    /// Read a UTF-32 value from ring storage.
     [[nodiscard]] auto readUInt32(unit::ByteIndex index) const noexcept -> char32_t;
+    /// Test whether a byte is a UTF-8 continuation byte.
     [[nodiscard]] static auto isContinuationByte(uint8_t value) noexcept -> bool;
+    /// Get the writable portion of the underlying storage.
     [[nodiscard]] auto storageWritableSpan() noexcept -> mem::ByteSpan;
+    /// Securely erase sensitive ring storage.
     void resetStorage() noexcept {
         if (_buffer.isSensitive()) {
             _buffer.secureErase();
         }
     }
+    /// Decode available input to UTF-8 text.
     [[nodiscard]] auto decodeToU8(unit::CpLength maximum, bool stopAtLineEnd, bool consumeDecoded) -> DecodedU8String;
+    /// Decode available input to UTF-16 text.
     [[nodiscard]] auto decodeToU16(unit::CpLength maximum, bool consumeDecoded) -> U16String;
+    /// Decode available input to UTF-32 text.
     [[nodiscard]] auto decodeToU32(unit::CpLength maximum, bool consumeDecoded) -> U32String;
 
 private:
@@ -225,4 +254,4 @@ private:
 
 }
 
-#include "impl/StringDecodeBuffer.tpp"
+#include "StringDecodeBuffer.tpp"

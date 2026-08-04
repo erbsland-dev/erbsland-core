@@ -68,7 +68,9 @@ public:
     };
 
 public:
+    /// Create an empty operation.
     Operation() = default;
+    /// Create an operation with `value`.
     constexpr Operation(const Value value) : _value{value} {} // NOLINT(*-explicit-constructor)
 
     // defaults
@@ -77,7 +79,9 @@ public:
     auto operator=(const Operation &) -> Operation & = default;
 
 public: // operators
+    /// Compare operations for equality.
     constexpr auto operator==(const Operation &other) const noexcept -> bool { return _value == other._value; }
+    /// Compare operations for inequality.
     constexpr auto operator!=(const Operation &other) const noexcept -> bool { return _value != other._value; }
 
 public: // tests

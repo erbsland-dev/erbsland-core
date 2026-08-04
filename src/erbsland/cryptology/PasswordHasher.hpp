@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PasswordHash.hpp"
+#include "PasswordHasher_fwd.hpp"
 #include "PasswordHashKey.hpp"
 #include "PasswordHashPolicy.hpp"
 #include "PasswordVerification.hpp"
@@ -74,19 +75,23 @@ public: // factories
         PasswordHashPolicy policy = PasswordHashPolicy::recommended()) -> PasswordHasher;
 
 private:
+    constexpr static auto cMaximumPasswordBytes = std::size_t{1024U * 1024U};
+
+    /// Create a hasher from normalized key-rotation state.
     PasswordHasher(
         std::optional<PasswordHashKey> activeKey,
         std::vector<PasswordHashKey> fallbackKeys,
         PasswordHashPolicy policy) noexcept;
+    /// Hash a password with supplied salt bytes.
     [[nodiscard]] auto hashWithSalt(const text::String &password, mem::ConstByteSpan salt) const -> PasswordHash;
+    /// Derive password-hash output according to a policy.
     [[nodiscard]] static auto derive(
         const text::String &password, mem::ConstByteSpan salt, const PasswordHashPolicy &policy)
         -> mem::ByteBlockEditor;
-    [[nodiscard]] static auto protectVerifier(
-        const mem::ByteBlock &raw, const text::String &header, const PasswordHashKey *key) -> mem::ByteBlockEditor;
+    /// Find the configured key identified by stored hash data.
     [[nodiscard]] auto keyFor(const impl::PasswordHashData &data) const noexcept -> const PasswordHashKey *;
-    [[nodiscard]] auto needsReplacement(const impl::PasswordHashData &data) const noexcept -> bool;
-    void performDummyDerivation(const text::String &password) const;
+    /// Mirror derivation, verifier protection, and comparison for verification failures.
+    void performDummyVerification(const text::String &password) const;
 
 private:
     std::optional<PasswordHashKey> _activeKey;  ///< The active key, or no key for explicitly unkeyed operation.

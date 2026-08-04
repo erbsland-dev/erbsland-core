@@ -39,11 +39,9 @@ public:
         (setPart(arguments), ...);
     }
 
-    /// Destroy this version.
+    // defaults
     ~Version() = default;
-    /// Copy a version.
     Version(const Version &) noexcept = default;
-    /// Copy another version into this version.
     auto operator=(const Version &) noexcept -> Version & = default;
 
 public: // operators
@@ -129,9 +127,13 @@ public: // conversion
     }
 
 private:
+    /// Set the major version part.
     constexpr void setPart(Major part) noexcept { _major = part; }
+    /// Set the minor version part.
     constexpr void setPart(Minor part) noexcept { _minor = part; }
+    /// Set the revision version part.
     constexpr void setPart(Revision part) noexcept { _revision = part; }
+    /// Set the build version part.
     constexpr void setPart(BuildNumber part) noexcept { _build = part; }
 
 private:
@@ -144,8 +146,10 @@ private:
 }
 
 namespace std {
+/// Hashes a version by its parts.
 template <>
 struct hash<erbsland::unit::Version> {
+    /// Calculate a version hash.
     auto operator()(const erbsland::unit::Version &value) const noexcept -> std::size_t {
         return erbsland::util::createHash(value.major(), value.minor(), value.revision(), value.build());
     }

@@ -29,15 +29,11 @@ public:
     CowManualStorage()
         requires std::default_initializable<tDataType>
         : _storage{} {}
-    /// Copy storage and share its data object.
+    // defaults
     CowManualStorage(const CowManualStorage &) noexcept = default;
-    /// Move storage while keeping the source object valid.
     CowManualStorage(CowManualStorage &&) noexcept = default;
-    /// Destroy the storage.
     ~CowManualStorage() = default;
-    /// Copy storage and share its data object.
     auto operator=(const CowManualStorage &) noexcept -> CowManualStorage & = default;
-    /// Move storage while keeping the source object valid.
     auto operator=(CowManualStorage &&) noexcept -> CowManualStorage & = default;
 
 public:
@@ -54,6 +50,16 @@ public:
         requires std::constructible_from<tDataType, tArgs...>
     [[nodiscard]] static auto create(tArgs &&...args) -> CowManualStorage {
         return CowManualStorage{CowStorage<tDataType>::create(std::forward<tArgs>(args)...)};
+    }
+    /// Create storage that shares one default-constructed data object.
+    /// The shared default object is retained for the lifetime of the program and contributes one owner to
+    /// `useCount()`. Mutable access detaches before returning the data object.
+    /// @return Storage sharing the default data object for this specialization.
+    [[nodiscard]] static auto sharedDefault() -> CowManualStorage
+        requires std::default_initializable<tDataType>
+    {
+        static const auto storage = CowManualStorage{};
+        return storage;
     }
 
 public:
@@ -96,6 +102,7 @@ public:
     friend void swap(CowManualStorage &a, CowManualStorage &b) noexcept { a.swap(b); }
 
 private:
+    /// Create manual storage from its shared implementation.
     explicit CowManualStorage(CowStorage<tDataType> storage) noexcept : _storage{std::move(storage)} {}
 
 private:

@@ -80,7 +80,9 @@ Failed tolerant writes validate before detaching, so both bytes and sharing rema
 range.
 Invalid, outside, or empty targets and empty sources are no-ops.
 It validates no-op cases before detaching and differs intentionally from the clamping, resizing ``replace()`` operation.
-The ``xorWith*()`` methods combine equal-length blocks without exposing writable storage.
+The whole-sequence ``xorWith()`` methods return ``false`` without changing the destination when lengths differ.
+Use ``xorWithOrThrow()`` when equal lengths are an invariant and a mismatch must raise ``ParameterError``.
+Range overloads remain clamped operations that combine as many source bytes as fit.
 
 Sensitive Storage
 ~~~~~~~~~~~~~~~~~
@@ -123,9 +125,14 @@ Low-level integrations keep :cpp:type:`ByteSpan <erbsland::mem::ByteSpan>` as an
 Internal native adapters use ``mem::impl::UnsafeByteArrayAccess`` or ``mem::impl::UnsafeByteBufferAccess`` when owning
 scratch storage must be passed to a writable byte-span boundary.
 
-Internally, byte blocks expose their storage through ``mem::impl::ByteDataView``.
-Shared read, comparison, and runtime-aware modification tools implement the algorithms once, so editors do not create
-temporary read-only blocks or byte vectors to reuse behavior.
+Internally, every contiguous byte owner exposes its storage through a private ``mem::impl::ByteDataView``.
+Stateful read and comparison tools bind to this raw view, which lets arrays, buffers, blocks, editors, and readers share
+algorithms without temporary owners or repeated shared-storage traversal.
+Writable owners expose a private writable span for fixed-size mutation tools.
+The owner still validates the operation and handles copy-on-write, allocation, sensitivity, and aliased sources before
+requesting writable storage.
+``mem::impl::UnsafeByteBlockAccess`` marks native read-only integration boundaries and exposes the same data-view type;
+it does not provide editor or writable access.
 ``mem::impl::UnsafeByteBlockBuffer`` supports growing uncommitted storage while preserving a written prefix and then
 transfers the completed allocation into a byte block without a final copy.
 Its storage is uninitialized and can be created in sensitive mode; a low-level producer must write every byte included
@@ -137,7 +144,18 @@ Byte Reader
 :cpp:class:`ByteReader <erbsland::mem::ByteReader>` reads bytes and integer values sequentially from a
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` or
 :cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>`.
-Default-returning reads leave the position unchanged when there are not enough bytes.
+It can return exact byte ranges and decode structured text frames.
+``ByteIntegerFormat`` fixes the signedness and wire width of a formatted integer independently from its C++ destination
+type.
+Alongside fixed widths and the compact count formats, it supports canonical most-significant-group-first unsigned
+base-128 integers for ASN.1 identifier and object-identifier components.
+``ByteTextOptions`` defines UTF encoding, count prefix, optional validated end mark, and dynamic or padded-field
+framing.
+Structured reads parse with a local cursor over the raw data and commit the reader position only after the complete
+value has been validated and decoded.
+This includes readers positioned in the middle of a block.
+Strict reads leave the position unchanged on failure; optional reads report an incomplete or invalid frame without
+advancing.
 
 Byte Writer
 -----------
@@ -145,6 +163,12 @@ Byte Writer
 :cpp:class:`ByteWriter <erbsland::mem::ByteWriter>` writes bytes and integer values sequentially into an internal editor
 and returns the completed data as a read-only :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`.
 Writing overwrites at the current position or appends when the position is at the end.
+Text and formatted-integer writes prepare the complete encoded value before modifying the writer, so encoding or
+validation failures leave the written data and position unchanged.
+Text writes use ``ByteTextOptions``.
+The default is dynamic UTF-8 with an unsigned 32-bit unit count, while ``ByteTextOptions::compact()`` uses an unsigned
+variable-length count.
+An explicit end mark is always validated by the reader, including in padded fields.
 
 Ring Buffers
 ------------
@@ -204,6 +228,8 @@ Interface
 .. doxygenfunction:: erbsland::mem::setInteger(const ByteSpan bytes, const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little) noexcept -> bool
 
 .. doxygenfunction:: erbsland::mem::setIntegerOrThrow(const ByteSpan bytes, const unit::ByteIndex offset, const T value, const Endianness endianness = Endianness::Little)
+.. doxygenclass:: erbsland::mem::ByteIntegerFormat
+    :members:
 .. doxygenclass:: erbsland::mem::ByteReader
     :members:
 .. doxygenclass:: erbsland::mem::ByteRingBuffer
@@ -227,9 +253,14 @@ Interface
 .. doxygenfunction:: erbsland::mem::toConstByteSpan(std::span<const uint8_t> span) noexcept -> ConstByteSpan
 
 .. doxygenfunction:: erbsland::mem::toConstByteSpan(std::span<const char> span) noexcept -> ConstByteSpan
+.. doxygenenum:: erbsland::mem::ByteTextFormat
+.. doxygenclass:: erbsland::mem::ByteTextOptions
+    :members:
 .. doxygenclass:: erbsland::mem::ByteWriter
     :members:
 .. doxygenenum:: erbsland::mem::Endianness
 .. doxygenclass:: erbsland::mem::RingBuffer
     :members:
 .. doxygenfunction:: erbsland::mem::secureErase(ByteSpan span) noexcept
+
+.. doxygenfunction:: erbsland::mem::secureErase(const std::span<T, Extent> span) noexcept

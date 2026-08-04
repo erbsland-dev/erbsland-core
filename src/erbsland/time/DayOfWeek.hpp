@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DayOfWeek_fwd.hpp"
 #include "DayOfWeekFormat.hpp"
 #include "TimeAmounts.hpp"
 

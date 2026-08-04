@@ -42,10 +42,10 @@ public:
     void testCopyAndAssignment() {
         CharRange a{U'a', U'z'};
         CharRange b{a}; // copy ctor
-        REQUIRE(a == b);
+        REQUIRE_EQUAL(a, b);
         CharRange c;    // assignment
         c = a;
-        REQUIRE(a == c);
+        REQUIRE_EQUAL(a, c);
     }
 
     void testOperators() {

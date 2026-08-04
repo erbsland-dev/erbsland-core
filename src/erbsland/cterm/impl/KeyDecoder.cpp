@@ -44,9 +44,9 @@ auto KeyDecoder::createCharacterKey(const CombinedChar &character) noexcept -> K
     return Key{Key::Combined, character.toU32String()};
 }
 
-auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offset) noexcept -> CharParseResult {
+auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offset) noexcept -> KeyCodePointParseResult {
     if (offset >= ByteIndex::end(text.length())) {
-        return CharParseResult{KeyParseStatus::Invalid, offset};
+        return KeyCodePointParseResult{KeyParseStatus::Invalid, offset};
     }
 
     const auto remainingLength = ByteLength::fromSizeT(text.length().toSizeT() - offset.toSizeT());
@@ -59,7 +59,7 @@ auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offse
 
         const auto status = buffer.codePointStatus();
         if (status == StringDecodeBuffer::CodePointStatus::Invalid) {
-            return CharParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+            return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
         }
         if (buffer.decodableCharacters(CpLength::one()) == CpLength::one()) {
             const auto beforeLength = buffer.byteLength();
@@ -68,13 +68,13 @@ auto KeyDecoder::decodeCodePointPrefix(const String &text, const ByteIndex offse
                 auto reader = StringCharReader{decodedText};
                 const auto character = reader.read();
                 const auto consumedLength = beforeLength - buffer.byteLength();
-                return CharParseResult{KeyParseStatus::Parsed, character, offset + consumedLength};
+                return KeyCodePointParseResult{KeyParseStatus::Parsed, character, offset + consumedLength};
             } catch (...) {
-                return CharParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
+                return KeyCodePointParseResult{KeyParseStatus::Invalid, offset + ByteLength::one()};
             }
         }
     }
-    return CharParseResult{KeyParseStatus::NeedMoreData, offset};
+    return KeyCodePointParseResult{KeyParseStatus::NeedMoreData, offset};
 }
 
 auto KeyDecoder::parseModifierParameter(const int value) noexcept -> std::optional<KeyModifiers> {
@@ -237,36 +237,36 @@ auto KeyDecoder::keyFromCsiTildeParameter(const int parameter) noexcept -> Key::
     }
 }
 
-auto KeyDecoder::decodeCsi(const String &text) noexcept -> ParseResult {
+auto KeyDecoder::decodeCsi(const String &text) noexcept -> KeyParseResult {
     const auto finalIndex = findCsiFinalByte(text);
     if (!finalIndex.has_value()) {
-        return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
+        return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
     const auto sequenceSize = *finalIndex + ByteLength::one();
     const auto finalByte = text.charAt(*finalIndex);
     if (finalByte == U'Z') {
         if (*finalIndex == cCsiPrefixIndex) {
-            return ParseResult{KeyParseStatus::Parsed, Key{Key::BackTab}, sequenceSize};
+            return KeyParseResult{KeyParseStatus::Parsed, Key{Key::BackTab}, sequenceSize};
         }
-        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+        return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
 
     const auto parameters = parseCsiParameters(text.slice(ByteRange{cCsiPrefixIndex, *finalIndex}));
     if (!parameters.has_value()) {
-        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+        return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
 
     auto type = Key::None;
     auto modifiers = KeyModifiers{};
     if (finalByte == U'~') {
         if (parameters->empty()) {
-            return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+            return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
         }
         type = keyFromCsiTildeParameter((*parameters)[0]);
         if (parameters->size() >= 2) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[1]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+                return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         }
@@ -275,61 +275,61 @@ auto KeyDecoder::decodeCsi(const String &text) noexcept -> ParseResult {
         if (parameters->size() >= 2) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[1]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+                return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         } else if (parameters->size() == 1 && (*parameters)[0] != 1) {
             const auto parsedModifiers = parseModifierParameter((*parameters)[0]);
             if (!parsedModifiers.has_value()) {
-                return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+                return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
             }
             modifiers = *parsedModifiers;
         }
     }
 
     if (type == Key::None || parameters->size() > 2) {
-        return ParseResult{KeyParseStatus::Invalid, sequenceSize};
+        return KeyParseResult{KeyParseStatus::Invalid, sequenceSize};
     }
-    return ParseResult{KeyParseStatus::Parsed, Key{type, modifiers}, sequenceSize};
+    return KeyParseResult{KeyParseStatus::Parsed, Key{type, modifiers}, sequenceSize};
 }
 
-auto KeyDecoder::decodeSs3(const String &text) noexcept -> ParseResult {
+auto KeyDecoder::decodeSs3(const String &text) noexcept -> KeyParseResult {
     if (text.length() < ByteLength{3U}) {
-        return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
+        return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
     }
     switch (text.charAt(ByteIndex{2U}).toRawValue()) {
     case U'H':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::Home}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::Home}, ByteIndex{3}};
     case U'F':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::End}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::End}, ByteIndex{3}};
     case U'P':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F1}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::F1}, ByteIndex{3}};
     case U'Q':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F2}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::F2}, ByteIndex{3}};
     case U'R':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F3}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::F3}, ByteIndex{3}};
     case U'S':
-        return ParseResult{KeyParseStatus::Parsed, Key{Key::F4}, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Parsed, Key{Key::F4}, ByteIndex{3}};
     default:
-        return ParseResult{KeyParseStatus::Invalid, ByteIndex{3}};
+        return KeyParseResult{KeyParseStatus::Invalid, ByteIndex{3}};
     }
 }
 
-auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> ParseResult {
+auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> KeyParseResult {
     if (_text.isEmpty()) {
-        return ParseResult{KeyParseStatus::Invalid, ByteIndex::zero()};
+        return KeyParseResult{KeyParseStatus::Invalid, ByteIndex::zero()};
     }
 
     for (const auto &definition : simpleSequenceDefinitions()) {
         if (_text.startsWith(definition.sequence)) {
-            return ParseResult{
+            return KeyParseResult{
                 KeyParseStatus::Parsed, Key{definition.type}, ByteIndex::end(definition.sequence.length())};
         }
     }
 
     if (_text.startsWith("\x1b"_el)) {
         if (_text.length() == ByteLength::one()) {
-            return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
+            return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
         }
         if (_text.charAt(ByteIndex::one()) == U'[') {
             return decodeCsi(_text);
@@ -337,19 +337,19 @@ auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> ParseResult {
         if (_text.charAt(ByteIndex::one()) == U'O') {
             return decodeSs3(_text);
         }
-        return ParseResult{KeyParseStatus::Invalid, ByteIndex{2}};
+        return KeyParseResult{KeyParseStatus::Invalid, ByteIndex{2}};
     }
 
     const auto firstCodePoint = decodeCodePointPrefix(_text, ByteIndex::zero());
     if (firstCodePoint.status() != KeyParseStatus::Parsed) {
-        return ParseResult{firstCodePoint.status(), firstCodePoint.consumedByteCount()};
+        return KeyParseResult{firstCodePoint.status(), firstCodePoint.consumedByteCount()};
     }
     const auto baseCodePoint = firstCodePoint.character();
     if (baseCodePoint.isControl()) {
-        return ParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
+        return KeyParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
     }
     if (baseCodePoint.displayWidth() == 0) {
-        return ParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
+        return KeyParseResult{KeyParseStatus::Invalid, firstCodePoint.consumedByteCount()};
     }
 
     auto character = CombinedChar{baseCodePoint};
@@ -358,22 +358,22 @@ auto KeyDecoder::parseConsoleInputPrefix() const noexcept -> ParseResult {
     while (offset < textEnd) {
         const auto nextCodePoint = decodeCodePointPrefix(_text, offset);
         if (nextCodePoint.status() == KeyParseStatus::NeedMoreData) {
-            return ParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
+            return KeyParseResult{KeyParseStatus::NeedMoreData, ByteIndex::zero()};
         }
         if (nextCodePoint.status() != KeyParseStatus::Parsed) {
-            return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
+            return KeyParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
         const auto codePoint = nextCodePoint.character();
         if (codePoint.isControl()) {
-            return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
+            return KeyParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
         if (codePoint.displayWidth() != 0) {
-            return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
+            return KeyParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
         }
         character = character.withCombining(codePoint);
         offset = nextCodePoint.consumedByteCount();
     }
-    return ParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
+    return KeyParseResult{KeyParseStatus::Parsed, createCharacterKey(character), offset};
 }
 
 auto KeyDecoder::decodeConsoleInput() const noexcept -> Key {

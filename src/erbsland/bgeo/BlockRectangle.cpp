@@ -5,8 +5,11 @@
 #include "BlockAlignedSource.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 namespace erbsland::bgeo {
+
+using namespace text::literals;
 
 auto BlockRectangle::operator|(const BlockRectangle &other) const noexcept -> BlockRectangle {
     return BlockRectangle{topLeft().componentMin(other.topLeft()), bottomRight().componentMax(other.bottomRight())};
@@ -183,19 +186,19 @@ auto BlockRectangle::gridCells(
     const BlockCoordinate horizontalSpacing,
     const BlockCoordinate verticalSpacing) const -> std::vector<BlockRectangle> {
     if (rows < 1) {
-        throw err::ParameterError{"BlockRect::gridCells() requires at least one row.", "rows"};
+        throw err::ParameterError{"BlockRect::gridCells() requires at least one row."_el, "rows"_el};
     }
     if (columns < 1) {
-        throw err::ParameterError{"BlockRect::gridCells() requires at least one column.", "columns"};
+        throw err::ParameterError{"BlockRect::gridCells() requires at least one column."_el, "columns"_el};
     }
     if (horizontalSpacing < 0 || verticalSpacing < 0) {
         throw err::ParameterError{
-            "BlockRect::gridCells() spacing must not be negative.", "horizontalSpacing/verticalSpacing"};
+            "BlockRect::gridCells() spacing must not be negative."_el, "horizontalSpacing/verticalSpacing"_el};
     }
     const auto usableWidth = width() - horizontalSpacing * BlockCoordinate{columns - 1};
     const auto usableHeight = height() - verticalSpacing * BlockCoordinate{rows - 1};
     if (usableWidth < columns || usableHeight < rows) {
-        throw err::ParameterError{"BlockRect::gridCells() cannot create cells of at least 1x1.", "rows/columns"};
+        throw err::ParameterError{"BlockRect::gridCells() cannot create cells of at least 1x1."_el, "rows/columns"_el};
     }
     const auto baseCellWidth = usableWidth / columns;
     const auto extraWidthCells = usableWidth % columns;

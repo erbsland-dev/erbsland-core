@@ -92,7 +92,9 @@ public:
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
         worker.join();
         REQUIRE(called);
-        REQUIRE(driver->wakes.load() >= 1);
-        REQUIRE(driver->timedWaits.load() >= 1);
+        const auto wakeCount = driver->wakes.load();
+        const auto timedWaitCount = driver->timedWaits.load();
+        REQUIRE_GREATER_EQUAL(wakeCount, 1);
+        REQUIRE_GREATER_EQUAL(timedWaitCount, 1);
     }
 };

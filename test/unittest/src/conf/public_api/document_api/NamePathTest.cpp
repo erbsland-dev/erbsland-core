@@ -73,7 +73,7 @@ public:
         REQUIRE_EQUAL(namePath.size(), expectedNameList.size());
         std::size_t index = 0;
         for (const auto &name : namePath) {
-            REQUIRE(index < expectedNameList.size())
+            REQUIRE_LESS(index, expectedNameList.size());
             REQUIRE_EQUAL(name, expectedNameList.at(index));
             ++index;
         }

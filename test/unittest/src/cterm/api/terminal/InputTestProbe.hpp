@@ -6,6 +6,8 @@
 
 #include <chrono>
 
+/// Test double controlling terminal-input results and recording calls.
+/// @notest{Test-only probe.}
 class InputProbe final : public Input {
 public:
     [[nodiscard]] auto mode() const noexcept -> Mode override { return _mode; }

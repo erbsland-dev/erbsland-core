@@ -11,9 +11,11 @@ namespace erbsland::re::impl {
 /// An input that reads from an owning UTF-8 read-only string.
 class StringInput final : public Input {
 public:
+    /// Create an input that reads the given UTF-8 string.
     [[nodiscard]] static auto create(const text::String &text) noexcept -> InputPtr {
         return std::make_shared<StringInput>(text);
     }
+    /// Create an input that retains a copy of `text`.
     explicit StringInput(const text::String &text) noexcept : _text{text} {}
 
 public: // implement Input

@@ -98,6 +98,17 @@ class PreprocessSourcesTest(unittest.TestCase):
 
         self.assertTrue(self.processor(force=True).run())
 
+    def test_trailing_return_preserves_override_on_pure_virtual_method(self) -> None:
+        result = self.processor().transform_source("auto events() -> Editor & override = 0;\n")
+
+        self.assertEqual(result, "Editor & events() override = 0;\n")
+
+    def test_trailing_return_preserves_method_qualifiers(self) -> None:
+        source = "auto first() -> int override;\nauto second() -> int final override;\n"
+        result = self.processor().transform_source(source)
+
+        self.assertEqual(result, "int first() override;\nint second() final override;\n")
+
 
 if __name__ == "__main__":
     unittest.main()

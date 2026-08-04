@@ -19,32 +19,45 @@ class TokenTypeTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 public:
     void testDefaultAndConstructor() {
         TokenType typeDefault;
-        REQUIRE(typeDefault == TokenType::Error);
+        REQUIRE_EQUAL(typeDefault, TokenType::Error);
 
         TokenType lineBreak{TokenType::LineBreak};
-        REQUIRE(lineBreak == TokenType::LineBreak);
-        REQUIRE(lineBreak != TokenType::Error);
+        REQUIRE_EQUAL(lineBreak, TokenType::LineBreak);
+        REQUIRE_NOT_EQUAL(lineBreak, TokenType::Error);
     }
 
     void testMultiLineOpen() {
-        REQUIRE(TokenType::fromMultiLineOpen(nc::doubleQuote) == TokenType::MultiLineTextOpen);
-        REQUIRE(TokenType::fromMultiLineOpen(nc::backtick) == TokenType::MultiLineCodeOpen);
-        REQUIRE(TokenType::fromMultiLineOpen(nc::slash) == TokenType::MultiLineRegexOpen);
-        REQUIRE(TokenType::fromMultiLineOpen(nc::lessThan) == TokenType::MultiLineBytesOpen);
-        REQUIRE(TokenType::fromMultiLineOpen(U'?') == TokenType::EndOfData);
+        const auto textOpen = TokenType::fromMultiLineOpen(nc::doubleQuote);
+        const auto codeOpen = TokenType::fromMultiLineOpen(nc::backtick);
+        const auto regexOpen = TokenType::fromMultiLineOpen(nc::slash);
+        const auto bytesOpen = TokenType::fromMultiLineOpen(nc::lessThan);
+        const auto unknownOpen = TokenType::fromMultiLineOpen(U'?');
+        REQUIRE_EQUAL(textOpen, TokenType::MultiLineTextOpen);
+        REQUIRE_EQUAL(codeOpen, TokenType::MultiLineCodeOpen);
+        REQUIRE_EQUAL(regexOpen, TokenType::MultiLineRegexOpen);
+        REQUIRE_EQUAL(bytesOpen, TokenType::MultiLineBytesOpen);
+        REQUIRE_EQUAL(unknownOpen, TokenType::EndOfData);
     }
 
     void testMultiLineClose() {
-        REQUIRE(TokenType::fromMultiLineClose(nc::doubleQuote) == TokenType::MultiLineTextClose);
-        REQUIRE(TokenType::fromMultiLineClose(nc::backtick) == TokenType::MultiLineCodeClose);
-        REQUIRE(TokenType::fromMultiLineClose(nc::slash) == TokenType::MultiLineRegexClose);
-        REQUIRE(TokenType::fromMultiLineClose(nc::greaterThan) == TokenType::MultiLineBytesClose);
-        REQUIRE(TokenType::fromMultiLineClose(U'?') == TokenType::EndOfData);
+        const auto textClose = TokenType::fromMultiLineClose(nc::doubleQuote);
+        const auto codeClose = TokenType::fromMultiLineClose(nc::backtick);
+        const auto regexClose = TokenType::fromMultiLineClose(nc::slash);
+        const auto bytesClose = TokenType::fromMultiLineClose(nc::greaterThan);
+        const auto unknownClose = TokenType::fromMultiLineClose(U'?');
+        REQUIRE_EQUAL(textClose, TokenType::MultiLineTextClose);
+        REQUIRE_EQUAL(codeClose, TokenType::MultiLineCodeClose);
+        REQUIRE_EQUAL(regexClose, TokenType::MultiLineRegexClose);
+        REQUIRE_EQUAL(bytesClose, TokenType::MultiLineBytesClose);
+        REQUIRE_EQUAL(unknownClose, TokenType::EndOfData);
     }
 
     void testFormatter() {
-        REQUIRE(std::format("{}", TokenType{TokenType::Boolean}) == "Boolean");
-        REQUIRE(std::format("{}", TokenType{TokenType::MultiLineCodeOpen}) == "MultiLineCodeOpen");
-        REQUIRE(std::format("{}", TokenType{TokenType::Error}) == "Error");
+        const auto boolean = std::format("{}", TokenType{TokenType::Boolean});
+        const auto multiLineCodeOpen = std::format("{}", TokenType{TokenType::MultiLineCodeOpen});
+        const auto error = std::format("{}", TokenType{TokenType::Error});
+        REQUIRE_EQUAL(boolean, "Boolean");
+        REQUIRE_EQUAL(multiLineCodeOpen, "MultiLineCodeOpen");
+        REQUIRE_EQUAL(error, "Error");
     }
 };

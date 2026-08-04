@@ -2,31 +2,26 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SourceIdentifier_fwd.hpp"
+
+#include "impl/utilities/InternalView_fwd.hpp"
+
 #include "../text/String.hpp"
 
-#include <memory>
-
 namespace erbsland::conf {
-
-namespace impl {
-class InternalView;
-using InternalViewPtr = std::shared_ptr<InternalView>;
-class PrivateTag;
-}
-
-class SourceIdentifier;
-using SourceIdentifierPtr = std::shared_ptr<SourceIdentifier>;
 
 /// Lightweight identifier for a configuration source.
 /// Instances of this class are usually shared between locations so that the
 /// parser and higher layers can refer to the same source without copying the
 /// underlying name and path strings.
 class SourceIdentifier {
+    class PrivateTag {};
+
 public:
     /// Create a new source identifier with explicit name and path.
     /// @param name The name of the source.
     /// @param path The path of the source.
-    SourceIdentifier(text::String name, text::String path, impl::PrivateTag) noexcept;
+    SourceIdentifier(text::String name, text::String path, PrivateTag) noexcept;
     /// Factory function to create a shared source identifier.
     /// @param name The source name.
     /// @param path The source path.

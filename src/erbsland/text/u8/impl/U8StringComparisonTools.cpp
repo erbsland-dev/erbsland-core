@@ -10,7 +10,7 @@
 namespace erbsland::text::impl {
 
 using unit::ByteIndex;
-using unit::ElementCount;
+using unit::ItemCount;
 
 auto U8StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char> data, const CharacterSet &characters) -> bool {
@@ -116,7 +116,7 @@ auto U8StringComparisonTools::contains(const Char character) const noexcept -> b
 }
 
 auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> ElementCount {
+    -> ItemCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
@@ -144,7 +144,7 @@ auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCom
         }
     }
 
-    auto result = ElementCount{};
+    auto result = ItemCount{};
     auto position = ByteIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
@@ -157,8 +157,8 @@ auto U8StringComparisonTools::count(const U8StringDataView &other, const CharCom
     return result;
 }
 
-auto U8StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
-    auto result = ElementCount{};
+auto U8StringComparisonTools::count(const Char character) const noexcept -> ItemCount {
+    auto result = ItemCount{};
     utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
         if (currentCharacter == character) {
             ++result;

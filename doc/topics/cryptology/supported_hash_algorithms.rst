@@ -35,6 +35,10 @@ NIST specifies SHA-2 in `FIPS 180-4 <https://doi.org/10.6028/NIST.FIPS.180-4>`_ 
 <https://doi.org/10.6028/NIST.FIPS.202>`_.
 Algorithm status can change when new attacks or guidance become available, so applications should apply current policy
 when reading persisted algorithm identifiers.
+The table lists the library status.
+An application-wide :cpp:class:`CryptologyConfiguration <erbsland::cryptology::CryptologyConfiguration>` can only
+downgrade that status, and :cpp:class:`HashSelector <erbsland::cryptology::HashSelector>` reports the resulting
+effective status.
 
 Overview
 ========

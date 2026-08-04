@@ -57,33 +57,33 @@ public:
         auto *backendPtr = backend.get();
         auto lookup = el::system::UserLookup{std::move(backend)};
 
-        REQUIRE_EQUAL(
-            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
-        REQUIRE_EQUAL(
-            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
+        const auto firstUserName = lookup.userNameForId(el::system::UserId{"42"_el});
+        REQUIRE_EQUAL(firstUserName.toString(), el::text::StringEditor{"user-42"_el});
+        const auto cachedUserName = lookup.userNameForId(el::system::UserId{"42"_el});
+        REQUIRE_EQUAL(cachedUserName.toString(), el::text::StringEditor{"user-42"_el});
         REQUIRE_EQUAL(backendPtr->userLookupCount, 1);
 
-        REQUIRE_EQUAL(
-            lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::StringEditor{"group-7"_el});
-        REQUIRE_EQUAL(
-            lookup.groupNameForId(el::system::GroupId{"7"_el}).toString(), el::text::StringEditor{"group-7"_el});
+        const auto firstGroupName = lookup.groupNameForId(el::system::GroupId{"7"_el});
+        REQUIRE_EQUAL(firstGroupName.toString(), el::text::StringEditor{"group-7"_el});
+        const auto cachedGroupName = lookup.groupNameForId(el::system::GroupId{"7"_el});
+        REQUIRE_EQUAL(cachedGroupName.toString(), el::text::StringEditor{"group-7"_el});
         REQUIRE_EQUAL(backendPtr->groupLookupCount, 1);
 
-        REQUIRE_EQUAL(
-            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::StringEditor{"id-seven"_el});
-        REQUIRE_EQUAL(
-            lookup.userIdForName(el::system::UserName{"seven"_el}).toString(), el::text::StringEditor{"id-seven"_el});
+        const auto firstUserId = lookup.userIdForName(el::system::UserName{"seven"_el});
+        REQUIRE_EQUAL(firstUserId.toString(), el::text::StringEditor{"id-seven"_el});
+        const auto cachedUserId = lookup.userIdForName(el::system::UserName{"seven"_el});
+        REQUIRE_EQUAL(cachedUserId.toString(), el::text::StringEditor{"id-seven"_el});
         REQUIRE_EQUAL(backendPtr->userReverseLookupCount, 1);
 
-        REQUIRE_EQUAL(
-            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::StringEditor{"id-staff"_el});
-        REQUIRE_EQUAL(
-            lookup.groupIdForName(el::system::GroupName{"staff"_el}).toString(), el::text::StringEditor{"id-staff"_el});
+        const auto firstGroupId = lookup.groupIdForName(el::system::GroupName{"staff"_el});
+        REQUIRE_EQUAL(firstGroupId.toString(), el::text::StringEditor{"id-staff"_el});
+        const auto cachedGroupId = lookup.groupIdForName(el::system::GroupName{"staff"_el});
+        REQUIRE_EQUAL(cachedGroupId.toString(), el::text::StringEditor{"id-staff"_el});
         REQUIRE_EQUAL(backendPtr->groupReverseLookupCount, 1);
 
         lookup.clearCache();
-        REQUIRE_EQUAL(
-            lookup.userNameForId(el::system::UserId{"42"_el}).toString(), el::text::StringEditor{"user-42"_el});
+        const auto userNameAfterCacheClear = lookup.userNameForId(el::system::UserId{"42"_el});
+        REQUIRE_EQUAL(userNameAfterCacheClear.toString(), el::text::StringEditor{"user-42"_el});
         REQUIRE_EQUAL(backendPtr->userLookupCount, 2);
     }
 
@@ -113,6 +113,6 @@ public:
 
         auto &first = scope.app().userLookup();
         auto &second = scope.app().userLookup();
-        REQUIRE(&first == &second);
+        REQUIRE_EQUAL(&first, &second);
     }
 };

@@ -11,6 +11,7 @@ using namespace text::literals;
 
 /// Tables with literal constants of the language.
 struct LiteralTables {
+    /// Units accepted for time-delta literals.
     enum class TimeDeltaUnit : uint8_t {
         Nanoseconds,
         Microseconds,
@@ -24,16 +25,19 @@ struct LiteralTables {
         Years,
     };
 
+    /// Multiplication factor for a byte-count suffix.
     struct ByteCountSuffix {
         int64_t factor;
     };
 
+    /// Unit selected by a time-delta suffix.
     struct TimeDeltaSuffix {
         TimeDeltaUnit unit;
     };
 
     using SuffixInfo = std::variant<ByteCountSuffix, TimeDeltaSuffix>;
 
+    /// Token data associated with a reserved identifier.
     struct IdentifierInfo {
         TokenType type;
         Content value;

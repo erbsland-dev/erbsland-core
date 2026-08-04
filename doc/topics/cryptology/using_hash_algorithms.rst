@@ -127,8 +127,8 @@ with :cpp:class:`StringEncoder <erbsland::text::StringEncoder>` and hash the res
 Select an Algorithm Automatically
 =================================
 
-Use :cpp:func:`HashAlgorithm::recommended() <erbsland::cryptology::HashAlgorithm::recommended>` when your application
-controls the stored format and wants to follow the library's current policy.
+Use :cpp:func:`HashSelector::recommended() <erbsland::cryptology::HashSelector::recommended>` when your application
+controls the stored format and wants to follow the library and application-wide policy.
 The default requirements select an acceptable general-purpose algorithm.
 
 :cpp:struct:`HashRequirements <erbsland::cryptology::HashRequirements>` can require an exact
@@ -146,7 +146,7 @@ The following demo requests high security with at least medium relative throughp
 
 .. code-block:: cpp
 
-    /// `HashAlgorithm` selects a supported algorithm from application requirements.
+    /// `HashSelector` selects a supported algorithm from application requirements and current policy.
     ///
     /// Use `recommended()` when your application controls the format and can follow current library policy. Persist the
     /// returned algorithm identifier with the digest because recommendations and metadata can change in later releases.
@@ -156,7 +156,7 @@ The following demo requests high security with at least medium relative throughp
             .minimumSecurity = el::CryptographicSecurity::High,
             .minimumThroughput = el::HashThroughput::Medium,
         };
-        const auto algorithm = el::HashAlgorithm::recommended(requirements);
+        const auto algorithm = el::HashSelector{requirements}.recommended();
 
         if (!algorithm.has_value()) {
             el::io::printLine("No supported hash algorithm satisfies the requirements."_el);
@@ -176,14 +176,15 @@ The following demo requests high security with at least medium relative throughp
 .. erbsland-demo-end::
 
 The result is optional because no built-in algorithm may satisfy every requirement.
-Use :cpp:func:`HashAlgorithm::matching() <erbsland::cryptology::HashAlgorithm::matching>` when the caller wants to
-inspect every qualifying algorithm instead of accepting the single recommendation.
+Use :cpp:func:`HashSelector::matching() <erbsland::cryptology::HashSelector::matching>` when the caller wants to inspect
+every qualifying algorithm instead of accepting the single recommendation.
 
-Algorithm metadata is library policy and can change as implementations and cryptographic guidance evolve.
+Algorithm selection status is library and application policy and can change as implementations, cryptographic guidance,
+or administrative limits evolve.
 Do not use :cpp:func:`HashAlgorithm::security() <erbsland::cryptology::HashAlgorithm::security>` alone as a safety
 decision.
 An algorithm can have a nominal output strength while its status disallows cryptographic use.
-Use :cpp:func:`HashAlgorithm::isSafe() <erbsland::cryptology::HashAlgorithm::isSafe>` or require an acceptable status.
+Use :cpp:func:`HashSelector::isSafe() <erbsland::cryptology::HashSelector::isSafe>` or require an acceptable status.
 
 Store Hash Values
 =================
@@ -300,7 +301,7 @@ Reject unknown identifiers instead of silently substituting a default.
 
         const auto algorithmText = document->getTextOrThrow(el::String{"canopy_record.algorithm"_el});
         const auto storedAlgorithm = el::HashAlgorithm::fromString(algorithmText);
-        if (!storedAlgorithm.has_value() || !storedAlgorithm->isSafe()) {
+        if (!storedAlgorithm.has_value() || !el::HashSelector{}.isSafe(storedAlgorithm.value())) {
             throw el::RuntimeError{"The stored hash algorithm is unknown or no longer acceptable."_el};
         }
 
@@ -355,7 +356,7 @@ algorithm that passes the current safety policy.
     /// Hash a file through a bounded stream and current algorithm policy.
     ///
     /// Open the file once, process its bytes incrementally, and keep both the memory use and total accepted input bounded.
-    /// Check `HashAlgorithm::isSafe()` before processing data that names its own algorithm.
+    /// Check `HashSelector::isSafe()` before processing data that names its own algorithm.
     void hashBoundedInput() {
         auto directoryOptions = el::PathTempDirectoryOptions{};
         directoryOptions.setPrefix("forêt-"_el).setSuffix("-hash-demo"_el);
@@ -371,13 +372,15 @@ algorithm that passes the current safety policy.
 
         el::io::printLine("Digest bytes: "_el, digest.length().toSizeT());
         el::io::printLine(
-            "MD5 rejected: "_el, el::BooleanFormat::yesNo(), !el::HashAlgorithm{el::HashAlgorithm::Md5}.isSafe());
+            "MD5 rejected: "_el,
+            el::BooleanFormat::yesNo(),
+            !el::HashSelector{}.isSafe(el::HashAlgorithm::Md5));
     }
 
     /// Hash an untrusted stream without collecting it in memory or accepting unlimited input.
     auto hashBoundedStream(el::ByteInputStream &input, const el::HashAlgorithm algorithm, const std::size_t maximumBytes)
         -> el::ByteBlock {
-        if (!algorithm.isSafe()) {
+        if (!el::HashSelector{}.isSafe(algorithm)) {
             throw el::RuntimeError{"The selected hash algorithm is not acceptable."_el};
         }
 

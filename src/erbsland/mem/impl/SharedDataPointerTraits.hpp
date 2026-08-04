@@ -13,9 +13,11 @@
 
 namespace erbsland::mem::impl {
 
+/// Tests whether a type is a compact shared array data type.
 template <typename tDataType>
 struct IsSharedArrayData : std::false_type {};
 
+/// Identifies a `SharedArrayData` specialization.
 template <
     typename tDataType,
     typename tSizeType,
@@ -23,27 +25,33 @@ template <
     SharedArrayDataCleanupMethod tCleanupMethod>
 struct IsSharedArrayData<SharedArrayData<tDataType, tSizeType, tConstructMethod, tCleanupMethod>> : std::true_type {};
 
+/// Tests whether a type is shared byte data with allocation flags.
 template <typename tDataType>
 struct IsSharedByteDataWithFlag : std::false_type {};
 
+/// Identifies a `SharedByteDataWithFlag` specialization.
 template <typename tDataType>
 struct IsSharedByteDataWithFlag<SharedByteDataWithFlag<tDataType>> : std::true_type {};
 
+/// Tests whether a type uses the regular shared-data ownership model.
 template <
     typename tDataType,
     bool tIsSpecialSharedData = IsSharedArrayData<tDataType>::value || IsSharedByteDataWithFlag<tDataType>::value>
 struct IsRegularSharedData : std::false_type {};
 
+/// Identifies regular shared data derived from `SharedData`.
 template <typename tDataType>
 struct IsRegularSharedData<tDataType, false>
     : std::bool_constant<std::is_base_of_v<SharedData, tDataType> && !std::is_base_of_v<SharedVirtualData, tDataType>> {
 };
 
+/// Tests whether a type uses the polymorphic shared-data ownership model.
 template <
     typename tDataType,
     bool tIsSpecialSharedData = IsSharedArrayData<tDataType>::value || IsSharedByteDataWithFlag<tDataType>::value>
 struct IsPolymorphicSharedData : std::false_type {};
 
+/// Identifies polymorphic shared data derived from `SharedVirtualData`.
 template <typename tDataType>
 struct IsPolymorphicSharedData<tDataType, false> : std::bool_constant<std::is_base_of_v<SharedVirtualData, tDataType>> {
 };
@@ -68,13 +76,13 @@ struct SharedDataPointerTraits {
     static constexpr auto isSupported = false;
 };
 
-/// Traits for data objects derived from `SharedData`.
-/// This specialization manages ordinary object data allocated with `new`. Derived classes must implement a correct copy
+/// Implement ownership operations for data objects derived from `SharedData`.
+/// This traits base manages ordinary object data allocated with `new`. Derived classes must implement a correct copy
 /// constructor for detach; the `SharedData` base resets the copied reference counter to an unreferenced state.
 ///
 /// @tparam tDataType The concrete data type derived from `SharedData`.
 template <typename tDataType>
-struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsRegularSharedData<tDataType>::value>> {
+struct RegularSharedDataPointerTraits {
     /// The concrete managed type.
     using Type = tDataType;
 
@@ -97,18 +105,18 @@ struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsRegularSharedData<t
     /// @param data A non-null source data object.
     /// @return A new object allocated with `new`.
     [[nodiscard]] static auto clone(const Type *data) -> Type * { return new Type{*data}; }
-    /// Destroy an object allocated by this traits specialization.
+    /// Destroy an object allocated by this traits base.
     /// @param data A non-null data object.
     static void destroy(Type *data) noexcept { delete data; }
 };
 
-/// Traits for polymorphic data objects derived from `SharedVirtualData`.
+/// Implement ownership operations for polymorphic data objects derived from `SharedVirtualData`.
 ///
-/// This specialization uses the virtual `clone()` method to detach via the dynamic type. The clone must return a newly
+/// This traits base uses the virtual `clone()` method to detach via the dynamic type. The clone must return a newly
 /// allocated object compatible with the managed static type.
 /// @tparam tDataType The polymorphic shared data type.
 template <typename tDataType>
-struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsPolymorphicSharedData<tDataType>::value>> {
+struct PolymorphicSharedDataPointerTraits {
     /// The concrete managed type.
     using Type = tDataType;
 
@@ -128,6 +136,16 @@ struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsPolymorphicSharedDa
     /// Destroy an object allocated by the virtual clone implementation.
     static void destroy(Type *data) noexcept { delete data; }
 };
+
+/// Adapt ordinary shared data ownership operations to the pointer traits interface.
+template <typename tDataType>
+struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsRegularSharedData<tDataType>::value>>
+    : RegularSharedDataPointerTraits<tDataType> {};
+
+/// Adapt polymorphic shared data ownership operations to the pointer traits interface.
+template <typename tDataType>
+struct SharedDataPointerTraits<tDataType, std::enable_if_t<IsPolymorphicSharedData<tDataType>::value>>
+    : PolymorphicSharedDataPointerTraits<tDataType> {};
 
 /// Traits for compact shared array data.
 /// `SharedArrayData` uses one allocation that contains the header followed by aligned element storage. This means it
@@ -169,12 +187,25 @@ struct SharedDataPointerTraits<SharedArrayData<tDataType, tSizeType, tConstructM
 /// Traits for compact shared byte data with allocation-level flags.
 template <typename tDataType>
 struct SharedDataPointerTraits<SharedByteDataWithFlag<tDataType>> {
+    /// The concrete managed byte-data type.
     using Type = SharedByteDataWithFlag<tDataType>;
+    /// Indicates that `SharedDataPointer` can manage this data type.
     static constexpr auto isSupported = true;
 
+    /// Access the intrusive counter of a mutable byte-data header.
+    /// @param data A non-null byte-data header.
+    /// @return The reference counter embedded in the byte-data header.
     [[nodiscard]] static auto referenceCounter(Type *data) noexcept -> ReferenceCounter &;
+    /// Access the intrusive counter of a const byte-data header.
+    /// @param data A non-null byte-data header.
+    /// @return The reference counter embedded in the byte-data header.
     [[nodiscard]] static auto referenceCounter(const Type *data) noexcept -> const ReferenceCounter &;
+    /// Create an unreferenced copy for copy-on-write detach.
+    /// @param data A non-null source byte-data header.
+    /// @return A new byte-data object allocated by its clone operation.
     [[nodiscard]] static auto clone(const Type *data) -> Type *;
+    /// Destroy byte data allocated by its matching creation or clone operation.
+    /// @param data A non-null byte-data header.
     static void destroy(Type *data) noexcept;
 };
 

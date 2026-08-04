@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "FramePainter.hpp"
 
+#include "../Block16Style.hpp"
+#include "../Tile9Style.hpp"
+
 namespace erbsland::cterm::impl {
 
 using bgeo::BlockCoordinate;

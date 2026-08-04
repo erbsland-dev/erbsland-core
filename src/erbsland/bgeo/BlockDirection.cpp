@@ -11,7 +11,7 @@
 
 namespace erbsland::bgeo {
 
-using namespace erbsland::text::literals;
+using namespace text::literals;
 
 auto BlockDirection::contains(BlockDirection direction) const noexcept -> bool {
     switch (_value) {

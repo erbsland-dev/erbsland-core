@@ -235,15 +235,17 @@ auto CharSetWorkerWorkload::execute(const erbsland::profiling::WorkerExecutionCo
         });
     case Operation::ForEachRange:
         return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-            static_cast<void>(_fixture.source.forEach([&](const el::CharRange &range) -> void {
+            const auto loopResult = _fixture.source.forEach([&](const el::CharRange &range) -> void {
                 consumeSize(sink, range.from().toRawValue());
                 consumeSize(sink, range.to().toRawValue());
-            }));
+            });
+            consumeSize(sink, static_cast<std::uint8_t>(loopResult));
         });
     case Operation::ForEachChar:
         return measure(context, [&](const std::uint64_t, std::uint64_t &sink) -> void {
-            static_cast<void>(_fixture.source.forEach(
-                [&](const el::Char character) -> void { consumeSize(sink, character.toRawValue()); }));
+            const auto loopResult = _fixture.source.forEach(
+                [&](const el::Char character) -> void { consumeSize(sink, character.toRawValue()); });
+            consumeSize(sink, static_cast<std::uint8_t>(loopResult));
         });
     case Operation::Transform:
         if (_fixture.caseName == "collapse"_el) {

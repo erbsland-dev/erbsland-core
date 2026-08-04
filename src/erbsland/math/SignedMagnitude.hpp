@@ -250,7 +250,7 @@ public:
     }
 
 private:
-    // Add two values into `result` and return `true` if the unsigned magnitude overflowed.
+    /// Add two values into `result` and return `true` if the unsigned magnitude overflowed.
     [[nodiscard]] constexpr auto addMagnitude(const SignedMagnitude &other, SignedMagnitude &result) const noexcept
         -> bool {
         if (_negative == other._negative) {
@@ -267,7 +267,7 @@ private:
         result = SignedMagnitude{other._negative, static_cast<Unsigned>(other._magnitude - _magnitude)};
         return false;
     }
-    // Multiply two values into `result` and return `true` if the unsigned magnitude overflowed.
+    /// Multiply two values into `result` and return `true` if the unsigned magnitude overflowed.
     [[nodiscard]] constexpr auto multiplyMagnitude(const SignedMagnitude &other, SignedMagnitude &result) const noexcept
         -> bool {
         if (_magnitude == Unsigned{0U} || other._magnitude == Unsigned{0U}) {
@@ -280,12 +280,14 @@ private:
         result = SignedMagnitude{_negative != other._negative, static_cast<Unsigned>(_magnitude * other._magnitude)};
         return false;
     }
+    /// Return the signed-magnitude quotient.
     [[nodiscard]] constexpr auto dividedMagnitude(const SignedMagnitude &other) const noexcept -> SignedMagnitude {
         if (other._magnitude == Unsigned{0U}) {
             std::terminate();
         }
         return SignedMagnitude{_negative != other._negative, static_cast<Unsigned>(_magnitude / other._magnitude)};
     }
+    /// Return the signed-magnitude remainder.
     [[nodiscard]] constexpr auto moduloMagnitude(const SignedMagnitude &other) const noexcept -> SignedMagnitude {
         if (other._magnitude == Unsigned{0U}) {
             std::terminate();

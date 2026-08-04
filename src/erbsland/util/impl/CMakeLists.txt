@@ -4,11 +4,21 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        CoAsyncGeneratorNextOperation.hpp
+        CoAsyncGeneratorPromise.hpp
+        CoAsyncGeneratorPromise_fwd.hpp
+        CoAsyncGeneratorTransferAwaiter.hpp
+        CoGeneratorIterator.hpp
+        CoGeneratorPromise.hpp
+        CoGeneratorPromise_fwd.hpp
         ComparisonHelper.hpp
         CoTaskAwaiter.hpp
         CoTaskAwaiterBase.hpp
         CoTaskCancelled.hpp
         CoTaskCompletion.hpp
+        CoTaskFinalAwaiter.hpp
+        CoTaskPromise.hpp
+        CoTaskPromise_fwd.hpp
         CoTaskState.hpp
         CoTaskStateBase.hpp
         CoWorkAwaiter.hpp
@@ -17,4 +27,7 @@ target_sources(erbsland-core PRIVATE
         CoWorkState.hpp
         EnumFlagsTraits.hpp
         LoopControl.hpp
+        ResultValue.hpp
+        Throw.cpp
+        Throw.hpp
 )

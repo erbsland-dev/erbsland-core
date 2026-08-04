@@ -4,7 +4,7 @@
 
 #include "StringPartConstraint.hpp"
 
-#include "../../../impl/vr/StringPartConstraint.hpp"
+#include "../../../impl/vr/EndsConstraint.hpp"
 
 #include <utility>
 
@@ -13,17 +13,27 @@ namespace erbsland::conf::vr::builder {
 using namespace text::literals;
 
 /// Adds an ends-with text constraint.
-struct Ends final : StringPartConstraint<impl::EndsConstraint> {
+class Ends final : public StringPartConstraint<impl::EndsConstraint> {
+public:
+    /// Creates an ends-with constraint from expected suffixes.
+    /// @param values The expected suffixes.
+    /// @param options Additional constraint options.
     explicit Ends(text::StringList values, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::EndsConstraint>(std::move(values), std::move(options)) {
+        StringPartConstraint(std::move(values), std::move(options)) {
         _name = "ends"_el;
     }
+    /// Creates an ends-with constraint from one expected suffix.
+    /// @param value The expected suffix.
+    /// @param options Additional constraint options.
     explicit Ends(const text::String &value, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::EndsConstraint>(value, std::move(options)) {
+        StringPartConstraint(value, std::move(options)) {
         _name = "ends"_el;
     }
+    /// Creates an ends-with constraint from expected suffixes.
+    /// @param values The expected suffixes.
+    /// @param options Additional constraint options.
     explicit Ends(const std::initializer_list<text::String> values, ConstraintOptions options = {}) :
-        StringPartConstraint<impl::EndsConstraint>(values, std::move(options)) {
+        StringPartConstraint(values, std::move(options)) {
         _name = "ends"_el;
     }
 };

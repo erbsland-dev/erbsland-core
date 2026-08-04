@@ -5,6 +5,7 @@
 #include "U16StringData_fwd.hpp"
 #include "U16StringDataView.hpp"
 #include "U16StringLiteralStorage.hpp"
+#include "U16StringSharedStorage_fwd.hpp"
 
 #include "../../../mem/StorageIdentifier.hpp"
 #include "../../../unit/ByteLength.hpp"

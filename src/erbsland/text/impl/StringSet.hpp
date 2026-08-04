@@ -34,22 +34,31 @@ public:
     using Base::remove;
     using Base::removed;
     using Base::tryRemove;
-    StringSet() = default;
-    explicit StringSet(std::initializer_list<Key> values) {
+
+    /// Creates a set from initial keys.
+    /// @param values The initial keys.
+    StringSet(std::initializer_list<Key> values) {
         for (const auto &key : values) {
             insert(key);
         }
     }
+    /// Creates a set by copying its raw representation.
+    /// @param raw The raw set to copy.
     explicit StringSet(const Raw &raw) {
         for (const auto &key : raw) {
             insert(key);
         }
     }
+    /// Creates a set from its raw representation.
+    /// @param raw The raw set to move keys from.
     explicit StringSet(Raw &&raw) {
         for (const auto &key : raw) {
             insert(key);
         }
     }
+
+    // defaults
+    StringSet() = default;
     ~StringSet() = default;
     StringSet(const StringSet &) noexcept = default;
     StringSet(StringSet &&) noexcept = default;
@@ -92,7 +101,10 @@ public: // key changes
     }
     /// Insert a string key.
     auto insert(const Key &key) -> StringSet & {
-        static_cast<void>(tryInsert(key));
+        auto &data = this->mutableRaw();
+        if (data.find(key) == data.end()) {
+            data.insert(key.copy());
+        }
         return *this;
     }
     /// Try to insert a string key.

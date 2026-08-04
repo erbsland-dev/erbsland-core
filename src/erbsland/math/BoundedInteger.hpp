@@ -217,6 +217,7 @@ protected:
     constexpr void setRawValue(NativeValue value) noexcept { _value = SaturatingValue{value}; }
 
 private:
+    /// Clamp an arbitrary integer to this type's configured native range.
     template <AnyIntegerType T>
     [[nodiscard]] constexpr static auto clampedRawValue(T value) noexcept -> NativeValue {
         return range().clamped(value);

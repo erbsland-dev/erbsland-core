@@ -31,7 +31,8 @@ public:
         rect.setPos(BlockPosition{-4, 5});
         rect.setSize(BlockSize{7, 8});
         REQUIRE_EQUAL(rect, (BlockRectangle{-4, 5, 7, 8}));
-        REQUIRE_EQUAL((BlockRectangle{BlockPosition{3, 4}, BlockPosition{9, 2}}), (BlockRectangle{3, 4, 6, 0}));
+        const auto fromPositions = BlockRectangle{BlockPosition{3, 4}, BlockPosition{9, 2}};
+        REQUIRE_EQUAL(fromPositions, (BlockRectangle{3, 4, 6, 0}));
     }
 
     void testAnchorAndAlignment() {
@@ -75,19 +76,26 @@ public:
         const auto first = BlockRectangle{0, 0, 5, 5};
         const auto second = BlockRectangle{3, 2, 6, 5};
 
-        REQUIRE_EQUAL((first | second), (BlockRectangle{0, 0, 9, 7}));
-        REQUIRE_EQUAL((first & second), (BlockRectangle{3, 2, 2, 3}));
-        REQUIRE_EQUAL((first & BlockRectangle{10, 10, 2, 2}), BlockRectangle{});
+        const auto merged = first | second;
+        const auto intersected = first & second;
+        const auto disjoint = first & BlockRectangle{10, 10, 2, 2};
+        REQUIRE_EQUAL(merged, (BlockRectangle{0, 0, 9, 7}));
+        REQUIRE_EQUAL(intersected, (BlockRectangle{3, 2, 2, 3}));
+        REQUIRE_EQUAL(disjoint, BlockRectangle{});
     }
 
     void testClampHandlesEmptyAxes() {
         using el::bgeo::BlockPosition;
         using el::bgeo::BlockRectangle;
 
-        REQUIRE_EQUAL((BlockRectangle{10, 20, 4, 3}.clamp(BlockPosition{99, 1})), (BlockPosition{13, 20}));
-        REQUIRE_EQUAL((BlockRectangle{10, 20, 0, 3}.clamp(BlockPosition{99, 99})), (BlockPosition{10, 22}));
-        REQUIRE_EQUAL((BlockRectangle{10, 20, 4, 0}.clamp(BlockPosition{99, 99})), (BlockPosition{13, 20}));
-        REQUIRE_EQUAL((BlockRectangle{10, 20, 0, 0}.clamp(BlockPosition{99, 99})), (BlockPosition{10, 20}));
+        const auto regular = BlockRectangle{10, 20, 4, 3}.clamp(BlockPosition{99, 1});
+        const auto zeroWidth = BlockRectangle{10, 20, 0, 3}.clamp(BlockPosition{99, 99});
+        const auto zeroHeight = BlockRectangle{10, 20, 4, 0}.clamp(BlockPosition{99, 99});
+        const auto empty = BlockRectangle{10, 20, 0, 0}.clamp(BlockPosition{99, 99});
+        REQUIRE_EQUAL(regular, (BlockPosition{13, 20}));
+        REQUIRE_EQUAL(zeroWidth, (BlockPosition{10, 22}));
+        REQUIRE_EQUAL(zeroHeight, (BlockPosition{13, 20}));
+        REQUIRE_EQUAL(empty, (BlockPosition{10, 20}));
     }
 
     void testMarginsAndSubRectangle() {
@@ -98,13 +106,14 @@ public:
 
         const auto rect = BlockRectangle{10, 20, 20, 10};
 
-        REQUIRE_EQUAL(rect.expandedBy(BlockMargins{1, 2, 3, 4}), (BlockRectangle{6, 19, 26, 14}));
-        REQUIRE_EQUAL(rect.insetBy(BlockMargins{1, 2, 3, 4}), (BlockRectangle{14, 21, 14, 6}));
-        REQUIRE_EQUAL(
-            rect.subRectangle(BlockAnchor::BottomRight, BlockSize{5, 4}, BlockMargins{1}),
-            (BlockRectangle{24, 25, 5, 4}));
-        REQUIRE_EQUAL(
-            rect.subRectangle(BlockAnchor::Center, BlockSize{0, 0}, BlockMargins{2}), (BlockRectangle{12, 22, 16, 6}));
+        const auto expanded = rect.expandedBy(BlockMargins{1, 2, 3, 4});
+        const auto inset = rect.insetBy(BlockMargins{1, 2, 3, 4});
+        const auto bottomRight = rect.subRectangle(BlockAnchor::BottomRight, BlockSize{5, 4}, BlockMargins{1});
+        const auto center = rect.subRectangle(BlockAnchor::Center, BlockSize{0, 0}, BlockMargins{2});
+        REQUIRE_EQUAL(expanded, (BlockRectangle{6, 19, 26, 14}));
+        REQUIRE_EQUAL(inset, (BlockRectangle{14, 21, 14, 6}));
+        REQUIRE_EQUAL(bottomRight, (BlockRectangle{24, 25, 5, 4}));
+        REQUIRE_EQUAL(center, (BlockRectangle{12, 22, 16, 6}));
     }
 
     void testAlignedSource() {
@@ -114,12 +123,10 @@ public:
 
         const auto target = BlockRectangle{10, 20, 6, 4};
 
-        REQUIRE_EQUAL(
-            target.alignedSource(BlockRectangle{0, 0, 4, 2}, Alignment::Center),
-            (BlockAlignedSource{BlockRectangle{11, 21, 4, 2}, BlockRectangle{0, 0, 4, 2}}));
-        REQUIRE_EQUAL(
-            target.alignedSource(BlockRectangle{100, 200, 10, 8}, Alignment::BottomRight),
-            (BlockAlignedSource{BlockRectangle{10, 20, 6, 4}, BlockRectangle{104, 204, 6, 4}}));
+        const auto centered = target.alignedSource(BlockRectangle{0, 0, 4, 2}, Alignment::Center);
+        const auto bottomRight = target.alignedSource(BlockRectangle{100, 200, 10, 8}, Alignment::BottomRight);
+        REQUIRE_EQUAL(centered, (BlockAlignedSource{BlockRectangle{11, 21, 4, 2}, BlockRectangle{0, 0, 4, 2}}));
+        REQUIRE_EQUAL(bottomRight, (BlockAlignedSource{BlockRectangle{10, 20, 6, 4}, BlockRectangle{104, 204, 6, 4}}));
     }
 
     void testFrameIndexDirectionAndIteration() {
@@ -137,7 +144,8 @@ public:
         REQUIRE_EQUAL(rect.frameIndex(BlockPosition{11, 21}), -1);
         REQUIRE_EQUAL(rect.frameDirection(BlockPosition{10, 20}), BlockDirection::NorthWest);
         REQUIRE_EQUAL(rect.frameDirection(BlockPosition{13, 21}), BlockDirection::East);
-        REQUIRE_EQUAL((BlockRectangle{0, 0, 1, 5}.frameIndex(BlockPosition{0, 4})), 4);
+        const auto columnFrameIndex = BlockRectangle{0, 0, 1, 5}.frameIndex(BlockPosition{0, 4});
+        REQUIRE_EQUAL(columnFrameIndex, 4);
 
         auto visited = std::vector<BlockPosition>{};
         rect.forEachInFrame([&](BlockPosition position, int index) -> void {
@@ -152,17 +160,19 @@ public:
     void testGridCellsAndValidation() {
         using el::bgeo::BlockRectangle;
 
-        const auto cells = BlockRectangle{0, 0, 11, 5}.gridCells(2, 3, 1, 1);
+        const auto rectangle = BlockRectangle{0, 0, 11, 5};
+        const auto cells = rectangle.gridCells(2, 3, 1, 1);
 
         REQUIRE_EQUAL(cells.size(), 6U);
         REQUIRE_EQUAL(cells[0], (BlockRectangle{0, 0, 3, 2}));
         REQUIRE_EQUAL(cells[1], (BlockRectangle{4, 0, 3, 2}));
         REQUIRE_EQUAL(cells[2], (BlockRectangle{8, 0, 3, 2}));
         REQUIRE_EQUAL(cells[3], (BlockRectangle{0, 3, 3, 2}));
-        REQUIRE_THROWS((BlockRectangle{0, 0, 3, 3}.gridCells(0, 1)));
-        REQUIRE_THROWS((BlockRectangle{0, 0, 3, 3}.gridCells(1, 0)));
-        REQUIRE_THROWS((BlockRectangle{0, 0, 3, 3}.gridCells(2, 2, 2, 2)));
-        REQUIRE_THROWS((BlockRectangle{0, 0, 3, 3}.gridCells(1, 1, -1, 0)));
+        const auto smallRectangle = BlockRectangle{0, 0, 3, 3};
+        REQUIRE_THROWS(smallRectangle.gridCells(0, 1));
+        REQUIRE_THROWS(smallRectangle.gridCells(1, 0));
+        REQUIRE_THROWS(smallRectangle.gridCells(2, 2, 2, 2));
+        REQUIRE_THROWS(smallRectangle.gridCells(1, 1, -1, 0));
     }
 
     void testTransforms() {
@@ -189,14 +199,18 @@ public:
         using el::bgeo::BlockRectangle;
 
         auto visited = std::vector<BlockPosition>{};
-        BlockRectangle{2, 3, 2, 2}.forEach([&](BlockPosition position) -> void { visited.push_back(position); });
+        const auto rect = BlockRectangle{2, 3, 2, 2};
+        rect.forEach([&](const BlockPosition position) -> void { visited.push_back(position); });
 
         REQUIRE_EQUAL(visited.size(), 4U);
         REQUIRE_EQUAL(visited[0], (BlockPosition{2, 3}));
         REQUIRE_EQUAL(visited[3], (BlockPosition{3, 4}));
-        REQUIRE_EQUAL(
-            BlockRectangle::bounds(BlockPositionList{{3, 5}, {-2, 4}, {10, 9}}), (BlockRectangle{-2, 4, 13, 6}));
-        REQUIRE_EQUAL(BlockRectangle::bounds(BlockPositionList{}), BlockRectangle{});
-        REQUIRE_EQUAL(std::hash<BlockRectangle>{}(BlockRectangle{2, 3, 4, 5}), (BlockRectangle{2, 3, 4, 5}.hash()));
+        const auto bounds = BlockRectangle::bounds(BlockPositionList{{3, 5}, {-2, 4}, {10, 9}});
+        const auto emptyBounds = BlockRectangle::bounds(BlockPositionList{});
+        const auto hashRect = BlockRectangle{2, 3, 4, 5};
+        const auto hash = std::hash<BlockRectangle>{}(hashRect);
+        REQUIRE_EQUAL(bounds, (BlockRectangle{-2, 4, 13, 6}));
+        REQUIRE_EQUAL(emptyBounds, BlockRectangle{});
+        REQUIRE_EQUAL(hash, hashRect.hash());
     }
 };

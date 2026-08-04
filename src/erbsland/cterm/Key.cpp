@@ -13,7 +13,7 @@
 
 namespace erbsland::cterm {
 
-using namespace erbsland::text::literals;
+using namespace text::literals;
 using namespace text;
 
 auto Key::keyTextDefinitions() noexcept -> const std::array<KeyTextDefinition, 28> & {

@@ -4,6 +4,7 @@
 #include "PathTestFixture.hpp"
 
 #include <erbsland/path/impl/BackendFactory.hpp>
+#include <erbsland/path/impl/PathBackend.hpp>
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/system/PlatformErrorCategory.hpp>
@@ -28,7 +29,9 @@ public:
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
             requirePosixError(error, ENOENT);
-            REQUIRE_EQUAL(toStdString(error.sourcePath()), toStdString(missing));
+            const auto actualSourcePath = toStdString(error.sourcePath());
+            const auto expectedSourcePath = toStdString(missing);
+            REQUIRE_EQUAL(actualSourcePath, expectedSourcePath);
         }
 
         const auto source = fixture.child("source.txt");
@@ -39,15 +42,19 @@ public:
             REQUIRE(false);
         } catch (const el::path::PathError &error) {
             requirePosixError(error, ENOENT);
-            REQUIRE_EQUAL(toStdString(error.sourcePath()), toStdString(source));
-            REQUIRE_EQUAL(toStdString(error.targetPath()), toStdString(destination));
+            const auto actualSourcePath = toStdString(error.sourcePath());
+            const auto expectedSourcePath = toStdString(source);
+            REQUIRE_EQUAL(actualSourcePath, expectedSourcePath);
+            const auto actualTargetPath = toStdString(error.targetPath());
+            const auto expectedTargetPath = toStdString(destination);
+            REQUIRE_EQUAL(actualTargetPath, expectedTargetPath);
         }
     }
 
 private:
     void requirePosixError(const el::path::PathError &error, const int expectedCode) {
         const auto context = std::dynamic_pointer_cast<const el::system::PosixErrorContext>(error.platformContext());
-        REQUIRE(context != nullptr);
+        REQUIRE_NOT_EQUAL(context, nullptr);
         REQUIRE_EQUAL(context->errorCode(), expectedCode);
         REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);
     }

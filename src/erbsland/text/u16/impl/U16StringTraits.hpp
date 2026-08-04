@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U16StringData_fwd.hpp"
+#include "U16StringSharedStorage_fwd.hpp"
 
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -20,6 +21,7 @@ namespace erbsland::text::impl {
 /// @tested{U16StringDataTest}
 struct U16StringTraits final {
     using CodeUnit = char16_t;
+    using SharedStorage = U16StringSharedStorage;
     using StorageData = U16StringData;
     using StoragePtr = U16StringDataPtr;
     using StandardView = std::u16string_view;

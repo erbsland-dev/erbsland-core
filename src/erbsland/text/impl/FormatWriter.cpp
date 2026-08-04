@@ -5,6 +5,7 @@
 #include "ThrowHelper.hpp"
 
 #include "../ByteFormat.hpp"
+#include "../FormatError.hpp"
 #include "../Literals.hpp"
 #include "../StringConverter.hpp"
 #include "../u16/U16StringEditor.hpp"
@@ -16,7 +17,7 @@
 
 namespace erbsland::text::impl {
 
-using namespace erbsland::text::literals;
+using namespace text::literals;
 using bgeo::Alignment;
 using bgeo::AlignmentFlag;
 
@@ -74,7 +75,7 @@ auto FormatWriter::defaultFieldText(const FormatArgument &argument, const Legacy
     if (isTextPresentation(spec.presentation) || spec.presentation == FormatPresentation::Default) {
         return textFieldText(argument, spec);
     }
-    throwFormatError("Unsupported format argument"_el);
+    throw FormatError("Unsupported format argument"_el);
 }
 
 auto FormatWriter::textFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor {
@@ -98,7 +99,7 @@ auto FormatWriter::textFieldText(const FormatArgument &argument, const LegacyFor
         text = characterText(argument.character());
         break;
     default:
-        throwFormatError("Format field requires a text argument"_el);
+        throw FormatError("Format field requires a text argument"_el);
     }
 
     return applyLayout(applyPrecision(text, spec), spec, AlignmentFlag::Left);
@@ -111,16 +112,16 @@ auto FormatWriter::integerFieldText(const FormatArgument &argument, const Legacy
     case FormatArgumentKind::UnsignedInteger:
         return applyLayout(integerFieldText(argument.unsignedInteger(), spec), spec, AlignmentFlag::Right);
     default:
-        throwFormatError("Format field requires an integer argument"_el);
+        throw FormatError("Format field requires an integer argument"_el);
     }
 }
 
 auto FormatWriter::floatFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor {
     if (spec.alternateForm) {
-        throwFormatError("Alternate floating point format is not supported"_el);
+        throw FormatError("Alternate floating point format is not supported"_el);
     }
     if (argument.kind() != FormatArgumentKind::FloatingPoint) {
-        throwFormatError("Format field requires a floating point argument"_el);
+        throw FormatError("Format field requires a floating point argument"_el);
     }
 
     auto text = U8StringEditor{String::fromFloat(argument.floatingPoint(), floatFormat(spec))};
@@ -134,7 +135,7 @@ auto FormatWriter::floatFieldText(const FormatArgument &argument, const LegacyFo
 
 auto FormatWriter::escapedFieldText(const FormatArgument &argument, const LegacyFormatSpec &spec) -> U8StringEditor {
     if (spec.signMode != IntegerSignMode::NegativeOnly || spec.alternateForm || spec.zeroFill) {
-        throwFormatError("Escaped text format does not support numeric modifiers"_el);
+        throw FormatError("Escaped text format does not support numeric modifiers"_el);
     }
 
     switch (argument.kind()) {
@@ -175,7 +176,7 @@ auto FormatWriter::escapedFieldText(const FormatArgument &argument, const Legacy
         return applyLayout(text.toEscaped(spec.escapeFormat, spec.escapeAmount), spec, AlignmentFlag::Left);
     }
     default:
-        throwFormatError("Escaped format field requires a text argument"_el);
+        throw FormatError("Escaped format field requires a text argument"_el);
     }
 }
 
@@ -196,7 +197,7 @@ auto FormatWriter::namedTextFieldText(const FormatArgument &argument, const Name
         text = characterText(argument.character());
         break;
     default:
-        throwFormatError("Named text format requires a text or character argument"_el);
+        throw FormatError("Named text format requires a text or character argument"_el);
     }
 
     if (spec.maximum.has_value()) {
@@ -216,7 +217,7 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
     case FormatArgumentKind::SignedInteger:
     case FormatArgumentKind::UnsignedInteger: {
         if (spec.notation.has_value()) {
-            throwFormatError("Named integer format does not support floating-point notation"_el);
+            throw FormatError("Named integer format does not support floating-point notation"_el);
         }
         auto format = IntegerFormat{spec.base.value_or(IntegerBase::Decimal)}
                           .setLetterCase(spec.letterCase)
@@ -234,14 +235,14 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
     }
     case FormatArgumentKind::FloatingPoint: {
         if (spec.base.has_value()) {
-            throwFormatError("Named floating-point format does not support an integer base"_el);
+            throw FormatError("Named floating-point format does not support an integer base"_el);
         }
         if (spec.alternateForm) {
-            throwFormatError("Named floating-point format does not support alternate form"_el);
+            throw FormatError("Named floating-point format does not support alternate form"_el);
         }
         auto format = FloatFormat{spec.notation.value_or(FloatFormat::Style::Default)}.setLetterCase(spec.letterCase);
         if (spec.precision.has_value()) {
-            format.setPrecision(unit::ElementCount{spec.precision->toRawValue()});
+            format.setPrecision(unit::ItemCount{spec.precision->toRawValue()});
         }
         text = U8StringEditor{String::fromFloat(argument.floatingPoint(), format)};
         if (spec.signMode == IntegerSignMode::Always && !text.startsWith("-"_el)) {
@@ -252,7 +253,7 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
         break;
     }
     default:
-        throwFormatError("Named number format requires a numeric argument"_el);
+        throw FormatError("Named number format requires a numeric argument"_el);
     }
     return applyLayout(std::move(text), spec.layout, defaultAlignment, spec.zeroFill);
 }
@@ -260,7 +261,7 @@ auto FormatWriter::namedNumberFieldText(const FormatArgument &argument, const Na
 auto FormatWriter::namedBooleanFieldText(const FormatArgument &argument, const NamedBooleanFormatSpec &spec)
     -> U8StringEditor {
     if (argument.kind() != FormatArgumentKind::Boolean) {
-        throwFormatError("Named boolean format requires a boolean argument"_el);
+        throw FormatError("Named boolean format requires a boolean argument"_el);
     }
     return applyLayout(U8StringEditor::fromBoolean(argument.boolean(), spec.format), spec.layout, AlignmentFlag::Left);
 }
@@ -268,7 +269,7 @@ auto FormatWriter::namedBooleanFieldText(const FormatArgument &argument, const N
 auto FormatWriter::namedBytesFieldText(const FormatArgument &argument, const NamedBytesFormatSpec &spec)
     -> U8StringEditor {
     if (argument.kind() != FormatArgumentKind::Bytes) {
-        throwFormatError("Named bytes format requires a byte-block argument"_el);
+        throw FormatError("Named bytes format requires a byte-block argument"_el);
     }
     auto format = ByteFormat::compact().setMaximum(spec.maximum).setTruncateMode(spec.truncateMode).setEllipsis("…"_el);
     if (spec.separator) {
@@ -326,7 +327,7 @@ auto FormatWriter::integerFormat(const LegacyFormatSpec &spec) -> IntegerFormat 
         result.setBase(IntegerBase::Octal);
         break;
     default:
-        throwFormatError("Format field requires an integer presentation"_el);
+        throw FormatError("Format field requires an integer presentation"_el);
     }
     result.setLetterCase(spec.letterCase);
     result.setSignMode(spec.signMode);
@@ -357,11 +358,11 @@ auto FormatWriter::floatFormat(const LegacyFormatSpec &spec) -> FloatFormat {
         result.setStyle(FloatFormat::Style::Hexadecimal);
         break;
     default:
-        throwFormatError("Format field requires a floating point presentation"_el);
+        throw FormatError("Format field requires a floating point presentation"_el);
     }
     result.setLetterCase(spec.letterCase);
     if (spec.precision.has_value()) {
-        result.setPrecision(unit::ElementCount{spec.precision.value().toRawValue()});
+        result.setPrecision(unit::ItemCount{spec.precision.value().toRawValue()});
     }
     return result;
 }
@@ -441,7 +442,7 @@ auto FormatWriter::applyLayout(
 
 void FormatWriter::requireTextCompatibleSpec(const LegacyFormatSpec &spec) {
     if (spec.signMode != IntegerSignMode::NegativeOnly || spec.alternateForm || spec.zeroFill) {
-        throwFormatError("Text format does not support numeric modifiers"_el);
+        throw FormatError("Text format does not support numeric modifiers"_el);
     }
 }
 
@@ -449,7 +450,7 @@ void FormatWriter::requireDefaultByteSpec(const LegacyFormatSpec &spec) {
     if (spec.alignment != AlignmentFlag::None || spec.fill != U' ' || spec.signMode != IntegerSignMode::NegativeOnly ||
         spec.alternateForm || spec.zeroFill || spec.width.has_value() || spec.precision.has_value() ||
         spec.presentation != FormatPresentation::Default) {
-        throwFormatError("Legacy byte-block formatting does not support modifiers"_el);
+        throw FormatError("Legacy byte-block formatting does not support modifiers"_el);
     }
 }
 

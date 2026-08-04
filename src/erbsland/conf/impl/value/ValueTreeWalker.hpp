@@ -22,6 +22,7 @@ public:
     using Visit = std::function<void(const conf::ValuePtr &)>;
 
 public:
+    // defaults
     ValueTreeWalker() = default;
 
     /// Set the root node to traverse. Accepts any Value (Document derives from Value).

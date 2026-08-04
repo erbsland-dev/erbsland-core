@@ -2,6 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "EqualsConstraint.hpp"
 
+#include "EqualsBooleanConstraint.hpp"
+#include "EqualsBytesConstraint.hpp"
+#include "EqualsFloatConstraint.hpp"
+#include "EqualsIntegerConstraint.hpp"
+#include "EqualsMatrixConstraint.hpp"
+#include "EqualsTextConstraint.hpp"
 #include "ValidationError.hpp"
 
 #include "../value/Value.hpp"
@@ -12,118 +18,6 @@
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
-
-EqualsIntegerConstraint::EqualsIntegerConstraint(const Integer value) : EqualsConstraint(value) {
-}
-
-void EqualsIntegerConstraint::validateInteger(const ValidationContext &context, const Integer value) const {
-    if (isNotValid(value, context)) {
-        throwValidationError(text::StringFormat{"The value {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateText(const ValidationContext &context, const text::String &value) const {
-    if (isNotValid(static_cast<Integer>(value.characterLength().toSizeT()), context)) {
-        throwValidationError(
-            text::StringFormat{"The number of characters in this text {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateBytes(const ValidationContext &context, const mem::ByteBlock &value) const {
-    if (isNotValid(static_cast<Integer>(value.length().toSizeT()), context)) {
-        throwValidationError(text::StringFormat{"The number of bytes {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateValueList(const ValidationContext &context) const {
-    if (isNotValid(static_cast<Integer>(context.value->asValueList().size()), context)) {
-        throwValidationError(
-            text::StringFormat{"The number of values in this list {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateSectionWithNames(const ValidationContext &context) const {
-    if (isNotValid(static_cast<Integer>(context.value->size()), context)) {
-        throwValidationError(
-            text::StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateSectionWithTexts(const ValidationContext &context) const {
-    if (isNotValid(static_cast<Integer>(context.value->size()), context)) {
-        throwValidationError(
-            text::StringFormat{"The number of entries in this section {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsIntegerConstraint::validateSectionList(const ValidationContext &context) const {
-    if (isNotValid(static_cast<Integer>(context.value->size()), context)) {
-        throwValidationError(
-            text::StringFormat{"The number of entries in this section list {} {}"_el}.build(comparisonText(), _value));
-    }
-}
-
-EqualsBooleanConstraint::EqualsBooleanConstraint(const bool value) : EqualsConstraint(value) {
-}
-
-void EqualsBooleanConstraint::validateBoolean(const ValidationContext &context, const bool value) const {
-    if (isNotValid(value, context)) {
-        const auto expectedValue = isNegated() ? !_value : _value;
-        throwValidationError(
-            text::StringFormat{"The value must be {}"_el}.build(text::String{expectedValue ? "true"_el : "false"_el}));
-    }
-}
-
-EqualsFloatConstraint::EqualsFloatConstraint(const Float value) : EqualsConstraint(value) {
-}
-
-void EqualsFloatConstraint::validateFloat(const ValidationContext &context, const Float value) const {
-    if (isNotValid(value, context)) {
-        throwValidationError(
-            text::StringFormat{"The value {} {:.6} (within platform tolerance)"_el}.build(comparisonText(), _value));
-    }
-}
-
-void EqualsTextConstraint::validateText(const ValidationContext &context, const text::String &value) const {
-    if (isNotValid(value, context)) {
-        throwValidationError(
-            text::StringFormat{"The text {} \"{:/display}\" ({})"_el}.build(
-                comparisonText(), _value, context.rule->caseSensitivity().toString()));
-    }
-}
-
-void EqualsBytesConstraint::validateBytes(const ValidationContext &context, const mem::ByteBlock &value) const {
-    if (isNotValid(value, context)) {
-        throwValidationError(
-            text::StringFormat{"The byte sequence {} \"{:bytes:maximum=16,truncate=middle}\""_el}.build(
-                comparisonText(), _value));
-    }
-}
-
-EqualsMatrixConstraint::EqualsMatrixConstraint(const Integer rows, const Integer columns) :
-    EqualsConstraint(rows), _columns{columns} {
-}
-
-auto EqualsMatrixConstraint::isNotValidColumns(const Integer &validatedValue, const ValidationContext &context) const
-    -> bool {
-    if (isNegated()) {
-        return isEqual(validatedValue, _columns, context);
-    }
-    return !isEqual(validatedValue, _columns, context);
-}
-
-void EqualsMatrixConstraint::validateValueList(const ValidationContext &context) const {
-    const auto &value = context.value;
-    if (isNotValid(static_cast<Integer>(value->size()), context)) {
-        throwValidationError(text::StringFormat{"The number of rows {} {}"_el}.build(comparisonText(), _value));
-    }
-    for (const auto &columns : *value) {
-        if (isNotValidColumns(static_cast<Integer>(columns->size()), context)) {
-            throwValidationError(
-                text::StringFormat{"The number of columns {} {}"_el}.build(comparisonText(), _columns));
-        }
-    }
-}
 
 auto handleEqualsConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
     auto &node = context.node;

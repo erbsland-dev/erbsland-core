@@ -10,6 +10,8 @@
 #include <erbsland/options/Options.hpp>
 #include <erbsland/options/OptionValue.hpp>
 #include <erbsland/options/OptionValues.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -25,8 +27,8 @@ using el::options::OptionValuePtr;
 using el::options::OptionValuesPtr;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
-using el::unit::ElementIndex;
 using el::unit::ExitCode;
+using el::unit::ItemIndex;
 using namespace el::text::literals;
 
 TESTED_TARGETS(Application OptionModule OptionValue OptionValues Options)
@@ -39,17 +41,18 @@ public:
 
         auto scope = ApplicationTestScope<Application>{2, argv};
         auto &application = scope.app();
-        REQUIRE(application.options() != nullptr);
+        const auto streamRedirect = redirectStandardStreams();
+        REQUIRE(application.options());
         REQUIRE_EQUAL(application.commandLineArguments().count().toSizeT(), 2U);
-        REQUIRE(application.commandLineArguments().get(ElementIndex{0}) == "tool"_el);
-        REQUIRE(application.commandLineArguments().get(ElementIndex{1}) == "--verbose"_el);
+        REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{0}), "tool"_el);
+        REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{1}), "--verbose"_el);
 
         application.info().setApplicationName("Tool"_el);
-        REQUIRE(application.info().applicationName() == "Tool"_el);
+        REQUIRE_EQUAL(application.info().applicationName(), "Tool"_el);
 
         application.setMainFn([]() -> ExitCode { return ExitCode{17}; });
-        REQUIRE(application.run() != 0);
-        REQUIRE(application.optionValues() == nullptr);
+        REQUIRE_NOT_EQUAL(application.run(), 0);
+        REQUIRE_FALSE(application.optionValues());
     }
 
     void testApplicationModuleMain() {
@@ -83,10 +86,10 @@ public:
         });
 
         REQUIRE_EQUAL(application.run(), 23);
-        REQUIRE(application.optionValues() == moduleValues);
-        REQUIRE(application.optionValues()->module() == module);
-        REQUIRE(moduleValues->getText("--name"_el) == "Ada"_el);
-        REQUIRE(moduleValues->value("--name"_el)->argumentIndex() == ArgumentIndex{3U});
+        REQUIRE_EQUAL(application.optionValues(), moduleValues);
+        REQUIRE_EQUAL(application.optionValues()->module(), module);
+        REQUIRE_EQUAL(moduleValues->getText("--name"_el), "Ada"_el);
+        REQUIRE_EQUAL(moduleValues->value("--name"_el)->argumentIndex(), ArgumentIndex{3U});
         REQUIRE(moduleMainGotFlagCount);
         REQUIRE(moduleMainCalled);
         REQUIRE_FALSE(applicationMainCalled);
@@ -105,11 +108,12 @@ public:
         });
 
         REQUIRE_EQUAL(application.run(), 17);
-        REQUIRE(application.optionValues() != nullptr);
+        REQUIRE(application.optionValues());
         REQUIRE(applicationMainCalled);
     }
 
     void testApplicationSkipsModuleMainForNonSuccess() {
+        const auto streamRedirect = redirectStandardStreams();
         char helpArg0[] = "tool";
         char helpArg1[] = "run";
         char helpArg2[] = "--help";
@@ -130,6 +134,7 @@ public:
     }
 
     void testApplicationMasksNarrowSensitiveArgumentsOnSuccessAndError() {
+        const auto streamRedirect = redirectStandardStreams();
         {
             char arg0[] = "tool";
             char arg1[] = "--secret=long-secret";
@@ -140,8 +145,8 @@ public:
             application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
 
             REQUIRE_EQUAL(application.run(), 0);
-            REQUIRE(application.commandLineArguments().get(ElementIndex{1U}) == "--secret=*****"_el);
-            REQUIRE(std::string_view{arg1} == "--secret=***********");
+            REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{1U}), "--secret=*****"_el);
+            REQUIRE_EQUAL(std::string_view{arg1}, "--secret=***********");
         }
 
         char arg0[] = "tool";
@@ -157,12 +162,13 @@ public:
                 throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
             });
 
-        REQUIRE(application.run() != 0);
-        REQUIRE(application.commandLineArguments().get(ElementIndex{2U}) == "*****"_el);
-        REQUIRE(std::string_view{arg2} == "***************");
+        REQUIRE_NOT_EQUAL(application.run(), 0);
+        REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{2U}), "*****"_el);
+        REQUIRE_EQUAL(std::string_view{arg2}, "***************");
     }
 
     void testApplicationMasksWideSensitiveArgumentsOnSuccessAndError() {
+        const auto streamRedirect = redirectStandardStreams();
         {
             wchar_t arg0[] = L"tool";
             wchar_t arg1[] = L"--secret";
@@ -174,8 +180,8 @@ public:
             application.setMainFn([]() -> ExitCode { return ExitCode::success(); });
 
             REQUIRE_EQUAL(application.run(), 0);
-            REQUIRE(application.commandLineArguments().get(ElementIndex{2U}) == "*****"_el);
-            REQUIRE(std::wstring_view{arg2} == L"***");
+            REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{2U}), "*****"_el);
+            REQUIRE_EQUAL(std::wstring_view{arg2}, L"***");
         }
 
         wchar_t arg0[] = L"tool";
@@ -190,12 +196,17 @@ public:
                 throw OptionError{OptionErrorContext{}.setDescription("Rejected secret"_el)};
             });
 
-        REQUIRE(application.run() != 0);
-        REQUIRE(application.commandLineArguments().get(ElementIndex{1U}) == "--secret=*****"_el);
-        REQUIRE(std::wstring_view{arg1} == L"--secret=**********");
+        REQUIRE_NOT_EQUAL(application.run(), 0);
+        REQUIRE_EQUAL(application.commandLineArguments().get(ItemIndex{1U}), "--secret=*****"_el);
+        REQUIRE_EQUAL(std::wstring_view{arg1}, L"--secret=**********");
     }
 
 private:
+    [[nodiscard]] static auto redirectStandardStreams() -> el::stream::StandardStreamRedirect {
+        return el::stream::redirectStandardStreams(
+            el::stream::AnyStringBuilderStream::create(), el::stream::AnyStringBuilderStream::create());
+    }
+
     void configureSkippedMainTest(
         Application &application, const OptionModulePtr &module, bool &moduleMainCalled, bool &applicationMainCalled) {
         module->setMainFn([&moduleMainCalled](OptionValuesPtr) -> ExitCode {
@@ -216,7 +227,7 @@ private:
         configureSkippedMainTest(application, module, moduleMainCalled, applicationMainCalled);
 
         REQUIRE_EQUAL(application.run(), 0);
-        REQUIRE(application.optionValues() == nullptr);
+        REQUIRE_FALSE(application.optionValues());
         REQUIRE_FALSE(moduleMainCalled);
         REQUIRE_FALSE(applicationMainCalled);
     }
@@ -228,8 +239,8 @@ private:
         module->addOption("--name"_el).setType(OptionType::Text);
         configureSkippedMainTest(application, module, moduleMainCalled, applicationMainCalled);
 
-        REQUIRE(application.run() != 0);
-        REQUIRE(application.optionValues() == nullptr);
+        REQUIRE_NOT_EQUAL(application.run(), 0);
+        REQUIRE_FALSE(application.optionValues());
         REQUIRE_FALSE(moduleMainCalled);
         REQUIRE_FALSE(applicationMainCalled);
     }

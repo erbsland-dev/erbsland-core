@@ -48,7 +48,9 @@ public: // helper
         const std::exception_ptr &errorPtr, const i18n::DisplayTextMapConstPtr &displayText = {}) -> text::TextDocument;
 
 private:
+    /// Append a diagnostic cause document.
     void appendCauseDocument(text::TextDocument &document, const DiagnosticConstPtr &diagnostic);
+    /// Append the nested causes of an exception.
     void appendCauses(text::TextDocument &document, std::exception_ptr cause, std::size_t depth);
 
 private:

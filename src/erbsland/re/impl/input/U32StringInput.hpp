@@ -11,9 +11,11 @@ namespace erbsland::re::impl {
 /// An input that reads from an owning UTF-32 read-only string.
 class U32StringInput final : public Input32 {
 public:
+    /// Create an input that reads the given UTF-32 string.
     [[nodiscard]] static auto create(const text::U32String &text) noexcept -> Input32Ptr {
         return std::make_shared<U32StringInput>(text);
     }
+    /// Create an input that retains a copy of `text`.
     explicit U32StringInput(const text::U32String &text) noexcept : _text{text} {}
 
 public: // implement InputBase

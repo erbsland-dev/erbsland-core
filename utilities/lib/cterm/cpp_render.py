@@ -63,7 +63,7 @@ def render_data_function(
     value_list = list(values)
     storage_type = result_type.split("::")[-1]
     lines = [
-        f"auto CommonBoxFrameCombinationStyle::{name}() noexcept -> std::span<const {result_type}> {{",
+        f"auto CommonBoxFrameBlockCombinationStyle::{name}() noexcept -> std::span<const {result_type}> {{",
         f"    static constexpr std::array<{storage_type}, {len(value_list)}U> data{{{{",
     ]
     lines.extend(render_integer_array(value_list, entries_per_line=entries_per_line, width=width))

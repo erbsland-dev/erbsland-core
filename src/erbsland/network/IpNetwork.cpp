@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "IpNetwork.hpp"
 
+#include "impl/CommonHostTests.hpp"
+
 #include "../err/ParameterError.hpp"
 #include "../err/ParseError.hpp"
 #include "../text/CharSet.hpp"
@@ -12,8 +14,8 @@
 #include "../text/StringList.hpp"
 #include "../unit/ByteIndex.hpp"
 #include "../unit/CpLength.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
 #include "../util/HashHelper.hpp"
 
 namespace erbsland::network {
@@ -94,31 +96,26 @@ auto IpNetwork::toHash() const noexcept -> std::size_t {
 
 auto IpNetwork::fromString(const String &text) noexcept -> std::optional<IpNetwork> {
     try {
-        const auto parts = StringList::fromSplit(text, CharSet{U'/'}, ElementCount::infinite(), true);
-        if (parts.count() != ElementCount{2U}) {
-            return std::nullopt;
-        }
-        const auto address = IpAddress::fromString(parts.get(ElementIndex::zero()));
-        if (!address.has_value()) {
-            return std::nullopt;
-        }
-        auto options = IntegerParseOptions{};
-        options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
-        const auto prefix = parts.get(ElementIndex{1U}).toInteger<unsigned>(256U, options);
-        if (prefix > maximumPrefix(address->version())) {
-            return std::nullopt;
-        }
-        return IpNetwork{*address, static_cast<uint8_t>(prefix)};
-    } catch (...) {
+        return fromStringOrThrow(text);
+    } catch (const err::ParseError &) {
         return std::nullopt;
     }
 }
 
 auto IpNetwork::fromStringOrThrow(const String &text) -> IpNetwork {
-    if (const auto result = fromString(text); result.has_value()) {
-        return *result;
+    impl::testCommonHostText(text, "IP-network"_el);
+    const auto parts = StringList::fromSplit(text, CharSet{U'/'}, ItemCount::infinite(), true);
+    if (parts.count() != ItemCount{2U}) {
+        throw err::ParseError{"An IP network must use address/prefix-length syntax."_el};
     }
-    throw err::ParseError{"The text is not a valid IPv4 or IPv6 CIDR network."_el};
+    const auto address = IpAddress::fromStringOrThrow(parts.get(ItemIndex::zero()));
+    auto options = IntegerParseOptions{};
+    options.setFixedBase(IntegerBase::Decimal).setMinimumDigits(CpLength::one());
+    const auto prefix = parts.get(ItemIndex{1U}).toIntegerOrThrow<unsigned>(options);
+    if (prefix > maximumPrefix(address.version())) {
+        throw err::ParseError{"The CIDR prefix length exceeds the address-family limit."_el};
+    }
+    return IpNetwork{address, static_cast<uint8_t>(prefix)};
 }
 
 }

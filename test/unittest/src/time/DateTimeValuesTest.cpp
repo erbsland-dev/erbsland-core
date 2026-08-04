@@ -16,8 +16,6 @@ using namespace el::time;
 TESTED_TARGETS(DateTime)
 class DateTimeValuesTest final : public UNITTEST_SUBCLASS(TimeDataTestBase) {
 public:
-    auto additionalErrorMessages() noexcept -> std::string override { return _context; }
-
     void testEpochValues() {
         const auto path = std::string_view{"data/time/datetime_epoch.txt"};
         const auto lines = fh::readDataLines(path);
@@ -32,21 +30,29 @@ public:
             const auto dateTime = dateTimeFromFields(dateTimeFields);
             const auto millisecond = Milliseconds{parseInt64(fields[7])};
             const auto secondsSinceEpoch = Seconds{parseInt64(fields[8])};
-            _context = std::format("datetime epoch line={} seconds={}", lineNumber, secondsSinceEpoch.toRawValue());
-            REQUIRE(dateTime.isValid());
-            REQUIRE_EQUAL(dateTime.year().toRawValue(), dateTimeFields.date.year);
-            REQUIRE_EQUAL(dateTime.month().toRawValue(), dateTimeFields.date.month);
-            REQUIRE_EQUAL(dateTime.day().toRawValue(), dateTimeFields.date.day);
-            REQUIRE_EQUAL(dateTime.hour().toRawValue(), dateTimeFields.time.hour);
-            REQUIRE_EQUAL(dateTime.minute().toRawValue(), dateTimeFields.time.minute);
-            REQUIRE_EQUAL(dateTime.second().toRawValue(), dateTimeFields.time.second);
-            REQUIRE_EQUAL(dateTime.millisecondFraction(), millisecond);
-            REQUIRE_EQUAL(dateTime.nanosecondFraction().toRawValue(), dateTimeFields.time.nanosecond);
-            REQUIRE_EQUAL(dateTime.toSecondsSinceEpoch(), secondsSinceEpoch);
-            const auto fromSeconds = DateTime::fromSecondsSinceEpoch(secondsSinceEpoch);
-            REQUIRE(fromSeconds.isValid());
-            REQUIRE_EQUAL(fromSeconds.toSecondsSinceEpoch(), secondsSinceEpoch);
-            REQUIRE_EQUAL(fromSeconds.nanosecondFraction(), Nanoseconds{});
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE(dateTime.isValid());
+                    REQUIRE_EQUAL(dateTime.year().toRawValue(), dateTimeFields.date.year);
+                    REQUIRE_EQUAL(dateTime.month().toRawValue(), dateTimeFields.date.month);
+                    REQUIRE_EQUAL(dateTime.day().toRawValue(), dateTimeFields.date.day);
+                    REQUIRE_EQUAL(dateTime.hour().toRawValue(), dateTimeFields.time.hour);
+                    REQUIRE_EQUAL(dateTime.minute().toRawValue(), dateTimeFields.time.minute);
+                    REQUIRE_EQUAL(dateTime.second().toRawValue(), dateTimeFields.time.second);
+                    REQUIRE_EQUAL(dateTime.millisecondFraction(), millisecond);
+                    REQUIRE_EQUAL(dateTime.nanosecondFraction().toRawValue(), dateTimeFields.time.nanosecond);
+                    const auto dateTimeSeconds = dateTime.toSecondsAndFractions().value().first;
+                    REQUIRE_EQUAL(dateTimeSeconds, secondsSinceEpoch);
+                    const auto fromSeconds = DateTime::fromTicks(secondsSinceEpoch).value();
+                    REQUIRE(fromSeconds.isValid());
+                    const auto fromSecondsValue = fromSeconds.toSecondsAndFractions().value().first;
+                    REQUIRE_EQUAL(fromSecondsValue, secondsSinceEpoch);
+                    REQUIRE_EQUAL(fromSeconds.nanosecondFraction(), Nanoseconds{});
+                },
+                [&]() -> std::string {
+                    return std::format("datetime epoch line={} seconds={}", lineNumber, secondsSinceEpoch.toRawValue());
+                });
         }
     }
 
@@ -64,31 +70,37 @@ public:
             const auto delta = Duration{Seconds{parseInt64(fields[7])}};
             const auto addExpected = dateTimeFromFields(parseDateTimeFields(fields, 8));
             const auto subtractExpected = dateTimeFromFields(parseDateTimeFields(fields, 15));
-            _context = std::format(
-                "datetime add line={} base={} delta={}",
-                lineNumber,
-                base.toSecondsSinceEpoch().toRawValue(),
-                delta.toSeconds().toRawValue());
             auto value = base.added(delta);
-            REQUIRE_EQUAL(value, addExpected);
-            value = base;
-            value.add(delta);
-            REQUIRE_EQUAL(value, addExpected);
-            value = base + delta;
-            REQUIRE_EQUAL(value, addExpected);
-            value = base;
-            value += delta;
-            REQUIRE_EQUAL(value, addExpected);
-            value = base.subtracted(delta);
-            REQUIRE_EQUAL(value, subtractExpected);
-            value = base;
-            value.subtract(delta);
-            REQUIRE_EQUAL(value, subtractExpected);
-            value = base - delta;
-            REQUIRE_EQUAL(value, subtractExpected);
-            value = base;
-            value -= delta;
-            REQUIRE_EQUAL(value, subtractExpected);
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    REQUIRE_EQUAL(value, addExpected);
+                    value = base;
+                    value.add(delta);
+                    REQUIRE_EQUAL(value, addExpected);
+                    value = base + delta;
+                    REQUIRE_EQUAL(value, addExpected);
+                    value = base;
+                    value += delta;
+                    REQUIRE_EQUAL(value, addExpected);
+                    value = base.subtracted(delta);
+                    REQUIRE_EQUAL(value, subtractExpected);
+                    value = base;
+                    value.subtract(delta);
+                    REQUIRE_EQUAL(value, subtractExpected);
+                    value = base - delta;
+                    REQUIRE_EQUAL(value, subtractExpected);
+                    value = base;
+                    value -= delta;
+                    REQUIRE_EQUAL(value, subtractExpected);
+                },
+                [&]() -> std::string {
+                    return std::format(
+                        "datetime add line={} base={} delta={}",
+                        lineNumber,
+                        base.toSecondsAndFractions().value().first.toRawValue(),
+                        delta.toSeconds().toRawValue());
+                });
         }
     }
 
@@ -110,16 +122,12 @@ public:
             }
             values.emplace_back(dateTime, parseInt(fields[8]));
         }
-        requireComparisonRows(values, _context, "DateTime");
+        requireComparisonRows(values, "DateTime");
     }
 
     void testStringConversion() {
         REQUIRE(DateTime{}.toString().isEmpty());
-        REQUIRE_EQUAL(
-            (DateTime{Date::fromYearMonthDay(2026, 7, 4), Time{Hour{7}, Minute{4}, Second{3}}}.toString()),
-            "2026-07-04 07:04:03Z"_el);
+        const auto text = DateTime{Date::fromYearMonthDay(2026, 7, 4), Time{Hour{7}, Minute{4}, Second{3}}}.toString();
+        REQUIRE_EQUAL(text, "2026-07-04 07:04:03Z"_el);
     }
-
-private:
-    std::string _context;
 };

@@ -34,7 +34,7 @@ void processAnyString(const el::AnyString &str) {
     }
 
     el::io::printLine("  Character length: "_el, str.characterLength());
-    el::io::printLine("  Is empty: "_el, str.isEmpty() ? "yes" : "no");
+    el::io::printLine("  Is empty: "_el, str.isEmpty());
 
     auto u8Str = el::U8StringEditor{str.toU8String()};
     u8Str.replaceAll("vlnění"_el, "vlny"_el);

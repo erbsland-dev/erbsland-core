@@ -29,8 +29,12 @@ public:
     static constexpr auto cSensitiveFlag = std::uint8_t{0x01};
 
 public: // lifetime
+    /// Create empty byte-buffer storage.
     ByteBufferData() = default;
+    /// Release all allocated byte-buffer storage.
     ~ByteBufferData() { release(); }
+
+    // defaults/deletions
     ByteBufferData(const ByteBufferData &) = delete;
     auto operator=(const ByteBufferData &) -> ByteBufferData & = delete;
     ByteBufferData(ByteBufferData &&other) noexcept :
@@ -38,6 +42,7 @@ public: // lifetime
         _size{std::exchange(other._size, 0U)},
         _capacity{std::exchange(other._capacity, 0U)},
         _flags{std::exchange(other._flags, std::uint8_t{})} {}
+    /// Replace this storage by moving from `other`.
     auto operator=(ByteBufferData &&other) noexcept -> ByteBufferData & {
         if (this != &other) {
             release();
@@ -50,24 +55,34 @@ public: // lifetime
     }
 
 public: // access
+    /// Get the number of stored bytes.
     [[nodiscard]] auto size() const noexcept -> SizeType { return _size; }
+    /// Set the number of initialized bytes.
     void setSize(const SizeType newSize) noexcept {
         if (newSize > _capacity) {
             std::terminate();
         }
         _size = newSize;
     }
+    /// Get the allocation capacity in bytes.
     [[nodiscard]] auto capacity() const noexcept -> SizeType { return _capacity; }
+    /// Access the mutable byte storage.
     [[nodiscard]] auto data() noexcept -> DataType * { return _data; }
+    /// Access the byte storage.
     [[nodiscard]] auto data() const noexcept -> const DataType * { return _data; }
+    /// Get the persistent allocation flags.
     [[nodiscard]] auto flags() const noexcept -> std::uint8_t { return _flags; }
+    /// Replace the persistent allocation flags.
     void setFlags(const std::uint8_t flags) noexcept { _flags = flags; }
+    /// Mark the allocation as sensitive.
     void setSensitive() const noexcept { _flags |= cSensitiveFlag; }
+    /// Test whether the allocation is sensitive.
     [[nodiscard]] auto isSensitive() const noexcept -> bool { return (_flags & cSensitiveFlag) != 0; }
 
 public: // storage
     /// Release the byte allocation while preserving the selected mode flags.
     void reset() noexcept { release(); }
+    /// Exchange storage with `other`.
     void swap(ByteBufferData &other) noexcept {
         using std::swap;
         swap(_data, other._data);
@@ -75,6 +90,7 @@ public: // storage
         swap(_capacity, other._capacity);
         swap(_flags, other._flags);
     }
+    /// Create byte storage with an initial size, capacity, and flags.
     [[nodiscard]] static auto create(
         const SizeType size, const SizeType capacity, const std::uint8_t flags = std::uint8_t{}) -> ByteBufferData {
         if (size > capacity || !canAllocateWithCapacity(capacity)) {
@@ -85,6 +101,7 @@ public: // storage
     }
 
 public: // allocation tools
+    /// Test whether `capacity` can be represented by this storage.
     template <std::integral T>
     [[nodiscard]] static constexpr auto canAllocateWithCapacity(const T capacity) noexcept -> bool {
         if constexpr (std::signed_integral<T>) {
@@ -101,7 +118,9 @@ public: // allocation tools
         }
         return true;
     }
+    /// Get the allocation overhead before byte storage.
     [[nodiscard]] static constexpr auto allocationOverhead() noexcept -> std::size_t { return 0U; }
+    /// Get the allocation size required for `capacity` bytes.
     template <std::integral T>
     [[nodiscard]] static constexpr auto allocationSizeForCapacity(const T capacity) noexcept -> std::size_t {
         if (!canAllocateWithCapacity(capacity)) {
@@ -111,9 +130,11 @@ public: // allocation tools
     }
 
 private:
+    /// Initialize storage from an existing allocation.
     ByteBufferData(DataType *data, const SizeType size, const SizeType capacity, const std::uint8_t flags) noexcept :
         _data{data}, _size{size}, _capacity{capacity}, _flags{flags} {}
 
+    /// Release the allocation while preserving its flags.
     void release() noexcept {
         if (_data != nullptr) {
             if (isSensitive()) {

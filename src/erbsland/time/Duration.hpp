@@ -5,6 +5,7 @@
 #include "Duration_fwd.hpp"
 #include "DurationPart.hpp"
 #include "TimeAmounts.hpp"
+#include "TimeDelta_fwd.hpp"
 
 #include "../util/impl/ComparisonHelper.hpp"
 
@@ -12,8 +13,6 @@
 #include <compare>
 
 namespace erbsland::time {
-
-class TimeDelta;
 
 /// A signed duration with a resolution of seconds.
 ///
@@ -71,10 +70,15 @@ public:
 
 public: // operators
     [[nodiscard]] auto operator<=>(const Duration &other) const noexcept -> std::strong_ordering = default;
+    /// Return the sum of this duration and another duration.
     [[nodiscard]] auto operator+(Duration other) const noexcept -> Duration;
+    /// Add another duration to this duration.
     auto operator+=(Duration other) noexcept -> Duration &;
+    /// Return the difference between this duration and another duration.
     [[nodiscard]] auto operator-(Duration other) const noexcept -> Duration;
+    /// Subtract another duration from this duration.
     auto operator-=(Duration other) noexcept -> Duration &;
+    /// Return this duration with its sign reversed.
     [[nodiscard]] auto operator-() const noexcept -> Duration;
 
 public: // tests
@@ -137,6 +141,8 @@ public:
     [[nodiscard]] static auto zero() noexcept -> Duration { return {}; }
 
 private:
+    constexpr static auto cSecondsPerDayFloat = 86'400.0;
+
     Seconds _seconds; ///< Total seconds.
 };
 

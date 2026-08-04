@@ -88,15 +88,15 @@ public:
         auto nulText = std::string{"mapa"};
         nulText.push_back('\0');
         nulText += "oculto";
-        REQUIRE(Path{el::text::StringEditor{nulText}}.isEmpty());
+        REQUIRE(Path{el::text::String{nulText}}.isEmpty());
 
         const auto invalidUtf8 = th::stdStringFromHex("61 C0 80 62");
-        REQUIRE(Path{el::text::StringEditor{invalidUtf8}}.isEmpty());
+        REQUIRE(Path{el::text::String{invalidUtf8}}.isEmpty());
 
         auto nulElementText = std::string{"visivel"};
         nulElementText.push_back('\0');
         nulElementText += "oculto";
-        const auto nulElement = el::text::StringEditor{nulElementText};
+        const auto nulElement = el::text::String{nulElementText};
         REQUIRE(Path::fromElements(el::text::StringList{"arquivo"_el, nulElement}).isEmpty());
 
         const auto invalidUtf8Element = el::text::StringEditor{th::stdStringFromHex("61 C0 80 62")};

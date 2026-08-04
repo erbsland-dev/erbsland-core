@@ -17,8 +17,10 @@
 namespace erbsland::path::impl {
 
 /// The POSIX path backend.
+/// @tested{PosixPathOperationsTest}
 class PosixPathBackend : public CommonPathBackend {
 public:
+    /// Create the POSIX path backend.
     PosixPathBackend() = default;
 
 public: // implement PathBackend
@@ -44,23 +46,39 @@ public: // implement PathBackend
     void clearAttributesOrThrow(const Path &path, PathAttributes attributes, PathChangeOptions options) const override;
 
 private:
+    /// Convert a path to native POSIX text.
     [[nodiscard]] static auto pathTextOrThrow(const Path &path) -> text::String;
+    /// Create all missing parent directories for a path.
     static void createParentDirectoriesOrThrow(const Path &path);
+    /// Test if an open file descriptor has readable content.
     [[nodiscard]] static auto fileDescriptorHasContentOrThrow(int fileDescriptor, const Path &path) -> bool;
+    /// Map POSIX file mode bits to a path type.
     [[nodiscard]] static auto typeFromMode(mode_t mode) noexcept -> PathType;
+    /// Map a POSIX directory entry type to a path type.
     [[nodiscard]] static auto typeFromDirectoryEntry(unsigned char type) noexcept -> PathType;
+    /// Create access information from POSIX status data.
     [[nodiscard]] static auto accessInfoFromStatus(const struct stat &info, PathType type) -> PathAccessInfo;
+    /// Extract access rights from a POSIX file mode.
     [[nodiscard]] static auto rightsFromMode(mode_t mode, unsigned int shift) noexcept -> PathAccessRights;
+    /// Convert a path access profile to POSIX mode bits.
     [[nodiscard]] static auto profileMode(PathAccessProfile profile, PathType type) noexcept -> mode_t;
+    /// Apply an access profile to an open file descriptor.
     static void applyAccessProfileToDescriptorOrThrow(
         int fileDescriptor, const Path &path, PathAccessProfile profile, PathType type);
+    /// Set or clear the requested POSIX attributes.
     static void applyAttributesOrThrow(const Path &path, PathAttributes attributes, bool set);
+    /// Resolve a path physically, including its final symbolic link.
     [[nodiscard]] static auto physicalPathOrThrow(const Path &path) -> Path;
+    /// Test whether a path currently exists.
     [[nodiscard]] static auto existingPath(const Path &path) -> bool;
+    /// Resolve a path without requiring its final component to exist.
     [[nodiscard]] static auto weakPathOrThrow(const Path &path) -> Path;
+    /// Resolve a path while preserving its final symbolic link.
     [[nodiscard]] static auto physicalNoFinalSymlinkPathOrThrow(const Path &path) -> Path;
+    /// Throw a path error for one affected path.
     [[noreturn]] static void throwSystemError(
         const text::String &title, const text::String &description, const Path &path, int errorCode);
+    /// Throw a path error for a source and destination path.
     [[noreturn]] static void throwSystemError(
         const text::String &title,
         const text::String &description,

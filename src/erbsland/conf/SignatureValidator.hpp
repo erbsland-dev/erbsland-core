@@ -2,20 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SignatureValidator_fwd.hpp"
 #include "SignatureValidatorData.hpp"
 #include "SignatureValidatorResult.hpp"
 
-#include <memory>
-
 namespace erbsland::conf {
-
-class SignatureValidator;
-using SignatureValidatorPtr = std::shared_ptr<SignatureValidator>;
 
 /// The interface for signature validation.
 class SignatureValidator {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~SignatureValidator() = default;
 
 public:

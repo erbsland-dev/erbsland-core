@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ArgumentType.hpp"
+
 #include "../text/Character.hpp"
 
 #include "../../../text/String.hpp"
@@ -27,13 +29,6 @@ enum class ArgumentKind : uint8_t {
     CounterIndex,   ///< A counter index.
     CounterValue,   ///< A counter value.
     AtomicGroupId,  ///< An atomic group ID.
-};
-
-/// The native type of the argument.
-enum class ArgumentType : uint8_t {
-    Text,    ///< A text.
-    Integer, ///< An integer.
-    Boolean, ///< A boolean.
 };
 
 /// A single argument.

@@ -3,12 +3,9 @@
 #pragma once
 
 #include "../PasswordHashAlgorithm.hpp"
+#include "../PasswordHashPolicy_fwd.hpp"
 
 #include <cstdint>
-
-namespace erbsland::cryptology {
-class PasswordHashPolicy;
-}
 
 namespace erbsland::cryptology::unsafe {
 
@@ -39,6 +36,7 @@ public:
         -> UnsafeCustomPasswordHashParameters;
 
 private:
+    /// Create unchecked custom password-hashing parameters.
     UnsafeCustomPasswordHashParameters(
         PasswordHashAlgorithm algorithm, uint32_t first, uint32_t second, uint32_t third, uint64_t large) noexcept;
 

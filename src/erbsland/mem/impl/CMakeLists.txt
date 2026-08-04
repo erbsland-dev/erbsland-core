@@ -4,8 +4,11 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        ByteArrayErrors.cpp
+        ByteArrayErrors.hpp
         BestGrowth.cpp
         BestGrowth.hpp
+        BestGrowthStrategy.hpp
         ByteBlockData.hpp
         ByteBlockData_fwd.hpp
         ByteBufferData.hpp
@@ -14,9 +17,19 @@ target_sources(erbsland-core PRIVATE
         ByteDataView.hpp
         ByteDataView_fwd.hpp
         ByteIntegerAccess.hpp
+        ByteIntegerTypes.hpp
         ByteModifyTools.hpp
+        ByteReadTools.cpp
         ByteReadTools.hpp
-        ByteSequenceOperations.hpp
+        ByteReaderTools.cpp
+        ByteReaderTools.hpp
+        ByteReaderTools_fwd.hpp
+        ByteTextTools.cpp
+        ByteTextTools.hpp
+        ByteWriteTools.cpp
+        ByteWriteTools.hpp
+        ByteWriterTools.cpp
+        ByteWriterTools.hpp
         RingBufferStorageTraits.hpp
         RingBufferWriter.hpp
         SecureErase.cpp
@@ -24,6 +37,7 @@ target_sources(erbsland-core PRIVATE
         SecureEraseBackend.hpp
         SharedArrayCapacity.hpp
         SharedArrayDataTraits.hpp
+        SharedArrayDataTraits.tpp
         SharedDataPointerTraits.hpp
         SharedDataPointerTraits_fwd.hpp
         SharedByteDataWithFlag.hpp

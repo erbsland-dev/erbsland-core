@@ -33,9 +33,13 @@ public:
     auto operator=(IoService &&) -> IoService & = delete;
 
 private:
+    /// Create the process-wide I/O service.
     IoService();
+    /// Submit work for asynchronous execution.
     void submit(std::function<void()> work);
+    /// Add a worker that processes queued work.
     void addWorker();
+    /// Run queued work on the current thread.
     void run();
 
 private:

@@ -14,8 +14,9 @@
 #include "../../../mem/ByteBuffer.hpp"
 #include "../../../mem/ByteSpan.hpp"
 #include "../../../mem/impl/ByteIntegerAccess.hpp"
-#include "../../../mem/impl/ByteSequenceOperations.hpp"
+#include "../../../mem/impl/ByteWriteTools.hpp"
 #include "../../../mem/impl/SecureErase.hpp"
+#include "../../../text/Literals.hpp"
 #include "../../../unit/ByteLength.hpp"
 
 #include <algorithm>
@@ -28,6 +29,7 @@
 namespace erbsland::cryptology::impl {
 
 // algorithms are never included in the public API, therefore using these namespaces never leaks.
+using namespace text::literals;
 using namespace erbsland::unit;
 using namespace erbsland::mem;
 
@@ -88,7 +90,7 @@ inline void salsa20_8(ByteArray<64> &block) noexcept {
     // Salsa20/8 finishes with feed-forward addition of the original words, then serializes little-endian.
     for (auto i = std::size_t{0}; i < 16U; ++i) {
         const auto word = static_cast<uint32_t>(x[i] + input[i]);
-        static_cast<void>(block.setInteger(ByteIndex::fromSizeT(i * sizeof(uint32_t)), word, Endianness::Little));
+        block.setIntegerOrThrow(ByteIndex::fromSizeT(i * sizeof(uint32_t)), word, Endianness::Little);
     }
     mem::impl::secureErase(std::as_writable_bytes(std::span{input}));
     mem::impl::secureErase(std::as_writable_bytes(std::span{x}));
@@ -101,7 +103,7 @@ inline void salsa20_8(const FixedByteSpan<64> block) noexcept {
     [[maybe_unused]] const auto valueErase = SecureEraseGuard{value};
     value.overwrite(ConstByteSpan{block});
     salsa20_8(value);
-    static_cast<void>(mem::impl::overwrite(block, ByteRange::all(), value.span()));
+    mem::impl::ByteWriteTools{block}.overwrite(ByteRange::all(), mem::impl::ByteDataView{value.span()});
 }
 
 /// Apply scrypt BlockMix using Salsa20/8.
@@ -115,7 +117,7 @@ inline void salsa20_8(const FixedByteSpan<64> block) noexcept {
 inline void scryptBlockMix(ByteBuffer &block, const uint32_t r) {
     const auto expectedLength = static_cast<std::size_t>(128U) * r;
     if (r == 0U || block.length().toSizeT() != expectedLength) {
-        throw err::ParameterError{"Invalid scrypt BlockMix dimensions", "r"};
+        throw err::ParameterError{"Invalid scrypt BlockMix dimensions"_el, "r"_el};
     }
     auto x = ByteArray<64>{};
     [[maybe_unused]] const auto xErase = SecureEraseGuard{x};
@@ -125,7 +127,7 @@ inline void scryptBlockMix(ByteBuffer &block, const uint32_t r) {
     x.overwrite(block.span(ByteIndex::fromSizeT(expectedLength - 64U), ByteLength{64U}));
     // For each chunk, compute X = Salsa20/8(X XOR B[i]) and retain the result as Y[i].
     for (auto i = std::size_t{0}; i < static_cast<std::size_t>(2U) * r; ++i) {
-        static_cast<void>(x.xorWith(block.span(ByteIndex::fromSizeT(i * 64U), ByteLength{64U})));
+        x.xorWithOrThrow(block.span(ByteIndex::fromSizeT(i * 64U), ByteLength{64U}));
         salsa20_8(x);
         y.overwrite(ByteIndex::fromSizeT(i * 64U), x.span());
     }
@@ -194,24 +196,24 @@ inline void scryptRomix(ByteBuffer &block, const uint64_t cost, const uint32_t r
     const uint32_t parallelization,
     const std::size_t outputLength) -> ByteBlockEditor {
     if (cost <= 1U || (cost & (cost - 1U)) != 0U) {
-        throw err::ParameterError{"scrypt N must be a power of two greater than one", "cost"};
+        throw err::ParameterError{"scrypt N must be a power of two greater than one"_el, "cost"_el};
     }
     if (r == 0U || parallelization == 0U) {
-        throw err::ParameterError{"scrypt r and p must be positive", "parameters"};
+        throw err::ParameterError{"scrypt r and p must be positive"_el, "parameters"_el};
     }
     constexpr auto max = std::numeric_limits<std::size_t>::max();
     if constexpr (sizeof(std::size_t) <= sizeof(uint32_t)) {
         if (r > max / 128U) {
-            throw err::ParameterError{"scrypt dimensions overflow", "parameters"};
+            throw err::ParameterError{"scrypt dimensions overflow"_el, "parameters"_el};
         }
     }
     if (parallelization > max / (static_cast<std::size_t>(128U) * r)) {
-        throw err::ParameterError{"scrypt dimensions overflow", "parameters"};
+        throw err::ParameterError{"scrypt dimensions overflow"_el, "parameters"_el};
     }
     const auto blockLength = static_cast<std::size_t>(128U) * r;
     const auto expandedLength = blockLength * parallelization;
     if (cost > max / blockLength) {
-        throw err::ParameterError{"scrypt memory size overflows", "cost"};
+        throw err::ParameterError{"scrypt memory size overflows"_el, "cost"_el};
     }
     // RFC 7914 section 6 step 1: B = PBKDF2-HMAC-SHA-256(P, S, 1, p * 128 * r).
     auto expanded = pbkdf2HmacSha256(password, salt, 1U, expandedLength);

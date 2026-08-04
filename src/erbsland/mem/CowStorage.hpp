@@ -31,14 +31,8 @@ public:
     CowStorage()
         requires std::default_initializable<tDataType>
         : _data{std::make_shared<tDataType>()} {}
-    /// Copy storage and share its data object.
-    CowStorage(const CowStorage &) noexcept = default;
     /// Move storage while keeping the source object valid.
     CowStorage(CowStorage &&other) noexcept : _data{other._data} {}
-    /// Destroy the storage.
-    ~CowStorage() = default;
-    /// Copy storage and share its data object.
-    auto operator=(const CowStorage &) noexcept -> CowStorage & = default;
     /// Move storage while keeping the source object valid.
     auto operator=(CowStorage &&other) noexcept -> CowStorage & {
         if (this != &other) {
@@ -46,6 +40,11 @@ public:
         }
         return *this;
     }
+
+    // defaults
+    CowStorage(const CowStorage &) noexcept = default;
+    ~CowStorage() = default;
+    auto operator=(const CowStorage &) noexcept -> CowStorage & = default;
 
 public:
     /// Create storage from an existing data object.
@@ -112,6 +111,7 @@ public:
     friend void swap(CowStorage &a, CowStorage &b) noexcept { a.swap(b); }
 
 private:
+    /// Create storage from an existing shared data object.
     explicit CowStorage(std::shared_ptr<tDataType> data) noexcept : _data{std::move(data)} {}
 
 private:

@@ -111,8 +111,8 @@ public:
     void testEqualityOperators() {
         auto red = fg(fg::Red);
         auto blue = fg(fg::Blue);
-        REQUIRE(red == fg(fg::Red));
-        REQUIRE(red != blue);
+        REQUIRE_EQUAL(red, fg(fg::Red));
+        REQUIRE_NOT_EQUAL(red, blue);
     }
 
     void testDefaultConstructedColorUsesInheritedComponents() {

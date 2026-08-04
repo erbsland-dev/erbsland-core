@@ -7,9 +7,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Marks a rule as optional or required.
-struct IsOptional : Attribute {
+class IsOptional : public Attribute {
+public:
+    /// Set whether a rule is optional.
+    /// @param isOptional `true` to mark the rule optional.
     explicit IsOptional(const bool isOptional = true) : _isOptional{isOptional} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     bool _isOptional{true};
 };
 

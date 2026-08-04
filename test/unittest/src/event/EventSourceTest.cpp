@@ -2,9 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/LogicError.hpp>
-#include <erbsland/event/EventEditor.hpp>
+#include <erbsland/err/ParameterError.hpp>
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventSource.hpp>
+#include <erbsland/event/impl/CommonEventEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <functional>
@@ -13,75 +14,124 @@
 
 using namespace el::event;
 
-TESTED_TARGETS(EventEditor EventSource)
+TESTED_TARGETS(EventEditor EventSource CommonEventEditor)
 class EventSourceTest final : public el::UnitTest {
-    class Editor final : public EventEditor {
+    class Editor final : public el::event::impl::CommonEventEditor {
     public:
-        explicit Editor(EventsPtr target) : EventEditor{std::move(target)} {}
-        std::function<void()> callback;
-    };
-    using EditorPtr = std::shared_ptr<Editor>;
+        Editor(EventSourcePtr source, EventsPtr target, std::function<void()> &callback) :
+            CommonEventEditor{std::move(source), std::move(target)}, _callback{callback} {}
 
-    class Source final : public EventSource, public std::enable_shared_from_this<Source> {
+    public:
+        auto setCallback(std::function<void()> callback) -> Editor & {
+            _callback = std::move(callback);
+            return *this;
+        }
+
+    private:
+        std::function<void()> &_callback;
+    };
+
+    class Source final : public EventSource {
     public:
         explicit Source(EventsPtr owner) : EventSource{std::move(owner)} {}
-        [[nodiscard]] auto events() -> EditorPtr {
-            auto result = std::make_shared<Editor>(currentOwnerEvents());
-            registerEditor(result);
-            return result;
+
+    public:
+        [[nodiscard]] auto events() -> Editor & override {
+            auto target = currentOwnerEvents();
+            if (_editor == nullptr) {
+                _editor = std::make_unique<Editor>(shared_from_this(), std::move(target), _callback);
+            }
+            return *_editor;
         }
         void emit() {
-            for (const auto &editor : connectedEditors<Editor>()) {
-                if (editor->callback) {
-                    editor->callback();
-                }
+            const auto callback = _callback;
+            if (callback) {
+                callback();
             }
         }
-        [[nodiscard]] auto connectedCount() const -> std::size_t { return connectedEditors<Editor>().size(); }
+
+    private:
+        std::function<void()> _callback;
+        std::unique_ptr<Editor> _editor;
+    };
+
+    class DetachedEditor final : public el::event::impl::CommonEventEditor {
+    public:
+        DetachedEditor(EventSourcePtr source, EventsPtr target) :
+            CommonEventEditor{std::move(source), std::move(target)} {}
     };
 
 public:
-    void testEditorLifetimeControlsSubscription() {
+    void testStableCovariantEditorAndHandlerReplacement() {
         const auto loop = EventLoop::create();
         const auto source = std::make_shared<Source>(loop);
-        auto firstCount = 0;
-        auto secondCount = 0;
-        auto first = EditorPtr{};
-        auto second = EditorPtr{};
-        auto *firstCountPtr = &firstCount;
-        auto *secondCountPtr = &secondCount;
+        auto calls = 0;
 
         loop->invoke([&]() -> void {
-            first = source->events();
-            second = source->events();
-            first->callback = [firstCountPtr]() -> void { *firstCountPtr += 1; };
-            second->callback = [secondCountPtr]() -> void { *secondCountPtr += 1; };
-            REQUIRE_EQUAL(source->connectedCount(), std::size_t{2U});
+            auto &typedEditor = source->events();
+            auto &genericEditor = static_cast<EventSource &>(*source).events();
+            REQUIRE_EQUAL(&typedEditor, &genericEditor);
+            REQUIRE_EQUAL(&typedEditor, &source->events());
+
+            typedEditor.setCallback([&calls]() -> void { calls += 1; });
             source->emit();
-            first.reset();
-            source->emit();
-            second->disconnect();
+            source->events().setCallback([&calls]() -> void { calls += 10; });
             source->emit();
         });
 
         REQUIRE(loop->runOnce());
-        REQUIRE_EQUAL(firstCount, 1);
-        REQUIRE_EQUAL(secondCount, 2);
+        REQUIRE_EQUAL(calls, 11);
     }
 
-    void testSourceDestructionDisconnectsEditors() {
+    void testSourceAndTargetAccess() {
         const auto loop = EventLoop::create();
-        auto source = std::make_shared<Source>(loop);
-        auto editor = EditorPtr{};
+        const auto source = std::make_shared<Source>(loop);
 
         loop->invoke([&]() -> void {
-            editor = source->events();
-            REQUIRE(editor->isConnected());
-            source.reset();
+            auto &editor = source->events();
+            REQUIRE_EQUAL(editor.source(), source);
+            REQUIRE_EQUAL(editor.target(), loop);
         });
 
         REQUIRE(loop->runOnce());
-        REQUIRE_FALSE(editor->isConnected());
+    }
+
+    void testSourceCanBeRetainedThroughEditor() {
+        const auto loop = EventLoop::create();
+        auto source = std::make_shared<Source>(loop);
+        auto weakSource = std::weak_ptr<Source>{source};
+        auto retainedSource = EventSourcePtr{};
+
+        loop->invoke([&]() -> void {
+            retainedSource = source->events().source();
+            source.reset();
+            REQUIRE_FALSE(weakSource.expired());
+        });
+
+        REQUIRE(loop->runOnce());
+        REQUIRE_FALSE(weakSource.expired());
+        retainedSource.reset();
+        REQUIRE(weakSource.expired());
+    }
+
+    void testExpiredCommonEditorSourceIsLogicError() {
+        const auto loop = EventLoop::create();
+        auto source = std::make_shared<Source>(loop);
+        auto editor = std::make_unique<DetachedEditor>(source, loop);
+        source.reset();
+
+        REQUIRE_THROWS_AS(el::err::LogicError, editor->source());
+        REQUIRE_EQUAL(editor->target(), loop);
+    }
+
+    void testCommonEditorRejectsInvalidConstruction() {
+        const auto ownerLoop = EventLoop::create();
+        const auto otherLoop = EventLoop::create();
+        const auto source = std::make_shared<Source>(ownerLoop);
+
+        REQUIRE_THROWS_AS(el::err::ParameterError, DetachedEditor(EventSourcePtr{}, ownerLoop));
+        REQUIRE_THROWS_AS(el::err::ParameterError, DetachedEditor(source, EventsPtr{}));
+        REQUIRE_THROWS_AS(el::err::LogicError, DetachedEditor(source, otherLoop));
     }
 
     void testEditorRejectsWrongCurrentLoop() {
@@ -105,15 +155,13 @@ public:
     void testEditorCallbackExceptionUsesLoopRouting() {
         const auto loop = EventLoop::create();
         const auto source = std::make_shared<Source>(loop);
-        auto editor = EditorPtr{};
         loop->invoke([&]() -> void {
-            editor = source->events();
-            editor->callback = []() -> void { throw std::runtime_error{"editor"}; };
+            source->events().setCallback([]() -> void { throw std::runtime_error{"editor"}; });
             source->emit();
         });
 
         REQUIRE(loop->runOnce());
         REQUIRE(loop->hasError());
-        REQUIRE(loop->takeError() != nullptr);
+        REQUIRE(loop->takeError());
     }
 };

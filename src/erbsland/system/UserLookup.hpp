@@ -49,9 +49,13 @@ public:
     void clearCache() noexcept;
 
 private:
+    /// Resolve and cache a user name for an identifier.
     [[nodiscard]] auto cachedUserNameForId(const UserId &id) -> UserName;
+    /// Resolve and cache a group name for an identifier.
     [[nodiscard]] auto cachedGroupNameForId(const GroupId &id) -> GroupName;
+    /// Resolve and cache a user identifier for a name.
     [[nodiscard]] auto cachedUserIdForName(const UserName &name) -> UserId;
+    /// Resolve and cache a group identifier for a name.
     [[nodiscard]] auto cachedGroupIdForName(const GroupName &name) -> GroupId;
 
 private:

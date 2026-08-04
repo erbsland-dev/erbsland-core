@@ -15,6 +15,7 @@ class EventLoopDriverRegistration final {
 public:
     /// Create a registration with its unregister operation.
     explicit EventLoopDriverRegistration(std::function<void()> unregister);
+    /// Unregister the retained native event-loop handle.
     ~EventLoopDriverRegistration();
 
     // defaults/deletions

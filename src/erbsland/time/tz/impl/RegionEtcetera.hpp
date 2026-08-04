@@ -11,33 +11,89 @@
 
 namespace erbsland::time::tz::impl {
 
+/// Create generated information for the `Etc/GMT` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+1` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus1() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+10` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus10() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+11` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus11() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+12` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus12() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+2` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus2() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+3` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus3() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+4` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus4() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+5` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus5() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+6` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus6() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+7` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus7() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+8` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus8() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT+9` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMTPlus9() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-1` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_1() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-10` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_10() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-11` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_11() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-12` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_12() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-13` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_13() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-14` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_14() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-2` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_2() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-3` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_3() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-4` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_4() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-5` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_5() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-6` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_6() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-7` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_7() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-8` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_8() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/GMT-9` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_GMT_9() noexcept -> std::unique_ptr<Info>;
+/// Create generated information for the `Etc/UTC` IANA time zone.
+/// @return The generated time-zone information.
 [[nodiscard]] auto infoEtc_UTC() noexcept -> std::unique_ptr<Info>;
 
 }

@@ -15,6 +15,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <string_view>
 
 namespace erbsland::cterm::impl {
 
@@ -45,6 +46,16 @@ private:
     static void enter(const TestTerminal &testTerminal, const ReadLinePtr &readLine, const Key key) {
         testTerminal.backend->_readKeyResults.push(key);
         static_cast<void>(readLine->update());
+    }
+
+    void requireOutputContains(const std::string &output, const std::string_view &text) {
+        const auto position = output.find(text);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
+    }
+
+    void requireOutputMissing(const std::string &output, const std::string_view &text) {
+        const auto position = output.find(text);
+        REQUIRE_EQUAL(position, std::string::npos);
     }
 
 public:
@@ -272,16 +283,16 @@ public:
         auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
             testTerminal.terminal, options, [&now]() noexcept { return now; });
         readLine->start();
-        REQUIRE(testTerminal.backend->output().find("[3s]") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "[3s]");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::seconds(2);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("[1s]") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "[1s]");
         testTerminal.backend->clearOutput();
         testTerminal.backend->_readKeyResults.push(Key::Left);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("[3s]") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "[3s]");
         now += erbsland::time::TimeDelta::seconds(2);
         REQUIRE(readLine->update().isIdle());
         now += erbsland::time::TimeDelta::seconds(1);
@@ -301,22 +312,22 @@ public:
         auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
             testTerminal.terminal, options, [&now]() noexcept { return now; });
         readLine->start();
-        REQUIRE(testTerminal.backend->output().find("[30s]") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "[30s]");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::seconds(9);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("[21s]") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "[21s]");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::seconds(1);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("[20s]") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "[20s]");
 
         testTerminal.backend->clearOutput();
         testTerminal.backend->_readKeyResults.push(Key::Left);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("[30s]") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "[30s]");
         readLine->stop();
 
         auto disabledTerminal = createTerminal();
@@ -325,7 +336,7 @@ public:
         auto disabled = erbsland::cterm::impl::ReadLineTestAccess::create(
             disabledTerminal.terminal, options, [&now]() noexcept { return now; });
         disabled->start();
-        REQUIRE(disabledTerminal.backend->output().find("[3s]") == std::string::npos);
+        requireOutputMissing(disabledTerminal.backend->output(), "[3s]");
         disabled->stop();
     }
 
@@ -335,17 +346,17 @@ public:
         auto readLine = erbsland::cterm::impl::ReadLineTestAccess::create(
             testTerminal.terminal, ReadLineOptions{}, [&now]() noexcept { return now; });
         readLine->start();
-        REQUIRE(testTerminal.backend->output().find("█") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "█");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::milliseconds(800);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("█") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "█");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::milliseconds(800);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("█") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "█");
         readLine->stop();
     }
 
@@ -359,17 +370,17 @@ public:
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::milliseconds(800);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("█") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "█");
 
         testTerminal.backend->clearOutput();
         testTerminal.backend->_readKeyResults.push(Key{U'a'});
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("█") != std::string::npos);
+        requireOutputContains(testTerminal.backend->output(), "█");
 
         testTerminal.backend->clearOutput();
         now += erbsland::time::TimeDelta::milliseconds(800);
         REQUIRE(readLine->update().isIdle());
-        REQUIRE(testTerminal.backend->output().find("█") == std::string::npos);
+        requireOutputMissing(testTerminal.backend->output(), "█");
         readLine->stop();
     }
 
@@ -421,7 +432,7 @@ public:
             REQUIRE_EQUAL(testTerminal.backend->output(), expected);
             testTerminal.backend->clearOutput();
             enter(testTerminal, readLine, Key{U'x'});
-            REQUIRE(testTerminal.backend->output().find('x') != std::string::npos);
+            requireOutputContains(testTerminal.backend->output(), "x");
 
             testTerminal.terminal->setSize(bgeo::BlockSize{12, 25});
             testTerminal.backend->clearOutput();

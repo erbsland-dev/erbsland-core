@@ -8,7 +8,6 @@
 
 #include "impl/U8StringDataView.hpp"
 
-#include "../FormatAs_fwd.hpp"
 #include "../StringSide.hpp"
 
 #include "../../unit/ByteLength.hpp"
@@ -32,9 +31,6 @@ class U8StringLiteral final {
         -> U8StringLiteral<char>;
     friend constexpr auto impl::createU8StringLiteral(const char8_t *data, std::size_t size) noexcept
         -> U8StringLiteral<char8_t>;
-    // format
-    template <typename T>
-    friend struct FormatAsU8Text;
 
 public:
     /// Create a new U8StringCharLiteral from a UTF-8 string `char` literal.

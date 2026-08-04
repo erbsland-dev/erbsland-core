@@ -57,7 +57,8 @@ WindowsAccessProfileSecurity::WindowsAccessProfileSecurity(const Path &path, con
 
 WindowsAccessProfileSecurity::~WindowsAccessProfileSecurity() {
     if (_acl != nullptr) {
-        static_cast<void>(LocalFree(_acl));
+        // A destructor cannot report a LocalFree failure and the ACL has no later owner that could recover it.
+        LocalFree(_acl);
     }
 }
 
@@ -75,9 +76,10 @@ auto WindowsAccessProfileSecurity::portableAccessMask() noexcept -> ACCESS_MASK 
 auto WindowsAccessProfileSecurity::tokenInformationOrThrow(
     void *token, const TOKEN_INFORMATION_CLASS informationClass, const Path &path) -> std::vector<BYTE> {
     auto size = DWORD{0};
-    static_cast<void>(GetTokenInformation(token, informationClass, nullptr, 0, &size));
-    if (size == 0U || GetLastError() != ERROR_INSUFFICIENT_BUFFER) {
-        throwProfileError("Cannot query the current process token."_el, path, GetLastError());
+    const auto sizeQuerySucceeded = GetTokenInformation(token, informationClass, nullptr, 0, &size) != 0;
+    const auto sizeQueryError = sizeQuerySucceeded ? DWORD{ERROR_SUCCESS} : GetLastError();
+    if (sizeQuerySucceeded || size == 0U || sizeQueryError != ERROR_INSUFFICIENT_BUFFER) {
+        throwProfileError("Cannot query the current process token."_el, path, sizeQueryError);
     }
     auto buffer = std::vector<BYTE>(size);
     if (GetTokenInformation(token, informationClass, buffer.data(), size, &size) == 0) {

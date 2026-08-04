@@ -10,7 +10,6 @@
 #include "impl/U16StringDataView.hpp"
 #include "impl/U16StringReadTools.hpp"
 
-#include "../FormatAs_fwd.hpp"
 #include "../StringSide.hpp"
 
 #include "../../mem/UnsafeCharPtr.hpp"
@@ -31,9 +30,6 @@ class U16StringLiteral final {
     friend class U16String;
     friend constexpr auto impl::createU16StringLiteral(const char16_t *data, std::size_t size) noexcept
         -> U16StringLiteral;
-    // format
-    template <typename T>
-    friend struct FormatAsU16Text;
 
 public:
     /// Create a new U16StringCharLiteral from a UTF-16 string `char16_t` literal.

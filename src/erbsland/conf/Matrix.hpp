@@ -3,8 +3,8 @@
 #pragma once
 
 #include "../err/OutOfRangeError.hpp"
-#include "../unit/ElementCount.hpp"
-#include "../unit/ElementIndex.hpp"
+#include "../unit/ItemCount.hpp"
+#include "../unit/ItemIndex.hpp"
 
 #include <concepts>
 #include <cstddef>
@@ -27,21 +27,21 @@ public:
     /// @param rowCount The number of rows.
     /// @param columnCount The number of columns.
     /// @throws err::OutOfRangeError if the matrix exceeds `cMaximumValueCount`.
-    Matrix(const unit::ElementCount rowCount, const unit::ElementCount columnCount) :
+    Matrix(const unit::ItemCount rowCount, const unit::ItemCount columnCount) :
         _rowCount{rowCount},
         _columnCount{columnCount},
-        _actualColumnCounts(rowVectorSize(rowCount, columnCount), unit::ElementCount::zero()),
+        _actualColumnCounts(rowVectorSize(rowCount, columnCount), unit::ItemCount::zero()),
         _values(valueVectorSize(rowCount, columnCount)) {}
 
 public: // access
     /// Get the number of rows in this matrix.
-    [[nodiscard]] auto rowCount() const noexcept -> unit::ElementCount { return _rowCount; }
+    [[nodiscard]] auto rowCount() const noexcept -> unit::ItemCount { return _rowCount; }
     /// Get the number of columns in this matrix.
-    [[nodiscard]] auto columnCount() const noexcept -> unit::ElementCount { return _columnCount; }
+    [[nodiscard]] auto columnCount() const noexcept -> unit::ItemCount { return _columnCount; }
     /// Get the actual column count for the given row.
     /// @param row The row index.
     /// @return The number of columns defined in the row.
-    [[nodiscard]] auto actualColumnCount(const unit::ElementIndex row) const noexcept -> unit::ElementCount {
+    [[nodiscard]] auto actualColumnCount(const unit::ItemIndex row) const noexcept -> unit::ItemCount {
         if (!row.isWithin(_rowCount)) {
             return {};
         }
@@ -51,7 +51,7 @@ public: // access
     /// @param row The row index.
     /// @param column The column index.
     /// @return `true` if the value was defined.
-    [[nodiscard]] auto isDefined(const unit::ElementIndex row, const unit::ElementIndex column) const noexcept -> bool {
+    [[nodiscard]] auto isDefined(const unit::ItemIndex row, const unit::ItemIndex column) const noexcept -> bool {
         if (!row.isWithin(_rowCount) || !column.isWithin(_columnCount)) {
             return false;
         }
@@ -63,7 +63,7 @@ public: // access
     /// @param defaultValue The default value for missing cells.
     /// @return The value or the default value if it was not defined.
     [[nodiscard]] auto value(
-        const unit::ElementIndex row, const unit::ElementIndex column, const T &defaultValue = {}) const noexcept -> T {
+        const unit::ItemIndex row, const unit::ItemIndex column, const T &defaultValue = {}) const noexcept -> T {
 
         if (!isDefined(row, column)) {
             return defaultValue;
@@ -75,7 +75,7 @@ public: // access
     /// @param column The column index.
     /// @return The value or a default value if it was not defined.
     /// @throws err::OutOfRangeError if the row or column is outside the matrix.
-    [[nodiscard]] auto valueOrThrow(const unit::ElementIndex row, const unit::ElementIndex column) const -> const T & {
+    [[nodiscard]] auto valueOrThrow(const unit::ItemIndex row, const unit::ItemIndex column) const -> const T & {
         requireIndices(row, column);
         return _values[toIndex(row, column)];
     }
@@ -84,69 +84,79 @@ public: // access
     /// @param column The column index.
     /// @param value The value to set.
     /// @throws err::OutOfRangeError if the row or column is outside the matrix.
-    void setValue(const unit::ElementIndex row, const unit::ElementIndex column, const T &value) {
+    void setValue(const unit::ItemIndex row, const unit::ItemIndex column, const T &value) {
         requireIndices(row, column);
         _values[toIndex(row, column)] = value;
-        updateActualColumnCount(row, column.distanceFromZero() + unit::ElementCount::one());
+        updateActualColumnCount(row, column.distanceFromZero() + unit::ItemCount::one());
     }
     /// Set values for a complete row.
     /// @param row The row index.
     /// @param values The values to set.
     /// @throws err::OutOfRangeError if the row is outside the matrix.
-    void setRow(const unit::ElementIndex row, const std::vector<T> &values) {
+    void setRow(const unit::ItemIndex row, const std::vector<T> &values) {
+        using namespace text::literals;
         requireRowIndex(row);
         if (values.size() > _columnCount.toSizeT()) {
-            throw err::OutOfRangeError("Matrix column index out of range");
+            throw err::OutOfRangeError("Matrix column index out of range"_el);
         }
-        for (unit::ElementIndex column = {}; column.toSizeT() < values.size(); ++column) {
+        for (unit::ItemIndex column = {}; column.toSizeT() < values.size(); ++column) {
             _values[toIndex(row, column)] = values[column.toSizeT()];
         }
-        updateActualColumnCount(row, unit::ElementCount::fromSizeT(values.size()));
+        updateActualColumnCount(row, unit::ItemCount::fromSizeT(values.size()));
     }
 
 private:
-    [[nodiscard]] auto toIndex(const unit::ElementIndex row, const unit::ElementIndex column) const noexcept
-        -> std::size_t {
+    /// Convert a row and column index into the flat value index.
+    [[nodiscard]] auto toIndex(const unit::ItemIndex row, const unit::ItemIndex column) const noexcept -> std::size_t {
         return (row.toSizeT() * _columnCount.toSizeT()) + column.toSizeT();
     }
-    void requireRowIndex(const unit::ElementIndex row) const {
+    /// Validate a row index.
+    void requireRowIndex(const unit::ItemIndex row) const {
+        using namespace text::literals;
         if (!row.isWithin(_rowCount)) {
-            throw err::OutOfRangeError("Matrix row index out of range");
+            throw err::OutOfRangeError("Matrix row index out of range"_el);
         }
     }
-    void requireIndices(const unit::ElementIndex row, const unit::ElementIndex column) const {
+    /// Validate a row and column index pair.
+    void requireIndices(const unit::ItemIndex row, const unit::ItemIndex column) const {
+        using namespace text::literals;
         requireRowIndex(row);
         if (!column.isWithin(_columnCount)) {
-            throw err::OutOfRangeError("Matrix column index out of range");
+            throw err::OutOfRangeError("Matrix column index out of range"_el);
         }
     }
-    void updateActualColumnCount(const unit::ElementIndex row, const unit::ElementCount columnCount) {
+    /// Track the populated column count of a row.
+    void updateActualColumnCount(const unit::ItemIndex row, const unit::ItemCount columnCount) {
         if (columnCount > _actualColumnCounts[row.toSizeT()]) {
             _actualColumnCounts[row.toSizeT()] = columnCount;
         }
     }
-    static void requireValidSize(const unit::ElementCount rowCount, const unit::ElementCount columnCount) {
-        const auto maximumValueCount = static_cast<unit::ElementCount::Value>(cMaximumValueCount);
+    /// Validate matrix dimensions against implementation limits.
+    static void requireValidSize(const unit::ItemCount rowCount, const unit::ItemCount columnCount) {
+        using namespace text::literals;
+        const auto maximumValueCount = static_cast<unit::ItemCount::Value>(cMaximumValueCount);
         if (!rowCount.isFinite() || !columnCount.isFinite() || rowCount.toRawValue() > maximumValueCount ||
             (rowCount.toRawValue() != 0U && columnCount.toRawValue() > maximumValueCount / rowCount.toRawValue())) {
-            throw err::OutOfRangeError("Matrix size exceeds maximum allowed");
+            throw err::OutOfRangeError("Matrix size exceeds maximum allowed"_el);
         }
     }
-    [[nodiscard]] static auto rowVectorSize(const unit::ElementCount rowCount, const unit::ElementCount columnCount)
+    /// Get the allocation size for row metadata.
+    [[nodiscard]] static auto rowVectorSize(const unit::ItemCount rowCount, const unit::ItemCount columnCount)
         -> std::size_t {
         requireValidSize(rowCount, columnCount);
         return rowCount.toSizeTOrThrow();
     }
-    [[nodiscard]] static auto valueVectorSize(const unit::ElementCount rowCount, const unit::ElementCount columnCount)
+    /// Get the allocation size for stored matrix values.
+    [[nodiscard]] static auto valueVectorSize(const unit::ItemCount rowCount, const unit::ItemCount columnCount)
         -> std::size_t {
         requireValidSize(rowCount, columnCount);
         return static_cast<std::size_t>(rowCount.toRawValue() * columnCount.toRawValue());
     }
 
 private:
-    unit::ElementCount _rowCount{0};
-    unit::ElementCount _columnCount{0};
-    std::vector<unit::ElementCount> _actualColumnCounts;
+    unit::ItemCount _rowCount{0};
+    unit::ItemCount _columnCount{0};
+    std::vector<unit::ItemCount> _actualColumnCounts;
     std::vector<T> _values;
 };
 

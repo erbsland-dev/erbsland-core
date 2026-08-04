@@ -17,6 +17,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionChoices {
 public:
+    /// Create an empty option-choice collection.
     OptionChoices() = default;
 
     // defaults

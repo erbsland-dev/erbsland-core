@@ -2,16 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "BufferedByteOutputStream_fwd.hpp"
+
 #include "../ByteOutputStream.hpp"
 #include "../TextOutputStream.hpp"
 
+#include "../../mem/ByteBlock_fwd.hpp"
 #include "../../text/StringBomMode.hpp"
 
 #include <mutex>
 
 namespace erbsland::stream::impl {
-
-class BufferedByteOutputStream;
 
 /// Text output stream that encodes text into a byte output stream.
 /// @tested{EncodedTextStreamTest}
@@ -28,8 +29,9 @@ public:
         text::StringBomMode bomMode = text::StringBomMode::Automatic,
         bool initialBomAlreadyHandled = false);
 
-    // defaults
     ~EncodedTextOutputStream() override { abort(); }
+
+    // defaults/deletions
     EncodedTextOutputStream(const EncodedTextOutputStream &) = delete;
     EncodedTextOutputStream(EncodedTextOutputStream &&) = delete;
     auto operator=(const EncodedTextOutputStream &) -> EncodedTextOutputStream & = delete;
@@ -62,7 +64,11 @@ public:
     using TextOutputStream::writeLine;
 
 private:
+    /// Select the BOM mode for the next atomic write.
     [[nodiscard]] auto bomModeForNextWrite() const noexcept -> text::StringBomMode;
+    /// Encode one normalized character for an unbuffered byte stream.
+    [[nodiscard]] auto encodeCharacter(text::Char character, text::StringBomMode bomMode) const -> mem::ByteBlock;
+    /// Write text while the stream mutex is held.
     auto writeLocked(const text::String &text) -> StreamWriteStatus;
 
 private:

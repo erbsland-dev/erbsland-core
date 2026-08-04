@@ -19,6 +19,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <utility>
 
 namespace erbsland::text::impl {
 
@@ -28,7 +29,12 @@ class StringReaderBase : public mem::SharedVirtualData {
 public:
     using ReadFn = std::function<util::LoopStatus(Char)>;
 
+protected:
+    /// The status and consumed-character count from a decoded-character loop.
+    using ReadLoopOutcome = std::pair<util::LoopResult, unit::CpLength>;
+
 public:
+    // defaults
     StringReaderBase() = default;
     StringReaderBase(const StringReaderBase &) = default;
     StringReaderBase(StringReaderBase &&) = default;
@@ -73,6 +79,10 @@ public: // read loops
     /// Read until stop characters are found.
     virtual auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult = 0;
+    /// Advance while expected characters are found.
+    virtual auto advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    /// Advance until a stop character is found.
+    virtual auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
 
 public: // capture
     /// Set the capture start position.
@@ -100,7 +110,7 @@ public: // buffer
     /// Take the current capture and append it to the buffer.
     virtual void appendCaptureToBuffer() = 0;
     /// Read one tolerant character and append it to the buffer.
-    [[nodiscard]] virtual auto readToBuffer() -> Char = 0;
+    virtual auto readToBuffer() -> Char = 0;
     /// Read one tolerant character if it matches and append it to the buffer.
     [[nodiscard]] virtual auto readToBufferIf(Char expected) -> bool = 0;
     /// Read one tolerant character if it matches and append it to the buffer.

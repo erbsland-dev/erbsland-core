@@ -74,22 +74,29 @@ public: // conversion
         unit::CpLength initialIndentWidth = unit::CpLength::zero()) const -> String;
 
 private:
+    /// Create a string tree from shared data.
     explicit StringTree(impl::StringTreeDataPtr data);
+    /// Create shared tree data with an optional title.
     [[nodiscard]] static auto createData(String title = {}) -> impl::StringTreeDataPtr;
+    /// Append all data entries to formatted output.
     static void appendData(
         StringEditor &result,
         const impl::StringTreeData &data,
         unit::CpLength indentWidth,
         unit::CpLength indent,
         bool &firstLine);
+    /// Append one data entry to formatted output.
     static void appendEntry(
         StringEditor &result,
         const impl::StringTreeEntry &entry,
         unit::CpLength indentWidth,
         unit::CpLength indent,
         bool &firstLine);
+    /// Append indentation before a formatted output line.
     static void appendLinePrefix(StringEditor &result, unit::CpLength indent, bool &firstLine);
+    /// Create the label for an indexed list entry.
     [[nodiscard]] static auto listIndexLabel(std::size_t index) -> String;
+    /// Detach shared data before modifying this tree.
     void ensureUnique();
 
 private:

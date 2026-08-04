@@ -15,6 +15,7 @@ Exception Model
     domain error = typed exception owned by the failing domain
     reason = human-readable local error text
     cause = optional exception from a genuinely separate failure layer
+    platform context = native failure data owned by its domain diagnostic, not a cause
 
 Diagnostic Trust Boundary
 -------------------------
@@ -24,24 +25,6 @@ Diagnostic Trust Boundary
     developer-authored text = trusted and rendered verbatim
     external values = display-escaped before insertion into diagnostics
     native or foreign text = untrusted external value
-
-Usage of Cause Chain
---------------------
-
-.. code-block:: text
-
-    cause = failure from a separate abstraction layer
-    platform context = part of its owning domain diagnostic, not a routine cause
-
-Writing Style of Error Messages
--------------------------------
-
-.. code-block:: text
-
-    title = what failed
-    description = why it failed
-    help = optional resolution
-    external values = display-escaped before insertion
 
 Primary Types
 =============

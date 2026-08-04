@@ -4,6 +4,8 @@
 #include "../../support/TestHelper.hpp"
 
 #include <erbsland/cterm/BlockCombinationStyle.hpp>
+#include <erbsland/cterm/MatrixBlockCombinationStyle.hpp>
+#include <erbsland/cterm/SimpleBlockCombinationStyle.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>

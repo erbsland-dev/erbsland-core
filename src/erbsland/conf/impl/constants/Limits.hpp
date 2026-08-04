@@ -6,7 +6,7 @@
 
 #include <cstddef>
 
-namespace erbsland::conf::limits {
+namespace erbsland::conf::impl::limits {
 
 /// The maximum size of a configuration document in bytes.
 constexpr std::size_t maxDocumentSize = 100'000'000; // 100MB

@@ -61,10 +61,12 @@ public:
     void testToNativeInteger() {
         // Native integer returns as-is
         std::int32_t val{42};
-        REQUIRE(toNativeInteger(val) == 42);
+        const auto nativeValue = toNativeInteger(val);
+        REQUIRE_EQUAL(nativeValue, 42);
 
         std::int64_t cval{1234567};
-        REQUIRE(toNativeInteger(cval) == 1234567);
+        const auto nativeConstantValue = toNativeInteger(cval);
+        REQUIRE_EQUAL(nativeConstantValue, 1234567);
     }
 
     void testSameSignednessNativeIntegers() {

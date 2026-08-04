@@ -8,6 +8,8 @@
 
 namespace erbsland::event {
 
+/// Receiving endpoint for a typed event pipe.
+/// @notest{This placeholder contains no behavior yet.}
 template <typename T>
 class EventPipeReceiver {};
 

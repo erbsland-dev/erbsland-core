@@ -14,6 +14,7 @@
 
 namespace erbsland::conf::vr {
 
+/// Represents the type accepted by a validation rule.
 class RuleType {
 public:
     enum Enum : uint8_t {
@@ -39,6 +40,7 @@ public:
     };
 
 private:
+    /// Stores lookup metadata for one rule type.
     struct Entry {
         Enum value;
         text::String text;
@@ -131,8 +133,11 @@ public: // enumeration
     [[nodiscard]] static auto all() noexcept -> const std::array<RuleType, 19> &;
 
 private:
+    /// Get the lookup table from values to metadata.
     [[nodiscard]] static auto valueToTextMap() noexcept -> const ValueMap &;
+    /// Get the lookup table from text to values.
     [[nodiscard]] static auto textToValueMap() noexcept -> const TextToValueMap &;
+    /// Get metadata for this rule type.
     [[nodiscard]] auto entry() const noexcept -> const Entry &;
 
 private:

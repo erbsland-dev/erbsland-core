@@ -11,6 +11,9 @@ namespace erbsland::conf::impl {
 /// The value implementation for bytes values.
 class BytesValue final : public Value {
 public:
+    /// Store a byte value using perfect forwarding.
+    /// @tparam FwdData The forwarded byte-data type.
+    /// @param value The byte value to retain.
     template <typename FwdData>
     explicit BytesValue(FwdData value) noexcept : _value{std::forward<FwdData>(value)} {}
 
@@ -20,6 +23,7 @@ public:
     [[nodiscard]] auto asBytesOrThrow() const -> mem::ByteBlock override { return _value; }
     [[nodiscard]] auto toTextRepresentation() const noexcept -> text::String override;
     [[nodiscard]] auto deepCopy() const -> ValuePtr override { return std::make_shared<BytesValue>(_value); }
+    /// Access the stored bytes without copying them.
     [[nodiscard]] auto rawStorage() const noexcept -> const mem::ByteBlock & { return _value; }
 
 private:

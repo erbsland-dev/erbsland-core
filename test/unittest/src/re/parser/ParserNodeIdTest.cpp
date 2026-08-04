@@ -11,15 +11,16 @@
 TESTED_TARGETS(Parser)
 TAGS(Parsing)
 
-using PatternNodeId = impl::PatternNodeId;
 using namespace impl::node_data;
 
 class ParserNodeIdTest final : public UNITTEST_SUBCLASS(ParserBase) {
+    using PatternNodeId = el::re::impl::PatternNodeId;
+
 private:
     void requireValidIdTree(const PatternNodePtr &root) {
-        REQUIRE(root != nullptr);
+        REQUIRE(root);
         REQUIRE_EQUAL(root->id(), static_cast<PatternNodeId>(0));
-        REQUIRE(root->parent() == nullptr);
+        REQUIRE_FALSE(root->parent());
 
         std::unordered_map<PatternNodeId, const PatternNode *> nodes;
         std::unordered_set<PatternNodeId> ids;
@@ -33,7 +34,7 @@ private:
 
             if (id != root->id()) {
                 const auto parent = node.parent();
-                REQUIRE(parent != nullptr);
+                REQUIRE(parent);
 
                 // Ensure parent is visited before children (pre-order traversal)
                 // and that the parent pointer references the correct structural parent.
@@ -51,7 +52,7 @@ private:
                 }
                 REQUIRE(foundInParent);
             } else {
-                REQUIRE(node.parent() == nullptr);
+                REQUIRE_FALSE(node.parent());
             }
 
             nodes.insert({id, &node});
@@ -66,50 +67,50 @@ public:
     void testNodeBehaviourDirect() {
         const auto root = std::make_shared<PatternNode>(0, Group{});
         REQUIRE_EQUAL(root->id(), static_cast<PatternNodeId>(0));
-        REQUIRE(root->parent() == nullptr);
+        REQUIRE_FALSE(root->parent());
 
         const auto seq1 = std::make_shared<PatternNode>(1, Sequence{});
         root->addChild(seq1);
-        REQUIRE(seq1->parent() != nullptr);
+        REQUIRE(seq1->parent());
         REQUIRE_EQUAL(seq1->parent()->id(), root->id());
         REQUIRE_EQUAL(seq1->parent().get(), root.get());
 
         const auto a = std::make_shared<PatternNode>(2, CharacterSequence{el::text::Char{U'a'}});
         seq1->addChild(a);
-        REQUIRE(a->parent() != nullptr);
+        REQUIRE(a->parent());
         REQUIRE_EQUAL(a->parent()->id(), seq1->id());
         REQUIRE_EQUAL(a->parent().get(), seq1.get());
 
         // Replace last child should update parentId as well.
         const auto b = std::make_shared<PatternNode>(3, CharacterSequence{el::text::Char{U'b'}});
         seq1->replaceLastChild(b);
-        REQUIRE(b->parent() != nullptr);
+        REQUIRE(b->parent());
         REQUIRE_EQUAL(b->parent()->id(), seq1->id());
         REQUIRE_EQUAL(b->parent().get(), seq1.get());
 
         // Old node keeps its previous parent pointer (we don't clear it on detach).
-        REQUIRE(a->parent() != nullptr);
+        REQUIRE(a->parent());
         REQUIRE_EQUAL(a->parent()->id(), seq1->id());
 
         // Add two children.
         const auto seq2 = std::make_shared<PatternNode>(4, Sequence{});
         root->addChild(seq2);
-        REQUIRE(seq2->parent() != nullptr);
+        REQUIRE(seq2->parent());
         REQUIRE_EQUAL(seq2->parent()->id(), root->id());
 
         const auto x = std::make_shared<PatternNode>(5, CharacterSequence{el::text::Char{U'x'}});
         const auto y = std::make_shared<PatternNode>(6, CharacterSequence{el::text::Char{U'y'}});
         seq2->addChild(x);
         seq2->addChild(y);
-        REQUIRE(x->parent() != nullptr);
+        REQUIRE(x->parent());
         REQUIRE_EQUAL(x->parent()->id(), seq2->id());
-        REQUIRE(y->parent() != nullptr);
+        REQUIRE(y->parent());
         REQUIRE_EQUAL(y->parent()->id(), seq2->id());
 
         // Replace last child must update the parent.
         const auto z = std::make_shared<PatternNode>(7, CharacterSequence{el::text::Char{U'z'}});
         seq2->replaceLastChild(z);
-        REQUIRE(z->parent() != nullptr);
+        REQUIRE(z->parent());
         REQUIRE_EQUAL(z->parent()->id(), seq2->id());
     }
 

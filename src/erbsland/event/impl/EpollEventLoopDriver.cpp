@@ -20,11 +20,6 @@ namespace erbsland::event::impl {
 
 using namespace text::literals;
 
-namespace {
-constexpr auto cWakeGeneration = uint64_t{1U};
-constexpr auto cMaximumEvents = 32;
-}
-
 EpollEventLoopDriver::EpollEventLoopDriver() :
     _epoll{::epoll_create1(EPOLL_CLOEXEC)}, _wake{::eventfd(0, EFD_CLOEXEC | EFD_NONBLOCK)} {
     if (_epoll < 0 || _wake < 0) {
@@ -73,6 +68,7 @@ void EpollEventLoopDriver::wait(const time::TimeDelta maximumWait) {
 
 void EpollEventLoopDriver::wake() noexcept {
     constexpr auto value = uint64_t{1U};
+    // anti-pattern: allow static_cast_void -- A failed wake is harmless because the queue remains signalled.
     static_cast<void>(::write(_wake, &value, sizeof(value)));
 }
 
@@ -87,8 +83,8 @@ auto EpollEventLoopDriver::registerDescriptor(
     if (!callback) {
         throw err::ParameterError{"The native event callback must not be empty."_el, "callback"_el};
     }
-    for (const auto &[generation, registration] : _registrations) {
-        static_cast<void>(generation);
+    for (const auto &entry : _registrations) {
+        const auto &registration = entry.second;
         if (registration.descriptor == descriptor) {
             throw err::ParameterError{"The native descriptor is already registered."_el, "descriptor"_el};
         }
@@ -115,6 +111,8 @@ void EpollEventLoopDriver::unregisterDescriptor(const uint64_t generation) noexc
     if (iterator == _registrations.end()) {
         return;
     }
+    // anti-pattern: allow static_cast_void -- The descriptor is being released and failed deregistration is
+    // unrecoverable.
     static_cast<void>(::epoll_ctl(_epoll, EPOLL_CTL_DEL, iterator->second.descriptor, nullptr));
     _registrations.erase(iterator);
 }

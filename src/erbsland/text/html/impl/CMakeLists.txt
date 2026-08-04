@@ -7,6 +7,7 @@ target_sources(erbsland-core PRIVATE
         HtmlAttribute.hpp
         HtmlParser.cpp
         HtmlParser.hpp
+        HtmlParser_fwd.hpp
         HtmlParser_tags.cpp
         HtmlParserFrame.hpp
         HtmlTagInfo.hpp

@@ -38,6 +38,7 @@ public:
     };
 
 public:
+    /// Create encoding tools for `data`.
     explicit constexpr U8StringEncodingTools(const U8StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -52,6 +53,8 @@ public:
     [[nodiscard]] static auto decode(
         const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode, EncodingMode mode)
         -> U8StringEditor;
+    /// Strictly validate encoded byte data without constructing string storage.
+    static void validate(const mem::ByteBlock &data, StringEncoding encoding, StringBomMode bomMode);
 
 public: // helpers
     /// Encode visible UTF-8 data as UTF-8 bytes.
@@ -82,6 +85,7 @@ private:
     U8StringDataView _data;
 };
 
+/// Decode characters supplied by a callback into a UTF-8 editor.
 template <typename Function>
 auto U8StringEncodingTools::decodeFromCharacters(Function function) -> U8StringEditor {
     auto reservedSize = unit::ByteLength::zero();

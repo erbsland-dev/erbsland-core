@@ -5,6 +5,7 @@
 #include "Block.hpp"
 #include "BlockString.hpp"
 #include "FrameStyle.hpp"
+#include "Tile9Style_fwd.hpp"
 
 #include "../bgeo/BlockRectangle.hpp"
 #include "../text/Char.hpp"
@@ -13,13 +14,8 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
 
 namespace erbsland::cterm {
-
-class Tile9Style;
-/// Shared pointer for Tile9Style
-using Tile9StylePtr = std::shared_ptr<Tile9Style>;
 
 /// Defines a style for repeating a 3x3 tile pattern across a rectangle.
 ///
@@ -107,15 +103,20 @@ public:
     [[nodiscard]] static auto forStyle(FrameStyle frameStyle) -> Tile9StylePtr;
 
 private:
+    /// Parsed 9- or 16-tile style data.
     struct ParsedTiles {
         std::array<Block, 16> tiles{};
         bool hasExtendedTiles = false;
     };
 
 private:
+    /// Create a style from validated parsed tiles.
     explicit Tile9Style(const ParsedTiles &parsed) noexcept;
+    /// Parse a text sequence into style tiles.
     [[nodiscard]] static auto parseTiles(const BlockString &tiles) -> ParsedTiles;
+    /// Expand nine base tiles into parsed style data.
     [[nodiscard]] static auto toParsedTiles(const std::array<Block, 9> &tiles) noexcept -> ParsedTiles;
+    /// Store sixteen explicit tiles as parsed style data.
     [[nodiscard]] static auto toParsedTiles(const std::array<Block, 16> &tiles) noexcept -> ParsedTiles;
 
 private:

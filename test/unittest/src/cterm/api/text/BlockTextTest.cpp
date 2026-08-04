@@ -15,7 +15,7 @@ public:
         REQUIRE(text.blockString().isEmpty());
         REQUIRE_EQUAL(text.rectangle(), expectedRect);
         REQUIRE_EQUAL(text.color(), Color{});
-        REQUIRE(text.font() == nullptr);
+        REQUIRE_EQUAL(text.font(), nullptr);
         REQUIRE_EQUAL(text.animation(), BlockTextAnimation::None);
         REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::TopLeft);
         REQUIRE_EQUAL(text.paragraphSpacing(), ParagraphSpacing::SingleLine);
@@ -57,7 +57,7 @@ public:
         requireStringEqual(text.blockString(), U"ABC"_el);
         REQUIRE_EQUAL(text.rectangle(), (bgeo::BlockRectangle{4, 5, 6, 7}));
         REQUIRE_EQUAL(text.color(), Color(fg::Yellow, bg::Blue));
-        REQUIRE(text.font() == font);
+        REQUIRE_EQUAL(text.font(), font);
         REQUIRE_EQUAL(text.animation(), BlockTextAnimation::ColorDiagonal);
         REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::BottomLeft);
         REQUIRE_EQUAL(text.lineIndent(), 3);

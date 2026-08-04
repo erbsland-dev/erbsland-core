@@ -2,9 +2,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 target_sources(cryptology-hash-profile PRIVATE
-        Application.cpp
         Application.hpp
         Application_fwd.hpp
+        CryptologyHashProfileApplication.cpp
         DefaultConfiguration.hpp.in
         HashScenarioWorkload.cpp
         HashScenarioWorkload.hpp

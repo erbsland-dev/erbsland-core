@@ -54,10 +54,12 @@ protected:
     }
 
 private:
+    /// Throw the standard unsupported-backend error.
     [[noreturn]] static void throwUnsupported() {
         using namespace text::literals;
         throw path::PathError{"The test backend operation is not implemented."_el};
     }
+    /// Create a path that the backend does not support.
     [[nodiscard]] static auto unsupportedPath() -> path::Path { throwUnsupported(); }
 };
 

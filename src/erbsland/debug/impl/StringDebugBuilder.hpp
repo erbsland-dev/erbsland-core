@@ -8,6 +8,7 @@
 
 #include "../../text/AnyString.hpp"
 #include "../../text/AnyStringBuilder.hpp"
+#include "../../text/impl/StringStorageKind.hpp"
 #include "../../text/SafeStringFlag.hpp"
 #include "../../text/StringFormat.hpp"
 #include "../../text/StringTree.hpp"
@@ -19,9 +20,6 @@ namespace erbsland::debug::impl {
 /// The width for content previews in string debug titles.
 constexpr auto cContentsPreviewWidth = unit::CpLength{60U};
 
-/// Convert a string storage kind to debug text.
-[[nodiscard]] auto storageKindText(StringStorageKind kind) noexcept -> text::String;
-
 /// Convert a storage identifier to debug text.
 [[nodiscard]] auto storageIdentifierText(const mem::StorageIdentifier &storageId) -> text::String;
 
@@ -31,7 +29,7 @@ template <typename T>
 void appendRange(text::StringTree &tree, const T &range) {
     using namespace text::literals;
 
-    static const auto rangeFormat = text::StringFormat{"index: {} - {} (length: {})"};
+    static const auto rangeFormat = text::StringFormat{"index: {} - {} (length: {})"_el};
     tree.append("selectedRange"_el, rangeFormat.build(range.index(), range.endIndex(), range.length()));
 }
 
@@ -41,16 +39,17 @@ template <typename T>
 void appendStorage(text::StringTree &tree, const T &value, const DebugViewDetails details) {
     using namespace text::literals;
 
-    const auto dataView = StringDebugAccess::dataView(value);
+    const auto access = StringDebugAccess{value};
+    const auto dataView = access.dataView();
     if (details.isSet(DebugViewDetail::UnderlyingType) || details.isSet(DebugViewDetail::CoreDetails)) {
-        tree.append("storageKind"_el, storageKindText(StringDebugAccess::storageKind(value)));
+        tree.append("storageKind"_el, text::impl::toString(access.storageKind()));
     }
     if (details.isSet(DebugViewDetail::StorageId)) {
         tree.append("storageId"_el, storageIdentifierText(value.storageId()));
     }
-    tree.append("backingStorageId"_el, storageIdentifierText(StringDebugAccess::backingStorageId(value)));
+    tree.append("backingStorageId"_el, storageIdentifierText(access.backingStorageId()));
     if (details.isSet(DebugViewDetail::States) || details.isSet(DebugViewDetail::CoreDetails)) {
-        tree.append("isShared"_el, StringDebugAccess::isShared(value));
+        tree.append("isShared"_el, access.isShared());
     }
     if (details.isSet(DebugViewDetail::Size) || details.isSet(DebugViewDetail::CoreDetails)) {
         tree.append("backingLength"_el, dataView.data().size());

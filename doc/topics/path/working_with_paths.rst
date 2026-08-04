@@ -139,7 +139,7 @@ expected.
         el::io::printLine("suffixes ..........: "_el, report.suffixes());
 
         // Public elements include the root for absolute paths.
-        for (auto index = el::ElementIndex{}; index.isWithin(report.elementCount()); ++index) {
+        for (auto index = el::ItemIndex{}; index.isWithin(report.elementCount()); ++index) {
             el::io::printLine("element "_el, index.toSizeT(), " .........: "_el, report.element(index));
         }
 
@@ -268,8 +268,8 @@ across all supported path formats.
         el::io::printLine("absolute rhs ......: "_el, borrowedAbsolute.toString());
 
         // Slice with and without the root element.
-        const auto absoluteSlice = morningLog.slice(el::ElementRange{el::ElementIndex{0}, el::ElementCount{3}});
-        const auto relativeSlice = morningLog.slice(el::ElementRange{el::ElementIndex{1}, el::ElementCount{2}});
+        const auto absoluteSlice = morningLog.slice(el::ItemRange{el::ItemIndex{0}, el::ItemCount{3}});
+        const auto relativeSlice = morningLog.slice(el::ItemRange{el::ItemIndex{1}, el::ItemCount{2}});
 
         el::io::printLine("absolute slice ....: "_el, absoluteSlice.toString());
         el::io::printLine("relative slice ....: "_el, relativeSlice.toString());

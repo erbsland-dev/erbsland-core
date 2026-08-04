@@ -28,7 +28,7 @@ auto ConfKey::element(const std::size_t index) const noexcept -> text::String {
     if (index >= _elements.count().toSizeT()) {
         return {};
     }
-    return _elements[unit::ElementIndex::fromSizeT(index)];
+    return _elements.getRefOrThrow(unit::ItemIndex::fromSizeT(index));
 }
 
 auto ConfKey::toText() const noexcept -> text::String {

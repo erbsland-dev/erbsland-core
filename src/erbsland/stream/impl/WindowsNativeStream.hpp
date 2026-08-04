@@ -4,6 +4,7 @@
 
 #include "NativeByteStream.hpp"
 #include "NativeOutputStream.hpp"
+#include "WindowsNativeStream_fwd.hpp"
 
 #include "../StreamErrorContext.hpp"
 
@@ -15,31 +16,10 @@
 
 namespace erbsland::stream::impl {
 
-/// A native Windows stream handle.
-using WindowsNativeHandle = void *;
-
 /// Native byte stream wrapper for Windows handles.
 /// @tested{WindowsNativeStreamTest}
 class WindowsNativeStream final : public NativeOutputStream, public NativeByteStream {
-    class Operation final {
-    public:
-        explicit Operation(const WindowsNativeStream &stream);
-        ~Operation();
-
-        // deletions
-        Operation(const Operation &) = delete;
-        Operation(Operation &&) = delete;
-        auto operator=(const Operation &) -> Operation & = delete;
-        auto operator=(Operation &&) -> Operation & = delete;
-
-    public: // accessors
-        [[nodiscard]] auto handle() const noexcept -> WindowsNativeHandle { return _handle; }
-
-    private:
-        const WindowsNativeStream &_stream;
-        WindowsNativeHandle _handle{};
-        WindowsNativeHandle _threadHandle{};
-    };
+    friend class WindowsNativeOperation;
 
 public:
     /// Create a Windows native stream wrapper.
@@ -52,8 +32,9 @@ public:
         text::String path = {},
         bool positioningAllowed = true);
 
-    // defaults
     ~WindowsNativeStream() override;
+
+    // defaults/deletions
     WindowsNativeStream(const WindowsNativeStream &) = delete;
     WindowsNativeStream(WindowsNativeStream &&) = delete;
     auto operator=(const WindowsNativeStream &) -> WindowsNativeStream & = delete;
@@ -78,6 +59,7 @@ public: // implement NativeByteStream
     void write(mem::ConstByteSpan bytes) override;
 
 public:
+    /// Test whether the stream still owns an open handle.
     [[nodiscard]] auto isOpen() const noexcept -> bool;
 
 public:
@@ -87,10 +69,14 @@ public:
     [[nodiscard]] auto fileSize() const -> unit::ByteLength;
 
 private:
+    /// Throw a stream error with a Windows error code.
     [[noreturn]] void throwError(
         text::String title, text::String description, system::WindowsErrorContext::ErrorCode errorCode) const;
+    /// Throw a stream error using the last Windows error.
     [[noreturn]] void throwErrorFromLastError(text::String title, text::String description) const;
+    /// Write UTF-16 text to the native handle.
     void writeWideText(std::wstring_view text);
+    /// Complete an asynchronous operation for a thread handle.
     void finishOperation(WindowsNativeHandle threadHandle) const noexcept;
 
 private:

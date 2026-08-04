@@ -7,6 +7,8 @@
 #include "TerminalStream_fwd.hpp"
 #include "TerminalStreamSynchronization.hpp"
 
+#include "impl/TerminalStreamData_fwd.hpp"
+
 #include "../stream/TextOutputStream.hpp"
 
 #include <memory>
@@ -29,8 +31,9 @@ public:
         TerminalStreamSynchronizationPtr synchronization = {},
         stream::OutputStreamSettings settings = {});
 
-    // defaults
     ~TerminalStream() override { abort(); }
+
+    // defaults/deletions
     TerminalStream(const TerminalStream &) = delete;
     TerminalStream(TerminalStream &&) = delete;
     auto operator=(const TerminalStream &) -> TerminalStream & = delete;
@@ -73,11 +76,8 @@ public: // accessors
     void setStyle(BlockStyle style);
 
 private:
-    class Data;
-
-private:
-    TerminalPtr _terminal;       ///< The terminal to write to.
-    std::shared_ptr<Data> _data; ///< Shared state retained by pending work.
+    TerminalPtr _terminal;                           ///< The terminal to write to.
+    std::shared_ptr<impl::TerminalStreamData> _data; ///< Shared state retained by pending work.
 };
 
 }

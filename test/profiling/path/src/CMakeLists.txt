@@ -2,7 +2,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 target_sources(path-walker-profile PRIVATE
-        Application.cpp
         Application.hpp
         Application_fwd.hpp
         DefaultConfiguration.hpp.in
@@ -10,6 +9,7 @@ target_sources(path-walker-profile PRIVATE
         PathWalkerScenarioWorkload.cpp
         PathWalkerScenarioWorkload.hpp
         PathWalkerScenarioWorkload_fwd.hpp
+        PathWalkerProfileApplication.cpp
         PathWalkerWorkerWorkload.cpp
         PathWalkerWorkerWorkload.hpp
         PathWalkerWorkerWorkload_fwd.hpp

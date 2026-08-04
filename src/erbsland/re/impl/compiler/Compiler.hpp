@@ -21,7 +21,7 @@ public:
     Compiler(text::StringCharReader reader, const GroupFlags flags, Settings settings) :
         _reader{std::move(reader)}, _flags{flags}, _settings{std::move(settings)} {}
 
-    // defaults and disable copy and move.
+    // defaults/deletions
     ~Compiler() = default;
     auto operator=(const Compiler &) -> Compiler & = delete;
     auto operator=(Compiler &&) -> Compiler & = delete;
@@ -33,6 +33,9 @@ public:
     [[nodiscard]] auto buildEngine() -> EnginePtr;
 
 private:
+    /// Build the engine directly for a literal pattern or flat literal alternatives.
+    /// @return The engine, or a null pointer when the full parser is required.
+    [[nodiscard]] auto tryBuildLiteralEngine() const -> EnginePtr;
     /// Parse the pattern into a tree.
     void parse();
     /// Collect all character and character class data into continuous data segments.

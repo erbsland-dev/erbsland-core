@@ -30,7 +30,7 @@ using namespace erbsland::mem;
 /// updates a 160-bit chaining state. All words are read and written in big-endian byte order.
 ///
 /// Source: https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.180-4.pdf (section 6.1)
-/// @tested{HashValidationTest}
+/// @tested{HashValidationTest HashFullValidationTest}
 class Sha1 final {
 public:
     /// Create a new instance and initialize the state.

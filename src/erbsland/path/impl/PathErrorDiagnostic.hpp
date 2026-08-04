@@ -13,6 +13,7 @@ namespace erbsland::path::impl {
 /// @tested{DiagnosticTest}
 class PathErrorDiagnostic final : public err::Diagnostic {
 public:
+    /// Create a diagnostic for a path error context.
     explicit PathErrorDiagnostic(PathErrorContext context) noexcept;
 
 public: // implement Diagnostic
@@ -22,6 +23,7 @@ public: // implement Diagnostic
         -> text::TextDocument override;
 
 private:
+    /// Append a path value to diagnostic document content.
     static void appendPath(text::TextNode &content, const text::String &path);
 
 private:

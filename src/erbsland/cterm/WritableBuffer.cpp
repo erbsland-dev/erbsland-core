@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WritableBuffer.hpp"
 
+#include "Block16Style.hpp"
+#include "Tile9Style.hpp"
+
 #include "impl/BitmapPainter.hpp"
 #include "impl/BlockTextPainter.hpp"
 #include "impl/FramePainter.hpp"
@@ -11,6 +14,7 @@
 
 namespace erbsland::cterm {
 
+using namespace text::literals;
 using namespace bgeo;
 using impl::BitmapPainter;
 using impl::BlockTextPainter;
@@ -370,7 +374,7 @@ void WritableBuffer::drawBuffer(
 void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOptions &options) {
     if (static_cast<const ReadableBuffer *>(this) == &buffer) {
         throw err::ParameterError{
-            "WritableBuffer::drawBuffer() does not support drawing a buffer onto itself.", "buffer"};
+            "WritableBuffer::drawBuffer() does not support drawing a buffer onto itself."_el, "buffer"_el};
     }
     const auto *source = &buffer;
     auto sourceRect = options.useFullSource() ? source->rect() : options.sourceRect();

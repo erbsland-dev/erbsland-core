@@ -10,7 +10,7 @@
 namespace erbsland::text::impl {
 
 using unit::CpIndex;
-using unit::ElementCount;
+using unit::ItemCount;
 
 auto U32StringComparisonTools::containsOneDecodedCharacter(
     const std::span<const char32_t> data, const CharacterSet &characters) -> bool {
@@ -116,7 +116,7 @@ auto U32StringComparisonTools::contains(const Char character) const noexcept -> 
 }
 
 auto U32StringComparisonTools::count(const U32StringDataView &other, const CharCompareFn compareFn) const noexcept
-    -> ElementCount {
+    -> ItemCount {
     const auto needle = other.dataSpan();
     if (needle.empty()) {
         return {};
@@ -144,7 +144,7 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
         }
     }
 
-    auto result = ElementCount{};
+    auto result = ItemCount{};
     auto position = CpIndex::zero();
     while (position.toSizeT() < data.size()) {
         if (matchesDecodedSpan(data, position, needle, compareFn)) {
@@ -157,8 +157,8 @@ auto U32StringComparisonTools::count(const U32StringDataView &other, const CharC
     return result;
 }
 
-auto U32StringComparisonTools::count(const Char character) const noexcept -> ElementCount {
-    auto result = ElementCount{};
+auto U32StringComparisonTools::count(const Char character) const noexcept -> ItemCount {
+    auto result = ItemCount{};
     utf32::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char currentCharacter) -> bool {
         if (currentCharacter == character) {
             ++result;

@@ -38,6 +38,7 @@ public: // accessors
     [[nodiscard]] auto errorMessage() const noexcept -> text::String { return _errorMessage; }
 
 private:
+    /// Convert a Windows error code into its system-provided message text.
     [[nodiscard]] static auto messageFromErrorCode(ErrorCode errorCode) -> text::String;
 
 private:

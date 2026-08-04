@@ -4,6 +4,7 @@
 #include <DemoCommon.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/cryptology/Hasher.hpp>
+#include <erbsland/cryptology/HashSelector.hpp>
 
 namespace demo {
 
@@ -25,7 +26,7 @@ void persistAlgorithm() {
 
     const auto algorithmText = document->getTextOrThrow(el::String{"canopy_record.algorithm"_el});
     const auto storedAlgorithm = el::HashAlgorithm::fromString(algorithmText);
-    if (!storedAlgorithm.has_value() || !storedAlgorithm->isSafe()) {
+    if (!storedAlgorithm.has_value() || !el::HashSelector{}.isSafe(storedAlgorithm.value())) {
         throw el::RuntimeError{"The stored hash algorithm is unknown or no longer acceptable."_el};
     }
 

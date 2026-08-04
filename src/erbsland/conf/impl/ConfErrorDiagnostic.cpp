@@ -57,7 +57,7 @@ auto ConfErrorDiagnostic::toTextDocument(const i18n::DisplayTextMapConstPtr &dis
             _context.location()->line() >= _context.codeSnippet()->startLine) {
             const auto localLine = _context.location()->line().toSizeT() - _context.codeSnippet()->startLine.toSizeT();
             if (localLine < _context.codeSnippet()->lines.count().toSizeT()) {
-                const auto &sourceLine = _context.codeSnippet()->lines.get(unit::ElementIndex{localLine});
+                const auto &sourceLine = _context.codeSnippet()->lines.get(unit::ItemIndex{localLine});
                 const auto lineLength = sourceLine.characterLength().toSizeT();
                 const auto clippedColumn = lineLength == 0U
                     ? unit::ColumnIndex::zero()

@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../text/String.hpp"
-#include "../../Integer.hpp"
+#include "ConfVersionRange.hpp"
+#include "VersionMask_fwd.hpp"
 
-#include <algorithm>
+#include "../../../text/String.hpp"
+
 #include <initializer_list>
-#include <limits>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -15,52 +15,6 @@
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
-
-/// A closed, inclusive version range [first, last].
-/// Notes:
-/// - Versions are modeled as non-negative integers (`Integer`).
-/// - Endpoints are clamped to be >= 0. If constructed with reversed endpoints,
-///   they are automatically ordered so that `fist <= last`.
-/// - The data member name `fist` is a historical typo kept for ABI compatibility; it represents the first value.
-class ConfVersionRange final {
-public:
-    /// Create a zero version range 0-0.
-    ConfVersionRange() = default;
-    /// Creates a version range with a single value n-n.
-    /// @param value The single version value (>=0).
-    constexpr explicit ConfVersionRange(const Integer value) noexcept :
-        first{clampVersion(value)}, last{clampVersion(value)} {}
-    /// Create a version name first-last.
-    /// @param fist The first version of the range (>=0).
-    /// @param last The last version of the range (>=0).
-    constexpr ConfVersionRange(const Integer fist, const Integer last) noexcept :
-        first{lowerVersion(fist, last)}, last{upperVersion(fist, last)} {}
-
-    /// Creates a version range that covers all valid versions.
-    constexpr static auto all() noexcept -> ConfVersionRange {
-        return ConfVersionRange{0, std::numeric_limits<Integer>::max()};
-    }
-
-public: // tests
-    [[nodiscard]] auto matches(const Integer version) const noexcept -> bool {
-        return version >= first && version <= last;
-    }
-
-private:
-    [[nodiscard]] constexpr static auto clampVersion(const Integer value) noexcept -> Integer {
-        return std::max(value, Integer{0});
-    }
-    [[nodiscard]] constexpr static auto lowerVersion(const Integer first, const Integer last) noexcept -> Integer {
-        return std::min(clampVersion(first), clampVersion(last));
-    }
-    [[nodiscard]] constexpr static auto upperVersion(const Integer first, const Integer last) noexcept -> Integer {
-        return std::max(clampVersion(first), clampVersion(last));
-    }
-
-public:
-    Integer first{};
-    Integer last{};
-};
 
 /// A set-like mask over non-negative integer versions.
 /// Semantics and invariants:
@@ -97,6 +51,7 @@ public:
     [[nodiscard]] static auto fromRanges(Fwd &&values) noexcept -> VersionMask {
         return VersionMask{normalize(std::forward<Fwd>(values))};
     }
+    /// Construct a mask from an initializer list of ranges.
     [[nodiscard]] static auto fromRanges(const std::initializer_list<ConfVersionRange> values) noexcept -> VersionMask;
 
     /// Construct a mask that matches any of the given version integers (OR semantics).
@@ -105,6 +60,7 @@ public:
     /// - Duplicates are removed, and adjacent numbers are merged into ranges.
     /// - Empty input creates an empty mask (matches nothing).
     [[nodiscard]] static auto fromIntegers(const std::vector<Integer> &values) noexcept -> VersionMask;
+    /// Construct a mask from an initializer list of version integers.
     [[nodiscard]] static auto fromIntegers(const std::initializer_list<Integer> values) noexcept -> VersionMask;
 
     /// Merge this mask with another one, using OR semantics.

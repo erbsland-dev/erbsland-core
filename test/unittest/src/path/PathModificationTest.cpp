@@ -5,15 +5,15 @@
 
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringEditor.hpp>
-#include <erbsland/unit/ElementRange.hpp>
+#include <erbsland/unit/ItemRange.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 
 using el::path::Path;
-using el::unit::ElementCount;
-using el::unit::ElementIndex;
-using el::unit::ElementRange;
+using el::unit::ItemCount;
+using el::unit::ItemIndex;
+using el::unit::ItemRange;
 using namespace el::text::literals;
 using namespace erbsland::test::pathtest;
 
@@ -35,7 +35,7 @@ public:
         auto text = std::string{"visivel"};
         text.push_back('\0');
         text += "oculto";
-        const auto replacement = el::text::StringEditor{text};
+        const auto replacement = el::text::String{text};
 
         REQUIRE(path.withName(replacement).isEmpty());
         REQUIRE(path.withSuffix(replacement).isEmpty());
@@ -55,43 +55,42 @@ public:
 
     void testSlice() {
         const auto path = Path{"/arquivo/rotas/manha.txt"_el};
-        REQUIRE_EQUAL(toStdString(path.slice(ElementRange{ElementIndex{0}, ElementCount{2}})), "/arquivo");
-        REQUIRE_EQUAL(toStdString(path.slice(ElementRange{ElementIndex{1}, ElementCount{2}})), "arquivo/rotas");
+        REQUIRE_EQUAL(toStdString(path.slice(ItemRange{ItemIndex{0}, ItemCount{2}})), "/arquivo");
+        REQUIRE_EQUAL(toStdString(path.slice(ItemRange{ItemIndex{1}, ItemCount{2}})), "arquivo/rotas");
         REQUIRE_EQUAL(
-            toStdString(path.slice(ElementRange{ElementIndex{1}, ElementCount::infinite()})),
-            "arquivo/rotas/manha.txt");
-        REQUIRE_EQUAL(toStdString(path.slice(ElementRange{ElementIndex{2}, ElementCount{20}})), "rotas/manha.txt");
-        REQUIRE(path.slice(ElementRange{ElementIndex{4}, ElementCount{1}}).isEmpty());
+            toStdString(path.slice(ItemRange{ItemIndex{1}, ItemCount::infinite()})), "arquivo/rotas/manha.txt");
+        REQUIRE_EQUAL(toStdString(path.slice(ItemRange{ItemIndex{2}, ItemCount{20}})), "rotas/manha.txt");
+        REQUIRE(path.slice(ItemRange{ItemIndex{4}, ItemCount{1}}).isEmpty());
     }
 
     void testSplitAfter() {
         const auto path = Path{"/arquivo/rotas/manha.txt"_el};
 
-        auto [emptyFront, wholeBack] = path.splitAfter(ElementCount::zero());
+        auto [emptyFront, wholeBack] = path.splitAfter(ItemCount::zero());
         REQUIRE(emptyFront.isEmpty());
         REQUIRE_EQUAL(toStdString(wholeBack), "/arquivo/rotas/manha.txt");
 
-        auto [rootFront, rootBack] = path.splitAfter(ElementCount{1});
+        auto [rootFront, rootBack] = path.splitAfter(ItemCount{1});
         REQUIRE_EQUAL(toStdString(rootFront), "/");
         REQUIRE_EQUAL(toStdString(rootBack), "arquivo/rotas/manha.txt");
 
-        auto [archiveFront, archiveBack] = path.splitAfter(ElementCount{2});
+        auto [archiveFront, archiveBack] = path.splitAfter(ItemCount{2});
         REQUIRE_EQUAL(toStdString(archiveFront), "/arquivo");
         REQUIRE_EQUAL(toStdString(archiveBack), "rotas/manha.txt");
 
-        auto [directoryFront, directoryBack] = path.splitAfter(ElementCount{3});
+        auto [directoryFront, directoryBack] = path.splitAfter(ItemCount{3});
         REQUIRE_EQUAL(toStdString(directoryFront), "/arquivo/rotas");
         REQUIRE_EQUAL(toStdString(directoryBack), "manha.txt");
 
-        auto [wholeFront, currentBack] = path.splitAfter(ElementCount{4});
+        auto [wholeFront, currentBack] = path.splitAfter(ItemCount{4});
         REQUIRE_EQUAL(toStdString(wholeFront), "/arquivo/rotas/manha.txt");
         REQUIRE_EQUAL(toStdString(currentBack), ".");
 
-        auto [infiniteFront, infiniteBack] = path.splitAfter(ElementCount::infinite());
+        auto [infiniteFront, infiniteBack] = path.splitAfter(ItemCount::infinite());
         REQUIRE_EQUAL(toStdString(infiniteFront), "/arquivo/rotas/manha.txt");
         REQUIRE_EQUAL(toStdString(infiniteBack), ".");
 
-        auto [invalidFront, invalidBack] = Path{}.splitAfter(ElementCount{1});
+        auto [invalidFront, invalidBack] = Path{}.splitAfter(ItemCount{1});
         REQUIRE(invalidFront.isEmpty());
         REQUIRE(invalidBack.isEmpty());
     }
@@ -100,7 +99,7 @@ public:
         const auto &empty = Path::empty();
         REQUIRE(empty.isEmpty());
         REQUIRE_FALSE(empty.isValid());
-        REQUIRE(&empty == &Path::empty());
+        REQUIRE_EQUAL(&empty, &Path::empty());
 
         const auto current = Path::currentElement();
         REQUIRE(current.isValid());

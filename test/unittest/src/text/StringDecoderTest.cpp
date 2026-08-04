@@ -24,6 +24,7 @@ using el::text::StringEncoding;
 static_assert(std::is_same_v<decltype(std::declval<StringDecoder &>().decode(StringEncoding::Utf8)), el::text::String>);
 static_assert(
     std::is_same_v<decltype(std::declval<StringDecoder &>().toU16String(StringEncoding::Utf16)), el::text::U16String>);
+static_assert(std::is_same_v<decltype(std::declval<StringDecoder &>().validateOrThrow(StringEncoding::Utf8)), void>);
 
 TESTED_TARGETS(StringDecoder)
 class StringDecoderTest final : public el::UnitTest {
@@ -58,6 +59,34 @@ public:
             std::u32string{U"A\uFFFDB"});
         REQUIRE_THROWS(
             StringDecoder{malformed}.toU8String(StringEncoding::Utf8, StringBomMode::Automatic, EncodingMode::Strict));
+    }
+
+    void testValidateEncodedDataWithoutDecoding() {
+        const auto utf8 = StringDecoder{makeBlock({0x41U, 0xC2U, 0xA2U})};
+        REQUIRE_NOTHROW(utf8.validateOrThrow(StringEncoding::Utf8));
+
+        const auto malformedUtf8 = StringDecoder{makeBlock({0x41U, 0xC0U, 0x42U})};
+        REQUIRE_THROWS_AS(el::text::EncodingError, malformedUtf8.validateOrThrow(StringEncoding::Utf8));
+
+        const auto utf8Bom = StringDecoder{makeBlock({0xEFU, 0xBBU, 0xBFU, 0x41U})};
+        REQUIRE_NOTHROW(utf8Bom.validateOrThrow(StringEncoding::Utf8, StringBomMode::Require));
+        REQUIRE_THROWS_AS(
+            el::text::EncodingError, utf8Bom.validateOrThrow(StringEncoding::Utf8, StringBomMode::Reject));
+        REQUIRE_THROWS_AS(el::text::EncodingError, utf8.validateOrThrow(StringEncoding::Utf8, StringBomMode::Require));
+
+        const auto utf16LittleEndian = StringDecoder{makeBlock({0x41U, 0x00U, 0x3DU, 0xD8U, 0x00U, 0xDEU})};
+        REQUIRE_NOTHROW(utf16LittleEndian.validateOrThrow(StringEncoding::Utf16LittleEndian));
+        const auto utf16BigEndian = StringDecoder{makeBlock({0x00U, 0x41U, 0xD8U, 0x3DU, 0xDEU, 0x00U})};
+        REQUIRE_NOTHROW(utf16BigEndian.validateOrThrow(StringEncoding::Utf16BigEndian));
+        REQUIRE_THROWS_AS(
+            el::text::EncodingError,
+            StringDecoder{makeBlock({0x41U})}.validateOrThrow(StringEncoding::Utf16LittleEndian));
+
+        const auto utf32BigEndian = StringDecoder{makeBlock({0x00U, 0x01U, 0xF6U, 0x00U})};
+        REQUIRE_NOTHROW(utf32BigEndian.validateOrThrow(StringEncoding::Utf32BigEndian));
+        REQUIRE_THROWS_AS(
+            el::text::EncodingError,
+            StringDecoder{makeBlock({0x00U, 0x00U, 0xD8U, 0x00U})}.validateOrThrow(StringEncoding::Utf32BigEndian));
     }
 
     void testInitialAndRepeatedBomForEveryEncoding() {

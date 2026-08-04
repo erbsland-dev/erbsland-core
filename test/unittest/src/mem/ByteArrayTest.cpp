@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/OutOfRangeError.hpp>
+#include <erbsland/err/ParameterError.hpp>
 #include <erbsland/mem/ByteArray.hpp>
 #include <erbsland/mem/ByteBuffer.hpp>
 #include <erbsland/mem/ByteIntegerAccess.hpp>
@@ -99,6 +100,36 @@ public:
 
         bytes.fill(Byte{0xaaU});
         REQUIRE_EQUAL(bytes.toByteBuffer(), ByteBuffer({Byte{0xaaU}, Byte{0xaaU}, Byte{0xaaU}}));
+    }
+
+    void testExactSizeSpanConstruction() {
+        const auto source = ByteBuffer({Byte{1U}, Byte{2U}, Byte{3U}});
+        const auto result = ByteArray<3>::fromSpan(source.span());
+        REQUIRE(result.has_value());
+        REQUIRE_EQUAL(result->toByteBuffer(), source);
+        REQUIRE_EQUAL(ByteArray<3>::fromSpanOrThrow(source.span()).toByteBuffer(), source);
+
+        REQUIRE_FALSE(ByteArray<2>::fromSpan(source.span()).has_value());
+        REQUIRE_FALSE(ByteArray<4>::fromSpan(source.span()).has_value());
+        REQUIRE_THROWS_AS(el::err::ParameterError, ByteArray<2>::fromSpanOrThrow(source.span()));
+        REQUIRE_THROWS_AS(el::err::ParameterError, ByteArray<4>::fromSpanOrThrow(source.span()));
+    }
+
+    void testConstantTimeEquality() {
+        const auto bytes = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto same = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto differentFirst = ByteArray{Byte{9U}, Byte{2U}, Byte{3U}, Byte{4U}};
+        const auto differentMiddle = ByteArray{Byte{1U}, Byte{2U}, Byte{9U}, Byte{4U}};
+        const auto differentLast = ByteArray{Byte{1U}, Byte{2U}, Byte{3U}, Byte{9U}};
+
+        REQUIRE(bytes.isEqualConstTime(same));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentFirst));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentMiddle));
+        REQUIRE_FALSE(bytes.isEqualConstTime(differentLast));
+        REQUIRE(bytes.isEqualConstTime(ConstByteSpan{same.span()}));
+        REQUIRE_FALSE(bytes.isEqualConstTime(ConstByteSpan{same.span()}.first(3U)));
+        REQUIRE(ByteArray<0>{}.isEqualConstTime(ByteArray<0>{}));
+        REQUIRE(ByteArray<0>{}.isEqualConstTime(ConstByteSpan{}));
     }
 
     void testEmptyArray() {
@@ -208,6 +239,13 @@ public:
         REQUIRE_EQUAL(
             bytes.toByteBuffer(), ByteBuffer({Byte{0U}, Byte{0xf6U}, Byte{0x06U}, Byte{0xf8U}, Byte{7U}, Byte{5U}}));
         REQUIRE_FALSE(bytes.xorWith(ByteArray{Byte{1U}}.span()));
+
+        auto strict = ByteArray{Byte{0xf0U}, Byte{0x0fU}};
+        strict.xorWithOrThrow(ByteArray{Byte{0xaaU}, Byte{0x55U}}.span());
+        REQUIRE_EQUAL(strict.toByteBuffer(), ByteBuffer({Byte{0x5aU}, Byte{0x5aU}}));
+        const auto strictSnapshot = strict;
+        REQUIRE_THROWS_AS(el::err::ParameterError, strict.xorWithOrThrow(ByteArray{Byte{1U}}.span()));
+        REQUIRE_EQUAL(strict, strictSnapshot);
     }
 
     void testBitwiseOperators() {

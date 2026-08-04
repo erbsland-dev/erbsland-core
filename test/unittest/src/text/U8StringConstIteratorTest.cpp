@@ -3,9 +3,9 @@
 
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
-#include <erbsland/text/u8/U8String.hpp>
+#include <erbsland/text/String.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u8/U8StringConstIterator.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstddef>
@@ -13,11 +13,10 @@
 #include <string_view>
 #include <vector>
 
-using namespace el::text::literals;
-
-using el::text::U8String;
+using el::text::String;
+using el::text::StringEditor;
 using el::text::U8StringConstIterator;
-using el::text::U8StringEditor;
+using namespace el::text::literals;
 
 TESTED_TARGETS(U8StringConstIterator)
 class U8StringConstIteratorTest final : public el::UnitTest {
@@ -26,21 +25,23 @@ public:
         const auto first = U8StringConstIterator{};
         const auto second = U8StringConstIterator{};
 
-        REQUIRE(first == second);
+        REQUIRE_EQUAL(first, second);
         REQUIRE_FALSE(first.isValid());
         REQUIRE((*first).isNull());
-        REQUIRE(first.operator->() == nullptr);
+        REQUIRE_FALSE(first.operator->());
     }
 
     void testEmptyStringIteration() {
-        const auto text = U8StringEditor{};
+        const auto text = StringEditor{};
 
-        REQUIRE(text.begin() == text.end());
+        const auto begin = text.begin();
+        const auto end = text.end();
+        REQUIRE_EQUAL(begin, end);
         REQUIRE_FALSE(text.begin().isValid());
     }
 
     void testStringIteration() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto text = String{"A¢€😀"_el};
 
         const auto values = collectRawValues(text);
 
@@ -53,15 +54,17 @@ public:
 
     void testLiteralViewIteratorComparison() {
 
-        const auto view = U8String{"Hello"_el};
+        const auto view = String{"Hello"_el};
 
-        REQUIRE(view.begin() == view.begin());
-        REQUIRE(view.begin() != view.end());
+        const auto begin = view.begin();
+        const auto end = view.end();
+        REQUIRE_EQUAL(begin, begin);
+        REQUIRE_NOT_EQUAL(begin, end);
     }
 
     void testViewIteration() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢"}};
-        const auto view = U8String{text};
+        const auto text = String{"A¢"_el};
+        const auto view = String{text};
 
         const auto values = collectRawValues(view);
 
@@ -72,7 +75,7 @@ public:
 
     void testInvalidUtf8Iteration() {
         const auto data = invalidUtf8Data();
-        const auto text = U8StringEditor{std::string_view{data}};
+        const auto text = StringEditor{std::string_view{data}};
 
         const auto values = collectRawValues(text);
 
@@ -83,12 +86,13 @@ public:
     }
 
     void testPreAndPostIncrement() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢"}};
+        const auto text = String{"A¢"_el};
         auto iterator = text.begin();
         const auto samePosition = iterator;
 
-        REQUIRE(iterator == samePosition);
-        REQUIRE(iterator != text.end());
+        REQUIRE_EQUAL(iterator, samePosition);
+        const auto end = text.end();
+        REQUIRE_NOT_EQUAL(iterator, end);
         REQUIRE_EQUAL((*iterator).toRawValue(), U'A');
         REQUIRE_EQUAL(iterator->toRawValue(), U'A');
 
@@ -97,30 +101,30 @@ public:
 
         const auto previous = iterator++;
         REQUIRE_EQUAL((*previous).toRawValue(), U'\u00A2');
-        REQUIRE(iterator == text.end());
-        REQUIRE_FALSE(previous == iterator);
+        REQUIRE_EQUAL(iterator, end);
+        REQUIRE_NOT_EQUAL(previous, iterator);
         REQUIRE((*iterator).isNull());
     }
 
     void testCopyAndMoveAssignment() {
-        const auto firstText = U8StringEditor{std::string_view{"First"}};
-        const auto secondText = U8StringEditor{std::string_view{"Second"}};
+        const auto firstText = StringEditor{"First"_el};
+        const auto secondText = StringEditor{"Second"_el};
         auto first = firstText.begin();
         auto second = secondText.begin();
 
-        REQUIRE(first != second);
+        REQUIRE_NOT_EQUAL(first, second);
 
         second = first;
-        REQUIRE(second == first);
+        REQUIRE_EQUAL(second, first);
         REQUIRE_EQUAL((*second).toRawValue(), U'F');
 
         auto moved = U8StringConstIterator{};
         moved = std::move(second);
-        REQUIRE(moved == first);
+        REQUIRE_EQUAL(moved, first);
         REQUIRE_EQUAL((*moved).toRawValue(), U'F');
 
         auto moveConstructed = U8StringConstIterator{std::move(moved)};
-        REQUIRE(moveConstructed == first);
+        REQUIRE_EQUAL(moveConstructed, first);
         REQUIRE_EQUAL((*moveConstructed).toRawValue(), U'F');
     }
 
@@ -128,13 +132,14 @@ public:
         auto iterator = U8StringConstIterator{};
 
         REQUIRE_FALSE(iterator.isValid());
-        REQUIRE(&++iterator == &iterator);
+        const auto *incrementedIterator = &++iterator;
+        REQUIRE_EQUAL(incrementedIterator, &iterator);
 
         const auto previous = iterator++;
 
         REQUIRE_FALSE(iterator.isValid());
         REQUIRE_FALSE(previous.isValid());
-        REQUIRE(previous == iterator);
+        REQUIRE_EQUAL(previous, iterator);
     }
 
 private:

@@ -118,7 +118,7 @@ auto EncodedTextInputStream::readChar() -> StreamReadResult<Char> {
 
 auto EncodedTextInputStream::read(const CpLength maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum text read length must be finite.", "maximum"};
+        throw err::ParameterError{"The maximum text read length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -129,7 +129,7 @@ auto EncodedTextInputStream::read(const CpLength maximum) -> StreamReadResult<St
 
 auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum line length must be finite.", "maximum"};
+        throw err::ParameterError{"The maximum line length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {
@@ -140,7 +140,7 @@ auto EncodedTextInputStream::readLine(const CpLength maximum) -> StreamReadResul
 
 auto EncodedTextInputStream::readAll(const CpLength maximum) -> StreamReadResult<String> {
     if (maximum.isInfinite()) {
-        throw err::ParameterError{"The maximum aggregate text length must be finite.", "maximum"};
+        throw err::ParameterError{"The maximum aggregate text length must be finite."_el, "maximum"_el};
     }
     const auto lock = std::unique_lock{_mutex, std::try_to_lock};
     if (!lock.owns_lock()) {

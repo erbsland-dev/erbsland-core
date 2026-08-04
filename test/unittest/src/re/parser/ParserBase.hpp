@@ -26,6 +26,7 @@ public:
     el::text::StringList tree; ///< last parsed tree for diagnostics
     String lastPattern;        ///< last parsed pattern for diagnostics
 
+    /// One parser input pattern and its expected tree lines.
     struct TestCase {
         String pattern;
         std::vector<std::string_view> expected;
@@ -104,7 +105,7 @@ public:
         const auto treeSize = tree.count().toSizeT();
         REQUIRE_GREATER_EQUAL(treeSize, prefix.size());
         for (std::size_t i = 0; i < prefix.size(); ++i) {
-            REQUIRE(compareWithStar(prefix[i], tree[el::unit::ElementIndex::fromSizeT(i)]));
+            REQUIRE(compareWithStar(prefix[i], tree.getRefOrThrow(el::unit::ItemIndex::fromSizeT(i))));
         }
 
         // Check alternative next line
@@ -112,7 +113,7 @@ public:
         REQUIRE_GREATER(treeSize, altIndex);
         bool matchedAlt = false;
         for (const auto &alt : alternatives) {
-            if (compareWithStar(alt, tree[el::unit::ElementIndex::fromSizeT(altIndex)])) {
+            if (compareWithStar(alt, tree.getRefOrThrow(el::unit::ItemIndex::fromSizeT(altIndex)))) {
                 matchedAlt = true;
                 break;
             }
@@ -124,7 +125,7 @@ public:
             REQUIRE_GREATER_EQUAL(treeSize, prefix.size() + trail.size() + 1);
             const std::size_t start = treeSize - trail.size();
             for (std::size_t i = 0; i < trail.size(); ++i) {
-                REQUIRE(compareWithStar(trail[i], tree[el::unit::ElementIndex::fromSizeT(start + i)]));
+                REQUIRE(compareWithStar(trail[i], tree.getRefOrThrow(el::unit::ItemIndex::fromSizeT(start + i))));
             }
         }
     }

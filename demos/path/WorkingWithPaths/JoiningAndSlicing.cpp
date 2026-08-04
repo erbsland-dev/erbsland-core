@@ -22,8 +22,8 @@ void joiningAndSlicing() {
     el::io::printLine("absolute rhs ......: "_el, borrowedAbsolute.toString());
 
     // Slice with and without the root element.
-    const auto absoluteSlice = morningLog.slice(el::ElementRange{el::ElementIndex{0}, el::ElementCount{3}});
-    const auto relativeSlice = morningLog.slice(el::ElementRange{el::ElementIndex{1}, el::ElementCount{2}});
+    const auto absoluteSlice = morningLog.slice(el::ItemRange{el::ItemIndex{0}, el::ItemCount{3}});
+    const auto relativeSlice = morningLog.slice(el::ItemRange{el::ItemIndex{1}, el::ItemCount{2}});
 
     el::io::printLine("absolute slice ....: "_el, absoluteSlice.toString());
     el::io::printLine("relative slice ....: "_el, relativeSlice.toString());

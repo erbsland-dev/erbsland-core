@@ -19,7 +19,7 @@ public:
     /// reference to the output stream.
     explicit PrintContextToWrite(TextOutputStream &output) : _output{output} {}
 
-    // defaults / prevent copy and move
+    // defaults/deletions
     ~PrintContextToWrite() override = default;
     PrintContextToWrite(const PrintContextToWrite &) = delete;
     PrintContextToWrite(PrintContextToWrite &&) = delete;

@@ -17,21 +17,21 @@ using namespace text::literals;
 
 void FileAccessCheck::enable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature.", "feature"};
+        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
     }
     _features.set(feature);
 }
 
 void FileAccessCheck::disable(const Feature feature) {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature.", "feature"};
+        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
     }
     _features.reset(feature);
 }
 
 auto FileAccessCheck::isEnabled(const Feature feature) const -> bool {
     if (feature >= _featureCount) {
-        throw err::ParameterError{"Invalid file access feature.", "feature"};
+        throw err::ParameterError{"Invalid file access feature."_el, "feature"_el};
     }
     return _features.test(feature);
 }
@@ -53,7 +53,7 @@ auto FileAccessCheck::check(const AccessSources &sources) -> AccessCheckResult {
 void FileAccessCheck::fileAccessCheck(const AccessSources &sources) const {
     // Sanity checks.
     if (sources.source->name() != text::String{impl::defaults::fileSourceIdentifier}) {
-        throw err::LogicError("This function only checks file sources.");
+        throw err::LogicError("This function only checks file sources."_el);
     }
     if (!(isEnabled(AnyDirectory) || isEnabled(SameDirectory) || isEnabled(Subdirectories))) {
         throwAccessError("No directory access policies are configured. All file access is currently blocked."_el);
@@ -70,7 +70,7 @@ void FileAccessCheck::fileAccessCheck(const AccessSources &sources) const {
         try {
             auto sourceInfo = sourcePath.info();
             sourceInfo.reload(path::PathInfoParts{path::PathInfoPart::Type, path::PathInfoPart::Size});
-            if (sourceInfo.fileSize().toSizeT() > limits::maxDocumentSize) {
+            if (sourceInfo.fileSize().toSizeT() > impl::limits::maxDocumentSize) {
                 throwAccessError("The included file exceeds the maximum allowed size of 100MB."_el, sourcePath);
             }
         } catch (const path::PathError &) {

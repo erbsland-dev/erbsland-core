@@ -5,7 +5,6 @@
 #include "Time.hpp"
 #include "TimeZone.hpp"
 
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
 
@@ -64,8 +63,3 @@ private:
 };
 
 }
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::TimeWithZone> : FormatAs<time::TimeWithZone, String> {
-    [[nodiscard]] auto format(const time::TimeWithZone &value) const -> String { return value.toString(); }
-};

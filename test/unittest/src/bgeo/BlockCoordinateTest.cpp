@@ -26,9 +26,13 @@ public:
         const auto maximum = BlockCoordinate::maximum();
         const auto minimum = BlockCoordinate::minimum();
 
-        REQUIRE_EQUAL((maximum + BlockCoordinate{1}).toRawValue(), maximum.toRawValue());
-        REQUIRE_EQUAL((minimum - BlockCoordinate{1}).toRawValue(), minimum.toRawValue());
-        REQUIRE_EQUAL(BlockCoordinate{-12}.toAbsolute().toRawValue(), 12);
-        REQUIRE_EQUAL(BlockCoordinate{8}.clamped(BlockCoordinate{2}, BlockCoordinate{5}).toRawValue(), 5);
+        const auto saturatedMaximum = maximum + BlockCoordinate{1};
+        const auto saturatedMinimum = minimum - BlockCoordinate{1};
+        const auto absolute = BlockCoordinate{-12}.toAbsolute();
+        const auto clamped = BlockCoordinate{8}.clamped(BlockCoordinate{2}, BlockCoordinate{5});
+        REQUIRE_EQUAL(saturatedMaximum.toRawValue(), maximum.toRawValue());
+        REQUIRE_EQUAL(saturatedMinimum.toRawValue(), minimum.toRawValue());
+        REQUIRE_EQUAL(absolute.toRawValue(), 12);
+        REQUIRE_EQUAL(clamped.toRawValue(), 5);
     }
 };

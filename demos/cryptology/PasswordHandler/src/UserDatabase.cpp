@@ -17,16 +17,12 @@ namespace demo {
 
 using namespace el::text::literals;
 
-namespace {
-
 /// Throw a database-format error associated with its source path.
 /// @notest{Compiled and exercised as part of the Password Handler demo.}
-[[noreturn]] void throwInvalidDatabase(const el::Path &path, const el::String &description) {
+[[noreturn]] void UserDatabase::throwInvalidDatabase(const el::Path &path, const el::String &description) {
     auto context = el::core::ApplicationErrorContext{"Invalid user database"_el, description};
     context.setSourcePath(path.toString());
     throw el::ApplicationError{context};
-}
-
 }
 
 auto UserDatabase::load(const el::Path &path) -> UserDatabase {

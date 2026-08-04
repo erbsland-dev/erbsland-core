@@ -1,9 +1,13 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/err/ParseError.hpp>
 #include <erbsland/network/Host.hpp>
 #include <erbsland/network/HostEndpoint.hpp>
+#include <erbsland/network/HostNameFormat.hpp>
+#include <erbsland/network/IpAddress.hpp>
 #include <erbsland/network/IpEndpoint.hpp>
+#include <erbsland/network/IpNetwork.hpp>
 #include <erbsland/network/Port.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -13,7 +17,7 @@
 using namespace el::network;
 using namespace el::text::literals;
 
-TESTED_TARGETS(Host HostName HostEndpoint IpEndpoint Port ScopeId)
+TESTED_TARGETS(Host HostName HostEndpoint IpAddress IpEndpoint IpNetwork Port ScopeId)
 class NetworkValueTest final : public el::UnitTest {
 public:
     void testPorts() {
@@ -41,6 +45,20 @@ public:
         REQUIRE_FALSE(HostName::fromString("bad name"_el).has_value());
         REQUIRE_FALSE(Host::fromString("bad:address"_el).has_value());
         REQUIRE_FALSE(Host::fromString("fe80::1%4"_el).has_value());
+    }
+
+    void testIdnaHostNames() {
+        const auto unicode = HostName::fromStringOrThrow("WWW.bücher.example"_el);
+        const auto encoded = HostName::fromStringOrThrow("www.XN--BCHER-KVA.example"_el);
+        const auto decomposed = HostName::fromStringOrThrow("www.bücher.example"_el);
+        REQUIRE_EQUAL(unicode, encoded);
+        REQUIRE_EQUAL(unicode, decomposed);
+        REQUIRE_EQUAL(unicode.toString(), "www.bücher.example"_el);
+        REQUIRE_EQUAL(unicode.toString(HostNameFormat::IdnaAscii), "www.xn--bcher-kva.example"_el);
+        REQUIRE_EQUAL(std::hash<HostName>{}(unicode), std::hash<HostName>{}(encoded));
+        REQUIRE_FALSE(HostName::fromString("bad_name.example"_el).has_value());
+        REQUIRE_FALSE(HostName::fromString("example.test."_el).has_value());
+        REQUIRE_FALSE(HostName::fromString("xn--abc-.example"_el).has_value());
     }
 
     void testEndpointsAndScopes() {
@@ -74,5 +92,39 @@ public:
         const auto firstEndpoint = IpEndpoint::fromStringOrThrow("[fe80::1%4]:443"_el);
         const auto secondEndpoint = IpEndpoint::fromStringOrThrow("[fe80:0::1%4]:443"_el);
         REQUIRE_EQUAL(std::hash<IpEndpoint>{}(firstEndpoint), std::hash<IpEndpoint>{}(secondEndpoint));
+    }
+
+    void testParsingErrorsReportTheCause() {
+        requireParseError(
+            []() -> void { static_cast<void>(IpAddress::fromStringOrThrow(""_el)); },
+            "The IP-address must not be empty."_el);
+        requireParseError(
+            []() -> void { static_cast<void>(IpAddress::fromStringOrThrow("192.0.2.999"_el)); },
+            "The IPv4 address syntax is invalid."_el);
+        requireParseError(
+            []() -> void { static_cast<void>(IpNetwork::fromStringOrThrow("192.0.2.1/33"_el)); },
+            "The CIDR prefix length exceeds the address-family limit."_el);
+        requireParseError(
+            []() -> void { static_cast<void>(IpEndpoint::fromStringOrThrow("[192.0.2.1]:80"_el)); },
+            "IPv6 addresses must be bracketed and IPv4 addresses must not be bracketed."_el);
+        requireParseError(
+            []() -> void { static_cast<void>(HostEndpoint::fromStringOrThrow("[example.test]:443"_el)); },
+            "Only IPv6 addresses may be bracketed or have a scope identifier."_el);
+
+        REQUIRE_FALSE(IpAddress::fromString(""_el).has_value());
+        REQUIRE_FALSE(IpNetwork::fromString("192.0.2.1/33"_el).has_value());
+        REQUIRE_FALSE(IpEndpoint::fromString("[192.0.2.1]:80"_el).has_value());
+        REQUIRE_FALSE(HostEndpoint::fromString("[example.test]:443"_el).has_value());
+    }
+
+private:
+    template <typename Callable>
+    void requireParseError(Callable callable, const el::text::String &expectedReason) {
+        try {
+            callable();
+            REQUIRE(false);
+        } catch (const el::err::ParseError &error) {
+            REQUIRE_EQUAL(error.reason(), expectedReason);
+        }
     }
 };

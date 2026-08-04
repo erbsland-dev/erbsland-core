@@ -47,6 +47,7 @@ public: // accessors
     auto setPlatformContext(system::PlatformErrorContextConstPtr platformContext) noexcept -> StreamErrorContext &;
 
 private:
+    /// Get help text associated with the captured native error category.
     [[nodiscard]] auto categoryHelp() const noexcept -> text::String;
 
 private:

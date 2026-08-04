@@ -46,30 +46,30 @@ private:
         const auto exact = exactText<StringType>();
         const auto searchable = searchText<StringType>();
         const auto match = regEx->match(exact);
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         REQUIRE_EQUAL(match->begin(), 0U);
         REQUIRE_EQUAL(match->end(), 3U);
         REQUIRE_EQUAL(match->begin(1), 1U);
         REQUIRE_EQUAL(match->end(1), 2U);
 
         const auto fullMatch = regEx->fullMatch(exact);
-        REQUIRE(fullMatch != nullptr);
+        REQUIRE(fullMatch);
         REQUIRE_EQUAL(fullMatch->begin(), 0U);
         REQUIRE_EQUAL(fullMatch->end(), 3U);
 
         const auto findFirst = regEx->findFirst(searchable);
-        REQUIRE(findFirst != nullptr);
+        REQUIRE(findFirst);
         REQUIRE_EQUAL(findFirst->begin(), 1U);
         REQUIRE_EQUAL(findFirst->end(), 4U);
         REQUIRE_EQUAL(findFirst->begin(1), 2U);
         REQUIRE_EQUAL(findFirst->end(1), 3U);
 
-        REQUIRE(regEx->fullMatch(StringType{}) == nullptr);
+        REQUIRE_FALSE(regEx->fullMatch(StringType{}));
     }
 
     template <typename StringType>
     void requireFullMatch(const RegExPtr &regEx) {
-        REQUIRE(regEx->fullMatch(exactText<StringType>()) != nullptr);
+        REQUIRE(regEx->fullMatch(exactText<StringType>()));
     }
 
     void requireFullMatchAllWidths(const RegExPtr &regEx) {
@@ -81,8 +81,8 @@ private:
     template <typename StringType>
     void requireSingleNullFullMatch(const RegExPtr &regEx) {
         const auto nullText = StringType::fromCharacter(el::text::Char{U'\0'});
-        REQUIRE(regEx->fullMatch(nullText) != nullptr);
-        REQUIRE(regEx->fullMatch(StringType{}) == nullptr);
+        REQUIRE(regEx->fullMatch(nullText));
+        REQUIRE_FALSE(regEx->fullMatch(StringType{}));
     }
 
 public:

@@ -16,6 +16,8 @@ using el::text::Char;
 using impl::CharClass;
 using impl::CharRange;
 using impl::PatternNode;
+using impl::PatternNodeAllocator;
+using impl::PatternNodeArena;
 using impl::PatternNodePtr;
 using namespace impl::node_data;
 
@@ -130,5 +132,18 @@ public:
 
         WITH_CONTEXT(requireLines(enter, expectedEnter))
         WITH_CONTEXT(requireLines(exit, expectedExit))
+    }
+
+    void testArenaOutlivesEscapingNode() {
+        auto arena = std::make_shared<PatternNodeArena>();
+        auto weakArena = std::weak_ptr<PatternNodeArena>{arena};
+        node = std::allocate_shared<PatternNode>(PatternNodeAllocator<PatternNode>{arena}, 1U, Sequence{});
+
+        arena.reset();
+        REQUIRE_FALSE(weakArena.expired());
+        REQUIRE(node->isSequence());
+
+        node.reset();
+        REQUIRE(weakArena.expired());
     }
 };

@@ -4,9 +4,9 @@
 
 #include "Duration_fwd.hpp"
 #include "TimeAmounts.hpp"
+#include "TimeDelta_fwd.hpp"
 #include "TimeDeltaFormat.hpp"
 
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
 #include "../util/impl/ComparisonHelper.hpp"
@@ -166,6 +166,10 @@ public: // factory methods
     [[nodiscard]] static auto weeksOrThrow(int64_t ticks) -> TimeDelta;
 
 private:
+    constexpr static auto cNanosecondsPerSecondFloat = 1'000'000'000.0;
+    constexpr static auto cNanosecondsPerDayFloat = 86'400.0 * cNanosecondsPerSecondFloat;
+
+    /// Create a time delta or throw if its nanosecond value overflows.
     template <typename tTimeUnit>
     [[nodiscard]] static auto createOrThrow(tTimeUnit value) -> TimeDelta;
 
@@ -173,8 +177,3 @@ private:
 };
 
 }
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::TimeDelta> : FormatAs<time::TimeDelta, String> {
-    [[nodiscard]] auto format(const time::TimeDelta &value) const -> String { return value.toString(); }
-};

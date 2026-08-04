@@ -83,7 +83,8 @@ public:
         REQUIRE(info.exists());
         REQUIRE(info.isSymlink());
         REQUIRE_EQUAL(info.type(), PathType::Symlink);
-        REQUIRE_EQUAL(toStdString(info.resolvedPath().name()), "link.txt");
+        const auto resolvedPathName = toStdString(info.resolvedPath().name());
+        REQUIRE_EQUAL(resolvedPathName, "link.txt");
 
         std::filesystem::remove_all(fixture);
     }
@@ -98,6 +99,6 @@ private:
     }
 
     [[nodiscard]] static auto pathFromStd(const std::filesystem::path &path) -> Path {
-        return Path::fromPosix(el::text::StringEditor{path.generic_string()});
+        return Path::fromPosix(el::text::String{path.generic_string()});
     }
 };

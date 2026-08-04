@@ -1,0 +1,11 @@
+[package]
+name = "erbsland-core-network-interop-counterpart"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+rustls = { version = "0.23.43", default-features = false, features = ["ring", "std", "tls12"] }
+rustls-pemfile = "2.2.0"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.143"

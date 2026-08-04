@@ -12,6 +12,8 @@
 
 namespace app::byte {
 
+using namespace el::text::literals;
+
 /// The profiler execution mode.
 enum class RunMode : std::uint8_t { Profile, Benchmark };
 /// A profiled owning byte type.
@@ -79,7 +81,7 @@ struct UseCaseDescriptor {
 /// @notest{Verified by byte profiler dry-run and smoke CTest entries.}
 struct RunSettings {
     RunMode mode{RunMode::Benchmark};                                          ///< The execution mode.
-    el::String suite{"snapshot"};                                              ///< The built-in suite.
+    el::String suite{"snapshot"_el};                                           ///< The built-in suite.
     std::chrono::nanoseconds duration{std::chrono::minutes{5}};                ///< Hard run deadline.
     std::uint32_t threadCount{4U};                                             ///< Workload thread count.
     std::uint64_t seed{0x455242534c414e44ULL};                                 ///< Global deterministic seed.
@@ -98,20 +100,13 @@ struct Scenario {
     el::String group;                                   ///< User-facing scenario group.
     ByteType type{ByteType::Buffer};                    ///< The owning byte type.
     UseCase useCase{UseCase::Create};                   ///< The use case.
-    el::String variant{"default"};                      ///< The implementation-path variant.
+    el::String variant{"default"_el};                   ///< The implementation-path variant.
     SizeMode sizeMode{SizeMode::Fixed};                 ///< The source size-expansion mode.
     SensitiveMode sensitiveMode{SensitiveMode::Normal}; ///< Effective sensitive-storage state.
     std::uint64_t size{4096U};                          ///< Primary byte size.
     std::uint64_t operandSize{64U};                     ///< Secondary operand or chunk size.
     std::uint32_t weight{1U};                           ///< Profile-mode repetition weight.
     WorkUnit workUnit{WorkUnit::Bytes};                 ///< Measurement normalization unit.
-};
-
-/// A validated and expanded configuration.
-/// @notest{Verified by byte profiler dry-run and smoke CTest entries.}
-struct Configuration {
-    RunSettings run;                   ///< Run settings.
-    std::vector<Scenario> scenarios{}; ///< Expanded scenarios.
 };
 
 /// One worker's measured result.

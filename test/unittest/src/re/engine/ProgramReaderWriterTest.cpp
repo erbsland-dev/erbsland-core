@@ -126,7 +126,7 @@ public:
         programCounter = 0;
         REQUIRE_EQUAL(reader.peekOperation(programCounter), Operation::Anchor);
         const auto ra = reader.readAnchor(programCounter);
-        REQUIRE(ra == TextAnchor::LineEnd);
+        REQUIRE_EQUAL(ra, TextAnchor::LineEnd);
         REQUIRE_EQUAL(programCounter, 1U);
     }
 
@@ -242,9 +242,11 @@ public:
 
         programCounter = 0;
         REQUIRE_EQUAL(reader.peekOperation(programCounter), Operation::Category);
-        REQUIRE(reader.readCategory(programCounter) == category);
+        const auto firstCategory = reader.readCategory(programCounter);
+        REQUIRE_EQUAL(firstCategory, category);
         REQUIRE_EQUAL(reader.peekOperation(programCounter), Operation::NotCategory);
-        REQUIRE(reader.readCategory(programCounter) == category);
+        const auto secondCategory = reader.readCategory(programCounter);
+        REQUIRE_EQUAL(secondCategory, category);
         REQUIRE_EQUAL(programCounter, 2U);
     }
 

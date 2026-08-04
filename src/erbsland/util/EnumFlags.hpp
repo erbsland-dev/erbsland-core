@@ -221,7 +221,9 @@ public: // conversion
     [[nodiscard]] constexpr auto toRawValue() const noexcept -> Value { return _value; }
 
 private:
+    /// Cast this base instance to the fluent derived result type.
     [[nodiscard]] constexpr auto derived() noexcept -> Result & { return static_cast<Result &>(*this); }
+    /// Invert raw flag bits.
     [[nodiscard]] constexpr static auto invertedValue(Value value) noexcept -> Value {
         return static_cast<Value>(~value);
     }

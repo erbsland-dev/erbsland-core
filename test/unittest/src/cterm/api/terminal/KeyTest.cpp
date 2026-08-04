@@ -36,8 +36,10 @@ public:
         REQUIRE_EQUAL(key.unicode(), U'a');
         REQUIRE_EQUAL(key.combined(), U"a"_el);
         REQUIRE(key.valid());
-        REQUIRE(key == Key{Key::Character, U'a'});
-        REQUIRE(key != Key{Key::Character, U'b'});
+        const auto matchingKey = Key{Key::Character, U'a'};
+        const auto differentKey = Key{Key::Character, U'b'};
+        REQUIRE_EQUAL(key, matchingKey);
+        REQUIRE_NOT_EQUAL(key, differentKey);
 
         const auto combined = Key{Key::Combined, U"e\u0301"_el};
         REQUIRE_EQUAL(combined.type(), Key::Combined);
@@ -48,8 +50,9 @@ public:
         const auto shiftedUp = Key{Key::Up, KeyModifier::Shift};
         REQUIRE_EQUAL(shiftedUp.type(), Key::Up);
         REQUIRE(shiftedUp.hasModifier(KeyModifier::Shift));
-        REQUIRE(shiftedUp != Key{Key::Up});
-        REQUIRE(shiftedUp != Key::Up);
+        const auto unmodifiedUp = Key{Key::Up};
+        REQUIRE_NOT_EQUAL(shiftedUp, unmodifiedUp);
+        REQUIRE_NOT_EQUAL(shiftedUp, Key::Up);
         REQUIRE_EQUAL(shiftedUp.withoutModifiers(), Key{Key::Up});
     }
 

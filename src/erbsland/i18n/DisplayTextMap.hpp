@@ -57,10 +57,15 @@ public: // accessors
     [[nodiscard]] auto translator() const noexcept -> const DisplayTextTranslatorConstPtr & { return _translator; }
 
 private:
+    /// Add built-in English source texts.
     void addDefaultTexts();
+    /// Clear translated text and format caches.
     void clearCaches();
+    /// Find source text for a complete display-text key.
     [[nodiscard]] auto findSourceText(const text::String &key) const -> std::optional<text::String>;
+    /// Extract the domain part of a display-text key.
     [[nodiscard]] static auto domainKey(const text::String &key) -> text::String;
+    /// Extract the final identifier part of a display-text key.
     [[nodiscard]] static auto finalKey(const text::String &key) noexcept -> text::String;
 
 private:

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "impl/Throw.hpp"
+
 #include <functional>
 
 namespace erbsland::util {
@@ -33,6 +35,25 @@ auto List<tElement, tSelf>::get(const Index index, const Element &defaultValue) 
     const auto &data = raw();
     if (!validIndex(index, data.size())) {
         return defaultValue;
+    }
+    return data[index.toSizeT()];
+}
+
+template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::getRef(const Index index) const -> const Element & {
+    const auto &data = raw();
+    if (!validIndex(index, data.size())) {
+        static const auto cDefaultElement = Element{};
+        return cDefaultElement;
+    }
+    return data[index.toSizeT()];
+}
+
+template <typename tElement, typename tSelf>
+auto List<tElement, tSelf>::getRefOrThrow(const Index index) const -> const Element & {
+    const auto &data = raw();
+    if (!validIndex(index, data.size())) {
+        impl::throwOutOfRange("List index out of range.");
     }
     return data[index.toSizeT()];
 }

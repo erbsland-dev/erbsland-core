@@ -28,7 +28,11 @@ Interface
 
 .. doxygenclass:: erbsland::conf::FileSourceResolver
     :members:
+
+.. doxygentypedef:: erbsland::conf::FileSourceResolverPtr
 .. doxygenclass:: erbsland::conf::SourceResolver
     :members:
+
+.. doxygentypedef:: erbsland::conf::SourceResolverPtr
 .. doxygenstruct:: erbsland::conf::SourceResolverContext
     :members:

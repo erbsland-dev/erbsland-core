@@ -18,9 +18,13 @@ public:
     explicit OptionErrorDiagnostic(OptionErrorContext context);
 
 public: // implement Diagnostic
+    /// Get the diagnostic source name.
     [[nodiscard]] auto sourceName() const noexcept -> text::String override;
+    /// Get the source location of the option error.
     [[nodiscard]] auto location() const noexcept -> unit::CodeLocation override;
+    /// Convert the diagnostic to plain text.
     [[nodiscard]] auto toString() const noexcept -> text::String override;
+    /// Convert the diagnostic to a structured text document.
     [[nodiscard]] auto toTextDocument(const i18n::DisplayTextMapConstPtr &displayText = {}) const
         -> text::TextDocument override;
 

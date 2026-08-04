@@ -165,6 +165,8 @@ public:
         WITH_CONTEXT(requireNoFindFirst("xyz"_el));
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testFindFirst_BacktrackingStress_AmbiguousAlternationWithRepetition() {
         // Roughly equivalent to `(a|aa)+b`.
         // This can create a lot of backtracking; it must still find the first match or conclude no match.
@@ -190,5 +192,25 @@ public:
             StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{99'999U}); // ~100kb
         longTextNotMatch.append("c"_el);
         WITH_CONTEXT(requireNoFindFirst(longTextNotMatch));
+    }
+
+    void testFindFirst_BacktrackingStress_AmbiguousAlternationWithRepetitionLight() {
+        WITH_CONTEXT(assembleProgram({
+            "loop:     SPLIT %one, %two",
+            "one:      CHAR 'a'",
+            "          JUMP %cont",
+            "two:      CHAR 'a'",
+            "          CHAR 'a'",
+            "cont:     SPLIT %loop, %after",
+            "after:    CHAR 'b'",
+            "end:      MATCH",
+        }));
+
+        auto matchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{1024U});
+        matchingText.append("b"_el);
+        WITH_CONTEXT(requireFindFirst(matchingText, CaptureRange{0, matchingText.length().toSizeT()}));
+        auto nonMatchingText = StringEditor::fromCharacter(el::text::Char{U'a'}, el::unit::CpLength{1024U});
+        nonMatchingText.append("c"_el);
+        WITH_CONTEXT(requireNoFindFirst(nonMatchingText));
     }
 };

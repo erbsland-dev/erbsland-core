@@ -51,7 +51,7 @@ public:
 
     void verifyValueMap(const ExpectedValueMap &expectedValueMap) {
         doc = builder.getDocumentAndReset();
-        REQUIRE(doc != nullptr);
+        REQUIRE(doc);
         auto flatMap = doc->toFlatValueMap();
         // First, convert and verify all name paths.
         auto actualValues = std::map<el::text::String, el::text::String>{};
@@ -97,16 +97,19 @@ public:
     void testConstruction() {
         // As we will use a member variable for all following tests, this test constructs and destructs
         // an instance to verify the memory handling.
-        std::weak_ptr<impl::Value> weakValue;
+        std::weak_ptr<el::conf::impl::Value> weakValue;
         {
-            impl::DocumentBuilder builder;
+            el::conf::impl::DocumentBuilder builder;
             builder.addSectionMap(NamePath::fromText("main"_el), location);
-            auto value = impl::Value::createInteger(1);
+            auto value = el::conf::impl::Value::createInteger(1);
             weakValue = value;
             builder.addValue(NamePath::fromText("main.value_1"_el), value, location);
             auto doc = builder.getDocumentAndReset();
-            REQUIRE(doc != nullptr);
-            REQUIRE(doc->value(NamePath::fromText("main.value_1"_el))->type() == ValueType::Integer);
+            REQUIRE(doc);
+            const auto resultValue = doc->value(NamePath::fromText("main.value_1"_el));
+            REQUIRE(resultValue);
+            const auto type = resultValue->type();
+            REQUIRE_EQUAL(type, ValueType::Integer);
             // destruct...
         }
         REQUIRE(weakValue.expired()); // no leaks.
@@ -115,8 +118,9 @@ public:
     void testBasics() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.value_1"_el), impl::Value::createInteger(1), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_2"_el), impl::Value::createInteger(2), location));
+            builder.addValue(NamePath::fromText("main.value_1"_el), el::conf::impl::Value::createInteger(1), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_2"_el), el::conf::impl::Value::createInteger(2), location));
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
             {"main.value_1"_el, "Integer(1)"_el},
@@ -134,41 +138,47 @@ public:
 
     void testAllTypes() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.value_1"_el), impl::Value::createInteger(12345), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.value_2"_el), impl::Value::createBoolean(true), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.value_3"_el), impl::Value::createFloat(123.456), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.value_4"_el), impl::Value::createText("😆"_el), location));
         REQUIRE_NOTHROW(builder.addValue(
-            NamePath::fromText("main.value_5"_el), impl::Value::createDate(makeDate(2025, 12, 26)), location));
+            NamePath::fromText("main.value_1"_el), el::conf::impl::Value::createInteger(12345), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.value_2"_el), el::conf::impl::Value::createBoolean(true), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.value_3"_el), el::conf::impl::Value::createFloat(123.456), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.value_4"_el), el::conf::impl::Value::createText("😆"_el), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.value_5"_el),
+            el::conf::impl::Value::createDate(makeDate(2025, 12, 26)),
+            location));
         REQUIRE_NOTHROW(builder.addValue(
             NamePath::fromText("main.value_6"_el),
-            impl::Value::createTimeWithZone(makeTimeWithZone(22, 11, 33, 123456000)),
+            el::conf::impl::Value::createTimeWithZone(makeTimeWithZone(22, 11, 33, 123456000)),
             location));
         REQUIRE_NOTHROW(builder.addValue(
             NamePath::fromText("main.value_7"_el),
-            impl::Value::createDateTime(
+            el::conf::impl::Value::createDateTime(
                 el::time::DateTime{makeDate(2025, 12, 26), makeTimeWithZone(22, 11, 33, 123456000)}),
             location));
         REQUIRE_NOTHROW(builder.addValue(
-            NamePath::fromText("main.value_8"_el), impl::Value::createBytes(bytesFromHex("0102aabbcc"_el)), location));
+            NamePath::fromText("main.value_8"_el),
+            el::conf::impl::Value::createBytes(bytesFromHex("0102aabbcc"_el)),
+            location));
         REQUIRE_NOTHROW(builder.addValue(
             NamePath::fromText("main.value_9"_el),
-            impl::Value::createCalendarDelta(el::time::CalendarDelta{el::time::Hours{5}}),
+            el::conf::impl::Value::createCalendarDelta(el::time::CalendarDelta{el::time::Hours{5}}),
             location));
         REQUIRE_NOTHROW(builder.addValue(
             NamePath::fromText("main.value_10"_el),
-            impl::Value::createRegEx(el::re::RegEx::compile("abc"_el)),
+            el::conf::impl::Value::createRegEx(el::re::RegEx::compile("abc"_el)),
             location));
-        std::vector<impl::ValuePtr> valueList;
-        valueList.emplace_back(impl::Value::createInteger(1));
-        valueList.emplace_back(impl::Value::createInteger(2));
-        valueList.emplace_back(impl::Value::createInteger(3));
+        std::vector<el::conf::impl::ValuePtr> valueList;
+        valueList.emplace_back(el::conf::impl::Value::createInteger(1));
+        valueList.emplace_back(el::conf::impl::Value::createInteger(2));
+        valueList.emplace_back(el::conf::impl::Value::createInteger(3));
         REQUIRE_NOTHROW(builder.addValue(
-            NamePath::fromText("main.value_11"_el), impl::Value::createValueList(std::move(valueList)), location));
+            NamePath::fromText("main.value_11"_el),
+            el::conf::impl::Value::createValueList(std::move(valueList)),
+            location));
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
             {"main.value_1"_el, "Integer(12345)"_el},
@@ -193,21 +203,26 @@ public:
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.server"_el), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.server.filter"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_1"_el), impl::Value::createInteger(1), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_1"_el), el::conf::impl::Value::createInteger(1), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.client"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_2"_el), impl::Value::createInteger(2), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_2"_el), el::conf::impl::Value::createInteger(2), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.server.handler"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_3"_el), impl::Value::createInteger(3), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_3"_el), el::conf::impl::Value::createInteger(3), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("web"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_4"_el), impl::Value::createInteger(4), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_4"_el), el::conf::impl::Value::createInteger(4), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("web.pages"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_5"_el), impl::Value::createInteger(5), location));
         REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.server.value_6"_el), impl::Value::createInteger(6), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.client.value_7"_el), impl::Value::createInteger(7), location));
+            builder.addValue(NamePath::fromText("value_5"_el), el::conf::impl::Value::createInteger(5), location));
         REQUIRE_NOTHROW(builder.addValue(
-            NamePath::fromText("main.server.handler.value_8"_el), impl::Value::createInteger(8), location));
+            NamePath::fromText("main.server.value_6"_el), el::conf::impl::Value::createInteger(6), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.client.value_7"_el), el::conf::impl::Value::createInteger(7), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.server.handler.value_8"_el), el::conf::impl::Value::createInteger(8), location));
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
             {"main.server"_el, "SectionWithNames()"_el},
@@ -231,13 +246,16 @@ public:
     void testSectionList() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         REQUIRE_NOTHROW(builder.addSectionList(NamePath::fromText("main.server"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_1"_el), impl::Value::createInteger(1), location));
-        REQUIRE_NOTHROW(builder.addSectionList(NamePath::fromText("main.server"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_2"_el), impl::Value::createInteger(2), location));
-        REQUIRE_NOTHROW(builder.addSectionList(NamePath::fromText("main.server"_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_3"_el), impl::Value::createInteger(3), location));
         REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.server.value_4"_el), impl::Value::createInteger(4), location));
+            builder.addValue(NamePath::fromText("value_1"_el), el::conf::impl::Value::createInteger(1), location));
+        REQUIRE_NOTHROW(builder.addSectionList(NamePath::fromText("main.server"_el), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_2"_el), el::conf::impl::Value::createInteger(2), location));
+        REQUIRE_NOTHROW(builder.addSectionList(NamePath::fromText("main.server"_el), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_3"_el), el::conf::impl::Value::createInteger(3), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.server.value_4"_el), el::conf::impl::Value::createInteger(4), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.server.details"_el), location));
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
@@ -271,9 +289,11 @@ public:
     void testCommonErrors() {
         // Adding values before any section is created.
         REQUIRE_THROWS_AS(
-            ConfError, builder.addValue(NamePath::fromText("main"_el), impl::Value::createInteger(1), location));
+            ConfError,
+            builder.addValue(NamePath::fromText("main"_el), el::conf::impl::Value::createInteger(1), location));
         REQUIRE_THROWS_AS(
-            ConfError, builder.addValue(NamePath::fromText("main.server"_el), impl::Value::createInteger(1), location));
+            ConfError,
+            builder.addValue(NamePath::fromText("main.server"_el), el::conf::impl::Value::createInteger(1), location));
         // Invalid name paths.
         REQUIRE_THROWS_AS(ConfError, builder.addSectionMap(NamePath{}, location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionMap(NamePath::fromText("main[5]"_el), location));
@@ -282,17 +302,19 @@ public:
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main[5]"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main.\"\"[5]"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main.\"text\""_el), location));
-        REQUIRE_THROWS_AS(ConfError, builder.addValue(NamePath{}, impl::Value::createInteger(1), location));
-        REQUIRE_THROWS_AS(
-            ConfError, builder.addValue(NamePath::fromText("main[1]"_el), impl::Value::createInteger(1), location));
+        REQUIRE_THROWS_AS(ConfError, builder.addValue(NamePath{}, el::conf::impl::Value::createInteger(1), location));
         REQUIRE_THROWS_AS(
             ConfError,
-            builder.addValue(NamePath::fromText("main.\"\"[2]"_el), impl::Value::createInteger(1), location));
+            builder.addValue(NamePath::fromText("main[1]"_el), el::conf::impl::Value::createInteger(1), location));
+        REQUIRE_THROWS_AS(
+            ConfError,
+            builder.addValue(NamePath::fromText("main.\"\"[2]"_el), el::conf::impl::Value::createInteger(1), location));
         // Adding a value to a non-existing section.
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.server"_el), location));
         REQUIRE_THROWS_AS(
             ConfError,
-            builder.addValue(NamePath::fromText("main.one.two.three"_el), impl::Value::createInteger(1), location));
+            builder.addValue(
+                NamePath::fromText("main.one.two.three"_el), el::conf::impl::Value::createInteger(1), location));
         // after all these errors, no additional elements should be created.
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "IntermediateSection()"_el},
@@ -307,7 +329,8 @@ public:
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main.server"_el), location));
         REQUIRE_THROWS_AS(
-            ConfError, builder.addValue(NamePath::fromText("main.server"_el), impl::Value::createInteger(1), location));
+            ConfError,
+            builder.addValue(NamePath::fromText("main.server"_el), el::conf::impl::Value::createInteger(1), location));
         // after all errors, only the initial two elements should exist.
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "IntermediateSection()"_el},
@@ -319,14 +342,15 @@ public:
     void testNameConflicts2() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.server"_el), impl::Value::createInteger(1), location));
+            builder.addValue(NamePath::fromText("main.server"_el), el::conf::impl::Value::createInteger(1), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionMap(NamePath::fromText("main.server"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionMap(NamePath::fromText("main.server.section"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main.server"_el), location));
         REQUIRE_THROWS_AS(ConfError, builder.addSectionList(NamePath::fromText("main.server.section"_el), location));
         REQUIRE_THROWS_AS(
             ConfError,
-            builder.addValue(NamePath::fromText("main.server.value"_el), impl::Value::createInteger(1), location));
+            builder.addValue(
+                NamePath::fromText("main.server.value"_el), el::conf::impl::Value::createInteger(1), location));
         // after all errors, only the initial two elements should exist.
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
@@ -337,15 +361,16 @@ public:
 
     void testTextNames() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.text"_el), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.text.\"Value 1\""_el), impl::Value::createInteger(1), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.text.\"Value 2\""_el), impl::Value::createInteger(2), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.text.\"Value 3\""_el), impl::Value::createInteger(3), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.text.\"Value 1\""_el), el::conf::impl::Value::createInteger(1), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.text.\"Value 2\""_el), el::conf::impl::Value::createInteger(2), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.text.\"Value 3\""_el), el::conf::impl::Value::createInteger(3), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.sub.\"Section 1\""_el), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.sub.\"Section 2\""_el), location));
-        REQUIRE_NOTHROW(builder.addValue(NamePath::fromText("value_4"_el), impl::Value::createInteger(4), location));
+        REQUIRE_NOTHROW(
+            builder.addValue(NamePath::fromText("value_4"_el), el::conf::impl::Value::createInteger(4), location));
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "IntermediateSection()"_el},
             {"main.text"_el, "SectionWithTexts()"_el},
@@ -386,19 +411,22 @@ public:
     void testTextNameValueErrors() {
         // Regular values must not be added to the root, this is also true for text names.
         REQUIRE_THROWS_AS(
-            ConfError, builder.addValue(NamePath::fromText("\"Text\""_el), impl::Value::createInteger(1), location));
+            ConfError,
+            builder.addValue(NamePath::fromText("\"Text\""_el), el::conf::impl::Value::createInteger(1), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main.text"_el), location));
         // Mixing regular with text names is not allowed.
         REQUIRE_THROWS_AS(
             ConfError,
-            builder.addValue(NamePath::fromText("main.\"Text\""_el), impl::Value::createInteger(1), location));
-        REQUIRE_NOTHROW(
-            builder.addValue(NamePath::fromText("main.text.\"Value 1\""_el), impl::Value::createInteger(1), location));
+            builder.addValue(
+                NamePath::fromText("main.\"Text\""_el), el::conf::impl::Value::createInteger(1), location));
+        REQUIRE_NOTHROW(builder.addValue(
+            NamePath::fromText("main.text.\"Value 1\""_el), el::conf::impl::Value::createInteger(1), location));
         // Mixing regular with text names is not allowed.
         REQUIRE_THROWS_AS(
             ConfError,
-            builder.addValue(NamePath::fromText("main.text.value_2"_el), impl::Value::createInteger(1), location));
+            builder.addValue(
+                NamePath::fromText("main.text.value_2"_el), el::conf::impl::Value::createInteger(1), location));
         // make sure only valid elements got added.
         auto expectedValueMap = ExpectedValueMap{
             {"main"_el, "SectionWithNames()"_el},
@@ -411,21 +439,21 @@ public:
     void testAddingInvalidValueTypes() {
         REQUIRE_NOTHROW(builder.addSectionMap(NamePath::fromText("main"_el), location));
         // 'addValue' must only accept values.
-        REQUIRE_THROWS(
-            builder.addValue(NamePath::fromText("main.section"_el), impl::Value::createSectionWithNames(), location));
         REQUIRE_THROWS(builder.addValue(
-            NamePath::fromText("main.section"_el), impl::Value::createIntermediateSection(), location));
-        REQUIRE_THROWS(
-            builder.addValue(NamePath::fromText("main.section"_el), impl::Value::createSectionList(), location));
-        REQUIRE_THROWS(
-            builder.addValue(NamePath::fromText("main.section"_el), impl::Value::createSectionWithTexts(), location));
+            NamePath::fromText("main.section"_el), el::conf::impl::Value::createSectionWithNames(), location));
+        REQUIRE_THROWS(builder.addValue(
+            NamePath::fromText("main.section"_el), el::conf::impl::Value::createIntermediateSection(), location));
+        REQUIRE_THROWS(builder.addValue(
+            NamePath::fromText("main.section"_el), el::conf::impl::Value::createSectionList(), location));
+        REQUIRE_THROWS(builder.addValue(
+            NamePath::fromText("main.section"_el), el::conf::impl::Value::createSectionWithTexts(), location));
         REQUIRE_THROWS(builder.addValue(NamePath::fromText("main.section"_el), nullptr, location));
 
-        struct UndefinedValue : impl::Value {
+        struct UndefinedValue : el::conf::impl::Value {
             UndefinedValue() = default;
             [[nodiscard]] auto type() const noexcept -> ValueType override { return ValueType::Undefined; }
-            [[nodiscard]] auto deepCopy() const -> impl::ValuePtr override {
-                impl::throwInternalError("not implemented"_el);
+            [[nodiscard]] auto deepCopy() const -> el::conf::impl::ValuePtr override {
+                el::conf::impl::throwInternalError("not implemented"_el);
             }
         };
         REQUIRE_THROWS(

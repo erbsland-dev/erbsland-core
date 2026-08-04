@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Host.hpp"
 
+#include "impl/CommonHostTests.hpp"
+
 #include "../err/ParseError.hpp"
 #include "../util/HashHelper.hpp"
 
@@ -9,6 +11,7 @@ namespace erbsland::network {
 
 using namespace unit;
 using namespace text;
+using namespace text::literals;
 
 auto Host::address() const noexcept -> std::optional<IpAddress> {
     if (const auto value = std::get_if<IpAddress>(&_value)) {
@@ -45,20 +48,22 @@ auto Host::toHash() const noexcept -> std::size_t {
 }
 
 auto Host::fromString(const String &text) noexcept -> std::optional<Host> {
-    if (const auto addressValue = IpAddress::fromString(text); addressValue.has_value()) {
-        return Host{*addressValue};
+    try {
+        return fromStringOrThrow(text);
+    } catch (const err::ParseError &) {
+        return std::nullopt;
     }
-    if (const auto nameValue = HostName::fromString(text); nameValue.has_value()) {
-        return Host{*nameValue};
-    }
-    return std::nullopt;
 }
 
 auto Host::fromStringOrThrow(const String &text) -> Host {
-    if (const auto result = fromString(text); result.has_value()) {
-        return *result;
+    impl::testCommonHostText(text, "host name or IP-address"_el);
+    if (text.slice(StringSide::Front, CpLength{5U}).contains(":"_el)) {
+        return Host{IpAddress::fromStringOrThrow(text)};
     }
-    throw err::ParseError{"The text is not a valid host."};
+    if (const auto address = IpAddress::fromString(text); address.has_value()) {
+        return Host{*address};
+    }
+    return Host{HostName::fromStringOrThrow(text)};
 }
 
 }

@@ -37,8 +37,8 @@ public:
         REQUIRE(homeDirectory.isAbsolute());
         REQUIRE(homeDirectory.isValid());
         const auto *account = ::getpwuid(::geteuid());
-        REQUIRE(account != nullptr);
-        REQUIRE(account->pw_dir != nullptr);
+        REQUIRE(account);
+        REQUIRE(account->pw_dir);
         REQUIRE_EQUAL(toStdString(homeDirectory), account->pw_dir);
     }
 
@@ -95,8 +95,9 @@ public:
             REQUIRE_EQUAL(toStdString(error.sourcePath()), toStdString(missingPath));
             const auto context =
                 std::dynamic_pointer_cast<const el::system::PosixErrorContext>(error.platformContext());
-            REQUIRE(context != nullptr);
-            REQUIRE(context->errorCode() != 0);
+            REQUIRE(context);
+            const auto errorCode = context->errorCode();
+            REQUIRE_NOT_EQUAL(errorCode, 0);
         }
 
         std::filesystem::remove_all(fixture);

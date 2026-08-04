@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "LineBufferEmitLockGuard.hpp"
+
 #include "../Backend.hpp"
 #include "../Block.hpp"
 
@@ -16,9 +18,7 @@ namespace erbsland::cterm::impl {
 
 /// A smart line buffer.
 class LineBuffer {
-public:
-    class EmitLockGuard;
-    friend class EmitLockGuard;
+    friend class LineBufferEmitLockGuard;
 
 public:
     /// A minimum buffer size reserved for low-level operations.
@@ -29,6 +29,7 @@ public:
     constexpr static std::size_t cMaxSize = 1023 * 1024; // 1k smaller than 1MB
 
 public:
+    // defaults
     LineBuffer() = default;
 
 public:
@@ -59,12 +60,18 @@ public:
     void shutdown() noexcept;
 
 private:
+    /// Get the character set recognized as line endings.
     [[nodiscard]] static auto newLineCharacters() -> const text::CharSet &;
+    /// Emit all currently buffered text to the backend.
     void emitFullLineBuffer() noexcept;
 
+    /// Synchronizes nested temporary suppression of line emission.
     struct EmitLock {
+        /// Test if line emission is currently suppressed.
         [[nodiscard]] auto isLocked() const noexcept -> bool;
+        /// Increment the line-emission suppression count.
         void lock() noexcept;
+        /// Decrement the line-emission suppression count.
         void unlock() noexcept;
         std::atomic<std::size_t> _emitLockCount{0}; ///< >0 locks the emitting
     };
@@ -75,21 +82,6 @@ private:
     text::StringEditor _buffer;   ///< The text buffer.
     bool _hasNewLine{false};      ///< A flag if there is a NL in the line buffer.
     EmitLock _emitLock;           ///< The emit lock.
-};
-
-class LineBuffer::EmitLockGuard {
-public:
-    explicit EmitLockGuard(LineBuffer &lineBuffer);
-    ~EmitLockGuard();
-
-    // delete copy/move/assign
-    EmitLockGuard(const EmitLockGuard &) = delete;
-    EmitLockGuard(EmitLockGuard &&) = delete;
-    auto operator=(const EmitLockGuard &) -> EmitLockGuard & = delete;
-    auto operator=(EmitLockGuard &&) -> EmitLockGuard & = delete;
-
-private:
-    LineBuffer &_lineBuffer;
 };
 
 }

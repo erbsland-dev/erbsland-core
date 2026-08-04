@@ -15,6 +15,7 @@
 #include "ValueType.hpp"
 
 #include "impl/utilities/TypeTraits.hpp"
+#include "vr/Rule_fwd.hpp"
 
 #include "../math/SaturatingMath.hpp"
 #include "../mem/ByteBlock.hpp"
@@ -29,16 +30,11 @@
 
 namespace erbsland::conf {
 
-namespace vr {
-class Rule;
-using RulePtr = std::shared_ptr<Rule>;
-}
-
 /// The base class and interface for all values.
 /// @tested{ValueAsMethodsTest ValueGetMethodsTest}
 class Value : public std::enable_shared_from_this<Value> {
 public:
-    /// Default destructor.
+    // defaults
     virtual ~Value() = default;
 
 public: // basic properties.
@@ -348,7 +344,8 @@ public: // Convenience methods.
     /// @return The requested value.
     template <typename tExpectedType>
     [[nodiscard]] auto getOrThrow([[maybe_unused]] const NamePathLike &namePath) const -> tExpectedType {
-        throw err::LogicError("getOrThrow() not implemented for the given type.");
+        using namespace text::literals;
+        throw err::LogicError("getOrThrow() not implemented for the given type."_el);
     }
     /// @private
     template <typename tExpectedType>
@@ -521,6 +518,11 @@ public: // Convenience methods.
     /// intermediate section, or a document.
     [[nodiscard]] auto isMap() const noexcept -> bool { return type().isMap(); }
     /// @}
+
+private:
+    /// Convert a scalar or list value to its uniform matrix representation.
+    template <typename tValueMatrix, typename tValue>
+    [[nodiscard]] static auto toValueMatrixImpl(tValue &value) noexcept -> tValueMatrix;
 };
 
 }

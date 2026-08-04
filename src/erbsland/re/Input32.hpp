@@ -16,6 +16,7 @@ protected:
     using InputBase::InputBase;
 
 public:
+    // defaults
     ~Input32() override = default;
 
 public:

@@ -15,9 +15,13 @@ public:
     Name name;
 
     void testFormat() {
-        REQUIRE_EQUAL(std::format("*{}*", NameType::Regular), "*Regular*");
-        REQUIRE_EQUAL(std::format("*{}*", NameType::Text), "*Text*");
-        REQUIRE_EQUAL(std::format("*{}*", NameType::Index), "*Index*");
-        REQUIRE_EQUAL(std::format("*{}*", NameType::TextIndex), "*TextIndex*");
+        const auto regular = std::format("*{}*", NameType::Regular);
+        const auto text = std::format("*{}*", NameType::Text);
+        const auto index = std::format("*{}*", NameType::Index);
+        const auto textIndex = std::format("*{}*", NameType::TextIndex);
+        REQUIRE_EQUAL(regular, "*Regular*");
+        REQUIRE_EQUAL(text, "*Text*");
+        REQUIRE_EQUAL(index, "*Index*");
+        REQUIRE_EQUAL(textIndex, "*TextIndex*");
     }
 };

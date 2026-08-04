@@ -52,14 +52,18 @@ public:
     void testScopedApplicationIsTheSingleton() {
         auto scope = ApplicationTestScope<>{};
 
-        REQUIRE(&el::core::Application::instance() == &scope.app());
-        REQUIRE(&el::core::application() == &scope.app());
+        const auto applicationInstance = &el::core::Application::instance();
+        const auto application = &el::core::application();
+        const auto scopeApplication = &scope.app();
+        REQUIRE_EQUAL(applicationInstance, scopeApplication);
+        REQUIRE_EQUAL(application, scopeApplication);
     }
 
     void testDerivedApplicationScope() {
         auto scope = ApplicationTestScope<DerivedApplication>{};
 
-        REQUIRE_EQUAL(scope.app().run(), 7);
+        const auto exitCode = scope.app().run();
+        REQUIRE_EQUAL(exitCode, 7);
         REQUIRE(scope.app().mainCalled);
     }
 
@@ -67,8 +71,8 @@ public:
         HookApplicationData::optionsAccessCount = 0;
         auto scope = ApplicationTestScope<el::core::Application, HookApplicationData>{};
 
-        REQUIRE(scope.app().options() != nullptr);
-        REQUIRE(HookApplicationData::optionsAccessCount > 0);
+        REQUIRE(scope.app().options());
+        REQUIRE_GREATER(HookApplicationData::optionsAccessCount, 0);
     }
 
     void testNoLocalApplicationInstanceTransfersTemporaryDataToLocalInstance() {
@@ -78,8 +82,10 @@ public:
         temporaryApplication.info().setApplicationName("Temporary"_el);
         auto application = el::core::Application{};
 
-        REQUIRE(&el::core::Application::instance() == &application);
-        REQUIRE(application.info().applicationName() == "Temporary"_el);
+        const auto applicationInstance = &el::core::Application::instance();
+        REQUIRE_EQUAL(applicationInstance, &application);
+        const auto applicationName = application.info().applicationName();
+        REQUIRE_EQUAL(applicationName, "Temporary"_el);
         REQUIRE_THROWS_AS(IllegalApplicationInstanceAccess, scope.app());
     }
 };

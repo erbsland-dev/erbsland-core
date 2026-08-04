@@ -41,7 +41,9 @@ public: // operators
     ERBSLAND_CORE_CONSTEXPR_COMPARE_MEMBER(_codePoint, const Char &other, other._codePoint);
     ERBSLAND_CORE_CONSTEXPR_COMPARE_MEMBER(_codePoint, const char32_t codePoint, codePoint);
     ERBSLAND_CORE_CONSTEXPR_COMPARE_FRIEND(const char32_t codePoint, const Char &other, codePoint, other._codePoint);
+    /// Test whether this character has a signal value.
     constexpr auto operator==(const CharSignal signal) const noexcept -> bool { return *this == fromSignal(signal); }
+    /// Test whether this character does not have a signal value.
     constexpr auto operator!=(const CharSignal signal) const noexcept -> bool { return !operator==(signal); }
 
 public: // accessors
@@ -347,6 +349,7 @@ public: // factory methods
     }
 
 private:
+    /// Apply a signed code-point delta while preserving character validity.
     [[nodiscard]] static auto applyDelta(char32_t codePoint, int32_t delta) noexcept -> Char;
 
 protected:

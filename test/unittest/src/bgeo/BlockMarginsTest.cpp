@@ -11,8 +11,10 @@ public:
     void testConstructorsAndAccessors() {
         using el::bgeo::BlockMargins;
 
-        REQUIRE_EQUAL(BlockMargins{5}, (BlockMargins{5, 5, 5, 5}));
-        REQUIRE_EQUAL((BlockMargins{2, 7}), (BlockMargins{7, 2, 7, 2}));
+        const auto uniformMargins = BlockMargins{5};
+        const auto opposingMargins = BlockMargins{2, 7};
+        REQUIRE_EQUAL(uniformMargins, (BlockMargins{5, 5, 5, 5}));
+        REQUIRE_EQUAL(opposingMargins, (BlockMargins{7, 2, 7, 2}));
 
         auto margins = BlockMargins{1, 2, 3, 4};
         REQUIRE_EQUAL(margins.top(), 1);
@@ -75,13 +77,16 @@ public:
         margins.limitTo(BlockMargins{2, 4, 6, 9}, Orientation::Horizontal);
         REQUIRE_EQUAL(margins, (BlockMargins{3, 4, 8, 4}));
 
-        REQUIRE_EQUAL((BlockMargins{-1, 2, -3, 4}.expandedPositive()), (BlockMargins{0, 2, 0, 4}));
-        REQUIRE_EQUAL((BlockMargins{1, 5, 3, 7}.limitedWith(BlockMargins{4, 2, 9, 6})), (BlockMargins{1, 2, 3, 6}));
+        const auto expanded = BlockMargins{-1, 2, -3, 4}.expandedPositive();
+        const auto limited = BlockMargins{1, 5, 3, 7}.limitedWith(BlockMargins{4, 2, 9, 6});
+        REQUIRE_EQUAL(expanded, (BlockMargins{0, 2, 0, 4}));
+        REQUIRE_EQUAL(limited, (BlockMargins{1, 2, 3, 6}));
     }
 
     void testUnaryNegation() {
         using el::bgeo::BlockMargins;
 
-        REQUIRE_EQUAL(-BlockMargins(1, 2, 3, 4), (BlockMargins{-1, -2, -3, -4}));
+        const auto negated = -BlockMargins(1, 2, 3, 4);
+        REQUIRE_EQUAL(negated, (BlockMargins{-1, -2, -3, -4}));
     }
 };

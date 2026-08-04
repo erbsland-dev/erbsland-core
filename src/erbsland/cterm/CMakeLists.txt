@@ -7,43 +7,62 @@ add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
         Backend.hpp
+        Backend_fwd.hpp
         Bitmap.cpp
         Bitmap.hpp
+        Bitmap_fwd.hpp
+        BitmapColorMode.hpp
         BitmapDrawOptions.cpp
         BitmapDrawOptions.hpp
+        BitmapScaleMode.hpp
         Block.cpp
         Block.hpp
         Block16Style.cpp
         Block16Style.hpp
+        Block16Style_fwd.hpp
+        Block_fwd.hpp
         BlockAttributes.cpp
         BlockAttributes.hpp
+        BlockAttributes_fwd.hpp
         BlockCombinationStyle.cpp
         BlockCombinationStyle.hpp
+        BlockCombinationStyle_fwd.hpp
         BlockCount.hpp
         BlockIndex.hpp
         BlockPrintContext.hpp
+        BlockPrintContext_fwd.hpp
         BlockRange.hpp
         BlockString.cpp
         BlockString.hpp
+        BlockString_fwd.hpp
         BlockStringEditor.cpp
         BlockStringEditor.hpp
+        BlockStringEditor_fwd.hpp
         BlockStringEditor_layout.cpp
         BlockStyle.cpp
         BlockStyle.hpp
+        BlockStyle_fwd.hpp
         BlockText.hpp
         BlockTextAnimation.hpp
         BlockTextOptions.cpp
         BlockTextOptions.hpp
+        BlockTextOptions_fwd.hpp
         BlockUnit.hpp
         Buffer.cpp
         Buffer.hpp
+        Buffer_fwd.hpp
+        BufferConstRefView.hpp
         BufferDrawOptions.hpp
         BufferResizeMode.hpp
         BufferView.cpp
         BufferView.hpp
+        BufferViewBase.cpp
+        BufferViewBase.hpp
+        BufferViewBase_fwd.hpp
         Color.cpp
         Color.hpp
-        ColorPart.cpp
+        ColorBase.cpp
+        ColorBase.hpp
         ColorPart.hpp
         ColorRole.hpp
         ColorSequence.cpp
@@ -53,23 +72,32 @@ target_sources(erbsland-core PRIVATE
         CursorBuffer.hpp
         CursorWriter.cpp
         CursorWriter.hpp
+        CursorWriter_fwd.hpp
         Font.cpp
         Font.hpp
+        Font_defaultAscii.cpp
+        Font_fwd.hpp
         FontGlyph.hpp
         FrameBorder.cpp
         FrameBorder.hpp
+        FrameBorder_fwd.hpp
         FrameBorderElement.hpp
+        FrameColorMode.hpp
         FrameDrawOptions.cpp
         FrameDrawOptions.hpp
         FrameStyle.hpp
         GridLayout.cpp
         GridLayout.hpp
         Input.hpp
+        Input_fwd.hpp
         Key.cpp
         Key.hpp
+        KeyModifier.hpp
         KeyModifiers.hpp
         Keys.cpp
         Keys.hpp
+        MatrixBlockCombinationStyle.cpp
+        MatrixBlockCombinationStyle.hpp
         MoveMode.hpp
         ParagraphBackgroundMode.hpp
         ParagraphIndents.hpp
@@ -79,6 +107,7 @@ target_sources(erbsland-core PRIVATE
         ParagraphSpacing.hpp
         ReadableBuffer.cpp
         ReadableBuffer.hpp
+        ReadableBuffer_fwd.hpp
         ReadLine.cpp
         ReadLine.hpp
         ReadLine_fwd.hpp
@@ -92,6 +121,8 @@ target_sources(erbsland-core PRIVATE
         ReadSecret_fwd.hpp
         RemappedBuffer.cpp
         RemappedBuffer.hpp
+        SimpleBlockCombinationStyle.cpp
+        SimpleBlockCombinationStyle.hpp
         TabOverflowBehavior.hpp
         Terminal.cpp
         Terminal.hpp
@@ -109,6 +140,7 @@ target_sources(erbsland-core PRIVATE
         TerminalDocumentStyleRule.hpp
         TerminalDocumentStyleSelector.cpp
         TerminalDocumentStyleSelector.hpp
+        TerminalFlag.hpp
         TerminalFlags.hpp
         TerminalSession.hpp
         TerminalStream.cpp
@@ -117,9 +149,14 @@ target_sources(erbsland-core PRIVATE
         TerminalStreamSynchronization.hpp
         Tile9Style.cpp
         Tile9Style.hpp
+        Tile9Style_fwd.hpp
+        TypeTraits.hpp
         UpdateSettings.cpp
         UpdateSettings.hpp
         WritableBuffer.cpp
         WritableBuffer.hpp
+        WritableBuffer_fwd.hpp
         WriteClippedBuffer.hpp
+        WriteClippedBufferBase.hpp
+        WriteClippedBufferRef.hpp
 )

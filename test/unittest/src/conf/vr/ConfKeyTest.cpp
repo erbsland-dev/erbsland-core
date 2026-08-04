@@ -29,20 +29,22 @@ public:
         ConfKey key{"Alpha"_el};
 
         REQUIRE_EQUAL(key.size(), 1);
-        REQUIRE_EQUAL(key.elements().count().toSizeT(), 1);
-        REQUIRE(key.element(0) == "Alpha"_el);
-        REQUIRE(key.toText() == "Alpha"_el);
+        const auto elementCount = key.elements().count().toSizeT();
+        REQUIRE_EQUAL(elementCount, 1);
+        REQUIRE_EQUAL(key.element(0), "Alpha"_el);
+        REQUIRE_EQUAL(key.toText(), "Alpha"_el);
     }
 
     void testMultipleElementConstructionAndAccess() {
         ConfKey key{el::text::StringList{"Alpha"_el, "Beta"_el, "Gamma"_el}};
 
         REQUIRE_EQUAL(key.size(), 3);
-        REQUIRE_EQUAL(key.elements().count().toSizeT(), 3);
-        REQUIRE(key.element(0) == "Alpha"_el);
-        REQUIRE(key.element(1) == "Beta"_el);
-        REQUIRE(key.element(2) == "Gamma"_el);
-        REQUIRE(key.toText() == "Alpha,Beta,Gamma"_el);
+        const auto elementCount = key.elements().count().toSizeT();
+        REQUIRE_EQUAL(elementCount, 3);
+        REQUIRE_EQUAL(key.element(0), "Alpha"_el);
+        REQUIRE_EQUAL(key.element(1), "Beta"_el);
+        REQUIRE_EQUAL(key.element(2), "Gamma"_el);
+        REQUIRE_EQUAL(key.toText(), "Alpha,Beta,Gamma"_el);
     }
 
     void testElementOutOfRangeReturnsEmptyString() {
@@ -95,6 +97,7 @@ public:
 
     void testFormatter() {
         const ConfKey key{el::text::StringList{"a"_el, "b"_el}};
-        REQUIRE_EQUAL(std::format("{}", key), "a,b");
+        const auto text = std::format("{}", key);
+        REQUIRE_EQUAL(text, "a,b");
     }
 };

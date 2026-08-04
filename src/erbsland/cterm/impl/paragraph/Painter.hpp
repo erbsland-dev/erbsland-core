@@ -18,6 +18,7 @@ public:
     using ColorResolver = std::function<Color(const Block &, bgeo::BlockPosition)>;
 
 public:
+    /// Create a paragraph painter for a target buffer.
     Painter(
         WritableBuffer &buffer,
         const bgeo::BlockRectangle rect,
@@ -44,9 +45,13 @@ public:
     void paint();
 
 private:
+    /// Draw one laid-out line and return its trailing color.
     [[nodiscard]] auto drawLine(const LayoutLine &line, bgeo::BlockPosition pos) -> std::optional<Color>;
+    /// Draw one layout fragment and return its trailing color.
     [[nodiscard]] auto drawFragment(const LayoutFragment &fragment, bgeo::BlockPosition &pos) -> std::optional<Color>;
+    /// Draw one terminal block and return its color.
     [[nodiscard]] auto drawBlock(const Block &character, bgeo::BlockPosition &pos) -> std::optional<Color>;
+    /// Fill a horizontal background range.
     void fillBackgroundRange(int y, int x1, int x2, Color color);
 
 private:

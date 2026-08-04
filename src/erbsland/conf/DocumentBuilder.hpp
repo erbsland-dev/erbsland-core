@@ -34,12 +34,11 @@ namespace erbsland::conf {
 /// @tested{DocumentBuilderTest}
 class DocumentBuilder {
 public:
-    /// Default constructor.
+    /// Create a new empty document builder.
     DocumentBuilder() = default;
-    /// Default destructor.
-    ~DocumentBuilder() = default;
 
-    // disable copy and assign.
+    // defaults/deletions
+    ~DocumentBuilder() = default;
     DocumentBuilder(const DocumentBuilder &) = delete;
     auto operator=(const DocumentBuilder &) -> DocumentBuilder & = delete;
     DocumentBuilder(DocumentBuilder &&) = delete;

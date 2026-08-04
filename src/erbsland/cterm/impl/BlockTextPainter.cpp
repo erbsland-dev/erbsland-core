@@ -7,6 +7,9 @@
 #include "paragraph/Layout.hpp"
 #include "paragraph/Painter.hpp"
 
+#include "../Bitmap.hpp"
+#include "../Font.hpp"
+
 #include "../../text/Char.hpp"
 
 namespace erbsland::cterm::impl {

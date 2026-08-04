@@ -21,14 +21,14 @@ class ParserState {
 public:
     /// Create a new parser state for the given pattern.
     explicit ParserState(text::StringCharReader reader, const GroupFlags flags, Settings &&settings) :
-        _reader{std::move(reader)}, _settings{std::move(settings)} {
+        _reader{std::move(reader)}, _settings{std::move(settings)}, _nodeArena{std::make_shared<PatternNodeArena>()} {
 
         // Create the root structure with a group and sequence.
         _rootNode = std::make_shared<PatternNode>(0, node_data::Group::createNonCapturing(flags));
         pushNode(_rootNode);
     }
 
-    // defaults: allow move, disallow copy.
+    // defaults/deletions
     ParserState(const ParserState &) = delete;
     ParserState(ParserState &&) = default;
     auto operator=(const ParserState &) -> ParserState & = delete;
@@ -61,11 +61,13 @@ public: // reading characters
 
     /// Get the next character from the pattern.
     [[nodiscard]] auto next() -> text::Char {
-        if (!_reader.position().isWithin(_settings.maximumPatternLength())) {
-            // important: This isn't redundant.
-            throwParsingError("Maximum pattern length exceeded"_el);
-        }
         const auto position = _reader.position();
+        if (!position.isWithin(_settings.maximumPatternLength())) {
+            // Enforce the limit incrementally to avoid a separate full UTF scan before parsing.
+            throwParsingError(
+                text::StringFormat{"The maximum pattern length is {} characters."_el}.build(
+                    _settings.maximumPatternLength()));
+        }
         const auto character = _reader.read();
         validatePatternCharacter(character, position);
         return character;
@@ -93,9 +95,6 @@ public: // reading characters
         return result;
     }
 
-    /// Test if at least the given number of pattern characters are available.
-    [[nodiscard]] auto canRead(const unit::CpLength count) const noexcept -> bool { return _reader.canRead(count); }
-
     /// Access the current sequence.
     [[nodiscard]] auto currentSequence() const noexcept -> const PatternNodePtr & { return _currentSequence; }
 
@@ -107,7 +106,7 @@ public: // reading characters
         return std::get<node_data::Group>(currentGroup()->data()).flags;
     }
 
-    // Inherit the group flags for a nested group.
+    /// Inherit the group flags for a nested group without the atomic flag.
     [[nodiscard]] auto inheritGroupFlags() const noexcept -> GroupFlags {
         auto flags = currentFlags();
         flags.clear(GroupFlag::Atomic);
@@ -159,7 +158,7 @@ public: // Node and group handling.
         _groupNames.insert(name);
     }
 
-    // The low-level method to push a node on the group stack.
+    /// Push a node on the group stack and create its initial sequence.
     void pushNode(const PatternNodePtr &node) {
         // As _groupStack also contains the implicit root group, add one to the maximum.
         if (_groupStack.size() >= (_settings.maximumGroupNestingDepth() + 1)) {
@@ -183,6 +182,7 @@ public: // Node and group handling.
         pushNode(createNode(std::forward<Fwd>(groupData)));
     }
 
+    /// Remove and return the current group.
     auto popGroup() -> PatternNodePtr {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(!_groupStack.empty(), "Popping group from empty group stack"_el);
         auto result = currentGroup();
@@ -199,7 +199,7 @@ public: // Node and group handling.
         return _currentSequence->children().back();
     }
 
-    /// Replace the last node
+    /// Replace the last node.
     void replaceLastNode(const PatternNodePtr &node) {
         ERBSLAND_CORE_RE_REQUIRE_SAFETY(lastNode() != nullptr, "Cannot replace last node in empty sequence"_el);
         if (lastNode() != node) {
@@ -210,11 +210,13 @@ public: // Node and group handling.
     /// Add a node to the current sequence
     void addNode(const PatternNodePtr &node) { _currentSequence->addChild(node); }
 
+    /// Create and retain a pattern node with the supplied data.
     template <typename Fwd>
         requires std::derived_from<std::remove_cvref_t<Fwd>, node_data::NodeData>
     [[nodiscard]] auto createNode(Fwd &&data) -> PatternNodePtr {
         _nextNodeId += 1;
-        return std::make_shared<PatternNode>(_nextNodeId, PatternNode::Data{std::forward<Fwd>(data)});
+        auto allocator = PatternNodeAllocator<PatternNode>{_nodeArena};
+        return std::allocate_shared<PatternNode>(allocator, _nextNodeId, PatternNode::Data{std::forward<Fwd>(data)});
     }
 
     /// Add data to the current sequence.
@@ -251,6 +253,7 @@ public: // Node and group handling.
     }
 
 private:
+    /// Validate a character used in a regular-expression pattern.
     void validatePatternCharacter(const text::Char character, const unit::CpIndex position) const {
         if (character.isNull() && !hasFeature(Feature::AcceptNullInPattern)) {
             throw RegExError{
@@ -265,6 +268,7 @@ private:
     text::StringCharReader _reader;
     Settings _settings;
     text::Char _currentChar{text::Char::noCodePoint()};
+    PatternNodeArenaPtr _nodeArena;                    ///< Monotonic allocator for descendant nodes.
     PatternNodePtr _rootNode;                          ///< The root node of the parsed pattern.
     PatternNodePtr _currentSequence;                   ///< The current sequence.
     std::vector<PatternNodePtr> _groupStack;           ///< A stack with all open groups.

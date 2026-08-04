@@ -3,6 +3,7 @@
 #pragma once
 
 #include "U32StringData_fwd.hpp"
+#include "U32StringSharedStorage_fwd.hpp"
 
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpLength.hpp"
@@ -17,6 +18,7 @@ namespace erbsland::text::impl {
 /// @tested{U32StringDataTest}
 struct U32StringTraits final {
     using CodeUnit = char32_t;
+    using SharedStorage = U32StringSharedStorage;
     using StorageData = U32StringData;
     using StoragePtr = U32StringDataPtr;
     using StandardView = std::u32string_view;

@@ -487,7 +487,7 @@ The method names intentionally express the validation strategy.
         if (!emailAddress.contains(requiredAt)) {
             throw ValidationError{"Email address must contain '@' character."_el};
         }
-        if (emailAddress.count(requiredAt) > el::ElementCount{1}) {
+        if (emailAddress.count(requiredAt) > el::ItemCount{1}) {
             throw ValidationError{"Email address can only contain one '@' character."_el};
         }
         const auto indexOfAt = emailAddress.find(requiredAt);
@@ -586,8 +586,8 @@ The method names intentionally express the validation strategy.
 Trim Characters from Strings
 ============================
 
-Use :cpp:func:`trimmed() <erbsland::text::U8String::trimmed>` to remove selected characters from the front, the
-back, or both sides of a string.
+Use :cpp:func:`trimmed() <erbsland::text::U8String::trimmed>` to remove selected characters from the front, the back, or
+both sides of a string.
 
 Without arguments, the function trims ASCII whitespace from both ends.
 With a custom :cpp:class:`CharSet <erbsland::text::CharSet>`, it trims exactly the characters you specify.
@@ -632,8 +632,8 @@ No new string allocation is required unless you later materialize the result.
 Remove Unwanted Characters
 ==========================
 
-Use :cpp:func:`removedAll() <erbsland::text::U8String::removedAll>` when unwanted characters may appear anywhere in
-the text:
+Use :cpp:func:`removedAll() <erbsland::text::U8String::removedAll>` when unwanted characters may appear anywhere in the
+text:
 
 .. erbsland-demo::
     :source: text/String/RemoveCharacters.cpp
@@ -672,8 +672,8 @@ copy.
 Transform Characters in a String
 ================================
 
-Use :cpp:func:`transformed() <erbsland::text::U8String::transformed>` when every decoded character should pass
-through a mapping function.
+Use :cpp:func:`transformed() <erbsland::text::U8String::transformed>` when every decoded character should pass through a
+mapping function.
 
 For common transformations,
 :cpp:class:`Char <erbsland::text::Char>` already provides suitable function

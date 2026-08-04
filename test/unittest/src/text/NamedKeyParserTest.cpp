@@ -12,7 +12,7 @@
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 #include <erbsland/util/Set.hpp>
 
@@ -50,7 +50,7 @@ private:
             REQUIRE(false);
         } catch (const el::err::ParseError &error) {
             REQUIRE(error.hasPosition());
-            REQUIRE_EQUAL(error.position(), position);
+            REQUIRE_EQUAL(error.codePointIndex(), position);
         }
     }
 
@@ -84,7 +84,7 @@ public:
 
     void testKeyFormsPrefixesAndRepeatedEnd() {
         auto format = standardFormat().setStopCharacter(U';');
-        auto reader = StringCharReader{U8String{"+ALPHA,beta=value,w32;tail"_el}};
+        auto reader = StringCharReader{String{"+ALPHA,beta=value,w32;tail"_el}};
         auto parser = NamedKeyParser{reader, format};
 
         const auto alpha = parser.readEntry();
@@ -113,133 +113,133 @@ public:
     void testBulkReadAcrossStringWidths() {
         auto format = standardFormat();
 
-        auto reader8 = StringCharReader{U8String{"alpha,beta=é,w12"_el}};
+        auto reader8 = StringCharReader{String{"alpha,beta=é,w12"_el}};
         const auto entries8 = NamedKeyParser{reader8, format}.readAllEntries();
-        REQUIRE_EQUAL(entries8.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(entries8.get(el::unit::ElementIndex{1U}).value(), "é"_el);
+        REQUIRE_EQUAL(entries8.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(entries8.get(el::unit::ItemIndex{1U}).value(), "é"_el);
 
         auto reader16 = StringCharReader{U16String{u"alpha,beta=é,w12"_el}};
         const auto entries16 = NamedKeyParser{reader16, format}.readAllEntries();
-        REQUIRE_EQUAL(entries16.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(entries16.get(el::unit::ElementIndex{1U}).value(), "é"_el);
+        REQUIRE_EQUAL(entries16.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(entries16.get(el::unit::ItemIndex{1U}).value(), "é"_el);
 
         auto reader32 = StringCharReader{U32String{U"alpha,beta=é,w12"_el}};
         const auto entries32 = NamedKeyParser{reader32, format}.readAllEntries();
-        REQUIRE_EQUAL(entries32.count(), el::unit::ElementCount{3U});
-        REQUIRE_EQUAL(entries32.get(el::unit::ElementIndex{1U}).value(), "é"_el);
+        REQUIRE_EQUAL(entries32.count(), el::unit::ItemCount{3U});
+        REQUIRE_EQUAL(entries32.get(el::unit::ItemIndex{1U}).value(), "é"_el);
     }
 
     void testAllowedKeysAndDuplicateAliases() {
         auto format = standardFormat();
-        auto allowedReader = StringCharReader{U8String{"alpha,w3"_el}};
+        auto allowedReader = StringCharReader{String{"alpha,w3"_el}};
         auto allowedParser = NamedKeyParser{allowedReader, format};
         allowedParser.setAllowedKeys(el::util::Set<int>{Alpha, Width});
-        REQUIRE_EQUAL(allowedParser.readAllEntries().count(), el::unit::ElementCount{2U});
+        REQUIRE_EQUAL(allowedParser.readAllEntries().count(), el::unit::ItemCount{2U});
 
-        auto disallowedReader = StringCharReader{U8String{"beta=value"_el}};
+        auto disallowedReader = StringCharReader{String{"beta=value"_el}};
         auto disallowedParser = NamedKeyParser{disallowedReader, format};
         disallowedParser.setAllowedKeys(el::util::Set<int>{Alpha});
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(disallowedParser.readEntry()));
 
-        auto noneReader = StringCharReader{U8String{"alpha"_el}};
+        auto noneReader = StringCharReader{String{"alpha"_el}};
         auto noneParser = NamedKeyParser{noneReader, format};
         noneParser.setAllowedKeys(el::util::Set<int>{});
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(noneParser.readEntry()));
 
-        auto duplicateReader = StringCharReader{U8String{"alpha,-a"_el}};
+        auto duplicateReader = StringCharReader{String{"alpha,-a"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{duplicateReader, format}.readAllEntries()));
 
         format.setUniqueKeysRequired(false);
-        auto repeatedReader = StringCharReader{U8String{"alpha,-a"_el}};
+        auto repeatedReader = StringCharReader{String{"alpha,-a"_el}};
         auto repeatedParser = NamedKeyParser{repeatedReader, format};
-        REQUIRE_EQUAL(repeatedParser.readAllEntries().count(), el::unit::ElementCount{2U});
+        REQUIRE_EQUAL(repeatedParser.readAllEntries().count(), el::unit::ItemCount{2U});
     }
 
     void testPositionalValueModeLocking() {
         auto format = standardFormat();
-        auto reader = StringCharReader{U8String{"first,alpha,beta=value"_el}};
+        auto reader = StringCharReader{String{"first,alpha,beta=value"_el}};
         const auto entries = NamedKeyParser{reader, format}.readAllEntries();
 
-        REQUIRE_EQUAL(entries.count(), el::unit::ElementCount{3U});
-        REQUIRE(entries.get(el::unit::ElementIndex{0U}).isValue());
-        REQUIRE_EQUAL(entries.get(el::unit::ElementIndex{1U}).value(), "alpha"_el);
-        REQUIRE_EQUAL(entries.get(el::unit::ElementIndex{2U}).value(), "beta=value"_el);
+        REQUIRE_EQUAL(entries.count(), el::unit::ItemCount{3U});
+        REQUIRE(entries.get(el::unit::ItemIndex{0U}).isValue());
+        REQUIRE_EQUAL(entries.get(el::unit::ItemIndex{1U}).value(), "alpha"_el);
+        REQUIRE_EQUAL(entries.get(el::unit::ItemIndex{2U}).value(), "beta=value"_el);
 
-        auto mixedReader = StringCharReader{U8String{"alpha,unknown"_el}};
+        auto mixedReader = StringCharReader{String{"alpha,unknown"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{mixedReader, format}.readAllEntries()));
 
-        auto explicitUnknownReader = StringCharReader{U8String{"unknown=value"_el}};
+        auto explicitUnknownReader = StringCharReader{String{"unknown=value"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{explicitUnknownReader, format}.readEntry()));
     }
 
     void testIndependentEntryFormPolicies() {
         auto noValues = standardFormat().setValuesAllowed(false).setValueListAllowed(true);
-        auto keyValueReader = StringCharReader{U8String{"alpha=value"_el}};
+        auto keyValueReader = StringCharReader{String{"alpha=value"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{keyValueReader, noValues}.readEntry()));
-        auto positionalReader = StringCharReader{U8String{"free"_el}};
+        auto positionalReader = StringCharReader{String{"free"_el}};
         REQUIRE(NamedKeyParser{positionalReader, noValues}.readEntry().isValue());
 
         auto valuesRequired = standardFormat().setKeysWithoutValuesAllowed(false);
-        auto bareReader = StringCharReader{U8String{"alpha"_el}};
+        auto bareReader = StringCharReader{String{"alpha"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{bareReader, valuesRequired}.readEntry()));
-        auto valuedReader = StringCharReader{U8String{"alpha=value"_el}};
+        auto valuedReader = StringCharReader{String{"alpha=value"_el}};
         REQUIRE(NamedKeyParser{valuedReader, valuesRequired}.readEntry().isKeyWithValue());
 
         auto noValueList = standardFormat().setValueListAllowed(false);
-        auto unknownReader = StringCharReader{U8String{"free"_el}};
+        auto unknownReader = StringCharReader{String{"free"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{unknownReader, noValueList}.readEntry()));
     }
 
     void testValueLimitsAndAllowedCharacters() {
         auto format = standardFormat()
-                          .setMaximumValues(el::unit::ElementCount{2U})
+                          .setMaximumValues(el::unit::ItemCount{2U})
                           .setMaximumValueLength(el::unit::CpLength{3U})
                           .setAllowedValueChars(CharSet::fromPattern("a-z0-9="_el));
-        auto validReader = StringCharReader{U8String{"foo,bar"_el}};
+        auto validReader = StringCharReader{String{"foo,bar"_el}};
         auto validParser = NamedKeyParser{validReader, format};
-        REQUIRE_EQUAL(validParser.readAllEntries().count(), el::unit::ElementCount{2U});
+        REQUIRE_EQUAL(validParser.readAllEntries().count(), el::unit::ItemCount{2U});
 
-        auto countReader = StringCharReader{U8String{"a,b,c"_el}};
+        auto countReader = StringCharReader{String{"a,b,c"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{countReader, format}.readAllEntries()));
 
-        auto lengthReader = StringCharReader{U8String{"abcd"_el}};
+        auto lengthReader = StringCharReader{String{"abcd"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{lengthReader, format}.readEntry()));
 
-        auto characterReader = StringCharReader{U8String{"a!"_el}};
+        auto characterReader = StringCharReader{String{"a!"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{characterReader, format}.readEntry()));
     }
 
     void testSeparatorsStopsAndPositionedErrors() {
         auto format = standardFormat().setStopCharacter(U']');
 
-        auto emptyReader = StringCharReader{U8String{",alpha]"_el}};
+        auto emptyReader = StringCharReader{String{",alpha]"_el}};
         WITH_CONTEXT(requirePositionedParseError(
             [&]() { static_cast<void>(NamedKeyParser{emptyReader, format}.readEntry()); }, el::unit::CpIndex{0U}));
 
-        auto trailingReader = StringCharReader{U8String{"alpha,]"_el}};
+        auto trailingReader = StringCharReader{String{"alpha,]"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{trailingReader, format}.readAllEntries()));
 
-        auto missingStopReader = StringCharReader{U8String{"alpha"_el}};
+        auto missingStopReader = StringCharReader{String{"alpha"_el}};
         REQUIRE_THROWS_AS(
             el::err::ParseError, static_cast<void>(NamedKeyParser{missingStopReader, format}.readAllEntries()));
 
-        auto missingValueReader = StringCharReader{U8String{"alpha=]"_el}};
+        auto missingValueReader = StringCharReader{String{"alpha=]"_el}};
         WITH_CONTEXT(requirePositionedParseError(
             [&]() { static_cast<void>(NamedKeyParser{missingValueReader, format}.readEntry()); },
             el::unit::CpIndex{0U}));
 
-        auto unsafeReader = StringCharReader{U8String{"alpha=\n]"_el}};
+        auto unsafeReader = StringCharReader{String{"alpha=\n]"_el}};
         REQUIRE_THROWS_AS(el::err::ParseError, static_cast<void>(NamedKeyParser{unsafeReader, format}.readEntry()));
     }
 
     void testInvalidFormatConfiguration() {
         auto sameSeparators = standardFormat().setValueSeparator(U',');
-        auto reader = StringCharReader{U8String{"alpha"_el}};
+        auto reader = StringCharReader{String{"alpha"_el}};
         REQUIRE_THROWS_AS(el::err::LogicError, static_cast<void>(NamedKeyParser{reader, sameSeparators}));
 
         auto conflictingCompact = standardFormat().setValueWithoutKeySeparatorChars(CharSet{U'a'});

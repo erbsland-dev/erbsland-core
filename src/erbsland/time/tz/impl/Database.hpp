@@ -65,6 +65,9 @@ public:
     [[nodiscard]] static auto indexFromText(const text::String &text) noexcept -> TextId;
 
 private:
+    /// Convert a generated zone name to a string.
+    /// @param zoneName The generated zone name.
+    /// @return The corresponding IANA zone name.
     [[nodiscard]] static auto zoneNameToString(const ZoneName &zoneName) -> text::String;
 
 private:

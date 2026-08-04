@@ -2,17 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "MultiLineAllowed.hpp"
+#include "NextLine.hpp"
 #include "TokenGenerator.hpp"
 
 #include "../decoder/TokenDecoder.hpp"
 
 namespace erbsland::conf::impl::lexer {
-
-/// If the value is defined on the same or next line.
-enum class NextLine : uint8_t { Yes, No };
-
-/// If multi-line values are allowed.
-enum class MultiLineAllowed : uint8_t { Yes, No };
 
 /// Expect and read a "name: value" sequence in the document.
 /// @param decoder The decoder.

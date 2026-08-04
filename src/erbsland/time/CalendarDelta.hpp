@@ -2,11 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "TimeAmounts.hpp"
+#include "CalendarDeltaParts.hpp"
 #include "TimeDelta.hpp"
 #include "TimeDeltaFormat.hpp"
 
-#include "../text/FormatAs.hpp"
 #include "../text/String.hpp"
 #include "../text/StringConverter.hpp"
 
@@ -20,27 +19,12 @@ namespace erbsland::time {
 /// @tested{CalendarDeltaTest}
 class CalendarDelta final {
 public:
-    /// All independently stored delta parts.
-    struct Parts {
-        Nanoseconds nanoseconds;
-        Microseconds microseconds;
-        Milliseconds milliseconds;
-        Seconds seconds;
-        Minutes minutes;
-        Hours hours;
-        Days days;
-        Weeks weeks;
-        Months months;
-        Years years;
-
-        friend auto operator==(const Parts &, const Parts &) noexcept -> bool = default;
-    };
+    /// Alias for all independently stored delta parts.
+    using Parts = CalendarDeltaParts;
 
 public:
-    /// Create a zero calendar delta.
-    CalendarDelta() noexcept = default;
     /// Create a calendar delta from all parts.
-    explicit CalendarDelta(Parts parts) noexcept : _parts{parts} {}
+    explicit CalendarDelta(const Parts &parts) noexcept : _parts{parts} {}
     /// Create a calendar delta containing one amount.
     template <typename tAmount>
         requires(
@@ -53,6 +37,7 @@ public:
     }
 
     // defaults
+    CalendarDelta() noexcept = default;
     ~CalendarDelta() = default;
     CalendarDelta(const CalendarDelta &) noexcept = default;
     auto operator=(const CalendarDelta &) noexcept -> CalendarDelta & = default;
@@ -61,37 +46,65 @@ public:
 
 public: // operators
     [[nodiscard]] auto operator==(const CalendarDelta &other) const noexcept -> bool = default;
+    /// Add `other` to this delta.
     [[nodiscard]] auto operator+(CalendarDelta other) const noexcept -> CalendarDelta;
+    /// Add `other` to this delta in place.
     auto operator+=(CalendarDelta other) noexcept -> CalendarDelta &;
+    /// Subtract `other` from this delta.
     [[nodiscard]] auto operator-(CalendarDelta other) const noexcept -> CalendarDelta;
+    /// Subtract `other` from this delta in place.
     auto operator-=(CalendarDelta other) noexcept -> CalendarDelta &;
+    /// Negate every part of this delta.
     [[nodiscard]] auto operator-() const noexcept -> CalendarDelta;
 
 public: // tests
+    /// Test whether every part is zero.
     [[nodiscard]] auto isZero() const noexcept -> bool;
+    /// Test whether this delta contains no calendar-dependent units.
     [[nodiscard]] auto isValidTimeDelta() const noexcept -> bool;
 
 public: // accessors
+    /// Access all independently stored parts.
     [[nodiscard]] constexpr auto parts() const noexcept -> Parts { return _parts; }
+    /// Access the nanosecond part.
     [[nodiscard]] constexpr auto nanoseconds() const noexcept -> Nanoseconds { return _parts.nanoseconds; }
+    /// Set the nanosecond part.
     auto setNanoseconds(Nanoseconds value) noexcept -> CalendarDelta &;
+    /// Access the microsecond part.
     [[nodiscard]] constexpr auto microseconds() const noexcept -> Microseconds { return _parts.microseconds; }
+    /// Set the microsecond part.
     auto setMicroseconds(Microseconds value) noexcept -> CalendarDelta &;
+    /// Access the millisecond part.
     [[nodiscard]] constexpr auto milliseconds() const noexcept -> Milliseconds { return _parts.milliseconds; }
+    /// Set the millisecond part.
     auto setMilliseconds(Milliseconds value) noexcept -> CalendarDelta &;
+    /// Access the second part.
     [[nodiscard]] constexpr auto seconds() const noexcept -> Seconds { return _parts.seconds; }
+    /// Set the second part.
     auto setSeconds(Seconds value) noexcept -> CalendarDelta &;
+    /// Access the minute part.
     [[nodiscard]] constexpr auto minutes() const noexcept -> Minutes { return _parts.minutes; }
+    /// Set the minute part.
     auto setMinutes(Minutes value) noexcept -> CalendarDelta &;
+    /// Access the hour part.
     [[nodiscard]] constexpr auto hours() const noexcept -> Hours { return _parts.hours; }
+    /// Set the hour part.
     auto setHours(Hours value) noexcept -> CalendarDelta &;
+    /// Access the day part.
     [[nodiscard]] constexpr auto days() const noexcept -> Days { return _parts.days; }
+    /// Set the day part.
     auto setDays(Days value) noexcept -> CalendarDelta &;
+    /// Access the week part.
     [[nodiscard]] constexpr auto weeks() const noexcept -> Weeks { return _parts.weeks; }
+    /// Set the week part.
     auto setWeeks(Weeks value) noexcept -> CalendarDelta &;
+    /// Access the month part.
     [[nodiscard]] constexpr auto months() const noexcept -> Months { return _parts.months; }
+    /// Set the month part.
     auto setMonths(Months value) noexcept -> CalendarDelta &;
+    /// Access the year part.
     [[nodiscard]] constexpr auto years() const noexcept -> Years { return _parts.years; }
+    /// Set the year part.
     auto setYears(Years value) noexcept -> CalendarDelta &;
 
 public: // conversion
@@ -105,6 +118,7 @@ public: // conversion
 
 private:
     template <typename tAmount>
+    /// Store `amount` in its matching part.
     void setAmount(tAmount amount) noexcept {
         if constexpr (std::is_same_v<tAmount, Nanoseconds>) {
             _parts.nanoseconds = amount;
@@ -133,8 +147,3 @@ private:
 };
 
 }
-
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::CalendarDelta> : FormatAs<time::CalendarDelta, String> {
-    [[nodiscard]] auto format(const time::CalendarDelta &value) const -> String { return value.toString(); }
-};

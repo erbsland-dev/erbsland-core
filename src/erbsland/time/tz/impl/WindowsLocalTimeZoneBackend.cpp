@@ -10,7 +10,7 @@
 
 namespace erbsland::time::tz::impl {
 
-auto WindowsLocalTimeZoneBackend::timeZone() noexcept -> std::optional<TimeZone> {
+auto WindowsLocalTimeZoneBackend::detectedTimeZone() noexcept -> std::optional<TimeZone> {
     auto information = DYNAMIC_TIME_ZONE_INFORMATION{};
     if (GetDynamicTimeZoneInformation(&information) == TIME_ZONE_ID_INVALID) {
         return {};

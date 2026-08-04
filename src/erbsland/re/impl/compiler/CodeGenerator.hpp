@@ -3,13 +3,12 @@
 #pragma once
 
 #include "../engine/Engine.hpp"
+#include "../engine/ProgramWriter_fwd.hpp"
 #include "../parser/PatternNode.hpp"
 
 #include <utility>
 
 namespace erbsland::re::impl {
-
-class ProgramWriter;
 
 // NOTES:
 // What if we traverse leaf to root?
@@ -42,7 +41,7 @@ public:
     /// Create an empty code generator, just for compatibility and tests.
     CodeGenerator() = default;
 
-    // defaults: allow move, disallow copy.
+    // defaults/deletions
     CodeGenerator(const CodeGenerator &) = delete;
     CodeGenerator(CodeGenerator &&) = default;
     auto operator=(const CodeGenerator &) -> CodeGenerator & = delete;
@@ -55,28 +54,47 @@ public:
     void generateCode();
 
 private:
-    // Generate the code fragments for a given type of data.
+    /// Generate code for a group node.
     void generateCodeForData(const PatternNode &node, const node_data::Group &data);
+    /// Generate code for a sequence node.
     void generateCodeForData(const PatternNode &node, const node_data::Sequence &data);
+    /// Generate code for an anchor node.
     void generateCodeForData(const PatternNode &node, const node_data::Anchor &data);
+    /// Generate code for a character category node.
     void generateCodeForData(const PatternNode &node, const node_data::CharacterCategory &data);
+    /// Generate code for a character sequence node.
     void generateCodeForData(const PatternNode &node, const node_data::CharacterSequence &data);
+    /// Generate code for a character class node.
     void generateCodeForData(const PatternNode &node, const node_data::CharacterClass &data);
+    /// Generate code for a quantifier node.
     void generateCodeForData(const PatternNode &node, const node_data::Quantifier &data);
 
+    /// Generate code for a fixed quantifier count.
     void generateFixedCount(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for an optional child program.
     void generateZeroOrOne(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for an unbounded zero-minimum quantifier.
     void generateZeroOrMore(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for an unbounded one-minimum quantifier.
     void generateOneOrMore(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for a zero-to-maximum quantifier.
     void generateZeroToMaximum(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for a one-to-maximum quantifier.
     void generateOneToMaximum(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for a finite minimum-to-maximum quantifier.
     void generateMinimumMaximum(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
+    /// Generate code for an unbounded minimum quantifier.
     void generateMinimumToMany(ProgramWriter &writer, const node_data::Quantifier &data, const Program &childProgram);
 
+    /// Resolve relative jump locations in generated programs.
     void resolveJumps();
 
     /// Create a new segment for the given node.
     [[nodiscard]] auto createSegment(const PatternNode &node) -> Program &;
+    /// Access an active node segment.
+    [[nodiscard]] auto getSegment(PatternNodeId nodeId) -> Program &;
+    /// Mark a merged node segment as inactive.
+    void releaseSegment(PatternNodeId nodeId);
 
     /// Access the currently active group.
     [[nodiscard]] auto currentGroup() const noexcept -> const GroupInfo & { return _groupStack.back(); }
@@ -88,9 +106,11 @@ private:
     PatternNodePtr _rootNode;           ///< The root node from the parser.
     EngineDataPtr _engineData;          ///< The engine data with all collected sequences and character classes.
     std::vector<GroupInfo> _groupStack; ///< A stack of group info.
-    std::unordered_map<PatternNodeId, Program> _segments; ///< Prepared program segments.
+    std::vector<Program> _segments;     ///< Prepared program segments, indexed by dense node ID.
+    std::vector<bool> _activeSegments;  ///< Marks program segments that have not been merged yet.
+    std::size_t _activeSegmentCount{};  ///< Number of active program segments.
     /// In the first pass, any written program counter is just a relative jump location from this map.
-    std::unordered_map<ProgramCounter, RelativeJump> _jumpLocations;
+    std::vector<RelativeJump> _jumpLocations;
 };
 
 }

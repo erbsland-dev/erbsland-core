@@ -2,20 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Constraint_fwd.hpp"
 #include "ConstraintType.hpp"
 
 #include "../Location.hpp"
 
-#include <memory>
-
 namespace erbsland::conf::vr {
-
-class Constraint;
-using ConstraintPtr = std::shared_ptr<Constraint>;
 
 /// A constraint for a validation-rule.
 class Constraint {
 public:
+    // defaults
     virtual ~Constraint() = default;
 
 public:

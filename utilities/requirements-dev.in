@@ -3,3 +3,4 @@
 black
 erbsland-conf
 erbsland-ansi-convert
+idna==3.18

@@ -19,7 +19,7 @@ public:
         const auto expectedRect = bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, expectedSize};
         const auto expectedViewRect = bgeo::BlockRectangle{bgeo::BlockPosition{1, 1}, expectedSize};
 
-        REQUIRE(view.content() == content);
+        REQUIRE_EQUAL(view.content(), content);
         REQUIRE_EQUAL(view.size(), expectedSize);
         REQUIRE_EQUAL(view.rect(), expectedRect);
         REQUIRE_EQUAL(view.viewRect(), expectedViewRect);
@@ -40,7 +40,7 @@ public:
         view.setViewRect(bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, bgeo::BlockSize{1, 1}});
         const auto expectedReplacementRect = bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, bgeo::BlockSize{1, 1}};
 
-        REQUIRE(view.content() == replacement);
+        REQUIRE_EQUAL(view.content(), replacement);
         REQUIRE_EQUAL(view.viewRect(), expectedReplacementRect);
         REQUIRE_EQUAL(view.get(bgeo::BlockPosition{0, 0}), U'Z');
     }

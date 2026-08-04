@@ -3,8 +3,8 @@
 #include "NamedFormatParser.hpp"
 
 #include "NamedKeyParser.hpp"
-#include "ThrowHelper.hpp"
 
+#include "../FormatError.hpp"
 #include "../Literals.hpp"
 #include "../StringEditor.hpp"
 
@@ -69,7 +69,7 @@ auto NamedFormatParser::parse() -> FormatSpec {
             parseOption(static_cast<Option>(entry.keyIndex()), entry);
         }
     } catch (const err::ParseError &error) {
-        throwFormatError(error.reason());
+        throw FormatError(error.reason());
     }
     validate();
     return _spec;

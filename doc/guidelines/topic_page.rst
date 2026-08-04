@@ -24,8 +24,8 @@ A good topic page helps the reader understand a feature from a practical and con
 It does not describe APIs class by class, function by function.
 It answers user questions and explains **how you can solve a problem**.
 
-A topic page goes even further, it demonstrates **how the API should be used** and it also teaches developers
-best practices and how to use a feature effectively.
+A topic page goes even further, it demonstrates **how the API should be used** and it also teaches developers best
+practices and how to use a feature effectively.
 
 File Structure
 ==============
@@ -74,13 +74,48 @@ documentation.
    Organize the content in a logical order:
 
    * Start with the most important concepts first.
-   * Continue with practical usage patterns, but avoid a list like "Use x ..., use y ...".
+   * Continue with practical usage patterns, but **avoid** a list like "Use x ..., use y ...".
    * Explain details and edge cases later.
    * Write and explain naturally, address the reader personally und try your best to show what problems an API
      (class, enum, or method) solves, and how to use it best. It shall inspire the reader, so they would like
      to use that API in their own application they write.
 
    In most cases, no final summary section is required because the introduction already provides an overview.
+
+Recommended Workflow to Create the Content
+==========================================
+
+* Start by creating a list of questions a developer will have about the topic and/or API.
+  Here, just a few examples, but remember, each topic will have different questions.
+
+  * How do I use the API for <use-case>?
+  * What is <function> for?
+  * How do I handle errors?
+  * ...
+
+* Next, create a logical sequence of sections that answer these questions.
+  These sections don't need to have the questions in its titles, they just need to answer them and
+  provide a title a reader immediately understands that this section will answer their question.
+* Each section that describes how to use an API must have a demo that demonstrates what it describes.
+  Creating these demos before writing the content can help to find more questions a developer will have.
+* Next, write the sections as described in "Page Structure".
+* After writing the topic page, review it, unbiased and don't be shy to remove/rewrite content if you
+  think it does not match our guidelines.
+
+Anti-Patterns
+=============
+
+* **Don't** write lists of usage instructions. If you have a list of e.g. "Use x ...", "Use y ..." in a
+  section, this no longer a topic page but usage instructions.
+* **Don't** write about internals and implementation. This is just noise, for several reasons:
+  A developer should not need to know it to use the API - otherwise it is bad API design.
+  Internals and implementation may change.
+* **Don't** write about what's missing. This is just distracting.
+* **Don't** write what was changed or what is new. A topic page always covers the present situation and
+  is by no means a changelog. A developer that reads the page for the first time may be confused about
+  references to old functionality they never knew.
+* **Don't** just insert/change a sentence because of an API change without reviewing the whole document.
+  Even a small change may require rewriting a section/demo etc. to keep the topic page consistent.
 
 Related Guidelines
 ==================

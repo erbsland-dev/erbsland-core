@@ -4,11 +4,29 @@
 #include "VrBase.hpp"
 
 #include <erbsland/conf/impl/vr/DependencyMode.hpp>
+#include <erbsland/conf/impl/vr/EqualsBooleanConstraint.hpp>
+#include <erbsland/conf/impl/vr/EqualsBytesConstraint.hpp>
 #include <erbsland/conf/impl/vr/EqualsConstraint.hpp>
+#include <erbsland/conf/impl/vr/EqualsFloatConstraint.hpp>
+#include <erbsland/conf/impl/vr/EqualsIntegerConstraint.hpp>
+#include <erbsland/conf/impl/vr/EqualsMatrixConstraint.hpp>
+#include <erbsland/conf/impl/vr/EqualsTextConstraint.hpp>
+#include <erbsland/conf/impl/vr/InBytesConstraint.hpp>
 #include <erbsland/conf/impl/vr/InConstraint.hpp>
+#include <erbsland/conf/impl/vr/InFloatConstraint.hpp>
+#include <erbsland/conf/impl/vr/InIntegerConstraint.hpp>
+#include <erbsland/conf/impl/vr/InTextConstraint.hpp>
 #include <erbsland/conf/impl/vr/KeyConstraint.hpp>
 #include <erbsland/conf/impl/vr/MinMaxConstraint.hpp>
+#include <erbsland/conf/impl/vr/MinMaxDateConstraint.hpp>
+#include <erbsland/conf/impl/vr/MinMaxDateTimeConstraint.hpp>
+#include <erbsland/conf/impl/vr/MinMaxFloatConstraint.hpp>
+#include <erbsland/conf/impl/vr/MinMaxIntegerConstraint.hpp>
+#include <erbsland/conf/impl/vr/MinMaxMatrixConstraint.hpp>
 #include <erbsland/conf/impl/vr/MultipleConstraint.hpp>
+#include <erbsland/conf/impl/vr/MultipleFloatConstraint.hpp>
+#include <erbsland/conf/impl/vr/MultipleIntegerConstraint.hpp>
+#include <erbsland/conf/impl/vr/MultipleMatrixConstraint.hpp>
 #include <erbsland/conf/impl/vr/Rule.hpp>
 #include <erbsland/conf/impl/vr/Rules.hpp>
 #include <erbsland/conf/StdFormat.hpp>
@@ -23,19 +41,19 @@ TESTED_TARGETS(RulesBuilder RuleDefinition)
 TAGS(ValidationRules)
 class VrBuilderApiTest final : public UNITTEST_SUBCLASS(VrBase) {
 public:
-    [[nodiscard]] static auto makeRule(const vr::RuleType type = vr::RuleType::Text) -> impl::Rule {
-        auto rule = impl::Rule{};
+    [[nodiscard]] static auto makeRule(const vr::RuleType type = vr::RuleType::Text) -> el::conf::impl::Rule {
+        auto rule = el::conf::impl::Rule{};
         rule.setRuleNamePath(NamePath::fromText("app.value"_el));
         rule.setTargetNamePath(NamePath::fromText("app.value"_el));
         rule.setType(type);
         return rule;
     }
 
-    [[nodiscard]] auto takeRulesImpl(vr::RulesBuilder &builder) -> std::shared_ptr<impl::Rules> {
+    [[nodiscard]] auto takeRulesImpl(vr::RulesBuilder &builder) -> std::shared_ptr<el::conf::impl::Rules> {
         auto rules = builder.takeRules();
-        REQUIRE(rules != nullptr);
-        auto rulesImpl = std::dynamic_pointer_cast<impl::Rules>(rules);
-        REQUIRE(rulesImpl != nullptr);
+        REQUIRE(rules);
+        auto rulesImpl = std::dynamic_pointer_cast<el::conf::impl::Rules>(rules);
+        REQUIRE(rulesImpl);
         return rulesImpl;
     }
 
@@ -68,16 +86,16 @@ public:
 
         auto rulesImpl = takeRulesImpl(builder);
         const auto alternativeRule = rulesImpl->ruleForNamePath(NamePath::fromText("app.variant"_el));
-        REQUIRE(alternativeRule != nullptr);
-        REQUIRE(alternativeRule->type() == vr::RuleType::Alternatives);
+        REQUIRE(alternativeRule);
+        REQUIRE_EQUAL(alternativeRule->type(), vr::RuleType::Alternatives);
         REQUIRE_EQUAL(alternativeRule->childrenImpl().size(), 2U);
 
         const auto firstAlternative = alternativeRule->childrenImpl().rule(Name::createIndex(0));
         const auto secondAlternative = alternativeRule->childrenImpl().rule(Name::createIndex(1));
-        REQUIRE(firstAlternative != nullptr);
-        REQUIRE(secondAlternative != nullptr);
-        REQUIRE(firstAlternative->type() == vr::RuleType::Integer);
-        REQUIRE(secondAlternative->type() == vr::RuleType::Text);
+        REQUIRE(firstAlternative);
+        REQUIRE(secondAlternative);
+        REQUIRE_EQUAL(firstAlternative->type(), vr::RuleType::Integer);
+        REQUIRE_EQUAL(secondAlternative->type(), vr::RuleType::Text);
 
         builder.reset();
         REQUIRE_NOTHROW(builder.addRule("app"_el, vr::RuleType::Section));
@@ -131,51 +149,52 @@ public:
 
         auto defaultCaseSensitive = vr::builder::CaseSensitive{};
         defaultCaseSensitive(rule);
-        REQUIRE(rule.caseSensitivity() == CaseSensitivity::CaseSensitive);
+        REQUIRE_EQUAL(rule.caseSensitivity(), CaseSensitivity::CaseSensitive);
         auto caseInsensitive = vr::builder::CaseSensitive{CaseSensitivity::CaseInsensitive};
         caseInsensitive(rule);
-        REQUIRE(rule.caseSensitivity() == CaseSensitivity::CaseInsensitive);
+        REQUIRE_EQUAL(rule.caseSensitivity(), CaseSensitivity::CaseInsensitive);
     }
 
     void testDefaultAttributeConstructors() {
-        auto defaultFromValue = vr::builder::Default(impl::Value::createInteger(7));
-        REQUIRE(defaultFromValue._value != nullptr);
-        REQUIRE(defaultFromValue._value->type() == ValueType::Integer);
+        auto defaultFromValue = vr::builder::Default(el::conf::impl::Value::createInteger(7));
+        REQUIRE(defaultFromValue._value);
+        REQUIRE_EQUAL(defaultFromValue._value->type(), ValueType::Integer);
 
-        REQUIRE(vr::builder::Default(Integer{7})._value->type() == ValueType::Integer);
-        REQUIRE(vr::builder::Default(true)._value->type() == ValueType::Boolean);
-        REQUIRE(vr::builder::Default(Float{1.5})._value->type() == ValueType::Float);
-        REQUIRE(vr::builder::Default(el::text::String{"text"_el})._value->type() == ValueType::Text);
-        REQUIRE(vr::builder::Default("text"_el)._value->type() == ValueType::Text);
-        REQUIRE(vr::builder::Default(makeDate(2026, 1, 1))._value->type() == ValueType::Date);
-        REQUIRE(vr::builder::Default(makeTime(12, 0, 0, 0))._value->type() == ValueType::Time);
-        REQUIRE(
-            vr::builder::Default(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)})._value->type() ==
+        REQUIRE_EQUAL(vr::builder::Default(Integer{7})._value->type(), ValueType::Integer);
+        REQUIRE_EQUAL(vr::builder::Default(true)._value->type(), ValueType::Boolean);
+        REQUIRE_EQUAL(vr::builder::Default(Float{1.5})._value->type(), ValueType::Float);
+        REQUIRE_EQUAL(vr::builder::Default(el::text::String{"text"_el})._value->type(), ValueType::Text);
+        REQUIRE_EQUAL(vr::builder::Default("text"_el)._value->type(), ValueType::Text);
+        REQUIRE_EQUAL(vr::builder::Default(makeDate(2026, 1, 1))._value->type(), ValueType::Date);
+        REQUIRE_EQUAL(vr::builder::Default(makeTime(12, 0, 0, 0))._value->type(), ValueType::Time);
+        REQUIRE_EQUAL(
+            vr::builder::Default(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)})._value->type(),
             ValueType::DateTime);
-        REQUIRE(vr::builder::Default(bytesFromHex("DE AD"_el))._value->type() == ValueType::Bytes);
-        REQUIRE(
-            vr::builder::Default(el::time::CalendarDelta{el::time::Hours{2}})._value->type() == ValueType::TimeDelta);
-        REQUIRE(vr::builder::Default(el::re::RegEx::compile("a.*"_el))._value->type() == ValueType::RegEx);
+        REQUIRE_EQUAL(vr::builder::Default(bytesFromHex("DE AD"_el))._value->type(), ValueType::Bytes);
+        REQUIRE_EQUAL(
+            vr::builder::Default(el::time::CalendarDelta{el::time::Hours{2}})._value->type(), ValueType::TimeDelta);
+        REQUIRE_EQUAL(vr::builder::Default(el::re::RegEx::compile("a.*"_el))._value->type(), ValueType::RegEx);
         REQUIRE_THROWS(vr::builder::Default(el::re::RegExPtr{}));
 
-        REQUIRE(vr::builder::Default(std::vector<Integer>{1, 2})._value->type() == ValueType::ValueList);
-        REQUIRE(vr::builder::Default(std::vector<bool>{true, false})._value->type() == ValueType::ValueList);
-        REQUIRE(vr::builder::Default(std::vector<Float>{1.0, 2.0})._value->type() == ValueType::ValueList);
-        REQUIRE(vr::builder::Default(el::text::StringList{"a"_el, "b"_el})._value->type() == ValueType::ValueList);
-        REQUIRE(
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<Integer>{1, 2})._value->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<bool>{true, false})._value->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<Float>{1.0, 2.0})._value->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(el::text::StringList{"a"_el, "b"_el})._value->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(
             vr::builder::Default(std::vector<el::mem::ByteBlock>{bytesFromHex("AA"_el), bytesFromHex("BB"_el)})
-                ._value->type() == ValueType::ValueList);
-        REQUIRE(
-            vr::builder::Default(std::vector<std::vector<Integer>>{{1, 2}, {3, 4}})._value->type() ==
+                ._value->type(),
             ValueType::ValueList);
-        REQUIRE(
-            vr::builder::Default(std::vector<std::vector<Float>>{{1.0, 2.0}})._value->type() == ValueType::ValueList);
+        REQUIRE_EQUAL(
+            vr::builder::Default(std::vector<std::vector<Integer>>{{1, 2}, {3, 4}})._value->type(),
+            ValueType::ValueList);
+        REQUIRE_EQUAL(
+            vr::builder::Default(std::vector<std::vector<Float>>{{1.0, 2.0}})._value->type(), ValueType::ValueList);
 
         auto rule = makeRule(vr::RuleType::Integer);
         vr::builder::Default(Integer{42})(rule);
         REQUIRE(rule.hasDefault());
-        REQUIRE(rule.defaultValue() != nullptr);
-        REQUIRE(rule.defaultValue()->type() == ValueType::Integer);
+        REQUIRE(rule.defaultValue());
+        REQUIRE_EQUAL(rule.defaultValue()->type(), ValueType::Integer);
     }
 
     void testKeyIndexConstructors() {
@@ -204,25 +223,25 @@ public:
 
         REQUIRE(rule.hasKeyDefinitions());
         REQUIRE_EQUAL(rule.keyDefinitions().size(), 9U);
-        REQUIRE(rule.keyDefinitions().back()->caseSensitivity() == CaseSensitivity::CaseSensitive);
+        REQUIRE_EQUAL(rule.keyDefinitions().back()->caseSensitivity(), CaseSensitivity::CaseSensitive);
     }
 
     void testDependencyConstructors() {
         auto rule = makeRule(vr::RuleType::Section);
 
         vr::builder::Dependency(
-            impl::DependencyMode::If,
+            el::conf::impl::DependencyMode::If,
             std::vector<NamePathLike>{el::text::String{"a"_el}},
             std::vector<NamePathLike>{el::text::String{"b"_el}},
             "dep"_el)(rule);
-        vr::builder::Dependency(impl::DependencyMode::XOR, {el::text::String{"x"_el}}, {el::text::String{"y"_el}})(
-            rule);
+        vr::builder::Dependency(
+            el::conf::impl::DependencyMode::XOR, {el::text::String{"x"_el}}, {el::text::String{"y"_el}})(rule);
 
         REQUIRE(rule.hasDependencyDefinitions());
         REQUIRE_EQUAL(rule.dependencyDefinitions().size(), 2U);
-        REQUIRE(rule.dependencyDefinitions().front()->mode() == impl::DependencyMode::If);
+        REQUIRE_EQUAL(rule.dependencyDefinitions().front()->mode(), el::conf::impl::DependencyMode::If);
         REQUIRE(rule.dependencyDefinitions().front()->hasErrorMessage());
-        REQUIRE(rule.dependencyDefinitions().back()->mode() == impl::DependencyMode::XOR);
+        REQUIRE_EQUAL(rule.dependencyDefinitions().back()->mode(), el::conf::impl::DependencyMode::XOR);
     }
 
     void testVersionAttributesAndBranches() {
@@ -275,8 +294,8 @@ public:
         vr::builder::Chars({"[mn]"_el, "[op]"_el}, {.isNegated = true, .errorMessage = "chars error"_el})(rule);
 
         const auto constraint = rule.constraint("not_chars"_el);
-        REQUIRE(constraint != nullptr);
-        REQUIRE(constraint->type() == vr::ConstraintType::Chars);
+        REQUIRE(constraint);
+        REQUIRE_EQUAL(constraint->type(), vr::ConstraintType::Chars);
         REQUIRE(constraint->isNegated());
         REQUIRE(constraint->hasCustomError());
 
@@ -307,9 +326,9 @@ public:
         vr::builder::Contains({el::text::String{"e"_el}})(rule);
         vr::builder::Contains({"f"_el, "g"_el}, {.isNegated = true, .errorMessage = "contains error"_el})(rule);
 
-        REQUIRE(rule.constraint("not_starts"_el) != nullptr);
-        REQUIRE(rule.constraint("not_ends"_el) != nullptr);
-        REQUIRE(rule.constraint("not_contains"_el) != nullptr);
+        REQUIRE(rule.constraint("not_starts"_el));
+        REQUIRE(rule.constraint("not_ends"_el));
+        REQUIRE(rule.constraint("not_contains"_el));
 
         REQUIRE_THROWS_AS(el::conf::ConfError, vr::builder::Starts(el::text::StringList{})(rule));
 
@@ -320,33 +339,34 @@ public:
     void testEqualsConstraintConstructorsAndBranches() {
         auto textRule = makeRule(vr::RuleType::Text);
         vr::builder::Equals(Integer{5})(textRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsIntegerConstraint>(textRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsIntegerConstraint>(textRule.constraint("equals"_el)));
         vr::builder::Equals(el::text::String{"abc"_el})(textRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsTextConstraint>(textRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsTextConstraint>(textRule.constraint("equals"_el)));
         vr::builder::Equals("def"_el)(textRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsTextConstraint>(textRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsTextConstraint>(textRule.constraint("equals"_el)));
         auto booleanRule = makeRule(vr::RuleType::Boolean);
         vr::builder::Equals(true)(booleanRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::EqualsBooleanConstraint>(booleanRule.constraint("equals"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::EqualsBooleanConstraint>(booleanRule.constraint("equals"_el)),
+            nullptr);
 
         auto floatRule = makeRule(vr::RuleType::Float);
         vr::builder::Equals(Float{1.25})(floatRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsFloatConstraint>(floatRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsFloatConstraint>(floatRule.constraint("equals"_el)));
 
         auto bytesRule = makeRule(vr::RuleType::Bytes);
         vr::builder::Equals(bytesFromHex("AA"_el))(bytesRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsBytesConstraint>(bytesRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsBytesConstraint>(bytesRule.constraint("equals"_el)));
         vr::builder::Equals(Integer{7})(bytesRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsIntegerConstraint>(bytesRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsIntegerConstraint>(bytesRule.constraint("equals"_el)));
 
         auto matrixRule = makeRule(vr::RuleType::ValueMatrix);
         vr::builder::Equals(std::pair<Integer, Integer>{2, 3})(matrixRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::EqualsMatrixConstraint>(matrixRule.constraint("equals"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::EqualsMatrixConstraint>(matrixRule.constraint("equals"_el)));
 
         vr::builder::Equals(Integer{4}, Integer{5}, {.isNegated = true, .errorMessage = "eq error"_el})(matrixRule);
         const auto negated = matrixRule.constraint("not_equals"_el);
-        REQUIRE(negated != nullptr);
+        REQUIRE(negated);
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 
@@ -358,19 +378,19 @@ public:
     void testInConstraintConstructorsAndBranches() {
         auto integerRule = makeRule(vr::RuleType::Integer);
         vr::builder::In(std::vector<Integer>{1, 2})(integerRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::InIntegerConstraint>(integerRule.constraint("in"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InIntegerConstraint>(integerRule.constraint("in"_el)));
         vr::builder::In(std::initializer_list<Integer>{1, 2})(integerRule);
         vr::builder::In(Integer{5})(integerRule);
 
         auto floatRule = makeRule(vr::RuleType::Float);
         vr::builder::In(std::vector<Float>{1.0, 2.0})(floatRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::InFloatConstraint>(floatRule.constraint("in"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InFloatConstraint>(floatRule.constraint("in"_el)));
         vr::builder::In({1.0, 2.0})(floatRule);
         vr::builder::In(Float{9.0})(floatRule);
 
         auto textRule = makeRule(vr::RuleType::Text);
         vr::builder::In(el::text::StringList{"a"_el, "b"_el})(textRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::InTextConstraint>(textRule.constraint("in"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InTextConstraint>(textRule.constraint("in"_el)));
         vr::builder::In({el::text::String{"x"_el}, el::text::String{"y"_el}})(textRule);
         vr::builder::In({"a"_el, "b"_el})(textRule);
         vr::builder::In(el::text::String{"x"_el})(textRule);
@@ -378,12 +398,12 @@ public:
 
         auto bytesRule = makeRule(vr::RuleType::Bytes);
         vr::builder::In(std::vector<el::mem::ByteBlock>{bytesFromHex("AA"_el)})(bytesRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::InBytesConstraint>(bytesRule.constraint("in"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::InBytesConstraint>(bytesRule.constraint("in"_el)));
         vr::builder::In({bytesFromHex("01"_el), bytesFromHex("02"_el)})(bytesRule);
         vr::builder::In(bytesFromHex("FF"_el), {.isNegated = true, .errorMessage = "in error"_el})(bytesRule);
 
         const auto negated = bytesRule.constraint("not_in"_el);
-        REQUIRE(negated != nullptr);
+        REQUIRE(negated);
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 
@@ -397,14 +417,14 @@ public:
         auto rule = makeRule(vr::RuleType::Integer);
 
         vr::builder::ConfKey(NamePathLike{el::text::String{"ids"_el}})(rule);
-        REQUIRE(std::dynamic_pointer_cast<impl::KeyConstraint>(rule.constraint("key"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::KeyConstraint>(rule.constraint("key"_el)));
 
         vr::builder::ConfKey(std::vector<NamePathLike>{el::text::String{"ids"_el}, el::text::String{"other"_el}})(rule);
-        REQUIRE(std::dynamic_pointer_cast<impl::KeyConstraint>(rule.constraint("key"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::KeyConstraint>(rule.constraint("key"_el)));
 
         vr::builder::ConfKey({el::text::String{"ids"_el}}, {.isNegated = true, .errorMessage = "key error"_el})(rule);
         const auto negated = rule.constraint("not_key"_el);
-        REQUIRE(negated != nullptr);
+        REQUIRE(negated);
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 
@@ -417,16 +437,16 @@ public:
         auto rule = makeRule(vr::RuleType::Text);
 
         vr::builder::Matches(el::text::String{"^[a-z]+$"_el})(rule);
-        REQUIRE(rule.constraint("matches"_el) != nullptr);
+        REQUIRE(rule.constraint("matches"_el));
 
         vr::builder::Matches("^[0-9]+$"_el, true)(rule);
-        REQUIRE(rule.constraint("matches"_el) != nullptr);
+        REQUIRE(rule.constraint("matches"_el));
 
         vr::builder::Matches(
             el::re::RegEx::compile("^a+$"_el, el::re::Flags{el::re::Flag::Verbose}),
             {.isNegated = true, .errorMessage = "match error"_el})(rule);
         const auto negated = rule.constraint("not_matches"_el);
-        REQUIRE(negated != nullptr);
+        REQUIRE(negated);
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 
@@ -440,51 +460,55 @@ public:
     void testMinimumAndMaximumConstraintConstructorsAndBranches() {
         auto integerRule = makeRule(vr::RuleType::Integer);
         vr::builder::Minimum(Integer{1})(integerRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxIntegerConstraint>(integerRule.constraint("minimum"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxIntegerConstraint>(integerRule.constraint("minimum"_el)),
+            nullptr);
         vr::builder::Maximum(Integer{1})(integerRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxIntegerConstraint>(integerRule.constraint("maximum"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxIntegerConstraint>(integerRule.constraint("maximum"_el)),
+            nullptr);
 
         auto floatRule = makeRule(vr::RuleType::Float);
         vr::builder::Minimum(Float{1.5})(floatRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::MinMaxFloatConstraint>(floatRule.constraint("minimum"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::MinMaxFloatConstraint>(floatRule.constraint("minimum"_el)));
         vr::builder::Maximum(Float{1.5})(floatRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::MinMaxFloatConstraint>(floatRule.constraint("maximum"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::MinMaxFloatConstraint>(floatRule.constraint("maximum"_el)));
 
         auto dateRule = makeRule(vr::RuleType::Date);
         vr::builder::Minimum(makeDate(2026, 1, 1))(dateRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::MinMaxDateConstraint>(dateRule.constraint("minimum"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::MinMaxDateConstraint>(dateRule.constraint("minimum"_el)));
         vr::builder::Maximum(makeDate(2026, 1, 1))(dateRule);
-        REQUIRE(std::dynamic_pointer_cast<impl::MinMaxDateConstraint>(dateRule.constraint("maximum"_el)) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<el::conf::impl::MinMaxDateConstraint>(dateRule.constraint("maximum"_el)));
 
         auto dateTimeRule = makeRule(vr::RuleType::DateTime);
         vr::builder::Minimum(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)})(dateTimeRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxDateTimeConstraint>(dateTimeRule.constraint("minimum"_el)) !=
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxDateTimeConstraint>(dateTimeRule.constraint("minimum"_el)),
             nullptr);
         vr::builder::Maximum(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)})(dateTimeRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxDateTimeConstraint>(dateTimeRule.constraint("maximum"_el)) !=
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxDateTimeConstraint>(dateTimeRule.constraint("maximum"_el)),
             nullptr);
 
         auto matrixRule = makeRule(vr::RuleType::ValueMatrix);
         vr::builder::Minimum(std::pair<Integer, Integer>{2, 3})(matrixRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxMatrixConstraint>(matrixRule.constraint("minimum"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxMatrixConstraint>(matrixRule.constraint("minimum"_el)),
+            nullptr);
         vr::builder::Maximum(std::pair<Integer, Integer>{2, 3})(matrixRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MinMaxMatrixConstraint>(matrixRule.constraint("maximum"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MinMaxMatrixConstraint>(matrixRule.constraint("maximum"_el)),
+            nullptr);
 
         vr::builder::Minimum(Integer{2}, Integer{4}, {.isNegated = true, .errorMessage = "min error"_el})(matrixRule);
         const auto negMin = matrixRule.constraint("not_minimum"_el);
-        REQUIRE(negMin != nullptr);
+        REQUIRE(negMin);
         REQUIRE(negMin->isNegated());
         REQUIRE(negMin->hasCustomError());
 
         vr::builder::Maximum(Integer{3}, Integer{5}, {.isNegated = true, .errorMessage = "max error"_el})(matrixRule);
         const auto negMax = matrixRule.constraint("not_maximum"_el);
-        REQUIRE(negMax != nullptr);
+        REQUIRE(negMax);
         REQUIRE(negMax->isNegated());
         REQUIRE(negMax->hasCustomError());
 
@@ -496,23 +520,25 @@ public:
     void testMultipleConstraintConstructorsAndBranches() {
         auto integerRule = makeRule(vr::RuleType::Integer);
         vr::builder::Multiple(Integer{2})(integerRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MultipleIntegerConstraint>(integerRule.constraint("multiple"_el)) !=
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MultipleIntegerConstraint>(integerRule.constraint("multiple"_el)),
             nullptr);
 
         auto floatRule = makeRule(vr::RuleType::Float);
         vr::builder::Multiple(Float{0.5})(floatRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MultipleFloatConstraint>(floatRule.constraint("multiple"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MultipleFloatConstraint>(floatRule.constraint("multiple"_el)),
+            nullptr);
 
         auto matrixRule = makeRule(vr::RuleType::ValueMatrix);
         vr::builder::Multiple(std::pair<Integer, Integer>{2, 3})(matrixRule);
-        REQUIRE(
-            std::dynamic_pointer_cast<impl::MultipleMatrixConstraint>(matrixRule.constraint("multiple"_el)) != nullptr);
+        REQUIRE_NOT_EQUAL(
+            std::dynamic_pointer_cast<el::conf::impl::MultipleMatrixConstraint>(matrixRule.constraint("multiple"_el)),
+            nullptr);
 
         vr::builder::Multiple(Integer{4}, Integer{5}, {.isNegated = true, .errorMessage = "mul error"_el})(matrixRule);
         const auto negated = matrixRule.constraint("not_multiple"_el);
-        REQUIRE(negated != nullptr);
+        REQUIRE(negated);
         REQUIRE(negated->isNegated());
         REQUIRE(negated->hasCustomError());
 

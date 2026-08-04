@@ -2,20 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ValueFloat.hpp"
 
+#include "ParseDecimalDigitsResult.hpp"
+
 #include "../char/NamedChars.hpp"
 
 #include "../../../err/OverflowError.hpp"
 #include "../../../err/ParseError.hpp"
 
-using namespace erbsland::text::literals;
-
 namespace erbsland::conf::impl::lexer {
 
-/// The result when parsing a decimal number.
-struct ParseDecimalDigitsResult {
-    std::size_t digitCount; ///< The number of digits.
-    bool zeroPrefixed;      ///< If the number consists of more than one digit and has a zero prefix.
-};
+using namespace text::literals;
 
 /// Converts a string representation of a floating point number to a Float, performing necessary
 /// normalization and error checking. Handles removal of digit separators and leading '+'.

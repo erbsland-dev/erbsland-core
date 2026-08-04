@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
         CallbackEventData.hpp
+        CommonEventEditor.cpp
+        CommonEventEditor.hpp
         CurrentEventsScope.cpp
         CurrentEventsScope.hpp
         EventLoop.cpp

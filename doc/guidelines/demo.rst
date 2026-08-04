@@ -55,6 +55,23 @@ The utility ``demo_doc`` synchronizes source code and the output from the demo i
 Code is inserted starting from the first ``///`` line in the demo code.
 Place unrelated code, like declarations and helper functions before the first ``///`` line.
 
+To show only the parts that are relevant to one explanation, add ``:function-blocks:`` followed by one or more function
+names.
+The utility finds complete ``auto`` or ``void`` function definitions, preserves their requested order, joins them into
+one code block, and removes their shared indentation.
+This keeps a topic page focused while the shown code remains synchronized with the complete demo.
+The utility also stores a hash for the selected names, so changing the selection regenerates the code block.
+
+.. code-block:: rst
+
+    .. erbsland-demo::
+        :source: network/TimeClient/TimeClientApp.hpp
+        :function-blocks: onResolved onBound onDatagram
+
+    (the selected functions will be automatically synchronized here)
+
+    .. erbsland-demo-end::
+
 The parameter ``:exec:`` is optional.
 When specified, it executes the demo and inserts a console output block below the source code.
 Reference the executable as ``<domain>/<target>``; for example, ``text/string_format``.

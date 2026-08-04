@@ -3,8 +3,11 @@
 #include "BitmapDrawOptions.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 namespace erbsland::cterm {
+
+using namespace text::literals;
 
 BitmapDrawOptions::BitmapDrawOptions(ColorSequence colorSequence, BitmapColorMode colorMode) :
     _color{colorSequence}, _colorMode{colorMode} {
@@ -65,7 +68,7 @@ auto BitmapDrawOptions::fullBlock() const noexcept -> const Block & {
 
 void BitmapDrawOptions::setFullBlock(Block fullBlock) {
     if (fullBlock.displayWidth() != 1) {
-        throw err::ParameterError{"Full block character must have display width of 1.", "fullBlock"};
+        throw err::ParameterError{"Full block character must have display width of 1."_el, "fullBlock"_el};
     }
     _fullBlock = fullBlock;
 }
@@ -76,12 +79,12 @@ auto BitmapDrawOptions::doubleBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setDoubleBlocks(BlockString doubleBlocks) {
     if (doubleBlocks.length() != BlockCount{2U}) {
-        throw err::ParameterError{"Double blocks string must contain exactly 2 characters.", "doubleBlocks"};
+        throw err::ParameterError{"Double blocks string must contain exactly 2 characters."_el, "doubleBlocks"_el};
     }
     for (const auto &character : doubleBlocks) {
         if (character.displayWidth() != 1) {
             throw err::ParameterError{
-                "Double blocks string must contain characters with display width of 1.", "doubleBlocks"};
+                "Double blocks string must contain characters with display width of 1."_el, "doubleBlocks"_el};
         }
     }
     _doubleBlocks = std::move(doubleBlocks);
@@ -93,12 +96,12 @@ auto BitmapDrawOptions::halfBlocks() const noexcept -> const BlockString & {
 
 void BitmapDrawOptions::setHalfBlocks(BlockString halfBlocks) {
     if (halfBlocks.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Half blocks string must contain exactly 16 characters.", "halfBlocks"};
+        throw err::ParameterError{"Half blocks string must contain exactly 16 characters."_el, "halfBlocks"_el};
     }
     for (const auto &character : halfBlocks) {
         if (character.displayWidth() != 1) {
             throw err::ParameterError{
-                "Half blocks string must contain characters with display width of 1.", "halfBlocks"};
+                "Half blocks string must contain characters with display width of 1."_el, "halfBlocks"_el};
         }
     }
     _halfBlocks = std::move(halfBlocks);

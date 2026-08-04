@@ -89,7 +89,8 @@ public:
         REQUIRE_EQUAL(backend->_emittedColors.size(), std::size_t{1});
         REQUIRE_EQUAL(backend->_emittedColors[0], Color(fg::Red, bg::Blue));
         REQUIRE_EQUAL(backend->output(), std::string{"A"});
-        REQUIRE(backend->output().find("\x1b[") == std::string::npos);
+        const auto escapePosition = backend->output().find("\x1b[");
+        REQUIRE_EQUAL(escapePosition, std::string::npos);
     }
 
     void testTerminalUsesCursorFallbackHooksWhenCursorCodesAreUnavailable() {
@@ -222,7 +223,8 @@ public:
         REQUIRE_EQUAL(backend->_emittedBlockAttributes.size(), std::size_t{1});
         REQUIRE(backend->_emittedBlockAttributes[0].isUnderline());
         REQUIRE_EQUAL(backend->output(), std::string{"A"});
-        REQUIRE(backend->output().find("\x1b[4m") == std::string::npos);
+        const auto underlinePosition = backend->output().find("\x1b[4m");
+        REQUIRE_EQUAL(underlinePosition, std::string::npos);
     }
 
     void testUnsupportedCharacterAttributesAreIgnored() {
@@ -235,7 +237,8 @@ public:
 
         REQUIRE_FALSE(terminal->blockAttributes().isBold());
         REQUIRE_EQUAL(backend->_emittedBlockAttributes.size(), std::size_t{0});
-        REQUIRE(backend->output().find("\x1b[1m") == std::string::npos);
+        const auto boldPosition = backend->output().find("\x1b[1m");
+        REQUIRE_EQUAL(boldPosition, std::string::npos);
     }
 
 private:

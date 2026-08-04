@@ -15,6 +15,8 @@ class RulesDefinitionValidator final {
 public:
     /// Create a new validator for the given rule tree.
     explicit RulesDefinitionValidator(RulePtr root);
+
+    // defaults
     ~RulesDefinitionValidator() = default;
 
 public:

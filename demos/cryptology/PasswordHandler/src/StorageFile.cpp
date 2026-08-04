@@ -55,7 +55,9 @@ void writeStorageFile(const el::Path &path, const el::String &text, const el::Pa
     } catch (...) {
         temporary->abort();
         if (!releasedPath.isEmpty()) {
-            static_cast<void>(releasedPath.operations().remove());
+            if (releasedPath.operations().remove().isSuccessful()) {
+                releasedPath = {};
+            }
         }
         throw;
     }

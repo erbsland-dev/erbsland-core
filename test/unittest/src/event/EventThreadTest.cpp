@@ -46,8 +46,8 @@ public:
         });
         thread->join();
 
-        REQUIRE(callbackThreadId != std::thread::id{});
-        REQUIRE(callbackThreadId != mainThreadId);
+        REQUIRE_NOT_EQUAL(callbackThreadId, std::thread::id{});
+        REQUIRE_NOT_EQUAL(callbackThreadId, mainThreadId);
     }
 
     void testStartIsOneShot() {

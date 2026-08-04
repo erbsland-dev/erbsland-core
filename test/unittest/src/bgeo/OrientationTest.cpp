@@ -17,7 +17,10 @@ static_assert(Orientation{Orientation::Vertical}.crossed() == Orientation::Horiz
 TESTED_TARGETS(Orientation)
 class OrientationTest final : public el::UnitTest {
 public:
-    void testDefaultConstructor() { REQUIRE_EQUAL(Orientation{}.value(), Orientation::Horizontal); }
+    void testDefaultConstructor() {
+        const auto orientation = Orientation{};
+        REQUIRE_EQUAL(orientation.value(), Orientation::Horizontal);
+    }
 
     void testConstructorFromValue() {
         const auto orientation = Orientation{Orientation::Vertical};
@@ -27,7 +30,9 @@ public:
 
     void testCrossed() {
 
-        REQUIRE_EQUAL(Orientation{Orientation::Horizontal}.crossed(), Orientation::Vertical);
-        REQUIRE_EQUAL(Orientation{Orientation::Vertical}.crossed(), Orientation::Horizontal);
+        const auto horizontal = Orientation{Orientation::Horizontal};
+        const auto vertical = Orientation{Orientation::Vertical};
+        REQUIRE_EQUAL(horizontal.crossed(), Orientation::Vertical);
+        REQUIRE_EQUAL(vertical.crossed(), Orientation::Horizontal);
     }
 };

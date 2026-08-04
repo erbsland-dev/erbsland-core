@@ -15,4 +15,10 @@ primary usage and security guidance.
     :maxdepth: 1
 
     hashing
+    key_agreement
+    message_authentication
     password_hashing
+    signing_keys
+    symmetric_encryption
+    tls_record_protection
+    x509_certificates

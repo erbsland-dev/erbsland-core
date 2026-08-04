@@ -13,6 +13,7 @@ namespace erbsland::profiling {
 /// @tested{WorkloadRunnerTest}
 class WorkerWorkload {
 public:
+    // defaults
     virtual ~WorkerWorkload() = default;
 
 public:

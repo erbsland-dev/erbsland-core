@@ -38,8 +38,8 @@ public:
         const auto utf8Style = Block16Style::create("0123456789ABCDEF"_el);
         const auto utf32Style = Block16Style::create(U"0123456789ABCDEF"_el);
 
-        REQUIRE(utf8Style != nullptr);
-        REQUIRE(utf32Style != nullptr);
+        REQUIRE(utf8Style);
+        REQUIRE(utf32Style);
         REQUIRE_EQUAL(utf8Style->block(1), U'1');
         REQUIRE_EQUAL(utf32Style->block(15), U'F');
     }
@@ -98,8 +98,8 @@ public:
         REQUIRE_EQUAL(Block16Style::forStyle(FrameStyle::Double)->block(5), U'═');
         REQUIRE_EQUAL(Block16Style::forStyle(FrameStyle::FullBlock)->block(5), U'█');
         REQUIRE_EQUAL(Block16Style::forStyle(FrameStyle::FullBlockWithChamfer)->block(3), U'◢');
-        REQUIRE(Block16Style::forStyle(FrameStyle::OuterHalfBlock) == nullptr);
-        REQUIRE(Block16Style::forStyle(FrameStyle::InnerHalfBlock) == nullptr);
+        REQUIRE_FALSE(Block16Style::forStyle(FrameStyle::OuterHalfBlock));
+        REQUIRE_FALSE(Block16Style::forStyle(FrameStyle::InnerHalfBlock));
         REQUIRE_EQUAL(Block16Style::forStyle(FrameStyle::LightWithRoundedCorners)->block(12), U'╯');
         REQUIRE_EQUAL(Block16Style::forStyle(FrameStyle::None)->block(15), U' ');
         REQUIRE_EQUAL(Block16Style::forStyle(static_cast<FrameStyle>(255))->block(3), U'┌');

@@ -52,7 +52,7 @@ public:
         buffer.clearRecording();
         buffer.fill(bgeo::BlockRectangle{0, 0, 3, 3}, Tile9Style::create("ABCDEFGHI"_el), Color{fg::Blue, bg::Black});
         REQUIRE_EQUAL(buffer._lastCall, WritableBufferDispatchProbe::Call::FillTile9);
-        REQUIRE(buffer._lastTile9Style != nullptr);
+        REQUIRE(buffer._lastTile9Style);
         REQUIRE_EQUAL(buffer._lastFrameColor, Color(fg::Blue, bg::Black));
     }
 
@@ -89,14 +89,14 @@ public:
         buffer.clearRecording();
         buffer.drawFrame(bgeo::BlockRectangle{0, 0, 3, 3}, FrameStyle::Light, Color{fg::Green, bg::Black});
         REQUIRE_EQUAL(buffer._lastCall, WritableBufferDispatchProbe::Call::FrameChar16);
-        REQUIRE(buffer._lastBlock16Style != nullptr);
+        REQUIRE(buffer._lastBlock16Style);
         REQUIRE_FALSE(buffer._lastOptionalFillBlock.has_value());
         REQUIRE_EQUAL(buffer._lastFrameColor, Color(fg::Green, bg::Black));
 
         buffer.clearRecording();
         buffer.drawFilledFrame(bgeo::BlockRectangle{0, 0, 3, 3}, FrameStyle::OuterHalfBlock, Block{U'.'});
         REQUIRE_EQUAL(buffer._lastCall, WritableBufferDispatchProbe::Call::FrameTile9);
-        REQUIRE(buffer._lastTile9Style != nullptr);
+        REQUIRE(buffer._lastTile9Style);
         REQUIRE(buffer._lastOptionalFillBlock.has_value());
         REQUIRE_EQUAL(*buffer._lastOptionalFillBlock, Block{U'.'});
 

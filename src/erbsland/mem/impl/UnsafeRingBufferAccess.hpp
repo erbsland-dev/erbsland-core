@@ -22,10 +22,14 @@ public:
     /// Create an exclusive unsafe access lease.
     explicit UnsafeRingBufferAccess(RingBuffer &buffer) : _buffer{buffer} { buffer.beginUnsafeAccess(); }
 
-    // defaults/deletions
+    /// Release the unsafe access lease.
     ~UnsafeRingBufferAccess() { release(); }
+
+    // defaults/deletions
     UnsafeRingBufferAccess(const UnsafeRingBufferAccess &) = delete;
     UnsafeRingBufferAccess(UnsafeRingBufferAccess &&other) noexcept : _buffer{other._buffer} { other._buffer.reset(); }
+
+    // defaults/deletions
     auto operator=(const UnsafeRingBufferAccess &) -> UnsafeRingBufferAccess & = delete;
     auto operator=(UnsafeRingBufferAccess &&) -> UnsafeRingBufferAccess & = delete;
 

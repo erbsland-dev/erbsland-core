@@ -27,6 +27,7 @@ public:
     using CharacterSet = CharSet;
 
 public:
+    /// Create read tools for `data`.
     explicit constexpr U8StringReadTools(const U8StringDataView &data) noexcept : _data{data} {}
 
 public: // raw accessors

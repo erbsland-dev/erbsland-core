@@ -103,6 +103,8 @@ public:
     };
 
     TESTED_TARGETS(match)
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testMatch() {
         // ■ = inserts the test pattern
         // ● = inserts the tested character
@@ -117,7 +119,7 @@ public:
         requireCharClassMatch(charClassTestCases, testPatterns, [this](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->match(preparedPattern.text));
-            REQUIRE(lastMatch != nullptr); // expect a match.
+            REQUIRE(lastMatch); // expect a match.
             // validate the matching groups.
             REQUIRE_EQUAL(preparedPattern.expectedGroupLines.size(), 1);
             const auto &firstMatchLocation = preparedPattern.expectedMatchLocations[0];
@@ -127,7 +129,7 @@ public:
         requireCharClassNotMatch(charClassTestCases, testPatterns, [&](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->match(preparedPattern.text));
-            REQUIRE(lastMatch == nullptr); // expect no match.
+            REQUIRE_FALSE(lastMatch); // expect no match.
         });
     }
 
@@ -145,7 +147,7 @@ public:
         requireCharClassMatch(charClassTestCases, testPatterns, [this](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->fullMatch(preparedPattern.text));
-            REQUIRE(lastMatch != nullptr); // expect a match.
+            REQUIRE(lastMatch); // expect a match.
             // validate the matching groups.
             REQUIRE_EQUAL(preparedPattern.expectedGroupLines.size(), 1);
             const auto &firstMatchLocation = preparedPattern.expectedMatchLocations[0];
@@ -155,7 +157,7 @@ public:
         requireCharClassNotMatch(charClassTestCases, testPatterns, [&](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->fullMatch(preparedPattern.text));
-            REQUIRE(lastMatch == nullptr); // expect no match.
+            REQUIRE_FALSE(lastMatch); // expect no match.
         });
     }
 
@@ -173,7 +175,7 @@ public:
         requireCharClassMatch(charClassTestCases, testPatterns, [this](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->findFirst(preparedPattern.text));
-            REQUIRE(lastMatch != nullptr); // expect a match.
+            REQUIRE(lastMatch); // expect a match.
             // validate the matching groups.
             REQUIRE_EQUAL(preparedPattern.expectedGroupLines.size(), 1);
             const auto &firstMatchLocation = preparedPattern.expectedMatchLocations[0];
@@ -183,7 +185,7 @@ public:
         requireCharClassNotMatch(charClassTestCases, testPatterns, [&](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             REQUIRE_NOTHROW(lastMatch = regex->findFirst(preparedPattern.text));
-            REQUIRE(lastMatch == nullptr); // expect no match.
+            REQUIRE_FALSE(lastMatch); // expect no match.
         });
     }
 
@@ -201,9 +203,10 @@ public:
         requireCharClassMatch(charClassTestCases, testPatterns, [this](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             std::size_t index = 0;
+            const auto expectedGroupCount = preparedPattern.expectedGroupLines.size();
             for (const auto &match : regex->findAll(preparedPattern.text)) {
                 lastMatch = match;
-                REQUIRE(index < preparedPattern.expectedGroupLines.size());
+                REQUIRE_LESS(index, expectedGroupCount);
                 const auto &firstMatchLocation = preparedPattern.expectedMatchLocations[index];
                 auto expectedGroups = std::vector<std::string>{preparedPattern.expectedGroupLines[index]};
                 WITH_CONTEXT(requireGroups(expectedGroups));
@@ -234,9 +237,10 @@ public:
         requireCharClassMatch(charClassTestCases, testPatterns, [this](const PreparedPattern &preparedPattern) -> void {
             REQUIRE_NOTHROW(regex = RegEx::compile(preparedPattern.pattern));
             std::size_t index = 0;
+            const auto expectedGroupCount = preparedPattern.expectedGroupLines.size();
             for (const auto &match : regex->collectAll(preparedPattern.text)) {
                 lastMatch = match;
-                REQUIRE(index < preparedPattern.expectedGroupLines.size());
+                REQUIRE_LESS(index, expectedGroupCount);
                 const auto &firstMatchLocation = preparedPattern.expectedMatchLocations[index];
                 auto expectedGroups = std::vector<std::string>{preparedPattern.expectedGroupLines[index]};
                 WITH_CONTEXT(requireGroups(expectedGroups));

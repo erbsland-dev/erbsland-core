@@ -31,7 +31,7 @@ public:
         WITH_CONTEXT(requireReplaceAll(testCases));
 
         // Special-case: both empty must return empty without requiring engine work.
-        REQUIRE_EQUAL(regex->replaceAll(String{}, String{}), StringEditor{});
+        REQUIRE_EQUAL(regex->replaceAll(String{}, String{}), String{});
     }
 
     void testReplaceAllExpression_CaptureGroupsByIndexAndEmptyExpression() {
@@ -138,11 +138,11 @@ public:
         REQUIRE_EQUAL(
             regex->replaceAll(
                 "ab cd"_el,
-                [&calls](const MatchPtr &) -> StringEditor {
+                [&calls](const MatchPtr &) -> String {
                     calls += 1;
-                    return StringEditor{};
+                    return {};
                 }),
-            StringEditor{" "_el});
+            String{" "_el});
         REQUIRE_EQUAL(calls, static_cast<std::size_t>(2));
     }
 
@@ -166,7 +166,7 @@ public:
         {
             std::size_t calls = 0;
             try {
-                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> StringEditor {
+                (void)regex->replaceAll("ab cd"_el, [&calls](const MatchPtr &) -> String {
                     calls += 1;
                     if (calls == 2) {
                         throw std::runtime_error{"replaceFn failed (second match)"};

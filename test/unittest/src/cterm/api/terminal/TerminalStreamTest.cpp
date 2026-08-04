@@ -65,7 +65,9 @@ public:
         error->flush();
 
         const auto text = backend->output();
-        REQUIRE(text == std::string{"output\nerror\n"} || text == std::string{"error\noutput\n"});
+        const auto outputFirst = text == std::string{"output\nerror\n"};
+        const auto errorFirst = text == std::string{"error\noutput\n"};
+        REQUIRE(outputFirst || errorFirst);
     }
 
     void testMissingTerminalThrows() {

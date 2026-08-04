@@ -21,9 +21,12 @@ public:
         auto scope = ApplicationTestScope<Application>{};
         auto &application = scope.app();
 
-        REQUIRE(&application.random() == &application.random());
-        REQUIRE(&application.secureRandom() == &application.secureRandom());
-        REQUIRE(application.random().getInt32(1, 1) == 1);
+        const auto *random = &application.random();
+        const auto *secureRandom = &application.secureRandom();
+        const auto randomValue = application.random().getInt32(1, 1);
+        REQUIRE_EQUAL(random, &application.random());
+        REQUIRE_EQUAL(secureRandom, &application.secureRandom());
+        REQUIRE_EQUAL(randomValue, 1);
     }
 
     void testConcurrentApplicationRandom() {

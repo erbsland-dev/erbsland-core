@@ -29,7 +29,7 @@ auto U16StringEditor::contains(const U16String &other, const CharCompareFn compa
     return impl::U16StringComparisonTools{dataView()}.contains(other.dataView(), compareFn);
 }
 
-auto U16StringEditor::count(const U16String &text, const CharCompareFn compareFn) const noexcept -> unit::ElementCount {
+auto U16StringEditor::count(const U16String &text, const CharCompareFn compareFn) const noexcept -> unit::ItemCount {
     return impl::U16StringComparisonTools{dataView()}.count(text.dataView(), compareFn);
 }
 

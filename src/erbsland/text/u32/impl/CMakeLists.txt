@@ -32,6 +32,7 @@ target_sources(erbsland-core PRIVATE
         U32StringReadTools.hpp
         U32StringSharedStorage.cpp
         U32StringSharedStorage.hpp
+        U32StringSharedStorage_fwd.hpp
         U32StringStorage.hpp
         U32StringTraits.hpp
         U32StringTransformTools.cpp

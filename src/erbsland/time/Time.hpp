@@ -8,28 +8,17 @@
 #include "IsoTimeFormat.hpp"
 #include "Minute.hpp"
 #include "Second.hpp"
+#include "Time_fwd.hpp"
 #include "TimeDelta.hpp"
+#include "TimeParts.hpp"
+#include "TimeWrapResult_fwd.hpp"
 
-#include "../text/FormatAs.hpp"
 #include "../text/StringConverter.hpp"
 #include "../text/StringEditor.hpp"
 
 #include <compare>
 
 namespace erbsland::time {
-
-struct TimeWrapResult;
-
-/// A wall-clock time split into named parts.
-/// @tested{TimeCoreTest}
-struct TimeParts {
-    Hour hour;                      ///< The hour component, range `0..23`.
-    Minute minute;                  ///< The minute component, range `0..59`.
-    Second second;                  ///< The second component, range `0..59`.
-    Nanoseconds nanosecondFraction; ///< The nanosecond fraction, range `0..999999999`.
-
-    friend auto operator==(const TimeParts &, const TimeParts &) noexcept -> bool = default;
-};
 
 /// A wall-clock time of day with nanosecond precision.
 ///
@@ -154,21 +143,13 @@ public:
     [[nodiscard]] static auto last() noexcept -> Time;
 
 private:
+    constexpr static auto cNanosecondsPerSecond = int64_t{1'000'000'000};
+    constexpr static auto cSecondsPerDay = int64_t{86'400};
+    constexpr static auto cNanosecondsPerDay = cNanosecondsPerSecond * cSecondsPerDay;
+
     Storage _nanoseconds; ///< Nanoseconds since midnight.
-};
-
-/// The result of adding to a wall-clock time with wrapping.
-/// @tested{TimeCoreTest}
-struct TimeWrapResult {
-    Time time; ///< The wrapped time of day.
-    Days days; ///< The number of day boundaries crossed.
-
-    friend auto operator==(const TimeWrapResult &, const TimeWrapResult &) noexcept -> bool = default;
 };
 
 }
 
-template <>
-struct erbsland::text::FormatAsText<erbsland::time::Time> : FormatAs<time::Time, String> {
-    [[nodiscard]] auto format(const time::Time &value) const -> String { return value.toString(); }
-};
+#include "TimeWrapResult.hpp"

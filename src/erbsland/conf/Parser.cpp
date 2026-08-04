@@ -25,7 +25,7 @@ void Parser::setSignatureValidator(const SignatureValidatorPtr &signatureValidat
 auto Parser::parseOrThrow(const SourcePtr &source) -> DocumentPtr {
     _lastError = std::nullopt;
     if (source == nullptr) {
-        throw err::ParameterError{"Source cannot be null.", "source"};
+        throw err::ParameterError{"Source cannot be null."_el, "source"_el};
     }
     impl::Parser parserImplementation(source, _settings);
     return parserImplementation.parse();
@@ -35,7 +35,7 @@ auto Parser::parse(const SourcePtr &source) -> DocumentPtr {
     try {
         _lastError = std::nullopt;
         if (source == nullptr) {
-            throw err::ParameterError{"Source cannot be null.", "source"};
+            throw err::ParameterError{"Source cannot be null."_el, "source"_el};
         }
         impl::Parser parserImplementation(source, _settings);
         return parserImplementation.parse();

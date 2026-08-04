@@ -1,0 +1,5 @@
+# The TCP map server returns these values for the matching text keys.
+[map]
+"Zurich": "Switzerland"
+"Bern": "Switzerland"
+"Geneva": "Switzerland"

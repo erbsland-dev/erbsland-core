@@ -12,7 +12,14 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
     // The group must never be empty, but the embedded sequence can be empty.
     ERBSLAND_CORE_RE_REQUIRE_SAFETY(
         !data.children().empty(), "Group must have at least one child node (a sequence)"_el);
-    ProgramCounter programCounter = 0;
+    const auto childrenCount = static_cast<int32_t>(data.children().size());
+    const auto hasAdoptedChild = childrenCount == 1 && data.index == 0 && data.atomicGroupId == cNoAtomicGroupId;
+    if (hasAdoptedChild) {
+        const auto childNodeId = data.children().front()->id();
+        segment = std::move(getSegment(childNodeId));
+        releaseSegment(childNodeId);
+    }
+    ProgramCounter programCounter = static_cast<ProgramCounter>(segment.size());
     ProgramWriter writer(segment, programCounter);
     if (data.index != 0) {
         // The node index is 1-based (0 = no capture).
@@ -22,12 +29,15 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
     if (data.atomicGroupId != cNoAtomicGroupId) {
         writer.writeStartAtomic(data.atomicGroupId);
     }
-    const auto childrenCount = static_cast<int32_t>(data.children().size());
-    if (childrenCount == 1) {
+    if (childrenCount == 1 && !hasAdoptedChild) {
         const auto childNodeId = data.children()[0]->id();
-        writer.writeProgram(_segments.at(childNodeId));
-        _segments.erase(childNodeId);
-    } else {
+        const auto wrapperLength = static_cast<std::size_t>(data.index != 0) * 2U +
+            static_cast<std::size_t>(data.atomicGroupId != cNoAtomicGroupId) * 2U +
+            static_cast<std::size_t>(node.id() == _rootNode->id());
+        segment.reserve(getSegment(childNodeId).size() + wrapperLength);
+        writer.writeProgram(getSegment(childNodeId));
+        releaseSegment(childNodeId);
+    } else if (childrenCount > 1) {
         // Generate code for alternation using forward-chained SPLITs.
         //
         // split0:           SPLIT alt0, split1
@@ -63,7 +73,7 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
         const auto &childNodes = data.children();
         for (auto i = 0; i < childCount; ++i) {
             const auto childNodeId = childNodes[static_cast<std::size_t>(i)]->id();
-            const auto &program = _segments.at(childNodeId);
+            const auto &program = getSegment(childNodeId);
             const auto begin = currentAbsolute;
             currentAbsolute += static_cast<RelativeJump>(program.size());
             const auto programEnd = currentAbsolute;
@@ -73,6 +83,11 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
             programData.emplace_back(begin, programEnd, childNodeId, program);
         }
         const auto exitAbsolute = currentAbsolute;
+
+        const auto wrapperLength = static_cast<std::size_t>(data.index != 0) * 2U +
+            static_cast<std::size_t>(data.atomicGroupId != cNoAtomicGroupId) * 2U +
+            static_cast<std::size_t>(node.id() == _rootNode->id());
+        segment.reserve(static_cast<std::size_t>(exitAbsolute) + wrapperLength);
 
         // Write the SPLIT chain.
         for (auto i = 0; i < splitCount; ++i) {
@@ -100,7 +115,7 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
 
         // Erase all included program segments.
         for (const auto &d : programData) {
-            _segments.erase(d.nodeId);
+            releaseSegment(d.nodeId);
         }
     }
     if (data.atomicGroupId != cNoAtomicGroupId) {
@@ -118,12 +133,23 @@ void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data
 
 void CodeGenerator::generateCodeForData(const PatternNode &node, const node_data::Sequence &data) {
     auto &segment = createSegment(node);
-    ProgramCounter programCounter = 0;
-    ProgramWriter writer(segment, programCounter);
+    if (data.children().empty()) {
+        return;
+    }
+    auto totalSize = std::size_t{};
     for (const auto &child : data.children()) {
+        totalSize += getSegment(child->id()).size();
+    }
+    const auto firstChildNodeId = data.children().front()->id();
+    segment = std::move(getSegment(firstChildNodeId));
+    releaseSegment(firstChildNodeId);
+    segment.reserve(totalSize);
+    ProgramCounter programCounter = static_cast<ProgramCounter>(segment.size());
+    ProgramWriter writer(segment, programCounter);
+    for (const auto &child : data.children().subspan(1U)) {
         const auto childNodeId = child->id();
-        writer.writeProgram(_segments.at(childNodeId));
-        _segments.erase(childNodeId);
+        writer.writeProgram(getSegment(childNodeId));
+        releaseSegment(childNodeId);
     }
 }
 

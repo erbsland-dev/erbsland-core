@@ -19,7 +19,8 @@ public:
         builder.root()->addParagraph()->addText("Custom details."_el);
         auto document = builder.takeDocument();
 
-        REQUIRE_EQUAL(document.root()->style(), "error"_el);
+        const auto rootStyle = document.root()->style();
+        REQUIRE_EQUAL(rootStyle, "error"_el);
         const auto text = document.toString();
         REQUIRE(text.contains("Failure"_el));
         REQUIRE(text.contains("Detailed description."_el));

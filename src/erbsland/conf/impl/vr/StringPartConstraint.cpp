@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "StringPartConstraint.hpp"
 
-#include "MinMaxConstraint.hpp"
+#include "ContainsConstraint.hpp"
+#include "EndsConstraint.hpp"
+#include "StartsConstraint.hpp"
 #include "ValidationError.hpp"
 
 #include "../../../text/StringFormat.hpp"
@@ -38,36 +40,33 @@ void StringPartConstraint::validateText(const ValidationContext &context, const 
     }
 }
 
-namespace {
-template <typename Constraint>
-[[nodiscard]] auto createConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
+auto StringPartConstraint::valuesFromContext(const ConstraintHandlerContext &context) -> text::StringList {
     const auto &node = context.node;
     const auto &rule = context.rule;
     if (rule->type() == vr::RuleType::Text) {
-        const auto textValues = node->asList<text::String>();
-        if (textValues.empty()) {
+        auto values = text::StringList{node->asList<text::String>()};
+        if (values.isEmpty()) {
             throwValidationError(
                 text::StringFormat{"The '{}' constraint must specify a single text value or a list of texts"_el}.build(
                     node->name().asText()));
         }
-        return std::make_shared<Constraint>(text::StringList{textValues});
+        return values;
     }
     throwValidationError(
         text::StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
             node->name().asText(), rule->type().toText()));
 }
-}
 
 auto handleStartsConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
-    return createConstraint<StartsConstraint>(context);
+    return std::make_shared<StartsConstraint>(StringPartConstraint::valuesFromContext(context));
 }
 
 auto handleEndsConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
-    return createConstraint<EndsConstraint>(context);
+    return std::make_shared<EndsConstraint>(StringPartConstraint::valuesFromContext(context));
 }
 
 auto handleContainsConstraint(const ConstraintHandlerContext &context) -> ConstraintPtr {
-    return createConstraint<ContainsConstraint>(context);
+    return std::make_shared<ContainsConstraint>(StringPartConstraint::valuesFromContext(context));
 }
 
 }

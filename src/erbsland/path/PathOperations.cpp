@@ -8,6 +8,7 @@
 #include "TempDirectory.hpp"
 
 #include "impl/BackendFactory.hpp"
+#include "impl/PathBackend.hpp"
 #include "impl/PathOperations.hpp"
 
 #include "../core/Application.hpp"
@@ -182,14 +183,14 @@ auto PathOperations::createTempDirectoryOrThrow(PathTempDirectoryOptions options
     }
     const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary directory could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
     try {
         auto &random = core::application().secureRandom();
         static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
+        for (auto attempt = unit::ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
             const auto temporaryPath = path() / name;
@@ -233,14 +234,14 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
     }
     const auto probeText = text::String::fromJoined({options.prefix(), "x"_el, options.suffix()});
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
     try {
         auto &random = core::application().secureRandom();
         static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ElementCount{}; attempt < options.maximumAttempts(); ++attempt) {
+        for (auto attempt = unit::ItemCount{}; attempt < options.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
             const auto temporaryPath = path() / name;
@@ -289,14 +290,14 @@ auto PathOperations::openTempTextOutputStreamOrThrow(
     }
     const auto probeText = text::String::fromJoined({temporaryOptions.prefix(), "x"_el, temporaryOptions.suffix()});
     const auto nameProbe = Path{probeText};
-    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ElementCount::one()) {
+    if (nameProbe.isEmpty() || nameProbe.isAbsolute() || nameProbe.elementCount() != unit::ItemCount::one()) {
         throw PathError{PathErrorContext{
             "Temporary file could not be created"_el, "The prefix and suffix must form one valid path name."_el}};
     }
     try {
         auto &random = core::application().secureRandom();
         static const auto alphabet = text::CharSet{"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"_el};
-        for (auto attempt = unit::ElementCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
+        for (auto attempt = unit::ItemCount{}; attempt < temporaryOptions.maximumAttempts(); ++attempt) {
             const auto name = text::String::fromJoined(
                 {temporaryOptions.prefix(),
                     random.buildString(temporaryOptions.randomLength(), alphabet),
@@ -341,7 +342,7 @@ void PathOperations::setAccessProfileOrThrow(const PathAccessProfile profile, co
             "File permissions could not be changed"_el, "No path was provided for the permission change."_el}
                 .setHelp("Provide a non-empty path."_el)};
     }
-    static_cast<void>(_impl->setAccessProfile(profile, options));
+    _impl->setAccessProfile(profile, options);
 }
 
 auto PathOperations::addAttributes(const PathAttributes attributes, const PathChangeOptions options) const noexcept
@@ -362,7 +363,7 @@ void PathOperations::addAttributesOrThrow(const PathAttributes attributes, const
             "File attributes could not be changed"_el, "No path was provided for the attribute change."_el}
                 .setHelp("Provide a non-empty path."_el)};
     }
-    static_cast<void>(_impl->addAttributes(attributes, options));
+    _impl->addAttributes(attributes, options);
 }
 
 auto PathOperations::clearAttributes(const PathAttributes attributes, const PathChangeOptions options) const noexcept
@@ -383,7 +384,7 @@ void PathOperations::clearAttributesOrThrow(const PathAttributes attributes, con
             "File attributes could not be changed"_el, "No path was provided for the attribute change."_el}
                 .setHelp("Provide a non-empty path."_el)};
     }
-    static_cast<void>(_impl->clearAttributes(attributes, options));
+    _impl->clearAttributes(attributes, options);
 }
 
 auto PathOperations::isAlreadyExistsError(const PathError &error) noexcept -> bool {

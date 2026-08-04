@@ -3,12 +3,12 @@
 
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -55,7 +55,7 @@ public:
     }
 
     void testErbslandToStdStrings() {
-        const auto u8Text = U8StringEditor{std::u8string_view{u8"A¢€😀"}};
+        const auto u8Text = String{"A¢€😀"_el};
         const auto u16Text = U16StringEditor{std::u16string_view{u"A¢€😀"}};
         const auto u32Text = U32StringEditor{std::u32string_view{U"A¢€😀"}};
 
@@ -78,7 +78,7 @@ public:
 
     void testInvalidInputModes() {
         const auto invalid = std::string{th::stdStringFromHex("41 C0 42")};
-        const auto invalidCore = U8String{U8StringEditor{std::string_view{invalid}}};
+        const auto invalidCore = String{StringEditor{std::string_view{invalid}}};
 
         REQUIRE_EQUAL(
             StringConverter{StringConverter{invalid}.toU32String()}.toStdU32String(), std::u32string{U"A\uFFFDB"});
@@ -90,7 +90,7 @@ public:
 
     void testEncodingModeIsAvailableForAllConversions() {
         using StdConverter = StringConverter<std::string>;
-        using CoreConverter = StringConverter<U8String>;
+        using CoreConverter = StringConverter<String>;
 
         static_assert(HasModeToU8String<StdConverter>);
         static_assert(HasModeToU8String<CoreConverter>);
@@ -102,8 +102,8 @@ public:
         const auto owningView = StringConverter{std::string{th::stdStringFromHex("41 C2 A2")}}.toString();
         REQUIRE_EQUAL(StringConverter{owningView}.toStdString(), th::stdStringFromHex("41 C2 A2"));
 
-        const auto text = U8StringEditor{std::string_view{"alias"}};
-        const auto sourceView = U8String{text};
+        const auto text = StringEditor{"alias"_el};
+        const auto sourceView = String{text};
         const auto aliasView = StringConverter{sourceView}.toString();
         REQUIRE_EQUAL(aliasView.storageId(), sourceView.storageId());
     }

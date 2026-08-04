@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "UserLookupBackend_fwd.hpp"
+
 #include "../GroupId.hpp"
 #include "../GroupName.hpp"
 #include "../UserId.hpp"
@@ -10,17 +12,13 @@
 #include "../../text/String.hpp"
 #include "../../text/StringEditor.hpp"
 
-#include <memory>
-
 namespace erbsland::system::impl {
-
-class UserLookupBackend;
-using UserLookupBackendPtr = std::unique_ptr<UserLookupBackend>;
 
 /// Backend interface for platform user and group lookups.
 /// @tested{UserLookupTest}
 class UserLookupBackend {
 public:
+    // defaults
     virtual ~UserLookupBackend() = default;
 
 public:

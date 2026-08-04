@@ -49,6 +49,12 @@ Writing uses ``detachedData()``, which detaches first when the data object is sh
 This makes mutable call sites easy to find while avoiding nullable or raw pointer handling in user code.
 Operations that create, replace, or detach data may throw allocation errors or exceptions from the stored type.
 
+Use ``sharedDefault()`` when many storage instances can start with the same default-constructed data object.
+The method keeps one shared default object for each data type and returns another owner for every call.
+The retained canonical owner contributes to ``useCount()`` and ensures that writable access always detaches from the
+default object.
+Ordinary default construction remains unique and constructs a separate data object for each storage instance.
+
 Shared Array Data
 -----------------
 
@@ -119,10 +125,8 @@ Interface
     :members:
 .. doxygenclass:: erbsland::mem::SharedArrayData
     :members:
-
-.. doxygenenum:: erbsland::mem::SharedArrayDataConstructMethod
-
 .. doxygenenum:: erbsland::mem::SharedArrayDataCleanupMethod
+.. doxygenenum:: erbsland::mem::SharedArrayDataConstructMethod
 .. doxygenclass:: erbsland::mem::SharedData
     :members:
 .. doxygenclass:: erbsland::mem::SharedDataPointer

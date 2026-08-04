@@ -3,11 +3,9 @@
 #pragma once
 
 #include "ReadNumberStatus.hpp"
+#include "String_fwd.hpp"
 
 #include "../err/ParseError.hpp"
-
-#include <string_view>
-#include <utility>
 
 namespace erbsland::text {
 
@@ -21,11 +19,7 @@ public:
     /// @param status The reader status that caused the error.
     /// @param position The optional code-point position of the parse error.
     explicit ParseNumberError(
-        String reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept :
-        err::ParseError{std::move(reason), position}, _status{status} {}
-    /// @overload
-    explicit ParseNumberError(
-        std::string_view reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
+        String reason, ReadNumberStatus status, unit::CpIndex position = unit::CpIndex::noIndex()) noexcept;
 
     // defaults
     ~ParseNumberError() override = default;

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-TOOL_VERSION = "1"
+TOOL_VERSION = "3"
 MARKER_FILE_NAME = ".preprocess-sources-run"
 PROJECT_DIR = Path(__file__).resolve().parents[2]
 DOC_DIR = PROJECT_DIR / "doc"
@@ -42,7 +42,7 @@ class SourcePreprocessor:
     RE_SWAP_TRAILING_RETURN = re.compile(
         r"auto\s+(?P<declarator>.*?)\s+->\s*"
         r"(?P<return_type>.*?)\s*"
-        r"(?P<suffix>(?:(?:override|final)\s+)*(?:override|final)?\s*[;{]|=\s*(?:0|default|delete)\s*;)"
+        r"(?P<suffix>(?:(?:override|final)\s+)*(?:override|final)?\s*(?:[;{]|=\s*(?:0|default|delete)\s*;))"
     )
     RE_STD_HELPERS = re.compile(r"(?s)template\s*<>\s*\nstruct.*\{\n.*\n\};\n")
     RE_MACRO_DEFINITIONS = re.compile(r"""(?mx)

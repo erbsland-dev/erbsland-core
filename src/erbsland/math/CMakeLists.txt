@@ -7,6 +7,13 @@ add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
         AnyIntegerTypes.hpp
+        BigInteger.cpp
+        BigInteger.hpp
+        BigInteger.tpp
+        BigInteger_fwd.hpp
+        BigUnsignedInteger.cpp
+        BigUnsignedInteger.hpp
+        BigUnsignedInteger.tpp
         BoundedInteger.hpp
         ConstexprSaturatingMath.hpp
         IntegerBitOperations.hpp

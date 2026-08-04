@@ -8,7 +8,7 @@
 #include "EventIdInfo.hpp"
 #include "EventRegistry_fwd.hpp"
 
-#include "../core/impl/ApplicationData_fwd.hpp"
+#include "../core/impl/EventData_fwd.hpp"
 #include "../text/String.hpp"
 #include "../text/StringHashMap.hpp"
 
@@ -19,7 +19,7 @@ namespace erbsland::event {
 /// The registry to manage event and backend ids.
 class EventRegistry final {
     struct PrivateTag {};
-    friend class core::impl::ApplicationData;
+    friend class core::impl::EventData;
     constexpr static auto cCustomEventBase = 0x10000U;
     constexpr static auto cCustomBackendBase = 0x10000U;
 

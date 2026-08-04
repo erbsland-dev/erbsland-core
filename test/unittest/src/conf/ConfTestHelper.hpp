@@ -33,6 +33,8 @@
 
 using namespace el::text::literals;
 
+/// Provide common fixtures and assertions for configuration tests.
+/// @notest{Shared unit-test helper.}
 class ConfTestHelper : public el::UnitTest {
 public:
     /// Lines of bytes
@@ -42,8 +44,11 @@ public:
     enum class LineBreak : uint8_t { None, LF, CRLF };
 
 public:
+    // defaults
+    ConfTestHelper() = default;
     ~ConfTestHelper() override = default;
 
+public:
     /// Convert compact or whitespace-separated hexadecimal test data into a byte block.
     [[nodiscard]] static auto bytesFromHex(const el::text::String &hex) -> el::mem::ByteBlock {
         const auto source = el::text::StringConverter{hex}.toStdString();
@@ -217,6 +222,7 @@ public:
         REQUIRE((a3 <=> b3) == std::strong_ordering::equal);
     }
 
+    /// Verify that every pair in an ordered array supports the expected comparisons.
     template <typename T, std::size_t tSize>
     void requireStrictOrder(const std::array<T, tSize> &valuesInOrder) {
         for (std::size_t i = 0; i < tSize; ++i) {
@@ -288,6 +294,7 @@ public:
         return lines;
     }
 
+    /// Write byte values to the test output for diagnostics.
     void writeBytesToConsole(std::string label, std::vector<std::byte> bytes) {
         std::stringstream ss;
         ss << label;
@@ -299,6 +306,7 @@ public:
     }
 
 public: // helper functions to work with generic test files.
+    /// Get and create the temporary directory used by this test.
     auto useTestFileDirectory() -> std::filesystem::path {
         if (_temporaryTestFileDirectory == nullptr) {
             auto temporaryTestFileDirectory = std::filesystem::temp_directory_path();
@@ -321,14 +329,17 @@ public: // helper functions to work with generic test files.
         return *_temporaryTestFileDirectory;
     }
 
+    /// Remove the temporary test directory.
     auto cleanUpTestFileDirectory() { _temporaryTestFileDirectory.reset(); }
 
+    /// Create a unique path below the test directory.
     auto createTemporaryFilePath() -> std::filesystem::path {
         auto result = useTestFileDirectory();
         result /= generateRandomHex(8) + ".txt";
         return result;
     }
 
+    /// Set the test content from text.
     void setTestContents(const erbsland::text::String &text) {
         testContents = el::text::StringEditor{
             std::format("UTF-8 Text, {} bytes (·=space ↦=tab ↲=newline ●=EOF):\n", text.length().toSizeT())};
@@ -347,11 +358,13 @@ public: // helper functions to work with generic test files.
         testContents.append(el::text::String{"●"_el});
     }
 
+    /// Set the test content from bytes.
     void setTestContents(const erbsland::mem::ByteBlock &content) {
         testContents = el::text::StringEditor{std::format("Binary data, {} bytes:\n", content.length().toSizeT())};
         testContents.append(el::text::String::fromByteBlock(content, el::text::ByteFormat::separated()));
     }
 
+    /// Set the test content from lines of bytes.
     void setTestContents(const FileLines &content) {
         testContents = el::text::StringEditor{std::format("Artificial line data, {} lines:\n", content.size())};
         int counter = 0;
@@ -360,6 +373,7 @@ public: // helper functions to work with generic test files.
         }
     }
 
+    /// Create a test file containing text.
     auto createTestFile(const erbsland::text::String &text) -> std::filesystem::path {
         auto filePath = createTemporaryFilePath();
         std::ofstream stream(filePath, std::ios::binary);
@@ -369,6 +383,7 @@ public: // helper functions to work with generic test files.
         return filePath;
     }
 
+    /// Create a test file containing bytes.
     auto createTestFile(const erbsland::mem::ByteBlock &content) -> std::filesystem::path {
         auto filePath = createTemporaryFilePath();
         std::ofstream stream(filePath, std::ios::binary);
@@ -379,6 +394,7 @@ public: // helper functions to work with generic test files.
         return filePath;
     }
 
+    /// Create a test file containing byte lines.
     auto createTestFile(const FileLines &content) -> std::filesystem::path {
         auto filePath = createTemporaryFilePath();
         std::ofstream stream(filePath, std::ios::binary);
@@ -395,6 +411,7 @@ public: // helper functions to work with generic test files.
         return filePath;
     }
 
+    /// Create an in-memory source containing text.
     auto createTestMemorySource(const erbsland::text::String &text) -> erbsland::conf::SourcePtr {
         setTestContents(text);
         return erbsland::conf::Source::fromString(text);
@@ -423,6 +440,7 @@ private:
     return ConfTestHelper::makeTime(hour, minute, second, nanosecond);
 }
 
+/// Create a Core time with a UTC offset in tests without a helper base class.
 [[nodiscard]] inline auto makeTimeWithZone(
     const int hour,
     const int minute,

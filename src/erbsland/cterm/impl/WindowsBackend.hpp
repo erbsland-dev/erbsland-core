@@ -3,6 +3,7 @@
 #pragma once
 
 #include "WindowsBackendPrivate_fwd.hpp"
+#include "WindowsSignalDispatcher_fwd.hpp"
 
 #include "../Backend.hpp"
 
@@ -10,13 +11,17 @@
 
 namespace erbsland::cterm::impl {
 
-class WindowsSignalDispatcher;
-
+/// Windows console implementation of the terminal backend.
+/// @notest{Platform integration is covered through terminal integration tests.}
 class WindowsBackend : public Backend {
 public:
     using OptionalTimeout = std::optional<std::chrono::milliseconds>;
 
+    /// Create a Windows terminal backend with requested flags.
+    /// @param terminalFlags The requested terminal features.
     explicit WindowsBackend(TerminalFlags terminalFlags);
+
+    // defaults
     ~WindowsBackend() override;
 
 public: // implement backend

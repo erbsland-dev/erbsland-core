@@ -21,7 +21,8 @@ class RegExErrorTest final : public el::UnitTest {
 private:
     void requireContains(const el::text::String &text, const std::string_view expected) {
         const auto actual = re_test::string_helper::toStdString(text);
-        REQUIRE(actual.find(expected) != std::string::npos);
+        const auto position = actual.find(expected);
+        REQUIRE_NOT_EQUAL(position, std::string::npos);
     }
 
 public:
@@ -66,7 +67,7 @@ public:
             {el::unit::LineIndex{1U}, el::unit::ColumnIndex{2U}, el::unit::CpIndex{3U}}};
         const auto diagnostic = error.diagnostic();
 
-        REQUIRE(diagnostic != nullptr);
+        REQUIRE(diagnostic);
         REQUIRE_EQUAL(diagnostic->location().position(), el::unit::CpIndex{3U});
         WITH_CONTEXT(requireContains(diagnostic->toString(), "Replacement expression is invalid"));
         WITH_CONTEXT(requireContains(diagnostic->toString(), "A closing brace has no matching opening brace."));

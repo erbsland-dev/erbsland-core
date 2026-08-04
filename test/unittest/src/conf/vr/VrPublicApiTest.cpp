@@ -23,7 +23,7 @@ public:
                                  "type: \"Integer\"\n"
                                  "minimum: 1024\n"
                                  "maximum: 0xffff\n"}))
-        REQUIRE(vrDocument != nullptr);
+        REQUIRE(vrDocument);
 
         REQUIRE_NOTHROW(rules = vr::Rules::createFromDocument(vrDocument));
 
@@ -91,12 +91,12 @@ public:
         }));
 
         auto password = document->valueOrThrow(el::text::String{"credentials.password"});
-        REQUIRE(password->validationRule() != nullptr);
+        REQUIRE(password->validationRule());
         REQUIRE(password->validationRule()->isSecret());
         REQUIRE(password->isSecret());
 
         auto username = document->valueOrThrow(el::text::String{"credentials.username"});
-        REQUIRE(username->validationRule() != nullptr);
+        REQUIRE(username->validationRule());
         REQUIRE_FALSE(username->validationRule()->isSecret());
         REQUIRE_FALSE(username->isSecret());
     }

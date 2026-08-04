@@ -21,7 +21,10 @@ namespace erbsland::event::impl {
 /// @tested{EventLoopDriverTest}
 class KqueueEventLoopDriver final : public EventLoopDriver {
 public:
+    /// Create a kqueue-based event-loop driver.
     KqueueEventLoopDriver();
+
+    /// Release the native kqueue descriptor and its registrations.
     ~KqueueEventLoopDriver() override;
 
     // defaults/deletions
@@ -42,9 +45,15 @@ public: // native source interface
         -> RegistrationPtr;
 
 private:
+    static constexpr auto cWakeIdentifier = uintptr_t{1U}; ///< Identifier reserved for wake events.
+    static constexpr auto cMaximumEvents = 32;             ///< Maximum native events read in one wait.
+
+    /// Wait for native events until an optional absolute timeout.
     void waitInternal(const timespec *timeout);
+    /// Remove a descriptor registration by generation.
     void unregisterDescriptor(uint64_t generation) noexcept;
 
+    /// A descriptor readiness registration.
     struct Registration {
         int descriptor;
         bool read;

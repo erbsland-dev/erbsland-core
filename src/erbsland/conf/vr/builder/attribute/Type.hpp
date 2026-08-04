@@ -9,9 +9,12 @@
 namespace erbsland::conf::vr::builder {
 
 /// Sets the rule type.
-struct Type : Attribute {
+class Type : public Attribute {
+public:
+    /// Set the rule value type.
+    /// @param type The value type to set.
     explicit Type(const RuleType type) : _type{type} {}
-    void operator()(impl::Rule &rule) override;
+    void operator()(Rule &rule) override;
     RuleType _type;
 };
 

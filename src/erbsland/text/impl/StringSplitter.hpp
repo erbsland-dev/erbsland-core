@@ -60,8 +60,16 @@ public:
     /// Calling this method at the end returns an empty string.
     /// @return The next part, optionally including its separator.
     [[nodiscard]] auto next() noexcept -> String;
+    /// Skip the next part without creating a shared slice.
+    /// Calling this method at the end has no effect.
+    void skip() noexcept;
     /// Restart splitting at the beginning of the source text.
     void reset() noexcept;
+
+private:
+    /// Advance to the next part and optionally store its source range.
+    /// @param partRange Where to store the consumed part range, or `nullptr` if no range is needed.
+    void advanceToNextPart(Range *partRange) noexcept;
 
 private:
     String _text;                                             ///< The owning source text.

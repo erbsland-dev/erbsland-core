@@ -41,7 +41,7 @@ void countEmojis(const el::String &text) {
         return el::LoopStatus::Continue;
     });
 
-    el::io::printLine("Text ..........: \"", text, "\"");
+    el::io::printLine("Text ..........: \""_el, text, "\""_el);
     el::io::printLine("Emoji symbols .: ", emojiCount);
     el::io::printLine();
 }

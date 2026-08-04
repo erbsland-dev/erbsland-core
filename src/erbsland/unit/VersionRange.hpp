@@ -28,11 +28,9 @@ public:
     constexpr VersionRange(std::optional<Version> minimum, std::optional<Version> maximum) noexcept :
         _minimum{minimum}, _maximum{maximum} {}
 
-    /// Destroy this version range.
+    // defaults
     ~VersionRange() = default;
-    /// Copy a version range.
     VersionRange(const VersionRange &) noexcept = default;
-    /// Copy another version range into this range.
     auto operator=(const VersionRange &) noexcept -> VersionRange & = default;
 
 public: // operators
@@ -123,6 +121,7 @@ private:
     std::optional<Version> _maximum; ///< The optional inclusive maximum bound.
 };
 
+/// Test whether this version is contained in a range at the given precision.
 constexpr auto Version::inRange(const VersionRange &range, VersionPart precision) const noexcept -> bool {
     return range.contains(*this, precision);
 }

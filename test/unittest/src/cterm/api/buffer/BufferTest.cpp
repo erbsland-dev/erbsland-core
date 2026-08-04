@@ -213,7 +213,7 @@ public:
 
         const auto cloned = buffer.clone();
 
-        REQUIRE(cloned != nullptr);
+        REQUIRE_NOT_EQUAL(cloned, nullptr);
         cloned->set(bgeo::BlockPosition{1, 0}, Block{U'B', fg::Red, bg::Black});
 
         REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 0}), U'A');

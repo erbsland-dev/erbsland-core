@@ -91,7 +91,7 @@ public:
             }
             REQUIRE(false);     // This must not work either.
         } catch (const ConfError &error) {
-            REQUIRE(error.category() == ConfErrorCategory::Internal);
+            REQUIRE_EQUAL(error.category(), ConfErrorCategory::Internal);
         }
     }
 
@@ -241,7 +241,7 @@ public:
 
     void testDocumentWithDigest() {
         // verify the used algorithm.
-        REQUIRE(impl::defaults::documentHashAlgorithm == el::cryptology::HashAlgorithm::Sha3_256);
+        REQUIRE_EQUAL(el::conf::impl::defaults::documentHashAlgorithm, el::cryptology::HashAlgorithm::Sha3_256);
         setupTokenGenerator("@signature: \"data\"\n[main]\nvalue: 123\nanother value: \"example\"\n"_el);
         while (auto nextToken = tokenGenerator.next()) {
             token = std::move(*nextToken);

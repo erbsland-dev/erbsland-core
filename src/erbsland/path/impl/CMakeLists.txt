@@ -12,6 +12,7 @@ target_sources(erbsland-core PRIVATE
         CommonPathBackend.hpp
         PathBackend.cpp
         PathBackend.hpp
+        PathBackend_fwd.hpp
         PathConstants.hpp
         PathContent.cpp
         PathContent.hpp
@@ -24,6 +25,7 @@ target_sources(erbsland-core PRIVATE
         PathInfoCache_fwd.hpp
         PathInfoData.cpp
         PathInfoData.hpp
+        PathInfoData_fwd.hpp
         PathNameTools.cpp
         PathNameTools.hpp
         PathOperations.cpp
@@ -45,9 +47,11 @@ if (WIN32)
             WindowsPathBackend.hpp
             WindowsPathBackend_operations.cpp
             WindowsPathBackend_path.cpp
+            WindowsSymbolicLinkReparseData.hpp
     )
 else ()
     target_sources(erbsland-core PRIVATE
+            PosixDirectoryCloser.hpp
             PosixPathBackend.cpp
             PosixPathBackend.hpp
             PosixPathBackend_operations.cpp

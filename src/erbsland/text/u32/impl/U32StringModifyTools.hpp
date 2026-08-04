@@ -20,6 +20,7 @@ namespace erbsland::text::impl {
 /// @tested{U32StringTest}
 class U32StringModifyTools final {
 public:
+    /// Create modification tools for `data`.
     explicit constexpr U32StringModifyTools(const U32StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -94,35 +95,90 @@ public:
         -> U32StringSharedStorage;
 
 private:
+    /// Test whether two spans share any storage.
+    /// @tparam T The span element type.
+    /// @param first The first span.
+    /// @param second The second span.
+    /// @return `true` if the spans overlap.
     template <typename T>
     [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
+    /// Encode one character into a fixed UTF-32 buffer.
+    /// @param character The character to encode.
+    /// @return The buffer containing the encoded character.
     [[nodiscard]] static auto characterBytes(Char character) noexcept -> std::array<char32_t, 2>;
+    /// Get the populated part of an encoded character buffer.
+    /// @param character The encoded character.
+    /// @param bytes The buffer returned by `characterBytes()`.
+    /// @return A span over the populated code points.
     [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char32_t, 2> &bytes) noexcept
         -> std::span<const char32_t>;
+    /// Return storage with selected characters replaced.
+    /// @tparam Predicate The character-selection predicate.
+    /// @param predicate The predicate selecting characters to replace.
+    /// @param replacement The UTF-32 replacement text.
+    /// @return Newly allocated modified storage.
     template <typename Predicate>
     [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char32_t> replacement) const
         -> U32StringSharedStorage;
+    /// Return storage with matching text replaced.
+    /// @param text The text to replace.
+    /// @param replacement The UTF-32 replacement text.
+    /// @param compareFn The character comparison function.
+    /// @return Newly allocated modified storage.
     [[nodiscard]] auto replacedText(
         const U32StringDataView &text, std::span<const char32_t> replacement, CharCompareFn compareFn) const
         -> U32StringSharedStorage;
+    /// Replace selected characters in storage, preserving unique storage when possible.
+    /// @tparam Predicate The character-selection predicate.
+    /// @param storage The storage to modify.
+    /// @param predicate The predicate selecting characters to replace.
+    /// @param replacement The UTF-32 replacement text.
+    /// @return The modified storage.
     template <typename Predicate>
     static auto replaceCharactersInStorage(
         U32StringSharedStorage &storage, Predicate predicate, std::span<const char32_t> replacement)
         -> U32StringSharedStorage &;
+    /// Replace matching text in storage, preserving unique storage when possible.
+    /// @param storage The storage to modify.
+    /// @param text The text to replace.
+    /// @param replacement The UTF-32 replacement text.
+    /// @param compareFn The character comparison function.
+    /// @return The modified storage.
     static auto replaceTextInStorage(
         U32StringSharedStorage &storage,
         const U32StringDataView &text,
         std::span<const char32_t> replacement,
         CharCompareFn compareFn) -> U32StringSharedStorage &;
+    /// Find the first range matching a text sequence.
+    /// @param data The data to search.
+    /// @param text The text to find.
+    /// @param compareFn The character comparison function.
+    /// @return The matching range, or an empty range if not found.
     [[nodiscard]] static auto findFirstTextRange(
         const U32StringDataView &data, const U32StringDataView &text, CharCompareFn compareFn) noexcept
         -> unit::CpRange;
+    /// Test whether text matches data at a character index.
+    /// @param data The data to inspect.
+    /// @param start The candidate match start.
+    /// @param text The text to match.
+    /// @param compareFn The character comparison function.
+    /// @return `true` if the text matches.
     [[nodiscard]] static auto matchesText(
         std::span<const char32_t> data,
         unit::CpIndex start,
         std::span<const char32_t> text,
         CharCompareFn compareFn) noexcept -> bool;
+    /// Compare two characters with an optional comparison function.
+    /// @param left The left character.
+    /// @param right The right character.
+    /// @param compareFn The comparison function.
+    /// @return `true` if the characters compare equal.
     [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
+    /// Return the character index immediately after a text match.
+    /// @param data The matched data.
+    /// @param start The match start.
+    /// @param text The matched text.
+    /// @return The index after the match.
     [[nodiscard]] static auto endOfMatch(
         std::span<const char32_t> data, unit::CpIndex start, std::span<const char32_t> text) noexcept -> unit::CpIndex;
 
@@ -131,6 +187,7 @@ private:
 };
 
 template <typename Predicate>
+/// Replace characters selected by a predicate with UTF-32 text.
 auto U32StringModifyTools::replacedCharacters(Predicate predicate, const std::span<const char32_t> replacement) const
     -> U32StringSharedStorage {
     const auto data = _data.dataSpan();
@@ -179,6 +236,7 @@ auto U32StringModifyTools::replacedCharacters(Predicate predicate, const std::sp
 }
 
 template <typename Predicate>
+/// Replace characters selected by a predicate directly in the shared storage.
 auto U32StringModifyTools::replaceCharactersInStorage(
     U32StringSharedStorage &storage, Predicate predicate, const std::span<const char32_t> replacement)
     -> U32StringSharedStorage & {

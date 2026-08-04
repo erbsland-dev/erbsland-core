@@ -78,9 +78,9 @@ auto WindowsPathBackend::userHomeDirectoryOrThrow() const -> Path {
     const auto closeToken = std::unique_ptr<void, decltype(&CloseHandle)>{token, &CloseHandle};
 
     auto length = DWORD{0};
-    static_cast<void>(GetUserProfileDirectoryW(token, nullptr, &length));
-    const auto lengthError = GetLastError();
-    if (length == 0U || lengthError != ERROR_INSUFFICIENT_BUFFER) {
+    const auto lengthQuerySucceeded = GetUserProfileDirectoryW(token, nullptr, &length) != 0;
+    const auto lengthError = lengthQuerySucceeded ? DWORD{ERROR_SUCCESS} : GetLastError();
+    if (lengthQuerySucceeded || length == 0U || lengthError != ERROR_INSUFFICIENT_BUFFER) {
         throwSystemError(
             "User home directory is unavailable"_el,
             "The operating system could not determine the current user's profile-directory size."_el,
@@ -224,9 +224,9 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
         result.loadedParts.set(PathInfoPart::Size);
     }
     if (parts.isSet(PathInfoPart::Times)) {
-        result.lastModified = time::impl::WindowsTimeConverter::fromFileTime(fileInfo.ftLastWriteTime);
-        result.lastAccessed = time::impl::WindowsTimeConverter::fromFileTime(fileInfo.ftLastAccessTime);
-        result.birthTime = time::impl::WindowsTimeConverter::fromFileTime(fileInfo.ftCreationTime);
+        result.lastModified = time::impl::windows_time_converter::fromFileTime(fileInfo.ftLastWriteTime);
+        result.lastAccessed = time::impl::windows_time_converter::fromFileTime(fileInfo.ftLastAccessTime);
+        result.birthTime = time::impl::windows_time_converter::fromFileTime(fileInfo.ftCreationTime);
         result.loadedParts.set(PathInfoPart::Times);
     }
     if (parts.isSet(PathInfoPart::AccessRights)) {
@@ -427,7 +427,8 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
             hasExistingContent,
         };
     } catch (...) {
-        static_cast<void>(CloseHandle(handle));
+        // Preserve the stream setup error; this handle has no remaining owner that could recover it.
+        CloseHandle(handle);
         throw;
     }
 }

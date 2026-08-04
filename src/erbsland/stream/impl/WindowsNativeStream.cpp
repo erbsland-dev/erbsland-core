@@ -3,6 +3,7 @@
 #include "WindowsNativeStream.hpp"
 
 #include "BufferedByteInputStream.hpp"
+#include "WindowsNativeOperation.hpp"
 
 #include "../StreamError.hpp"
 
@@ -24,7 +25,7 @@ using unit::ByteIndex;
 using unit::ByteLength;
 using unit::ByteOffset;
 
-WindowsNativeStream::Operation::Operation(const WindowsNativeStream &stream) : _stream{stream} {
+WindowsNativeOperation::WindowsNativeOperation(const WindowsNativeStream &stream) : _stream{stream} {
     const auto lock = std::scoped_lock{_stream._operationMutex};
     _handle = _stream._handle.load();
     if (_handle == nullptr || _handle == INVALID_HANDLE_VALUE) {
@@ -41,13 +42,14 @@ WindowsNativeStream::Operation::Operation(const WindowsNativeStream &stream) : _
     try {
         _stream._operationThreads.push_back(_threadHandle);
     } catch (...) {
-        static_cast<void>(CloseHandle(threadHandle));
+        // Preserve the allocation error; no owner remains that could recover this duplicate handle.
+        CloseHandle(threadHandle);
         _threadHandle = nullptr;
         throw;
     }
 }
 
-WindowsNativeStream::Operation::~Operation() {
+WindowsNativeOperation::~WindowsNativeOperation() {
     _stream.finishOperation(_threadHandle);
 }
 
@@ -94,7 +96,7 @@ WindowsNativeStream::~WindowsNativeStream() {
 }
 
 void WindowsNativeStream::writeBytes(const std::span<const char> bytes) {
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     auto position = std::size_t{0};
     while (position < bytes.size()) {
         const auto remaining = bytes.size() - position;
@@ -144,7 +146,7 @@ auto WindowsNativeStream::position() const -> ByteIndex {
             "Failed to get the native stream position."_el,
             "The Windows native stream does not support positioning."_el);
     }
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     const auto distance = LARGE_INTEGER{};
     auto result = LARGE_INTEGER{};
     if (SetFilePointerEx(static_cast<HANDLE>(operation.handle()), distance, &result, FILE_CURRENT) == 0) {
@@ -164,7 +166,7 @@ auto WindowsNativeStream::setPosition(const ByteIndex position) -> ByteIndex {
         position.toRawValue() > static_cast<ByteIndex::Value>(std::numeric_limits<LONGLONG>::max())) {
         throw err::ParameterError{"Stream position is outside Windows file-offset bounds.", "position"};
     }
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     auto distance = LARGE_INTEGER{};
     distance.QuadPart = static_cast<LONGLONG>(position.toRawValue());
     auto result = LARGE_INTEGER{};
@@ -193,7 +195,7 @@ auto WindowsNativeStream::movePosition(const StreamPositionOrigin origin, const 
         moveMethod = FILE_END;
         break;
     }
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     auto distance = LARGE_INTEGER{};
     distance.QuadPart = offset.toRawValue();
     auto result = LARGE_INTEGER{};
@@ -231,7 +233,8 @@ void WindowsNativeStream::abort() noexcept {
         const auto lock = std::scoped_lock{_operationMutex};
         handle = _handle.exchange(nullptr);
         for (const auto threadHandle : _operationThreads) {
-            static_cast<void>(CancelSynchronousIo(static_cast<HANDLE>(threadHandle)));
+            // Cancellation is best-effort during noexcept abort and may race with normal completion.
+            CancelSynchronousIo(static_cast<HANDLE>(threadHandle));
         }
         if (_ownership == NativeStreamOwnership::Owned && handle != nullptr && handle != INVALID_HANDLE_VALUE &&
             !_operationThreads.empty()) {
@@ -240,12 +243,13 @@ void WindowsNativeStream::abort() noexcept {
         }
     }
     if (_ownership == NativeStreamOwnership::Owned && handle != nullptr && handle != INVALID_HANDLE_VALUE) {
-        static_cast<void>(CloseHandle(static_cast<HANDLE>(handle)));
+        // Abort is noexcept and the invalidated handle has no remaining owner that could recover it.
+        CloseHandle(static_cast<HANDLE>(handle));
     }
 }
 
 auto WindowsNativeStream::read(const mem::ByteSpan destination) -> ByteLength {
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     if (destination.empty()) {
         return ByteLength::zero();
     }
@@ -269,7 +273,7 @@ void WindowsNativeStream::write(const mem::ConstByteSpan bytes) {
 }
 
 auto WindowsNativeStream::fileSize() const -> ByteLength {
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     auto fileSize = LARGE_INTEGER{};
     if (GetFileSizeEx(static_cast<HANDLE>(operation.handle()), &fileSize) == 0) {
         throwErrorFromLastError("Failed to get the native stream size."_el, "The Windows file-size lookup failed."_el);
@@ -281,7 +285,7 @@ auto WindowsNativeStream::fileSize() const -> ByteLength {
 }
 
 void WindowsNativeStream::writeWideText(const std::wstring_view text) {
-    const auto operation = Operation{*this};
+    const auto operation = WindowsNativeOperation{*this};
     auto position = std::size_t{0};
     while (position < text.size()) {
         const auto remaining = text.size() - position;
@@ -318,9 +322,11 @@ void WindowsNativeStream::finishOperation(const WindowsNativeHandle threadHandle
             handle = std::exchange(_deferredCloseHandle, nullptr);
         }
     }
-    static_cast<void>(CloseHandle(static_cast<HANDLE>(threadHandle)));
+    // The duplicate thread handle exists only for cancellation and cannot be recovered after this operation.
+    CloseHandle(static_cast<HANDLE>(threadHandle));
     if (handle != nullptr && handle != INVALID_HANDLE_VALUE) {
-        static_cast<void>(CloseHandle(static_cast<HANDLE>(handle)));
+        // Deferred noexcept cleanup cannot report failure and the stream handle has already been invalidated.
+        CloseHandle(static_cast<HANDLE>(handle));
     }
 }
 

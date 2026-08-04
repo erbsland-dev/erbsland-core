@@ -3,9 +3,12 @@
 #include "ParagraphOptions.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 #include "../text/u32/U32StringConstIterator.hpp"
 
 namespace erbsland::cterm {
+
+using namespace text::literals;
 
 auto ParagraphOptions::alignment() const noexcept -> bgeo::Alignment {
     return _alignment;
@@ -69,10 +72,10 @@ auto ParagraphOptions::lineBreakEndMark() const noexcept -> const BlockString & 
 
 void ParagraphOptions::setLineBreakEndMark(BlockString mark) {
     if (mark.length() > BlockCount{2U}) {
-        throw err::ParameterError{"Line break end mark must not exceed two characters.", "mark"};
+        throw err::ParameterError{"Line break end mark must not exceed two characters."_el, "mark"_el};
     }
     if (mark.containsControlCharacters()) {
-        throw err::ParameterError{"Line break end mark must not contain control characters.", "mark"};
+        throw err::ParameterError{"Line break end mark must not contain control characters."_el, "mark"_el};
     }
     _lineBreakEndMark = std::move(mark);
 }
@@ -83,7 +86,7 @@ auto ParagraphOptions::lineBreakStartMark() const noexcept -> const BlockString 
 
 void ParagraphOptions::setLineBreakStartMark(BlockString mark) {
     if (mark.containsControlCharacters()) {
-        throw err::ParameterError{"Line break start mark must not contain control characters.", "mark"};
+        throw err::ParameterError{"Line break start mark must not contain control characters."_el, "mark"_el};
     }
     _lineBreakStartMark = std::move(mark);
 }

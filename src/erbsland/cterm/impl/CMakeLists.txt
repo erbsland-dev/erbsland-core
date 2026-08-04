@@ -11,13 +11,20 @@ target_sources(erbsland-core PRIVATE
         AnsiSequence.hpp
         BitmapPainter.cpp
         BitmapPainter.hpp
+        BlockPrintContextToBlockString.cpp
+        BlockPrintContextToBlockString.hpp
+        BlockPrintContextToBlockString_fwd.hpp
+        BlockPrintContextToCursorWriter.cpp
+        BlockPrintContextToCursorWriter.hpp
         BlockPrintContextToString.cpp
         BlockPrintContextToString.hpp
         BlockPrintContextToTerminal.cpp
         BlockPrintContextToTerminal.hpp
         BlockStringBuilder.hpp
+        BlockStringBuilder_fwd.hpp
         BlockStringData.cpp
         BlockStringData.hpp
+        BlockStringData_fwd.hpp
         BlockStringRangeView.cpp
         BlockStringRangeView.hpp
         BlockStringWrapper.cpp
@@ -28,29 +35,39 @@ target_sources(erbsland-core PRIVATE
         CommonBoxFrameBlockCombinationStyle.cpp
         CommonBoxFrameBlockCombinationStyle.hpp
         CommonBoxFrameBlockCombinationStyle_data.cpp
-        FontDefaultAscii.cpp
         FrameBorder_data.hpp
         FramePainter.cpp
         FramePainter.hpp
         HashHelper.hpp
         InputBackend.cpp
         InputBackend.hpp
+        KeyCodePointParseResult.hpp
         KeyDecoder.cpp
         KeyDecoder.hpp
+        KeyParseResult.hpp
+        KeyParseStatus.hpp
         LineBuffer.cpp
         LineBuffer.hpp
+        LineBuffer_fwd.hpp
+        LineBufferEmitLockGuard.cpp
+        LineBufferEmitLockGuard.hpp
         ReadLine.cpp
         ReadLine.hpp
         ReadLineBase.cpp
         ReadLineBase.hpp
         ReadLineBase_render.cpp
+        ReadLineLayout_fwd.hpp
+        ReadLineLayoutTypes.hpp
+        ReadLineTestAccess_fwd.hpp
         ReadSecret.cpp
         ReadSecret.hpp
         StandardInput.cpp
         StandardInput.hpp
         TerminalDocumentStyleData.cpp
         TerminalDocumentStyleData.hpp
-        TypeTraits.hpp
+        TerminalStreamData.cpp
+        TerminalStreamData.hpp
+        TerminalStreamData_fwd.hpp
 )
 
 if (WIN32)
@@ -63,6 +80,7 @@ if (WIN32)
             WindowsBackendPrivate_fwd.hpp
             WindowsSignalDispatcher.cpp
             WindowsSignalDispatcher.hpp
+            WindowsSignalDispatcher_fwd.hpp
     )
 else ()
     target_sources(erbsland-core PRIVATE
@@ -70,5 +88,6 @@ else ()
             PosixBackend.hpp
             PosixSignalDispatcher.cpp
             PosixSignalDispatcher.hpp
+            PosixSignalDispatcher_fwd.hpp
     )
 endif ()

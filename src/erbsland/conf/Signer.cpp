@@ -10,9 +10,11 @@
 
 namespace erbsland::conf {
 
+using namespace text::literals;
+
 Signer::Signer(SignatureSignerPtr signatureSigner) : _signatureSigner{std::move(signatureSigner)} {
     if (_signatureSigner == nullptr) {
-        throw err::ParameterError("Signature signer must not be null", "signatureSigner");
+        throw err::ParameterError("Signature signer must not be null"_el, "signatureSigner"_el);
     }
 }
 

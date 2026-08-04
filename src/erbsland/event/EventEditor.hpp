@@ -2,20 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "EventEditor_fwd.hpp"
 #include "Events_fwd.hpp"
-
-#include <atomic>
+#include "EventSource_fwd.hpp"
 
 namespace erbsland::event {
 
-/// A lifetime-controlled callback editor for an event source.
-///
-/// The source keeps only a weak reference to the editor. Retain the editor for as long as its callbacks shall remain
-/// connected. Releasing the editor or calling `disconnect()` removes the complete callback group.
+/// Common interface for editing handlers owned by an event source.
+/// Sources own their editors and return them by reference. The source and target accessors exist primarily for
+/// generic code that works with heterogeneous editors; regular code uses the typed `on...()` methods.
 /// @tested{EventSourceTest}
 class EventEditor {
 public:
+    /// Destroy the event editor.
     virtual ~EventEditor();
 
     // defaults/deletions
@@ -24,21 +22,18 @@ public:
     auto operator=(const EventEditor &) -> EventEditor & = delete;
     auto operator=(EventEditor &&) -> EventEditor & = delete;
 
-public:
-    /// Disconnect all callbacks represented by this editor.
-    void disconnect() noexcept;
-    /// Test if this editor is still connected.
-    [[nodiscard]] auto isConnected() const noexcept -> bool;
-    /// Access the target on which callbacks are executed.
-    [[nodiscard]] auto targetEvents() const noexcept -> const EventsPtr &;
+public: // interface
+    /// Retain and access the source that owns this editor.
+    /// @return The owning event source.
+    /// @throws err::LogicError If the editor cannot provide its source because of an internal lifetime error.
+    [[nodiscard]] virtual auto source() const -> EventSourcePtr = 0;
+    /// Retain and access the target on which callbacks are executed.
+    /// @return The callback target.
+    [[nodiscard]] virtual auto target() const noexcept -> EventsPtr = 0;
 
 protected:
-    /// Create an editor attached to an event target.
-    explicit EventEditor(EventsPtr targetEvents);
-
-private:
-    EventsPtr _targetEvents;            ///< Target for callbacks.
-    std::atomic<bool> _connected{true}; ///< Connection state.
+    // defaults
+    EventEditor() = default;
 };
 
 }

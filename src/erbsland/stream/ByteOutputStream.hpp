@@ -22,6 +22,7 @@ namespace erbsland::stream {
 /// @tested{ByteStreamTest AsyncStreamTest}
 class ByteOutputStream : public OutputStream {
 public:
+    // defaults
     ~ByteOutputStream() override = default;
 
 public: // accessors

@@ -12,13 +12,19 @@ function(erbsland_core_configure_unittest target)
     erbsland_unittest(TARGET ${target} ${_options} ${ARGN})
 endfunction()
 
-if(ERBSLAND_CORE_ENABLE_TESTS)
+if(ERBSLAND_CORE_ENABLE_TESTS OR ERBSLAND_CORE_ENABLE_INTEROP_TESTS)
     add_subdirectory(test)
+endif()
 
+if(ERBSLAND_CORE_ENABLE_TESTS)
     enable_testing()
     add_test(
             NAME erbsland-core-unittest
             COMMAND $<TARGET_FILE:erbsland-core-unittest> --no-color
+    )
+    add_test(
+            NAME erbsland-core-heap-unittest
+            COMMAND $<TARGET_FILE:erbsland-core-heap-unittest> --no-color
     )
     add_test(
             NAME char-set-profile-smoke
@@ -384,6 +390,18 @@ if(ERBSLAND_CORE_ENABLE_TESTS)
                     -P ${PROJECT_SOURCE_DIR}/test/profiling/regex/cmake/VerifyParity.cmake
     )
     add_test(
+            NAME regex-api-profile-command-line-overrides
+            COMMAND ${CMAKE_COMMAND}
+                    -DEXECUTABLE=$<TARGET_FILE:regex-api-profile>
+                    -P ${PROJECT_SOURCE_DIR}/test/profiling/regex/cmake/VerifyOverrides.cmake
+    )
+    add_test(
+            NAME regex-api-profile-std-comparison
+            COMMAND ${CMAKE_COMMAND}
+                    -DEXECUTABLE=$<TARGET_FILE:regex-api-profile>
+                    -P ${PROJECT_SOURCE_DIR}/test/profiling/regex/cmake/VerifyComparison.cmake
+    )
+    add_test(
             NAME regex-api-profile-sampling-mode
             COMMAND $<TARGET_FILE:regex-api-profile> --config
                     ${PROJECT_SOURCE_DIR}/test/profiling/regex/config/profile-smoke.elcl
@@ -506,6 +524,8 @@ if(ERBSLAND_CORE_ENABLE_TESTS)
             regex-api-profile-duplicate-scenario
             regex-api-profile-determinism
             regex-api-profile-backend-parity
+            regex-api-profile-command-line-overrides
+            regex-api-profile-std-comparison
             regex-api-profile-sampling-mode
             regex-api-profile-write-template
             regex-api-profile-deadline

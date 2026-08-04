@@ -26,6 +26,7 @@ public:
     using CharacterSet = CharSet;
 
 public:
+    /// Create read tools for `data`.
     explicit constexpr U32StringReadTools(const U32StringDataView &data) noexcept : _data{data} {}
 
 public: // raw accessors

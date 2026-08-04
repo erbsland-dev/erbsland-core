@@ -13,6 +13,8 @@
 #include <erbsland/options/OptionSet.hpp>
 #include <erbsland/options/OptionValue.hpp>
 #include <erbsland/options/OptionValues.hpp>
+#include <erbsland/stream/AnyStringBuilderStream.hpp>
+#include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -27,8 +29,8 @@ using el::text::StringConverter;
 using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
-using el::unit::ElementCount;
 using el::unit::ExitCode;
+using el::unit::ItemCount;
 using namespace el::options;
 using namespace el::text::literals;
 
@@ -59,7 +61,7 @@ public:
                 "SAFE"_el});
 
         REQUIRE(result.status() == OptionResultStatus::Success);
-        REQUIRE(result.values() != nullptr);
+        REQUIRE(result.values());
         REQUIRE(result.values()->getFlag("--verbose"_el));
         REQUIRE(result.values()->getFlag("--all"_el));
         REQUIRE(result.values()->getFlag("--binary"_el));
@@ -138,9 +140,9 @@ public:
                 "-p"_el,
                 "charlie"_el,
                 "delta"_el});
-        const auto retainedUnicodeArgument = arguments.get(el::unit::ElementIndex{2U});
-        const auto retainedSeparateArgument = arguments.get(el::unit::ElementIndex{4U});
-        const auto retainedPositionalArgument = arguments.get(el::unit::ElementIndex{7U});
+        const auto retainedUnicodeArgument = arguments.get(el::unit::ItemIndex{2U});
+        const auto retainedSeparateArgument = arguments.get(el::unit::ItemIndex{4U});
+        const auto retainedPositionalArgument = arguments.get(el::unit::ItemIndex{7U});
 
         const auto result = manager.parse(arguments);
 
@@ -163,13 +165,13 @@ public:
         REQUIRE(locations.at(3) == OptionSensitiveTextLocation{ArgumentIndex{6U}, el::unit::ByteIndex::zero()});
         REQUIRE(locations.at(4) == OptionSensitiveTextLocation{ArgumentIndex{7U}, el::unit::ByteIndex::zero()});
 
-        REQUIRE(arguments.get(el::unit::ElementIndex{1U}) == "--long=*****"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{2U}) == "-s=*****"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{3U}) == "--separate"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{4U}) == "*****"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{5U}) == "-p"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{6U}) == "*****"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{7U}) == "*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{1U}) == "--long=*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{2U}) == "-s=*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{3U}) == "--separate"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{4U}) == "*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{5U}) == "-p"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{6U}) == "*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{7U}) == "*****"_el);
 
         REQUIRE(retainedUnicodeArgument.isSensitive());
         REQUIRE(retainedUnicodeArgument == u8"-s=秘密"_el);
@@ -198,8 +200,8 @@ public:
         REQUIRE(result.status() == OptionResultStatus::Error);
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::UnexpectedValueType);
-        REQUIRE(arguments.get(el::unit::ElementIndex{1U}) == "--secret=*****"_el);
-        REQUIRE(arguments.get(el::unit::ElementIndex{3U}) == "*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{1U}) == "--secret=*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{3U}) == "*****"_el);
         REQUIRE_EQUAL(result.sensitiveTextLocations().size(), std::size_t{2U});
     }
 
@@ -219,11 +221,11 @@ public:
         const auto result = manager.parse(arguments);
 
         REQUIRE(result.status() == OptionResultStatus::Error);
-        REQUIRE(arguments.get(el::unit::ElementIndex{2U}) == "*****"_el);
+        REQUIRE(arguments.get(el::unit::ItemIndex{2U}) == "*****"_el);
         REQUIRE_EQUAL(result.sensitiveTextLocations().size(), std::size_t{1U});
         REQUIRE(result.errorContext().has_value());
-        REQUIRE(result.errorContext()->arguments().get(el::unit::ElementIndex{2U}) == "*****"_el);
-        REQUIRE(result.errorContext()->arguments().get(el::unit::ElementIndex{0U}) == "tool"_el);
+        REQUIRE(result.errorContext()->arguments().get(el::unit::ItemIndex{2U}) == "*****"_el);
+        REQUIRE(result.errorContext()->arguments().get(el::unit::ItemIndex{0U}) == "tool"_el);
     }
 
     void testListAndDefaultArgumentIndexes() {
@@ -424,13 +426,14 @@ public:
     }
 
     void testParseOrThrow() {
+        const auto streamRedirect = redirectStandardStreams();
         auto options = Options::create();
         options->addOption("--name"_el).setType(OptionType::Text);
 
         auto manager = OptionManager{options};
         auto arguments = makeArgs({"tool"_el, "--name"_el, "Ada"_el});
         const auto values = manager.parseOrThrow(arguments);
-        REQUIRE(values != nullptr);
+        REQUIRE(values);
         REQUIRE(values->getText("--name"_el) == "Ada"_el);
 
         arguments = makeArgs({"tool"_el, "--unknown"_el});
@@ -449,7 +452,7 @@ public:
         auto moduleManager = OptionManager{moduleOptions};
         auto moduleArguments = makeArgs({"tool"_el, "run"_el, "--force"_el});
         const auto moduleValues = moduleManager.parseOrThrow(moduleArguments);
-        REQUIRE(moduleValues != nullptr);
+        REQUIRE(moduleValues);
         REQUIRE(moduleValues->moduleName() == "run"_el);
         REQUIRE(moduleValues->module() == module);
         REQUIRE(moduleValues->getFlag("--force"_el));
@@ -562,7 +565,8 @@ public:
 
         options = Options::create();
         options->addOption("path"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
-        assertError(options, {"tool"_el}, OptionErrorReason::UnexpectedValueType);
+        const auto result = parse(options, {"tool"_el});
+        REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
     }
 
     void testHelpBeforeAndAfterTerminator() {
@@ -655,6 +659,26 @@ public:
         REQUIRE_EQUAL(result.values()->getInteger("--count"_el), OptionInteger{-1});
     }
 
+    void testEmptyRequiredPositionalDisplaysHelp() {
+        auto preParsingCalled = false;
+        auto options = Options::create();
+        options->addOption("source"_el).setType(OptionType::Text).setFlag(OptionFlag::Required);
+        options->optionSets().front()->setPreParsingFn(
+            [&preParsingCalled](OptionSetPtr) -> void { preParsingCalled = true; });
+
+        auto result = parse(options, {"tool"_el});
+        REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
+        REQUIRE_FALSE(result.errorContext().has_value());
+        REQUIRE_FALSE(preParsingCalled);
+
+        options->setParserFlag(OptionParserFlag::ErrorOnEmptyRequiredPositionals);
+        result = parse(options, {"tool"_el});
+        REQUIRE(result.status() == OptionResultStatus::Error);
+        REQUIRE(result.errorContext().has_value());
+        REQUIRE(result.errorContext()->reason() == OptionErrorReason::UnexpectedValueType);
+        REQUIRE(preParsingCalled);
+    }
+
     void testModuleOptionSuccess() {
         auto options = makeOptionsWithGlobalAndModuleOptions();
 
@@ -663,7 +687,7 @@ public:
         REQUIRE(result.status() == OptionResultStatus::Success);
         REQUIRE(result.values()->moduleName() == "remove"_el);
         REQUIRE(result.values()->module() == options->optionModules().front());
-        REQUIRE(result.values() != nullptr);
+        REQUIRE(result.values());
         REQUIRE(result.values()->getFlag("--verbose"_el));
         REQUIRE(result.values()->getFlag("--force"_el));
         REQUIRE_EQUAL(result.values()->getInteger("--count"_el), OptionInteger{3});
@@ -678,7 +702,7 @@ public:
         auto result = parse(options, {"tool"_el, "--help"_el});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
         REQUIRE(result.values()->moduleName().isEmpty());
-        REQUIRE(result.values()->module() == nullptr);
+        REQUIRE_FALSE(result.values()->module());
 
         result = parse(options, {"tool"_el, "remove"_el, "--help"_el});
         REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
@@ -700,7 +724,7 @@ public:
     void testModuleErrorCases() {
         auto result = parse(makeOptionsWithGlobalAndModuleOptions(), {"tool"_el});
         REQUIRE(result.status() == OptionResultStatus::Error);
-        REQUIRE(result.values()->module() == nullptr);
+        REQUIRE_FALSE(result.values()->module());
         REQUIRE(result.errorContext().has_value());
         REQUIRE(result.errorContext()->reason() == OptionErrorReason::SyntaxError);
 
@@ -951,6 +975,7 @@ public:
     }
 
     void testParseOrThrowReportsValidationErrors() {
+        const auto streamRedirect = redirectStandardStreams();
         auto options = Options::create();
         options->addOption("--name"_el)
             .setType(OptionType::Text)
@@ -974,9 +999,14 @@ public:
     }
 
 private:
+    [[nodiscard]] static auto redirectStandardStreams() -> el::stream::StandardStreamRedirect {
+        return el::stream::redirectStandardStreams(
+            el::stream::AnyStringBuilderStream::create(), el::stream::AnyStringBuilderStream::create());
+    }
+
     [[nodiscard]] static auto makeArgs(std::initializer_list<String> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
-        result.reserve(ElementCount{args.size()});
+        result.reserve(ItemCount{args.size()});
         for (const auto &arg : args) {
             result.append(arg.copy());
         }
@@ -997,7 +1027,7 @@ private:
     }
 
     void requireArgumentIndexes(const OptionValuePtr &value, std::initializer_list<ArgumentIndex> indexes) {
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         REQUIRE_EQUAL(value->argumentIndexes().size(), indexes.size());
         auto index = std::size_t{0};
         for (const auto expectedIndex : indexes) {

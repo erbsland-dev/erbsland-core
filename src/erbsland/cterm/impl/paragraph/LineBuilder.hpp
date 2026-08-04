@@ -4,6 +4,7 @@
 
 #include "LayoutContext.hpp"
 #include "LayoutPreparedSourceLine.hpp"
+#include "LayoutSpacingRun.hpp"
 
 #include <optional>
 #include <utility>
@@ -19,38 +20,10 @@ class LineBuilder final {
         std::size_t tabStopIndex = 0; ///< The next configured tab stop index.
     };
 
-    /// The evaluated spacing run before the next word token.
-    class SpacingRun final {
-    public:
-        /// The action to take after evaluating the spacing tokens.
-        enum class Action : uint8_t {
-            Continue,   ///< Continue with the next word token.
-            LineBreak,  ///< Break before the next word token.
-            EndOfTokens ///< No word token follows the spacing run.
-        };
-
-        /// Create one evaluated spacing run.
-        /// @param width The rendered width of the spacing run on this line.
-        /// @param nextTokenIndex The next word token, or the next token after a forced break.
-        /// @param nextTabStopIndex The next tab stop index after consuming the run.
-        /// @param action The selected action for the run.
-        SpacingRun(
-            const int width = 0,
-            const std::size_t nextTokenIndex = 0,
-            const std::size_t nextTabStopIndex = 0,
-            const Action action = Action::Continue) noexcept :
-            width{width}, nextTokenIndex{nextTokenIndex}, nextTabStopIndex{nextTabStopIndex}, action{action} {}
-
-    public:
-        int width = 0;                    ///< The rendered width of the spacing run on this line.
-        std::size_t nextTokenIndex = 0;   ///< The next word token, or the next token after a forced break.
-        std::size_t nextTabStopIndex = 0; ///< The next tab stop index after consuming the run.
-        Action action = Action::Continue; ///< The selected action for the run.
-    };
-
     /// The result of building one physical line and the state for the next one.
     class BuildResult final {
     public:
+        /// Create an empty build result.
         BuildResult() = default;
 
         /// Create one build result.
@@ -102,8 +75,11 @@ private:
     /// @return The built physical line, or `std::nullopt` if the line cannot be built.
     [[nodiscard]] auto buildLine(int reservedSuffixWidth, bool addEndMark, bool addEllipsis) const
         -> std::optional<BuildResult>;
+    /// Evaluate the next spacing run from the current layout state.
     [[nodiscard]] auto evaluateSpacingRun(
-        std::size_t tokenIndex, std::size_t tabStopIndex, int currentColumn, bool isLineStart) const -> SpacingRun;
+        std::size_t tokenIndex, std::size_t tabStopIndex, int currentColumn, bool isLineStart) const
+        -> LayoutSpacingRun;
+    /// Append a spacing run to the current line fragments.
     void appendSpacingRun(
         LayoutFragments &fragments,
         std::size_t startTokenIndex,

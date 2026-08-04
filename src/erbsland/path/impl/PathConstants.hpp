@@ -4,14 +4,14 @@
 
 #include "../../text/Literals.hpp"
 #include "../../unit/CpLength.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 
 namespace erbsland::path::impl {
 
 using namespace text::literals;
 
 constexpr auto cMaximumPathCharacters = unit::CpLength{8192U};
-constexpr auto cMaximumPathElements = unit::ElementCount{1000U};
+constexpr auto cMaximumPathElements = unit::ItemCount{1000U};
 
 constexpr auto cSlash = "/"_el;
 constexpr auto cDoubleSlash = "//"_el;

@@ -82,7 +82,7 @@ auto manualHelpRendering() -> el::ExitCode {
 }
 
 auto main(const int argc, char *argv[]) -> int {
-    if (argc > 1 && std::string_view{argv[1]} == "manual") {
+    if (argc > 1 && std::string_view{argv[1]} == std::string_view{"manual"}) {
         auto app = el::Application{};
         app.setMainFn(demo::manualHelpRendering);
         return app.run();

@@ -29,6 +29,8 @@ using impl::SequenceIndex;
 using impl::SequenceLength;
 using impl::TextAnchor;
 
+/// Shared fixture helpers for regular-expression assembler diagnostics tests.
+/// @notest{Test fixture base class.}
 class AssemblerBase : public el::UnitTest {
 public:
     EngineDataPtr engineData;
@@ -55,7 +57,7 @@ public:
         }
     }
 
-    // Compile and expect an error. Test if a given string is part of the error message
+    /// Compile source lines and require the expected compiler error.
     void requireCompilerError(const el::text::StringList &lines, const std::string_view expectedError = {}) {
 
         Assembler assembler;
@@ -79,12 +81,13 @@ public:
         }
     }
 
+    /// Compile source lines and require the expected compiler error.
     void requireCompilerError(
         const std::initializer_list<std::string_view> lines, const std::string_view expectedError = {}) {
         requireCompilerError(re_test::string_helper::toStringList(lines), expectedError);
     }
 
-    // Compile and expect no errors.
+    /// Compile source lines and require successful assembly.
     void requireCompile(const std::initializer_list<std::string_view> lines) {
         Assembler assembler;
         REQUIRE_NOTHROW(engineData = assembler.compile(re_test::string_helper::toStringList(lines)));
@@ -104,16 +107,22 @@ public:
         reader->skipOperation(programCounter);
     }
 
+    /// Require a NONE operation.
     void requireNone() { requireOperation(Operation::None); }
 
+    /// Require a MATCH operation.
     void requireMatch() { requireOperation(Operation::Match); }
 
+    /// Require a NOT MATCH operation.
     void requireNotMatch() { requireOperation(Operation::NotMatch); }
 
+    /// Require a SUCCESS operation.
     void requireSuccess() { requireOperation(Operation::Success); }
 
+    /// Require a FAILURE operation.
     void requireFailure() { requireOperation(Operation::Failure); }
 
+    /// Require an ANY operation.
     void requireAny() { requireOperation(Operation::Any); }
 
     /// Require a JUMP with the given address.
@@ -135,6 +144,7 @@ public:
         REQUIRE_EQUAL(actualB, expectedB);
     }
 
+    /// Require a class operation with the expected index.
     void requireClassBase(const uint16_t expectedIndex, const Operation expectedOperation) {
         REQUIRE(programCounter < engineData->program.size());
         const auto actualOperation = reader->peekOperation(programCounter);
@@ -182,6 +192,7 @@ public:
         REQUIRE_EQUAL(actualIndex, expectedIndex);
     }
 
+    /// Require a character operation with the expected character.
     void requireCharBase(const char32_t expectedChar, const Operation expectedOperation) {
         REQUIRE(programCounter < engineData->program.size());
         const auto actualOperation = reader->peekOperation(programCounter);
@@ -199,6 +210,7 @@ public:
     /// Require NOT CI CHAR with the given character.
     void requireNotCiChar(const char32_t expectedChar) { requireCharBase(expectedChar, Operation::NotCiChar); }
 
+    /// Require a sequence operation with the expected offset and length.
     void requireSequenceBase(
         const SequenceIndex expectedOffset, const SequenceLength expectedLength, const Operation expectedOperation) {
 
@@ -220,6 +232,7 @@ public:
         requireSequenceBase(expectedOffset, expectedLength, Operation::CiSequence);
     }
 
+    /// Require a category operation with the expected category.
     void requireCategoryBase(const Category expectedCategory, const Operation expectedOperation) {
         REQUIRE(programCounter < engineData->program.size());
         const auto actualOperation = reader->peekOperation(programCounter);
@@ -248,6 +261,7 @@ public:
         requireCategoryBase(expectedCategory, Operation::NotAssertCategory);
     }
 
+    /// Require a counter operation with the expected index and value.
     void requireCounterBase(
         const CounterIndex expectedIndex, const CounterType expectedValue, const Operation expectedOperation) {
 
@@ -284,6 +298,7 @@ public:
         requireCounterBase(expectedIndex, expectedValue, Operation::Minimum);
     }
 
+    /// Require a START ATOMIC operation with the expected group identifier.
     void requireStartAtomic(const AtomicGroupId expectedGroupId) {
         const auto operation = reader->peekOperation(programCounter);
         REQUIRE_EQUAL(operation, Operation::StartAtomic);
@@ -291,6 +306,7 @@ public:
         REQUIRE_EQUAL(groupId, expectedGroupId);
     }
 
+    /// Require a STOP ATOMIC operation with the expected group identifier.
     void requireStopAtomic(const AtomicGroupId expectedGroupId) {
         const auto operation = reader->peekOperation(programCounter);
         REQUIRE_EQUAL(operation, Operation::StopAtomic);

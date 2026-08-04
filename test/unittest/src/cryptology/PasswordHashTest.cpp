@@ -29,37 +29,6 @@ using el::mem::ByteBlock;
 using el::mem::ByteBlockEditor;
 using el::text::String;
 
-namespace {
-
-auto testKey(const uint8_t value, const std::string_view identifier = {}) -> PasswordHashKey {
-    auto bytes = ByteBlockEditor{el::unit::ByteLength{32U}};
-    for (auto index = el::unit::ByteIndex{0U}; index < el::unit::ByteIndex{32U}; ++index) {
-        bytes.set(index, el::mem::Byte{value});
-    }
-    if (identifier.empty()) {
-        return PasswordHashKey{ByteBlock{bytes}};
-    }
-    return PasswordHashKey::identified(el::text::String{identifier}, ByteBlock{bytes});
-}
-
-auto testPassword(const std::string_view password = "correct horse battery staple") -> String {
-    auto result = String{password};
-    result.markAsSensitive();
-    return result;
-}
-
-auto fastArgon(const uint32_t memory = 32U, const uint32_t passes = 1U) -> PasswordHashPolicy {
-    return PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::argon2id(memory, passes, 1U)};
-}
-
-auto fastScrypt() -> PasswordHashPolicy {
-    return PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::scrypt(16U, 1U, 1U)};
-}
-
-static_assert(!std::is_convertible_v<PasswordVerification, bool>);
-
-}
-
 TESTED_TARGETS(
     PasswordHashPolicy PasswordHashKey PasswordHash PasswordHasher PasswordVerification UnsafeNoPasswordHashKey)
 class PasswordHasherTest final : public el::UnitTest {
@@ -98,7 +67,9 @@ public:
 
         const auto named = testKey(2U, "current-2026");
         REQUIRE(named.isIdentified());
-        REQUIRE_EQUAL(*named.identifier(), el::text::String{"current-2026"});
+        const auto identifier = named.identifier();
+        REQUIRE(identifier.has_value());
+        REQUIRE_EQUAL(*identifier, el::text::String{"current-2026"});
 
         auto keyBytes = ByteBlock{ByteBlockEditor{el::unit::ByteLength{32U}}};
         const auto markedKey = PasswordHashKey{keyBytes};
@@ -124,7 +95,9 @@ public:
         REQUIRE(first.isKeyed());
         REQUIRE_EQUAL(first.algorithm(), PasswordHashAlgorithm::Argon2id);
         REQUIRE_FALSE(first.keyIdentifier().has_value());
-        REQUIRE(first.toString() != second.toString());
+        const auto firstText = first.toString();
+        const auto secondText = second.toString();
+        REQUIRE_NOT_EQUAL(firstText, secondText);
 
         const auto parsed = PasswordHash::fromStringOrThrow(first.toString());
         REQUIRE_EQUAL(parsed.toString(), first.toString());
@@ -139,10 +112,53 @@ public:
 
         auto tamperedRecord = el::text::StringConverter{first.toString()}.toStdString();
         const auto memoryField = tamperedRecord.find(",m:32,");
-        REQUIRE(memoryField != std::string::npos);
+        REQUIRE_NOT_EQUAL(memoryField, std::string::npos);
         tamperedRecord.replace(memoryField, std::string_view{",m:32,"}.size(), ",m:40,");
         const auto tampered = PasswordHash::fromStringOrThrow(el::text::String{tamperedRecord});
         REQUIRE(hasher.verify(password, tampered).isRejected());
+    }
+
+    void testCanonicalRecordForms() {
+        const auto salt = std::string(22U, 'A');
+        const auto verifier = std::string(43U, 'A');
+        WITH_CONTEXT(requireCanonicalRecord(
+            std::string{"f:el-password-hash,v:1,a:argon2id,av:19,m:8,t:1,p:1,x:hmac-sha256,i:key-2026,s:"} + salt +
+                ",d:" + verifier,
+            PasswordHashAlgorithm::Argon2id,
+            true,
+            "key-2026"));
+        WITH_CONTEXT(requireCanonicalRecord(
+            std::string{"f:el-password-hash,v:1,a:argon2id,av:19,m:8,t:1,p:1,x:hmac-sha256,s:"} + salt +
+                ",d:" + verifier,
+            PasswordHashAlgorithm::Argon2id,
+            true));
+        WITH_CONTEXT(requireCanonicalRecord(
+            std::string{"f:el-password-hash,v:1,a:scrypt,n:16,r:1,p:1,x:none,s:"} + salt + ",d:" + verifier,
+            PasswordHashAlgorithm::Scrypt,
+            false));
+    }
+
+    void testVerifierTampering() {
+        const auto applicationScope = ApplicationTestScope<>{};
+        const auto hasher = PasswordHasher{testKey(1U), fastArgon()};
+        const auto password = testPassword();
+        const auto hash = hasher.hash(password);
+        const auto record = el::text::StringConverter{hash.toString()}.toStdString();
+        const auto verifierStart = record.find(",d:");
+        REQUIRE_NOT_EQUAL(verifierStart, std::string::npos);
+        const auto offsets = std::array<std::size_t, 3U>{0U, 21U, 41U};
+        for (const auto offset : offsets) {
+            runWithContext(
+                SOURCE_LOCATION(),
+                [&]() -> void {
+                    auto tamperedText = record;
+                    auto &character = tamperedText[verifierStart + 3U + offset];
+                    character = character == 'A' ? 'B' : 'A';
+                    const auto tampered = PasswordHash::fromStringOrThrow(el::text::String{tamperedText});
+                    REQUIRE(hasher.verify(password, tampered).isRejected());
+                },
+                [&]() -> std::string { return "verifier Base64url offset: " + std::to_string(offset); });
+        }
     }
 
     void testEmptyPasswordAndScrypt() {
@@ -181,7 +197,10 @@ public:
         const auto result = rotating.verify(password, oldHash);
         REQUIRE(result.isAccepted());
         REQUIRE(result.replacementHash().has_value());
-        REQUIRE_EQUAL(*result.replacementHash()->keyIdentifier(), el::text::String{"new"});
+        const auto replacementHash = result.replacementHash();
+        const auto replacementKeyIdentifier = replacementHash->keyIdentifier();
+        REQUIRE(replacementKeyIdentifier.has_value());
+        REQUIRE_EQUAL(*replacementKeyIdentifier, el::text::String{"new"});
 
         const auto missing =
             PasswordHasher::withKeyRotation(testKey(3U, "other"), el::util::List<PasswordHashKey>{}, fastArgon());
@@ -201,7 +220,9 @@ public:
         const auto result = current.verify(password, oldHash);
         REQUIRE(result.isAccepted());
         REQUIRE(result.replacementHash().has_value());
-        REQUIRE_EQUAL(result.replacementHash()->algorithm(), PasswordHashAlgorithm::Argon2id);
+        const auto replacementHash = result.replacementHash();
+        const auto replacementAlgorithm = replacementHash->algorithm();
+        REQUIRE_EQUAL(replacementAlgorithm, PasswordHashAlgorithm::Argon2id);
     }
 
     void testMalformedSentinelAndLimits() {
@@ -253,6 +274,8 @@ public:
         REQUIRE(hasher.verify(oversizedPassword, invalid).isRejected());
     }
 
+    SKIP_BY_DEFAULT()
+    TAGS(FullRun)
     void testProductionPresetSmoke() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto password = testPassword("production preset smoke");
@@ -261,4 +284,51 @@ public:
         const auto scryptHash = PasswordHasher{testKey(1U), PasswordHashPolicy::scrypt()}.hash(password);
         REQUIRE(scryptHash.isValid());
     }
+
+private:
+    void requireCanonicalRecord(
+        const std::string &recordText,
+        const PasswordHashAlgorithm algorithm,
+        const bool keyed,
+        const std::string_view keyIdentifier = {}) {
+        const auto record = PasswordHash::fromStringOrThrow(el::text::String{recordText});
+        REQUIRE(record.isValid());
+        REQUIRE_EQUAL(record.algorithm(), algorithm);
+        REQUIRE_EQUAL(record.isKeyed(), keyed);
+        REQUIRE_EQUAL(record.toString(), el::text::String{recordText});
+        const auto parsedIdentifier = record.keyIdentifier();
+        if (keyIdentifier.empty()) {
+            REQUIRE_FALSE(parsedIdentifier.has_value());
+        } else {
+            REQUIRE(parsedIdentifier.has_value());
+            REQUIRE_EQUAL(*parsedIdentifier, el::text::String{keyIdentifier});
+        }
+    }
+
+    static auto testKey(const uint8_t value, const std::string_view identifier = {}) -> PasswordHashKey {
+        auto bytes = ByteBlockEditor{el::unit::ByteLength{32U}};
+        for (auto index = el::unit::ByteIndex{0U}; index < el::unit::ByteIndex{32U}; ++index) {
+            bytes.set(index, el::mem::Byte{value});
+        }
+        if (identifier.empty()) {
+            return PasswordHashKey{ByteBlock{bytes}};
+        }
+        return PasswordHashKey::identified(el::text::String{identifier}, ByteBlock{bytes});
+    }
+
+    static auto testPassword(const std::string_view password = "correct horse battery staple") -> String {
+        auto result = String{password};
+        result.markAsSensitive();
+        return result;
+    }
+
+    static auto fastArgon(const uint32_t memory = 32U, const uint32_t passes = 1U) -> PasswordHashPolicy {
+        return PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::argon2id(memory, passes, 1U)};
+    }
+
+    static auto fastScrypt() -> PasswordHashPolicy {
+        return PasswordHashPolicy{unsafe::UnsafeCustomPasswordHashParameters::scrypt(16U, 1U, 1U)};
+    }
+
+    static_assert(!std::is_convertible_v<PasswordVerification, bool>);
 };

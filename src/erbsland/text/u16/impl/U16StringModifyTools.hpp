@@ -23,6 +23,7 @@ namespace erbsland::text::impl {
 /// @tested{U16StringTest}
 class U16StringModifyTools final {
 public:
+    /// Create modification tools for the given UTF-16 data.
     explicit constexpr U16StringModifyTools(const U16StringDataView &data) noexcept : _data{data} {}
 
 public:
@@ -118,39 +119,52 @@ public:
 
 private:
     template <typename T>
+    /// Test whether two spans overlap in memory.
     [[nodiscard]] static auto spansOverlap(std::span<const T> first, std::span<const T> second) noexcept -> bool;
+    /// Encode one character into UTF-16 code units.
     [[nodiscard]] static auto characterBytes(Char character) noexcept -> std::array<char16_t, 2>;
+    /// Get the encoded UTF-16 code units for one character.
     [[nodiscard]] static auto characterByteSpan(Char character, const std::array<char16_t, 2> &bytes) noexcept
         -> std::span<const char16_t>;
 
     template <typename Predicate>
+    /// Return storage with matching characters replaced.
     [[nodiscard]] auto replacedCharacters(Predicate predicate, std::span<const char16_t> replacement) const
         -> U16StringSharedStorage;
+    /// Return storage with matching text replaced.
     [[nodiscard]] auto replacedText(
         const U16StringDataView &text, std::span<const char16_t> replacement, CharCompareFn compareFn) const
         -> U16StringSharedStorage;
     template <typename Predicate>
+    /// Replace matching characters in existing storage.
     static auto replaceCharactersInStorage(
         U16StringSharedStorage &storage, Predicate predicate, std::span<const char16_t> replacement)
         -> U16StringSharedStorage &;
+    /// Replace matching text in existing storage.
     static auto replaceTextInStorage(
         U16StringSharedStorage &storage,
         const U16StringDataView &text,
         std::span<const char16_t> replacement,
         CharCompareFn compareFn) -> U16StringSharedStorage &;
+    /// Convert a character range into a UTF-16 data range.
     [[nodiscard]] static auto dataRangeForCharacterRange(const U16StringDataView &data, unit::CpRange range) noexcept
         -> unit::U16DataRange;
+    /// Convert a character index into a UTF-16 data index.
     [[nodiscard]] static auto dataIndexForCharacterIndex(const U16StringDataView &data, unit::CpIndex index) noexcept
         -> unit::U16DataIndex;
+    /// Find the first UTF-16 data range matching text.
     [[nodiscard]] static auto findFirstTextRange(
         const U16StringDataView &data, const U16StringDataView &text, CharCompareFn compareFn) noexcept
         -> unit::U16DataRange;
+    /// Test whether UTF-16 data matches text at an index.
     [[nodiscard]] static auto matchesText(
         std::span<const char16_t> data,
         unit::U16DataIndex start,
         std::span<const char16_t> text,
         CharCompareFn compareFn) noexcept -> bool;
+    /// Compare two characters using an optional comparison function.
     [[nodiscard]] static auto charactersEqual(Char left, Char right, CharCompareFn compareFn) noexcept -> bool;
+    /// Get the data index immediately after a text match.
     [[nodiscard]] static auto endOfMatch(
         std::span<const char16_t> data, unit::U16DataIndex start, std::span<const char16_t> text) noexcept
         -> unit::U16DataIndex;
@@ -160,6 +174,7 @@ private:
 };
 
 template <typename Predicate>
+/// Replace characters selected by a predicate with UTF-16 text.
 auto U16StringModifyTools::replacedCharacters(Predicate predicate, const std::span<const char16_t> replacement) const
     -> U16StringSharedStorage {
     const auto data = _data.dataSpan();
@@ -208,6 +223,7 @@ auto U16StringModifyTools::replacedCharacters(Predicate predicate, const std::sp
 }
 
 template <typename Predicate>
+/// Replace characters selected by a predicate directly in the shared storage.
 auto U16StringModifyTools::replaceCharactersInStorage(
     U16StringSharedStorage &storage, Predicate predicate, const std::span<const char16_t> replacement)
     -> U16StringSharedStorage & {

@@ -33,8 +33,8 @@ using el::text::StringConverter;
 using el::text::StringEditor;
 using el::unit::ArgumentCount;
 using el::unit::ArgumentIndex;
-using el::unit::ElementCount;
-using el::unit::ElementIndex;
+using el::unit::ItemCount;
+using el::unit::ItemIndex;
 using namespace el::options;
 using namespace el::text::literals;
 namespace th = erbsland::unittest::th;
@@ -50,7 +50,7 @@ public:
                                 .setHelp("Specify the demo to run."_el)
                                 .option();
 
-        REQUIRE(option != nullptr);
+        REQUIRE(option);
         REQUIRE(option->type() == OptionType::Choice);
 
         auto result = parse(options, {"tool"_el, "-d"_el, "FULL"_el});
@@ -80,7 +80,7 @@ public:
                                 .setDefaultValue(StringEditor{"AUTO"_el})
                                 .option();
 
-        REQUIRE(option != nullptr);
+        REQUIRE(option);
         REQUIRE(option->type() == OptionType::Choice);
         REQUIRE_EQUAL(option->choices()->choiceCount(), ArgumentCount{2U});
 
@@ -100,10 +100,10 @@ public:
         const auto nameOption =
             options->addOption({"-n"_el, "--name"_el, "name"_el}).setType(OptionType::Text).option();
 
-        REQUIRE(demoOption != nullptr);
+        REQUIRE(demoOption);
         REQUIRE(demoOption->isRegularOption());
         REQUIRE(demoOption->type() == OptionType::Flag);
-        REQUIRE(nameOption != nullptr);
+        REQUIRE(nameOption);
         REQUIRE(nameOption->isRegularOption());
         REQUIRE(nameOption->type() == OptionType::Text);
 
@@ -129,10 +129,10 @@ public:
         const auto modeOption =
             options->addOption("mode"_el).setChoices(OptionChoices::create({"fast"_el, "safe"_el})).option();
 
-        REQUIRE(pathOption != nullptr);
+        REQUIRE(pathOption);
         REQUIRE(pathOption->isPositionalArgument());
         REQUIRE(pathOption->type() == OptionType::Text);
-        REQUIRE(modeOption != nullptr);
+        REQUIRE(modeOption);
         REQUIRE(modeOption->isPositionalArgument());
         REQUIRE(modeOption->type() == OptionType::Choice);
 
@@ -331,9 +331,9 @@ public:
         auto result = parse(options, {"file_size_monitor"_el, "-t"_el, "5"_el, "-x"_el, "-y"_el});
         requireError(result, OptionErrorReason::UnknownName, "Unknown option"_el, {}, {}, ArgumentIndex{3U});
         REQUIRE_EQUAL(result.errorContext()->arguments().count().toSizeT(), std::size_t{5U});
-        REQUIRE(result.errorContext()->arguments().get(ElementIndex{0U}) == "file_size_monitor"_el);
-        REQUIRE(result.errorContext()->arguments().get(ElementIndex{3U}) == "-x"_el);
-        REQUIRE(result.errorContext()->arguments().get(ElementIndex{3U}) == "-x"_el);
+        REQUIRE(result.errorContext()->arguments().get(ItemIndex{0U}) == "file_size_monitor"_el);
+        REQUIRE(result.errorContext()->arguments().get(ItemIndex{3U}) == "-x"_el);
+        REQUIRE(result.errorContext()->arguments().get(ItemIndex{3U}) == "-x"_el);
         REQUIRE(result.errorContext()->options() == options);
 
         options = Options::create();
@@ -342,6 +342,10 @@ public:
                                     .setFlag(OptionFlag::Required)
                                     .setHelp("The path to the file to monitor."_el)
                                     .option();
+        result = parse(options, {"file_size_monitor"_el});
+        REQUIRE(result.status() == OptionResultStatus::DisplayHelp);
+
+        options->setParserFlag(OptionParserFlag::ErrorOnEmptyRequiredPositionals);
         result = parse(options, {"file_size_monitor"_el});
         requireError(result, OptionErrorReason::UnexpectedValueType, "Required argument is missing"_el, fileOption);
         REQUIRE(result.errorContext()->options() == options);
@@ -390,7 +394,7 @@ public:
 private:
     [[nodiscard]] static auto makeArgs(std::initializer_list<String> args) -> CommandLineArguments {
         auto result = CommandLineArguments{};
-        result.reserve(ElementCount{args.size()});
+        result.reserve(ItemCount{args.size()});
         for (const auto &arg : args) {
             result.append(arg.copy());
         }
@@ -421,7 +425,7 @@ private:
     }
 
     void requireArgumentIndexes(const OptionValuePtr &value, std::initializer_list<ArgumentIndex> indexes) {
-        REQUIRE(value != nullptr);
+        REQUIRE(value);
         REQUIRE_EQUAL(value->argumentIndexes().size(), indexes.size());
         auto index = std::size_t{0};
         for (const auto expectedIndex : indexes) {

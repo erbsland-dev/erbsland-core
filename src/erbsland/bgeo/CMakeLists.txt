@@ -9,6 +9,7 @@ target_sources(erbsland-core PRIVATE
         BlockAlignedSource.hpp
         BlockAlignedSource_fwd.hpp
         BlockAnchor.hpp
+        BlockAnchorFlag.hpp
         BlockAxisMapper.hpp
         BlockCoordinate.hpp
         BlockDirection.cpp
@@ -28,6 +29,7 @@ target_sources(erbsland-core PRIVATE
         BlockRectangleList_fwd.hpp
         BlockSize.cpp
         BlockSize.hpp
+        BlockSize.tpp
         BlockSize_fwd.hpp
         Orientation.hpp
         StdFormat.hpp

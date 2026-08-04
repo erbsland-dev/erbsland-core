@@ -7,6 +7,7 @@ add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
         CoAsyncGenerator.hpp
+        CoAsyncGenerator_fwd.hpp
         CoGenerator.hpp
         CoGenerator_fwd.hpp
         CoTask.hpp

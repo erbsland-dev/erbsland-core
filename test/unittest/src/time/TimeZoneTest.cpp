@@ -15,7 +15,7 @@ using namespace el::text::literals;
 
 using el::text::StringConverter;
 using el::text::StringEditor;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 using el::unit::Version;
 
 TESTED_TARGETS(time TimeZone TimeZoneId)
@@ -40,7 +40,8 @@ public:
             const auto zone = TimeZone::fromName(name);
             REQUIRE(zone.has_value());
             const auto utc = DateTime{Date::fromYearMonthDay(2026, 1, 1), Time{Hour{12}, Minute{0}}};
-            REQUIRE_EQUAL(utc.toTimeZone(*zone).timeOffset(), Duration{});
+            const auto local = utc.toTimeZone(*zone);
+            REQUIRE_EQUAL(local.timeOffset(), Duration{});
         }
         REQUIRE(TimeZone::fromNameOrThrow("Factory"_el).isUtc());
         REQUIRE_FALSE(TimeZone::fromName("Mars/Olympus"_el).has_value());
@@ -103,10 +104,14 @@ public:
 
     void testFullDayNormalization() {
 
-        REQUIRE_EQUAL(TimeZone{Hours{13}}.staticOffset(), Duration{Hours{13}});
-        REQUIRE_EQUAL(TimeZone{Hours{-13}}.staticOffset(), Duration{Hours{-13}});
-        REQUIRE_EQUAL(TimeZone{Hours{37}}.staticOffset(), Duration{Hours{23}});
-        REQUIRE_EQUAL(TimeZone{Hours{-37}}.staticOffset(), Duration{Hours{-23}});
+        const auto positiveThirteen = TimeZone{Hours{13}};
+        REQUIRE_EQUAL(positiveThirteen.staticOffset(), Duration{Hours{13}});
+        const auto negativeThirteen = TimeZone{Hours{-13}};
+        REQUIRE_EQUAL(negativeThirteen.staticOffset(), Duration{Hours{-13}});
+        const auto positiveThirtySeven = TimeZone{Hours{37}};
+        REQUIRE_EQUAL(positiveThirtySeven.staticOffset(), Duration{Hours{23}});
+        const auto negativeThirtySeven = TimeZone{Hours{-37}};
+        REQUIRE_EQUAL(negativeThirtySeven.staticOffset(), Duration{Hours{-23}});
 
         const auto dateTime =
             DateTime{Date::fromYearMonthDay(2026, 1, 1), Time{Hour{1}, Minute{0}}, TimeZone{Hours{14}}};
@@ -117,9 +122,10 @@ public:
 
     void testGeneratedNamesAndDatabaseVersion() {
 
-        REQUIRE_EQUAL(TimeZone::databaseVersion(), (Version{1, 2026, 2}));
+        const auto databaseVersion = TimeZone::databaseVersion();
+        REQUIRE_EQUAL(databaseVersion, (Version{1, 2026, 2}));
         const auto names = TimeZone::names();
-        REQUIRE(names.count() > ElementCount{500});
+        REQUIRE_GREATER(names.count(), ItemCount{500});
         REQUIRE(names.contains(StringEditor{"Europe/Zurich"}));
         REQUIRE(names.contains(StringEditor{"America/New_York"}));
         REQUIRE(names.contains(StringEditor{"Etc/GMT+1"}));
@@ -129,11 +135,13 @@ public:
         const auto zurichAgain = TimeZone::fromNameOrThrow("Europe/Zurich"_el);
         REQUIRE(zurich.isNamed());
         REQUIRE_EQUAL(zurich.id(), zurichAgain.id());
-        REQUIRE_EQUAL(StringConverter{zurich.name()}.toStdString(), "Europe/Zurich");
+        const auto zurichName = StringConverter{zurich.name()}.toStdString();
+        REQUIRE_EQUAL(zurichName, "Europe/Zurich");
 
         const auto eastern = TimeZone::fromNameOrThrow("US/Eastern"_el);
         REQUIRE(eastern.isNamed());
-        REQUIRE_EQUAL(StringConverter{eastern.name()}.toStdString(), "America/New_York");
+        const auto easternName = StringConverter{eastern.name()}.toStdString();
+        REQUIRE_EQUAL(easternName, "America/New_York");
     }
 
     void testGeneratedEtcNamesTakePrecedence() {

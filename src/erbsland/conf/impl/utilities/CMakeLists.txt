@@ -7,7 +7,7 @@ target_sources(erbsland-core PRIVATE
         InternalError.hpp
         InternalView.cpp
         InternalView.hpp
-        PrivateTag.hpp
+        InternalView_fwd.hpp
         TestTextHelper.hpp
         TypeTraits.hpp
         YieldMacros.hpp

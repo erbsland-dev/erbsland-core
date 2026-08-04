@@ -65,9 +65,12 @@ public:
         using el::bgeo::AlignmentFlag;
         using el::bgeo::AlignmentFlags;
 
-        REQUIRE(Alignment{} == Alignment::TopLeft);
-        REQUIRE(Alignment{AlignmentFlag::Center} == Alignment::Center);
-        REQUIRE(Alignment{AlignmentFlags{AlignmentFlag::Right, AlignmentFlag::Bottom}} == Alignment::BottomRight);
+        const auto defaultAlignment = Alignment{};
+        const auto centerAlignment = Alignment{AlignmentFlag::Center};
+        const auto bottomRightAlignment = Alignment{AlignmentFlags{AlignmentFlag::Right, AlignmentFlag::Bottom}};
+        REQUIRE_EQUAL(defaultAlignment, Alignment::TopLeft);
+        REQUIRE_EQUAL(centerAlignment, Alignment::Center);
+        REQUIRE_EQUAL(bottomRightAlignment, Alignment::BottomRight);
         REQUIRE(Alignment{AlignmentFlag::None}.toRawValue().isEmpty());
         REQUIRE(Alignment{AlignmentFlag::Left}.vertical().toRawValue().isEmpty());
         REQUIRE(Alignment{AlignmentFlag::Top}.horizontal().toRawValue().isEmpty());
@@ -78,17 +81,19 @@ public:
         using el::bgeo::AlignmentFlag;
         using el::bgeo::AlignmentFlags;
 
-        REQUIRE(
-            Alignment{AlignmentFlags{AlignmentFlag::Left, AlignmentFlag::HCenter, AlignmentFlag::Right}} ==
-            Alignment::Left);
-        REQUIRE(Alignment{AlignmentFlags{AlignmentFlag::HCenter, AlignmentFlag::Right}} == Alignment::HCenter);
-        REQUIRE(
-            Alignment{AlignmentFlags{AlignmentFlag::Top, AlignmentFlag::VCenter, AlignmentFlag::Bottom}} ==
-            Alignment::Top);
-        REQUIRE(Alignment{AlignmentFlags{AlignmentFlag::VCenter, AlignmentFlag::Bottom}} == Alignment::VCenter);
-        REQUIRE(
-            Alignment{AlignmentFlags{AlignmentFlag::Right, AlignmentFlag::Bottom, AlignmentFlag::VCenter}} ==
-            Alignment::CenterRight);
+        const auto horizontalConflict =
+            Alignment{AlignmentFlags{AlignmentFlag::Left, AlignmentFlag::HCenter, AlignmentFlag::Right}};
+        const auto horizontalCenterConflict = Alignment{AlignmentFlags{AlignmentFlag::HCenter, AlignmentFlag::Right}};
+        const auto verticalConflict =
+            Alignment{AlignmentFlags{AlignmentFlag::Top, AlignmentFlag::VCenter, AlignmentFlag::Bottom}};
+        const auto verticalCenterConflict = Alignment{AlignmentFlags{AlignmentFlag::VCenter, AlignmentFlag::Bottom}};
+        const auto mixedConflict =
+            Alignment{AlignmentFlags{AlignmentFlag::Right, AlignmentFlag::Bottom, AlignmentFlag::VCenter}};
+        REQUIRE_EQUAL(horizontalConflict, Alignment::Left);
+        REQUIRE_EQUAL(horizontalCenterConflict, Alignment::HCenter);
+        REQUIRE_EQUAL(verticalConflict, Alignment::Top);
+        REQUIRE_EQUAL(verticalCenterConflict, Alignment::VCenter);
+        REQUIRE_EQUAL(mixedConflict, Alignment::CenterRight);
     }
 
     void testAccessorsAndFilters() {
@@ -102,8 +107,8 @@ public:
         REQUIRE_FALSE(alignment.isTop());
         REQUIRE_FALSE(alignment.isVerticalCenter());
         REQUIRE(alignment.isBottom());
-        REQUIRE(alignment.horizontal() == Alignment::HCenter);
-        REQUIRE(alignment.vertical() == Alignment::Bottom);
+        REQUIRE_EQUAL(alignment.horizontal(), Alignment::HCenter);
+        REQUIRE_EQUAL(alignment.vertical(), Alignment::Bottom);
 
         const auto verticalOnly = Alignment{AlignmentFlag::VCenter};
         REQUIRE_FALSE(verticalOnly.isLeft());
@@ -115,8 +120,9 @@ public:
     void testHashSupport() {
         using el::bgeo::Alignment;
 
-        REQUIRE(std::hash<Alignment>{}(Alignment::Center) == Alignment::Center.hash());
-        REQUIRE(std::hash<Alignment>{}(Alignment::Center) == std::hash<Alignment>{}(Alignment::Center));
+        const auto centerHash = std::hash<Alignment>{}(Alignment::Center);
+        REQUIRE_EQUAL(centerHash, Alignment::Center.hash());
+        REQUIRE_EQUAL(centerHash, std::hash<Alignment>{}(Alignment::Center));
     }
 
     void testOffsetHelpers() {

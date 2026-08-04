@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "OptionDisplayGroup_fwd.hpp"
 #include "OptionDisplayRow.hpp"
 
 #include "../../text/String.hpp"

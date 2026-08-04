@@ -37,6 +37,8 @@ project.
     demo
     examples
     example_themes
+    anti_patterns/index
+    cryptographic_algorithms
     api_guidelines
     api/common
     api/bgeo

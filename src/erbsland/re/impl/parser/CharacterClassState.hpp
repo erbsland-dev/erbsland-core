@@ -25,11 +25,17 @@ public: // the public interface.
     };
 
 private: // wrapper around `ParserState`
+    /// Test if a parser feature is enabled.
     [[nodiscard]] auto hasFeature(Feature feature) const noexcept -> bool;
+    /// Read the next pattern character.
     void readNext();
+    /// Test if parsing reached the end of input.
     [[nodiscard]] auto isAtEnd() const noexcept -> bool;
+    /// Get the current pattern character.
     [[nodiscard]] auto currentChar() const noexcept -> text::Char;
+    /// Get the current group flags.
     [[nodiscard]] auto currentFlags() const noexcept -> GroupFlags;
+    /// Throw a parsing error through the owning parser state.
     template <typename Fwd>
     [[noreturn]] auto throwParsingError(Fwd &&message) -> void {
         _state.throwParsingError(std::forward<Fwd>(message));

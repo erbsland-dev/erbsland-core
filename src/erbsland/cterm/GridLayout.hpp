@@ -81,8 +81,10 @@ public:
         -> bgeo::BlockRectangle;
 
 private:
+    /// Get the size contributed by one border element.
     [[nodiscard]] static auto borderSize(const FrameBorder &border, FrameBorder::Element element) noexcept
         -> bgeo::BlockCoordinate;
+    /// Validate row or column sizes.
     static void validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, const text::StringLiteral &name);
 
 private:

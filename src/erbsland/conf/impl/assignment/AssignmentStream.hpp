@@ -4,15 +4,13 @@
 
 #include "Assignment.hpp"
 #include "AssignmentGenerator.hpp"
+#include "AssignmentStream_fwd.hpp"
 
 #include "../lexer/Lexer.hpp"
 
 #include <cassert>
 
 namespace erbsland::conf::impl {
-
-class AssignmentStream;
-using AssignmentStreamPtr = std::shared_ptr<AssignmentStream>;
 
 /// A stream that uses a lexer to parse a document and return a stream of value assignments.
 /// What this stream does:
@@ -42,6 +40,8 @@ using AssignmentStreamPtr = std::shared_ptr<AssignmentStream>;
 ///   This includes value lists and nested value lists.
 ///     `AssignmentStreamSectionListTest`, `AssignmentStreamTextNameTest`.
 class AssignmentStream final {
+    class PrivateTag {};
+
     /// The document area.
     enum class DocumentArea : uint8_t {
         /// The root area, before the first section definition.
@@ -63,7 +63,7 @@ public:
     // defaults
     ~AssignmentStream() = default;
 
-    // disable copy and assign.
+    // defaults/deletions
     AssignmentStream(const AssignmentStream &) = delete;
     auto operator=(const AssignmentStream &) -> AssignmentStream & = delete;
 
@@ -112,9 +112,13 @@ private:
     /// Throw an error with the start position of the current token.
     /// @{
     [[noreturn]] void throwSyntaxError(text::String message) const;
+    /// Throw a syntax error at a name-path location.
     [[noreturn]] void throwSyntaxError(text::String message, const NamePath &namePath) const;
+    /// Throw an error for unsupported assignment syntax.
     [[noreturn]] void throwUnsupportedError(text::String message) const;
+    /// Throw an error for unexpected end of input.
     [[noreturn]] void throwUnexpectedEndError(text::String message) const;
+    /// Throw an error for an exceeded implementation limit.
     [[noreturn]] void throwLimitExceededError(text::String message) const;
     /// @}
 

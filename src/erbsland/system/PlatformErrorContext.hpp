@@ -14,6 +14,7 @@ namespace erbsland::system {
 /// @tested{DiagnosticTest}
 class PlatformErrorContext {
 public:
+    // defaults/deletions
     virtual ~PlatformErrorContext() = default;
     PlatformErrorContext(const PlatformErrorContext &) = delete;
     PlatformErrorContext(PlatformErrorContext &&) = delete;
@@ -31,6 +32,7 @@ public: // conversion
     [[nodiscard]] virtual auto toTextDocument() const -> text::TextDocument = 0;
 
 protected:
+    /// Create an empty platform error context.
     PlatformErrorContext() = default;
 };
 

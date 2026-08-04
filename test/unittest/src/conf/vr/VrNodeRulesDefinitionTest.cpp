@@ -30,7 +30,7 @@ public:
             valueLine,
         }));
         auto value = document->valueOrThrow(el::text::String{"app.secret"});
-        REQUIRE(value->validationRule() != nullptr);
+        REQUIRE(value->validationRule());
         REQUIRE(value->validationRule()->isSecret());
         REQUIRE(value->isSecret());
     }
@@ -88,7 +88,8 @@ public:
         WITH_CONTEXT(requirePassLines({
             "[client]",
         }));
-        REQUIRE_EQUAL(document->getOrThrow<Integer>(el::text::String{"client.port"}), 9000);
+        const auto port = document->getOrThrow<Integer>(el::text::String{"client.port"});
+        REQUIRE_EQUAL(port, 9000);
 
         // `section` is not automatically made optional by giving `port` a default value.
         WITH_CONTEXT(requireFailLines({}));
@@ -210,8 +211,9 @@ public:
         // now test if the documentation is accessible via public API.
         auto portValue = document->valueOrThrow(el::text::String{"client.port"_el});
         auto portValueRule = portValue->validationRule();
-        REQUIRE(portValueRule != nullptr);
-        REQUIRE_EQUAL(portValueRule->title(), el::text::String{"Port on the server to connect to"});
+        REQUIRE(portValueRule);
+        const auto title = portValueRule->title();
+        REQUIRE_EQUAL(title, el::text::String{"Port on the server to connect to"});
         REQUIRE_EQUAL(
             portValueRule->description(),
             el::text::String{"The numeric port where the client connects to the server."});

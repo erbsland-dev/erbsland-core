@@ -22,7 +22,9 @@
 #include "../text/u16/U16String_fwd.hpp"
 #include "../text/u32/U32String_fwd.hpp"
 
+#include <atomic>
 #include <functional>
+#include <mutex>
 
 namespace erbsland::re {
 
@@ -38,7 +40,17 @@ class RegEx final {
     friend class diagnostics::Disassembler;
     friend class diagnostics::Assembler;
 
-    struct LazyState;
+    /// Mutable state retained by a lazily compiled expression.
+    struct LazyState final {
+        /// Create lazy compilation state.
+        LazyState(Flags flags, Settings settings) noexcept;
+
+        Flags flags;                        ///< The source pattern flags.
+        Settings settings;                  ///< The source parser and engine settings.
+        impl::ConstEnginePtr engine;        ///< The engine compiled on first use.
+        std::once_flag compileOnce;         ///< Ensures the engine is compiled only once at a time.
+        std::atomic_bool isCompiled{false}; ///< Whether compilation completed successfully.
+    };
 
 public:
     /// A callback that creates replacement text for one match.
@@ -178,8 +190,12 @@ public: // replacement
     [[nodiscard]] auto replaceAll(const text::String &text, const ReplaceFn &replaceFn) const -> text::String;
 
 private: // internal API
+    /// Build the compiled engine for a pattern and settings.
     [[nodiscard]] static auto buildEngine(const text::AnyString &pattern, Flags flags, const Settings &settings)
         -> impl::ConstEnginePtr;
+    /// Compile the retained pattern if it has not been compiled yet.
+    void ensureEngineCompiled() const;
+    /// Get the compiled regular-expression engine.
     [[nodiscard]] auto engine() const -> const impl::ConstEnginePtr &;
 
 public:

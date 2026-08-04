@@ -38,7 +38,8 @@ public:
     void testStdFilesystemInterop() {
         const auto path = Path{std::filesystem::path{"arquivo/rotas/voo.txt"}};
         REQUIRE_EQUAL(toStdString(path), "arquivo/rotas/voo.txt");
-        REQUIRE_EQUAL(path.toStdPath().generic_string(), "arquivo/rotas/voo.txt");
+        const auto genericPath = path.toStdPath().generic_string();
+        REQUIRE_EQUAL(genericPath, "arquivo/rotas/voo.txt");
     }
 
     void testThrowingFactories() {

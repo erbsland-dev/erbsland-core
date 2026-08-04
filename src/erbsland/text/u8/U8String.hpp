@@ -27,11 +27,13 @@
 #include "../impl/IntegerAppend.hpp"
 #include "../impl/IntegerConversion.hpp"
 #include "../impl/StringConversionTools_fwd.hpp"
+#include "../impl/StringNormalizationTools_fwd.hpp"
 #include "../impl/StringReaderBase_fwd.hpp"
 #include "../impl/UnsafeU8StringAccess_fwd.hpp"
 #include "../IntegerFormat.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
+#include "../NormalizationForm.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringCharReader.hpp"
@@ -54,7 +56,7 @@
 #include "../../unit/CpIndex.hpp"
 #include "../../unit/CpLength.hpp"
 #include "../../unit/CpRange.hpp"
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 #include "../../util/impl/ComparisonHelper.hpp"
 #include "../../util/LoopResult.hpp"
 
@@ -75,13 +77,15 @@ namespace erbsland::text {
 /// Use the `String` alias in user code and only `U8String` if UTF-8 encoding matters.
 /// A `StringEditor` and `StringLiteral` are implicitly convertible to a `String`, no copy involved.
 /// Copy, move, slicing, trimming are fast and copy-free operations.
-/// @tested{U8StringTest BooleanConversionTest}
+/// @tested{U8StringTest BooleanConversionTest UnicodeNormalizationTest}
 class U8String final {
-    friend class debug::impl::StringDebugAccess;
+    friend class debug::impl::StringDebugAccess<U8String>;
     friend class U8StringEditor;
     friend class U8StringConstIterator;
     friend class impl::StringReaderBase;
     friend class impl::StringConversionTools;
+    template <typename>
+    friend class impl::StringNormalizationTools;
     friend class impl::U16StringBuilder;
     friend class impl::U8StringBuilder;
     friend class impl::U8StringReader;
@@ -152,7 +156,7 @@ public: // tests
     [[nodiscard]] auto contains(const U8String &other, CharCompareFn compareFn = {}) const noexcept -> bool;
     /// Count non-overlapping occurrences of another string.
     /// Empty text counts as zero occurrences.
-    [[nodiscard]] auto count(const U8String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ElementCount;
+    [[nodiscard]] auto count(const U8String &text, CharCompareFn compareFn = {}) const noexcept -> unit::ItemCount;
     /// Test if this string contains any character from the given set.
     /// Malformed UTF-8 is decoded as `Char::replacement()`.
     /// @param characters The character set to match.
@@ -384,8 +388,17 @@ public: // transform and copy-modify
     [[nodiscard]] auto replaced(unit::CpRange range, const U8String &text) const -> U8String;
     /// Call a function for every decoded code point, stopping early if the function requests it.
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
+    /// @overload
+    auto forEach(const ProcessCharacterWithCpIndexFn &function) const -> util::LoopResult;
     /// Return a string where every decoded code point is mapped through the given function.
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U8String;
+    /// Return this string in the selected Unicode normalization form.
+    /// Malformed UTF-8 is replaced with U+FFFD. Unchanged valid text retains its original storage.
+    /// @param form The explicit normalization form to apply.
+    /// @return The normalized string, sharing this storage if no change is required.
+    /// @usesunidb{Uses the generated Unicode normalization database.}
+    /// @seedoc{/topics/strings/normalizing_strings}
+    [[nodiscard]] auto normalized(NormalizationForm form) const -> U8String;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const -> U8String;
     /// Return a string truncated to a maximum decoded code-point width, inserting an optional ellipsis.
@@ -479,6 +492,8 @@ private:
     [[nodiscard]] auto dataView() const noexcept -> impl::U8StringDataView;
     /// Create a new string with the given storage.
     explicit U8String(impl::U8StringStorage storage) : _storage(std::move(storage)) {}
+    /// Test if the string storage is shared.
+    [[nodiscard]] auto isStorageShared() const noexcept -> bool;
 
 private:
     impl::U8StringStorage _storage; ///< Either literal or shared string data.

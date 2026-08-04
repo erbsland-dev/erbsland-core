@@ -492,6 +492,7 @@ public: // constants
     [[nodiscard]] static constexpr auto isSigned() noexcept -> bool { return std::signed_integral<NativeValue>; }
 
 private:
+    /// Convert an arbitrary integer into the native integer type without narrowing errors.
     template <AnyIntegerType T>
     [[nodiscard]] static constexpr auto convertToNativeInt(T value) noexcept -> NativeIntegerOfT<T>;
 

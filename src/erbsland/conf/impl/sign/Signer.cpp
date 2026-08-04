@@ -12,8 +12,10 @@
 #include "../../../path/PathInfo.hpp"
 #include "../../../path/PathWriteTextOptions.hpp"
 #include "../../../text/EscapeFormat.hpp"
+#include "../../../text/Literals.hpp"
 #include "../../../text/StringEditor.hpp"
 #include "../../ConfError.hpp"
+#include "../../SignatureSigner.hpp"
 #include "../../SignatureSignerData.hpp"
 #include "../../Source.hpp"
 
@@ -23,7 +25,7 @@ using namespace text::literals;
 
 Signer::Signer(SignatureSignerPtr signatureSigner) : _signatureSigner{std::move(signatureSigner)} {
     if (_signatureSigner == nullptr) {
-        throw err::ParameterError("Signature signer must not be null", "signatureSigner");
+        throw err::ParameterError("Signature signer must not be null"_el, "signatureSigner"_el);
     }
 }
 

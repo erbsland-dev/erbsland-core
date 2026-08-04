@@ -25,8 +25,10 @@ public:
         waitFor(task);
         REQUIRE(started.load());
         REQUIRE(task.isComplete());
-        REQUIRE_EQUAL(task.result(), 42);
-        REQUIRE_EQUAL(task.takeResult(), 42);
+        const auto result = task.result();
+        REQUIRE_EQUAL(result, 42);
+        const auto takenResult = task.takeResult();
+        REQUIRE_EQUAL(takenResult, 42);
         REQUIRE_THROWS_AS(el::err::LogicError, task.result());
     }
 
@@ -35,7 +37,8 @@ public:
 
         waitFor(task);
         REQUIRE(task.isComplete());
-        REQUIRE_EQUAL(task.takeResult(), 42);
+        const auto result = task.takeResult();
+        REQUIRE_EQUAL(result, 42);
     }
 
     void testVoidTask() {
@@ -54,7 +57,7 @@ public:
 
         waitFor(task);
         auto result = task.takeResult();
-        REQUIRE(result != nullptr);
+        REQUIRE_NOT_EQUAL(result, nullptr);
         REQUIRE_EQUAL(*result, 42);
     }
 

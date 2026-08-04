@@ -2,24 +2,25 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "OptionParsedValue_fwd.hpp"
+
 #include "../Option_fwd.hpp"
 #include "../OptionValueStorage.hpp"
 
 #include "../../unit/ArgumentUnit.hpp"
 
-#include <memory>
 #include <utility>
 #include <vector>
 
 namespace erbsland::options::impl {
 
-class OptionParsedValue;
-using OptionParsedValuePtr = std::shared_ptr<OptionParsedValue>;
-
+/// Mutable intermediate representation of a parsed option value.
 class OptionParsedValue {
 public:
+    /// Create a parsed value with no recorded argument locations.
     OptionParsedValue(OptionPtr option, OptionValueStorage storage, unit::ArgumentCount count) :
         option{std::move(option)}, storage{std::move(storage)}, count{count} {}
+    /// Create a parsed value with recorded argument locations.
     OptionParsedValue(
         OptionPtr option,
         OptionValueStorage storage,
@@ -32,10 +33,12 @@ public:
         argumentIndexes{std::move(argumentIndexes)},
         explicitFlagValue{explicitFlagValue} {}
 
+    /// Create shared parsed storage without argument locations.
     [[nodiscard]] static auto create(const OptionPtr &option, OptionValueStorage storage, unit::ArgumentCount count)
         -> OptionParsedValuePtr {
         return std::make_shared<OptionParsedValue>(option, std::move(storage), count);
     }
+    /// Create shared parsed storage with argument locations.
     [[nodiscard]] static auto create(
         const OptionPtr &option,
         OptionValueStorage storage,

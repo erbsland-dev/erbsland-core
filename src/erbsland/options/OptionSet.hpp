@@ -18,6 +18,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionSet : public OptionSetManager {
 public:
+    /// Create an empty option set.
     OptionSet() = default;
 
     // defaults
@@ -38,7 +39,9 @@ public:
     void addOption(OptionPtr option);
 
 public: // implement OptionsManager
+    /// Add an option with one or more names.
     auto addOption(std::initializer_list<text::String> names) -> OptionEditor override;
+    /// Edit an option selected by one of its names.
     auto editOption(const text::String &name) -> OptionEditor override;
 
 public: // accessors
@@ -76,6 +79,7 @@ public: // accessors
     void setPostParsingFn(PostParsingFn fn) { _postParsingFn = std::move(fn); }
 
 private:
+    /// Find an option selected by one of its names.
     [[nodiscard]] auto findOption(const text::String &name) const -> OptionPtr;
 
 private:

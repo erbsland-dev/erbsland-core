@@ -20,6 +20,7 @@ protected:
     };
 
 protected:
+    /// Create common state for paragraph renderers.
     RendererBase(
         const bgeo::Alignment alignment,
         const LayoutResult &layout,
@@ -40,21 +41,28 @@ public: // defaults/deletions
     auto operator=(RendererBase &&) -> RendererBase & = delete;
 
 protected:
+    /// Get the paragraph alignment.
     [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment { return _alignment; }
+    /// Get the completed paragraph layout.
     [[nodiscard]] auto layout() const noexcept -> const LayoutResult & { return _layout; }
+    /// Get the source block string.
     [[nodiscard]] auto sourceText() const noexcept -> const BlockString & { return _sourceText; }
+    /// Get the paragraph layout options.
     [[nodiscard]] auto options() const noexcept -> const ParagraphOptions & { return _options; }
+    /// Test if background fill is required left of text.
     [[nodiscard]] auto usesLeftFill() const noexcept -> bool {
         return _backgroundMode == ParagraphBackgroundMode::WrappedLeft ||
             _backgroundMode == ParagraphBackgroundMode::WrappedBoth ||
             _backgroundMode == ParagraphBackgroundMode::FullBoth;
     }
+    /// Test if background fill is required right of text.
     [[nodiscard]] auto usesRightFill() const noexcept -> bool {
         return _backgroundMode == ParagraphBackgroundMode::WrappedRight ||
             _backgroundMode == ParagraphBackgroundMode::WrappedBoth ||
             _backgroundMode == ParagraphBackgroundMode::FullRight ||
             _backgroundMode == ParagraphBackgroundMode::FullBoth;
     }
+    /// Test if background fill is required right of one line.
     [[nodiscard]] auto usesRightFillForLine(const LayoutLine &line) const noexcept -> bool {
         if (_backgroundMode == ParagraphBackgroundMode::FullRight ||
             _backgroundMode == ParagraphBackgroundMode::FullBoth) {
@@ -64,6 +72,7 @@ protected:
             (_backgroundMode == ParagraphBackgroundMode::WrappedRight ||
                 _backgroundMode == ParagraphBackgroundMode::WrappedBoth);
     }
+    /// Calculate placement geometry for one layout line.
     [[nodiscard]] auto linePlacement(const LayoutLine &line, int x1, int width) const noexcept -> LinePlacement;
 
 private:

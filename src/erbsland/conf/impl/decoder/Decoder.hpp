@@ -2,7 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "Decoder_fwd.hpp"
 #include "DecoderState.hpp"
+#include "Transaction_fwd.hpp"
 
 #include "../char/CharClass.hpp"
 #include "../char/NamedChars.hpp"
@@ -18,15 +20,14 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-class Transaction;
-
 /// The base class for all character-based decoders.
 class Decoder {
 public:
+    // defaults
     Decoder() = default;
     virtual ~Decoder() = default;
 
-    // disable copy and assign.
+    // defaults/deletions
     Decoder(const Decoder &) = delete;
     auto operator=(const Decoder &) -> Decoder & = delete;
     Decoder(Decoder &&) = delete;

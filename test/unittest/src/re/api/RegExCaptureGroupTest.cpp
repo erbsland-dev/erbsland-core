@@ -169,7 +169,7 @@ public:
         const auto match = expression->fullMatch("a"_el);
         const auto weakExpression = std::weak_ptr<RegEx>{expression};
 
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         expression.reset();
 
         REQUIRE(weakExpression.expired());
@@ -184,7 +184,7 @@ public:
 
         const auto match = copiedExpression.fullMatch("a"_el);
 
-        REQUIRE(match != nullptr);
+        REQUIRE(match);
         REQUIRE_EQUAL(match->content("letter"_el), "a"_el);
     }
 

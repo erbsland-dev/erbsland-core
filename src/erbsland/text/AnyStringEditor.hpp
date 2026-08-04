@@ -7,21 +7,16 @@
 #include "StringConverter.hpp"
 #include "StringKind.hpp"
 
+#include "impl/StringTraits.hpp"
 #include "u16/U16StringEditor.hpp"
 #include "u32/U32StringEditor.hpp"
 #include "u8/U8StringEditor.hpp"
 
-#include <concepts>
 #include <optional>
-#include <type_traits>
 #include <utility>
 #include <variant>
 
 namespace erbsland::text {
-
-template <typename tString>
-concept AnyStringEditorType = std::is_same_v<tString, U8StringEditor> || std::is_same_v<tString, U16StringEditor> ||
-    std::is_same_v<tString, U32StringEditor>;
 
 /// A wrapper that stores a mutable string editor of any supported width.
 /// Converts its contents to a requested read-only string width when needed.
@@ -34,7 +29,7 @@ public:
     AnyStringEditor() = default;
 
     /// Create a string of the given type.
-    template <AnyStringEditorType tString>
+    template <impl::AnyStringEditorType tString>
     constexpr AnyStringEditor(tString str) : // NOLINT(*-explicit-constructor)
         _value(str.isEmpty() ? Value{} : std::move(str)) {}
 
@@ -46,26 +41,32 @@ public:
     auto operator=(AnyStringEditor &&) -> AnyStringEditor & = default;
 
 public: // operators
+    /// Copy an editable UTF-8 string into this value.
     auto operator=(const U8StringEditor &str) -> AnyStringEditor & {
         _value = str;
         return *this;
     }
+    /// Move an editable UTF-8 string into this value.
     auto operator=(U8StringEditor &&str) -> AnyStringEditor & {
         _value = std::move(str);
         return *this;
     }
+    /// Copy an editable UTF-16 string into this value.
     auto operator=(const U16StringEditor &str) -> AnyStringEditor & {
         _value = str;
         return *this;
     }
+    /// Move an editable UTF-16 string into this value.
     auto operator=(U16StringEditor &&str) -> AnyStringEditor & {
         _value = std::move(str);
         return *this;
     }
+    /// Copy an editable UTF-32 string into this value.
     auto operator=(const U32StringEditor &str) -> AnyStringEditor & {
         _value = str;
         return *this;
     }
+    /// Move an editable UTF-32 string into this value.
     auto operator=(U32StringEditor &&str) -> AnyStringEditor & {
         _value = std::move(str);
         return *this;
@@ -111,9 +112,7 @@ public: // conversion
         return std::visit(
             []<typename T>(const T &value) noexcept -> AnyString {
                 using ValueType = std::remove_cvref_t<T>;
-                if constexpr (
-                    std::is_same_v<ValueType, U8StringEditor> || std::is_same_v<ValueType, U16StringEditor> ||
-                    std::is_same_v<ValueType, U32StringEditor>) {
+                if constexpr (impl::AnyStringEditorType<ValueType>) {
                     return AnyString{value};
                 } else {
                     return {};

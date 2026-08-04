@@ -9,6 +9,8 @@ namespace erbsland::conf::impl {
 /// Implementation of value for value lists.
 class ValueList final : public ValueWithChildren {
 public:
+    /// Create a list value from child values.
+    /// @param valueList The child values to move into the list.
     explicit ValueList(std::vector<ValuePtr> &&valueList) noexcept :
         ValueWithChildren(ValueMap{std::move(valueList)}) {}
     [[nodiscard]] auto type() const noexcept -> ValueType override { return ValueType::ValueList; }

@@ -2,20 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "TerminalFlag.hpp"
+
 #include "../core/Definitions.hpp"
 
 #include <cstdint>
 #include <type_traits>
 
 namespace erbsland::cterm {
-
-/// A terminal flag.
-enum class TerminalFlag : uint8_t {
-    /// Disables signal handling to restore the screen when the application is terminated.
-    /// If this flag is set, you must ensure that the `restoreScreen()` method is called when the application
-    /// is terminated by a signal. Otherwise, the terminal will not be restored properly.
-    NoSignalHandling = 1 << 0,
-};
 
 /// A set of terminal flags.
 /// Terminal flags control the behavior of the built-in terminal backend.
@@ -78,6 +72,7 @@ public:
     void clear(const TerminalFlag flag) { _flags &= ~static_cast<Mask>(flag); }
 
 private:
+    /// Create terminal flags from a low-level mask.
     explicit TerminalFlags(const Mask flags) : _flags(flags) {}
 
 private:

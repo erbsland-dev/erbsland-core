@@ -11,6 +11,7 @@
 namespace erbsland::re::impl {
 
 Assembler::Assembler() : _data{std::make_shared<EngineData>()}, _writer{_data->program, _programCounter} {
+    _data->counterCount = 0U;
 }
 
 auto Assembler::compile(const text::StringList &lines) -> EngineDataPtr {

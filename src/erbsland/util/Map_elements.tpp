@@ -95,9 +95,8 @@ template <typename tKey, typename tValue, typename tCompare, typename tSelf>
 auto Map<tKey, tValue, tCompare, tSelf>::toKeyList() const -> List<Key> {
     auto result = List<Key>{};
     result.reserve(count());
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(value);
-        result.append(key);
+    for (const auto &entry : raw()) {
+        result.append(entry.first);
     }
     return result;
 }
@@ -108,9 +107,8 @@ template <typename tKey, typename tValue, typename tCompare, typename tSelf>
 auto Map<tKey, tValue, tCompare, tSelf>::toValueList() const -> List<Value> {
     auto result = List<Value>{};
     result.reserve(count());
-    for (const auto &[key, value] : raw()) {
-        static_cast<void>(key);
-        result.append(value);
+    for (const auto &entry : raw()) {
+        result.append(entry.second);
     }
     return result;
 }

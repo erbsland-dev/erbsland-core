@@ -9,6 +9,8 @@
 #include "../ByteBlockEditor.hpp"
 #include "../ByteSpan.hpp"
 
+#include "../../err/OutOfRangeError.hpp"
+#include "../../text/Literals.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <algorithm>
@@ -16,10 +18,11 @@
 #include <cstring>
 #include <exception>
 #include <span>
-#include <stdexcept>
 #include <utility>
 
 namespace erbsland::mem::impl {
+
+using namespace text::literals;
 
 /// Owns uncommitted byte block storage for low-level native APIs.
 /// Storage is uninitialized; every byte included in `take()` must be written first.
@@ -30,11 +33,12 @@ public:
     /// Create an empty buffer.
     UnsafeByteBlockBuffer() = default;
     /// Create a buffer with the given usable capacity.
+    /// @throws err::OutOfRangeError If `capacity` exceeds the supported storage limit.
     explicit UnsafeByteBlockBuffer(unit::ByteLength capacity, bool sensitive = false) : _sensitive{sensitive} {
         const auto capacityValue = capacity.toSizeTOrThrow();
         if (capacityValue != 0U) {
             if (!ByteBlockData::canAllocateWithCapacity(capacityValue)) {
-                throw std::length_error{"Byte block capacity exceeds the supported limit"};
+                throw err::OutOfRangeError{"Byte block capacity exceeds the supported limit"_el};
             }
             _data = ByteBlockDataPtr{ByteBlockData::create(
                 0U,
@@ -74,6 +78,7 @@ public:
     /// @param preservedLength The initialized prefix that must survive relocation.
     /// @param maximumCapacity The hard upper bound for growth.
     /// @return The complete writable buffer after any relocation.
+    /// @throws err::OutOfRangeError If the requested capacity exceeds the supported storage limit.
     auto grow(
         unit::ByteLength minimumCapacity,
         unit::ByteLength preservedLength,
@@ -86,12 +91,13 @@ public:
             return data();
         }
         const auto minimum = minimumCapacity.toSizeT();
-        auto target = bestGrowthCapacity<ByteBlockData>(capacity().toSizeT(), minimum, BestGrowthStrategy::Geometric);
+        auto target =
+            BestGrowth{capacity().toSizeT(), minimum}.bestGrowth<ByteBlockData>(BestGrowthStrategy::Geometric);
         if (maximumCapacity.isFinite()) {
             target = std::min(target, maximumCapacity.toSizeT());
         }
         if (!ByteBlockData::canAllocateWithCapacity(target)) {
-            throw std::length_error{"Byte block capacity exceeds the supported limit"};
+            throw err::OutOfRangeError{"Byte block capacity exceeds the supported limit"_el};
         }
         const auto flags =
             _data.isNull() ? (_sensitive ? ByteBlockData::cSensitiveFlag : std::uint8_t{}) : _data.constGet()->flags();
@@ -114,6 +120,12 @@ public:
         }
         _data.get()->setSize(static_cast<ByteBlockData::SizeType>(finalLength.toSizeT()));
         return ByteBlockEditor{std::move(_data)};
+    }
+
+public:
+    /// Test if a capacity would exceed the maximum capacity.
+    [[nodiscard]] static auto wouldExceedCapacity(const std::size_t capacityValue) noexcept -> bool {
+        return !ByteBlockData::canAllocateWithCapacity(capacityValue);
     }
 
 private:

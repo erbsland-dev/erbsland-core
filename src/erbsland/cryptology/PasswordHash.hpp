@@ -3,6 +3,7 @@
 #pragma once
 
 #include "PasswordHashAlgorithm.hpp"
+#include "PasswordHasher_fwd.hpp"
 
 #include "impl/PasswordHashData_fwd.hpp"
 
@@ -11,8 +12,6 @@
 #include <optional>
 
 namespace erbsland::cryptology {
-
-class PasswordHasher;
 
 /// An immutable canonical password-hash record suitable for database or configuration storage.
 /// The default value is an invalid sentinel and is safe to use for malformed records and unknown users.
@@ -57,6 +56,8 @@ public: // conversion
     [[nodiscard]] static auto fromStringOrThrow(const text::String &text) -> PasswordHash;
 
 private:
+    /// Create a password hash from immutable record data.
+    /// @param data The immutable record data to retain.
     explicit PasswordHash(impl::PasswordHashDataPtr data) noexcept;
 
 private:

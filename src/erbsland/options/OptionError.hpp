@@ -14,9 +14,15 @@ class OptionError : public err::RuntimeError {
 public:
     /// Create an option error.
     OptionError() noexcept = default;
+    /// Create an option error with a reason.
+    explicit OptionError(text::String reason, const std::exception_ptr &cause = {}) noexcept;
     /// Create an option error with reason details.
     /// @param context The error context.
-    explicit OptionError(OptionErrorContext context);
+    explicit OptionError(OptionErrorContext context) noexcept;
+    /// Create an option error with reason details and a cause.
+    /// @param context The error context.
+    /// @param cause The cause of the error.
+    explicit OptionError(OptionErrorContext context, const std::exception_ptr &cause) noexcept;
 
     // defaults
     ~OptionError() override = default;
@@ -26,6 +32,7 @@ public:
     auto operator=(OptionError &&) -> OptionError & = default;
 
 public: // accessors
+    /// Create a diagnostic document for this error.
     [[nodiscard]] auto diagnostic() const -> err::DiagnosticConstPtr override;
 
 public: // accessors

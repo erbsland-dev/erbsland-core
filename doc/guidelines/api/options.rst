@@ -13,22 +13,6 @@ Command-Line Model
     option = named flag, typed value, choice, or positional argument
     option set = group of option definitions with parsing callbacks
     module = first token selecting an action-specific collection of option sets
-    values = parsed lookup map from every accepted name to shared parsed data
-    sensitive suffix = source and stored UTF-8 allocations marked before the source suffix is masked
-    display document = neutral text document for help, version, or error output
-
-Name Forms
-----------
-
-.. code-block:: text
-
-    -a = case-sensitive short option
-    -abc = grouped short flags
-    --long = case-insensitive long option
-    --long=value = attached value that may begin with a dash
-    --flag[=boolean] = bare true flag or explicit ELCL boolean
-    positional = dashless option definition or parsed argument
-    module-name = module selector using long-name text rules
 
 Primary Types
 =============

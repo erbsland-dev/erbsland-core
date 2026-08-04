@@ -8,12 +8,15 @@
 
 namespace erbsland::event::impl {
 
+/// Managed event-thread implementation backed by an event-thread base.
 class ManagedEventThread final : public event::ManagedEventThread, private EventThreadBase {
 public:
+    /// Create an inactive managed event thread.
     ManagedEventThread() = default;
+    /// Stop and release the managed event thread.
     ~ManagedEventThread() noexcept override;
 
-    // defaults
+    // defaults/deletions
     ManagedEventThread(const ManagedEventThread &) = delete;
     auto operator=(const ManagedEventThread &) -> ManagedEventThread & = delete;
     ManagedEventThread(ManagedEventThread &&) = delete;

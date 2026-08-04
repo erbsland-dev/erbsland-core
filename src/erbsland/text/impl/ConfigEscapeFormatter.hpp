@@ -32,7 +32,9 @@ public:
     [[nodiscard]] static auto testInstance() noexcept -> const EscapeFormatterPtr &;
 
 private:
+    /// Get the integer format used for Unicode escapes.
     [[nodiscard]] static auto unicodeEscapeFormat() noexcept -> IntegerFormat;
+    /// Get the number of hexadecimal digits for an escaped character.
     [[nodiscard]] static auto hexadecimalDigitCount(Char character) noexcept -> std::size_t;
 
 private:

@@ -17,6 +17,7 @@ target_sources(erbsland-core PRIVATE
         EventBackendTarget_fwd.hpp
         EventCallback.hpp
         EventData.hpp
+        EventData_fwd.hpp
         EventEditor.cpp
         EventEditor.hpp
         EventEditor_fwd.hpp
@@ -49,5 +50,6 @@ target_sources(erbsland-core PRIVATE
         EventTimer_fwd.hpp
         EventTimerMode.hpp
         ManagedEventThread.hpp
+        UnmanagedEventThread.cpp
         UnmanagedEventThread.hpp
 )

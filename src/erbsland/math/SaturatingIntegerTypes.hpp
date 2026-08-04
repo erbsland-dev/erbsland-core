@@ -13,7 +13,7 @@ namespace erbsland::math {
 template <typename T>
 struct IsSaturatingInteger : std::false_type {};
 
-// Specialization for saturating integer values.
+/// Specialization that identifies saturating integer values.
 template <NativeInteger T>
 struct IsSaturatingInteger<SaturatingInteger<T>> : std::true_type {};
 

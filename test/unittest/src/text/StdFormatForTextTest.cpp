@@ -20,15 +20,23 @@ public:
         const auto text16 = el::text::StringConverter{text}.toU16String();
         const auto text32 = el::text::StringConverter{text}.toU32String();
 
-        REQUIRE_EQUAL(std::format("{}", text), std::string{"text"});
-        REQUIRE_EQUAL(std::format("{:>6}", editor), std::string{"  edit"});
-        REQUIRE_EQUAL(std::format("{}", text16), std::string{"text"});
-        REQUIRE_EQUAL(std::format("{}", text32), std::string{"text"});
+        const auto formattedText = std::format("{}", text);
+        const auto formattedEditor = std::format("{:>6}", editor);
+        const auto formattedText16 = std::format("{}", text16);
+        const auto formattedText32 = std::format("{}", text32);
+        REQUIRE_EQUAL(formattedText, std::string{"text"});
+        REQUIRE_EQUAL(formattedEditor, std::string{"  edit"});
+        REQUIRE_EQUAL(formattedText16, std::string{"text"});
+        REQUIRE_EQUAL(formattedText32, std::string{"text"});
     }
 
-    void testCharacter() { REQUIRE_EQUAL(std::format("{}", el::text::Char{U'ä'}), std::string{"ä"}); }
+    void testCharacter() {
+        const auto formatted = std::format("{}", el::text::Char{U'ä'});
+        REQUIRE_EQUAL(formatted, std::string{"ä"});
+    }
 
     void testCaseSensitivity() {
-        REQUIRE_EQUAL(std::format("{}", el::text::cCaseInsensitive), std::string{"case-insensitive"});
+        const auto formatted = std::format("{}", el::text::cCaseInsensitive);
+        REQUIRE_EQUAL(formatted, std::string{"case-insensitive"});
     }
 };

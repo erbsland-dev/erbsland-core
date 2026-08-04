@@ -13,12 +13,14 @@ public:
     /// Protect one local scratch value.
     explicit SecureEraseGuard(T &value) noexcept : _value{&value} {}
 
-    // defaults/deletions
+    /// Securely erase the guarded scratch value.
     ~SecureEraseGuard() noexcept {
         if (_value != nullptr) {
             _value->secureErase();
         }
     }
+
+    // defaults/deletions
     SecureEraseGuard(const SecureEraseGuard &) = delete;
     SecureEraseGuard(SecureEraseGuard &&) = delete;
     auto operator=(const SecureEraseGuard &) -> SecureEraseGuard & = delete;

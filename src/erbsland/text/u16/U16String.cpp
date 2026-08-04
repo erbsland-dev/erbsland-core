@@ -445,4 +445,11 @@ auto U16String::dataView() const noexcept -> U16StringDataView {
     return {};
 }
 
+auto U16String::isStorageShared() const noexcept -> bool {
+    if (const auto *shared = std::get_if<U16StringSharedStorage>(&_storage)) {
+        return shared->sharedData().isShared();
+    }
+    return false;
+}
+
 }

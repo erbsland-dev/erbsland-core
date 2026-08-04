@@ -38,3 +38,5 @@ Interface
 
 .. doxygenfunction:: erbsland::conf::toNamePath(const NamePathLike &namePathLike) -> NamePath
 .. doxygenenum:: erbsland::conf::NameType
+
+.. doxygenfunction:: erbsland::conf::toString(const NameType nameType) noexcept -> text::String

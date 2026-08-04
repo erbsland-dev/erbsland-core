@@ -2,22 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "DisassemblerFlag.hpp"
+
 #include "../../../util/EnumFlags.hpp"
 
 #include <cstdint>
 
 namespace erbsland::re::impl {
-
-enum class DisassemblerFlag : uint8_t {
-    None = 0,
-
-    /// Output the disassembly in a format that can be used in unit tests.
-    /// - Outputs no comments.
-    /// - Outputs no labels.
-    /// - Outputs no hexadecimal codes.
-    /// - Does not align the output.
-    TestOutput = 1U << 0U,
-};
 
 /// Flags controlling diagnostic disassembly output.
 /// @tested{DisassemblerTest}

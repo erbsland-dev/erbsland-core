@@ -14,32 +14,6 @@
 #include <type_traits>
 #include <vector>
 
-namespace {
-
-struct SharedByteEraseEvent final {
-    std::size_t size{};
-    bool isZero{};
-};
-
-std::vector<SharedByteEraseEvent> gSharedByteEraseEvents;
-
-void observeSharedByteErase(const std::span<const std::byte> bytes) noexcept {
-    gSharedByteEraseEvents.push_back(
-        {bytes.size(),
-            std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool { return value == std::byte{}; })});
-}
-
-class SharedByteEraseObserverGuard final {
-public:
-    SharedByteEraseObserverGuard() {
-        gSharedByteEraseEvents.clear();
-        el::mem::impl::setSecureEraseObserver(observeSharedByteErase);
-    }
-    ~SharedByteEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
-};
-
-}
-
 TESTED_TARGETS(SharedByteDataWithFlag)
 class SharedByteDataWithFlagTest final : public el::UnitTest {
 public:
@@ -103,8 +77,32 @@ public:
         data->setSensitive();
         Data::destroy(data);
 
-        REQUIRE_EQUAL(gSharedByteEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gSharedByteEraseEvents.front().size, Data::allocationSizeForCapacity(std::uint32_t{32U}));
-        REQUIRE(gSharedByteEraseEvents.front().isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        const auto expectedAllocationSize = Data::allocationSizeForCapacity(std::uint32_t{32U});
+        REQUIRE_EQUAL(_eraseEvents.front().size, expectedAllocationSize);
+        REQUIRE(_eraseEvents.front().isZero);
     }
+
+private:
+    struct SharedByteEraseEvent final {
+        std::size_t size{};
+        bool isZero{};
+    };
+
+    class SharedByteEraseObserverGuard final {
+    public:
+        SharedByteEraseObserverGuard() {
+            _eraseEvents.clear();
+            el::mem::impl::setSecureEraseObserver(observeSharedByteErase);
+        }
+        ~SharedByteEraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+    };
+
+    static void observeSharedByteErase(const std::span<const std::byte> bytes) noexcept {
+        _eraseEvents.push_back({bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool {
+                                    return value == std::byte{};
+                                })});
+    }
+
+    inline static std::vector<SharedByteEraseEvent> _eraseEvents;
 };

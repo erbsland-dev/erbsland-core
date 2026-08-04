@@ -63,14 +63,14 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() -> void {
-                    REQUIRE(matching == charClass);
-                    REQUIRE(charClass == matching);
-                    REQUIRE_FALSE(matching != charClass);
-                    REQUIRE_FALSE(charClass != matching);
-                    REQUIRE_FALSE(nonMatching == charClass);
-                    REQUIRE_FALSE(charClass == nonMatching);
-                    REQUIRE(nonMatching != charClass);
-                    REQUIRE(charClass != nonMatching);
+                    REQUIRE_EQUAL(matching, charClass);
+                    REQUIRE_EQUAL(charClass, matching);
+                    REQUIRE_EQUAL(matching, charClass);
+                    REQUIRE_EQUAL(charClass, matching);
+                    REQUIRE_NOT_EQUAL(nonMatching, charClass);
+                    REQUIRE_NOT_EQUAL(charClass, nonMatching);
+                    REQUIRE_NOT_EQUAL(nonMatching, charClass);
+                    REQUIRE_NOT_EQUAL(charClass, nonMatching);
                 },
                 [&]() -> std::string {
                     return std::format(
@@ -88,39 +88,39 @@ public:
         static_assert(nc::digit0 != CharClass::Letter);
         static_assert(CharClass::Letter != nc::digit0);
 
-        REQUIRE(nc::tab == CharClass::ValidLang);
-        REQUIRE(nc::newLine == CharClass::ValidLang);
-        REQUIRE(nc::carriageReturn == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0x0000U} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0x001FU} == CharClass::ValidLang);
-        REQUIRE(text::Char{0x0020U} == CharClass::ValidLang);
-        REQUIRE(text::Char{0x007EU} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0x007FU} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0x00A0U} == CharClass::ValidLang);
-        REQUIRE(text::Char{0x00A1U} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char::endOfData() == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char::noCodePoint() == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char::error() == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char::byteOrderMark() == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0xFEFFU} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0xD800U} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0xDFFFU} == CharClass::ValidLang);
-        REQUIRE_FALSE(text::Char{0x110000U} == CharClass::ValidLang);
-        REQUIRE(text::Char{0x10FFFFU} == CharClass::ValidLang);
+        REQUIRE_EQUAL(nc::tab, CharClass::ValidLang);
+        REQUIRE_EQUAL(nc::newLine, CharClass::ValidLang);
+        REQUIRE_EQUAL(nc::carriageReturn, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0x0000U}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0x001FU}, CharClass::ValidLang);
+        REQUIRE_EQUAL(text::Char{0x0020U}, CharClass::ValidLang);
+        REQUIRE_EQUAL(text::Char{0x007EU}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0x007FU}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0x00A0U}, CharClass::ValidLang);
+        REQUIRE_EQUAL(text::Char{0x00A1U}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char::endOfData(), CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char::noCodePoint(), CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char::error(), CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char::byteOrderMark(), CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0xFEFFU}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0xD800U}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0xDFFFU}, CharClass::ValidLang);
+        REQUIRE_NOT_EQUAL(text::Char{0x110000U}, CharClass::ValidLang);
+        REQUIRE_EQUAL(text::Char{0x10FFFFU}, CharClass::ValidLang);
     }
 
     void testWindowsServerNameBoundaries() {
-        REQUIRE(text::Char{0x001FU} == CharClass::InvalidWindowsServerName);
-        REQUIRE_FALSE(text::Char{0x0020U} == CharClass::InvalidWindowsServerName);
-        REQUIRE_FALSE(text::Char{0x007FU} == CharClass::InvalidWindowsServerName);
-        REQUIRE(text::Char{0x0080U} == CharClass::InvalidWindowsServerName);
-        REQUIRE(nc::asterisk == CharClass::InvalidWindowsServerName);
-        REQUIRE(nc::questionMark == CharClass::InvalidWindowsServerName);
-        REQUIRE(nc::pipe == CharClass::InvalidWindowsServerName);
-        REQUIRE(nc::doubleQuote == CharClass::InvalidWindowsServerName);
-        REQUIRE(nc::lessThan == CharClass::InvalidWindowsServerName);
-        REQUIRE_FALSE(nc::greaterThan == CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(text::Char{0x001FU}, CharClass::InvalidWindowsServerName);
+        REQUIRE_NOT_EQUAL(text::Char{0x0020U}, CharClass::InvalidWindowsServerName);
+        REQUIRE_NOT_EQUAL(text::Char{0x007FU}, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(text::Char{0x0080U}, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(nc::asterisk, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(nc::questionMark, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(nc::pipe, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(nc::doubleQuote, CharClass::InvalidWindowsServerName);
+        REQUIRE_EQUAL(nc::lessThan, CharClass::InvalidWindowsServerName);
+        REQUIRE_NOT_EQUAL(nc::greaterThan, CharClass::InvalidWindowsServerName);
     }
 
-    void testInvalidClassValue() { REQUIRE_FALSE(nc::lowercaseA == static_cast<CharClass>(0xFFU)); }
+    void testInvalidClassValue() { REQUIRE_NOT_EQUAL(nc::lowercaseA, static_cast<CharClass>(0xFFU)); }
 };

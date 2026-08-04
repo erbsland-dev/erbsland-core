@@ -13,6 +13,7 @@
 
 namespace erbsland::re::impl::parser {
 
+/// Parse and append one character-class node.
 inline void handleCharacterClass(ParserState &state) {
     state.readNext(); // consume the initial `[`
 

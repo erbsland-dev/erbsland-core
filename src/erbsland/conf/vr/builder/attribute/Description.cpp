@@ -6,7 +6,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void Description::operator()(impl::Rule &rule) {
+void Description::operator()(Rule &rule) {
     rule.setDescription(std::move(_description));
 }
 

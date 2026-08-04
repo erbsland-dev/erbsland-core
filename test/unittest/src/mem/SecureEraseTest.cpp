@@ -8,6 +8,7 @@
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <span>
 #include <utility>
@@ -18,34 +19,9 @@ using el::mem::ByteArray;
 using el::mem::ByteSpan;
 using el::mem::secureErase;
 
-namespace {
-
-struct EraseEvent final {
-    std::size_t size{};
-    bool isZero{};
-};
-
-std::vector<EraseEvent> gEraseEvents;
-
-void observeErase(const std::span<const std::byte> bytes) noexcept {
-    gEraseEvents.push_back({bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool {
-                                return value == std::byte{};
-                            })});
-}
-
-class EraseObserverGuard final {
-public:
-    EraseObserverGuard() {
-        gEraseEvents.clear();
-        el::mem::impl::setSecureEraseObserver(observeErase);
-    }
-    ~EraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
-};
-
-}
-
 static_assert(noexcept(secureErase(std::declval<ByteSpan>())));
 static_assert(noexcept(std::declval<ByteArray<4> &>().secureErase()));
+static_assert(noexcept(secureErase(std::declval<std::span<uint32_t, 4>>())));
 
 TESTED_TARGETS(SecureErase)
 class SecureEraseTest final : public el::UnitTest {
@@ -57,9 +33,9 @@ public:
         secureErase(ByteSpan{bytes});
 
         REQUIRE(std::ranges::all_of(bytes, [](const Byte value) noexcept -> bool { return value == Byte{}; }));
-        REQUIRE_EQUAL(gEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gEraseEvents[0].size, std::size_t{3U});
-        REQUIRE(gEraseEvents[0].isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents[0].size, std::size_t{3U});
+        REQUIRE(_eraseEvents[0].isZero);
     }
 
     void testByteArray() {
@@ -71,9 +47,21 @@ public:
         auto allZero = true;
         static_cast<void>(bytes.forEach([&allZero](const Byte value) noexcept { allZero &= value == Byte{}; }));
         REQUIRE(allZero);
-        REQUIRE_EQUAL(gEraseEvents.size(), std::size_t{1U});
-        REQUIRE_EQUAL(gEraseEvents[0].size, std::size_t{4U});
-        REQUIRE(gEraseEvents[0].isZero);
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents[0].size, std::size_t{4U});
+        REQUIRE(_eraseEvents[0].isZero);
+    }
+
+    void testNativeWordSpan() {
+        const auto observer = EraseObserverGuard{};
+        auto words = std::array<uint32_t, 4>{0x11223344U, 0x55667788U, 0x99aabbccU, 0xddeeff00U};
+
+        secureErase(std::span{words});
+
+        REQUIRE(std::ranges::all_of(words, [](const uint32_t value) noexcept -> bool { return value == 0U; }));
+        REQUIRE_EQUAL(_eraseEvents.size(), std::size_t{1U});
+        REQUIRE_EQUAL(_eraseEvents[0].size, sizeof(words));
+        REQUIRE(_eraseEvents[0].isZero);
     }
 
     void testEmptyInputs() {
@@ -84,6 +72,29 @@ public:
         emptyArray.secureErase();
         secureErase(emptySpan);
 
-        REQUIRE(gEraseEvents.empty());
+        REQUIRE(_eraseEvents.empty());
     }
+
+private:
+    struct EraseEvent final {
+        std::size_t size{};
+        bool isZero{};
+    };
+
+    class EraseObserverGuard final {
+    public:
+        EraseObserverGuard() {
+            _eraseEvents.clear();
+            el::mem::impl::setSecureEraseObserver(observeErase);
+        }
+        ~EraseObserverGuard() { el::mem::impl::setSecureEraseObserver(nullptr); }
+    };
+
+    static void observeErase(const std::span<const std::byte> bytes) noexcept {
+        _eraseEvents.push_back({bytes.size(), std::ranges::all_of(bytes, [](const std::byte value) noexcept -> bool {
+                                    return value == std::byte{};
+                                })});
+    }
+
+    inline static std::vector<EraseEvent> _eraseEvents;
 };

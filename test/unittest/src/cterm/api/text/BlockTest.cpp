@@ -92,13 +92,13 @@ public:
         const auto differentAttributeChar = Block{U'★', Color{fg::Yellow, bg::Blue}, differentAttributes};
         const auto differentCodePoint = Block{U'☆', fg::Yellow, bg::Blue};
 
-        REQUIRE(left == equal);
-        REQUIRE_FALSE(left != equal);
-        REQUIRE_FALSE(left == differentColor);
-        REQUIRE_FALSE(left == differentAttributeChar);
-        REQUIRE_FALSE(left == differentCodePoint);
-        REQUIRE(differentColor != left);
-        REQUIRE(differentCodePoint != left);
+        REQUIRE_EQUAL(left, equal);
+        REQUIRE_EQUAL(left, equal);
+        REQUIRE_NOT_EQUAL(left, differentColor);
+        REQUIRE_NOT_EQUAL(left, differentAttributeChar);
+        REQUIRE_NOT_EQUAL(left, differentCodePoint);
+        REQUIRE_NOT_EQUAL(differentColor, left);
+        REQUIRE_NOT_EQUAL(differentCodePoint, left);
     }
 
     void testEqualityIgnoresTheDisplayWidthCache() {
@@ -108,21 +108,21 @@ public:
         auto right = Block{U'界', Color{fg::Yellow, bg::Blue}, attributes};
 
         REQUIRE_EQUAL(left.displayWidth(), 2);
-        REQUIRE(left == right);
+        REQUIRE_EQUAL(left, right);
 
         REQUIRE_EQUAL(right.displayWidth(), 2);
-        REQUIRE(left == right);
+        REQUIRE_EQUAL(left, right);
     }
 
     void testSingleCodePointComparisonsIgnoreColorButRejectMultiCodePointCharacters() {
         const auto colored = Block{U'★', fg::Yellow, bg::Blue};
         const auto combined = Block{U"e\u0301"_el};
 
-        REQUIRE(colored == U'★');
-        REQUIRE_FALSE(colored != U'★');
-        REQUIRE(colored != U'☆');
-        REQUIRE_FALSE(combined == U'e');
-        REQUIRE(combined != U'e');
+        REQUIRE_EQUAL(colored, U'★');
+        REQUIRE_EQUAL(colored, U'★');
+        REQUIRE_NOT_EQUAL(colored, U'☆');
+        REQUIRE_NOT_EQUAL(combined, U'e');
+        REQUIRE_NOT_EQUAL(combined, U'e');
     }
 
     void testWithOverlayPreservesInheritedComponents() {
@@ -233,11 +233,11 @@ public:
 
         REQUIRE(empty.isEmpty());
         REQUIRE_FALSE(space.isEmpty());
-        REQUIRE(space == U' ');
+        REQUIRE_EQUAL(space, U' ');
         REQUIRE_EQUAL(space.color(), Color{});
-        REQUIRE(symbol == U'X');
-        REQUIRE_FALSE(symbol == U'A');
-        REQUIRE_FALSE(combined == U'e');
+        REQUIRE_EQUAL(symbol, U'X');
+        REQUIRE_NOT_EQUAL(symbol, U'A');
+        REQUIRE_NOT_EQUAL(combined, U'e');
     }
 
     void testEmptyBlockCreatesAnEmptyCharacterWithTheRequestedStyle() {

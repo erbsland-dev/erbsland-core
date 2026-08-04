@@ -29,17 +29,18 @@ public:
             Minimum(1),
             Maximum(100));
         rules = rulesBuilder.takeRules();
-        REQUIRE(rules != nullptr);
+        REQUIRE(rules);
         WITH_CONTEXT(requirePassLines({
             "[app]",
             "x = 10",
         }));
         auto xValue = document->value(el::text::String{"app.x"});
-        REQUIRE(xValue != nullptr);
-        REQUIRE(xValue->validationRule() != nullptr);
-        REQUIRE(xValue->validationRule()->type() == RuleType::Integer);
-        REQUIRE_EQUAL(xValue->validationRule()->title(), el::text::String{"X"});
-        REQUIRE_EQUAL(xValue->validationRule()->description(), el::text::String{"This is the value x"});
+        REQUIRE(xValue);
+        const auto validationRule = xValue->validationRule();
+        REQUIRE(validationRule);
+        REQUIRE_EQUAL(validationRule->type(), RuleType::Integer);
+        REQUIRE_EQUAL(validationRule->title(), el::text::String{"X"});
+        REQUIRE_EQUAL(validationRule->description(), el::text::String{"This is the value x"});
     }
 
     void testAdvancedConstruction() {
@@ -53,7 +54,7 @@ public:
             RuleType::Section,
             IsOptional(),
             Dependency(
-                impl::DependencyMode::XOR,
+                el::conf::impl::DependencyMode::XOR,
                 {NamePathLike{el::text::String{"hostname"}}},
                 {NamePathLike{el::text::String{"ip_address"}}}));
         rulesBuilder.addRule(el::text::String{"app.server.hostname"}, RuleType::Text, IsOptional());
@@ -80,7 +81,7 @@ public:
             MaximumVersion(10));
 
         rules = rulesBuilder.takeRules();
-        REQUIRE(rules != nullptr);
+        REQUIRE(rules);
 
         WITH_CONTEXT(requirePassLines(
             {

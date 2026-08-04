@@ -13,8 +13,10 @@ target_sources(erbsland-core PRIVATE
         U32String.hpp
         U32String_boolean.cpp
         U32String_comparison.cpp
+        U32String_float.cpp
         U32String_fwd.hpp
         U32String_integer.tpp
+        U32String_normalization.cpp
         U32String_trim.cpp
         U32StringCIHashMap.hpp
         U32StringCIHashMap_fwd.hpp
@@ -34,6 +36,7 @@ target_sources(erbsland-core PRIVATE
         U32StringEditor_float.cpp
         U32StringEditor_fwd.hpp
         U32StringEditor_integer.tpp
+        U32StringEditor_normalization.cpp
         U32StringEditor_trim.cpp
         U32StringEditorList.hpp
         U32StringEditorList_fwd.hpp

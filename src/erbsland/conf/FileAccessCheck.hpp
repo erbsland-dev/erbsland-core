@@ -3,6 +3,7 @@
 #pragma once
 
 #include "AccessCheck.hpp"
+#include "FileAccessCheck_fwd.hpp"
 
 #include "../path/Path.hpp"
 #include "../text/String.hpp"
@@ -11,9 +12,6 @@
 #include <exception>
 
 namespace erbsland::conf {
-
-class FileAccessCheck;
-using FileAccessCheckPtr = std::shared_ptr<FileAccessCheck>;
 
 /// A basic file access check.
 /// By default, the `CanonicalizePath`, `SameDirectory`, `Subdirectories` features are activated.
@@ -58,7 +56,7 @@ public:
 
     /// Default constructor.
     FileAccessCheck() = default;
-    /// Default destructor.
+    // defaults
     ~FileAccessCheck() override = default;
 
 public:
@@ -84,9 +82,13 @@ protected:
         text::String message, path::Path path = {}, std::exception_ptr cause = {});
 
 private:
+    /// Extract and validate the source path from access sources.
     [[nodiscard]] auto extractSourcePath(const AccessSources &sources) const -> path::Path;
+    /// Extract the parent directory used for source containment checks.
     [[nodiscard]] auto extractParentDirectory(const AccessSources &sources) const -> path::Path;
+    /// Canonicalize source and parent paths for a reliable containment comparison.
     static void canonicalizePaths(path::Path &sourcePath, path::Path &parentDirectory);
+    /// Test whether the source path is contained by the parent directory.
     [[nodiscard]] static auto requireSourceInParentDirectory(
         const path::Path &sourcePath, const path::Path &parentDirectory) -> bool;
 

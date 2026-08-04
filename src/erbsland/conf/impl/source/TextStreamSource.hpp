@@ -16,6 +16,7 @@ namespace erbsland::conf::impl {
 /// @tested{TextStreamSourceTest FileSourceTest}
 class TextStreamSource : public Source {
 public:
+    // defaults
     TextStreamSource() = default;
     ~TextStreamSource() override = default;
 
@@ -33,11 +34,17 @@ protected:
     [[nodiscard]] virtual auto createStream() -> stream::TextInputStreamPtr = 0;
 
 private:
+    /// Read one line from the Core text stream.
     [[nodiscard]] auto readStreamLine() -> std::optional<text::String>;
+    /// Retain a recently read source line for diagnostics.
     void rememberLine(const text::String &line);
+    /// Mark the source as having reached the end of input.
     void sourceIsAtEnd() noexcept;
+    /// Throw an error for a line exceeding the configured length.
     [[noreturn]] void throwLineLengthExceeded();
+    /// Throw an error for a stream read timeout.
     [[noreturn]] void throwTimeout();
+    /// Throw an error for an unsuccessful stream read.
     [[noreturn]] void throwReadError(ConfErrorCategory category, text::String title, text::String description);
 
 private:

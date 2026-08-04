@@ -10,6 +10,7 @@
 /// @tested{WorkloadRunnerTest}
 class FakeTimeSource final : public erbsland::profiling::TimeSource {
 public:
+    /// Create a clock that advances by `step` on each read.
     explicit FakeTimeSource(erbsland::time::TimeDelta step);
 
 public: // implement TimeSource

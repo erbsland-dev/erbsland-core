@@ -8,6 +8,8 @@
 
 namespace erbsland::event {
 
+/// Shared state connecting one event sender with its receivers.
+/// @notest{This placeholder contains no behavior yet.}
 template <typename T>
 class EventPipe {};
 

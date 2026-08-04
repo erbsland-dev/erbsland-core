@@ -3,11 +3,11 @@
 
 #include <erbsland/mem/RingBuffer.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/StringEncoder.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <cstdint>
@@ -18,8 +18,16 @@ using el::unit::CpIndex;
 using el::unit::CpLength;
 using el::unit::CpRange;
 using namespace el::text;
+using namespace el::text::literals;
 
-TESTED_TARGETS(StringEncoder StringEncoderTraits)
+template <typename T>
+concept StringEncoderSource = requires(const T &source) { StringEncoder{source}; };
+
+static_assert(sizeof(StringEncoder<String>) == sizeof(const String *));
+static_assert(sizeof(StringEncoder<StringEditor>) == sizeof(const StringEditor *));
+static_assert(!StringEncoderSource<Char>);
+
+TESTED_TARGETS(StringEncoder)
 class StringEncoderTest final : public el::UnitTest {
 private:
     template <typename T>
@@ -64,7 +72,7 @@ private:
 
 public:
     void testEncodeUtf8WithoutBom() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A¢"}};
+        const auto text = String{"A¢"_el};
 
         REQUIRE_EQUAL(
             StringEncoder{text}.encode(StringEncoding::Utf8, StringBomMode::Reject).toUInt8Vector(),
@@ -83,7 +91,7 @@ public:
 
     void testEncodeUtf32AndCodePoint() {
         const auto text = U32StringEditor{std::u32string_view{U"A¢"}};
-        const auto charView = U8StringEditor{std::u8string_view{u8"xxA¢yy"}}.slice(CpRange{CpIndex{2U}, CpLength{2U}});
+        const auto charView = String{"xxA¢yy"_el}.slice(CpRange{CpIndex{2U}, CpLength{2U}});
 
         REQUIRE_EQUAL(
             StringEncoder{text}.encode(StringEncoding::Utf32LittleEndian, StringBomMode::Reject).toUInt8Vector(),
@@ -94,12 +102,12 @@ public:
     }
 
     void testEncodedLengthForAllSourceWidths() {
-        const auto u8Editor = U8StringEditor{std::u8string_view{u8"A—😀"}};
+        const auto u8Editor = StringEditor{"A—😀"_el};
         const auto u16Editor = U16StringEditor{std::u16string_view{u"A—😀"}};
         const auto u32Editor = U32StringEditor{std::u32string_view{U"A—😀"}};
 
         WITH_CONTEXT(requireLengthMatches(u8Editor));
-        WITH_CONTEXT(requireLengthMatches(U8String{u8Editor}));
+        WITH_CONTEXT(requireLengthMatches(String{u8Editor}));
         WITH_CONTEXT(requireLengthMatches(u16Editor));
         WITH_CONTEXT(requireLengthMatches(U16String{u16Editor}));
         WITH_CONTEXT(requireLengthMatches(u32Editor));
@@ -107,12 +115,12 @@ public:
     }
 
     void testEncodeToMatchesByteBlockEncoding() {
-        const auto u8Editor = U8StringEditor{std::u8string_view{u8"A—😀"}};
+        const auto u8Editor = StringEditor{"A—😀"_el};
         const auto u16Editor = U16StringEditor{std::u16string_view{u"A—😀"}};
         const auto u32Editor = U32StringEditor{std::u32string_view{U"A—😀"}};
 
         WITH_CONTEXT(requireDirectEncodingMatches(u8Editor));
-        WITH_CONTEXT(requireDirectEncodingMatches(U8String{u8Editor}));
+        WITH_CONTEXT(requireDirectEncodingMatches(String{u8Editor}));
         WITH_CONTEXT(requireDirectEncodingMatches(u16Editor));
         WITH_CONTEXT(requireDirectEncodingMatches(U16String{u16Editor}));
         WITH_CONTEXT(requireDirectEncodingMatches(u32Editor));
@@ -125,7 +133,7 @@ public:
         REQUIRE(isSuccessful(buffer.writeExact(prefix)));
         static_cast<void>(buffer.read(el::unit::ByteLength{12U}));
 
-        const auto text = U8StringEditor{std::u8string_view{u8"A—😀"}};
+        const auto text = String{"A—😀"_el};
         const auto encoder = StringEncoder{text};
         REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject)));
 
@@ -137,7 +145,7 @@ public:
     }
 
     void testEncodeToGrows() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A—😀"}};
+        const auto text = String{"A—😀"_el};
         auto buffer = el::mem::RingBuffer{el::unit::ByteLength{4U}, el::unit::ByteLength{32U}};
 
         REQUIRE(isSuccessful(StringEncoder{text}.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Require)));
@@ -149,7 +157,7 @@ public:
         const auto prefix = std::vector<el::mem::Byte>({el::mem::Byte{0xaaU}});
         REQUIRE(isSuccessful(buffer.writeExact(prefix)));
 
-        const auto text = U8StringEditor{std::u8string_view{u8"A—"}};
+        const auto text = String{"A—"_el};
         REQUIRE(isFailure(StringEncoder{text}.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject)));
         REQUIRE_EQUAL(buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(), std::vector<uint8_t>({0xaaU}));
     }
@@ -165,7 +173,7 @@ public:
 
     void testMatchingRepresentationIsCopiedAndTranscodingReplacesMalformedText() {
         const auto invalidUtf8Bytes = std::string{'A', static_cast<char>(0xc0U), 'B'};
-        const auto invalidUtf8 = U8StringEditor{std::string_view{invalidUtf8Bytes}};
+        const auto invalidUtf8 = StringEditor{std::string_view{invalidUtf8Bytes}};
         const auto encoder = StringEncoder{invalidUtf8};
 
         REQUIRE_EQUAL(
@@ -183,17 +191,6 @@ public:
             std::vector<uint8_t>({0xefU, 0xbbU, 0xbfU, 0x41U, 0xc0U, 0x42U}));
     }
 
-    void testCharacterEncoderWritesDirectly() {
-        const auto character = Char{U'😀'};
-        const auto encoder = StringEncoder{character};
-        auto buffer = el::mem::RingBuffer{el::unit::ByteLength{4U}, el::unit::ByteLength{16U}};
-
-        REQUIRE(isSuccessful(encoder.encodeTo(buffer, StringEncoding::Utf8, StringBomMode::Reject)));
-        REQUIRE_EQUAL(
-            buffer.read(el::unit::ByteLength::infinite()).toUInt8Vector(),
-            std::vector<uint8_t>({0xf0U, 0x9fU, 0x98U, 0x80U}));
-    }
-
     void testRawBomCodePointIsInvalidContent() {
         const auto text = U32StringEditor{std::u32string{U'A', char32_t{0xFEFFU}, U'B'}};
         const auto encoder = StringEncoder{text};
@@ -204,7 +201,7 @@ public:
     }
 
     void testStandaloneCallsApplyBomIndependently() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A"}};
+        const auto text = String{"A"_el};
         const auto encoder = StringEncoder{text};
         auto buffer = el::mem::RingBuffer{el::unit::ByteLength{16U}};
 
@@ -216,7 +213,7 @@ public:
     }
 
     void testEmptyTextCanProduceBomOnly() {
-        const auto encoder = StringEncoder{U8StringEditor{}};
+        const auto encoder = StringEncoder{StringEditor{}};
         auto buffer = el::mem::RingBuffer{el::unit::ByteLength{4U}};
 
         REQUIRE_EQUAL(
@@ -231,7 +228,7 @@ public:
     }
 
     void testExplicitBomSignaturesForEveryEncoding() {
-        const auto encoder = StringEncoder{U8StringEditor{}};
+        const auto encoder = StringEncoder{StringEditor{}};
         REQUIRE_EQUAL(
             encoder.encode(StringEncoding::Utf8, StringBomMode::Require).toUInt8Vector(),
             std::vector<uint8_t>({0xEFU, 0xBBU, 0xBFU}));

@@ -3,8 +3,9 @@
 #pragma once
 
 #include "BlockTextAnimation.hpp"
+#include "BlockTextOptions_fwd.hpp"
 #include "ColorSequence.hpp"
-#include "Font.hpp"
+#include "Font_fwd.hpp"
 #include "ParagraphOptions.hpp"
 
 #include "../bgeo/Alignment.hpp"

@@ -54,7 +54,7 @@ void Terminal::writeResolved(const BlockString &str) noexcept {
 
 void Terminal::write(const ReadableBuffer &buffer) noexcept {
     {
-        impl::LineBuffer::EmitLockGuard emitLock{_lineBuffer};
+        impl::LineBufferEmitLockGuard emitLock{_lineBuffer};
         writeImpl(buffer, false);
     }
     _lineBuffer.handleEmit();
@@ -87,7 +87,7 @@ auto Terminal::printParagraphImpl(const BlockString &paragraph, const ParagraphO
         return finishParagraphWithExplicitLineBreaks(0, options.paragraphSpacing());
     }
     const auto lineCount = [&]() -> int {
-        impl::LineBuffer::EmitLockGuard emitLock{_lineBuffer};
+        impl::LineBufferEmitLockGuard emitLock{_lineBuffer};
         return impl::paragraph::Printer{
             *this,
             x1.toRawValue(),

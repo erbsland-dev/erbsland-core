@@ -16,6 +16,6 @@ public:
         // Integer should be a signed 64-bit type
         REQUIRE(std::is_same_v<Integer, std::int64_t>);
         REQUIRE(std::numeric_limits<Integer>::is_signed);
-        REQUIRE(sizeof(Integer) == sizeof(std::int64_t));
+        REQUIRE_EQUAL(sizeof(Integer), sizeof(std::int64_t));
     }
 };

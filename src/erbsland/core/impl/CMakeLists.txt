@@ -8,6 +8,8 @@ target_sources(erbsland-core PRIVATE
         ApplicationData_fwd.hpp
         ApplicationDataImpl.cpp
         ApplicationDataImpl.hpp
+        EventData.hpp
+        EventData_fwd.hpp
         ApplicationErrorDiagnostic.cpp
         ApplicationErrorDiagnostic.hpp
         ApplicationErrorDocumentBuilder.cpp

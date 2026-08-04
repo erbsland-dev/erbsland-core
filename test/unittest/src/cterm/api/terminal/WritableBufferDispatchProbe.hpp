@@ -7,8 +7,11 @@
 #include <memory>
 #include <optional>
 
+/// Test buffer that records dispatched writable-buffer operations.
+/// @notest{Used only by writable-buffer unit tests.}
 class WritableBufferDispatchProbe final : public WritableBuffer {
 public:
+    /// The operation most recently dispatched to the probe.
     enum class Call {
         None,
         Resize,
@@ -48,6 +51,7 @@ public:
 
     void set(const bgeo::BlockPosition pos, const Block &block) noexcept override { _buffer.set(pos, block); }
 
+    /// Clear every recorded operation and argument.
     void clearRecording() {
         _lastCall = Call::None;
         _lastRect = {};

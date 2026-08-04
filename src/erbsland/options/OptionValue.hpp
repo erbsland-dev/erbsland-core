@@ -22,6 +22,7 @@ namespace erbsland::options {
 /// @tested{OptionsFrameworkTest}
 class OptionValue {
 public:
+    /// Create an empty option value.
     OptionValue() = default;
     /// Create an option value.
     /// @param storage Parsed value storage.

@@ -42,22 +42,31 @@ public:
     using Base::remove;
     using Base::removed;
     using Base::take;
-    StringMap() = default;
-    explicit StringMap(std::initializer_list<Entry> values) {
+
+    /// Creates a map from key-value entries.
+    /// @param values The initial entries.
+    StringMap(std::initializer_list<Entry> values) {
         for (const auto &[key, value] : values) {
             set(key, value);
         }
     }
+    /// Creates a map by copying its raw representation.
+    /// @param raw The raw map to copy.
     explicit StringMap(const Raw &raw) {
         for (const auto &[key, value] : raw) {
             set(key, value);
         }
     }
+    /// Creates a map from its raw representation.
+    /// @param raw The raw map to move values from.
     explicit StringMap(Raw &&raw) {
         for (auto &[key, value] : raw) {
             set(key, std::move(value));
         }
     }
+
+    // defaults
+    StringMap() = default;
     ~StringMap() = default;
     StringMap(const StringMap &) noexcept = default;
     StringMap(StringMap &&) noexcept = default;

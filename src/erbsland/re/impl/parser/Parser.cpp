@@ -109,15 +109,6 @@ void Parser::preFlightChecks() const {
     if (_state.currentFlags().isSet(GroupFlag::Atomic)) {
         _state.throwParsingError("The atomic flag is not allowed as initial flag"_el);
     }
-    checkPatternSize();
-}
-
-void Parser::checkPatternSize() const {
-    const auto maximumLength = _state.settings().maximumPatternLength();
-    if (_state.canRead(maximumLength)) {
-        _state.throwParsingError(
-            text::StringFormat{"The maximum pattern length is {} characters."_el}.build(maximumLength));
-    }
 }
 
 }

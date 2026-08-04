@@ -12,9 +12,11 @@ namespace erbsland::text::impl {
 /// URL metadata attached to a link node.
 class LinkData final : public TextNodeData {
 public:
+    /// Create link metadata with its target `url`.
     explicit LinkData(String url) noexcept : _url{std::move(url)} {}
 
 public:
+    /// Get the link target URL.
     [[nodiscard]] auto url() const noexcept -> String { return _url; }
     [[nodiscard]] auto toString() const -> String override { return _url; }
 

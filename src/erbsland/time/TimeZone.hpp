@@ -26,10 +26,12 @@ namespace erbsland::time {
 /// @seedoc{/reference/time/date_and_time}
 /// @tested{TimeZoneTest}
 class TimeZone final {
+    /// Stores a normalized fixed offset from UTC.
     struct FixedOffset {
         Seconds offset;
         friend auto operator==(const FixedOffset &, const FixedOffset &) noexcept -> bool = default;
     };
+    /// Stores an IANA time-zone identifier.
     struct NamedZone {
         TimeZoneId id;
         friend auto operator==(const NamedZone &, const NamedZone &) noexcept -> bool = default;
@@ -120,14 +122,23 @@ public:
 
 private:
     friend class DateTime;
-    friend class tz::impl::LocalTimeZoneResolver;
+    friend class tz::impl::LocalTimeZoneBackend;
+    /// Format a time offset as a zone abbreviation.
     [[nodiscard]] static auto abbreviation(tz::TimeOffset offset) -> text::String;
+    /// Get the bundled IANA time-zone database.
     [[nodiscard]] static auto database() noexcept -> const tz::impl::Database &;
+    /// Mark this value as the process-local time zone.
+    void markAsLocalTime() noexcept { _isLocalTime = true; }
+    /// Clamp an offset to the supported fixed-offset range.
     [[nodiscard]] static auto normalizeOffset(Seconds seconds) noexcept -> Seconds;
+    /// Parse a fixed UTC offset from text.
     [[nodiscard]] static auto parseFixedOffsetText(const text::String &text, Seconds &offset) noexcept -> bool;
+    /// Resolve a special UTC or fixed-offset zone name.
     [[nodiscard]] static auto specialTimeZoneFromName(const text::String &name) noexcept -> std::optional<TimeZone>;
+    /// Resolve the offset for a local date and time.
     [[nodiscard]] auto timeOffsetAtLocal(Date date, Time time, TimeOccurrenceInFold occurrence) const noexcept
         -> tz::TimeOffset;
+    /// Resolve the offset for a UTC date and time.
     [[nodiscard]] auto timeOffsetAtUtc(Date date, Time time) const noexcept -> tz::TimeOffset;
 
 private:

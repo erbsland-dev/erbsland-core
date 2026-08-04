@@ -35,6 +35,7 @@ target_sources(erbsland-core PRIVATE
         U8StringReadTools.hpp
         U8StringSharedStorage.cpp
         U8StringSharedStorage.hpp
+        U8StringSharedStorage_fwd.hpp
         U8StringStorage.hpp
         U8StringTraits.hpp
         U8StringTransformTools.cpp

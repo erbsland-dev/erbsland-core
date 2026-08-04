@@ -30,12 +30,14 @@ public:
     /// Create a growable ring.
     RingBuffer(unit::ByteLength initialCapacity, unit::ByteLength maximumCapacity);
 
-    // defaults/deletions
+    /// Destroy this ring buffer.
     virtual ~RingBuffer();
+
+    // defaults/deletions
     RingBuffer(const RingBuffer &) = delete;
-    RingBuffer(RingBuffer &&) = delete;
+    RingBuffer(RingBuffer &&) = default;
     auto operator=(const RingBuffer &) -> RingBuffer & = delete;
-    auto operator=(RingBuffer &&) -> RingBuffer & = delete;
+    auto operator=(RingBuffer &&) -> RingBuffer & = default;
 
 public: // state
     /// Get the current storage capacity.

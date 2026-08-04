@@ -53,11 +53,11 @@ public:
         left.set(bgeo::BlockDirection::East);
         right.set(bgeo::BlockDirection::East);
 
-        REQUIRE(left == right);
+        REQUIRE_EQUAL(left, right);
 
         right.set(bgeo::BlockDirection::SouthEast);
 
-        REQUIRE(left != right);
+        REQUIRE_NOT_EQUAL(left, right);
     }
 
     void testFromViewSetsEdgesAndCornersForClippedContent() {

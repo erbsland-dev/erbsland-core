@@ -7,12 +7,11 @@
 #include "ByteBlock_fwd.hpp"
 #include "ByteBlockEditor_fwd.hpp"
 #include "ByteBuffer.hpp"
-#include "ByteIntegerAccess.hpp"
 #include "ByteSpan.hpp"
 
 #include "impl/ByteBlockData_fwd.hpp"
 #include "impl/ByteDataView.hpp"
-#include "impl/ByteSequenceOperations.hpp"
+#include "impl/ByteReadTools.hpp"
 #include "impl/UnsafeByteBlockAccess_fwd.hpp"
 
 #include "../unit/ByteIndex.hpp"
@@ -56,6 +55,7 @@ public:
     /// @param editor The byte block editor whose complete data is shared.
     ByteBlock(const ByteBlockEditor &editor) noexcept; // NOLINT(*-explicit-constructor)
 
+    // defaults
     ByteBlock();
     ~ByteBlock();
     ByteBlock(const ByteBlock &);
@@ -79,10 +79,21 @@ public: // main operations
     void secureErase();
 
 public: // comparison
+    /// Compare this block with an editable byte block.
     [[nodiscard]] auto operator<=>(const ByteBlockEditor &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const ByteBlockEditor &other, other);
+    /// Compare this block with another read-only byte block.
     [[nodiscard]] auto operator<=>(const ByteBlock &other) const noexcept -> std::strong_ordering;
     ERBSLAND_CORE_COMPARE_FROM_SPACESHIP(const ByteBlock &other, other);
+    /// Test equality without content-dependent short-circuiting.
+    /// Equal-length inputs always inspect every byte; a length mismatch returns immediately.
+    /// @param other The byte block to compare.
+    /// @return `true` if both blocks have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(const ByteBlock &other) const noexcept -> bool;
+    /// @overload
+    /// @param other The borrowed byte sequence to compare.
+    /// @return `true` if both sequences have the same length and contents.
+    [[nodiscard]] auto isEqualConstTime(ConstByteSpan other) const noexcept -> bool;
 
 public: // tests
     /// Test if this block contains no bytes.
@@ -135,7 +146,7 @@ public: // read
     [[nodiscard]] auto span() const noexcept -> ConstByteSpan { return dataView().dataSpan(); }
     /// Access a clamped visible range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteRange range) const noexcept -> ConstByteSpan {
-        return impl::clampedSpan(span(), range);
+        return impl::ByteReadTools{dataView()}.span(range);
     }
     /// Access a clamped visible range through a read-only borrowed span.
     [[nodiscard]] auto span(unit::ByteIndex index, unit::ByteLength lengthValue) const noexcept -> ConstByteSpan {
@@ -144,7 +155,7 @@ public: // read
     /// Invoke a callback for every visible byte and its optional index.
     template <typename Function>
     auto forEach(Function function) const -> util::LoopResult {
-        return impl::forEachByte(span(), std::move(function));
+        return impl::ByteReadTools{dataView()}.forEach(std::move(function));
     }
 
 public: // integers
@@ -160,7 +171,7 @@ public: // integers
         const unit::ByteIndex offset,
         const Endianness endianness = Endianness::Little,
         const T defaultOnError = T{}) const noexcept -> T {
-        return mem::getInteger<T>(span(), offset, endianness, defaultOnError);
+        return impl::ByteReadTools{dataView()}.getInteger<T>(offset, endianness, defaultOnError);
     }
     /// Get an integer or throw if its byte range is invalid.
     /// @tparam T A non-boolean native integer type.
@@ -172,7 +183,7 @@ public: // integers
         requires(std::integral<T> && !std::same_as<std::remove_cv_t<T>, bool>)
     [[nodiscard]] auto getIntegerOrThrow(
         const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const -> T {
-        return mem::getIntegerOrThrow<T>(span(), offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerOrThrow<T>(offset, endianness);
     }
     /// Decode an integer into an existing value, leaving it unchanged for an invalid range.
     /// @tparam T A non-boolean native integer type.
@@ -185,7 +196,7 @@ public: // integers
     [[nodiscard]] auto getIntegerInto(
         T &value, const unit::ByteIndex offset, const Endianness endianness = Endianness::Little) const noexcept
         -> bool {
-        return mem::getIntegerInto(span(), value, offset, endianness);
+        return impl::ByteReadTools{dataView()}.getIntegerInto(value, offset, endianness);
     }
 
 public: // find

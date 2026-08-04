@@ -17,6 +17,7 @@ class Quantifier : public NodeData {
 public:
     using CounterIndex = uint8_t;
     using Count = uint16_t;
+    /// Select how repetitions are consumed by the regex engine.
     enum class Mode : uint8_t {
         Greedy,
         Lazy,
@@ -57,17 +58,21 @@ public:
         return result;
     }
 
+    /// Access the sole repeated child node.
     [[nodiscard]] auto children() const noexcept -> std::span<const PatternNodePtr> { return {&content, 1U}; }
 
     /// Access the size of this data block.
     [[nodiscard]] auto size() const noexcept -> std::size_t { return 1U; }
 
 public:
+    /// Return the sentinel representing an unbounded repetition count.
     constexpr static auto infinitelyMany() noexcept -> Count { return std::numeric_limits<Count>::max(); }
+    /// Format a repetition count for diagnostic output.
     static auto strForCount(const Count count) -> text::String {
         using namespace text::literals;
         return count == infinitelyMany() ? "*"_el : text::String::fromInteger(count);
     }
+    /// Format a quantifier mode for diagnostic output.
     static auto nameForMode(const Mode mode) -> text::String {
         using namespace text::literals;
         switch (mode) {

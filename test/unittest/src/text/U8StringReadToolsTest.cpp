@@ -8,7 +8,7 @@
 #include <erbsland/unit/ByteIndex.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unit/CpLength.hpp>
-#include <erbsland/unit/ElementCount.hpp>
+#include <erbsland/unit/ItemCount.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -24,7 +24,7 @@ using el::unit::ByteIndex;
 using el::unit::ByteLength;
 using el::unit::ByteRange;
 using el::unit::CpLength;
-using el::unit::ElementCount;
+using el::unit::ItemCount;
 
 namespace th = erbsland::unittest::th;
 
@@ -421,7 +421,7 @@ public:
         const auto tools = makeComparisonTools(data);
 
         REQUIRE_EQUAL(tools.find(makeDataView(needle)), ByteIndex{4033U});
-        REQUIRE_EQUAL(tools.count(makeDataView(needle)), ElementCount{1U});
+        REQUIRE_EQUAL(tools.count(makeDataView(needle)), ItemCount{1U});
         needle.back() = 'c';
         REQUIRE(tools.find(makeDataView(needle)).isNoIndex());
 

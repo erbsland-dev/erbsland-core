@@ -12,6 +12,7 @@ namespace erbsland::event {
 /// @tested{EventThreadTest ApplicationEventTest}
 class EventThread {
 public:
+    // defaults
     virtual ~EventThread() = default;
 
 public:

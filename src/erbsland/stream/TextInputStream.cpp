@@ -3,9 +3,11 @@
 #include "TextInputStream.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/Literals.hpp"
 
 namespace erbsland::stream {
 
+using namespace text::literals;
 using text::String;
 using util::CoAsyncGenerator;
 using util::CoTask;
@@ -58,7 +60,7 @@ auto TextInputStream::coReadBlocks() -> CoAsyncGenerator<StreamReadResult<String
 
 auto TextInputStream::coReadBlocks(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
-        throw err::ParameterError{"The coroutine text-block length must be positive and finite.", "maximum"};
+        throw err::ParameterError{"The coroutine text-block length must be positive and finite."_el, "maximum"_el};
     }
     while (true) {
         auto result = co_await coRead(maximum);
@@ -78,7 +80,7 @@ auto TextInputStream::coReadLines() -> CoAsyncGenerator<StreamReadResult<String>
 
 auto TextInputStream::coReadLines(const unit::CpLength maximum) -> CoAsyncGenerator<StreamReadResult<String>> {
     if (maximum.isInfinite() || maximum.isZero()) {
-        throw err::ParameterError{"The coroutine line length must be positive and finite.", "maximum"};
+        throw err::ParameterError{"The coroutine line length must be positive and finite."_el, "maximum"_el};
     }
     while (true) {
         auto result = co_await coReadLine(maximum);

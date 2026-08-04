@@ -2,19 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "EventData_fwd.hpp"
+
 #include "../core/Definitions.hpp"
 
-#include <memory>
-
 namespace erbsland::event {
-
-class EventData;
-using EventDataUniquePtr = std::unique_ptr<EventData>;
 
 /// The base class for event data.
 /// If an event has additional data, it is stored as a subclass of this class.
 class EventData {
 public:
+    // defaults
     virtual ~EventData() = default;
 
 public:

@@ -8,9 +8,16 @@ Relation File vs. Type
 
 1.  One primary type per ``hpp/cpp`` module.
 2.  A primary type can be a ``class``, ``struct``, ``enum class`` or even a ``using`` directive.
-    Relaxed ``impl`` directories: a ``hpp/cpp`` module can also contain a logical group of helper functions/templates/types. 
-3.  The filename of a source file always matches its type. E.g. the file for the class ``Example`` is ``Example.hpp``.
-4.  A ``cpp`` file is added if there are implementation details that cannot/should not be in the header file.
+    A primary class template and its explicit or partial specializations are one logical type and stay in the same
+    header.
+3.  A header ending in ``Traits.hpp`` can collect multiple thematically related traits. A header ending in
+    ``Types.hpp`` can collect a coherent set of micro-types, such as aliases, concepts, or lightweight shells derived
+    from one detailed base and adding only one or two overrides.
+4.  Relaxed ``impl`` directories: a ``hpp/cpp`` module can also contain a logical group of helper
+    functions/templates/types.
+5.  The filename of a source file always matches its primary type. E.g. the file for the class ``Example`` is
+    ``Example.hpp``.
+6.  A ``cpp`` file is added if there are implementation details that cannot/should not be in the header file.
 
 Splitting Implementation over Multiple Files
 ============================================

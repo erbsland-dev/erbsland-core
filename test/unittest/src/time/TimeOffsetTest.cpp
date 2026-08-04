@@ -16,7 +16,7 @@ class TimeOffsetTest final : public el::UnitTest {
     public:
         explicit Backend(std::optional<el::time::TimeZone> result, int *externalCalls = nullptr) :
             _result{result}, _externalCalls{externalCalls} {}
-        [[nodiscard]] auto timeZone() noexcept -> std::optional<el::time::TimeZone> override {
+        [[nodiscard]] auto detectedTimeZone() noexcept -> std::optional<el::time::TimeZone> override {
             ++calls;
             if (_externalCalls != nullptr) {
                 ++*_externalCalls;
@@ -64,29 +64,18 @@ public:
         using el::time::TimeZone;
 
         auto known = Backend{TimeZone::fromNameOrThrow("Europe/Zurich"_el)};
-        auto resolved = el::time::tz::impl::localTimeZoneFromBackend(known);
+        auto resolved = known.localTimeZone();
         REQUIRE_EQUAL(resolved.name(), "Europe/Zurich"_el);
         REQUIRE(resolved.isLocalTime());
         REQUIRE_EQUAL(known.calls, 1);
         auto missing = Backend{std::nullopt};
-        const auto fallback = el::time::tz::impl::localTimeZoneFromBackend(missing);
+        const auto fallback = missing.localTimeZone();
         REQUIRE(fallback.isUtc());
         REQUIRE(fallback.isLocalTime());
-        REQUIRE_FALSE(fallback == TimeZone::utc());
+        REQUIRE_NOT_EQUAL(fallback, TimeZone::utc());
     }
 
-    void testLocalTimeIsCached() {
-
-        auto backendCalls = 0;
-        auto backend =
-            std::make_unique<Backend>(el::time::TimeZone::fromNameOrThrow("Europe/Zurich"_el), &backendCalls);
-        const auto cache = el::time::tz::impl::LocalTimeZoneCache{std::move(backend)};
-        REQUIRE_EQUAL(backendCalls, 1);
-        REQUIRE_EQUAL(cache.value().name(), "Europe/Zurich"_el);
-        REQUIRE(cache.value().isLocalTime());
-        REQUIRE_EQUAL(cache.value().name(), "Europe/Zurich"_el);
-        REQUIRE_EQUAL(backendCalls, 1);
-
+    void testLocalTimeIsStable() {
         const auto first = el::time::TimeZone::local();
         const auto second = el::time::TimeZone::local();
         REQUIRE_EQUAL(first, second);

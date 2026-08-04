@@ -86,12 +86,12 @@ class TimeZoneGenerator:
             if target_name not in self.zones:
                 raise UtilityError(f'CLDR time-zone name "{iana_name}" is not present in the bundled IANA database.')
             entries.append(
-                f'        Mapping{{L"{windows_name}", TimeZoneId{{0x{self.zones[target_name].id:04x}U}}}},'
+                f'            Mapping{{L"{windows_name}", TimeZoneId{{0x{self.zones[target_name].id:04x}U}}}},'
                 f" // {iana_name}"
             )
         self.write(
             "WindowsTimeZoneMap.hpp",
-            f'''{self.header(pragma_once=True)}
+            f"""{self.header(pragma_once=True)}
 
 #include "../../TimeZoneId.hpp"
 
@@ -106,30 +106,29 @@ namespace erbsland::time::tz::impl {{
 [[nodiscard]] auto timeZoneIdFromWindowsName(std::wstring_view windowsName) noexcept -> std::optional<TimeZoneId>;
 
 }}
-''',
+""",
         )
         self.write(
             "WindowsTimeZoneMap.cpp",
-            f'''{self.header()}
+            f"""{self.header()}
 #include "WindowsTimeZoneMap.hpp"
 
 #include <array>
 
 namespace erbsland::time::tz::impl {{
 
-namespace {{
-struct Mapping {{
-    std::wstring_view windowsName;
-    TimeZoneId timeZoneId;
-}};
-
-// Generated from Unicode CLDR windowsZones.xml entries for territory "001".
-constexpr auto cMappings = std::to_array<Mapping>({{
-{chr(10).join(entries)}
-}});
-}}
 
 auto timeZoneIdFromWindowsName(const std::wstring_view windowsName) noexcept -> std::optional<TimeZoneId> {{
+    struct Mapping {{
+        std::wstring_view windowsName;
+        TimeZoneId timeZoneId;
+    }};
+    
+    // Generated from Unicode CLDR windowsZones.xml entries for territory "001".
+    constexpr auto cMappings = std::to_array<Mapping>({{
+    {chr(10).join(entries)}
+    }});
+    
     for (const auto &mapping : cMappings) {{
         if (mapping.windowsName == windowsName) {{
             return mapping.timeZoneId;
@@ -139,7 +138,7 @@ auto timeZoneIdFromWindowsName(const std::wstring_view windowsName) noexcept -> 
 }}
 
 }}
-''',
+""",
         )
 
     def read_database(self) -> None:
@@ -248,9 +247,17 @@ auto timeZoneIdFromWindowsName(const std::wstring_view windowsName) noexcept -> 
 
 namespace erbsland::time::tz::impl {{
 
+/// Get the generated text entry table.
+/// @return The generated text entries.
 [[nodiscard]] auto textEntries() noexcept -> const std::array<Text, {len(entries)}>&;
+/// Get the generated text storage block.
+/// @return The generated text block.
 [[nodiscard]] auto textBlock() noexcept -> std::string_view;
+/// Get all generated IANA time-zone names.
+/// @return The generated time-zone names.
 [[nodiscard]] auto zoneNames() noexcept -> const std::array<ZoneName, {len(zone_names)}>&;
+/// Get the generated primary IANA time-zone names.
+/// @return The generated primary time-zone names.
 [[nodiscard]] auto primaryZoneNames() noexcept -> const std::array<ZoneName, {len(primary_names)}>&;
 
 }}
@@ -317,6 +324,9 @@ auto primaryZoneNames() noexcept -> const std::array<ZoneName, {len(primary_name
 
 namespace erbsland::time::tz::impl {{
 
+/// Get a generated daylight-saving rule set.
+/// @param index The generated rule-set index.
+/// @return The rule set for the index, or an empty rule set for an invalid index.
 [[nodiscard]] auto ruleSet(uint16_t index) noexcept -> RuleSet;
 
 }}
@@ -328,7 +338,7 @@ namespace erbsland::time::tz::impl {{
             if name and name != last_name:
                 rule_lines.append(f"        // {name}")
                 last_name = name
-            rule_lines.append(f"        Rule{{0x{value:016x}ULL}}, {comment}")
+            rule_lines.append(f"            Rule{{0x{value:016x}ULL}}, {comment}")
         offset_lines = ", ".join(f"{offset}U" for offset in offsets)
         self.write(
             "Rules.cpp",
@@ -339,17 +349,13 @@ namespace erbsland::time::tz::impl {{
 
 namespace erbsland::time::tz::impl {{
 
-namespace {{
-
-constexpr auto cRules = std::array<Rule, {len(encoded_rules)}>{{
-{chr(10).join(rule_lines)}
-}};
-
-constexpr auto cRuleSetOffsets = std::array<std::size_t, {len(offsets)}>{{{offset_lines}}};
-
-}}
-
 auto ruleSet(uint16_t index) noexcept -> RuleSet {{
+    static constexpr auto cRules = std::array<const Rule, {len(encoded_rules)}>{{
+    {chr(10).join(rule_lines)}
+    }};
+    
+    constexpr auto cRuleSetOffsets = std::array<std::size_t, {len(offsets)}>{{{offset_lines}}};
+    
     if (index + 1U >= cRuleSetOffsets.size()) {{
         return {{std::span<const Rule>{{cRules.data(), 0}}}};
     }}
@@ -403,10 +409,12 @@ namespace erbsland::time::tz::impl {{
 }}
 """,
             )
-        region_includes = "\n".join(f'#include "Region{self.region_class_name(region)}.hpp"' for region in sorted(region_decl))
+        region_includes = "\n".join(
+            f'#include "Region{self.region_class_name(region)}.hpp"' for region in sorted(region_decl)
+        )
         function_lines = []
         for zone_id in range(1, len(self.zone_list) + 1):
-            function_lines.append(f"        &{info_functions[zone_id]},")
+            function_lines.append(f"            &{info_functions[zone_id]},")
         self.write(
             "Zones.hpp",
             f"""{self.header(pragma_once=True)}
@@ -418,6 +426,9 @@ namespace erbsland::time::tz::impl {{
 
 namespace erbsland::time::tz::impl {{
 
+/// Create generated information for an IANA time-zone identifier.
+/// @param id The time-zone identifier.
+/// @return The generated information, or no value for an invalid identifier.
 [[nodiscard]] auto info(ZoneId id) noexcept -> std::unique_ptr<Info>;
 
 }}
@@ -434,17 +445,13 @@ namespace erbsland::time::tz::impl {{
 
 namespace erbsland::time::tz::impl {{
 
-namespace {{
-
-using InfoFunction = auto (*)() noexcept -> std::unique_ptr<Info>;
-
-constexpr auto cInfoFunctions = std::array<InfoFunction, {len(self.zone_list)}>{{
-{chr(10).join(function_lines)}
-}};
-
-}}
-
 auto info(ZoneId id) noexcept -> std::unique_ptr<Info> {{
+    using InfoFunction = auto (*)() noexcept -> std::unique_ptr<Info>;
+    
+    constexpr auto cInfoFunctions = std::array<InfoFunction, {len(self.zone_list)}>{{
+    {chr(10).join(function_lines)}
+    }};
+    
     if (id == cUtcZoneId || id == cZoneIdNotFound || id - 1U >= cInfoFunctions.size()) {{
         return nullptr;
     }}
@@ -487,8 +494,12 @@ auto Database::version() noexcept -> unit::Version {{
         for index, entry in enumerate(zone.entries):
             fixed_id = abbreviation_ids[index]
             fixed_offset = text_ids.index(fixed_id) + 1 if fixed_id in text_ids else 0
-            lines.append(self.continuation_line_code(entry, fixed_offset, abbreviation_rule_offsets[index], used_rule_names))
-        declaration = f"[[nodiscard]] auto {zone.function_name}() noexcept -> std::unique_ptr<Info>;"
+            lines.append(
+                self.continuation_line_code(entry, fixed_offset, abbreviation_rule_offsets[index], used_rule_names)
+            )
+        declaration = f"""/// Create generated information for the `{zone.name}` IANA time zone.
+/// @return The generated time-zone information.
+[[nodiscard]] auto {zone.function_name}() noexcept -> std::unique_ptr<Info>;"""
         implementation = f"""auto {zone.function_name}() noexcept -> std::unique_ptr<Info> {{
     return std::make_unique<Info>(
         std::vector<RuleSet>{{{rule_sets_code}}},
@@ -510,7 +521,9 @@ auto Database::version() noexcept -> unit::Version {{
             if entry.is_rule_set_based:
                 assert entry.rule_set is not None
                 used_rules.setdefault(entry.rule_set.name, entry.rule_set)
-            is_dynamic_abbreviation = entry.is_rule_set_based and ("%s" in entry.format_text or "%z" in entry.format_text)
+            is_dynamic_abbreviation = entry.is_rule_set_based and (
+                "%s" in entry.format_text or "%z" in entry.format_text
+            )
             if not is_dynamic_abbreviation:
                 fixed_rule_offset = 0 if entry.is_rule_set_based else entry.rule_offset_seconds
                 text = entry.abbreviation_text("", entry.std_offset_seconds + fixed_rule_offset)

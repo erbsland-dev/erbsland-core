@@ -10,7 +10,7 @@
 #include "../../stream/impl/InputStreamFactory.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
-#include "../../unit/ElementIndex.hpp"
+#include "../../unit/ItemIndex.hpp"
 
 namespace erbsland::path::impl {
 
@@ -62,7 +62,7 @@ auto CommonPathBackend::toRelativeOrThrow(const Path &path, std::optional<Path> 
     const auto pathElements = absolutePath.elements();
     const auto baseElements = absoluteBase.elements();
 
-    auto commonIndex = unit::ElementIndex::one();
+    auto commonIndex = unit::ItemIndex::one();
     while (
         commonIndex.isWithin(pathElements.count()) && commonIndex.isWithin(baseElements.count()) &&
         pathElements.get(commonIndex) == baseElements.get(commonIndex)) {
@@ -101,7 +101,7 @@ auto CommonPathBackend::isRelativeTo(const Path &path, std::optional<Path> base)
         if (baseElements.count() > pathElements.count()) {
             return false;
         }
-        for (auto index = unit::ElementIndex::zero(); index.isWithin(baseElements.count()); ++index) {
+        for (auto index = unit::ItemIndex::zero(); index.isWithin(baseElements.count()); ++index) {
             if (pathElements.get(index) != baseElements.get(index)) {
                 return false;
             }
@@ -128,7 +128,7 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
 
         auto commonElements = text::StringList{};
         commonElements.append(pathElements.first());
-        auto index = unit::ElementIndex::one();
+        auto index = unit::ItemIndex::one();
         while (
             index.isWithin(pathElements.count()) && index.isWithin(baseElements.count()) &&
             pathElements.get(index) == baseElements.get(index)) {

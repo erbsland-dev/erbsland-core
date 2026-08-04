@@ -69,13 +69,15 @@ public:
     void testComparison() {
         using Value = el::math::SignedMagnitude<std::int8_t>;
 
-        REQUIRE(Value::fromSignAndMagnitude(true, std::uint8_t{0}) == Value{});
-        REQUIRE(
-            (Value::fromValue(std::int8_t{-2}) <=> Value::fromValue(std::int8_t{-1})) == std::strong_ordering::less);
-        REQUIRE((Value::fromValue(std::int8_t{-1}) <=> Value::fromValue(std::int8_t{0})) == std::strong_ordering::less);
-        REQUIRE((Value::fromValue(std::int8_t{1}) <=> Value::fromValue(std::int8_t{2})) == std::strong_ordering::less);
-        REQUIRE(Value::fromValue(std::int8_t{-1}) < Value::fromValue(std::int8_t{1}));
-        REQUIRE(Value::fromValue(std::int8_t{2}) > Value::fromValue(std::int8_t{-2}));
+        REQUIRE_EQUAL(Value::fromSignAndMagnitude(true, std::uint8_t{0}), Value{});
+        REQUIRE_EQUAL(
+            (Value::fromValue(std::int8_t{-2}) <=> Value::fromValue(std::int8_t{-1})), std::strong_ordering::less);
+        REQUIRE_EQUAL(
+            (Value::fromValue(std::int8_t{-1}) <=> Value::fromValue(std::int8_t{0})), std::strong_ordering::less);
+        REQUIRE_EQUAL(
+            (Value::fromValue(std::int8_t{1}) <=> Value::fromValue(std::int8_t{2})), std::strong_ordering::less);
+        REQUIRE_LESS(Value::fromValue(std::int8_t{-1}), Value::fromValue(std::int8_t{1}));
+        REQUIRE_GREATER(Value::fromValue(std::int8_t{2}), Value::fromValue(std::int8_t{-2}));
     }
 
     void testConversionAllTypes() {
@@ -153,25 +155,25 @@ private:
         constexpr auto min = std::numeric_limits<Result>::min();
         constexpr auto max = std::numeric_limits<Result>::max();
 
-        REQUIRE(Value::fromValue(Result{0}).toSaturatingValue(min, max) == Result{0});
-        REQUIRE(Value::fromValue(Result{1}).toSaturatingValue(min, max) == Result{1});
+        REQUIRE_EQUAL(Value::fromValue(Result{0}).toSaturatingValue(min, max), Result{0});
+        REQUIRE_EQUAL(Value::fromValue(Result{1}).toSaturatingValue(min, max), Result{1});
 
         if constexpr (std::signed_integral<Result>) {
             REQUIRE(Value::fromValue(min).isNegative());
-            REQUIRE(Value::fromValue(min).magnitude() == minimumAbsolute<Result>());
-            REQUIRE(Value::fromValue(min).toSaturatingValue(min, max) == min);
-            REQUIRE(
-                Value::fromValue(static_cast<Unsigned>(minimumAbsolute<Result>())).toSaturatingValue(min, max) == max);
+            REQUIRE_EQUAL(Value::fromValue(min).magnitude(), minimumAbsolute<Result>());
+            REQUIRE_EQUAL(Value::fromValue(min).toSaturatingValue(min, max), min);
+            REQUIRE_EQUAL(
+                Value::fromValue(static_cast<Unsigned>(minimumAbsolute<Result>())).toSaturatingValue(min, max), max);
         } else {
             REQUIRE(Value::fromValue(Signed{-1}).isNegative());
-            REQUIRE(Value::fromValue(Signed{-1}).toSaturatingValue(min, max) == min);
+            REQUIRE_EQUAL(Value::fromValue(Signed{-1}).toSaturatingValue(min, max), min);
             REQUIRE(Value::fromValue(Signed{-1}).wouldSaturate(min, max));
         }
 
         constexpr auto customMinimum = static_cast<Result>(min + Result{1});
         constexpr auto customMaximum = static_cast<Result>(max - Result{1});
-        REQUIRE(Value::fromValue(min).toSaturatingValue(customMinimum, max) == customMinimum);
-        REQUIRE(Value::fromValue(max).toSaturatingValue(min, customMaximum) == customMaximum);
+        REQUIRE_EQUAL(Value::fromValue(min).toSaturatingValue(customMinimum, max), customMinimum);
+        REQUIRE_EQUAL(Value::fromValue(max).toSaturatingValue(min, customMaximum), customMaximum);
     }
 
     template <typename Result>
@@ -182,17 +184,17 @@ private:
         constexpr auto min = std::numeric_limits<Result>::min();
         constexpr auto max = std::numeric_limits<Result>::max();
 
-        REQUIRE(Value::fromValue(Result{0}).negated() == Value{});
+        REQUIRE_EQUAL(Value::fromValue(Result{0}).negated(), Value{});
         if constexpr (std::signed_integral<Result>) {
-            REQUIRE(Value::fromValue(Result{-5}).negated().toSaturatingValue(min, max) == Result{5});
-            REQUIRE(Value::fromValue(min).negated().toSaturatingValue(min, max) == max);
+            REQUIRE_EQUAL(Value::fromValue(Result{-5}).negated().toSaturatingValue(min, max), Result{5});
+            REQUIRE_EQUAL(Value::fromValue(min).negated().toSaturatingValue(min, max), max);
             REQUIRE(Value::fromValue(min).negated().wouldSaturate(min, max));
         } else {
-            REQUIRE(Value::fromValue(Signed{-5}).negated().toSaturatingValue(min, max) == Result{5});
-            REQUIRE(Value::fromValue(Result{5}).negated().toSaturatingValue(min, max) == min);
+            REQUIRE_EQUAL(Value::fromValue(Signed{-5}).negated().toSaturatingValue(min, max), Result{5});
+            REQUIRE_EQUAL(Value::fromValue(Result{5}).negated().toSaturatingValue(min, max), min);
             REQUIRE(Value::fromValue(Result{5}).negated().wouldSaturate(min, max));
         }
-        REQUIRE(Value::fromSignAndMagnitude(true, static_cast<Unsigned>(5)).negated().isNegative() == false);
+        REQUIRE_EQUAL(Value::fromSignAndMagnitude(true, static_cast<Unsigned>(5)).negated().isNegative(), false);
     }
 
     template <typename Result>
@@ -218,9 +220,10 @@ private:
             WITH_CONTEXT(requireAdd<Result>(Result{0}, Signed{-5}, min, max, min, true));
         }
 
-        REQUIRE(
+        REQUIRE_EQUAL(
             Value::fromSignAndMagnitude(false, std::numeric_limits<Unsigned>::max())
-                .saturatingAddBounded(Value::fromSignAndMagnitude(false, Unsigned{1}), min, max) == max);
+                .saturatingAddBounded(Value::fromSignAndMagnitude(false, Unsigned{1}), min, max),
+            max);
         REQUIRE(
             Value::fromSignAndMagnitude(false, std::numeric_limits<Unsigned>::max())
                 .wouldAddBoundedSaturate(Value::fromSignAndMagnitude(false, Unsigned{1}), min, max));
@@ -247,9 +250,10 @@ private:
             WITH_CONTEXT(requireMultiply<Result>(Signed{-5}, Result{2}, min, max, min, true));
         }
 
-        REQUIRE(
+        REQUIRE_EQUAL(
             Value::fromSignAndMagnitude(false, std::numeric_limits<Unsigned>::max())
-                .saturatingMultiplyBounded(Value::fromValue(Result{2}), min, max) == max);
+                .saturatingMultiplyBounded(Value::fromValue(Result{2}), min, max),
+            max);
         REQUIRE(
             Value::fromSignAndMagnitude(false, std::numeric_limits<Unsigned>::max())
                 .wouldMultiplyBoundedSaturate(Value::fromValue(Result{2}), min, max));
@@ -295,8 +299,8 @@ private:
         using Value = el::math::SignedMagnitude<Result>;
         const auto firstValue = Value::fromValue(first);
         const auto secondValue = Value::fromValue(second);
-        REQUIRE(firstValue.saturatingAddBounded(secondValue, minimum, maximum) == expected);
-        REQUIRE(firstValue.wouldAddBoundedSaturate(secondValue, minimum, maximum) == saturated);
+        REQUIRE_EQUAL(firstValue.saturatingAddBounded(secondValue, minimum, maximum), expected);
+        REQUIRE_EQUAL(firstValue.wouldAddBoundedSaturate(secondValue, minimum, maximum), saturated);
     }
 
     template <typename Result, typename First, typename Second>
@@ -304,8 +308,8 @@ private:
         using Value = el::math::SignedMagnitude<Result>;
         const auto firstValue = Value::fromValue(first);
         const auto secondValue = Value::fromValue(second);
-        REQUIRE(firstValue.saturatingMultiplyBounded(secondValue, minimum, maximum) == expected);
-        REQUIRE(firstValue.wouldMultiplyBoundedSaturate(secondValue, minimum, maximum) == saturated);
+        REQUIRE_EQUAL(firstValue.saturatingMultiplyBounded(secondValue, minimum, maximum), expected);
+        REQUIRE_EQUAL(firstValue.wouldMultiplyBoundedSaturate(secondValue, minimum, maximum), saturated);
     }
 
     template <typename Result, typename First, typename Second>
@@ -313,8 +317,8 @@ private:
         using Value = el::math::SignedMagnitude<Result>;
         const auto firstValue = Value::fromValue(first);
         const auto secondValue = Value::fromValue(second);
-        REQUIRE(firstValue.saturatingDivideBounded(secondValue, minimum, maximum) == expected);
-        REQUIRE(firstValue.wouldDivideBoundedSaturate(secondValue, minimum, maximum) == saturated);
+        REQUIRE_EQUAL(firstValue.saturatingDivideBounded(secondValue, minimum, maximum), expected);
+        REQUIRE_EQUAL(firstValue.wouldDivideBoundedSaturate(secondValue, minimum, maximum), saturated);
     }
 
     template <typename Result, typename First, typename Second>
@@ -322,8 +326,8 @@ private:
         using Value = el::math::SignedMagnitude<Result>;
         const auto firstValue = Value::fromValue(first);
         const auto secondValue = Value::fromValue(second);
-        REQUIRE(firstValue.saturatingModuloBounded(secondValue, minimum, maximum) == expected);
-        REQUIRE(firstValue.wouldModuloBoundedSaturate(secondValue, minimum, maximum) == saturated);
+        REQUIRE_EQUAL(firstValue.saturatingModuloBounded(secondValue, minimum, maximum), expected);
+        REQUIRE_EQUAL(firstValue.wouldModuloBoundedSaturate(secondValue, minimum, maximum), saturated);
     }
 
     template <std::signed_integral T>

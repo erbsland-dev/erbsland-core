@@ -3,10 +3,12 @@
 #pragma once
 
 #include "ApplicationData.hpp"
+#include "EventData_fwd.hpp"
 
 #include "../../stream/TextOutputStream_fwd.hpp"
 
 #include <atomic>
+#include <memory>
 #include <mutex>
 
 namespace erbsland::core::impl {
@@ -15,7 +17,9 @@ namespace erbsland::core::impl {
 /// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
 class ApplicationDataImpl : public ApplicationData {
 public:
+    /// Create the default internal application-data storage.
     ApplicationDataImpl();
+    /// Release internal application-data resources.
     ~ApplicationDataImpl() override;
 
 public: // implement ApplicationData
@@ -45,6 +49,7 @@ public: // accessors
     void setRandom(random::RandomPtr random) noexcept override;
     [[nodiscard]] auto secureRandom() noexcept -> const random::RandomPtr & override;
     void setSecureRandom(random::RandomPtr random) noexcept override;
+    [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & override;
     [[nodiscard]] auto systemMutex() noexcept -> std::mutex & override;
     [[nodiscard]] auto displayText() noexcept -> const i18n::DisplayTextMapConstPtr & override;
     void setDisplayText(i18n::DisplayTextMapConstPtr displayText) noexcept override;
@@ -57,6 +62,12 @@ public: // accessors
     void setStandardStreamRedirect(stream::StandardStreamRedirect redirect) noexcept override;
 
 private:
+    template <typename Char>
+    /// Mask sensitive native command-line arguments.
+    static void maskNativeArguments(
+        int argumentCount, Char **arguments, const options::OptionSensitiveTextLocations &locations) noexcept;
+
+    /// Create a plain system output stream for a text document.
     [[nodiscard]] static auto plainSystemOutputStream(const text::TextDocument &document)
         -> stream::TextOutputStreamPtr;
 
@@ -81,17 +92,20 @@ private:
     random::RandomPtr _random;                                 ///< Shared fast random generator.
     random::RandomPtr _secureRandom;                           ///< Shared secure random generator.
 
-    std::mutex _systemMutex;                                   ///< Mutex for lazy system service creation.
-    i18n::DisplayTextMapConstPtr _displayText;                 ///< Shared application display texts.
-    system::UserLookupPtr _userLookup;                         ///< Shared user and group lookup service.
+    std::mutex _cryptologyMutex;                               ///< Mutex for lazy cryptology configuration creation.
+    std::unique_ptr<cryptology::CryptologyConfiguration> _cryptologyConfiguration; ///< Cryptology configuration.
 
-    bool _isTerminalEnabled{false};                            ///< Flag if the terminal was enabled.
-    cterm::TerminalPtr _terminal;                              ///< The terminal instance.
+    std::mutex _systemMutex;                                ///< Mutex for lazy system service creation.
+    i18n::DisplayTextMapConstPtr _displayText;              ///< Shared application display texts.
+    system::UserLookupPtr _userLookup;                      ///< Shared user and group lookup service.
 
-    stream::StandardStreamRedirect _standardStreamRedirect;    ///< Redirects standard streams to the terminal.
+    bool _isTerminalEnabled{false};                         ///< Flag if the terminal was enabled.
+    cterm::TerminalPtr _terminal;                           ///< The terminal instance.
 
-    std::mutex _eventMutex;                                    ///< Mutex for lazy event system creation.
-    EventDataPtr _eventData;                                   ///< The data for the event system.
+    stream::StandardStreamRedirect _standardStreamRedirect; ///< Redirects standard streams to the terminal.
+
+    std::mutex _eventMutex;                                 ///< Mutex for lazy event system creation.
+    EventDataPtr _eventData;                                ///< The data for the event system.
 };
 
 }

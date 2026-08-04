@@ -18,6 +18,7 @@ namespace erbsland::text::impl {
 /// Shared limit-aware escaping state for `toSafeString()`.
 /// @tested{StringTransformTest}
 class SafeStringEscapeTools final {
+    /// Stores an escaped source-text fragment and its output metadata.
     struct Chunk {
         std::vector<Char> text;
         std::size_t sourceStart{};
@@ -41,13 +42,20 @@ public:
     void appendTo(AnyStringBuilder &builder, std::size_t sourceLength) const;
 
 private:
+    /// Create an escaped fragment for one character.
     [[nodiscard]] auto escapedChunk(Char character) const -> Chunk;
+    /// Get the count of fragments fitting an output budget.
     [[nodiscard]] auto selectedChunkCount(std::size_t budget) const noexcept -> std::size_t;
+    /// Test if selected fragments require enclosing quotes.
     [[nodiscard]] auto needsQuotes(std::size_t chunkCount) const noexcept -> bool;
+    /// Get the escaped-body length of selected fragments.
     [[nodiscard]] auto bodyLength(std::size_t chunkCount) const noexcept -> std::size_t;
 
+    /// Get the number of decimal digits in a value.
     [[nodiscard]] static auto decimalLength(std::size_t value) noexcept -> std::size_t;
+    /// Get the output length of a truncation suffix.
     [[nodiscard]] static auto suffixLength(std::size_t remainingUnits) noexcept -> std::size_t;
+    /// Create the truncation suffix for remaining input units.
     [[nodiscard]] static auto suffix(std::size_t remainingUnits) -> std::vector<Char>;
 
 private:

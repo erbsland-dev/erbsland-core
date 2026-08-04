@@ -14,6 +14,7 @@ namespace erbsland::re::diagnostics {
 /// Please read the documentation for the full syntax of the assembler language.
 class Assembler {
 public:
+    // defaults
     Assembler() = default;
     ~Assembler() = default;
 

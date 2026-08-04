@@ -8,10 +8,12 @@
 
 namespace app::stream {
 
-/// Load and expand one profiler configuration.
-/// @notest{Covered by the profiler dry-run and smoke CTest entries.}
-class ConfigurationLoader final {
-public:
+/// The effective validated and expanded configuration.
+/// @notest{Covered through command-line dry runs and profiler smoke tests.}
+struct Configuration {
+    RunSettings run;                 ///< Complete run settings.
+    std::vector<Scenario> scenarios; ///< Expanded scenarios.
+
     /// Load the embedded default configuration or a user configuration.
     /// @param path Optional user configuration path.
     /// @return The validated and expanded configuration.

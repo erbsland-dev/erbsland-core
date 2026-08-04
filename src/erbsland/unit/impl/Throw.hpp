@@ -6,6 +6,7 @@
 
 namespace erbsland::unit::impl {
 
+/// Throw an overflow error with the supplied reason.
 [[noreturn]] void throwOverflow(std::string_view reason);
 
 }

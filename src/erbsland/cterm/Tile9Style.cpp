@@ -136,7 +136,7 @@ Tile9Style::Tile9Style(const ParsedTiles &parsed) noexcept :
 
 auto Tile9Style::parseTiles(const BlockString &tiles) -> ParsedTiles {
     if (tiles.length() != BlockCount{9U} && tiles.length() != BlockCount{16U}) {
-        throw err::ParameterError{"Tile9Style requires exactly 9 or 16 terminal characters.", "tiles"};
+        throw err::ParameterError{"Tile9Style requires exactly 9 or 16 terminal characters."_el, "tiles"_el};
     }
     auto result = ParsedTiles{};
     result.hasExtendedTiles = tiles.length() == BlockCount{16U};

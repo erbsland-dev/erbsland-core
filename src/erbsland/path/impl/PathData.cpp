@@ -107,7 +107,7 @@ void PathData::setElements(text::StringList elements) noexcept {
     resetInfoCache();
 }
 
-auto PathData::publicElementCount() const noexcept -> unit::ElementCount {
+auto PathData::publicItemCount() const noexcept -> unit::ItemCount {
     auto result = _elements.count();
     if (!_root.isEmpty()) {
         ++result;
@@ -117,7 +117,7 @@ auto PathData::publicElementCount() const noexcept -> unit::ElementCount {
 
 auto PathData::publicElements() const -> text::StringList {
     auto result = StringList{};
-    result.reserve(publicElementCount());
+    result.reserve(publicItemCount());
     if (!_root.isEmpty()) {
         result.append(_root);
     }
@@ -215,11 +215,11 @@ auto PathData::create(const PathFormat format, const String &root, StringList el
     -> mem::SharedDataPointer<tData> {
     static_assert(std::is_same_v<tData, PathData>);
 
-    auto publicElementCount = elements.count();
+    auto publicItemCount = elements.count();
     if (!root.isEmpty()) {
-        publicElementCount += ElementCount::one();
+        publicItemCount += ItemCount::one();
     }
-    if (publicElementCount.isZero() || publicElementCount > cMaximumPathElements) {
+    if (publicItemCount.isZero() || publicItemCount > cMaximumPathElements) {
         return {};
     }
     CpLength totalLength = root.characterLength();
@@ -250,7 +250,7 @@ auto PathData::createJoined(const PathData &base, const String &element) noexcep
     if (element.isEmpty() || element.containsOneOf(invalidPathCharacters())) {
         return {};
     }
-    const auto elementCount = base.publicElementCount() + ElementCount::one();
+    const auto elementCount = base.publicItemCount() + ItemCount::one();
     auto characterLength = base._characterLength + element.characterLength();
     if (!base._elements.isEmpty()) {
         characterLength += CpLength::one();

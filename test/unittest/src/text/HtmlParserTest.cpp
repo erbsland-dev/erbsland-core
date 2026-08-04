@@ -9,12 +9,12 @@
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/TextNode.hpp>
 #include <erbsland/text/TextNodeData.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <initializer_list>
@@ -28,12 +28,12 @@ using el::text::AnyString;
 using el::text::AnyStringBuilder;
 using el::text::String;
 using el::text::StringConverter;
+using el::text::StringEditor;
 using el::text::TextDocument;
 using el::text::TextNode;
 using el::text::TextNodePtr;
 using el::text::U16StringEditor;
 using el::text::U32StringEditor;
-using el::text::U8StringEditor;
 using el::text::html::HtmlParser;
 
 TESTED_TARGETS(HtmlParser TextDocument TextNode)
@@ -173,7 +173,7 @@ public:
                 "  HorizontalLine id=\"rule\" style=\"sep\"",
             });
         const auto link = document.root()->children().first()->children().first();
-        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::LinkData>(link->data()) != nullptr);
+        REQUIRE(std::dynamic_pointer_cast<const el::text::impl::LinkData>(link->data()));
     }
 
     void testParseHandlesSelfClosingInlineTags() {
@@ -202,7 +202,7 @@ public:
         auto aliasParser = el::html::HtmlParser{String{"<strong>Alias</strong>"_el}};
         requirePlainText(aliasParser.parse(), "Alias");
 
-        const auto utf8 = U8StringEditor{std::u8string_view{u8"<p>A¢</p>"}};
+        const auto utf8 = String{"<p>A¢</p>"_el};
         const auto utf16 = U16StringEditor{std::u16string_view{u"<p>A¢</p>"}};
         const auto utf32 = U32StringEditor{std::u32string_view{U"<p>A¢</p>"}};
         requirePlainText(HtmlParser{AnyString{utf8}}.parse(), "A¢");

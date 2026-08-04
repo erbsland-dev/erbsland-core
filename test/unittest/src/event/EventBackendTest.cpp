@@ -131,7 +131,8 @@ public:
         REQUIRE(backendPtr->attached);
         REQUIRE(loop->runOnce(TimeDelta::zero()));
         REQUIRE_EQUAL(log, std::vector<int>({1, 100}));
-        REQUIRE_GREATER_EQUAL(backendPtr->pollCount, std::size_t{1});
+        const auto initialPollCount = backendPtr->pollCount;
+        REQUIRE_GREATER_EQUAL(initialPollCount, std::size_t{1});
     }
 
     void testBackendPollingOrder() {
@@ -174,7 +175,8 @@ public:
         loop->registerBackend(std::move(backend));
 
         REQUIRE(loop->runOnce(TimeDelta{Seconds{1}}));
-        REQUIRE_GREATER_EQUAL(backendPtr->pollCount, std::size_t{2});
+        const auto finalPollCount = backendPtr->pollCount;
+        REQUIRE_GREATER_EQUAL(finalPollCount, std::size_t{2});
         REQUIRE_EQUAL(log, std::vector<int>({9, 900}));
     }
 
@@ -187,7 +189,7 @@ public:
         loop->registerBackend(std::move(backend));
         backendPtr->requestTargetWake();
 
-        REQUIRE(backendPtr != nullptr);
+        REQUIRE(backendPtr);
     }
 
     void testHandleEventDispatch() {
@@ -243,7 +245,7 @@ public:
         auto &scheduler = loop->get<EventScheduler>();
         const auto timer = scheduler.createTimer([]() -> void {});
 
-        REQUIRE(timer != nullptr);
+        REQUIRE(timer);
         REQUIRE_FALSE(timer->isActive());
     }
 };

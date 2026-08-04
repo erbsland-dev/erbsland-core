@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ParseNumberError.hpp"
 
+#include "String.hpp"
 #include "StringEditor.hpp"
 
 namespace erbsland::text {
 
-ParseNumberError::ParseNumberError(
-    const std::string_view reason, const ReadNumberStatus status, const unit::CpIndex position) noexcept :
-    ParseNumberError{String{reason}, status, position} {
+ParseNumberError::ParseNumberError(String reason, ReadNumberStatus status, unit::CpIndex position) noexcept :
+    err::ParseError{std::move(reason), position}, _status{status} {
 }
 
 }

@@ -40,7 +40,7 @@ public:
         auto source = Source::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
     }
 
     void requireMatchingAsciiData(const el::text::String &testData) {
@@ -50,17 +50,17 @@ public:
         for (auto testCharacter = testReader.read(); !testCharacter.isEndOfData(); testCharacter = testReader.read()) {
             decodedChar = decoder->next();
             if (testCharacter == el::text::Char{U'\n'}) {
-                REQUIRE(decodedChar.character() == CharClass::LineBreak);
-                REQUIRE(decodedChar.character() == U'\n');
-                REQUIRE(decodedChar.codeLocation() == pos);
+                REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+                REQUIRE_EQUAL(decodedChar.character(), U'\n');
+                REQUIRE_EQUAL(decodedChar.codeLocation(), pos);
                 pos.nextLine();
             } else {
-                REQUIRE(decodedChar.character() == testCharacter);
+                REQUIRE_EQUAL(decodedChar.character(), testCharacter);
                 el::text::StringEditor decodedString;
                 decodedString.append(decodedChar.character());
                 auto expectedStr = el::text::StringEditor::fromCharacter(testCharacter);
                 REQUIRE_EQUAL(decodedString, expectedStr);
-                REQUIRE(decodedChar.codeLocation() == pos);
+                REQUIRE_EQUAL(decodedChar.codeLocation(), pos);
                 pos.nextColumn();
             }
         }
@@ -75,11 +75,11 @@ public:
         el::text::String testData = "[main]\nkey: \"test\"\r\nlast"_el;
         const auto testFile = createTestFile(el::text::String{testData});
         auto source = Source::fromFile(el::path::Path{testFile});
-        REQUIRE(source != nullptr);
+        REQUIRE(source);
         REQUIRE_NOTHROW(source->open());
-        REQUIRE(source->name() == "file"_el);
+        REQUIRE_EQUAL(source->name(), "file"_el);
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         WITH_CONTEXT(requireMatchingAsciiData(testData))
     }
 
@@ -87,13 +87,13 @@ public:
         el::text::String testData = "[main]\nkey: \"test\"\r\nlast"_el;
         // std::u8string
         auto source = Source::fromString(el::text::String{testData});
-        REQUIRE(source != nullptr);
+        REQUIRE(source);
         REQUIRE_NOTHROW(source->open());
-        REQUIRE(source->name() == "text"_el);
+        REQUIRE_EQUAL(source->name(), "text"_el);
         REQUIRE(source->path().isEmpty());
-        REQUIRE(source->identifier()->toText() == "text"_el);
+        REQUIRE_EQUAL(source->identifier()->toText(), "text"_el);
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         WITH_CONTEXT(requireMatchingAsciiData(testData))
     }
 
@@ -106,13 +106,13 @@ public:
         auto source = Source::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x00D7U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x00D7U);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x2190U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x2190U);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x1F604U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x1F604U);
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
     }
@@ -129,11 +129,11 @@ public:
         auto source = Source::fromFile(el::path::Path{testFile});
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x41U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x41U);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x42U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x42U);
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
     }
@@ -142,7 +142,7 @@ public:
     void requireErrorAfterValidA(const T &content, ConfErrorCategory expectedErrorCategory) {
         auto source = [&]() -> SourcePtr {
             if constexpr (std::is_same_v<T, el::mem::ByteBlock>) {
-                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{content}.data();
+                const auto byteSpan = el::mem::impl::UnsafeByteBlockAccess{content}.dataView().dataSpan();
                 return Source::fromString(
                     el::text::String{
                         std::string_view{reinterpret_cast<const char *>(byteSpan.data()), byteSpan.size()}});
@@ -152,14 +152,14 @@ public:
         }();
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
-        REQUIRE(decoder != nullptr);
+        REQUIRE(decoder);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == 0x41U);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), 0x41U);
         try {
             decodedChar = decoder->next();
             REQUIRE(false);
         } catch (ConfError &e) {
-            REQUIRE(e.category() == expectedErrorCategory);
+            REQUIRE_EQUAL(e.category(), expectedErrorCategory);
         }
     }
 
@@ -253,7 +253,7 @@ public:
                 auto source = Source::fromString(el::text::String{content});
                 REQUIRE_NOTHROW(source->open());
                 decoder = CharStream::create(source);
-                REQUIRE(decoder != nullptr);
+                REQUIRE(decoder);
                 WITH_CONTEXT(requireMatchingAsciiData(el::text::String{content}));
             } else {
                 WITH_CONTEXT(requireErrorAfterValidA(el::text::String{content}, ConfErrorCategory::Character));
@@ -267,13 +267,13 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 0U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -283,17 +283,17 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 2U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 3U, 0U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -303,32 +303,32 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 2U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 2U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LetterA);
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LetterA);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 3U, 0U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -338,22 +338,22 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 2U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 3U, 0U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -363,14 +363,14 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         // The decoder ignores invalid line-breaks but changes the position correctly.
         // The lexer will raise an error - as it has more context for better error reporting.
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 1U, 0U));
 
         content = "A\n"_el;
@@ -378,10 +378,10 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 1U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -391,16 +391,16 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LetterA);
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LetterA);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 1U));
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\n');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\n');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 2U));
         decodedChar = decoder->next();
         REQUIRE(decodedChar.character().isEndOfData());
@@ -410,13 +410,13 @@ public:
         REQUIRE_NOTHROW(source->open());
         decoder = CharStream::create(source);
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character().toRawValue() == U'A');
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'A');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 0U));
         // The decoder ignored the invalid line-ending but changed the position correctly.
         // The lexer will raise an error - as it has more context for better error reporting.
         decodedChar = decoder->next();
-        REQUIRE(decodedChar.character() == CharClass::LineBreak);
-        REQUIRE(decodedChar.character().toRawValue() == U'\r');
+        REQUIRE_EQUAL(decodedChar.character(), CharClass::LineBreak);
+        REQUIRE_EQUAL(decodedChar.character().toRawValue(), U'\r');
         WITH_CONTEXT(requireLocation(decodedChar, 0U, 1U));
     }
 };

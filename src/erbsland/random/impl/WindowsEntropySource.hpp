@@ -10,6 +10,7 @@ namespace erbsland::random::impl {
 /// @tested{SecureRandomTest}
 class WindowsEntropySource final : public EntropySource {
 public:
+    /// Create the Windows entropy source.
     WindowsEntropySource() = default;
 
     // defaults

@@ -78,6 +78,23 @@ public:
         REQUIRE_EQUAL(splitter.next(), "a"_el);
     }
 
+    void testSkipPartsWithoutCreatingSlices() {
+        auto discard = StringSplitter{"first,,third"_el, Char{U','}};
+        discard.skip();
+        REQUIRE_EQUAL(discard.remaining(), ",third"_el);
+        discard.skip();
+        REQUIRE_EQUAL(discard.next(), "third"_el);
+        REQUIRE(discard.isAtEnd());
+        discard.skip();
+        REQUIRE(discard.isAtEnd());
+
+        auto keep = StringSplitter{"one\ntwo\n"_el, Char{U'\n'}, StringSplitMode::KeepSeparator};
+        keep.skip();
+        REQUIRE_EQUAL(keep.remaining(), "two\n"_el);
+        keep.skip();
+        REQUIRE(keep.isAtEnd());
+    }
+
     void testMalformedUtf8IsPreserved() {
         auto malformed = std::string{"left"};
         malformed.push_back(static_cast<char>(0x80U));

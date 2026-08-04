@@ -256,6 +256,7 @@ public: // private ctor
     TextNode(Type type, String text, String identifier, String style, TextNodeDataPtr data, Level level, PrivateTag);
 
 private:
+    /// Create a node with optional metadata.
     [[nodiscard]] static auto createNode(
         Type type,
         String text = {},
@@ -263,8 +264,10 @@ private:
         String style = {},
         TextNodeDataPtr data = {},
         Level level = 0) -> TextNodePtr;
+    /// Convert a local code-snippet line to its source line index.
     [[nodiscard]] static auto codeSnippetLineIndex(unit::LineIndex startLine, std::size_t localLine) noexcept
         -> unit::LineIndex;
+    /// Append a child node and return it.
     auto appendChild(TextNodePtr child) -> TextNodePtr;
 
 private:

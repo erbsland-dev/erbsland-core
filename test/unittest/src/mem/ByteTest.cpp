@@ -20,6 +20,11 @@ public:
     void testConstructionAndConversion() {
         const auto fromUInt8 = Byte{uint8_t{0xabU}};
         const auto fromStdByte = Byte{std::byte{0xcdU}};
+        const auto fromChar = Byte::fromChar('A');
+        const auto fromUInt8Factory = Byte::fromUInt8(0x42U);
+        const auto fromCroppedUInt16 = Byte::fromCroppedUInt16(0x12abU);
+        const auto fromCroppedUInt32 = Byte::fromCroppedUInt32(0x123456cdU);
+        const auto fromCroppedUInt64 = Byte::fromCroppedUInt64(0x123456789abcdef0ULL);
 
         REQUIRE_EQUAL(fromUInt8.toStdByte(), std::byte{0xabU});
         REQUIRE_EQUAL(fromUInt8.toUInt8(), uint8_t{0xabU});
@@ -28,18 +33,18 @@ public:
         REQUIRE_EQUAL(fromUInt8.toUInt64(), uint64_t{0xabU});
         REQUIRE_EQUAL(fromUInt8.toRawValue(), std::byte{0xabU});
         REQUIRE_EQUAL(fromStdByte, Byte{0xcdU});
-        REQUIRE_EQUAL(Byte::fromChar('A').toChar(), 'A');
-        REQUIRE_EQUAL(Byte::fromUInt8(0x42U), Byte{0x42U});
-        REQUIRE_EQUAL(Byte::fromCroppedUInt16(0x12abU), Byte{0xabU});
-        REQUIRE_EQUAL(Byte::fromCroppedUInt32(0x123456cdU), Byte{0xcdU});
-        REQUIRE_EQUAL(Byte::fromCroppedUInt64(0x123456789abcdef0ULL), Byte{0xf0U});
+        REQUIRE_EQUAL(fromChar.toChar(), 'A');
+        REQUIRE_EQUAL(fromUInt8Factory, Byte{0x42U});
+        REQUIRE_EQUAL(fromCroppedUInt16, Byte{0xabU});
+        REQUIRE_EQUAL(fromCroppedUInt32, Byte{0xcdU});
+        REQUIRE_EQUAL(fromCroppedUInt64, Byte{0xf0U});
     }
 
     void testComparisonAndBitwiseOperators() {
         const auto first = Byte{0b10101100U};
         const auto second = Byte{0b11000011U};
 
-        REQUIRE(first < Byte{0xffU});
+        REQUIRE_LESS(first, Byte{0xffU});
         REQUIRE_EQUAL(first | second, Byte{0b11101111U});
         REQUIRE_EQUAL(first & second, Byte{0b10000000U});
         REQUIRE_EQUAL(first ^ second, Byte{0b01101111U});

@@ -63,6 +63,14 @@ auto ByteBlock::operator<=>(const ByteBlockEditor &other) const noexcept -> std:
     return impl::ByteComparisonTools{dataView()}.compare(other.dataView());
 }
 
+auto ByteBlock::isEqualConstTime(const ByteBlock &other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(other.dataView());
+}
+
+auto ByteBlock::isEqualConstTime(const ConstByteSpan other) const noexcept -> bool {
+    return impl::ByteComparisonTools{dataView()}.isEqualConstTime(impl::ByteDataView{other});
+}
+
 auto ByteBlock::isEmpty() const noexcept -> bool {
     return length().isZero();
 }

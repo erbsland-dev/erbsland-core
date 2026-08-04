@@ -13,11 +13,16 @@ namespace erbsland::text::html::impl {
 /// @tested{HtmlParserTest}
 class HtmlTagInfo final {
 public:
+    /// Describe whether a tag creates inline or block content.
     enum class NodeBehavior : uint8_t { Inline, Block };
+    /// Describe how a tag determines its text-node level.
     enum class LevelMode : uint8_t { Fixed, UseListLevel };
+    /// Describe whether a tag's child subtree is retained.
     enum class SubtreeBehavior : uint8_t { Keep, Suppress };
+    /// Mark a tag whose element itself produces no node.
     enum class Transparency : uint8_t { Transparent };
 
+    /// Create an empty tag description.
     HtmlTagInfo() = default;
 
     /// Create one node-producing tag description.

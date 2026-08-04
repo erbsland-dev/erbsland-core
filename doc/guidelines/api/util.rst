@@ -13,10 +13,6 @@ Container Model
     index = zero-based element position
     size = non-negative element count
     slice = half-open element range
-    storage = copy-on-write wrapper around the matching standard container
-    mutation = detach and return the receiver
-    transformation = return a new value without changing the source
-    standard-container access = explicit raw-value boundary
 
 Result Model
 ------------
@@ -24,8 +20,6 @@ Result Model
 .. code-block:: text
 
     result = typed success or failure status, never an implicitly interpreted boolean
-    success state = encoded in the lower half of the status range
-    failure state = encoded in the upper half of the status range
     result data = payload transported beside a specialized status
     loop result = reason a visitor or parser stopped
 
@@ -40,7 +34,6 @@ Coroutine Model
     asynchronous next = at most one outstanding operation
     failure = rethrown when consuming a task result or awaiting a generator value
     incomplete destruction = request cancellation without forcibly interrupting active work
-    worker service = process-wide, without caller-thread affinity, and separate from native input/output workers
 
 Primary Types
 =============
@@ -90,7 +83,7 @@ Common Container Patterns
 
     T([values]) // create an empty container or copy compatible values
     o.toRawValue() -> R // cross the explicit standard-container boundary
-    o.count()/countIf(function) -> unit::ElementCount // count elements or predicate matches
+    o.count()/countIf(function) -> unit::ItemCount // count elements or predicate matches
     o.first()/last() -> E // access an iteration-boundary value or its default
     o.clear()/swap(other) -> T& // remove or exchange contents
     o.remove/removeIf(selector) -> T& // remove selected data in place
@@ -106,6 +99,8 @@ List Patterns
 .. code-block:: text
 
     o.get(index[, fallback]) -> E // access a value or fallback
+    o.getRef(index) -> const E& // borrow a value or a shared immutable default
+    o.getRefOrThrow(index) -> const E& // borrow a value or throw for an invalid index
     o.set(index, value) -> T& // replace a valid index
     o.resize/reserve/shrinkToFit(count) -> T& // manage sequential storage
     o.slice/prefix/suffix(range-or-count) -> T // copy a selected range
@@ -114,7 +109,7 @@ List Patterns
     o.insert/append/prepend(position, value-or-list) -> T& // add sequential values
     o.map/reverse/sort([function]) -> T& // transform ordering or values in place
     o.mapped/reversed/sorted([function]) -> T // return transformed values
-    o.findFirst/findLast(value-or-function[, start]) -> unit::ElementIndex // locate a value or predicate match
+    o.findFirst/findLast(value-or-function[, start]) -> unit::ItemIndex // locate a value or predicate match
     o.toStdVector()/toStdSet() -> R // explicitly copy into a standard container
 
 Set Patterns

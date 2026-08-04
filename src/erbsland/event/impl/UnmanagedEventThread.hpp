@@ -8,12 +8,15 @@
 
 namespace erbsland::event::impl {
 
+/// Unmanaged event-thread implementation backed by an event-thread base.
 class UnmanagedEventThread final : public event::UnmanagedEventThread, private EventThreadBase {
 public:
+    /// Create an inactive unmanaged event thread.
     UnmanagedEventThread() = default;
+    /// Stop and release the unmanaged event thread.
     ~UnmanagedEventThread() noexcept override;
 
-    // defaults
+    // defaults/deletions
     UnmanagedEventThread(const UnmanagedEventThread &) = delete;
     auto operator=(const UnmanagedEventThread &) -> UnmanagedEventThread & = delete;
     UnmanagedEventThread(UnmanagedEventThread &&) = delete;

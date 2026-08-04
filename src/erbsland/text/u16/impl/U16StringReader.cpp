@@ -135,11 +135,19 @@ auto U16StringReader::advanceIf(const CharSet &expected) noexcept -> bool {
 
 auto U16StringReader::readWhile(const ReadFn &readFn, const CharSet &expected, CpLength maximum) noexcept
     -> LoopResult {
-    return readLoop(readFn, expected, maximum, false);
+    return readLoop(readFn, expected, maximum, false).first;
 }
 
 auto U16StringReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept -> LoopResult {
-    return readLoop(readFn, stopSet, maximum, true);
+    return readLoop(readFn, stopSet, maximum, true).first;
+}
+
+auto U16StringReader::advanceWhile(const CharSet &expected, const CpLength maximum) noexcept -> CpLength {
+    return readLoop({}, expected, maximum, false).second;
+}
+
+auto U16StringReader::advanceUntil(const CharSet &stopSet, const CpLength maximum) noexcept -> CpLength {
+    return readLoop({}, stopSet, maximum, true).second;
 }
 
 void U16StringReader::startCapture() noexcept {
@@ -212,7 +220,9 @@ auto U16StringReader::readToBuffer() -> Char {
         return character;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(CpLength::one()));
+    if (!advance(CpLength::one())) {
+        std::terminate();
+    }
     return character;
 }
 
@@ -222,7 +232,9 @@ auto U16StringReader::readToBufferIf(const Char expected) -> bool {
         return false;
     }
     appendToBuffer(character);
-    static_cast<void>(advance(CpLength::one()));
+    if (!advance(CpLength::one())) {
+        std::terminate();
+    }
     return true;
 }
 
@@ -232,7 +244,9 @@ auto U16StringReader::readToBufferIf(const CharSet &expected) -> std::optional<C
         return {};
     }
     appendToBuffer(character);
-    static_cast<void>(advance(CpLength::one()));
+    if (!advance(CpLength::one())) {
+        std::terminate();
+    }
     return character;
 }
 
@@ -245,30 +259,30 @@ auto U16StringReader::readToBufferUntil(const CharSet &stopSet, const CpLength m
 }
 
 auto U16StringReader::readLoop(
-    const ReadFn &readFn, const CharSet &charSet, CpLength maximum, bool stopOnMatch) noexcept -> LoopResult {
+    const ReadFn &readFn, const CharSet &charSet, CpLength maximum, bool stopOnMatch) noexcept -> ReadLoopOutcome {
     auto count = CpLength::zero();
     while (true) {
         const auto lastPosition = _position;
         const auto lastCpPosition = _cpPosition;
         const auto character = read();
         if (character.isEndOfData()) {
-            return LoopResult::EndOfData;
+            return {LoopResult::EndOfData, count};
         }
         if (charSet.contains(character) == stopOnMatch) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return LoopResult::Success;
+            return {LoopResult::Success, count};
         }
         if (!maximum.isInfinite() && count >= maximum) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return LoopResult::LimitReached;
+            return {LoopResult::LimitReached, count};
         }
         const auto result = readFn != nullptr ? readFn(character) : LoopStatus::Continue;
         if (result != LoopStatus::Continue) {
             _position = lastPosition;
             _cpPosition = lastCpPosition;
-            return result == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped;
+            return {result == LoopStatus::Error ? LoopResult::Error : LoopResult::Stopped, count};
         }
         ++count;
     }
@@ -288,7 +302,9 @@ auto U16StringReader::readToBufferLoop(const CharSet &charSet, CpLength maximum,
             return LoopResult::LimitReached;
         }
         appendToBuffer(character);
-        static_cast<void>(advance(CpLength::one()));
+        if (!advance(CpLength::one())) {
+            std::terminate();
+        }
         ++count;
     }
 }

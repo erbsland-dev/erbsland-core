@@ -74,7 +74,7 @@ Recursive removal is leaf-to-root.
 ``keepBase`` removes the contents but retains the starting directory.
 Removing a filesystem root is rejected.
 A prescan can provide an exact :cpp:struct:`PathProgress <erbsland::path::PathProgress>` total; without one, the total
-is the infinite ``ElementCount`` value, which represents an unknown count.
+is the infinite ``ItemCount`` value, which represents an unknown count.
 
 Temporary Resources
 ===================

@@ -6,6 +6,7 @@
 
 namespace erbsland::text::impl {
 
+/// Escape formatter for regular-expression text.
 class RegExEscapeFormatter final : public EscapeFormatter {
 public:
     [[nodiscard]] auto needsEscape(Char character, EscapeAmount amount) const noexcept -> bool override;
@@ -13,6 +14,7 @@ public:
     [[nodiscard]] auto escapeSize(Char character, StringKind stringKind) const noexcept -> std::size_t override;
 
 public:
+    /// Get the shared regular-expression escape formatter instance.
     [[nodiscard]] static auto instance() noexcept -> const EscapeFormatterPtr &;
 };
 

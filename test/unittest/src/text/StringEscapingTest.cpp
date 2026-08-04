@@ -5,13 +5,13 @@
 #include <erbsland/text/EscapeFormat.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
+#include <erbsland/text/String.hpp>
 #include <erbsland/text/StringConverter.hpp>
+#include <erbsland/text/StringEditor.hpp>
 #include <erbsland/text/u16/U16String.hpp>
 #include <erbsland/text/u16/U16StringEditor.hpp>
 #include <erbsland/text/u32/U32String.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
-#include <erbsland/text/u8/U8String.hpp>
-#include <erbsland/text/u8/U8StringEditor.hpp>
 #include <erbsland/unit/CpIndex.hpp>
 #include <erbsland/unit/U16DataIndex.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -28,7 +28,7 @@ using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(EscapeFormat EscapeAmount U8StringEditor U8String U16StringEditor U16String U32StringEditor U32String)
+TESTED_TARGETS(EscapeFormat EscapeAmount StringEditor String U16StringEditor U16String U32StringEditor U32String)
 class StringEscapingTest final : public el::UnitTest {
 public:
     void testEscapeFormatConversion() {
@@ -96,7 +96,7 @@ public:
     }
 
     void testHtmlAndXmlTargets() {
-        const auto text = U8StringEditor{std::string_view{"<tag attr=\"x\">&'</tag>"}};
+        const auto text = StringEditor{"<tag attr=\"x\">&'</tag>"_el};
 
         const auto htmlRequired = text.toEscaped(EscapeFormat::Html, EscapeAmount::Required);
         REQUIRE_EQUAL(
@@ -117,24 +117,24 @@ public:
     }
 
     void testJsonCppAndRegExTargets() {
-        const auto jsonText = U8StringEditor{std::u8string_view{u8"\"\\\n😀"}};
+        const auto jsonText = String{"\"\\\n😀"_el};
         const auto jsonEscaped = jsonText.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{jsonEscaped}.toStdString(), std::string{"\\\"\\\\\\n\\uD83D\\uDE00"});
         REQUIRE_EQUAL(jsonEscaped.length(), jsonText.escapedSize(EscapeFormat::Json, EscapeAmount::NonAscii));
 
-        const auto cppText = U8StringEditor{std::u8string_view{u8"A\né😀"}};
+        const auto cppText = String{"A\né😀"_el};
         const auto cppEscaped = cppText.toEscaped(EscapeFormat::Cpp, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{cppEscaped}.toStdString(), std::string{"A\\n\\u00E9\\U0001F600"});
         REQUIRE_EQUAL(cppEscaped.length(), cppText.escapedSize(EscapeFormat::Cpp, EscapeAmount::NonAscii));
 
-        const auto regExText = U8StringEditor{std::string_view{"a+b*(c)"}};
+        const auto regExText = StringEditor{"a+b*(c)"_el};
         const auto regExEscaped = regExText.toEscaped(EscapeFormat::RegEx, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{regExEscaped}.toStdString(), std::string{"a\\+b\\*\\(c\\)"});
         REQUIRE_EQUAL(regExEscaped.length(), regExText.escapedSize(EscapeFormat::RegEx, EscapeAmount::Required));
     }
 
     void testConfigTarget() {
-        const auto u8Text = U8StringEditor{std::u8string_view{u8"A\\\"$\n\r\t\u0001é"}};
+        const auto u8Text = String{"A\\\"$\n\r\t\u0001é"_el};
         const auto u8Escaped = u8Text.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{u8Escaped}.toStdString(), std::string{"A\\\\\\\"\\$\\n\\r\\t\\u{1}é"});
         REQUIRE_EQUAL(u8Escaped.length(), u8Text.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
@@ -151,7 +151,7 @@ public:
     }
 
     void testEscapeAmounts() {
-        const auto text = U8StringEditor{std::u8string_view{u8"A\né"}};
+        const auto text = String{"A\né"_el};
 
         REQUIRE_EQUAL(
             StringConverter{text.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing)}.toStdString(),
@@ -170,14 +170,14 @@ public:
             StringConverter{text.toEscaped(EscapeFormat::Json, EscapeAmount::Everything)}.toStdString(),
             std::string{"\\u0041\\n\\u00E9"});
 
-        const auto formatText = U8StringEditor{std::u8string_view{u8"A‍B"}};
+        const auto formatText = String{"A‍B"_el};
         REQUIRE_EQUAL(
             StringConverter{formatText.toEscaped(EscapeFormat::Json)}.toStdString(), std::string{"A\\u200DB"});
     }
 
     void testNativeStringAndViewApis() {
-        const auto u8Text = U8StringEditor{std::string_view{"<&>"}};
-        const auto u8View = U8String{u8Text};
+        const auto u8Text = StringEditor{"<&>"_el};
+        const auto u8View = String{u8Text};
         const auto u8Result = u8View.toEscaped(EscapeFormat::Html);
         REQUIRE_EQUAL(StringConverter{u8Result}.toStdString(), std::string{"&lt;&amp;&gt;"});
         REQUIRE_EQUAL(u8Result.length(), u8View.escapedSize(EscapeFormat::Html));
@@ -204,7 +204,7 @@ public:
     }
 
     void testMalformedInputHandling() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         const auto escapedUtf8 = invalidUtf8.toEscaped(EscapeFormat::Json, EscapeAmount::NonAscii);
         REQUIRE_EQUAL(StringConverter{escapedUtf8}.toStdString(), std::string{"A\\uFFFDB"});
 
@@ -228,7 +228,7 @@ public:
     }
 
     void testNoEscapePreservesNativeInvalidData() {
-        const auto invalidUtf8 = U8StringEditor{std::string_view{th::stdStringFromHex("41 C0 42")}};
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         const auto unchangedUtf8 = invalidUtf8.toEscaped(EscapeFormat::Json, EscapeAmount::Nothing);
         REQUIRE_FALSE(unchangedUtf8.isValidUtf8());
         REQUIRE_EQUAL(unchangedUtf8.length(), invalidUtf8.length());

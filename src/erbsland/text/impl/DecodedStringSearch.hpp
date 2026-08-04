@@ -5,9 +5,10 @@
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
 
-#include "../../unit/ElementCount.hpp"
+#include "../../unit/ItemCount.hpp"
 
 #include <cstddef>
+#include <exception>
 #include <vector>
 
 namespace erbsland::text::impl {
@@ -16,6 +17,7 @@ namespace erbsland::text::impl {
 /// @tested{U8StringReadToolsTest U16StringTest U32StringTest}
 class DecodedStringSearch final {
 private:
+    /// One decoded pattern character and its longest matching prefix length.
     struct PatternElement {
         Char character;             ///< The decoded pattern character.
         std::size_t prefixLength{}; ///< Length of the longest matching proper prefix at this position.
@@ -81,7 +83,9 @@ public:
                 auto result = start;
                 const auto skippedLength = processedLength - matchedLength;
                 for (auto i = std::size_t{0}; i < skippedLength; ++i) {
-                    static_cast<void>(readNext(result));
+                    if (readNext(result).isEndOfData()) {
+                        std::terminate();
+                    }
                 }
                 return result;
             }
@@ -93,12 +97,12 @@ public:
     /// @param readNext A function that decodes one character and advances its native index, or returns end-of-data.
     /// @return The number of non-overlapping matches.
     template <typename tIndex, typename tReadNext>
-    [[nodiscard]] auto count(const tIndex start, tReadNext readNext) const -> unit::ElementCount {
+    [[nodiscard]] auto count(const tIndex start, tReadNext readNext) const -> unit::ItemCount {
         if (_pattern.empty()) {
             return {};
         }
 
-        auto result = unit::ElementCount{};
+        auto result = unit::ItemCount{};
         auto position = start;
         auto matchedLength = std::size_t{0};
         while (true) {

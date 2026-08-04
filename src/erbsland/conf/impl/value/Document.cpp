@@ -7,9 +7,13 @@
 
 #include "../vr/Rule.hpp"
 
+#include "../../../text/Literals.hpp"
+
 #include <stack>
 
 namespace erbsland::conf::impl {
+
+using namespace text::literals;
 
 auto Document::name() const noexcept -> Name {
     return {};
@@ -208,7 +212,7 @@ auto Document::toFlatValueMap() const noexcept -> FlatValueMap {
 }
 
 void Document::setParent(const conf::ValuePtr &) {
-    throw err::LogicError("The document must not have a parent.");
+    throw err::LogicError("The document must not have a parent."_el);
 }
 
 void Document::addValue(const ValuePtr &childValue) {

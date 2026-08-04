@@ -18,9 +18,13 @@ using LabelOffset = uint32_t;
 
 /// The target for a label.
 struct LabelTarget {
+    /// Create a label target in a data section.
+    /// @param section The target data section.
+    /// @param offset The target label offset.
     LabelTarget(const DataSection section, const LabelOffset offset) noexcept : section{section}, offset{offset} {}
-    LabelTarget() = default;
 
+    // defaults
+    LabelTarget() = default;
     auto operator==(const LabelTarget &other) const noexcept -> bool = default;
     auto operator!=(const LabelTarget &other) const noexcept -> bool = default;
 
@@ -28,28 +32,11 @@ struct LabelTarget {
     LabelOffset offset{0};                     ///< The label offset (program counter/index).
 };
 
-/// A label target with source information.
-struct LabelTargetWithSource : LabelTarget {
-    LabelTargetWithSource(const DataSection section, const LabelOffset offset, const unit::LineIndex sourceLine) :
-        LabelTarget{section, offset}, sourceLine{sourceLine} {}
-    LabelTargetWithSource() = default;
-
-    unit::LineIndex sourceLine; ///< The source line, where it was defined (for error reporting on duplicates).
-};
-
 }
 
-namespace std {
 template <>
-struct hash<erbsland::re::impl::LabelTarget> {
+struct std::hash<erbsland::re::impl::LabelTarget> {
     auto operator()(const erbsland::re::impl::LabelTarget &target) const noexcept -> std::size_t {
         return erbsland::util::createHash(target.section, target.offset);
     }
 };
-template <>
-struct hash<erbsland::re::impl::LabelTargetWithSource> {
-    auto operator()(const erbsland::re::impl::LabelTargetWithSource &target) const noexcept -> std::size_t {
-        return erbsland::util::createHash(target.section, target.offset, target.sourceLine);
-    }
-};
-}

@@ -30,9 +30,10 @@ public:
     constexpr static std::size_t maxIdentifierLength = 16U;
 
 public:
+    /// Create a tokenizer for one assembly `line`.
     explicit AssemblerTokenizer(const text::String &line) noexcept : _reader{line} {}
 
-    // disable assign and copy
+    // defaults/deletions
     ~AssemblerTokenizer() = default;
     AssemblerTokenizer(const AssemblerTokenizer &) = delete;
     AssemblerTokenizer(AssemblerTokenizer &&) = delete;
@@ -57,6 +58,7 @@ public:
     }
 
 private: // char-level
+    /// Advance to the next input character.
     void readNext() {
         if (!_reader.position().isWithin(limits::maximumAssemblerLineLength)) {
             throwError("Line too long"_el);
@@ -64,32 +66,38 @@ private: // char-level
         _character = _reader.read();
     }
 
+    /// Consume following ASCII whitespace.
     void skipSpacing() {
         while (_character.isAsciiBlank()) {
             readNext();
         }
     }
 
+    /// Advance once and consume following ASCII whitespace.
     void readNextSkipSpacing() {
         readNext();
         skipSpacing();
     }
 
+    /// Test whether the current character ends a token.
     [[nodiscard]] auto isValidTokenEnd() const noexcept -> bool {
         return _character.isEndOfData() || _character.isAsciiBlank() || _character == U';' || _character == U',' ||
             _character == U'-';
     }
 
+    /// Require the current character to end a token.
     void requireValidTokenEnd() {
         if (!isValidTokenEnd()) {
             throwError("Unexpected character"_el);
         }
     }
 
+    /// Get the current input column.
     [[nodiscard]] auto currentColumn() const noexcept -> unit::ColumnIndex {
         return unit::ColumnIndex::fromSizeT(_reader.position().toSizeT()) - unit::ColumnCount::one();
     }
 
+    /// Throw an assembler error at the current column.
     [[noreturn]] void throwError(text::String description) const {
         throw RegExError{
             ErrorCategory::Assembler,
@@ -99,11 +107,13 @@ private: // char-level
     }
 
 private: // token-level
+    /// Create a token beginning at the current token start.
     [[nodiscard]] auto createToken(const AssemblerToken::Type type, AssemblerToken::Value value) const
         -> AssemblerToken {
         return AssemblerToken{type, std::move(value), _tokenStartColumn};
     }
 
+    /// Read the next token from the input.
     [[nodiscard]] auto nextToken() -> AssemblerToken {
         _tokenStartColumn = currentColumn();
         if (_character.isDigitValue(text::IntegerBase::Decimal)) {
@@ -148,6 +158,7 @@ private: // token-level
         throwError("Unexpected character"_el);
     }
 
+    /// Read an unsigned decimal integer token.
     [[nodiscard]] auto readInteger() -> AssemblerToken {
         text::StringEditor integerStr;
         while (_character.isDigitValue(text::IntegerBase::Decimal)) {
@@ -163,6 +174,7 @@ private: // token-level
         return createToken(AssemblerToken::Integer, value);
     }
 
+    /// Read a quoted text token.
     [[nodiscard]] auto readText() -> AssemblerToken {
         text::StringEditor result;
         readNext(); // consume `"`
@@ -215,6 +227,7 @@ private: // token-level
         return createToken(AssemblerToken::Text, std::move(result));
     }
 
+    /// Read a quoted character token.
     [[nodiscard]] auto readCharacter() -> AssemblerToken {
         readNext(); // consume `'`
         auto character = text::Char::noCodePoint();
@@ -270,6 +283,7 @@ private: // token-level
         return createToken(AssemblerToken::Char, static_cast<uint32_t>(character.toRawValue()));
     }
 
+    /// Read a keyword, operation, modifier, or line label.
     [[nodiscard]] auto readKeywordOrLabel() -> AssemblerToken {
         text::StringEditor keyword;
         while (_character.isAsciiWord()) {
@@ -330,6 +344,7 @@ private: // token-level
         }
     }
 
+    /// Read a percent-prefixed label token.
     [[nodiscard]] auto readLabel() -> AssemblerToken {
         readNext(); // consume `%`
         text::StringEditor label;
@@ -351,6 +366,7 @@ private: // token-level
         return createToken(AssemblerToken::Label, std::move(label));
     }
 
+    /// Read a dollar-prefixed hexadecimal offset token.
     [[nodiscard]] auto readOffset() -> AssemblerToken {
         readNext(); // consume `$`
         text::StringEditor offset;
@@ -372,6 +388,7 @@ private: // token-level
         return createToken(AssemblerToken::Offset, value);
     }
 
+    /// Read an ampersand-prefixed identifier token.
     [[nodiscard]] auto readIdentifier() -> AssemblerToken {
         readNext(); // consume `&`
         text::StringEditor identifier;
@@ -390,6 +407,7 @@ private: // token-level
         return createToken(AssemblerToken::Identifier, std::move(identifier));
     }
 
+    /// Read a dot-prefixed assembler command token.
     [[nodiscard]] auto readCommand() -> AssemblerToken {
         readNext(); // consume `.`
         text::StringEditor command;

@@ -114,7 +114,7 @@ auto ReadLineOptions::setMaximumLength(const unit::CpLength maximumLength) noexc
 
 auto ReadLineOptions::setMaximumLines(const unit::LineCount maximumLines) -> ReadLineOptions & {
     if (maximumLines.isZero()) {
-        throw err::ParameterError{"The read-line maximum line count must be at least one.", "maximumLines"};
+        throw err::ParameterError{"The read-line maximum line count must be at least one."_el, "maximumLines"_el};
     }
     _maximumLines = maximumLines;
     return *this;
@@ -143,7 +143,7 @@ auto ReadLineOptions::setCurrentText(text::String currentText) noexcept -> ReadL
 
 auto ReadLineOptions::setTimeout(const time::Seconds timeout) -> ReadLineOptions & {
     if (timeout.isNegative()) {
-        throw err::ParameterError{"The read-line timeout must not be negative.", "timeout"};
+        throw err::ParameterError{"The read-line timeout must not be negative."_el, "timeout"_el};
     }
     _timeout = timeout;
     return *this;
@@ -152,7 +152,7 @@ auto ReadLineOptions::setTimeout(const time::Seconds timeout) -> ReadLineOptions
 auto ReadLineOptions::setTimeoutDisplayThreshold(const time::Seconds timeoutDisplayThreshold) -> ReadLineOptions & {
     if (timeoutDisplayThreshold.isNegative()) {
         throw err::ParameterError{
-            "The read-line timeout display threshold must not be negative.", "timeoutDisplayThreshold"};
+            "The read-line timeout display threshold must not be negative."_el, "timeoutDisplayThreshold"_el};
     }
     _timeoutDisplayThreshold = timeoutDisplayThreshold;
     return *this;
@@ -160,7 +160,7 @@ auto ReadLineOptions::setTimeoutDisplayThreshold(const time::Seconds timeoutDisp
 
 auto ReadLineOptions::setBlinkInterval(const time::Milliseconds blinkInterval) -> ReadLineOptions & {
     if (!blinkInterval.isPositive()) {
-        throw err::ParameterError{"The read-line blink interval must be positive.", "blinkInterval"};
+        throw err::ParameterError{"The read-line blink interval must be positive."_el, "blinkInterval"_el};
     }
     _blinkInterval = blinkInterval;
     return *this;

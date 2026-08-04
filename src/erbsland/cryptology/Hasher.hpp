@@ -4,16 +4,14 @@
 
 #include "HashAlgorithm.hpp"
 
+#include "impl/hash/HashWorker_fwd.hpp"
+
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock_fwd.hpp"
 #include "../mem/ByteSpan.hpp"
 #include "../text/String_fwd.hpp"
 
 #include <memory>
-
-namespace erbsland::cryptology::impl {
-class HashWorker;
-}
 
 namespace erbsland::cryptology {
 
@@ -22,7 +20,7 @@ namespace erbsland::cryptology {
 /// share a worker and detach before mutation. After finalization, the cached digest remains available until `reset()`;
 /// calling `update()` before resetting is a logic error.
 /// @seedoc{/reference/cryptology/hashing}
-/// @tested{HasherTest Sha3ValidationTest HashValidationTest}
+/// @tested{HasherTest Sha3ValidationTest HashValidationTest HashFullValidationTest}
 class Hasher final {
 public:
     /// Create an invalid placeholder.
@@ -35,7 +33,9 @@ public:
     ~Hasher();
     Hasher(const Hasher &);
     Hasher(Hasher &&) noexcept;
+    /// Copy another hasher into this hasher.
     auto operator=(const Hasher &) -> Hasher &;
+    /// Move another hasher into this hasher.
     auto operator=(Hasher &&) noexcept -> Hasher &;
 
 public:

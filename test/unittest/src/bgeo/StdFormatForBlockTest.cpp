@@ -11,10 +11,12 @@ TESTED_TARGETS(StdFormatForBlock)
 class StdFormatForBlockTest final : public el::UnitTest {
 public:
     void testBlockValues() {
-        REQUIRE_EQUAL(std::format("{}", el::bgeo::BlockPosition{2, -3}), std::string{"2,-3"});
-        REQUIRE_EQUAL(std::format("{}", el::bgeo::BlockSize{8, 5}), std::string{"8x5"});
-        REQUIRE_EQUAL(
-            std::format("{}", el::bgeo::BlockRectangle{el::bgeo::BlockPosition{2, 3}, el::bgeo::BlockSize{8, 5}}),
-            std::string{"2,3:8x5"});
+        const auto positionText = std::format("{}", el::bgeo::BlockPosition{2, -3});
+        const auto sizeText = std::format("{}", el::bgeo::BlockSize{8, 5});
+        const auto rectangle = el::bgeo::BlockRectangle{el::bgeo::BlockPosition{2, 3}, el::bgeo::BlockSize{8, 5}};
+        const auto rectangleText = std::format("{}", rectangle);
+        REQUIRE_EQUAL(positionText, std::string{"2,-3"});
+        REQUIRE_EQUAL(sizeText, std::string{"8x5"});
+        REQUIRE_EQUAL(rectangleText, std::string{"2,3:8x5"});
     }
 };

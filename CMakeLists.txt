@@ -7,6 +7,14 @@ project(erbsland-core LANGUAGES CXX)
 
 # Option if unit tests should be enabled in this build.
 option(ERBSLAND_CORE_ENABLE_TESTS "Enable unit tests" ${PROJECT_IS_TOP_LEVEL})
+# Option if standalone interoperability tests should be enabled in this build.
+option(ERBSLAND_CORE_ENABLE_INTEROP_TESTS "Enable standalone interoperability tests" OFF)
+option(
+        ERBSLAND_CORE_REQUIRE_EXTERNAL_TLS_TOOLS
+        "Require TLS-1.3-capable OpenSSL and curl for network interoperability tests"
+        OFF)
+# Option if Clang libFuzzer targets should be enabled in this build.
+option(ERBSLAND_CORE_ENABLE_FUZZING "Enable Clang libFuzzer targets" OFF)
 # Option if demos should be enabled in this build.
 option(ERBSLAND_CORE_ENABLE_DEMOS "Enable demos" ${PROJECT_IS_TOP_LEVEL})
 # Option if precompiled headers should be enabled in this build.
@@ -52,3 +60,7 @@ set(_erbsland_core_install_targets erbsland-core)
 include(cmake/install.cmake)
 include(cmake/tests.cmake)
 include(cmake/demos.cmake)
+
+if(ERBSLAND_CORE_ENABLE_FUZZING)
+    add_subdirectory(test/fuzzing)
+endif()

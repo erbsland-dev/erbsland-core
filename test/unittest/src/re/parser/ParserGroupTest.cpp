@@ -133,7 +133,7 @@ public:
 
     void testErrors_TooManyCaptureGroups() {
         StringEditor pattern;
-        for (std::size_t i = 0; i < impl::limits::maximumCaptureGroupCount; ++i) {
+        for (std::size_t i = 0; i < el::re::impl::limits::maximumCaptureGroupCount; ++i) {
             pattern.append("(abc)"_el);
         }
         parser = Parser{pattern};
@@ -234,7 +234,7 @@ public:
         // With default settings: nesting exactly at the limit should parse,
         // nesting exceeding the limit should throw.
         {
-            constexpr auto limit = impl::limits::maximumGroupNestingDepth;
+            constexpr auto limit = el::re::impl::limits::maximumGroupNestingDepth;
 
             // Exactly at the limit: should NOT throw
             prepareParserWithNestedGroups(limit);

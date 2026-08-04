@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "OutputStream_fwd.hpp"
 #include "OutputStreamSettings.hpp"
 #include "StreamCloseStatus.hpp"
 #include "StreamError.hpp"
@@ -12,12 +13,7 @@
 
 #include "../err/LogicError.hpp"
 
-#include <memory>
-
 namespace erbsland::stream {
-
-class OutputStream;
-using OutputStreamPtr = std::shared_ptr<OutputStream>;
 
 /// The common base class for writable streams.
 /// Output streams atomically accept complete write requests. Public operations wait at most for the timeout fixed in
@@ -26,7 +22,8 @@ using OutputStreamPtr = std::shared_ptr<OutputStream>;
 /// @tested{AsyncStreamTest}
 class OutputStream : public StreamPositioning, public std::enable_shared_from_this<OutputStream> {
 public:
-    virtual ~OutputStream() = default;
+    // defaults
+    ~OutputStream() override = default;
 
 public: // state
     /// Get the immutable settings selected when this stream was created.

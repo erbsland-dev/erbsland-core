@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "IpAddress.hpp"
 
+#include "impl/CommonHostTests.hpp"
+
 #include "../err/ParseError.hpp"
 #include "../text/IntegerBase.hpp"
 #include "../text/IntegerFormat.hpp"
@@ -209,28 +211,28 @@ auto IpAddress::toHash() const noexcept -> std::size_t {
 
 auto IpAddress::fromString(const String &text) noexcept -> std::optional<IpAddress> {
     try {
-        auto reader = StringCharReader{text};
-        auto bytes = Bytes{};
-        auto v4Bytes = V4Bytes{};
-        if (parseV4(reader, v4Bytes)) {
-            bytes.overwrite(v4Bytes.span());
-            return IpAddress{IpVersion::V4, bytes};
-        }
-        reader.reset();
-        if (parseV6(reader, bytes)) {
-            return IpAddress{IpVersion::V6, bytes};
-        }
-        return std::nullopt;
-    } catch (...) {
+        return fromStringOrThrow(text);
+    } catch (const err::ParseError &) {
         return std::nullopt;
     }
 }
 
 auto IpAddress::fromStringOrThrow(const String &text) -> IpAddress {
-    if (const auto result = fromString(text); result.has_value()) {
-        return *result;
+    impl::testCommonHostText(text, "IP-address"_el);
+
+    auto reader = StringCharReader{text};
+    auto bytes = Bytes{};
+    auto v4Bytes = V4Bytes{};
+    if (parseV4(reader, v4Bytes)) {
+        bytes.overwrite(v4Bytes.span());
+        return IpAddress{IpVersion::V4, bytes};
     }
-    throw err::ParseError{"The text is not a valid IPv4 or IPv6 address."_el};
+    reader.reset();
+    if (parseV6(reader, bytes)) {
+        return IpAddress{IpVersion::V6, bytes};
+    }
+    throw err::ParseError{
+        text.contains(":"_el) ? "The IPv6 address syntax is invalid."_el : "The IPv4 address syntax is invalid."_el};
 }
 
 auto IpAddress::fromBytes(const IpVersion version, Bytes bytes) noexcept -> IpAddress {

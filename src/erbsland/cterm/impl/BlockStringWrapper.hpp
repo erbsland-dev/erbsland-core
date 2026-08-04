@@ -16,7 +16,7 @@ public:
     /// @param str The read-only string to process.
     explicit BlockStringWrapper(const BlockString &str) noexcept : _str{str} {}
 
-    // default/delete
+    // defaults/deletions
     ~BlockStringWrapper() = default;
     BlockStringWrapper(const BlockStringWrapper &) = delete;
     BlockStringWrapper(BlockStringWrapper &&) = delete;
@@ -35,6 +35,7 @@ public:
     [[nodiscard]] auto splitLines() const noexcept -> std::vector<BlockStringEditor>;
 
 private:
+    /// Wrap this paragraph into display-width-limited lines.
     [[nodiscard]] auto wrapParagraphIntoLines(int width) const noexcept -> std::vector<BlockStringEditor>;
     /// Reset the pending spacing token that is only emitted when followed by another word on the same line.
     static void clearPendingSpacing(BlockStringEditor &pendingSpacing, int &pendingSpacingWidth) noexcept;

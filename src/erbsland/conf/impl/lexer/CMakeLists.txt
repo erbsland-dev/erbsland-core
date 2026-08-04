@@ -4,21 +4,29 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        AcceptedNameEnd.hpp
         Content.hpp
         Core.cpp
         Core.hpp
         Lexer.cpp
         Lexer.hpp
+        Lexer_fwd.hpp
         LexerToken.hpp
         LiteralTables.hpp
+        MultiLineAllowed.hpp
         Name.cpp
         Name.hpp
         NameLexer.cpp
         NameLexer.hpp
+        NameLexer_fwd.hpp
+        NextLine.hpp
         Number.cpp
         Number.hpp
+        NumberSeparators.hpp
+        ParseDecimalDigitsResult.hpp
         Section.cpp
         Section.hpp
+        Sign.hpp
         Text.cpp
         Text.hpp
         TokenGenerator.hpp

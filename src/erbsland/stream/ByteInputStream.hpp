@@ -6,6 +6,8 @@
 #include "InputStream.hpp"
 #include "StreamReadResult.hpp"
 
+#include "impl/EncodedTextInputStream_fwd.hpp"
+
 #include "../mem/Byte.hpp"
 #include "../mem/ByteBlock.hpp"
 #include "../mem/ByteSpan.hpp"
@@ -23,10 +25,6 @@
 #include <optional>
 #include <span>
 #include <type_traits>
-
-namespace erbsland::stream::impl {
-class EncodedTextInputStream;
-}
 
 namespace erbsland::stream {
 
@@ -46,6 +44,7 @@ public:
     static constexpr auto cDefaultByteReadMaximum = unit::ByteLength{10U * 1024U * 1024U};
 
 public:
+    // defaults
     ~ByteInputStream() override = default;
 
 public: // accessors
@@ -183,17 +182,25 @@ protected:
     [[nodiscard]] auto deadlineFromNow() const -> ReadDeadline;
 
 protected:
+    /// Read until the destination is full or the deadline is reached.
     [[nodiscard]] auto readUntil(mem::ByteSpan destination, ReadDeadline deadline)
         -> StreamReadResult<unit::ByteLength>;
 
 private:
+    /// Read one source chunk while the logical-read lock is held.
     [[nodiscard]] auto readChunkLocked(mem::ByteSpan destination, ReadDeadline deadline)
         -> StreamReadResult<unit::ByteLength>;
+    /// Read source bytes into retained storage.
     [[nodiscard]] auto readIntoRetained(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    /// Prepare a bounded read from retained and source bytes.
     [[nodiscard]] auto prepareRead(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    /// Prepare an exact-length read from retained and source bytes.
     [[nodiscard]] auto prepareExact(unit::ByteLength length, ReadDeadline deadline) -> StreamReadStatus;
+    /// Prepare an aggregate read from retained and source bytes.
     [[nodiscard]] auto prepareAll(unit::ByteLength maximumLength, ReadDeadline deadline) -> StreamReadStatus;
+    /// Get the retained-input buffer, creating it when necessary.
     [[nodiscard]] auto retainedBuffer() -> mem::RingBuffer &;
+    /// Take a byte prefix from retained input.
     [[nodiscard]] auto takeRetained(unit::ByteLength length) -> mem::ByteBlock;
 
 protected:
@@ -214,7 +221,10 @@ protected:
     virtual auto moveSourcePosition(StreamPositionOrigin origin, unit::ByteOffset offset) -> StreamPositionStatus;
 
 private:
+    /// Clear retained input without replaying it.
     void clearRetainedInput() noexcept;
+
+private:
     mem::Endianness _endianness{mem::Endianness::Little}; ///< Integer byte order.
     mutable std::mutex _readMutex;                        ///< Serializes logical read state.
     std::optional<mem::RingBuffer> _retainedBytes;        ///< Ordered bytes retained across logical operations.

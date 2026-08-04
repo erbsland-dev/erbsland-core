@@ -18,6 +18,7 @@ public:
     inline static const auto cDefaultMaximumByteLength = unit::ByteLength{10'000'000LL};
 
 public:
+    /// Create path-read options with their default values.
     PathReadDataOptions() noexcept = default;
 
 public: // stream settings

@@ -8,7 +8,5 @@ namespace erbsland::time::tz::impl {
 
 class LocalTimeZoneBackend;
 using LocalTimeZoneBackendPtr = std::unique_ptr<LocalTimeZoneBackend>;
-class LocalTimeZoneCache;
-class LocalTimeZoneResolver;
 
 }

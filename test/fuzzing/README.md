@@ -3,6 +3,19 @@
 Each fuzz target resides in a separate subdirectory. This keeps its source,
 build configuration, corpus, and launcher together as more targets are added.
 
+## HTTP/1.x request and response codecs
+
+The transport-independent HTTP decoders have separate bounded state-machine targets with fixed-length, chunked,
+malformed, and request-smuggling seeds:
+
+```shell
+test/fuzzing/http1-request/run.sh -max_total_time=60
+test/fuzzing/http1-response/run.sh -max_total_time=60
+```
+
+The leading selector bytes control fragmentation and, for responses, HEAD/CONNECT method context. Both targets cap
+wire input at 128 KiB and run with AddressSanitizer, UndefinedBehaviorSanitizer, and libFuzzer coverage.
+
 ## TLS 1.3 record deprotection
 
 From the repository root, start the bounded TLS record-deprotection fuzzer with:

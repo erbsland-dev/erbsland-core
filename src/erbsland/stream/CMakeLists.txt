@@ -9,6 +9,9 @@ target_sources(erbsland-core PRIVATE
         AnyStringBuilderStream.cpp
         AnyStringBuilderStream.hpp
         AnyStringBuilderStream_fwd.hpp
+        ByteBlockInputStream.cpp
+        ByteBlockInputStream.hpp
+        ByteBlockInputStream_fwd.hpp
         ByteInputStream.cpp
         ByteInputStream.hpp
         ByteInputStream_fwd.hpp

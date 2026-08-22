@@ -4,11 +4,11 @@
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventLoopDriver.hpp>
-#include <erbsland/network/impl/HostResolver.hpp>
-#include <erbsland/network/impl/TcpAcceptedSocket.hpp>
-#include <erbsland/network/impl/TcpConnection.hpp>
-#include <erbsland/network/impl/TcpConnectionDevice.hpp>
-#include <erbsland/network/impl/TcpConnectionRequest.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
+#include <erbsland/network/impl/tcp/TcpConnection.hpp>
+#include <erbsland/network/impl/tcp/TcpConnectionDevice.hpp>
+#include <erbsland/network/impl/tcp/TcpConnectionRequest.hpp>
 #include <erbsland/network/source/ConnectionQuota.hpp>
 #include <erbsland/network/source/NetworkError.hpp>
 #include <erbsland/network/tcp/TcpConnection.hpp>
@@ -33,8 +33,8 @@ namespace mem = el::mem;
 namespace unit = el::unit;
 
 TESTED_TARGETS(
-    TcpConnection TcpConnectOptions TcpAcceptOptions TcpConnectionEventEditor TcpConnectionCloseContext
-        TcpConnectionCloseOrigin TcpHostResolvedFn TcpConnectionDevice ConnectionQuota ConnectionQuotaLease)
+    TcpConnection TcpConnectOptions TcpAcceptOptions TcpConnectionEventEditor ConnectionCloseContext
+        ConnectionCloseOrigin TcpHostResolvedFn TcpConnectionDevice ConnectionQuota ConnectionQuotaLease)
 class TcpConnectionTest final : public el::UnitTest {
     class FakeResolver final : public HostResolver {
     public:
@@ -186,8 +186,8 @@ public:
                 .onConnected([&]() -> void { events.push_back(1); })
                 .onData([&](mem::ByteBlock data) -> void { received.emplace_back(std::move(data)); })
                 .onWritable([&]() -> void { events.push_back(2); })
-                .onClosed([&](const TcpConnectionCloseContext &context) -> void {
-                    REQUIRE_EQUAL(context.origin(), TcpConnectionCloseOrigin::Local);
+                .onClosed([&](const ConnectionCloseContext &context) -> void {
+                    REQUIRE_EQUAL(context.origin(), ConnectionCloseOrigin::Local);
                     events.push_back(3);
                 })
                 .onFinal([&]() -> void { events.push_back(4); });
@@ -237,7 +237,7 @@ public:
         run(harness, [&]() -> void {
             REQUIRE_THROWS_AS(el::err::ParameterError, harness.connection->accept(request));
             REQUIRE_EQUAL(request->state(), TcpConnectionRequestState::Pending);
-            REQUIRE_EQUAL(harness.connection->state(), NetworkSourceState::Inactive);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
         });
 
         *harness.compatibility = true;

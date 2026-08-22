@@ -2,12 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "NetworkBackend.hpp"
 
-#include "HostLookup.hpp"
-#include "TcpConnection.hpp"
-#include "TcpListener.hpp"
-#include "TlsClientConnection.hpp"
-#include "TlsServerConnection.hpp"
-#include "UdpSocket.hpp"
+#include "host/HostLookup.hpp"
+#include "http/client/HttpClientSession.hpp"
+#include "http/server/HttpServer.hpp"
+#include "tcp/TcpConnection.hpp"
+#include "tcp/TcpListener.hpp"
+#include "tls/client/TlsClientConnection.hpp"
+#include "tls/server/TlsServerConnection.hpp"
+#include "udp/UdpSocket.hpp"
 
 #include "../../err/LogicError.hpp"
 #include "../../event/CurrentEvents.hpp"
@@ -57,6 +59,22 @@ auto NetworkBackend::createHostLookup() -> HostLookupPtr {
         throw err::LogicError{"Host lookups must be created on their owner event loop."_el};
     }
     return std::make_shared<impl::HostLookup>(owner, _resolver);
+}
+
+auto NetworkBackend::createHttpClientSession() -> HttpClientSessionPtr {
+    const auto owner = ownerEvents();
+    if (event::currentEvents() != owner) {
+        throw err::LogicError{"HTTP client sessions must be created on their owner event loop."_el};
+    }
+    return std::make_shared<impl::HttpClientSession>(owner);
+}
+
+auto NetworkBackend::createHttpServer() -> HttpServerPtr {
+    const auto owner = ownerEvents();
+    if (event::currentEvents() != owner) {
+        throw err::LogicError{"HTTP servers must be created on their owner event loop."_el};
+    }
+    return std::make_shared<impl::HttpServer>(owner);
 }
 
 auto NetworkBackend::createTcpListener() -> network::TcpListenerPtr {

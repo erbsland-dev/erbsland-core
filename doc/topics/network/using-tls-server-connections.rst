@@ -94,7 +94,7 @@ before the server creates secrets or emits its flight:
             auto options = network::TlsServerAcceptOptions{handshakeQuota};
             options.setIdentityMappings({
                 {network::HostName::fromStringOrThrow("api.example.test"_el), "tls/server/api"_el}})
-                .setAlpnProtocols({mem::ByteBlock({'h', 't', 't', 'p', '/', '1', '.', '1'})});
+                .setAlpnProtocols({"http/1.1"_el});
             connection->accept(std::move(request), std::move(options));
         });
 

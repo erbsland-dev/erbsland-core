@@ -13,3 +13,8 @@ erbsland_unittest(TARGET erbsland-profiling-unittest ENABLE_WARNINGS)
 set_target_properties(erbsland-profiling-unittest PROPERTIES
         FOLDER "Tests/Profiling"
 )
+
+add_test(
+        NAME erbsland-profiling-unittest
+        COMMAND $<TARGET_FILE:erbsland-profiling-unittest> --no-color
+)

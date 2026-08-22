@@ -25,6 +25,19 @@ The built-in :cpp:class:`HostLookup <erbsland::network::HostLookup>` implementat
 :doc:`/topics/network/resolving-hosts-asynchronously`.
 One-shot transport sources cannot be restarted after reaching ``Closed`` or ``Failed``.
 
+Common Connection Interface
+===========================
+
+``Connection`` is the common application byte-stream interface implemented by ``TcpConnection``,
+``TlsClientConnection``, and ``TlsServerConnection``.
+Protocol-specific connection and handshake checkpoints remain on the concrete interfaces.
+Once ``ConnectionState::Active`` is reached, generic consumers use the same endpoints, buffer limits, atomic send,
+receive flow control, graceful close, abort, and common event handlers.
+
+``ConnectionCloseContext`` identifies the first orderly-close initiator.
+A remote TCP close is peer EOF, while a remote TLS close is an authenticated ``close_notify``.
+Bare TCP EOF below TLS remains a truncation failure.
+
 TLS Client Sources
 ==================
 
@@ -92,7 +105,7 @@ Closing the listener does not invalidate requests already emitted.
 
 TCP data callbacks contain owned chunks of one byte stream and do not represent messages.
 Graceful local closure drains accepted output; remote EOF delivers buffered input and drains accepted output.
-``TcpConnectionCloseContext`` reports which side initiated the first normal close.
+``ConnectionCloseContext`` reports which side initiated the first normal close.
 Aborting posts only ``onFinal()``, while normal close and failure post ``onFinal()`` after ``onClosed()`` or
 ``onError()``.
 

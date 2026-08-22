@@ -14,3 +14,8 @@ target_include_directories(erbsland-core-heap-unittest PRIVATE
 add_subdirectory(src)
 
 erbsland_core_configure_unittest(erbsland-core-heap-unittest)
+
+add_test(
+        NAME erbsland-core-heap-unittest
+        COMMAND $<TARGET_FILE:erbsland-core-heap-unittest> --no-color
+)

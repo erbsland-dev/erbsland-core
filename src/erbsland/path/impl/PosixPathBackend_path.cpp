@@ -17,9 +17,8 @@
 #include "../../system/GroupId.hpp"
 #include "../../system/PosixErrorContext.hpp"
 #include "../../system/UserId.hpp"
-#include "../../text/impl/UnsafeU8StringAccess.hpp"
+#include "../../text/impl/PlatformU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
-#include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../unit/ByteLength.hpp"
@@ -50,9 +49,10 @@ using namespace text::literals;
 
 auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     errno = 0;
-    auto resolved = std::unique_ptr<char, decltype(&std::free)>{::realpath(pathAccess.data(), nullptr), &std::free};
+    auto resolved = std::unique_ptr<char, decltype(&std::free)>{
+        ::realpath(pathAccess.nullTerminatedCharPtr(), nullptr), &std::free};
     if (resolved == nullptr) {
         throwSystemError(
             "Path could not be resolved"_el,
@@ -65,9 +65,9 @@ auto PosixPathBackend::physicalPathOrThrow(const Path &path) -> Path {
 
 auto PosixPathBackend::existingPath(const Path &path) -> bool {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     struct stat info{};
-    if (::lstat(pathAccess.data(), &info) == 0) {
+    if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) == 0) {
         return true;
     }
     if (errno == ENOENT || errno == ENOTDIR) {

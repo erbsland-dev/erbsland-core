@@ -34,7 +34,13 @@ counterpart; control-channel EOF also terminates it. Finally, `Subprocess` owner
 if orderly shutdown fails.
 
 The control plane uses native sockets rather than Erbsland Network, keeping orchestration independent of the code being
-tested. The Rust counterpart uses rustls with the ring provider and no async runtime.
+tested. The Rust counterpart uses rustls with the ring provider and no async runtime. It also exposes bounded
+`http-request`, `http-response`, and `http-chunk-size` comparison commands backed by the independent `httparse` crate;
+the C++ side compares acceptance and exact parsed control/header values with the Core codecs.
+
+Deterministic `http_plain_server` and `http_tls_server` scenarios independently parse a fixed POST with `httparse`,
+validate its target, Host field, framing, and body, then return an informational head followed by chunked JSON and
+trailers. The TLS mode uses rustls, the test certificate, and HTTP/1.1-only ALPN.
 
 ## Protocol
 

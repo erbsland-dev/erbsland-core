@@ -13,9 +13,9 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
 #include <erbsland/network/Host.hpp>
-#include <erbsland/network/impl/TlsClientProtocol.hpp>
-#include <erbsland/network/impl/TlsClientProtocolTestAccess.hpp>
-#include <erbsland/network/impl/TlsWireWriter.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/TlsWireWriter.hpp>
 #include <erbsland/network/source/NetworkSendStatus.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/String.hpp>
@@ -41,7 +41,7 @@ using el::unit::ByteLength;
 TESTED_TARGETS(TlsClientHelloBuilder TlsClientProtocolOptions TlsClientProtocolState TlsClientProtocol)
 class TlsClientProtocolTest final : public el::UnitTest {
 private:
-    [[nodiscard]] static auto options(std::vector<ByteBlock> alpn = {}) -> TlsClientProtocolOptions {
+    [[nodiscard]] static auto options(std::vector<el::text::String> alpn = {}) -> TlsClientProtocolOptions {
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow("server.example"_el),
             X509ServerCertificatePolicy{X509CertificateBundle{}},
@@ -121,7 +121,7 @@ private:
 public:
     void testAuthenticatedCoreApplicationKeyUpdateAndClose() {
         const auto applicationScope = ApplicationTestScope<>{};
-        auto protocol = TlsClientProtocol{options({ByteBlock({'h', '2'})})};
+        auto protocol = TlsClientProtocol{options({"h2"_el})};
         auto access = TlsClientProtocolTestAccess{protocol};
         const auto clientRandom = ByteBlock{ByteLength{32U}, 0x11U};
         const auto sessionId = ByteBlock{ByteLength{32U}, 0x22U};

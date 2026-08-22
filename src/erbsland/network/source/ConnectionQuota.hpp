@@ -5,7 +5,7 @@
 #include "ConnectionQuota_fwd.hpp"
 #include "ConnectionQuotaLease.hpp"
 
-#include "../impl/TcpListener_fwd.hpp"
+#include "../impl/tcp/TcpListener_fwd.hpp"
 #include "../tcp/TcpListener_fwd.hpp"
 
 #include "../../unit/ItemCount.hpp"

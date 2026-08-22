@@ -23,6 +23,16 @@ public:
     constexpr U8StringDataView(std::span<const char> data, unit::ByteRange range) noexcept :
         _data{data}, _range{range} {}
 
+public: // tests
+    /// Test if the selected range is a slice of the backing string data.
+    [[nodiscard]] constexpr auto isSlice() const noexcept -> bool {
+        if (_data.empty() || !_range.isValid() || _range.isEmpty()) {
+            return false;
+        }
+        const auto backingLength = _data.back() == '\0' ? _data.size() - 1U : _data.size();
+        return !_range.index().isZero() || _range.length().toSizeT() != backingLength;
+    }
+
 public: // accessors
     /// Access the complete backing data span.
     [[nodiscard]] constexpr auto data() const noexcept -> std::span<const char> { return _data; }

@@ -13,13 +13,13 @@
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventLoopDriver.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/network/impl/HostResolver.hpp>
-#include <erbsland/network/impl/TcpAcceptedSocket.hpp>
-#include <erbsland/network/impl/TcpConnection.hpp>
-#include <erbsland/network/impl/TcpConnectionDevice.hpp>
-#include <erbsland/network/impl/TlsClientConnection.hpp>
-#include <erbsland/network/impl/TlsClientProtocolTestAccess.hpp>
-#include <erbsland/network/impl/TlsWireWriter.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
+#include <erbsland/network/impl/tcp/TcpConnection.hpp>
+#include <erbsland/network/impl/tcp/TcpConnectionDevice.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientConnection.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/TlsWireWriter.hpp>
 #include <erbsland/network/tls/TlsClientConnection.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -39,8 +39,7 @@ using namespace el::text::literals;
 namespace mem = el::mem;
 namespace unit = el::unit;
 
-TESTED_TARGETS(
-    TlsClientConnection TlsClientConnectOptions TlsClientConnectionEventEditor TlsClientConnectionCloseContext)
+TESTED_TARGETS(TlsClientConnection TlsClientConnectOptions TlsClientConnectionEventEditor ConnectionCloseContext)
 class TlsClientConnectionTest final : public el::UnitTest {
 private:
     class FakeResolver final : public HostResolver {
@@ -179,14 +178,14 @@ public:
         run(harness, [&]() -> void {
             REQUIRE_THROWS_AS(
                 el::err::RuntimeError, harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}}));
-            REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Inactive);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
         });
         registerPolicy("tls"_el);
         run(harness, [&]() -> void {
             harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}});
             REQUIRE_EQUAL(harness.connection->requestedConfigurationLabel(), "tls/client"_el);
             REQUIRE_EQUAL(harness.connection->matchedConfigurationLabel(), "tls"_el);
-            REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Connecting);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Connecting);
         });
         run(harness, [&]() -> void { harness.connection->abort(); });
         static_cast<void>(harness.loop->runUntilIdle());
@@ -200,7 +199,7 @@ public:
         run(harness, [&]() -> void {
             REQUIRE_THROWS_AS(
                 el::err::RuntimeError, harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}}));
-            REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Inactive);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
         });
     }
 
@@ -210,7 +209,7 @@ public:
         auto harness = makeHarness();
         auto events = std::vector<int>{};
         auto received = mem::ByteBlock{};
-        auto closeOrigin = TlsClientConnectionCloseOrigin::Remote;
+        auto closeOrigin = ConnectionCloseOrigin::Remote;
         run(harness, [&]() -> void {
             harness.connection->events()
                 .onHostResolved([&](const el::util::List<IpEndpoint> &) -> void { events.push_back(1); })
@@ -218,14 +217,14 @@ public:
                 .onPeerHello([&]() -> void { events.push_back(3); })
                 .onPeerAuthenticated([&]() -> void { events.push_back(4); })
                 .onHandshakeCompleted([&]() -> void {
-                    REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Active);
+                    REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Active);
                     events.push_back(5);
                 })
                 .onData([&](mem::ByteBlock data) -> void {
                     received = std::move(data);
                     events.push_back(6);
                 })
-                .onClosed([&](const TlsClientConnectionCloseContext &context) -> void {
+                .onClosed([&](const ConnectionCloseContext &context) -> void {
                     closeOrigin = context.origin();
                     events.push_back(7);
                 })
@@ -259,7 +258,7 @@ public:
             finishedRecord = serverHandshakeSender.protect(TlsRecordContentType::Handshake, finished.span());
             harness.device->callbacks.data(finishedRecord);
         });
-        REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Active);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Active);
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3, 4, 5}));
         REQUIRE(harness.connection->cipherSuite().has_value());
 
@@ -273,14 +272,14 @@ public:
         run(harness, [&]() -> void {
             REQUIRE(harness.connection->send(mem::ByteBlock({'p', 'i', 'n', 'g'})).isAccepted());
             harness.connection->close();
-            REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Closing);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Closing);
         });
         run(harness, [&]() -> void {
             harness.device->callbacks.data(
                 serverApplicationSender.protect(TlsRecordContentType::Alert, mem::ByteBlock({1U, 0U}).span()));
         });
         static_cast<void>(harness.loop->runUntilIdle());
-        REQUIRE_EQUAL(closeOrigin, TlsClientConnectionCloseOrigin::Local);
+        REQUIRE_EQUAL(closeOrigin, ConnectionCloseOrigin::Local);
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3, 4, 5, 6, 7, 8}));
         REQUIRE(harness.device->closed);
     }
@@ -312,7 +311,7 @@ public:
         REQUIRE_EQUAL(reason, NetworkErrorReason::Timeout);
         REQUIRE_EQUAL(phase, NetworkErrorPhase::Handshaking);
         REQUIRE_EQUAL(finalCount, std::size_t{1U});
-        REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Failed);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Failed);
     }
 
     void testAbortAtCheckpointPreventsNextTransitionAndEmitsOnlyFinal() {
@@ -328,7 +327,7 @@ public:
                     harness.connection->abort();
                 })
                 .onPeerAuthenticated([&]() -> void { events.push_back(99); })
-                .onClosed([&](const TlsClientConnectionCloseContext &) -> void { events.push_back(98); })
+                .onClosed([&](const ConnectionCloseContext &) -> void { events.push_back(98); })
                 .onError([&](const NetworkErrorContext &) -> void { events.push_back(97); })
                 .onFinal([&]() -> void { events.push_back(3); });
             harness.connection->connect(HostEndpoint{IpAddress::loopbackV4(), Port{9443U}});
@@ -351,6 +350,6 @@ public:
         static_cast<void>(harness.loop->runUntilIdle());
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3}));
         REQUIRE(harness.device->aborted);
-        REQUIRE_EQUAL(harness.connection->state(), TlsClientConnectionState::Closed);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Closed);
     }
 };

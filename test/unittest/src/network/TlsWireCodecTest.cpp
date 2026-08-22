@@ -3,11 +3,11 @@
 
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
-#include <erbsland/network/impl/TlsAlertDescription.hpp>
-#include <erbsland/network/impl/TlsHandshakeStream.hpp>
-#include <erbsland/network/impl/TlsProtocolError.hpp>
-#include <erbsland/network/impl/TlsRecordStream.hpp>
-#include <erbsland/network/impl/TlsWireReader.hpp>
+#include <erbsland/network/impl/tls/TlsAlertDescription.hpp>
+#include <erbsland/network/impl/tls/TlsHandshakeStream.hpp>
+#include <erbsland/network/impl/tls/TlsProtocolError.hpp>
+#include <erbsland/network/impl/tls/TlsRecordStream.hpp>
+#include <erbsland/network/impl/tls/TlsWireReader.hpp>
 #include <erbsland/unit/ByteLength.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

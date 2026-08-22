@@ -8,7 +8,7 @@
 #include "../Path.hpp"
 #include "../PathError.hpp"
 
-#include "../../text/impl/UnsafeU8StringAccess.hpp"
+#include "../../text/impl/PlatformU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
@@ -32,8 +32,8 @@ using namespace text::literals;
 
 auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &resolvedPath) const -> std::vector<Path> {
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
-    auto *directory = ::opendir(pathAccess.data());
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    auto *directory = ::opendir(pathAccess.nullTerminatedCharPtr());
     if (directory == nullptr) {
         throwSystemError(
             "Directory could not be read"_el,
@@ -91,8 +91,8 @@ auto PosixPathBackend::directoryEntriesOrThrow(const Path &path, const Path &res
 
 void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
-    if (::mkdir(pathAccess.data(), profileMode(profile, PathType::Directory)) != 0) {
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    if (::mkdir(pathAccess.nullTerminatedCharPtr(), profileMode(profile, PathType::Directory)) != 0) {
         throwSystemError(
             "Directory could not be created"_el,
             "The operating system could not create the directory."_el,
@@ -100,10 +100,10 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
             errno);
     }
     if (profile != PathAccessProfile::Default &&
-        ::chmod(pathAccess.data(), profileMode(profile, PathType::Directory)) != 0) {
+        ::chmod(pathAccess.nullTerminatedCharPtr(), profileMode(profile, PathType::Directory)) != 0) {
         const auto error = errno;
         // Rollback is best-effort; preserve the permission error that caused the operation to fail.
-        ::rmdir(pathAccess.data());
+        ::rmdir(pathAccess.nullTerminatedCharPtr());
         throwSystemError(
             "Directory permissions could not be applied"_el,
             "The directory was created, but its requested permissions could not be applied."_el,
@@ -115,16 +115,17 @@ void PosixPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathA
 
 void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     struct stat info{};
-    if (::lstat(pathAccess.data(), &info) != 0) {
+    if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
             "Path could not be removed"_el,
             "The operating system could not inspect the path before removing it."_el,
             path,
             errno);
     }
-    const auto result = S_ISDIR(info.st_mode) != 0 ? ::rmdir(pathAccess.data()) : ::unlink(pathAccess.data());
+    const auto result = S_ISDIR(info.st_mode) != 0 ? ::rmdir(pathAccess.nullTerminatedCharPtr())
+                                                   : ::unlink(pathAccess.nullTerminatedCharPtr());
     if (result != 0) {
         throwSystemError(
             "Path could not be removed"_el, "The operating system could not remove the path."_el, path, errno);
@@ -135,14 +136,15 @@ void PosixPathBackend::removeEntryOrThrow(const Path &path) const {
 void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU8StringAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU8StringAccess{destinationText};
-    const auto sourceDescriptor = ::open(sourceAccess.data(), O_RDONLY);
+    const auto sourceAccess = text::impl::PlatformU8StringAccess{sourceText};
+    const auto destinationAccess = text::impl::PlatformU8StringAccess{destinationText};
+    const auto sourceDescriptor = ::open(sourceAccess.nullTerminatedCharPtr(), O_RDONLY);
     if (sourceDescriptor < 0) {
         throwSystemError(
             "File could not be copied"_el, "The source file could not be opened for copying."_el, source, errno);
     }
-    const auto destinationDescriptor = ::open(destinationAccess.data(), O_WRONLY | O_CREAT | O_EXCL, 0666);
+    const auto destinationDescriptor =
+        ::open(destinationAccess.nullTerminatedCharPtr(), O_WRONLY | O_CREAT | O_EXCL, 0666);
     if (destinationDescriptor < 0) {
         const auto error = errno;
         // Preserve the destination error; a close failure cannot safely be retried.
@@ -192,7 +194,7 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
         ::close(sourceDescriptor);
         ::close(destinationDescriptor);
         // Removing the incomplete destination is best-effort while preserving the copy error.
-        ::unlink(destinationAccess.data());
+        ::unlink(destinationAccess.nullTerminatedCharPtr());
         throw;
     }
     // The source was read successfully; a read-only close failure is not actionable or safely retryable.
@@ -200,7 +202,7 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
     if (::close(destinationDescriptor) != 0) {
         const auto error = errno;
         // Removing the incomplete destination is best-effort while preserving the finalization error.
-        ::unlink(destinationAccess.data());
+        ::unlink(destinationAccess.nullTerminatedCharPtr());
         throwSystemError(
             "File could not be copied"_el,
             "The destination file could not be finalized."_el,
@@ -214,9 +216,9 @@ void PosixPathBackend::copyFileEntryOrThrow(const Path &source, const Path &dest
 void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU8StringAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU8StringAccess{destinationText};
-    if (::rename(sourceAccess.data(), destinationAccess.data()) != 0) {
+    const auto sourceAccess = text::impl::PlatformU8StringAccess{sourceText};
+    const auto destinationAccess = text::impl::PlatformU8StringAccess{destinationText};
+    if (::rename(sourceAccess.nullTerminatedCharPtr(), destinationAccess.nullTerminatedCharPtr()) != 0) {
         throwSystemError(
             "Path could not be moved"_el,
             "The operating system could not move the path on the same filesystem."_el,
@@ -230,11 +232,11 @@ void PosixPathBackend::moveEntryOrThrow(const Path &source, const Path &destinat
 
 auto PosixPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     auto bufferSize = std::size_t{256U};
     while (true) {
         auto buffer = text::impl::UnsafeU8StringBuffer{bufferSize};
-        const auto length = ::readlink(pathAccess.data(), buffer.data(), buffer.dataSize());
+        const auto length = ::readlink(pathAccess.nullTerminatedCharPtr(), buffer.data(), buffer.dataSize());
         if (length < 0) {
             throwSystemError(
                 "Symbolic link could not be read"_el,
@@ -253,9 +255,9 @@ void PosixPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, [[maybe_unused]] const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::UnsafeU8StringAccess{targetText};
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
-    if (::symlink(targetAccess.data(), pathAccess.data()) != 0) {
+    const auto targetAccess = text::impl::PlatformU8StringAccess{targetText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    if (::symlink(targetAccess.nullTerminatedCharPtr(), pathAccess.nullTerminatedCharPtr()) != 0) {
         throwSystemError(
             "Symbolic link could not be created"_el,
             "The operating system could not create the symbolic link."_el,

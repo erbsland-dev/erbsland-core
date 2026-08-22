@@ -2,13 +2,17 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Url.hpp"
 
-#include "../impl/UrlData.hpp"
-#include "../impl/UrlParser.hpp"
-#include "../impl/UrlWriter.hpp"
+#include "../impl/url/UrlData.hpp"
+#include "../impl/url/UrlParser.hpp"
+#include "../impl/url/UrlResolver.hpp"
+#include "../impl/url/UrlWriter.hpp"
 
 #include "../../err/ParseError.hpp"
+#include "../../text/Literals.hpp"
 
 namespace erbsland::network {
+
+using namespace text::literals;
 
 Url::Url(HostEndpoint endpoint, text::String path, text::String query, text::String fragment) :
     Url{UrlScheme::Https, std::move(endpoint), std::move(path), std::move(query), std::move(fragment)} {
@@ -49,8 +53,14 @@ auto Url::path() const noexcept -> text::String {
 auto Url::query() const noexcept -> text::String {
     return _data != nullptr ? _data->query : text::String{};
 }
+auto Url::hasQuery() const noexcept -> bool {
+    return _data != nullptr && _data->hasQuery;
+}
 auto Url::fragment() const noexcept -> text::String {
     return _data != nullptr ? _data->fragment : text::String{};
+}
+auto Url::hasFragment() const noexcept -> bool {
+    return _data != nullptr && _data->hasFragment;
 }
 
 auto Url::toString(const UrlFormatOptions options) const -> text::String {
@@ -67,6 +77,21 @@ auto Url::fromString(const text::String &text, const UrlParseOptions options) no
 
 auto Url::fromStringOrThrow(const text::String &text, const UrlParseOptions options) -> Url {
     return Url{impl::UrlParser{text, options}.parse()};
+}
+
+auto Url::resolved(const text::String &reference, const UrlParseOptions options) const noexcept -> Url {
+    try {
+        return resolvedOrThrow(reference, options);
+    } catch (const err::ParseError &) {
+        return {};
+    }
+}
+
+auto Url::resolvedOrThrow(const text::String &reference, const UrlParseOptions options) const -> Url {
+    if (!isValid()) {
+        throw err::ParseError{"A relative URI reference requires a valid base URL."_el};
+    }
+    return Url{impl::UrlResolver{*_data, reference, options}.resolve()};
 }
 
 auto Url::file(text::String path, text::String query, text::String fragment) -> Url {

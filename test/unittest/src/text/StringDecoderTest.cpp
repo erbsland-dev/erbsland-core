@@ -156,6 +156,23 @@ public:
         }
     }
 
+    void testStrictUtf8LargeExactSizeAndMalformedBoundary() {
+        auto bytes = std::vector<uint8_t>(64U * 1024U, 0x61U);
+        const auto decoded =
+            StringDecoder{makeBlock(bytes)}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict);
+        REQUIRE_EQUAL(decoded.length(), el::unit::ByteLength{64U * 1024U});
+        REQUIRE_EQUAL(StringConverter{decoded}.toStdString(), std::string(64U * 1024U, 'a'));
+
+        const auto tolerantDecoded =
+            StringDecoder{makeBlock(bytes)}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Tolerant);
+        REQUIRE_EQUAL(StringConverter{tolerantDecoded}.toStdString(), std::string(64U * 1024U, 'a'));
+
+        bytes.back() = 0xC3U;
+        REQUIRE_THROWS_AS(
+            el::text::EncodingError,
+            StringDecoder{makeBlock(bytes)}.decode(StringEncoding::Utf8, StringBomMode::Reject, EncodingMode::Strict));
+    }
+
 private:
     [[nodiscard]] static auto makeBlock(const std::vector<uint8_t> &bytes) -> ByteBlock {
         return ByteBlock::fromVector(bytes);

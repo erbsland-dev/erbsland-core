@@ -3,16 +3,16 @@
 
 #include <erbsland/core/Application.hpp>
 #include <erbsland/cryptology/keys/SigningPrivateKey.hpp>
-#include <erbsland/cryptology/tls_record/TlsRecordContentType.hpp>
 #include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
+#include <erbsland/cryptology/tls_record/TlsRecordContentType.hpp>
 #include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
 #include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/network/Host.hpp>
-#include <erbsland/network/impl/TlsClientProtocol.hpp>
-#include <erbsland/network/impl/TlsClientProtocolOptions.hpp>
-#include <erbsland/network/impl/TlsServerProtocol.hpp>
-#include <erbsland/network/impl/TlsServerProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolOptions.hpp>
+#include <erbsland/network/impl/tls/server/TlsServerProtocol.hpp>
+#include <erbsland/network/impl/tls/server/TlsServerProtocolTestAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/time/DateTime.hpp>
 
@@ -68,6 +68,9 @@ public:
         const auto contentType = mode == 1U ? erbsland::cryptology::TlsRecordContentType::Handshake
             : mode == 2U                    ? erbsland::cryptology::TlsRecordContentType::Alert
                                             : erbsland::cryptology::TlsRecordContentType::ApplicationData;
+        if (payload.empty() && contentType != erbsland::cryptology::TlsRecordContentType::ApplicationData) {
+            return 0;
+        }
         auto offset = std::size_t{0U};
         do {
             const auto length = std::min<std::size_t>(payload.size() - offset, 1U << 14U);

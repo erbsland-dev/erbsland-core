@@ -63,6 +63,7 @@ Secondary Types
     ByteTextFormat, ByteTextOptions // dynamic or padded text framing definition
     ByteBlockEditor // explicit mutable copy-on-write byte value
     RingBuffer, ByteRingBuffer // bounded FIFO bytes with optional integer operations
+    BitReader // sequential single-bit reader over borrowed read-only bytes
     ByteReader, ByteWriter // sequential byte and integer reader and writer
     StorageIdentifier // identity token for a visible backend storage range
     CowStorage❮Data❯, CowManualStorage❮Data❯ // automatic- and explicit-detach copy-on-write wrappers
@@ -72,6 +73,15 @@ Secondary Types
     ReferenceCounter // atomic intrusive reference state
     UnsafeConstMemoryPtr, UnsafeMemoryPtr // explicit raw memory boundaries
     UnsafeConstCharPtr, UnsafeCharPtr // explicit raw character boundaries
+
+Compression Types
+=================
+
+.. code-block:: text
+
+    ByteCompressionAlgorithm // stable raw compression algorithm identifier and output bound
+    ByteCompressor, ByteDecompressor // one-shot and buffered byte compression
+    ByteCompressionError, ByteCompressionErrorReason // malformed or unsupported representation failure
 
 Pattern Definitions
 ===================
@@ -204,6 +214,19 @@ Ring Buffer Patterns
     o.readInteger() -> T // atomically read one endian-aware integer
     o.writeInteger(value) -> util::Result // atomically write one endian-aware integer
     o.clear()/shrinkToInitial() // discard bytes or restore empty initial capacity
+
+Byte Compression Patterns
+=========================
+
+.. code-block:: text
+
+    T(algorithm) // create a raw compressor or decompressor for one algorithm
+    o.compress(bytes)/decompress(bytes, originalSize) -> ByteBlock // transform a raw algorithm block
+    o.compressWithEnvelope(bytes) -> ByteBlock // create a framed self-describing representation
+    T::decompressWithEnvelope(bytes[, maximumSize]) -> ByteBlock // validate, dispatch, and decode an envelope
+    o.update(bytes) // append buffered incremental input before finalization
+    o.finalize([originalSize])/finalizeWithEnvelope([maximumSize]) -> ByteBlock // finalize in one selected format
+    o.reset() // discard buffered input and cached output for reuse
 
 Sensitive Byte Storage Patterns
 ===============================

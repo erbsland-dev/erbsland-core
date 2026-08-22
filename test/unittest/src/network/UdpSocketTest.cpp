@@ -5,8 +5,8 @@
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventLoopDriver.hpp>
-#include <erbsland/network/impl/UdpSocket.hpp>
-#include <erbsland/network/impl/UdpSocketDevice.hpp>
+#include <erbsland/network/impl/udp/UdpSocket.hpp>
+#include <erbsland/network/impl/udp/UdpSocketDevice.hpp>
 #include <erbsland/network/source/NetworkError.hpp>
 #include <erbsland/network/udp/UdpSocket.hpp>
 #include <erbsland/text/Literals.hpp>

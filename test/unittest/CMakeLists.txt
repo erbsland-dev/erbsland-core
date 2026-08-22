@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_executable(erbsland-core-unittest)
+add_dependencies(erbsland-core-unittest erbsland-core-resource-integration)
 erbsland_set_required_compiler_options(erbsland-core-unittest)
 target_link_libraries(erbsland-core-unittest PRIVATE erbsland::core)
 target_include_directories(erbsland-core-unittest PRIVATE
@@ -41,4 +42,12 @@ add_subdirectory(src)
 erbsland_core_configure_unittest(erbsland-core-unittest
         COPY_TEST_DATA data
         ENABLE_DATA_DEPS
+)
+
+add_test(
+        NAME erbsland-core-unittest
+        COMMAND $<TARGET_FILE:erbsland-core-unittest> --no-color
+)
+set_tests_properties(erbsland-core-unittest PROPERTIES
+        ENVIRONMENT "ERBSLAND_CORE_CONF_TEST_SUITE=${PROJECT_SOURCE_DIR}/test/erbsland-lang-config-tests"
 )

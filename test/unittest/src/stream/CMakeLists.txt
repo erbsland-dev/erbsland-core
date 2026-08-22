@@ -7,6 +7,7 @@ target_sources(erbsland-core-unittest PRIVATE
         AnyStringBuilderStreamTest.cpp
         AsyncStreamTest.cpp
         BufferedStreamTest.cpp
+        ByteBlockInputStreamTest.cpp
         ByteStreamTest.cpp
         EncodedTextStreamTest.cpp
         StandardStreamsTest.cpp

@@ -55,7 +55,7 @@ void Hasher::update(const mem::ByteBlock &data) {
 }
 
 void Hasher::update(const text::String &text) {
-    const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataView().dataSpan();
+    const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
     workerForWrite().update(mem::toConstByteSpan(bytes));
 }
 

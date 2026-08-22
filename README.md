@@ -5,31 +5,41 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 
 ## Features
 
-- Extensive and reliable Unicode-aware strings, text and formatting (UTF-8/16/32).
-- Safe and reliable regular expression engine.
-- Filesystem paths, path infos, file and directory operations, and file streams
-- Full features command-line option parsing including formatted help and version output.
-- Networking with event-based TCP and UDP connection, host name resolution, and more.
-- Erbsland Configuration Language implementation, with support for validation rules.
-- Application framework to minimize boilerplate.
-- Extensive cryptography layer that is fully independent of other libraries.
-- Implementation of TLS 1.3 network layer over TCP. 
-- Terminal output with colors, styles, formatting, cursor movement, terminal size detection, and more.
-- Reliable date and time types, durations, system-independent time-zone calculation.
-- Safe numeric utilities, saturating math/integers, safe numeric conversions, and more.
-- Random generators, APIs to use fast or secure random generators safely.
-- Event primitives: Event loops, scheduler, timer, function invocation, event threads.
-- Stream framework: Byte and text streams, text encodings, buffers, and more.
-- Error handling: Predefined error classes, error diagnostic, formatted diagnostic error output.
-- Utilities: COW containers, co-routine primitives, enum flags, ...
+### Text, data, and utilities
+
+- Unicode-aware strings, text, and formatting for UTF-8, UTF-16, and UTF-32
+- A safe, reliable regular-expression engine
+- Byte and text streams, text encodings, and buffers
+- Filesystem paths, file and directory operations, and file streams
+- Date and time types, durations, and system-independent time-zone calculation
+- Safe numeric utilities, including saturating arithmetic and checked conversions
+- Fast and secure random-number generators with safe APIs
+- Copy-on-write containers, coroutine primitives, enum flags, compression, and more
+
+### Applications and system integration
+
+- Command-line option parsing with formatted help and version output
+- An application framework and application-part management to minimize boilerplate
+- A resource system for automatically compiled-in resources
+- Terminal output with colors, styles, cursor movement, and terminal-size detection
+- Error classes, diagnostics, and formatted diagnostic output
+- The Erbsland Configuration Language, including validation rules
+
+### Events and networking
+
+- Event loops, schedulers, timers, function invocation, and event threads
+- Event-based TCP and UDP connections, host-name resolution, and more
+- A TLS 1.3 network layer over TCP
+- An event-based HTTP server and client framework for plain TCP and TLS
+
+### Cryptography
+
+- An extensive cryptography layer with no dependency on other libraries
 
 ## Alpha Status
 
 Erbsland Core is in alpha state. Its public API may change without a compatibility period, so pin the Git revision
-used by your project and expect migrations when updating. Some of the unfinished areas are:
-
-- Logging
-- Application component lifecycle
+used by your project and expect migrations when updating. The only major unfinished area is logging.
 
 **Use the cryptography API at your own risk!**
 

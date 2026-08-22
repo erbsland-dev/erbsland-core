@@ -2,15 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "TlsClientConnectionCloseFn.hpp"
 #include "TlsClientConnectionEventEditor_fwd.hpp"
 
-#include "../source/NetworkDataFn.hpp"
-#include "../source/NetworkErrorFn.hpp"
-#include "../source/NetworkEventFn.hpp"
+#include "../source/ConnectionEventEditor.hpp"
 #include "../tcp/TcpHostResolvedFn.hpp"
-
-#include "../../event/impl/CommonEventEditor.hpp"
 
 #include <utility>
 
@@ -18,7 +13,7 @@ namespace erbsland::network {
 
 /// Callback editor for an authenticated TLS client connection.
 /// @notest{Abstract interface; the built-in implementation owns behavior tests.}
-class TlsClientConnectionEventEditor : public event::impl::CommonEventEditor {
+class TlsClientConnectionEventEditor : public ConnectionEventEditor {
 public: // defaults
     ~TlsClientConnectionEventEditor() override = default;
 
@@ -43,33 +38,20 @@ public:
     /// @param callback The replacement callback.
     /// @return This editor for chaining.
     virtual auto onHandshakeCompleted(NetworkEventFn callback) -> TlsClientConnectionEventEditor & = 0;
-    /// Set the authenticated application-data callback.
-    /// @param callback The replacement callback.
-    /// @return This editor for chaining.
-    virtual auto onData(NetworkDataFn callback) -> TlsClientConnectionEventEditor & = 0;
-    /// Set the callback for renewed application send capacity.
-    /// @param callback The replacement callback.
-    /// @return This editor for chaining.
-    virtual auto onWritable(NetworkEventFn callback) -> TlsClientConnectionEventEditor & = 0;
-    /// Set the callback for completed bidirectional TLS closure.
-    /// @param callback The replacement callback.
-    /// @return This editor for chaining.
-    virtual auto onClosed(TlsClientConnectionCloseFn callback) -> TlsClientConnectionEventEditor & = 0;
-    /// Set the callback for one operational failure.
-    /// @param callback The replacement callback.
-    /// @return This editor for chaining.
-    virtual auto onError(NetworkErrorFn callback) -> TlsClientConnectionEventEditor & = 0;
-    /// Set the exactly-once terminal callback.
-    /// @param callback The replacement callback.
-    /// @return This editor for chaining.
-    virtual auto onFinal(NetworkEventFn callback) -> TlsClientConnectionEventEditor & = 0;
+
+public: // implement ConnectionEventEditor
+    auto onData(NetworkDataFn callback) -> TlsClientConnectionEventEditor & override = 0;
+    auto onWritable(NetworkEventFn callback) -> TlsClientConnectionEventEditor & override = 0;
+    auto onClosed(ConnectionCloseFn callback) -> TlsClientConnectionEventEditor & override = 0;
+    auto onError(NetworkErrorFn callback) -> TlsClientConnectionEventEditor & override = 0;
+    auto onFinal(NetworkEventFn callback) -> TlsClientConnectionEventEditor & override = 0;
 
 protected:
     /// Create a TLS client event editor.
     /// @param source The source whose handlers are edited.
     /// @param target The event target on which callbacks run.
     TlsClientConnectionEventEditor(event::EventSourcePtr source, event::EventsPtr target) :
-        CommonEventEditor{std::move(source), std::move(target)} {}
+        ConnectionEventEditor{std::move(source), std::move(target)} {}
 };
 
 }

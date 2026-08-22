@@ -10,7 +10,7 @@
 #include "../PathWindowsFormat.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../text/impl/UnsafeU16StringAccess.hpp"
+#include "../../text/impl/PlatformU16StringAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../time/impl/WindowsTimeConverter.hpp"
@@ -113,14 +113,14 @@ auto WindowsPathBackend::directoryEntriesOrThrow(const Path &path, const Path &r
 
 void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const PathAccessProfile profile) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (profile != PathAccessProfile::Default) {
         security = std::make_unique<WindowsAccessProfileSecurity>(path, profile);
         securityAttributes = security->securityAttributes();
     }
-    if (CreateDirectoryW(pathAccess.dataAsWide(), securityAttributes) == 0) {
+    if (CreateDirectoryW(pathAccess.nullTerminatedWideCharPtr(), securityAttributes) == 0) {
         throwSystemError(
             "Directory could not be created"_el,
             "The operating system could not create the directory."_el,
@@ -132,8 +132,8 @@ void WindowsPathBackend::createDirectoryEntryOrThrow(const Path &path, const Pat
 
 void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
-    const auto attributes = GetFileAttributesW(pathAccess.dataAsWide());
+    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto attributes = GetFileAttributesW(pathAccess.nullTerminatedWideCharPtr());
     if (attributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
             "Path could not be removed"_el,
@@ -141,8 +141,9 @@ void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
             path,
             GetLastError());
     }
-    const auto result = (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0U ? RemoveDirectoryW(pathAccess.dataAsWide())
-                                                                      : DeleteFileW(pathAccess.dataAsWide());
+    const auto result = (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0U
+        ? RemoveDirectoryW(pathAccess.nullTerminatedWideCharPtr())
+        : DeleteFileW(pathAccess.nullTerminatedWideCharPtr());
     if (result == 0) {
         throwSystemError(
             "Path could not be removed"_el, "The operating system could not remove the path."_el, path, GetLastError());
@@ -153,9 +154,9 @@ void WindowsPathBackend::removeEntryOrThrow(const Path &path) const {
 void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU16StringAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU16StringAccess{destinationText};
-    if (CopyFileW(sourceAccess.dataAsWide(), destinationAccess.dataAsWide(), TRUE) == 0) {
+    const auto sourceAccess = text::impl::PlatformU16StringAccess{sourceText};
+    const auto destinationAccess = text::impl::PlatformU16StringAccess{destinationText};
+    if (CopyFileW(sourceAccess.nullTerminatedWideCharPtr(), destinationAccess.nullTerminatedWideCharPtr(), TRUE) == 0) {
         throwSystemError(
             "File could not be copied"_el,
             "The operating system could not copy the file."_el,
@@ -169,9 +170,12 @@ void WindowsPathBackend::copyFileEntryOrThrow(const Path &source, const Path &de
 void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destination) const {
     const auto sourceText = pathTextOrThrow(source);
     const auto destinationText = pathTextOrThrow(destination);
-    const auto sourceAccess = text::impl::UnsafeU16StringAccess{sourceText};
-    const auto destinationAccess = text::impl::UnsafeU16StringAccess{destinationText};
-    if (MoveFileExW(sourceAccess.dataAsWide(), destinationAccess.dataAsWide(), MOVEFILE_WRITE_THROUGH) == 0) {
+    const auto sourceAccess = text::impl::PlatformU16StringAccess{sourceText};
+    const auto destinationAccess = text::impl::PlatformU16StringAccess{destinationText};
+    if (MoveFileExW(
+            sourceAccess.nullTerminatedWideCharPtr(),
+            destinationAccess.nullTerminatedWideCharPtr(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH) == 0) {
         throwSystemError(
             "Path could not be moved"_el,
             "The operating system could not move the path on the same filesystem."_el,
@@ -185,9 +189,9 @@ void WindowsPathBackend::moveEntryOrThrow(const Path &source, const Path &destin
 
 auto WindowsPathBackend::readSymlinkOrThrow(const Path &path) const -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
-        pathAccess.dataAsWide(),
+        pathAccess.nullTerminatedWideCharPtr(),
         0,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr,
@@ -267,20 +271,22 @@ void WindowsPathBackend::createSymlinkOrThrow(
     const Path &target, const Path &path, const bool targetIsDirectory) const {
     const auto targetText = pathTextOrThrow(target);
     const auto pathText = pathTextOrThrow(path);
-    const auto targetAccess = text::impl::UnsafeU16StringAccess{targetText};
-    const auto pathAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto targetAccess = text::impl::PlatformU16StringAccess{targetText};
+    const auto pathAccess = text::impl::PlatformU16StringAccess{pathText};
     auto flags = DWORD{SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE};
     if (targetIsDirectory) {
         flags |= SYMBOLIC_LINK_FLAG_DIRECTORY;
     }
-    if (CreateSymbolicLinkW(pathAccess.dataAsWide(), targetAccess.dataAsWide(), flags) != 0) {
+    if (CreateSymbolicLinkW(pathAccess.nullTerminatedWideCharPtr(), targetAccess.nullTerminatedWideCharPtr(), flags) !=
+        0) {
         invalidateInfo(path);
         return;
     }
     auto errorCode = GetLastError();
     if (errorCode == ERROR_INVALID_PARAMETER) {
         flags &= ~SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
-        if (CreateSymbolicLinkW(pathAccess.dataAsWide(), targetAccess.dataAsWide(), flags) != 0) {
+        if (CreateSymbolicLinkW(
+                pathAccess.nullTerminatedWideCharPtr(), targetAccess.nullTerminatedWideCharPtr(), flags) != 0) {
             invalidateInfo(path);
             return;
         }

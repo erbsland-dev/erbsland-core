@@ -146,7 +146,9 @@ auto CommonPathBackend::commonAncestor(const Path &path, std::optional<Path> bas
 auto CommonPathBackend::openTextInputStreamOrThrow(const Path &path, const PathReadTextOptions options) const
     -> stream::TextInputStreamPtr {
     return stream::impl::createEncodedTextInputStream(
-        openByteInputStreamOrThrow(path, PathReadDataOptions{}.setStreamSettings(options.streamSettings())),
+        openByteInputStreamOrThrow(
+            path,
+            PathReadDataOptions{}.setSymlinkMode(options.symlinkMode()).setStreamSettings(options.streamSettings())),
         options.encoding(),
         options.bomMode(),
         options.encodingMode());

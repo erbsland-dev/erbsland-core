@@ -23,6 +23,8 @@ File Positioning
 ================
 
 Streams opened for regular files support optional byte positioning unless the output file was opened in append mode.
+``ByteBlockInputStream`` also supports positioning and exposes a retained copy-on-write byte block through immediate
+bounded reads.
 Check :cpp:func:`erbsland::stream::StreamPositioning::supportsPositioning <erbsland::stream::StreamPositioning::supportsPositioning>` before using the positioning methods.
 Pipes, terminals, standard-stream proxies, append-only output streams, and in-memory text builders do not promise this
 capability.
@@ -165,6 +167,8 @@ Interface
 =========
 
 .. doxygenclass:: erbsland::stream::AnyStringBuilderStream
+    :members:
+.. doxygenclass:: erbsland::stream::ByteBlockInputStream
     :members:
 .. doxygenclass:: erbsland::stream::ByteInputStream
     :members:

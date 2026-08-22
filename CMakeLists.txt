@@ -5,6 +5,8 @@ cmake_minimum_required(VERSION 3.28)
 
 project(erbsland-core LANGUAGES CXX)
 
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 # Option if unit tests should be enabled in this build.
 option(ERBSLAND_CORE_ENABLE_TESTS "Enable unit tests" ${PROJECT_IS_TOP_LEVEL})
 # Option if standalone interoperability tests should be enabled in this build.
@@ -45,6 +47,7 @@ erbsland_enable_precompiled_headers(erbsland-core
 )
 
 add_subdirectory(src/erbsland)
+add_subdirectory(cmake/tools/resource-compiler)
 
 # Add the include path for integrations and installations
 target_include_directories(erbsland-core
@@ -55,12 +58,21 @@ target_include_directories(erbsland-core
         $<INSTALL_INTERFACE:include>
 )
 
-set(_erbsland_core_install_targets erbsland-core)
+set(_erbsland_core_install_targets erbsland-core erbsland-core-resource-compiler)
 
+include(cmake/application.cmake)
+include(cmake/resources.cmake)
 include(cmake/install.cmake)
 include(cmake/tests.cmake)
-include(cmake/demos.cmake)
 
-if(ERBSLAND_CORE_ENABLE_FUZZING)
-    add_subdirectory(test/fuzzing)
+if(ERBSLAND_CORE_ENABLE_DEMOS)
+    add_subdirectory(demos)
+endif()
+
+if(ERBSLAND_CORE_ENABLE_TESTS)
+    enable_testing()
+endif()
+
+if(ERBSLAND_CORE_ENABLE_TESTS OR ERBSLAND_CORE_ENABLE_INTEROP_TESTS OR ERBSLAND_CORE_ENABLE_FUZZING)
+    add_subdirectory(test)
 endif()

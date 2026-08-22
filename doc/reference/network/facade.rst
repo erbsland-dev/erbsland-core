@@ -36,6 +36,8 @@ Accepted TLS
 before it consumes a TCP request.
 A required shared handshake quota independently bounds unauthenticated work and releases its lease when client Finished
 is verified.
+ALPN protocols are configured and reported as ``text::String`` values.
+TLS preserves their exact raw bytes and only converts between string storage and protocol bytes at the wire boundary.
 See :doc:`/topics/network/using-tls-server-connections` for identity registration, shared quotas, ClientHello policy,
 back-pressure, and graceful closure.
 
@@ -45,10 +47,21 @@ Interface
 .. doxygentypedef:: erbsland::network::HostResolvedFn
 .. doxygenclass:: erbsland::network::Network
     :members:
+.. doxygenclass:: erbsland::network::Connection
+    :members:
+
+.. doxygentypedef:: erbsland::network::ConnectionPtr
+.. doxygenclass:: erbsland::network::ConnectionCloseContext
+    :members:
+.. doxygentypedef:: erbsland::network::ConnectionCloseFn
+.. doxygenenum:: erbsland::network::ConnectionCloseOrigin
+.. doxygenclass:: erbsland::network::ConnectionEventEditor
+    :members:
 .. doxygenclass:: erbsland::network::ConnectionQuota
     :members:
 .. doxygenclass:: erbsland::network::ConnectionQuotaLease
     :members:
+.. doxygenenum:: erbsland::network::ConnectionState
 .. doxygentypedef:: erbsland::network::NetworkDataFn
 .. doxygenclass:: erbsland::network::NetworkError
     :members:
@@ -65,10 +78,6 @@ Interface
     :members:
 .. doxygenclass:: erbsland::network::TcpAcceptOptions
     :members:
-.. doxygenclass:: erbsland::network::TcpConnectionCloseContext
-    :members:
-.. doxygentypedef:: erbsland::network::TcpConnectionCloseFn
-.. doxygenenum:: erbsland::network::TcpConnectionCloseOrigin
 .. doxygentypedef:: erbsland::network::TcpConnectionFilterFn
 .. doxygenenum:: erbsland::network::TcpConnectionFilterResult
 .. doxygentypedef:: erbsland::network::TcpConnectionFn
@@ -82,26 +91,16 @@ Interface
 .. doxygenenum:: erbsland::network::TlsAlertDescription
 .. doxygenclass:: erbsland::network::TlsClientConnection
     :members:
-.. doxygenclass:: erbsland::network::TlsClientConnectionCloseContext
-    :members:
-.. doxygentypedef:: erbsland::network::TlsClientConnectionCloseFn
-.. doxygenenum:: erbsland::network::TlsClientConnectionCloseOrigin
 .. doxygenclass:: erbsland::network::TlsClientConnectionEventEditor
     :members:
-.. doxygenenum:: erbsland::network::TlsClientConnectionState
 .. doxygenclass:: erbsland::network::TlsClientConnectOptions
     :members:
 .. doxygenclass:: erbsland::network::TlsServerAcceptOptions
     :members:
 .. doxygenclass:: erbsland::network::TlsServerConnection
     :members:
-.. doxygenclass:: erbsland::network::TlsServerConnectionCloseContext
-    :members:
-.. doxygentypedef:: erbsland::network::TlsServerConnectionCloseFn
-.. doxygenenum:: erbsland::network::TlsServerConnectionCloseOrigin
 .. doxygenclass:: erbsland::network::TlsServerConnectionEventEditor
     :members:
-.. doxygenenum:: erbsland::network::TlsServerConnectionState
 .. doxygenclass:: erbsland::network::TlsServerIdentityMapping
     :members:
 .. doxygenclass:: erbsland::network::UdpDatagram

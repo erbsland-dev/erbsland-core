@@ -22,6 +22,7 @@ namespace options {}
 namespace path {}
 namespace random {}
 namespace re {}
+namespace resource {}
 namespace stream::io {}
 namespace system {}
 namespace text {

@@ -8,7 +8,8 @@
 #include "UrlScheme.hpp"
 
 #include "../HostEndpoint.hpp"
-#include "../impl/UrlData_fwd.hpp"
+#include "../impl/http/client/HttpClientRequest_fwd.hpp"
+#include "../impl/url/UrlData_fwd.hpp"
 
 #include <memory>
 #include <utility>
@@ -21,6 +22,8 @@ namespace erbsland::network {
 /// @seedoc{/reference/network/url}
 /// @tested{UrlTest}
 class Url final {
+    friend class impl::HttpClientRequest;
+
 public:
     /// Create an invalid URL placeholder.
     Url() noexcept = default;
@@ -62,8 +65,12 @@ public: // tests/accessors
     [[nodiscard]] auto path() const noexcept -> text::String;
     /// Get the decoded NFC query.
     [[nodiscard]] auto query() const noexcept -> text::String;
+    /// Test whether a query delimiter is present, including an explicitly empty query.
+    [[nodiscard]] auto hasQuery() const noexcept -> bool;
     /// Get the decoded NFC fragment.
     [[nodiscard]] auto fragment() const noexcept -> text::String;
+    /// Test whether a fragment delimiter is present, including an explicitly empty fragment.
+    [[nodiscard]] auto hasFragment() const noexcept -> bool;
 
 public: // conversion
     /// Format this URL in canonical form.
@@ -73,6 +80,11 @@ public: // conversion
     /// Parse an absolute URL.
     /// @throws err::ParseError If the URL is invalid or exceeds configured limits.
     [[nodiscard]] static auto fromStringOrThrow(const text::String &text, UrlParseOptions options = {}) -> Url;
+    /// Resolve a relative or absolute URI reference, returning an invalid URL on failure.
+    [[nodiscard]] auto resolved(const text::String &reference, UrlParseOptions options = {}) const noexcept -> Url;
+    /// Resolve a relative or absolute URI reference.
+    /// @throws err::ParseError If the base or reference is invalid, unsupported, or exceeds configured limits.
+    [[nodiscard]] auto resolvedOrThrow(const text::String &reference, UrlParseOptions options = {}) const -> Url;
 
 public: // factories
     /// Create a local file URL.

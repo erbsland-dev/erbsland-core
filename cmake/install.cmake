@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 install(TARGETS ${_erbsland_core_install_targets}
         EXPORT erbsland-core-targets
         ARCHIVE DESTINATION lib
+        RUNTIME DESTINATION bin
         INCLUDES DESTINATION include
 )
 install(DIRECTORY include/
@@ -35,6 +36,8 @@ configure_package_config_file(
 )
 install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake/git-version.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/application.cmake"
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/resources.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfig.cmake"
         "${CMAKE_CURRENT_BINARY_DIR}/erbsland-coreConfigVersion.cmake"
         DESTINATION lib/cmake/erbsland-core

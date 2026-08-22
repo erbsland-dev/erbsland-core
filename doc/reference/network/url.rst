@@ -19,6 +19,19 @@ Dot segments remain unchanged.
 ``authorityText()`` retains the source authority, but ``toString()`` creates canonical transport text and therefore does
 not preserve the original encoding spelling.
 
+``hasQuery()`` and ``hasFragment()`` distinguish an absent delimiter from an explicitly empty query or fragment.
+Canonical output retains explicitly empty delimiters.
+
+Relative References
+===================
+
+``resolved()`` and ``resolvedOrThrow()`` apply RFC 3986 reference resolution to hierarchical URLs.
+They support absolute, scheme-relative, absolute-path, relative-path, query-only, fragment-only, and empty references.
+Resolution removes dot segments from the resulting path; ordinary absolute parsing continues to retain them.
+
+HTTP, HTTPS, FTP, FTPS, file, and authority-bearing custom URLs can act as bases.
+Mail addresses and authority-free custom URLs are opaque and cannot resolve relative references.
+
 Safety and Display
 ==================
 

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/text/impl/PlatformU16StringAccess.hpp>
 #include <erbsland/text/impl/UnsafeU16StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
@@ -659,7 +660,7 @@ public:
 
         auto text = U16StringEditor{std::u16string_view{u"abef"}};
         text.reserve(U16DataLength{16U});
-        const auto *data = el::text::impl::UnsafeU16StringEditorAccess{text}.data();
+        const auto *data = el::text::impl::UnsafeU16StringEditorAccess{text}.dataSpan().data();
 
         text.insert(U16DataIndex{2U}, u"cd"_el);
         text.replace(U16DataRange{U16DataIndex{2U}, U16DataLength{2U}}, u"XY"_el);
@@ -668,8 +669,9 @@ public:
         text.replace(U16DataRange::noRange(), u"?"_el);
 
         REQUIRE_EQUAL(StringConverter{text}.toStdU16String(), std::u16string{u"abXYef!"});
-        REQUIRE_EQUAL(el::text::impl::UnsafeU16StringEditorAccess{text}.data(), data);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU16StringEditorAccess{text}.data()[text.length().toSizeT()], u'\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU16StringEditorAccess{text}.dataSpan().data(), data);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU16StringAccess{text}.nullTerminatedCharPtr()[text.length().toSizeT()], u'\0');
 
         auto firstText = U16StringEditor{std::u16string_view{u"one one"}};
         firstText.removeFirst(u"one"_el);

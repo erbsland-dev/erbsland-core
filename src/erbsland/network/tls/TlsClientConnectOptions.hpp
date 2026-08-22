@@ -7,7 +7,6 @@
 #include "../source/SocketBufferLimits.hpp"
 #include "../tcp/TcpConnectOptions.hpp"
 
-#include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
 #include "../../time/TimeDelta.hpp"
 
@@ -61,12 +60,12 @@ public:
         _bufferLimits = value;
         return *this;
     }
-    /// Get the ordered opaque ALPN offers.
-    [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<mem::ByteBlock> & { return _alpnProtocols; }
-    /// Set the ordered opaque ALPN offers.
+    /// Get the ordered ALPN offers.
+    [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<text::String> & { return _alpnProtocols; }
+    /// Set the ordered ALPN offers.
     /// @param value The protocols in client preference order.
     /// @return This options object for chaining.
-    auto setAlpnProtocols(std::vector<mem::ByteBlock> value) noexcept -> TlsClientConnectOptions & {
+    auto setAlpnProtocols(std::vector<text::String> value) noexcept -> TlsClientConnectOptions & {
         _alpnProtocols = std::move(value);
         return *this;
     }
@@ -102,7 +101,7 @@ private:
     text::String _configurationLabel{cDefaultConfigurationLabel}; ///< Registry label resolved at startup.
     TcpConnectOptions _tcpOptions;                                ///< DNS and TCP options.
     SocketBufferLimits _bufferLimits;                             ///< TLS-owned queue limits.
-    std::vector<mem::ByteBlock> _alpnProtocols;                   ///< Ordered ALPN offer.
+    std::vector<text::String> _alpnProtocols;                     ///< Ordered ALPN offer.
     time::TimeDelta _handshakeTimeout{cDefaultHandshakeTimeout};  ///< TLS handshake deadline.
     time::TimeDelta _idleTimeout{cDefaultIdleTimeout};            ///< Authenticated application idle deadline.
     time::TimeDelta _closeTimeout{cDefaultCloseTimeout};          ///< Graceful close deadline.

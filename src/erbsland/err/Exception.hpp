@@ -15,6 +15,7 @@
 namespace erbsland::err {
 
 /// The base class for all exceptions in this library.
+/// @tested{PlatformStringAccessTest}
 class Exception : public std::exception {
 public:
     /// Create an empty exception.
@@ -22,16 +23,15 @@ public:
 
     /// Create an error with the given reason text.
     /// @param reason The reason for the exception.
-    explicit Exception(text::String reason) noexcept : _reason{std::move(reason)} {}
+    explicit Exception(text::String reason);
     /// Create an error with the given reason text and diagnostic cause.
     /// @param reason The reason for the exception.
     /// @param cause The diagnostic cause.
-    explicit Exception(text::String reason, std::exception_ptr cause) noexcept :
-        _reason{std::move(reason)}, _cause{std::move(cause)} {}
+    explicit Exception(text::String reason, std::exception_ptr cause);
     /// @overload
-    explicit Exception(std::string_view reason) noexcept;
+    explicit Exception(std::string_view reason);
     /// @overload
-    explicit Exception(std::string_view reason, std::exception_ptr cause) noexcept;
+    explicit Exception(std::string_view reason, std::exception_ptr cause);
 
     // defaults
     ~Exception() override = default;
@@ -58,9 +58,12 @@ public: // conversion
     /// Convert the error with all its details into a structured diagnostic.
     [[nodiscard]] virtual auto diagnostic() const -> DiagnosticConstPtr;
 
-protected:
+private:
     text::String _reason;      ///< The reason for the exception.
     std::exception_ptr _cause; ///< Optional diagnostic cause.
+
+    /// Materialize sliced reasons because `what()` must return storage owned by this exception.
+    [[nodiscard]] static auto normalizedReason(text::String reason) -> text::String;
 };
 
 }

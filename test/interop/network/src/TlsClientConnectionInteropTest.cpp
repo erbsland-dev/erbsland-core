@@ -48,15 +48,15 @@ private:
         std::uint64_t sent{};
         mem::ByteBlockEditor received;
         std::optional<TlsCipherSuite> cipherSuite;
-        mem::ByteBlock alpn;
+        el::text::String alpn;
         std::optional<NetworkErrorContext> error;
     };
 
     static constexpr auto cChunkLength = std::uint64_t{16U * 1024U};
 
 private:
-    [[nodiscard]] static auto alpn() -> mem::ByteBlock {
-        return mem::ByteBlock({'e', 'r', 'b', 's', 'l', 'a', 'n', 'd', '-', 't', 'e', 's', 't'});
+    [[nodiscard]] static auto alpn() -> el::text::String {
+        return "erbsland-test"_el;
     }
 
     static void installTlsConfiguration() {
@@ -119,7 +119,7 @@ private:
                         connection->close();
                     }
                 })
-                .onClosed([&](const TlsClientConnectionCloseContext &) -> void { result.closed = true; })
+                .onClosed([&](const ConnectionCloseContext &) -> void { result.closed = true; })
                 .onError([&](const NetworkErrorContext &context) -> void { result.error = context; })
                 .onFinal([&]() -> void { result.final = true; });
             auto options = TlsClientConnectOptions{};

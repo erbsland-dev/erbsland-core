@@ -26,6 +26,7 @@ Excluded From All Headers :
     * "text/StdFormat.hpp"
     * "time/StdFormat.hpp"
     * "unit/StdFormat.hpp"
+    * "resource/ResourceStorageRegistration.hpp"
 
 # Source-relative public headers that remain available in their original
 # include directory but are not additionally exposed in the folded parent.

@@ -47,6 +47,16 @@ takes longer than the normal cache period.
 Successful mutations through the library invalidate the cache attached to each directly affected path.
 External filesystem changes remain snapshot-based and become visible after cache expiry or an explicit reload.
 
+Reading Content
+===============
+
+``Path::content()`` opens byte and text input streams and provides bounded whole-file helpers on top of those streams.
+Input options default to ``SymlinkMode::Follow`` for compatibility with ordinary filesystem reads.
+Select ``Skip`` or ``Use`` to reject symbolic links and reparse points instead.
+Restrictive POSIX opens walk path components with ``openat`` and ``O_NOFOLLOW``; Windows opens inspect every component
+with reparse-point processing disabled.
+Text reads propagate the selected policy to their underlying byte stream.
+
 Path Diagnostics
 ================
 

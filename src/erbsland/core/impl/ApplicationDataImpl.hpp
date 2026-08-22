@@ -5,6 +5,7 @@
 #include "ApplicationData.hpp"
 #include "EventData_fwd.hpp"
 
+#include "../../resource/ResourceManager_fwd.hpp"
 #include "../../stream/TextOutputStream_fwd.hpp"
 
 #include <atomic>
@@ -14,7 +15,7 @@
 namespace erbsland::core::impl {
 
 /// The default storage implementation for the internal application data.
-/// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
+/// @tested{ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
 class ApplicationDataImpl : public ApplicationData {
 public:
     /// Create the default internal application-data storage.
@@ -44,12 +45,16 @@ public: // accessors
     void setInitializeFn(InitializeFn initializeFn) noexcept override;
     [[nodiscard]] auto mainFn() noexcept -> const MainFn & override;
     void setMainFn(MainFn mainFn) noexcept override;
+    [[nodiscard]] auto partManagerMutex() noexcept -> std::mutex & override;
+    [[nodiscard]] auto partManager() noexcept -> const ApplicationPartManagerPtr & override;
+    void setPartManager(ApplicationPartManagerPtr manager) noexcept override;
     [[nodiscard]] auto randomMutex() noexcept -> std::mutex & override;
     [[nodiscard]] auto random() noexcept -> const random::RandomPtr & override;
     void setRandom(random::RandomPtr random) noexcept override;
     [[nodiscard]] auto secureRandom() noexcept -> const random::RandomPtr & override;
     void setSecureRandom(random::RandomPtr random) noexcept override;
     [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & override;
+    [[nodiscard]] auto resources() -> const resource::Resources & override;
     [[nodiscard]] auto systemMutex() noexcept -> std::mutex & override;
     [[nodiscard]] auto displayText() noexcept -> const i18n::DisplayTextMapConstPtr & override;
     void setDisplayText(i18n::DisplayTextMapConstPtr displayText) noexcept override;
@@ -88,6 +93,9 @@ private:
     InitializeFn _initializeFn;                                ///< Lamda-based override of initialize().
     MainFn _mainFn;                                            ///< Lambda-based override of main().
 
+    std::mutex _partManagerMutex;                              ///< Protects part-manager creation.
+    ApplicationPartManagerPtr _partManager;                    ///< Optional detached part manager.
+
     std::mutex _randomMutex;                                   ///< Mutex for lazy random generator creation.
     random::RandomPtr _random;                                 ///< Shared fast random generator.
     random::RandomPtr _secureRandom;                           ///< Shared secure random generator.
@@ -95,17 +103,20 @@ private:
     std::mutex _cryptologyMutex;                               ///< Mutex for lazy cryptology configuration creation.
     std::unique_ptr<cryptology::CryptologyConfiguration> _cryptologyConfiguration; ///< Cryptology configuration.
 
-    std::mutex _systemMutex;                                ///< Mutex for lazy system service creation.
-    i18n::DisplayTextMapConstPtr _displayText;              ///< Shared application display texts.
-    system::UserLookupPtr _userLookup;                      ///< Shared user and group lookup service.
+    std::mutex _resourceMutex;                                   ///< Mutex for lazy resource-manager creation.
+    std::unique_ptr<resource::ResourceManager> _resourceManager; ///< Compiled-resource manager.
 
-    bool _isTerminalEnabled{false};                         ///< Flag if the terminal was enabled.
-    cterm::TerminalPtr _terminal;                           ///< The terminal instance.
+    std::mutex _systemMutex;                                     ///< Mutex for lazy system service creation.
+    i18n::DisplayTextMapConstPtr _displayText;                   ///< Shared application display texts.
+    system::UserLookupPtr _userLookup;                           ///< Shared user and group lookup service.
 
-    stream::StandardStreamRedirect _standardStreamRedirect; ///< Redirects standard streams to the terminal.
+    bool _isTerminalEnabled{false};                              ///< Flag if the terminal was enabled.
+    cterm::TerminalPtr _terminal;                                ///< The terminal instance.
 
-    std::mutex _eventMutex;                                 ///< Mutex for lazy event system creation.
-    EventDataPtr _eventData;                                ///< The data for the event system.
+    stream::StandardStreamRedirect _standardStreamRedirect;      ///< Redirects standard streams to the terminal.
+
+    std::mutex _eventMutex;                                      ///< Mutex for lazy event system creation.
+    EventDataPtr _eventData;                                     ///< The data for the event system.
 };
 
 }

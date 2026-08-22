@@ -34,3 +34,17 @@ checkpoints, back-pressure, deadlines, and ``close_notify``.
 
 :doc:`using-tls-server-connections` explains shared accepted-connection and handshake quotas, default and exact-SNI
 identities, ClientHello inspection, authenticated stream flow, and graceful shutdown.
+
+HTTP Servers
+============
+
+:doc:`using-http-servers` explains how to configure one plaintext or TLS HTTP/1.1 server, register ordered server and
+session routes, choose request-body policies, retain requests for delayed work, stream responses, and enable bounded
+cookie-backed sessions.
+
+HTTP Clients
+============
+
+:doc:`using-http-clients` explains how to prepare and submit HTTP or HTTPS requests through one session, choose
+automatic or low-level response handling, stream uploads and downloads under back-pressure, and close the session
+cleanly.

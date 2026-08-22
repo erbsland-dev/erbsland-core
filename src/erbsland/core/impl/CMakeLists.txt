@@ -16,6 +16,16 @@ target_sources(erbsland-core PRIVATE
         ApplicationErrorDocumentBuilder.hpp
         ApplicationInstanceManager.cpp
         ApplicationInstanceManager.hpp
+        ApplicationPartIdentifier.cpp
+        ApplicationPartIdentifier.hpp
+        ApplicationPartManager.cpp
+        ApplicationPartManager.hpp
+        ApplicationPartManager_fwd.hpp
+        ApplicationPartManager_lifecycle.cpp
+        ApplicationPartManager_prepare.cpp
+        ApplicationPartRecord.hpp
+        ApplicationPartThread.cpp
+        ApplicationPartThread.hpp
         LibraryVersion.hpp
 )
 

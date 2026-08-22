@@ -67,7 +67,7 @@ void Hmac::update(const mem::ByteBlock &data) {
 }
 
 void Hmac::update(const text::String &text) {
-    const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataView().dataSpan();
+    const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
     update(mem::toConstByteSpan(bytes));
 }
 

@@ -17,9 +17,8 @@
 #include "../../system/GroupId.hpp"
 #include "../../system/UserId.hpp"
 #include "../../system/WindowsErrorContext.hpp"
-#include "../../text/impl/UnsafeU16StringAccess.hpp"
+#include "../../text/impl/PlatformU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
-#include "../../text/impl/UnsafeU16StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/StringEditor.hpp"
@@ -66,13 +65,13 @@ void WindowsPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryTextAccess = text::impl::UnsafeU16StringAccess{directoryText};
-        if (CreateDirectoryW(directoryTextAccess.dataAsWide(), nullptr) != 0) {
+        const auto directoryTextAccess = text::impl::PlatformU16StringAccess{directoryText};
+        if (CreateDirectoryW(directoryTextAccess.nullTerminatedWideCharPtr(), nullptr) != 0) {
             continue;
         }
         auto errorCode = GetLastError();
         if (errorCode == ERROR_ALREADY_EXISTS) {
-            const auto attributes = GetFileAttributesW(directoryTextAccess.dataAsWide());
+            const auto attributes = GetFileAttributesW(directoryTextAccess.nullTerminatedWideCharPtr());
             if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0U) {
                 continue;
             }
@@ -183,9 +182,9 @@ auto WindowsPathBackend::sidString(void *sid) -> text::String {
 
 auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
-        pathTextAccess.dataAsWide(),
+        pathTextAccess.nullTerminatedWideCharPtr(),
         FILE_READ_ATTRIBUTES,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr,
@@ -224,8 +223,8 @@ auto WindowsPathBackend::physicalPathOrThrow(const Path &path) -> Path {
 
 auto WindowsPathBackend::existingPath(const Path &path) -> bool {
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
-    const auto attributes = GetFileAttributesW(pathTextAccess.dataAsWide());
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto attributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (attributes != INVALID_FILE_ATTRIBUTES) {
         return true;
     }

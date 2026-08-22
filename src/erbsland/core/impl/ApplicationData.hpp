@@ -6,6 +6,7 @@
 #include "EventData_fwd.hpp"
 
 #include "../ApplicationInfo.hpp"
+#include "../ApplicationPartManager_fwd.hpp"
 #include "../CommandLineArguments.hpp"
 #include "../InitializeFn.hpp"
 #include "../MainFn.hpp"
@@ -18,17 +19,20 @@
 #include "../../options/OptionSensitiveTextLocation.hpp"
 #include "../../options/OptionValues.hpp"
 #include "../../random/Random_fwd.hpp"
+#include "../../resource/Resources_fwd.hpp"
 #include "../../stream/StandardStreamRedirect.hpp"
 #include "../../system/UserLookup_fwd.hpp"
 #include "../../text/TextDocument_fwd.hpp"
 #include "../../unit/ExitCode.hpp"
+
+#include <mutex>
 
 namespace erbsland::core::impl {
 
 /// The interface for the internal data of the application.
 /// This is the actual singleton to allow temporary `Application` instances.
 /// Construction and `setCommandLineArguments` are protected by the mutex in `ApplicationInstanceManager`.
-/// @tested{ApplicationOptionsTest ApplicationTestScopeTest}
+/// @tested{ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
 class ApplicationData {
 public:
     // defaults
@@ -81,6 +85,12 @@ public: // accessors
     [[nodiscard]] virtual auto mainFn() noexcept -> const MainFn & = 0;
     /// Set the application's main function.
     virtual void setMainFn(MainFn mainFn) noexcept = 0;
+    /// Access the mutex protecting application-part manager creation.
+    [[nodiscard]] virtual auto partManagerMutex() noexcept -> std::mutex & = 0;
+    /// Access the application-part manager, if created.
+    [[nodiscard]] virtual auto partManager() noexcept -> const ApplicationPartManagerPtr & = 0;
+    /// Set the application-part manager.
+    virtual void setPartManager(ApplicationPartManagerPtr manager) noexcept = 0;
     /// Access the mutex protecting the random generators.
     [[nodiscard]] virtual auto randomMutex() noexcept -> std::mutex & = 0;
     /// Access the standard random generator.
@@ -93,6 +103,8 @@ public: // accessors
     virtual void setSecureRandom(random::RandomPtr random) noexcept = 0;
     /// Access the cryptology configuration.
     [[nodiscard]] virtual auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & = 0;
+    /// Access the compiled-resource manager.
+    [[nodiscard]] virtual auto resources() -> const resource::Resources & = 0;
     /// Access the mutex protecting system integration state.
     [[nodiscard]] virtual auto systemMutex() noexcept -> std::mutex & = 0;
     /// Access the application display-text map.

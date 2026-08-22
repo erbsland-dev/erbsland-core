@@ -10,6 +10,8 @@ Topics
     :maxdepth: 3
 
     core/index
+    mem/index
+    resource/index
     security/index
     cryptology/index
     strings/index

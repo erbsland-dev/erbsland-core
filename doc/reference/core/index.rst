@@ -7,6 +7,7 @@ Core Functionality
 
     application
     application_error_context
+    application_parts
     definitions
     make_one_namespace
     namespaces

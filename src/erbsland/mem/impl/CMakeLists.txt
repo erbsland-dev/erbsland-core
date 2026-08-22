@@ -13,6 +13,8 @@ target_sources(erbsland-core PRIVATE
         ByteBlockData_fwd.hpp
         ByteBufferData.hpp
         ByteBufferData_fwd.hpp
+        ByteCompressionCodec.cpp
+        ByteCompressionCodec.hpp
         ByteComparisonTools.hpp
         ByteDataView.hpp
         ByteDataView_fwd.hpp

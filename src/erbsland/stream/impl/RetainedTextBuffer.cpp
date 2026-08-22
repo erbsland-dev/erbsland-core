@@ -42,7 +42,7 @@ void RetainedTextBuffer::append(String text, const CpLength textLength, const bo
     }
     if (lineScanned && _lineScanLength == _length) {
         _lineScanLength += textLength;
-        const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataView().dataSpan();
+        const auto bytes = text::impl::UnsafeU8StringAccess{text}.dataSpan();
         if (!bytes.empty() && bytes.back() == '\n') {
             _firstLineLength = _lineScanLength;
         }
@@ -80,7 +80,7 @@ void RetainedTextBuffer::scanForLineEnd(const CpLength maximum) noexcept {
         }
         const auto skip = _lineScanLength > chunkOffset ? _lineScanLength - chunkOffset : CpLength{};
         auto localLength = CpLength{};
-        const auto bytes = text::impl::UnsafeU8StringAccess{chunk.text}.dataView().dataSpan();
+        const auto bytes = text::impl::UnsafeU8StringAccess{chunk.text}.dataSpan();
         for (const auto byte : bytes) {
             const auto value = static_cast<std::uint8_t>(byte);
             if ((value & 0xc0U) == 0x80U) {
@@ -187,7 +187,7 @@ void RetainedTextBuffer::copyAndConsume(const CpLength characterLength, const st
         auto &chunk = _chunks.front();
         const auto count = std::min(remaining, chunk.length);
         const auto prefix = chunk.text.slice(CpRange{CpIndex{}, count});
-        const auto source = text::impl::UnsafeU8StringAccess{prefix}.dataView().dataSpan();
+        const auto source = text::impl::UnsafeU8StringAccess{prefix}.dataSpan();
         std::memcpy(destination.data() + offset, source.data(), source.size());
         offset += source.size();
         remaining -= count;

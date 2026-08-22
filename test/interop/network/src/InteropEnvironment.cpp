@@ -154,15 +154,23 @@ auto InteropEnvironment::startClientScenario(
     const std::uint64_t payloadLength,
     const std::string &serverName) -> Scenario {
     const auto id = nextId();
-    const auto message = "{\"protocol\":1,\"id\":" + std::to_string(id) +
-        ",\"command\":\"connect\",\"scenario\":\"" + jsonEscape(scenario) + "\",\"cipher\":\"" +
-        jsonEscape(cipher) + "\",\"payload_length\":" + std::to_string(payloadLength) +
-        ",\"port\":" + std::to_string(port) + ",\"server_name\":\"" + jsonEscape(serverName) + "\"}";
+    const auto message = "{\"protocol\":1,\"id\":" + std::to_string(id) + ",\"command\":\"connect\",\"scenario\":\"" +
+        jsonEscape(scenario) + "\",\"cipher\":\"" + jsonEscape(cipher) +
+        "\",\"payload_length\":" + std::to_string(payloadLength) + ",\"port\":" + std::to_string(port) +
+        ",\"server_name\":\"" + jsonEscape(serverName) + "\"}";
     const auto response = _control.request(message, id);
     if (!response.scenarioId.has_value() || *response.scenarioId != id) {
         throw std::runtime_error{"invalid client-scenario response from interop counterpart"};
     }
     return Scenario{*this, id, port};
+}
+
+auto InteropEnvironment::compareHttp(const std::string &kind, const std::string &wireHex) -> InteropControl::Response {
+    const auto id = nextId();
+    return _control.request(
+        "{\"protocol\":1,\"id\":" + std::to_string(id) + ",\"command\":\"http-" + jsonEscape(kind) +
+            "\",\"wire_hex\":\"" + jsonEscape(wireHex) + "\"}",
+        id);
 }
 
 auto InteropEnvironment::nextId() noexcept -> std::uint64_t {

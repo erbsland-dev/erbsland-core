@@ -7,5 +7,9 @@ Network Reference
 
     addressing
     facade
+    http_client
+    http_messages
+    http_server
+    http_values
     sources
     url

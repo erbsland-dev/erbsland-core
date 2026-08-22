@@ -6,7 +6,7 @@
 #include "TcpListener_fwd.hpp"
 #include "TcpListenerOptions_fwd.hpp"
 
-#include "../impl/TcpListener_fwd.hpp"
+#include "../impl/tcp/TcpListener_fwd.hpp"
 #include "../source/ConnectionQuota.hpp"
 
 #include "../../unit/ItemCount.hpp"

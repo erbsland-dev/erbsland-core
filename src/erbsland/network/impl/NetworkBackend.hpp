@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "HostResolver.hpp"
+#include "host/HostResolver.hpp"
 
 #include "../Network.hpp"
 
@@ -32,6 +32,8 @@ public: // implement EventBackend
 
 public: // implement Network
     [[nodiscard]] auto createHostLookup() -> HostLookupPtr override;
+    [[nodiscard]] auto createHttpClientSession() -> HttpClientSessionPtr override;
+    [[nodiscard]] auto createHttpServer() -> HttpServerPtr override;
     [[nodiscard]] auto createTcpListener() -> network::TcpListenerPtr override;
     [[nodiscard]] auto createTcpConnection() -> network::TcpConnectionPtr override;
     [[nodiscard]] auto createTlsClientConnection() -> network::TlsClientConnectionPtr override;

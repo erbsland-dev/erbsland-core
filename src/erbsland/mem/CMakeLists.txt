@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        BitReader.cpp
+        BitReader.hpp
+        BitReader_fwd.hpp
         Byte.hpp
         ByteArray.hpp
         ByteArray_fwd.hpp
@@ -18,6 +21,17 @@ target_sources(erbsland-core PRIVATE
         ByteBuffer.cpp
         ByteBuffer.hpp
         ByteBuffer_fwd.hpp
+        ByteCompressionAlgorithm.cpp
+        ByteCompressionAlgorithm.hpp
+        ByteCompressionError.cpp
+        ByteCompressionError.hpp
+        ByteCompressionErrorReason.hpp
+        ByteCompressor.cpp
+        ByteCompressor.hpp
+        ByteCompressor_fwd.hpp
+        ByteDecompressor.cpp
+        ByteDecompressor.hpp
+        ByteDecompressor_fwd.hpp
         ByteIntegerAccess.hpp
         ByteIntegerFormat.hpp
         ByteReader.cpp

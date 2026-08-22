@@ -69,6 +69,7 @@ auto PathContent::readTextOrThrow(const PathReadTextOptions options) const -> St
     const auto data = readDataOrThrow(
         PathReadDataOptions{}
             .setMaximumByteLength(options.maximumByteLength())
+            .setSymlinkMode(options.symlinkMode())
             .setStreamSettings(options.streamSettings()));
     auto result = StringDecoder{data}.decode(options.encoding(), options.bomMode(), options.encodingMode());
     if (options.maximumCpLength().isFinite() && result.characterLength() > options.maximumCpLength()) {

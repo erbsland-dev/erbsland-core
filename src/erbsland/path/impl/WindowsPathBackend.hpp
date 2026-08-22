@@ -11,7 +11,6 @@
 #include "../PathType.hpp"
 
 #include "../../text/impl/UnsafeU16StringBuffer_fwd.hpp"
-#include "../../text/impl/UnsafeU16StringEditorAccess_fwd.hpp"
 #include "../../text/StringList.hpp"
 #include "../../text/u16/U16StringEditor.hpp"
 
@@ -68,6 +67,8 @@ private:
     static void createParentDirectoriesOrThrow(const Path &path);
     /// Test whether a native handle has content.
     [[nodiscard]] static auto handleHasContentOrThrow(void *handle, const Path &path) -> bool;
+    /// Open an input handle using the configured symbolic-link policy.
+    [[nodiscard]] static auto openInputHandleOrThrow(const Path &path, SymlinkMode symlinkMode) -> void *;
     /// Resolve a path through all symbolic links.
     [[nodiscard]] static auto physicalPathOrThrow(const Path &path) -> Path;
     /// Test whether `path` exists.

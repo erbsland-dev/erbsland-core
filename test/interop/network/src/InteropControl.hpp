@@ -14,6 +14,8 @@ public:
         std::optional<std::uint64_t> scenarioId;
         std::optional<std::uint64_t> port;
         std::optional<std::uint64_t> bytesReceived;
+        std::optional<std::uint64_t> accepted;
+        std::string parsed;
         std::string errorCode;
         std::string errorMessage;
     };

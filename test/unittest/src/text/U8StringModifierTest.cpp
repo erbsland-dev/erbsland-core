@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/text/CharSet.hpp>
+#include <erbsland/text/impl/PlatformU8StringAccess.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
@@ -43,14 +44,15 @@ public:
 
         auto text = StringEditor{"Hi"_el};
         text.reserve(ByteLength{16U});
-        const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
+        const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
 
         text.append(", "_el).append(Char{U'X'}).append(Char{U'!'}, CpLength{2U}).append("?"_el, ItemCount{2U});
 
         REQUIRE_EQUAL(text, "Hi, X!!??"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), data);
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), data);
         REQUIRE_EQUAL(text.capacity(), ByteLength{16U});
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data()[text.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{text}.nullTerminatedCharPtr()[text.length().toSizeT()], '\0');
     }
 
     void testAppendMaterializesSharedAndSlicedStorage() {
@@ -58,15 +60,16 @@ public:
         auto base = StringEditor{"abcdef"_el};
         auto text = base.slice(ByteRange{ByteIndex{2U}, ByteLength{2U}});
         const auto copy = text;
-        const auto *copyData = el::text::impl::UnsafeU8StringEditorAccess{copy}.data();
+        const auto *copyData = el::text::impl::UnsafeU8StringEditorAccess{copy}.dataSpan().data();
 
         text.append("!"_el);
 
         REQUIRE_EQUAL(text, "cd!"_el);
         REQUIRE_EQUAL(copy, "cd"_el);
         REQUIRE_EQUAL(base, "abcdef"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{copy}.data(), copyData);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data()[text.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{copy}.dataSpan().data(), copyData);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{text}.nullTerminatedCharPtr()[text.length().toSizeT()], '\0');
     }
 
     void testRemoveKeepAndCopyVariants() {
@@ -94,58 +97,65 @@ public:
         text.remove(CpRange{CpIndex{1U}, CpLength{2U}});
 
         REQUIRE_EQUAL(text, u8"A😀"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data()[text.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{text}.nullTerminatedCharPtr()[text.length().toSizeT()], '\0');
     }
 
     void testInPlaceRemoveKeepReuseUniqueFullRangeStorage() {
 
         auto rangeText = StringEditor{"abcdef"_el};
         rangeText.reserve(ByteLength{16U});
-        const auto *rangeData = el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data();
+        const auto *rangeData = el::text::impl::UnsafeU8StringEditorAccess{rangeText}.dataSpan().data();
 
         rangeText.remove(CpRange{CpIndex{2U}, CpLength{2U}});
 
         REQUIRE_EQUAL(rangeText, "abef"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data(), rangeData);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{rangeText}.data()[rangeText.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{rangeText}.dataSpan().data(), rangeData);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{rangeText}.nullTerminatedCharPtr()[rangeText.length().toSizeT()],
+            '\0');
 
         auto setText = StringEditor{"axbxcx"_el};
         setText.reserve(ByteLength{16U});
-        const auto *setData = el::text::impl::UnsafeU8StringEditorAccess{setText}.data();
+        const auto *setData = el::text::impl::UnsafeU8StringEditorAccess{setText}.dataSpan().data();
 
         setText.removeAll(CharSet{"x"_el});
 
         REQUIRE_EQUAL(setText, "abc"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{setText}.data(), setData);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{setText}.data()[setText.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{setText}.dataSpan().data(), setData);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{setText}.nullTerminatedCharPtr()[setText.length().toSizeT()], '\0');
 
         auto needleText = StringEditor{"abcabc"_el};
         needleText.reserve(ByteLength{16U});
-        const auto *needleData = el::text::impl::UnsafeU8StringEditorAccess{needleText}.data();
+        const auto *needleData = el::text::impl::UnsafeU8StringEditorAccess{needleText}.dataSpan().data();
 
         needleText.removeAll("bc"_el);
 
         REQUIRE_EQUAL(needleText, "aa"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{needleText}.data(), needleData);
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{needleText}.dataSpan().data(), needleData);
         REQUIRE_EQUAL(
-            el::text::impl::UnsafeU8StringEditorAccess{needleText}.data()[needleText.length().toSizeT()], '\0');
+            el::text::impl::PlatformU8StringAccess{needleText}.nullTerminatedCharPtr()[needleText.length().toSizeT()],
+            '\0');
 
         auto keepText = StringEditor{"abcdef"_el};
         keepText.reserve(ByteLength{16U});
-        const auto *keepData = el::text::impl::UnsafeU8StringEditorAccess{keepText}.data();
+        const auto *keepData = el::text::impl::UnsafeU8StringEditorAccess{keepText}.dataSpan().data();
 
         keepText.keep(CpRange{CpIndex{2U}, CpLength{3U}});
 
         REQUIRE_EQUAL(keepText, "cde"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{keepText}.data(), keepData);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{keepText}.data()[keepText.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{keepText}.dataSpan().data(), keepData);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{keepText}.nullTerminatedCharPtr()[keepText.length().toSizeT()],
+            '\0');
     }
 
     void testInsertReplaceAndFirstModifiers() {
 
         auto text = StringEditor{"abef"_el};
         text.reserve(ByteLength{16U});
-        const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
+        const auto *data = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
 
         text.insert(ByteIndex{2U}, "cd"_el);
         text.replace(ByteRange{ByteIndex{2U}, ByteLength{2U}}, "XY"_el);
@@ -154,8 +164,9 @@ public:
         text.replace(ByteRange::noRange(), "?"_el);
 
         REQUIRE_EQUAL(text, "abXYef!"_el);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), data);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data()[text.length().toSizeT()], '\0');
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), data);
+        REQUIRE_EQUAL(
+            el::text::impl::PlatformU8StringAccess{text}.nullTerminatedCharPtr()[text.length().toSizeT()], '\0');
 
         auto codePointText = StringEditor{"A😀"_el};
         codePointText.insert(CpIndex{1U}, u8"¢"_el);
@@ -328,7 +339,7 @@ public:
 
 private:
     [[nodiscard]] static auto rawBytes(const StringEditor &text) -> std::string {
-        return std::string{el::text::impl::UnsafeU8StringEditorAccess{text}.data(), text.length().toSizeT()};
+        return std::string{el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), text.length().toSizeT()};
     }
 
     [[nodiscard]] static auto invalidUtf8Data() -> std::string {

@@ -1,3 +1,8 @@
 # Keep these test data files as-is (binary) so CRLF line endings are preserved.
 test/unittest/data/re/shakespeare.html -text
 test/unittest/data/re/shakespeare.txt -text
+
+# Resource compiler fixtures compare their original bytes, including LF line endings.
+test/cmake/resource-integration/data/** -text
+test/cmake/resource-integration/raw/** -text
+test/cmake/resource-installed-package/data/** -text

@@ -12,6 +12,8 @@ endif()
 target_compile_options(erbsland-core PRIVATE -fsanitize=fuzzer-no-link,address,undefined)
 
 add_subdirectory(ecdsa-signature)
+add_subdirectory(http1-request)
+add_subdirectory(http1-response)
 add_subdirectory(punycode)
 add_subdirectory(pkcs8-key)
 add_subdirectory(tls-client-protocol)

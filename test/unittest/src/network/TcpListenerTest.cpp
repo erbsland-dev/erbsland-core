@@ -3,9 +3,9 @@
 
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventLoopDriver.hpp>
-#include <erbsland/network/impl/TcpAcceptedSocket.hpp>
-#include <erbsland/network/impl/TcpListener.hpp>
-#include <erbsland/network/impl/TcpListenerDevice.hpp>
+#include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
+#include <erbsland/network/impl/tcp/TcpListener.hpp>
+#include <erbsland/network/impl/tcp/TcpListenerDevice.hpp>
 #include <erbsland/network/source/ConnectionQuota.hpp>
 #include <erbsland/network/tcp/TcpConnectionRequest.hpp>
 #include <erbsland/network/tcp/TcpListener.hpp>

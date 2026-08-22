@@ -6,7 +6,7 @@
 #include "../WindowsErrorContext.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../text/impl/UnsafeU16StringAccess.hpp"
+#include "../../text/impl/PlatformU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
@@ -20,9 +20,9 @@ using namespace text::literals;
 
 auto WindowsEnvironmentVariableBackend::get(const text::String &name) const -> std::optional<text::String> {
     const auto nativeName = text::StringConverter{name}.toU16String();
-    const auto nameAccess = text::impl::UnsafeU16StringAccess{nativeName};
+    const auto nameAccess = text::impl::PlatformU16StringAccess{nativeName};
     ::SetLastError(ERROR_SUCCESS);
-    auto bufferSize = ::GetEnvironmentVariableW(nameAccess.dataAsWide(), nullptr, 0U);
+    auto bufferSize = ::GetEnvironmentVariableW(nameAccess.nullTerminatedWideCharPtr(), nullptr, 0U);
     if (bufferSize == 0U) {
         const auto errorCode = ::GetLastError();
         if (errorCode == ERROR_ENVVAR_NOT_FOUND) {
@@ -39,7 +39,7 @@ auto WindowsEnvironmentVariableBackend::get(const text::String &name) const -> s
         auto buffer = text::impl::UnsafeU16StringBuffer{static_cast<std::size_t>(bufferSize)};
         ::SetLastError(ERROR_SUCCESS);
         const auto length = ::GetEnvironmentVariableW(
-            nameAccess.dataAsWide(), buffer.dataAsWide(), static_cast<DWORD>(buffer.dataSize()));
+            nameAccess.nullTerminatedWideCharPtr(), buffer.dataAsWide(), static_cast<DWORD>(buffer.dataSize()));
         if (length == 0U) {
             const auto errorCode = ::GetLastError();
             if (errorCode == ERROR_ENVVAR_NOT_FOUND) {
@@ -61,10 +61,10 @@ auto WindowsEnvironmentVariableBackend::get(const text::String &name) const -> s
 void WindowsEnvironmentVariableBackend::set(const text::String &name, const text::String &value) {
     const auto nativeName = text::StringConverter{name}.toU16String();
     const auto nativeValue = text::StringConverter{value}.toU16String();
-    const auto nameAccess = text::impl::UnsafeU16StringAccess{nativeName};
-    const auto valueAccess = text::impl::UnsafeU16StringAccess{nativeValue};
-    const auto *valueData = value.isEmpty() ? L"" : valueAccess.dataAsWide();
-    if (::SetEnvironmentVariableW(nameAccess.dataAsWide(), valueData) == 0) {
+    const auto nameAccess = text::impl::PlatformU16StringAccess{nativeName};
+    const auto valueAccess = text::impl::PlatformU16StringAccess{nativeValue};
+    const auto *valueData = value.isEmpty() ? L"" : valueAccess.nullTerminatedWideCharPtr();
+    if (::SetEnvironmentVariableW(nameAccess.nullTerminatedWideCharPtr(), valueData) == 0) {
         const auto errorCode = ::GetLastError();
         throw PlatformError{"Failed to set an environment variable."_el, WindowsErrorContext::fromErrorCode(errorCode)};
     }
@@ -72,8 +72,8 @@ void WindowsEnvironmentVariableBackend::set(const text::String &name, const text
 
 void WindowsEnvironmentVariableBackend::remove(const text::String &name) {
     const auto nativeName = text::StringConverter{name}.toU16String();
-    const auto nameAccess = text::impl::UnsafeU16StringAccess{nativeName};
-    if (::SetEnvironmentVariableW(nameAccess.dataAsWide(), nullptr) == 0) {
+    const auto nameAccess = text::impl::PlatformU16StringAccess{nativeName};
+    if (::SetEnvironmentVariableW(nameAccess.nullTerminatedWideCharPtr(), nullptr) == 0) {
         const auto errorCode = ::GetLastError();
         if (errorCode == ERROR_ENVVAR_NOT_FOUND) {
             return;

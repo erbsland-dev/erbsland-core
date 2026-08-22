@@ -83,7 +83,7 @@ void EnvironmentVariables::validateName(const text::String &name) {
     if (name.isEmpty()) {
         throw err::ParameterError{"The environment-variable name must not be empty."_el, "name"_el};
     }
-    const auto data = text::impl::UnsafeU8StringAccess{name}.dataView().dataSpan();
+    const auto data = text::impl::UnsafeU8StringAccess{name}.dataSpan();
     if (std::ranges::find(data, '=') != data.end()) {
         throw err::ParameterError{"The environment-variable name must not contain an equals sign."_el, "name"_el};
     }
@@ -99,7 +99,7 @@ void EnvironmentVariables::validateValue(const text::String &value) {
 }
 
 auto EnvironmentVariables::containsNull(const text::String &value) noexcept -> bool {
-    const auto data = text::impl::UnsafeU8StringAccess{value}.dataView().dataSpan();
+    const auto data = text::impl::UnsafeU8StringAccess{value}.dataSpan();
     return std::ranges::find(data, '\0') != data.end();
 }
 

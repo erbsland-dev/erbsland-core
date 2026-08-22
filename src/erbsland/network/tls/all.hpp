@@ -8,18 +8,10 @@
 #include "TlsAlertDescription.hpp"
 #include "TlsClientConnectOptions.hpp"
 #include "TlsClientConnection.hpp"
-#include "TlsClientConnectionCloseContext.hpp"
-#include "TlsClientConnectionCloseFn.hpp"
-#include "TlsClientConnectionCloseOrigin.hpp"
 #include "TlsClientConnectionEventEditor.hpp"
-#include "TlsClientConnectionState.hpp"
 #include "TlsServerAcceptOptions.hpp"
 #include "TlsServerConnection.hpp"
-#include "TlsServerConnectionCloseContext.hpp"
-#include "TlsServerConnectionCloseFn.hpp"
-#include "TlsServerConnectionCloseOrigin.hpp"
 #include "TlsServerConnectionEventEditor.hpp"
-#include "TlsServerConnectionState.hpp"
 #include "TlsServerIdentityMapping.hpp"
 
 

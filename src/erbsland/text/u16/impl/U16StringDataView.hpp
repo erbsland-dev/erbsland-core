@@ -23,6 +23,16 @@ public:
     constexpr U16StringDataView(std::span<const char16_t> data, unit::U16DataRange range) noexcept :
         _data{data}, _range{range} {}
 
+public: // tests
+    /// Test if the selected range is a slice of the backing string data.
+    [[nodiscard]] constexpr auto isSlice() const noexcept -> bool {
+        if (_data.empty() || !_range.isValid() || _range.isEmpty()) {
+            return false;
+        }
+        const auto backingLength = _data.back() == u'\0' ? _data.size() - 1U : _data.size();
+        return !_range.index().isZero() || _range.length().toSizeT() != backingLength;
+    }
+
 public: // accessors
     /// Access the complete backing data span.
     [[nodiscard]] constexpr auto data() const noexcept -> std::span<const char16_t> { return _data; }

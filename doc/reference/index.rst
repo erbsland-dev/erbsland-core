@@ -21,6 +21,7 @@ Reference
     path/index
     random/index
     re/index
+    resource/index
     stream/index
     system/index
     text/index

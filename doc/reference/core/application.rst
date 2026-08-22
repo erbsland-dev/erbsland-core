@@ -77,6 +77,15 @@ See :doc:`/reference/cryptology/key_agreement` for provider behavior and lifecyc
 Erbsland Core does not automatically read environment variables or command-line options for this interface.
 The application decides how enterprise configuration is authenticated, parsed, and applied.
 
+Application Compiled Resources
+==============================
+
+:cpp:func:`Application::resources() <erbsland::core::Application::resources>` lazily creates the read-only compiled
+resource manager.
+The manager indexes statically linked descriptors on first access and caches decoded data and text independently.
+An application with no compiled descriptors receives an empty manager.
+See :doc:`/topics/resource/compiled_resources` for CMake integration and lookup examples.
+
 Interface
 =========
 

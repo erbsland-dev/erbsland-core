@@ -48,8 +48,9 @@ treated as ordinary filesystem failures.
 Traversal and Symlinks
 ======================
 
-:cpp:enum:`SymlinkMode <erbsland::path::SymlinkMode>` has three explicit policies.  ``Skip`` neither reports nor follows
-a symbolic link.
+:cpp:enum:`SymlinkMode <erbsland::path::SymlinkMode>` has three explicit policies. Input-read options use ``Follow``
+for ordinary file access, while ``Skip`` and ``Use`` reject a path containing symbolic links.
+During traversal, ``Skip`` neither reports nor follows a symbolic link.
 ``Use`` reports the link itself and never descends through it.
 ``Follow`` reports information about the target and descends into directory targets.
 Physical directory paths are tracked during followed walks so a link back to an already visited directory cannot create

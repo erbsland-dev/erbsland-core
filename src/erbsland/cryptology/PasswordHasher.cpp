@@ -84,7 +84,7 @@ auto PasswordHasher::hashWithSalt(const text::String &password, const mem::Const
 auto PasswordHasher::derive(
     const text::String &password, const mem::ConstByteSpan salt, const PasswordHashPolicy &policy)
     -> mem::ByteBlockEditor {
-    const auto sourceBytes = text::impl::UnsafeU8StringAccess{password}.dataView().dataSpan();
+    const auto sourceBytes = text::impl::UnsafeU8StringAccess{password}.dataSpan();
     auto passwordEditor = mem::ByteBlockEditor{unit::ByteLength::fromSizeT(sourceBytes.size())};
     passwordEditor.markAsSensitive();
     passwordEditor.overwrite(mem::toConstByteSpan(sourceBytes));

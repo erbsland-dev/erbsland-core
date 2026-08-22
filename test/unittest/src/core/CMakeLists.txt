@@ -9,6 +9,9 @@ target_sources(erbsland-core-unittest PRIVATE
         ApplicationInstanceBuilder.hpp
         ApplicationInstanceBuilderBase.hpp
         ApplicationOptionsTest.cpp
+        ApplicationPartApplicationTest.cpp
+        ApplicationPartManagerTest.cpp
+        ApplicationResourceTest.cpp
         ApplicationTerminalTest.cpp
         ApplicationTestScope.cpp
         ApplicationTestScope.hpp

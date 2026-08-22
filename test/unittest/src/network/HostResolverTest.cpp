@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/network/HostName.hpp>
-#include <erbsland/network/impl/HostResolver.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 

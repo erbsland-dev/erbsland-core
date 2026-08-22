@@ -19,8 +19,7 @@
 #include <erbsland/network/tcp/TcpConnectionRequest.hpp>
 #include <erbsland/network/tcp/TcpListener.hpp>
 #include <erbsland/network/tls/TlsServerConnection.hpp>
-#include <erbsland/network/tls/TlsServerConnectionCloseContext.hpp>
-#include <erbsland/network/tls/TlsServerConnectionCloseOrigin.hpp>
+#include <erbsland/network/source/ConnectionCloseContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/FileHelper.hpp>
@@ -50,10 +49,10 @@ private:
         bool final{};
         std::uint64_t bytesReceived{};
         std::optional<NetworkErrorContext> error;
-        std::optional<TlsServerConnectionCloseOrigin> closeOrigin;
+        std::optional<ConnectionCloseOrigin> closeOrigin;
         std::optional<TlsCipherSuite> cipherSuite;
         el::text::String requestedLabel;
-        mem::ByteBlock alpn;
+        el::text::String alpn;
     };
 
     [[nodiscard]] static auto readText(const char *path) -> el::text::String {
@@ -68,8 +67,8 @@ private:
         el::core::application().cryptologyConfiguration().setTlsConfiguration(label, std::move(configuration));
     }
 
-    [[nodiscard]] static auto alpn() -> mem::ByteBlock {
-        return mem::ByteBlock({'e', 'r', 'b', 's', 'l', 'a', 'n', 'd', '-', 't', 'e', 's', 't'});
+    [[nodiscard]] static auto alpn() -> el::text::String {
+        return "erbsland-test"_el;
     }
 
     void runUntilFinal(const EventLoopPtr &loop, Result &result) {
@@ -122,7 +121,7 @@ private:
                             result.bytesReceived += data.length().toSizeT();
                             REQUIRE(connection->send(data).isAccepted());
                         })
-                        .onClosed([&](const TlsServerConnectionCloseContext &context) -> void {
+                        .onClosed([&](const ConnectionCloseContext &context) -> void {
                             result.closed = true;
                             result.closeOrigin = context.origin();
                         })
@@ -180,7 +179,7 @@ private:
         REQUIRE_EQUAL(result.bytesReceived, std::uint64_t{4U});
         REQUIRE_EQUAL(result.cipherSuite, std::optional<TlsCipherSuite>{expectedSuite});
         REQUIRE_EQUAL(result.alpn, alpn());
-        REQUIRE_EQUAL(result.closeOrigin, std::optional<TlsServerConnectionCloseOrigin>{TlsServerConnectionCloseOrigin::Remote});
+        REQUIRE_EQUAL(result.closeOrigin, std::optional<ConnectionCloseOrigin>{ConnectionCloseOrigin::Remote});
     }
 
 public:

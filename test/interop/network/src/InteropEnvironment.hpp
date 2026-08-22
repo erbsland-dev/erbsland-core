@@ -52,6 +52,8 @@ public:
         const std::string &cipher,
         std::uint64_t payloadLength,
         const std::string &serverName = "localhost") -> Scenario;
+    /// Compare bounded HTTP wire syntax with the independent Rust httparse implementation.
+    [[nodiscard]] auto compareHttp(const std::string &kind, const std::string &wireHex) -> InteropControl::Response;
 
 private:
     [[nodiscard]] auto nextId() noexcept -> std::uint64_t;

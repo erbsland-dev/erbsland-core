@@ -123,6 +123,7 @@ Read and Write Patterns
     o.writeText/writeData(value[, options]) -> bool // write complete content with status reporting
     o.writeTextOrThrow/writeDataOrThrow(value[, options]) // write complete content or throw PathError
     o.open❮Kind❯InputStream([options]) -> T // open a byte or text input stream
+    o.setSymlinkMode(mode) -> O& // configure whether an input operation may follow symbolic links
     o.open❮Kind❯OutputStream([options]) -> T // open a byte or text output stream
 
 Mutation and Temporary Resource Patterns

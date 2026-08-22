@@ -129,4 +129,94 @@ public:
         boundary.append(U'x');
         REQUIRE_FALSE(Url::fromString(el::text::String{boundary}).isValid());
     }
+
+    void testRelativeResolution() {
+        const auto base = Url::fromStringOrThrow("http://a.test/b/c/d;p?q#old"_el);
+        requireResolved(base, "g"_el, "http://a.test/b/c/g"_el);
+        requireResolved(base, "./g"_el, "http://a.test/b/c/g"_el);
+        requireResolved(base, "g/"_el, "http://a.test/b/c/g/"_el);
+        requireResolved(base, "/g"_el, "http://a.test/g"_el);
+        requireResolved(base, "?y"_el, "http://a.test/b/c/d;p?y"_el);
+        requireResolved(base, "#s"_el, "http://a.test/b/c/d;p?q#s"_el);
+        requireResolved(base, ""_el, "http://a.test/b/c/d;p?q"_el);
+        requireResolved(base, "."_el, "http://a.test/b/c/"_el);
+        requireResolved(base, ".."_el, "http://a.test/b/"_el);
+        requireResolved(base, "../g"_el, "http://a.test/b/g"_el);
+        requireResolved(base, "../../g"_el, "http://a.test/g"_el);
+        requireResolved(base, "../../../g"_el, "http://a.test/g"_el);
+        requireResolved(base, "g?y#s"_el, "http://a.test/b/c/g?y#s"_el);
+        requireResolved(base, "//g.test/x"_el, "http://g.test/x"_el);
+        requireResolved(base, "https://other.test/a/../b"_el, "https://other.test/b"_el);
+
+        const auto idna = base.resolvedOrThrow("//bücher.example/x"_el);
+        REQUIRE_EQUAL(idna.toString(), "http://xn--bcher-kva.example/x"_el);
+        const auto ipv6 = base.resolvedOrThrow("//[2001:db8::1]/x"_el);
+        REQUIRE_EQUAL(ipv6.toString(), "http://[2001:db8::1]/x"_el);
+
+        REQUIRE_EQUAL(
+            Url::fromStringOrThrow("ftp://example.test/a/b"_el).resolvedOrThrow("../c"_el).toString(),
+            "ftp://example.test/c"_el);
+        REQUIRE_EQUAL(Url::fromStringOrThrow("file:///a/b"_el).resolvedOrThrow("../c"_el).toString(), "file:///c"_el);
+        REQUIRE_FALSE(base.resolved("abc"_el, UrlParseOptions{}.setMaximumLength(el::unit::ByteLength{2U})).isValid());
+    }
+
+    void testRfc3986ResolutionExamples() {
+        const auto base = Url::fromStringOrThrow("http://a/b/c/d;p?q"_el);
+
+        requireResolved(base, "g:h"_el, "g:h"_el);
+        requireResolved(base, ";x"_el, "http://a/b/c/;x"_el);
+        requireResolved(base, "g;x"_el, "http://a/b/c/g;x"_el);
+        requireResolved(base, "g;x?y#s"_el, "http://a/b/c/g;x?y#s"_el);
+        requireResolved(base, "./"_el, "http://a/b/c/"_el);
+        requireResolved(base, "../"_el, "http://a/b/"_el);
+        requireResolved(base, "../.."_el, "http://a/"_el);
+        requireResolved(base, "../../"_el, "http://a/"_el);
+        requireResolved(base, "../../../../g"_el, "http://a/g"_el);
+        requireResolved(base, "/./g"_el, "http://a/g"_el);
+        requireResolved(base, "/../g"_el, "http://a/g"_el);
+        requireResolved(base, "g."_el, "http://a/b/c/g."_el);
+        requireResolved(base, ".g"_el, "http://a/b/c/.g"_el);
+        requireResolved(base, "g.."_el, "http://a/b/c/g.."_el);
+        requireResolved(base, "..g"_el, "http://a/b/c/..g"_el);
+        requireResolved(base, "./../g"_el, "http://a/b/g"_el);
+        requireResolved(base, "./g/."_el, "http://a/b/c/g/"_el);
+        requireResolved(base, "g/./h"_el, "http://a/b/c/g/h"_el);
+        requireResolved(base, "g/../h"_el, "http://a/b/c/h"_el);
+        requireResolved(base, "g;x=1/./y"_el, "http://a/b/c/g;x=1/y"_el);
+        requireResolved(base, "g;x=1/../y"_el, "http://a/b/c/y"_el);
+        requireResolved(base, "g?y/./x"_el, "http://a/b/c/g?y/./x"_el);
+        requireResolved(base, "g?y/../x"_el, "http://a/b/c/g?y/../x"_el);
+        requireResolved(base, "g#s/./x"_el, "http://a/b/c/g#s/./x"_el);
+        requireResolved(base, "g#s/../x"_el, "http://a/b/c/g#s/../x"_el);
+    }
+
+    void testEmptyQueryAndFragment() {
+        const auto parsed = Url::fromStringOrThrow("https://example.test/path?#"_el);
+        REQUIRE(parsed.hasQuery());
+        REQUIRE(parsed.query().isEmpty());
+        REQUIRE(parsed.hasFragment());
+        REQUIRE(parsed.fragment().isEmpty());
+        REQUIRE_EQUAL(parsed.toString(), "https://example.test/path?#"_el);
+
+        const auto base = Url::fromStringOrThrow("https://example.test/path?old#part"_el);
+        const auto emptyQuery = base.resolvedOrThrow("?"_el);
+        REQUIRE(emptyQuery.hasQuery());
+        REQUIRE(emptyQuery.query().isEmpty());
+        REQUIRE_FALSE(emptyQuery.hasFragment());
+        REQUIRE_EQUAL(emptyQuery.toString(), "https://example.test/path?"_el);
+        const auto emptyFragment = base.resolvedOrThrow("#"_el);
+        REQUIRE(emptyFragment.hasFragment());
+        REQUIRE_EQUAL(emptyFragment.toString(), "https://example.test/path?old#"_el);
+
+        REQUIRE_FALSE(Url::mailto("a@example.test"_el).resolved("next"_el).isValid());
+        REQUIRE_FALSE(Url::custom("demo"_el, "path"_el).resolved("next"_el).isValid());
+        REQUIRE_FALSE(Url{}.resolved("https://example.test/"_el).isValid());
+        const auto custom = Url::customWithAuthority("demo"_el, "host.test:42"_el, "/a/b"_el);
+        REQUIRE_EQUAL(custom.resolvedOrThrow("../c"_el).toString(), "demo://host.test:42/c"_el);
+    }
+
+private:
+    void requireResolved(const Url &base, const el::text::String &reference, const el::text::String &expected) {
+        REQUIRE_EQUAL(base.resolvedOrThrow(reference).toString(), expected);
+    }
 };

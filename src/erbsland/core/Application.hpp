@@ -4,6 +4,8 @@
 
 #include "Application_fwd.hpp"
 #include "ApplicationInfo.hpp"
+#include "ApplicationPartManager.hpp"
+#include "ApplicationPartTraits.hpp"
 #include "CommandLineArguments.hpp"
 #include "InitializeFn.hpp"
 #include "MainFn.hpp"
@@ -22,6 +24,7 @@
 #include "../options/Options_fwd.hpp"
 #include "../options/OptionValues_fwd.hpp"
 #include "../random/Random_fwd.hpp"
+#include "../resource/Resources_fwd.hpp"
 #include "../system/UserLookup_fwd.hpp"
 #include "../unit/ExitCode.hpp"
 
@@ -39,7 +42,7 @@ namespace erbsland::core {
 /// and call `Application::linkWith(app)` in this method. From `main()` call all these `initialize...()` methods
 /// of all DLLs that use Erbsland Core, just after creating the `Application` instance.
 /// Do not use `application()` or `Application::instance()` in static initialization in DLLs that link Erbsland Core.
-/// @tested{ApplicationEventTest ApplicationOptionsTest ApplicationTestScopeTest}
+/// @tested{ApplicationEventTest ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
 class Application {
     friend class impl::ApplicationInstanceManager;
     friend auto application() -> Application &;
@@ -134,6 +137,23 @@ public: // command line options
     /// Get the option values.
     [[nodiscard]] auto optionValues() const noexcept -> const options::OptionValuesPtr &;
 
+public: // application parts
+    /// Access the lazily created application-part manager.
+    [[nodiscard]] auto partManager() -> ApplicationPartManagerPtr;
+    /// Register an application-part class before `run()`.
+    /// @tparam T The concrete application-part class.
+    template <ApplicationPartClass T>
+    void registerPart() {
+        partManager()->template registerPart<T>();
+    }
+    /// Access a prepared application part through its interface.
+    /// @tparam T The abstract part interface.
+    /// @return The prepared part implementing `T`.
+    template <ApplicationPartInterface T>
+    [[nodiscard]] auto part() -> std::shared_ptr<T> {
+        return partManager()->template part<T>();
+    }
+
 public: // random numbers
     /// Get the shared random generator for non-security use.
     [[nodiscard]] auto random() -> random::Random &;
@@ -151,6 +171,10 @@ public: // system services
     void setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText);
     /// Get the shared user and group lookup service.
     [[nodiscard]] auto userLookup() -> system::UserLookup &;
+
+public: // compiled resources
+    /// Access the lazily initialized compiled-resource manager.
+    [[nodiscard]] auto resources() -> const resource::Resources &;
 
 public: // terminal access
     /// Access the application-shared terminal instance.
@@ -207,6 +231,12 @@ private:
     /// Internal constructor.
     /// Only used by the instance manager when creating a temporary application instance.
     explicit Application(impl::ApplicationDataPtr data);
+    /// Access the part manager without creating it.
+    [[nodiscard]] auto partManagerIfCreated() const noexcept -> ApplicationPartManagerPtr;
+    /// Bring a created part manager to a terminal state before application cleanup.
+    void stopPartManager();
+    /// Quit the application event system after part shutdown.
+    void quitEventSystem() noexcept;
 
 private:
     impl::ApplicationDataPtr _data;

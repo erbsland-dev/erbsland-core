@@ -135,19 +135,40 @@ auto U8StringEncodingTools::resolveBomLayout(
 
 auto U8StringEncodingTools::decodeUtf8(const ByteBlock &data, const DecodeLayout layout, const EncodingMode mode)
     -> U8StringEditor {
+    const auto sourceBytes = data.span().subspan(layout.start);
+    const auto source = std::span<const char>{reinterpret_cast<const char *>(sourceBytes.data()), sourceBytes.size()};
+    const auto copySource = [&source]() -> U8StringEditor {
+        return U8StringEditor{U8StringSharedStorage::fromBytes(source)};
+    };
     switch (mode) {
-    case EncodingMode::Strict:
-        return decodeFromCharacters([&](auto function) -> void {
-            auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            utf8::forEachDecodedCharacter<EncodingMode::Strict>(reader, function);
-        });
-    case EncodingMode::Tolerant:
-        return decodeFromCharacters([&](auto function) -> void {
-            auto reader = ByteReader{data};
-            reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
-            utf8::forEachDecodedCharacter<EncodingMode::Tolerant>(reader, function);
-        });
+    case EncodingMode::Strict: {
+        auto reader = ByteReader{data};
+        reader.setPosition(unit::ByteIndex::fromSizeT(layout.start));
+        utf8::forEachDecodedCharacter<EncodingMode::Strict>(reader, [](const Char) -> void {});
+        return copySource();
+    }
+    case EncodingMode::Tolerant: {
+        auto decodedSize = unit::ByteLength::zero();
+        auto position = unit::ByteIndex::zero();
+        auto sourceIsValid = true;
+        while (position.toSizeT() < source.size()) {
+            if (const auto character = utf8::tryDecodeChar(source, position); character.has_value()) {
+                decodedSize += utf8::encodedLength(*character);
+            } else {
+                sourceIsValid = false;
+                decodedSize += utf8::encodedLength(Char::replacement());
+            }
+        }
+        if (sourceIsValid) {
+            return copySource();
+        }
+
+        auto storage = U8StringSharedStorage::forSize(decodedSize.toSizeT());
+        auto writer = U8Writer{std::span{storage.dataForWrite(), storage.dataSize()}};
+        utf8::forEachDecodedCharacter<EncodingMode::Tolerant>(
+            source, [&writer](const Char character) -> void { writer.write(character); });
+        return U8StringEditor{std::move(storage)};
+    }
     }
     return {};
 }

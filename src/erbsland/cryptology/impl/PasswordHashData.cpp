@@ -330,7 +330,7 @@ auto PasswordHashData::protectVerifier(
     if (key == nullptr) {
         return ByteBlock::fromSpan(rawVerifier);
     }
-    const auto headerBytes = ByteBlock::fromSpan(text::impl::UnsafeU8StringAccess{header}.dataView().dataSpan());
+    const auto headerBytes = ByteBlock::fromSpan(text::impl::UnsafeU8StringAccess{header}.dataSpan());
     const auto separator = ByteArray<1>{Byte{0U}};
     return ByteBlock{hmacSha256(
         key->_key.span(),

@@ -5,6 +5,7 @@
 #include "UnsafeU8StringBuffer_fwd.hpp"
 
 #include "../u8/impl/U8StringData.hpp"
+#include "../u8/U8String.hpp"
 #include "../u8/U8StringEditor.hpp"
 
 #include "../../unit/ByteLength.hpp"
@@ -78,16 +79,11 @@ public:
     }
     /// Create a UTF-8 string from the buffer and release the buffer.
     [[nodiscard]] auto take(unit::ByteLength length = unit::ByteLength::infinite()) -> U8StringEditor {
-        const auto finalLength = checkedFinalLength(length);
-        if (finalLength.isZero()) {
-            _data.reset();
-            return {};
-        }
-        auto data = std::move(_data);
-        const auto size = finalLength.toSizeT();
-        data.get()->setSize(static_cast<U8StringData::SizeType>(size + 1U));
-        data.get()->data()[size] = '\0';
-        return U8StringEditor{U8StringSharedStorage{std::move(data), unit::ByteRange::fromSizeT(size)}};
+        return U8StringEditor{takeStorage(length)};
+    }
+    /// Create a read-only UTF-8 string from the buffer and release the buffer.
+    [[nodiscard]] auto takeString(unit::ByteLength length = unit::ByteLength::infinite()) -> U8String {
+        return U8String{takeStorage(length)};
     }
 
 public:
@@ -132,6 +128,19 @@ private:
             std::terminate();
         }
         return length;
+    }
+    /// Finalize and detach shared string storage.
+    [[nodiscard]] auto takeStorage(unit::ByteLength length) -> U8StringSharedStorage {
+        const auto finalLength = checkedFinalLength(length);
+        if (finalLength.isZero()) {
+            _data.reset();
+            return {};
+        }
+        auto data = std::move(_data);
+        const auto size = finalLength.toSizeT();
+        data.get()->setSize(static_cast<U8StringData::SizeType>(size + 1U));
+        data.get()->data()[size] = '\0';
+        return U8StringSharedStorage{std::move(data), unit::ByteRange::fromSizeT(size)};
     }
 
 private:

@@ -20,6 +20,7 @@ using namespace network;
 using namespace options;
 using namespace path;
 using namespace random;
+using namespace resource;
 using namespace stream;
 namespace io = stream::io;
 using namespace text;

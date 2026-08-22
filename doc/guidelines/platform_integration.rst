@@ -22,11 +22,13 @@ Strings and Buffers
 1.  Use ``text::String`` (or ``text::StringEditor``) for regular library code and POSIX/macOS API inputs.
 2.  Use ``text::U16String`` (or ``text::U16StringEditor``) for Windows API inputs that require UTF-16.
 3.  Use ``text::StringConverter`` for explicit UTF-8/UTF-16 conversion at platform boundaries.
-4.  Use ``text::impl::UnsafeU8StringEditorAccess`` and ``text::impl::UnsafeU16StringEditorAccess`` only for read-only,
-    null-terminated access to existing strings.
-5.  Use ``text::impl::UnsafeU8StringBuffer`` and ``text::impl::UnsafeU16StringBuffer`` for APIs that fill caller-owned
+4.  Use ``text::impl::PlatformU8StringAccess`` and ``text::impl::PlatformU16StringAccess`` for null-terminated
+    read-only platform API inputs. These accessors safely materialize sliced strings.
+5.  Use ``text::impl::UnsafeU8StringAccess`` and ``text::impl::UnsafeU16StringAccess`` only for bounded span or data-view
+    access inside the library. They deliberately do not expose null-terminated pointers.
+6.  Use ``text::impl::UnsafeU8StringBuffer`` and ``text::impl::UnsafeU16StringBuffer`` for APIs that fill caller-owned
     buffers.
-6.  Track buffer sizes with strong unit types such as ``unit::ByteLength`` and ``unit::U16DataLength`` whenever the size
+7.  Track buffer sizes with strong unit types such as ``unit::ByteLength`` and ``unit::U16DataLength`` whenever the size
     is part of library logic.
 
 Platform Notes

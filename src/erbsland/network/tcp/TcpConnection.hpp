@@ -9,36 +9,18 @@
 #include "TcpConnectOptions.hpp"
 
 #include "../HostEndpoint.hpp"
-#include "../IpEndpoint.hpp"
-#include "../source/NetworkSendStatus.hpp"
-#include "../source/NetworkSourceState.hpp"
-#include "../source/SocketBufferLimits.hpp"
-
-#include "../../event/EventSource.hpp"
-#include "../../mem/ByteBlock.hpp"
+#include "../source/Connection.hpp"
 
 namespace erbsland::network {
 
 /// A one-shot TCP connection spanning establishment and active byte-stream use.
 /// @notest{Abstract interface; mock and native connection implementations own behavior tests.}
-class TcpConnection : public event::EventSource {
+class TcpConnection : public Connection {
 public:
     // defaults
     ~TcpConnection() override = default;
 
-public:
-    /// Get the resolved local endpoint.
-    /// @return The local endpoint.
-    [[nodiscard]] virtual auto localEndpoint() const -> std::optional<IpEndpoint> = 0;
-    /// Get the resolved remote endpoint.
-    /// @return The connected peer endpoint.
-    [[nodiscard]] virtual auto remoteEndpoint() const -> std::optional<IpEndpoint> = 0;
-    /// Get the configured queue limits.
-    /// @return The send and receive limits.
-    [[nodiscard]] virtual auto bufferLimits() const noexcept -> SocketBufferLimits = 0;
-    /// Get the source lifecycle state.
-    /// @return The current state.
-    [[nodiscard]] virtual auto state() const noexcept -> NetworkSourceState = 0;
+public: // operations
     /// Resolve and connect to a remote endpoint.
     /// @param remoteEndpoint The numeric address or host name and port.
     /// @param options The connection policy and stream limits.
@@ -51,26 +33,23 @@ public:
     virtual void accept(TcpConnectionRequestPtr request, TcpAcceptOptions options) = 0;
     /// @overload
     void accept(TcpConnectionRequestPtr request);
-    /// Atomically submit a complete byte block.
-    /// @param data The owned stream data to queue.
-    /// @return Whether the block was accepted, back-pressured, or rejected because the stream is closed.
-    [[nodiscard]] virtual auto send(const mem::ByteBlock &data) -> NetworkSendStatus = 0;
-    /// Suspend delivery of received data.
-    virtual void pauseReceiving() = 0;
-    /// Resume delivery of received data.
-    virtual void resumeReceiving() = 0;
-    /// Close gracefully after accepted output drains.
-    virtual void close() = 0;
-    /// Abort the connection immediately.
-    virtual void abort() noexcept = 0;
-    /// Access the editor for the connection-owned event handlers.
-    /// @return The stable source-owned editor.
+
+public: // implement Connection
+    [[nodiscard]] auto localEndpoint() const -> std::optional<IpEndpoint> override = 0;
+    [[nodiscard]] auto remoteEndpoint() const -> std::optional<IpEndpoint> override = 0;
+    [[nodiscard]] auto bufferLimits() const noexcept -> SocketBufferLimits override = 0;
+    [[nodiscard]] auto state() const noexcept -> ConnectionState override = 0;
+    [[nodiscard]] auto send(const mem::ByteBlock &data) -> NetworkSendStatus override = 0;
+    void pauseReceiving() override = 0;
+    void resumeReceiving() override = 0;
+    void close() override = 0;
+    void abort() noexcept override = 0;
     [[nodiscard]] auto events() -> TcpConnectionEventEditor & override = 0;
 
 protected:
     /// Create a connection owned by an event collection.
     /// @param ownerEvents The owner-loop event collection.
-    explicit TcpConnection(event::EventsPtr ownerEvents) : EventSource{std::move(ownerEvents)} {}
+    explicit TcpConnection(event::EventsPtr ownerEvents) : Connection{std::move(ownerEvents)} {}
 };
 
 }

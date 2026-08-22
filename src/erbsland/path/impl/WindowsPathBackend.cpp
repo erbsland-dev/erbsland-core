@@ -20,9 +20,8 @@
 #include "../../system/GroupId.hpp"
 #include "../../system/UserId.hpp"
 #include "../../system/WindowsErrorContext.hpp"
-#include "../../text/impl/UnsafeU16StringAccess.hpp"
+#include "../../text/impl/PlatformU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
-#include "../../text/impl/UnsafeU16StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/StringEditor.hpp"
@@ -158,9 +157,9 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
     result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
     const auto handle = CreateFileW(
-        pathTextAccess.dataAsWide(),
+        pathTextAccess.nullTerminatedWideCharPtr(),
         FILE_READ_ATTRIBUTES | READ_CONTROL,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         nullptr,
@@ -273,26 +272,97 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
 
 auto WindowsPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
     -> stream::ByteInputStreamPtr {
-    const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
-    const auto handle = CreateFileW(
-        pathTextAccess.dataAsWide(),
-        GENERIC_READ,
-        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-        nullptr,
-        OPEN_EXISTING,
-        FILE_ATTRIBUTE_NORMAL,
-        nullptr);
-    if (handle == INVALID_HANDLE_VALUE) {
+    const auto handle = openInputHandleOrThrow(path, options.symlinkMode());
+    auto native = std::make_shared<stream::impl::WindowsNativeStream>(
+        handle, stream::impl::NativeStreamOwnership::Owned, path.toString());
+    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
+}
+
+auto WindowsPathBackend::openInputHandleOrThrow(const Path &path, const SymlinkMode symlinkMode) -> void * {
+    if (symlinkMode == SymlinkMode::Follow) {
+        const auto pathText = pathTextOrThrow(path);
+        const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+        const auto handle = CreateFileW(
+            pathTextAccess.nullTerminatedWideCharPtr(),
+            GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            nullptr);
+        if (handle != INVALID_HANDLE_VALUE) {
+            return handle;
+        }
         throwSystemError(
             "File could not be opened for reading"_el,
             "The operating system could not open the file for reading."_el,
             path,
             GetLastError());
     }
-    auto native = std::make_shared<stream::impl::WindowsNativeStream>(
-        handle, stream::impl::NativeStreamOwnership::Owned, path.toString());
-    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
+
+    const auto absolutePath = path.toAbsoluteOrThrow();
+    const auto elements = absolutePath.elements();
+    auto currentPath = Path{elements.first()};
+    auto handle = INVALID_HANDLE_VALUE;
+    for (auto index = unit::ItemIndex::one(); index.isWithin(elements.count()); ++index) {
+        currentPath /= elements.get(index);
+        const auto pathText = pathTextOrThrow(currentPath);
+        const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+        const auto isFinal = !index.advanced(unit::ItemCount::one()).isWithin(elements.count());
+        handle = CreateFileW(
+            pathTextAccess.nullTerminatedWideCharPtr(),
+            isFinal ? GENERIC_READ : FILE_READ_ATTRIBUTES,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            nullptr,
+            OPEN_EXISTING,
+            FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT,
+            nullptr);
+        if (handle == INVALID_HANDLE_VALUE) {
+            throwSystemError(
+                "File could not be opened for reading"_el,
+                "The path could not be opened without following symbolic links."_el,
+                path,
+                GetLastError());
+        }
+        auto attributeInfo = FILE_ATTRIBUTE_TAG_INFO{};
+        if (GetFileInformationByHandleEx(handle, FileAttributeTagInfo, &attributeInfo, sizeof(attributeInfo)) == 0) {
+            const auto errorCode = GetLastError();
+            CloseHandle(handle);
+            throwSystemError(
+                "File could not be opened for reading"_el,
+                "The opened path component could not be inspected."_el,
+                path,
+                errorCode);
+        }
+        if ((attributeInfo.FileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0U) {
+            CloseHandle(handle);
+            throwSystemError(
+                "File could not be opened for reading"_el,
+                "The path contains a symbolic link or reparse point."_el,
+                path,
+                ERROR_CANT_ACCESS_FILE);
+        }
+        if (!isFinal) {
+            if ((attributeInfo.FileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0U) {
+                CloseHandle(handle);
+                throwSystemError(
+                    "File could not be opened for reading"_el,
+                    "An intermediate path component is not a directory."_el,
+                    path,
+                    ERROR_DIRECTORY);
+            }
+            CloseHandle(handle);
+            handle = INVALID_HANDLE_VALUE;
+        }
+    }
+    if (handle != INVALID_HANDLE_VALUE) {
+        return handle;
+    }
+    throwSystemError(
+        "File could not be opened for reading"_el,
+        "A filesystem root has no readable file content."_el,
+        path,
+        ERROR_ACCESS_DENIED);
 }
 
 void WindowsPathBackend::setAccessProfileOrThrow(
@@ -302,10 +372,10 @@ void WindowsPathBackend::setAccessProfileOrThrow(
     }
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
     auto security = WindowsAccessProfileSecurity{resolvedPath, profile};
     const auto securityStatus = SetNamedSecurityInfoW(
-        const_cast<LPWSTR>(pathTextAccess.dataAsWide()),
+        const_cast<LPWSTR>(pathTextAccess.nullTerminatedWideCharPtr()),
         SE_FILE_OBJECT,
         DACL_SECURITY_INFORMATION | PROTECTED_DACL_SECURITY_INFORMATION,
         nullptr,
@@ -326,8 +396,8 @@ void WindowsPathBackend::addAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
-    const auto currentAttributes = GetFileAttributesW(pathTextAccess.dataAsWide());
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto currentAttributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
             "File attributes are unavailable"_el,
@@ -336,7 +406,7 @@ void WindowsPathBackend::addAttributesOrThrow(
             GetLastError());
     }
     const auto newAttributes = currentAttributes | windowsAttributesFromPathAttributes(attributes);
-    if (SetFileAttributesW(pathTextAccess.dataAsWide(), newAttributes) == 0) {
+    if (SetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr(), newAttributes) == 0) {
         throwSystemError(
             "File attributes could not be changed"_el,
             "The operating system rejected the requested attribute change."_el,
@@ -350,8 +420,8 @@ void WindowsPathBackend::clearAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
-    const auto currentAttributes = GetFileAttributesW(pathTextAccess.dataAsWide());
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    const auto currentAttributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
     if (currentAttributes == INVALID_FILE_ATTRIBUTES) {
         throwSystemError(
             "File attributes are unavailable"_el,
@@ -360,7 +430,7 @@ void WindowsPathBackend::clearAttributesOrThrow(
             GetLastError());
     }
     const auto newAttributes = currentAttributes & ~windowsAttributesFromPathAttributes(attributes);
-    if (SetFileAttributesW(pathTextAccess.dataAsWide(), newAttributes) == 0) {
+    if (SetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr(), newAttributes) == 0) {
         throwSystemError(
             "File attributes could not be changed"_el,
             "The operating system rejected the requested attribute change."_el,
@@ -392,7 +462,7 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathTextAccess = text::impl::UnsafeU16StringAccess{pathText};
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
     auto security = std::unique_ptr<WindowsAccessProfileSecurity>{};
     auto *securityAttributes = static_cast<SECURITY_ATTRIBUTES *>(nullptr);
     if (options.accessProfile() != PathAccessProfile::Default) {
@@ -400,7 +470,7 @@ auto WindowsPathBackend::openByteOutputStreamWithExistingContentOrThrow(
         securityAttributes = security->securityAttributes();
     }
     const auto handle = CreateFileW(
-        pathTextAccess.dataAsWide(),
+        pathTextAccess.nullTerminatedWideCharPtr(),
         desiredAccess,
         FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
         securityAttributes,

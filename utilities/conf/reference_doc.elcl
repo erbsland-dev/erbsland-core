@@ -24,6 +24,7 @@ Excluded Header Globs       :
     * "core/Definitions.hpp"
     * "core/MakeOneNamespace.hpp"
     * "core/Namespaces.hpp"
+    * "resource/ResourceStorageRegistration.hpp"
 
 # Reference pages maintained entirely by hand and never removed as orphans.
 Manual Reference Pages      :
@@ -76,6 +77,21 @@ Headers     :
     * "core/MainFn.hpp"
     * "core/InitializeFn.hpp"
     * "unit/ExitCode.hpp"
+
+------------*[ Reference Groups ]
+Page        : "core/application_parts.rst"
+Title       : "Application Parts"
+Headers     :
+    * "core/ApplicationPart.hpp"
+    * "core/ApplicationPartCallback.hpp"
+    * "core/ApplicationPartCommandLine.hpp"
+    * "core/ApplicationPartErrorAction.hpp"
+    * "core/ApplicationPartIdentifier.hpp"
+    * "core/ApplicationPartManager.hpp"
+    * "core/ApplicationPartManagerAccess.hpp"
+    * "core/ApplicationPartManagerState.hpp"
+    * "core/ApplicationPartState.hpp"
+    * "core/ApplicationPartTraits.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "debug/debug.rst"
@@ -144,9 +160,20 @@ Headers     :
     * "math/ConstexprSaturatingMath.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "mem/byte_compression.rst"
+Title       : "Byte Compression"
+Headers     :
+    * "mem/ByteCompressionAlgorithm.hpp"
+    * "mem/ByteCompressionError.hpp"
+    * "mem/ByteCompressionErrorReason.hpp"
+    * "mem/ByteCompressor.hpp"
+    * "mem/ByteDecompressor.hpp"
+
+------------*[ Reference Groups ]
 Page        : "mem/byte_utilities.rst"
 Title       : "Byte Reader, Writer, Types and Utilities"
 Headers     :
+    * "mem/BitReader.hpp"
     * "mem/Byte.hpp"
     * "mem/ByteArray.hpp"
     * "mem/ByteBlock.hpp"
@@ -375,6 +402,16 @@ Headers     :
     * "cryptology/x509/X509Version.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "resource/resources.rst"
+Title       : "Compiled Resources"
+Headers     :
+    * "resource/ResourceError.hpp"
+    * "resource/ResourceErrorCategory.hpp"
+    * "resource/ResourceInfo.hpp"
+    * "resource/ResourceManager.hpp"
+    * "resource/Resources.hpp"
+
+------------*[ Reference Groups ]
 Page        : "random/random.rst"
 Title       : "Random Number Convenience Interfaces"
 Headers     :
@@ -475,6 +512,7 @@ Headers     :
     * "stream/StreamError.hpp"
     * "stream/StreamErrorContext.hpp"
     * "stream/StreamErrorSource.hpp"
+    * "stream/ByteBlockInputStream.hpp"
     * "stream/ByteInputStream.hpp"
     * "stream/ByteOutputStream.hpp"
     * "stream/InputStream.hpp"
@@ -950,9 +988,51 @@ Headers     :
     * "network/url/UrlScheme.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "network/http_values.rst"
+Title       : "HTTP Value Types"
+Headers     :
+    * "network/http/HttpCookieSameSite.hpp"
+    * "network/http/HttpField.hpp"
+    * "network/http/HttpFieldName.hpp"
+    * "network/http/HttpFieldType.hpp"
+    * "network/http/HttpHeaderLimits.hpp"
+    * "network/http/HttpHeaders.hpp"
+    * "network/http/HttpMediaType.hpp"
+    * "network/http/HttpMediaTypeParameter.hpp"
+    * "network/http/HttpMethod.hpp"
+    * "network/http/HttpMethodType.hpp"
+    * "network/http/HttpStatus.hpp"
+    * "network/http/HttpVersion.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_messages.rst"
+Title       : "HTTP Messages and Codecs"
+Headers     :
+    * "network/http/HttpRequestHead.hpp"
+    * "network/http/HttpResponseHead.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_server.rst"
+Title       : "HTTP Server"
+Header Globs:
+    * "network/http_server/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_client.rst"
+Title       : "HTTP Client"
+Header Globs:
+    * "network/http_client/*.hpp"
+
+------------*[ Reference Groups ]
 Page        : "network/facade.rst"
 Title       : "Network Facade"
 Headers     :
+    * "network/source/Connection.hpp"
+    * "network/source/ConnectionCloseContext.hpp"
+    * "network/source/ConnectionCloseFn.hpp"
+    * "network/source/ConnectionCloseOrigin.hpp"
+    * "network/source/ConnectionEventEditor.hpp"
+    * "network/source/ConnectionState.hpp"
     * "network/source/ConnectionQuota.hpp"
     * "network/source/ConnectionQuotaLease.hpp"
     * "network/host_lookup/HostResolvedFn.hpp"
@@ -969,9 +1049,6 @@ Headers     :
     * "network/source/SocketBufferLimits.hpp"
     * "network/tcp/TcpAcceptOptions.hpp"
     * "network/tcp/TcpConnectOptions.hpp"
-    * "network/tcp/TcpConnectionCloseContext.hpp"
-    * "network/tcp/TcpConnectionCloseFn.hpp"
-    * "network/tcp/TcpConnectionCloseOrigin.hpp"
     * "network/tcp/TcpConnectionFilterFn.hpp"
     * "network/tcp/TcpConnectionFilterResult.hpp"
     * "network/tcp/TcpConnectionFn.hpp"
@@ -982,18 +1059,10 @@ Headers     :
     * "network/tls/TlsAlertDescription.hpp"
     * "network/tls/TlsClientConnectOptions.hpp"
     * "network/tls/TlsClientConnection.hpp"
-    * "network/tls/TlsClientConnectionCloseContext.hpp"
-    * "network/tls/TlsClientConnectionCloseFn.hpp"
-    * "network/tls/TlsClientConnectionCloseOrigin.hpp"
     * "network/tls/TlsClientConnectionEventEditor.hpp"
-    * "network/tls/TlsClientConnectionState.hpp"
     * "network/tls/TlsServerAcceptOptions.hpp"
     * "network/tls/TlsServerConnection.hpp"
-    * "network/tls/TlsServerConnectionCloseContext.hpp"
-    * "network/tls/TlsServerConnectionCloseFn.hpp"
-    * "network/tls/TlsServerConnectionCloseOrigin.hpp"
     * "network/tls/TlsServerConnectionEventEditor.hpp"
-    * "network/tls/TlsServerConnectionState.hpp"
     * "network/tls/TlsServerIdentityMapping.hpp"
     * "network/udp/UdpDatagram.hpp"
     * "network/udp/UdpDatagramDropContext.hpp"

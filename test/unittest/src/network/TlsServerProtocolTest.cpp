@@ -13,12 +13,13 @@
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
 #include <erbsland/network/Host.hpp>
-#include <erbsland/network/impl/TlsClientProtocol.hpp>
-#include <erbsland/network/impl/TlsClientProtocolOptions.hpp>
-#include <erbsland/network/impl/TlsClientProtocolTestAccess.hpp>
-#include <erbsland/network/impl/TlsServerProtocol.hpp>
-#include <erbsland/network/impl/TlsServerProtocolTestAccess.hpp>
-#include <erbsland/network/impl/TlsWireWriter.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolOptions.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/server/TlsServerProtocol.hpp>
+#include <erbsland/network/impl/tls/server/TlsServerProtocolTestAccess.hpp>
+#include <erbsland/network/impl/tls/TlsAlpnProtocol.hpp>
+#include <erbsland/network/impl/tls/TlsWireWriter.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/time/DateTime.hpp>
 #include <erbsland/unit/ByteLength.hpp>
@@ -54,14 +55,14 @@ private:
     }
 
     [[nodiscard]] static auto clientOptions(
-        std::vector<ByteBlock> alpn = {}, const char *trustPath = "data/network/tls-interop/ca.pem")
+        std::vector<el::text::String> alpn = {}, const char *trustPath = "data/network/tls-interop/ca.pem")
         -> TlsClientProtocolOptions {
         return clientOptionsForHost("localhost"_el, std::move(alpn), trustPath);
     }
 
     [[nodiscard]] static auto clientOptionsForHost(
         const el::text::String &host,
-        std::vector<ByteBlock> alpn = {},
+        std::vector<el::text::String> alpn = {},
         const char *trustPath = "data/network/tls-interop/ca.pem") -> TlsClientProtocolOptions {
         return TlsClientProtocolOptions{
             Host::fromStringOrThrow(host),
@@ -154,23 +155,28 @@ public:
             el::err::ParameterError,
             (TlsServerProtocolOptions{
                 serverIdentity, {}, {TlsCipherSuite::Aes128GcmSha256, TlsCipherSuite::Aes128GcmSha256}}));
-        REQUIRE_THROWS_AS(el::err::ParameterError, (TlsServerProtocolOptions{serverIdentity, {ByteBlock{}}}));
-        const auto repeatedProtocol = ByteBlock({'h', '2'});
+        REQUIRE_THROWS_AS(el::err::ParameterError, (TlsServerProtocolOptions{serverIdentity, {el::text::String{}}}));
+        const auto repeatedProtocol = el::text::String{"h2"_el};
         REQUIRE_THROWS_AS(
             el::err::ParameterError, (TlsServerProtocolOptions{serverIdentity, {repeatedProtocol, repeatedProtocol}}));
         REQUIRE_THROWS_AS(
             el::err::ParameterError,
-            (TlsServerProtocolOptions{serverIdentity, {ByteBlock{ByteLength{256U}, el::mem::Byte{1U}}}}));
+            (TlsServerProtocolOptions{
+                serverIdentity, {TlsAlpnProtocol::fromBytes(ByteBlock{ByteLength{256U}, el::mem::Byte{1U}}.span())}}));
 
-        auto tooManyProtocols = std::vector<ByteBlock>(65U, ByteBlock({'x'}));
+        auto tooManyProtocols = std::vector<el::text::String>(65U, "x"_el);
         REQUIRE_THROWS_AS(
             el::err::ParameterError, (TlsServerProtocolOptions{serverIdentity, std::move(tooManyProtocols)}));
-        auto oversizedProtocols = std::vector<ByteBlock>{};
+        auto oversizedProtocols = std::vector<el::text::String>{};
         for (auto index = uint8_t{0U}; index < 17U; ++index) {
-            oversizedProtocols.emplace_back(ByteLength{255U}, el::mem::Byte{index});
+            oversizedProtocols.emplace_back(
+                TlsAlpnProtocol::fromBytes(ByteBlock{ByteLength{255U}, el::mem::Byte{index}}.span()));
         }
         REQUIRE_THROWS_AS(
             el::err::ParameterError, (TlsServerProtocolOptions{serverIdentity, std::move(oversizedProtocols)}));
+        const auto malformedOne = TlsAlpnProtocol::fromBytes(ByteBlock({0xFFU}).span());
+        const auto malformedTwo = TlsAlpnProtocol::fromBytes(ByteBlock({0xFEU}).span());
+        REQUIRE_NOTHROW((TlsServerProtocolOptions{serverIdentity, {malformedOne, malformedTwo}}));
 
         const auto name = HostName::fromStringOrThrow("WWW.bücher.example"_el);
         auto duplicateNames = std::vector<TlsServerProtocolOptions::NamedIdentity>{
@@ -226,8 +232,8 @@ public:
     TAGS(FullRun)
     void testAuthenticatedHandshakeApplicationAndFragmentation() {
         const auto applicationScope = ApplicationTestScope<>{};
-        const auto http11 = ByteBlock({'h', 't', 't', 'p', '/', '1', '.', '1'});
-        const auto http2 = ByteBlock({'h', '2'});
+        const auto http11 = el::text::String{"http/1.1"_el};
+        const auto http2 = el::text::String{"h2"_el};
         auto client = TlsClientProtocol{clientOptions({http11, http2})};
         auto server =
             TlsServerProtocol{TlsServerProtocolOptions{identity(), {http2, http11}, {TlsCipherSuite::Aes128GcmSha256}}};
@@ -240,6 +246,16 @@ public:
         REQUIRE(server.cipherSuite().has_value());
         REQUIRE_EQUAL(*server.cipherSuite(), TlsCipherSuite::Aes128GcmSha256);
         REQUIRE(server.signatureScheme().has_value());
+
+        const auto malformed = TlsAlpnProtocol::fromBytes(ByteBlock({0xFFU, 0xFEU}).span());
+        auto rawClient = TlsClientProtocol{clientOptions({malformed})};
+        auto rawServer =
+            TlsServerProtocol{TlsServerProtocolOptions{identity(), {malformed}, {TlsCipherSuite::Aes128GcmSha256}}};
+        rawClient.start();
+        rawServer.start();
+        completeHandshake(rawClient, rawServer, false);
+        REQUIRE(TlsAlpnProtocol::equal(rawServer.negotiatedAlpn(), malformed));
+        REQUIRE(TlsAlpnProtocol::equal(rawClient.negotiatedAlpn(), malformed));
 
         const auto request = ByteBlock({'p', 'i', 'n', 'g'});
         REQUIRE_EQUAL(client.sendApplication(request.span()), NetworkSendStatus::Accepted);
@@ -406,8 +422,8 @@ public:
     void testRejectedOffersBackPressureTimeoutAndExactlyOnceFailure() {
         const auto applicationScope = ApplicationTestScope<>{};
         const auto serverIdentity = identity();
-        const auto http11 = ByteBlock({'h', 't', 't', 'p', '/', '1', '.', '1'});
-        const auto http2 = ByteBlock({'h', '2'});
+        const auto http11 = el::text::String{"http/1.1"_el};
+        const auto http2 = el::text::String{"h2"_el};
 
         auto noOverlapClient = TlsClientProtocol{clientOptions({http2})};
         auto noOverlapServer = TlsServerProtocol{TlsServerProtocolOptions{serverIdentity, {http11}}};

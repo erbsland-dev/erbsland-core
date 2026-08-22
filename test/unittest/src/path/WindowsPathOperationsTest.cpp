@@ -8,6 +8,7 @@
 #include <erbsland/path/impl/PathBackend.hpp>
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
+#include <erbsland/path/PathInfo.hpp>
 #include <erbsland/system/PlatformErrorCategory.hpp>
 #include <erbsland/system/WindowsErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -22,6 +23,19 @@ using namespace erbsland::test::pathtest;
 TESTED_TARGETS(Path PathOperations WindowsPathBackend PathBackend)
 class WindowsPathOperationsTest final : public el::UnitTest {
 public:
+    void testNativeMoveReplacesRegularFile() {
+        const auto fixture = PathTestFixture{"windows-native-replace"};
+        const auto source = fixture.child("source.txt");
+        const auto destination = fixture.child("destination.txt");
+        source.content().writeTextOrThrow("replacement"_el);
+        destination.content().writeTextOrThrow("previous"_el);
+
+        el::path::impl::pathBackend().moveEntryOrThrow(source, destination);
+
+        REQUIRE_FALSE(source.info().exists());
+        REQUIRE_EQUAL(destination.content().readTextOrThrow(), "replacement"_el);
+    }
+
     void testNativeFailuresPreservePlatformContext() {
         const auto fixture = PathTestFixture{"windows-operation-errors"};
         const auto missing = fixture.child("missing");

@@ -5,6 +5,8 @@
 #include "Network_fwd.hpp"
 
 #include "host_lookup/HostLookup_fwd.hpp"
+#include "http_client/HttpClientSession_fwd.hpp"
+#include "http_server/HttpServer_fwd.hpp"
 #include "tcp/TcpConnection_fwd.hpp"
 #include "tcp/TcpListener_fwd.hpp"
 #include "tls/TlsClientConnection_fwd.hpp"
@@ -35,6 +37,14 @@ public: // factories
     /// @return The new lookup source.
     /// @throws err::LogicError If called outside the owner event loop.
     [[nodiscard]] virtual auto createHostLookup() -> HostLookupPtr = 0;
+    /// Create an active session-first HTTP/1.1 and HTTPS client.
+    /// @return The new client session.
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto createHttpClientSession() -> HttpClientSessionPtr = 0;
+    /// Create an inactive HTTP/1.1 or HTTPS server.
+    /// @return The new server source.
+    /// @throws err::LogicError If called outside the owner event loop.
+    [[nodiscard]] virtual auto createHttpServer() -> HttpServerPtr = 0;
     /// Create an inactive TCP listener.
     /// @return The new listener source.
     [[nodiscard]] virtual auto createTcpListener() -> TcpListenerPtr = 0;

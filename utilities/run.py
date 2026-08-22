@@ -133,6 +133,12 @@ REGISTERED_UTILITIES = {
         "GenerateTimeZoneDataApp",
         help="Generate compact time-zone metadata from IANA tzdb and Unicode CLDR.",
     ),
+    "generate_public_suffix_data": RegisteredUtility(
+        "Generate Public Suffix Data",
+        "dev.generate_public_suffix_data",
+        "GeneratePublicSuffixDataApp",
+        help="Generate compact HTTP client Public Suffix List tables from the pinned snapshot.",
+    ),
     "generate_common_box_frame_style": RegisteredUtility(
         "Generate Common Box Frame Style",
         "dev.generate_common_box_frame_style",

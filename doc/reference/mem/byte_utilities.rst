@@ -157,6 +157,17 @@ This includes readers positioned in the middle of a block.
 Strict reads leave the position unchanged on failure; optional reads report an incomplete or invalid frame without
 advancing.
 
+Bit Reader
+----------
+
+``BitReader`` reads individual bits from a borrowed
+:cpp:type:`ConstByteSpan <erbsland::mem::ConstByteSpan>` without copying or owning its input.
+It processes the most-significant bit first in each byte and exposes the total bit count, current position, remaining
+count, bounded position changes, and end checks.
+``readBool()`` returns the next bit as a boolean, while ``readInteger<T>()`` returns the same bit as zero or one of a
+selected native integer type.
+Reads at the end return ``false`` or zero without advancing.
+
 Byte Writer
 -----------
 
@@ -209,6 +220,8 @@ If allocating replacement storage fails, the invoking shared block is unchanged.
 Interface
 =========
 
+.. doxygenclass:: erbsland::mem::BitReader
+    :members:
 .. doxygenclass:: erbsland::mem::Byte
     :members:
 .. doxygenclass:: erbsland::mem::ByteArray

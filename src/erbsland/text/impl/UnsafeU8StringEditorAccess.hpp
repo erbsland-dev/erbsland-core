@@ -6,6 +6,8 @@
 
 #include "../u8/U8StringEditor.hpp"
 
+#include <span>
+
 namespace erbsland::text::impl {
 
 /// Provides unsafe access to the internal string data.
@@ -24,8 +26,8 @@ public:
     auto operator=(UnsafeU8StringEditorAccess &&) = delete;
 
 public:
-    /// Access the null-terminated string data.
-    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr { return _string->_storage.data(); }
+    /// Access the bounded span for the string data.
+    [[nodiscard]] auto dataSpan() const noexcept -> std::span<const char> { return _string->dataView().dataSpan(); }
     /// Access the internal data view.
     [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string->dataView(); }
 

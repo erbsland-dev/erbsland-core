@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Host.hpp"
 
-#include "impl/CommonHostTests.hpp"
+#include "impl/host/CommonHostTests.hpp"
 
 #include "../err/ParseError.hpp"
 #include "../util/HashHelper.hpp"

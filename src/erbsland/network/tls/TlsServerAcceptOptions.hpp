@@ -10,7 +10,6 @@
 #include "../tcp/TcpAcceptOptions.hpp"
 
 #include "../../cryptology/tls/TlsCipherSuite.hpp"
-#include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
 #include "../../time/TimeDelta.hpp"
 
@@ -87,12 +86,12 @@ public: // accessors
         _bufferLimits = value;
         return *this;
     }
-    /// Get supported opaque ALPN identifiers in server-preference order.
-    [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<mem::ByteBlock> & { return _alpnProtocols; }
-    /// Set supported opaque ALPN identifiers in server-preference order.
+    /// Get supported ALPN identifiers in server-preference order.
+    [[nodiscard]] auto alpnProtocols() const noexcept -> const std::vector<text::String> & { return _alpnProtocols; }
+    /// Set supported ALPN identifiers in server-preference order.
     /// @param value The bounded non-empty protocol identifiers.
     /// @return This options object for chaining.
-    auto setAlpnProtocols(std::vector<mem::ByteBlock> value) noexcept -> TlsServerAcceptOptions & {
+    auto setAlpnProtocols(std::vector<text::String> value) noexcept -> TlsServerAcceptOptions & {
         _alpnProtocols = std::move(value);
         return *this;
     }
@@ -141,7 +140,7 @@ private:
     std::vector<TlsServerIdentityMapping> _identityMappings;      ///< Exact SNI label mappings.
     TcpAcceptOptions _tcpOptions;                                 ///< Accepted TCP stream options.
     SocketBufferLimits _bufferLimits;                             ///< TLS queue limits.
-    std::vector<mem::ByteBlock> _alpnProtocols;                   ///< Server-preference ALPN identifiers.
+    std::vector<text::String> _alpnProtocols;                     ///< Server-preference ALPN identifiers.
     std::vector<cryptology::TlsCipherSuite> _cipherSuites;        ///< Server-preference cipher suites.
     time::TimeDelta _handshakeTimeout{cDefaultHandshakeTimeout};  ///< Handshake deadline.
     time::TimeDelta _idleTimeout{cDefaultIdleTimeout};            ///< Application idle deadline.

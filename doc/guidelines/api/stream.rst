@@ -46,6 +46,7 @@ Primary Types
 
     InputStream, OutputStream // common readable and writable stream interfaces
     ByteInputStream, ByteOutputStream // raw-byte and endian-integer streams
+    ByteBlockInputStream // immediate positional input retaining a copy-on-write byte block
     TextInputStream, TextOutputStream // decoded and encoded Unicode streams
 
 Secondary Types
@@ -108,6 +109,7 @@ Read Patterns
     o.read❮Integer❯() -> R // read one integer using configured byte order
     o.encoding()/effectiveEncoding() -> text::StringEncoding // inspect configured and BOM-resolved encoding
     o.setSensitive(enabled) -> InputStreamSettings& // protect retained input and mark ordinary read payloads
+    T(data[, settings]) // expose one retained byte block as an immediate positional stream
 
 Write Patterns
 ==============

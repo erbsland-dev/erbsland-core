@@ -6,11 +6,13 @@
 
 #include "../u8/U8String.hpp"
 
+#include <span>
+
 namespace erbsland::text::impl {
 
 /// Provides unsafe access to the internal read-only string data.
 /// @warning Do not use this class in user code!
-/// @tested{OptionsParserTest}
+/// @tested{UnsafeU8StringEditorAccessTest PlatformStringAccessTest}
 class UnsafeU8StringAccess {
 public:
     /// Create an accessor
@@ -24,8 +26,8 @@ public:
     auto operator=(UnsafeU8StringAccess &&) = delete;
 
 public:
-    /// Access the null-terminated string data.
-    [[nodiscard]] auto data() const noexcept -> mem::UnsafeConstCharPtr { return _string.dataView().data().data(); }
+    /// Access the bounded span for the string data.
+    [[nodiscard]] auto dataSpan() const noexcept -> std::span<const char> { return _string.dataView().dataSpan(); }
     /// Access the internal data view.
     [[nodiscard]] auto dataView() const noexcept -> U8StringDataView { return _string.dataView(); }
 

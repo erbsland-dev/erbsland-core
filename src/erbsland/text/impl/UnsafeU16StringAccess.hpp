@@ -6,13 +6,13 @@
 
 #include "../u16/U16String.hpp"
 
-#include "../../core/Definitions.hpp"
+#include <span>
 
 namespace erbsland::text::impl {
 
 /// Provides unsafe access to the internal string data.
 /// @warning Do not use this class in user code!
-/// @tested{UnsafeU16StringEditorAccessTest}
+/// @tested{UnsafeU16StringEditorAccessTest PlatformStringAccessTest}
 class UnsafeU16StringAccess {
 public:
     /// Create an accessor
@@ -26,14 +26,8 @@ public:
     auto operator=(UnsafeU16StringAccess &&) = delete;
 
 public:
-    /// Access the null-terminated string data.
-    [[nodiscard]] auto data() const noexcept -> const char16_t * { return _string.dataView().data().data(); }
-#ifdef ERBSLAND_WCHAR_16BIT
-    /// Access the null-terminated string data as wide string.
-    [[nodiscard]] auto dataAsWide() const noexcept -> const wchar_t * {
-        return reinterpret_cast<const wchar_t *>(data());
-    }
-#endif
+    /// Access the bounded span for the string data.
+    [[nodiscard]] auto dataSpan() const noexcept -> std::span<const char16_t> { return _string.dataView().dataSpan(); }
     /// Access the internal data view.
     [[nodiscard]] auto dataView() const noexcept -> U16StringDataView { return _string.dataView(); }
 

@@ -30,6 +30,7 @@
 #include "../impl/StringNormalizationTools_fwd.hpp"
 #include "../impl/StringReaderBase_fwd.hpp"
 #include "../impl/UnsafeU8StringAccess_fwd.hpp"
+#include "../impl/UnsafeU8StringBuffer_fwd.hpp"
 #include "../IntegerFormat.hpp"
 #include "../IntegerParseOptions.hpp"
 #include "../Literals.hpp"
@@ -90,6 +91,7 @@ class U8String final {
     friend class impl::U8StringBuilder;
     friend class impl::U8StringReader;
     friend class impl::UnsafeU8StringAccess;
+    friend class impl::UnsafeU8StringBuffer;
     template <typename>
     friend class impl::StringList;
 

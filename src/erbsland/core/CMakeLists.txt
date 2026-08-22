@@ -13,6 +13,22 @@ target_sources(erbsland-core PRIVATE
         ApplicationError.hpp
         ApplicationErrorContext.hpp
         ApplicationInfo.hpp
+        ApplicationPart.cpp
+        ApplicationPart.hpp
+        ApplicationPart_fwd.hpp
+        ApplicationPartCallback.hpp
+        ApplicationPartCommandLine.hpp
+        ApplicationPartErrorAction.hpp
+        ApplicationPartIdentifier.cpp
+        ApplicationPartIdentifier.hpp
+        ApplicationPartIdentifier_fwd.hpp
+        ApplicationPartManager.cpp
+        ApplicationPartManager.hpp
+        ApplicationPartManager_fwd.hpp
+        ApplicationPartManagerAccess.hpp
+        ApplicationPartManagerState.hpp
+        ApplicationPartState.hpp
+        ApplicationPartTraits.hpp
         CommandLineArguments.hpp
         Definitions.hpp
         InitializeFn.hpp

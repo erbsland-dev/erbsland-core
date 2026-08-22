@@ -46,6 +46,8 @@ struct Request {
     port: u16,
     #[serde(default)]
     server_name: String,
+    #[serde(default)]
+    wire_hex: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -144,6 +146,22 @@ fn run() -> Result<(), String> {
             continue;
         }
         match request.command.as_str() {
+            "http-request" | "http-response" | "http-chunk-size" => {
+                let result = compare_http(&request.command, &request.wire_hex);
+                match result {
+                    Ok((accepted, parsed)) => write_json(
+                        &mut control,
+                        &serde_json::json!({
+                            "protocol": PROTOCOL_VERSION,
+                            "id": request.id,
+                            "status": "ok",
+                            "accepted": if accepted { 1 } else { 0 },
+                            "parsed": parsed
+                        }),
+                    )?,
+                    Err(error) => write_error(&mut control, request.id, "http", &error)?,
+                }
+            }
             "start" => {
                 if scenarios.contains_key(&request.id) {
                     write_error(
@@ -256,6 +274,99 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+fn compare_http(command: &str, wire_hex: &str) -> Result<(bool, String), String> {
+    let wire = decode_hex(wire_hex)?;
+    match command {
+        "http-request" => {
+            let mut headers = [httparse::EMPTY_HEADER; 100];
+            let mut request = httparse::Request::new(&mut headers);
+            match request.parse(&wire) {
+                Ok(httparse::Status::Complete(consumed)) => {
+                    let mut parsed = format!(
+                        "{}:{}:{}:{}",
+                        consumed,
+                        request.version.unwrap_or(255),
+                        hex(request.method.unwrap_or("").as_bytes()),
+                        hex(request.path.unwrap_or("").as_bytes())
+                    );
+                    for header in request.headers {
+                        parsed.push(':');
+                        parsed.push_str(&hex(header.name.as_bytes()));
+                        parsed.push('=');
+                        parsed.push_str(&hex(header.value));
+                    }
+                    Ok((true, parsed))
+                }
+                Ok(httparse::Status::Partial) | Err(_) => Ok((false, String::new())),
+            }
+        }
+        "http-response" => {
+            let mut headers = [httparse::EMPTY_HEADER; 100];
+            let mut response = httparse::Response::new(&mut headers);
+            match response.parse(&wire) {
+                Ok(httparse::Status::Complete(consumed)) => {
+                    let mut parsed = format!(
+                        "{}:{}:{}:{}",
+                        consumed,
+                        response.version.unwrap_or(255),
+                        response.code.unwrap_or(0),
+                        hex(response.reason.unwrap_or("").as_bytes())
+                    );
+                    for header in response.headers {
+                        parsed.push(':');
+                        parsed.push_str(&hex(header.name.as_bytes()));
+                        parsed.push('=');
+                        parsed.push_str(&hex(header.value));
+                    }
+                    Ok((true, parsed))
+                }
+                Ok(httparse::Status::Partial) | Err(_) => Ok((false, String::new())),
+            }
+        }
+        "http-chunk-size" => match httparse::parse_chunk_size(&wire) {
+            Ok(httparse::Status::Complete((consumed, size))) => {
+                Ok((true, format!("{consumed}:{size}")))
+            }
+            Ok(httparse::Status::Partial) | Err(_) => Ok((false, String::new())),
+        },
+        _ => Err("unknown HTTP comparison kind".to_owned()),
+    }
+}
+
+fn decode_hex(text: &str) -> Result<Vec<u8>, String> {
+    if text.len() % 2 != 0 || text.len() > 128 * 1024 {
+        return Err("invalid bounded hexadecimal HTTP input".to_owned());
+    }
+    let mut result = Vec::with_capacity(text.len() / 2);
+    let bytes = text.as_bytes();
+    for index in (0..bytes.len()).step_by(2) {
+        let high = hex_digit(bytes[index]).ok_or_else(|| "invalid hexadecimal input".to_owned())?;
+        let low =
+            hex_digit(bytes[index + 1]).ok_or_else(|| "invalid hexadecimal input".to_owned())?;
+        result.push((high << 4) | low);
+    }
+    Ok(result)
+}
+
+fn hex_digit(value: u8) -> Option<u8> {
+    match value {
+        b'0'..=b'9' => Some(value - b'0'),
+        b'a'..=b'f' => Some(value - b'a' + 10),
+        b'A'..=b'F' => Some(value - b'A' + 10),
+        _ => None,
+    }
+}
+
+fn hex(bytes: &[u8]) -> String {
+    const DIGITS: &[u8; 16] = b"0123456789abcdef";
+    let mut result = String::with_capacity(bytes.len() * 2);
+    for value in bytes {
+        result.push(DIGITS[(value >> 4) as usize] as char);
+        result.push(DIGITS[(value & 0x0f) as usize] as char);
+    }
+    result
+}
+
 fn start_client_scenario(
     request: &Request,
     ca_certificates: Arc<Vec<CertificateDer<'static>>>,
@@ -339,6 +450,11 @@ fn start_scenario(
                 .map_err(|error| format!("failed to clone scenario stream: {error}"))?,
         );
         match scenario.as_str() {
+            "http_plain_server" => run_http_exchange(stream),
+            "http_tls_server" => run_tls_http_server(
+                stream,
+                build_http_server_config(&certificates, &private_key_path)?,
+            ),
             "tls_echo" => run_tls_echo(
                 stream,
                 build_server_config(&certificates, &private_key_path, &cipher, false)?,
@@ -415,6 +531,22 @@ fn build_server_config(
         .with_single_cert(certificates.to_vec(), key)
         .map_err(|error| format!("failed to configure certificate: {error}"))?;
     config.alpn_protocols = vec![b"erbsland-test".to_vec()];
+    Ok(Arc::new(config))
+}
+
+fn build_http_server_config(
+    certificates: &[CertificateDer<'static>],
+    private_key_path: &Path,
+) -> Result<Arc<ServerConfig>, String> {
+    let key = load_private_key(private_key_path)?;
+    let mut config =
+        ServerConfig::builder_with_provider(Arc::new(rustls::crypto::ring::default_provider()))
+            .with_protocol_versions(&[&version::TLS13])
+            .map_err(|error| format!("failed to select TLS 1.3: {error}"))?
+            .with_no_client_auth()
+            .with_single_cert(certificates.to_vec(), key)
+            .map_err(|error| format!("failed to configure HTTP certificate: {error}"))?;
+    config.alpn_protocols = vec![b"http/1.1".to_vec()];
     Ok(Arc::new(config))
 }
 
@@ -506,6 +638,95 @@ fn run_tls_echo(
         }
     }
     Ok(total)
+}
+
+fn run_tls_http_server(stream: TcpStream, config: Arc<ServerConfig>) -> Result<usize, String> {
+    let connection = ServerConnection::new(config)
+        .map_err(|error| format!("failed to create TLS HTTP server: {error}"))?;
+    let mut stream = StreamOwned::new(connection, stream);
+    let result = run_http_exchange(&mut stream)?;
+    stream.conn.send_close_notify();
+    stream
+        .flush()
+        .map_err(|error| format!("failed to flush HTTP close notification: {error}"))?;
+    Ok(result)
+}
+
+fn run_http_exchange<T: Read + Write>(stream: T) -> Result<usize, String> {
+    let mut stream = BufReader::new(stream);
+    let mut request_wire = Vec::<u8>::new();
+    let mut header_length = None::<usize>;
+    while header_length.is_none() {
+        if request_wire.len() >= MAXIMUM_CONTROL_LINE_LENGTH {
+            return Err("HTTP request head exceeds 64 KiB".to_owned());
+        }
+        let mut byte = [0_u8; 1];
+        stream
+            .read_exact(&mut byte)
+            .map_err(io_error("read HTTP request head"))?;
+        request_wire.push(byte[0]);
+        if request_wire.ends_with(b"\r\n\r\n") {
+            header_length = Some(request_wire.len());
+        }
+    }
+    let mut headers = [httparse::EMPTY_HEADER; 100];
+    let mut request = httparse::Request::new(&mut headers);
+    let parsed_length = match request
+        .parse(&request_wire)
+        .map_err(|error| format!("failed to parse HTTP request: {error}"))?
+    {
+        httparse::Status::Complete(length) => length,
+        httparse::Status::Partial => return Err("HTTP request head remained partial".to_owned()),
+    };
+    if parsed_length != header_length.unwrap_or_default()
+        || request.method != Some("POST")
+        || request.path != Some("/interop?x=1")
+        || request.version != Some(1)
+    {
+        return Err("HTTP request line does not match the deterministic scenario".to_owned());
+    }
+    let mut content_length = None::<usize>;
+    let mut host_seen = false;
+    for header in request.headers.iter() {
+        if header.name.eq_ignore_ascii_case("host") {
+            host_seen = !header.value.is_empty();
+        } else if header.name.eq_ignore_ascii_case("content-length") {
+            let text = std::str::from_utf8(header.value)
+                .map_err(|_| "HTTP Content-Length is not ASCII".to_owned())?;
+            content_length = Some(
+                text.parse::<usize>()
+                    .map_err(|_| "HTTP Content-Length is not numeric".to_owned())?,
+            );
+        } else if header.name.eq_ignore_ascii_case("transfer-encoding") {
+            return Err("fixed interop request unexpectedly used Transfer-Encoding".to_owned());
+        }
+    }
+    if !host_seen {
+        return Err("HTTP interop request has no Host field".to_owned());
+    }
+    let body_length =
+        content_length.ok_or_else(|| "HTTP interop request has no Content-Length".to_owned())?;
+    let mut body = vec![0_u8; body_length];
+    stream
+        .read_exact(&mut body)
+        .map_err(io_error("read HTTP request body"))?;
+    if body != b"payload" {
+        return Err("HTTP interop request body mismatch".to_owned());
+    }
+    stream
+        .get_mut()
+        .write_all(
+            b"HTTP/1.1 103 Early Hints\r\nLink: </style.css>; rel=preload\r\n\r\n\
+HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\n\
+Transfer-Encoding: chunked\r\nTrailer: X-Interop\r\nConnection: close\r\n\r\n\
+6\r\n{\"ok\":\r\n5\r\ntrue}\r\n0\r\nX-Interop: rust\r\n\r\n",
+        )
+        .map_err(io_error("write HTTP response"))?;
+    stream
+        .get_mut()
+        .flush()
+        .map_err(io_error("flush HTTP response"))?;
+    Ok(body_length)
 }
 
 fn run_tls_client_echo(

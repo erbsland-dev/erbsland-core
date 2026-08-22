@@ -60,7 +60,7 @@ private:
                 [this](const el::List<el::IpEndpoint> &endpoints) -> void { validateResolvedEndpoints(endpoints); })
             .onConnected([this]() -> void { sendQuery(); })
             .onData([this](el::ByteBlock data) -> void { onData(std::move(data)); })
-            .onClosed([this](const el::TcpConnectionCloseContext &) -> void {
+            .onClosed([this](const el::ConnectionCloseContext &) -> void {
                 if (!_receivedAnswer) {
                     throw el::ApplicationError{"The map server closed without a complete response."_el};
                 }

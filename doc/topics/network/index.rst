@@ -17,4 +17,6 @@ The network domain provides event-loop-owned host lookup and native TCP and UDP 
     using-tcp-connections
     using-tls-client-connections
     using-tls-server-connections
+    using-http-servers
+    using-http-clients
     using-udp-sockets

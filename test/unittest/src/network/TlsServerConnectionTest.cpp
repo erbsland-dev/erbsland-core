@@ -13,14 +13,14 @@
 #include <erbsland/err/RuntimeError.hpp>
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/event/EventLoopDriver.hpp>
-#include <erbsland/network/impl/HostResolver.hpp>
-#include <erbsland/network/impl/TcpAcceptedSocket.hpp>
-#include <erbsland/network/impl/TcpConnection.hpp>
-#include <erbsland/network/impl/TcpConnectionDevice.hpp>
-#include <erbsland/network/impl/TcpConnectionRequest.hpp>
-#include <erbsland/network/impl/TlsClientProtocol.hpp>
-#include <erbsland/network/impl/TlsClientProtocolOptions.hpp>
-#include <erbsland/network/impl/TlsServerConnection.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/tcp/TcpAcceptedSocket.hpp>
+#include <erbsland/network/impl/tcp/TcpConnection.hpp>
+#include <erbsland/network/impl/tcp/TcpConnectionDevice.hpp>
+#include <erbsland/network/impl/tcp/TcpConnectionRequest.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocol.hpp>
+#include <erbsland/network/impl/tls/client/TlsClientProtocolOptions.hpp>
+#include <erbsland/network/impl/tls/server/TlsServerConnection.hpp>
 #include <erbsland/network/source/ConnectionQuota.hpp>
 #include <erbsland/network/tls/TlsServerConnection.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -46,7 +46,7 @@ namespace unit = el::unit;
 
 TESTED_TARGETS(
     TlsServerConnection TlsServerAcceptOptions TlsServerIdentityMapping TlsServerConnectionEventEditor
-        TlsServerConnectionCloseContext TlsServerConnectionState ConnectionQuota ConnectionQuotaLease)
+        ConnectionCloseContext ConnectionState ConnectionQuota ConnectionQuotaLease)
 class TlsServerConnectionTest final : public el::UnitTest {
 private:
     class FakeResolver final : public HostResolver {
@@ -200,12 +200,12 @@ public:
             REQUIRE_THROWS_AS(
                 el::err::RuntimeError, harness.connection->accept(request, TlsServerAcceptOptions{quota}));
             REQUIRE_EQUAL(request->state(), TcpConnectionRequestState::Pending);
-            REQUIRE_EQUAL(harness.connection->state(), TlsServerConnectionState::Inactive);
+            REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Inactive);
         });
 
         registerIdentity("tls"_el);
         run(harness, [&]() -> void { harness.connection->accept(request, TlsServerAcceptOptions{quota}); });
-        REQUIRE_EQUAL(harness.connection->state(), TlsServerConnectionState::Handshaking);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Handshaking);
         auto client = TlsClientProtocol{clientOptions()};
         client.start();
         REQUIRE(transferClientOutput(harness, client));
@@ -235,7 +235,7 @@ public:
         REQUIRE_EQUAL(reason, NetworkErrorReason::ResourceLimitExceeded);
         REQUIRE_EQUAL(phase, NetworkErrorPhase::Accepting);
         REQUIRE_EQUAL(finalCount, std::size_t{1U});
-        REQUIRE_EQUAL(rejectedHarness.connection->state(), TlsServerConnectionState::Failed);
+        REQUIRE_EQUAL(rejectedHarness.connection->state(), ConnectionState::Failed);
     }
 
     void testHandshakeTimeoutAndAdmissionCallbackExceptionFinalizeOnce() {
@@ -254,7 +254,7 @@ public:
         });
         runUntil(timeoutHarness.loop, [&]() -> bool { return timeoutFinalCount == 1U; });
         REQUIRE_EQUAL(timeoutReason, NetworkErrorReason::Timeout);
-        REQUIRE_EQUAL(timeoutHarness.connection->state(), TlsServerConnectionState::Failed);
+        REQUIRE_EQUAL(timeoutHarness.connection->state(), ConnectionState::Failed);
         REQUIRE_EQUAL(timeoutQuota->current(), unit::ItemCount{});
 
         auto callbackHarness = makeHarness();
@@ -273,7 +273,7 @@ public:
         REQUIRE(callbackHarness.loop->hasError());
         REQUIRE_EQUAL(callbackFinalCount, std::size_t{1U});
         REQUIRE_THROWS_AS(std::runtime_error, std::rethrow_exception(callbackHarness.loop->takeError()));
-        REQUIRE_EQUAL(callbackHarness.connection->state(), TlsServerConnectionState::Failed);
+        REQUIRE_EQUAL(callbackHarness.connection->state(), ConnectionState::Failed);
     }
 
     void testClientHelloSelectionAndCheckpointAbort() {
@@ -322,20 +322,20 @@ public:
         const auto quota = ConnectionQuota::create(unit::ItemCount{1U});
         auto events = std::vector<int>{};
         auto received = mem::ByteBlock{};
-        auto closeOrigin = TlsServerConnectionCloseOrigin::Remote;
+        auto closeOrigin = ConnectionCloseOrigin::Remote;
         run(harness, [&]() -> void {
             harness.connection->events()
                 .onTransportConnected([&]() -> void { events.push_back(1); })
                 .onClientHello([&]() -> void { events.push_back(2); })
                 .onHandshakeCompleted([&]() -> void {
-                    REQUIRE_EQUAL(harness.connection->state(), TlsServerConnectionState::Active);
+                    REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Active);
                     events.push_back(3);
                 })
                 .onData([&](mem::ByteBlock data) -> void {
                     received = std::move(data);
                     events.push_back(4);
                 })
-                .onClosed([&](const TlsServerConnectionCloseContext &context) -> void {
+                .onClosed([&](const ConnectionCloseContext &context) -> void {
                     closeOrigin = context.origin();
                     events.push_back(5);
                 })
@@ -350,12 +350,12 @@ public:
             auto progress = transferClientOutput(harness, client);
             progress = transferServerOutput(harness, client, serverOutputCursor) || progress;
             if (client.state() == TlsClientProtocolState::Established &&
-                harness.connection->state() == TlsServerConnectionState::Active) {
+                harness.connection->state() == ConnectionState::Active) {
                 break;
             }
             REQUIRE(progress);
         }
-        REQUIRE_EQUAL(harness.connection->state(), TlsServerConnectionState::Active);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Active);
         REQUIRE_EQUAL(quota->current(), unit::ItemCount{});
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3}));
 
@@ -371,9 +371,9 @@ public:
         REQUIRE(transferServerOutput(harness, client, serverOutputCursor));
         REQUIRE(transferClientOutput(harness, client));
         static_cast<void>(harness.loop->runUntilIdle());
-        REQUIRE_EQUAL(closeOrigin, TlsServerConnectionCloseOrigin::Local);
+        REQUIRE_EQUAL(closeOrigin, ConnectionCloseOrigin::Local);
         REQUIRE_EQUAL(events, std::vector<int>({1, 2, 3, 4, 5, 6}));
         REQUIRE(harness.device->closed);
-        REQUIRE_EQUAL(harness.connection->state(), TlsServerConnectionState::Closed);
+        REQUIRE_EQUAL(harness.connection->state(), ConnectionState::Closed);
     }
 };

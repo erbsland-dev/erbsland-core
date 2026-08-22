@@ -8,6 +8,7 @@
 #include <erbsland/path/PathCreateMode.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathReadDataOptions.hpp>
+#include <erbsland/path/SymlinkMode.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -27,6 +28,7 @@ using el::path::PathReadDataOptions;
 using el::path::PathReadTextOptions;
 using el::path::PathWriteDataOptions;
 using el::path::PathWriteTextOptions;
+using el::path::SymlinkMode;
 using namespace el::text;
 using namespace el::text::literals;
 using namespace erbsland::test::pathtest;
@@ -171,6 +173,40 @@ public:
         const auto empty = PathContent{};
         REQUIRE_FALSE(empty.readData().has_value());
         REQUIRE(empty.writeData(ByteBlock{}).isFailure());
+    }
+
+    void testSymlinkReadPolicy() {
+        const auto fixture = Fixture{"symlink-policy"};
+        const auto target = fixture.path() / "target.txt";
+        const auto link = fixture.path() / "link.txt";
+        pathFromStd(target).content().writeTextOrThrow("target"_el);
+
+        auto errorCode = std::error_code{};
+        std::filesystem::create_symlink(target, link, errorCode);
+        if (errorCode) {
+            return;
+        }
+
+        REQUIRE_EQUAL(pathFromStd(link).content().readTextOrThrow(), "target"_el);
+        auto dataOptions = PathReadDataOptions{};
+        REQUIRE_EQUAL(dataOptions.symlinkMode(), SymlinkMode::Follow);
+        dataOptions.setSymlinkMode(SymlinkMode::Skip);
+        REQUIRE_THROWS_AS(PathError, pathFromStd(link).content().readDataOrThrow(dataOptions));
+
+        auto textOptions = PathReadTextOptions{};
+        textOptions.setSymlinkMode(SymlinkMode::Use);
+        REQUIRE_THROWS_AS(PathError, pathFromStd(link).content().readTextOrThrow(textOptions));
+
+        const auto directory = fixture.path() / "directory";
+        const auto nested = directory / "nested.txt";
+        const auto directoryLink = fixture.path() / "directory-link";
+        std::filesystem::create_directory(directory);
+        pathFromStd(nested).content().writeTextOrThrow("nested"_el);
+        std::filesystem::create_directory_symlink(directory, directoryLink, errorCode);
+        if (!errorCode) {
+            REQUIRE_THROWS_AS(
+                PathError, pathFromStd(directoryLink / "nested.txt").content().readDataOrThrow(dataOptions));
+        }
     }
 
 private:

@@ -1,8 +1,8 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/network/source/ConnectionCloseContext.hpp>
 #include <erbsland/network/tcp/TcpAcceptOptions.hpp>
-#include <erbsland/network/tcp/TcpConnectionCloseContext.hpp>
 #include <erbsland/network/tcp/TcpConnectionFilterResult.hpp>
 #include <erbsland/network/tcp/TcpConnectOptions.hpp>
 #include <erbsland/network/tcp/TcpListenerOptions.hpp>
@@ -12,8 +12,7 @@
 using namespace el::network;
 
 TESTED_TARGETS(
-    TcpAcceptOptions TcpConnectOptions TcpConnectionCloseContext TcpConnectionFilterResult TcpListenerOptions
-        UdpDatagram)
+    TcpAcceptOptions TcpConnectOptions ConnectionCloseContext TcpConnectionFilterResult TcpListenerOptions UdpDatagram)
 class NetworkProtocolFacadeTest final : public el::UnitTest {
 public:
     void testTcpOptionDefaultsAndSetters() {
@@ -38,8 +37,8 @@ public:
     }
 
     void testCloseContextAndFilterResult() {
-        const auto context = TcpConnectionCloseContext{TcpConnectionCloseOrigin::Remote};
-        REQUIRE_EQUAL(context.origin(), TcpConnectionCloseOrigin::Remote);
+        const auto context = ConnectionCloseContext{ConnectionCloseOrigin::Remote};
+        REQUIRE_EQUAL(context.origin(), ConnectionCloseOrigin::Remote);
         REQUIRE_NOT_EQUAL(TcpConnectionFilterResult::Accept, TcpConnectionFilterResult::Reject);
     }
 };

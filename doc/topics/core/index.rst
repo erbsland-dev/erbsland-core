@@ -9,4 +9,5 @@ Core
 .. toctree::
     :maxdepth: 3
 
+    application_parts
     adding_git_version_to_your_app

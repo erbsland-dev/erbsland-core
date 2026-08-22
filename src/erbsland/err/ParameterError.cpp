@@ -19,7 +19,7 @@ ParameterError::ParameterError(const std::string_view reason, const std::string_
 }
 
 auto ParameterError::toString() const noexcept -> text::String {
-    return text::String::fromJoined({_reason, " (parameter: "_el, _parameterName, ")"_el});
+    return text::String::fromJoined({reason(), " (parameter: "_el, _parameterName, ")"_el});
 }
 
 }

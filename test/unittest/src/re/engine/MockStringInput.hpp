@@ -51,7 +51,7 @@ public:
 private:
     /// Decode one character and advance the supplied byte position.
     [[nodiscard]] auto readCharacter(unit::ByteIndex &readPosition) const -> text::Char {
-        const auto data = text::impl::UnsafeU8StringAccess{_text}.dataView().dataSpan();
+        const auto data = text::impl::UnsafeU8StringAccess{_text}.dataSpan();
         if (readPosition.toSizeT() >= data.size()) {
             return text::Char::endOfData();
         }

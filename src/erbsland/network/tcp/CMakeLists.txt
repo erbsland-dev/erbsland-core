@@ -9,11 +9,6 @@ target_sources(erbsland-core PRIVATE
         TcpConnection.cpp
         TcpConnection.hpp
         TcpConnection_fwd.hpp
-        TcpConnectionCloseContext.hpp
-        TcpConnectionCloseContext_fwd.hpp
-        TcpConnectionCloseFn.hpp
-        TcpConnectionCloseOrigin.hpp
-        TcpConnectionCloseOrigin_fwd.hpp
         TcpConnectionEventEditor.hpp
         TcpConnectionEventEditor_fwd.hpp
         TcpConnectionFilterFn.hpp

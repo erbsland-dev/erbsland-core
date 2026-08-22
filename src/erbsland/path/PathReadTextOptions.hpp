@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "SymlinkMode.hpp"
+
 #include "../stream/InputStreamSettings.hpp"
 #include "../text/EncodingMode.hpp"
 #include "../text/StringBomMode.hpp"
@@ -59,6 +61,14 @@ public:
     [[nodiscard]] auto maximumCpLength() const -> unit::CpLength { return _maximumCpLength; }
     /// Set the maximum number of code points to read.
     auto setMaximumCpLength(unit::CpLength value) -> PathReadTextOptions &;
+    /// Get how symbolic links are handled while opening the input file.
+    [[nodiscard]] auto symlinkMode() const noexcept -> SymlinkMode { return _symlinkMode; }
+    /// Set how symbolic links are handled while opening the input file.
+    /// `Use` has the same restrictive behavior as `Skip`, because a symbolic link has no regular file content.
+    auto setSymlinkMode(const SymlinkMode value) noexcept -> PathReadTextOptions & {
+        _symlinkMode = value;
+        return *this;
+    }
     /// Get the maximum wait for one stream operation.
     [[nodiscard]] auto timeout() const noexcept -> time::TimeDelta { return _streamSettings.timeout(); }
     /// Set the maximum wait for one stream operation.
@@ -84,6 +94,7 @@ private:
     text::EncodingMode _encodingMode = text::EncodingMode::Tolerant;
     unit::ByteLength _maximumByteLength = unit::ByteLength{10'000'000LL};
     unit::CpLength _maximumCpLength = unit::CpLength::infinite();
+    SymlinkMode _symlinkMode{SymlinkMode::Follow};
     stream::InputStreamSettings _streamSettings{stream::InputStreamSettings{}.setTimeout(cDefaultTimeout)};
 };
 

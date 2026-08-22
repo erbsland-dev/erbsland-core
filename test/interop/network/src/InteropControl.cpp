@@ -256,6 +256,8 @@ auto InteropControl::decodeResponse(const std::string &text) -> Response {
         .scenarioId = jsonUnsigned(text, "scenario_id"),
         .port = jsonUnsigned(text, "port"),
         .bytesReceived = jsonUnsigned(text, "bytes_received"),
+        .accepted = jsonUnsigned(text, "accepted"),
+        .parsed = jsonString(text, "parsed").value_or(std::string{}),
         .errorCode = jsonString(text, "error_code").value_or(std::string{}),
         .errorMessage = jsonString(text, "error_message").value_or(std::string{}),
     };

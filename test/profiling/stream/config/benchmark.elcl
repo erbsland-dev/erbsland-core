@@ -2,7 +2,7 @@
 
 ---[ Run ]---------------------------------------------------------------------
 Mode              : "benchmark"
-Duration          : 500ms
+Duration          : 2s
 Threads           : 4
 Seed              : 0x4552'4253'4c41'4e44
 Corpus Limit      : 1 MiB

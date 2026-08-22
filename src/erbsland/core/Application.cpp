@@ -24,6 +24,7 @@
 #include "../options/OptionModule.hpp"
 #include "../random/SecureRandom.hpp"
 #include "../random/ThreadSafeFastRandom.hpp"
+#include "../resource/Resources.hpp"
 #include "../stream/StandardStreams.hpp"
 #include "../system/UserLookup.hpp"
 #include "../text/TextDocument.hpp"
@@ -66,15 +67,30 @@ auto Application::run() -> int {
     unit::ExitCode exitCode;
     try {
         initialize();
+        if (const auto manager = partManagerIfCreated(); manager != nullptr) {
+            manager->prepare();
+        }
         registerCommandLineOptions(_data->options());
+        if (const auto manager = partManagerIfCreated(); manager != nullptr) {
+            manager->registerCommandLineOptions(_data->options());
+        }
         parseCommandLine();
         if (_data->optionValues() == nullptr) {
             exitCode = unit::ExitCode::success();
         } else {
+            if (const auto manager = partManagerIfCreated(); manager != nullptr) {
+                manager->parseCommandLine(_data->optionValues());
+            }
             exitCode = main();
         }
+        stopPartManager();
         cleanup();
     } catch (const err::Exception &error) {
+        try {
+            stopPartManager();
+        } catch (...) { // NOLINT(*-empty-catch)
+            // Preserve the original application error.
+        }
         cleanup();
         if (const auto applicationError = dynamic_cast<const core::ApplicationError *>(&error);
             applicationError != nullptr) {
@@ -83,6 +99,15 @@ auto Application::run() -> int {
             exitCode = unit::ExitCode::failure();
         }
         _data->renderSystemOutput(err::DiagnosticHelper{error, _data->displayText()}.toDocument());
+    } catch (...) {
+        const auto error = std::current_exception();
+        try {
+            stopPartManager();
+        } catch (...) { // NOLINT(*-empty-catch)
+            // Preserve the original foreign exception.
+        }
+        cleanup();
+        std::rethrow_exception(error);
     }
     return exitCode.toRawValue();
 }
@@ -117,6 +142,20 @@ auto Application::commandLineArguments() const noexcept -> const CommandLineArgu
 
 auto Application::optionValues() const noexcept -> const options::OptionValuesPtr & {
     return _data->optionValues();
+}
+
+auto Application::partManager() -> ApplicationPartManagerPtr {
+    const auto lock = std::scoped_lock{_data->partManagerMutex()};
+    if (_data->partManager() == nullptr) {
+        auto manager = ApplicationPartManager::create(events());
+        manager->setOwnerStateChangedFn([this](const ApplicationPartManagerState state) -> void {
+            if (state == ApplicationPartManagerState::Stopped || state == ApplicationPartManagerState::Failed) {
+                quitEventSystem();
+            }
+        });
+        _data->setPartManager(std::move(manager));
+    }
+    return _data->partManager();
 }
 
 void Application::enableTerminal() {
@@ -187,6 +226,10 @@ auto Application::main() -> unit::ExitCode {
         return _data->mainFn()();
     }
     // By default, run the main loop of the application.
+    if (const auto manager = partManagerIfCreated();
+        manager != nullptr && manager->state() == ApplicationPartManagerState::Ready) {
+        manager->start();
+    }
     return runEventLoop();
 }
 
@@ -233,6 +276,10 @@ auto Application::secureRandom() -> random::Random & {
 
 auto Application::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {
     return _data->cryptologyConfiguration();
+}
+
+auto Application::resources() -> const resource::Resources & {
+    return _data->resources();
 }
 
 auto Application::userLookup() -> system::UserLookup & {
@@ -285,6 +332,17 @@ auto Application::runEventLoop() -> unit::ExitCode {
         auto currentEventsScope = event::impl::CurrentEventsScope{eventData.eventLoop};
         eventData.eventLoop->run();
     }
+    if (const auto manager = partManagerIfCreated(); manager != nullptr) {
+        const auto managerState = manager->state();
+        if (managerState == ApplicationPartManagerState::Starting ||
+            managerState == ApplicationPartManagerState::Running) {
+            manager->stop();
+            if (!eventData.eventLoop->isQuitRequested()) {
+                auto currentEventsScope = event::impl::CurrentEventsScope{eventData.eventLoop};
+                eventData.eventLoop->run();
+            }
+        }
+    }
     eventData.eventLoop->setErrorHandler({});
     auto exitCode = unit::ExitCode::success();
     auto eventThreads = std::vector<ManagedEventThreadPtr>{};
@@ -307,6 +365,9 @@ auto Application::runEventLoop() -> unit::ExitCode {
     }
     if (*loopError != nullptr) {
         std::rethrow_exception(*loopError);
+    }
+    if (const auto manager = partManagerIfCreated(); manager != nullptr && manager->hasError()) {
+        std::rethrow_exception(manager->takeError());
     }
     return exitCode;
 }
@@ -334,8 +395,6 @@ auto Application::createEventThread() -> ManagedEventThreadPtr {
 
 void Application::quit(unit::ExitCode exitCode) noexcept {
     try {
-        auto eventThreads = std::vector<ManagedEventThreadPtr>{};
-        auto eventLoop = EventLoopPtr{};
         auto &eventData = _data->event();
         {
             std::scoped_lock lock{eventData.mutex};
@@ -343,6 +402,59 @@ void Application::quit(unit::ExitCode exitCode) noexcept {
                 eventData.quitExitCode = exitCode;
                 eventData.quitExitCodeSet = true;
             }
+        }
+        if (const auto manager = partManagerIfCreated(); manager != nullptr) {
+            const auto managerState = manager->state();
+            if (managerState == ApplicationPartManagerState::Ready ||
+                managerState == ApplicationPartManagerState::Starting ||
+                managerState == ApplicationPartManagerState::Running) {
+                manager->stop();
+                return;
+            }
+            if (managerState == ApplicationPartManagerState::Stopping) {
+                return;
+            }
+        }
+        quitEventSystem();
+    } catch (...) { // NOLINT(*-empty-catch)
+        // `quit()` must be safe to call from cleanup paths.
+    }
+}
+
+auto Application::partManagerIfCreated() const noexcept -> ApplicationPartManagerPtr {
+    const auto lock = std::scoped_lock{_data->partManagerMutex()};
+    return _data->partManager();
+}
+
+void Application::stopPartManager() {
+    const auto manager = partManagerIfCreated();
+    if (manager == nullptr) {
+        return;
+    }
+    auto managerState = manager->state();
+    if (managerState == ApplicationPartManagerState::Ready || managerState == ApplicationPartManagerState::Starting ||
+        managerState == ApplicationPartManagerState::Running) {
+        manager->stop();
+        managerState = manager->state();
+    }
+    if (managerState == ApplicationPartManagerState::Ready || managerState == ApplicationPartManagerState::Starting ||
+        managerState == ApplicationPartManagerState::Running || managerState == ApplicationPartManagerState::Stopping) {
+        auto &eventLoop = _data->event().eventLoop;
+        auto currentEventsScope = event::impl::CurrentEventsScope{eventLoop};
+        eventLoop->run();
+    }
+    if (manager->hasError()) {
+        std::rethrow_exception(manager->takeError());
+    }
+}
+
+void Application::quitEventSystem() noexcept {
+    try {
+        auto eventThreads = std::vector<ManagedEventThreadPtr>{};
+        auto eventLoop = EventLoopPtr{};
+        auto &eventData = _data->event();
+        {
+            const auto lock = std::scoped_lock{eventData.mutex};
             eventLoop = eventData.eventLoop;
             std::erase_if(eventData.eventThreads, [](const ManagedEventThreadWeakPtr &eventThreadWeakPtr) -> bool {
                 return eventThreadWeakPtr.expired();
@@ -358,7 +470,7 @@ void Application::quit(unit::ExitCode exitCode) noexcept {
             eventThread->quit();
         }
     } catch (...) { // NOLINT(*-empty-catch)
-        // `quit()` must be safe to call from cleanup paths.
+        // Application event shutdown must remain safe in cleanup paths.
     }
 }
 

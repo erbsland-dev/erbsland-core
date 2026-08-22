@@ -12,6 +12,7 @@
 #include "../../options/OptionManager.hpp"
 #include "../../options/Options.hpp"
 #include "../../random/Random.hpp"
+#include "../../resource/ResourceManager.hpp"
 #include "../../stream/StandardStreams.hpp"
 #include "../../stream/TextOutputStream.hpp"
 #include "../../system/UserLookup.hpp"
@@ -184,6 +185,18 @@ void ApplicationDataImpl::setMainFn(MainFn mainFn) noexcept {
     _mainFn = std::move(mainFn);
 }
 
+auto ApplicationDataImpl::partManagerMutex() noexcept -> std::mutex & {
+    return _partManagerMutex;
+}
+
+auto ApplicationDataImpl::partManager() noexcept -> const ApplicationPartManagerPtr & {
+    return _partManager;
+}
+
+void ApplicationDataImpl::setPartManager(ApplicationPartManagerPtr manager) noexcept {
+    _partManager = std::move(manager);
+}
+
 auto ApplicationDataImpl::randomMutex() noexcept -> std::mutex & {
     return _randomMutex;
 }
@@ -210,6 +223,14 @@ auto ApplicationDataImpl::cryptologyConfiguration() -> cryptology::CryptologyCon
         _cryptologyConfiguration = std::make_unique<cryptology::CryptologyConfiguration>();
     }
     return *_cryptologyConfiguration;
+}
+
+auto ApplicationDataImpl::resources() -> const resource::Resources & {
+    const auto lock = std::scoped_lock{_resourceMutex};
+    if (_resourceManager == nullptr) {
+        _resourceManager = std::make_unique<resource::ResourceManager>();
+    }
+    return *_resourceManager;
 }
 
 auto ApplicationDataImpl::systemMutex() noexcept -> std::mutex & {

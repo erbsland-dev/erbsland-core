@@ -5,8 +5,8 @@
 #include "../RandomError.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
-#include "../../System/PlatformError.hpp"
-#include "../../System/WindowsErrorContext.hpp"
+#include "../../system/PlatformError.hpp"
+#include "../../system/WindowsErrorContext.hpp"
 #include "../../text/Literals.hpp"
 
 #include <bcrypt.h>

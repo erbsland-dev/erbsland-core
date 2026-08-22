@@ -708,15 +708,15 @@ public:
     void testDetach() {
         auto first = StringEditor{"Hello"_el};
         const auto second = first;
-        const auto *firstData = el::text::impl::UnsafeU8StringEditorAccess{first}.data();
-        const auto *secondData = el::text::impl::UnsafeU8StringEditorAccess{second}.data();
+        const auto *firstData = el::text::impl::UnsafeU8StringEditorAccess{first}.dataSpan().data();
+        const auto *secondData = el::text::impl::UnsafeU8StringEditorAccess{second}.dataSpan().data();
 
         REQUIRE_EQUAL(firstData, secondData);
 
         first.detach();
 
-        REQUIRE_NOT_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{first}.data(), firstData);
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{second}.data(), secondData);
+        REQUIRE_NOT_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{first}.dataSpan().data(), firstData);
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{second}.dataSpan().data(), secondData);
         REQUIRE_EQUAL(StringConverter{first}.toStdString(), std::string{"Hello"});
         REQUIRE_EQUAL(StringConverter{second}.toStdString(), std::string{"Hello"});
     }
@@ -733,18 +733,18 @@ public:
 
     void testReserveOnNonEmptyStringGrowsCapacityWithoutChangingText() {
         auto text = StringEditor{"Hello"_el};
-        const auto *originalData = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
+        const auto *originalData = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
 
         text.reserve(ByteLength{9U});
 
         REQUIRE_EQUAL(StringConverter{text}.toStdString(), std::string{"Hello"});
         REQUIRE_EQUAL(text.capacity(), ByteLength{9U});
         REQUIRE_EQUAL(text.memoryUsage(), expectedMemoryUsage(9U));
-        REQUIRE_NOT_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), originalData);
+        REQUIRE_NOT_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), originalData);
 
-        const auto *reservedData = el::text::impl::UnsafeU8StringEditorAccess{text}.data();
+        const auto *reservedData = el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data();
         text.reserve(ByteLength{3U});
-        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.data(), reservedData);
+        REQUIRE_EQUAL(el::text::impl::UnsafeU8StringEditorAccess{text}.dataSpan().data(), reservedData);
     }
 
     void testReserveOnSliceMaterializesStandaloneStorage() {

@@ -4,6 +4,7 @@
 
 #include "impl/ExceptionDiagnostic.hpp"
 
+#include "../text/impl/PlatformU8StringAccess.hpp"
 #include "../text/impl/UnsafeU8StringAccess.hpp"
 #include "../text/StringEditor.hpp"
 
@@ -11,19 +12,22 @@
 
 namespace erbsland::err {
 
-Exception::Exception(const std::string_view reason) noexcept : Exception{text::String{reason}} {
+Exception::Exception(text::String reason) : _reason{normalizedReason(std::move(reason))} {
 }
 
-Exception::Exception(const std::string_view reason, std::exception_ptr cause) noexcept :
+Exception::Exception(text::String reason, std::exception_ptr cause) :
+    _reason{normalizedReason(std::move(reason))}, _cause{std::move(cause)} {
+}
+
+Exception::Exception(const std::string_view reason) : Exception{text::String{reason}} {
+}
+
+Exception::Exception(const std::string_view reason, std::exception_ptr cause) :
     Exception{text::String{reason}, std::move(cause)} {
 }
 
 auto Exception::what() const noexcept -> mem::UnsafeConstCharPtr {
-    if (_reason.isEmpty()) {
-        const static std::string staticEmpty{};
-        return staticEmpty.data();
-    }
-    return text::impl::UnsafeU8StringAccess{_reason}.dataView().dataSpan().data();
+    return text::impl::PlatformU8StringAccess{_reason}.nullTerminatedCharPtr();
 }
 
 auto Exception::toString() const noexcept -> text::String {
@@ -33,6 +37,13 @@ auto Exception::toString() const noexcept -> text::String {
 
 auto Exception::diagnostic() const -> DiagnosticConstPtr {
     return std::make_shared<impl::ExceptionDiagnostic>(toString());
+}
+
+auto Exception::normalizedReason(text::String reason) -> text::String {
+    if (text::impl::UnsafeU8StringAccess{reason}.dataView().isSlice()) {
+        return reason.copy();
+    }
+    return reason;
 }
 
 }

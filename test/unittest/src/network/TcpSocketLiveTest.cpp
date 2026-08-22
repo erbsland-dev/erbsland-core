@@ -3,9 +3,9 @@
 
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/network/Network.hpp>
+#include <erbsland/network/source/ConnectionCloseContext.hpp>
 #include <erbsland/network/source/NetworkErrorContext.hpp>
 #include <erbsland/network/tcp/TcpConnection.hpp>
-#include <erbsland/network/tcp/TcpConnectionCloseContext.hpp>
 #include <erbsland/network/tcp/TcpConnectionRequest.hpp>
 #include <erbsland/network/tcp/TcpListener.hpp>
 #include <erbsland/time/TimeDelta.hpp>
@@ -19,7 +19,7 @@ using namespace el::event;
 using namespace el::network;
 using namespace el::time;
 
-TESTED_TARGETS(TcpConnection TcpListener TcpConnectionRequest TcpConnectionCloseContext)
+TESTED_TARGETS(TcpConnection TcpListener TcpConnectionRequest ConnectionCloseContext)
 class TcpSocketLiveTest final : public el::UnitTest {
 public:
     void testIpv4LoopbackConnectionAndCloseOrigins() { runLoopbackConnection(IpAddress::loopbackV4()); }
@@ -90,7 +90,7 @@ public:
         runUntil(loop, [&]() -> bool { return final; });
         REQUIRE(resolved);
         REQUIRE_FALSE(connected);
-        REQUIRE_EQUAL(connection->state(), NetworkSourceState::Closed);
+        REQUIRE_EQUAL(connection->state(), ConnectionState::Closed);
     }
 
 private:
@@ -104,8 +104,8 @@ private:
         auto echoed = false;
         auto clientFinal = false;
         auto serverFinal = false;
-        auto clientOrigin = std::optional<TcpConnectionCloseOrigin>{};
-        auto serverOrigin = std::optional<TcpConnectionCloseOrigin>{};
+        auto clientOrigin = std::optional<ConnectionCloseOrigin>{};
+        auto serverOrigin = std::optional<ConnectionCloseOrigin>{};
         const auto payload = el::mem::ByteBlock{el::unit::ByteLength{32U}, el::mem::Byte{0x5aU}};
 
         loop->invoke([&]() -> void {
@@ -127,7 +127,7 @@ private:
                             client->close();
                         })
                         .onClosed(
-                            [&](const TcpConnectionCloseContext &context) -> void { clientOrigin = context.origin(); })
+                            [&](const ConnectionCloseContext &context) -> void { clientOrigin = context.origin(); })
                         .onError([&](const NetworkErrorContext &context) -> void { error = context; })
                         .onFinal([&]() -> void { clientFinal = true; });
                     const auto endpoint = *listener->localEndpoint();
@@ -139,7 +139,7 @@ private:
                         .onConnected([]() -> void {})
                         .onData([&](el::mem::ByteBlock data) -> void { REQUIRE(server->send(data).isAccepted()); })
                         .onClosed(
-                            [&](const TcpConnectionCloseContext &context) -> void { serverOrigin = context.origin(); })
+                            [&](const ConnectionCloseContext &context) -> void { serverOrigin = context.origin(); })
                         .onError([&](const NetworkErrorContext &context) -> void { error = context; })
                         .onFinal([&]() -> void { serverFinal = true; });
                     server->accept(std::move(request));
@@ -152,8 +152,8 @@ private:
         REQUIRE_FALSE(error.has_value());
         REQUIRE(resolved);
         REQUIRE(echoed);
-        REQUIRE_EQUAL(clientOrigin, std::optional<TcpConnectionCloseOrigin>{TcpConnectionCloseOrigin::Local});
-        REQUIRE_EQUAL(serverOrigin, std::optional<TcpConnectionCloseOrigin>{TcpConnectionCloseOrigin::Remote});
+        REQUIRE_EQUAL(clientOrigin, std::optional<ConnectionCloseOrigin>{ConnectionCloseOrigin::Local});
+        REQUIRE_EQUAL(serverOrigin, std::optional<ConnectionCloseOrigin>{ConnectionCloseOrigin::Remote});
 
         loop->invoke([&]() -> void { listener->close(); });
         static_cast<void>(loop->runUntilIdle());

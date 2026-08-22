@@ -69,8 +69,8 @@ private:
             "tls/server/external"_el, std::move(configuration));
     }
 
-    [[nodiscard]] static auto alpn() -> mem::ByteBlock {
-        return mem::ByteBlock({'e', 'r', 'b', 's', 'l', 'a', 'n', 'd', '-', 't', 'e', 's', 't'});
+    [[nodiscard]] static auto alpn() -> el::text::String {
+        return "erbsland-test"_el;
     }
 
     [[nodiscard]] static auto httpResponse() -> mem::ByteBlock {
@@ -155,7 +155,7 @@ private:
                         .onFinal([&]() -> void { result.final = true; });
                     auto options = TlsServerAcceptOptions{handshakeQuota};
                     options.setConfigurationLabel("tls/server/external"_el)
-                        .setAlpnProtocols({http ? mem::ByteBlock({'h', 't', 't', 'p', '/', '1', '.', '1'}) : alpn()});
+                        .setAlpnProtocols({http ? el::text::String{"http/1.1"_el} : alpn()});
                     connection->accept(std::move(request), std::move(options));
                     listener->close();
                 })

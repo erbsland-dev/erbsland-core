@@ -180,7 +180,8 @@ void PathOperations::moveToOrThrow(const Path &destination, const PathMoveOption
                 .setSourcePath(_path.toString())
                 .setTargetPath(destination.toString())};
     }
-    if (destination.info().exists()) {
+    const auto destinationInfo = destination.info();
+    if (destinationInfo.exists()) {
         if (options.collisionMode() == PathCollisionMode::Skip) {
             return;
         }
@@ -189,7 +190,18 @@ void PathOperations::moveToOrThrow(const Path &destination, const PathMoveOption
                     .setSourcePath(_path.toString())
                     .setTargetPath(destination.toString())};
         }
-        removeExistingOrThrow(destination);
+        const auto overwriteRegularFile =
+            options.collisionMode() == PathCollisionMode::Overwrite && sourceInfo.isRegularFile();
+        if (overwriteRegularFile && !destinationInfo.isRegularFile()) {
+            throw PathError{PathErrorContext{
+                "File could not be moved"_el, "A regular file can only atomically replace another regular file."_el}
+                    .setSourcePath(_path.toString())
+                    .setTargetPath(destination.toString())};
+        }
+        const auto canReplaceRegularFile = overwriteRegularFile && destinationInfo.isRegularFile();
+        if (!canReplaceRegularFile) {
+            removeExistingOrThrow(destination);
+        }
     }
     if (options.createParents()) {
         createParentsOrThrow(destination);

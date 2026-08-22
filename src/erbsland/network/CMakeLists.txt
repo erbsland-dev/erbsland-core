@@ -4,6 +4,9 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(host_lookup)
+add_subdirectory(http)
+add_subdirectory(http_client)
+add_subdirectory(http_server)
 add_subdirectory(impl)
 add_subdirectory(source)
 add_subdirectory(tcp)

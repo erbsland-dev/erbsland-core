@@ -7,8 +7,8 @@
 #include <erbsland/network/host_lookup/HostLookup.hpp>
 #include <erbsland/network/host_lookup/HostLookupEventEditor.hpp>
 #include <erbsland/network/host_lookup/HostLookupOptions.hpp>
-#include <erbsland/network/impl/HostResolver.hpp>
-#include <erbsland/network/impl/HostResolverErrorContext.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/host/HostResolverErrorContext.hpp>
 #include <erbsland/network/impl/NetworkBackend.hpp>
 #include <erbsland/network/Network.hpp>
 #include <erbsland/network/source/NetworkError.hpp>

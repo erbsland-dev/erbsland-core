@@ -51,6 +51,7 @@ project.
     api/i18n
     api/math
     api/mem
+    api/resource
     api/network
     api/options
     api/path

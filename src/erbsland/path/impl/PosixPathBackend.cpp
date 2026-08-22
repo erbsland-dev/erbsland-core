@@ -20,9 +20,8 @@
 #include "../../system/EnvironmentVariables.hpp"
 #include "../../system/GroupId.hpp"
 #include "../../system/UserId.hpp"
-#include "../../text/impl/UnsafeU8StringAccess.hpp"
+#include "../../text/impl/PlatformU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
-#include "../../text/impl/UnsafeU8StringEditorAccess.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../time/DateTime.hpp"
@@ -39,7 +38,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include <algorithm>
 #include <cerrno>
 #include <cstddef>
 #include <cstdlib>
@@ -118,9 +116,9 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
             const auto absolutePath = path.toAbsolute();
             if (!absolutePath.isEmpty()) {
                 const auto pathText = pathTextOrThrow(absolutePath);
-                const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+                const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
                 struct stat info{};
-                if (::stat(pathAccess.data(), &info) == 0 && S_ISDIR(info.st_mode) != 0) {
+                if (::stat(pathAccess.nullTerminatedCharPtr(), &info) == 0 && S_ISDIR(info.st_mode) != 0) {
                     return absolutePath;
                 }
             }
@@ -128,10 +126,10 @@ auto PosixPathBackend::systemTempDirectoryOrThrow() const -> Path {
     }
     const auto fallback = Path::fromPosix("/tmp"_el);
     const auto fallbackText = pathTextOrThrow(fallback);
-    const auto fallbackAccess = text::impl::UnsafeU8StringAccess{fallbackText};
+    const auto fallbackAccess = text::impl::PlatformU8StringAccess{fallbackText};
     struct stat fallbackInfo{};
     errno = 0;
-    const auto fallbackResult = ::stat(fallbackAccess.data(), &fallbackInfo);
+    const auto fallbackResult = ::stat(fallbackAccess.nullTerminatedCharPtr(), &fallbackInfo);
     if (fallbackResult == 0 && S_ISDIR(fallbackInfo.st_mode) != 0) {
         return fallback;
     }
@@ -171,9 +169,9 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
     result.resolvedPath = resolvedPath;
 
     const auto pathText = pathTextOrThrow(result.resolvedPath);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     struct stat info{};
-    if (::lstat(pathAccess.data(), &info) != 0) {
+    if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
             "Path information is unavailable"_el,
             "The operating system could not provide information about the path."_el,
@@ -229,7 +227,7 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
             result.attributes.set(PathAttribute::Hidden);
         }
 #elif defined(ERBSLAND_OS_LINUX)
-        const auto fileDescriptor = ::open(pathAccess.data(), O_RDONLY | O_NONBLOCK);
+        const auto fileDescriptor = ::open(pathAccess.nullTerminatedCharPtr(), O_RDONLY | O_NONBLOCK);
         if (fileDescriptor >= 0) {
             auto flags = 0;
             if (::ioctl(fileDescriptor, FS_IOC_GETFLAGS, &flags) == 0 && (flags & FS_IMMUTABLE_FL) != 0) {
@@ -246,28 +244,64 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
 
 auto PosixPathBackend::openByteInputStreamOrThrow(const Path &path, const PathReadDataOptions options) const
     -> stream::ByteInputStreamPtr {
-    const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
-    const auto fileDescriptor = ::open(pathAccess.data(), O_RDONLY);
-    if (fileDescriptor < 0) {
+    const auto fileDescriptor = openInputFileDescriptorOrThrow(path, options.symlinkMode());
+    auto native = std::make_shared<stream::impl::PosixNativeStream>(
+        fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString());
+    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
+}
+
+auto PosixPathBackend::openInputFileDescriptorOrThrow(const Path &path, const SymlinkMode symlinkMode) -> int {
+    if (symlinkMode == SymlinkMode::Follow) {
+        const auto pathText = pathTextOrThrow(path);
+        const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+        const auto fileDescriptor = ::open(pathAccess.nullTerminatedCharPtr(), O_RDONLY | O_CLOEXEC);
+        if (fileDescriptor >= 0) {
+            return fileDescriptor;
+        }
         throwSystemError(
             "File could not be opened for reading"_el,
             "The operating system could not open the file for reading."_el,
             path,
             errno);
     }
-    auto native = std::make_shared<stream::impl::PosixNativeStream>(
-        fileDescriptor, stream::impl::NativeStreamOwnership::Owned, path.toString());
-    return stream::impl::createBufferedByteInputStream(std::move(native), options.streamSettings());
+
+    const auto absolutePath = path.toAbsoluteOrThrow();
+    auto descriptor = ::open("/", O_RDONLY | O_DIRECTORY | O_CLOEXEC);
+    if (descriptor < 0) {
+        throwSystemError(
+            "File could not be opened for reading"_el,
+            "The filesystem root could not be opened for a symbolic-link-safe traversal."_el,
+            path,
+            errno);
+    }
+    const auto elements = absolutePath.elements();
+    for (auto index = unit::ItemIndex::one(); index.isWithin(elements.count()); ++index) {
+        const auto name = elements.get(index);
+        const auto nameAccess = text::impl::PlatformU8StringAccess{name};
+        const auto isFinal = !index.advanced(unit::ItemCount::one()).isWithin(elements.count());
+        const auto flags = O_RDONLY | O_CLOEXEC | O_NOFOLLOW | (isFinal ? 0 : O_DIRECTORY);
+        const auto next = ::openat(descriptor, nameAccess.nullTerminatedCharPtr(), flags);
+        const auto errorCode = errno;
+        ::close(descriptor);
+        if (next < 0) {
+            throwSystemError(
+                "File could not be opened for reading"_el,
+                "The path could not be opened without following symbolic links."_el,
+                path,
+                errorCode);
+        }
+        descriptor = next;
+    }
+    return descriptor;
 }
 
 void PosixPathBackend::setAccessProfileOrThrow(
     const Path &path, const PathAccessProfile profile, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);
     const auto pathText = pathTextOrThrow(resolvedPath);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     struct stat info{};
-    if (::lstat(pathAccess.data(), &info) != 0) {
+    if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
             "Path information is unavailable"_el,
             "The file permissions could not be changed because the path type is unavailable."_el,
@@ -282,7 +316,7 @@ void PosixPathBackend::setAccessProfileOrThrow(
                 .setSourcePath(resolvedPath.toString())
                 .setHelp("Change the permissions on the symbolic link target instead."_el)};
     }
-    if (::chmod(pathAccess.data(), profileMode(profile, type)) != 0) {
+    if (::chmod(pathAccess.nullTerminatedCharPtr(), profileMode(profile, type)) != 0) {
         throwSystemError(
             "File permissions could not be changed"_el,
             "The operating system rejected the requested permission change."_el,
@@ -324,10 +358,10 @@ auto PosixPathBackend::openByteOutputStreamWithExistingContentOrThrow(
     }
 
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     const auto existed = existingPath(path);
     const auto fileDescriptor =
-        ::open(pathAccess.data(), flags, profileMode(options.accessProfile(), PathType::RegularFile));
+        ::open(pathAccess.nullTerminatedCharPtr(), flags, profileMode(options.accessProfile(), PathType::RegularFile));
     if (fileDescriptor < 0) {
         throwSystemError(
             "File could not be opened for writing"_el,
@@ -379,14 +413,14 @@ void PosixPathBackend::createParentDirectoriesOrThrow(const Path &path) {
             continue;
         }
         const auto directoryText = pathTextOrThrow(directory);
-        const auto directoryAccess = text::impl::UnsafeU8StringAccess{directoryText};
-        if (::mkdir(directoryAccess.data(), static_cast<mode_t>(0777)) == 0) {
+        const auto directoryAccess = text::impl::PlatformU8StringAccess{directoryText};
+        if (::mkdir(directoryAccess.nullTerminatedCharPtr(), static_cast<mode_t>(0777)) == 0) {
             continue;
         }
         auto errorCode = errno;
         if (errorCode == EEXIST) {
             struct stat info{};
-            if (::stat(directoryAccess.data(), &info) == 0 && S_ISDIR(info.st_mode)) {
+            if (::stat(directoryAccess.nullTerminatedCharPtr(), &info) == 0 && S_ISDIR(info.st_mode)) {
                 continue;
             }
             if (errno != 0) {
@@ -552,9 +586,9 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
     struct stat info{};
-    if (::lstat(pathAccess.data(), &info) != 0) {
+    if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
         throwSystemError(
             "Path information is unavailable"_el,
             "The file attributes could not be changed because the current path information is unavailable."_el,
@@ -577,7 +611,7 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
             flags &= static_cast<decltype(flags)>(~static_cast<decltype(flags)>(UF_HIDDEN));
         }
     }
-    if (::chflags(pathAccess.data(), flags) != 0) {
+    if (::chflags(pathAccess.nullTerminatedCharPtr(), flags) != 0) {
         throwSystemError(
             "File attributes could not be changed"_el,
             "The operating system rejected the requested attribute change."_el,
@@ -594,8 +628,8 @@ void PosixPathBackend::applyAttributesOrThrow(const Path &path, const PathAttrib
                 .setHelp("Request only attributes supported by this operating system."_el)};
     }
     const auto pathText = pathTextOrThrow(path);
-    const auto pathAccess = text::impl::UnsafeU8StringAccess{pathText};
-    const auto fileDescriptor = ::open(pathAccess.data(), O_RDONLY | O_NONBLOCK);
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    const auto fileDescriptor = ::open(pathAccess.nullTerminatedCharPtr(), O_RDONLY | O_NONBLOCK);
     if (fileDescriptor < 0) {
         throwSystemError(
             "File attributes could not be changed"_el,

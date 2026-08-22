@@ -52,6 +52,8 @@ private:
     static void createParentDirectoriesOrThrow(const Path &path);
     /// Test if an open file descriptor has readable content.
     [[nodiscard]] static auto fileDescriptorHasContentOrThrow(int fileDescriptor, const Path &path) -> bool;
+    /// Open an input descriptor using the configured symbolic-link policy.
+    [[nodiscard]] static auto openInputFileDescriptorOrThrow(const Path &path, SymlinkMode symlinkMode) -> int;
     /// Map POSIX file mode bits to a path type.
     [[nodiscard]] static auto typeFromMode(mode_t mode) noexcept -> PathType;
     /// Map a POSIX directory entry type to a path type.

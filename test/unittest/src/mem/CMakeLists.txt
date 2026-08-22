@@ -4,9 +4,11 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core-unittest PRIVATE
+        BitReaderTest.cpp
         ByteArrayTest.cpp
         ByteBlockTest.cpp
         ByteBufferTest.cpp
+        ByteCompressionTest.cpp
         ByteDataViewTest.cpp
         ByteReaderWriterTest.cpp
         ByteTest.cpp

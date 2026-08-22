@@ -5,6 +5,9 @@
 #include <erbsland/system/EnvironmentVariables.hpp>
 #include <erbsland/system/PlatformError.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/unit/ByteIndex.hpp>
+#include <erbsland/unit/ByteLength.hpp>
+#include <erbsland/unit/ByteRange.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <memory>
@@ -178,5 +181,24 @@ public:
 
         environment.removeOrThrow(name);
         REQUIRE_FALSE(environment.get(name).has_value());
+    }
+
+    void testDefaultBackendWithSlicedInputs() {
+        constexpr auto nameText = std::string_view{"ERBSLAND_CORE_SLICED_ENVIRONMENT_VARIABLE_TEST"};
+        constexpr auto valueText = std::string_view{"sliced-value"};
+        const auto nameSource = el::text::String{"xERBSLAND_CORE_SLICED_ENVIRONMENT_VARIABLE_TEST-tail"_el};
+        const auto valueSource = el::text::String{"xsliced-value-tail"_el};
+        const auto name = nameSource.slice(
+            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength::fromSizeT(nameText.size())});
+        const auto value = valueSource.slice(
+            el::unit::ByteRange{el::unit::ByteIndex{1U}, el::unit::ByteLength::fromSizeT(valueText.size())});
+        auto environment = el::system::EnvironmentVariables{};
+        const auto canonicalName = el::text::String{nameText};
+        const auto guard = VariableGuard{environment, canonicalName};
+
+        environment.setOrThrow(name, value);
+        REQUIRE_EQUAL(environment.getOrThrow(canonicalName), el::text::String{valueText});
+        environment.removeOrThrow(name);
+        REQUIRE_FALSE(environment.get(canonicalName).has_value());
     }
 };

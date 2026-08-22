@@ -201,6 +201,21 @@ public:
         REQUIRE_EQUAL(std::wstring_view{arg1}, L"--secret=**********");
     }
 
+    void testApplicationPreservesWideUnicodeArguments() {
+        wchar_t arg0[] = L"resource-compiler";
+        wchar_t arg1[] = L"--input";
+        wchar_t arg2[] = L"C:\\fixtures\\nested folder\\caf\u00e9_\u65e5\u672c\u8a9e.json";
+        wchar_t *argv[] = {arg0, arg1, arg2};
+
+        auto scope = ApplicationTestScope<Application>{3, argv};
+        auto &application = scope.app();
+
+        REQUIRE_EQUAL(application.commandLineArguments().count().toSizeT(), 3U);
+        REQUIRE_EQUAL(
+            application.commandLineArguments().get(ItemIndex{2U}),
+            u8"C:\\fixtures\\nested folder\\caf\u00e9_\u65e5\u672c\u8a9e.json"_el);
+    }
+
 private:
     [[nodiscard]] static auto redirectStandardStreams() -> el::stream::StandardStreamRedirect {
         return el::stream::redirectStandardStreams(

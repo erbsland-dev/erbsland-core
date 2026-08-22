@@ -86,6 +86,10 @@ target_sources(erbsland-core PRIVATE
         PlainTextRenderer.cpp
         PlainTextRenderer.hpp
         PlainTextRenderer_fwd.hpp
+        PlatformU16StringAccess.hpp
+        PlatformU16StringAccess_fwd.hpp
+        PlatformU8StringAccess.hpp
+        PlatformU8StringAccess_fwd.hpp
         RegExEscapeFormatter.cpp
         RegExEscapeFormatter.hpp
         RepeatCount.hpp

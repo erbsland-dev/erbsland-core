@@ -97,7 +97,7 @@ auto CharStream::readNextLine() -> bool {
         return false;
     }
     _line = std::move(line);
-    _lineBytes = text::impl::UnsafeU8StringAccess{_line}.dataView().dataSpan();
+    _lineBytes = text::impl::UnsafeU8StringAccess{_line}.dataSpan();
     _lineEndIndex = unit::ByteIndex::fromSizeT(_lineBytes.size());
     _lineReadIndex = {};
     // Important: As the char stream is not only used to verify, but also to create document signatures,

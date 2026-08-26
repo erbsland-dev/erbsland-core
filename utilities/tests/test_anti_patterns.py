@@ -112,6 +112,19 @@ class SourceFileTest(unittest.TestCase):
         self.assertFalse(source.is_in_os_conditional(text.index("callOutside")))
         self.assertFalse(source.is_in_os_conditional(text.index("callFeature")))
 
+    def test_detects_generated_file_marker_in_first_ten_lines_case_insensitively(self) -> None:
+        generated = SourceFile(
+            Path("Generated.cpp"),
+            "\n" * 9 + "// This Is A Generated File - do not edit\n" + "value\n",
+        )
+        marker_too_late = SourceFile(
+            Path("Handwritten.cpp"),
+            "\n" * 10 + "// THIS IS A GENERATED FILE\n",
+        )
+
+        self.assertTrue(generated.is_generated)
+        self.assertFalse(marker_too_late.is_generated)
+
 
 class AntiPatternRulesTest(unittest.TestCase):
     """Positive and negative tests for every scanner rule."""
@@ -119,6 +132,38 @@ class AntiPatternRulesTest(unittest.TestCase):
     def test_anonymous_namespace(self) -> None:
         self.assertEqual(1, len(rule_candidates("anonymous_namespace", "namespace {\nauto value = 1;\n}\n")))
         self.assertEqual(0, len(rule_candidates("anonymous_namespace", '// namespace {\nauto text = "namespace {";\n')))
+
+    def test_oversized_file_reports_line_501(self) -> None:
+        source = "// source line\n" * 501
+
+        candidates = rule_candidates("oversized_file", source)
+
+        self.assertEqual(1, len(candidates))
+        self.assertEqual(source.rfind("// source line"), candidates[0].start)
+        self.assertEqual(501, SourceFile(Path("Example.cpp"), source).line_number(candidates[0].start))
+
+    def test_oversized_file_accepts_500_lines_and_generated_files(self) -> None:
+        maximum_size = "// source line\n" * 500
+        generated = "// this is a generated file\n" + "// generated line\n" * 500
+
+        self.assertEqual(0, len(rule_candidates("oversized_file", maximum_size)))
+        self.assertEqual(0, len(rule_candidates("oversized_file", generated)))
+
+    def test_oversized_file_excludes_api_comment_lines_in_headers(self) -> None:
+        documented_header = "/// API documentation.\n" * 100 + "int value;\n" * 500
+        oversized_header = documented_header + "int overflow;\n"
+        trailing_comments = "int value; ///< API documentation.\n" * 501
+        ordinary_comments = "// Implementation detail.\n" * 501
+        raw_string = 'auto text = R"doc(\n' + "/// Not an API comment.\n" * 500 + ')doc";\n'
+
+        self.assertEqual(0, len(rule_candidates("oversized_file", documented_header, "Example.hpp")))
+        candidates = rule_candidates("oversized_file", oversized_header, "Example.hpp")
+        self.assertEqual(1, len(candidates))
+        self.assertEqual(601, SourceFile(Path("Example.hpp"), oversized_header).line_number(candidates[0].start))
+        self.assertEqual(1, len(rule_candidates("oversized_file", trailing_comments, "Example.hpp")))
+        self.assertEqual(1, len(rule_candidates("oversized_file", ordinary_comments, "Example.hpp")))
+        self.assertEqual(1, len(rule_candidates("oversized_file", raw_string, "Example.hpp")))
+        self.assertEqual(1, len(rule_candidates("oversized_file", documented_header, "Example.cpp")))
 
     def test_type_in_wrong_unit_detects_namespace_scope_cpp_type_definitions(self) -> None:
         text = (
@@ -1065,6 +1110,11 @@ class SuppressionTest(unittest.TestCase):
 class AntiPatternConfigTest(unittest.TestCase):
     """Tests for ELCL scanner configuration and central suppressions."""
 
+    @staticmethod
+    def read_source(path: Path, label: str) -> str:
+        """Read a scanner test source without intercepting cache reads."""
+        return path.read_text(encoding="utf-8")
+
     def setUp(self) -> None:
         self.temporary_directory = tempfile.TemporaryDirectory(dir="/private/tmp")
         self.project_directory = Path(self.temporary_directory.name)
@@ -1166,6 +1216,80 @@ class AntiPatternConfigTest(unittest.TestCase):
         self.assertEqual(2, len(findings))
         self.assertTrue(all(finding.candidate.rule.identifier == "regular_string_literal" for finding in findings))
         self.assertEqual({1, 8}, {finding.line_number for finding in findings})
+
+    def test_scanner_reuses_cached_findings_without_reading_unchanged_sources(self) -> None:
+        config = AntiPatternConfig.read(self.project_directory, self.write_config())
+
+        with patch("lib.anti_patterns.scanner.read_safe_text", wraps=self.read_source) as read_text:
+            first_scanner = AntiPatternScanner(config)
+            first_findings = first_scanner.scan()
+            first_read_count = read_text.call_count
+            second_scanner = AntiPatternScanner(config)
+            second_findings = second_scanner.scan()
+
+        self.assertGreater(first_read_count, 0)
+        self.assertEqual(first_read_count, read_text.call_count)
+        self.assertEqual(first_findings, second_findings)
+        self.assertEqual(first_read_count, second_scanner.cache_hits)
+        self.assertTrue((self.project_directory / ".cache/anti_patterns.json").is_file())
+
+    def test_scanner_rescans_only_a_changed_source(self) -> None:
+        config = AntiPatternConfig.read(self.project_directory, self.write_config())
+        AntiPatternScanner(config).scan()
+        changed_path = self.project_directory / "src/tests/Test.cpp"
+        changed_path.write_text("static_cast<void>(first());\nstatic_cast<void>(second());\n", encoding="utf-8")
+
+        with patch("lib.anti_patterns.scanner.read_safe_text", wraps=self.read_source) as read_text:
+            scanner = AntiPatternScanner(config)
+            findings = scanner.scan()
+
+        self.assertEqual(1, read_text.call_count)
+        self.assertEqual(changed_path, read_text.call_args.args[0])
+        self.assertEqual(1, scanner.cache_misses)
+        self.assertEqual(1, scanner.cache_hits)
+        self.assertEqual(2, sum(finding.path == Path("src/tests/Test.cpp") for finding in findings))
+
+    def test_cached_findings_use_current_configuration_suppressions(self) -> None:
+        initial_config = AntiPatternConfig.read(self.project_directory, self.write_config())
+        initial_findings = AntiPatternScanner(initial_config).scan()
+        self.assertFalse(
+            next(finding for finding in initial_findings if finding.path == Path("src/Example.cpp")).suppressed
+        )
+        updated_config = AntiPatternConfig.read(
+            self.project_directory,
+            self.write_config(
+                "*[Rule.anonymous_namespace]*\n"
+                'Excluded Path: "src/Example.cpp"\n'
+                'Reason: "Current configuration exception."\n'
+            ),
+        )
+
+        with patch("lib.anti_patterns.scanner.read_safe_text", wraps=self.read_source) as read_text:
+            findings = AntiPatternScanner(updated_config).scan()
+
+        example_finding = next(finding for finding in findings if finding.path == Path("src/Example.cpp"))
+        self.assertEqual(0, read_text.call_count)
+        self.assertTrue(example_finding.suppressed)
+        self.assertEqual("configuration", example_finding.suppression.source)
+
+    def test_scanner_rebuilds_a_malformed_or_stale_cache(self) -> None:
+        config = AntiPatternConfig.read(self.project_directory, self.write_config())
+        expected = AntiPatternScanner(config).scan()
+        cache_path = self.project_directory / ".cache/anti_patterns.json"
+        cache_path.write_text("not json\n", encoding="utf-8")
+
+        with patch("lib.anti_patterns.scanner.read_safe_text", wraps=self.read_source) as read_text:
+            malformed_findings = AntiPatternScanner(config).scan()
+        with (
+            patch("lib.anti_patterns.cache.AntiPatternCache._scanner_fingerprint", return_value="changed"),
+            patch("lib.anti_patterns.scanner.read_safe_text", wraps=self.read_source) as read_text_after_change,
+        ):
+            stale_findings = AntiPatternScanner(config).scan()
+
+        self.assertEqual(2, read_text.call_count)
+        self.assertEqual(2, read_text_after_change.call_count)
+        self.assertEqual(expected, malformed_findings)
+        self.assertEqual(expected, stale_findings)
 
     def test_rejects_unknown_rule_missing_reason_and_stale_path(self) -> None:
         invalid_configurations = (

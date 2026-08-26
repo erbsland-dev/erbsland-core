@@ -55,9 +55,6 @@ private:
     /// Parse an index component.
     [[nodiscard]] auto expectIndex() -> Name;
 
-    /// Skip spacing between name components.
-    void skipSpacing();
-
 private:
     bool _afterFirstElement = false;
     FastNameDecoder _decoder;

@@ -8,6 +8,7 @@ add_subdirectory(impl)
 target_sources(erbsland-core PRIVATE
         Application.cpp
         Application.hpp
+        Application_events.cpp
         Application_fwd.hpp
         ApplicationError.cpp
         ApplicationError.hpp

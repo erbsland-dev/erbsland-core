@@ -5,18 +5,20 @@
 
 namespace demo {
 
-/// `CharSet::from()` creates reusable sets from ASCII and Unicode character categories.
-///
-/// ASCII categories are compact and do not require Unicode metadata.
-/// Unicode categories are useful when a validation rule should follow standard Unicode character classes.
+/// Use `AsciiCategory` directly when an API accepts it, and construct a `CharSet` only when the policy must be retained
+/// or combined with other characters.
 void characterSetCategories() {
-    static const auto asciiHexDigits = el::CharSet::from(el::AsciiCategory::HexDigit);
+    const auto packetId = el::String{"SENSOR-07"_el};
+    const auto packetIdIsValid = packetId.containsOnly(el::AsciiCategory::WordWithHyphen);
+    const auto firstIsUppercase =
+        packetId.charAt(el::StringSide::Front).isAsciiCategory(el::AsciiCategory::UppercaseLetter);
+
     static const auto unicodeDigits = el::CharSet::from(el::UnicodeCategory::DecimalNumber);
     static const auto unicodeLetters = el::CharSet::from(el::UnicodeCategoryGroup::Letter);
 
     const auto yesNo = el::BooleanFormat::yesNo();
-    el::io::printLine("ASCII hex accepts 'F' ....: "_el, yesNo, asciiHexDigits.contains(U'F'));
-    el::io::printLine("ASCII hex accepts 'G' ....: "_el, yesNo, asciiHexDigits.contains(U'G'));
+    el::io::printLine("Packet-id is ASCII word ..: "_el, yesNo, packetIdIsValid);
+    el::io::printLine("First letter is uppercase : "_el, yesNo, firstIsUppercase);
     el::io::printLine("Unicode digit accepts '7' : "_el, yesNo, unicodeDigits.contains(U'7'));
     el::io::printLine("Unicode letter accepts 'é': "_el, yesNo, unicodeLetters.contains(U'é'));
 }

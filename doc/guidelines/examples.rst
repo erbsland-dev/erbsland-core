@@ -94,7 +94,7 @@ Guidelines:
   * ``String`` is an owning, read-only string for most purposes.
   * ``""_el`` - everywhere for string literals
   * ``StringFormat`` - for formatting strings (or use ``el::io::print``)
-  * ``StringEditor`` - when building strings from scratch.
+  * ``StringEditor`` - for examples that explicitly demonstrate local in-place editing or small construction tasks.
 
 * Avoid unnecessary usage of standard library string types in examples unless they are directly relevant to the topic.
 
@@ -114,5 +114,3 @@ Do not hesitate to use Unicode characters and emojis in example code when they i
 engaging.
 
 Well-placed Unicode text often makes examples feel more realistic and memorable.
-
-

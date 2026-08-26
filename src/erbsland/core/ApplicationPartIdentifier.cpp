@@ -5,7 +5,7 @@
 #include "impl/ApplicationPartIdentifier.hpp"
 
 #include "../err/ParameterError.hpp"
-#include "../text/CharSet.hpp"
+#include "../text/AsciiCategory.hpp"
 #include "../text/Literals.hpp"
 #include "../unit/CpLength.hpp"
 
@@ -14,8 +14,7 @@ namespace erbsland::core {
 using namespace text::literals;
 
 auto ApplicationPartIdentifier::create(text::String name) -> ApplicationPartIdentifierPtr {
-    static const auto validCharacters = text::CharSet::fromPattern("-_.a-zA-Z0-9"_el);
-    if (name.isEmpty() || !name.isValidUtf8() || !name.containsOnly(validCharacters)) {
+    if (name.isEmpty() || !name.containsOnly(text::AsciiCategory::DottedName)) {
         throw err::ParameterError{
             "The application-part identifier must be a non-empty ASCII reverse-domain token."_el, "name"_el};
     }

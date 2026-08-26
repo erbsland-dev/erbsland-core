@@ -34,7 +34,7 @@ An optional :cpp:class:`CharSet <erbsland::text::CharSet>` narrows the canonical
 IDNA2008 checks.
 Dots remain domain separators and are not tested by that filter.
 
-See :doc:`/topics/strings/encoding_internationalized_names` for practical codec and domain examples.
+See :doc:`/topics/text/encoding_internationalized_names` for practical codec and domain examples.
 
 Interface
 =========

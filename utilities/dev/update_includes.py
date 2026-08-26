@@ -391,7 +391,7 @@ class UpdateIncludesApp(UtilityApp):
         config = read_elcl_file(self.config_file_path())
         main_config = config["main"]
         header_config = HeaderConfig.read(self.config_file_path())
-        self.generated_header = header_config.source_header("hpp", tool="update_includes.py", pragma_once=True)
+        self.generated_header = header_config.source_header("hpp", tool="update_includes.py")
         self.generated_include_header = header_config.source_header("include", tool="update_includes.py")
         self.exclude_dirs = main_config.get_list("excluded_directories", str, default=[])
         self.exclude_headers = {

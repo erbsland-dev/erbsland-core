@@ -11,8 +11,8 @@ namespace demo {
 ///
 /// Reserving before every append step can repeatedly materialize new storage.
 /// The better pattern is to calculate the final native size, reserve once, and
-/// then append the fragments. For unknown or streaming text, prefer
-/// `AnyStringBuilder` because it is designed for incremental construction.
+/// then append the fragments. Unreserved growth may otherwise reallocate and
+/// copy the existing text several times.
 void reserveForAppend() {
     const auto fragments = std::array{
         "Aurora station: céu limpo"_el,

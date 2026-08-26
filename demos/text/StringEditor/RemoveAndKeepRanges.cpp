@@ -5,7 +5,7 @@
 
 namespace demo {
 
-/// Range-based editing works best with byte indexes returned by string search
+/// Range-based in-place edits work best with byte indexes returned by search
 /// functions. Those indexes already point into the native UTF-8 storage and can
 /// be passed directly to `ByteRange`.
 ///

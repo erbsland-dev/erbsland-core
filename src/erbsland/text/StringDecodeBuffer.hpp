@@ -255,3 +255,4 @@ private:
 }
 
 #include "StringDecodeBuffer.tpp"
+#include "StringDecodeBuffer_scan.tpp"

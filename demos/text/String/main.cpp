@@ -37,10 +37,13 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("IteratingCharacters"_el, iteratingCharacters);
     app.registerDemo("JoiningText"_el, joiningText);
     app.registerDemo("LengthAttributes"_el, lengthAttributes);
+    app.registerDemo("NormalizationForms"_el, normalizationForms);
+    app.registerDemo("NormalizeJoinedText"_el, normalizeJoinedText);
     app.registerDemo("PartialStringComparison"_el, partialStringComparison);
     app.registerDemo("RemoveCharacters"_el, removeCharacters);
     app.registerDemo("SliceAndKept"_el, sliceAndKept);
     app.registerDemo("SliceBoundaries"_el, sliceBoundaries);
+    app.registerDemo("SequentialCharacterReading"_el, sequentialCharacterReading);
     app.registerDemo("StorageIdentifier"_el, storageIdentifier);
     app.registerDemo("SplittingText"_el, splittingText);
     app.registerDemo("StdVsCoreCaseFold"_el, stdVsCoreCaseFold);

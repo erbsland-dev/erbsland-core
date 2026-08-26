@@ -6,3 +6,6 @@ test/unittest/data/re/shakespeare.txt -text
 test/cmake/resource-integration/data/** -text
 test/cmake/resource-integration/raw/** -text
 test/cmake/resource-installed-package/data/** -text
+
+# Render profiler validation hashes require platform-independent source bytes.
+test/profiling/render/data/** text eol=lf

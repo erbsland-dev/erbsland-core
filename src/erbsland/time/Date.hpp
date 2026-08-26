@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CalendarParts.hpp"
+#include "Date_fwd.hpp"
 #include "DateTimePrecision.hpp"
 #include "Day.hpp"
 #include "DayOfWeek.hpp"

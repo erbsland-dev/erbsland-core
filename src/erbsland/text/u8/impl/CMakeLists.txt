@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
         U8Encoding.hpp
+        U8Encoding_byte_reader.hpp
         U8StringAppendTools.cpp
         U8StringAppendTools.hpp
         U8StringBuilder.cpp

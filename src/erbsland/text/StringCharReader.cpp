@@ -81,8 +81,8 @@ auto StringCharReader::save() const noexcept -> StringCharReaderState {
     return _reader->save();
 }
 
-auto StringCharReader::restore(const StringCharReaderState state) noexcept -> bool {
-    return _reader->restore(state);
+void StringCharReader::restore(const StringCharReaderState state) noexcept {
+    _reader->restore(state);
 }
 
 void StringCharReader::reset() noexcept {
@@ -106,17 +106,35 @@ auto StringCharReader::readWhile(const ReadFn &readFn, const CharSet &expected, 
     return _reader->readWhile(readFn, expected, maximum);
 }
 
+auto StringCharReader::readWhile(const ReadFn &readFn, const AsciiCategory expected, CpLength maximum) noexcept
+    -> util::LoopResult {
+    return _reader->readWhile(readFn, expected, maximum);
+}
+
 auto StringCharReader::readUntil(const ReadFn &readFn, const CharSet &stopSet, CpLength maximum) noexcept
     -> util::LoopResult {
     return _reader->readUntil(readFn, stopSet, maximum);
+}
+
+auto StringCharReader::readUntil(const ReadFn &readFn, const AsciiCategory stopCategory, CpLength maximum) noexcept
+    -> util::LoopResult {
+    return _reader->readUntil(readFn, stopCategory, maximum);
 }
 
 auto StringCharReader::advanceWhile(const CharSet &expected, CpLength maximum) noexcept -> CpLength {
     return _reader->advanceWhile(expected, maximum);
 }
 
+auto StringCharReader::advanceWhile(const AsciiCategory expected, CpLength maximum) noexcept -> CpLength {
+    return _reader->advanceWhile(expected, maximum);
+}
+
 auto StringCharReader::advanceUntil(const CharSet &stopSet, CpLength maximum) noexcept -> CpLength {
     return _reader->advanceUntil(stopSet, maximum);
+}
+
+auto StringCharReader::advanceUntil(const AsciiCategory stopCategory, CpLength maximum) noexcept -> CpLength {
+    return _reader->advanceUntil(stopCategory, maximum);
 }
 
 auto StringCharReader::peek() const noexcept -> Char {
@@ -160,9 +178,7 @@ auto StringCharReader::advanceIf(const String &expected, const CharCompareFn com
             (compareFn != nullptr ? compareFn(actualCharacter, expectedCharacter) == std::strong_ordering::equal
                                   : actualCharacter == expectedCharacter);
         if (!matches) {
-            if (!restore(saved)) {
-                std::terminate();
-            }
+            restore(saved);
             return false;
         }
     }
@@ -242,8 +258,16 @@ auto StringCharReader::readToBufferWhile(const CharSet &expected, CpLength maxim
     return _reader->readToBufferWhile(expected, maximum);
 }
 
+auto StringCharReader::readToBufferWhile(const AsciiCategory expected, CpLength maximum) -> util::LoopResult {
+    return _reader->readToBufferWhile(expected, maximum);
+}
+
 auto StringCharReader::readToBufferUntil(const CharSet &stopSet, CpLength maximum) -> util::LoopResult {
     return _reader->readToBufferUntil(stopSet, maximum);
+}
+
+auto StringCharReader::readToBufferUntil(const AsciiCategory stopCategory, CpLength maximum) -> util::LoopResult {
+    return _reader->readToBufferUntil(stopCategory, maximum);
 }
 
 auto StringCharReader::scanInteger(const IntegerParseOptions &options) -> ReadIntegerResult {

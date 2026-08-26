@@ -50,7 +50,12 @@ class AntiPatternsApp(UtilityApp):
     def run(self, argv=None) -> None:
         super().run(argv)
         config = AntiPatternConfig.read(self.project_directory, self.config_file_path())
-        findings = AntiPatternScanner(config).scan(self.requested_paths or None)
+        scanner = AntiPatternScanner(config)
+        findings = scanner.scan(self.requested_paths or None)
+        self.print_verbose(
+            f"Anti-pattern cache: {scanner.cache_hits} unchanged file(s) reused, "
+            f"{scanner.cache_misses} file(s) scanned."
+        )
         self.active_findings = sum(not finding.suppressed for finding in findings)
         print(create_report(findings, limit=self.limit, show_suppressed=self.show_suppressed), end="")
 

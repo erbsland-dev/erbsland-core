@@ -1,0 +1,8 @@
+{% set layer = "level-1" %}
+{% set marker = layer %}
+{% extends "inheritance-stress/base.html" %}
+{% block alpha %}<l1>{{ super() }}</l1>{% endblock %}
+{% block beta %}<l1-beta>{{ super() }}</l1-beta>{% endblock %}
+{% block gamma %}<l1-gamma>{{ super() }}</l1-gamma>{% endblock %}
+{% block row %}<l1-row>{{ super() }}</l1-row>{% endblock %}
+{% block navigation_row %}<l1-nav>{{ super() }}</l1-nav>{% endblock %}

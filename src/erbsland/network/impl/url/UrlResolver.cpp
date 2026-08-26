@@ -6,6 +6,7 @@
 
 #include "../../../err/ParseError.hpp"
 #include "../../../text/AnyString.hpp"
+#include "../../../text/AsciiCategory.hpp"
 #include "../../../text/Char.hpp"
 #include "../../../text/CharSet.hpp"
 #include "../../../text/Literals.hpp"
@@ -51,7 +52,7 @@ auto UrlResolver::hasScheme() const noexcept -> bool {
         if (character == U'/' || character == U'?' || character == U'#') {
             return false;
         }
-        if (!character.isAsciiAlphanumeric() && character != U'+' && character != U'-' && character != U'.') {
+        if (!character.isAsciiCategory(AsciiCategory::UrlScheme)) {
             return false;
         }
     }

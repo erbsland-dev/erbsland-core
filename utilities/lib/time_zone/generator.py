@@ -8,7 +8,7 @@ import subprocess
 import xml.etree.ElementTree as et
 from pathlib import Path
 
-from lib.copyright import HeaderConfig
+from lib.copyright import HeaderConfig, HeaderKind
 from lib.error import UtilityError
 from lib.file_update import FileUpdate
 from lib.path_safety import read_safe_text, require_directory
@@ -91,7 +91,7 @@ class TimeZoneGenerator:
             )
         self.write(
             "WindowsTimeZoneMap.hpp",
-            f"""{self.header(pragma_once=True)}
+            f"""{self.header("hpp")}
 
 #include "../../TimeZoneId.hpp"
 
@@ -237,7 +237,7 @@ auto timeZoneIdFromWindowsName(const std::wstring_view windowsName) noexcept -> 
         primary_names = [self.zone_name_entry(zone.name) for zone in self.zone_list]
         self.write(
             "Texts.hpp",
-            f"""{self.header(pragma_once=True)}
+            f"""{self.header("hpp")}
 
 #include "Text.hpp"
 #include "ZoneName.hpp"
@@ -316,7 +316,7 @@ auto primaryZoneNames() noexcept -> const std::array<ZoneName, {len(primary_name
         encoded_rules.append((0, "// dummy", ""))
         self.write(
             "Rules.hpp",
-            f"""{self.header(pragma_once=True)}
+            f"""{self.header("hpp")}
 
 #include "RuleSet.hpp"
 
@@ -383,7 +383,7 @@ auto ruleSet(uint16_t index) noexcept -> RuleSet {{
             class_name = self.region_class_name(region)
             self.write(
                 f"Region{class_name}.hpp",
-                f"""{self.header(pragma_once=True)}
+                f"""{self.header("hpp")}
 
 #include "Info.hpp"
 
@@ -417,7 +417,7 @@ namespace erbsland::time::tz::impl {{
             function_lines.append(f"            &{info_functions[zone_id]},")
         self.write(
             "Zones.hpp",
-            f"""{self.header(pragma_once=True)}
+            f"""{self.header("hpp")}
 
 #include "Info.hpp"
 #include "ZoneId.hpp"
@@ -644,9 +644,8 @@ auto Database::version() noexcept -> unit::Version {{
             for text1, text2, text3, zone_id in zone_names
         )
 
-    def header(self, *, pragma_once: bool = False) -> str:
-        kind = "hpp" if pragma_once else "cpp"
-        return self.header_config.source_header(kind, pragma_once=pragma_once, tool="generate_time_zone_data.py")
+    def header(self, kind: HeaderKind = "cpp") -> str:
+        return self.header_config.source_header(kind, tool="generate_time_zone_data.py")
 
     def write(self, name: str, content: str) -> None:
         path = self.output_dir / name

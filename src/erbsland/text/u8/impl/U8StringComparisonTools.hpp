@@ -6,6 +6,7 @@
 
 #include "../../../unit/ByteIndex.hpp"
 #include "../../../unit/ItemCount.hpp"
+#include "../../AsciiCategory.hpp"
 #include "../../CharCompareFn.hpp"
 #include "../../CharSet.hpp"
 
@@ -61,6 +62,8 @@ public: // tests
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// Test if the view contains only decoded characters from the given character set.
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// Test if the view contains only decoded characters from an ASCII category.
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // character traversal
     /// Test if UTF-8 data contains one decoded character from the given character set.

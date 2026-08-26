@@ -51,6 +51,10 @@ public: // state and services
     /// @throws err::LogicError If the part has not started yet.
     [[nodiscard]] auto events() const -> event::EventsPtr;
 
+public: // implement ApplicationPartCommandLine
+    void registerCommandLineOptions(const options::OptionsPtr &options) override;
+    void parseCommandLine(const options::OptionValuesPtr &values) override;
+
 protected: // lifecycle customization
     /// Decide whether this part starts during initial automatic startup.
     [[nodiscard]] virtual auto automaticStart() -> bool;
@@ -67,10 +71,6 @@ protected: // lifecycle customization
     virtual void cleanup() noexcept;
     /// Complete asynchronous stopping and request the part event loop to quit.
     void completeStopping() noexcept;
-
-private: // implement ApplicationPartCommandLine
-    void registerCommandLineOptions(const options::OptionsPtr &options) override;
-    void parseCommandLine(const options::OptionValuesPtr &values) override;
 
 private: // manager access
     /// Bind this part to its prepared manager and optional runtime event target.

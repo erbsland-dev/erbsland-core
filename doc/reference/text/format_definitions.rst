@@ -245,13 +245,15 @@ refer directly to the original literal storage.
 
     using namespace erbsland::text::literals;
 
-    constexpr auto label = u8"Status"_el; // U8StringLiteral<char8_t>
-    auto labelView = u8"Status"_el;      // U8String
-    auto labelText = u8"Status"_el;      // U8StringEditor
+    constexpr auto label = u8"Status"_el;       // U8StringLiteral<char8_t>
+    auto labelText = el::U8String{u8"Status"_el}; // U8String
+    auto labelEditor = el::U8StringEditor{u8"Status"_el};
+    labelEditor.append(u8": ready"_el);           // explicit local mutable construction
 
 Use ``"_el"`` when you want a constexpr-capable :cpp:class:`U8StringLiteral <erbsland::text::U8StringLiteral>`.
 Use ``"_el"`` for APIs that inspect text through :cpp:class:`U8String <erbsland::text::U8String>`.
-Use ``"_el"`` for APIs that need an owning :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`.
+Construct :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` explicitly for local mutable construction or
+in-place editing.
 
 Display Escaping
 ================
@@ -261,6 +263,15 @@ It preserves printable punctuation and Unicode text while converting control and
 sequences.
 Together with ``EscapeAmount::Balanced``, it provides safe output without obscuring ordinary quotes, backslashes, or
 path punctuation.
+
+Markdown Escaping
+=================
+
+``EscapeFormat::Markdown`` protects ordinary CommonMark text.
+At ``EscapeAmount::Required`` it prefixes escapable ASCII punctuation with a backslash.
+Higher amounts encode controls, format characters, and requested non-ASCII code points as decimal numeric references.
+This format does not protect CommonMark contexts in which backslash escaping is disabled, such as code spans and code
+blocks.
 
 Interface
 =========

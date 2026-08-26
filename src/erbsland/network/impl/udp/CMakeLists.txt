@@ -15,6 +15,7 @@ endif ()
 target_sources(erbsland-core PRIVATE
         UdpSocket.cpp
         UdpSocket.hpp
+        UdpSocket_delivery.cpp
         UdpSocket_fwd.hpp
         UdpSocketDevice.hpp
         UdpSocketDevice_fwd.hpp

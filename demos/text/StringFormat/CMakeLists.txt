@@ -12,6 +12,11 @@ target_sources(string_format PRIVATE
         FormattingPatterns.cpp
         IntegerFormats.cpp
         main.cpp
+        NamedBooleanFormat.cpp
+        NamedByteFormat.cpp
+        NamedFloatFormat.cpp
+        NamedIntegerFormat.cpp
+        NamedTextFormat.cpp
         PositionalPlaceholders.cpp
         StringFormatDemos.hpp
         SupportedTypes.cpp

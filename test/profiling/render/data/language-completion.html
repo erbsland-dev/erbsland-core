@@ -1,0 +1,32 @@
+{% extends "language-completion/base.html" %}
+{% block body %}
+{{ super() }}
+{{ benchmark_text }}
+{{ super() | capitalize }}
+{{ 1 + 2 * 3 }} {{ -9223372036854775808 / -1 }} {{ 7 / 2 }} {{ 7 / 2.0 }} {{ 1 / 0 }}
+{{ none ~ ':' ~ true ~ ':' ~ 4 }}
+{{ [3, 1, 2,] | sort | join(',') }}
+{{ {'b': 2, 'a': 1,} | keys | join(',') }}
+{{ 'bc' in 'abcd' }} {{ 2 in [1, 2] }} {{ 'a' in {'a': 1} }} {{ 4 not in [1, 2] }}
+{{ none is null }} {{ 2 is number }} {{ [1] is sequence }} {{ {'a': 1} is mapping }} {{ 3 is odd }}
+{% for item in [] %}unreachable{% else %}empty{% endfor %}
+{% for item in [1, 2] %}{{ item }}{% else %}unreachable{% endfor %}
+{{ 'hello WORLD' | capitalize }}
+{{ 'MIXED' | lower }} {{ 'mixed' | capitalize }} {{ '  trim  ' | trim }}
+{{ 'a-b-a' | replace('a', 'x') }}
+{{ [1, 2] | first }} {{ [1, 2] | last }} {{ [1, 2] | length }}
+{{ 'abc' | reverse }} {{ [3, 1, 2] | sort(true, true) | join(':') }}
+{{ {'a': 1, 'b': 2} | values | sum }} {{ {'a': 1} | items | length }}
+{{ (-9223372036854775808) | abs }} {{ 1.21 | round(1, 'ceil') }}
+{{ [1, 2, 3] | sum(4) }} {{ [3, 1, 2] | min }} {{ [3, 1, 2] | max }}
+{{ none | default('fallback') }}
+{{ services | join(',', 'name') }}
+{{ {'name': 'Ada', 'values': [1, 2]} | tojson | safe }}
+{{ benchmark_text | profile0 }} {{ benchmark_text | profile1('one') }} {{ benchmark_text | profile2('one', 'two') }}
+{{ benchmark_text | escape(html) }} {{ benchmark_text | escape(xml) }} {{ benchmark_text | escape(config) }}
+{{ benchmark_text | escape(markdown) }} {{ benchmark_text | escape(json) }}
+{% include "language-completion/fragment.xml" %}
+{% include "language-completion/fragment.elcl" %}
+{% include "language-completion/fragment.md" %}
+{% include "language-completion/fragment.json" %}
+{% endblock %}

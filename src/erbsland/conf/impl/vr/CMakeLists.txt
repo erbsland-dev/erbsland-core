@@ -105,6 +105,7 @@ target_sources(erbsland-core PRIVATE
         RulesConstants.hpp
         RulesDefinitionValidator.cpp
         RulesDefinitionValidator.hpp
+        RulesDefinitionValidator_keys.cpp
         RulesFromDocument.cpp
         RulesFromDocument.hpp
         RulesFromDocument_constraintHandlers.cpp

@@ -27,28 +27,29 @@ void constructionAndStorage() {
     const auto textForRead = el::String{"🌲 Schwarzwald: kühle Morgenluft"_el};
     el::io::printLine("A string from a string literal: "_el, textForRead);
     printMemoryAndRangeInfo(textForRead);
-    // Constructing a `StringEditor` will always create a copy of the passed string literal.
-    const auto textForEdit = el::StringEditor{"🌴 Bali: hangatnya angin fajar"_el};
-    el::io::printLine("A string from a literal: "_el, textForEdit);
-    printMemoryAndRangeInfo(textForEdit);
+    // A local editor is appropriate when construction and in-place editing are explicit parts of the workflow.
+    auto constructedText = el::StringEditor{"🌴 Bali: "_el};
+    constructedText.append("hangatnya angin fajar"_el);
+    el::io::printLine("A simply constructed string: "_el, constructedText);
+    printMemoryAndRangeInfo(constructedText);
 
     // `String`s are created implicitly from `StringEditor` objects.
     // The read-only string stores an owning reference to the editor's storage.
     // Even when the editor is destroyed, the string and the storage remain valid.
-    const el::String stringFromString = textForEdit;
+    const el::String stringFromEditor = constructedText;
     // `String`s are also created implicitly from `StringLiteral` objects.
     // That makes them the primary choice for function parameters and to store strings.
     const el::String stringFromLiteral = "🌳 Forêt humide après la pluie"_el;
 
     // The strings look identical but carry different storage references.
     // From a user perspective, there is no difference in behavior.
-    el::io::printLine("String from editor  : "_el, stringFromString);
-    printMemoryAndRangeInfo(stringFromString);
+    el::io::printLine("String from editor  : "_el, stringFromEditor);
+    printMemoryAndRangeInfo(stringFromEditor);
     el::io::printLine("String from literal : "_el, stringFromLiteral);
     printMemoryAndRangeInfo(stringFromLiteral);
 
     // When sliced, strings keep the same storage reference but change their visible range.
-    auto word = stringFromString.slice(getFirstWordRange(stringFromString));
+    auto word = stringFromEditor.slice(getFirstWordRange(stringFromEditor));
     el::io::printLine("First word #1 : "_el, word);
     printMemoryAndRangeInfo(word);
     word = stringFromLiteral.slice(getFirstWordRange(stringFromLiteral));

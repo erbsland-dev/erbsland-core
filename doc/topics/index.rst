@@ -14,7 +14,7 @@ Topics
     resource/index
     security/index
     cryptology/index
-    strings/index
+    text/index
     options/index
     err/index
     path/index

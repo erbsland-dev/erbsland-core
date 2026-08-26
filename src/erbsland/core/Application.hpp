@@ -116,8 +116,9 @@ public:
     /// In case of an `core::ApplicationError`, the exit code from the exception will be used.
     /// Any non-`err::Exception` propagates out of this method.
     [[nodiscard]] auto run() -> int;
-    /// Override the initialize function.
-    /// Use this to set a custom initialization function without deriving from `Application`.
+    /// Set the function called by the default `initialize()` implementation.
+    /// Use this to customize initialization without deriving from `Application`.
+    /// A derived `initialize()` override must call `Application::initialize()` to invoke this function.
     void setInitializeFn(InitializeFn initializeFn);
     /// Override the main function.
     /// Use this to set a custom main function without deriving from `Application`.

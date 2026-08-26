@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../text/CharSet.hpp"
-#include "../../text/Literals.hpp"
+#include "../../text/AsciiCategory.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringSide.hpp"
 #include "../../unit/CpLength.hpp"
@@ -15,13 +14,12 @@ namespace erbsland::options::impl {
 
 /// Test if a dash-free token is a valid long, positional, or module name.
 [[nodiscard]] inline auto isAsciiNameToken(const text::String &token) noexcept -> bool {
-    using namespace text::literals;
-    static const auto nameCharacters = text::CharSet::fromPattern("-_a-zA-Z0-9"_el);
     const auto [first, rest] = token.slice(text::StringSide::Front);
     if (!first.isAsciiLetter()) {
         return false;
     }
-    if (!rest.containsOnly(nameCharacters) || rest.characterLength() > unit::CpLength{99U}) {
+    // After we know the text is ASCII only, comparing the length by bytes is faster.
+    if (!rest.containsOnly(text::AsciiCategory::WordWithHyphen) || rest.length() > unit::ByteLength{99U}) {
         return false;
     }
     return true;

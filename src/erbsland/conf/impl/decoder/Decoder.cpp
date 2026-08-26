@@ -8,6 +8,15 @@
 
 namespace erbsland::conf::impl {
 
+auto Decoder::advanceWhile(const text::AsciiCategory category, unit::CpLength maximum) -> unit::CpLength {
+    auto count = unit::CpLength::zero();
+    while (character().isAsciiCategory(category) && (maximum.isInfinite() || count < maximum)) {
+        next();
+        ++count;
+    }
+    return count;
+}
+
 auto Decoder::startTransaction(Transaction &transaction) noexcept -> DecoderState {
     transaction._parent = _activeTransaction;
     _activeTransaction = std::ref(transaction);

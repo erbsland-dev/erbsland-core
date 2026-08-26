@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(base_n)
 add_subdirectory(punycode)
+add_subdirectory(render)
 
 target_sources(erbsland-core-unittest PRIVATE
         AnyStringBuilderTest.cpp

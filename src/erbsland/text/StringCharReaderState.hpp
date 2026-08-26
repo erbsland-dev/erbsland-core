@@ -2,10 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "impl/StringReaderBackendKind.hpp"
 #include "impl/StringReaderBase_fwd.hpp"
 
-#include "../mem/StorageIdentifier.hpp"
 #include "../unit/CpIndex.hpp"
 
 #include <cstddef>
@@ -14,9 +12,9 @@ namespace erbsland::text {
 
 /// A saved state for `StringReader`.
 ///
-/// This value is intentionally opaque. It stores the reader backend kind, the visible storage identity, the backend
-/// cursor, and the decoded code-point position. Create it via `StringCharReader::save()` and pass it back to
-/// `StringCharReader::restore()`.
+/// This value is intentionally opaque. It stores the reader backend cursor and decoded code-point position. Create it
+/// via `StringCharReader::save()` and only pass it back to the same reader or a compatible copy over the same visible
+/// text and encoding. Passing it to any other reader is undefined.
 /// @seedoc{/reference/text/string_reader}
 /// @tested{StringCharReaderTest}
 class StringCharReaderState final {
@@ -35,8 +33,7 @@ public:
 public:
     /// Test if two saved states are equal.
     [[nodiscard]] constexpr auto operator==(const StringCharReaderState &other) const noexcept -> bool {
-        return _kind == other._kind && _storageId == other._storageId && _rawPosition == other._rawPosition &&
-            _cpPosition == other._cpPosition;
+        return _rawPosition == other._rawPosition && _cpPosition == other._cpPosition;
     }
     /// Test if two saved states differ.
     [[nodiscard]] constexpr auto operator!=(const StringCharReaderState &other) const noexcept -> bool {
@@ -44,26 +41,16 @@ public:
     }
 
 private:
-    /// Create a state from reader backend identity and positions.
-    constexpr StringCharReaderState(
-        impl::StringReaderBackendKind kind,
-        mem::StorageIdentifier storageId,
-        std::size_t rawPosition,
-        unit::CpIndex cpPosition) noexcept :
-        _kind{kind}, _storageId{storageId}, _rawPosition{rawPosition}, _cpPosition{cpPosition} {}
+    /// Create a state from the backend and decoded positions.
+    constexpr StringCharReaderState(const std::size_t rawPosition, const unit::CpIndex cpPosition) noexcept :
+        _rawPosition{rawPosition}, _cpPosition{cpPosition} {}
 
-    /// Access the associated backend kind.
-    [[nodiscard]] constexpr auto kind() const noexcept -> impl::StringReaderBackendKind { return _kind; }
-    /// Access the read-only storage identity.
-    [[nodiscard]] constexpr auto storageId() const noexcept -> mem::StorageIdentifier { return _storageId; }
     /// Access the backend-native position.
     [[nodiscard]] constexpr auto rawPosition() const noexcept -> std::size_t { return _rawPosition; }
     /// Access the decoded code-point position.
     [[nodiscard]] constexpr auto cpPosition() const noexcept -> unit::CpIndex { return _cpPosition; }
 
 private:
-    impl::StringReaderBackendKind _kind{};            ///< The backend kind this state belongs to.
-    mem::StorageIdentifier _storageId;                ///< The read-only string storage identity.
     std::size_t _rawPosition{0};                      ///< The raw backend position.
     unit::CpIndex _cpPosition{unit::CpIndex::zero()}; ///< The decoded code-point position.
 };

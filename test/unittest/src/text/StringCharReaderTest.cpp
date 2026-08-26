@@ -48,6 +48,7 @@ static_assert(std::is_same_v<decltype(std::declval<StringCharReader &>().takeBuf
 static_assert(std::is_same_v<
     decltype(std::declval<StringCharReader &>().advanceWhile(std::declval<const CharSet &>())),
     CpLength>);
+static_assert(std::is_same_v<decltype(std::declval<StringCharReader &>().advanceWhile(AsciiCategory::Word)), CpLength>);
 
 TESTED_TARGETS(
     StorageIdentifier StringCharReader ReadIntegerResult ReadNumberStatus ParseNumberError StringReader
@@ -93,7 +94,7 @@ public:
 
         const auto saved = reader.save();
         REQUIRE_EQUAL(reader.read().toRawValue(), U'\u00A2');
-        REQUIRE(reader.restore(saved));
+        reader.restore(saved);
         REQUIRE_EQUAL(reader.position(), CpIndex{1U});
         REQUIRE_EQUAL(reader.read().toRawValue(), U'\u00A2');
 
@@ -125,7 +126,7 @@ public:
 
         const auto saved = reader.save();
         reader.advanceOrThrow();
-        REQUIRE(reader.restore(saved));
+        reader.restore(saved);
         REQUIRE_EQUAL(reader.read().toRawValue(), U'\u20AC');
         REQUIRE_EQUAL(reader.read().toRawValue(), U'\U0001F600');
         REQUIRE(reader.isAtEnd());
@@ -717,7 +718,7 @@ public:
         reader.appendToBuffer(Char{U'X'});
         REQUIRE(reader.advance());
         reader.appendCaptureToBuffer();
-        REQUIRE(reader.restore(state));
+        reader.restore(state);
 
         REQUIRE_EQUAL(reader.position(), CpIndex{2U});
         WITH_CONTEXT(requireBufferView(reader.bufferView(), StringKind::U8, U"Xabc"));
@@ -765,32 +766,16 @@ public:
         REQUIRE_EQUAL(second.read().toRawValue(), U'c');
     }
 
-    void testRestoreRejectsWrongKindAndOutOfRange() {
+    void testRestoreAcrossCompatibleReaders() {
         const auto longText = StringEditor{"abcd"_el};
         auto longUtf8Reader = StringCharReader{longText};
         REQUIRE(longUtf8Reader.advance(CpLength{3U}));
         const auto longUtf8State = longUtf8Reader.save();
 
-        auto shortUtf8Reader = StringCharReader{StringEditor{"a"_el}};
-        REQUIRE_FALSE(shortUtf8Reader.restore(longUtf8State));
-        REQUIRE_EQUAL(shortUtf8Reader.read().toRawValue(), U'a');
-
         auto sameStorageReader = StringCharReader{longText};
-        REQUIRE(sameStorageReader.restore(longUtf8State));
+        sameStorageReader.restore(longUtf8State);
         REQUIRE_EQUAL(sameStorageReader.position(), CpIndex{3U});
         REQUIRE_EQUAL(sameStorageReader.read().toRawValue(), U'd');
-
-        auto slicedReader = StringCharReader{longText.slice(ByteRange{ByteIndex{1U}, ByteLength{3U}})};
-        REQUIRE_FALSE(slicedReader.restore(longUtf8State));
-        REQUIRE(slicedReader.position().isZero());
-
-        auto utf16Reader = StringCharReader{U16StringEditor{std::u16string_view{u"abc"}}};
-        REQUIRE(utf16Reader.advance());
-        const auto utf16State = utf16Reader.save();
-
-        auto utf32Reader = StringCharReader{U32StringEditor{std::u32string_view{U"abc"}}};
-        REQUIRE_FALSE(utf32Reader.restore(utf16State));
-        REQUIRE_EQUAL(utf32Reader.read().toRawValue(), U'a');
     }
 
     void testParseIntegerBasics() {
@@ -1009,7 +994,134 @@ public:
         REQUIRE_EQUAL(utf32Reader.read().toRawValue(), U'B');
     }
 
+    void testAsciiCategoryLoopsAcrossEncodings() {
+        WITH_CONTEXT(requireAsciiCategoryLoops(AnyString{String{"Ab_9-.: tail"_el}}));
+        WITH_CONTEXT(requireAsciiCategoryLoops(AnyString{U16String{u"Ab_9-.: tail"_el}}));
+        WITH_CONTEXT(requireAsciiCategoryLoops(AnyString{U32String{U"Ab_9-.: tail"_el}}));
+
+        WITH_CONTEXT(requireMalformedCategoryBoundary(AnyString{String{th::stdStringFromHex("41 C0 42")}}));
+        const auto invalidUtf16 = std::u16string{u'A', char16_t{0xD800U}, u'B'};
+        WITH_CONTEXT(requireMalformedCategoryBoundary(AnyString{U16StringEditor{std::u16string_view{invalidUtf16}}}));
+        const auto invalidUtf32 = std::u32string{U'A', char32_t{0x110000U}, U'B'};
+        WITH_CONTEXT(requireMalformedCategoryBoundary(AnyString{U32StringEditor{std::u32string_view{invalidUtf32}}}));
+    }
+
 private:
+    void requireAsciiCategoryLoops(const AnyString &source) {
+        auto collected = std::u32string{};
+        auto readWhileReader = StringCharReader{source};
+        REQUIRE_EQUAL(readWhileReader.readWhile(collectText(collected), AsciiCategory::Word), LoopResult::Success);
+        REQUIRE_EQUAL(collected, std::u32string{U"Ab_9"});
+        REQUIRE_EQUAL(readWhileReader.peek(), U'-');
+
+        collected.clear();
+        auto readUntilReader = StringCharReader{source};
+        REQUIRE_EQUAL(
+            readUntilReader.readUntil(collectText(collected), AsciiCategory::Whitespace), LoopResult::Success);
+        REQUIRE_EQUAL(collected, std::u32string{U"Ab_9-.:"});
+        REQUIRE_EQUAL(readUntilReader.peek(), U' ');
+
+        auto advanceWhileReader = StringCharReader{source};
+        REQUIRE_EQUAL(advanceWhileReader.advanceWhile(AsciiCategory::DottedName), CpLength{6U});
+        REQUIRE_EQUAL(advanceWhileReader.peek(), U':');
+
+        auto advanceUntilReader = StringCharReader{source};
+        REQUIRE_EQUAL(advanceUntilReader.advanceUntil(AsciiCategory::Digit), CpLength{3U});
+        REQUIRE_EQUAL(advanceUntilReader.peek(), U'9');
+
+        auto bufferWhileReader = StringCharReader{source};
+        REQUIRE_EQUAL(bufferWhileReader.readToBufferWhile(AsciiCategory::WordWithHyphen), LoopResult::Success);
+        REQUIRE_EQUAL(
+            StringConverter{bufferWhileReader.takeBuffer().toU32String()}.toStdU32String(), std::u32string{U"Ab_9-"});
+        REQUIRE_EQUAL(bufferWhileReader.peek(), U'.');
+
+        auto bufferUntilReader = StringCharReader{source};
+        REQUIRE_EQUAL(bufferUntilReader.readToBufferUntil(AsciiCategory::Whitespace), LoopResult::Success);
+        REQUIRE_EQUAL(
+            StringConverter{bufferUntilReader.takeBuffer().toU32String()}.toStdU32String(), std::u32string{U"Ab_9-.:"});
+        REQUIRE_EQUAL(bufferUntilReader.peek(), U' ');
+
+        auto limitReader = StringCharReader{source};
+        REQUIRE_EQUAL(limitReader.advanceWhile(AsciiCategory::Word, CpLength{2U}), CpLength{2U});
+        REQUIRE_EQUAL(limitReader.peek(), U'_');
+
+        collected.clear();
+        auto readLimitReader = StringCharReader{source};
+        REQUIRE_EQUAL(
+            readLimitReader.readUntil(collectText(collected), AsciiCategory::Whitespace, CpLength{2U}),
+            LoopResult::LimitReached);
+        REQUIRE_EQUAL(collected, std::u32string{U"Ab"});
+        REQUIRE_EQUAL(readLimitReader.peek(), U'_');
+
+        auto bufferLimitReader = StringCharReader{source};
+        REQUIRE_EQUAL(bufferLimitReader.readToBufferWhile(AsciiCategory::Word, CpLength{2U}), LoopResult::LimitReached);
+        REQUIRE_EQUAL(
+            StringConverter{bufferLimitReader.takeBuffer().toU32String()}.toStdU32String(), std::u32string{U"Ab"});
+        REQUIRE_EQUAL(bufferLimitReader.peek(), U'_');
+
+        auto zeroLimitReader = StringCharReader{source};
+        REQUIRE_EQUAL(zeroLimitReader.advanceWhile(AsciiCategory::Word, CpLength::zero()), CpLength::zero());
+        REQUIRE_EQUAL(zeroLimitReader.peek(), U'A');
+
+        auto zeroUntilReader = StringCharReader{source};
+        REQUIRE_EQUAL(zeroUntilReader.advanceUntil(AsciiCategory::Digit, CpLength::zero()), CpLength::zero());
+        REQUIRE_EQUAL(zeroUntilReader.peek(), U'A');
+
+        collected.clear();
+        auto zeroReadReader = StringCharReader{source};
+        REQUIRE_EQUAL(
+            zeroReadReader.readWhile(collectText(collected), AsciiCategory::Word, CpLength::zero()),
+            LoopResult::LimitReached);
+        REQUIRE(collected.empty());
+        REQUIRE_EQUAL(zeroReadReader.peek(), U'A');
+
+        auto zeroBufferReader = StringCharReader{source};
+        REQUIRE_EQUAL(
+            zeroBufferReader.readToBufferUntil(AsciiCategory::Digit, CpLength::zero()), LoopResult::LimitReached);
+        REQUIRE(zeroBufferReader.takeBuffer().isEmpty());
+        REQUIRE_EQUAL(zeroBufferReader.peek(), U'A');
+
+        auto endReader = StringCharReader{source};
+        endReader.advanceUntil(AsciiCategory::Whitespace);
+        endReader.advance();
+        REQUIRE_EQUAL(endReader.advanceWhile(AsciiCategory::Word), CpLength{4U});
+        REQUIRE(endReader.isAtEnd());
+
+        collected.clear();
+        auto readEndReader = StringCharReader{source};
+        readEndReader.advanceUntil(AsciiCategory::Whitespace);
+        readEndReader.advance();
+        REQUIRE_EQUAL(readEndReader.readWhile(collectText(collected), AsciiCategory::Word), LoopResult::EndOfData);
+        REQUIRE_EQUAL(collected, std::u32string{U"tail"});
+
+        auto bufferEndReader = StringCharReader{source};
+        bufferEndReader.advanceUntil(AsciiCategory::Whitespace);
+        bufferEndReader.advance();
+        REQUIRE_EQUAL(bufferEndReader.readToBufferWhile(AsciiCategory::Word), LoopResult::EndOfData);
+        REQUIRE_EQUAL(
+            StringConverter{bufferEndReader.takeBuffer().toU32String()}.toStdU32String(), std::u32string{U"tail"});
+
+        const auto requireCallback = [&](const LoopStatus callbackStatus, const LoopResult expectedResult) -> void {
+            auto callbackReader = StringCharReader{source};
+            const auto result = callbackReader.readWhile(
+                [callbackStatus](const Char character) -> LoopStatus {
+                    return character == U'_' ? callbackStatus : LoopStatus::Continue;
+                },
+                AsciiCategory::Word);
+            REQUIRE_EQUAL(result, expectedResult);
+            REQUIRE_EQUAL(callbackReader.peek(), U'_');
+        };
+        requireCallback(LoopStatus::Stop, LoopResult::Stopped);
+        requireCallback(LoopStatus::Error, LoopResult::Error);
+    }
+
+    void requireMalformedCategoryBoundary(const AnyString &source) {
+        auto reader = StringCharReader{source};
+        REQUIRE_EQUAL(reader.advanceWhile(AsciiCategory::Word), CpLength::one());
+        REQUIRE(reader.peek().isReplacement());
+        REQUIRE_EQUAL(reader.position(), CpIndex::one());
+    }
+
     [[nodiscard]] static auto matchingSet() -> CharSet {
         auto result = CharSet{};
         result.add(Char{U'\u00A2'});

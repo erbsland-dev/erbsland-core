@@ -35,7 +35,7 @@ values, except that they do not have a source argument index.
 .. erbsland-demo::
     :source: option/OptionValues/main.cpp
     :exec: option/option_values
-    :source-sha256: c0f53642c6de072472b75c2cfe3af7bbc706940583866cc4ae6a0199d7fef1d8
+    :source-sha256: 744eccb15abaff817a33ab03770c152788dfe94467de5646614a5f66bb1a8590
 
 .. code-block:: cpp
 
@@ -62,8 +62,9 @@ values, except that they do not have a source argument index.
         options->addOption("instrument"_el).setRequired().setHelpDescription("Primary instrument."_el);
 
         auto manager = el::OptionManager{options};
-        const auto values = manager.parseOrThrow(
-            makeArgs({"valores"_el, "-vv"_el, "--point"_el, "entrada"_el, "-p"_el, "lente"_el, "microscopio"_el}));
+        auto arguments =
+            makeArgs({"valores"_el, "-vv"_el, "--point"_el, "entrada"_el, "-p"_el, "lente"_el, "microscopio"_el});
+        const auto values = manager.parseOrThrow(arguments);
 
         const auto verboseByLongName = values->value("--verbose"_el);
         const auto verboseByAlias = values->value("verbose"_el);
@@ -72,7 +73,11 @@ values, except that they do not have a source argument index.
         el::io::printLine("verbose count: "_el, values->getFlagCount("verbose"_el));
         el::io::printLine("instrument: "_el, values->getText("instrument"_el));
         el::io::printLine("level: "_el, values->getInteger("level"_el));
-        el::io::printLine("points: "_el, points.join(", "_el));
+        auto pointList = el::StringList{};
+        for (const auto &point : points) {
+            pointList.append(point.copy());
+        }
+        el::io::printLine("points: "_el, pointList.join(", "_el));
         el::io::printLine("first index: "_el, values->value("point"_el)->argumentIndex().toSizeT());
         return el::ExitCode::success();
     }
@@ -125,7 +130,7 @@ Applications that do not use module main functions can dispatch manually with th
 .. erbsland-demo::
     :source: option/OptionValueAccess/main.cpp
     :exec: option/option_value_access
-    :source-sha256: 628c48c4e9f0b336ffcd6611ac8124b5be83f11f7942482b1052444fe23bb0f9
+    :source-sha256: 09e86783add390fdea58d16cdbfdb3282bdb5fb63239e77112c192a21db978c9
 
 .. code-block:: cpp
 
@@ -137,11 +142,12 @@ Applications that do not use module main functions can dispatch manually with th
     /// `moduleName()` when dispatching manually.
     auto optionValueAccess() -> el::ExitCode {
         auto manager = el::OptionManager{createValueOptions()};
-        const auto values = manager.parseOrThrow(
-            makeArgs({"night-values"_el, "count"_el, "-vv"_el, "--route"_el, "forest-edge"_el, "-r"_el, "pond"_el, "dune"_el}));
+        auto arguments = makeArgs(
+            {"night-values"_el, "count"_el, "-vv"_el, "--route"_el, "forest-edge"_el, "-r"_el, "pond"_el, "dune"_el});
+        const auto values = manager.parseOrThrow(arguments);
 
         const auto routes = values->getTextList("route"_el);
-        auto routeList = el::StringEditorList{};
+        auto routeList = el::StringList{};
         for (const auto &route : routes) {
             routeList.append(route.copy());
         }

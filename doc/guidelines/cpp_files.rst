@@ -22,7 +22,8 @@ Relation File vs. Type
 Splitting Implementation over Multiple Files
 ============================================
  
-If the implementation for a class exceeds 500 lines, it should be split into multiple ``cpp`` files.
+Handwritten C++ source files must not exceed 500 physical lines.
+If the implementation for a class would exceed this limit, split it into multiple ``cpp`` files.
 
 1.  The pattern for files related to a class is: ``Class_part.cpp``, where ``part`` is a descriptive name for the 
     logical functionality.

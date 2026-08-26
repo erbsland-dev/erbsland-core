@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/text/AsciiCategory.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -590,6 +591,15 @@ public:
         REQUIRE_FALSE(text.containsOnly(CharSet::fromPattern(U"A\u00A2"_el)));
         REQUIRE_FALSE(view.containsOnly(CharSet{}));
         REQUIRE(text.containsOnly(CharSet::fromPattern(U"Aa\u00A2\U0001F600"_el)));
+        REQUIRE(U32StringEditor{std::u32string_view{U"Alpha_09"}}.containsOnly(AsciiCategory::Word));
+        REQUIRE(U32String{U"Alpha-09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE(U32String{}.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(U32String{U"Alpha.09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE_FALSE(U32String{U"Alpha\u00E4"_el}.containsOnly(AsciiCategory::Word));
+        const auto malformedCategoryData = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
+        const auto malformedCategoryText = U32StringEditor{std::u32string_view{malformedCategoryData}};
+        REQUIRE_FALSE(malformedCategoryText.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(U32String{malformedCategoryText}.containsOnly(AsciiCategory::Word));
         REQUIRE_EQUAL(text.count(U"a"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE_EQUAL(view.count(U"a"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE_EQUAL(text.count(U32String{}, Char::compareCaseFolded), ItemCount::zero());

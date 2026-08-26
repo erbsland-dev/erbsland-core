@@ -219,6 +219,37 @@ public:
         REQUIRE_THROWS(CharSet::fromPattern("z-a"_el));
     }
 
+    void testAsciiCategoryExactMemberships() {
+        using Char = el::text::Char;
+
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::Word), CharSet::fromPattern("_A-Za-z0-9"_el));
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::WordWithHyphen), CharSet::fromPattern("-_A-Za-z0-9"_el));
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::DottedName), CharSet::fromPattern("-._A-Za-z0-9"_el));
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::UrlScheme), CharSet::fromPattern("-+.A-Za-z0-9"_el));
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::Base64Text), CharSet::fromPattern("+/=A-Za-z0-9"_el));
+
+        auto httpToken = CharSet::from(AsciiCategory::Alphanumeric);
+        httpToken.add({
+            Char{U'!'},
+            Char{U'#'},
+            Char{U'$'},
+            Char{U'%'},
+            Char{U'&'},
+            Char{U'\''},
+            Char{U'*'},
+            Char{U'+'},
+            Char{U'-'},
+            Char{U'.'},
+            Char{U'^'},
+            Char{U'_'},
+            Char{U'`'},
+            Char{U'|'},
+            Char{U'~'},
+        });
+        REQUIRE_EQUAL(CharSet::from(AsciiCategory::HttpToken), httpToken);
+        REQUIRE_FALSE(CharSet::from(AsciiCategory::HttpToken).contains(Char{U'\u0080'}));
+    }
+
     void testForEachAndTransform() {
         using Char = el::text::Char;
         using CharRange = el::text::CharRange;

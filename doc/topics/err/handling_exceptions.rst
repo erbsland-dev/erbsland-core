@@ -30,7 +30,7 @@ handle every :cpp:class:`RuntimeError <erbsland::err::RuntimeError>` in the same
 .. erbsland-demo::
     :source: err/Exception/ThrowAndCatch.cpp
     :exec: err/exception --demo ThrowAndCatch
-    :source-sha256: 8af8ca72ce377d4915a322d36a8f06b1b54038011a67926bd84aa302c6cde146
+    :source-sha256: ba74946248c5a2e804330c73f3a0355b469088fbd0130362054b49c7a009d4d9
 
 .. code-block:: cpp
 
@@ -92,7 +92,7 @@ Choose the Right Text Interface
     /// `what()` provides the null-terminated compatibility string expected by standard C++ interfaces.
     void exceptionText() {
         try {
-            const auto tempo = el::StringEditor{"速い"_el}.toIntegerOrThrow<int>();
+            const auto tempo = el::String{"速い"_el}.toIntegerOrThrow<int>();
             el::io::printLine("Tempo: "_el, tempo);
         } catch (const el::ParseError &error) {
             el::io::printLine("reason(): "_el, error.reason());
@@ -185,7 +185,7 @@ Build those optional details in an
     :source: err/Exception/ApplicationReporting.cpp
     :exec: err/exception --demo ApplicationReporting
     :exec-exit-code: 1
-    :source-sha256: 03a061f5d00a2db7eaf0c072d14669fd7b70f06edef8a04c6d7e16d0b0b528f4
+    :source-sha256: 7e28667dd284d2609fa7ac921b516124c6c2d498d04a50ab9b8b4ad23bdbafca
 
 .. code-block:: cpp
 

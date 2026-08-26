@@ -7,6 +7,10 @@ add_executable(erbsland-core-unittest)
 add_dependencies(erbsland-core-unittest erbsland-core-resource-integration)
 erbsland_set_required_compiler_options(erbsland-core-unittest)
 target_link_libraries(erbsland-core-unittest PRIVATE erbsland::core)
+if (MSVC)
+    # Deep dependency-limit tests exercise intentionally recursive debug code whose /RTC stack frames exceed 1 MiB.
+    target_link_options(erbsland-core-unittest PRIVATE /STACK:4194304)
+endif()
 target_include_directories(erbsland-core-unittest PRIVATE
         ${PROJECT_SOURCE_DIR}/src
         src

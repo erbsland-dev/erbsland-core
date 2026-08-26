@@ -1,0 +1,4 @@
+<footer>
+<nav>{% for item in navigation %}<a href="{{ item.url }}">{{ item.label | escape }}</a>{% endfor %}</nav>
+<small>{{ company }} · {{ account.region }}</small>
+</footer>

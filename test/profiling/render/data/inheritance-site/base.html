@@ -1,0 +1,25 @@
+{% set theme = "base" %}
+{% set page_name = "base-page" %}
+<!doctype html>
+<html lang="en">
+<head><title>{% block title %}Erbsland Services{% endblock %}</title></head>
+<body class="{{ theme }}">
+{% block header %}<header><h1>{{ page_name }}</h1></header>{% endblock %}
+<div class="layout">
+{% block content %}
+<section class="services">
+{% for service in services %}
+{% block service_row %}
+<article id="{{ service.id }}">
+<h2>{{ service.name }}</h2>
+{% block service_badge %}{% if service.healthy %}healthy{% else %}degraded{% endif %}{% endblock %}
+</article>
+{% endblock %}
+{% endfor %}
+</section>
+{% endblock %}
+{% block sidebar %}<aside>Default account: {{ account.name }}</aside>{% endblock %}
+</div>
+{% block footer %}{% include "inheritance-site/footer.html" %}{% endblock %}
+</body>
+</html>

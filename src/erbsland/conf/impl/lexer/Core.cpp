@@ -5,6 +5,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
+
 namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
@@ -60,17 +62,8 @@ auto scanForSpacing(TokenDecoder &decoder) -> std::optional<LexerToken> {
 
 auto expectSpacing(TokenDecoder &decoder) -> LexerToken {
     decoder.expect(CharClass::Spacing, "Expected spacing, but got something else."_el);
-    while (decoder.character() == CharClass::Spacing) {
-        decoder.next();
-    }
+    decoder.advanceWhile(text::AsciiCategory::Blank);
     return decoder.createToken(TokenType::Spacing);
-}
-
-void skipSpacing(TokenDecoder &decoder) {
-    while (decoder.character() == CharClass::Spacing) {
-        decoder.next();
-    }
-    decoder.checkForErrorAndThrowIt();
 }
 
 auto expectAndCheckIndentation(TokenDecoder &decoder) -> LexerToken {
@@ -91,9 +84,7 @@ auto expectAndCheckIndentation(TokenDecoder &decoder) -> LexerToken {
         return decoder.createToken(TokenType::Indentation);
     }
     // if no indentation pattern is defined, read and set one.
-    while (decoder.character() == CharClass::Spacing) {
-        decoder.next();
-    }
+    decoder.advanceWhile(text::AsciiCategory::Blank);
     decoder.checkForErrorAndThrowIt();
     auto token = decoder.createToken(TokenType::Indentation);
     decoder.setIndentationPattern(token.rawText());

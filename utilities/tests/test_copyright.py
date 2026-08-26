@@ -25,7 +25,6 @@ class CopyrightTest(unittest.TestCase):
         header = HeaderConfig.read(self.config_file_path()).source_header(
             "hpp",
             tool="sample.py",
-            pragma_once=True,
             year=2034,
         )
 

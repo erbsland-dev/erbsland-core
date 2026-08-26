@@ -6,7 +6,7 @@
 #include "CodeSnippetLayout.hpp"
 
 #include "../AnyString.hpp"
-#include "../CharSet.hpp"
+#include "../AsciiCategory.hpp"
 #include "../Literals.hpp"
 #include "../StringCharReader.hpp"
 #include "../TextDocument.hpp"
@@ -425,16 +425,13 @@ void PlainTextRenderer::appendLine(AnyStringBuilder &builder, const String &pref
 
 void PlainTextRenderer::appendWrappedLine(
     AnyStringBuilder &builder, const String &prefix, const String &continuation, const String &text) {
-    const static auto whiteSpace = CharSet::from(AsciiCategory::Whitespace);
     auto reader = StringCharReader{text};
     auto line = AnyStringBuilder::basedOn(prefix);
     auto firstWord = true;
     auto continuationLine = false;
 
     while (!reader.isAtEnd()) {
-        while (!reader.isAtEnd() && reader.peek().isAsciiWhitespace()) {
-            reader.advance();
-        }
+        reader.advanceWhile(AsciiCategory::Whitespace);
 
         auto wordLength = CpLength{};
         reader.startCapture();
@@ -443,7 +440,7 @@ void PlainTextRenderer::appendWrappedLine(
                 ++wordLength;
                 return util::LoopStatus::Continue;
             },
-            whiteSpace);
+            AsciiCategory::Whitespace);
         if (wordLength.isZero()) {
             break;
         }

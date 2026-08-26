@@ -12,11 +12,10 @@ String Char Reader
 ------------------
 
 :cpp:class:`StringCharReader <erbsland::text::StringCharReader>` is a sequential reader for decoded Unicode code points.
-It accepts :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` /:cpp:class:`U8String
-<erbsland::text::U8String>`,
-:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>` /:cpp:class:`U16String <erbsland::text::U16String>`, and
-:cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>` /:cpp:class:`U32String <erbsland::text::U32String>` and
-exposes the same read API for all encodings.
+It accepts :cpp:class:`U8String <erbsland::text::U8String>`,
+:cpp:class:`U16String <erbsland::text::U16String>`, and
+:cpp:class:`U32String <erbsland::text::U32String>` and exposes the same read API for all encodings.
+Editor values are accepted for compatibility and converted to the corresponding owning read-only string.
 
 The reader keeps the source storage alive through the read-only string object stored in its backend.
 Copying a reader shares the immutable source data, but the cursor state is copied, so moving one reader forward does not
@@ -28,6 +27,9 @@ Positions and States
 :cpp:func:`position() <erbsland::text::StringCharReader::position>` returns the current decoded code-point index as
 ``unit::CpIndex``.
 This is the value user code should use for diagnostics and parse errors.
+``save()`` and ``restore()`` capture and restore the backend cursor and decoded position in constant time.
+A saved state must be restored only to the reader that created it or to a compatible copy over the same visible text and
+encoding; passing it to another reader is undefined.
 
 Reader Operations
 ~~~~~~~~~~~~~~~~~
@@ -51,6 +53,22 @@ an error.
 ``advanceWhile()`` and ``advanceUntil()`` have no callback and instead return the ``unit::CpLength`` actually skipped.
 They leave the boundary character unread and stop at the configured maximum or end-of-data.
 The count can be ignored when only the skip operation matters, for example when discarding optional whitespace.
+
+Each while/until operation accepts either a :cpp:class:`CharSet <erbsland::text::CharSet>` or an
+:cpp:enum:`AsciiCategory <erbsland::text::AsciiCategory>`. Prefer the category overload for standard ASCII grammar
+classes such as whitespace, digits, words, URL schemes, Base64 text, and HTTP tokens.
+The UTF-8, UTF-16, and UTF-32 backends decode each character once and classify it directly, without constructing a
+temporary ``CharSet``.
+
+.. code-block:: cpp
+
+    auto reader = el::StringCharReader{source};
+    reader.advanceWhile(el::AsciiCategory::Whitespace);
+    reader.startCapture();
+    reader.advanceWhile(el::AsciiCategory::WordWithHyphen);
+    auto identifier = reader.takeCapture().toString();
+
+Use a ``CharSet`` when the grammar has a custom or dynamic character combination that no category represents.
 
 ``parseInteger()`` parses a low-level integer token with
 :cpp:class:`IntegerParseOptions <erbsland::text::IntegerParseOptions>`.

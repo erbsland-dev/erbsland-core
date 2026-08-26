@@ -11,7 +11,6 @@
 #include "../../text/base_n/BaseNDecoder.hpp"
 #include "../../text/base_n/BaseNEncoder.hpp"
 #include "../../text/base_n/BaseNFormat.hpp"
-#include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringCharReader.hpp"
@@ -42,13 +41,13 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
     auto reader = text::StringCharReader{_text};
     auto result = util::List<mem::ByteBlock>{};
     auto totalDerLength = std::size_t{};
-    static const auto cWhitespace = text::CharSet::from(text::AsciiCategory::Whitespace);
-    reader.advanceWhile(cWhitespace);
+    reader.advanceWhile(text::AsciiCategory::Whitespace);
     while (!reader.isAtEnd()) {
         if (result.count().toSizeT() >= cMaximumCertificates) {
             throw err::OutOfRangeError{"PEM bundle exceeds the fixed certificate-count limit."_el};
         }
-        if (!reader.advanceIf("-----BEGIN CERTIFICATE-----"_el) || reader.advanceWhile(cWhitespace).isZero()) {
+        if (!reader.advanceIf("-----BEGIN CERTIFICATE-----"_el) ||
+            reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
             throw err::ParseError{
                 "Expected an exact CERTIFICATE PEM pre-encapsulation boundary."_el, reader.position()};
         }
@@ -69,9 +68,7 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
             if (character.isAsciiWhitespace()) {
                 continue;
             }
-            const auto isBase64 =
-                character.isAsciiAlphanumeric() || character == U'+' || character == U'/' || character == U'=';
-            if (!isBase64) {
+            if (!character.isAsciiCategory(text::AsciiCategory::Base64Text)) {
                 throw err::ParseError{"PEM certificate contains a non-Base64 character."_el, reader.position()};
             }
             base64.append(character);
@@ -91,7 +88,7 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
         }
         totalDerLength += derLength;
         result.append(std::move(der));
-        reader.advanceWhile(cWhitespace);
+        reader.advanceWhile(text::AsciiCategory::Whitespace);
     }
     if (result.isEmpty()) {
         throw err::ParseError{"PEM input contains no CERTIFICATE block."_el, unit::CpIndex::zero()};

@@ -1,0 +1,16 @@
+{% set layer = "base" %}
+{% set marker = "base" %}
+<stress data-layer="{{ layer }}" data-marker="{{ marker }}">
+{% block alpha %}<base-alpha>{{ account.name }}</base-alpha>{% endblock %}
+{% block beta %}<base-beta>{% block gamma %}<base-gamma>{{ account.region }}</base-gamma>{% endblock %}</base-beta>{% endblock %}
+<services>
+{% for service in services %}
+{% block row %}<base-row>{{ service.name }}:{% block badge %}{% if service.healthy %}up{% else %}down{% endif %}{% endblock %}</base-row>{% endblock %}
+{% endfor %}
+</services>
+<navigation>
+{% for item in navigation %}{% block navigation_row %}<a href="{{ item.url }}">{{ loop.index }}:{{ item.label }}</a>{% endblock %}{% endfor %}
+</navigation>
+{% block component %}{% include "inheritance-stress/component.html" %}{% endblock %}
+{% block fallback %}<fallback>{{ incident.title }} / {{ incident.owner.name }}</fallback>{% endblock %}
+</stress>

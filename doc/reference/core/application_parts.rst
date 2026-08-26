@@ -10,7 +10,9 @@ Application parts are dependency-aware, one-shot components with dedicated event
 The detached
 :cpp:class:`ApplicationPartManager <erbsland::core::ApplicationPartManager>` owns their graph and runtime, while
 :cpp:class:`Application <erbsland::core::Application>` can provide the same manager as a lazy application service.
-See :doc:`/topics/core/application_parts` for a complete example and lifecycle guidance.
+See :doc:`/topics/core/applications_from_parts` for application integration,
+:doc:`/topics/core/application_parts` for part design and lifecycle guidance, and
+:doc:`/topics/core/detached_application_parts` for standalone manager operation.
 
 Identifiers and Registration
 ============================

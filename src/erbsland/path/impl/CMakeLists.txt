@@ -44,6 +44,7 @@ if (WIN32)
             WindowsAccessProfileSecurity.cpp
             WindowsAccessProfileSecurity.hpp
             WindowsPathBackend.cpp
+            WindowsPathBackend_access.cpp
             WindowsPathBackend.hpp
             WindowsPathBackend_operations.cpp
             WindowsPathBackend_path.cpp
@@ -53,6 +54,7 @@ else ()
     target_sources(erbsland-core PRIVATE
             PosixDirectoryCloser.hpp
             PosixPathBackend.cpp
+            PosixPathBackend_access.cpp
             PosixPathBackend.hpp
             PosixPathBackend_operations.cpp
             PosixPathBackend_path.cpp

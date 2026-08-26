@@ -11,9 +11,10 @@ void clearResetAndAppend();
 void copyOnWrite();
 void editingText();
 void insertAndReplace();
+void manualDetach();
+void normalizeText();
 void removeAndKeepRanges();
 void removeFirstAndAll();
-void manualDetach();
 void reserveForAppend();
 void shrinkSlices();
 

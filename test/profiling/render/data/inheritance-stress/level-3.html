@@ -1,0 +1,8 @@
+{% set layer = "level-3" %}
+{% set marker = layer %}
+{% extends "inheritance-stress/level-2.html" %}
+{% block alpha %}<l3>{{ super() }}</l3>{% endblock %}
+{% block gamma %}{% set captured = super() %}<l3-gamma>{{ captured | upper }}</l3-gamma>{% endblock %}
+{% block row %}<l3-row>{{ super() }}</l3-row>{% endblock %}
+{% block badge %}<l3-badge>{{ super() | trim }}</l3-badge>{% endblock %}
+{% block component %}<l3-component>{{ super() }}</l3-component>{% endblock %}

@@ -12,6 +12,7 @@ Text Processing
     html/index
     json
     punycode
+    render
     std_compatibility
     string_collections
     string_converter

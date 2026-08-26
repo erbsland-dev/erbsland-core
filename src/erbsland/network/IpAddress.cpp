@@ -133,9 +133,10 @@ auto IpAddress::parseV6(StringCharReader &reader, Bytes &bytes) noexcept -> bool
             return false;
         }
         if (reader.peek() == U'.') {
-            if (wordCount > 6U || !reader.restore(wordState)) {
+            if (wordCount > 6U) {
                 return false;
             }
+            reader.restore(wordState);
             auto v4Bytes = V4Bytes{};
             if (!parseV4(reader, v4Bytes)) {
                 return false;

@@ -80,7 +80,7 @@ Only the final replay check uses an explicit seed, because that line intentional
 .. erbsland-demo::
     :source: random/RandomTopics/ApiOverview.cpp
     :exec: random/random_topics --demo ApiOverview
-    :source-sha256: 9b7298912dfdff6e8ff5297239575ff3e171776418c23208084f50756c513dcf
+    :source-sha256: 36fb66d931ec58c4c07e781b7af7b8b63942d7078309760c4a71ceb081de1fc1
 
 .. code-block:: cpp
 
@@ -90,14 +90,9 @@ Only the final replay check uses an explicit seed, because that line intentional
     /// switch to `SecureRandom` for values that protect access or identity, and
     /// reserve explicitly seeded `FastRandom` instances for reproducible tests and
     /// simulations.
-    auto buildMapRows(el::Random &random) -> el::StringEditorList {
-        const auto terrain = el::List<el::StringEditor>{
-            el::StringEditor{"les"_el},
-            el::StringEditor{"skala"_el},
-            el::StringEditor{"voda"_el},
-            el::StringEditor{"louka"_el},
-        };
-        auto rows = el::StringEditorList{};
+    auto buildMapRows(el::Random &random) -> el::StringList {
+        const auto terrain = el::StringList{"les"_el, "skala"_el, "voda"_el, "louka"_el};
+        auto rows = el::StringList{};
 
         for (auto y = 0; y < 3; ++y) {
             auto row = el::StringEditor{};
@@ -107,7 +102,7 @@ Only the final replay check uses an explicit seed, because that line intentional
                 }
                 row.append(random.selectElement(terrain));
             }
-            rows.append(row);
+            rows.append(el::String{row});
         }
         return rows;
     }

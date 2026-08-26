@@ -4,6 +4,7 @@
 
 #include "NamedKeyParser.hpp"
 
+#include "../AsciiCategory.hpp"
 #include "../FormatError.hpp"
 #include "../Literals.hpp"
 #include "../StringEditor.hpp"
@@ -159,12 +160,8 @@ auto NamedFormatParser::readIdentifier() const -> String {
     if (!_entry->isKeyWithValue()) {
         throwFormatError("Named format option value is missing");
     }
-    auto reader = StringCharReader{_entry->value()};
-    while (!reader.isAtEnd()) {
-        const auto character = reader.read();
-        if (!character.isAsciiAlphanumeric() && character != U'-' && character != U'_') {
-            throwFormatError("Named format option value is not an identifier");
-        }
+    if (!_entry->value().containsOnly(AsciiCategory::WordWithHyphen)) {
+        throwFormatError("Named format option value is not an identifier");
     }
     return _entry->value().transformed(Char::toAsciiLowercase);
 }
@@ -314,6 +311,8 @@ void NamedFormatParser::parseEscape() {
         spec.escapeFormat = EscapeFormat::Config;
     } else if (value == "config_test"_el || value == "ct"_el) {
         spec.escapeFormat = EscapeFormat::ConfigTest;
+    } else if (value == "markdown"_el || value == "md"_el) {
+        spec.escapeFormat = EscapeFormat::Markdown;
     } else {
         throwFormatError("Named escape value is not supported");
     }

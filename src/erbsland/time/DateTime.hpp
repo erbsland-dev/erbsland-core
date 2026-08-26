@@ -4,6 +4,7 @@
 
 #include "CalendarDelta.hpp"
 #include "Date.hpp"
+#include "DateTime_fwd.hpp"
 #include "DateTimeParts.hpp"
 #include "Duration.hpp"
 #include "Time.hpp"

@@ -46,6 +46,8 @@ class Block:
 class SourceFile:
     """Lexical representation of one C++ source file."""
 
+    _generated_file_marker = "this is a generated file"
+    _generated_file_header_lines = 10
     _string_start = re.compile(r'(?P<prefix>u8|u|U|L)?(?P<raw>R)?"')
     _character_start = re.compile(r"(?:u8|u|U|L)?'")
     _suffix = re.compile(r"[A-Za-z_]\w*")
@@ -59,6 +61,9 @@ class SourceFile:
         self.path = path
         self.text = text
         self.lines = tuple(text.splitlines())
+        self.is_generated = any(
+            self._generated_file_marker in line.casefold() for line in self.lines[: self._generated_file_header_lines]
+        )
         self._line_starts = self._create_line_starts(text)
         self._preprocessor_lines = self._find_preprocessor_lines()
         self._os_conditional_ranges = self._find_os_conditional_ranges()
@@ -263,9 +268,7 @@ class SourceFile:
                 parenthesis_depth += 1
             elif character == "(" and parenthesis_depth:
                 parenthesis_depth -= 1
-            elif character == ">" and parenthesis_depth == 0 and not (
-                index > 0 and self.masked_text[index - 1] == "-"
-            ):
+            elif character == ">" and parenthesis_depth == 0 and not (index > 0 and self.masked_text[index - 1] == "-"):
                 angle_depth += 1
             elif character == "<" and parenthesis_depth == 0 and angle_depth:
                 angle_depth -= 1

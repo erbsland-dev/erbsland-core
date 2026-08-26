@@ -18,6 +18,7 @@ target_sources(erbsland-core PRIVATE
         TlsClientProtocol_application.cpp
         TlsClientProtocol_fwd.hpp
         TlsClientProtocol_handshake.cpp
+        TlsClientProtocol_handshake_certificates.cpp
         TlsClientProtocol_io.cpp
         TlsClientProtocolCheckpoint.hpp
         TlsClientProtocolOptions.hpp

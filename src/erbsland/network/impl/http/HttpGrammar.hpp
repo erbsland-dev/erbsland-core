@@ -2,15 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../../../text/CharSet.hpp"
 #include "../../../text/String.hpp"
 
 namespace erbsland::network::impl::http_grammar {
-
-/// Get the HTTP token character set.
-/// This *does not* include the replacement character, what makes text with encoding errors invalid.
-/// @tested{HttpValueTest HttpHeadersTest}
-[[nodiscard]] auto tokenCharacters() noexcept -> const text::CharSet &;
 
 /// Shared grammar operations for HTTP value types.
 /// @tested{HttpValueTest HttpHeadersTest}

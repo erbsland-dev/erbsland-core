@@ -49,7 +49,7 @@ helper.
 Consume the Package
 ===================
 
-Use CMake's config-package mode and link the installed target:
+Use CMake's config-package mode and configure the executable with Core's application helper:
 
 .. code-block:: cmake
     :caption: <consumer>/CMakeLists.txt
@@ -60,8 +60,7 @@ Use CMake's config-package mode and link the installed target:
     find_package(erbsland-core CONFIG REQUIRED)
 
     add_executable(example src/main.cpp)
-    target_compile_features(example PRIVATE cxx_std_20)
-    target_link_libraries(example PRIVATE ErbslandDEV::erbsland-core)
+    erbsland_core_setup_application(TARGET example)
 
 Point CMake to a custom installation prefix when configuring the consumer:
 
@@ -71,7 +70,8 @@ Point CMake to a custom installation prefix when configuring the consumer:
           -DCMAKE_PREFIX_PATH=/absolute/path/to/erbsland-core-install
     $ cmake --build build
 
-The target names intentionally differ between the two integration modes:
+The helper selects the available target automatically.
+When linking a library target directly, the target names intentionally differ between the two integration modes:
 
 *   Source integration uses ``erbsland::core``.
 *   An installed package uses ``ErbslandDEV::erbsland-core``.

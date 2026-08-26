@@ -70,6 +70,8 @@ target_sources(erbsland-core PRIVATE
         JsonEscapeFormatter.cpp
         JsonEscapeFormatter.hpp
         LinkData.hpp
+        MarkdownEscapeFormatter.cpp
+        MarkdownEscapeFormatter.hpp
         NamedFormatDomain.hpp
         NamedFormatParser.cpp
         NamedFormatParser.hpp
@@ -101,7 +103,10 @@ target_sources(erbsland-core PRIVATE
         StringAppendTools.hpp
         StringConversionTools.cpp
         StringConversionTools.hpp
+        StringConversionTools_decode.cpp
+        StringConversionTools_encoding.cpp
         StringConversionTools_fwd.hpp
+        StringConversionTools_std.cpp
         StringEncodingWriter.hpp
         StringHashMap.hpp
         StringHashMap_fwd.hpp
@@ -124,7 +129,6 @@ target_sources(erbsland-core PRIVATE
         StringPatternElementKind.hpp
         StringPatternFactory.cpp
         StringPatternFactory.hpp
-        StringReaderBackendKind.hpp
         StringReaderBase.cpp
         StringReaderBase.hpp
         StringReaderBase_fwd.hpp

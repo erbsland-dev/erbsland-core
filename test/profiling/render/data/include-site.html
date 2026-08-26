@@ -1,0 +1,7 @@
+<!doctype html>
+<html><body>
+{% include "include-site/header.html" %}
+<main>{% for service in services %}{% include "include-site/service.html" with context %}{% endfor %}</main>
+{% include "include-site/optional.html" ignore missing %}
+{% include "include-site/footer.html" without context %}
+</body></html>

@@ -4,6 +4,9 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-profiling PRIVATE
+        AllocationMeasurement.hpp
+        AllocationScope.cpp
+        AllocationScope.hpp
         AxisDefinition.cpp
         AxisDefinition.hpp
         AxisDefinition_fwd.hpp

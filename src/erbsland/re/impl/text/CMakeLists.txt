@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.28)
 target_sources(erbsland-core PRIVATE
         Category.cpp
         Category.hpp
+        Category_names.cpp
         Character.cpp
         Character.hpp
         CharClass.cpp

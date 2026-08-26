@@ -7,7 +7,7 @@
 #include "../../../../err/LogicError.hpp"
 #include "../../../../event/Events.hpp"
 #include "../../../../text/AnyString.hpp"
-#include "../../../../text/CharSet.hpp"
+#include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/StringCharReader.hpp"
 #include "../../ConnectionProtocolAccess.hpp"
@@ -225,18 +225,17 @@ void Http1Transaction::assessPersistence(const Http1DecodeEvent &event) {
 }
 
 auto Http1Transaction::requestsConnectionClose(const HttpHeaders &headers) -> bool {
-    static const auto cOws = CharSet{U' ', U'\t'};
     const auto values = headers.getAll(HttpFieldType::Connection);
     for (const auto &value : values) {
         auto reader = StringCharReader{value};
         while (!reader.isAtEnd()) {
-            reader.advanceWhile(cOws);
+            reader.advanceWhile(AsciiCategory::Blank);
             reader.startCapture();
-            reader.advanceWhile(http_grammar::tokenCharacters());
+            reader.advanceWhile(AsciiCategory::HttpToken);
             if (http_grammar::equalTokenCI(reader.takeCapture().toString(), "close"_el)) {
                 return true;
             }
-            reader.advanceWhile(cOws);
+            reader.advanceWhile(AsciiCategory::Blank);
             if (!reader.advanceIf(U',')) {
                 break;
             }

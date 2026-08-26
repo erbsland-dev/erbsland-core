@@ -17,7 +17,6 @@
 #include "../../text/AsciiCategory.hpp"
 #include "../../text/base_n/BaseNDecoder.hpp"
 #include "../../text/base_n/BaseNFormat.hpp"
-#include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringCharReader.hpp"
 #include "../../text/StringEditor.hpp"
@@ -83,9 +82,9 @@ auto PrivateKeyParser::decodePem(const text::String &pem) -> mem::ByteBlock {
         throw err::OutOfRangeError{"Private-key PEM exceeds the fixed two-MiB source limit."_el};
     }
     auto reader = text::StringCharReader{pem};
-    static const auto cWhitespace = text::CharSet::from(text::AsciiCategory::Whitespace);
-    reader.advanceWhile(cWhitespace);
-    if (!reader.advanceIf("-----BEGIN PRIVATE KEY-----"_el) || reader.advanceWhile(cWhitespace).isZero()) {
+    reader.advanceWhile(text::AsciiCategory::Whitespace);
+    if (!reader.advanceIf("-----BEGIN PRIVATE KEY-----"_el) ||
+        reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
         throwParseError("Expected an exact PRIVATE KEY PEM pre-encapsulation boundary."_el);
     }
     auto base64 = text::StringEditor{};
@@ -94,7 +93,7 @@ auto PrivateKeyParser::decodePem(const text::String &pem) -> mem::ByteBlock {
         if (character.isAsciiWhitespace()) {
             continue;
         }
-        if (!(character.isAsciiAlphanumeric() || character == U'+' || character == U'/' || character == U'=')) {
+        if (!character.isAsciiCategory(text::AsciiCategory::Base64Text)) {
             throwParseError("Private-key PEM contains a non-Base64 character."_el);
         }
         base64.append(character);
@@ -102,7 +101,7 @@ auto PrivateKeyParser::decodePem(const text::String &pem) -> mem::ByteBlock {
     if (base64.isEmpty() || !reader.advanceIf("-----END PRIVATE KEY-----"_el)) {
         throwParseError("Private-key PEM has empty data or no exact post-encapsulation boundary."_el);
     }
-    reader.advanceWhile(cWhitespace);
+    reader.advanceWhile(text::AsciiCategory::Whitespace);
     if (!reader.isAtEnd()) {
         throwParseError("Private-key PEM contains trailing data or another block."_el);
     }

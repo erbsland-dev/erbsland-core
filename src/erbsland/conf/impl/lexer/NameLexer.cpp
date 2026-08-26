@@ -9,6 +9,7 @@
 #include "../char/NamedChars.hpp"
 #include "../constants/Limits.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
 #include "../../../text/StringEditor.hpp"
 
 #include <limits>
@@ -25,7 +26,7 @@ void NameLexer::initialize() {
 }
 
 auto NameLexer::next() -> Name {
-    skipSpacing();
+    _decoder.advanceWhile(text::AsciiCategory::Blank);
     bool readSeparator = false;
     if (_decoder.character().isEndOfData()) {
         return {}; // Coverage: This prevents misuse and is not used for correct operation.
@@ -35,7 +36,7 @@ auto NameLexer::next() -> Name {
             _decoder.throwSyntaxError("The name path must not start with a separator."_el);
         }
         _decoder.next();
-        skipSpacing(); // Ignore spacing after the separator.
+        _decoder.advanceWhile(text::AsciiCategory::Blank); // Ignore spacing after the separator.
         if (_decoder.character().isEndOfData()) {
             _decoder.throwUnexpectedEndOfDataError("Name path must not end with a separator."_el);
         }
@@ -66,7 +67,7 @@ auto NameLexer::next() -> Name {
 }
 
 void NameLexer::expectNameSeparatorOrEnd() {
-    skipSpacing();
+    _decoder.advanceWhile(text::AsciiCategory::Blank);
     if (!(_decoder.character() == nc::namePathSeparator || _decoder.character().isEndOfData())) {
         _decoder.throwSyntaxError(
             "Unexpected character after the last element. Expected name separator or the end of the path."_el);
@@ -74,7 +75,7 @@ void NameLexer::expectNameSeparatorOrEnd() {
 }
 
 void NameLexer::expectNameSeparatorIndexOrEnd() {
-    skipSpacing();
+    _decoder.advanceWhile(text::AsciiCategory::Blank);
     if (!(_decoder.character() == nc::namePathSeparator || _decoder.character() == nc::openingSquareBracket ||
             _decoder.character().isEndOfData())) {
         _decoder.throwSyntaxError(
@@ -84,10 +85,10 @@ void NameLexer::expectNameSeparatorIndexOrEnd() {
 
 auto NameLexer::expectGenericIndex() -> std::size_t {
     _decoder.next(); // Skip the opening bracket.
-    skipSpacing();
+    _decoder.advanceWhile(text::AsciiCategory::Blank);
     auto result =
         lexer::parseNumber(_decoder, text::IntegerBase::Decimal, lexer::Sign::Positive, lexer::NumberSeparators::Yes);
-    skipSpacing();
+    _decoder.advanceWhile(text::AsciiCategory::Blank);
     if (_decoder.character() != nc::closingSquareBracket) {
         _decoder.throwSyntaxError("An index must end with a closing bracket."_el);
     }
@@ -132,12 +133,6 @@ auto NameLexer::expectIndex() -> Name {
     expectNameSeparatorIndexOrEnd();
     _afterFirstElement = true;
     return Name::createIndex(index);
-}
-
-void NameLexer::skipSpacing() {
-    while (_decoder.character() == CharClass::Spacing) {
-        _decoder.next();
-    }
 }
 
 }

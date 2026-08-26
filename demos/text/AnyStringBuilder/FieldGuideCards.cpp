@@ -9,48 +9,58 @@ struct Observation {
     el::String symbol;
     el::String species;
     el::String place;
-    el::String count;
+    int count;
+    double moisture;
+    el::ByteBlock sampleId;
     el::String note;
 };
 
 void appendFieldGuideCard(el::AnyStringBuilder &builder, const Observation &observation);
 
 /// `AnyStringBuilder` efficiently builds strings in memory.
-/// It can be reused, moved out with `takeString()`, and target UTF-8, UTF-16,
-/// or UTF-32 while generic helper functions keep the same signature.
+/// It appends integers, floating-point values, byte blocks, and differently
+/// encoded text directly. Its cached `length()` avoids rescanning the built
+/// text to count decoded code points.
 void fieldGuideCards() {
     const auto fern = Observation{
         .symbol = "🌿"_el,
         .species = "Farn im Moos"_el,
         .place = "Bachufer · 水辺"_el,
-        .count = "7 fronds"_el,
+        .count = 7,
+        .moisture = 62.5,
+        .sampleId = el::ByteBlock{el::Byte{0x0fU}, el::Byte{0xa7U}},
         .note = "New leaves curl like tiny green clocks."_el,
     };
     const auto oak = Observation{
         .symbol = "🌳"_el,
         .species = "chêne ancien"_el,
         .place = "Forêt claire · północ"_el,
-        .count = "3 seedlings"_el,
+        .count = 3,
+        .moisture = 48.25,
+        .sampleId = el::ByteBlock{el::Byte{0x10U}, el::Byte{0x3cU}},
         .note = "Acorns found beside warm limestone."_el,
     };
     const auto cypress = Observation{
         .symbol = "🌲"_el,
         .species = "κυπαρίσσι"_el,
         .place = "Sun trail · camino del sol"_el,
-        .count = "12 cones"_el,
+        .count = 12,
+        .moisture = 31.75,
+        .sampleId = el::ByteBlock{el::Byte{0x12U}, el::Byte{0xceU}},
         .note = "Resin scent after noon rain."_el,
     };
 
-    // Build a UTF-8 field guide page for display in the terminal.
+    // Build a UTF-8 field guide page for display in the terminal. The helper
+    // also receives UTF-16 input and converts it directly into the target.
     auto builder = el::AnyStringBuilder{};
 
     appendFieldGuideCard(builder, fern);
     el::io::printLine("First card preview:"_el);
     el::io::print(builder.toString());
-    el::io::printLine("Length after first card: "_el, builder.length());
+    el::io::printLine("Cached code-point length after first card: "_el, builder.length());
 
     appendFieldGuideCard(builder, oak);
-    el::io::printLine("Length after second card: "_el, builder.length());
+    el::io::printLine("Cached code-point length after second card: "_el, builder.length());
 
     // Move the completed page out, then continue with the same builder.
     auto guidePage = builder.takeString();
@@ -92,8 +102,10 @@ void appendFieldGuideCard(el::AnyStringBuilder &builder, const Observation &obse
         .append(U' ')
         .append(U'─', el::CpLength{53} - observation.species.characterLength() - observation.symbol.characterLength())
         .append("╮\n"_el);
-    builder.append("│ Place : "_el).append(observation.place).append(U'\n');
-    builder.append("│ Count : "_el).append(observation.count).append(U'\n');
+    builder.append(u"│ Place : "_el).append(observation.place).append(U'\n');
+    builder.append("│ Count : "_el).appendInteger(observation.count).append(U'\n');
+    builder.append("│ Moist.: "_el).appendFloat(observation.moisture).append(" %\n"_el);
+    builder.append("│ Sample: "_el).appendByteBlock(observation.sampleId, el::ByteFormat::compact()).append(U'\n');
     builder.append("│ Note  : "_el).append(observation.note).append(U'\n');
     builder.append(U'╰').append(U'─', el::CpLength{58}).append("╯\n"_el);
 }

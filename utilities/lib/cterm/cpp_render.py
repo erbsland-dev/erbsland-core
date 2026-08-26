@@ -87,7 +87,7 @@ def generated_cpp_file(
 ) -> str:
     """Create a complete generated C++ file with shared project headers."""
     lines = [
-        header_config.source_header(kind, tool=tool, pragma_once=kind == "hpp"),
+        header_config.source_header(kind, tool=tool),
         "// clang-format off",
     ]
     summary_list = list(summary_lines)

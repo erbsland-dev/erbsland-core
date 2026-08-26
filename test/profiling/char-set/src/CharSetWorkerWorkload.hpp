@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "AllocationScope.hpp"
 #include "CharSetFixture.hpp"
 #include "CharSetWorkerWorkload_fwd.hpp"
 #include "Operation.hpp"
 
+#include <erbsland/profiling/AllocationScope.hpp>
 #include <erbsland/profiling/WorkerExecutionContext.hpp>
 #include <erbsland/profiling/WorkerWorkload.hpp>
 
@@ -33,7 +33,7 @@ private:
         -> erbsland::profiling::WorkerMeasurement {
         auto sink = context.seed;
         auto operations = std::uint64_t{};
-        auto allocationScope = AllocationScope{_fixture.trackAllocations};
+        auto allocationScope = erbsland::profiling::AllocationScope{_fixture.trackAllocations};
         for (; operations < context.operations && !context.stopToken.stop_requested(); ++operations) {
             function(operations, sink);
         }

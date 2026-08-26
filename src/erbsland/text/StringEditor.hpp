@@ -8,7 +8,8 @@
 
 namespace erbsland::text {
 
-/// The common string type used in the library.
+/// The common UTF-8 editor for explicit in-place editing and local construction tasks.
+/// Use `String` for parameters, read-only storage, and ordinary copy-returning transformations.
 using StringEditor = U8StringEditor;
 
 }

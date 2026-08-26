@@ -40,8 +40,10 @@ target_sources(erbsland-core PRIVATE
         X509FileTools.hpp
         X509Parser.cpp
         X509Parser.hpp
+        X509Parser_extensions.cpp
         X509Parser_fwd.hpp
         X509ServerCertificateValidator.cpp
         X509ServerCertificateValidator.hpp
         X509ServerCertificateValidator_fwd.hpp
+        X509ServerCertificateValidator_validation.cpp
 )

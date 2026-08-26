@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Long-form operational guidance for {{ product.name | escape }}</title>
+<article>
+  <h1>Reliable systems are built from explicit boundaries</h1>
+  <p>Operators need prose that remains readable under pressure. This representative page deliberately contains long
+  stretches of ordinary UTF-8 text, punctuation, mathematical symbols Δ and λ, place names such as Zürich and Åsen,
+  Japanese text 東京, and emoji 😀. Only occasional dynamic fields interrupt the content.</p>
+  <p>The first principle is to preserve source text exactly. Layout compilation must scan these paragraphs without
+  repeatedly attempting every delimiter at every character. Diagnostics must still retain precise line, column, and
+  decoded-code-point locations even when the surrounding content contains multibyte Unicode characters.</p>
+  {# This comment is intentionally surrounded by substantial raw text. #}
+  <p>Environment: {{ environment.name | escape }}. Revision: {{ release.revision }}. The renderer stores static output
+  as shared source slices, emits generated values separately, and joins the final sequence once. This keeps ordinary
+  pages predictable while allowing strict errors for unsupported operations.</p>
+  <p>Repeated compilation benchmarks should measure the complete tokenizer and compiler pipeline with immutable input,
+  deterministic syntax options, and validation outside the timed section. They must remain useful when includes,
+  inheritance, blocks, and further expression features arrive in later milestones.</p>
+  <p>End of the representative long-form section for {{ product.name | escape }}.</p>
+</article>

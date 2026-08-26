@@ -7,8 +7,9 @@
 #include "../../core/Application.hpp"
 #include "../../err/ParameterError.hpp"
 #include "../../resource/Resources.hpp"
+#include "../../text/AsciiCategory.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringCharReader.hpp"
+#include "../../text/StringSide.hpp"
 
 namespace erbsland::network {
 
@@ -63,20 +64,12 @@ auto HttpStaticResourceHandler::maximumContentLength() const noexcept -> unit::B
 }
 
 void HttpStaticResourceHandler::verifyIdentifier(const text::String &identifier) {
-    if (!identifier.isValidUtf8() || identifier.isEmpty()) {
+    if (identifier.isEmpty()) {
         throw err::ParameterError{"A static-resource identifier must be a portable ASCII token."_el, "identifier"_el};
     }
-    auto reader = text::StringCharReader{identifier};
-    auto first = true;
-    while (!reader.isAtEnd()) {
-        const auto character = reader.read();
-        if ((first && !character.isAsciiAlphanumeric()) ||
-            (!first && !character.isAsciiAlphanumeric() && character != U'.' && character != U'-' &&
-                character != U'_')) {
-            throw err::ParameterError{
-                "A static-resource identifier must be a portable ASCII token."_el, "identifier"_el};
-        }
-        first = false;
+    const auto [first, rest] = identifier.slice(text::StringSide::Front);
+    if (!first.isAsciiAlphanumeric() || !rest.containsOnly(text::AsciiCategory::DottedName)) {
+        throw err::ParameterError{"A static-resource identifier must be a portable ASCII token."_el, "identifier"_el};
     }
 }
 

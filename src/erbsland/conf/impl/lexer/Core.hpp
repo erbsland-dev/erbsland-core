@@ -36,10 +36,6 @@ enum class ExpectMore : uint8_t { No, Yes };
 /// @return The token.
 [[nodiscard]] auto expectSpacing(TokenDecoder &decoder) -> LexerToken;
 
-/// Skips (reads) spacing.
-/// @param decoder The decoder
-void skipSpacing(TokenDecoder &decoder);
-
 /// Expects and checks indentation.
 /// @param decoder The decoder
 /// @return The token.

@@ -14,6 +14,7 @@
 #include "impl/U16StringSharedStorage.hpp"
 
 #include "../AnyStringBuilder.hpp"
+#include "../AsciiCategory.hpp"
 #include "../BooleanFormat.hpp"
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
@@ -33,7 +34,6 @@
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringBomMode.hpp"
-#include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
@@ -69,11 +69,10 @@
 namespace erbsland::text {
 
 /// An owning UTF-16 string editor with copy-on-write semantics for sequential code-point access.
-/// Use it to build new and edit UTF-16 strings.
-/// Use `U16String` for storage and read-only access.
+/// Use it as a local mutable working value for UTF-16 construction and multi-step editing.
+/// Use `U16String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
-/// Use `StringEditor` for most use cases and `U16StringEditor` only if you need random access to code points or require
-/// UTF-16 encoding.
+/// Use `U16StringEditor` only when the mutable workflow requires UTF-16 encoding.
 /// @seedoc{/reference/text/string_width_variants}
 /// @tested{U16StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
 class U16StringEditor {
@@ -142,6 +141,8 @@ public: // tests
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// @copydoc erbsland::text::U16String::containsOnly(const CharSet &) const
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// @copydoc erbsland::text::U16String::containsOnly(AsciiCategory) const
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // read
     /// @copydoc erbsland::text::U16String::length() const

@@ -14,6 +14,7 @@
 #include "impl/U8StringSharedStorage.hpp"
 
 #include "../AnyStringBuilder.hpp"
+#include "../AsciiCategory.hpp"
 #include "../BooleanFormat.hpp"
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
@@ -33,7 +34,6 @@
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringBomMode.hpp"
-#include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
@@ -69,9 +69,9 @@
 namespace erbsland::text {
 
 /// An owning UTF-8 string editor with copy-on-write semantics for sequential code-point access.
-/// Use it to build new and edit UTF-8 strings.
+/// Use it as a local mutable working value for UTF-8 construction and multi-step editing.
 /// Use the `StringEditor` alias in user code and only `U8StringEditor` if UTF-8 encoding matters.
-/// Use `String`/`U8String` for storage and read-only access.
+/// Use `String`/`U8String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// @seedoc{/reference/text/string_width_variants}
 /// @tested{U8StringEditorTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
@@ -151,6 +151,8 @@ public: // tests
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// @copydoc erbsland::text::U8String::containsOnly(const CharSet &) const
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// @copydoc erbsland::text::U8String::containsOnly(AsciiCategory) const
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // read
     /// @copydoc erbsland::text::U8String::length() const
@@ -330,14 +332,14 @@ public: // transform
     /// @param form The explicit normalization form to apply.
     /// @return This editor for chaining.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/strings/normalizing_strings}
+    /// @seedoc{/topics/text/normalizing_strings}
     auto normalize(NormalizationForm form) -> U8StringEditor &;
     /// Return this string in the selected Unicode normalization form.
     /// Malformed UTF-8 is replaced with U+FFFD. Unchanged valid text retains its original storage.
     /// @param form The explicit normalization form to apply.
     /// @return The normalized string, sharing this storage if no change is required.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/strings/normalizing_strings}
+    /// @seedoc{/topics/text/normalizing_strings}
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U8StringEditor;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const

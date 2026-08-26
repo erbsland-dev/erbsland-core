@@ -9,6 +9,8 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
+
 #include <cassert>
 
 namespace erbsland::conf::impl::lexer {
@@ -80,9 +82,7 @@ auto parseMultiLineString(
             }
             // At this point we are in spacing territory, always expect that we read the trailing space of the line.
             auto trailingSpaceTransaction = Transaction{decoder};
-            while (decoder.character() == CharClass::Spacing) {
-                decoder.next();
-            }
+            decoder.advanceWhile(text::AsciiCategory::Blank);
             if (isAtMultiLineEnd(decoder, tokenType)) {
                 // If we reached the end of the line, while consuming spaces. We have to roll back this section,
                 // as this is the trailing portion that is not part of the actual text.

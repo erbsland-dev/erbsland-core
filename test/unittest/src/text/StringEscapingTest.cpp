@@ -41,6 +41,8 @@ public:
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::RegEx), 5U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Display), 6U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Config), 7U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::ConfigTest), 8U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Markdown), 9U);
 
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::None}.toString(), "none"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Html}.toString(), "html"_el);
@@ -50,6 +52,7 @@ public:
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::RegEx}.toString(), "regex"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Display}.toString(), "display"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Config}.toString(), "config"_el);
+        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Markdown}.toString(), "markdown"_el);
 
         REQUIRE_EQUAL(EscapeFormat::fromString("html"_el).value(), EscapeFormat::Html);
         REQUIRE_EQUAL(EscapeFormat::fromString("json"_el).value(), EscapeFormat::Json);
@@ -57,6 +60,7 @@ public:
         REQUIRE_FALSE(EscapeFormat::fromString("pcre"_el).has_value());
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("display"_el), EscapeFormat::Display);
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("config"_el), EscapeFormat::Config);
+        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("markdown"_el), EscapeFormat::Markdown);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
         REQUIRE_THROWS(EscapeFormat::fromStringOrThrow("unknown"_el));
     }
@@ -148,6 +152,23 @@ public:
         const auto u32Escaped = u32Text.toEscaped(EscapeFormat::Config, EscapeAmount::Required);
         REQUIRE_EQUAL(StringConverter{u32Escaped}.toStdU32String(), std::u32string{U"A\\\\\\\"\\$\\n\\r\\t\\u{1}é"});
         REQUIRE_EQUAL(u32Escaped.length(), u32Text.escapedSize(EscapeFormat::Config, EscapeAmount::Required));
+    }
+
+    void testMarkdownTargetForEveryStringWidth() {
+        const auto u8Text = String{"A*![]_\né"_el};
+        REQUIRE_EQUAL(u8Text.toEscaped(EscapeFormat::Markdown, EscapeAmount::Required), "A\\*\\!\\[\\]\\_\né"_el);
+        REQUIRE_EQUAL(
+            u8Text.toEscaped(EscapeFormat::Markdown, EscapeAmount::NonAscii), "A\\*\\!\\[\\]\\_&#10;&#233;"_el);
+
+        const auto u16Text = U16StringEditor{std::u16string_view{u"A*![]_\né"}};
+        REQUIRE_EQUAL(
+            StringConverter{u16Text.toEscaped(EscapeFormat::Markdown, EscapeAmount::NonAscii)}.toStdU16String(),
+            std::u16string{u"A\\*\\!\\[\\]\\_&#10;&#233;"});
+
+        const auto u32Text = U32StringEditor{std::u32string_view{U"A*![]_\né"}};
+        REQUIRE_EQUAL(
+            StringConverter{u32Text.toEscaped(EscapeFormat::Markdown, EscapeAmount::NonAscii)}.toStdU32String(),
+            std::u32string{U"A\\*\\!\\[\\]\\_&#10;&#233;"});
     }
 
     void testEscapeAmounts() {

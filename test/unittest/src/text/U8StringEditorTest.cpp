@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/text/AsciiCategory.hpp>
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/impl/UnsafeU8StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -583,6 +584,10 @@ public:
         REQUIRE(text.containsOnly(CharSet{u8"A¢€😀"_el}));
         REQUIRE_FALSE(text.containsOnly(CharSet{u8"A¢€"_el}));
         REQUIRE_FALSE(text.containsOnly(CharSet{}));
+        REQUIRE(StringEditor{"Alpha-09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE(StringEditor{}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE_FALSE(StringEditor{"Alpha.09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE_FALSE(text.containsOnly(AsciiCategory::Word));
     }
 
     void testComparisonChecks() {
@@ -650,6 +655,7 @@ public:
         REQUIRE_EQUAL(text.count(u8"\uFFFD"_el), ItemCount{1U});
         REQUIRE_EQUAL(text.count(u8"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE(text.containsOneOf(CharSet{Char::replacement()}));
+        REQUIRE_FALSE(text.containsOnly(AsciiCategory::Word));
         REQUIRE_FALSE(text.startsWith(u8"\uFFFD"_el));
         REQUIRE_FALSE(text.endsWith(u8"\uFFFD"_el));
     }

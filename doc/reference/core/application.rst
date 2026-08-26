@@ -5,6 +5,9 @@
 Application
 ***********
 
+See :doc:`/topics/core/choosing_an_application_design` for the function-based, event-driven, procedural, command-style,
+and application-part designs supported by this lifecycle.
+
 :cpp:class:`Application <erbsland::core::Application>` retains non-owning access to the original narrow or wide
 ``argv`` vector supplied to its constructor.
 After option parsing, every suffix reported as sensitive text is overwritten in place with one star per existing byte or

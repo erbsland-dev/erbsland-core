@@ -15,6 +15,11 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("FloatFormats"_el, floatFormats);
     app.registerDemo("FormattingPatterns"_el, formattingPatterns);
     app.registerDemo("IntegerFormats"_el, integerFormats);
+    app.registerDemo("NamedBooleanFormat"_el, namedBooleanFormat);
+    app.registerDemo("NamedByteFormat"_el, namedByteFormat);
+    app.registerDemo("NamedFloatFormat"_el, namedFloatFormat);
+    app.registerDemo("NamedIntegerFormat"_el, namedIntegerFormat);
+    app.registerDemo("NamedTextFormat"_el, namedTextFormat);
     app.registerDemo("PositionalPlaceholders"_el, positionalPlaceholders);
     app.registerDemo("SupportedTypes"_el, supportedTypes);
     app.registerDemo("TextFormats"_el, textFormats);

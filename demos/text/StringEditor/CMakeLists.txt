@@ -11,10 +11,11 @@ target_sources(string_editor PRIVATE
         EditingText.cpp
         InsertAndReplace.cpp
         ManualDetach.cpp
-        ReserveForAppend.cpp
-        ShrinkSlices.cpp
         main.cpp
+        NormalizeText.cpp
         RemoveAndKeepRanges.cpp
         RemoveFirstAndAll.cpp
+        ReserveForAppend.cpp
+        ShrinkSlices.cpp
         StringEditorDemos.hpp
 )

@@ -6,6 +6,7 @@
 #include "../../../err/ParseError.hpp"
 #include "../../../math/SignedMagnitude.hpp"
 #include "../../AnyString.hpp"
+#include "../../AsciiCategory.hpp"
 #include "../../FloatParseOptions.hpp"
 #include "../../IntegerParseOptions.hpp"
 #include "../../Literals.hpp"
@@ -216,7 +217,6 @@ void JsonParser::parseEscapeSequence() {
 }
 
 auto JsonParser::parseNumber() -> JsonValue {
-    static const auto asciiDigits = CharSet::from(AsciiCategory::Digit);
     static const auto exponent = CharSet{U'e', U'E'};
     static const auto sign = CharSet{U'+', U'-'};
     // Enforce a stricter JSON number format, capture the number text for later conversion.
@@ -230,7 +230,7 @@ auto JsonParser::parseNumber() -> JsonValue {
         if (!_reader.peek().isAsciiDigit() || _reader.peek() == U'0') {
             fail("A JSON number requires an integer part."_el);
         }
-        _reader.advanceWhile(asciiDigits);
+        _reader.advanceWhile(AsciiCategory::Digit);
     }
     auto isInteger = true;
     if (_reader.advanceIf(U'.')) {
@@ -238,12 +238,12 @@ auto JsonParser::parseNumber() -> JsonValue {
         if (!_reader.peek().isAsciiDigit()) {
             fail("A JSON fraction requires at least one digit."_el);
         }
-        _reader.advanceWhile(asciiDigits);
+        _reader.advanceWhile(AsciiCategory::Digit);
     }
     if (_reader.advanceIf(exponent)) {
         isInteger = false;
         _reader.advanceIf(sign);
-        if (_reader.advanceWhile(asciiDigits) == unit::CpLength::zero()) {
+        if (_reader.advanceWhile(AsciiCategory::Digit) == unit::CpLength::zero()) {
             fail("A JSON exponent requires at least one digit."_el);
         }
     }

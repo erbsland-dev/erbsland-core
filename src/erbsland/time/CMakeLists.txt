@@ -15,11 +15,13 @@ target_sources(erbsland-core PRIVATE
         CalendarPartsTypes.hpp
         Date.cpp
         Date.hpp
+        Date_fwd.hpp
         DateParts_fwd.hpp
         DateTime.cpp
         DateTime.hpp
         DateTime.tpp
         DateTime_calendar.cpp
+        DateTime_fwd.hpp
         DateTimeParts.hpp
         DateTimePrecision.hpp
         Day.cpp

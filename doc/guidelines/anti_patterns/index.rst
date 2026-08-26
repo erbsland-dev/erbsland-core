@@ -39,6 +39,10 @@ A finding is a request to inspect the location, not proof that the code is wrong
 Findings inside conditional compilation blocks opened with an ``ERBSLAND_OS`` macro are ignored because these blocks
 contain platform-specific integration code that must be inspected in its native API context.
 
+Source-level findings are cached in ``.cache/anti_patterns.json``.
+Unchanged files are not read or parsed again, while changes to a source file or to the scanner implementation
+automatically invalidate the affected cached results.
+
 Accepted Locations
 ==================
 
@@ -81,6 +85,7 @@ Anti-Pattern Catalog
 .. toctree::
     :maxdepth: 1
 
+    oversized_file
     anonymous_namespace
     type_in_wrong_unit
     namespace_in_wrong_unit

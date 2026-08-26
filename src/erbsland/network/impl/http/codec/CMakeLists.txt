@@ -11,6 +11,7 @@ target_sources(erbsland-core PRIVATE
         Http1DecodeEvent_fwd.hpp
         Http1Decoder.cpp
         Http1Decoder.hpp
+        Http1Decoder_fields.cpp
         Http1Encoder.cpp
         Http1Encoder.hpp
         Http1FailureReason.hpp

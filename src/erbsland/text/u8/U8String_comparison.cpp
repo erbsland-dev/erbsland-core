@@ -40,4 +40,8 @@ auto U8String::containsOnly(const CharSet &characters) const noexcept -> bool {
     return impl::U8StringComparisonTools{dataView()}.containsOnly(characters);
 }
 
+auto U8String::containsOnly(const AsciiCategory category) const noexcept -> bool {
+    return impl::U8StringComparisonTools{dataView()}.containsOnly(category);
+}
+
 }

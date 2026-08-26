@@ -172,6 +172,20 @@ public:
         static_assert(Char{U'\\'}.isSpecialRegexCharacter());
         static_assert(!Char{U'A'}.isSpecialRegexCharacter());
         static_assert(Char{U'_'}.isAsciiCategory(AsciiCategory::Punctuation));
+        static_assert(Char{U'_'}.isAsciiCategory(AsciiCategory::Word));
+        static_assert(Char{U'-'}.isAsciiCategory(AsciiCategory::WordWithHyphen));
+        static_assert(Char{U'.'}.isAsciiCategory(AsciiCategory::DottedName));
+        static_assert(Char{U'+'}.isAsciiCategory(AsciiCategory::UrlScheme));
+        static_assert(Char{U'/'}.isAsciiCategory(AsciiCategory::Base64Text));
+        static_assert(Char{U'='}.isAsciiCategory(AsciiCategory::Base64Text));
+        static_assert(Char{U'~'}.isAsciiCategory(AsciiCategory::HttpToken));
+        static_assert(!Char{U'-'}.isAsciiCategory(AsciiCategory::Word));
+        static_assert(!Char{U'.'}.isAsciiCategory(AsciiCategory::WordWithHyphen));
+        static_assert(!Char{U'+'}.isAsciiCategory(AsciiCategory::DottedName));
+        static_assert(!Char{U'_'}.isAsciiCategory(AsciiCategory::UrlScheme));
+        static_assert(!Char{U'-'}.isAsciiCategory(AsciiCategory::Base64Text));
+        static_assert(!Char{U'('}.isAsciiCategory(AsciiCategory::HttpToken));
+        static_assert(!Char{U'\u00E4'}.isAsciiCategory(AsciiCategory::Word));
         static_assert(Char{U' '}.isAsciiCategory(AsciiCategory::Whitespace));
         static_assert(Char{U'\t'}.isAsciiCategory(AsciiCategory::Blank));
         static_assert(Char{U'\n'}.isAsciiCategory(AsciiCategory::Control));
@@ -184,6 +198,14 @@ public:
         REQUIRE(Char{U'?'}.isSpecialRegexCharacter());
         REQUIRE_FALSE(Char{U'_'}.isSpecialRegexCharacter());
         REQUIRE(Char{U'~'}.isAsciiCategory(AsciiCategory::Punctuation));
+        REQUIRE(Char{U'A'}.isAsciiCategory(AsciiCategory::Word));
+        REQUIRE(Char{U'9'}.isAsciiCategory(AsciiCategory::WordWithHyphen));
+        REQUIRE(Char{U'.'}.isAsciiCategory(AsciiCategory::DottedName));
+        REQUIRE(Char{U'+'}.isAsciiCategory(AsciiCategory::UrlScheme));
+        REQUIRE(Char{U'='}.isAsciiCategory(AsciiCategory::Base64Text));
+        REQUIRE(Char{U'|'}.isAsciiCategory(AsciiCategory::HttpToken));
+        REQUIRE_FALSE(Char{U':'}.isAsciiCategory(AsciiCategory::HttpToken));
+        REQUIRE_FALSE(Char{U'\u00E4'}.isAsciiCategory(AsciiCategory::Base64Text));
         REQUIRE_FALSE(Char{U' '}.isAsciiCategory(AsciiCategory::Alphanumeric));
     }
 

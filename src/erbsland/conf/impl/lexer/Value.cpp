@@ -15,6 +15,7 @@
 #include "../char/NamedChars.hpp"
 #include "../utilities/YieldMacros.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
 #include "../../../text/Literals.hpp"
 
 namespace erbsland::conf::impl::lexer {
@@ -72,9 +73,7 @@ auto expectMultiLineValueList(TokenDecoder &decoder) -> TokenGenerator {
     // If the next line starts with spacing, it is potentially a continuation of the value list.
     while (decoder.character() == CharClass::Spacing) {
         auto transaction = Transaction{decoder};
-        while (decoder.character() == CharClass::Spacing) {
-            decoder.next();
-        }
+        decoder.advanceWhile(text::AsciiCategory::Blank);
         if (decoder.character() == CharClass::EndOfLineStart) {
             // This is a valid empty line. Therefore, also a valid end of the list.
             transaction.rollback();

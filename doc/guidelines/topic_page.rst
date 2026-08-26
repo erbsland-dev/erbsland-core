@@ -102,6 +102,20 @@ Recommended Workflow to Create the Content
 * After writing the topic page, review it, unbiased and don't be shy to remove/rewrite content if you
   think it does not match our guidelines.
 
+Recommended Writing Style
+=========================
+
+Additionally to the writing style guidelines, topic pages shall follow these writing style rules:
+
+* Write in the style of a high-quality technical introduction aimed at intelligent readers who may be new to the topic.
+* Use clear, direct, and approachable language.
+* Introduce concepts from the reader's perspective by explaining why they matter before discussing how they work.
+* Build ideas incrementally, using concrete examples and realistic scenarios rather than abstract definitions.
+* Maintain a conversational but professional tone, avoiding marketing language, unnecessary enthusiasm,
+  and excessive jargon.
+* Prefer explanation over formal specification, and favour readability over brevity.
+* Assume the reader is curious and technically capable, but not yet familiar with the subject.
+
 Anti-Patterns
 =============
 

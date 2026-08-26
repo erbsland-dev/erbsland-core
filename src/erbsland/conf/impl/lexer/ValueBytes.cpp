@@ -9,6 +9,7 @@
 #include "../utilities/YieldMacros.hpp"
 
 #include "../../../mem/ByteBlockEditor.hpp"
+#include "../../../text/AsciiCategory.hpp"
 
 namespace erbsland::conf::impl::lexer {
 
@@ -42,7 +43,8 @@ auto scanBytes(TokenDecoder &decoder) -> std::optional<LexerToken> {
     auto bytes = mem::ByteBlockEditor{};
     while (decoder.character() != nc::greaterThan) {
         decoder.expectMoreInLine("Unexpected end in bytes value."_el);
-        skipSpacing(decoder);
+        decoder.advanceWhile(text::AsciiCategory::Blank);
+        decoder.checkForErrorAndThrowIt();
         if (decoder.character() == nc::greaterThan) {
             break; // Valid end of bytes.
         }
@@ -71,7 +73,8 @@ auto parseMultiLineBytesHexLine(TokenDecoder &decoder) -> TokenGenerator {
         mem::ByteBlockEditor decodedBytes;
         // Carefully consume the text block by block, so we can skip trailing spacing.
         while (!isAtMultiLineEnd(decoder, TokenType::MultiLineBytes)) {
-            skipSpacing(decoder);
+            decoder.advanceWhile(text::AsciiCategory::Blank);
+            decoder.checkForErrorAndThrowIt();
             if (isAtMultiLineEnd(decoder, TokenType::MultiLineBytes)) {
                 break;
             }

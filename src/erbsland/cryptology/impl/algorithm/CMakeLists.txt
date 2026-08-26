@@ -19,6 +19,7 @@ target_sources(erbsland-core PRIVATE
         Md5.hpp
         NistPrimeCurve.cpp
         NistPrimeCurve.hpp
+        NistPrimeCurve_arithmetic.cpp
         Scrypt.hpp
         Sha1.hpp
         Sha2.hpp

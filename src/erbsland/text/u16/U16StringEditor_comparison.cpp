@@ -41,4 +41,8 @@ auto U16StringEditor::containsOnly(const CharSet &characters) const noexcept -> 
     return impl::U16StringComparisonTools{dataView()}.containsOnly(characters);
 }
 
+auto U16StringEditor::containsOnly(const AsciiCategory category) const noexcept -> bool {
+    return impl::U16StringComparisonTools{dataView()}.containsOnly(category);
+}
+
 }

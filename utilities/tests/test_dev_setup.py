@@ -76,6 +76,7 @@ class DevSetupTest(unittest.TestCase):
                 "--init",
                 "--recursive",
                 "test/erbsland-unittest",
+                "test/erbsland-lang-config-tests",
             ],
             self.commands[2][0],
         )

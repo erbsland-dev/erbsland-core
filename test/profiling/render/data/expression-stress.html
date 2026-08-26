@@ -1,0 +1,13 @@
+<article>
+{{ user.name | trim | escape }}
+{{ user.profile.display_name | upper }}
+{{ order.identifier == selected_identifier }}
+{{ order.total > 100.0 and order.currency == "CHF" }}
+{{ not account.disabled and (account.active or account.trial) }}
+{{ first or second or third or "fallback" }}
+{{ first and second and third }}
+{{ temperature >= -12.5 and temperature <= 42.75 }}
+{{ counter != 0 }}
+{{ "Unicode Δ λ 中 😀" | escape }}
+{% if user.active and not user.suspended %}active{% elif user.pending or user.invited %}pending{% else %}inactive{% endif %}
+</article>

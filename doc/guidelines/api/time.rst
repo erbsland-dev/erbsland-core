@@ -188,7 +188,7 @@ Time-Zone Patterns
     o.isUtc()/isStaticOffset()/isNamed()/isLocalTime() -> bool // inspect zone representation
     o.staticOffset()/name()/id() -> T // inspect zone identity
     T::fromName/fromNameOrThrow(name) -> TimeZone // resolve with empty or throwing failure reporting
-    T::names() -> text::StringEditorList // list supported IANA zone names
+    T::names() -> text::StringList // list supported IANA zone names
     T::databaseVersion() -> unit::Version // inspect the bundled IANA database version
     T::utc()/local() -> TimeZone // access UTC or cached system-local zones
 
@@ -197,7 +197,7 @@ Formatting and Parsing Patterns
 
 .. code-block:: text
 
-    o.toIsoString([flags, precision]) -> text::StringEditor // create ISO text
+    o.toIsoString([flags, precision]) -> text::String // create ISO text
     T::fromIsoString/fromIsoStringOrThrow(text[, zone, precision]) -> T // parse with invalid or throwing failure
     o.toString([format]) -> text::String // create normalized human-readable text
     T::shortUnits/longUnits/elcl() -> TimeDeltaFormat // create a standard delta format

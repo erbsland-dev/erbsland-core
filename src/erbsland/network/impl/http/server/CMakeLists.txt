@@ -15,6 +15,7 @@ target_sources(erbsland-core PRIVATE
         HttpServer_fwd.hpp
         HttpServerConnection.cpp
         HttpServerConnection.hpp
+        HttpServerConnection_dispatch.cpp
         HttpServerConnection_fwd.hpp
         HttpServerEventEditor.cpp
         HttpServerEventEditor.hpp

@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/text/AsciiCategory.hpp>
 #include <erbsland/text/CharSet.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>
@@ -499,6 +500,10 @@ public:
         REQUIRE(string.containsOnly(CharSet{u8"A¢€😀"_el}));
         REQUIRE_FALSE(string.containsOnly(CharSet{u8"A¢€"_el}));
         REQUIRE_FALSE(string.containsOnly(CharSet{}));
+        REQUIRE(String{"Alpha_09"_el}.containsOnly(AsciiCategory::Word));
+        REQUIRE(String{}.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(String{"Alpha-09"_el}.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(String{"Alphaä"_el}.containsOnly(AsciiCategory::WordWithHyphen));
     }
 
     void testInvalidUtf8PredicateChecks() {
@@ -512,6 +517,7 @@ public:
         REQUIRE_EQUAL(string.count(u8"\uFFFD"_el), ItemCount{1U});
         REQUIRE_EQUAL(string.count(u8"\uFFFD"_el, Char::compareCaseFolded), ItemCount{1U});
         REQUIRE(string.containsOneOf(CharSet{Char::replacement()}));
+        REQUIRE_FALSE(string.containsOnly(AsciiCategory::Word));
         REQUIRE_FALSE(string.startsWith(u8"\uFFFD"_el));
         REQUIRE_FALSE(string.endsWith(u8"\uFFFD"_el));
     }

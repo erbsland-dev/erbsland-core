@@ -8,20 +8,18 @@ namespace demo {
 
 constexpr auto cDebugFlags = el::DebugViewDetail::BackingStore;
 
-/// Copy-on-write allows strings to be copied at almost no cost.
-/// Multiple string objects can share the same backing store until one of them
-/// is modified. At that point, only the modified string receives its own copy
-/// of the data.
+/// Copies of an editor share their backing store until one editor is mutated.
+/// The first write detaches that editor, preserving the other values.
 ///
 /// From the user's perspective, every string behaves like an independent value.
 /// The sharing and copying happens automatically in the background.
 ///
-/// This demo visualizes how the backing store changes as strings are copied and
-/// modified.
+/// Constructing an editor from a read-only `String` creates editable storage.
+/// Later edits can reuse that storage and its spare capacity while it remains
+/// unique.
 void copyOnWrite() {
-
-    // Create the original string and two copies.
-    auto a = el::StringEditor{"The treasure is hidden under the old oak tree."_el};
+    const auto source = el::String{"The treasure is hidden under the old oak tree."_el};
+    auto a = el::StringEditor{source};
     auto b = a;
     auto c = b;
 
@@ -42,14 +40,13 @@ void copyOnWrite() {
     el::io::printLine("After copying a -> b and b -> c"_el);
     printAll();
 
-    // Modifying b causes it to detach from the shared data.
+    // Mutating b detaches it from the shared editor storage.
     b.replaceAll("treasure"_el, "secret"_el);
 
     el::io::printLine("After modifying b"_el);
     printAll();
 
-    // a and c still share the original backing store.
-    // Modifying a creates another independent copy.
+    // Mutating a detaches it too; c still preserves the original value.
     a.append(" Nobody has found it yet."_el);
 
     el::io::printLine("After modifying a"_el);

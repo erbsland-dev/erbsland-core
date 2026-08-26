@@ -157,6 +157,21 @@ public: // tests
             return isAsciiHexDigit();
         case AsciiCategory::Alphanumeric:
             return isAsciiAlphanumeric();
+        case AsciiCategory::Word:
+            return isAsciiWord();
+        case AsciiCategory::WordWithHyphen:
+            return isAsciiWord() || _codePoint == U'-';
+        case AsciiCategory::DottedName:
+            return isAsciiWord() || _codePoint == U'-' || _codePoint == U'.';
+        case AsciiCategory::UrlScheme:
+            return isAsciiAlphanumeric() || _codePoint == U'+' || _codePoint == U'-' || _codePoint == U'.';
+        case AsciiCategory::Base64Text:
+            return isAsciiAlphanumeric() || _codePoint == U'+' || _codePoint == U'/' || _codePoint == U'=';
+        case AsciiCategory::HttpToken:
+            return isAsciiAlphanumeric() || _codePoint == U'!' || _codePoint == U'#' || _codePoint == U'$' ||
+                _codePoint == U'%' || _codePoint == U'&' || _codePoint == U'\'' || _codePoint == U'*' ||
+                _codePoint == U'+' || _codePoint == U'-' || _codePoint == U'.' || _codePoint == U'^' ||
+                _codePoint == U'_' || _codePoint == U'`' || _codePoint == U'|' || _codePoint == U'~';
         case AsciiCategory::Whitespace:
             return isAsciiWhitespace();
         case AsciiCategory::Blank:

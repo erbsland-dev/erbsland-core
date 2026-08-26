@@ -181,6 +181,15 @@ auto U8StringComparisonTools::containsOnly(const CharSet &characters) const noex
     return result;
 }
 
+auto U8StringComparisonTools::containsOnly(const AsciiCategory category) const noexcept -> bool {
+    auto result = true;
+    utf8::forEachDecodedCharacter(_data.dataSpan(), EncodingMode::Tolerant, [&](const Char character) -> bool {
+        result = character.isAsciiCategory(category);
+        return result;
+    });
+    return result;
+}
+
 auto U8StringComparisonTools::compareDecodedSpans(
     const std::span<const char> left, const std::span<const char> right, const CharCompareFn compareFn) noexcept
     -> std::strong_ordering {

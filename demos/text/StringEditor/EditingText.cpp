@@ -5,11 +5,10 @@
 
 namespace demo {
 
-/// `StringEditor` is an owning, editable copy-on-write string type.
-/// Use it when you build text from scratch or modify existing text.
-/// Use `String` for parameters and stored read-only text.
+/// `StringEditor` is an owning, mutable working value for multi-step edits.
+/// Use `String` for parameters, stored read-only text, and ordinary
+/// copy-returning transformations.
 void editingText() {
-    // Create an editable string from a string literal.
     auto story = el::StringEditor{"The frost lifts from the valley. A pale crocus opens beside the stone. "
                                   "Der Wind trägt Blätter durch die Luft."_el};
 

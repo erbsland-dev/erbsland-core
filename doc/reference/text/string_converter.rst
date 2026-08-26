@@ -95,9 +95,7 @@ String Kind
 
 :cpp:enum:`StringKind <erbsland::text::StringKind>` selects the concrete string encoding used by generic text
 construction APIs.
-Use it when user code should decide whether a result is built as
-:cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>`,
-:cpp:class:`U16StringEditor <erbsland::text::U16StringEditor>`, or :cpp:class:`U32StringEditor <erbsland::text::U32StringEditor>`.
+Use it when user code should decide whether a result is built as UTF-8, UTF-16, or UTF-32 text.
 
 Usage
 ~~~~~

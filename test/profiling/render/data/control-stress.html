@@ -1,0 +1,15 @@
+{% set state = "initial" %}
+{% if primary %}
+  {% set state = "primary" %}
+  {% for item in primary_items %}
+    {% if item.visible %}{{ loop.index }}={{ item.name }}{% elif item.pending %}pending{% else %}hidden{% endif %}
+  {% endfor %}
+{% elif secondary %}
+  {% set state = "secondary" %}
+  {% for key, value in secondary_values %}
+    {% if value.enabled and not value.archived %}{{ key }}={{ value.label }}{% else %}disabled{% endif %}
+  {% endfor %}
+{% else %}
+  {% set state = "fallback" %}
+{% endif %}
+{{ state }}

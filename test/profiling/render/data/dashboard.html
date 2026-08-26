@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head><title>{{ account.name | escape }} — Operations</title></head>
+<body>
+  <header>
+    <h1>{{ account.name | escape }}</h1>
+    {% if account.trial %}<p class="trial">Trial account · {{ account.days_left }} days left</p>
+    {% elif account.suspended %}<p class="warning">Account suspended</p>
+    {% else %}<p class="status">All systems operational</p>{% endif %}
+  </header>
+  <nav>
+    {% for item in navigation %}
+      <a class="{% if item.active %}active{% else %}regular{% endif %}" href="{{ item.url | escape }}">
+        {{ loop.index }}. {{ item.label | escape }}
+      </a>
+    {% endfor %}
+  </nav>
+  <main>
+    {% for service in services %}
+      <section id="{{ service.id }}">
+        <h2>{{ service.name | escape }}</h2>
+        {% if service.healthy %}<strong>Healthy</strong>{% else %}<strong>Needs attention</strong>{% endif %}
+        <dl>
+          {% for metric, value in service.metrics %}
+            <dt>{{ metric | escape }}</dt><dd>{{ value }}</dd>
+          {% endfor %}
+        </dl>
+        <footer>{{ loop.revindex }} service sections remaining · Zürich ✓</footer>
+      </section>
+    {% endfor %}
+  </main>
+</body>
+</html>

@@ -2,8 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpCookieSessionManagerData.hpp"
 
-#include "../HttpGrammar.hpp"
-
 #include "../../../../core/Application.hpp"
 #include "../../../../err/ParameterError.hpp"
 #include "../../../../event/Events.hpp"
@@ -88,7 +86,7 @@ auto HttpCookieSessionManagerData::invalidate(const network::HttpServerSessionPt
 }
 
 void HttpCookieSessionManagerData::validate() const {
-    if (_options.cookieName().isEmpty() || !_options.cookieName().containsOnly(http_grammar::tokenCharacters()) ||
+    if (_options.cookieName().isEmpty() || !_options.cookieName().containsOnly(AsciiCategory::HttpToken) ||
         !_options.cookiePath().startsWith("/"_el) || _options.cookiePath().contains(";"_el) ||
         !_options.idleTimeout().isPositive() || !_options.absoluteTimeout().isPositive() ||
         _options.maximumSessions().isZero() || _options.maximumSessions().isInfinite() ||
@@ -99,11 +97,10 @@ void HttpCookieSessionManagerData::validate() const {
 
 auto HttpCookieSessionManagerData::requestIdentifier(const HttpHeaders &headers) const -> std::optional<String> {
     auto found = std::optional<String>{};
-    const auto whitespace = CharSet::from(AsciiCategory::Whitespace);
     for (const auto &fieldValue : headers.getAll(HttpFieldType::Cookie)) {
         auto reader = StringCharReader{fieldValue};
         while (!reader.isAtEnd()) {
-            reader.advanceWhile(whitespace);
+            reader.advanceWhile(AsciiCategory::Whitespace);
             reader.startCapture();
             reader.advanceUntil(CharSet{U'=', U';'});
             const auto name = reader.takeCapture().toString();
@@ -114,15 +111,15 @@ auto HttpCookieSessionManagerData::requestIdentifier(const HttpHeaders &headers)
             reader.startCapture();
             reader.advanceUntil(CharSet{U';'});
             auto value = reader.takeCapture().toString();
-            while (!value.isEmpty() && whitespace.contains(value.charAt(StringSide::Back))) {
+            while (!value.isEmpty() && value.charAt(StringSide::Back).isAsciiWhitespace()) {
                 value = value.slice(StringSide::Front, value.length() - unit::ByteLength::one());
             }
             reader.advanceIf(U';');
             if (name != _options.cookieName()) {
                 continue;
             }
-            const auto tokenCharacters = CharSet::from(AsciiCategory::Alphanumeric) | CharSet{U'-', U'_'};
-            if (found.has_value() || value.length() != unit::ByteLength{43U} || !value.containsOnly(tokenCharacters)) {
+            if (found.has_value() || value.length() != unit::ByteLength{43U} ||
+                !value.containsOnly(AsciiCategory::WordWithHyphen)) {
                 return std::nullopt;
             }
             found = std::move(value);

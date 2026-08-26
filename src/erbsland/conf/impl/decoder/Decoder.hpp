@@ -9,6 +9,8 @@
 #include "../char/CharClass.hpp"
 #include "../char/NamedChars.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
+#include "../../../unit/CpLength.hpp"
 #include "../../ConfError.hpp"
 #include "../../Location.hpp"
 
@@ -54,6 +56,14 @@ public:
     /// Capture the current character and decode the next.
     /// @throws ConfError (Encoding) In case of any encoding error.
     virtual void next() = 0;
+
+    /// Advance while the current character belongs to an ASCII category.
+    /// Delayed decoder errors at the boundary remain pending so callers can preserve token-yield timing.
+    /// @param category The ASCII category to consume.
+    /// @param maximum The maximum number of characters to consume.
+    /// @return The number of consumed characters.
+    auto advanceWhile(text::AsciiCategory category, unit::CpLength maximum = unit::CpLength::infinite())
+        -> unit::CpLength;
 
 protected:
     /// Test if speculative parsing is currently active.

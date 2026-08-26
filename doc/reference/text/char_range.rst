@@ -70,9 +70,45 @@ escaped when inserted literally into regular-expression syntax.
     using Char = el::Char;
 
     auto value = Char{U'F'};
-    if (value.isAscii<Char::AsciiCategory::HexDigit>()) {
+    if (value.isAsciiCategory(el::AsciiCategory::HexDigit)) {
         // Fast ASCII-only path.
     }
+
+ASCII Categories
+~~~~~~~~~~~~~~~~
+
+:cpp:enum:`AsciiCategory <erbsland::text::AsciiCategory>` names reusable ASCII-only character classes.
+:cpp:func:`isAsciiCategory() <erbsland::text::Char::isAsciiCategory>` tests them directly without constructing a set or
+consulting the Unicode database.
+The parser-oriented categories have these exact memberships:
+
+.. list-table::
+    :header-rows: 1
+
+    * - Category
+      - Membership
+    * - ``Word``
+      - ``[_A-Za-z0-9]``
+    * - ``WordWithHyphen``
+      - ``[-_A-Za-z0-9]``
+    * - ``DottedName``
+      - ``[-._A-Za-z0-9]``
+    * - ``UrlScheme``
+      - ``[+\-.A-Za-z0-9]``
+    * - ``Base64Text``
+      - ``[+/=A-Za-z0-9]``
+    * - ``HttpToken``
+      - ASCII letters and digits plus ``!#$%&'*+-.^_`|~``
+
+``Base64Text`` deliberately includes ``=`` padding, but it does not validate padding placement.
+``HttpToken`` follows the HTTP token character definition and excludes separators, whitespace, controls, and non-ASCII
+characters.
+
+For sequential parsing, pass the category directly to the while/until operations of
+:cpp:class:`StringCharReader <erbsland::text::StringCharReader>`. For whole-string validation, use the
+``containsOnly(AsciiCategory)`` overload on the read-only or editor string type.
+Both paths classify decoded characters directly.
+Malformed encoded input is decoded tolerantly to a replacement character, which never belongs to an ASCII category.
 
 Integer Digit Helpers
 ~~~~~~~~~~~~~~~~~~~~~
@@ -236,8 +272,9 @@ Use :cpp:func:`CharSet::fromRange() <erbsland::text::CharSet::fromRange>` when t
 range.
 The expression ``CharSet{Char{U'0'}, Char{U'9'}}`` creates a set containing only the two characters ``0`` and ``9``.
 
-Use :cpp:func:`CharSet::from(AsciiCategory) <erbsland::text::CharSet::from>` for ASCII-only classification sets that do
-not link the Unicode data layer.
+Use :cpp:func:`CharSet::from(AsciiCategory) <erbsland::text::CharSet::from>` only when an API requires a retained set or
+the category must participate in set operations.
+Direct category classification and scanning avoid materializing that set.
 Use :cpp:func:`CharSet::from(UnicodeCategory) <erbsland::text::CharSet::from>` for sets derived from a Unicode general
 category.
 Use :cpp:func:`CharSet::fromPattern() <erbsland::text::CharSet::fromPattern>` for compact literal/range patterns where

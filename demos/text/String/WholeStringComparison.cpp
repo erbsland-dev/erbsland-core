@@ -9,17 +9,14 @@ namespace demo {
 /// Use the comparison operators for ordinary equality and ordering. Use `compare()`
 /// when you need the `std::strong_ordering` result explicitly or want to pass a
 /// character comparison function. The common UTF-8 aliases compare with other UTF-8
-/// strings, editors, and `"_el"` literals; UTF-16 and UTF-32 variants follow the same
-/// same-width pattern.
+/// strings and `"_el"` literals; UTF-16 and UTF-32 variants follow the same same-width pattern.
 void wholeStringComparison() {
     const auto tag = el::String{"lišejník"_el};
     const auto sameString = el::String{"lišejník"_el};
-    const auto editableTag = el::StringEditor{"lišejník"_el};
     const auto booleanFormat = el::BooleanFormat::yesNo();
 
-    // Compare a string with another string, an editor, and a literal.
+    // Compare a string with another string and a literal.
     el::io::printLine("tag == sameString .............: "_el, booleanFormat, tag == sameString);
-    el::io::printLine("tag == editableTag ............: "_el, booleanFormat, tag == editableTag);
     el::io::printLine("tag == \"lišejník\"_el ..........: "_el, booleanFormat, tag == "lišejník"_el);
     el::io::printLine("tag != \"tuleň\"_el .............: "_el, booleanFormat, tag != "tuleň"_el);
 

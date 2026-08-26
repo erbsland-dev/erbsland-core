@@ -40,4 +40,8 @@ auto U32String::containsOnly(const CharSet &characters) const noexcept -> bool {
     return impl::U32StringComparisonTools{dataView()}.containsOnly(characters);
 }
 
+auto U32String::containsOnly(const AsciiCategory category) const noexcept -> bool {
+    return impl::U32StringComparisonTools{dataView()}.containsOnly(category);
+}
+
 }

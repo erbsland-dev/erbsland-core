@@ -1,0 +1,8 @@
+{% set theme = "final" %}
+{% set page_name = company %}
+{% extends "inheritance-site/page.html" %}
+{% block header %}<header class="final">{{ super() }}</header>{% endblock %}
+{% block content %}
+{% set inherited = super() %}
+<main data-theme="{{ theme }}" data-page="{{ page_name }}">{{ inherited | trim }}</main>
+{% endblock %}

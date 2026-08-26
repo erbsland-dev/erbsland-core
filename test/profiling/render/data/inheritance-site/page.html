@@ -1,0 +1,8 @@
+{% set theme = "page" %}
+{% set page_name = "service-page" %}
+{% extends "inheritance-site/section.html" %}
+{% block title %}{{ company }} — Service Overview{% endblock %}
+{% block header %}<div class="page-header">{{ super.super() }}</div>{% endblock %}
+{% block service_row %}<div class="service-row">{{ super() }}<span>{{ loop.index }}/{{ service.id }}</span></div>{% endblock %}
+{% block service_badge %}<strong>{{ super() | upper }}</strong>{% endblock %}
+{% block sidebar %}<aside>{{ account.region }} / {{ account.days_left }}</aside>{% endblock %}

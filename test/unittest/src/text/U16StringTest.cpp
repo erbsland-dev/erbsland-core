@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/mem/ByteBlock.hpp>
+#include <erbsland/text/AsciiCategory.hpp>
 #include <erbsland/text/impl/PlatformU16StringAccess.hpp>
 #include <erbsland/text/impl/UnsafeU16StringEditorAccess.hpp>
 #include <erbsland/text/Literals.hpp>
@@ -584,6 +585,15 @@ public:
         REQUIRE_EQUAL(U16String{u"aaaa"_el}.count(u"aa"_el), ItemCount{2U});
         REQUIRE_FALSE(text.containsOnly(CharSet::fromPattern(u"A\u00A2"_el)));
         REQUIRE_FALSE(chars.containsOnly(CharSet{}));
+        REQUIRE(U16StringEditor{std::u16string_view{u"Alpha_09"}}.containsOnly(AsciiCategory::Word));
+        REQUIRE(U16String{u"Alpha-09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE(U16String{}.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(U16String{u"Alpha.09"_el}.containsOnly(AsciiCategory::WordWithHyphen));
+        REQUIRE_FALSE(U16String{u"Alpha\u00E4"_el}.containsOnly(AsciiCategory::Word));
+        const auto malformedCategoryData = std::u16string{u'A', static_cast<char16_t>(0xD800U), u'B'};
+        const auto malformedCategoryText = U16StringEditor{std::u16string_view{malformedCategoryData}};
+        REQUIRE_FALSE(malformedCategoryText.containsOnly(AsciiCategory::Word));
+        REQUIRE_FALSE(U16String{malformedCategoryText}.containsOnly(AsciiCategory::Word));
 
         const auto mixed = U16StringEditor{std::u16string_view{u"\u00C4xK"}};
         const auto mixedView = U16String{mixed};

@@ -12,7 +12,12 @@ Introduction
 :cpp:class:`U8String <erbsland::text::U8String>`.
 It stores an owning, read-only UTF-8 value with copy-on-write storage.
 
-Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` when text must be modified in place.
+Use :cpp:type:`StringEditor <erbsland::text::StringEditor>` as a local mutable working value for explicit in-place
+editing or small construction tasks.
+For parameters, read-only storage, and ordinary transformations, prefer ``String`` and its copy-returning operations.
+
+The practical workflow and allocation trade-offs are described in :doc:`/topics/text/overview`,
+:doc:`/topics/text/transforming_strings`, and :doc:`/topics/text/editing_strings_in_place`.
 
 For a full description of the underlying type, see :doc:`string_width_variants`.
 

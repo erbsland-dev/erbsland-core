@@ -737,6 +737,26 @@ Headers     :
     * "text/json/JsonValue.hpp"
 
 ------------*[ Reference Groups ]
+Page        : "text/render.rst"
+Title       : "Layout Rendering"
+Headers     :
+    * "text/render/Context.hpp"
+    * "text/render/Delimiters.hpp"
+    * "text/render/Environment.hpp"
+    * "text/render/EnvironmentOptions.hpp"
+    * "text/render/FileSystemLoader.hpp"
+    * "text/render/FileSystemLoaderOptions.hpp"
+    * "text/render/LayoutSource.hpp"
+    * "text/render/Loader.hpp"
+    * "text/render/ResourceLoader.hpp"
+    * "text/render/RenderError.hpp"
+    * "text/render/RenderErrorCategory.hpp"
+    * "text/render/RenderErrorContext.hpp"
+    * "text/render/RenderLimits.hpp"
+    * "text/render/Value.hpp"
+    * "text/render/ValueType.hpp"
+
+------------*[ Reference Groups ]
 Page        : "text/string_tree.rst"
 Title       : "StringEditor Tree"
 Headers     :

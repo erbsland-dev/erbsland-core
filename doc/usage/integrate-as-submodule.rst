@@ -70,20 +70,23 @@ The aggregation file owns the individual Erbsland subdirectories:
 This structure keeps the top-level project stable when extensions are added or removed.
 Add Core before extensions because an extension may use Core's types and CMake target.
 
-Link Your Target
-================
+Configure an Application Target
+===============================
 
-Link the namespaced source target from your application or library:
+Pass each executable target to Core's application setup helper:
 
 .. code-block:: cmake
     :caption: <project>/app/CMakeLists.txt
 
     add_executable(example src/main.cpp)
-    target_compile_features(example PRIVATE cxx_std_20)
-    target_link_libraries(example PRIVATE erbsland::core)
+    erbsland_core_setup_application(TARGET example)
 
-The target provides Core's public include directories, C++20 requirement, and any public compile definitions selected by
-the Core build configuration.
+``erbsland_core_setup_application()`` links ``erbsland::core``, enables C++20, disables C++ module scanning for the
+target, and selects UTF-8 source and execution character sets on MSVC.
+Calling it more than once for the same executable is safe.
+
+For a library target, link ``erbsland::core`` directly and publish the dependency with the visibility required by that
+library's public API.
 
 Include only public headers below ``<erbsland/...>``.
 Use focused headers for individual APIs or domain headers such as ``<erbsland/all_path.hpp>`` when a source file works

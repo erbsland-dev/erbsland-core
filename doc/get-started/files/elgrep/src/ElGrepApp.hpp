@@ -4,7 +4,7 @@
 
 #include <erbsland/Application.hpp>
 #include <erbsland/Path.hpp>
-#include <erbsland/StringEditor.hpp>
+#include <erbsland/String.hpp>
 #include <erbsland/re/CaptureRange.hpp>
 #include <erbsland/re/RegEx.hpp>
 

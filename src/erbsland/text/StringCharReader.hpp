@@ -4,6 +4,7 @@
 
 #include "AnyString_fwd.hpp"
 #include "AnyStringEditor_fwd.hpp"
+#include "AsciiCategory.hpp"
 #include "Char.hpp"
 #include "CharCompareFn.hpp"
 #include "CharSet.hpp"
@@ -83,12 +84,11 @@ public:
     /// The saved state is only restorable for a reader over the same visible storage range and encoding backend.
     /// @return A saved reader state. This state only works for readers with the same backend and visible storage range.
     [[nodiscard]] auto save() const noexcept -> StringCharReaderState;
-    /// Restore a saved reader state.
-    /// Returns `false` and keeps the current position unchanged if the state belongs to a different backend, a
-    /// different visible storage range, or an invalid raw/code-point position pair.
-    /// @param state The readers state to restore.
-    /// @return `true` if the state was successfully restored, `false` otherwise.
-    auto restore(StringCharReaderState state) noexcept -> bool;
+    /// Restore a saved reader state in constant time.
+    /// The state must originate from this reader or a compatible copy over the same visible text and encoding.
+    /// Passing any other state is undefined.
+    /// @param state The reader state to restore.
+    void restore(StringCharReaderState state) noexcept;
     /// Reset the reader position to the start of the string.
     void reset() noexcept;
     /// Read a character, tolerating malformed encoding, and advance on success.
@@ -161,6 +161,10 @@ public: // read loops
     auto readWhile(
         const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> util::LoopResult;
+    /// @overload
+    auto readWhile(
+        const ReadFn &readFn, AsciiCategory expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> util::LoopResult;
     /// Read characters until, but without a character from the given set.
     /// Does not consume the stop character.
     /// @param readFn The read function, or nullptr to continue for all read characters.
@@ -173,6 +177,10 @@ public: // read loops
     auto readUntil(
         const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> util::LoopResult;
+    /// @overload
+    auto readUntil(
+        const ReadFn &readFn, AsciiCategory stopCategory, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> util::LoopResult;
     /// Advance while decoded characters match `expected`.
     /// Stops before the first nonmatching character, at the end of data, or after `maximum` characters. Malformed
     /// encoded data is handled tolerantly like `read()`. The returned count may be ignored when only the skip side
@@ -182,6 +190,9 @@ public: // read loops
     /// @return The number of decoded characters skipped.
     auto advanceWhile(const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> unit::CpLength;
+    /// @overload
+    auto advanceWhile(AsciiCategory expected, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> unit::CpLength;
     /// Advance until, but without consuming, a decoded character from `stopSet`.
     /// Stops before the first matching character, at the end of data, or after `maximum` characters. Malformed
     /// encoded data is handled tolerantly like `read()`. The returned count may be ignored when only the skip side
@@ -190,6 +201,9 @@ public: // read loops
     /// @param maximum The maximum number of characters to advance.
     /// @return The number of decoded characters skipped.
     auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
+        -> unit::CpLength;
+    /// @overload
+    auto advanceUntil(AsciiCategory stopCategory, unit::CpLength maximum = unit::CpLength::infinite()) noexcept
         -> unit::CpLength;
 
 public: // read integers
@@ -263,12 +277,18 @@ public: // buffer
     /// @return The loop result, with the same meaning as `readWhile()`.
     [[nodiscard]] auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum = unit::CpLength::infinite())
         -> util::LoopResult;
+    /// @overload
+    [[nodiscard]] auto readToBufferWhile(AsciiCategory expected, unit::CpLength maximum = unit::CpLength::infinite())
+        -> util::LoopResult;
     /// Read characters until, but without, a stop character and append them to the buffer.
     /// @param stopSet The set with stop characters.
     /// @param maximum The maximum number of characters to read.
     /// @return The loop result, with the same meaning as `readUntil()`.
     [[nodiscard]] auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum = unit::CpLength::infinite())
         -> util::LoopResult;
+    /// @overload
+    [[nodiscard]] auto readToBufferUntil(
+        AsciiCategory stopCategory, unit::CpLength maximum = unit::CpLength::infinite()) -> util::LoopResult;
 
 private:
     using ReaderPtr = mem::SharedDataPointer<impl::StringReaderBase>;

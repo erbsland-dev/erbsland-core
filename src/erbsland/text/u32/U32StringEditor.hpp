@@ -14,6 +14,7 @@
 #include "impl/U32StringSharedStorage.hpp"
 
 #include "../AnyStringBuilder.hpp"
+#include "../AsciiCategory.hpp"
 #include "../BooleanFormat.hpp"
 #include "../Char.hpp"
 #include "../CharCompareFn.hpp"
@@ -33,7 +34,6 @@
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
 #include "../StringBomMode.hpp"
-#include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
@@ -66,11 +66,10 @@
 namespace erbsland::text {
 
 /// An owning UTF-32 string editor with copy-on-write semantics for random code-point access.
-/// Use it to build new and edit UTF-32 strings.
-/// Use `U32String` for storage and read-only access.
+/// Use it as a local mutable working value for UTF-32 construction and multi-step editing.
+/// Use `U32String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
-/// Use `StringEditor` for most use cases and `U32StringEditor` only if you need random access to code points or require
-/// UTF-32 encoding.
+/// Use `U32StringEditor` only when the mutable workflow requires UTF-32 encoding.
 /// @seedoc{/reference/text/string_width_variants}
 /// @tested{U32StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
 class U32StringEditor {
@@ -135,6 +134,8 @@ public: // tests
     [[nodiscard]] auto containsOneOf(const CharSet &characters) const noexcept -> bool;
     /// @copydoc erbsland::text::U32String::containsOnly(const CharSet &) const
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// @copydoc erbsland::text::U32String::containsOnly(AsciiCategory) const
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // read
     /// @copydoc erbsland::text::U32String::length() const

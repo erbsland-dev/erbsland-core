@@ -49,7 +49,8 @@ Files and Includes
 * Put private implementation details in an ``impl`` directory and matching ``impl`` namespace.
 * Directly include every declaration a file uses; do not rely on unrelated transitive includes.
   A ``cpp`` file includes its corresponding header first.
-* Split implementations beyond roughly 500 lines by logical responsibility.
+* Handwritten C++ source files must not exceed 500 physical lines.
+  Split larger implementations by logical responsibility.
   Name parts ``Class_part.cpp``, ``Class_part.hpp``, or ``Class_part.tpp``.
   Include ``tpp`` parts at the bottom of the owning header, without an include back to that header.
 * Do not edit generated files directly.
@@ -167,7 +168,11 @@ Erbsland Core Integration
 =========================
 
 * Prefer ``String`` for read-only strings, ``""_el`` for literals, and ``StringFormat`` for formatting.
-* Prefer ``StringEditor`` for construction, and ``AnyStringBuilder`` for width agnostic construction.
+* Prefer ``StringEditor`` as a local mutable working value for explicit in-place editing or small construction tasks.
+  Do not use it as the default parameter or read-only storage type.
+* For joining fixed string segments, use ``String::fromJoined()``; for a dynamic collection, prepare and join a
+  ``StringList``.
+  Use ``AnyStringBuilder`` for width-independent construction and direct formatted-value appends.
 * Prefer regular UTF-8 types; use U8, U16, or U32 types when an API boundary or algorithm requires them.
 * Prefer Erbsland Core types and algorithms before ``std::`` types and algorithms.
 * In portable unit tests, do not construct UTF-8 text with ``\x??`` escapes because their interpretation differs

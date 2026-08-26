@@ -1,0 +1,13 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "profile"
+Suite               : "snapshot"
+Duration            : 30s
+Threads             : 1
+Seed                : 0x4552'4253'4c41'4e44
+Warmup Samples      : 1
+Samples             : 3
+Minimum Sample Time : 5ms
+Memory Limit        : 256 MiB
+Progress Interval   : 5s

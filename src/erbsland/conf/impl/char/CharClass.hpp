@@ -4,6 +4,8 @@
 
 #include "NamedChars.hpp"
 
+#include "../../../text/AsciiCategory.hpp"
+
 #include <cstdint>
 
 namespace erbsland::conf::impl {
@@ -107,7 +109,7 @@ enum class CharClass : uint8_t {
     case CharClass::SectionNameStart:
         return character.isAsciiLetter() || character == nc::doubleQuote;
     case CharClass::FormatIdentifierChar:
-        return character.isAsciiAlphanumeric() || character == nc::underscore || character == nc::minus;
+        return character.isAsciiCategory(text::AsciiCategory::WordWithHyphen);
     case CharClass::IntegerSuffixChar:
         return character.isAsciiLetter() || character == nc::microSign;
     case CharClass::LineBreakOrEnd:

@@ -20,6 +20,8 @@
 #include <erbsland/network/http_client/HttpClientSessionOptions.hpp>
 #include <erbsland/network/http_server/HttpServer.hpp>
 #include <erbsland/network/http_server/HttpServerRequest.hpp>
+#include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/NetworkBackend.hpp>
 #include <erbsland/network/Network.hpp>
 #include <erbsland/network/source/Connection.hpp>
 #include <erbsland/network/source/NetworkErrorContext.hpp>
@@ -37,6 +39,7 @@
 #include <chrono>
 #include <filesystem>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <span>
 #include <string>
@@ -49,6 +52,14 @@ using namespace el::text::literals;
 
 TESTED_TARGETS(HttpClientSession HttpClientRequest HttpClientResponse)
 class HttpClientTest final : public el::UnitTest {
+private:
+    class LoopbackResolver final : public el::network::impl::HostResolver {
+    public:
+        auto resolve(const HostName &) -> el::util::List<IpAddress> override {
+            return el::util::List<IpAddress>{IpAddress::loopbackV4()};
+        }
+    };
+
 private:
     [[nodiscard]] static auto bytes(const std::string_view text) -> el::mem::ByteBlock {
         return el::mem::ByteBlock::fromSpan(std::span<const char>{text.data(), text.size()});
@@ -748,7 +759,8 @@ public:
     }
 
     void testCrossOriginRedirectStripsSensitiveFieldsAndEnforcesHostPolicies() {
-        const auto loop = EventLoop::create();
+        const auto loop = EventLoop::create(
+            std::make_unique<el::network::impl::NetworkBackend>(std::make_shared<LoopbackResolver>()));
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
         auto error = std::optional<NetworkErrorContext>{};
@@ -788,10 +800,9 @@ public:
                 .onFinal([&]() -> void { serverFinal = true; })
                 .onListening([&]() -> void {
                     const auto endpoint = *server->localEndpoint();
-                    const auto targetHost = HostEndpoint{endpoint.address(), endpoint.port(), endpoint.scopeId()};
-                    redirectLocation = el::text::String{
-                        el::text::StringEditor{"http://"_el}.append(targetHost.toString()).append("/target"_el)};
-                    const auto sourceHost = HostEndpoint{Host::fromStringOrThrow("localhost"_el), endpoint.port()};
+                    const auto targetHost = HostEndpoint{Host::fromStringOrThrow("target.test"_el), endpoint.port()};
+                    redirectLocation = Url{UrlScheme::Http, targetHost, "/target"_el}.toString();
+                    const auto sourceHost = HostEndpoint{Host::fromStringOrThrow("source.test"_el), endpoint.port()};
                     const auto sourceUrl = Url{UrlScheme::Http, sourceHost, "/cross"_el};
                     session = loop->get<Network>().createHttpClientSession();
                     auto options = HttpClientSessionOptions{};
@@ -799,7 +810,7 @@ public:
                     session->setOptions(options);
                     auto defaults = HttpHeaders{};
                     defaults.setField(HttpFieldType::Authorization, "Bearer secret"_el)
-                        .setField("Origin"_el, "http://localhost"_el);
+                        .setField("Origin"_el, "http://source.test"_el);
                     session->setDefaultHeaders(std::move(defaults));
                     session->events()
                         .onTextResponse(
@@ -819,7 +830,7 @@ public:
                         auto headers = HttpHeaders{};
                         headers.setField(HttpFieldType::ProxyAuthorization, "Basic secret"_el)
                             .setField(HttpFieldType::Cookie, "caller=secret"_el)
-                            .setField(HttpFieldType::Referer, "http://localhost/private"_el);
+                            .setField(HttpFieldType::Referer, "http://source.test/private"_el);
                         request->setHeaders(std::move(headers));
                         request->events().onFinal([&]() -> void {
                             ++finalCalls;

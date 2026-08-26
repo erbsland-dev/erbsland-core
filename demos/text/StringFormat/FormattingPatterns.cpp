@@ -6,20 +6,22 @@
 namespace demo {
 
 /// `StringFormat` stores a reusable formatting pattern.
-/// The pattern uses the same placeholder syntax as `std::format`.
+/// Named specifications keep the expected value type and each formatting choice visible.
 ///
 /// Use `build()` to create a new string from formatted values.
 /// Use `appendTo()` to add formatted text to an existing `AnyStringBuilder` without
 /// creating temporary strings.
 void formattingPatterns() {
     // Create a reusable pattern for ISO 8601 date-time values.
-    const auto isoDateTime = el::StringFormat{"{:04}-{:02}-{:02}T{:02}:{:02}:{:02}"_el};
+    const auto isoDateTime =
+        el::StringFormat{"{:number:width=4,zero-fill}-{:number:width=2,zero-fill}-{:number:width=2,zero-fill}T"
+                         "{:number:width=2,zero-fill}:{:number:width=2,zero-fill}:{:number:width=2,zero-fill}"_el};
 
     auto timestamp = isoDateTime.build(2026, 5, 30, 21, 41, 56);
     el::io::printLine("ISO date-time: "_el, timestamp);
 
-    // Create a pattern to for simple HTML tags.
-    const auto htmlTag = el::StringFormat{"<{0}>{1:/html}</{0}>\n"_el};
+    // Create a pattern for simple HTML tags.
+    const auto htmlTag = el::StringFormat{"<{0}>{1:text:escape=html}</{0}>\n"_el};
 
     el::AnyStringBuilder htmlOutput;
     htmlTag.appendTo(htmlOutput, "h1"_el, "Hello World"_el);

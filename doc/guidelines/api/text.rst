@@ -56,7 +56,7 @@ Processing Types
 .. code-block:: text
 
     AnyString, AnyStringEditor, AnyStringBuilder // runtime-width text values and builder
-    StringEditor, U8StringEditor, U16StringEditor, U32StringEditor // explicit mutable string storage
+    StringEditor, U8StringEditor, U16StringEditor, U32StringEditor // local mutable editing and construction values
     StringLiteral, U8StringLiteral, U16StringLiteral, U32StringLiteral // compile-time string literals
     StringCharReader, StringCharReaderState // sequential decoded-character reader and retained state
     StringSplitter, U8StringSplitter, U16StringSplitter, U32StringSplitter // owning sequential splitters
@@ -111,6 +111,20 @@ Document Types
     json::JsonArray, json::JsonObject // ordered JSON containers
     json::JsonParseOptions, json::JsonFormatOptions // JSON limits and output controls
 
+Layout Renderer Types
+=====================
+
+.. code-block:: text
+
+    render::Environment, render::EnvironmentOptions, render::RenderLimits // renderer configuration and limits
+    render::Loader, render::FileSystemLoader, render::ResourceLoader // logical-layout source providers
+    render::LayoutSource // source text, diagnostic origin, and opaque revision
+    render::Context // concrete named values passed to a render
+    render::Value, render::ValueType // immutable shared render values and their semantic type
+    render::FilterFn // callback receiving the piped value and up to two arguments in one immutable value list
+    render::RenderError, render::RenderErrorContext // structured user-facing render failures
+    render::RenderErrorCategory // stable failure classification
+
 Codec Types
 ===========
 
@@ -143,6 +157,7 @@ String Value Patterns
     o.compare(text[, comparison]) -> std::strong_ordering // compare decoded text
     o.find/findLast(text[, start, comparison]) -> I // locate text using native indexes
     o.startsWith/endsWith/contains(text[, comparison]) -> bool // test text membership
+    o.containsOnly(set-or-ascii-category) -> bool // validate decoded character membership
     o.forEach(function) -> util::LoopResult // visit decoded code points
     o.splitAt(index) -> std::pair❮S❯ // split into read-only values
     o.trimmed/transformed([arguments]) -> S // return processed read-only text
@@ -174,7 +189,8 @@ Reader and Split Patterns
     o.isAtEnd()/position()/remaining() -> T // inspect sequential state
     o.next()/peek() -> T // consume or inspect the next character or slice
     o.advanceIf(character-or-string[, compare]) -> bool // transactionally skip an optional token
-    o.advanceWhile/advanceUntil(set[, maximum]) -> unit::CpLength // skip and optionally inspect the count
+    o.advanceWhile/advanceUntil(set-or-ascii-category[, maximum]) -> unit::CpLength // skip and inspect the count
+    o.readWhile/readUntil(function, set-or-ascii-category[, maximum]) -> util::LoopResult // decoded scan
     o.skip() // discard the next splitter part without creating a slice
     o.reset([state]) // restart or restore retained reader state
 
@@ -244,6 +260,21 @@ JSON Value Patterns
     o.toString([options]) -> String // serialize deterministic JSON
     T::fromString(text[, options]) -> optional<T> // parse with empty failure reporting
     T::fromStringOrThrow(text[, options]) -> T // parse or throw ParseError
+
+Layout Renderer Patterns
+========================
+
+.. code-block:: text
+
+    T::create([options]) -> EnvironmentPtr // create a setup-phase environment
+    o.addLayoutLoader(loader[, priority])/addFilter(name, filter)/enableAutoReload() // configure before first render
+    o.setGlobalContext(context) // atomically replace the global fallback snapshot
+    o.render(layout[, context]) -> String // compile/cache and render a logical layout
+    o.load(layout) -> optional<LayoutSource> // return one source generation or report missing
+    o.contains/get/set(name[, value]) -> T // inspect or change named local values
+    o.type()/isTruthy()/itemCount() -> T // inspect immutable value semantics
+    o.get(index-or-name) -> Value // tolerant child lookup returning null when missing
+    o.as❮Scalar❯() -> T // checked scalar access
 
 Base-N Codec Patterns
 =====================

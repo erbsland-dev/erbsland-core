@@ -2,10 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "HttpRoutes.hpp"
 
-#include "../HttpGrammar.hpp"
-
 #include "../../../../err/ParameterError.hpp"
 #include "../../../../text/AnyString.hpp"
+#include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../../../text/NormalizationForm.hpp"
 #include "../../../../text/StringCharReader.hpp"
@@ -112,7 +111,7 @@ void HttpRoutes::validateContentTypePattern(const String &pattern) {
     }
     auto reader = StringCharReader{pattern};
     reader.startCapture();
-    reader.advanceWhile(http_grammar::tokenCharacters());
+    reader.advanceWhile(AsciiCategory::HttpToken);
     const auto type = reader.takeCapture().toString();
     if (type.isEmpty() || !reader.advanceIf(U'/')) {
         throw err::ParameterError{
@@ -133,7 +132,7 @@ void HttpRoutes::validateContentTypePattern(const String &pattern) {
         }
     }
     reader.startCapture();
-    reader.advanceWhile(http_grammar::tokenCharacters());
+    reader.advanceWhile(AsciiCategory::HttpToken);
     const auto subtype = reader.takeCapture().toString();
     if (subtype.isEmpty() || !reader.isAtEnd()) {
         throw err::ParameterError{"An HTTP Content-Type pattern has an invalid subtype."_el, "acceptedContentTypes"_el};
@@ -162,12 +161,8 @@ auto HttpRoutes::parsePattern(String pattern) -> std::vector<Segment> {
             if (text.isEmpty() || !text.charAt(StringSide::Front).isAsciiLetter()) {
                 throw err::ParameterError{"An HTTP route parameter has an invalid name."_el, "pattern"_el};
             }
-            auto reader = StringCharReader{text};
-            while (!reader.isAtEnd()) {
-                const auto character = reader.read();
-                if (!character.isAsciiAlphanumeric() && character != U'_') {
-                    throw err::ParameterError{"An HTTP route parameter has an invalid name."_el, "pattern"_el};
-                }
+            if (!text.containsOnly(AsciiCategory::Word)) {
+                throw err::ParameterError{"An HTTP route parameter has an invalid name."_el, "pattern"_el};
             }
             if (kind == SegmentKind::CatchAll && index + 1U != parts.size()) {
                 throw err::ParameterError{"An HTTP catch-all parameter must be the final segment."_el, "pattern"_el};

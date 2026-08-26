@@ -7,7 +7,7 @@
 #include "../../../../err/OverflowError.hpp"
 #include "../../../../err/ParseError.hpp"
 #include "../../../../text/AnyString.hpp"
-#include "../../../../text/CharSet.hpp"
+#include "../../../../text/AsciiCategory.hpp"
 #include "../../../../text/IntegerBase.hpp"
 #include "../../../../text/IntegerParseOptions.hpp"
 #include "../../../../text/Literals.hpp"
@@ -34,8 +34,6 @@ Http1FramingParser::Http1FramingParser(const HttpHeaders &headers) {
 }
 
 void Http1FramingParser::parseContentLength(const String &text) {
-    static const auto cOws = CharSet{U' ', U'\t'};
-    static const auto cDigits = CharSet::fromRange(Char{U'0'}, Char{U'9'});
     static const auto cNumberOptions = []() -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
         result.setFixedBase(IntegerBase::Decimal).setMinimumDigits(unit::CpLength::one());
@@ -46,9 +44,9 @@ void Http1FramingParser::parseContentLength(const String &text) {
         throw err::ParseError{"Content-Length must not be empty."_el};
     }
     for (;;) {
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         reader.startCapture();
-        reader.advanceWhile(cDigits);
+        reader.advanceWhile(AsciiCategory::Digit);
         const auto digits = reader.takeCapture().toString();
         if (digits.isEmpty()) {
             throw err::ParseError{"Content-Length has a malformed list value."_el};
@@ -65,7 +63,7 @@ void Http1FramingParser::parseContentLength(const String &text) {
             throw err::ParseError{"Content-Length values disagree."_el};
         }
         _contentLength = value;
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         if (reader.isAtEnd()) {
             break;
         }
@@ -79,15 +77,14 @@ void Http1FramingParser::parseContentLength(const String &text) {
 }
 
 void Http1FramingParser::parseTransferEncoding(const String &text) {
-    static const auto cOws = CharSet{U' ', U'\t'};
     auto reader = StringCharReader{text};
     if (reader.isAtEnd()) {
         throw err::ParseError{"Transfer-Encoding must not be empty."_el};
     }
     for (;;) {
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         reader.startCapture();
-        reader.advanceWhile(http_grammar::tokenCharacters());
+        reader.advanceWhile(AsciiCategory::HttpToken);
         const auto coding = reader.takeCapture().toString();
         if (coding.isEmpty()) {
             throw err::ParseError{"Transfer-Encoding has a malformed list value."_el};
@@ -95,7 +92,7 @@ void Http1FramingParser::parseTransferEncoding(const String &text) {
         ++_codingCount;
         _transferCoding = http_grammar::equalTokenCI(coding, "chunked"_el) ? Http1TransferCoding::Chunked
                                                                            : Http1TransferCoding::Unsupported;
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         if (reader.isAtEnd()) {
             break;
         }
@@ -109,9 +106,6 @@ void Http1FramingParser::parseTransferEncoding(const String &text) {
 }
 
 auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
-    static const auto cOws = CharSet{U' ', U'\t'};
-    static const auto cHexDigits = CharSet::fromRange(Char{U'0'}, Char{U'9'}) |
-        CharSet::fromRange(Char{U'a'}, Char{U'f'}) | CharSet::fromRange(Char{U'A'}, Char{U'F'});
     static const auto cNumberOptions = []() -> IntegerParseOptions {
         auto result = IntegerParseOptions{};
         result.setFixedBase(IntegerBase::Hexadecimal).setMinimumDigits(unit::CpLength::one());
@@ -119,7 +113,7 @@ auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
     }();
     auto reader = StringCharReader{line};
     reader.startCapture();
-    reader.advanceWhile(cHexDigits);
+    reader.advanceWhile(AsciiCategory::HexDigit);
     const auto digits = reader.takeCapture().toString();
     if (digits.isEmpty()) {
         throw err::ParseError{"A chunk-size line requires hexadecimal digits."_el};
@@ -133,19 +127,19 @@ auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
         throw err::ParseError{"The chunk size overflows its numeric range."_el};
     }
     while (!reader.isAtEnd()) {
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         if (reader.isAtEnd() || !reader.advanceIf(U';')) {
             throw err::ParseError{"A chunk extension is malformed."_el};
         }
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         reader.startCapture();
-        reader.advanceWhile(http_grammar::tokenCharacters());
+        reader.advanceWhile(AsciiCategory::HttpToken);
         if (reader.takeCapture().toString().isEmpty()) {
             throw err::ParseError{"A chunk extension name is missing."_el};
         }
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
         if (reader.advanceIf(U'=')) {
-            reader.advanceWhile(cOws);
+            reader.advanceWhile(AsciiCategory::Blank);
             if (reader.advanceIf(U'\"')) {
                 auto closed = false;
                 while (!reader.isAtEnd()) {
@@ -169,13 +163,13 @@ auto Http1FramingParser::chunkSize(const String &line) -> std::uint64_t {
                 }
             } else {
                 reader.startCapture();
-                reader.advanceWhile(http_grammar::tokenCharacters());
+                reader.advanceWhile(AsciiCategory::HttpToken);
                 if (reader.takeCapture().toString().isEmpty()) {
                     throw err::ParseError{"A chunk extension value is missing."_el};
                 }
             }
         }
-        reader.advanceWhile(cOws);
+        reader.advanceWhile(AsciiCategory::Blank);
     }
     return result;
 }

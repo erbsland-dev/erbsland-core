@@ -12,10 +12,9 @@ It provides a consistent API for Linux, macOS, and Windows and depends only on t
 
 .. warning::
 
-    Erbsland Core is in **early alpha**.
-    The available parts are useful for experiments and new applications, but the public API can change without a
-    compatibility period and several planned subsystems are incomplete.
-    Pin the Git revision you use and expect to update application code when moving to a newer revision.
+    Erbsland Core is in **alpha**.
+    The available status is already useful for experiments and new applications, but the public API can change without a
+    compatibility period. See :doc:`addendum/roadmap` for details.
 
 .. button-ref:: get-started/index
     :ref-type: doc
@@ -58,31 +57,49 @@ Choose Your Starting Point
         Look up public types, functions, and detailed behavior by API area.
 
     .. grid-item-card:: :fas:`list-check;sd-text-success` Requirements
-        :link: requirements
+        :link: addendum/requirements
         :link-type: doc
 
         Check compiler, CMake, Git, platform, and contributor-tool requirements.
 
-What Is Available Today
-=======================
+Features Available Today
+========================
 
-The implemented foundation already covers:
+Text, data, and utilities
+--------------------------
 
-*   Extensive and reliable Unicode-aware strings, text and formatting (UTF-8/16/32).
-*   Safe and reliable regular expression engine.
-*   Filesystem paths, path infos, file and directory operations, and file streams
-*   Full features command-line option parsing including formatted help and version output.
-*   Application framework to minimize boilerplate.
-*   Terminal output with colors, styles, formatting, cursor movement, terminal size detection, and more.
-*   Reliable date and time types, durations, system-independent time-zone calculation.
-*   Safe numeric utilities, saturating math/integers, safe numeric conversions, and more.
-*   Random generators, APIs to use fast or secure random generators safely.
-*   Event primitives: Event loops, scheduler, timer, function invocation, event threads.
-*   Stream framework: Byte and text streams, text encodings, buffers, and more.
-*   Error handling: Predefined error classes, error diagnostic, formatted diagnostic error output.
-*   Utilities: COW containers, co-routine primitives, enum flags, ...
+- Unicode-aware strings, text, and formatting for UTF-8, UTF-16, and UTF-32
+- A safe, reliable regular-expression engine
+- Byte and text streams, text encodings, and buffers
+- Filesystem paths, file and directory operations, and file streams
+- Date and time types, durations, and system-independent time-zone calculation
+- Safe numeric utilities, including saturating arithmetic and checked conversions
+- Fast and secure random-number generators with safe APIs
+- Copy-on-write containers, coroutine primitives, enum flags, compression, and more
+- Template render framework with a Jinja like syntax.
 
-The repository README lists the major areas that are still missing from the alpha.
+Applications and system integration
+-----------------------------------
+
+- Command-line option parsing with formatted help and version output
+- An application framework and application-part management to minimize boilerplate
+- A resource system for automatically compiled-in resources
+- Terminal output with colors, styles, cursor movement, and terminal-size detection
+- Error classes, diagnostics, and formatted diagnostic output
+- The Erbsland Configuration Language, including validation rules
+
+Events and networking
+---------------------
+
+- Event loops, schedulers, timers, function invocation, and event threads
+- Event-based TCP and UDP connections, host-name resolution, and more
+- A TLS 1.3 network layer over TCP
+- An event-based HTTP server and client framework for plain TCP and TLS
+
+Cryptography
+------------
+
+- An extensive cryptography layer with no dependency on other libraries
 
 All Documentation
 =================
@@ -94,7 +111,9 @@ All Documentation
     usage/index
     topics/index
     reference/index
-    requirements
+    addendum/background
+    addendum/roadmap
+    addendum/requirements
     addendum/changelog
     guidelines/index
 

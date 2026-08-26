@@ -6,7 +6,7 @@
 namespace demo {
 
 /// `removeFirst()` changes only the first matching text occurrence.
-/// `removeAll()` removes every matching text occurrence or every character from
+/// `removeAll()` removes every matching occurrence or every character from
 /// a character set.
 ///
 /// Text matching is decoded Unicode text matching. You can pass a comparison

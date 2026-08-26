@@ -7,6 +7,7 @@ target_sources(erbsland-core PRIVATE
         HttpStaticContent.hpp
         HttpStaticContentOperation.cpp
         HttpStaticContentOperation.hpp
+        HttpStaticContentOperation_content.cpp
         HttpStaticContentUse.cpp
         HttpStaticContentUse.hpp
         HttpStaticContentUse_fwd.hpp

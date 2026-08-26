@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "StringReaderBackendKind.hpp"
 #include "StringReaderBase_fwd.hpp"
 
 #include "../AnyString_fwd.hpp"
 #include "../AnyStringEditor_fwd.hpp"
+#include "../AsciiCategory.hpp"
 #include "../Char.hpp"
 #include "../CharSet.hpp"
 #include "../StringCharReaderState.hpp"
@@ -50,7 +50,7 @@ public:
     /// Save the current reader state.
     [[nodiscard]] virtual auto save() const noexcept -> StringCharReaderState = 0;
     /// Restore a previous reader state.
-    virtual auto restore(StringCharReaderState state) noexcept -> bool = 0;
+    virtual void restore(StringCharReaderState state) noexcept = 0;
     /// Reset the reader position to the start of the string.
     virtual void reset() noexcept = 0;
     /// Read a tolerant character and advance on success.
@@ -76,13 +76,23 @@ public: // read loops
     /// Read while expected characters are found.
     virtual auto readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
         -> util::LoopResult = 0;
+    /// Read while characters from an ASCII category are found.
+    virtual auto readWhile(const ReadFn &readFn, AsciiCategory expected, unit::CpLength maximum) noexcept
+        -> util::LoopResult = 0;
     /// Read until stop characters are found.
     virtual auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult = 0;
+    /// Read until a character from an ASCII category is found.
+    virtual auto readUntil(const ReadFn &readFn, AsciiCategory stopCategory, unit::CpLength maximum) noexcept
+        -> util::LoopResult = 0;
     /// Advance while expected characters are found.
     virtual auto advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    /// Advance while characters from an ASCII category are found.
+    virtual auto advanceWhile(AsciiCategory expected, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
     /// Advance until a stop character is found.
     virtual auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
+    /// Advance until a character from an ASCII category is found.
+    virtual auto advanceUntil(AsciiCategory stopCategory, unit::CpLength maximum) noexcept -> unit::CpLength = 0;
 
 public: // capture
     /// Set the capture start position.
@@ -118,26 +128,21 @@ public: // buffer
     /// Read while expected characters are found and append them to the buffer.
     [[nodiscard]] virtual auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum)
         -> util::LoopResult = 0;
+    /// Read characters from an ASCII category into the buffer.
+    [[nodiscard]] virtual auto readToBufferWhile(AsciiCategory expected, unit::CpLength maximum)
+        -> util::LoopResult = 0;
     /// Read until stop characters are found and append read characters to the buffer.
     [[nodiscard]] virtual auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum)
+        -> util::LoopResult = 0;
+    /// Read into the buffer until a character from an ASCII category is found.
+    [[nodiscard]] virtual auto readToBufferUntil(AsciiCategory stopCategory, unit::CpLength maximum)
         -> util::LoopResult = 0;
 
 protected:
     /// Create a reader state.
-    [[nodiscard]] static constexpr auto makeState(
-        StringReaderBackendKind kind,
-        mem::StorageIdentifier storageId,
-        std::size_t rawPosition,
-        unit::CpIndex cpPosition) noexcept -> StringCharReaderState {
-        return StringCharReaderState{kind, storageId, rawPosition, cpPosition};
-    }
-    /// Get the backend kind from a saved state.
-    [[nodiscard]] static constexpr auto stateKind(StringCharReaderState state) noexcept -> StringReaderBackendKind {
-        return state.kind();
-    }
-    /// Get the storage identity from a saved state.
-    [[nodiscard]] static constexpr auto storageId(StringCharReaderState state) noexcept -> mem::StorageIdentifier {
-        return state.storageId();
+    [[nodiscard]] static constexpr auto makeState(std::size_t rawPosition, unit::CpIndex cpPosition) noexcept
+        -> StringCharReaderState {
+        return StringCharReaderState{rawPosition, cpPosition};
     }
     /// Get the raw backend position from a saved state.
     [[nodiscard]] static constexpr auto rawPosition(StringCharReaderState state) noexcept -> std::size_t {
@@ -146,11 +151,6 @@ protected:
     /// Get the decoded code-point position from a saved state.
     [[nodiscard]] static constexpr auto cpPosition(StringCharReaderState state) noexcept -> unit::CpIndex {
         return state.cpPosition();
-    }
-    /// Get the identity of a read-only string.
-    template <typename View>
-    [[nodiscard]] static auto viewStorageId(const View &view) noexcept -> mem::StorageIdentifier {
-        return view.storageId();
     }
 };
 

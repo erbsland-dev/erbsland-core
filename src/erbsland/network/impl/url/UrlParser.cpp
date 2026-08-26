@@ -6,6 +6,7 @@
 #include "../../../err/ParameterError.hpp"
 #include "../../../err/ParseError.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
+#include "../../../text/AsciiCategory.hpp"
 #include "../../../text/CharSet.hpp"
 #include "../../../text/EncodingMode.hpp"
 #include "../../../text/Literals.hpp"
@@ -40,7 +41,7 @@ auto UrlParser::parse() const -> std::shared_ptr<UrlData> {
         if (character == U':') {
             break;
         }
-        if (!character.isAsciiAlphanumeric() && character != U'+' && character != U'-' && character != U'.') {
+        if (!character.isAsciiCategory(AsciiCategory::UrlScheme)) {
             throw err::ParseError{"The URL scheme contains an invalid character."_el, reader.position()};
         }
         schemeEditor.append(character.toAsciiLowercase());
@@ -441,7 +442,7 @@ void UrlParser::validateSchemeText(const String &scheme) {
     }
     while (!reader.isAtEnd()) {
         const auto character = reader.read();
-        if (!character.isAsciiAlphanumeric() && character != U'+' && character != U'-' && character != U'.') {
+        if (!character.isAsciiCategory(AsciiCategory::UrlScheme)) {
             throw err::ParameterError{"A custom URL scheme contains an invalid character."_el, "scheme"_el};
         }
     }

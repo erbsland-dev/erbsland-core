@@ -10,7 +10,7 @@ namespace demo {
 ///
 /// `slice()` returns a narrowed string that can continue to share the original
 /// backing store. This is ideal for temporary parsing and for lists of views.
-/// `kept()` materializes the selected range as an editable string, which lets a
+/// `kept()` materializes the selected range as an independent read-only string, which lets a
 /// large source string be released after the interesting part has been copied.
 void sliceAndKept() {
     auto journal = el::String{"rubrik=Norrpasset|väder=klar|anteckning=Stjärnklart över sjön"_el};

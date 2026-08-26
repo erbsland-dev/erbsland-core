@@ -3,8 +3,8 @@
 #include "PasswordHashKey.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/AsciiCategory.hpp"
 #include "../text/Literals.hpp"
-#include "../text/StringCharReader.hpp"
 
 #include <string_view>
 #include <utility>
@@ -40,12 +40,7 @@ auto PasswordHashKey::isValidIdentifier(const text::String &identifier) noexcept
     if (identifier.isEmpty() || identifier.characterLength() > unit::CpLength{32U}) {
         return false;
     }
-    static const auto validCharacters = []() -> text::CharSet {
-        auto result = text::CharSet::from(text::AsciiCategory::Alphanumeric);
-        result.add({U'.', U'_', U'-'});
-        return result;
-    }();
-    return identifier.containsOnly(validCharacters);
+    return identifier.containsOnly(text::AsciiCategory::DottedName);
 }
 
 }

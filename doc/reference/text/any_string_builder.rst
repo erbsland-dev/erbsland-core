@@ -30,7 +30,7 @@ Single decoded code points can be appended as either :cpp:class:`Char <erbsland:
 
     builder.append(U'4');
     builder.append(U'2');
-    builder.append(el::U8StringEditor{" cafés"});
+    builder.append(u8" cafés"_el);
 
     auto result = builder.toU16String();
 
@@ -115,8 +115,8 @@ The unsuffixed ``take*String()`` methods return a completed read-only value and 
 its original kind.
 When the requested result matches the builder kind, the internal storage is moved out.
 
-Use an explicit ``to*StringEditor()`` or ``take*StringEditor()`` method only when the caller intentionally needs to
-continue editing the result.
+Use an explicit ``to*StringEditor()`` or ``take*StringEditor()`` method only when the caller intentionally continues
+with in-place editing or local mutable construction.
 
 Copying Builders
 ================
@@ -127,7 +127,7 @@ The copied builders may initially share copy-on-write string storage, but later 
 .. code-block:: cpp
 
     auto first = el::AnyStringBuilder{};
-    first.append(el::U8StringEditor{"Hei"});
+    first.append(u8"Hei"_el);
 
     auto second = first;
     second.append(U'!');

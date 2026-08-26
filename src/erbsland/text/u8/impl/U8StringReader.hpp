@@ -33,7 +33,7 @@ public:
     [[nodiscard]] auto clone() const -> U8StringReader * override;
     [[nodiscard]] auto position() const noexcept -> unit::CpIndex override;
     [[nodiscard]] auto save() const noexcept -> StringCharReaderState override;
-    auto restore(StringCharReaderState state) noexcept -> bool override;
+    void restore(StringCharReaderState state) noexcept override;
     void reset() noexcept override;
     [[nodiscard]] auto read() noexcept -> Char override;
     [[nodiscard]] auto readIf(Char expected) noexcept -> bool override;
@@ -46,10 +46,16 @@ public:
     auto advanceIf(const CharSet &expected) noexcept -> bool override;
     auto readWhile(const ReadFn &readFn, const CharSet &expected, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
+    auto readWhile(const ReadFn &readFn, AsciiCategory expected, unit::CpLength maximum) noexcept
+        -> util::LoopResult override;
     auto readUntil(const ReadFn &readFn, const CharSet &stopSet, unit::CpLength maximum) noexcept
         -> util::LoopResult override;
+    auto readUntil(const ReadFn &readFn, AsciiCategory stopCategory, unit::CpLength maximum) noexcept
+        -> util::LoopResult override;
     auto advanceWhile(const CharSet &expected, unit::CpLength maximum) noexcept -> unit::CpLength override;
+    auto advanceWhile(AsciiCategory expected, unit::CpLength maximum) noexcept -> unit::CpLength override;
     auto advanceUntil(const CharSet &stopSet, unit::CpLength maximum) noexcept -> unit::CpLength override;
+    auto advanceUntil(AsciiCategory stopCategory, unit::CpLength maximum) noexcept -> unit::CpLength override;
     void startCapture() noexcept override;
     [[nodiscard]] auto takeCapture() noexcept -> AnyString override;
     void clearBuffer() noexcept override;
@@ -65,14 +71,22 @@ public:
     [[nodiscard]] auto readToBufferIf(Char expected) -> bool override;
     [[nodiscard]] auto readToBufferIf(const CharSet &expected) -> std::optional<Char> override;
     [[nodiscard]] auto readToBufferWhile(const CharSet &expected, unit::CpLength maximum) -> util::LoopResult override;
+    [[nodiscard]] auto readToBufferWhile(AsciiCategory expected, unit::CpLength maximum) -> util::LoopResult override;
     [[nodiscard]] auto readToBufferUntil(const CharSet &stopSet, unit::CpLength maximum) -> util::LoopResult override;
+    [[nodiscard]] auto readToBufferUntil(AsciiCategory stopCategory, unit::CpLength maximum)
+        -> util::LoopResult override;
 
 private:
     /// Read UTF-8 characters until a matching boundary is reached.
     auto readLoop(const ReadFn &readFn, const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) noexcept
         -> ReadLoopOutcome;
+    /// Read UTF-8 characters until an ASCII-category boundary is reached.
+    auto readLoop(const ReadFn &readFn, AsciiCategory category, unit::CpLength maximum, bool stopOnMatch) noexcept
+        -> ReadLoopOutcome;
     /// Read UTF-8 characters into the reader buffer until a matching boundary is reached.
     auto readToBufferLoop(const CharSet &charSet, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
+    /// Read UTF-8 characters into the reader buffer until an ASCII-category boundary is reached.
+    auto readToBufferLoop(AsciiCategory category, unit::CpLength maximum, bool stopOnMatch) -> util::LoopResult;
 
 private:
     U8String _text;                                            ///< The read-only string to read.

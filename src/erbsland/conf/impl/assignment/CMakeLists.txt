@@ -9,5 +9,6 @@ target_sources(erbsland-core PRIVATE
         AssignmentStream.cpp
         AssignmentStream.hpp
         AssignmentStream_fwd.hpp
+        AssignmentStream_values.cpp
         AssignmentType.hpp
 )

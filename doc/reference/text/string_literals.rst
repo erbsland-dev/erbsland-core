@@ -19,11 +19,14 @@ refer directly to the original literal storage.
 
     constexpr auto label = u8"Status"_el;        // U8StringLiteral<char8_t>
     auto labelText = el::U8String{label};         // owning read-only value
-    auto labelEditor = el::U8StringEditor{label}; // explicit mutable value
+    auto labelEditor = el::U8StringEditor{label}; // begin an explicit mutable workflow
+    labelEditor.append(u8": ready"_el);
 
 Use ``"_el"`` when you want a constexpr-capable :cpp:class:`U8StringLiteral <erbsland::text::U8StringLiteral>`.
-Pass the literal directly when an API accepts it. Otherwise construct :cpp:class:`U8String <erbsland::text::U8String>`
-or :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` explicitly.
+Pass the literal directly when an API accepts it.
+Otherwise construct :cpp:class:`U8String <erbsland::text::U8String>` explicitly.
+Construct :cpp:class:`U8StringEditor <erbsland::text::U8StringEditor>` when the literal begins an explicit in-place edit
+or local construction workflow.
 
 Interface
 =========

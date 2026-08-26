@@ -11,9 +11,9 @@ void printDraftState(const el::String &label, const el::StringEditor &editor);
 /// reuse. `reset()` returns the string to its initial empty state and releases
 /// the reserved storage.
 ///
-/// Use `append()` for a small number of direct edits on an existing string. When
-/// a result is produced from many fragments in a loop, prefer `AnyStringBuilder`
-/// because it is designed for incremental construction.
+/// This pattern is useful when one local editor is reused for several editing
+/// passes. Reserve once before predictable growth; do not reserve before each
+/// append operation.
 void clearResetAndAppend() {
     auto draft = el::StringEditor{"ridge log"_el};
     draft.reserve(el::ByteLength{80U});

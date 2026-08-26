@@ -34,6 +34,22 @@ using namespace el::text::literals;
 TESTED_TARGETS(Application OptionModule OptionValue OptionValues Options)
 class ApplicationOptionsTest final : public el::UnitTest {
 public:
+    void testInitializeFunctionRunsBeforeMain() {
+        auto scope = ApplicationTestScope<Application>{};
+        auto &application = scope.app();
+        auto initializeCount = 0;
+        auto mainSawInitialization = false;
+        application.setInitializeFn([&initializeCount]() -> void { ++initializeCount; });
+        application.setMainFn([&initializeCount, &mainSawInitialization]() -> ExitCode {
+            mainSawInitialization = initializeCount == 1;
+            return ExitCode{17};
+        });
+
+        REQUIRE_EQUAL(application.run(), 17);
+        REQUIRE_EQUAL(initializeCount, 1);
+        REQUIRE(mainSawInitialization);
+    }
+
     void testApplicationStub() {
         char arg0[] = "tool";
         char arg1[] = "--verbose";

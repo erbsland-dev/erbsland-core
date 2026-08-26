@@ -73,7 +73,6 @@ class HeaderConfig:
         kind: HeaderKind,
         *,
         tool: str,
-        pragma_once: bool = False,
         year: int | None = None,
     ) -> str:
         """Create a generated source header for the given file kind."""
@@ -83,7 +82,7 @@ class HeaderConfig:
         warning_text = self.warning_template(kind).format(tool=tool).rstrip()
         if kind == "include":
             return f"{copyright_text}\n{warning_text}"
-        if pragma_once:
+        if kind == "hpp":
             copyright_text += "\n#pragma once"
         return f"{copyright_text}\n\n{warning_text}"
 

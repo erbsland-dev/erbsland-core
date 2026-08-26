@@ -16,12 +16,12 @@ void trimAndTrimmed() {
     el::io::printLine("original ................: "_el, original);
     el::io::printLine("trimmed .................: "_el, envelope.trimmed(original));
 
-    auto editable = el::StringEditor{"messung:ph=7.1;ok"_el};
-    if (envelope.trim(editable)) {
-        el::io::printLine("mutable .................: "_el, editable);
+    auto narrowed = el::String{"messung:ph=7.1;ok"_el};
+    if (envelope.trim(narrowed)) {
+        el::io::printLine("narrowed ................: "_el, narrowed);
     }
 
-    auto unchanged = el::StringEditor{"messung:ph=7.1;prüfen"_el};
+    auto unchanged = el::String{"messung:ph=7.1;prüfen"_el};
     el::io::printLine("changed .................: "_el, envelope.trim(unchanged));
     el::io::printLine("kept ....................: "_el, unchanged);
 }

@@ -86,6 +86,14 @@ Reason              : "The public io convenience namespace groups helpers around
 Excluded Path       : "test/unittest/src"
 Reason              : "Encapsulating types has a higher priority, over readability in unit tests."
 
+--*[ Rule . oversized_file ]*-----------------------------------------------------------------------------------------
+Excluded Path       : "test/unittest"
+Reason              : "Unit tests keep related scenarios together, where readability is more important than the file-size limit."
+
+--*[ Rule . oversized_file ]*-----------------------------------------------------------------------------------------
+Excluded Path       : "test/profiling"
+Reason              : "Profiling workloads keep each scenario, measurement loop, and result output together for review."
+
 --*[ Rule . static_only_class ]*--------------------------------------------------------------------------------------
 Excluded Path       : "src/erbsland/unit/*Unit.hpp"
 Reason              : "These unit traits define compile-time representation mappings."

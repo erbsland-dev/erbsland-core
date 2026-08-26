@@ -196,6 +196,36 @@ class RegexRule(AntiPatternRule):
             yield Candidate(self.info, match.start(), source.statement_end(match.start()))
 
 
+class OversizedFileRule(AntiPatternRule):
+    """Reject handwritten source files that exceed 500 counted lines."""
+
+    info = RuleInfo("oversized_file", "Files Longer Than 500 Lines", Severity.High)
+    _maximum_lines = 500
+
+    def scan(self, source: SourceFile) -> Iterable[Candidate]:
+        """Yield the first counted line beyond the file-size limit."""
+        if source.is_generated:
+            return
+        api_documentation_lines = {
+            comment.start_line
+            for comment in source.comments
+            if source.path.suffix == ".hpp"
+            and comment.line_comment
+            and comment.text.startswith("/")
+            and not source.text[source.line_start(comment.start_line) : comment.start].strip()
+        }
+        counted_lines = 0
+        for line_number in range(1, len(source.lines) + 1):
+            if line_number in api_documentation_lines:
+                continue
+            counted_lines += 1
+            if counted_lines <= self._maximum_lines:
+                continue
+            start = source.line_start(line_number)
+            yield Candidate(self.info, start, source.line_end(line_number))
+            return
+
+
 class AnonymousNamespaceRule(RegexRule):
     info = RuleInfo("anonymous_namespace", "Anonymous Namespaces", Severity.High)
     pattern = re.compile(r"\bnamespace\s*\{")
@@ -993,6 +1023,7 @@ class NestedNamespaceRule(AntiPatternRule):
 
 
 RULES: tuple[AntiPatternRule, ...] = (
+    OversizedFileRule(),
     AnonymousNamespaceRule(),
     TypeInWrongUnitRule(),
     NamespaceInWrongUnitRule(),

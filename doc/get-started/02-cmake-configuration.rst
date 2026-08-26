@@ -37,15 +37,16 @@ unless your project explicitly enables them.
 Configure the Application Target
 ================================
 
-The application CMake file declares the executable and links it to Core's source-integration target.
+The application CMake file declares the executable and passes it to Core's application setup helper.
 
 .. literalinclude:: files/elgrep/CMakeLists.txt
     :language: cmake
     :caption: <project>/elgrep/CMakeLists.txt
 
-Linking ``erbsland::core`` supplies the public include path and the C++20 requirement.
-The explicit ``target_compile_features`` line also documents the application's own language requirement for readers and
-build tools.
+``erbsland_core_setup_application()`` links the available Core target, enables C++20, disables C++ module scanning for
+the target, and selects UTF-8 source and execution character sets on MSVC.
+The helper works with both source integration and an installed Core package, so the application CMake file does not need
+to choose between their different target names.
 
 .. button-ref:: 03-application-framework
     :ref-type: doc

@@ -41,4 +41,8 @@ auto U32StringEditor::containsOnly(const CharSet &characters) const noexcept -> 
     return impl::U32StringComparisonTools{dataView()}.containsOnly(characters);
 }
 
+auto U32StringEditor::containsOnly(const AsciiCategory category) const noexcept -> bool {
+    return impl::U32StringComparisonTools{dataView()}.containsOnly(category);
+}
+
 }

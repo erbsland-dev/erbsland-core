@@ -13,7 +13,7 @@ auto createTextWithInvalidUtf8() -> el::String {
     constexpr auto bytes = std::array<const char, 15>{
         'S', 'u', 'n', 'n', 'y', ' ', static_cast<char>(0x82U), ' ', 'W', 'e', 'a', 't', 'h', 'e', 'r'};
 
-    return el::U8StringEditor{std::string_view{bytes.data(), bytes.size()}};
+    return el::String{std::string_view{bytes.data(), bytes.size()}};
 }
 
 /// This demo shows basic state checks for `String`.

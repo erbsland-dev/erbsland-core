@@ -14,6 +14,7 @@
 #include "impl/U16StringReader_fwd.hpp"
 #include "impl/U16StringStorage.hpp"
 
+#include "../AsciiCategory.hpp"
 #include "../BooleanFormat.hpp"
 #include "../ByteFormat.hpp"
 #include "../Char.hpp"
@@ -36,7 +37,6 @@
 #include "../NormalizationForm.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
-#include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
@@ -158,6 +158,11 @@ public: // tests
     /// @param characters The character set to match.
     /// @return `true` all characters in the string are from the given set.
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// Test if this string only contains characters from an ASCII category.
+    /// Malformed UTF-16 never matches an ASCII category.
+    /// @param category The ASCII category to match.
+    /// @return `true` if all characters in the string belong to `category`.
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // read
     /// Create a compact copy of this string.

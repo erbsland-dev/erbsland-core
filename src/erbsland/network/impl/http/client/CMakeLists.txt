@@ -9,12 +9,15 @@ target_sources(erbsland-core PRIVATE
         HttpClientRequest.cpp
         HttpClientRequest.hpp
         HttpClientRequest_fwd.hpp
+        HttpClientRequest_redirect.cpp
+        HttpClientRequest_transaction.cpp
         HttpClientRequestEventEditor.cpp
         HttpClientRequestEventEditor.hpp
         HttpClientRequestEventEditor_fwd.hpp
         HttpClientResponse.cpp
         HttpClientResponse.hpp
         HttpClientResponse_fwd.hpp
+        HttpClientResponse_output.cpp
         HttpClientResponseEventEditor.cpp
         HttpClientResponseEventEditor.hpp
         HttpClientResponseEventEditor_fwd.hpp

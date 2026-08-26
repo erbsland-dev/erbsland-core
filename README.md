@@ -56,8 +56,9 @@ Therefore, be warned: **do not** use TLS connections for public networks.
 - [API reference](https://core.erbsland.dev/reference/)
 
 The recommended source integration places Core at `<project>/erbsland/core` as a pinned Git submodule and uses
-`<project>/erbsland/CMakeLists.txt` as the aggregation point for Core and future Erbsland extensions. Link applications
-against `erbsland::core`. The [source integration guide](https://core.erbsland.dev/usage/integrate-as-submodule.html)
+`<project>/erbsland/CMakeLists.txt` as the aggregation point for Core and future Erbsland extensions. Configure
+application targets with `erbsland_core_setup_application(TARGET <target>)`. The
+[source integration guide](https://core.erbsland.dev/usage/integrate-as-submodule.html)
 contains the complete layout and commands; an
 [installed static library](https://core.erbsland.dev/usage/install-static-library.html) is supported as well.
 
@@ -67,7 +68,7 @@ contains the complete layout and commands; an
 - CMake 3.28 or newer
 - Git for the recommended submodule integration
 
-Ninja is optional. See the [requirements page](https://core.erbsland.dev/requirements.html) for supported platforms and
+Ninja is optional. See the [requirements page](https://core.erbsland.dev/addendum/requirements.html) for supported platforms and
 Core-development tooling.
 
 ## Development

@@ -7,8 +7,7 @@ namespace demo {
 
 /// `insert()` adds text at a byte or code-point index. `replace()` changes a
 /// range, `replaceFirst()` changes the first matching text occurrence, and
-/// `replaceAll()` changes every matching text occurrence or character from a
-/// character set.
+/// `replaceAll()` changes every matching occurrence in place.
 ///
 /// Prefer byte indexes when they come from a search operation. Use code-point
 /// indexes and ranges when the text is short and the edit position is naturally

@@ -12,17 +12,8 @@ namespace erbsland::network::impl::http_grammar {
 using namespace text;
 using namespace text::literals;
 
-auto tokenCharacters() noexcept -> const CharSet & {
-    static const auto cTokenCharacters = []() -> CharSet {
-        auto result = CharSet::from(AsciiCategory::Alphanumeric);
-        result.add(CharSet{"!#$%&'*+-.^_`|~"_el});
-        return result;
-    }();
-    return cTokenCharacters;
-}
-
 auto isToken(const String &value) noexcept -> bool {
-    return !value.isEmpty() && value.containsOnly(tokenCharacters());
+    return !value.isEmpty() && value.containsOnly(AsciiCategory::HttpToken);
 }
 
 auto isFieldValue(const String &value) noexcept -> bool {

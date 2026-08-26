@@ -14,9 +14,10 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("CopyOnWrite"_el, copyOnWrite);
     app.registerDemo("EditingText"_el, editingText);
     app.registerDemo("InsertAndReplace"_el, insertAndReplace);
+    app.registerDemo("ManualDetach"_el, manualDetach);
+    app.registerDemo("NormalizeText"_el, normalizeText);
     app.registerDemo("RemoveAndKeepRanges"_el, removeAndKeepRanges);
     app.registerDemo("RemoveFirstAndAll"_el, removeFirstAndAll);
-    app.registerDemo("ManualDetach"_el, manualDetach);
     app.registerDemo("ReserveForAppend"_el, reserveForAppend);
     app.registerDemo("ShrinkSlices"_el, shrinkSlices);
     return app.run();

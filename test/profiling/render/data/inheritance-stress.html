@@ -1,0 +1,7 @@
+{% set layer = "root" %}
+{% set marker = company %}
+{% extends "inheritance-stress/level-3.html" %}
+{% block alpha %}<root-alpha>{{ super() }}</root-alpha>{% endblock %}
+{% block beta %}{% set inherited = super() %}<root-beta>{{ inherited | trim }}</root-beta>{% endblock %}
+{% block row %}<root-row>{{ super() }}|{{ loop.index }}|{{ service.id }}</root-row>{% endblock %}
+{% block badge %}<root-badge>{{ super.super() | upper }}</root-badge>{% endblock %}

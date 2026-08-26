@@ -83,13 +83,13 @@ Unicode Normalization
 
 The read-only and editor types for all three widths support NFC, NFD, NFKC, and NFKD normalization through an explicit
 :cpp:enum:`NormalizationForm <erbsland::text::NormalizationForm>` argument.
-Read :doc:`/topics/strings/normalizing_strings` for guidance about choosing a form, compatibility-changing behavior,
+Read :doc:`/topics/text/normalizing_strings` for guidance about choosing a form, compatibility-changing behavior,
 malformed input, storage reuse, and concatenation.
 
-``normalized(form)`` returns a value or editor of the same width.
-Editors additionally provide ``normalize(form)`` for in-place operation.
-When valid text is already in the requested form, these methods preserve the original shared allocation; the in-place
-operation also leaves capacity and aliases unchanged.
+``normalized(form)`` returns a read-only value of the same width and is the preferred operation in application code.
+Editors also expose ``normalize(form)`` for an explicit in-place editing workflow.
+They should remain local mutable working values rather than default parameter or read-only storage types.
+When valid text is already in the requested form, these methods preserve the original shared allocation.
 Normalization uses constant bounded working memory and creates replacement storage only after the first changed
 sequence.
 After decomposition, a canonical sequence with more than 30 consecutive non-starters is replaced completely with one

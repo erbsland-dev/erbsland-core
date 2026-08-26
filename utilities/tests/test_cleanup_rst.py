@@ -118,7 +118,8 @@ class CleanupRstTest(unittest.TestCase):
         result = self.cleanup("Use :cpp:any:`U8StringEditor::append` for appending text.\n")
 
         self.assertEqual(
-            "Use :cpp:func:`U8StringEditor::append <erbsland::text::U8StringEditor::append>` for appending text.\n",
+            "Use :cpp:func:`U8StringEditor::append <erbsland::text::U8StringEditor::append>` for\n"
+            "appending text.\n",
             result,
         )
 
@@ -141,7 +142,8 @@ class CleanupRstTest(unittest.TestCase):
         result = self.cleanup(text)
 
         self.assertEqual(
-            "This paragraph references :cpp:type:`StringEditor <erbsland::text::StringEditor>` and\n"
+            "This paragraph references\n"
+            ":cpp:type:`StringEditor <erbsland::text::StringEditor>` and\n"
             "``std::string`` while it keeps words wrapped within the configured width.\n"
             "Another sentence follows with ordinary text.\n",
             result,

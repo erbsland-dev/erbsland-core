@@ -11,27 +11,28 @@ void countEmojis(const el::String &text);
 ///
 /// It accepts common string inputs naturally:
 /// - string literals are used directly without copying,
-/// - existing views share their backend,
-/// - editors convert safely to owning read-only strings.
+/// - existing strings share their storage,
+/// - local editors convert safely to read-only strings.
 ///
 /// From the caller's perspective, all variants behave the same.
 void idealFunctionParameter() {
     // A string literal can be passed directly.
     countEmojis("🌲🌲 Waldkonzert mit Fuchs 🦊 und Eule 🦉"_el);
 
-    // An existing view can be passed without copying.
-    const auto stringView = el::String{"Pluie douce sur les fleurs 🌧️🌷🌼"_el};
-    countEmojis(stringView);
+    // An existing string can be passed without copying.
+    const auto string = el::String{"Pluie douce sur les fleurs 🌧️🌷🌼"_el};
+    countEmojis(string);
 
-    // An editable string is accepted as read-only input.
-    const auto stringEdit = el::StringEditor{"Bosque nocturno: luna 🌙, estrellas ✨ y grillos 🦗"_el};
-    countEmojis(stringEdit);
+    // A short value assembled with an editor is accepted as read-only input.
+    auto constructed = el::StringEditor{"Bosque nocturno: "_el};
+    constructed.append("luna 🌙 y grillos 🦗"_el);
+    countEmojis(constructed);
 }
 
 /// Count all emoji-like symbols in `text` and print the result.
 ///
 /// The function only needs read-only access to the text. It does not need to know
-/// whether the caller passed a literal, a view, or an editable string.
+/// whether the caller passed a literal, a string, or a short constructed value.
 void countEmojis(const el::String &text) {
     std::size_t emojiCount = 0;
     text.forEach([&](const el::Char character) mutable noexcept -> el::util::LoopStatus {

@@ -7,6 +7,7 @@
 #include "../../err/ParameterError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../text/AnyString.hpp"
+#include "../../text/AsciiCategory.hpp"
 #include "../../text/Char.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringCharReader.hpp"
@@ -101,15 +102,13 @@ auto HttpMediaType::fromStringOrThrow(const String &text) -> HttpMediaType {
         throw err::ParseError{"A media type must be valid UTF-8."_el};
     }
     auto reader = StringCharReader{text};
-    static const auto cWhitespace = CharSet{U' ', U'\t'};
-    const auto skipWhitespace = [&reader]() -> void { reader.advanceWhile(cWhitespace); };
     const auto readToken = [&reader]() -> String {
         reader.startCapture();
-        reader.advanceWhile(impl::http_grammar::tokenCharacters());
+        reader.advanceWhile(AsciiCategory::HttpToken);
         return reader.takeCapture().toString();
     };
 
-    skipWhitespace();
+    reader.advanceWhile(AsciiCategory::Blank);
     auto type = readToken();
     if (type.isEmpty() || !reader.advanceIf(U'/')) {
         throw err::ParseError{"A media type requires a type and subtype separated by a slash."_el};
@@ -119,18 +118,18 @@ auto HttpMediaType::fromStringOrThrow(const String &text) -> HttpMediaType {
         throw err::ParseError{"A media type requires a non-empty subtype token."_el};
     }
     auto parameters = HttpMediaTypeParameters{};
-    skipWhitespace();
+    reader.advanceWhile(AsciiCategory::Blank);
     while (!reader.isAtEnd()) {
         if (!reader.advanceIf(U';')) {
             throw err::ParseError{"Unexpected text follows the media type subtype."_el};
         }
-        skipWhitespace();
+        reader.advanceWhile(AsciiCategory::Blank);
         auto name = readToken();
-        skipWhitespace();
+        reader.advanceWhile(AsciiCategory::Blank);
         if (name.isEmpty() || !reader.advanceIf(U'=')) {
             throw err::ParseError{"A media-type parameter requires a token name and equals sign."_el};
         }
-        skipWhitespace();
+        reader.advanceWhile(AsciiCategory::Blank);
         auto value = String{};
         if (reader.advanceIf(U'\"')) {
             reader.clearBuffer();
@@ -179,7 +178,7 @@ auto HttpMediaType::fromStringOrThrow(const String &text) -> HttpMediaType {
         if (parameters.count() > cMaximumParameterCount) {
             throw err::ParseError{"The media type exceeds the parameter-count limit."_el};
         }
-        skipWhitespace();
+        reader.advanceWhile(AsciiCategory::Blank);
     }
     try {
         return HttpMediaType{std::move(type), std::move(subtype), std::move(parameters)};

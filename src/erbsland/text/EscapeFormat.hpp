@@ -27,6 +27,7 @@ public:
         Display,     ///< Escape unsafe characters for human-readable display text (equals Config).
         Config,      ///< Escape for Erbsland Configuration Language text literals.
         ConfigTest,  ///< Escape for Erbsland Configuration Language test strings.
+        Markdown,    ///< Escape normal CommonMark text using backslash and numeric references.
 
         _valueCount, ///< Number of escape formats.
     };

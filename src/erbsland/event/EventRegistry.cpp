@@ -3,6 +3,7 @@
 #include "EventRegistry.hpp"
 
 #include "../err/ParameterError.hpp"
+#include "../text/AsciiCategory.hpp"
 
 #include <thread>
 #include <utility>
@@ -10,7 +11,6 @@
 namespace erbsland::event {
 
 using namespace text::literals;
-using text::CharSet;
 using text::String;
 
 EventRegistry::EventRegistry(PrivateTag) {
@@ -19,8 +19,7 @@ EventRegistry::EventRegistry(PrivateTag) {
 
 auto EventRegistry::registerEvent(String name, String description) -> EventId {
     std::scoped_lock lock{_mutex};
-    static const auto validNameCharSet = CharSet::fromPattern("-_.a-zA-Z0-9"_el);
-    if (!name.isValidUtf8() || !name.containsOnly(validNameCharSet)) {
+    if (!name.containsOnly(text::AsciiCategory::DottedName)) {
         throw err::ParameterError{"The event name contains invalid characters."_el, "name"_el};
     }
     if (name.length() > unit::ByteLength{800} || name.characterLength() > unit::CpLength{200}) {
@@ -68,8 +67,7 @@ auto EventRegistry::getEventInfo(const EventId identifier) const noexcept -> Eve
 
 auto EventRegistry::registerBackend(String name, String description) -> EventBackendId {
     std::scoped_lock lock{_mutex};
-    static const auto validNameCharSet = CharSet::fromPattern("-_.a-zA-Z0-9"_el);
-    if (!name.isValidUtf8() || !name.containsOnly(validNameCharSet)) {
+    if (!name.containsOnly(text::AsciiCategory::DottedName)) {
         throw err::ParameterError{"The backend name contains invalid characters."_el, "name"_el};
     }
     if (name.length() > unit::ByteLength{800} || name.characterLength() > unit::CpLength{200}) {

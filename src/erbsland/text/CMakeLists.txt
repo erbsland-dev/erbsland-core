@@ -9,6 +9,7 @@ add_subdirectory(impl)
 add_subdirectory(json)
 add_subdirectory(pattern)
 add_subdirectory(punycode)
+add_subdirectory(render)
 add_subdirectory(u16)
 add_subdirectory(u32)
 add_subdirectory(u8)
@@ -45,6 +46,7 @@ target_sources(erbsland-core PRIVATE
         CharSet.hpp
         CharSet.tpp
         CharSet_fwd.hpp
+        CharSet_set_operations.cpp
         CharSet_unicode.cpp
         CharSignal.hpp
         CodeSnippet.hpp
@@ -111,6 +113,7 @@ target_sources(erbsland-core PRIVATE
         StringDecodeBuffer.cpp
         StringDecodeBuffer.hpp
         StringDecodeBuffer.tpp
+        StringDecodeBuffer_scan.tpp
         StringDecoder.cpp
         StringDecoder.hpp
         StringDecoder_fwd.hpp

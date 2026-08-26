@@ -25,6 +25,7 @@ const EscapeFormat::ValueToTextArray EscapeFormat::_valueToTextMap = {
         {Display, "display"_el},
         {Config, "config"_el},
         {ConfigTest, "config_test"_el},
+        {Markdown, "markdown"_el},
     },
 };
 

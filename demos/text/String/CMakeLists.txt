@@ -34,11 +34,14 @@ target_sources(string PRIVATE
         JoiningText.cpp
         LengthAttributes.cpp
         main.cpp
+        NormalizationForms.cpp
+        NormalizeJoinedText.cpp
         PartialStringComparison.cpp
         RemoveCharacters.cpp
         SharedTools.hpp
         SliceAndKept.cpp
         SliceBoundaries.cpp
+        SequentialCharacterReading.cpp
         StorageIdentifier.cpp
         SplittingText.cpp
         StdVsCoreCaseFold.cpp

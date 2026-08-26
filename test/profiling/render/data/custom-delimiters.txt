@@ -1,0 +1,7 @@
+(# Custom delimiters isolate candidate matching and closing-delimiter checks. #)
+[[ account.name | escape ]]
+<% if account.active %>active<% else %>inactive<% endif %>
+<% for item in navigation %>
+[[ loop.index ]]/[[ loop.length ]]: [[ item.label | trim ]]
+<% endfor %>
+Ordinary braces { and percent signs % remain raw text between custom tags.

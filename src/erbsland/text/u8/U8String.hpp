@@ -14,6 +14,7 @@
 #include "impl/U8StringReader_fwd.hpp"
 #include "impl/U8StringStorage.hpp"
 
+#include "../AsciiCategory.hpp"
 #include "../BooleanFormat.hpp"
 #include "../ByteFormat.hpp"
 #include "../Char.hpp"
@@ -37,7 +38,6 @@
 #include "../NormalizationForm.hpp"
 #include "../ProcessCharacterFn.hpp"
 #include "../SafeStringFlag.hpp"
-#include "../StringCharReader.hpp"
 #include "../StringEncoding.hpp"
 #include "../StringSide.hpp"
 #include "../TransformCharacterFn.hpp"
@@ -169,6 +169,11 @@ public: // tests
     /// @param characters The character set to match.
     /// @return `true` all characters in the string are from the given set.
     [[nodiscard]] auto containsOnly(const CharSet &characters) const noexcept -> bool;
+    /// Test if this string only contains characters from an ASCII category.
+    /// Malformed UTF-8 never matches an ASCII category.
+    /// @param category The ASCII category to match.
+    /// @return `true` if all characters in the string belong to `category`.
+    [[nodiscard]] auto containsOnly(AsciiCategory category) const noexcept -> bool;
 
 public: // read
     /// Create a compact copy of this string.
@@ -399,7 +404,7 @@ public: // transform and copy-modify
     /// @param form The explicit normalization form to apply.
     /// @return The normalized string, sharing this storage if no change is required.
     /// @usesunidb{Uses the generated Unicode normalization database.}
-    /// @seedoc{/topics/strings/normalizing_strings}
+    /// @seedoc{/topics/text/normalizing_strings}
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U8String;
     /// Return a string truncated to a maximum decoded code-point width.
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode = TruncateMode::End) const -> U8String;

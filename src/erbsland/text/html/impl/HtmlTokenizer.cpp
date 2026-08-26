@@ -3,6 +3,7 @@
 #include "HtmlTokenizer.hpp"
 
 #include "../../AnyStringEditor.hpp"
+#include "../../AsciiCategory.hpp"
 
 #include <array>
 #include <cstdint>
@@ -310,9 +311,7 @@ auto HtmlTokenizer::parseName() -> std::optional<String> {
 }
 
 void HtmlTokenizer::skipWhitespace() noexcept {
-    while (!_reader.isAtEnd() && _reader.peek().isAsciiWhitespace()) {
-        _reader.advance();
-    }
+    _reader.advanceWhile(AsciiCategory::Whitespace);
 }
 
 auto HtmlTokenizer::takeBufferString() -> String {

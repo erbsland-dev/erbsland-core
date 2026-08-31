@@ -18,7 +18,7 @@
 
 namespace erbsland::text {
 
-/// Decode binary text data into Erbsland strings.
+/// Decode binary text data into Erbsland Core strings.
 /// @tested{StringDecoderTest}
 class StringDecoder final {
 public:

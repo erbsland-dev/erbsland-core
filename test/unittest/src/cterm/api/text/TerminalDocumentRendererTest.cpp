@@ -154,6 +154,21 @@ public:
         requireContains(lines[1], "message: No such file or directory");
     }
 
+    void testFieldListStartsOversizedContentAfterLabel() {
+        auto document = text::TextDocument{};
+        auto list = document.root()->add(text::TextNodeType::FieldList);
+        auto path = list->add(text::TextNodeType::FieldItem);
+        path->add(text::TextNodeType::FieldLabel)->addText("Path"_el);
+        path->add(text::TextNodeType::FieldContent)
+            ->addText("/var/folders/example/temporary/configuration/application-settings.elcl"_el);
+
+        auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
+        const auto result = renderDocument(renderer, document, 50);
+
+        requireContains(result, "Path: /var/folders/");
+        REQUIRE(result.find("Path:\n") == std::string::npos);
+    }
+
     void testContainerDecorationsSurroundAndPrefixContent() {
         auto style = TerminalDocumentStyle{};
         style.edit(TerminalDocumentStyleSelector::blockquote())

@@ -8,6 +8,7 @@
 #include "ApplicationPartTraits.hpp"
 #include "CommandLineArguments.hpp"
 #include "InitializeFn.hpp"
+#include "LastErrorDumpMode.hpp"
 #include "MainFn.hpp"
 
 #include "impl/ApplicationData_fwd.hpp"
@@ -21,6 +22,8 @@
 #include "../event/Events_fwd.hpp"
 #include "../event/EventThread_fwd.hpp"
 #include "../i18n/DisplayTextMap_fwd.hpp"
+#include "../log/LogManager_fwd.hpp"
+#include "../log/LogStream_fwd.hpp"
 #include "../options/Options_fwd.hpp"
 #include "../options/OptionValues_fwd.hpp"
 #include "../random/Random_fwd.hpp"
@@ -42,7 +45,7 @@ namespace erbsland::core {
 /// and call `Application::linkWith(app)` in this method. From `main()` call all these `initialize...()` methods
 /// of all DLLs that use Erbsland Core, just after creating the `Application` instance.
 /// Do not use `application()` or `Application::instance()` in static initialization in DLLs that link Erbsland Core.
-/// @tested{ApplicationEventTest ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
+/// @tested{ApplicationEventTest ApplicationLogTest ApplicationOptionsTest}
 class Application {
     friend class impl::ApplicationInstanceManager;
     friend auto application() -> Application &;
@@ -165,6 +168,21 @@ public: // cryptology
     /// Get the shared cryptology configuration, creating it on first use.
     [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration &;
 
+public: // logging
+    /// Access the lazily created application log manager.
+    /// The first access installs the default information, warning, and error console route.
+    /// @return The application-owned manager, which remains valid until application cleanup.
+    [[nodiscard]] auto log() -> log::LogManager &;
+    /// Access the root application log stream.
+    /// This method lazily creates the same manager as `log()`.
+    /// @return The root producer stream of the application log manager.
+    [[nodiscard]] auto logStream() -> const log::LogStreamPtr &;
+    /// Enable retaining and conditionally displaying recent error entries during final application cleanup.
+    /// The writer remains persistent across later logging configuration replacements.
+    /// Repeated calls update the display mode without installing another writer.
+    /// @param mode Select whether a nonempty snapshot is displayed only after failure or after every run.
+    void enableLastErrorDump(LastErrorDumpMode mode = LastErrorDumpMode::OnFailure);
+
 public: // system services
     /// Access the application display texts. The returned pointer is always non-null.
     [[nodiscard]] auto displayText() const -> const i18n::DisplayTextMapConstPtr &;
@@ -240,7 +258,8 @@ private:
     void quitEventSystem() noexcept;
 
 private:
-    impl::ApplicationDataPtr _data;
+    impl::ApplicationDataPtr _data; ///< Shared internal application state.
+    unit::ExitCode _exitCode;       ///< Final run result used by process-lifetime cleanup features.
 };
 
 /// Access the global application instance, creating a default one on first use.

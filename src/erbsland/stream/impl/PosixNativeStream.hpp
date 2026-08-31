@@ -35,14 +35,15 @@ public:
     auto operator=(const PosixNativeStream &) -> PosixNativeStream & = delete;
     auto operator=(PosixNativeStream &&) -> PosixNativeStream & = delete;
 
-public: // implement NativeOutputStream
+public: // implements NativeOutputStream
     using StreamErrorSource::throwError;
 
     void writeBytes(std::span<const char> bytes) override;
     void flush() override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
-public: // implement NativeByteStream
+public: // implements NativeByteStream
+    [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity override;
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto position() const -> unit::ByteIndex override;
     auto setPosition(unit::ByteIndex position) -> unit::ByteIndex override;
@@ -75,6 +76,7 @@ private:
     std::atomic<int> _fileDescriptor{-1};                              ///< Wrapped POSIX file descriptor.
     NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Descriptor ownership mode.
     text::String _path;                                                ///< Stream path, when available.
+    system::FileIdentity _fileIdentity;                                ///< Identity captured from the descriptor.
     bool _supportsPositioning{false};                                  ///< Whether this descriptor can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.
     mutable unsigned int _operationCount{0U};                          ///< Number of native calls using the descriptor.

@@ -14,6 +14,7 @@ Reference
     err/index
     event/index
     i18n/index
+    log/index
     math/index
     mem/index
     network/index

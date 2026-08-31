@@ -142,11 +142,12 @@ target_sources(erbsland-core PRIVATE
         TerminalDocumentStyleSelector.hpp
         TerminalFlag.hpp
         TerminalFlags.hpp
+        TerminalOutputGuard.hpp
+        TerminalOutputGuard_fwd.hpp
         TerminalSession.hpp
         TerminalStream.cpp
         TerminalStream.hpp
         TerminalStream_fwd.hpp
-        TerminalStreamSynchronization.hpp
         Tile9Style.cpp
         Tile9Style.hpp
         Tile9Style_fwd.hpp

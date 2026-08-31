@@ -9,12 +9,16 @@
 #include "../ApplicationPartManager_fwd.hpp"
 #include "../CommandLineArguments.hpp"
 #include "../InitializeFn.hpp"
+#include "../LastErrorDumpMode.hpp"
 #include "../MainFn.hpp"
 
 #include "../../cryptology/configuration/CryptologyConfiguration_fwd.hpp"
 #include "../../cterm/Terminal_fwd.hpp"
 #include "../../cterm/TerminalDocumentStyle.hpp"
 #include "../../i18n/DisplayTextMap_fwd.hpp"
+#include "../../log/ConsoleLogWriter_fwd.hpp"
+#include "../../log/LastErrorsLogWriter_fwd.hpp"
+#include "../../log/LogManager_fwd.hpp"
 #include "../../options/Options.hpp"
 #include "../../options/OptionSensitiveTextLocation.hpp"
 #include "../../options/OptionValues.hpp"
@@ -32,7 +36,7 @@ namespace erbsland::core::impl {
 /// The interface for the internal data of the application.
 /// This is the actual singleton to allow temporary `Application` instances.
 /// Construction and `setCommandLineArguments` are protected by the mutex in `ApplicationInstanceManager`.
-/// @tested{ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
+/// @tested{ApplicationLogTest ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
 class ApplicationData {
 public:
     // defaults
@@ -48,7 +52,8 @@ public:
     virtual void setCommandLineArguments(int argc, wchar_t *argv[]) = 0;
     /// Do cleanup tasks before application exit.
     /// - Restore terminal integration after the application instance has been destroyed.
-    virtual void cleanupBeforeAppExit() noexcept = 0;
+    /// @param exitCode The final application result, or success when the application was never run.
+    virtual void cleanupBeforeAppExit(unit::ExitCode exitCode) noexcept = 0;
     /// Access and lazy creation of the event system data.
     [[nodiscard]] virtual auto event() -> EventData & = 0;
     /// Render a system-output document to the best available output target.
@@ -101,6 +106,23 @@ public: // accessors
     [[nodiscard]] virtual auto secureRandom() noexcept -> const random::RandomPtr & = 0;
     /// Set the cryptographically secure random generator.
     virtual void setSecureRandom(random::RandomPtr random) noexcept = 0;
+    /// Access the mutex protecting lazy log initialization.
+    [[nodiscard]] virtual auto logMutex() noexcept -> std::mutex & = 0;
+    /// Access the application log manager.
+    [[nodiscard]] virtual auto logManager() noexcept -> const log::LogManagerPtr & = 0;
+    /// Store the application log manager and its default console writer.
+    /// @param manager The lazily created application manager.
+    /// @param consoleWriter The console writer retained for cleanup output.
+    virtual void setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept = 0;
+    /// Access the installed last-errors writer.
+    [[nodiscard]] virtual auto lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & = 0;
+    /// Store the installed last-errors writer.
+    /// @param writer The persistent retained-error writer, or empty before it is enabled.
+    virtual void setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept = 0;
+    /// Access the condition for displaying retained errors during cleanup.
+    [[nodiscard]] virtual auto lastErrorDumpMode() const noexcept -> LastErrorDumpMode = 0;
+    /// Set the condition for displaying retained errors during cleanup.
+    virtual void setLastErrorDumpMode(LastErrorDumpMode mode) noexcept = 0;
     /// Access the cryptology configuration.
     [[nodiscard]] virtual auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & = 0;
     /// Access the compiled-resource manager.

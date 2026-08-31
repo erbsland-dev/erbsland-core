@@ -9,6 +9,7 @@ import hashlib
 import os
 import re
 import shlex
+import shutil
 import stat
 import struct
 import subprocess
@@ -38,6 +39,8 @@ DEMO_TERMINAL_WIDTH = 90
 DEMO_TERMINAL_HEIGHT = 40
 EXECUTABLE_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+(?:/[A-Za-z0-9_-]+)*$")
 ARGUMENT_RE = re.compile(r"^[A-Za-z0-9_-]+$")
+BRANCH_ARGUMENT_RE = re.compile(r"^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)+$")
+FIXTURE_ARGUMENT_RE = re.compile(r"^demos/[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)+$")
 PLACEHOLDER_RE = re.compile(r"^\{(?P<kind>file|directory):(?P<value>[^{}]+)\}$")
 DIRECTORY_PLACEHOLDER_NAME_RE = re.compile(r"^[-_a-zA-Z0-9]{1,64}$")
 FILE_PLACEHOLDER_TYPES = frozenset(("empty", "text", "none"))
@@ -123,12 +126,38 @@ class DemoExecutor:
         executable_name = parts[0]
         if EXECUTABLE_NAME_RE.fullmatch(executable_name) is None:
             raise DemoDocError(f"Demo executable name is not allowed: {executable_name!r}")
+        previous_argument = ""
         for argument in parts[1:]:
             if ARGUMENT_RE.fullmatch(argument) is not None:
+                previous_argument = argument
+                continue
+            if previous_argument == "--branch" and BRANCH_ARGUMENT_RE.fullmatch(argument) is not None:
+                previous_argument = argument
+                continue
+            if self.fixture_path(argument) is not None:
+                previous_argument = argument
                 continue
             if self.parse_placeholder(argument, 0) is None:
                 raise DemoDocError(f"Demo argument is not allowed: {argument!r}")
+            previous_argument = argument
         return parts
+
+    def fixture_path(self, argument: str) -> Path | None:
+        """Resolve an existing read-only demo fixture argument."""
+        if FIXTURE_ARGUMENT_RE.fullmatch(argument) is None:
+            return None
+        try:
+            validate_source_relative_path(argument, "Demo fixture")
+        except UtilityError as error:
+            raise DemoDocError(str(error)) from None
+        path = self.project_dir / argument
+        try:
+            require_safe_existing_file(path, "Demo fixture")
+        except UtilityError as error:
+            raise DemoDocError(str(error)) from None
+        if not path.exists():
+            raise DemoDocError(f"Demo fixture does not exist: {path}")
+        return path
 
     @staticmethod
     def parse_placeholder(argument: str, index: int) -> DemoPlaceholder | None:
@@ -166,6 +195,22 @@ class DemoExecutor:
                     directory_path.mkdir()
                     directory_paths[placeholder.value] = directory_path
                 expanded_arguments.append(str(directory_path))
+        return expanded_arguments
+
+    def copy_fixture_arguments(self, arguments: list[str], temporary_dir: Path) -> list[str]:
+        """Replace demo fixture arguments with temporary read-only copies."""
+        expanded_arguments: list[str] = []
+        fixture_index = 0
+        for argument in arguments:
+            fixture_path = self.fixture_path(argument)
+            if fixture_path is None:
+                expanded_arguments.append(argument)
+                continue
+            copied_path = temporary_dir / f"fixture-{fixture_index}{fixture_path.suffix}"
+            shutil.copyfile(fixture_path, copied_path)
+            copied_path.chmod(0o400)
+            expanded_arguments.append(str(copied_path))
+            fixture_index += 1
         return expanded_arguments
 
     @staticmethod
@@ -209,10 +254,14 @@ class DemoExecutor:
         executable_argument = str(executable_path.relative_to(self.project_dir))
         command = [executable_argument, *parts[1:]]
         temporary_dir_context = None
-        if any(self.parse_placeholder(argument, 0) is not None for argument in parts[1:]):
+        if any(
+            self.parse_placeholder(argument, 0) is not None or self.fixture_path(argument) is not None
+            for argument in parts[1:]
+        ):
             temporary_dir_context = tempfile.TemporaryDirectory(prefix="erbsland-demo-doc-")
             temporary_dir = Path(temporary_dir_context.name)
-            command = [executable_argument, *self.expand_placeholders(parts[1:], temporary_dir)]
+            arguments = self.expand_placeholders(parts[1:], temporary_dir)
+            command = [executable_argument, *self.copy_fixture_arguments(arguments, temporary_dir)]
         process = None
         terminal_master_fd = None
         terminal_slave_fd = None

@@ -12,7 +12,7 @@ Boolean Format
 --------------
 
 :cpp:class:`BooleanFormat <erbsland::text::BooleanFormat>` describes how boolean values are written to Erbsland
-strings and stream ``print`` helpers.
+Core strings and stream ``print`` helpers.
 The default format writes lowercase ``true`` and ``false``.
 Use the style factories to select ``true`` /``false``, ``yes`` /``no``, ``on`` /``off``, or ``enabled`` /``disabled``
 output.
@@ -90,7 +90,7 @@ Float Format
 ------------
 
 :cpp:class:`FloatFormat <erbsland::text::FloatFormat>` describes how floating-point values are written to Erbsland
-strings and stream ``print`` helpers.
+Core strings and stream ``print`` helpers.
 It wraps the simple presentation styles provided by ``std::format`` and supports an optional precision.
 
 Use a :cpp:class:`FloatFormat <erbsland::text::FloatFormat>` object in a print argument list to change the format for
@@ -114,7 +114,7 @@ Float Parse Options
 -------------------
 
 :cpp:class:`FloatParseOptions <erbsland::text::FloatParseOptions>` controls floating-point parsing from Erbsland
-strings.
+Core strings.
 By default the parser accepts general floating-point syntax and requires the complete input to be consumed.
 
 Use a style when accepted syntax must be constrained:
@@ -147,7 +147,7 @@ detection logic.
 Integer Format
 --------------
 
-:cpp:class:`IntegerFormat <erbsland::text::IntegerFormat>` describes how integers are written to Erbsland strings and
+:cpp:class:`IntegerFormat <erbsland::text::IntegerFormat>` describes how integers are written to Erbsland Core strings and
 :cpp:class:`AnyStringBuilder <erbsland::text::AnyStringBuilder>`.
 The default format is decimal with no flags, lowercase letters, a zero field width, no precision, and negative-only sign
 output.
@@ -192,7 +192,7 @@ Without this flag, parsing requires full consumption.
 Integer Parse Options
 ---------------------
 
-:cpp:class:`IntegerParseOptions <erbsland::text::IntegerParseOptions>` controls integer parsing from Erbsland strings and
+:cpp:class:`IntegerParseOptions <erbsland::text::IntegerParseOptions>` controls integer parsing from Erbsland Core strings and
 from :cpp:class:`StringCharReader <erbsland::text::StringCharReader>`.
 ``parserDefault()`` is the default option set for low-level parsers and tokenizers.
 It does not accept signs or separators and reads a single integer token.
@@ -263,6 +263,15 @@ It preserves printable punctuation and Unicode text while converting control and
 sequences.
 Together with ``EscapeAmount::Balanced``, it provides safe output without obscuring ordinary quotes, backslashes, or
 path punctuation.
+
+Log Escaping
+============
+
+``EscapeFormat::Log`` applies the same balanced safety rule as display escaping, except that U+000A line feeds remain
+real line breaks.
+All other Unicode control and format characters are converted into visible escapes.
+Use it for untrusted messages that may intentionally contain short multiline listings but must not contain terminal
+control sequences, bidirectional format controls, or hidden line separators.
 
 Markdown Escaping
 =================

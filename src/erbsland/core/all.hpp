@@ -22,6 +22,7 @@
 #include "CommandLineArguments.hpp"
 #include "Definitions.hpp"
 #include "InitializeFn.hpp"
+#include "LastErrorDumpMode.hpp"
 #include "MainFn.hpp"
 #include "MakeOneNamespace.hpp"
 #include "Namespaces.hpp"

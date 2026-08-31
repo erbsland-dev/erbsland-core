@@ -33,7 +33,7 @@ result. A scenario handle sends `cancel` during unwinding. `shutdown` joins rema
 counterpart; control-channel EOF also terminates it. Finally, `Subprocess` ownership guarantees termination and reaping
 if orderly shutdown fails.
 
-The control plane uses native sockets rather than Erbsland Network, keeping orchestration independent of the code being
+The control plane uses native sockets rather than Erbsland Core Network, keeping orchestration independent of the code being
 tested. The Rust counterpart uses rustls with the ring provider and no async runtime. It also exposes bounded
 `http-request`, `http-response`, and `http-chunk-size` comparison commands backed by the independent `httparse` crate;
 the C++ side compares acceptance and exact parsed control/header values with the Core codecs.

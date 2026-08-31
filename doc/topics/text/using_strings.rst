@@ -200,7 +200,7 @@ for long-lived storage.
 Let Literals Stay Literal
 =========================
 
-The ``_el`` suffix creates an Erbsland string literal with static lifetime.
+The ``_el`` suffix creates an Erbsland Core string literal with static lifetime.
 Passing it directly avoids allocating and copying character data.
 Construct a ``String`` from the literal when the value must be stored in a uniform container or returned through a
 ``String`` interface.

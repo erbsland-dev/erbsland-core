@@ -12,6 +12,7 @@
 #include "impl/PathInfoCache.hpp"
 #include "impl/PathWalker_fwd.hpp"
 
+#include "../system/FileIdentity.hpp"
 #include "../system/GroupId.hpp"
 #include "../system/GroupName.hpp"
 #include "../system/UserId.hpp"
@@ -115,6 +116,9 @@ public: // attributes
     /// The size of the file in bytes.
     /// @return The size of the file in bytes, or zero if the file does not exist or the path is no file.
     [[nodiscard]] auto fileSize() const noexcept -> unit::ByteLength;
+    /// Get the stable identity of the current filesystem object.
+    /// @return An invalid identity if the path does not exist or identity lookup failed.
+    [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity;
     /// Get the last modified time.
     /// It is available on all platforms.
     /// The returned time is always in the UTC time zone.

@@ -49,6 +49,7 @@ project.
     api/err
     api/event
     api/i18n
+    api/log
     api/math
     api/mem
     api/resource

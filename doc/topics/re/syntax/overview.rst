@@ -651,7 +651,7 @@ When encountering one of these constructs, the parser will raise an error.
 
 .. rubric:: Footnotes
 
-.. [#q1] The Erbsland regular expression syntax accepts only *documented escape sequences*.
+.. [#q1] The Erbsland Core regular expression syntax accepts only *documented escape sequences*.
          Any escape sequence not listed as supported will result in a parser error.
 
 .. [#u1] Hexadecimal letters are case-insensitive.

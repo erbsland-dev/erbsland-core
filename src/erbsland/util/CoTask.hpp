@@ -24,8 +24,8 @@ namespace erbsland::util {
 /// An eagerly started, single-consumer coroutine task.
 ///
 /// `CoTask` stores its result independently from the coroutine frame. Destroying an incomplete task requests
-/// cancellation; Erbsland coroutine awaiters observe that request at their next completion and unwind the coroutine.
-/// Continuations run on the thread that completes the awaited operation and have no caller-thread affinity.
+/// cancellation; Erbsland Core coroutine awaiters observe that request at their next completion and unwind the
+/// coroutine. Continuations run on the thread that completes the awaited operation and have no caller-thread affinity.
 /// @tparam tValue The task result type.
 /// @tested{CoTaskTest}
 template <typename tValue>

@@ -22,6 +22,10 @@ Fully blocking behavior belongs in caller code as a loop over these bounded oper
 File Positioning
 ================
 
+``OutputStream::fileIdentity()`` returns the identity captured when a file stream was opened.
+Buffered byte and encoded text wrappers forward the same value, while non-file streams return an invalid identity.
+Comparing it with ``PathInfo::fileIdentity()`` detects replacement without exposing native handles.
+
 Streams opened for regular files support optional byte positioning unless the output file was opened in append mode.
 ``ByteBlockInputStream`` also supports positioning and exposes a retained copy-on-write byte block through immediate
 bounded reads.
@@ -256,4 +260,6 @@ Interface
 .. doxygenclass:: erbsland::stream::TextOutputStream
     :members:
 .. doxygenclass:: erbsland::stream::TextPrintContext
+    :members:
+.. doxygenclass:: erbsland::system::FileIdentity
     :members:

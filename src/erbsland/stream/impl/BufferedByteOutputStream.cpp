@@ -29,6 +29,10 @@ BufferedByteOutputStream::~BufferedByteOutputStream() {
     abort();
 }
 
+auto BufferedByteOutputStream::fileIdentity() const noexcept -> system::FileIdentity {
+    return _data->native->fileIdentity();
+}
+
 auto BufferedByteOutputStream::outputSettings() const noexcept -> const OutputStreamSettings & {
     return _data->settings;
 }

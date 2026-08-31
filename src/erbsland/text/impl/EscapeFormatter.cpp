@@ -7,6 +7,7 @@
 #include "DisplayEscapeFormatter.hpp"
 #include "HtmlEscapeFormatter.hpp"
 #include "JsonEscapeFormatter.hpp"
+#include "LogEscapeFormatter.hpp"
 #include "MarkdownEscapeFormatter.hpp"
 #include "NoneEscapeFormatter.hpp"
 #include "RegExEscapeFormatter.hpp"
@@ -47,6 +48,7 @@ auto EscapeFormatter::forFormat(const EscapeFormat format) noexcept -> const Esc
         FormatterEntry{EscapeFormat::Xml, &XmlEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::RegEx, &RegExEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Display, &DisplayEscapeFormatter::instance},
+        FormatterEntry{EscapeFormat::Log, &LogEscapeFormatter::instance},
         FormatterEntry{EscapeFormat::Config, &ConfigEscapeFormatter::regularInstance},
         FormatterEntry{EscapeFormat::ConfigTest, &ConfigEscapeFormatter::testInstance},
         FormatterEntry{EscapeFormat::Markdown, &MarkdownEscapeFormatter::instance},

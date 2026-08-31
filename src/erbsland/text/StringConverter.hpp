@@ -24,7 +24,7 @@
 
 namespace erbsland::text {
 
-/// Convert between Erbsland and standard string types.
+/// Convert between Erbsland Core and standard string types.
 /// @tested{StringConverterTest}
 template <typename T>
 class StringConverter final {

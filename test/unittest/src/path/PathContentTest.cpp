@@ -7,8 +7,10 @@
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathCreateMode.hpp>
 #include <erbsland/path/PathError.hpp>
+#include <erbsland/path/PathInfo.hpp>
 #include <erbsland/path/PathReadDataOptions.hpp>
 #include <erbsland/path/SymlinkMode.hpp>
+#include <erbsland/stream/TextOutputStream.hpp>
 #include <erbsland/text/EncodingError.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
@@ -24,6 +26,7 @@ using el::path::Path;
 using el::path::PathContent;
 using el::path::PathCreateMode;
 using el::path::PathError;
+using el::path::PathInfoPart;
 using el::path::PathReadDataOptions;
 using el::path::PathReadTextOptions;
 using el::path::PathWriteDataOptions;
@@ -130,6 +133,26 @@ public:
         REQUIRE_EQUAL(
             appendedNewPath.content().readDataOrThrow().toUInt8Vector(),
             std::vector<uint8_t>({0xffU, 0xfeU, 0x43U, 0x00U}));
+    }
+
+    void testOpenOutputStreamCapturesFileIdentity() {
+        const auto fixture = Fixture{"file-identity"};
+        const auto nativePath = fixture.path() / "active.log";
+        const auto path = pathFromStd(nativePath);
+        auto options = PathWriteTextOptions{};
+        options.setCreationMode(PathCreateMode::CreateOrAppend);
+        const auto stream = path.content().openTextOutputStream(options);
+
+        REQUIRE(stream->fileIdentity().isValid());
+        REQUIRE_EQUAL(stream->fileIdentity(), path.info(PathInfoPart::FileIdentity).fileIdentity());
+
+        const auto movedPath = fixture.path() / "moved.log";
+        std::filesystem::rename(nativePath, movedPath);
+        path.content().writeTextOrThrow("replacement"_el);
+        auto replacementInfo = path.info(PathInfoPart::FileIdentity);
+        replacementInfo.reload(PathInfoPart::FileIdentity);
+        REQUIRE_NOT_EQUAL(stream->fileIdentity(), replacementInfo.fileIdentity());
+        stream->abort();
     }
 
     void testEncodingErrorHandling() {

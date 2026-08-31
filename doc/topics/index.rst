@@ -21,6 +21,7 @@ Topics
     random/index
     re/index
     event/index
+    log/index
     stream/index
     network/index
     cterm/index

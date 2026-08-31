@@ -5,7 +5,6 @@
 #include "BlockStyle.hpp"
 #include "Terminal_fwd.hpp"
 #include "TerminalStream_fwd.hpp"
-#include "TerminalStreamSynchronization.hpp"
 
 #include "impl/TerminalStreamData_fwd.hpp"
 
@@ -23,15 +22,9 @@ public:
     /// Create a terminal stream.
     /// @param terminal The terminal to write to.
     /// @param style The style applied to every write.
-    /// @param synchronization Shared synchronization state for streams using the same terminal.
     /// @param settings The fixed timeout and buffer settings.
     explicit TerminalStream(
-        TerminalPtr terminal,
-        BlockStyle style = BlockStyle::reset(),
-        TerminalStreamSynchronizationPtr synchronization = {},
-        stream::OutputStreamSettings settings = {});
-
-    ~TerminalStream() override { abort(); }
+        TerminalPtr terminal, BlockStyle style = BlockStyle::reset(), stream::OutputStreamSettings settings = {});
 
     // defaults/deletions
     TerminalStream(const TerminalStream &) = delete;
@@ -40,19 +33,22 @@ public:
     auto operator=(TerminalStream &&) -> TerminalStream & = delete;
 
 public:
-    /// Create shared synchronization state.
-    [[nodiscard]] static auto createSynchronization() -> TerminalStreamSynchronizationPtr;
     /// Create a shared terminal stream.
+    /// @param terminal The terminal receiving stream output.
+    /// @param style The style applied to every write transaction.
+    /// @param settings The immutable timeout and buffering settings.
+    /// @return A new shared terminal stream.
     [[nodiscard]] static auto create(
-        TerminalPtr terminal,
-        BlockStyle style = BlockStyle::reset(),
-        TerminalStreamSynchronizationPtr synchronization = {},
-        stream::OutputStreamSettings settings = {}) -> TerminalStreamPtr;
+        TerminalPtr terminal, BlockStyle style = BlockStyle::reset(), stream::OutputStreamSettings settings = {})
+        -> TerminalStreamPtr;
     /// Create synchronized output and error streams for a terminal.
+    /// @param terminal The terminal shared by both streams.
+    /// @return An output stream with reset style and an error stream with the terminal's error style.
     [[nodiscard]] static auto createStandardStreams(TerminalPtr terminal)
         -> std::pair<TerminalStreamPtr, TerminalStreamPtr>;
 
-public: // implement TextOutputStream
+public: // implements TextOutputStream
+    ~TerminalStream() override { abort(); }
     [[nodiscard]] auto encoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto effectiveEncoding() const noexcept -> text::StringEncoding override;
     [[nodiscard]] auto outputSettings() const noexcept -> const stream::OutputStreamSettings & override;
@@ -71,8 +67,10 @@ public: // accessors
     /// Get the terminal used by this stream.
     [[nodiscard]] auto terminal() const noexcept -> const TerminalPtr & { return _terminal; }
     /// Get the style applied to every write.
+    /// @return A thread-safe snapshot of the current base style.
     [[nodiscard]] auto style() const -> BlockStyle;
     /// Set the style applied to every write.
+    /// @param style The base style to capture with subsequently queued writes.
     void setStyle(BlockStyle style);
 
 private:

@@ -20,38 +20,22 @@ using text::Char;
 using text::String;
 using text::StringEncoding;
 
-TerminalStream::TerminalStream(
-    TerminalPtr terminal,
-    const BlockStyle style,
-    TerminalStreamSynchronizationPtr synchronization,
-    const OutputStreamSettings settings) :
+TerminalStream::TerminalStream(TerminalPtr terminal, const BlockStyle style, const OutputStreamSettings settings) :
     _terminal{std::move(terminal)} {
-    if (synchronization == nullptr) {
-        synchronization = createSynchronization();
-    }
-    _data = std::make_shared<impl::TerminalStreamData>(_terminal, style, std::move(synchronization), settings);
+    _data = std::make_shared<impl::TerminalStreamData>(_terminal, style, settings);
 }
 
-auto TerminalStream::createSynchronization() -> TerminalStreamSynchronizationPtr {
-    return std::make_shared<TerminalStreamSynchronization>();
-}
-
-auto TerminalStream::create(
-    TerminalPtr terminal,
-    const BlockStyle style,
-    TerminalStreamSynchronizationPtr synchronization,
-    const OutputStreamSettings settings) -> TerminalStreamPtr {
-    return std::make_shared<TerminalStream>(std::move(terminal), style, std::move(synchronization), settings);
+auto TerminalStream::create(TerminalPtr terminal, const BlockStyle style, const OutputStreamSettings settings)
+    -> TerminalStreamPtr {
+    return std::make_shared<TerminalStream>(std::move(terminal), style, settings);
 }
 
 auto TerminalStream::createStandardStreams(TerminalPtr terminal) -> std::pair<TerminalStreamPtr, TerminalStreamPtr> {
     auto errorAttributes = BlockAttributes{};
     errorAttributes.setBold(true);
 
-    auto synchronization = createSynchronization();
-    auto outputStream = create(terminal, BlockStyle::reset(), synchronization);
-    auto errorStream =
-        create(std::move(terminal), BlockStyle{Color{fg::BrightRed, bg::Default}, errorAttributes}, synchronization);
+    auto outputStream = create(terminal, BlockStyle::reset());
+    auto errorStream = create(std::move(terminal), BlockStyle{Color{fg::BrightRed, bg::Default}, errorAttributes});
     return {std::move(outputStream), std::move(errorStream)};
 }
 

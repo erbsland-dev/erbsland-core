@@ -8,6 +8,7 @@
 #include "../StreamPositionOrigin.hpp"
 
 #include "../../mem/Byte.hpp"
+#include "../../system/FileIdentity.hpp"
 #include "../../unit/ByteIndex.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/ByteOffset.hpp"
@@ -26,6 +27,9 @@ public:
     ~NativeByteStream() override = default;
 
 public:
+    /// Get the identity captured for the native file, or an invalid identity for other stream types.
+    /// @return The opened file's identity, or an invalid identity for non-file native streams.
+    [[nodiscard]] virtual auto fileIdentity() const noexcept -> system::FileIdentity { return {}; }
     /// Test if the native stream supports byte positioning.
     [[nodiscard]] virtual auto supportsPositioning() const noexcept -> bool = 0;
     /// Get the native byte position.

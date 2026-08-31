@@ -31,7 +31,7 @@ Primary Types
 
 .. code-block:: text
 
-    Exception // base class for all Erbsland exceptions
+    Exception // base class for all Erbsland Core exceptions
     Diagnostic // abstract structured representation of one failure
 
 Secondary Types

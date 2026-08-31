@@ -174,7 +174,7 @@ private:
         }
     }
 
-    /// Add a pair of equivalent Erbsland and standard-library scenarios.
+    /// Add a pair of equivalent Erbsland Core and standard-library scenarios.
     static void addComparisonPair(
         std::vector<Scenario> &target,
         const RunSettings &run,
@@ -209,7 +209,7 @@ private:
         target.emplace_back(std::move(standardScenario));
     }
 
-    /// Add the scenarios that compare Erbsland and standard-library regular expressions.
+    /// Add the scenarios that compare Erbsland Core and standard-library regular expressions.
     static void addComparisonSuite(std::vector<Scenario> &target, const RunSettings &run) {
         addComparisonPair(
             target, run, "compile-alternatives-8"_el, UseCase::Compile, alternativePattern(8U), "alt0000"_el);

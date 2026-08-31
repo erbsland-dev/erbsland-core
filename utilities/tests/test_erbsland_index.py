@@ -17,7 +17,7 @@ from erbsland_index import ErbslandIndexTransform, strip_erbsland_cpp_index_valu
 
 
 class ErbslandIndexTest(unittest.TestCase):
-    """Tests for Erbsland generated C++ index entry rewriting."""
+    """Tests for Erbsland Core generated C++ index entry rewriting."""
 
     def test_strips_erbsland_cpp_index_values_to_leaf_names(self) -> None:
         cases = {

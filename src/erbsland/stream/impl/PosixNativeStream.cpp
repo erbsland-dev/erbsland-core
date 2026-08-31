@@ -62,12 +62,20 @@ PosixNativeStream::PosixNativeStream(
     }
     struct stat info{};
     const auto flags = ::fcntl(_fileDescriptor.load(), F_GETFL);
-    _supportsPositioning =
-        flags >= 0 && (flags & O_APPEND) == 0 && ::fstat(_fileDescriptor.load(), &info) == 0 && S_ISREG(info.st_mode);
+    const auto hasInfo = ::fstat(_fileDescriptor.load(), &info) == 0;
+    _supportsPositioning = flags >= 0 && (flags & O_APPEND) == 0 && hasInfo && S_ISREG(info.st_mode);
+    if (hasInfo) {
+        _fileIdentity = system::FileIdentity::fromNativeValues(
+            static_cast<uint64_t>(info.st_dev), static_cast<uint64_t>(info.st_ino));
+    }
 }
 
 PosixNativeStream::~PosixNativeStream() {
     abort();
+}
+
+auto PosixNativeStream::fileIdentity() const noexcept -> system::FileIdentity {
+    return _fileIdentity;
 }
 
 void PosixNativeStream::writeBytes(const std::span<const char> bytes) {

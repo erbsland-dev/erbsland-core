@@ -112,7 +112,7 @@ assuming it still happens in the background.
 Cleanup and Errors
 ==================
 
-``Application::run()`` calls ``cleanup()`` after the returned exit code and after handled Erbsland exceptions.
+``Application::run()`` calls ``cleanup()`` after the returned exit code and after handled Erbsland Core exceptions.
 Cleanup must not block or throw.
 Use ordinary local ownership within ``main()`` for resources that should be released before application cleanup, and use
 the cleanup override only for application-lifetime state.

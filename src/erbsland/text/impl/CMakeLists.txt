@@ -70,6 +70,8 @@ target_sources(erbsland-core PRIVATE
         JsonEscapeFormatter.cpp
         JsonEscapeFormatter.hpp
         LinkData.hpp
+        LogEscapeFormatter.cpp
+        LogEscapeFormatter.hpp
         MarkdownEscapeFormatter.cpp
         MarkdownEscapeFormatter.hpp
         NamedFormatDomain.hpp

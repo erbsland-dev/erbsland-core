@@ -156,6 +156,7 @@ void DisplayTextMap::addDefaultTexts() {
         .set("LineLabel"_el, "Line"_el)
         .set("ColumnLabel"_el, "Column"_el)
         .set("PositionLabel"_el, "Position"_el)
+        .set("log.LastErrorDumpTitle"_el, "Recent Error Log Entries"_el)
         .set("options.ApplicationNameFallback"_el, "application"_el)
         .set("options.UsageLabel"_el, "Usage"_el)
         .set("options.ModulePlaceholder"_el, "module"_el)

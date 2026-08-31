@@ -28,7 +28,7 @@ using el::path::PathType;
 using namespace el::text::literals;
 using namespace erbsland::test::pathtest;
 
-TESTED_TARGETS(PathInfo Path)
+TESTED_TARGETS(FileIdentity PathInfo Path)
 class PathInfoTest final : public el::UnitTest {
     class TestBackend final : public PathBackendTestBase {
     public:
@@ -73,6 +73,9 @@ class PathInfoTest final : public el::UnitTest {
             result.lastRefresh = el::time::TimePoint::now();
             if (parts.isSet(PathInfoPart::Size)) {
                 result.fileSize = el::unit::ByteLength{123U};
+            }
+            if (parts.isSet(PathInfoPart::FileIdentity)) {
+                result.fileIdentity = el::system::FileIdentity::fromNativeValues(12U, 34U);
             }
             if (parts.isSet(PathInfoPart::Times)) {
                 result.lastModified =
@@ -144,6 +147,18 @@ public:
         REQUIRE_EQUAL(scope.backendPtr->trustedLoadCount, 1);
         REQUIRE_EQUAL(scope.backendPtr->resolveCount, 1);
         REQUIRE_EQUAL(toStdString(scope.backendPtr->lastTrustedResolvedPath), "/resolved/report.txt");
+    }
+
+    void testLazyLoadOfFileIdentity() {
+        auto scope = BackendScope{std::make_unique<TestBackend>()};
+
+        const auto info = Path{"report.txt"_el}.info();
+        REQUIRE_EQUAL(scope.backendPtr->loadCount, 1);
+        const auto identity = info.fileIdentity();
+        REQUIRE(identity.isValid());
+        REQUIRE_EQUAL(identity, el::system::FileIdentity::fromNativeValues(12U, 34U));
+        REQUIRE(scope.backendPtr->lastParts.isSet(PathInfoPart::FileIdentity));
+        REQUIRE_EQUAL(scope.backendPtr->loadCount, 2);
     }
 
     void testPathCopiesShareInformationCache() {

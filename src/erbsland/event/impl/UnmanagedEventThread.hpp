@@ -22,16 +22,16 @@ public:
     UnmanagedEventThread(UnmanagedEventThread &&) = delete;
     auto operator=(UnmanagedEventThread &&) -> UnmanagedEventThread & = delete;
 
-public: // implement event::EventThread
+public: // implements event::EventThread
     void start() override;
     void quit() noexcept override;
     void join() override;
     [[nodiscard]] auto isStarted() const noexcept -> bool override;
     [[nodiscard]] auto isRunning() const noexcept -> bool override;
-    [[nodiscard]] auto eventLoop() -> event::EventLoop & override;
-    [[nodiscard]] auto events() -> event::EventsPtr override;
+    [[nodiscard]] auto eventLoop() noexcept -> event::EventLoop & override;
+    [[nodiscard]] auto events() noexcept -> event::EventsPtr override;
 
-private: // implement EventThreadBase
+private: // implements EventThreadBase
     void runEventLoop() override;
 };
 

@@ -89,10 +89,20 @@ WindowsNativeStream::WindowsNativeStream(
     auto consoleMode = DWORD{};
     _isConsole = GetConsoleMode(static_cast<HANDLE>(_handle.load()), &consoleMode) != 0;
     _supportsPositioning = positioningAllowed && GetFileType(static_cast<HANDLE>(_handle.load())) == FILE_TYPE_DISK;
+    auto fileInfo = BY_HANDLE_FILE_INFORMATION{};
+    if (GetFileInformationByHandle(static_cast<HANDLE>(_handle.load()), &fileInfo) != 0) {
+        const auto fileIndex =
+            (static_cast<uint64_t>(fileInfo.nFileIndexHigh) << 32U) | static_cast<uint64_t>(fileInfo.nFileIndexLow);
+        _fileIdentity = system::FileIdentity::fromNativeValues(fileInfo.dwVolumeSerialNumber, fileIndex);
+    }
 }
 
 WindowsNativeStream::~WindowsNativeStream() {
     abort();
+}
+
+auto WindowsNativeStream::fileIdentity() const noexcept -> system::FileIdentity {
+    return _fileIdentity;
 }
 
 void WindowsNativeStream::writeBytes(const std::span<const char> bytes) {

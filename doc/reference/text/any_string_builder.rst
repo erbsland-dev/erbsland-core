@@ -20,7 +20,7 @@ encoding.
 Basic Usage
 ===========
 
-Choose the target kind when you create the builder, append decoded characters or Erbsland strings, and convert the final
+Choose the target kind when you create the builder, append decoded characters or Erbsland Core strings, and convert the final
 result to the string type you need.
 Single decoded code points can be appended as either :cpp:class:`Char <erbsland::text::Char>` or ``char32_t``.
 
@@ -68,8 +68,8 @@ This can reserve more storage than eventually needed, but it keeps the kind-eras
 Appending Text
 ==============
 
-:cpp:func:`append() <erbsland::text::AnyStringBuilder::append>` accepts :cpp:class:`Char <erbsland::text::Char>`, repeated :cpp:class:`Char <erbsland::text::Char>` values, Erbsland string
-views, and Erbsland string literals.
+:cpp:func:`append() <erbsland::text::AnyStringBuilder::append>` accepts :cpp:class:`Char <erbsland::text::Char>`, repeated :cpp:class:`Char <erbsland::text::Char>` values, Erbsland Core string
+views, and Erbsland Core string literals.
 
 When the source encoding matches the builder kind, the builder uses the existing owning string append operation.
 This preserves the same behavior as ``U8StringEditor::append()``, ``U16StringEditor::append()``, and

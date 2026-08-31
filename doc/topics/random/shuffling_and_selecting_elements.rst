@@ -28,7 +28,7 @@ You will learn when to select an element directly, when to select an index, how 
 differs, and how to shuffle mutable sequences in place.
 
 Random element helpers keep code focused on the domain choice instead of on manual index math.
-They support Erbsland containers, standard vectors, spans, and initializer lists.
+They support Erbsland Core containers, standard vectors, spans, and initializer lists.
 Use the higher-level helpers when the random choice itself is the important operation.
 Use :cpp:func:`selectIndex() <erbsland::random::Random::selectIndex>` only when the index is part of the surrounding
 algorithm.

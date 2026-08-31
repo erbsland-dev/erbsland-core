@@ -52,11 +52,11 @@ auto EventThreadBase::isRunning() const noexcept -> bool {
     return _eventLoop->isRunning();
 }
 
-auto EventThreadBase::eventLoop() -> event::EventLoop & {
+auto EventThreadBase::eventLoop() noexcept -> event::EventLoop & {
     return *_eventLoop;
 }
 
-auto EventThreadBase::events() -> event::EventsPtr {
+auto EventThreadBase::events() noexcept -> event::EventsPtr {
     return _eventLoop;
 }
 

@@ -38,6 +38,7 @@
 #include "core/CommandLineArguments.hpp"
 #include "core/Definitions.hpp"
 #include "core/InitializeFn.hpp"
+#include "core/LastErrorDumpMode.hpp"
 #include "core/MainFn.hpp"
 #include "core/MakeOneNamespace.hpp"
 #include "core/Namespaces.hpp"

@@ -12,6 +12,7 @@
 #include "StreamWriteStatus.hpp"
 
 #include "../err/LogicError.hpp"
+#include "../system/FileIdentity.hpp"
 
 namespace erbsland::stream {
 
@@ -26,6 +27,10 @@ public:
     ~OutputStream() override = default;
 
 public: // state
+    /// Get the identity captured when the backing file was opened.
+    /// Non-file streams return an invalid identity.
+    /// @return The opened file's identity, or an invalid identity for a non-file stream.
+    [[nodiscard]] virtual auto fileIdentity() const noexcept -> system::FileIdentity { return {}; }
     /// Get the immutable settings selected when this stream was created.
     [[nodiscard]] virtual auto outputSettings() const noexcept -> const OutputStreamSettings & = 0;
     /// Get the lifecycle state.

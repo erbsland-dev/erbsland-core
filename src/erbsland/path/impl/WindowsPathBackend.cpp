@@ -214,6 +214,12 @@ auto WindowsPathBackend::loadResolvedInfoOrThrow(
     result.exists = true;
     result.type = typeFromAttributes(fileInfo.dwFileAttributes, reparseTag, fileType);
     result.loadedParts.set(PathInfoPart::Type);
+    if (parts.isSet(PathInfoPart::FileIdentity)) {
+        const auto fileIndex =
+            (static_cast<uint64_t>(fileInfo.nFileIndexHigh) << 32U) | static_cast<uint64_t>(fileInfo.nFileIndexLow);
+        result.fileIdentity = system::FileIdentity::fromNativeValues(fileInfo.dwVolumeSerialNumber, fileIndex);
+        result.loadedParts.set(PathInfoPart::FileIdentity);
+    }
     if (parts.isSet(PathInfoPart::Size)) {
         const auto size = (static_cast<std::uint64_t>(fileInfo.nFileSizeHigh) << 32U) |
             static_cast<std::uint64_t>(fileInfo.nFileSizeLow);

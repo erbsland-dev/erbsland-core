@@ -44,6 +44,8 @@ class DemoDocTest(unittest.TestCase):
             "\n",
             encoding="utf-8",
         )
+        self.fixture_path = self.demo_source_dir / "settings.elcl"
+        self.fixture_path.write_text("Value: original\n", encoding="utf-8")
         self.demo_output_dir = self.project_dir / "cmake-build-debug" / "demo-apps"
         self.demo_output_dir.mkdir(parents=True)
         self.executable_path = self.demo_output_dir / "demoapp"
@@ -329,6 +331,14 @@ class DemoDocTest(unittest.TestCase):
 
         self.assertEqual(["text/demoapp", "--demo", "Sample"], executor.validate_command("text/demoapp --demo Sample"))
 
+    def test_exec_validation_accepts_demo_fixture_and_dotted_branch(self) -> None:
+        executor = DemoExecutor(self.project_dir)
+
+        self.assertEqual(
+            ["demoapp", "demos/text/settings.elcl", "--branch", "application.logging"],
+            executor.validate_command("demoapp demos/text/settings.elcl --branch application.logging"),
+        )
+
     def test_executable_path_resolves_domain_specific_demo(self) -> None:
         domain_executable_path = self.demo_output_dir / "text" / "demoapp"
         domain_executable_path.parent.mkdir()
@@ -363,6 +373,8 @@ class DemoDocTest(unittest.TestCase):
             "/text/demoapp",
             "demo.app",
             "demoapp --demo Sample.cpp",
+            "demoapp demos/text/missing.elcl",
+            "demoapp demos/../settings.elcl",
             "demoapp 'bad value'",
             "demoapp --file={file:text}",
             "demoapp {file:binary}",
@@ -403,6 +415,18 @@ class DemoDocTest(unittest.TestCase):
             self.assertNotEqual(expanded[0], expanded[1])
             self.assertTrue(Path(expanded[0]).is_file())
             self.assertTrue(Path(expanded[1]).is_file())
+
+    def test_fixture_arguments_are_copied_read_only(self) -> None:
+        executor = DemoExecutor(self.project_dir)
+
+        with tempfile.TemporaryDirectory(dir="/private/tmp") as temporary_dir:
+            expanded = executor.copy_fixture_arguments(["demos/text/settings.elcl", "Sample"], Path(temporary_dir))
+
+            copied_path = Path(expanded[0])
+            self.assertNotEqual(self.fixture_path, copied_path)
+            self.assertEqual("Value: original\n", copied_path.read_text(encoding="utf-8"))
+            self.assertEqual(0o400, copied_path.stat().st_mode & 0o777)
+            self.assertEqual("Sample", expanded[1])
 
     def test_run_expands_placeholders_for_demo_process(self) -> None:
         placeholder_executable = self.demo_output_dir / "placeholder"

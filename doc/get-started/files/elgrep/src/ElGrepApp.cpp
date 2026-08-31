@@ -31,7 +31,7 @@ void ElGrepApp::registerCommandLineOptions(const el::OptionsPtr &options) {
         .setType(el::OptionType::Flag)
         .setHelpDescription("Recursively searches a directory and skips symbolic links."_el);
     options->addOption("path"_el).setRequired().setHelpDescription("File or directory to search."_el);
-    options->addOption("pattern"_el).setRequired().setHelpDescription("Erbsland regular-expression pattern."_el);
+    options->addOption("pattern"_el).setRequired().setHelpDescription("Erbsland Core regular-expression pattern."_el);
 }
 
 auto ElGrepApp::main() -> el::ExitCode {

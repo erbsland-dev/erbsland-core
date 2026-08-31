@@ -61,7 +61,7 @@ directory walk.
     :end-before: auto ElGrepApp::searchFile(
 
 There is deliberately no ``try`` /``catch`` block here.
-Invalid paths and patterns already throw exceptions from the Erbsland error hierarchy.
+Invalid paths and patterns already throw exceptions from the Erbsland Core error hierarchy.
 For application-specific validation, ``elgrep`` throws :cpp:class:`ApplicationError <erbsland::core::ApplicationError>`.
 :cpp:func:`Application::run() <erbsland::core::Application::run>` catches these errors, renders a consistent diagnostic,
 and returns the corresponding process exit code.

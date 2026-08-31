@@ -89,6 +89,18 @@ The manager indexes statically linked descriptors on first access and caches dec
 An application with no compiled descriptors receives an empty manager.
 See :doc:`/topics/resource/compiled_resources` for CMake integration and lookup examples.
 
+Application Logging
+===================
+
+``log()`` lazily creates the application-wide log manager, and ``logStream()`` returns its root stream.
+The application default routes information, warning, and error entries to its terminal-backed console writer.
+``enableLastErrorDump()`` installs a retained-error writer that remains present across later configuration replacements.
+By default, final cleanup displays its nonempty snapshot only after a nonzero application exit code.
+Select :cpp:enumerator:`LastErrorDumpMode::Always <erbsland::core::LastErrorDumpMode::Always>` to display it after a
+successful run as well.
+The heading uses the application's ``log.LastErrorDumpTitle`` display-text entry.
+See :doc:`/topics/log/using_logging` for routing, trace sections, and standalone managers.
+
 Interface
 =========
 
@@ -102,6 +114,7 @@ Interface
     :members:
 .. doxygentypedef:: erbsland::core::CommandLineArguments
 .. doxygentypedef:: erbsland::core::InitializeFn
+.. doxygenenum:: erbsland::core::LastErrorDumpMode
 .. doxygentypedef:: erbsland::core::MainFn
 .. doxygenclass:: erbsland::cryptology::CryptologyConfiguration
     :members:

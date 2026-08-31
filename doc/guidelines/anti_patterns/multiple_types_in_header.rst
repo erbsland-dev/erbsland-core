@@ -24,7 +24,7 @@ The following declarations count as one logical header type:
 * A coherent collection of micro-types in a header ending in ``Types.hpp``. Typical micro-types are aliases, concepts,
   or lightweight shells derived from one detailed base and adding only one or two overrides.
 
-Supported ``std::hash`` and ``std::formatter`` specializations can stay with the Erbsland type they extend.
+Supported ``std::hash`` and ``std::formatter`` specializations can stay with the Erbsland Core type they extend.
 
 Correct Solution
 ================

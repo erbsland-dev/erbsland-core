@@ -73,9 +73,9 @@ public:
     explicit CharSet(Char character);
     /// Decode a UTF-8 view tolerantly into a character set.
     explicit CharSet(const U8String &characters);
-    /// Create a character set from an ordered Erbsland set of characters.
+    /// Create a character set from an ordered Erbsland Core set of characters.
     explicit CharSet(const util::Set<Char> &characters);
-    /// Create a character set from an Erbsland list of characters.
+    /// Create a character set from an Erbsland Core list of characters.
     explicit CharSet(const util::List<Char> &characters);
     /// Create a character set from a list of characters.
     CharSet(std::initializer_list<Char> characters);
@@ -191,9 +191,9 @@ public: // conversion
     [[nodiscard]] auto toU16String() const -> U16String;
     /// Export all characters as a UTF-32 string.
     [[nodiscard]] auto toU32String() const -> U32String;
-    /// Export all characters as an ordered Erbsland set.
+    /// Export all characters as an ordered Erbsland Core set.
     [[nodiscard]] auto toSet() const -> util::Set<Char>;
-    /// Export all characters as an Erbsland list in ascending code-point order.
+    /// Export all characters as an Erbsland Core list in ascending code-point order.
     [[nodiscard]] auto toList() const -> util::List<Char>;
 
 public: // factory methods

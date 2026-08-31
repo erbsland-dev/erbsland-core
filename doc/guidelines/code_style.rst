@@ -31,7 +31,7 @@ Naming
   Enum-like static constants may use ``PascalCase``, as in ``Color::Red``.
 * A single straightforward template parameter may use ``T``; multiple or descriptive parameters use ``tCamelCase``.
 * Namespaces use lowercase nested names, such as ``erbsland::unittest``.
-* Preprocessor macros use ``UPPER_CASE`` and an ``ERBSLAND_<LIBRARY>_`` prefix in Erbsland libraries and applications.
+* Preprocessor macros use ``UPPER_CASE`` and an ``ERBSLAND_<LIBRARY>_`` prefix in Erbsland Core libraries and applications.
   Do not use macros for constants.
 * Treat initialisms as words in identifiers, such as ``HttpServer`` and ``parseUtf8``.
   Keep the documented spelling of domain-specific abbreviations.
@@ -88,6 +88,9 @@ Required Documentation
 * Explicitly defaulted or deleted special members don't need documentation, they must be grouped under ``// defaults``
   or ``// defaults/deletions`` or a similar block.
 * A trivial getter or setter needs only a one-line description without ``@param`` or ``@return``.
+* An override inherits the API documentation of its base declaration and must not duplicate that documentation.
+  Group overrides under ``public: // implements Base`` or ``protected: // implements Base`` and document only relevant
+  behavioral differences at the derived-class level.
 
 Cryptographic Implementations
 -----------------------------
@@ -130,7 +133,7 @@ The usual section order is:
 3.  Default and other constructors, destructor, copy and move constructors, then copy and move assignment.
     Put explicitly defaulted or deleted members in a final defaults group.
 4.  Main public operations.
-5.  Overrides, using one ``public: // implement Base`` section per base.
+5.  Overrides, using one ``public: // implements Base`` section per base.
 6.  Operators: comparison, arithmetic, logical, then other operators.
 7.  Accessors: condition tests first, then each attribute's accessors together.
 8.  Other public tools, grouped only when this improves navigation.

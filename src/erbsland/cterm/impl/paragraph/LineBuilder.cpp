@@ -112,7 +112,9 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
             continue;
         }
         if (usedWidth > prefixWidth) {
-            break;
+            if (wordToken.isIndivisible() || wordFitsOnWrappedLine(remainingWidth)) {
+                break;
+            }
         }
         if (wordToken.isIndivisible()) {
             appendSpacingRun(
@@ -139,6 +141,9 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
             maximumTextWidth - usedWidth - spacingRun.width,
             splitMarkerWidth);
         if (!splitWord.has_value()) {
+            if (usedWidth > prefixWidth) {
+                break;
+            }
             return std::nullopt;
         }
         appendSpacingRun(
@@ -170,6 +175,14 @@ auto LineBuilder::buildLine(const int reservedSuffixWidth, const bool addEndMark
         line.wrapsToNext = true;
     }
     return BuildResult{std::move(line), state, state.tokenIndex >= _preparedSourceLine.tokens.size()};
+}
+
+auto LineBuilder::wordFitsOnWrappedLine(const int wordWidth) const noexcept -> bool {
+    auto prefixWidth = _context.calculateIndentWidth(false);
+    if (_context.leftAligned() && !_context.options().lineBreakStartMark().isEmpty()) {
+        prefixWidth += _context.lineBreakStartMarkWidth();
+    }
+    return prefixWidth + wordWidth <= _context.width();
 }
 
 auto LineBuilder::evaluateSpacingRun(

@@ -15,7 +15,7 @@
 namespace erbsland::core::impl {
 
 /// The default storage implementation for the internal application data.
-/// @tested{ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
+/// @tested{ApplicationLogTest ApplicationOptionsTest ApplicationPartApplicationTest ApplicationTestScopeTest}
 class ApplicationDataImpl : public ApplicationData {
 public:
     /// Create the default internal application-data storage.
@@ -23,14 +23,13 @@ public:
     /// Release internal application-data resources.
     ~ApplicationDataImpl() override;
 
-public: // implement ApplicationData
+public: // implements ApplicationData
     void setCommandLineArguments(int argc, char *argv[]) override;
     void setCommandLineArguments(int argc, wchar_t *argv[]) override;
-    void cleanupBeforeAppExit() noexcept override;
+    void cleanupBeforeAppExit(unit::ExitCode exitCode) noexcept override;
     [[nodiscard]] auto event() -> EventData & override;
     void renderSystemOutput(const text::TextDocument &document) override;
 
-public: // accessors
     [[nodiscard]] auto info() noexcept -> ApplicationInfo & override;
     [[nodiscard]] auto commandLineArguments() const noexcept -> const CommandLineArguments & override;
     [[nodiscard]] auto commandLineArgumentsForParsing() noexcept -> CommandLineArguments & override;
@@ -53,6 +52,13 @@ public: // accessors
     void setRandom(random::RandomPtr random) noexcept override;
     [[nodiscard]] auto secureRandom() noexcept -> const random::RandomPtr & override;
     void setSecureRandom(random::RandomPtr random) noexcept override;
+    [[nodiscard]] auto logMutex() noexcept -> std::mutex & override;
+    [[nodiscard]] auto logManager() noexcept -> const log::LogManagerPtr & override;
+    void setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept override;
+    [[nodiscard]] auto lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & override;
+    void setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept override;
+    [[nodiscard]] auto lastErrorDumpMode() const noexcept -> LastErrorDumpMode override;
+    void setLastErrorDumpMode(LastErrorDumpMode mode) noexcept override;
     [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & override;
     [[nodiscard]] auto resources() -> const resource::Resources & override;
     [[nodiscard]] auto systemMutex() noexcept -> std::mutex & override;
@@ -77,30 +83,36 @@ private:
         -> stream::TextOutputStreamPtr;
 
 private:
-    ApplicationInfo _info;                                     ///< Application metadata.
+    ApplicationInfo _info;                                              ///< Application metadata.
 
-    std::atomic<bool> _commandLineArgumentsInitialized{false}; ///< If command line arguments are initialized.
-    CommandLineArguments _commandLineArguments;                ///< Converted command line arguments.
-    int _nativeArgumentCount{0};                               ///< The original native argument count.
-    char **_nativeArguments{nullptr};                          ///< Borrowed original UTF-8 argument vector.
-    wchar_t **_nativeWideArguments{nullptr};                   ///< Borrowed original wide argument vector.
+    std::atomic<bool> _commandLineArgumentsInitialized{false};          ///< If command line arguments are initialized.
+    CommandLineArguments _commandLineArguments;                         ///< Converted command line arguments.
+    int _nativeArgumentCount{0};                                        ///< The original native argument count.
+    char **_nativeArguments{nullptr};                                   ///< Borrowed original UTF-8 argument vector.
+    wchar_t **_nativeWideArguments{nullptr};                            ///< Borrowed original wide argument vector.
 
-    options::OptionsPtr _options;                              ///< The global options configuration.
-    options::OptionValuesPtr _optionValues;                    ///< The option values after parsing.
+    options::OptionsPtr _options;                                       ///< The global options configuration.
+    options::OptionValuesPtr _optionValues;                             ///< The option values after parsing.
     cterm::TerminalDocumentStyle _systemOutputStyle{
-        cterm::TerminalDocumentStyle::defaultSystemOutput()};  ///< Style for system output documents.
+        cterm::TerminalDocumentStyle::defaultSystemOutput()};           ///< Style for system output documents.
 
-    InitializeFn _initializeFn;                                ///< Lamda-based override of initialize().
-    MainFn _mainFn;                                            ///< Lambda-based override of main().
+    InitializeFn _initializeFn;                                         ///< Lamda-based override of initialize().
+    MainFn _mainFn;                                                     ///< Lambda-based override of main().
 
-    std::mutex _partManagerMutex;                              ///< Protects part-manager creation.
-    ApplicationPartManagerPtr _partManager;                    ///< Optional detached part manager.
+    std::mutex _partManagerMutex;                                       ///< Protects part-manager creation.
+    ApplicationPartManagerPtr _partManager;                             ///< Optional detached part manager.
 
-    std::mutex _randomMutex;                                   ///< Mutex for lazy random generator creation.
-    random::RandomPtr _random;                                 ///< Shared fast random generator.
-    random::RandomPtr _secureRandom;                           ///< Shared secure random generator.
+    std::mutex _randomMutex;                                            ///< Mutex for lazy random generator creation.
+    random::RandomPtr _random;                                          ///< Shared fast random generator.
+    random::RandomPtr _secureRandom;                                    ///< Shared secure random generator.
 
-    std::mutex _cryptologyMutex;                               ///< Mutex for lazy cryptology configuration creation.
+    std::mutex _logMutex;                                               ///< Mutex for lazy log initialization.
+    log::LogManagerPtr _logManager;                                     ///< Application log manager.
+    log::ConsoleLogWriterPtr _consoleLogWriter;                         ///< Default console log writer.
+    log::LastErrorsLogWriterPtr _lastErrorsLogWriter;                   ///< Optional retained-error writer.
+    LastErrorDumpMode _lastErrorDumpMode{LastErrorDumpMode::OnFailure}; ///< Condition for displaying retained errors.
+
+    std::mutex _cryptologyMutex; ///< Mutex for lazy cryptology configuration creation.
     std::unique_ptr<cryptology::CryptologyConfiguration> _cryptologyConfiguration; ///< Cryptology configuration.
 
     std::mutex _resourceMutex;                                   ///< Mutex for lazy resource-manager creation.

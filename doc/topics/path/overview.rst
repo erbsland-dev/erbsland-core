@@ -42,7 +42,7 @@ retains its native error code, message, and portable category.
 The ``std::filesystem::path`` API on ``Path`` is an interoperability conversion only and performs no filesystem access.
 The non-throwing form returns an empty value, ``std::nullopt``, or a failed
 :cpp:class:`Result <erbsland::util::Result>`, depending on the operation.
-These forms convert exceptions from the Erbsland exception hierarchy; unexpected foreign exceptions are not silently
+These forms convert exceptions from the Erbsland Core exception hierarchy; unexpected foreign exceptions are not silently
 treated as ordinary filesystem failures.
 
 Traversal and Symlinks

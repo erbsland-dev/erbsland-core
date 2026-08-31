@@ -44,7 +44,7 @@ public:
     void reset();
     /// Securely erase message-dependent state and reset this hasher.
     void secureErase();
-    /// Add Erbsland byte data.
+    /// Add Erbsland Core byte data.
     /// Empty spans are accepted.
     /// @param data The next exact message bytes.
     /// @throws err::LogicError If this hasher is invalid or already finalized.

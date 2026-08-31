@@ -10,6 +10,7 @@
 #include "../PathInfoParts.hpp"
 #include "../PathType.hpp"
 
+#include "../../system/FileIdentity.hpp"
 #include "../../system/GroupId.hpp"
 #include "../../system/GroupName.hpp"
 #include "../../system/UserId.hpp"
@@ -44,6 +45,7 @@ public:
     bool refreshFailed{false};         ///< If automatic refresh must stop until explicit reload.
     PathType type{PathType::Unknown};  ///< The target type.
     unit::ByteLength fileSize;         ///< Size for regular files.
+    system::FileIdentity fileIdentity; ///< Stable identity of the current filesystem object.
     time::DateTime lastModified;       ///< Last modification time.
     time::DateTime lastAccessed;       ///< Last access time.
     time::DateTime birthTime;          ///< Creation/birth time when available.

@@ -161,13 +161,13 @@ public: // conversion
     /// Assumes UTF-8 encoding. Uses tolerant decoding using the replacement character for invalid sequences.
     /// @param argc Argument count from `main`.
     /// @param argv UTF-8 encoded argument vector from `main`.
-    /// @return A converted command-line argument list using Erbsland strings.
+    /// @return A converted command-line argument list using Erbsland Core strings.
     [[nodiscard]] static auto convertCommandLineArguments(int argc, char *argv[]) -> core::CommandLineArguments;
     /// Convert wide command line arguments to library strings.
     /// Assumes UTF-16/32 encoding. Uses tolerant decoding using the replacement character for invalid sequences.
     /// @param argc Argument count from `wmain`.
     /// @param argv Wide argument vector from `wmain`.
-    /// @return A converted command-line argument list using Erbsland strings.
+    /// @return A converted command-line argument list using Erbsland Core strings.
     /// @note This method is designed for Windows processes, that supply `wchar_t` arguments via main, which
     ///     is a safer alternative to the more unpredictable `char` encoding.
     [[nodiscard]] static auto convertCommandLineArguments(int argc, wchar_t *argv[]) -> core::CommandLineArguments;

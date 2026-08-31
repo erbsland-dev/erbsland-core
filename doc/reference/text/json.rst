@@ -11,7 +11,7 @@ Value Tree
 
 ``JsonValue`` is a copy-on-write value tree for JSON nulls, booleans, signed 64-bit integers, finite floating-point
 numbers, Unicode strings, arrays, and objects.
-``JsonArray`` and ``JsonObject`` use the regular Erbsland list and ordered string-map containers.
+``JsonArray`` and ``JsonObject`` use the regular Erbsland Core list and ordered string-map containers.
 Copying a tree is inexpensive; the first mutation detaches the changed value.
 
 Parsing and Formatting

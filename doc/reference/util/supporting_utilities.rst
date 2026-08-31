@@ -115,7 +115,7 @@ out through ``takeResult()``, or await and consume the task as an rvalue.
 This service is separate from stream native-I/O workers, and continuations resume without caller-thread affinity.
 Exceptions are stored and rethrown by result retrieval or ``co_await``.
 Destroying an incomplete task requests cancellation; an already running callable finishes normally, but a cancelled
-Erbsland coroutine does not continue past its next awaited completion.
+Erbsland Core coroutine does not continue past its next awaited completion.
 
 CoAsyncGenerator
 ----------------

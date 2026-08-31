@@ -13,7 +13,7 @@
 
 namespace erbsland::text::impl {
 
-/// A string-keyed unordered set with Erbsland string-list helpers.
+/// A string-keyed unordered set with Erbsland Core string-list helpers.
 /// @tparam tString The string key type.
 /// @tparam tCaseInsensitive Use case-insensitive key hashing and equality.
 /// @tested{StringSetTest}

@@ -132,11 +132,11 @@ Interface
 .. doxygenenum:: erbsland::cterm::TerminalFlag
 .. doxygenclass:: erbsland::cterm::TerminalFlags
     :members:
+.. doxygenclass:: erbsland::cterm::TerminalOutputGuard
+    :members:
 .. doxygenclass:: erbsland::cterm::TerminalSession
     :members:
 .. doxygenclass:: erbsland::cterm::TerminalStream
-    :members:
-.. doxygenclass:: erbsland::cterm::TerminalStreamSynchronization
     :members:
 .. doxygenclass:: erbsland::cterm::Tile9Style
     :members:

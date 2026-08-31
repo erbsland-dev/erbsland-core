@@ -64,7 +64,7 @@ Processing Types
     UnicodeCategory, UnicodeCategoryGroup, AsciiCategory // character classifications
     NormalizationForm // NFC, NFD, NFKC, and NFKD Unicode normalization selection
     StringKind, StringSide, StringSplitMode, CaseSensitivity // width, position, splitting, and comparison policies
-    StringConverter // explicit Erbsland and standard string conversion entry point
+    StringConverter // explicit Erbsland Core and standard string conversion entry point
     StringDecoder, StringEncoder, StringDecodeBuffer // byte codecs and bounded incremental decoding
     StringEncoding, EncodingMode, StringBomMode // encoding, error, and byte-order-mark policies
 

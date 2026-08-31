@@ -41,7 +41,7 @@ public: // one-shot compression
     [[nodiscard]] auto compress(ConstByteSpan data) const -> ByteBlock;
     /// Compress an owning byte block and propagate its sensitivity mark.
     [[nodiscard]] auto compress(const ByteBlock &data) const -> ByteBlock;
-    /// Compress borrowed bytes into a self-describing Erbsland envelope.
+    /// Compress borrowed bytes into a self-describing Erbsland Core envelope.
     [[nodiscard]] auto compressWithEnvelope(ConstByteSpan data) const -> ByteBlock;
     /// Compress an owning byte block into an envelope and propagate sensitivity.
     [[nodiscard]] auto compressWithEnvelope(const ByteBlock &data) const -> ByteBlock;

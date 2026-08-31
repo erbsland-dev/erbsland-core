@@ -28,7 +28,9 @@ using namespace el::text;
 
 namespace th = erbsland::unittest::th;
 
-TESTED_TARGETS(EscapeFormat EscapeAmount StringEditor String U16StringEditor U16String U32StringEditor U32String)
+TESTED_TARGETS(
+    EscapeFormat EscapeAmount LogEscapeFormatter StringEditor String U16StringEditor U16String U32StringEditor
+        U32String)
 class StringEscapingTest final : public el::UnitTest {
 public:
     void testEscapeFormatConversion() {
@@ -40,9 +42,10 @@ public:
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Xml), 4U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::RegEx), 5U);
         REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Display), 6U);
-        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Config), 7U);
-        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::ConfigTest), 8U);
-        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Markdown), 9U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Log), 7U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Config), 8U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::ConfigTest), 9U);
+        REQUIRE_EQUAL(static_cast<std::uint8_t>(EscapeFormat::Markdown), 10U);
 
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::None}.toString(), "none"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Html}.toString(), "html"_el);
@@ -51,6 +54,7 @@ public:
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Xml}.toString(), "xml"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::RegEx}.toString(), "regex"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Display}.toString(), "display"_el);
+        REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Log}.toString(), "log"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Config}.toString(), "config"_el);
         REQUIRE_EQUAL(EscapeFormat{EscapeFormat::Markdown}.toString(), "markdown"_el);
 
@@ -59,6 +63,7 @@ public:
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("regex"_el), EscapeFormat::RegEx);
         REQUIRE_FALSE(EscapeFormat::fromString("pcre"_el).has_value());
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("display"_el), EscapeFormat::Display);
+        REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("log"_el), EscapeFormat::Log);
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("config"_el), EscapeFormat::Config);
         REQUIRE_EQUAL(EscapeFormat::fromStringOrThrow("markdown"_el), EscapeFormat::Markdown);
         REQUIRE_FALSE(EscapeFormat::fromString("unknown"_el).has_value());
@@ -97,6 +102,14 @@ public:
         auto text = el::text::StringEditor{"\"quoted\" \\ path"_el};
         text.append(U'\x1b').append(U'\n');
         REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Display), "\"quoted\" \\ path\\u{1b}\\n"_el);
+    }
+
+    void testLogEscapingPreservesLineFeedsAndEscapesOtherUnsafeCharacters() {
+        auto text = el::text::StringEditor{"first"_el};
+        text.append(U'\n').append("second"_el).append(U'\t').append(U'\x1b').append(U'\u200d');
+
+        REQUIRE_EQUAL(text.toEscaped(EscapeFormat::Log), "first\nsecond\\t\\u{1b}\\u{200d}"_el);
+        REQUIRE_EQUAL(text.escapedSize(EscapeFormat::Log), text.toEscaped(EscapeFormat::Log).length());
     }
 
     void testHtmlAndXmlTargets() {

@@ -130,7 +130,9 @@ Timer and Thread Patterns
     o.mode()/interval() -> T // inspect timer scheduling
     o.createEventThread() -> ManagedEventThreadPtr // create an application-owned event thread
     T::create() -> UnmanagedEventThreadPtr // create a standalone event thread
-    o.start()/quit()/join() // control an event thread lifecycle
+    o.start() // start a one-shot event thread; never restart a joined thread
+    o.quit() // idempotently request graceful termination without waiting
+    o.join() // wait without requesting termination; never call from the worker itself
     o.eventLoop()/events() -> Ep // access a thread's loop or event target
 
 Backend Patterns

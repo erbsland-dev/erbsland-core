@@ -10,11 +10,11 @@
 The Project Structure
 *********************
 
-Organize Erbsland Libraries Together
+Organize Erbsland Core Libraries Together
 ====================================
 
 Erbsland Core is designed to live at ``<project>/erbsland/core``.
-Future Erbsland extension libraries can then be placed next to it at ``<project>/erbsland/<extension>``.
+Future Erbsland Core extension libraries can then be placed next to it at ``<project>/erbsland/<extension>``.
 Keeping these dependencies below one directory makes their ownership and CMake integration clear.
 
 The completed tutorial project has this structure:
@@ -24,7 +24,7 @@ The completed tutorial project has this structure:
     elgrep-project
         ├── erbsland
         │   ├── core                    # Erbsland Core Git submodule
-        │   └── CMakeLists.txt          # Aggregates Erbsland libraries
+        │   └── CMakeLists.txt          # Aggregates Erbsland Core libraries
         ├── elgrep
         │   ├── src
         │   │   ├── ElGrepApp.cpp

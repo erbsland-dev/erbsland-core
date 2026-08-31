@@ -25,7 +25,7 @@ Getting Started
 
     Build a Unicode-Safe Recursive Search Tool
 
-In this tutorial you will build ``elgrep``, a small command-line tool that searches files with an Erbsland regular
+In this tutorial you will build ``elgrep``, a small command-line tool that searches files with an Erbsland Core regular
 expression.
 It accepts a file or a directory, walks directories recursively when requested, and highlights every match using safe
 terminal output.

@@ -182,6 +182,11 @@ auto PosixPathBackend::loadResolvedInfoOrThrow(
     result.exists = true;
     result.type = typeFromMode(info.st_mode);
     result.loadedParts.set(PathInfoPart::Type);
+    if (parts.isSet(PathInfoPart::FileIdentity)) {
+        result.fileIdentity = system::FileIdentity::fromNativeValues(
+            static_cast<uint64_t>(info.st_dev), static_cast<uint64_t>(info.st_ino));
+        result.loadedParts.set(PathInfoPart::FileIdentity);
+    }
     if (parts.isSet(PathInfoPart::Size)) {
         if (result.type == PathType::RegularFile && info.st_size >= 0) {
             result.fileSize = unit::ByteLength::fromSizeT(static_cast<std::size_t>(info.st_size));

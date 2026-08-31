@@ -33,6 +33,7 @@ target_sources(erbsland-core PRIVATE
         CommandLineArguments.hpp
         Definitions.hpp
         InitializeFn.hpp
+        LastErrorDumpMode.hpp
         MainFn.hpp
         MakeOneNamespace.hpp
         Namespaces.hpp

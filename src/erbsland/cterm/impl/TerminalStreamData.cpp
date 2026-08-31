@@ -11,14 +11,8 @@
 namespace erbsland::cterm::impl {
 
 TerminalStreamData::TerminalStreamData(
-    TerminalPtr streamTerminal,
-    const BlockStyle streamStyle,
-    TerminalStreamSynchronizationPtr streamSynchronization,
-    const stream::OutputStreamSettings streamSettings) :
-    terminal{std::move(streamTerminal)},
-    style{streamStyle},
-    synchronization{std::move(streamSynchronization)},
-    settings{streamSettings} {
+    TerminalPtr streamTerminal, const BlockStyle streamStyle, const stream::OutputStreamSettings streamSettings) :
+    terminal{std::move(streamTerminal)}, style{streamStyle}, settings{streamSettings} {
     if (terminal == nullptr) {
         streamState.store(stream::StreamState::Closed);
     }
@@ -44,7 +38,7 @@ void TerminalStreamData::schedule() {
 void TerminalStreamData::performWrite(const Command &command) {
     auto failure = std::exception_ptr{};
     try {
-        const auto terminalLock = std::scoped_lock{synchronization->_mutex};
+        auto terminalLock = terminal->synchronizeOutput();
         terminal->setStyle(command.style);
         try {
             if (!command.text.isEmpty()) {
@@ -90,7 +84,7 @@ void TerminalStreamData::scheduleFlush(const bool closeAfterFlush, const uint64_
 void TerminalStreamData::performFlush(const bool closeAfterFlush, const uint64_t generation) {
     auto failure = std::exception_ptr{};
     try {
-        const auto terminalLock = std::scoped_lock{synchronization->_mutex};
+        auto terminalLock = terminal->synchronizeOutput();
         terminal->flush();
     } catch (...) {
         failure = std::current_exception();

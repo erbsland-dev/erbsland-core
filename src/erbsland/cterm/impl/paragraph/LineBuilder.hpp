@@ -75,6 +75,8 @@ private:
     /// @return The built physical line, or `std::nullopt` if the line cannot be built.
     [[nodiscard]] auto buildLine(int reservedSuffixWidth, bool addEndMark, bool addEllipsis) const
         -> std::optional<BuildResult>;
+    /// Test whether the remaining word fits intact on a fresh wrapped line.
+    [[nodiscard]] auto wordFitsOnWrappedLine(int wordWidth) const noexcept -> bool;
     /// Evaluate the next spacing run from the current layout state.
     [[nodiscard]] auto evaluateSpacingRun(
         std::size_t tokenIndex, std::size_t tabStopIndex, int currentColumn, bool isLineStart) const

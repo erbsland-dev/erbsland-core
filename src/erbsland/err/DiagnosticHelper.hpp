@@ -31,11 +31,11 @@ public:
     auto operator=(DiagnosticHelper &&) noexcept -> DiagnosticHelper & = delete;
 
 public:
-    /// Create a diagnostic for one Erbsland exception.
+    /// Create a diagnostic for one Erbsland Core exception.
     /// @return The diagnostic for the exception itself.
     [[nodiscard]] auto toDiagnostic() -> DiagnosticConstPtr;
 
-    /// Create a diagnostic document from an Erbsland exception, including causes.
+    /// Create a diagnostic document from an Erbsland Core exception, including causes.
     /// @return The diagnostic document.
     [[nodiscard]] auto toDocument() -> text::TextDocument;
 

@@ -37,9 +37,9 @@ public:
     /// Test if the event-loop thread is currently running.
     [[nodiscard]] auto isRunning() const noexcept -> bool;
     /// Get the thread's event loop.
-    [[nodiscard]] auto eventLoop() -> event::EventLoop &;
+    [[nodiscard]] auto eventLoop() noexcept -> event::EventLoop &;
     /// Get the event source associated with the event loop.
-    [[nodiscard]] auto events() -> event::EventsPtr;
+    [[nodiscard]] auto events() noexcept -> event::EventsPtr;
 
 protected:
     /// Shut down the event loop and join the thread.

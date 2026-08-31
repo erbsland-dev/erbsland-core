@@ -96,4 +96,4 @@ When the program needs separate command-line registration, parsing transformatio
 methods, or asynchronous callbacks that share members, an application subclass makes those relationships clearer.
 
 Exceptions from either callback remain inside the normal ``Application::run()`` boundary.
-An Erbsland exception is reported after cleanup, while the returned ``ExitCode`` becomes the process result.
+An Erbsland Core exception is reported after cleanup, while the returned ``ExitCode`` becomes the process result.

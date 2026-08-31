@@ -87,7 +87,7 @@ class SourceFile:
         return frozenset(result)
 
     def _find_os_conditional_ranges(self) -> tuple[tuple[int, int], ...]:
-        """Find conditional compilation blocks selected with an Erbsland OS macro."""
+        """Find conditional compilation blocks selected with an Erbsland Core OS macro."""
         stack: list[tuple[int, bool]] = []
         result: list[tuple[int, int]] = []
         line_number = 1
@@ -320,7 +320,7 @@ class SourceFile:
         return all(block.kind == "namespace" for block in self.enclosing_blocks(offset))
 
     def is_in_os_conditional(self, offset: int) -> bool:
-        """Test whether a location is inside a conditional block selected by an Erbsland OS macro."""
+        """Test whether a location is inside a conditional block selected by an Erbsland Core OS macro."""
         return any(start <= offset < end for start, end in self._os_conditional_ranges)
 
     def immediate_parent(self, block: Block) -> Block | None:

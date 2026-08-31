@@ -74,6 +74,7 @@ Headers     :
     * "cryptology/configuration/CryptologyConfiguration.hpp"
     * "cryptology/tls/TlsConfiguration.hpp"
     * "cryptology/tls/TlsConfigurationResolution.hpp"
+    * "core/LastErrorDumpMode.hpp"
     * "core/MainFn.hpp"
     * "core/InitializeFn.hpp"
     * "unit/ExitCode.hpp"
@@ -126,6 +127,12 @@ Title       : "Display Text"
 Headers     :
     * "i18n/DisplayTextMap.hpp"
     * "i18n/DisplayTextTranslator.hpp"
+
+------------*[ Reference Groups ]
+Page        : "log/logging.rst"
+Title       : "Logging"
+Header Globs:
+    * "log/*.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "math/big_integers.rst"
@@ -539,6 +546,7 @@ Headers     :
     * "stream/TempTextOutputStream.hpp"
     * "stream/TextPrintContext.hpp"
     * "stream/SensitiveInputScope.hpp"
+    * "system/FileIdentity.hpp"
 
 ------------*[ Reference Groups ]
 Page        : "text/base_n.rst"

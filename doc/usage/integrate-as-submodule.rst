@@ -18,15 +18,15 @@ configuration across application and library code.
 Recommended Project Layout
 ==========================
 
-Place all Erbsland libraries below one directory:
+Place all Erbsland Core libraries below one directory:
 
 .. code-block:: none
 
     <project>
         ├── erbsland
         │   ├── core                    # Git submodule
-        │   ├── <extension>             # Future Erbsland extension
-        │   └── CMakeLists.txt          # Erbsland aggregation
+        │   ├── <extension>             # Future Erbsland Core extension
+        │   └── CMakeLists.txt          # Erbsland Core aggregation
         ├── <application-or-library>
         │   ├── src
         │   └── CMakeLists.txt
@@ -45,7 +45,7 @@ Initialize all recorded dependencies after cloning a project:
 
     $ git submodule update --init --recursive
 
-Aggregate Erbsland Libraries
+Aggregate Erbsland Core Libraries
 ============================
 
 The project root only needs to know about the ``erbsland`` directory and its own targets:
@@ -59,7 +59,7 @@ The project root only needs to know about the ``erbsland`` directory and its own
     add_subdirectory(erbsland)
     add_subdirectory(app)
 
-The aggregation file owns the individual Erbsland subdirectories:
+The aggregation file owns the individual Erbsland Core subdirectories:
 
 .. code-block:: cmake
     :caption: <project>/erbsland/CMakeLists.txt

@@ -100,7 +100,7 @@ Terminal Integration Types
     Backend // platform terminal output and input backend interface
     TerminalSession // scoped terminal setup and restoration
     TerminalStream // text stream adapter for terminal output
-    TerminalStreamSynchronization // shared synchronization state for terminal streams
+    TerminalOutputGuard // move-only guard for terminal-wide multi-call output transactions
     TerminalFlags, UpdateSettings // terminal construction and screen update policies
 
 Document Types
@@ -183,6 +183,7 @@ Terminal Patterns
     o.clearScreen()/flush() // apply immediate terminal output control
     o.input() -> Input& // access the terminal-owned input interface
     o.beginSession() -> TerminalSession // enter scoped terminal control
+    o.synchronizeOutput() -> TerminalOutputGuard // serialize an explicit output transaction
 
 Input Patterns
 ==============

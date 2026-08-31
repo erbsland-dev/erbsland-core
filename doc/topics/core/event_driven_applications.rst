@@ -101,7 +101,7 @@ Finishing and Reporting Failures
 The first call to ``quit()`` chooses the process exit code.
 It also asks registered application parts and managed event threads to stop before the main event system exits.
 
-An Erbsland exception thrown by a callback on the automatically managed main event loop crosses the same reporting
+An Erbsland Core exception thrown by a callback on the automatically managed main event loop crosses the same reporting
 boundary as an exception from ``initialize()`` or ``main()``.
 Use explicit result handling when a failure is expected and recoverable; throw ``ApplicationError`` when a callback must
 terminate the whole process with a diagnostic and exit code.

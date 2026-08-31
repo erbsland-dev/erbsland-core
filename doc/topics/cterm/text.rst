@@ -219,8 +219,8 @@ UTF-8-based constructors are tolerant and replace malformed input.
     const auto text = el::String{"Gr\xC3"};
     const auto displayText = BlockString{text}; // inserts U+FFFD
 
-Validate byte or standard-string input before constructing Erbsland text when invalid data should fail fast.
-For existing UTF-8 Erbsland strings, call ``isValidUtf8()`` explicitly when validation is required.
+Validate byte or standard-string input before constructing Erbsland Core text when invalid data should fail fast.
+For existing UTF-8 Erbsland Core strings, call ``isValidUtf8()`` explicitly when validation is required.
 
 Searching, Slicing, and Measuring
 ---------------------------------

@@ -87,6 +87,7 @@ Applications and system integration
 - Terminal output with colors, styles, cursor movement, and terminal-size detection
 - Error classes, diagnostics, and formatted diagnostic output
 - The Erbsland Configuration Language, including validation rules
+- Bounded asynchronous logging with hierarchical streams, runtime reconfiguration, and statistics
 
 Events and networking
 ---------------------

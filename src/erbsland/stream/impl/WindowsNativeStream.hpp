@@ -40,7 +40,7 @@ public:
     auto operator=(const WindowsNativeStream &) -> WindowsNativeStream & = delete;
     auto operator=(WindowsNativeStream &&) -> WindowsNativeStream & = delete;
 
-public: // implement NativeOutputStream
+public: // implements NativeOutputStream
     using StreamErrorSource::throwError;
 
     void writeBytes(std::span<const char> bytes) override;
@@ -48,7 +48,8 @@ public: // implement NativeOutputStream
     void flush() override;
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
 
-public: // implement NativeByteStream
+public: // implements NativeByteStream
+    [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity override;
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto position() const -> unit::ByteIndex override;
     auto setPosition(unit::ByteIndex position) -> unit::ByteIndex override;
@@ -83,6 +84,7 @@ private:
     std::atomic<WindowsNativeHandle> _handle{};                        ///< Wrapped native handle.
     NativeStreamOwnership _ownership{NativeStreamOwnership::Borrowed}; ///< Handle ownership mode.
     text::String _path;                                                ///< Stream path, when available.
+    system::FileIdentity _fileIdentity;                                ///< Identity captured from the handle.
     bool _isConsole{false};                                            ///< Whether the handle is a Windows console.
     bool _supportsPositioning{false};                                  ///< Whether this handle can be positioned.
     mutable std::mutex _operationMutex;                                ///< Protects operation and deferred close state.

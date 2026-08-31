@@ -47,6 +47,7 @@ Secondary Types
     ApplicationInfo // application name, version, author, copyright, and license metadata
     CommandLineArguments // owning UTF-8 process argument list
     InitializeFn, MainFn // functional lifecycle customization callbacks
+    LastErrorDumpMode // condition for displaying retained errors during final cleanup
     ApplicationError // controlled application termination failure
     ApplicationErrorContext // structured application failure and exit-code context
     ApplicationPart // base class for one managed part implementation
@@ -106,6 +107,7 @@ Application Service Patterns
     o.displayText()/setDisplayTextMap(map) // inspect or replace application display text
     o.userLookup() -> system::UserLookup& // access shared identity lookup
     o.resources() -> const resource::Resources& // access compiled resources through a lazy shared manager
+    o.enableLastErrorDump([mode]) // retain recent errors and display them on failure or after every run
     o.terminal()/systemOutputStyle() -> T // access terminal integration and presentation
     o.events()/eventRegistry()/createEventThread() -> T // access shared event services
 

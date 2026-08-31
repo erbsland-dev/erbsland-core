@@ -9,6 +9,10 @@
 #include "../../cterm/Terminal.hpp"
 #include "../../cterm/TerminalDocumentRenderer.hpp"
 #include "../../i18n/DisplayTextMap.hpp"
+#include "../../log/ConsoleLogWriter.hpp"
+#include "../../log/impl/LogLineFormatter.hpp"
+#include "../../log/LastErrorsLogWriter.hpp"
+#include "../../log/LogManager.hpp"
 #include "../../options/OptionManager.hpp"
 #include "../../options/Options.hpp"
 #include "../../random/Random.hpp"
@@ -82,8 +86,28 @@ void ApplicationDataImpl::setCommandLineArguments(const int argc, wchar_t *argv[
     _commandLineArgumentsInitialized = true;
 }
 
-void ApplicationDataImpl::cleanupBeforeAppExit() noexcept {
+void ApplicationDataImpl::cleanupBeforeAppExit(const unit::ExitCode exitCode) noexcept {
     try {
+        if (_logManager != nullptr) {
+            _logManager->shutdown();
+            if (_lastErrorsLogWriter != nullptr && _consoleLogWriter != nullptr &&
+                (_lastErrorDumpMode == LastErrorDumpMode::Always || exitCode.isFailure())) {
+                const auto lineFormat = _logManager->configuration().lineFormat();
+                const auto entries = _lastErrorsLogWriter->snapshot();
+                if (!entries.empty()) {
+                    auto title = text::TextDocument{};
+                    title.addHeading(2)->addText(displayText()->text("log.LastErrorDumpTitle"_el));
+                    renderSystemOutput(title);
+                    for (const auto &entry : entries) {
+                        _consoleLogWriter->write(entry, log::impl::LogLineFormatter{*entry, lineFormat}.format());
+                    }
+                    _consoleLogWriter->flush();
+                }
+            }
+            _lastErrorsLogWriter.reset();
+            _consoleLogWriter.reset();
+            _logManager.reset();
+        }
         if (_standardStreamRedirect.isActive()) {
             stream::stdOut()->flush();
             stream::stdErr()->flush();
@@ -215,6 +239,35 @@ auto ApplicationDataImpl::secureRandom() noexcept -> const random::RandomPtr & {
 
 void ApplicationDataImpl::setSecureRandom(random::RandomPtr random) noexcept {
     _secureRandom = std::move(random);
+}
+
+auto ApplicationDataImpl::logMutex() noexcept -> std::mutex & {
+    return _logMutex;
+}
+
+auto ApplicationDataImpl::logManager() noexcept -> const log::LogManagerPtr & {
+    return _logManager;
+}
+
+void ApplicationDataImpl::setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept {
+    _logManager = std::move(manager);
+    _consoleLogWriter = std::move(consoleWriter);
+}
+
+auto ApplicationDataImpl::lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & {
+    return _lastErrorsLogWriter;
+}
+
+void ApplicationDataImpl::setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept {
+    _lastErrorsLogWriter = std::move(writer);
+}
+
+auto ApplicationDataImpl::lastErrorDumpMode() const noexcept -> LastErrorDumpMode {
+    return _lastErrorDumpMode;
+}
+
+void ApplicationDataImpl::setLastErrorDumpMode(const LastErrorDumpMode mode) noexcept {
+    _lastErrorDumpMode = mode;
 }
 
 auto ApplicationDataImpl::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {

@@ -8,6 +8,7 @@ target_sources(erbsland-core-unittest PRIVATE
         ApplicationEventTest.cpp
         ApplicationInstanceBuilder.hpp
         ApplicationInstanceBuilderBase.hpp
+        ApplicationLogTest.cpp
         ApplicationOptionsTest.cpp
         ApplicationPartApplicationTest.cpp
         ApplicationPartManagerTest.cpp

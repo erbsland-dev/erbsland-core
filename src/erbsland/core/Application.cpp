@@ -19,6 +19,11 @@
 #include "../event/impl/ManagedEventThread.hpp"
 #include "../event/ManagedEventThread.hpp"
 #include "../i18n/DisplayTextMap.hpp"
+#include "../log/ConsoleLogWriter.hpp"
+#include "../log/LastErrorsLogWriter.hpp"
+#include "../log/LogConfiguration.hpp"
+#include "../log/LogManager.hpp"
+#include "../log/LogStream.hpp"
 #include "../options/OptionError.hpp"
 #include "../options/OptionManager.hpp"
 #include "../options/OptionModule.hpp"
@@ -59,7 +64,7 @@ Application::Application(impl::ApplicationDataPtr data) : _data{std::move(data)}
 
 Application::~Application() {
     if (impl::ApplicationInstanceManager::instance()->unregisterInstance(this)) {
-        _data->cleanupBeforeAppExit();
+        _data->cleanupBeforeAppExit(_exitCode);
     }
 }
 
@@ -107,8 +112,10 @@ auto Application::run() -> int {
             // Preserve the original foreign exception.
         }
         cleanup();
+        _exitCode = unit::ExitCode::failure();
         std::rethrow_exception(error);
     }
+    _exitCode = exitCode;
     return exitCode.toRawValue();
 }
 
@@ -278,6 +285,44 @@ auto Application::secureRandom() -> random::Random & {
 
 auto Application::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {
     return _data->cryptologyConfiguration();
+}
+
+auto Application::log() -> log::LogManager & {
+    auto lock = std::scoped_lock{_data->logMutex()};
+    if (_data->logManager() == nullptr) {
+        if (!_data->isTerminalEnabled()) {
+            enableTerminal();
+        }
+        auto manager = log::LogManager::create();
+        auto consoleWriter = log::ConsoleLogWriterPtr{};
+        auto configuration = log::LogConfiguration{};
+        if (_data->terminal() != nullptr) {
+            consoleWriter = std::make_shared<log::ConsoleLogWriter>(_data->terminal());
+            configuration.addWriter(
+                consoleWriter,
+                log::LogWriterFilter{
+                    log::LogLevels{log::LogLevel::Information, log::LogLevel::Warning, log::LogLevel::Error}});
+        }
+        manager->setConfiguration(std::move(configuration));
+        _data->setLogManager(std::move(manager), std::move(consoleWriter));
+    }
+    return *_data->logManager();
+}
+
+auto Application::logStream() -> const log::LogStreamPtr & {
+    return log().rootStream();
+}
+
+void Application::enableLastErrorDump(const LastErrorDumpMode mode) {
+    auto &manager = log();
+    const auto lock = std::scoped_lock{_data->logMutex()};
+    _data->setLastErrorDumpMode(mode);
+    if (_data->lastErrorsLogWriter() != nullptr) {
+        return;
+    }
+    auto writer = std::make_shared<log::LastErrorsLogWriter>();
+    manager.addPersistentWriter(writer, log::LogWriterFilter{log::LogLevel::Error});
+    _data->setLastErrorsLogWriter(std::move(writer));
 }
 
 auto Application::resources() -> const resource::Resources & {

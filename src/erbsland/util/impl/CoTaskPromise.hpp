@@ -45,7 +45,7 @@ public:
     /// Access shared task state for final coroutine completion.
     /// @return The task state owned by this promise.
     [[nodiscard]] auto state() const noexcept -> std::shared_ptr<CoTaskState<tValue>> { return _state; }
-    /// Access task cancellation state for Erbsland coroutine awaiters.
+    /// Access task cancellation state for Erbsland Core coroutine awaiters.
     /// @return Shared cancellation state for this task.
     [[nodiscard]] auto cancellationState() const noexcept -> std::shared_ptr<CoTaskStateBase> { return _state; }
 
@@ -76,7 +76,7 @@ public:
     /// Access shared task state for final coroutine completion.
     /// @return The task state owned by this promise.
     [[nodiscard]] auto state() const noexcept -> std::shared_ptr<CoTaskState<void>> { return _state; }
-    /// Access task cancellation state for Erbsland coroutine awaiters.
+    /// Access task cancellation state for Erbsland Core coroutine awaiters.
     /// @return Shared cancellation state for this task.
     [[nodiscard]] auto cancellationState() const noexcept -> std::shared_ptr<CoTaskStateBase> { return _state; }
 

@@ -23,6 +23,7 @@ const EscapeFormat::ValueToTextArray EscapeFormat::_valueToTextMap = {
         {Xml, "xml"_el},
         {RegEx, "regex"_el},
         {Display, "display"_el},
+        {Log, "log"_el},
         {Config, "config"_el},
         {ConfigTest, "config_test"_el},
         {Markdown, "markdown"_el},

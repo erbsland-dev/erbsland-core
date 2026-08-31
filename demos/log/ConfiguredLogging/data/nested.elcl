@@ -1,0 +1,16 @@
+# Logging can be one branch in a larger application configuration.
+--[ Application ]-----------------------------------------------------------------------------------------------------
+Name                        : "Pohjoinen tutkimusretki"
+
+--[ Application . Logging ]-------------------------------------------------------------------------------------------
+Trace Sections              :
+    * "route-search"
+
+--[ . Format ]--------------------------------------------------------------------------------------------------------
+Pattern                     : "{level} {name}: {message}"
+Name                        : "leaf"
+
+--*[ . Writers ]*-----------------------------------------------------------------------------------------------------
+Type                        : "console"
+Levels                      : "trace", "information", "warning", "error"
+Paths                       : "guild"

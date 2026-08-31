@@ -30,11 +30,11 @@ auto ManagedEventThread::isRunning() const noexcept -> bool {
     return EventThreadBase::isRunning();
 }
 
-auto ManagedEventThread::eventLoop() -> event::EventLoop & {
+auto ManagedEventThread::eventLoop() noexcept -> event::EventLoop & {
     return EventThreadBase::eventLoop();
 }
 
-auto ManagedEventThread::events() -> event::EventsPtr {
+auto ManagedEventThread::events() noexcept -> event::EventsPtr {
     return EventThreadBase::events();
 }
 

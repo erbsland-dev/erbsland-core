@@ -26,7 +26,7 @@ pass the original size when decoding.
         el::mem::ByteCompressionAlgorithm::Lz4Block};
     const auto original = decompressor.decompress(compressed, data.length());
 
-If the compressed value must stand on its own, use the Erbsland compression envelope.
+If the compressed value must stand on its own, use the Erbsland Core compression envelope.
 It records the algorithm, original length, and compressed payload length, so decoding does not require a configured
 decompressor.
 

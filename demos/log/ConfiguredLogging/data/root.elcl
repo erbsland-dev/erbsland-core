@@ -1,0 +1,27 @@
+# Complete root-level configuration for the explorer guild demo.
+--[ Format ]----------------------------------------------------------------------------------------------------------
+Pattern                     : "{level} [{name}] {message}"
+Timestamp Zone              : "utc"
+Level                       : "short_upper"
+Name                        : "full"
+Name Limit                  : 40
+Message Truncation          : "none"
+Message Limit               : 0
+Truncation Mark             : "…"
+
+--[ Queue ]-----------------------------------------------------------------------------------------------------------
+Maximum Entries             : 512
+Maximum Bytes               : 1'048'576
+Reserved Error Entries      : 64
+Reserved Error Bytes        : 131'072
+Maximum Message Bytes       : 65'536
+Shutdown Timeout Ms         : 2'000
+
+--*[ Writers ]*-------------------------------------------------------------------------------------------------------
+Type                        : "console"
+Levels                      : "trace", "information", "warning", "error"
+Paths                       : "guild"
+Line Indent                 : 0
+First Line Indent           : -1
+Wrapped Line Indent         : 4
+Maximum Line Wraps          : 2

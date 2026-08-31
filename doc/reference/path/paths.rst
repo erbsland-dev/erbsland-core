@@ -47,6 +47,10 @@ takes longer than the normal cache period.
 Successful mutations through the library invalidate the cache attached to each directly affected path.
 External filesystem changes remain snapshot-based and become visible after cache expiry or an explicit reload.
 
+Requesting ``PathInfoPart::FileIdentity`` loads an opaque, comparable identity for a regular filesystem object.
+POSIX backends derive it from device and inode information; Windows backends use volume serial and file index data.
+The identity is invalid when the path does not resolve to an identifiable object.
+
 Reading Content
 ===============
 

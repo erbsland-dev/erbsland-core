@@ -31,7 +31,7 @@ public:
 public:
     /// Access the temporary directory as a native filesystem path.
     [[nodiscard]] auto stdPath() const noexcept -> const std::filesystem::path & { return _path; }
-    /// Access the temporary directory as an Erbsland path.
+    /// Access the temporary directory as an Erbsland Core path.
     [[nodiscard]] auto path() const -> el::path::Path { return el::path::Path{_path}; }
     /// Get a fixture path below this fixture's root.
     [[nodiscard]] auto child(const std::filesystem::path &suffix) const -> el::path::Path {

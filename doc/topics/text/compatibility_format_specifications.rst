@@ -121,7 +121,7 @@ Precision is forwarded to ``FloatFormat`` and therefore follows the selected not
 Recognize the Compact Escaping Extension
 ========================================
 
-The slash presentations are Erbsland extensions to the compatibility grammar.
+The slash presentations are Erbsland Core extensions to the compatibility grammar.
 ``/html``, ``/json``, ``/xml``, ``/cpp``, and ``/pcre`` escape text for the selected destination.
 The suffix ``-``, ``=``, ``+``, or ``*`` selects minimal, balanced, non-ASCII, or complete escaping respectively.
 Precision is applied before escaping and width afterward.

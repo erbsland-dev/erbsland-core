@@ -104,6 +104,15 @@ auto PathInfo::fileSize() const noexcept -> unit::ByteLength {
     return _cache->data.fileSize;
 }
 
+auto PathInfo::fileIdentity() const noexcept -> system::FileIdentity {
+    ensureParts(PathInfoPart::FileIdentity);
+    if (isEmpty()) {
+        return {};
+    }
+    const auto lock = std::scoped_lock{_cache->mutex};
+    return _cache->data.fileIdentity;
+}
+
 auto PathInfo::lastModified() const noexcept -> DateTime {
     ensureParts(PathInfoPart::Times);
     if (isEmpty()) {

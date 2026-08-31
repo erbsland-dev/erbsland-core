@@ -219,7 +219,7 @@ class IncludeGraph:
         project_directory: Path,
         public_policy: PublicHeaderPolicy | None = None,
     ) -> IncludeGraph:
-        """Build the graph for the standard Erbsland source directory."""
+        """Build the graph for the standard Erbsland Core source directory."""
         return cls.from_source_directory(project_directory / "src" / "erbsland", public_policy)
 
     @property

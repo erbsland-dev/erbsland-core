@@ -37,7 +37,7 @@ public:
     Value(bool value); // NOLINT(*-explicit-constructor)
     /// Create a text value.
     Value(String text); // NOLINT(*-explicit-constructor)
-    /// Create a text value from an Erbsland string literal.
+    /// Create a text value from an Erbsland Core string literal.
     Value(StringLiteral text) : Value{String{text}} {} // NOLINT(*-explicit-constructor)
     /// Create an integer value.
     Value(int64_t value); // NOLINT(*-explicit-constructor)

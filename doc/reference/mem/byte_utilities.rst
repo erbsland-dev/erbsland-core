@@ -103,7 +103,7 @@ See :doc:`/topics/security/about_sensitive_strings_and_byte_blocks` for the comp
 Compatibility Boundaries
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-``ByteBuffer`` replaces raw dynamic byte vectors at owning Erbsland API boundaries.
+``ByteBuffer`` replaces raw dynamic byte vectors at owning Erbsland Core API boundaries.
 Short byte sequences can be initialized directly with ``ByteBlock({0x01, 0x02})``.
 The ``fromSpan()`` and raw ``uint8_t`` /``char`` ``fromVector()`` factories make compatibility copies explicit, while
 ``toByteBuffer()``, ``toUInt8Vector()``, and ``toCharVector()`` explicitly copy ordinary block data out.

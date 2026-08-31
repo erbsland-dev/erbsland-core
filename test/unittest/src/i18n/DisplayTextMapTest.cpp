@@ -41,6 +41,7 @@ public:
         REQUIRE_EQUAL(map.text("options.UsageLabel"_el), "Usage"_el);
         REQUIRE_EQUAL(map.text("PathValuesHeading"_el), "Paths"_el);
         REQUIRE_EQUAL(map.text("PlatformErrorHeading"_el), "Platform Error"_el);
+        REQUIRE_EQUAL(map.text("log.LastErrorDumpTitle"_el), "Recent Error Log Entries"_el);
         REQUIRE_EQUAL(map.text("demo.deep.Label"_el), "exact"_el);
         map.remove("demo.deep.Label"_el);
         REQUIRE_EQUAL(map.text("demo.deep.Label"_el), "domain"_el);

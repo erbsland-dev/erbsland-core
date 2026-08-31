@@ -9,13 +9,16 @@
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <chrono>
 #include <memory>
 #include <string>
+#include <thread>
+#include <vector>
 
 using namespace el::cterm;
 using namespace el::text::literals;
 
-TESTED_TARGETS(TerminalStream TerminalStreamSynchronization)
+TESTED_TARGETS(TerminalStream TerminalOutputGuard)
 class TerminalStreamTest final : public el::UnitTest {
 public:
     void testWriteMethodsUseTerminal() {
@@ -52,7 +55,7 @@ public:
         REQUIRE_EQUAL(backend->_emittedColors.back(), Color::reset());
     }
 
-    void testStandardStreamsShareSynchronization() {
+    void testStandardStreamsUseTerminalSynchronization() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsColorCodes = false;
         backend->_supportedBlockAttributeCodes = BlockAttributes{};
@@ -68,6 +71,67 @@ public:
         const auto outputFirst = text == std::string{"output\nerror\n"};
         const auto errorFirst = text == std::string{"error\noutput\n"};
         REQUIRE(outputFirst || errorFirst);
+    }
+
+    void testOutputGuardCanBeNested() {
+        const auto backend = std::make_shared<TerminalTestBackend>();
+        const auto terminal = std::make_shared<Terminal>(backend);
+
+        auto outerGuard = terminal->synchronizeOutput();
+        terminal->write("outer "_el);
+        {
+            auto innerGuard = terminal->synchronizeOutput();
+            terminal->write("inner"_el);
+        }
+        terminal->writeLineBreak();
+
+        REQUIRE_EQUAL(backend->output(), std::string{"outer inner\n"});
+    }
+
+    void testDirectOutputGuardBlocksCompetingTerminalStream() {
+        const auto backend = std::make_shared<TerminalTestBackend>();
+        const auto terminal = std::make_shared<Terminal>(backend);
+        const auto stream = TerminalStream::create(terminal);
+        {
+            auto guard = terminal->synchronizeOutput();
+            terminal->write("direct"_el);
+            terminal->flush();
+            stream->writeLine("stream"_el);
+            std::this_thread::sleep_for(std::chrono::milliseconds{10});
+            REQUIRE_EQUAL(backend->output(), std::string{"direct"});
+        }
+        stream->flush();
+
+        REQUIRE_EQUAL(backend->output(), std::string{"directstream\n"});
+    }
+
+    void testCompetingTerminalStreamsKeepCompleteLinesAtomic() {
+        const auto backend = std::make_shared<TerminalTestBackend>();
+        const auto terminal = std::make_shared<Terminal>(backend);
+        const auto first = TerminalStream::create(terminal);
+        const auto second = TerminalStream::create(terminal);
+        auto threads = std::vector<std::thread>{};
+        threads.emplace_back([first]() -> void {
+            for (auto index = 0; index < 50; ++index)
+                first->writeLine("AAAA"_el);
+        });
+        threads.emplace_back([second]() -> void {
+            for (auto index = 0; index < 50; ++index)
+                second->writeLine("BBBB"_el);
+        });
+        for (auto &thread : threads)
+            thread.join();
+        first->flush();
+        second->flush();
+
+        auto offset = std::size_t{};
+        const auto output = backend->output();
+        for (auto index = 0; index < 100; ++index) {
+            const auto line = output.substr(offset, 5U);
+            REQUIRE(line == "AAAA\n" || line == "BBBB\n");
+            offset += 5U;
+        }
+        REQUIRE_EQUAL(offset, output.size());
     }
 
     void testMissingTerminalThrows() {

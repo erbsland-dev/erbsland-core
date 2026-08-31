@@ -11,6 +11,7 @@
 #include "ParagraphOptions.hpp"
 #include "Terminal_fwd.hpp"
 #include "TerminalFlags.hpp"
+#include "TerminalOutputGuard.hpp"
 #include "TypeTraits.hpp"
 #include "UpdateSettings.hpp"
 #include "WritableBuffer.hpp"
@@ -71,7 +72,7 @@ public:
     /// @param size The fallback terminal size used when automatic detection is unavailable.
     explicit Terminal(BackendPtr backend, bgeo::BlockSize size = {80, 25});
 
-public: // implement CursorWriter
+public: // implements CursorWriter
     using CursorWriter::setColor;
     using CursorWriter::write;
     using CursorWriter::writeLineBreak;
@@ -175,6 +176,10 @@ public: // initialization
     void restoreScreen() noexcept;
 
 public: // screen handling
+    /// Exclusively synchronize a sequence of output operations on this terminal.
+    /// Individual terminal calls stay independently thread-safe and do not acquire this optional guard.
+    /// @return A move-only guard retaining the recursive output lock until its destruction.
+    [[nodiscard]] auto synchronizeOutput() const -> TerminalOutputGuard;
     /// Clears the screen.
     /// In `OutputMode::BlockText`, this method has no effect.
     /// If you need the screen cleared immediately, call `flush()` after this method.
@@ -215,7 +220,7 @@ public: // backward compatibility.
     [[deprecated("use setOutputMode()")]]
     void setColorEnabled(bool enabled) noexcept;
 
-protected: // implement CursorWriter
+protected: // implements CursorWriter
     auto createPrintContext() noexcept -> BlockPrintContextPtr override;
     auto printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int override;
 
@@ -280,6 +285,8 @@ private:
     WritableBufferPtr _backBuffer;          ///< The back buffer.
     impl::InputBackend _input;              ///< The input backend.
     impl::LineBuffer _lineBuffer;           ///< The line buffer.
+    std::shared_ptr<std::recursive_mutex> _outputMutex{
+        std::make_shared<std::recursive_mutex>()}; ///< Output guard mutex.
 };
 
 }

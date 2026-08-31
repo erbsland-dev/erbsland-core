@@ -910,7 +910,7 @@ class MultipleTypesInHeaderRule(AntiPatternRule):
 
 
 class RegularStringLiteralRule(AntiPatternRule):
-    info = RuleInfo("regular_string_literal", "Regular Literal Strings for Erbsland APIs", Severity.Medium)
+    info = RuleInfo("regular_string_literal", "Regular Literal Strings for Erbsland Core APIs", Severity.Medium)
     _direct_construction = re.compile(
         r"(?:\b[A-Za-z_]\w*::)*(?:" r"[A-Za-z_]\w*(?:\s*<[^;{}]+>)?\s*\{" r"|[A-Z]\w*(?:\s*<[^;{}]+>)?\s*\()\s*$"
     )

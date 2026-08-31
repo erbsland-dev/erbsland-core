@@ -8,7 +8,7 @@ String Decode Buffer
 Introduction
 ============
 
-``StringDecodeBuffer`` incrementally decodes byte chunks into Erbsland strings.
+``StringDecodeBuffer`` incrementally decodes byte chunks into Erbsland Core strings.
 It is useful for file, terminal, and network input where byte chunks can split an encoded code point.
 It is backed by :cpp:class:`ByteBuffer <erbsland::mem::ByteBuffer>` and can operate in ordinary or sensitive mode.
 

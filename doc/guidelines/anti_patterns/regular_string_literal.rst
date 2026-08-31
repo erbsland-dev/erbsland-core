@@ -17,7 +17,7 @@ This is especially important when throwing exceptions or comparing against stati
 Scope and Exceptions
 ====================
 
-In headers and templates, a ``throw...Error(std::string_view text)`` wrapper is accepted if using the Erbsland string
+In headers and templates, a ``throw...Error(std::string_view text)`` wrapper is accepted if using the Erbsland Core string
 types would add an unnecessary include dependency to the public API.
 Files with ``Windows`` or ``Posix`` in their names are centrally excluded from this rule because they primarily contain
 native API integration code where narrow C strings are expected.

@@ -1,4 +1,4 @@
-# Erbsland profiling framework
+# Erbsland Core profiling framework
 
 The framework supplies the application shell, declarative configuration model, scenario registry, deterministic
 seeding, synchronized workload runner, statistics, and stable line-oriented reporting for profiling tools.

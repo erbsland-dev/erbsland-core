@@ -166,7 +166,7 @@ The neutral derived types cover recurring situations without introducing a domai
 .. erbsland-demo-end::
 
 The hierarchy is deliberately independent from similarly named standard-library exceptions.
-Catch Erbsland exceptions through their Erbsland base classes, and use the actual inheritance shown above when selecting
+Catch Erbsland Core exceptions through their Erbsland Core base classes, and use the actual inheritance shown above when selecting
 a handler.
 
 Domain-Specific Exceptions

@@ -245,7 +245,7 @@ public: // conversion
     [[nodiscard]] auto toCharVector() const -> std::vector<char>;
 
 public: // factory methods
-    /// Create a block by copying an Erbsland byte span.
+    /// Create a block by copying an Erbsland Core byte span.
     [[nodiscard]] static auto fromSpan(ConstByteSpan bytes) -> ByteBlock;
     /// Create a block by copying standard byte values.
     [[nodiscard]] static auto fromSpan(std::span<const std::byte> bytes) -> ByteBlock;

@@ -1,0 +1,12 @@
+# An application configuration with logging at the fixed root section "Log".
+--[ Application ]-----------------------------------------------------------------------------------------------------
+Name                        : "Explorer Guild"
+
+--[ Log ]-------------------------------------------------------------------------------------------------------------
+----[ . Format ]
+Pattern                     : "{level} [{name}] {message}"
+
+---*[ . Writers ]*
+Type                        : "console"
+Levels                      : "information", "warning", "error"
+Paths                       : "application"

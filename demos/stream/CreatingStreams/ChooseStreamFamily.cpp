@@ -37,7 +37,7 @@ void printFileAsHex(const el::ByteInputStreamPtr &input) {
 void printFileAsText(const el::TextInputStreamPtr &input) {
     const auto result = input->readAll(el::CpLength{1024U});
     if (result.hasData()) {
-        // The stream decoder turns the file encoding into an Erbsland string.
+        // The stream decoder turns the file encoding into an Erbsland Core string.
         el::io::printLine("Text: "_el, result.data());
     }
 }

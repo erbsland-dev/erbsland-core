@@ -77,7 +77,7 @@ unrelated transitive includes.
 Optional Standard-Library Formatters
 ====================================
 
-The production API uses the Erbsland ``StringFormat`` system.
+The production API uses the Erbsland Core ``StringFormat`` system.
 Optional ``std::formatter`` specializations exist only to improve diagnostics in unit tests and other explicit
 standard-library interoperability code.
 

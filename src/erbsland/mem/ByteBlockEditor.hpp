@@ -383,7 +383,7 @@ public: // conversion
     [[nodiscard]] auto toCharVector() const -> std::vector<char>;
 
 public: // factory methods
-    /// Create an editor by copying an Erbsland byte span.
+    /// Create an editor by copying an Erbsland Core byte span.
     [[nodiscard]] static auto fromSpan(ConstByteSpan bytes) -> ByteBlockEditor;
     /// Create an editor by copying standard byte values.
     [[nodiscard]] static auto fromSpan(std::span<const std::byte> bytes) -> ByteBlockEditor;

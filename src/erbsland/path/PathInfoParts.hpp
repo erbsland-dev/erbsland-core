@@ -20,12 +20,13 @@ enum class PathInfoPart : uint16_t {
     GroupName = 1U << 6U,        ///< The resolved group name.
     AccessRights = 1U << 7U,     ///< Portable access rights.
     Attributes = 1U << 8U,       ///< Native attributes.
+    FileIdentity = 1U << 9U,     ///< Stable identity of the current filesystem object.
 
     Owner = OwnerId | OwnerName, ///< The owner identifier and name.
     Group = GroupId | GroupName, ///< The group identifier and name.
     Identity = Owner | Group,    ///< Owner and group identifiers and names.
     Default = Type,              ///< The default parts to request.
-    All = Type | Size | Times | Identity | AccessRights | Attributes, ///< All parts requested.
+    All = Type | Size | Times | Identity | AccessRights | Attributes | FileIdentity, ///< All parts requested.
 };
 
 /// The parts of path information to initially request and cache.

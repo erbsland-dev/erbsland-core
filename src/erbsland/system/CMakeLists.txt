@@ -10,6 +10,7 @@ target_sources(erbsland-core PRIVATE
         EnvironmentVariables.cpp
         EnvironmentVariables.hpp
         EnvironmentVariables_fwd.hpp
+        FileIdentity.hpp
         GroupId.hpp
         GroupName.cpp
         GroupName.hpp

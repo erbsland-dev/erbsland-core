@@ -62,7 +62,7 @@ class ErbslandCppIndexValue:
 
 
 def strip_erbsland_cpp_index_value(value: str) -> str:
-    """Strip Erbsland namespaces and parent classes from a C++ index value."""
+    """Strip Erbsland Core namespaces and parent classes from a C++ index value."""
     parsed_value = parse_erbsland_cpp_index_value(value)
     if parsed_value is None:
         return value
@@ -135,7 +135,7 @@ class ErbslandIndexTransform(SphinxTransform):
 
 
 def setup(app: Sphinx) -> dict[str, bool]:
-    """Register Erbsland index transforms."""
+    """Register Erbsland Core index transforms."""
     app.add_transform(ErbslandIndexTransform)
     return {
         "parallel_read_safe": True,

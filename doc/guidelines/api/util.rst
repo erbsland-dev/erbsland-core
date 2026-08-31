@@ -117,7 +117,7 @@ Set Patterns
 
 .. code-block:: text
 
-    T::fromList(values) -> T // create from an Erbsland list
+    T::fromList(values) -> T // create from an Erbsland Core list
     o.insert(key)/remove(key) -> T& // mutate membership
     o.tryInsert/tryRemove(key) -> bool // mutate and report whether membership changed
     o.unite/intersect/subtract/symmetricDifference(other) -> T& // apply a set relation in place

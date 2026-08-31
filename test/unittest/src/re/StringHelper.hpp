@@ -19,7 +19,7 @@ using namespace el::text::literals;
 
 namespace re_test::string_helper {
 
-/// Build an Erbsland string editor from raw UTF-8 bytes.
+/// Build an Erbsland Core string editor from raw UTF-8 bytes.
 inline auto bytesToString(const std::initializer_list<std::uint8_t> bytes) -> StringEditor {
     auto buffer = el::text::impl::UnsafeU8StringBuffer{el::unit::ByteLength::fromSizeT(bytes.size())};
     auto index = std::size_t{};
@@ -50,12 +50,12 @@ inline auto bytesToU8String(const std::initializer_list<std::uint8_t> bytes) -> 
     return result;
 }
 
-/// Convert an Erbsland string to a native string for test assertions.
+/// Convert an Erbsland Core string to a native string for test assertions.
 [[nodiscard]] inline auto toStdString(const String &value) -> std::string {
     return el::text::StringConverter{value}.toStdString();
 }
 
-/// Convert native string views to an Erbsland string list.
+/// Convert native string views to an Erbsland Core string list.
 [[nodiscard]] inline auto toStringList(const std::initializer_list<std::string_view> lines) -> el::text::StringList {
     el::text::StringList result;
     for (const auto line : lines) {

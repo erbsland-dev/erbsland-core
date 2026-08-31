@@ -8,7 +8,7 @@ String Converter
 Introduction
 ============
 
-``StringConverter`` is the explicit conversion entry point for Erbsland strings, editors, literals and the supported
+``StringConverter`` is the explicit conversion entry point for Erbsland Core strings, editors, literals and the supported
 standard-library string types.
 It keeps conversion helpers out of the core string classes while still allowing concise call sites.
 
@@ -33,14 +33,14 @@ Encoding Mode
 ``Tolerant`` is the default and replaces malformed input with Unicode replacement characters when transcoding.
 Compatible representations may instead be copied unchanged without validation.
 ``Strict`` throws :cpp:class:`EncodingError <erbsland::text::EncodingError>` when malformed input is encountered.
-Use strict mode when a conversion must also validate its source, including an existing Erbsland string.
+Use strict mode when a conversion must also validate its source, including an existing Erbsland Core string.
 
 String Decoder
 --------------
 
 :cpp:class:`StringDecoder <erbsland::text::StringDecoder>` decodes
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` or
-:cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` input into Erbsland strings.
+:cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` input into Erbsland Core strings.
 
 .. code-block:: cpp
 
@@ -62,13 +62,13 @@ no output storage.
 String Encoder
 --------------
 
-``StringEncoder`` encodes Erbsland strings and editors into
+``StringEncoder`` encodes Erbsland Core strings and editors into
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` data or directly into a
 :cpp:class:`RingBuffer <erbsland::mem::RingBuffer>`.
 Use ``encodedLength()`` to calculate the exact byte length without allocating an intermediate byte block.
 The ``encodeTo()`` method reserves the complete output and commits it atomically; insufficient capacity leaves readable
 ring data unchanged.
-The encoder is intentionally limited to Erbsland text sources.
+The encoder is intentionally limited to Erbsland Core text sources.
 
 .. code-block:: cpp
 
@@ -81,7 +81,7 @@ empty text that produce only a BOM.
 Stateful output streams suppress the BOM after their first successful write.
 Explicit BOM output is generated as an encoding signature.
 When the source and target representations match, the encoder copies the native units directly without a validation pass
-because Erbsland strings are assumed to contain valid text.
+because Erbsland Core strings are assumed to contain valid text.
 When transcoding is necessary, malformed source sequences become Unicode replacement characters.
 Call the matching ``isValidUtf8()``, ``isValidUtf16()``, or ``isValidUtf32()`` method before encoding when invalid
 internal text must be detected.

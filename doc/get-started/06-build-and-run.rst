@@ -31,7 +31,7 @@ The executable is located below the application's build directory:
     Options:
     -h, --help       Display this help.
     <path>           File or directory to search.
-    <pattern>        Erbsland regular-expression pattern.
+    <pattern>        Erbsland Core regular-expression pattern.
     -r, --recursive  Recursively searches a directory and skips symbolic links.
         --version    Display version information.
 

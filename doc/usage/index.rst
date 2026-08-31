@@ -28,7 +28,7 @@ Source integration through a pinned Git submodule is our recommended way for any
         :link: integrate-as-submodule
         :link-type: doc
 
-        Place Core below ``erbsland/core``, aggregate Erbsland libraries in one CMake directory, and configure
+        Place Core below ``erbsland/core``, aggregate Erbsland Core libraries in one CMake directory, and configure
         executables with Core's application setup helper.
 
     .. grid-item-card:: :fas:`sliders;sd-text-success` Configure the Build

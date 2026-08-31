@@ -11,7 +11,7 @@
 Throwing and Handling Exceptions
 ********************************
 
-This page shows how to use Erbsland exceptions in application code.
+This page shows how to use Erbsland Core exceptions in application code.
 You will learn where to catch an error, which text interface to use, how to retain an original failure as a cause, and
 how ``Application`` turns an uncaught library exception into a consistent error report.
 
@@ -160,7 +160,7 @@ The outer reason then explains which application operation failed, while
 .. erbsland-demo-end::
 
 The cause is a standard ``std::exception_ptr``.
-It may therefore refer to another Erbsland exception, a foreign ``std::exception``, or an unknown exception.
+It may therefore refer to another Erbsland Core exception, a foreign ``std::exception``, or an unknown exception.
 :cpp:class:`DiagnosticHelper <erbsland::err::DiagnosticHelper>` understands all three cases and limits pathological
 cause depth while building a complete report.
 
@@ -174,7 +174,7 @@ including causes, and renders it through the application's system output.
 A callback exception from the automatically managed main event loop stops that loop, shuts down managed event threads,
 and then reaches this same boundary.
 A foreign ``std::exception`` is not caught directly by ``run()``, but it is rendered when preserved as the cause of an
-Erbsland exception.
+Erbsland Core exception.
 
 Use :cpp:class:`ApplicationError <erbsland::core::ApplicationError>` when application code wants to choose the final
 exit code or provide a title, description, source, and code location.

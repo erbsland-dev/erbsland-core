@@ -25,6 +25,7 @@ public:
         Xml,         ///< Escape for XML text.
         RegEx,       ///< Escape for regular expression literal patterns.
         Display,     ///< Escape unsafe characters for human-readable display text (equals Config).
+        Log,         ///< Escape unsafe log text while preserving line feeds.
         Config,      ///< Escape for Erbsland Configuration Language text literals.
         ConfigTest,  ///< Escape for Erbsland Configuration Language test strings.
         Markdown,    ///< Escape normal CommonMark text using backslash and numeric references.
@@ -37,6 +38,7 @@ private:
 
 public:
     /// Create an escape format from a value.
+    /// @param value The raw escape-format value.
     constexpr EscapeFormat(const Value value) noexcept : _value{value} {} // NOLINT(*-explicit-constructor)
 
     // defaults
@@ -58,10 +60,15 @@ public: // accessors
 
 public: // conversion
     /// Convert this escape format to its canonical string.
+    /// @return The lowercase canonical identifier for this format.
     [[nodiscard]] auto toString() const -> String;
     /// Create an escape format from a canonical string.
+    /// @param text The canonical identifier to parse.
+    /// @return The parsed format, or an empty optional if `text` is unknown.
     [[nodiscard]] static auto fromString(const String &text) noexcept -> std::optional<EscapeFormat>;
     /// Create an escape format from a canonical string.
+    /// @param text The canonical identifier to parse.
+    /// @return The parsed escape format.
     /// @throws err::ParseError if the string is not a supported escape format.
     [[nodiscard]] static auto fromStringOrThrow(const String &text) -> EscapeFormat;
 

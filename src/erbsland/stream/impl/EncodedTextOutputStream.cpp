@@ -40,6 +40,10 @@ auto EncodedTextOutputStream::createErrorContext() const noexcept -> StreamError
     return _byteOutputStream->createErrorContext();
 }
 
+auto EncodedTextOutputStream::fileIdentity() const noexcept -> system::FileIdentity {
+    return _byteOutputStream->fileIdentity();
+}
+
 auto EncodedTextOutputStream::encoding() const noexcept -> StringEncoding {
     return _encoding;
 }

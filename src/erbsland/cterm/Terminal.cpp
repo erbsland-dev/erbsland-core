@@ -22,6 +22,10 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 
+auto Terminal::synchronizeOutput() const -> TerminalOutputGuard {
+    return TerminalOutputGuard{_outputMutex};
+}
+
 Terminal::Terminal() : Terminal(bgeo::BlockSize{80, 25}, TerminalFlags{}) {
 }
 

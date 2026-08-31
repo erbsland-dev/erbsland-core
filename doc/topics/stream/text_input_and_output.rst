@@ -277,7 +277,7 @@ text.
 
 .. note::
 
-    Text output assumes that Erbsland strings already contain the representation the application intends to write.
+    Text output assumes that Erbsland Core strings already contain the representation the application intends to write.
     When the target uses the same representation, the stream copies it without another validation pass.
     When transcoding is required, malformed source sequences become Unicode replacement characters.
     Call ``isValid()`` before writing when the application must reject malformed internal text.
@@ -412,7 +412,7 @@ Encoding is a property of the boundary, not of the application text.
 Choose it when the stream is opened through
 :cpp:class:`PathReadTextOptions <erbsland::path::PathReadTextOptions>` or
 :cpp:class:`PathWriteTextOptions <erbsland::path::PathWriteTextOptions>`.
-After opening, readers and writers continue to use the same Erbsland string and character types regardless of the byte
+After opening, readers and writers continue to use the same Erbsland Core string and character types regardless of the byte
 representation below them.
 
 :cpp:class:`StringEncoding <erbsland::text::StringEncoding>` supports UTF-8 plus UTF-16 and UTF-32 in generic or explicit

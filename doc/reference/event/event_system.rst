@@ -18,6 +18,24 @@ Use ``currentEvents()`` from domain event editors to attach to the event loop cu
 Use ``ManagedEventThread`` for application-owned worker event loops and ``UnmanagedEventThread`` for standalone worker
 event loops.
 
+Event Thread Lifecycle
+======================
+
+Event threads are one-shot objects.
+After ``start()`` succeeds, ``isStarted()`` remains true even after the worker terminates and is joined.
+``isRunning()`` only observes whether the event loop is currently executing and is not a synchronization barrier for
+startup or completion.
+
+``quit()`` is an idempotent asynchronous request.
+It can be issued before startup and lets events queued before the quit request run before the loop terminates.
+``join()`` is only a wait operation: it never requests termination, is a no-op before startup or after a previous join,
+and must not be called from the event thread itself.
+It does not transport exceptions from the worker thread; an exception that escapes the event loop terminates the
+process.
+
+Destroying an event thread requests termination and joins a started worker.
+Therefore, the final owning pointer must be released from another thread, never from the event thread itself.
+
 Source-Owned Event Editors
 ==========================
 

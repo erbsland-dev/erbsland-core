@@ -22,7 +22,7 @@
 
 namespace erbsland::text {
 
-/// Encode Erbsland strings as binary text data.
+/// Encode Erbsland Core strings as binary text data.
 /// @tested{StringEncoderTest}
 template <impl::AnyStringOrStringEditorType T>
 class StringEncoder final {

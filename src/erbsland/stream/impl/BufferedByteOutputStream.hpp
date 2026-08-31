@@ -37,7 +37,8 @@ public:
     auto operator=(const BufferedByteOutputStream &) -> BufferedByteOutputStream & = delete;
     auto operator=(BufferedByteOutputStream &&) -> BufferedByteOutputStream & = delete;
 
-public:
+public: // implements ByteOutputStream
+    [[nodiscard]] auto fileIdentity() const noexcept -> system::FileIdentity override;
     [[nodiscard]] auto outputSettings() const noexcept -> const OutputStreamSettings & override;
     [[nodiscard]] auto state() const noexcept -> StreamState override;
     [[nodiscard]] auto isReady() const noexcept -> bool override;
@@ -48,7 +49,7 @@ public:
     [[nodiscard]] auto createErrorContext() const noexcept -> StreamErrorContext override;
     auto write(mem::ConstByteSpan bytes) -> StreamWriteStatus override;
 
-public: // implement StreamPositioning
+public: // implements StreamPositioning
     [[nodiscard]] auto supportsPositioning() const noexcept -> bool override;
     [[nodiscard]] auto position() const -> unit::ByteIndex override;
     auto setPosition(unit::ByteIndex position) -> StreamPositionStatus override;
@@ -88,7 +89,7 @@ private:
     void cancelPositioning() noexcept;
 
 private:
-    BufferedByteOutputStreamDataPtr _data;
+    BufferedByteOutputStreamDataPtr _data; ///< Shared queue, worker, and stream state.
 };
 
 }

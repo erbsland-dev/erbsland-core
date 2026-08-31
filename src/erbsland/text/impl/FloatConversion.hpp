@@ -56,7 +56,7 @@ struct FloatParserResult final {
 /// Validate decoded input and create UTF-8 text for the standard parser backend.
 [[nodiscard]] auto readFloatText(StringCharReader reader) -> FloatTextResult;
 
-/// Map Erbsland parse styles to the standard floating point parser format.
+/// Map Erbsland Core parse styles to the standard floating point parser format.
 [[nodiscard]] auto charsFormat(FloatParseOptions::Style style) noexcept -> std::chars_format;
 
 /// Create a successful parse result.

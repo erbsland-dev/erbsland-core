@@ -185,4 +185,36 @@ public:
         };
         REQUIRE_EQUAL_LINES(actual, expected);
     }
+
+    void testOversizedWordUsesRemainingSpaceBeforeWrapping() {
+        options.setWordBreakMark(Block{});
+        buffer.clearScreen();
+        buffer.printParagraph("Path: /var/folders/example/temporary"_el, options);
+        actual = rawLinesFromBuffer();
+        expected = std::vector<std::string>{
+            //  01234567890123456789
+            "Path: /var/folders/e",
+            "xample/temporary    ",
+            "                    ",
+            "                    ",
+            "                    ",
+        };
+        REQUIRE_EQUAL_LINES(actual, expected);
+    }
+
+    void testOversizedWordStartsOnNextLineIfCurrentLineIsFull() {
+        options.setWordBreakMark(Block{});
+        buffer.clearScreen();
+        buffer.printParagraph("12345678901234567890 /var/folders/example/temporary"_el, options);
+        actual = rawLinesFromBuffer();
+        expected = std::vector<std::string>{
+            //  01234567890123456789
+            "12345678901234567890",
+            "/var/folders/example",
+            "/temporary          ",
+            "                    ",
+            "                    ",
+        };
+        REQUIRE_EQUAL_LINES(actual, expected);
+    }
 };

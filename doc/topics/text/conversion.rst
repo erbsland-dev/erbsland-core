@@ -272,7 +272,7 @@ when encoding strings.
 On decoding, these modes apply only to an initial encoded signature.
 A second or embedded BOM sequence is invalid content and is either replaced with ``U+FFFD`` or rejected according to
 :cpp:enum:`EncodingMode <erbsland::text::EncodingMode>` at the byte-decoding boundary.
-When encoding an Erbsland string, a raw ``U+FEFF`` is copied unchanged for a matching representation and becomes
+When encoding an Erbsland Core string, a raw ``U+FEFF`` is copied unchanged for a matching representation and becomes
 ``U+FFFD`` when transcoding.
 
 .. erbsland-demo::

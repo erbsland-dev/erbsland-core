@@ -24,6 +24,7 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 - Terminal output with colors, styles, cursor movement, and terminal-size detection
 - Error classes, diagnostics, and formatted diagnostic output
 - The Erbsland Configuration Language, including validation rules
+- Bounded asynchronous logging with hierarchical streams, runtime reconfiguration, and statistics
 
 ### Events and networking
 
@@ -38,8 +39,7 @@ boilerplate. It supports Linux, macOS, and Windows and has no required dependenc
 
 ## Alpha Status
 
-Erbsland Core is in alpha state. Its public API may change without a compatibility period, so pin the Git revision
-used by your project and expect migrations when updating. The only major unfinished area is logging.
+Erbsland Core is in alpha state. Its public API may change without a compatibility period.
 
 **Use the cryptography API at your own risk!**
 
@@ -56,7 +56,7 @@ Therefore, be warned: **do not** use TLS connections for public networks.
 - [API reference](https://core.erbsland.dev/reference/)
 
 The recommended source integration places Core at `<project>/erbsland/core` as a pinned Git submodule and uses
-`<project>/erbsland/CMakeLists.txt` as the aggregation point for Core and future Erbsland extensions. Configure
+`<project>/erbsland/CMakeLists.txt` as the aggregation point for Core and future Erbsland Core extensions. Configure
 application targets with `erbsland_core_setup_application(TARGET <target>)`. The
 [source integration guide](https://core.erbsland.dev/usage/integrate-as-submodule.html)
 contains the complete layout and commands; an

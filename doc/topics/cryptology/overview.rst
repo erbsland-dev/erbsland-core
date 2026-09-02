@@ -74,6 +74,24 @@ signature, match a hostname, or decide whether a certificate is acceptable for a
 See :doc:`/reference/cryptology/x509_certificates` for formats, strict and compatible parsing, resource limits, and the
 typed field API.
 
+Creating TLS Certificates and Requests
+======================================
+
+The profile-driven :cpp:class:`X509CertificateBuilder <erbsland::cryptology::X509CertificateBuilder>` creates a local
+test CA and its server or client certificates, or produces a PKCS#10 request for an enterprise CA. It supplies the
+extension and signature defaults that are easy to get wrong while leaving application identity, SANs, validity, and
+hierarchy policy explicit.
+See :doc:`creating_tls_certificates` for complete test and enterprise workflows.
+
+Configuring TLS Profiles
+========================
+
+Applications can read labeled client and server TLS profiles from ELCL section lists.
+:cpp:class:`TlsConfigurationParser <erbsland::cryptology::TlsConfigurationParser>` validates one list entry, loads its
+certificate and key files, and returns an independent
+:cpp:class:`TlsConfigurationEntry <erbsland::cryptology::TlsConfigurationEntry>` for registration.
+See :doc:`configuring_tls` for client-only, server-only, combined, fallback, and included-file examples.
+
 Supported Hash Algorithms
 =========================
 

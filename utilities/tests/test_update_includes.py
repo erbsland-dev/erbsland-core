@@ -232,13 +232,13 @@ class PlatformError {};
 """,
         )
         self.write_header(
-            "system/WindowsErrorContext.hpp",
+            "system/MakeOneNamespace.hpp",
             """// Copyright (c) 2026 Tobias Erbsland
 #pragma once
 
 namespace erbsland::system {
 
-class WindowsErrorContext {};
+class MakeOneNamespace {};
 
 }
 """,
@@ -248,9 +248,9 @@ class WindowsErrorContext {};
 
         system_all_text = (self.project_dir / "src" / "erbsland" / "system" / "all.hpp").read_text(encoding="utf-8")
         self.assertIn('#include "PlatformError.hpp"', system_all_text)
-        self.assertNotIn("WindowsErrorContext.hpp", system_all_text)
+        self.assertNotIn("MakeOneNamespace.hpp", system_all_text)
         self.assertTrue((self.project_dir / "include" / "erbsland" / "system" / "PlatformError.hpp").is_file())
-        self.assertFalse((self.project_dir / "include" / "erbsland" / "system" / "WindowsErrorContext.hpp").exists())
+        self.assertFalse((self.project_dir / "include" / "erbsland" / "system" / "MakeOneNamespace.hpp").exists())
 
     def test_header_can_be_published_but_excluded_from_all_headers(self) -> None:
         self.write_header(

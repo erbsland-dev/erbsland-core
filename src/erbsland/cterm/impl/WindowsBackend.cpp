@@ -101,7 +101,7 @@ auto WindowsBackend::isInteractive() const noexcept -> bool {
     return _p->_isInteractive;
 }
 
-auto WindowsBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
+auto WindowsBackend::detectScreenSize() -> std::optional<block::Size> {
     if (_p->outputHandle == nullptr || _p->outputHandle == INVALID_HANDLE_VALUE) {
         _p->_isInteractive = false;
         return std::nullopt;
@@ -118,7 +118,7 @@ auto WindowsBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
         return std::nullopt;
     }
     _p->_isInteractive = true;
-    return bgeo::BlockSize{width, height};
+    return block::Size{width, height};
 }
 
 void WindowsBackend::setCursorVisible(const bool visible) {

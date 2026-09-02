@@ -4,6 +4,7 @@
 #include <erbsland/core/ApplicationPartIdentifier.hpp>
 #include <erbsland/core/ApplicationPartManager.hpp>
 #include <erbsland/core/ApplicationPartTraits.hpp>
+#include <erbsland/core/ApplicationPartWithInterface.hpp>
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/err/RuntimeError.hpp>

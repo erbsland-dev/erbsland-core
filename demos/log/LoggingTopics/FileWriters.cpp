@@ -28,8 +28,7 @@ void fileWriters() {
     auto format = el::LogLineFormat{};
     format.setPattern("{level} [{name}] {message}"_el);
     auto configuration = el::LogConfiguration{};
-    configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::FileLogWriter>(std::move(writerOptions)));
+    configuration.setLineFormat(std::move(format)).addWriter(el::LogWriter::createForFile(writerOptions));
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));

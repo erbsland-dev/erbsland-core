@@ -8,6 +8,7 @@
 
 #include "../utilities/InternalError.hpp"
 
+#include "../../../err/ParameterError.hpp"
 #include "../../../text/StringFormat.hpp"
 
 #include <algorithm>
@@ -36,10 +37,6 @@ auto Rules::empty() const -> bool {
     return _root->empty();
 }
 
-auto Rules::isDefinitionValidated() const -> bool {
-    return _isDefinitionValidated;
-}
-
 auto Rules::addRule(const RulePtr &rule) -> void {
     if (rule == nullptr) {
         throw err::ParameterError{"Cannot add a null rule"_el, "rule"_el};
@@ -58,7 +55,6 @@ auto Rules::addRule(const RulePtr &rule) -> void {
     ERBSLAND_CORE_CONF_REQUIRE_DEBUG(parentRule != nullptr, "At this point, parentRule must not be null"_el);
     rule->setParent(parentRule);
     parentRule->addChild(rule);
-    _isDefinitionValidated = false;
 }
 
 auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
@@ -100,7 +96,6 @@ auto Rules::addAlternativeRule(const RulePtr &rule) -> void {
     rule->setRuleNamePath(newPath);
     rule->setParent(alternativeRule);
     alternativeRule->addChild(rule);
-    _isDefinitionValidated = false;
 }
 
 auto Rules::root() const -> RulePtr {
@@ -108,12 +103,8 @@ auto Rules::root() const -> RulePtr {
 }
 
 void Rules::validateDefinition() {
-    if (_isDefinitionValidated) {
-        return; // Skip this if the definition was already validated.
-    }
     RulesDefinitionValidator validator{_root};
     validator.validate();
-    _isDefinitionValidated = true;
 }
 
 auto Rules::ruleForNamePath(const NamePath &path, std::size_t maxDepth) const -> RulePtr {

@@ -54,4 +54,26 @@ public: // implement LogWriter
     }
 };
 
+/// A demo writer that retains the most recently delivered entry.
+/// @notest{This support type is exercised by the compiled message-size demo.}
+class CapturingLogWriter final : public el::log::LogWriter {
+public: // implement LogWriter
+    void write(const el::log::LogEntryConstPtr &entry, [[maybe_unused]] const el::log::LogLineConstPtr &line) override {
+        const auto lock = std::scoped_lock{_mutex};
+        _entry = entry;
+    }
+
+public:
+    /// Get the most recently delivered entry.
+    /// @return The captured immutable entry, or null before delivery.
+    [[nodiscard]] auto lastEntry() const -> el::log::LogEntryConstPtr {
+        const auto lock = std::scoped_lock{_mutex};
+        return _entry;
+    }
+
+private:
+    mutable std::mutex _mutex;        ///< Protects the captured entry.
+    el::log::LogEntryConstPtr _entry; ///< Most recently delivered entry.
+};
+
 }

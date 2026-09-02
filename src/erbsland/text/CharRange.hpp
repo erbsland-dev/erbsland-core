@@ -13,7 +13,7 @@ namespace erbsland::text {
 /// A range of Unicode scalar values.
 /// Empty ranges are represented by invalid endpoint characters. Invalid input creates an empty range, while valid
 /// endpoints are ordered automatically.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @tested{CharRangeTest}
 class CharRange final {
 public:

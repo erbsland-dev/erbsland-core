@@ -22,9 +22,8 @@ class CharsConstraint final : public Constraint {
 public:
     /// Create a character constraint from expected range definitions.
     /// @param expectedValue The configured character-range definitions.
-    explicit CharsConstraint(const text::StringList &expectedValue) {
+    explicit CharsConstraint(const text::StringList &expectedValue) : Constraint{vr::ConstraintType::Chars} {
         _charSet = parseTextRanges(expectedValue);
-        setType(vr::ConstraintType::Chars);
     }
 
 protected:

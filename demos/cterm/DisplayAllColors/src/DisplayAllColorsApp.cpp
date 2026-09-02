@@ -6,7 +6,7 @@
 namespace demo {
 
 auto DisplayAllColorsApp::beforeMain() -> int {
-    _buffer = Buffer{BlockSize{BlockCoordinate{80}, BlockCoordinate{9 + 18 + 18}}};
+    _buffer = Buffer{Size{Coordinate{80}, Coordinate{9 + 18 + 18}}};
     _buffer.fill(Block{U' ', bg::Default});
     renderTable();
     renderMatrix();
@@ -17,45 +17,37 @@ auto DisplayAllColorsApp::beforeMain() -> int {
 }
 
 void DisplayAllColorsApp::renderTable() {
-    auto headerCells = _buffer.rect()
-                           .subRectangle(BlockAnchor::Top, BlockSize{BlockCoordinate{0}, BlockCoordinate{1}}, {})
-                           .gridCells(1, 2);
+    auto headerCells = _buffer.rect().subRectangle(Anchor::Top, Size{Coordinate{0}, Coordinate{1}}, {}).gridCells(1, 2);
     _buffer.drawBlockText("Foregrounds"_el, headerCells.at(0), Alignment::Center, {fg::BrightWhite, bg::Inherited});
     _buffer.drawBlockText("Backgrounds"_el, headerCells.at(1), Alignment::Center, {fg::BrightWhite});
-    auto cells = _buffer.rect()
-                     .subRectangle(BlockAnchor::Top, BlockSize{BlockCoordinate{0}, BlockCoordinate{8}}, {1, 0, 0, 0})
-                     .gridCells(8, 4);
+    auto cells =
+        _buffer.rect().subRectangle(Anchor::Top, Size{Coordinate{0}, Coordinate{8}}, {1, 0, 0, 0}).gridCells(8, 4);
     for (int i = 0; i < 8; ++i) {
         Foreground fgColor = Foreground::fromIndex16(i);
         Background bgColor = fgColor != fg::Black ? bg::Black : bg::BrightBlack;
         auto rect = cells.at(static_cast<std::size_t>(i) * 4U);
         _buffer.fill(rect, Block{U' ', fgColor, bgColor});
-        _buffer.drawBlockText(
-            fgColor.toString(), rect.insetBy(BlockMargins{1, 0}), Alignment::Left, {fgColor, bgColor});
+        _buffer.drawBlockText(fgColor.toString(), rect.insetBy(Margins{1, 0}), Alignment::Left, {fgColor, bgColor});
         fgColor = Foreground::fromIndex16(i + 8);
         bgColor = bg::Black;
         rect = cells.at(static_cast<std::size_t>(i) * 4U + 1U);
         _buffer.fill(rect, Block{U' ', fgColor, bgColor});
-        _buffer.drawBlockText(
-            fgColor.toString(), rect.insetBy(BlockMargins{1, 0}), Alignment::Left, {fgColor, bgColor});
+        _buffer.drawBlockText(fgColor.toString(), rect.insetBy(Margins{1, 0}), Alignment::Left, {fgColor, bgColor});
         bgColor = Background::fromIndex16(i);
         fgColor = fg::BrightWhite;
         rect = cells.at(static_cast<std::size_t>(i) * 4U + 2U);
         _buffer.fill(rect, Block{U' ', fgColor, bgColor});
-        _buffer.drawBlockText(
-            bgColor.toString(), rect.insetBy(BlockMargins{1, 0}), Alignment::Left, {fgColor, bgColor});
+        _buffer.drawBlockText(bgColor.toString(), rect.insetBy(Margins{1, 0}), Alignment::Left, {fgColor, bgColor});
         bgColor = Background::fromIndex16(i + 8);
         fgColor = bgColor != bg::BrightWhite ? fg::BrightWhite : fg::BrightBlack;
         rect = cells.at(static_cast<std::size_t>(i) * 4U + 3U);
         _buffer.fill(rect, Block{U' ', fgColor, bgColor});
-        _buffer.drawBlockText(
-            bgColor.toString(), rect.insetBy(BlockMargins{1, 0}), Alignment::Left, {fgColor, bgColor});
+        _buffer.drawBlockText(bgColor.toString(), rect.insetBy(Margins{1, 0}), Alignment::Left, {fgColor, bgColor});
     }
 }
 
 void DisplayAllColorsApp::renderMatrix() {
-    auto matrixRect =
-        BlockRectangle{BlockCoordinate{0}, BlockCoordinate{10}, BlockCoordinate{16 * 5}, BlockCoordinate{17}};
+    auto matrixRect = Rectangle{Coordinate{0}, Coordinate{10}, Coordinate{16 * 5}, Coordinate{17}};
     auto cells = matrixRect.gridCells(17, 16);
     for (int x = 0; x < 16; ++x) {
         for (int y = 0; y < 17; ++y) {
@@ -108,8 +100,7 @@ void DisplayAllColorsApp::renderRainbow() {
         bg::White,
         bg::BrightBlack,
         bg::Black};
-    auto matrixRect =
-        BlockRectangle{BlockCoordinate{0}, BlockCoordinate{28}, BlockCoordinate{16 * 5}, BlockCoordinate{17}};
+    auto matrixRect = Rectangle{Coordinate{0}, Coordinate{28}, Coordinate{16 * 5}, Coordinate{17}};
     auto cells = matrixRect.gridCells(17, 16);
     for (int x = 0; x < 16; ++x) {
         for (int y = 0; y < 17; ++y) {

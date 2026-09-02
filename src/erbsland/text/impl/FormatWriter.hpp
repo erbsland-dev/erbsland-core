@@ -12,8 +12,8 @@
 #include "../IntegerFormat.hpp"
 #include "../u8/U8StringEditor.hpp"
 
-#include "../../bgeo/Alignment.hpp"
-#include "../../bgeo/AlignmentFlags.hpp"
+#include "../../geometry/Alignment.hpp"
+#include "../../geometry/AlignmentFlags.hpp"
 #include "../../math/IntegerTraits.hpp"
 
 #include <cstddef>
@@ -72,22 +72,24 @@ private:
     /// Convert a legacy specification to a floating-point format.
     [[nodiscard]] static auto floatFormat(const LegacyFormatSpec &spec) -> FloatFormat;
     /// Derive layout alignment from a legacy specification.
-    [[nodiscard]] static auto formattedAlignment(const LegacyFormatSpec &spec, bgeo::AlignmentFlag defaultAlignment)
-        -> bgeo::Alignment;
+    [[nodiscard]] static auto formattedAlignment(const LegacyFormatSpec &spec, geometry::AlignmentFlag defaultAlignment)
+        -> geometry::Alignment;
     /// Derive layout alignment from a named specification.
-    [[nodiscard]] static auto formattedAlignment(const NamedLayoutSpec &spec, bgeo::AlignmentFlag defaultAlignment)
-        -> bgeo::Alignment;
+    [[nodiscard]] static auto formattedAlignment(const NamedLayoutSpec &spec, geometry::AlignmentFlag defaultAlignment)
+        -> geometry::Alignment;
     /// Add leading zeroes until text reaches a width.
     [[nodiscard]] static auto zeroPaddedNumericText(const String &text, unit::CpLength width) -> U8StringEditor;
     /// Apply a legacy precision limit to text.
     [[nodiscard]] static auto applyPrecision(const String &text, const LegacyFormatSpec &spec) -> StringEditor;
     /// Apply legacy width, fill, and alignment to text.
     [[nodiscard]] static auto applyLayout(
-        U8StringEditor text, const LegacyFormatSpec &spec, bgeo::AlignmentFlag defaultAlignment) -> StringEditor;
+        U8StringEditor text, const LegacyFormatSpec &spec, geometry::AlignmentFlag defaultAlignment) -> StringEditor;
     /// Apply named width, fill, and alignment to text.
     [[nodiscard]] static auto applyLayout(
-        U8StringEditor text, const NamedLayoutSpec &spec, bgeo::AlignmentFlag defaultAlignment, bool zeroFill = false)
-        -> U8StringEditor;
+        U8StringEditor text,
+        const NamedLayoutSpec &spec,
+        geometry::AlignmentFlag defaultAlignment,
+        bool zeroFill = false) -> U8StringEditor;
     /// Reject legacy format options that are incompatible with text.
     static void requireTextCompatibleSpec(const LegacyFormatSpec &spec);
     /// Reject legacy format options that bytes do not support.

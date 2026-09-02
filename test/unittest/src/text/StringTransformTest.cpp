@@ -1,7 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
-#include <erbsland/bgeo/Alignment.hpp>
+#include <erbsland/geometry/Alignment.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/SafeStringFlag.hpp>
 #include <erbsland/text/StdFormat.hpp>
@@ -23,7 +23,7 @@
 
 using namespace el::text::literals;
 
-using el::bgeo::Alignment;
+using el::geometry::Alignment;
 using el::unit::CpLength;
 using namespace el::text;
 

@@ -20,7 +20,7 @@ void linePatterns() {
         lineFormat.setPattern(std::move(pattern));
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));

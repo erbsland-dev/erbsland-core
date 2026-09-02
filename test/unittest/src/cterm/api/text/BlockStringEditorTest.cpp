@@ -391,14 +391,14 @@ public:
     }
 
     void testNaturalTextSizeMeasuresExplicitLines() {
-        REQUIRE_EQUAL(BlockStringEditor{}.naturalBlockTextSize(), (bgeo::BlockSize{1, 1}));
-        REQUIRE_EQUAL(BlockStringEditor{"A界\nBC"_el}.naturalBlockTextSize(), (bgeo::BlockSize{3, 2}));
-        REQUIRE_EQUAL(BlockStringEditor{"AB\n\nC\n"_el}.naturalBlockTextSize(), (bgeo::BlockSize{2, 3}));
+        REQUIRE_EQUAL(BlockStringEditor{}.naturalBlockTextSize(), (block::Size{1, 1}));
+        REQUIRE_EQUAL(BlockStringEditor{"A界\nBC"_el}.naturalBlockTextSize(), (block::Size{3, 2}));
+        REQUIRE_EQUAL(BlockStringEditor{"AB\n\nC\n"_el}.naturalBlockTextSize(), (block::Size{2, 3}));
     }
 
     void testWrappedTextHeightUsesParagraphLayoutAndMargins() {
         auto options = BlockTextOptions{};
-        options.setMargins(bgeo::BlockMargins{1, 0, 2, 0});
+        options.setMargins(block::Margins{1, 0, 2, 0});
 
         REQUIRE_EQUAL(BlockStringEditor{"alpha beta gamma"_el}.wrappedBlockTextHeight(blockCoordinate(10), options), 5);
     }
@@ -513,7 +513,7 @@ public:
         REQUIRE_EQUAL(cropped.indexOf(U'\n'), BlockIndex{3});
         REQUIRE_EQUAL(render(cropped.slice(BlockRange{BlockIndex{1U}, BlockCount{2U}})), std::string{"BC"});
         REQUIRE_EQUAL(
-            render(cropped.croppedToDisplayWidth(blockCoordinate(2), bgeo::Alignment::Left)), std::string{"AB"});
+            render(cropped.croppedToDisplayWidth(blockCoordinate(2), geometry::Alignment::Left)), std::string{"AB"});
         REQUIRE_EQUAL(renderLines(cropped.splitLines()), std::vector<std::string>({"ABC"}));
 
         cropped[BlockIndex{1}] = Block{U'Z'};

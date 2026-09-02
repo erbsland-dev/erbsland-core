@@ -28,9 +28,9 @@ private:
     };
 
 private:
-    void drawPanel(BlockRectangle rect, const PanelSpec &panel);
-    void drawHeader(BlockRectangle rect);
-    void drawFooter(BlockRectangle rect);
+    void drawPanel(Rectangle rect, const PanelSpec &panel);
+    void drawHeader(Rectangle rect);
+    void drawFooter(Rectangle rect);
 
 private:
     [[nodiscard]] static auto panelSpecs() -> const std::array<PanelSpec, 7> &;

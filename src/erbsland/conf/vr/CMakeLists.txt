@@ -10,6 +10,8 @@ target_sources(erbsland-core PRIVATE
         Constraint_fwd.hpp
         ConstraintType.cpp
         ConstraintType.hpp
+        DependencyMode.cpp
+        DependencyMode.hpp
         Rule.hpp
         Rule_fwd.hpp
         Rules.cpp

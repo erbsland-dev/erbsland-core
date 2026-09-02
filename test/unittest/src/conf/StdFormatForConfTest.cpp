@@ -25,7 +25,7 @@ public:
 
     void testImplementationValues() {
         const auto dependencyMode =
-            std::format("{}", el::conf::impl::DependencyMode{el::conf::impl::DependencyMode::IfNot});
+            std::format("{}", el::conf::vr::DependencyMode{el::conf::vr::DependencyMode::IfNot});
         const auto tokenType = std::format("{}", el::conf::impl::TokenType{el::conf::impl::TokenType::Text});
         const auto key = std::format("{}", el::conf::impl::ConfKey{"entry"_el});
         REQUIRE_EQUAL(dependencyMode, std::string{"if_not"});

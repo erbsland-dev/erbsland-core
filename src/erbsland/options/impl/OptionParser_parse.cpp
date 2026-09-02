@@ -3,8 +3,10 @@
 #include "OptionParser.hpp"
 
 #include "../Option.hpp"
+#include "../OptionFlag.hpp"
 #include "../OptionModule.hpp"
 #include "../OptionParserFlag.hpp"
+#include "../Options.hpp"
 #include "../OptionType.hpp"
 
 #include "../../text/EscapeFormat.hpp"
@@ -37,7 +39,7 @@ auto OptionParser::prepareModuleParsing() -> bool {
 
     const auto &argument = getArgAt(_argumentIndex);
     const auto builtInFlag = builtInFlagAt(_argumentIndex);
-    if (builtInFlag.has_value() && builtInFlag->validValue && builtInFlag->value) {
+    if (builtInFlag.has_value() && builtInFlag->validValue) {
         return true;
     }
     if (argument.startsWith("-"_el)) {
@@ -48,22 +50,26 @@ auto OptionParser::prepareModuleParsing() -> bool {
             _argumentIndex);
     }
     if (!OptionModule::isValidName(argument)) {
-        return makeError(
+        makeError(
             OptionErrorReason::UnknownName,
             "Unknown module"_el,
             StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
                 argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
+        _error->setSuggestions(suggestModules(argument));
+        return false;
     }
 
     _selectedModule = findModule(argument);
     if (_selectedModule == nullptr) {
-        return makeError(
+        makeError(
             OptionErrorReason::UnknownName,
             "Unknown module"_el,
             StringFormat{"\"{}\" is not an available module. Choose one of the modules listed below."}.build(
                 argument.toEscaped(EscapeFormat::Display)),
             _argumentIndex);
+        _error->setSuggestions(suggestModules(argument));
+        return false;
     }
     _moduleName = _selectedModule->name();
     _moduleArgumentIndex = _argumentIndex;
@@ -113,16 +119,20 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
     }
     const auto match = findLongOption(name);
     if (match.option == nullptr || match.disabled) {
-        return makeError(
+        makeError(
             OptionErrorReason::UnknownName,
             "Unknown option"_el,
             StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
             index);
+        _error->setSuggestions(suggestLongOptions(name));
+        return false;
     }
 
-    const auto optionType = match.option->type();
+    const auto builtInHelpIsFlag =
+        match.option->hasLongName("--help"_el) && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails);
+    const auto optionType = builtInHelpIsFlag ? OptionType{OptionType::Flag} : match.option->type();
     if (optionType == OptionType::Flag) {
-        if (!equalsIndex.isNoIndex() && !booleanValuesEnabled()) {
+        if (!equalsIndex.isNoIndex()) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
@@ -130,32 +140,6 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
                     name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
-        }
-        if (!equalsIndex.isNoIndex()) {
-            const auto valueText = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
-            auto value = false;
-            if (!parseBooleanLiteral(valueText, value)) {
-                return makeError(
-                    OptionErrorReason::UnexpectedValueType,
-                    "Invalid boolean value"_el,
-                    StringFormat{
-                        "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, "
-                        "no, or disabled."}
-                        .build(valueText.toEscaped(EscapeFormat::Display), name.toEscaped(EscapeFormat::Display)),
-                    index,
-                    match.option);
-            }
-            return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
-        }
-        if (booleanValuesEnabled()) {
-            const auto valueIndex = _argumentIndex.incremented();
-            if (isIndexInArgs(valueIndex)) {
-                auto value = false;
-                if (parseBooleanLiteral(getArgAt(valueIndex), value)) {
-                    _argumentIndex = valueIndex;
-                    return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
-                }
-            }
         }
         return acceptStorageResult(_storage.storeFlag(match.option, index));
     }
@@ -166,9 +150,21 @@ auto OptionParser::parseLongOption(const String &argument, const ArgumentIndex i
     if (!equalsIndex.isNoIndex()) {
         valueStartIndex = equalsIndex.incremented();
         value = argument.slice({valueStartIndex, ByteLength::infinite()});
-    } else if (!consumeFollowingValue(value, index, match.option)) {
-        return false;
     } else {
+        const auto nextIndex = _argumentIndex.incremented();
+        const auto acceptAsFlag = match.option->flags().isSet(OptionFlag::AcceptAsFlag);
+        if (acceptAsFlag && (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith("-"_el))) {
+            return acceptStorageResult(_storage.storeFlag(match.option, index));
+        }
+        if (acceptAsFlag && optionType == OptionType::Boolean) {
+            auto ignored = false;
+            if (!parseBooleanLiteral(getArgAt(nextIndex), ignored)) {
+                return acceptStorageResult(_storage.storeFlag(match.option, index));
+            }
+        }
+        if (!consumeFollowingValue(value, index, match.option)) {
+            return false;
+        }
         valueIndex = _argumentIndex;
     }
     return storeValue(match.option, value, valueIndex, valueStartIndex);
@@ -195,7 +191,17 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
                 StringFormat{"\"{}\" is not available for this command."}.build(name.toEscaped(EscapeFormat::Display)),
                 index);
         }
-        if (match.option->type() == OptionType::Flag && !booleanValuesEnabled()) {
+        if (match.option->hasLongName("--help"_el)) {
+            return makeError(
+                OptionErrorReason::UnexpectedValueType,
+                "Short help does not accept a value"_el,
+                "Use the attached --help=<name> syntax to request detailed help."_el,
+                index,
+                match.option);
+        }
+        const auto isFlag = match.option->type() == OptionType::Flag ||
+            (match.option->hasLongName("--help"_el) && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
+        if (isFlag) {
             return makeError(
                 OptionErrorReason::UnexpectedValueType,
                 "Flag does not accept a value"_el,
@@ -203,22 +209,6 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
                     name.toEscaped(EscapeFormat::Display)),
                 index,
                 match.option);
-        }
-        if (match.option->type() == OptionType::Flag) {
-            const auto valueText = argument.slice({equalsIndex.incremented(), ByteLength::infinite()});
-            auto value = false;
-            if (!parseBooleanLiteral(valueText, value)) {
-                return makeError(
-                    OptionErrorReason::UnexpectedValueType,
-                    "Invalid boolean value"_el,
-                    StringFormat{
-                        "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, "
-                        "no, or disabled."}
-                        .build(valueText.toEscaped(EscapeFormat::Display), name.toEscaped(EscapeFormat::Display)),
-                    index,
-                    match.option);
-            }
-            return acceptStorageResult(_storage.storeFlag(match.option, index, value, true));
         }
         return storeValue(
             match.option,
@@ -257,18 +247,23 @@ auto OptionParser::parseShortOption(const String &argument, const ArgumentIndex 
             index);
     }
     if (remainingNames.isEmpty()) {
-        if (firstMatch.option->type() == OptionType::Flag) {
-            if (booleanValuesEnabled()) {
-                const auto valueIndex = _argumentIndex.incremented();
-                if (isIndexInArgs(valueIndex)) {
-                    auto value = false;
-                    if (parseBooleanLiteral(getArgAt(valueIndex), value)) {
-                        _argumentIndex = valueIndex;
-                        return acceptStorageResult(_storage.storeFlag(firstMatch.option, index, value, true));
-                    }
-                }
-            }
+        const auto isFlag = firstMatch.option->type() == OptionType::Flag ||
+            (firstMatch.option->hasLongName("--help"_el) &&
+                _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
+        if (isFlag) {
             return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
+        }
+        const auto nextIndex = _argumentIndex.incremented();
+        if (firstMatch.option->flags().isSet(OptionFlag::AcceptAsFlag) &&
+            (!isIndexInArgs(nextIndex) || getArgAt(nextIndex).startsWith("-"_el))) {
+            return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
+        }
+        if (firstMatch.option->flags().isSet(OptionFlag::AcceptAsFlag) &&
+            firstMatch.option->type() == OptionType::Boolean) {
+            auto ignored = false;
+            if (!parseBooleanLiteral(getArgAt(nextIndex), ignored)) {
+                return acceptStorageResult(_storage.storeFlag(firstMatch.option, index));
+            }
         }
         auto value = String{};
         if (!consumeFollowingValue(value, index, firstMatch.option)) {

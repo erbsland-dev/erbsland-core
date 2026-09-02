@@ -32,7 +32,7 @@ namespace erbsland::mem {
 
 /// A dynamic, deep-copying buffer of explicit byte values.
 /// The object uniquely owns a compact byte allocation and never shares storage through copy-on-write.
-/// @seedoc{/reference/mem/byte_utilities}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{ByteBufferTest}
 class ByteBuffer final {
     friend class impl::UnsafeByteBufferAccess;

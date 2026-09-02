@@ -11,13 +11,19 @@ target_sources(erbsland-core PRIVATE
         X509Certificate.cpp
         X509Certificate.hpp
         X509Certificate_fwd.hpp
+        X509CertificateBuilder.cpp
+        X509CertificateBuilder.hpp
+        X509CertificateBuilder_fwd.hpp
         X509CertificateBundle.cpp
         X509CertificateBundle.hpp
         X509CertificateBundle_fwd.hpp
-        X509CertificateFormat.hpp
+        X509CertificateProfile.hpp
         X509CertificateProfileIssue.hpp
         X509CertificateProfileIssueCategory.hpp
         X509CertificateProfileMode.hpp
+        X509CertificateSigningRequest.cpp
+        X509CertificateSigningRequest.hpp
+        X509CertificateSigningRequest_fwd.hpp
         X509CertificateValidation.hpp
         X509CertificateValidationFailure.hpp
         X509CertificateValidationFailureCategory.hpp

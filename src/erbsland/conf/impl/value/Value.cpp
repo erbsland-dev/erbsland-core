@@ -1,4 +1,4 @@
-// Copyright (c) 2024-2025 Tobias Erbsland - https://erbsland.dev
+// Copyright (c) 2024-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 #include "Value.hpp"
 
@@ -22,6 +22,7 @@
 
 #include "../vr/Rule.hpp"
 
+#include "../../../err/ParameterError.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
 

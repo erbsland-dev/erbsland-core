@@ -3,13 +3,12 @@
 #include "IsSecret.hpp"
 
 #include "../../../../text/StringFormat.hpp"
-#include "../../../impl/vr/Rule.hpp"
 
 namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void IsSecret::operator()(Rule &rule) {
+void IsSecret::apply(RuleDefinition &rule) const {
     if (_isSecret && !rule.type().isScalar()) {
         throwValidationError(
             text::StringFormat{"The 'is_secret' marker can only be used for scalar value types. Found {} type"_el}

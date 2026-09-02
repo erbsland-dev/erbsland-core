@@ -10,6 +10,8 @@
 
 #include "impl/OptionParser_fwd.hpp"
 
+#include "../text/String.hpp"
+
 namespace erbsland::options {
 
 /// The result of processing command line arguments.
@@ -41,6 +43,10 @@ public: // accessors
     /// Set the result status.
     /// @param status New parser status.
     void setStatus(const OptionResultStatus status) noexcept { _status = status; }
+    /// Get the detailed-help target name, or an empty string for ordinary help.
+    [[nodiscard]] auto helpName() const noexcept -> const text::String & { return _helpName; }
+    /// Set the detailed-help target name.
+    void setHelpName(text::String helpName) { _helpName = std::move(helpName); }
     /// Access the error context.
     /// @return Structured error context when `status()` is `OptionResultStatus::Error`.
     [[nodiscard]] auto errorContext() const noexcept -> const std::optional<OptionErrorContext> & {
@@ -67,6 +73,7 @@ private:
 private:
     OptionValuesPtr _values;                                 ///< The parsed option values.
     OptionResultStatus _status{OptionResultStatus::Success}; ///< The result status.
+    text::String _helpName;                                  ///< Detailed-help target name.
     std::optional<OptionErrorContext> _errorContext;         ///< The error context.
     OptionSensitiveTextLocations _sensitiveTextLocations;    ///< Sensitive source locations found while parsing.
 };

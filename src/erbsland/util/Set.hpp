@@ -21,7 +21,7 @@
 namespace erbsland::util {
 
 /// A copy-on-write ordered key container with Erbsland-style access and set algorithms.
-/// @seedoc{/reference/util/collections}
+/// @seedoc{/reference/util/utilities}
 /// @tparam tKey The key type.
 /// @tparam tCompare The key comparison type.
 /// @tparam tSelf Internal CRTP type used by derived public set types.

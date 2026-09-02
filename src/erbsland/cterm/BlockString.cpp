@@ -17,9 +17,9 @@
 
 namespace erbsland::cterm {
 
-using bgeo::Alignment;
-using bgeo::BlockCoordinate;
-using bgeo::BlockSize;
+using block::Coordinate;
+using block::Size;
+using geometry::Alignment;
 using impl::BlockStringDataPtr;
 using impl::BlockStringRangeView;
 using impl::BlockStringWrapper;
@@ -154,7 +154,7 @@ auto BlockString::slice(const StringSide side, const BlockCount count) const noe
     return slice(BlockRange{BlockIndex::zero(), count});
 }
 
-auto BlockString::croppedToDisplayWidth(const BlockCoordinate displayWidth, const Alignment alignment) const noexcept
+auto BlockString::croppedToDisplayWidth(const Coordinate displayWidth, const Alignment alignment) const noexcept
     -> BlockString {
     const auto range = BlockStringRangeView{*_data, _range}.croppedRange(displayWidth, alignment);
     if (range.isEmpty()) {
@@ -198,17 +198,17 @@ auto BlockString::terminalLines(const int width) const noexcept -> int {
     return BlockStringRangeView{*_data, _range}.terminalLines(width);
 }
 
-auto BlockString::naturalBlockTextSize() const noexcept -> BlockSize {
+auto BlockString::naturalBlockTextSize() const noexcept -> Size {
     return BlockStringRangeView{*_data, _range}.naturalBlockTextSize();
 }
 
-auto BlockString::wrappedBlockTextHeight(const BlockCoordinate width, const BlockTextOptions &options) const noexcept
-    -> BlockCoordinate {
+auto BlockString::wrappedBlockTextHeight(const Coordinate width, const BlockTextOptions &options) const noexcept
+    -> Coordinate {
     const auto margins = options.margins();
-    const auto verticalMargins = margins.verticalExtent();
+    const auto verticalMargins = margins.vertical().extent();
     if (options.font() != nullptr) {
-        auto lineCount = BlockCoordinate{0};
-        const auto lineHeight = std::max(BlockCoordinate{1}, BlockCoordinate{(options.font()->height() + 1) / 2});
+        auto lineCount = Coordinate{0};
+        const auto lineHeight = std::max(Coordinate{1}, Coordinate{(options.font()->height() + 1) / 2});
         for (const auto &line : splitLines()) {
             if (std::ranges::any_of(line, [&](const Block &character) -> bool {
                     return options.font()->glyph(character.toString()) != nullptr;
@@ -216,9 +216,9 @@ auto BlockString::wrappedBlockTextHeight(const BlockCoordinate width, const Bloc
                 lineCount += lineHeight;
             }
         }
-        return std::max(lineCount, BlockCoordinate{1}) + verticalMargins;
+        return std::max(lineCount, Coordinate{1}) + verticalMargins;
     }
-    const auto contentWidth = std::max(width - margins.horizontalExtent(), BlockCoordinate{1});
+    const auto contentWidth = std::max(width - margins.horizontal().extent(), Coordinate{1});
     const auto layout =
         impl::paragraph::Layout{
             *this,
@@ -227,14 +227,14 @@ auto BlockString::wrappedBlockTextHeight(const BlockCoordinate width, const Bloc
             impl::paragraph::LayoutNewlineMode::ParagraphBreak}
             .build();
     if (layout.valid()) {
-        return std::max(BlockCoordinate{layout.size()}, BlockCoordinate{1}) + verticalMargins;
+        return std::max(Coordinate{layout.size()}, Coordinate{1}) + verticalMargins;
     }
     if (options.onError() == ParagraphOnError::Empty) {
         return verticalMargins;
     }
     const auto fallbackLines =
         BlockStringWrapper{*this}.wrapIntoLines(contentWidth.toRawValue(), options.paragraphSpacing());
-    return std::max(BlockCoordinate{fallbackLines.size()}, BlockCoordinate{1}) + verticalMargins;
+    return std::max(Coordinate{fallbackLines.size()}, Coordinate{1}) + verticalMargins;
 }
 
 auto BlockString::splitLines() const noexcept -> std::vector<BlockString> {

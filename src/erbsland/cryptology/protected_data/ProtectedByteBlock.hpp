@@ -15,7 +15,7 @@ namespace erbsland::cryptology {
 /// An opaque byte block encrypted by the current application's protected-data provider.
 /// This type stores no key or provider reference. It is intended as application-lifetime memory hardening, not as a
 /// persistent encrypted format or an authorization boundary against code executing inside the process.
-/// @seedoc{/reference/cryptology/key_agreement}
+/// @seedoc{/reference/cryptology/protected_data}
 /// @tested{ProtectedByteBlockTest}
 class ProtectedByteBlock final {
     friend class impl::ProtectedDataTestAccess;

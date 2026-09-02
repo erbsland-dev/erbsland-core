@@ -7,8 +7,8 @@
 #include "ReadableBuffer_fwd.hpp"
 #include "WritableBuffer_fwd.hpp"
 
-#include "../bgeo/BlockRectangle.hpp"
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Rectangle.hpp"
+#include "../block/Size.hpp"
 #include "../text/CharSet.hpp"
 
 namespace erbsland::cterm {
@@ -22,14 +22,14 @@ public:
 public: // API
     /// Get the configured size of the buffer.
     /// @return The width and height of the buffer.
-    [[nodiscard]] virtual auto size() const noexcept -> bgeo::BlockSize = 0;
+    [[nodiscard]] virtual auto size() const noexcept -> block::Size = 0;
     /// Get a rectangle representing this buffer.
     /// @return The rectangle for this buffer.
-    [[nodiscard]] virtual auto rect() const noexcept -> bgeo::BlockRectangle = 0;
+    [[nodiscard]] virtual auto rect() const noexcept -> block::Rectangle = 0;
     /// Read the block stored at the given position.
     /// @param pos The coordinates within the buffer.
     /// @return A reference to the stored block.
-    [[nodiscard]] virtual auto get(bgeo::BlockPosition pos) const noexcept -> const Block & = 0;
+    [[nodiscard]] virtual auto get(block::Position pos) const noexcept -> const Block & = 0;
     /// Create a writeable copy of this buffer.
     /// This will copy every block from this buffer into a new independent instance.
     [[nodiscard]] virtual auto clone() const -> WritableBufferPtr = 0;

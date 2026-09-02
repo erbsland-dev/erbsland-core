@@ -15,7 +15,7 @@ class MultipleConstraint : public Constraint {
 public:
     /// Creates a multiple-of constraint.
     /// @param divisor The required divisor.
-    explicit MultipleConstraint(T divisor) : _divisor{divisor} { setType(vr::ConstraintType::Multiple); }
+    explicit MultipleConstraint(T divisor) : Constraint{vr::ConstraintType::Multiple}, _divisor{divisor} {}
 
 protected:
     /// Get the comparison text for the current negation state.

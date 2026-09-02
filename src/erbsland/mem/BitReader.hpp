@@ -14,7 +14,7 @@ namespace erbsland::mem {
 /// A sequential reader for individual bits in a read-only byte span.
 /// Bits are read most-significant bit first within each byte. The reader borrows its input; the source bytes must
 /// remain valid for the reader's lifetime.
-/// @seedoc{/reference/mem/byte_utilities}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{BitReaderTest}
 class BitReader final {
 public:

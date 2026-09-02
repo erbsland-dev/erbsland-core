@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixUserLookupBackend.hpp"
 
+#include "PosixErrorContext.hpp"
+
 #include "../PlatformError.hpp"
-#include "../PosixErrorContext.hpp"
 
 #include "../../err/ParameterError.hpp"
 #include "../../text/IntegerBase.hpp"
@@ -29,7 +30,7 @@ namespace erbsland::system::impl {
 using namespace text::literals;
 
 void PosixUserLookupBackend::throwLookupError(text::String reason, const int status) {
-    throw system::PlatformError{std::move(reason), system::PosixErrorContext::fromErrorCode(status)};
+    throw system::PlatformError{std::move(reason), system::impl::PosixErrorContext::fromErrorCode(status)};
 }
 
 auto PosixUserLookupBackend::userNameForId(const UserId &id) -> UserName {

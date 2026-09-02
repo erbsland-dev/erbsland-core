@@ -20,7 +20,7 @@ public:
     using Lines = std::vector<std::string>;
 
 public:
-    CursorBuffer buffer{bgeo::BlockSize{20, 5}, CursorBuffer::OverflowMode::Wrap};
+    CursorBuffer buffer{block::Size{20, 5}, CursorBuffer::OverflowMode::Wrap};
 
 public:
     /// Get the buffer contents as raw test lines.
@@ -30,7 +30,7 @@ public:
             std::string line;
             line.reserve(buffer.size().width().toSizeT() * 2);
             for (int x = 0; x < buffer.size().width().toRawValue(); ++x) {
-                line += blockToStdString(buffer.get(bgeo::BlockPosition{x, y}));
+                line += blockToStdString(buffer.get(block::Position{x, y}));
             }
             lines.emplace_back(std::move(line));
         }

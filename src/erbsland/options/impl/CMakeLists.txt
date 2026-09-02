@@ -30,4 +30,6 @@ target_sources(erbsland-core PRIVATE
         OptionParser_positionals.cpp
         OptionParserStorage.cpp
         OptionParserStorage.hpp
+        OptionSuggestion.cpp
+        OptionSuggestion.hpp
 )

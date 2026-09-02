@@ -3,8 +3,6 @@
 #include "ConstraintOptions.hpp"
 
 #include "../../../../text/StringEditor.hpp"
-#include "../../../impl/vr/Constraint.hpp"
-#include "../../../impl/vr/Rule.hpp"
 
 namespace erbsland::conf::vr::builder {
 
@@ -14,18 +12,9 @@ auto ConstraintOptions::prefixedConstraintName(const text::String &constraintNam
     return withNotPrefix(constraintName, isNegated);
 }
 
-void ConstraintOptions::applyTo(impl::Constraint &constraint, const text::String &constraintName) const {
-    constraint.setName(prefixedConstraintName(constraintName));
-    constraint.setNegated(isNegated);
-    if (!errorMessage.isEmpty()) {
-        constraint.setErrorMessage(errorMessage);
-    }
-}
-
 void ConstraintOptions::addToRule(
-    impl::Rule &rule, const impl::ConstraintPtr &constraint, const text::String &constraintName) const {
-    applyTo(*constraint, constraintName);
-    rule.addOrOverwriteConstraint(constraint);
+    RuleDefinition &rule, const vr::ConstraintPtr &constraint, const text::String &constraintName) const {
+    rule.addConstraint(constraint, constraintName, isNegated, errorMessage);
 }
 
 auto ConstraintOptions::withNotPrefix(const text::String &name, const bool isNegated) -> text::String {

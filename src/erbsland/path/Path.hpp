@@ -326,6 +326,13 @@ public: // factory methods
     /// Return a path to the current working directory of the process.
     /// @return An absolute path to the current working directory.
     [[nodiscard]] static auto currentDirectory() noexcept -> Path;
+    /// Return the absolute executable image path of the current process.
+    /// @return The executable image path, or an empty path on error.
+    [[nodiscard]] static auto executablePath() noexcept -> Path;
+    /// Return the absolute executable image path of the current process.
+    /// @return The executable image path.
+    /// @throws PathError If the executable path cannot be determined or converted.
+    [[nodiscard]] static auto executablePathOrThrow() -> Path;
     /// Return the home directory for the effective user of this process.
     /// This lookup uses the operating-system account database and does not inspect environment variables.
     /// @return An absolute path to the effective user's home directory, or an empty path on error.

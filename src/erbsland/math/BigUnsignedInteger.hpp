@@ -20,7 +20,7 @@ namespace erbsland::math {
 /// Arithmetic is exact except for subtraction below zero, which throws an overflow error. Division and modulo by zero
 /// terminate the process. Operators intentionally accept only another `BigUnsignedInteger`; use an explicit constructor
 /// when starting from a native integer.
-/// @seedoc{/reference/math/big_integers}
+/// @seedoc{/reference/math/mathematics}
 /// @tested{BigUnsignedIntegerTest}
 class BigUnsignedInteger final {
     friend class BigInteger;

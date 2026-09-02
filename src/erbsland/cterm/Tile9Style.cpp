@@ -30,7 +30,7 @@ Tile9Style::Tile9Style(const text::String &tiles) : Tile9Style(parseTiles(BlockS
 Tile9Style::Tile9Style(const text::U32String &tiles) : Tile9Style(parseTiles(BlockStringEditor{tiles})) {
 }
 
-auto Tile9Style::block(const bgeo::BlockRectangle rect, const bgeo::BlockPosition pos) const noexcept -> Block {
+auto Tile9Style::block(const block::Rectangle rect, const block::Position pos) const noexcept -> Block {
     if (!rect.contains(pos)) {
         return Block{};
     }

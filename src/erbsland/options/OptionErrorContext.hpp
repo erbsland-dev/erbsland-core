@@ -118,6 +118,13 @@ public:
         _arguments = std::move(arguments);
         return *this;
     }
+    /// Get suggested replacements for an unknown or invalid name.
+    [[nodiscard]] auto suggestions() const noexcept -> const text::StringList & { return _suggestions; }
+    /// Set suggested replacements in display order.
+    auto setSuggestions(text::StringList suggestions) -> OptionErrorContext & {
+        _suggestions = std::move(suggestions);
+        return *this;
+    }
     /// Get the display wording captured for this error.
     [[nodiscard]] auto displayText() const noexcept -> const i18n::DisplayTextMapConstPtr & { return _displayText; }
     /// Set the display wording captured for this error.
@@ -139,6 +146,7 @@ private:
     OptionPtr _option;                                  ///< The option where the error occurred.
     OptionSetPtr _optionSet;                            ///< The option set where the error occurred.
     text::StringList _arguments;                        ///< The command-line arguments, if available.
+    text::StringList _suggestions;                      ///< Suggested replacement names.
     i18n::DisplayTextMapConstPtr _displayText;          ///< The wording captured for diagnostic rendering.
 };
 

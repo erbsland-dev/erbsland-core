@@ -10,7 +10,7 @@
 
 #include "../U16StringEditor_fwd.hpp"
 
-#include "../../../bgeo/Alignment.hpp"
+#include "../../../geometry/Alignment.hpp"
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/U16DataLength.hpp"
 #include "../../../util/LoopResult.hpp"
@@ -43,7 +43,7 @@ public:
         unit::CpLength maximumWidth, TruncateMode mode, const U16StringDataView &ellipsis) const
         -> U16StringSharedStorage;
     /// Return storage padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill) const
+    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill) const
         -> U16StringSharedStorage;
 
 public: // escaping.

@@ -4,10 +4,10 @@
 
 #include "FrameBorder.hpp"
 
-#include "../bgeo/BlockCoordinate.hpp"
-#include "../bgeo/BlockPosition.hpp"
-#include "../bgeo/BlockRectangle.hpp"
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Coordinate.hpp"
+#include "../block/Position.hpp"
+#include "../block/Rectangle.hpp"
+#include "../block/Size.hpp"
 #include "../text/StringLiteral.hpp"
 
 #include <initializer_list>
@@ -25,14 +25,13 @@ public:
     /// @param columnWidths The content width of each column. Each value must be positive.
     /// @param rowHeights The content height of each row. Each value must be positive.
     /// @throws err::ParameterError if either list is empty or contains a non-positive size.
-    GridLayout(std::vector<bgeo::BlockCoordinate> columnWidths, std::vector<bgeo::BlockCoordinate> rowHeights);
+    GridLayout(std::vector<block::Coordinate> columnWidths, std::vector<block::Coordinate> rowHeights);
     /// Create a grid layout from initializer lists.
     /// @param columnWidths The content width of each column. Each value must be positive.
     /// @param rowHeights The content height of each row. Each value must be positive.
     /// @throws err::ParameterError if either list is empty or contains a non-positive size.
     GridLayout(
-        std::initializer_list<bgeo::BlockCoordinate> columnWidths,
-        std::initializer_list<bgeo::BlockCoordinate> rowHeights);
+        std::initializer_list<block::Coordinate> columnWidths, std::initializer_list<block::Coordinate> rowHeights);
 
     // defaults
     ~GridLayout() = default;
@@ -53,22 +52,22 @@ public: // accessors
     /// @param row The row index.
     /// @return The row content height.
     /// @throws err::OutOfRangeError if `row` is outside the layout.
-    [[nodiscard]] auto rowHeight(std::size_t row) const -> bgeo::BlockCoordinate;
+    [[nodiscard]] auto rowHeight(std::size_t row) const -> block::Coordinate;
     /// Access one column width.
     /// @param column The column index.
     /// @return The column content width.
     /// @throws err::OutOfRangeError if `column` is outside the layout.
-    [[nodiscard]] auto columnWidth(std::size_t column) const -> bgeo::BlockCoordinate;
+    [[nodiscard]] auto columnWidth(std::size_t column) const -> block::Coordinate;
     /// Access all row heights.
-    [[nodiscard]] auto rowHeights() const noexcept -> const std::vector<bgeo::BlockCoordinate> &;
+    [[nodiscard]] auto rowHeights() const noexcept -> const std::vector<block::Coordinate> &;
     /// Access all column widths.
-    [[nodiscard]] auto columnWidths() const noexcept -> const std::vector<bgeo::BlockCoordinate> &;
+    [[nodiscard]] auto columnWidths() const noexcept -> const std::vector<block::Coordinate> &;
 
 public:
     /// Calculate the complete size of this layout for the given border.
     /// @param border Border styles that decide which frame lines occupy cells.
     /// @return The total grid size including active frame lines.
-    [[nodiscard]] auto size(const FrameBorder &border) const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto size(const FrameBorder &border) const noexcept -> block::Size;
     /// Calculate the content rectangle for one cell.
     /// @param row The row index.
     /// @param column The column index.
@@ -77,19 +76,19 @@ public:
     /// @return The cell content rectangle.
     /// @throws err::OutOfRangeError if `row` or `column` is outside the layout.
     [[nodiscard]] auto cellRect(
-        std::size_t row, std::size_t column, bgeo::BlockPosition origin, const FrameBorder &border) const
-        -> bgeo::BlockRectangle;
+        std::size_t row, std::size_t column, block::Position origin, const FrameBorder &border) const
+        -> block::Rectangle;
 
 private:
     /// Get the size contributed by one border element.
     [[nodiscard]] static auto borderSize(const FrameBorder &border, FrameBorder::Element element) noexcept
-        -> bgeo::BlockCoordinate;
+        -> block::Coordinate;
     /// Validate row or column sizes.
-    static void validateSizes(const std::vector<bgeo::BlockCoordinate> &sizes, const text::StringLiteral &name);
+    static void validateSizes(const std::vector<block::Coordinate> &sizes, const text::StringLiteral &name);
 
 private:
-    std::vector<bgeo::BlockCoordinate> _columnWidths;
-    std::vector<bgeo::BlockCoordinate> _rowHeights;
+    std::vector<block::Coordinate> _columnWidths;
+    std::vector<block::Coordinate> _rowHeights;
 };
 
 }

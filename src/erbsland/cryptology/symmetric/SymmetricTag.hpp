@@ -11,7 +11,7 @@
 namespace erbsland::cryptology {
 
 /// An authentication tag produced or consumed by an AEAD construction.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptographicDataBlockTest SymmetricEncryptionFrontendTest}
 class SymmetricTag final : public CryptographicDataBlock {
 public:

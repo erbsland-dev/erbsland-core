@@ -11,7 +11,7 @@
 namespace erbsland::cryptology {
 
 /// A nonce for an authenticated symmetric encryption construction.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptographicDataBlockTest SymmetricEncryptionFrontendTest}
 class SymmetricNonce final : public CryptographicDataBlock {
 public:

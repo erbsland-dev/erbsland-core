@@ -14,7 +14,7 @@ public:
     /// Set the rule value type.
     /// @param type The value type to set.
     explicit Type(const RuleType type) : _type{type} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     RuleType _type;
 };
 

@@ -15,10 +15,17 @@
 
 using namespace el::text::literals;
 using namespace el::text::render;
-using namespace el::text::render::impl;
 
 TESTED_TARGETS(CompiledBlock CompiledExtends CompiledInclude CompiledLayout Compiler)
 class RenderCompilerTest final : public el::UnitTest {
+    using CompiledBlock = el::text::render::impl::CompiledBlock;
+    using CompiledExtends = el::text::render::impl::CompiledExtends;
+    using CompiledInclude = el::text::render::impl::CompiledInclude;
+    using CompiledLayout = el::text::render::impl::CompiledLayout;
+    using Compiler = el::text::render::impl::Compiler;
+    using ConstCompiledLayoutPtr = el::text::render::impl::ConstCompiledLayoutPtr;
+    using Engine = el::text::render::impl::Engine;
+
 public:
     void testConstantsAndLocations() {
         const auto layout = compile("before\n{{ user.name }}after"_el);

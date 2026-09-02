@@ -70,12 +70,9 @@ auto Terminal::createPrintContext() noexcept -> BlockPrintContextPtr {
 }
 
 auto Terminal::printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int {
-    const auto margins = options.margins();
-    const auto x1 = std::max(margins.left(), bgeo::BlockCoordinate{0});
-    const auto width = std::max(
-        size().width() - std::max(margins.left(), bgeo::BlockCoordinate{0}) -
-            std::max(margins.right(), bgeo::BlockCoordinate{0}),
-        bgeo::BlockCoordinate{0});
+    const auto margins = options.margins().horizontal().expandedPositive();
+    const auto x1 = margins.leading();
+    const auto width = std::max(size().width() - margins.extent(), block::Coordinate{0});
     const auto layout =
         impl::paragraph::Layout{
             paragraph, width.toRawValue(), options, impl::paragraph::LayoutNewlineMode::HardLineBreak}
@@ -113,11 +110,8 @@ auto Terminal::printParagraphPlainOutput(const BlockString &paragraph, const Par
         return 0;
     }
     write(paragraph);
-    const auto margins = options.margins();
-    const auto width = std::max(
-        size().width() - std::max(margins.left(), bgeo::BlockCoordinate{0}) -
-            std::max(margins.right(), bgeo::BlockCoordinate{0}),
-        bgeo::BlockCoordinate{1});
+    const auto margins = options.margins().horizontal();
+    const auto width = std::max(size().width() - margins.extent(), block::Coordinate{1});
     return finishParagraphWithExplicitLineBreaks(
         paragraph.terminalLines(width.toRawValue()), options.paragraphSpacing());
 }

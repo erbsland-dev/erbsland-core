@@ -29,25 +29,25 @@ public:
         const auto layout = gridLayout({2, 3}, {1, 2});
         const auto border = FrameBorder{};
 
-        REQUIRE_EQUAL(layout.size(border), (bgeo::BlockSize{5, 3}));
-        REQUIRE_EQUAL(layout.cellRect(1, 1, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{12, 21, 3, 2}));
+        REQUIRE_EQUAL(layout.size(border), (block::Size{5, 3}));
+        REQUIRE_EQUAL(layout.cellRect(1, 1, block::Position{10, 20}, border), (block::Rectangle{12, 21, 3, 2}));
     }
 
     void testActiveBorderAddsOuterAndSeparatorLineCells() {
         const auto layout = gridLayout({2, 3}, {1, 2});
         const auto border = FrameBorder{FrameStyle::Light};
 
-        REQUIRE_EQUAL(layout.size(border), (bgeo::BlockSize{8, 6}));
-        REQUIRE_EQUAL(layout.cellRect(0, 0, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{11, 21, 2, 1}));
-        REQUIRE_EQUAL(layout.cellRect(1, 1, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{14, 23, 3, 2}));
+        REQUIRE_EQUAL(layout.size(border), (block::Size{8, 6}));
+        REQUIRE_EQUAL(layout.cellRect(0, 0, block::Position{10, 20}, border), (block::Rectangle{11, 21, 2, 1}));
+        REQUIRE_EQUAL(layout.cellRect(1, 1, block::Position{10, 20}, border), (block::Rectangle{14, 23, 3, 2}));
     }
 
     void testUnsupportedBorderStylesDoNotAddLineCells() {
         const auto layout = gridLayout({2, 3}, {1, 2});
         const auto border = FrameBorder{FrameStyle::FullBlock};
 
-        REQUIRE_EQUAL(layout.size(border), (bgeo::BlockSize{5, 3}));
-        REQUIRE_EQUAL(layout.cellRect(1, 1, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{12, 21, 3, 2}));
+        REQUIRE_EQUAL(layout.size(border), (block::Size{5, 3}));
+        REQUIRE_EQUAL(layout.cellRect(1, 1, block::Position{10, 20}, border), (block::Rectangle{12, 21, 3, 2}));
     }
 
     void testOmittedLinesDoNotContributeToSizeOrCellPositions() {
@@ -55,9 +55,9 @@ public:
         auto border = FrameBorder{};
         border.set(FrameBorder::Element::VLine, FrameStyle::Light);
 
-        REQUIRE_EQUAL(layout.size(border), (bgeo::BlockSize{6, 3}));
-        REQUIRE_EQUAL(layout.cellRect(0, 0, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{10, 20, 2, 1}));
-        REQUIRE_EQUAL(layout.cellRect(1, 1, bgeo::BlockPosition{10, 20}, border), (bgeo::BlockRectangle{13, 21, 3, 2}));
+        REQUIRE_EQUAL(layout.size(border), (block::Size{6, 3}));
+        REQUIRE_EQUAL(layout.cellRect(0, 0, block::Position{10, 20}, border), (block::Rectangle{10, 20, 2, 1}));
+        REQUIRE_EQUAL(layout.cellRect(1, 1, block::Position{10, 20}, border), (block::Rectangle{13, 21, 3, 2}));
     }
 
     void testConstructorRejectsInvalidDimensions() {
@@ -80,7 +80,7 @@ public:
         const auto layout = gridLayout({2}, {1});
         const auto border = FrameBorder{};
 
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(1, 0, bgeo::BlockPosition{}, border));
-        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(0, 1, bgeo::BlockPosition{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(1, 0, block::Position{}, border));
+        REQUIRE_THROWS_AS(erbsland::err::OutOfRangeError, layout.cellRect(0, 1, block::Position{}, border));
     }
 };

@@ -16,7 +16,7 @@ ReadLineOptions::ReadLineOptions() :
     _cursorStyle{BlockAttributes::Reverse},
     _displayStyle{ReadLineDisplayStyle::HorizontalFrame},
     _frameBorder{FrameStyle::Light},
-    _padding{0, 1, 0, 1},
+    _padding{1},
     _prompt{BlockString{"› "_el}},
     _timeout{time::Seconds::zero()},
     _timeoutDisplayThreshold{20},
@@ -71,12 +71,8 @@ auto ReadLineOptions::setFrameBorder(FrameBorder border) noexcept -> ReadLineOpt
     return *this;
 }
 
-auto ReadLineOptions::setPadding(const bgeo::BlockMargins padding) noexcept -> ReadLineOptions & {
-    _padding = bgeo::BlockMargins{
-        bgeo::BlockCoordinate{0},
-        std::max(padding.right(), bgeo::BlockCoordinate{0}),
-        bgeo::BlockCoordinate{0},
-        std::max(padding.left(), bgeo::BlockCoordinate{0})};
+auto ReadLineOptions::setPadding(const block::MarginPair padding) noexcept -> ReadLineOptions & {
+    _padding = padding.expandedPositive();
     return *this;
 }
 

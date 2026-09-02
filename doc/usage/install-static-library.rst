@@ -70,8 +70,6 @@ Point CMake to a custom installation prefix when configuring the consumer:
           -DCMAKE_PREFIX_PATH=/absolute/path/to/erbsland-core-install
     $ cmake --build build
 
-The helper selects the available target automatically.
-When linking a library target directly, the target names intentionally differ between the two integration modes:
-
-*   Source integration uses ``erbsland::core``.
-*   An installed package uses ``ErbslandDEV::erbsland-core``.
+Both setup helpers select the available Core target automatically.
+Use ``erbsland_core_setup_static_library(TARGET example_library)`` for a static-library target, whether Core is
+integrated from source or consumed as an installed package.

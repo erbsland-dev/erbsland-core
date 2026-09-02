@@ -39,18 +39,18 @@ public:
     /// @param fillChar The character used to initialize and refill empty cells.
     /// @throws err::ParameterError if startSize exceeds the maximum or fillChar is not a single-width character.
     explicit CursorBuffer(
-        const bgeo::BlockSize startSize,
+        const block::Size startSize,
         const OverflowMode overflowMode = OverflowMode::Shift,
-        const bgeo::BlockSize maximumSize = cMaximumSize,
+        const block::Size maximumSize = cMaximumSize,
         const Block fillChar = Block::space()) :
-        RemappedBuffer{startSize, bgeo::Orientation::Vertical, fillChar},
+        RemappedBuffer{startSize, geometry::Orientation::Vertical, fillChar},
         _overflowMode(overflowMode),
         _maximumSize(maximumSize),
         _fillChar(fillChar) {
         validateFillChar(_fillChar);
     }
     /// Create a new cursor buffer with a default size of 80x25 and overflow mode `Shift`.
-    CursorBuffer() : CursorBuffer{bgeo::BlockSize{80, 25}, OverflowMode::Shift} {}
+    CursorBuffer() : CursorBuffer{block::Size{80, 25}, OverflowMode::Shift} {}
 
     // defaults
     ~CursorBuffer() override = default;
@@ -61,11 +61,11 @@ public:
 
 public: // setup
     /// Get the maximum size.
-    [[nodiscard]] auto maximumSize() const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto maximumSize() const noexcept -> block::Size;
     /// Change the maximum size.
     /// Changing the maximum size will not affect the current content.
     /// @param maximumSize The new maximum size.
-    void setMaximumSize(bgeo::BlockSize maximumSize) noexcept;
+    void setMaximumSize(block::Size maximumSize) noexcept;
     /// Get the overflow mode for this buffer.
     [[nodiscard]] auto overflowMode() const noexcept -> OverflowMode;
     /// Set the overflow mode for this buffer.
@@ -84,7 +84,7 @@ public: // implement CursorWriter
     using CursorWriter::setColor;
     using CursorWriter::write;
     using CursorWriter::writeLineBreak;
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _size; }
+    [[nodiscard]] auto size() const noexcept -> block::Size override { return _size; }
     [[nodiscard]] auto color() const noexcept -> Color override;
     [[nodiscard]] auto blockAttributes() const noexcept -> BlockAttributes override;
     void setColor(Color color) noexcept override;
@@ -92,7 +92,7 @@ public: // implement CursorWriter
     void setForeground(Foreground color) noexcept override;
     void setBackground(Background color) noexcept override;
     [[nodiscard]] auto supportedBlockAttributes() const noexcept -> BlockAttributes override;
-    void moveCursor(bgeo::BlockPosition posOrDelta, MoveMode mode) noexcept override;
+    void moveCursor(block::Position posOrDelta, MoveMode mode) noexcept override;
     void setAutoWrap(bool enabled) noexcept override;
     void clearScreen() noexcept override;
     void write(const Block &character) noexcept override;
@@ -113,13 +113,13 @@ private:
     void writeResolvedBlock(const Block &character) noexcept;
 
 private:
-    OverflowMode _overflowMode{OverflowMode::Shift};     ///< The overflow mode of the buffer.
-    bgeo::BlockSize _maximumSize{bgeo::BlockSize{0, 0}}; ///< The maximum size of the buffer.
-    Block _fillChar{Block::space()};                     ///< The character used for empty cells.
-    bgeo::BlockPosition _cursorPosition{0, 0};           ///< The current position of the cursor.
-    BlockStyle _currentStyle{BlockStyle::reset()};       ///< The current character style.
-    bool _autoWrap{true};                                ///< If auto-wrap is enabled.
-    bool _wrapOnNextChar{false};                         ///< If the next character should be wrapped to the next line.
+    OverflowMode _overflowMode{OverflowMode::Shift}; ///< The overflow mode of the buffer.
+    block::Size _maximumSize{block::Size{0, 0}};     ///< The maximum size of the buffer.
+    Block _fillChar{Block::space()};                 ///< The character used for empty cells.
+    block::Position _cursorPosition{0, 0};           ///< The current position of the cursor.
+    BlockStyle _currentStyle{BlockStyle::reset()};   ///< The current character style.
+    bool _autoWrap{true};                            ///< If auto-wrap is enabled.
+    bool _wrapOnNextChar{false};                     ///< If the next character should be wrapped to the next line.
 };
 
 }

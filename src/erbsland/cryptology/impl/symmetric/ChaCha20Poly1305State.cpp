@@ -5,6 +5,7 @@
 #include "../algorithm/chacha20/ChaCha20BackendFactory.hpp"
 #include "../algorithm/chacha20/Poly1305Factory.hpp"
 
+#include "../../../err/RuntimeError.hpp"
 #include "../../../mem/ByteBlock.hpp"
 #include "../../../mem/ByteBlockEditor.hpp"
 #include "../../../mem/Endianness.hpp"
@@ -26,7 +27,7 @@ ChaCha20Poly1305State::ChaCha20Poly1305State(const mem::ConstByteSpan key, const
     oneTimeKey.overwrite(firstBlock.span(unit::ByteIndex{0U}, unit::ByteLength{32U}));
     try {
         _poly1305 = createPoly1305(oneTimeKey.span());
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         oneTimeKey.secureErase();
         firstBlock.secureErase();
         _chacha20->secureErase();

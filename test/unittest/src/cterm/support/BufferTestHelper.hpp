@@ -4,7 +4,7 @@
 
 #include "BlockStringTestHelper.hpp"
 
-#include <erbsland/bgeo/StdFormat.hpp>
+#include <erbsland/block/StdFormat.hpp>
 #include <erbsland/text/StdFormat.hpp>
 
 #include <format>
@@ -20,7 +20,7 @@ public:
     /// Create a buffer from equal-width text rows.
     auto createBuffer(const std::initializer_list<std::string_view> rows) -> Buffer {
         REQUIRE_FALSE(rows.size() == 0);
-        auto width = bgeo::BlockCoordinate{0};
+        auto width = block::Coordinate{0};
         auto rowIndex = 0;
         for (const auto row : rows) {
             runWithContext(
@@ -28,9 +28,9 @@ public:
                 [&]() {
                     REQUIRE_FALSE(row.empty());
                     if (width == 0) {
-                        width = bgeo::BlockCoordinate{row.size()};
+                        width = block::Coordinate{row.size()};
                     } else {
-                        REQUIRE_EQUAL(bgeo::BlockCoordinate{row.size()}, width);
+                        REQUIRE_EQUAL(block::Coordinate{row.size()}, width);
                     }
                 },
                 [&]() -> std::string {
@@ -43,7 +43,7 @@ public:
                 });
             rowIndex += 1;
         }
-        auto buffer = Buffer{bgeo::BlockSize{width, bgeo::BlockCoordinate{rows.size()}}};
+        auto buffer = Buffer{block::Size{width, block::Coordinate{rows.size()}}};
         fillBufferFromRows(buffer, rows);
         return buffer;
     }
@@ -55,13 +55,13 @@ public:
 
     /// Fill a writable buffer from text rows.
     void fillBufferFromRows(WritableBuffer &buffer, const std::initializer_list<std::string_view> rows) {
-        REQUIRE(buffer.size().height() >= bgeo::BlockCoordinate{rows.size()});
-        auto y = bgeo::BlockCoordinate{0};
+        REQUIRE(buffer.size().height() >= block::Coordinate{rows.size()});
+        auto y = block::Coordinate{0};
         auto rowIndex = 0;
         for (const auto row : rows) {
             runWithContext(
                 SOURCE_LOCATION(),
-                [&]() { REQUIRE(buffer.size().width() >= bgeo::BlockCoordinate{row.size()}); },
+                [&]() { REQUIRE(buffer.size().width() >= block::Coordinate{row.size()}); },
                 [&]() -> std::string {
                     return std::format(
                         "rowIndex = {} / row = \"{}\" / rowSize = {} / bufferWidth = {} / bufferHeight = {}",
@@ -71,10 +71,9 @@ public:
                         buffer.size().width().toRawValue(),
                         buffer.size().height().toRawValue());
                 });
-            for (auto x = bgeo::BlockCoordinate{0}; x < bgeo::BlockCoordinate{row.size()}; ++x) {
+            for (auto x = block::Coordinate{0}; x < block::Coordinate{row.size()}; ++x) {
                 buffer.set(
-                    bgeo::BlockPosition{x, y},
-                    Block{static_cast<char32_t>(static_cast<unsigned char>(row[x.toSizeT()]))});
+                    block::Position{x, y}, Block{static_cast<char32_t>(static_cast<unsigned char>(row[x.toSizeT()]))});
             }
             y += 1;
             rowIndex += 1;
@@ -85,10 +84,10 @@ public:
     [[nodiscard]] static auto renderRows(const auto &buffer) -> std::vector<std::string> {
         auto rows = std::vector<std::string>{};
         rows.reserve(buffer.size().height().toSizeT());
-        for (auto y = bgeo::BlockCoordinate{0}; y < buffer.size().height(); ++y) {
+        for (auto y = block::Coordinate{0}; y < buffer.size().height(); ++y) {
             auto row = std::string{};
-            for (auto x = bgeo::BlockCoordinate{0}; x < buffer.size().width(); ++x) {
-                const auto &block = buffer.get(bgeo::BlockPosition{x, y});
+            for (auto x = block::Coordinate{0}; x < buffer.size().width(); ++x) {
+                const auto &block = buffer.get(block::Position{x, y});
                 const auto text = block.toString();
                 row += text.isEmpty() ? " " : erbsland::text::StringConverter{text}.toStdString();
             }

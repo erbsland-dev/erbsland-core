@@ -12,10 +12,12 @@
 
 using namespace el::conf;
 using namespace el::text::literals;
-using namespace el::conf::impl;
 
 TESTED_TARGETS(VersionMask)
 class VersionMaskTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
+    using ConfVersionRange = el::conf::impl::ConfVersionRange;
+    using VersionMask = el::conf::impl::VersionMask;
+
 public:
     void testVersionRangeDefault() {
         ConfVersionRange r; // default constructed

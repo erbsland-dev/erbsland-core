@@ -30,8 +30,8 @@ private:
     /// Parse and validate the Ed25519 algorithm-specific key.
     [[nodiscard]] auto parseEd25519(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
         -> SigningPrivateKey;
-    /// Parse and validate the P-256 algorithm-specific key.
-    [[nodiscard]] auto parseEcdsaP256(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
+    /// Parse and validate a supported named-curve ECDSA key.
+    [[nodiscard]] auto parseEcdsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
         -> SigningPrivateKey;
     /// Parse and validate one two-prime RSA key with RSAE or supported PSS parameters.
     [[nodiscard]] auto parseRsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const -> SigningPrivateKey;

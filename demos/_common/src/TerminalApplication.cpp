@@ -8,7 +8,7 @@ namespace demo {
 void TerminalApplication::initialize() {
     enableTerminal();
     terminal()->input().setMode(Input::Mode::Key);
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{60}, BlockCoordinate{20}});
+    _updateSettings.setMinimumSize(Size{Coordinate{60}, Coordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{"Resize the terminal to at least 60x20 cells for this demo."_el, Color{fg::BrightRed, bg::Black}});

@@ -145,24 +145,25 @@ public:
         auto corruptedPrivateKey = el::ByteBlockEditor{privateKey};
         const auto lastPrivateKeyByte = el::ByteIndex{corruptedPrivateKey.length().toSizeT() - 1U};
         corruptedPrivateKey.set(lastPrivateKeyByte, corruptedPrivateKey.getOrThrow(lastPrivateKeyByte) ^ el::Byte{1U});
-        auto corruptedChildren = el::ByteBlockEditor{};
-        corruptedChildren.append(privateKeyInfo.child(el::ItemIndex{0U}).encodedData());
-        corruptedChildren.append(privateKeyInfo.child(el::ItemIndex{1U}).encodedData());
-        corruptedChildren.append(el::cryptology::impl::der_encoder::octetString(corruptedPrivateKey.span()));
-        REQUIRE_THROWS_AS(
-            el::err::ParseError,
-            SigningPrivateKey::fromDerOrThrow(el::cryptology::impl::der_encoder::sequence(corruptedChildren.span())));
+        auto corruptedEncoder = el::cryptology::impl::DerEncoder{};
+        const auto corruptedRoot = corruptedEncoder.beginSequence();
+        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}).encodedData().span());
+        corruptedEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{1U}).encodedData().span());
+        corruptedEncoder.appendOctetString(corruptedPrivateKey.span());
+        corruptedEncoder.end(corruptedRoot);
+        REQUIRE_THROWS_AS(el::err::ParseError, SigningPrivateKey::fromDerOrThrow(corruptedEncoder.encoded()));
 
         // RFC 4055 section 3.1: an id-RSASSA-PSS key restricts both the TLS key family and the permitted hash.
         const auto pssAlgorithm = bytesFromHex(
             "304106092a864886f70d01010a3034a00f300d06096086480165030402010500"
             "a11c301a06092a864886f70d010108300d06096086480165030402010500a203020120");
-        auto pssChildren = el::ByteBlockEditor{};
-        pssChildren.append(privateKeyInfo.child(el::ItemIndex{0U}).encodedData());
-        pssChildren.append(pssAlgorithm);
-        pssChildren.append(el::cryptology::impl::der_encoder::octetString(privateKey.span()));
-        const auto pssKey =
-            SigningPrivateKey::fromDerOrThrow(el::cryptology::impl::der_encoder::sequence(pssChildren.span()));
+        auto pssEncoder = el::cryptology::impl::DerEncoder{};
+        const auto pssRoot = pssEncoder.beginSequence();
+        pssEncoder.appendEncoded(privateKeyInfo.child(el::ItemIndex{0U}).encodedData().span());
+        pssEncoder.appendEncoded(pssAlgorithm.span());
+        pssEncoder.appendOctetString(privateKey.span());
+        pssEncoder.end(pssRoot);
+        const auto pssKey = SigningPrivateKey::fromDerOrThrow(pssEncoder.encoded());
         REQUIRE(pssKey.supports(TlsSignatureScheme::RsaPssPssSha256));
         REQUIRE_FALSE(pssKey.supports(TlsSignatureScheme::RsaPssPssSha384));
         REQUIRE_FALSE(pssKey.supports(TlsSignatureScheme::RsaPssRsaeSha256));

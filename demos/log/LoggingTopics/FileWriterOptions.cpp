@@ -3,6 +3,7 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/log/all.hpp>
+#include <erbsland/log/line/all.hpp>
 
 #include <memory>
 #include <utility>
@@ -17,12 +18,15 @@ auto createFileWriterDemoDirectory() -> el::TempDirectoryPtr {
 }
 
 void writeFileDemoLine(
-    el::FileLogWriter &writer, const el::DateTime &timestamp, const el::String &message, const uint64_t sequence = 1U) {
+    const el::LogWriterPtr &writer,
+    const el::DateTime &timestamp,
+    const el::String &message,
+    const uint64_t sequence = 1U) {
     const auto entry = std::make_shared<el::LogEntry>(
         sequence, timestamp, el::LogLevel::Information, el::LogPath{"guild/journal"_el}, message);
     const auto line =
         std::make_shared<el::LogLine>(std::vector<el::LogLineSegment>{{el::LogLinePart::Message, message}});
-    writer.write(entry, line);
+    writer->write(entry, line);
 }
 
 /// The initial file mode decides whether the first successful open preserves or replaces existing content.
@@ -36,15 +40,15 @@ void fileWriterModes() {
     appendPath.content().writeTextOrThrow("Earlier run\n"_el);
     overwritePath.content().writeTextOrThrow("Earlier run\n"_el);
 
-    auto appendWriter = el::FileLogWriter{el::FileLogWriterOptions{appendPath}};
+    const auto appendWriter = el::LogWriter::createForFile(el::FileLogWriterOptions{appendPath});
     writeFileDemoLine(appendWriter, el::DateTime::now(), "Current run"_el);
-    appendWriter.close();
+    appendWriter->close();
 
     auto overwriteOptions = el::FileLogWriterOptions{overwritePath};
     overwriteOptions.setMode(el::LogFileMode::Overwrite);
-    auto overwriteWriter = el::FileLogWriter{std::move(overwriteOptions)};
+    const auto overwriteWriter = el::LogWriter::createForFile(overwriteOptions);
     writeFileDemoLine(overwriteWriter, el::DateTime::now(), "Current run"_el);
-    overwriteWriter.close();
+    overwriteWriter->close();
 
     const auto yesNo = el::BooleanFormat::yesNo();
     el::io::printLine(
@@ -66,7 +70,7 @@ void fileWriterRotation() {
     const auto path = temporary->path() / "guild.log"_el;
     auto options = el::FileLogWriterOptions{path};
     options.setMode(el::LogFileMode::Overwrite).setRotation(el::LogFileRotation::Daily);
-    auto writer = el::FileLogWriter{std::move(options)};
+    const auto writer = el::LogWriter::createForFile(options);
 
     writeFileDemoLine(
         writer,
@@ -78,7 +82,7 @@ void fileWriterRotation() {
         el::DateTime{el::Date::fromYearMonthDay(2026, 9, 2), el::Time{el::Hour{7}, el::Minute{0}}},
         "Second day"_el,
         2U);
-    writer.close();
+    writer->close();
 
     const auto archive = path.withStem("guild.2026-09-01"_el);
     el::io::printLine("Daily archive: "_el, archive.name());
@@ -96,11 +100,11 @@ void fileWriterMaximumSize() {
     options.setMode(el::LogFileMode::Overwrite)
         .setRotation(el::LogFileRotation::Size)
         .setMaximumSize(el::ByteLength{24U});
-    auto writer = el::FileLogWriter{std::move(options)};
+    const auto writer = el::LogWriter::createForFile(options);
 
     writeFileDemoLine(writer, el::DateTime::now(), "First observation"_el, 1U);
     writeFileDemoLine(writer, el::DateTime::now(), "Second observation"_el, 2U);
-    writer.close();
+    writer->close();
 
     el::io::printLine(
         "Rotation created guild.1.log: "_el, el::BooleanFormat::yesNo(), path.withStem("guild.1"_el).info().exists());
@@ -118,12 +122,12 @@ void fileWriterRetention() {
         .setRotation(el::LogFileRotation::Size)
         .setMaximumSize(el::ByteLength{12U})
         .setRetention(2U);
-    auto writer = el::FileLogWriter{std::move(options)};
+    const auto writer = el::LogWriter::createForFile(options);
 
     for (auto sequence = uint64_t{1U}; sequence <= 4U; ++sequence) {
         writeFileDemoLine(writer, el::DateTime::now(), "Entry 0001"_el, sequence);
     }
-    writer.close();
+    writer->close();
 
     const auto yesNo = el::BooleanFormat::yesNo();
     el::io::printLine("guild.1.log exists: "_el, yesNo, path.withStem("guild.1"_el).info().exists());

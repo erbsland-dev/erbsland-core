@@ -3,10 +3,11 @@
 #include "X509CertificateBundle.hpp"
 
 #include "../impl/PemCodec.hpp"
-#include "../impl/X509FileTools.hpp"
+#include "../impl/PemDerFileTools.hpp"
 
 #include "../../err/LogicError.hpp"
 #include "../../err/ParameterError.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../path/Path.hpp"
 #include "../../text/Literals.hpp"
 
@@ -42,10 +43,10 @@ auto X509CertificateBundle::toDer() const -> mem::ByteBlock {
     return _certificates.first().toDer();
 }
 
-void X509CertificateBundle::writeToFile(const path::Path &path, const X509CertificateFormat format) const {
-    const auto file = impl::X509FileTools{path};
+void X509CertificateBundle::writeToFile(const path::Path &path, const PemDerFormat format) const {
+    const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::Certificate};
     const auto selected = file.outputFormat(format);
-    if (selected == X509CertificateFormat::Pem) {
+    if (selected == PemDerFormat::Pem) {
         file.writePem(toPem());
     } else {
         file.writeDer(toDer());
@@ -56,7 +57,7 @@ auto X509CertificateBundle::fromPem(const text::String &text, const X509Certific
     -> X509CertificateBundle {
     try {
         return fromPemOrThrow(text, mode);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
@@ -75,7 +76,7 @@ auto X509CertificateBundle::fromDer(const mem::ByteBlock &data, const X509Certif
     -> X509CertificateBundle {
     try {
         return fromDerOrThrow(data, mode);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
@@ -86,23 +87,22 @@ auto X509CertificateBundle::fromDerOrThrow(const mem::ByteBlock &data, const X50
 }
 
 auto X509CertificateBundle::fromFile(
-    const path::Path &path, const X509CertificateFormat format, const X509CertificateProfileMode mode) noexcept
+    const path::Path &path, const PemDerFormat format, const X509CertificateProfileMode mode) noexcept
     -> X509CertificateBundle {
     try {
         return fromFileOrThrow(path, format, mode);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }
 
 auto X509CertificateBundle::fromFileOrThrow(
-    const path::Path &path, const X509CertificateFormat format, const X509CertificateProfileMode mode)
-    -> X509CertificateBundle {
-    const auto file = impl::X509FileTools{path};
+    const path::Path &path, const PemDerFormat format, const X509CertificateProfileMode mode) -> X509CertificateBundle {
+    const auto file = impl::PemDerFileTools{path, impl::PemDerFileTools::Artifact::Certificate};
     const auto data = file.read();
     const auto selected = file.inputFormat(data, format);
-    return selected == X509CertificateFormat::Pem ? fromPemOrThrow(impl::X509FileTools::toPemText(data), mode)
-                                                  : fromDerOrThrow(data, mode);
+    return selected == PemDerFormat::Pem ? fromPemOrThrow(impl::PemDerFileTools::toPemText(data), mode)
+                                         : fromDerOrThrow(data, mode);
 }
 
 }

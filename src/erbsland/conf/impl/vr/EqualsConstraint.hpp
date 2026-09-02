@@ -24,9 +24,7 @@ public:
     /// @param value The expected value.
     template <typename Fwd>
         requires(std::is_same_v<std::remove_cvref_t<Fwd>, T>)
-    explicit EqualsConstraint(Fwd &&value) : _value{std::forward<Fwd>(value)} {
-        setType(vr::ConstraintType::Equals);
-    }
+    explicit EqualsConstraint(Fwd &&value) : Constraint{vr::ConstraintType::Equals}, _value{std::forward<Fwd>(value)} {}
 
 protected:
     /// Compare two values using the rule's type-specific semantics.

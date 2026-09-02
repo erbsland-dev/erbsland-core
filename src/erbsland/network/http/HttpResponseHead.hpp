@@ -14,7 +14,7 @@ namespace erbsland::network {
 
 /// The control data and header section of an HTTP response.
 /// The reason phrase retains its exact bytes, including obs-text and malformed UTF-8.
-/// @seedoc{/reference/network/http_messages}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpMessageTest Http1CodecTest}
 class HttpResponseHead final {
 public:

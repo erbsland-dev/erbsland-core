@@ -42,7 +42,7 @@ public: // implement Backend
         return _supportedBlockAttributeCodes;
     }
     [[nodiscard]] auto isInteractive() const noexcept -> bool override { return _isInteractive; }
-    [[nodiscard]] auto detectScreenSize() -> std::optional<bgeo::BlockSize> override {
+    [[nodiscard]] auto detectScreenSize() -> std::optional<block::Size> override {
         _detectScreenSizeCallCount += 1;
         return _detectedScreenSize;
     }
@@ -50,7 +50,7 @@ public: // implement Backend
     void emitBlockAttributes(const BlockAttributes attributes) override {
         _emittedBlockAttributes.push_back(attributes);
     }
-    void moveCursor(const bgeo::BlockPosition pos, const MoveMode mode) override {
+    void moveCursor(const block::Position pos, const MoveMode mode) override {
         _cursorMoves.push_back(CursorMove{pos, mode});
     }
     void clearScreen() override { _clearScreenCallCount += 1; }
@@ -137,7 +137,7 @@ public:
     BlockAttributes _supportedBlockAttributeCodes = BlockAttributes::all();
     bool _isInteractive = true;
     bool _isAlternateScreenActive = false;
-    std::optional<bgeo::BlockSize> _detectedScreenSize{};
+    std::optional<block::Size> _detectedScreenSize{};
     Input::Mode _inputMode = Input::Mode::ReadLine;
     int _initializePlatformCallCount = 0;
     int _restorePlatformCallCount = 0;

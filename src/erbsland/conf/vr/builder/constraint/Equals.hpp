@@ -6,8 +6,10 @@
 #include "ConstraintOptions.hpp"
 
 #include "../../../../mem/ByteBlock.hpp"
-#include "../../../impl/vr/TypeTraits.hpp"
+#include "../../../Float.hpp"
+#include "../../../Integer.hpp"
 
+#include <type_traits>
 #include <utility>
 #include <variant>
 
@@ -25,7 +27,7 @@ public:
     /// @param value The expected value.
     /// @param options Additional constraint options.
     template <typename TValue>
-        requires(impl::IsInteger<TValue>)
+        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool>)
     explicit Equals(const TValue value, ConstraintOptions options = {}) :
         _value{static_cast<Integer>(value)}, _options{std::move(options)} {}
     /// Creates a Boolean equality constraint.
@@ -37,7 +39,7 @@ public:
     /// @param value The expected value.
     /// @param options Additional constraint options.
     template <typename TValue>
-        requires(impl::IsFloat<TValue>)
+        requires std::is_floating_point_v<TValue>
     explicit Equals(const TValue value, ConstraintOptions options = {}) :
         _value{static_cast<Float>(value)}, _options{std::move(options)} {}
     /// Creates a text equality constraint.
@@ -62,7 +64,7 @@ public:
     Equals(const Integer first, const Integer second, ConstraintOptions options = {}) :
         _value{std::pair<Integer, Integer>{first, second}}, _options{std::move(options)} {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
     Value _value;
     ConstraintOptions _options;

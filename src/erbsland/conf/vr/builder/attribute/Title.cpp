@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Title.hpp"
 
-#include "../../../impl/vr/Rule.hpp"
-
 namespace erbsland::conf::vr::builder {
 
-void Title::operator()(Rule &rule) {
-    rule.setTitle(std::move(_title));
+void Title::apply(RuleDefinition &rule) const {
+    rule.setTitle(_title);
 }
 
 }

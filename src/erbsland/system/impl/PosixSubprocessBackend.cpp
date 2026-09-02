@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixSubprocessBackend.hpp"
 
+#include "PosixErrorContext.hpp"
+#include "ProcessIdAccess.hpp"
+
 #include "../PlatformError.hpp"
-#include "../PosixErrorContext.hpp"
 #include "../SubprocessOptions.hpp"
 
 #include "../../text/Literals.hpp"
@@ -229,6 +231,10 @@ PosixSubprocessBackend::PosixSubprocessBackend(
 
 PosixSubprocessBackend::~PosixSubprocessBackend() {
     joinReaders();
+}
+
+auto PosixSubprocessBackend::processId() const noexcept -> ProcessId {
+    return _processId > 0 ? ProcessIdAccess::fromNative(static_cast<std::uint64_t>(_processId)) : ProcessId{};
 }
 
 auto PosixSubprocessBackend::isRunning() -> bool {

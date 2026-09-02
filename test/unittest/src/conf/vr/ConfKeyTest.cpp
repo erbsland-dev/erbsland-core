@@ -12,11 +12,12 @@
 
 using namespace el::conf;
 using namespace el::text::literals;
-using namespace el::conf::impl;
 using el::text::CaseSensitivity;
 
 TESTED_TARGETS(ConfKey)
 class ConfKeyTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
+    using ConfKey = el::conf::impl::ConfKey;
+
 public:
     void testDefaultConstruction() {
         ConfKey key;

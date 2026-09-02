@@ -22,14 +22,14 @@ public:
     void onRenderToBuffer() override;
 
 private:
-    void drawSelector(BlockRectangle rect);
-    void drawPreview(BlockRectangle rect);
-    void drawScaleModeVariant(BlockRectangle rect, std::size_t variantIndex);
-    void drawColorModeVariant(BlockRectangle rect, std::size_t variantIndex);
-    void drawLayoutVariant(BlockRectangle rect, std::size_t variantIndex);
-    void drawStyleVariant(BlockRectangle rect, std::size_t variantIndex);
-    void drawPreviewPanel(BlockRectangle rect, el::String title, Color fillColor);
-    void drawFooter(BlockRectangle rect);
+    void drawSelector(Rectangle rect);
+    void drawPreview(Rectangle rect);
+    void drawScaleModeVariant(Rectangle rect, std::size_t variantIndex);
+    void drawColorModeVariant(Rectangle rect, std::size_t variantIndex);
+    void drawLayoutVariant(Rectangle rect, std::size_t variantIndex);
+    void drawStyleVariant(Rectangle rect, std::size_t variantIndex);
+    void drawPreviewPanel(Rectangle rect, el::String title, Color fillColor);
+    void drawFooter(Rectangle rect);
     [[nodiscard]] auto footerText() const -> BlockString;
     [[nodiscard]] auto pageTitle() const -> el::String;
     [[nodiscard]] auto variantCount(std::size_t pageIndex) const noexcept -> std::size_t;

@@ -54,7 +54,7 @@ public:
             RuleType::Section,
             IsOptional(),
             Dependency(
-                el::conf::impl::DependencyMode::XOR,
+                el::conf::vr::DependencyMode::XOR,
                 {NamePathLike{el::text::String{"hostname"}}},
                 {NamePathLike{el::text::String{"ip_address"}}}));
         rulesBuilder.addRule(el::text::String{"app.server.hostname"}, RuleType::Text, IsOptional());

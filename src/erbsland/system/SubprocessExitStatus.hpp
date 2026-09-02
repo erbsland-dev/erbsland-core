@@ -10,7 +10,7 @@ namespace erbsland::system {
 /// Describes how an owned subprocess exited.
 /// POSIX signal termination has no direct Windows equivalent. On Windows, native termination is represented by the
 /// process exit code and `terminationSignal()` remains empty.
-/// @seedoc{/reference/system/subprocess}
+/// @seedoc{/reference/system/system_services}
 /// @tested{SubprocessInteropTest}
 class SubprocessExitStatus final {
 public:

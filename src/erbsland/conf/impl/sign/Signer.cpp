@@ -7,6 +7,7 @@
 #include "../constants/Defaults.hpp"
 #include "../constants/Limits.hpp"
 
+#include "../../../err/ParameterError.hpp"
 #include "../../../path/PathContent.hpp"
 #include "../../../path/PathError.hpp"
 #include "../../../path/PathInfo.hpp"

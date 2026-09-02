@@ -5,7 +5,6 @@
 #include "X509AlgorithmIdentifier.hpp"
 #include "X509BasicConstraints.hpp"
 #include "X509CertificateBundle_fwd.hpp"
-#include "X509CertificateFormat.hpp"
 #include "X509CertificateProfileIssue.hpp"
 #include "X509CertificateProfileMode.hpp"
 #include "X509Extension.hpp"
@@ -20,6 +19,7 @@
 #include "../impl/X509CertificateData.hpp"
 #include "../impl/X509Parser_fwd.hpp"
 #include "../keys/PublicKey.hpp"
+#include "../PemDerFormat.hpp"
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../path/Path_fwd.hpp"
@@ -128,7 +128,7 @@ public: // conversion
     /// @throws err::LogicError If the certificate is empty.
     /// @throws err::ParameterError If automatic output cannot select a format.
     /// @throws path::PathError If writing fails.
-    void writeToFile(const path::Path &path, X509CertificateFormat format = X509CertificateFormat::Automatic) const;
+    void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
 
 public: // factories
     /// Parse exactly one strict CERTIFICATE PEM block, returning an empty certificate on any error.
@@ -154,7 +154,7 @@ public: // factories
     /// Read one certificate from a file, returning an empty certificate on any error.
     [[nodiscard]] static auto fromFile(
         const path::Path &path,
-        X509CertificateFormat format = X509CertificateFormat::Automatic,
+        PemDerFormat format = PemDerFormat::Automatic,
         X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) noexcept -> X509Certificate;
     /// Read one certificate from a file.
     /// @throws path::PathError If reading fails.
@@ -162,7 +162,7 @@ public: // factories
     /// @throws err::OutOfRangeError If a fixed resource limit is exceeded.
     [[nodiscard]] static auto fromFileOrThrow(
         const path::Path &path,
-        X509CertificateFormat format = X509CertificateFormat::Automatic,
+        PemDerFormat format = PemDerFormat::Automatic,
         X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) -> X509Certificate;
 
 private:

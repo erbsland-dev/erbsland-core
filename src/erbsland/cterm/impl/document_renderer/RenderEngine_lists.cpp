@@ -179,10 +179,11 @@ auto RenderEngine::termListLayout(const std::vector<TermItemRenderData> &items, 
     auto finalLeftMargin = 0;
     auto finalRightMargin = 0;
     for (const auto &item : items) {
+        const auto horizontalMargins = item.indents.margins().horizontal();
         maxNameWidth = std::max(maxNameWidth, item.nameFirstLineIndent + item.name.displayWidth());
         maxDescriptionWidth = std::max(maxDescriptionWidth, item.description.displayWidth());
-        finalLeftMargin = std::max(finalLeftMargin, positive(item.indents.margins().left()));
-        finalRightMargin = std::max(finalRightMargin, positive(item.indents.margins().right()));
+        finalLeftMargin = std::max(finalLeftMargin, positive(horizontalMargins.leading()));
+        finalRightMargin = std::max(finalRightMargin, positive(horizontalMargins.trailing()));
     }
     const auto terminalWidth = _width - frameWidth();
     const auto availableWidth = std::max(terminalWidth - finalLeftMargin - finalRightMargin, 0);
@@ -215,7 +216,7 @@ void RenderEngine::appendNormalTermItem(const TermItemRenderData &item, const Te
         return;
     }
     const auto localDescriptionColumn =
-        std::max(layout.descriptionStartColumn - positive(item.indents.margins().left()), 0);
+        std::max(layout.descriptionStartColumn - positive(item.indents.margins().horizontal().leading()), 0);
     if (layout.stacked) {
         auto nameBlock = RenderBlock{BlockKind::Paragraph, item.name, item.indents};
         emitBlock(std::move(nameBlock));
@@ -308,7 +309,8 @@ void RenderEngine::emitBlock(RenderBlock block) {
     _blockBuilder.clear();
     auto frameRightMargin = 0;
     for (const auto &scope : _scopes) {
-        const auto leftMargin = positive(scope.margins.left());
+        const auto horizontalMargins = scope.margins.horizontal();
+        const auto leftMargin = positive(horizontalMargins.leading());
         if (leftMargin > 0) {
             _blockBuilder.append(
                 BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block{Char{U' '}}});
@@ -316,13 +318,13 @@ void RenderEngine::emitBlock(RenderBlock block) {
         if (scope.linePrefix.has_value()) {
             _blockBuilder.append(*scope.linePrefix);
         }
-        frameRightMargin += positive(scope.margins.right());
+        frameRightMargin += positive(horizontalMargins.trailing());
     }
     block.setFrame(_blockBuilder.toString(), frameRightMargin);
     for (auto &scope : _scopes) {
         const auto isFirstBlockInScope = !scope.hasBlocks;
         if (isFirstBlockInScope) {
-            collapseVerticalMargin(block, bgeo::BlockMargins::Side::Top, scope.margins.top());
+            collapseVerticalMargin(block, block::Margins::Side::Top, scope.margins.vertical().leading());
             scope.hasBlocks = true;
         }
         if (scope.listItemLayout.has_value()) {
@@ -338,9 +340,7 @@ void RenderEngine::emitBlock(RenderBlock block) {
 }
 
 void RenderEngine::openScope(
-    const bgeo::BlockMargins margins,
-    std::optional<ListItemLayout> listItemLayout,
-    std::optional<BlockString> linePrefix) {
+    const block::Margins margins, std::optional<ListItemLayout> listItemLayout, std::optional<BlockString> linePrefix) {
     _scopes.push_back(BlockScope{margins, std::move(listItemLayout), false, std::move(linePrefix)});
 }
 
@@ -353,7 +353,7 @@ void RenderEngine::closeScope() {
     if (!scope.hasBlocks || !_pendingBlock.has_value()) {
         return;
     }
-    collapseVerticalMargin(*_pendingBlock, bgeo::BlockMargins::Side::Bottom, scope.margins.bottom());
+    collapseVerticalMargin(*_pendingBlock, block::Margins::Side::Bottom, scope.margins.vertical().trailing());
 }
 
 auto RenderEngine::currentListItemHasBlocks() const noexcept -> bool {
@@ -366,7 +366,7 @@ auto RenderEngine::currentListItemHasBlocks() const noexcept -> bool {
 }
 
 void RenderEngine::collapseVerticalMargin(
-    RenderBlock &block, const bgeo::BlockMargins::Side side, const bgeo::BlockCoordinate margin) {
+    RenderBlock &block, const block::Margins::Side side, const block::Coordinate margin) {
     if (margin == 0) {
         return;
     }
@@ -387,14 +387,14 @@ auto RenderEngine::usesLevel(const TextNodeType nodeType) noexcept -> bool {
         nodeType == TextNodeType::NumberedList || nodeType.isListItem();
 }
 
-auto RenderEngine::positive(const bgeo::BlockCoordinate value) noexcept -> int {
+auto RenderEngine::positive(const block::Coordinate value) noexcept -> int {
     return std::max(value.toRawValue(), 0);
 }
 
 auto RenderEngine::frameWidth() const noexcept -> int {
     auto result = 0;
     for (const auto &scope : _scopes) {
-        result += positive(scope.margins.left()) + positive(scope.margins.right());
+        result += scope.margins.horizontal().extent().toRawValue();
         if (scope.linePrefix.has_value()) {
             result += scope.linePrefix->displayWidth();
         }

@@ -126,10 +126,12 @@ This makes complete option declarations compact while still keeping the importan
 Choose the Right Value Type
 ===========================
 
-The parser supports five option types:
+The parser supports six option types:
 
-* :cpp:enumerator:`OptionType::Flag <erbsland::options::OptionType::Flag>` stores whether a switch appeared, and also
+* :cpp:enumerator:`OptionType::Flag <erbsland::options::OptionType::Flag>` stores a valueless occurrence marker and
   remembers how often it appeared.
+* :cpp:enumerator:`OptionType::Boolean <erbsland::options::OptionType::Boolean>` parses a Boolean literal as a typed
+  scalar or list value.
 * :cpp:enumerator:`OptionType::Integer <erbsland::options::OptionType::Integer>` parses a signed decimal integer.
 * :cpp:enumerator:`OptionType::Text <erbsland::options::OptionType::Text>` stores one text value exactly as the command
   line supplied it after argument conversion.
@@ -152,7 +154,8 @@ Choices are matched case-insensitively, but the parsed value uses the configured
 Use simple :cpp:func:`addChoice() <erbsland::options::OptionEditor::addChoice>` calls when all choices only need a
 label.
 Use :cpp:class:`OptionChoices <erbsland::options::OptionChoices>` and
-:cpp:class:`OptionChoice <erbsland::options::OptionChoice>` when choices need their own help text or visibility.
+:cpp:class:`OptionChoiceEditor <erbsland::options::OptionChoiceEditor>` when choices need their own help text or
+visibility.
 
 Choice help is rendered as detail rows below the option.
 Hidden choices remain parseable, but do not appear in the help output.
@@ -170,18 +173,17 @@ Hidden choices remain parseable, but do not appear in the help output.
     /// Build a choice list when individual choices need their own help metadata.
     ///
     /// `OptionEditor::addChoice()` is enough for simple choices.
-    /// Create `OptionChoice` objects when choices need descriptions or visibility settings of their own.
+    /// `OptionChoices::addChoice()` returns an editor for adding help details to each choice.
     /// Hidden choices remain accepted by the parser, but are omitted from generated help output.
     [[nodiscard]] auto activityChoices() -> el::OptionChoicesPtr {
         auto choices = el::OptionChoices::create();
 
-        choices->addChoice(el::OptionChoice::create("dusk"_el, el::OptionHelp{"Activity around dusk."_el}));
-        choices->addChoice(el::OptionChoice::create("night"_el, el::OptionHelp{"Activity in full darkness."_el}));
-        choices->addChoice(el::OptionChoice::create("dawn"_el, el::OptionHelp{"Activity shortly before sunrise."_el}));
-
-        auto internalHelp = el::OptionHelp{"Internal test choice that does not appear in regular help."_el};
-        internalHelp.setVisibility(el::OptionHelpVisibility::Hidden);
-        choices->addChoice(el::OptionChoice::create("internal"_el, internalHelp));
+        choices->addChoice("dusk"_el).setHelpDescription("Activity around dusk."_el);
+        choices->addChoice("night"_el).setHelpDescription("Activity in full darkness."_el);
+        choices->addChoice("dawn"_el).setHelpDescription("Activity shortly before sunrise."_el);
+        choices->addChoice("internal"_el)
+            .setHelpDescription("Internal test choice that does not appear in regular help."_el)
+            .setHelpVisibility(el::OptionHelpVisibility::Hidden);
         return choices;
     }
 
@@ -376,6 +378,12 @@ Flags
     Allows a positional list option to consume values greedily.
     It is meaningful for positional list definitions; it is not a general replacement for explicit command syntax.
 
+``AcceptAsFlag``
+    Allows a named, non-positional scalar value option to appear without a value.
+    Bare use is available through ``getFlag()``, while valued use is available through the declared typed getter.
+    The definition must accept exactly one value.
+    It has no additional effect on ``Flag`` and no behavior on option sets.
+
 Customize Option Help
 =====================
 
@@ -383,11 +391,13 @@ Every option stores :cpp:class:`OptionHelp <erbsland::options::OptionHelp>`.
 For ordinary definitions, use the direct editor methods:
 :cpp:func:`setHelpDescription() <erbsland::options::OptionEditor::setHelpDescription>`,
 :cpp:func:`setHelpTitle() <erbsland::options::OptionEditor::setHelpTitle>`,
+``setHelpExample()``,
 :cpp:func:`setHelpEpilog() <erbsland::options::OptionEditor::setHelpEpilog>`, and
 :cpp:func:`setHelpVisibility() <erbsland::options::OptionEditor::setHelpVisibility>`.
 
 The description is the main text shown next to the option.
 The title is used by renderers when a short label is needed.
+The example is shown in detailed ``--help=<name>`` output.
 The epilog is available for renderers that expose trailing option details.
 The value name changes the placeholder shown in help, for example ``<dier>`` instead of the generic ``<value>``.
 

@@ -11,7 +11,7 @@ namespace erbsland::network {
 
 /// A recognized HTTP field-name classification.
 /// Applicability metadata is descriptive and never makes an extension field invalid.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpHeadersTest}
 class HttpFieldType final {
 public:

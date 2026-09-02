@@ -10,8 +10,8 @@
 #include "ReadableBuffer_fwd.hpp"
 #include "TypeTraits.hpp"
 
-#include "../bgeo/BlockPosition.hpp"
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Position.hpp"
+#include "../block/Size.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 #include "../text/u32/U32String.hpp"
@@ -120,42 +120,42 @@ public: // cursor state
     /// Move the cursor to the left.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param count The number of terminal cells to move.
-    virtual void moveLeft(const bgeo::BlockCoordinate count) noexcept {
-        moveCursor(bgeo::BlockPosition{-count, bgeo::BlockCoordinate{0}}, MoveMode::Relative);
+    virtual void moveLeft(const block::Coordinate count) noexcept {
+        moveCursor(block::Position{-count, block::Coordinate{0}}, MoveMode::Relative);
     }
     /// Move the cursor to the right.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param count The number of terminal cells to move.
-    virtual void moveRight(const bgeo::BlockCoordinate count) noexcept {
-        moveCursor(bgeo::BlockPosition{count, bgeo::BlockCoordinate{0}}, MoveMode::Relative);
+    virtual void moveRight(const block::Coordinate count) noexcept {
+        moveCursor(block::Position{count, block::Coordinate{0}}, MoveMode::Relative);
     }
     /// Move the cursor up.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param count The number of terminal cells to move.
-    virtual void moveUp(const bgeo::BlockCoordinate count) noexcept {
-        moveCursor(bgeo::BlockPosition{bgeo::BlockCoordinate{0}, -count}, MoveMode::Relative);
+    virtual void moveUp(const block::Coordinate count) noexcept {
+        moveCursor(block::Position{block::Coordinate{0}, -count}, MoveMode::Relative);
     }
     /// Move the cursor down.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param count The number of terminal cells to move.
-    virtual void moveDown(const bgeo::BlockCoordinate count) noexcept {
-        moveCursor(bgeo::BlockPosition{bgeo::BlockCoordinate{0}, count}, MoveMode::Relative);
+    virtual void moveDown(const block::Coordinate count) noexcept {
+        moveCursor(block::Position{block::Coordinate{0}, count}, MoveMode::Relative);
     }
     /// Move the cursor to the given position.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param pos The position to move the cursor to.
-    virtual void moveTo(const bgeo::BlockPosition pos) noexcept { moveCursor(pos, MoveMode::Absolute); }
+    virtual void moveTo(const block::Position pos) noexcept { moveCursor(pos, MoveMode::Absolute); }
     /// Moves the cursor to the home position.
-    virtual void moveHome() noexcept { moveCursor(bgeo::BlockPosition{0, 0}, MoveMode::Absolute); }
+    virtual void moveHome() noexcept { moveCursor(block::Position{0, 0}, MoveMode::Absolute); }
     /// Move the cursor absolute or relative.
     /// If the resulting position is out of bounds, the result is undefined.
     /// @param posOrDelta The absolute position or delta for the move.
     /// @param mode The move mode, either absolute or relative.
-    virtual void moveCursor(bgeo::BlockPosition posOrDelta, MoveMode mode) noexcept = 0;
+    virtual void moveCursor(block::Position posOrDelta, MoveMode mode) noexcept = 0;
     /// Try to get the current cursor position.
     /// Not all implementations support retrieving the cursor position.
     /// @return The current cursor position, or `std::nullopt` if it cannot be determined.
-    virtual auto cursorPosition() noexcept -> std::optional<bgeo::BlockPosition> { return std::nullopt; }
+    virtual auto cursorPosition() noexcept -> std::optional<block::Position> { return std::nullopt; }
     /// Enabled/disable auto-wrap.
     /// Auto wrap controls if the cursor automatically wraps to the next line when reaching the right margin.
     /// This is a feature that can be enabled or disabled.
@@ -169,7 +169,7 @@ public: // cursor state
 
 public: // screen handling
     /// Get the size of the screen/writing area.
-    [[nodiscard]] virtual auto size() const noexcept -> bgeo::BlockSize = 0;
+    [[nodiscard]] virtual auto size() const noexcept -> block::Size = 0;
     /// Clears the screen/writing area.
     virtual void clearScreen() noexcept = 0;
 

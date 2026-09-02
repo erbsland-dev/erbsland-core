@@ -7,7 +7,7 @@
 /// Recorded cursor movement used for terminal assertions.
 /// @notest{Test-only value object.}
 struct TerminalTestCursorMove final {
-    bgeo::BlockPosition pos{};
+    block::Position pos{};
     MoveMode mode = MoveMode::Absolute;
 
     auto operator==(const TerminalTestCursorMove &) const noexcept -> bool = default;

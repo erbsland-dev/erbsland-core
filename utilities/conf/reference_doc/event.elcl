@@ -1,0 +1,7 @@
+# Reference-document groups for the event domain.
+
+------------*[ Reference Groups ]
+Page        : "event/event_system.rst"
+Title       : "Event System"
+Header Globs:
+    * "event/*.hpp"

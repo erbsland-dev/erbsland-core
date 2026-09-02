@@ -25,16 +25,4 @@ concept ApplicationPartClass = std::derived_from<T, ApplicationPart> && requires
     { T::create() } -> std::same_as<std::shared_ptr<T>>;
 };
 
-/// An application-part base implementing one public interface.
-/// @tparam T The abstract part interface.
-/// @tested{ApplicationPartManagerTest}
-template <ApplicationPartInterface T>
-class ApplicationPartWithInterface : public ApplicationPart, public T {
-public:
-    using T::partIdentifier;
-
-    // defaults
-    ~ApplicationPartWithInterface() override = default;
-};
-
 }

@@ -8,7 +8,7 @@
 #include "ParagraphIndents.hpp"
 #include "TerminalDocumentStyleMarker.hpp"
 
-#include "../bgeo/BlockMargins.hpp"
+#include "../block/Margins.hpp"
 #include "../text/String.hpp"
 #include "../text/u32/U32String.hpp"
 
@@ -36,7 +36,7 @@ public: // accessors
     /// Get the paragraph indents and margins.
     [[nodiscard]] auto indents() const noexcept -> const ParagraphIndents & { return _indents; }
     /// Get the margins around the block.
-    [[nodiscard]] auto margins() const noexcept -> const bgeo::BlockMargins & { return _indents.margins(); }
+    [[nodiscard]] auto margins() const noexcept -> const block::Margins & { return _indents.margins(); }
     /// Get the optional prefix.
     [[nodiscard]] auto prefix() const noexcept -> std::optional<BlockString>;
     /// Get the optional suffix.
@@ -67,7 +67,7 @@ public:
     /// Replace the margins.
     /// @param margins The new margins.
     /// @return Reference to this rule.
-    auto setMargins(bgeo::BlockMargins margins) noexcept -> TerminalDocumentStyleRule &;
+    auto setMargins(block::Margins margins) noexcept -> TerminalDocumentStyleRule &;
     /// Replace all margins with one value.
     /// @param allSides The value for all sides.
     /// @return Reference to this rule.

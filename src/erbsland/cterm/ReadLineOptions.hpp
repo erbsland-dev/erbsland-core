@@ -8,7 +8,7 @@
 #include "Key.hpp"
 #include "ReadLineDisplayStyle.hpp"
 
-#include "../bgeo/BlockMargins.hpp"
+#include "../block/MarginPair.hpp"
 #include "../text/String.hpp"
 #include "../text/StringList.hpp"
 #include "../time/TimeAmounts.hpp"
@@ -70,11 +70,10 @@ public: // layout
     /// Set the frame border.
     auto setFrameBorder(FrameBorder border) noexcept -> ReadLineOptions &;
     /// Get the horizontal input padding.
-    /// Vertical values are always zero.
-    [[nodiscard]] auto padding() const noexcept -> const bgeo::BlockMargins & { return _padding; }
+    [[nodiscard]] auto padding() const noexcept -> const block::MarginPair & { return _padding; }
     /// Set the input padding.
-    /// Negative horizontal values are clamped to zero and vertical values are discarded.
-    auto setPadding(bgeo::BlockMargins padding) noexcept -> ReadLineOptions &;
+    /// Negative values are clamped to zero.
+    auto setPadding(block::MarginPair padding) noexcept -> ReadLineOptions &;
 
 public: // displayed text
     /// Get the title.
@@ -175,7 +174,7 @@ private:
     BlockStyle _cursorStyle;                ///< Style overlay for the cursor.
     ReadLineDisplayStyle _displayStyle;     ///< Layout of the input area.
     FrameBorder _frameBorder;               ///< Border around the input area.
-    bgeo::BlockMargins _padding;            ///< Horizontal input padding.
+    block::MarginPair _padding;             ///< Horizontal input padding.
     BlockString _title;                     ///< Optional title.
     BlockString _prompt;                    ///< Optional prompt.
     BlockString _placeholder;               ///< Optional placeholder.

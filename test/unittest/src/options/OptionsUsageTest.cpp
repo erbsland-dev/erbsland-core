@@ -205,9 +205,9 @@ public:
                                       .setMaximum(ArgumentCount{2U})
                                       .setValidateFn([this, &calls](OptionValuePtr value, OptionValuesPtr) -> void {
                                           const auto values = value->getTextList();
-                                          REQUIRE_EQUAL(values.size(), 2U);
-                                          REQUIRE(values.at(0) == "fast"_el);
-                                          REQUIRE(values.at(1) == "safe"_el);
+                                          REQUIRE_EQUAL(values.count(), el::unit::ItemCount{2U});
+                                          REQUIRE(values.get(el::unit::ItemIndex::zero()) == "fast"_el);
+                                          REQUIRE(values.get(el::unit::ItemIndex{1U}) == "safe"_el);
                                           calls.emplace_back("choice"_el);
                                       })
                                       .option();
@@ -242,7 +242,7 @@ public:
         requireError(
             parse(options, {"tool"_el, "--flag=value"_el}),
             OptionErrorReason::UnexpectedValueType,
-            "Invalid boolean value"_el,
+            "Flag does not accept a value"_el,
             option,
             {},
             ArgumentIndex{1U});

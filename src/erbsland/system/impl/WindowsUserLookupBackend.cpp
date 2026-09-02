@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsUserLookupBackend.hpp"
 
+#include "WindowsErrorContext.hpp"
+
 #include "../PlatformError.hpp"
-#include "../WindowsErrorContext.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../text/impl/PlatformU16StringAccess.hpp"
@@ -25,8 +26,8 @@ namespace erbsland::system::impl {
 using namespace text::literals;
 
 void WindowsUserLookupBackend::throwLookupError(
-    text::String reason, const system::WindowsErrorContext::ErrorCode errorCode) {
-    throw system::PlatformError{std::move(reason), system::WindowsErrorContext::fromErrorCode(errorCode)};
+    text::String reason, const system::impl::WindowsErrorContext::ErrorCode errorCode) {
+    throw system::PlatformError{std::move(reason), system::impl::WindowsErrorContext::fromErrorCode(errorCode)};
 }
 
 auto WindowsUserLookupBackend::userNameForId(const UserId &id) -> UserName {

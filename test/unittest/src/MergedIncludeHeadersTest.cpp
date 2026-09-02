@@ -1,11 +1,15 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/block/Size.hpp>
+#include <erbsland/block/StdFormat.hpp>
 #include <erbsland/Host.hpp>
 #include <erbsland/Literals.hpp>
 #include <erbsland/MakeOneNamespace.hpp>
 #include <erbsland/Network.hpp>
+#include <erbsland/ProcessInfo.hpp>
 #include <erbsland/StdFormat.hpp>
+#include <erbsland/SystemInfo.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <format>
@@ -16,7 +20,7 @@
 using namespace el::text::literals;
 using namespace el::time::literals;
 
-TESTED_TARGETS(Host Literals MakeOneNamespace Network StdFormat)
+TESTED_TARGETS(Host Literals MakeOneNamespace Network ProcessInfo StdFormat SystemInfo)
 class MergedIncludeHeadersTest final : public el::UnitTest {
 private:
     struct MergedFormatUnitTag {};
@@ -30,7 +34,7 @@ public:
     void testStdFormat() {
         using SampleAmount = el::unit::IntegerAmount<MergedFormatUnitTag, std::ratio<1>>;
 
-        const auto blockSize = el::bgeo::BlockSize{8, 5};
+        const auto blockSize = el::block::Size{8, 5};
         const auto text = el::text::String{"merged"_el};
         const auto date = el::time::Date::fromYearMonthDay(2026, 7, 28);
         const auto amount = SampleAmount{42};
@@ -48,5 +52,12 @@ public:
     void testNetworkNamespaceIsFlattened() {
         REQUIRE((std::is_same_v<el::Host, el::network::Host>));
         REQUIRE((std::is_same_v<el::Network, el::network::Network>));
+    }
+
+    void testSystemNamespaceIsFlattened() {
+        REQUIRE((std::is_same_v<el::ProcessInfo, el::system::ProcessInfo>));
+        REQUIRE((std::is_same_v<el::OperatingSystem, el::system::OperatingSystem>));
+        REQUIRE(el::sys_info::operatingSystem() != el::OperatingSystem::Unknown);
+        REQUIRE_GREATER_EQUAL(el::sys_info::logicalCpuCount(), 1U);
     }
 };

@@ -9,7 +9,7 @@
 namespace erbsland::mem {
 
 /// The base class for custom implicitly/explicitly shared data.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @warning This is an advanced data type, meant for people extending the library.
 /// Do not use it unless you understand the implications and have a specific need.
 class SharedData {

@@ -8,7 +8,7 @@
 
 #include "../StreamErrorContext.hpp"
 
-#include "../../system/WindowsErrorContext.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
 
 #include <atomic>
 #include <mutex>
@@ -72,7 +72,7 @@ public:
 private:
     /// Throw a stream error with a Windows error code.
     [[noreturn]] void throwError(
-        text::String title, text::String description, system::WindowsErrorContext::ErrorCode errorCode) const;
+        text::String title, text::String description, system::impl::WindowsErrorContext::ErrorCode errorCode) const;
     /// Throw a stream error using the last Windows error.
     [[noreturn]] void throwErrorFromLastError(text::String title, text::String description) const;
     /// Write UTF-16 text to the native handle.

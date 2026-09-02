@@ -15,7 +15,7 @@ For details about accepted expressions and compatibility features, see :doc:`/to
 
 The following reference pages document all public interfaces in detail.
 
-.. button-ref:: regex
+.. button-ref:: regular_expressions
     :ref-type: doc
     :color: success
     :align: center
@@ -29,9 +29,4 @@ The following reference pages document all public interfaces in detail.
     :maxdepth: 1
     :hidden:
 
-    diagnostics
-    error
-    input
-    match
-    regex
-    settings
+    regular_expressions

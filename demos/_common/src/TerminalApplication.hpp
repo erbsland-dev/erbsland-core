@@ -10,7 +10,8 @@
 namespace demo {
 
 using namespace el::text::literals;
-using namespace el::bgeo;
+using namespace el::block;
+using namespace el::geometry;
 using namespace el::cterm;
 
 /// The base class for all demo applications

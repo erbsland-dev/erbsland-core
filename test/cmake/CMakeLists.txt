@@ -15,7 +15,15 @@ add_test(
                 -DERBSLAND_CORE_HOST_COMPILER_NAME=$<TARGET_FILE_NAME:erbsland-core-resource-compiler>
                 -P ${PROJECT_SOURCE_DIR}/test/cmake/resource-installed-package/RunInstalledPackage.cmake
 )
-foreach(resource_error_case IN ITEMS invalid-target duplicate empty oversized identifier)
+foreach(resource_error_case IN ITEMS
+        invalid-target
+        invalid-static-library-target
+        invalid-resource-target
+        export-static-library
+        duplicate
+        empty
+        oversized
+        identifier)
     add_test(
             NAME erbsland-core-resource-error-${resource_error_case}
             COMMAND ${CMAKE_COMMAND}

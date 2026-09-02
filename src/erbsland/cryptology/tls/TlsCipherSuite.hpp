@@ -17,7 +17,7 @@ namespace erbsland::cryptology {
 /// A supported TLS 1.3 cipher suite from RFC 8446 section 9.1.
 /// The suite binds one AEAD construction to the hash used by HKDF and the handshake transcript. Only the three
 /// cipher suites defined by RFC 8446 are represented.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsCipherSuite final {
 public:

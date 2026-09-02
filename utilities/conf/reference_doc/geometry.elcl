@@ -1,0 +1,7 @@
+# Reference-document groups for the geometry domain.
+
+------------*[ Reference Groups ]
+Page        : "geometry/geometry.rst"
+Title       : "Geometry Types"
+Header Globs:
+    * "geometry/*.hpp"

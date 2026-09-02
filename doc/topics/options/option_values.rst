@@ -99,11 +99,13 @@ Use Typed Getters for Normal Code
 
 The typed getters are the easiest and safest way to read parsed values:
 
-* :cpp:func:`getFlag() <erbsland::options::OptionValues::getFlag>` reads the stored boolean value.
+* :cpp:func:`getFlag() <erbsland::options::OptionValues::getFlag>` tests for valueless flag storage.
 * :cpp:func:`getFlagCount() <erbsland::options::OptionValues::getFlagCount>` reads how often a flag appeared.
+* ``getBoolean()`` reads a Boolean value.
 * :cpp:func:`getInteger() <erbsland::options::OptionValues::getInteger>` reads an integer.
 * :cpp:func:`getText() <erbsland::options::OptionValues::getText>` reads text, choice, or marked sensitive text.
 * :cpp:func:`getIntegerList() <erbsland::options::OptionValues::getIntegerList>` reads repeated integers.
+* ``getBooleanList()`` reads repeated Boolean values.
 * :cpp:func:`getTextList() <erbsland::options::OptionValues::getTextList>` reads repeated text values.
 
 Each getter accepts a fallback value.
@@ -116,11 +118,12 @@ Flags, Lists, and Module Names
 
 Repeated flags are stored as a count.
 This makes ``-vv`` and ``-v -v`` useful for verbosity levels without creating extra options.
-An explicit false value is still an occurrence: ``getFlag()`` returns ``false``, while ``getFlagCount()`` returns one
-and the corresponding :cpp:class:`OptionValue <erbsland::options::OptionValue>` retains its source argument index.
-This distinction lets code tell an omitted flag or configured default from an explicit user choice.
+Boolean values are separate typed scalars or ordered lists and never contribute to a flag count.
+For an option using ``AcceptAsFlag``, a bare occurrence returns true through ``getFlag()``, while a valued occurrence is
+available only through its declared typed getter.
 
-Repeated text or integer values are stored as lists.
+Repeated Boolean and integer values use standard-library vectors; repeated text values use
+:cpp:type:`StringList <erbsland::text::StringList>`.
 The parser preserves the order in which the values were assigned to that option.
 
 If modules are used, :cpp:func:`moduleName() <erbsland::options::OptionValues::moduleName>` returns the selected module

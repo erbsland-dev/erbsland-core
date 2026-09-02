@@ -22,7 +22,7 @@ protected:
 protected:
     /// Create common state for paragraph renderers.
     RendererBase(
-        const bgeo::Alignment alignment,
+        const geometry::Alignment alignment,
         const LayoutResult &layout,
         const BlockString &sourceText,
         const ParagraphOptions &options,
@@ -42,7 +42,7 @@ public: // defaults/deletions
 
 protected:
     /// Get the paragraph alignment.
-    [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment { return _alignment; }
+    [[nodiscard]] auto alignment() const noexcept -> geometry::Alignment { return _alignment; }
     /// Get the completed paragraph layout.
     [[nodiscard]] auto layout() const noexcept -> const LayoutResult & { return _layout; }
     /// Get the source block string.
@@ -76,7 +76,7 @@ protected:
     [[nodiscard]] auto linePlacement(const LayoutLine &line, int x1, int width) const noexcept -> LinePlacement;
 
 private:
-    bgeo::Alignment _alignment;
+    geometry::Alignment _alignment;
     const LayoutResult &_layout;
     const BlockString &_sourceText;
     const ParagraphOptions &_options;

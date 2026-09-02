@@ -16,7 +16,7 @@ public:
     /// @param isNegated Whether to negate the version condition.
     explicit MinimumVersion(const Integer version, const bool isNegated = false) :
         _version{version}, _isNegated{isNegated} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     Integer _version;
     bool _isNegated{false};
 };

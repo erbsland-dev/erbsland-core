@@ -31,7 +31,7 @@ namespace erbsland::path {
 /// - A call of `reload()` invalidates cached information immediately and triggers path resolving.
 /// - Without manually calling `reload()`, the cache is automatically invalidated after one second.
 /// - Successful library mutations invalidate the cache attached to the directly affected path.
-/// @seedoc{/reference/path/paths}
+/// @seedoc{/reference/path/file_system_paths}
 /// Empty/Unresolved/Non-Existing Behavior:
 /// - exists() returns `false`.
 /// - resolvedPath() returns an empty path.

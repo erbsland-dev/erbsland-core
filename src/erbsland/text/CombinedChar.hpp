@@ -19,7 +19,7 @@
 namespace erbsland::text {
 
 /// Representation of one Unicode character with optional combining marks.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @tested{CombinedCharTest}
 class CombinedChar final {
 public:

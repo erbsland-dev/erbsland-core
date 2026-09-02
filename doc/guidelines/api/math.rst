@@ -5,17 +5,13 @@ Math Domain API Guidelines
 Core Semantics
 ==============
 
-Integer Arithmetic
-------------------
-
 .. code-block:: text
 
-    saturating = clamp an out-of-range result to the represented domain
-    bounded = use explicit minimum and maximum instead of the native type limits
+    saturating arithmetic = arithmetic that clamps an out-of-range result to the represented domain
+    bounded arithmetic = arithmetic restricted to an explicit minimum and maximum
     overflow = mathematical result outside the native result type
     inclusive range = minimum and maximum are both represented values
     absolute magnitude = unsigned non-negative magnitude safe for the signed minimum
-    compatible result = native integer selected without unsafe signed or width promotion
 
 Primary Types
 =============

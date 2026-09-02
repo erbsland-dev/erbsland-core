@@ -2,11 +2,16 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ConsoleLogWriterOptions_fwd.hpp"
+#include "FileLogWriterOptions_fwd.hpp"
 #include "LogEntry.hpp"
-#include "LogLine.hpp"
 #include "LogWriter_fwd.hpp"
+#include "SyslogLogWriterOptions_fwd.hpp"
 
 #include "impl/LogManagerData_fwd.hpp"
+#include "line/LogLine_fwd.hpp"
+
+#include "../cterm/Terminal_fwd.hpp"
 
 #include <mutex>
 #include <span>
@@ -46,6 +51,28 @@ public:
     using Batch = std::span<const BatchItem>;
 
 public:
+    /// Create the built-in console writer.
+    /// @param terminal The terminal receiving complete log paragraphs.
+    /// @return A writer that renders styled paragraphs to `terminal`.
+    [[nodiscard]] static auto createForConsole(cterm::TerminalPtr terminal) -> LogWriterPtr;
+    /// Create the built-in console writer.
+    /// @param terminal The terminal receiving complete log paragraphs.
+    /// @param options Style and paragraph layout settings.
+    /// @return A writer that renders styled paragraphs to `terminal`.
+    [[nodiscard]] static auto createForConsole(cterm::TerminalPtr terminal, const ConsoleLogWriterOptions &options)
+        -> LogWriterPtr;
+    /// Create the built-in resilient file writer.
+    /// @param options The target path, open mode, rotation, and retention settings.
+    /// @return A writer that persists formatted lines to the configured file.
+    [[nodiscard]] static auto createForFile(const FileLogWriterOptions &options) -> LogWriterPtr;
+    /// Create the built-in syslog writer with default UDP settings.
+    /// @return A writer that sends RFC 5424 messages to the default syslog endpoint.
+    [[nodiscard]] static auto createForSyslog() -> LogWriterPtr;
+    /// Create the built-in syslog writer.
+    /// @param options The transport, endpoint, RFC 5424 fields, TLS label, and pending-data limit.
+    /// @return A writer that sends RFC 5424 messages using the configured transport.
+    [[nodiscard]] static auto createForSyslog(const SyslogLogWriterOptions &options) -> LogWriterPtr;
+
     // defaults
     virtual ~LogWriter() = default;
     /// Deliver one filtered entry and its formatted line.

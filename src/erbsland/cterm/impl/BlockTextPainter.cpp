@@ -14,12 +14,13 @@
 
 namespace erbsland::cterm::impl {
 
-using namespace bgeo;
+using namespace block;
+using namespace geometry;
 using text::Char;
 using text::String;
 using text::U32String;
 
-void BlockTextPainter::drawBlockText(BlockPosition pos, const BlockString &str) {
+void BlockTextPainter::drawBlockText(Position pos, const BlockString &str) {
     if (str.isEmpty()) {
         return;
     }
@@ -27,7 +28,7 @@ void BlockTextPainter::drawBlockText(BlockPosition pos, const BlockString &str) 
     for (const auto character : str) {
         if (character == U'\n') {
             pos.setX(x);
-            pos += BlockPosition{0, 1};
+            pos += Position{0, 1};
             continue;
         }
         if (character.displayWidth() == 0) {
@@ -36,7 +37,7 @@ void BlockTextPainter::drawBlockText(BlockPosition pos, const BlockString &str) 
         if (rect().contains(pos)) {
             set(pos, character.withBase(get(pos).color()));
         }
-        pos += BlockPosition{character.displayWidth(), 0};
+        pos += Position{character.displayWidth(), 0};
     }
 }
 
@@ -53,10 +54,7 @@ auto BlockTextPainter::simpleBlockTextOptions(const Alignment alignment, BlockSt
 }
 
 void BlockTextPainter::drawBlockText(
-    const BlockString &text,
-    const BlockRectangle rect,
-    const BlockTextOptions &options,
-    const std::size_t animationCycle) {
+    const BlockString &text, const Rectangle rect, const BlockTextOptions &options, const std::size_t animationCycle) {
     const auto textRect = contentRect(rect, options.paragraphOptions());
     if (textRect.width() <= 0 || textRect.height() <= 0) {
         return;
@@ -93,7 +91,7 @@ void BlockTextPainter::drawBlockText(
         text,
         options.paragraphOptions(),
         options.backgroundMode(),
-        [&](const Block &character, const BlockPosition position) -> Color {
+        [&](const Block &character, const Position position) -> Color {
             return colorForBlockTextPosition(options, character, position, animationCycle);
         }}
         .paint();
@@ -101,7 +99,7 @@ void BlockTextPainter::drawBlockText(
 
 void BlockTextPainter::drawBlockText(
     const String &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -110,7 +108,7 @@ void BlockTextPainter::drawBlockText(
 
 void BlockTextPainter::drawBlockText(
     const U32String &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -119,20 +117,19 @@ void BlockTextPainter::drawBlockText(
 
 void BlockTextPainter::drawBlockText(
     const BlockString &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
     drawBlockText(text, rect, simpleBlockTextOptions(alignment, style), animationCycle);
 }
 
-auto BlockTextPainter::contentRect(const BlockRectangle rect, const ParagraphOptions &options) noexcept
-    -> BlockRectangle {
+auto BlockTextPainter::contentRect(const Rectangle rect, const ParagraphOptions &options) noexcept -> Rectangle {
     return rect.insetBy(options.margins());
 }
 
 auto BlockTextPainter::buildSimpleBlockTextLines(
-    const BlockString &text, const BlockRectangle rect, ParagraphSpacing spacing) const -> BlockStringLines {
+    const BlockString &text, const Rectangle rect, ParagraphSpacing spacing) const -> BlockStringLines {
     return text.wrapIntoLines(rect.width().toRawValue(), spacing);
 }
 
@@ -171,7 +168,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
         return {};
     }
     bitmapWidth += renderedGlyphs - 1;
-    auto bitmap = Bitmap{BlockSize{bitmapWidth, font.height()}};
+    auto bitmap = Bitmap{Size{bitmapWidth, font.height()}};
     auto columnColors = std::vector<Color>(static_cast<std::size_t>((bitmapWidth + 1) / 2 + 1));
     auto insertX = 0;
     auto isFirstGlyph = true;
@@ -183,7 +180,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
         if (!isFirstGlyph) {
             ++insertX;
         }
-        bitmap.draw(BlockPosition{insertX, 0}, *glyph);
+        bitmap.draw(Position{insertX, 0}, *glyph);
         const auto startColumn = insertX / 2;
         const auto columnCount = glyph->size().width().toRawValue() / 2 + 1;
         for (auto columnIndex = 0; columnIndex < columnCount; ++columnIndex) {
@@ -201,7 +198,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
         line.reserve(BlockCount::fromSizeT(static_cast<std::size_t>(columns)));
         for (auto x = 0; x < columns; ++x) {
             const auto color = columnColors[static_cast<std::size_t>(x)];
-            line.append(Block{pixelMap[bitmap.pixelQuad(BlockPosition{x, y})], color});
+            line.append(Block{pixelMap[bitmap.pixelQuad(Position{x, y})], color});
         }
         lines.emplace_back(line);
     }
@@ -209,7 +206,7 @@ auto BlockTextPainter::buildFontBlockTextLines(const BlockTextOptions &options, 
 }
 
 void BlockTextPainter::applyBlockTextLines(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const BlockTextOptions &options,
     const BlockStringLines &lines,
     const std::size_t animationCycle) noexcept {
@@ -223,14 +220,14 @@ void BlockTextPainter::applyBlockTextLines(
     }
     for (auto lineIndex = 0; lineIndex < maxLines; ++lineIndex) {
         const auto &line = lines[static_cast<std::size_t>(lineIndex)];
-        const auto lineWidth = BlockCoordinate{std::min(line.displayWidth(), rect.width().toRawValue())};
+        const auto lineWidth = Coordinate{std::min(line.displayWidth(), rect.width().toRawValue())};
         auto xStart = rect.topLeft().x();
         if (alignment.isRight()) {
             xStart = rect.x2() - lineWidth;
         } else if (alignment.isHorizontalCenter()) {
             xStart += (rect.width() - lineWidth) / 2;
         }
-        auto pos = BlockPosition{xStart, yStart + lineIndex};
+        auto pos = Position{xStart, yStart + lineIndex};
         for (const auto &character : line) {
             const auto characterWidth = character.displayWidth();
             if (characterWidth <= 0) {
@@ -245,7 +242,7 @@ void BlockTextPainter::applyBlockTextLines(
                 finalColor = get(pos).color().overlayWith(finalColor);
                 set(pos, character.withOverlay(finalColor));
             }
-            pos = pos + BlockPosition{characterWidth, 0};
+            pos = pos + Position{characterWidth, 0};
         }
     }
 }
@@ -253,7 +250,7 @@ void BlockTextPainter::applyBlockTextLines(
 auto BlockTextPainter::colorForBlockTextPosition(
     const BlockTextOptions &options,
     const Block &character,
-    const BlockPosition position,
+    const Position position,
     const std::size_t animationCycle) const noexcept -> Color {
 
     auto color = Color{};

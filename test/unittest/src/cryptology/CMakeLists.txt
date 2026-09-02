@@ -22,6 +22,7 @@ target_sources(erbsland-core-unittest PRIVATE
         CryptologyResponseReader.hpp
         CryptologyTestHelper.hpp
         CryptologyVectorManifestTest.cpp
+        DerEncoderTest.cpp
         DeterministicSecureRandom.hpp
         EcdsaSignatureFullTest.cpp
         EcdsaSignatureTest.cpp
@@ -45,12 +46,14 @@ target_sources(erbsland-core-unittest PRIVATE
         SymmetricEncryptionFrontendTest.cpp
         SymmetricEncryptionTypeTest.cpp
         Tls13KeyScheduleTest.cpp
+        TlsConfigurationParserTest.cpp
         TlsRecordProtectionTest.cpp
         TlsServerIdentityTest.cpp
         TlsSignatureSchemeFullTest.cpp
         TlsSignatureSchemeTest.cpp
         X25519FullTest.cpp
         X509CertificateBackendTest.cpp
+        X509CertificateBuilderTest.cpp
         X509CertificateFileTest.cpp
         X509CertificateTest.cpp
         X509ServerCertificatePolicyTest.cpp

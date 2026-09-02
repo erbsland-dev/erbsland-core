@@ -7,6 +7,7 @@
 
 #include "../../err/LogicError.hpp"
 #include "../../err/ParameterError.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/Literals.hpp"
 
@@ -71,7 +72,7 @@ void SymmetricDecryptor::addAuthenticatedData(const mem::ConstByteSpan data) {
     }
     try {
         _data->addAuthenticatedData(data);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _state = State::Failed;
         throw;
     }
@@ -92,7 +93,7 @@ auto SymmetricDecryptor::decrypt(const mem::ConstByteSpan data) -> mem::ByteBloc
             _state = State::Payload;
         }
         return result;
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _state = State::Failed;
         throw;
     }
@@ -117,7 +118,7 @@ auto SymmetricDecryptor::finalize(const SymmetricTag &tag) -> mem::ByteBlock {
         auto result = markSensitive(_data->finalize(tag));
         _state = State::Finalized;
         return result;
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _state = State::Failed;
         throw;
     }
@@ -135,7 +136,7 @@ auto SymmetricDecryptor::finalize() -> mem::ByteBlock {
         auto result = markSensitive(_data->finalize());
         _state = State::Finalized;
         return result;
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         _state = State::Failed;
         throw;
     }

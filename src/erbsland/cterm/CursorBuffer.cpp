@@ -14,10 +14,10 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 
-using bgeo::BlockCoordinate;
-using bgeo::BlockDirection;
-using bgeo::BlockPosition;
-using bgeo::BlockSize;
+using block::Coordinate;
+using block::Direction;
+using block::Position;
+using block::Size;
 
 void CursorBuffer::validateFillChar(const Block &fillChar) {
     if (fillChar.displayWidth() != 1) {
@@ -41,11 +41,11 @@ void CursorBuffer::setBlockAttributes(const BlockAttributes attributes) noexcept
     _currentStyle.setAttributes(attributes.withBase(BlockAttributes::reset()));
 }
 
-auto CursorBuffer::maximumSize() const noexcept -> BlockSize {
+auto CursorBuffer::maximumSize() const noexcept -> Size {
     return _maximumSize;
 }
 
-void CursorBuffer::setMaximumSize(BlockSize maximumSize) noexcept {
+void CursorBuffer::setMaximumSize(Size maximumSize) noexcept {
     _maximumSize = maximumSize;
 }
 
@@ -84,12 +84,12 @@ auto CursorBuffer::supportedBlockAttributes() const noexcept -> BlockAttributes 
     return BlockAttributes::all();
 }
 
-void CursorBuffer::moveCursor(const BlockPosition posOrDelta, const MoveMode mode) noexcept {
+void CursorBuffer::moveCursor(const Position posOrDelta, const MoveMode mode) noexcept {
     if (std::abs(posOrDelta.x().toRawValue()) > cMaximumSize.width().toRawValue() ||
         std::abs(posOrDelta.y().toRawValue()) > cMaximumSize.height().toRawValue()) {
         return; // ignore calls with extreme values.
     }
-    if (posOrDelta == BlockPosition{0, 0}) {
+    if (posOrDelta == Position{0, 0}) {
         return;
     }
     _wrapOnNextChar = false;
@@ -106,7 +106,7 @@ void CursorBuffer::setAutoWrap(const bool enabled) noexcept {
 
 void CursorBuffer::clearScreen() noexcept {
     fill(_fillChar);
-    _cursorPosition = BlockPosition{};
+    _cursorPosition = Position{};
     _wrapOnNextChar = false;
 }
 
@@ -122,7 +122,7 @@ void CursorBuffer::writeResolvedBlock(const Block &character) noexcept {
         if (_autoWrap) {
             writeLineBreak();
         } else {
-            _cursorPosition = BlockPosition{width - 1, y};
+            _cursorPosition = Position{width - 1, y};
         }
         _wrapOnNextChar = false;
         x = _cursorPosition.x();
@@ -138,20 +138,20 @@ void CursorBuffer::writeResolvedBlock(const Block &character) noexcept {
             writeLineBreak();
             x = _cursorPosition.x();
             y = _cursorPosition.y();
-            set(BlockPosition{x, y}, character);
-            _cursorPosition = BlockPosition{x + displayWidth, y};
+            set(Position{x, y}, character);
+            _cursorPosition = Position{x + displayWidth, y};
         } else {
-            set(BlockPosition{x, y}, character);
+            set(Position{x, y}, character);
             _wrapOnNextChar = _autoWrap;
         }
     } else {
-        set(BlockPosition{x, y}, character);
+        set(Position{x, y}, character);
         x += displayWidth;
         if (x >= width) {
             x = width - 1;
             _wrapOnNextChar = _autoWrap;
         }
-        _cursorPosition = BlockPosition{x, y};
+        _cursorPosition = Position{x, y};
     }
 }
 
@@ -176,9 +176,9 @@ void CursorBuffer::writeResolved(const BlockString &str) noexcept {
 }
 
 void CursorBuffer::write(const ReadableBuffer &buffer) noexcept {
-    for (auto y = BlockCoordinate{0}; y < buffer.size().height(); ++y) {
-        for (auto x = BlockCoordinate{0}; x < buffer.size().width(); ++x) {
-            write(buffer.get(BlockPosition{x, y}));
+    for (auto y = Coordinate{0}; y < buffer.size().height(); ++y) {
+        for (auto x = Coordinate{0}; x < buffer.size().width(); ++x) {
+            write(buffer.get(Position{x, y}));
         }
         writeLineBreak();
     }
@@ -187,41 +187,39 @@ void CursorBuffer::write(const ReadableBuffer &buffer) noexcept {
 void CursorBuffer::writeLineBreak() noexcept {
     _wrapOnNextChar = false;
     if (_cursorPosition.y() < _size.height() - 1) {
-        _cursorPosition = BlockPosition{BlockCoordinate{0}, _cursorPosition.y() + 1};
+        _cursorPosition = Position{Coordinate{0}, _cursorPosition.y() + 1};
     } else {
         switch (_overflowMode) {
         case OverflowMode::Wrap:
-            _cursorPosition = BlockPosition{0, 0};
+            _cursorPosition = Position{0, 0};
             break;
         case OverflowMode::Shift:
-            shift(BlockDirection::North, _fillChar, 1);
-            _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
+            shift(Direction::North, _fillChar, 1);
+            _cursorPosition = Position{Coordinate{0}, _size.height() - 1};
             break;
         case OverflowMode::ExpandThenShift:
             if (_size.height() < _maximumSize.height()) {
-                resize(_size + BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
+                resize(_size + Size{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
             } else {
-                shift(BlockDirection::North, _fillChar, 1);
+                shift(Direction::North, _fillChar, 1);
             }
-            _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
+            _cursorPosition = Position{Coordinate{0}, _size.height() - 1};
             break;
         case OverflowMode::ExpandThenWrap:
             if (_size.height() < _maximumSize.height()) {
-                resize(_size + BlockSize{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
-                _cursorPosition = BlockPosition{BlockCoordinate{0}, _size.height() - 1};
+                resize(_size + Size{0, 1}, BufferResizeMode::PreserveContent, _fillChar);
+                _cursorPosition = Position{Coordinate{0}, _size.height() - 1};
             } else {
-                _cursorPosition = BlockPosition{0, 0};
+                _cursorPosition = Position{0, 0};
             }
         }
     }
 }
 
 auto CursorBuffer::printParagraphImpl(const BlockString &paragraph, const ParagraphOptions &options) noexcept -> int {
-    const auto margins = options.margins();
-    const auto x1 = std::max(margins.left(), BlockCoordinate{0});
-    const auto width = std::max(
-        size().width() - std::max(margins.left(), BlockCoordinate{0}) - std::max(margins.right(), BlockCoordinate{0}),
-        BlockCoordinate{0});
+    const auto margins = options.margins().horizontal().expandedPositive();
+    const auto x1 = margins.leading();
+    const auto width = std::max(size().width() - margins.extent(), Coordinate{0});
     const auto layout =
         impl::paragraph::Layout{
             paragraph, width.toRawValue(), options, impl::paragraph::LayoutNewlineMode::HardLineBreak}

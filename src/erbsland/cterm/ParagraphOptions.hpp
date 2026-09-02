@@ -9,7 +9,7 @@
 #include "ParagraphOnError.hpp"
 #include "TabOverflowBehavior.hpp"
 
-#include "../bgeo/Alignment.hpp"
+#include "../geometry/Alignment.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/u32/U32String.hpp"
 
@@ -30,7 +30,7 @@ public:
 
 public:
     /// Create paragraph options with the given alignment.
-    explicit ParagraphOptions(const bgeo::Alignment alignment) noexcept : _alignment{alignment} {}
+    explicit ParagraphOptions(const geometry::Alignment alignment) noexcept : _alignment{alignment} {}
 
     // defaults
     ParagraphOptions() = default;
@@ -44,16 +44,16 @@ public:
     /// For the `Terminal::printParagraph` calls, vertical alignment is ignored.
     /// For the `drawBlockText(BlockText)` calls, the vertical alignment is used to align the text in the given
     /// rectangle.
-    [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment;
+    [[nodiscard]] auto alignment() const noexcept -> geometry::Alignment;
     /// Set the alignment of the paragraph.
-    void setAlignment(bgeo::Alignment alignment) noexcept;
+    void setAlignment(geometry::Alignment alignment) noexcept;
     /// Get the configured indents and margins.
     [[nodiscard]] auto indents() const noexcept -> const ParagraphIndents &;
     /// Replace the configured indents and margins.
     /// @param indents The new indent and margin settings.
     void setIndents(const ParagraphIndents &indents) noexcept;
     /// The line indent for all lines.
-    /// Only valid if the alignment is set to `bgeo::Alignment::Left`.
+    /// Only valid if the alignment is set to `geometry::Alignment::Left`.
     /// This indent can be overridden by `firstLineIndent` and `wrappedLineIndent`.
     [[nodiscard]] auto lineIndent() const noexcept -> int;
     /// Set the line indent for all lines.
@@ -61,7 +61,7 @@ public:
     void setLineIndent(int indent) noexcept;
     /// Get the first line indent.
     /// This is the indent for the first line of the paragraph.
-    /// Only valid if the alignment is set to `bgeo::Alignment::Left`.
+    /// Only valid if the alignment is set to `geometry::Alignment::Left`.
     /// @code
     /// 1:| <first indent> A long text that is broken   |
     /// 2:| into multiple lines.                        |
@@ -72,7 +72,7 @@ public:
     void setFirstLineIndent(int indent) noexcept;
     /// Get the indent for wrapped lines.
     /// This is the indent for all lines that are wrapped at the terminal width.
-    /// Only valid if the alignment is set to `bgeo::Alignment::Left`.
+    /// Only valid if the alignment is set to `geometry::Alignment::Left`.
     /// @code
     /// 1:| <first indent> A long text that is broken   |
     /// 2:| into multiple lines.                        |
@@ -82,10 +82,10 @@ public:
     /// @param indent The new indent value. `>=0` or `cUseLineIndent` to use `lineIndent`
     void setWrappedLineIndent(int indent) noexcept;
     /// Get the margins around the paragraph.
-    [[nodiscard]] auto margins() const noexcept -> const bgeo::BlockMargins &;
+    [[nodiscard]] auto margins() const noexcept -> const block::Margins &;
     /// Set the margins around the paragraph.
     /// @param margins The margins around the paragraph area.
-    void setMargins(bgeo::BlockMargins margins) noexcept;
+    void setMargins(block::Margins margins) noexcept;
     /// Get the background mode.
     /// The background mode determines how the background of the paragraph is handled when lines are wrapped.
     /// It also controls how the background is extended for the last line in the paragraph.
@@ -179,7 +179,7 @@ public:
     /// @param mark The paragraph ellipsis mark. If empty, no ellipsis mark will be used.
     void setParagraphEllipsisMark(BlockString mark) noexcept;
     /// Get the tab stops for the paragraph.
-    /// Only valid if the alignment is set to `bgeo::Alignment::Left`.
+    /// Only valid if the alignment is set to `geometry::Alignment::Left`.
     /// If a line (text up to a newline character) contains TAB characters, each tab character will pick the
     /// next tab-stop columns value from this array. If the column is larger than the current column,
     /// spacing is inserted until the cursor reaches the tab-stop column.
@@ -212,8 +212,8 @@ public:
     [[nodiscard]] static auto defaultOptions() noexcept -> const ParagraphOptions &;
 
 private:
-    bgeo::Alignment _alignment{bgeo::Alignment::TopLeft}; ///< The text alignment.
-    ParagraphIndents _indents;                            ///< Indent and margin settings for the paragraph.
+    geometry::Alignment _alignment{geometry::Alignment::TopLeft}; ///< The text alignment.
+    ParagraphIndents _indents;                                    ///< Indent and margin settings for the paragraph.
     ParagraphBackgroundMode _backgroundMode{ParagraphBackgroundMode::Default}; ///< The background mode.
     BlockString _lineBreakEndMark{};   ///< BlockString to mark wrapped lines on the right side. Max 2 characters.
     BlockString _lineBreakStartMark{}; ///< BlockString to mark wrapped lines on the left side.

@@ -17,7 +17,7 @@
 #include "impl/BlockStringBuilder_fwd.hpp"
 #include "impl/BlockStringData.hpp"
 
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Size.hpp"
 #include "../text/CharSet.hpp"
 #include "../text/String.hpp"
 #include "../text/StringSide.hpp"
@@ -226,11 +226,11 @@ public: // accessors
     /// If a double-sized character is at the edge, it isn't included in the result.
     /// Therefore, the resulting string may be shorter than the display width.
     /// @param displayWidth The maximum width of the substring in display units.
-    /// @param alignment The alignment of the cropped text. Only `bgeo::Alignment::Left` and `bgeo::Alignment::Right`
-    /// are supported.
+    /// @param alignment The alignment of the cropped text. Only `geometry::Alignment::Left` and
+    /// `geometry::Alignment::Right` are supported.
     /// @return The cropped substring or an empty string if displayWidth is <=0.
     [[nodiscard]] auto croppedToDisplayWidth(
-        bgeo::BlockCoordinate displayWidth, bgeo::Alignment alignment) const noexcept -> BlockStringEditor;
+        block::Coordinate displayWidth, geometry::Alignment alignment) const noexcept -> BlockStringEditor;
     /// Return a string with the given characters trimmed from the beginning and end.
     /// Only single-code-point characters are matched.
     /// @param characters The characters to remove from both ends. If empty, removes space, tab, and newline characters.
@@ -351,14 +351,14 @@ public: // tools
     /// The returned size is at least 1x1, preserves explicit non-trailing newline characters as separate lines,
     /// and uses terminal cell width for wide and combining characters.
     /// @return The natural text size in terminal cells.
-    [[nodiscard]] auto naturalBlockTextSize() const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto naturalBlockTextSize() const noexcept -> block::Size;
     /// Calculate the height required to render this text with `WritableBuffer::drawBlockText()`.
     /// The given width is the full target rectangle width, including margins configured in `options`.
     /// @param width The available rectangle width in terminal cells.
     /// @param options The text options used for paragraph layout.
     /// @return The required rectangle height in terminal cells.
-    [[nodiscard]] auto wrappedBlockTextHeight(
-        bgeo::BlockCoordinate width, const BlockTextOptions &options) const noexcept -> bgeo::BlockCoordinate;
+    [[nodiscard]] auto wrappedBlockTextHeight(block::Coordinate width, const BlockTextOptions &options) const noexcept
+        -> block::Coordinate;
     /// Splits this string into individual lines.
     /// The string is split at the NL character that is not included in the result.
     /// Empty lines are preserved.

@@ -10,7 +10,7 @@ namespace erbsland::cryptology {
 
 /// Requirements for selecting a hash algorithm.
 /// The defaults request an acceptable general-purpose algorithm without imposing a throughput minimum.
-/// @seedoc{/reference/cryptology/hashing}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HashAlgorithmTest}
 struct HashRequirements final {
     CryptographicStatus requiredStatus{CryptographicStatus::Acceptable};    ///< The exact required status.

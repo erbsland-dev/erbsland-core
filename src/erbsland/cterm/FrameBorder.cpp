@@ -116,35 +116,35 @@ auto FrameBorder::cornerChar(const Border east, const Border south, const Border
         jointCodePoint(east.style, south.style, west.style, north.style), jointColor(east, south, west, north)};
 }
 
-auto FrameBorder::corner(const bgeo::BlockAnchor anchor) const noexcept -> Block {
+auto FrameBorder::corner(const geometry::Anchor anchor) const noexcept -> Block {
     static const auto cNone = Border{};
 
-    if (anchor == bgeo::BlockAnchor::TopLeft) {
+    if (anchor == geometry::Anchor::TopLeft) {
         return cornerChar(border(Element::Top), border(Element::Left), cNone, cNone);
     }
-    if (anchor == bgeo::BlockAnchor::TopCenter) {
+    if (anchor == geometry::Anchor::TopCenter) {
         return cornerChar(border(Element::Top), border(Element::VLine), border(Element::Top), cNone);
     }
-    if (anchor == bgeo::BlockAnchor::TopRight) {
+    if (anchor == geometry::Anchor::TopRight) {
         return cornerChar(cNone, border(Element::Right), border(Element::Top), cNone);
     }
-    if (anchor == bgeo::BlockAnchor::CenterLeft) {
+    if (anchor == geometry::Anchor::CenterLeft) {
         return cornerChar(border(Element::HLine), border(Element::Left), cNone, border(Element::Left));
     }
-    if (anchor == bgeo::BlockAnchor::Center) {
+    if (anchor == geometry::Anchor::Center) {
         return cornerChar(
             border(Element::HLine), border(Element::VLine), border(Element::HLine), border(Element::VLine));
     }
-    if (anchor == bgeo::BlockAnchor::CenterRight) {
+    if (anchor == geometry::Anchor::CenterRight) {
         return cornerChar(cNone, border(Element::Right), border(Element::HLine), border(Element::Right));
     }
-    if (anchor == bgeo::BlockAnchor::BottomLeft) {
+    if (anchor == geometry::Anchor::BottomLeft) {
         return cornerChar(border(Element::Bottom), cNone, cNone, border(Element::Left));
     }
-    if (anchor == bgeo::BlockAnchor::BottomCenter) {
+    if (anchor == geometry::Anchor::BottomCenter) {
         return cornerChar(border(Element::Bottom), cNone, border(Element::Bottom), border(Element::VLine));
     }
-    if (anchor == bgeo::BlockAnchor::BottomRight) {
+    if (anchor == geometry::Anchor::BottomRight) {
         return cornerChar(cNone, cNone, border(Element::Bottom), border(Element::Right));
     }
     return cornerChar(cNone, cNone, cNone, cNone);

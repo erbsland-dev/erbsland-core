@@ -25,7 +25,7 @@ A narrower destination may wrap these completed lines naturally.
 There is no separate narrow-output layout.
 
 Use ``TerminalDocumentStyle`` to customize the default text style, base block layout, and selector-specific rules.
-Rules use ``BlockStyle`` for terminal text style overlays and ``ParagraphIndents`` with ``bgeo::BlockMargins`` for
+Rules use ``BlockStyle`` for terminal text style overlays and ``ParagraphIndents`` with ``block::Margins`` for
 layout.
 Prefixes, suffixes, and markers are exposed as read-only ``BlockString`` values.
 

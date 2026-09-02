@@ -10,11 +10,11 @@
 /// @notest{Test-only probe.}
 class ReadableBufferDispatchProbe final : public ReadableBuffer {
 public:
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _buffer.size(); }
+    [[nodiscard]] auto size() const noexcept -> block::Size override { return _buffer.size(); }
 
-    [[nodiscard]] auto rect() const noexcept -> bgeo::BlockRectangle override { return _buffer.rect(); }
+    [[nodiscard]] auto rect() const noexcept -> block::Rectangle override { return _buffer.rect(); }
 
-    [[nodiscard]] auto get(const bgeo::BlockPosition pos) const noexcept -> const Block & override {
+    [[nodiscard]] auto get(const block::Position pos) const noexcept -> const Block & override {
         return _buffer.get(pos);
     }
 
@@ -32,5 +32,5 @@ protected:
     }
 
 private:
-    Buffer _buffer{bgeo::BlockSize{2, 1}};
+    Buffer _buffer{block::Size{2, 1}};
 };

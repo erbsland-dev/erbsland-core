@@ -35,12 +35,12 @@ auto BlockStringEditor::terminalLines(const int width) const noexcept -> int {
     return BlockString{*this}.terminalLines(width);
 }
 
-auto BlockStringEditor::naturalBlockTextSize() const noexcept -> bgeo::BlockSize {
+auto BlockStringEditor::naturalBlockTextSize() const noexcept -> block::Size {
     return BlockString{*this}.naturalBlockTextSize();
 }
 
 auto BlockStringEditor::wrappedBlockTextHeight(
-    const bgeo::BlockCoordinate width, const BlockTextOptions &options) const noexcept -> bgeo::BlockCoordinate {
+    const block::Coordinate width, const BlockTextOptions &options) const noexcept -> block::Coordinate {
     return BlockString{*this}.wrappedBlockTextHeight(width, options);
 }
 

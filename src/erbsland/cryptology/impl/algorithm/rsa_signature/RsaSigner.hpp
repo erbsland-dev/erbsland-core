@@ -5,6 +5,7 @@
 #include "RsaSignature.hpp"
 
 #include "../../../../mem/ByteSpan.hpp"
+#include "../../DerEncoder.hpp"
 
 namespace erbsland::cryptology::impl::rsa_signer {
 
@@ -31,8 +32,12 @@ struct PrivateKeyData final {
 
 /// Parse and validate one RFC 8017 two-prime RSAPrivateKey.
 [[nodiscard]] auto decodePrivateKey(mem::ConstByteSpan privateKey) -> PrivateKeyData;
-/// Validate a private key and derive SubjectPublicKeyInfo using the exact PKCS#8 AlgorithmIdentifier.
-[[nodiscard]] auto publicKey(mem::ConstByteSpan privateKey, mem::ConstByteSpan algorithmIdentifier) -> mem::ByteBlock;
+/// Validate a private key and append SubjectPublicKeyInfo using the exact PKCS#8 AlgorithmIdentifier.
+/// @param encoder Destination DER encoder.
+/// @param privateKey PKCS#1 private-key data.
+/// @param algorithmIdentifier Exact validated PKCS#8 AlgorithmIdentifier.
+/// @tested{SigningPrivateKeyTest}
+void appendPublicKey(DerEncoder &encoder, mem::ConstByteSpan privateKey, mem::ConstByteSpan algorithmIdentifier);
 /// Produce an RSA-PSS signature using application secure randomness for salt and message blinding.
 [[nodiscard]] auto sign(
     mem::ConstByteSpan privateKey, TlsSignatureScheme scheme, mem::ConstByteSpan message, const PublicKey &publicKey)
@@ -45,28 +50,5 @@ struct PrivateKeyData final {
     const PublicKey &publicKey,
     mem::ConstByteSpan salt,
     mem::ConstByteSpan blindingFactor) -> mem::ByteBlock;
-
-/// Reduce an arbitrary bounded value modulo an odd or even secret modulus with a fixed bit schedule.
-[[nodiscard]] auto reduceSecret(const rsa_signature::Number &value, const rsa_signature::Number &modulus) noexcept
-    -> rsa_signature::Number;
-/// Multiply reduced values modulo an odd or even secret modulus with a fixed bit schedule.
-[[nodiscard]] auto multiplyModuloSecret(
-    const rsa_signature::Number &left,
-    const rsa_signature::Number &right,
-    const rsa_signature::Number &modulus) noexcept -> rsa_signature::Number;
-/// Subtract two reduced values modulo a secret modulus with masked correction.
-[[nodiscard]] auto subtractModuloSecret(
-    const rsa_signature::Number &left,
-    const rsa_signature::Number &right,
-    const rsa_signature::Number &modulus) noexcept -> rsa_signature::Number;
-/// Raise a reduced base to an exponent with a fixed Montgomery square-and-multiply-always schedule.
-[[nodiscard]] auto powerModuloSecret(
-    const rsa_signature::Number &base,
-    const rsa_signature::Number &exponent,
-    const rsa_signature::Number &oddModulus) noexcept -> rsa_signature::Number;
-/// Multiply two integers without modular reduction into the caller-selected fixed width.
-[[nodiscard]] auto multiplyExact(
-    const rsa_signature::Number &left, const rsa_signature::Number &right, std::size_t resultWords) noexcept
-    -> rsa_signature::Number;
 
 }

@@ -21,7 +21,8 @@ void traceSectionActivation() {
             configuration.enableTraceSection(section);
         }
         const auto levels = acceptTrace ? el::LogLevels{el::LogLevel::Trace} : el::LogLevels{el::LogLevel::Information};
-        configuration.addWriter(std::make_shared<el::LastErrorsLogWriter>(), el::LogWriterFilter{levels});
+        configuration.addWriter(
+            el::LogWriter::createForConsole(el::application().terminal()), el::LogWriterFilter{levels});
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));

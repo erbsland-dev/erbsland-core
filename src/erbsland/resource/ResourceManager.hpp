@@ -14,7 +14,7 @@ namespace erbsland::resource {
 
 /// The default lazy manager for process-wide compiled resources.
 /// Construction performs no allocation. The immutable lookup index and decoded values are created on first access.
-/// @seedoc{/reference/resource/resources}
+/// @seedoc{/reference/resource/compiled_resources}
 /// @tested{ResourceManagerTest ApplicationResourceTest}
 class ResourceManager final : public Resources {
 public:

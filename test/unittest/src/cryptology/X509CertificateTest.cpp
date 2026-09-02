@@ -25,7 +25,7 @@ using namespace el::text::literals;
 using erbsland::test::x509::certificatePem;
 
 TESTED_TARGETS(
-    X509Certificate X509CertificateBundle X509Version X509CertificateFormat X509CertificateProfileMode
+    X509Certificate X509CertificateBundle X509Version PemDerFormat X509CertificateProfileMode
         X509CertificateProfileIssue X509AlgorithmIdentifier X509Name X509NameAttribute X509RelativeDistinguishedName
             X509GeneralName X509Extension X509BasicConstraints X509KeyUsage PublicKey)
 class X509CertificateTest final : public el::UnitTest {

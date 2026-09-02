@@ -11,7 +11,7 @@
 namespace erbsland::text::punycode {
 
 /// Decode RFC 3492 Punycode or strict IDNA2008 text into UTF-8.
-/// @seedoc{/reference/text/punycode}
+/// @seedoc{/reference/text/encoding}
 /// @tested{PunycodeTest IdnaTest}
 class PunycodeDecoder final {
 public:

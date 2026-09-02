@@ -195,10 +195,6 @@ void Constraint::setName(text::String name) {
     _name = std::move(name);
 }
 
-void Constraint::setType(const vr::ConstraintType type) {
-    _type = type;
-}
-
 void Constraint::setErrorMessage(text::String errorMessage) {
     _errorMessage = std::move(errorMessage);
 }

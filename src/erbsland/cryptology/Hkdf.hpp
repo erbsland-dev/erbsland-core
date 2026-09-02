@@ -18,7 +18,7 @@ namespace erbsland::cryptology {
 /// material or pseudorandom key is retained after an operation returns.
 /// `extract()` implements RFC 5869 section 2.2 and `expand()` implements section 2.3.
 /// Specification: https://www.rfc-editor.org/rfc/rfc5869.html#section-2
-/// @seedoc{/reference/cryptology/message_authentication}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HkdfTest}
 class Hkdf final {
 public:

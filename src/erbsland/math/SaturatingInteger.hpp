@@ -193,6 +193,13 @@ public: // Named arithmetic returning a value
     /// Subtract another integer operand and keep this type as the result type.
     template <AnyIntegerType T>
     [[nodiscard]] auto subtracted(T other) const noexcept -> SaturatingInteger;
+    /// Calculate the non-negative difference to another integer operand and keep this type as the result type.
+    /// The difference saturates to this native value type.
+    /// @tparam T The type of the other value.
+    /// @param other The other value of the operation.
+    /// @return The saturated absolute difference.
+    template <AnyIntegerType T>
+    [[nodiscard]] auto absoluteDifference(T other) const noexcept -> SaturatingInteger;
     /// Multiply another integer operand and keep this type as the result type.
     template <AnyIntegerType T>
     [[nodiscard]] auto multiplied(T other) const noexcept -> SaturatingInteger;

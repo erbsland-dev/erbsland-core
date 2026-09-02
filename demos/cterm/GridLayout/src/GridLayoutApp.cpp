@@ -8,7 +8,7 @@
 namespace demo {
 
 void GridLayoutApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{60}, BlockCoordinate{20}});
+    _updateSettings.setMinimumSize(Size{Coordinate{60}, Coordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -35,23 +35,13 @@ void GridLayoutApp::onKey(const Key &key) {
 void GridLayoutApp::onRenderToBuffer() {
     _buffer.fill(Block{U' ', bg::Black});
 
-    const auto titleRect = BlockRectangle{
-        BlockCoordinate{0}, BlockCoordinate{0}, BlockCoordinate{_buffer.size().width()}, BlockCoordinate{1}};
-    const auto gridArea = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{_buffer.size().height() - 9}};
-    const auto statusRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().height() - 6},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{3}};
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().height() - 2},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{2}};
+    const auto titleRect = Rectangle{Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{1}};
+    const auto gridArea = Rectangle{
+        Coordinate{2}, Coordinate{2}, Coordinate{_buffer.size().width() - 4}, Coordinate{_buffer.size().height() - 9}};
+    const auto statusRect = Rectangle{
+        Coordinate{2}, Coordinate{_buffer.size().height() - 6}, Coordinate{_buffer.size().width() - 4}, Coordinate{3}};
+    const auto footerRect = Rectangle{
+        Coordinate{0}, Coordinate{_buffer.size().height() - 2}, Coordinate{_buffer.size().width()}, Coordinate{2}};
 
     _buffer.fill(titleRect, Block{U' ', bg::Blue});
     _buffer.drawBlockText(
@@ -70,7 +60,7 @@ void GridLayoutApp::cycleBorder(const FrameBorderElement element) noexcept {
     _border.set(element, nextStyle(_border.style(element)), Color{fg::BrightWhite, bg::Black});
 }
 
-void GridLayoutApp::renderGrid(const BlockRectangle gridArea) {
+void GridLayoutApp::renderGrid(const Rectangle gridArea) {
     const auto layout = createLayout(gridArea.size());
     const auto gridSize = layout.size(_border);
     const auto origin = gridArea.alignmentOffset(gridSize, Alignment::Center);
@@ -79,7 +69,7 @@ void GridLayoutApp::renderGrid(const BlockRectangle gridArea) {
     _buffer.drawGridLayout(origin, layout, _border);
 }
 
-void GridLayoutApp::renderCellContent(const GridLayout &layout, const BlockPosition origin) {
+void GridLayoutApp::renderCellContent(const GridLayout &layout, const Position origin) {
     for (std::size_t row = 0; row < _rowCount; ++row) {
         for (std::size_t column = 0; column < _columnCount; ++column) {
             const auto rect = layout.cellRect(row, column, origin, _border);
@@ -94,7 +84,7 @@ void GridLayoutApp::renderCellContent(const GridLayout &layout, const BlockPosit
     }
 }
 
-void GridLayoutApp::renderStatus(const BlockRectangle statusRect) {
+void GridLayoutApp::renderStatus(const Rectangle statusRect) {
     auto status = BlockStringEditor{};
     appendBorderStatusLine(status, 0, 2);
     status += BlockString{U"\n"_el};
@@ -117,7 +107,7 @@ void GridLayoutApp::appendBorderStatusLine(
     }
 }
 
-void GridLayoutApp::renderFooter(const BlockRectangle footerRect) {
+void GridLayoutApp::renderFooter(const Rectangle footerRect) {
     _buffer.fill(footerRect, Block{U' ', bg::BrightBlack});
     auto prompt = BlockStringEditor{};
     prompt.append(
@@ -141,25 +131,23 @@ void GridLayoutApp::renderFooter(const BlockRectangle footerRect) {
     _buffer.drawBlockText(BlockText{prompt, footerRect, Alignment::CenterLeft});
 }
 
-auto GridLayoutApp::createLayout(const BlockSize availableSize) const -> GridLayout {
-    const auto separatorWidth =
-        static_cast<BlockCoordinate>(_columnCount - 1) * borderLineSize(FrameBorderElement::VLine);
-    const auto separatorHeight =
-        static_cast<BlockCoordinate>(_rowCount - 1) * borderLineSize(FrameBorderElement::HLine);
+auto GridLayoutApp::createLayout(const Size availableSize) const -> GridLayout {
+    const auto separatorWidth = static_cast<Coordinate>(_columnCount - 1) * borderLineSize(FrameBorderElement::VLine);
+    const auto separatorHeight = static_cast<Coordinate>(_rowCount - 1) * borderLineSize(FrameBorderElement::HLine);
     const auto lineWidth =
         borderLineSize(FrameBorderElement::Left) + borderLineSize(FrameBorderElement::Right) + separatorWidth;
     const auto lineHeight =
         borderLineSize(FrameBorderElement::Top) + borderLineSize(FrameBorderElement::Bottom) + separatorHeight;
     const auto contentWidth =
-        std::max<BlockCoordinate>(static_cast<BlockCoordinate>(_columnCount), availableSize.width() - lineWidth);
+        std::max<Coordinate>(static_cast<Coordinate>(_columnCount), availableSize.width() - lineWidth);
     const auto contentHeight =
-        std::max<BlockCoordinate>(static_cast<BlockCoordinate>(_rowCount), availableSize.height() - lineHeight);
+        std::max<Coordinate>(static_cast<Coordinate>(_rowCount), availableSize.height() - lineHeight);
     return GridLayout{distribute(contentWidth, _columnCount), distribute(contentHeight, _rowCount)};
 }
 
-auto GridLayoutApp::borderLineSize(const FrameBorderElement element) const noexcept -> BlockCoordinate {
+auto GridLayoutApp::borderLineSize(const FrameBorderElement element) const noexcept -> Coordinate {
     const auto style = _border.style(element);
-    return style != FrameStyle::None && FrameBorder::isLineStyle(style) ? BlockCoordinate{1} : BlockCoordinate{0};
+    return style != FrameStyle::None && FrameBorder::isLineStyle(style) ? Coordinate{1} : Coordinate{0};
 }
 
 auto GridLayoutApp::nextStyle(const FrameStyle style) noexcept -> FrameStyle {
@@ -230,10 +218,10 @@ auto GridLayoutApp::borderElements() noexcept -> const std::array<BorderElementI
     return cElements;
 }
 
-auto GridLayoutApp::distribute(const BlockCoordinate total, const std::size_t count) -> std::vector<BlockCoordinate> {
-    auto result = std::vector<BlockCoordinate>(count, total / static_cast<BlockCoordinate>(count));
-    const auto remainder = total % static_cast<BlockCoordinate>(count);
-    for (auto index = BlockCoordinate{0}; index < remainder; ++index) {
+auto GridLayoutApp::distribute(const Coordinate total, const std::size_t count) -> std::vector<Coordinate> {
+    auto result = std::vector<Coordinate>(count, total / static_cast<Coordinate>(count));
+    const auto remainder = total % static_cast<Coordinate>(count);
+    for (auto index = Coordinate{0}; index < remainder; ++index) {
         ++result[index.toSizeT()];
     }
     return result;

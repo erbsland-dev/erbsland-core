@@ -18,8 +18,8 @@
 namespace erbsland::text::impl {
 
 using namespace text::literals;
-using bgeo::Alignment;
-using bgeo::AlignmentFlag;
+using geometry::Alignment;
+using geometry::AlignmentFlag;
 
 FormatWriter::FormatWriter(AnyStringBuilder &builder) : _builder{builder} {
 }

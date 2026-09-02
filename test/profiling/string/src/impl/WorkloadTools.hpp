@@ -456,7 +456,7 @@ template <typename Traits, typename Value>
             } else if (scenario.variant == "truncate"_el) {
                 finalText = String{value.truncated(cpLength(cpCount / 2U), el::TruncateMode::Middle)};
             } else {
-                finalText = String{value.aligned(cpLength(cpCount + 16U), el::bgeo::Alignment::HCenter)};
+                finalText = String{value.aligned(cpLength(cpCount + 16U), el::geometry::Alignment::HCenter)};
             }
             sink = mixSeed(sink, Traits::dataLength(finalText));
             break;

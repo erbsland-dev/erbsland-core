@@ -17,8 +17,6 @@ target_sources(erbsland-core PRIVATE
         DependencyDefinition.cpp
         DependencyDefinition.hpp
         DependencyDefinition_fwd.hpp
-        DependencyMode.cpp
-        DependencyMode.hpp
         DocumentValidator.cpp
         DocumentValidator.hpp
         DocumentValidator_constraints.cpp
@@ -102,6 +100,7 @@ target_sources(erbsland-core PRIVATE
         Rules_fwd.hpp
         RulesBuilder.cpp
         RulesBuilder.hpp
+        RulesBuilder_fwd.hpp
         RulesConstants.hpp
         RulesDefinitionValidator.cpp
         RulesDefinitionValidator.hpp

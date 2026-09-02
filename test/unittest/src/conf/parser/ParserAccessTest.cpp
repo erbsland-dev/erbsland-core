@@ -1,9 +1,10 @@
-// Copyright (c) 2025 Tobias Erbsland - https://erbsland.dev
+// Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
 #include "ParserTestHelper.hpp"
 
 #include <erbsland/conf/StdFormat.hpp>
+#include <erbsland/err/ParameterError.hpp>
 
 #include <array>
 

@@ -1,8 +1,9 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "ManagerDemoWriters.hpp"
+
 #include <DemoCommon.hpp>
-#include <erbsland/log/all.hpp>
 
 #include <memory>
 #include <utility>
@@ -16,16 +17,16 @@ namespace demo {
 void managerMessageSize() {
     auto options = el::LogManagerOptions{};
     options.setMaximumMessageBytes(el::ByteLength{32U});
-    const auto retained = std::make_shared<el::LastErrorsLogWriter>();
+    const auto captured = std::make_shared<CapturingLogWriter>();
     auto configuration = el::LogConfiguration{};
-    configuration.setManagerOptions(options).addWriter(retained);
+    configuration.setManagerOptions(options).addWriter(captured);
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));
     manager->rootStream()->error("Aurora observation continues beyond midnight."_el);
     manager->shutdown();
 
-    const auto entry = retained->snapshot().front();
+    const auto entry = captured->lastEntry();
     el::io::printLine("Retained message: "_el, entry->message());
     el::io::printLine("Marked as truncated: "_el, entry->isTruncated() ? "yes"_el : "no"_el);
 }

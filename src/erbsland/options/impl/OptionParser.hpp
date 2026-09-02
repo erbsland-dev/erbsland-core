@@ -67,9 +67,7 @@ public:
     /// Match details for a built-in help or version flag.
     struct BuiltInFlagMatch {
         OptionResultStatus status;
-        bool value{true};
-        bool explicitValue{false};
-        bool consumedFollowing{false};
+        text::String helpName;
         bool validValue{true};
     };
 
@@ -143,20 +141,22 @@ private:
     [[nodiscard]] auto findLongOption(const text::String &name) const -> NameMatch;
     /// Find a short option by its single-character name.
     [[nodiscard]] auto findShortOption(text::Char shortName) const -> NameMatch;
+    /// Suggest visible long option names for an unknown name.
+    [[nodiscard]] auto suggestLongOptions(const text::String &name) const -> text::StringList;
+    /// Suggest visible module names for an unknown name.
+    [[nodiscard]] auto suggestModules(const text::String &name) const -> text::StringList;
     /// Test whether an option is an enabled built-in option.
     [[nodiscard]] auto isEnabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const -> bool;
-    /// Test whether a name identifies an enabled built-in flag.
-    [[nodiscard]] auto isEnabledBuiltInFlag(const text::String &name) const -> bool;
-    /// Test whether explicit boolean flag values are enabled.
-    [[nodiscard]] auto booleanValuesEnabled() const noexcept -> bool;
+    /// Test whether a name identifies an enabled built-in option.
+    [[nodiscard]] auto isEnabledBuiltInOptionName(const text::String &name) const -> bool;
     /// Parse a recognized boolean literal.
     [[nodiscard]] static auto parseBooleanLiteral(const text::String &text, bool &value) noexcept -> bool;
     /// Get the built-in flag match at an argument index.
     [[nodiscard]] auto builtInFlagAt(unit::ArgumentIndex index) const -> std::optional<BuiltInFlagMatch>;
     /// Test whether any argument requests help or version output.
-    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status) const -> bool;
+    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status) -> bool;
     /// Test whether an argument suffix requests help or version output.
-    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) const -> bool;
+    [[nodiscard]] auto isHelpOrVersionRequest(OptionResultStatus &status, unit::ArgumentIndex startIndex) -> bool;
     /// Validate option names in every active option set.
     [[nodiscard]] auto validateOptionNames() -> bool;
 
@@ -189,6 +189,7 @@ private:
     i18n::DisplayTextMapConstPtr _displayText;            ///< The wording captured for diagnostics.
     OptionModulePtr _selectedModule;                      ///< The selected module, if any.
     text::String _moduleName;                             ///< The canonical selected module name.
+    text::String _helpName;                               ///< The requested detailed-help target.
     std::vector<OptionSetPtr> _activeOptionSets;          ///< The option sets active for parsing.
     OptionParserStorage _storage;                         ///< The parsed option values.
     OptionValuesPtr _values;                              ///< The final parsed values.

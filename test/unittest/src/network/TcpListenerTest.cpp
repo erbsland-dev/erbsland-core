@@ -22,7 +22,6 @@
 
 using namespace el::event;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 namespace unit = el::unit;
 
@@ -30,6 +29,15 @@ TESTED_TARGETS(
     TcpListener TcpListenerOptions TcpListenerEventEditor TcpConnectionRequest TcpConnectionRequestState
         TcpConnectionFilterFn TcpConnectionFilterResult TcpListenerDevice ConnectionQuota ConnectionQuotaLease)
 class TcpListenerTest final : public el::UnitTest {
+    using TcpAcceptedSocket = el::network::impl::TcpAcceptedSocket;
+    using TcpAcceptedSocketPtr = el::network::impl::TcpAcceptedSocketPtr;
+    using TcpListener = el::network::impl::TcpListener;
+    using TcpListenerDevice = el::network::impl::TcpListenerDevice;
+    using TcpListenerDeviceCallbacks = el::network::impl::TcpListenerDeviceCallbacks;
+    using TcpListenerDevicePtr = el::network::impl::TcpListenerDevicePtr;
+    using TcpListenerEventEditor = el::network::impl::TcpListenerEventEditor;
+    using TcpListenerPtr = el::network::impl::TcpListenerPtr;
+
     class FakeSocket final : public TcpAcceptedSocket {
     public:
         FakeSocket(IpEndpoint local, IpEndpoint remote, std::shared_ptr<int> destructionCount = {}) :

@@ -150,7 +150,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
         }
         auto sourceSpecified = false;
         auto targetSpecified = false;
-        auto mode = DependencyMode{DependencyMode::Undefined};
+        auto mode = vr::DependencyMode{vr::DependencyMode::Undefined};
         NamePathList sourcePaths;
         NamePathList targetPaths;
         text::String errorMessage;
@@ -160,8 +160,8 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                     if (child->type() != ValueType::Text) {
                         throwValidationError("The 'mode' value in 'vr_dependency' must be a text value"_el);
                     }
-                    mode = DependencyMode::fromText(child->asText());
-                    if (mode == DependencyMode::Undefined) {
+                    mode = vr::DependencyMode::fromText(child->asText());
+                    if (mode == vr::DependencyMode::Undefined) {
                         throwValidationError(
                             "The 'mode' value in 'vr_dependency' must be one of: 'if', 'if_not', 'or', 'xnor', "_el
                             "'xor'"_el);
@@ -215,7 +215,7 @@ void RulesFromDocument::processDependencies(const conf::ValuePtr &node) {
                 throw;
             }
         }
-        if (mode == DependencyMode::Undefined) {
+        if (mode == vr::DependencyMode::Undefined) {
             throwValidationError("A 'vr_dependency' definition must have a 'mode' value"_el);
         }
         if (!sourceSpecified) {

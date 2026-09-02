@@ -195,20 +195,20 @@ private:
         const auto scenarios = values->getTextList("scenario"_el);
         const auto backends = values->getTextList("backend"_el);
         std::erase_if(configuration.scenarios, [&](const Scenario &scenario) {
-            const auto useCaseMatches = useCases.empty() || contains(useCases, toString(scenario.useCase));
-            const auto inputMatches = inputs.empty() || contains(inputs, toString(scenario.inputKind));
-            const auto patternMatches = patterns.empty() || contains(patterns, scenario.patternName);
-            const auto corpusMatches = corpora.empty() || contains(corpora, scenario.corpusName);
+            const auto useCaseMatches = useCases.isEmpty() || contains(useCases, toString(scenario.useCase));
+            const auto inputMatches = inputs.isEmpty() || contains(inputs, toString(scenario.inputKind));
+            const auto patternMatches = patterns.isEmpty() || contains(patterns, scenario.patternName);
+            const auto corpusMatches = corpora.isEmpty() || contains(corpora, scenario.corpusName);
             const auto scenarioMatches =
-                scenarios.empty() || contains(scenarios, scenario.id) || contains(scenarios, scenario.group);
-            const auto backendMatches = backends.empty() || contains(backends, toString(scenario.backend));
+                scenarios.isEmpty() || contains(scenarios, scenario.id) || contains(scenarios, scenario.group);
+            const auto backendMatches = backends.isEmpty() || contains(backends, toString(scenario.backend));
             return !useCaseMatches || !inputMatches || !patternMatches || !corpusMatches || !scenarioMatches ||
                 !backendMatches;
         });
     }
 
     /// Test if a string list contains a value.
-    [[nodiscard]] static auto contains(const std::vector<el::String> &values, const el::String &value) -> bool {
+    [[nodiscard]] static auto contains(const el::StringList &values, const el::String &value) -> bool {
         return std::ranges::find(values, value) != values.end();
     }
 

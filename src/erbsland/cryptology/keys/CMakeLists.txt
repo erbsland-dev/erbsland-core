@@ -18,6 +18,7 @@ target_sources(erbsland-core PRIVATE
         PublicKey.hpp
         PublicKey_fwd.hpp
         SigningKeyAlgorithm.hpp
+        SigningKeyProfile.hpp
         SigningPrivateKey.cpp
         SigningPrivateKey.hpp
         SigningPrivateKey_fwd.hpp

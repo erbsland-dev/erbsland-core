@@ -14,7 +14,7 @@ namespace erbsland::text::render {
 /// - It does not follow symlinks.
 /// - It does map layout paths 1:1 to relative file paths.
 /// - It searches for layouts in the given search directories in the specified order.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{FileSystemLoaderTest}
 class FileSystemLoader : public Loader {
 public:

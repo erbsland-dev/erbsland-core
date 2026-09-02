@@ -283,7 +283,7 @@ auto X509ServerCertificateValidator::verifyEdge(const X509Certificate &child, co
                      child.signatureAlgorithm(), child.tbsCertificateDer().span(), child.signatureData().span())
             ? EdgeStatus::Valid
             : EdgeStatus::Invalid;
-    } catch (const std::exception &) {
+    } catch (const err::RuntimeError &) {
         status = EdgeStatus::Unsupported;
     }
     _verifiedEdges.push_back(VerifiedEdge{childDer, issuerDer, status});

@@ -49,7 +49,7 @@ public:
 
     void testIndentsAndMarginsCanBeConfiguredAsOneValueObject() {
         auto options = ParagraphOptions{};
-        auto indents = ParagraphIndents{2, 4, 6, bgeo::BlockMargins{1, 3}};
+        auto indents = ParagraphIndents{2, 4, 6, block::Margins{1, 3}};
 
         options.setIndents(indents);
 
@@ -57,7 +57,7 @@ public:
         REQUIRE_EQUAL(options.lineIndent(), 2);
         REQUIRE_EQUAL(options.firstLineIndent(), 4);
         REQUIRE_EQUAL(options.wrappedLineIndent(), 6);
-        REQUIRE_EQUAL(options.margins(), bgeo::BlockMargins(1, 3));
+        REQUIRE_EQUAL(options.margins(), block::Margins(1, 3));
     }
 
     void testWordSeparatorsAreCanonicalizedAndReuseSharedDefaults() {

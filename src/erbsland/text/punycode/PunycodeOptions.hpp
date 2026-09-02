@@ -12,7 +12,7 @@
 namespace erbsland::text::punycode {
 
 /// Options for Punycode and strict IDNA2008 processing.
-/// @seedoc{/reference/text/punycode}
+/// @seedoc{/reference/text/encoding}
 /// @tested{PunycodeTest IdnaTest}
 class PunycodeOptions final {
 public:

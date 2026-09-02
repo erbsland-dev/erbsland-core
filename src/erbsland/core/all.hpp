@@ -19,6 +19,7 @@
 #include "ApplicationPartManagerState.hpp"
 #include "ApplicationPartState.hpp"
 #include "ApplicationPartTraits.hpp"
+#include "ApplicationPartWithInterface.hpp"
 #include "CommandLineArguments.hpp"
 #include "Definitions.hpp"
 #include "InitializeFn.hpp"

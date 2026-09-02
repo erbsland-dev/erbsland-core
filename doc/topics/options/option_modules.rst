@@ -26,6 +26,9 @@ Examples include commands such as ``scan``, ``render``, ``observe``, or ``export
 Once any modules are registered, the command line must select a module before ordinary options are parsed.
 Only root ``--help`` and ``--version`` are accepted before the module name.
 This rule keeps parsing unambiguous and makes generated root help a clear command overview.
+When no argument is supplied, parsing returns ``DisplayModuleOverview`` and displays only the module usage line and
+visible module list, without callbacks or definition validation.
+Set ``OptionParserFlag::ErrorOnMissingModule`` when an empty command must remain an error.
 
 .. erbsland-demo::
     :source: option/OptionModules/main.cpp

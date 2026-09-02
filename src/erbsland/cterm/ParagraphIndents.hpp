@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../bgeo/BlockMargins.hpp"
+#include "../block/Margins.hpp"
 
 #include <algorithm>
 
@@ -29,7 +29,7 @@ public:
         const int lineIndent,
         const int firstLineIndent,
         const int wrappedLineIndent,
-        const bgeo::BlockMargins margins) noexcept :
+        const block::Margins margins) noexcept :
         _lineIndent{std::max(lineIndent, 0)},
         _firstLineIndent{std::max(firstLineIndent, cUseLineIndent)},
         _wrappedLineIndent{std::max(wrappedLineIndent, cUseLineIndent)},
@@ -66,16 +66,16 @@ public:
         _wrappedLineIndent = std::max(indent, cUseLineIndent);
     }
     /// Get the margins around the paragraph.
-    [[nodiscard]] constexpr auto margins() const noexcept -> const bgeo::BlockMargins & { return _margins; }
+    [[nodiscard]] constexpr auto margins() const noexcept -> const block::Margins & { return _margins; }
     /// Set the margins around the paragraph.
     /// @param margins The new margins.
-    constexpr void setMargins(const bgeo::BlockMargins margins) noexcept { _margins = margins; }
+    constexpr void setMargins(const block::Margins margins) noexcept { _margins = margins; }
 
 private:
     int _lineIndent{0};                     ///< Indent for all lines.
     int _firstLineIndent{cUseLineIndent};   ///< Indent for the first line, or `cUseLineIndent`.
     int _wrappedLineIndent{cUseLineIndent}; ///< Indent for wrapped lines, or `cUseLineIndent`.
-    bgeo::BlockMargins _margins{0};         ///< bgeo::BlockMargins around the paragraph area.
+    block::Margins _margins{0};             ///< block::Margins around the paragraph area.
 };
 
 }

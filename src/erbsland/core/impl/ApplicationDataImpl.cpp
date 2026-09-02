@@ -9,9 +9,9 @@
 #include "../../cterm/Terminal.hpp"
 #include "../../cterm/TerminalDocumentRenderer.hpp"
 #include "../../i18n/DisplayTextMap.hpp"
-#include "../../log/ConsoleLogWriter.hpp"
+#include "../../log/impl/ConsoleLogWriter.hpp"
+#include "../../log/impl/LastErrorsLogWriter.hpp"
 #include "../../log/impl/LogLineFormatter.hpp"
-#include "../../log/LastErrorsLogWriter.hpp"
 #include "../../log/LogManager.hpp"
 #include "../../options/OptionManager.hpp"
 #include "../../options/Options.hpp"
@@ -249,16 +249,17 @@ auto ApplicationDataImpl::logManager() noexcept -> const log::LogManagerPtr & {
     return _logManager;
 }
 
-void ApplicationDataImpl::setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept {
+void ApplicationDataImpl::setLogManager(
+    log::LogManagerPtr manager, log::impl::ConsoleLogWriterPtr consoleWriter) noexcept {
     _logManager = std::move(manager);
     _consoleLogWriter = std::move(consoleWriter);
 }
 
-auto ApplicationDataImpl::lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & {
+auto ApplicationDataImpl::lastErrorsLogWriter() noexcept -> const log::impl::LastErrorsLogWriterPtr & {
     return _lastErrorsLogWriter;
 }
 
-void ApplicationDataImpl::setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept {
+void ApplicationDataImpl::setLastErrorsLogWriter(log::impl::LastErrorsLogWriterPtr writer) noexcept {
     _lastErrorsLogWriter = std::move(writer);
 }
 

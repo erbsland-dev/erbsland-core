@@ -17,7 +17,7 @@
 namespace erbsland::core {
 
 /// Thread-safe read and wait access to an application-part manager.
-/// @seedoc{/reference/core/application_parts}
+/// @seedoc{/reference/core/application_framework}
 /// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
 class ApplicationPartManagerAccess {
 public:

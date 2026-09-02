@@ -22,7 +22,7 @@ void traceSectionGrouping() {
     configuration.setLineFormat(std::move(format))
         .enableTraceSection(routeSearch)
         .addWriter(
-            std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+            el::LogWriter::createForConsole(el::application().terminal()),
             el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
 
     const auto manager = el::LogManager::create();

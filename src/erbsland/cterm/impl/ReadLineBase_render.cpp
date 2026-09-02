@@ -12,7 +12,7 @@
 #include "../FrameBorder.hpp"
 #include "../Terminal.hpp"
 
-#include "../../bgeo/BlockAnchor.hpp"
+#include "../../geometry/Anchor.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../unit/CpRange.hpp"
@@ -26,9 +26,9 @@
 namespace erbsland::cterm::impl {
 
 using namespace text::literals;
-using bgeo::BlockCoordinate;
-using bgeo::BlockPosition;
-using bgeo::BlockSize;
+using block::Coordinate;
+using block::Position;
+using block::Size;
 
 auto ReadLineBase::horizontalBlock(const FrameBorder &border, const FrameBorder::Element element) noexcept -> Block {
     const auto line = border.border(element);
@@ -44,7 +44,7 @@ void ReadLineBase::setClipped(Buffer &buffer, const int x, const int y, const Bl
     if (x < 0 || y < 0 || x >= buffer.size().width().toRawValue() || y >= buffer.size().height().toRawValue()) {
         return;
     }
-    buffer.set(BlockPosition{x, y}, block);
+    buffer.set(Position{x, y}, block);
 }
 
 void ReadLineBase::drawBlockString(
@@ -84,9 +84,9 @@ auto ReadLineBase::createLayout() const -> ReadLineLayout {
     result.terminalWidth = std::max(1, _terminal->size().width().toRawValue());
     const auto hasVerticalFrame = _options.displayStyle() == ReadLineDisplayStyle::Frame;
     const auto frameInset = hasVerticalFrame && result.terminalWidth >= 2 ? 1 : 0;
-    result.contentLeft = std::min(result.terminalWidth - 1, frameInset + _options.padding().left().toRawValue());
-    result.contentRight =
-        std::max(result.contentLeft + 1, result.terminalWidth - frameInset - _options.padding().right().toRawValue());
+    result.contentLeft = std::min(result.terminalWidth - 1, frameInset + _options.padding().leading().toRawValue());
+    result.contentRight = std::max(
+        result.contentLeft + 1, result.terminalWidth - frameInset - _options.padding().trailing().toRawValue());
     const auto contentWidth = std::max(1, result.contentRight - result.contentLeft);
     result.promptWidth = std::clamp(_options.prompt().displayWidth(), 0, std::max(0, contentWidth - 1));
     result.textColumn = result.contentLeft + result.promptWidth;
@@ -260,7 +260,7 @@ void ReadLineBase::render(const bool showCursor) {
         hasFrameRows ? 1 : (_options.displayStyle() == ReadLineDisplayStyle::HorizontalSpace ? 1 : 0);
     const auto actualHeight = topRows + static_cast<int>(visibleRowCount) + bottomRows;
     const auto fill = Block{U' ', _options.backgroundStyle()};
-    auto area = Buffer{BlockSize{layout.terminalWidth, actualHeight}, fill};
+    auto area = Buffer{Size{layout.terminalWidth, actualHeight}, fill};
 
     if (hasFrameRows) {
         const auto &border = _options.frameBorder();
@@ -272,22 +272,22 @@ void ReadLineBase::render(const bool showCursor) {
             setClipped(area, x, actualHeight - 1, bottomLine);
         }
         if (_options.displayStyle() == ReadLineDisplayStyle::Frame && layout.terminalWidth >= 2) {
-            setClipped(area, 0, 0, border.corner(bgeo::BlockAnchor::TopLeft).withBase(_options.backgroundStyle()));
+            setClipped(area, 0, 0, border.corner(geometry::Anchor::TopLeft).withBase(_options.backgroundStyle()));
             setClipped(
                 area,
                 layout.terminalWidth - 1,
                 0,
-                border.corner(bgeo::BlockAnchor::TopRight).withBase(_options.backgroundStyle()));
+                border.corner(geometry::Anchor::TopRight).withBase(_options.backgroundStyle()));
             setClipped(
                 area,
                 0,
                 actualHeight - 1,
-                border.corner(bgeo::BlockAnchor::BottomLeft).withBase(_options.backgroundStyle()));
+                border.corner(geometry::Anchor::BottomLeft).withBase(_options.backgroundStyle()));
             setClipped(
                 area,
                 layout.terminalWidth - 1,
                 actualHeight - 1,
-                border.corner(bgeo::BlockAnchor::BottomRight).withBase(_options.backgroundStyle()));
+                border.corner(geometry::Anchor::BottomRight).withBase(_options.backgroundStyle()));
             const auto leftLine =
                 verticalBlock(border, FrameBorder::Element::Left).withBase(_options.backgroundStyle());
             const auto rightLine =
@@ -345,7 +345,7 @@ void ReadLineBase::render(const bool showCursor) {
         const auto y = editStartY + static_cast<int>(activeCursorRow - firstVisibleRow);
         const auto x = layout.textColumn + cursorColumn(layout);
         if (x < layout.contentRight) {
-            const auto existing = area.get(BlockPosition{x, y});
+            const auto existing = area.get(Position{x, y});
             if (!existing.isEmpty() && existing != U' ') {
                 setClipped(area, x, y, existing.withOverlay(_options.cursorStyle()));
             } else {
@@ -363,7 +363,7 @@ void ReadLineBase::render(const bool showCursor) {
         writeRenderedBuffer(area, actualHeight);
         return;
     }
-    auto expanded = Buffer{BlockSize{layout.terminalWidth, writeHeight}, Block{U' ', BlockStyle::reset()}};
+    auto expanded = Buffer{Size{layout.terminalWidth, writeHeight}, Block{U' ', BlockStyle::reset()}};
     expanded.setFrom(area, Block{U' ', BlockStyle::reset()});
     writeRenderedBuffer(expanded, actualHeight);
 }
@@ -371,7 +371,7 @@ void ReadLineBase::render(const bool showCursor) {
 void ReadLineBase::writeRenderedBuffer(const ReadableBuffer &buffer, const int actualHeight) {
     _terminal->setAutoWrap(false);
     _terminal->write(buffer);
-    _terminal->moveUp(BlockCoordinate{buffer.size().height().toRawValue()});
+    _terminal->moveUp(Coordinate{buffer.size().height().toRawValue()});
     _terminal->setAutoWrap(true);
     _terminal->flush();
     _renderedHeight = actualHeight;
@@ -381,7 +381,7 @@ void ReadLineBase::writeRenderedBuffer(const ReadableBuffer &buffer, const int a
 void ReadLineBase::renderFinal() noexcept {
     try {
         render(false);
-        _terminal->moveDown(BlockCoordinate{_renderedHeight});
+        _terminal->moveDown(Coordinate{_renderedHeight});
         _terminal->flush();
     } catch (...) {}
 }
@@ -392,7 +392,7 @@ void ReadLineBase::clearRenderedArea() noexcept {
     }
     try {
         const auto width = std::max(1, _terminal->size().width().toRawValue());
-        auto clearBuffer = Buffer{BlockSize{width, _renderedHeight}, Block{U' ', BlockStyle::reset()}};
+        auto clearBuffer = Buffer{Size{width, _renderedHeight}, Block{U' ', BlockStyle::reset()}};
         writeRenderedBuffer(clearBuffer, 0);
     } catch (...) {}
 }

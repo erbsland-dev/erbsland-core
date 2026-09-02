@@ -2,39 +2,6 @@
 Utilities API Guidelines
 ************************
 
-Core Semantics
-==============
-
-Container Model
----------------
-
-.. code-block:: text
-
-    index = zero-based element position
-    size = non-negative element count
-    slice = half-open element range
-
-Result Model
-------------
-
-.. code-block:: text
-
-    result = typed success or failure status, never an implicitly interpreted boolean
-    result data = payload transported beside a specialized status
-    loop result = reason a visitor or parser stopped
-
-Coroutine Model
----------------
-
-.. code-block:: text
-
-    synchronous generator = lazy pull sequence
-    task = eagerly started move-only single-consumer result awaited as an rvalue
-    asynchronous generator = lazy move-only asynchronous single-pass sequence
-    asynchronous next = at most one outstanding operation
-    failure = rethrown when consuming a task result or awaiting a generator value
-    incomplete destruction = request cancellation without forcibly interrupting active work
-
 Primary Types
 =============
 

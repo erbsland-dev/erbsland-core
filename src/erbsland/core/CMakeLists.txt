@@ -30,6 +30,7 @@ target_sources(erbsland-core PRIVATE
         ApplicationPartManagerState.hpp
         ApplicationPartState.hpp
         ApplicationPartTraits.hpp
+        ApplicationPartWithInterface.hpp
         CommandLineArguments.hpp
         Definitions.hpp
         InitializeFn.hpp

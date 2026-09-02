@@ -1,0 +1,7 @@
+# Reference-document groups for the stream domain.
+
+------------*[ Reference Groups ]
+Page        : "stream/streams.rst"
+Title       : "Streams"
+Header Globs:
+    * "stream/*.hpp"

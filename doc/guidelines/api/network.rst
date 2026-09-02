@@ -5,9 +5,6 @@ Network Domain API Guidelines
 Core Semantics
 ==============
 
-Addressing
-----------
-
 .. code-block:: text
 
     address = numeric IPv4 or IPv6 identity without port or scope
@@ -15,53 +12,17 @@ Addressing
     host name = canonical lowercase NFC Unicode identity with a prevalidated strict IDNA2008 ASCII transport form
     host = numeric address or unresolved host name
     endpoint = host or address plus port and optional numeric IPv6 scope
-    result order = native resolver order after unsupported families and duplicates are removed
-
-Source Lifecycle
-----------------
-
-.. code-block:: text
-
-    source = event-loop-owned non-blocking network operation
-    connection = active plaintext or authenticated application byte stream after protocol-specific setup
-    inactive = configurable source without an active operation
-    close = graceful terminal shutdown after accepted output drains
-    abort or cancel = immediate terminal shutdown
-
-Transport Behavior
-------------------
-
-.. code-block:: text
-
-    TCP input = owned byte chunks without message boundaries
-    TCP connection = one Connection source spanning outgoing establishment or accepted stream use
-    UDP input = owned datagram preserving payload and remote endpoint
-    send queue = finite atomic acceptance of one complete block or datagram
-    would block = caller retains a rejected send until a writable transition is reported
-    operational failure = failed source state is established before its error event
-    TLS configuration = immutable application-wide entry selected by hierarchical label
-    TLS fallback = exact label, then slash parents, then empty global default; never field-wise merging
-    TLS client = one-shot Connection source active only after authenticated handshake completion
-    common connection state = inactive, connecting or accepting, handshaking, active, closing, closed, or failed
 
 HTTP Values
 -----------
 
 .. code-block:: text
 
-    method = case-sensitive validated HTTP token with optional standard classification
-    field name = ASCII-token identity compared and hashed with ASCII case folding
-    field value = exact bytes excluding field-line edge OWS and prohibited controls; malformed UTF-8 and obs-text remain representable
-    headers = ordered repeated fields with captured count and byte limits
+    method = case-sensitive HTTP token identity with optional standard classification
+    field name = ASCII case-insensitive HTTP token identity
+    field value = exact byte sequence after field-line edge OWS, including malformed UTF-8 and obs-text
+    headers = ordered sequence of repeated fields
     media type = canonical lowercase type, subtype, and parameter names with semantic parameter values
-    request head = method, exact printable-ASCII request-target, version, and ordered headers
-    response head = version, status, exact reason-phrase bytes, and ordered headers
-    protocol scan = delimit raw octets before constructing String values
-    field-line OWS = strip only leading and trailing SP/HTAB around the field value
-    retained field bytes = preserve every interior byte without UTF-8 validation, normalization, or transcoding
-    serialization = emit retained native String bytes with canonical name, colon, SP, and CRLF framing
-    codec ownership = request/response state machines stay internal until the transaction API establishes their seam
-    peer diagnostics = stable failure category plus nonsensitive local text; never include field values
 
 Primary Types
 =============

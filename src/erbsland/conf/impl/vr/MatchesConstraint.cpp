@@ -11,7 +11,8 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-MatchesConstraint::MatchesConstraint(const text::String &pattern, const bool isVerbose) {
+MatchesConstraint::MatchesConstraint(const text::String &pattern, const bool isVerbose) :
+    Constraint{vr::ConstraintType::Matches} {
     try {
         auto flags = re::Flags{};
         if (isVerbose) {
@@ -23,7 +24,8 @@ MatchesConstraint::MatchesConstraint(const text::String &pattern, const bool isV
     }
 }
 
-MatchesConstraint::MatchesConstraint(re::RegExPtr regex) : _regex{std::move(regex)} {
+MatchesConstraint::MatchesConstraint(re::RegExPtr regex) :
+    Constraint{vr::ConstraintType::Matches}, _regex{std::move(regex)} {
     if (_regex == nullptr) {
         throwValidationError("The regular expression in 'matches' constraint cannot be null"_el);
     }

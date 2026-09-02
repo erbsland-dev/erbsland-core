@@ -35,7 +35,7 @@ protected:
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat))
             .enableTraceSection(el::LogTraceSection{"route-search"_el})
-            .addWriter(std::make_shared<el::FileLogWriter>(std::move(fileOptions)));
+            .addWriter(el::LogWriter::createForFile(fileOptions));
         log().setConfiguration(std::move(configuration));
 
         enableLastErrorDump();

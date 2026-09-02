@@ -14,7 +14,7 @@
 #elif defined(ERBSLAND_OS_LINUX)
 #include "../../../../event/impl/EpollEventLoopDriver.hpp"
 #endif
-#include "../../../../system/PosixErrorContext.hpp"
+#include "../../../../system/impl/PosixErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
 
 #include <fcntl.h>
@@ -221,7 +221,8 @@ void PosixTcpListenerDevice::acceptReady() {
 auto PosixTcpListenerDevice::createContext(const int errorCode, text::String title, text::String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
-    context.setReason(errorReason(errorCode)).setPlatformContext(system::PosixErrorContext::fromErrorCode(errorCode));
+    context.setReason(errorReason(errorCode))
+        .setPlatformContext(system::impl::PosixErrorContext::fromErrorCode(errorCode));
     if (_localEndpoint.has_value()) {
         context.setLocalEndpoint(*_localEndpoint);
     }

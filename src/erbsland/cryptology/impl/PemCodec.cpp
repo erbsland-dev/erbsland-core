@@ -23,14 +23,15 @@ namespace erbsland::cryptology::impl {
 
 using namespace text::literals;
 
-PemCodec::PemCodec(text::String text) noexcept : _text{std::move(text)} {
+PemCodec::PemCodec(text::String text, const PemLabel label) noexcept : _text{std::move(text)}, _label{label} {
 }
 
-PemCodec::PemCodec(mem::ByteBlock certificate) {
+PemCodec::PemCodec(mem::ByteBlock certificate, const PemLabel label) : _label{label} {
     _certificates.append(std::move(certificate));
 }
 
-PemCodec::PemCodec(util::List<mem::ByteBlock> certificates) noexcept : _certificates{std::move(certificates)} {
+PemCodec::PemCodec(util::List<mem::ByteBlock> certificates, const PemLabel label) noexcept :
+    _certificates{std::move(certificates)}, _label{label} {
 }
 
 auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
@@ -43,24 +44,25 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
     auto totalDerLength = std::size_t{};
     reader.advanceWhile(text::AsciiCategory::Whitespace);
     while (!reader.isAtEnd()) {
-        if (result.count().toSizeT() >= cMaximumCertificates) {
+        const auto maximumBlocks = _label == PemLabel::Certificate ? cMaximumCertificates : std::size_t{1U};
+        if (result.count().toSizeT() >= maximumBlocks) {
+            if (_label != PemLabel::Certificate) {
+                throw err::ParseError{"This PEM artifact must contain exactly one block."_el, reader.position()};
+            }
             throw err::OutOfRangeError{"PEM bundle exceeds the fixed certificate-count limit."_el};
         }
-        if (!reader.advanceIf("-----BEGIN CERTIFICATE-----"_el) ||
-            reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
+        if (!reader.advanceIf(beginBoundary()) || reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
             throw err::ParseError{
-                "Expected an exact CERTIFICATE PEM pre-encapsulation boundary."_el, reader.position()};
+                "Expected the exact PEM pre-encapsulation boundary for this artifact."_el, reader.position()};
         }
         auto base64 = text::StringEditor{};
         while (true) {
             if (reader.isAtEnd()) {
-                throw err::ParseError{
-                    "PEM certificate is missing its post-encapsulation boundary."_el, reader.position()};
+                throw err::ParseError{"PEM artifact is missing its post-encapsulation boundary."_el, reader.position()};
             }
             if (reader.peek() == U'-') {
-                if (!reader.advanceIf("-----END CERTIFICATE-----"_el)) {
-                    throw err::ParseError{
-                        "Malformed CERTIFICATE PEM post-encapsulation boundary."_el, reader.position()};
+                if (!reader.advanceIf(endBoundary())) {
+                    throw err::ParseError{"Malformed PEM post-encapsulation boundary."_el, reader.position()};
                 }
                 break;
             }
@@ -69,15 +71,15 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
                 continue;
             }
             if (!character.isAsciiCategory(text::AsciiCategory::Base64Text)) {
-                throw err::ParseError{"PEM certificate contains a non-Base64 character."_el, reader.position()};
+                throw err::ParseError{"PEM artifact contains a non-Base64 character."_el, reader.position()};
             }
             base64.append(character);
             if (base64.length().toSizeTOrThrow() > cMaximumCertificateTextLength) {
-                throw err::OutOfRangeError{"PEM certificate exceeds the fixed text limit."_el};
+                throw err::OutOfRangeError{"PEM artifact exceeds the fixed text limit."_el};
             }
         }
         if (base64.isEmpty()) {
-            throw err::ParseError{"PEM certificate contains no Base64 data."_el, reader.position()};
+            throw err::ParseError{"PEM artifact contains no Base64 data."_el, reader.position()};
         }
         auto format = text::base_n::BaseNFormat::base64();
         format.setWhitespace({});
@@ -91,7 +93,7 @@ auto PemCodec::decode() const -> util::List<mem::ByteBlock> {
         reader.advanceWhile(text::AsciiCategory::Whitespace);
     }
     if (result.isEmpty()) {
-        throw err::ParseError{"PEM input contains no CERTIFICATE block."_el, unit::CpIndex::zero()};
+        throw err::ParseError{"PEM input contains no block with the required label."_el, unit::CpIndex::zero()};
     }
     return result;
 }
@@ -104,15 +106,47 @@ auto PemCodec::encode() const -> text::String {
     return text::String{result};
 }
 
-void PemCodec::appendEncoded(text::StringEditor &result, const mem::ByteBlock &der) {
-    // RFC 7468 sections 3 and 5.1: canonical CERTIFICATE boundaries and 64-character Base64 lines.
-    result.append("-----BEGIN CERTIFICATE-----\n"_el);
+void PemCodec::appendEncoded(text::StringEditor &result, const mem::ByteBlock &der) const {
+    // RFC 7468 section 3: exact boundaries and 64-character Base64 lines.
+    result.append(beginBoundary());
+    result.append(U'\n');
     const auto encoded = text::base_n::BaseNEncoder{der, text::base_n::BaseNFormat::base64Pem()}.toString();
     result.append(encoded);
     if (!encoded.endsWith("\n"_el)) {
         result.append(U'\n');
     }
-    result.append("-----END CERTIFICATE-----\n"_el);
+    result.append(endBoundary());
+    result.append(U'\n');
+}
+
+auto PemCodec::labelText() const -> text::String {
+    switch (_label) {
+    case PemLabel::Certificate:
+        return "CERTIFICATE"_el;
+    case PemLabel::PrivateKey:
+        return "PRIVATE KEY"_el;
+    case PemLabel::EncryptedPrivateKey:
+        return "ENCRYPTED PRIVATE KEY"_el;
+    case PemLabel::PublicKey:
+        return "PUBLIC KEY"_el;
+    case PemLabel::CertificateRequest:
+        return "CERTIFICATE REQUEST"_el;
+    }
+    return {};
+}
+
+auto PemCodec::beginBoundary() const -> text::String {
+    auto result = text::StringEditor{"-----BEGIN "_el};
+    result.append(labelText());
+    result.append("-----"_el);
+    return text::String{result};
+}
+
+auto PemCodec::endBoundary() const -> text::String {
+    auto result = text::StringEditor{"-----END "_el};
+    result.append(labelText());
+    result.append("-----"_el);
+    return text::String{result};
 }
 
 }

@@ -4,7 +4,7 @@
 
 #include "../BlockStringBuilder.hpp"
 
-#include "../../../bgeo/BlockCoordinate.hpp"
+#include "../../../block/Coordinate.hpp"
 #include "../../BlockString.hpp"
 #include "../../BlockStringEditor.hpp"
 #include "../../BlockStyle.hpp"
@@ -19,8 +19,8 @@ namespace erbsland::cterm::impl::document_renderer {
 /// @param first The first margin.
 /// @param second The second margin.
 /// @return The collapsed margin.
-[[nodiscard]] auto collapsedVerticalMarginValue(bgeo::BlockCoordinate first, bgeo::BlockCoordinate second) noexcept
-    -> bgeo::BlockCoordinate;
+[[nodiscard]] auto collapsedVerticalMarginValue(block::Coordinate first, block::Coordinate second) noexcept
+    -> block::Coordinate;
 
 /// Resolve an optional decoration with the given base style.
 /// @param builder The scratch builder to reuse.

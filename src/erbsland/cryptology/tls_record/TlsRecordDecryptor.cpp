@@ -11,6 +11,7 @@
 #include "../symmetric/SymmetricTag.hpp"
 
 #include "../../err/LogicError.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/Byte.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
@@ -164,7 +165,7 @@ auto TlsRecordDecryptor::unprotect(const mem::ConstByteSpan record) -> TlsRecord
 
         // Ownership of authenticated plaintext transfers to the result; its destructor or caller erases the allocation.
         return TlsRecordPlaintext{type, std::move(content)};
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // RFC-facing peer rejection and backend failure are terminal for this direction; erase secret, key, IV, and
         // counters.
         secureErase();
@@ -179,7 +180,7 @@ void TlsRecordDecryptor::updateApplicationTrafficKeys() {
     try {
         // RFC 8446 sections 4.6.3 and 7.2: replace this receiving direction after an authenticated KeyUpdate message.
         _state->updateApplicationTrafficKeys();
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // Failed replacement is terminal: erase retained old state and any incomplete next generation.
         secureErase();
         throw;

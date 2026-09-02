@@ -6,8 +6,8 @@
 
 #include "../RandomError.hpp"
 
+#include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
-#include "../../system/PosixErrorContext.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -40,7 +40,7 @@ void PosixEntropySource::fillBytes(const std::span<std::byte> destination) {
             }
             const auto errorCode = errno;
             throw system::PlatformError{
-                "System entropy source failed"_el, system::PosixErrorContext::fromErrorCode(errorCode)};
+                "System entropy source failed"_el, system::impl::PosixErrorContext::fromErrorCode(errorCode)};
         }
         if (readCount == 0) {
             throw system::PlatformError{"System entropy source ended unexpectedly"_el};

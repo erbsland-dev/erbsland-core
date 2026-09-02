@@ -14,7 +14,7 @@ namespace erbsland::mem {
 
 /// A byte-compression algorithm supported by the library.
 /// Raw algorithm values are stable because they are stored in compression envelopes.
-/// @seedoc{/reference/mem/byte_compression}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{ByteCompressionTest}
 class ByteCompressionAlgorithm final {
 public:

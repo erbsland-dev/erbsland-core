@@ -21,7 +21,7 @@
 namespace erbsland::util {
 
 /// A copy-on-write list container with Erbsland-style element access and algorithms.
-/// @seedoc{/reference/util/collections}
+/// @seedoc{/reference/util/utilities}
 /// @tparam tElement The element type stored in this list.
 /// @tparam tSelf Internal CRTP type used by derived public list types.
 /// @tested{ListTest}

@@ -17,11 +17,15 @@
 #include <erbsland/util/Set.hpp>
 
 using namespace el::text;
-using namespace el::text::impl;
 using namespace el::text::literals;
 
 TESTED_TARGETS(NamedKeyEntryKind NamedKeyEntry NamedKeyFormat NamedKeyParser)
 class NamedKeyParserTest final : public el::UnitTest {
+    using NamedKeyEntry = el::text::impl::NamedKeyEntry;
+    using NamedKeyEntryKind = el::text::impl::NamedKeyEntryKind;
+    using NamedKeyFormat = el::text::impl::NamedKeyFormat;
+    using NamedKeyParser = el::text::impl::NamedKeyParser;
+
 private:
     enum Key : int {
         Alpha = 1,

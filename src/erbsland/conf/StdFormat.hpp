@@ -13,8 +13,8 @@
 
 #include "impl/lexer/TokenType.hpp"
 #include "impl/vr/ConfKey.hpp"
-#include "impl/vr/DependencyMode.hpp"
 #include "vr/ConstraintType.hpp"
+#include "vr/DependencyMode.hpp"
 
 #include "../text/StdFormat.hpp"
 
@@ -120,10 +120,10 @@ struct std::formatter<erbsland::conf::impl::ConfKey> : std::formatter<erbsland::
 };
 
 template <>
-struct std::formatter<erbsland::conf::impl::DependencyMode> : std::formatter<erbsland::text::String> {
+struct std::formatter<erbsland::conf::vr::DependencyMode> : std::formatter<erbsland::text::String> {
     using Base = std::formatter<erbsland::text::String>;
 
-    auto format(const erbsland::conf::impl::DependencyMode value, std::format_context &ctx) const {
+    auto format(const erbsland::conf::vr::DependencyMode value, std::format_context &ctx) const {
         return Base::format(value.toText(), ctx);
     }
 };

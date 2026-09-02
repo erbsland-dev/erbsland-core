@@ -8,7 +8,9 @@ namespace erbsland::options {
 
 /// The concrete storage type of an option value.
 enum class OptionValueType {
-    Flag,          ///< A boolean flag value.
+    Flag,          ///< A valueless flag occurrence.
+    Boolean,       ///< A single boolean value.
+    BooleanList,   ///< A list of boolean values.
     Integer,       ///< A single integer value.
     IntegerList,   ///< A list of integer values.
     Text,          ///< A single text value.

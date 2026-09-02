@@ -17,9 +17,9 @@ void writerSetup() {
     auto format = el::LogLineFormat{};
     format.setPattern("{level} [{name}] {message}"_el);
 
-    const auto consoleWriter = std::make_shared<el::ConsoleLogWriter>(el::application().terminal());
     auto configuration = el::LogConfiguration{};
-    configuration.setLineFormat(std::move(format)).addWriter(consoleWriter);
+    configuration.setLineFormat(std::move(format))
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));

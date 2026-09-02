@@ -30,11 +30,11 @@ The drawing types on this page determine how those operations appear.
 
 .. code-block:: cpp
 
-    const auto panel = BlockRectangle{2, 2, 30, 10};
+    const auto panel = Rectangle{2, 2, 30, 10};
 
     buffer.fill(panel, Block{" ", Color{fg::Inherited, bg::Blue}});
     buffer.drawFrame(panel, FrameStyle::LightWithRoundedCorners, Color{fg::BrightWhite, bg::Blue});
-    buffer.drawBlockText("Overview", panel.insetBy(BlockMargins{1}), Alignment::TopLeft);
+    buffer.drawBlockText("Overview", panel.insetBy(Margins{1}), Alignment::TopLeft);
 
 ``FrameStyle`` is the fastest way to choose one of the built-in Unicode box styles.
 It works well for common UI elements such as panels, dialogs, and separators.
@@ -44,17 +44,17 @@ You can restyle the same layout code simply by changing the enum value:
 .. code-block:: cpp
 
     buffer.drawFilledFrame(
-        BlockRectangle{2, 4, 20, 4},
+        Rectangle{2, 4, 20, 4},
         FrameStyle::Light,
         Block{" ", Color{fg::Inherited, bg::Blue}},
         Color{fg::BrightCyan, bg::Inherited});
     buffer.drawFilledFrame(
-        BlockRectangle{25, 4, 20, 4},
+        Rectangle{25, 4, 20, 4},
         FrameStyle::LightWithRoundedCorners,
         Block{" ", Color{fg::Inherited, bg::Green}},
         Color{fg::BrightGreen, bg::Inherited});
     buffer.drawFilledFrame(
-        BlockRectangle{48, 9, 20, 4},
+        Rectangle{48, 9, 20, 4},
         FrameStyle::FullBlock,
         Block{" ", Color{fg::Inherited, bg::BrightBlack}});
 
@@ -89,8 +89,8 @@ characters.
     auto frameStyle = Block16Style::lightFrame();
     auto combination = BlockCombinationStyle::commonBoxFrame();
 
-    buffer.drawFrame(BlockRectangle{2, 2, 18, 8}, frameStyle, combination, Color{fg::BrightCyan, bg::Black});
-    buffer.drawFrame(BlockRectangle{8, 5, 20, 8}, frameStyle, combination, Color{fg::BrightYellow, bg::Black});
+    buffer.drawFrame(Rectangle{2, 2, 18, 8}, frameStyle, combination, Color{fg::BrightCyan, bg::Black});
+    buffer.drawFrame(Rectangle{8, 5, 20, 8}, frameStyle, combination, Color{fg::BrightYellow, bg::Black});
 
 This ensures that intersecting lines produce consistent box-drawing characters instead of visual artifacts.
 
@@ -111,7 +111,7 @@ Block frame styles are not grid line styles and are treated like ``None`` here.
     border.set(FrameBorderElement::HLine, FrameStyle::Heavy, Color{fg::BrightWhite, bg::Black});
 
     auto layout = GridLayout{{16, 16, 16}, {3, 3}};
-    auto origin = BlockPosition{2, 2};
+    auto origin = Position{2, 2};
 
     for (std::size_t row = 0; row < layout.rowCount(); ++row) {
         for (std::size_t column = 0; column < layout.columnCount(); ++column) {
@@ -136,23 +136,23 @@ with a box-aware combiner:
     auto style = Block16Style::lightFrame();
 
     buffer.drawFrame(
-        BlockRectangle{2, 2, 17, 6},
+        Rectangle{2, 2, 17, 6},
         style,
         BlockCombinationStyle::overwrite(),
         Color{fg::BrightCyan, bg::Inherited});
     buffer.drawFrame(
-        BlockRectangle{8, 4, 18, 6},
+        Rectangle{8, 4, 18, 6},
         style,
         BlockCombinationStyle::overwrite(),
         Color{fg::BrightYellow, bg::Inherited});
 
     buffer.drawFrame(
-        BlockRectangle{37, 2, 17, 6},
+        Rectangle{37, 2, 17, 6},
         style,
         BlockCombinationStyle::commonBoxFrame(),
         Color{fg::BrightCyan, bg::Inherited});
     buffer.drawFrame(
-        BlockRectangle{43, 4, 18, 6},
+        Rectangle{43, 4, 18, 6},
         style,
         BlockCombinationStyle::commonBoxFrame(),
         Color{fg::BrightYellow, bg::Inherited});
@@ -184,7 +184,7 @@ This lets you define separate characters for corners, edges, and the center whil
 
 .. code-block:: cpp
 
-    const auto panel = BlockRectangle{2, 2, 30, 10};
+    const auto panel = Rectangle{2, 2, 30, 10};
     const auto style = Tile9Style::create("╔═╗║ ║╚═╝");
 
     buffer.fill(panel, style, Color{fg::BrightBlack, bg::Black});
@@ -204,13 +204,13 @@ The right side uses letter-coded 16-tile input so the special degenerate tiles a
 .. code-block:: cpp
 
     const auto decorative = Tile9Style::create("╔═╗║·║╚═╝");
-    buffer.fill(BlockRectangle{3, 2, 28, 7}, decorative, Color{fg::BrightCyan, bg::Inherited});
+    buffer.fill(Rectangle{3, 2, 28, 7}, decorative, Color{fg::BrightCyan, bg::Inherited});
 
     const auto degenerate = Tile9Style::create("ABCDEFGHIJKLMNOP");
-    buffer.fill(BlockRectangle{39, 2, 10, 5}, degenerate, Color{fg::BrightYellow, bg::Inherited});
-    buffer.fill(BlockRectangle{52, 2, 10, 1}, degenerate, Color{fg::BrightYellow, bg::Inherited});
-    buffer.fill(BlockRectangle{52, 4, 1, 5}, degenerate, Color{fg::BrightYellow, bg::Inherited});
-    buffer.fill(BlockRectangle{57, 4, 1, 1}, degenerate, Color{fg::BrightYellow, bg::Inherited});
+    buffer.fill(Rectangle{39, 2, 10, 5}, degenerate, Color{fg::BrightYellow, bg::Inherited});
+    buffer.fill(Rectangle{52, 2, 10, 1}, degenerate, Color{fg::BrightYellow, bg::Inherited});
+    buffer.fill(Rectangle{52, 4, 1, 5}, degenerate, Color{fg::BrightYellow, bg::Inherited});
+    buffer.fill(Rectangle{57, 4, 1, 1}, degenerate, Color{fg::BrightYellow, bg::Inherited});
 
 .. erbsland-ansi::
     :escape-char: ␛
@@ -248,8 +248,8 @@ a reusable object.
         FrameColorMode::ChasingBorderCW);
     panelStyle.setFillColor(Color{fg::Inherited, bg::Blue});
 
-    buffer.drawFrame(BlockRectangle{2, 2, 28, 10}, panelStyle, animationCycle);
-    buffer.drawFrame(BlockRectangle{34, 2, 28, 10}, panelStyle, animationCycle + 4);
+    buffer.drawFrame(Rectangle{2, 2, 28, 10}, panelStyle, animationCycle);
+    buffer.drawFrame(Rectangle{34, 2, 28, 10}, panelStyle, animationCycle + 4);
 
 This approach is especially useful when the same panel style is reused throughout your application, or when you work
 with animated borders, custom fill behavior, or non-default combination rules.
@@ -288,8 +288,8 @@ presets:
         },
         FrameColorMode::ChasingBorderCW);
 
-    buffer.drawFrame(BlockRectangle{24, 1, 22, 8}, stripeOptions);
-    buffer.drawFrame(BlockRectangle{47, 1, 22, 8}, chasingOptions, 3);
+    buffer.drawFrame(Rectangle{24, 1, 22, 8}, stripeOptions);
+    buffer.drawFrame(Rectangle{47, 1, 22, 8}, chasingOptions, 3);
 
 .. erbsland-ansi::
     :escape-char: ␛

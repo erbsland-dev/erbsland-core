@@ -7,5 +7,6 @@
 
 #include "Attributes.hpp"
 #include "Constraints.hpp"
+#include "RuleDefinition.hpp"
 
 

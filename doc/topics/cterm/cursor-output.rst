@@ -72,10 +72,10 @@ within the writable area.
 
 .. code-block:: cpp
 
-    cursorBuffer.moveCursor(BlockPosition{10, 3}, MoveMode::Absolute);
+    cursorBuffer.moveCursor(Position{10, 3}, MoveMode::Absolute);
     cursorBuffer.print("Header");
 
-    cursorBuffer.moveCursor(BlockPosition{0, 2}, MoveMode::Relative);
+    cursorBuffer.moveCursor(Position{0, 2}, MoveMode::Relative);
     cursorBuffer.printLine("First entry");
 
 All convenience functions—such as ``moveLeft()``, ``moveRight()``, ``moveUp()``, ``moveDown()``, ``moveTo()``, and

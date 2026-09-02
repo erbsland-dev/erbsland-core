@@ -1,20 +1,20 @@
 .. index::
-    single: Resources; Compiling into Applications
+    single: Resources; Compiling into Applications and Libraries
     single: CMake; Compiled Resources
 
-***************************************
-Compiling Resources into an Application
-***************************************
+**************************************************
+Compiling Resources into an Application or Library
+**************************************************
 
-Compiled resources place small application data directly in the executable and expose it through a lazy, read-only
-lookup interface.
+Compiled resources place small application data directly in an executable or static library and expose it through a
+lazy, read-only lookup interface.
 This avoids deployment-time file discovery for defaults, templates, schemas, and other data that belongs to a specific
 application build.
 
-Add Resources to an Executable
-==============================
+Add Resources to a Target
+=========================
 
-Call ``erbsland_core_add_resources`` after creating an executable target.
+Call ``erbsland_core_add_resources`` after creating an executable or static-library target.
 The command configures the target for Erbsland Core automatically, scans the directory at configuration time, and
 generates one data source and one descriptor source for every selected regular file.
 
@@ -28,6 +28,22 @@ generates one data source and one descriptor source for every selected regular f
             IDENTIFIER "my_data"
             RECURSIVE
             SUFFIXES ".jpeg" ".xml" ".json"
+    )
+
+For a static library, use the same command with the library target.
+Its generated resource objects are built in an internal companion archive, which is retained automatically when the
+library is linked into an executable, even when no ordinary library symbol refers to them.
+Static libraries with compiled resources cannot be exported or installed as CMake package targets; CMake stops with an
+error if such an export is attempted.
+
+.. code-block:: cmake
+
+    add_library(my_library STATIC library.cpp)
+
+    erbsland_core_add_resources(
+            TARGET my_library
+            DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/data"
+            IDENTIFIER "my_library_data"
     )
 
 The identifier is a portable ASCII token chosen by your application.

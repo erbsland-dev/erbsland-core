@@ -8,10 +8,11 @@ namespace erbsland::options {
 
 /// The status of option processing.
 enum class OptionResultStatus {
-    Success,        ///< Parsing succeeded.
-    DisplayVersion, ///< The version should be displayed.
-    DisplayHelp,    ///< Help should be displayed.
-    Error,          ///< Parsing failed.
+    Success,               ///< Parsing succeeded.
+    DisplayVersion,        ///< The version should be displayed.
+    DisplayHelp,           ///< Help should be displayed.
+    DisplayModuleOverview, ///< The reduced module overview should be displayed.
+    Error,                 ///< Parsing failed.
 };
 
 }

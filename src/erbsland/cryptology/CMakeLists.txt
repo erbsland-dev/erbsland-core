@@ -46,5 +46,6 @@ target_sources(erbsland-core PRIVATE
         PasswordHashPolicy_fwd.hpp
         PasswordVerification.cpp
         PasswordVerification.hpp
+        PemDerFormat.hpp
         StdFormat.hpp
 )

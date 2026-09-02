@@ -7,6 +7,8 @@
 
 #include "TlsCipherSuite.hpp"
 #include "TlsConfiguration.hpp"
+#include "TlsConfigurationEntry.hpp"
+#include "TlsConfigurationParser.hpp"
 #include "TlsConfigurationResolution.hpp"
 #include "TlsServerIdentity.hpp"
 #include "TlsSignatureScheme.hpp"

@@ -7,6 +7,8 @@ add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
         all.hpp
+        CpuArchitecture.cpp
+        CpuArchitecture.hpp
         EnvironmentVariables.cpp
         EnvironmentVariables.hpp
         EnvironmentVariables_fwd.hpp
@@ -14,14 +16,21 @@ target_sources(erbsland-core PRIVATE
         GroupId.hpp
         GroupName.cpp
         GroupName.hpp
+        MakeOneNamespace.hpp
+        OperatingSystem.cpp
+        OperatingSystem.hpp
         PlatformError.cpp
         PlatformError.hpp
         PlatformErrorCategory.cpp
         PlatformErrorCategory.hpp
         PlatformErrorContext.hpp
         PlatformErrorContext_fwd.hpp
-        PosixErrorContext.cpp
-        PosixErrorContext.hpp
+        ProcessId.cpp
+        ProcessId.hpp
+        ProcessId_fwd.hpp
+        ProcessInfo.cpp
+        ProcessInfo.hpp
+        ProcessInfo_fwd.hpp
         Subprocess.cpp
         Subprocess.hpp
         Subprocess_fwd.hpp
@@ -29,6 +38,8 @@ target_sources(erbsland-core PRIVATE
         SubprocessOptions.hpp
         SubprocessOptions_fwd.hpp
         SubprocessOutputMode.hpp
+        SystemInfo.cpp
+        SystemInfo.hpp
         UserId.hpp
         UserLookup.cpp
         UserLookup.hpp
@@ -36,10 +47,3 @@ target_sources(erbsland-core PRIVATE
         UserName.cpp
         UserName.hpp
 )
-
-if (WIN32)
-    target_sources(erbsland-core PRIVATE
-            WindowsErrorContext.cpp
-            WindowsErrorContext.hpp
-    )
-endif()

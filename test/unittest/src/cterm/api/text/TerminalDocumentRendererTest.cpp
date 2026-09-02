@@ -14,7 +14,7 @@
 #include <erbsland/err/Exception.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathErrorContext.hpp>
-#include <erbsland/system/PosixErrorContext.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
 #include <erbsland/text/TextDocument.hpp>
 #include <erbsland/text/u32/U32StringEditor.hpp>
 #include <erbsland/unittest/TextHelper.hpp>
@@ -36,7 +36,7 @@ public:
         for (auto y = 0; y < buffer.size().height().toRawValue(); ++y) {
             auto line = std::string{};
             for (auto x = 0; x < buffer.size().width().toRawValue(); ++x) {
-                line += blockToStdString(buffer.get(bgeo::BlockPosition{x, y}));
+                line += blockToStdString(buffer.get(block::Position{x, y}));
             }
             lines.emplace_back(std::move(line));
         }
@@ -46,8 +46,8 @@ public:
     [[nodiscard]] static auto renderDocument(
         const TerminalDocumentRenderer &renderer, const text::TextDocument &document, const int width = 80)
         -> std::string {
-        auto buffer = CursorBuffer{
-            bgeo::BlockSize{width, 1}, CursorBuffer::OverflowMode::ExpandThenWrap, bgeo::BlockSize{width, 1000}};
+        auto buffer =
+            CursorBuffer{block::Size{width, 1}, CursorBuffer::OverflowMode::ExpandThenWrap, block::Size{width, 1000}};
         renderer.renderTo(buffer, document);
         auto lines = rawLinesFromBuffer(buffer);
         for (auto &line : lines) {
@@ -147,7 +147,7 @@ public:
         message->add(text::TextNodeType::FieldContent)->addText("No such file or directory"_el);
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
-        auto buffer = CursorBuffer{bgeo::BlockSize{80, 2}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{80, 2}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
         const auto lines = rawLinesFromBuffer(buffer);
         requireContains(lines[0], "errno:   2");
@@ -184,14 +184,14 @@ public:
 
     void testRenderToCursorBufferUsesMarginsAndTerminalWidthRules() {
         auto style = TerminalDocumentStyle{};
-        style.edit(TerminalDocumentStyleSelector::horizontalLine()).setMargins(bgeo::BlockMargins{1, 2, 0, 3});
+        style.edit(TerminalDocumentStyleSelector::horizontalLine()).setMargins(block::Margins{1, 2, 0, 3});
 
         auto document = text::TextDocument{};
         document.addHorizontalLine();
 
         auto renderer = TerminalDocumentRenderer{style};
         auto writer = CursorWriterProbe{};
-        writer._size = bgeo::BlockSize{12, 3};
+        writer._size = block::Size{12, 3};
         renderer.renderTo(writer, document);
 
         REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{2});
@@ -259,7 +259,7 @@ public:
         REQUIRE_EQUAL(renderDocument(renderer, separatorDocument, 60), std::string(58, 'a') + "/\ntail");
         REQUIRE_EQUAL(renderDocument(renderer, escapeDocument, 60), std::string(58, 'a') + "\n\\033tail");
         auto oversizedWriter = CursorWriterProbe{};
-        oversizedWriter._size = bgeo::BlockSize{60, 25};
+        oversizedWriter._size = block::Size{60, 25};
         renderer.renderTo(oversizedWriter, oversizedEscapeDocument);
         REQUIRE_EQUAL(oversizedWriter._writtenStrings.size(), std::size_t{2});
         REQUIRE_EQUAL(render(oversizedWriter._writtenStrings[0]), std::string(70, 'e'));
@@ -278,14 +278,14 @@ public:
         REQUIRE_EQUAL(renderDocument(renderer, document, 120), std::string(70, 'x'));
 
         auto narrowWriter = CursorWriterProbe{};
-        narrowWriter._size = bgeo::BlockSize{1, 25};
+        narrowWriter._size = block::Size{1, 25};
         renderer.renderTo(narrowWriter, document);
         REQUIRE_EQUAL(narrowWriter._writtenStrings.size(), std::size_t{1});
         REQUIRE_EQUAL(render(narrowWriter._writtenStrings[0]), std::string(70, 'x'));
     }
 
     void testFramedDiagnosticUsesOnePrefixColumnForAllPhysicalLines() {
-        const auto platform = std::make_shared<const erbsland::system::PosixErrorContext>(2, "No such file"_el);
+        const auto platform = std::make_shared<const erbsland::system::impl::PosixErrorContext>(2, "No such file"_el);
         const auto pathError = erbsland::path::PathError{erbsland::path::PathErrorContext{
             "Path could not be resolved"_el, "The path could not be resolved to its physical location."_el}
                 .setSourcePath("/tmp/missing"_el)
@@ -415,7 +415,7 @@ public:
         requireContains(rendered, "     \u2502   \u2594\u2594\u2594\u2594\u2594\u2594");
         requireContains(rendered, "  14 \u2502 next");
 
-        auto buffer = CursorBuffer{bgeo::BlockSize{40, 6}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{40, 6}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
         const auto rawLines = rawLinesFromBuffer(buffer);
         auto markerY = std::size_t{0U};
@@ -428,10 +428,10 @@ public:
         REQUIRE_NOT_EQUAL(gutterX, std::string::npos);
         REQUIRE_NOT_EQUAL(markerX, std::string::npos);
         REQUIRE_EQUAL(
-            buffer.get(bgeo::BlockPosition{static_cast<int>(gutterX), static_cast<int>(markerY)}).style().fg(),
+            buffer.get(block::Position{static_cast<int>(gutterX), static_cast<int>(markerY)}).style().fg(),
             fg::BrightBlack);
         REQUIRE_EQUAL(
-            buffer.get(bgeo::BlockPosition{static_cast<int>(markerX), static_cast<int>(markerY)}).style().fg(),
+            buffer.get(block::Position{static_cast<int>(markerX), static_cast<int>(markerY)}).style().fg(),
             fg::BrightRed);
     }
 
@@ -454,7 +454,7 @@ public:
         requireContains(rendered, "A\u754cB");
         requireContains(rendered, "\u2594\u2594");
 
-        auto buffer = CursorBuffer{bgeo::BlockSize{16, 12}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{16, 12}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
         const auto rawLines = rawLinesFromBuffer(buffer);
         REQUIRE(
@@ -503,7 +503,7 @@ public:
         fifth->add(text::TextNodeType::TermDescription)->addText("Target name."_el);
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
-        auto buffer = CursorBuffer{bgeo::BlockSize{80, 6}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{80, 6}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
 
         const auto lines = rawLinesFromBuffer(buffer);
@@ -539,7 +539,7 @@ public:
         detail->add(text::TextNodeType::TermDescription)->addText("Structured data."_el);
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
-        auto buffer = CursorBuffer{bgeo::BlockSize{100, 3}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{100, 3}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
 
         const auto lines = rawLinesFromBuffer(buffer);
@@ -558,7 +558,7 @@ public:
                 "layout mode."_el);
 
         auto renderer = TerminalDocumentRenderer{};
-        auto buffer = CursorBuffer{bgeo::BlockSize{100, 4}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{100, 4}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
 
         const auto lines = rawLinesFromBuffer(buffer);
@@ -574,7 +574,7 @@ public:
             ->addText("Description text that is long enough to select aligned layout."_el);
 
         auto renderer = TerminalDocumentRenderer{};
-        auto buffer = CursorBuffer{bgeo::BlockSize{80, 4}, CursorBuffer::OverflowMode::Wrap};
+        auto buffer = CursorBuffer{block::Size{80, 4}, CursorBuffer::OverflowMode::Wrap};
         renderer.renderTo(buffer, document);
 
         const auto lines = rawLinesFromBuffer(buffer);
@@ -591,7 +591,7 @@ public:
 
         auto renderer = TerminalDocumentRenderer{};
         auto writer = CursorWriterProbe{};
-        writer._size = bgeo::BlockSize{0, 25};
+        writer._size = block::Size{0, 25};
         renderer.renderTo(writer, document);
 
         REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{1});
@@ -631,7 +631,7 @@ public:
 
         auto renderer = TerminalDocumentRenderer{TerminalDocumentStyle::defaultSystemOutput()};
         auto writer = CursorWriterProbe{};
-        writer._size = bgeo::BlockSize{40, 4};
+        writer._size = block::Size{40, 4};
         renderer.renderTo(writer, document);
 
         REQUIRE_EQUAL(writer._writtenStrings.size(), std::size_t{2});
@@ -666,14 +666,14 @@ public:
 
     void testRendererHelpersAreDirectlyTestable() {
         REQUIRE_EQUAL(
-            renderer_impl::collapsedVerticalMarginValue(bgeo::BlockCoordinate{2}, bgeo::BlockCoordinate{4}),
-            bgeo::BlockCoordinate{4});
+            renderer_impl::collapsedVerticalMarginValue(block::Coordinate{2}, block::Coordinate{4}),
+            block::Coordinate{4});
         REQUIRE_EQUAL(
-            renderer_impl::collapsedVerticalMarginValue(bgeo::BlockCoordinate{-3}, bgeo::BlockCoordinate{-1}),
-            bgeo::BlockCoordinate{-3});
+            renderer_impl::collapsedVerticalMarginValue(block::Coordinate{-3}, block::Coordinate{-1}),
+            block::Coordinate{-3});
         REQUIRE_EQUAL(
-            renderer_impl::collapsedVerticalMarginValue(bgeo::BlockCoordinate{4}, bgeo::BlockCoordinate{-1}),
-            bgeo::BlockCoordinate{3});
+            renderer_impl::collapsedVerticalMarginValue(block::Coordinate{4}, block::Coordinate{-1}),
+            block::Coordinate{3});
 
         const auto preservedText = text::StringEditor{std::string{"  alpha  "}};
         auto builder = renderer_impl::InlineTextBuilder{};

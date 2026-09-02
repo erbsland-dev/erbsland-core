@@ -11,7 +11,7 @@
 namespace erbsland::time {
 
 /// Options for formatting fixed and calendar time deltas.
-/// @seedoc{/reference/time/duration_and_time_amounts}
+/// @seedoc{/reference/time/date_and_time}
 /// @tested{CalendarDeltaTest}
 class TimeDeltaFormat final {
 public:

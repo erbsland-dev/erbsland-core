@@ -53,7 +53,7 @@ auto OptionValue::argumentIndex() const noexcept -> ArgumentIndex {
 }
 
 auto OptionValue::flagCount() const noexcept -> ArgumentCount {
-    if (std::holds_alternative<bool>(_storage)) {
+    if (std::holds_alternative<std::monostate>(_storage)) {
         return ArgumentCount::fromSizeT(_argumentIndexes.size());
     }
     return ArgumentCount::zero();
@@ -63,8 +63,10 @@ auto OptionValue::valueCount() const noexcept -> ArgumentCount {
     return std::visit(
         [](const auto &value) -> ArgumentCount {
             using Value = std::decay_t<decltype(value)>;
-            if constexpr (
-                std::is_same_v<Value, std::vector<OptionInteger>> || std::is_same_v<Value, std::vector<text::String>>) {
+            if constexpr (std::is_same_v<Value, text::StringList>) {
+                return ArgumentCount::fromSizeT(value.count().toSizeT());
+            } else if constexpr (
+                std::is_same_v<Value, std::vector<bool>> || std::is_same_v<Value, std::vector<OptionInteger>>) {
                 return ArgumentCount::fromSizeT(value.size());
             } else {
                 return ArgumentCount::one();
@@ -77,15 +79,19 @@ auto OptionValue::type() const noexcept -> OptionValueType {
     return std::visit(
         [](const auto &value) -> OptionValueType {
             using Value = std::decay_t<decltype(value)>;
-            if constexpr (std::is_same_v<Value, bool>) {
+            if constexpr (std::is_same_v<Value, std::monostate>) {
                 return OptionValueType::Flag;
+            } else if constexpr (std::is_same_v<Value, bool>) {
+                return OptionValueType::Boolean;
+            } else if constexpr (std::is_same_v<Value, std::vector<bool>>) {
+                return OptionValueType::BooleanList;
             } else if constexpr (std::is_same_v<Value, OptionInteger>) {
                 return OptionValueType::Integer;
             } else if constexpr (std::is_same_v<Value, std::vector<OptionInteger>>) {
                 return OptionValueType::IntegerList;
             } else if constexpr (std::is_same_v<Value, text::String>) {
                 return value.isSensitive() ? OptionValueType::SensitiveText : OptionValueType::Text;
-            } else if constexpr (std::is_same_v<Value, std::vector<text::String>>) {
+            } else if constexpr (std::is_same_v<Value, text::StringList>) {
                 return OptionValueType::TextList;
             }
         },
@@ -93,10 +99,27 @@ auto OptionValue::type() const noexcept -> OptionValueType {
 }
 
 auto OptionValue::getFlag(const bool defaultFlag) const -> bool {
-    if (const auto flag = std::get_if<bool>(&_storage)) {
-        return *flag;
+    if (std::holds_alternative<std::monostate>(_storage)) {
+        return true;
     }
     return defaultFlag;
+}
+
+auto OptionValue::getBoolean(const bool defaultBoolean) const -> bool {
+    if (const auto boolean = std::get_if<bool>(&_storage)) {
+        return *boolean;
+    }
+    return defaultBoolean;
+}
+
+auto OptionValue::getBooleanList(std::vector<bool> defaultBooleanList) const -> std::vector<bool> {
+    if (const auto booleanList = std::get_if<std::vector<bool>>(&_storage)) {
+        return *booleanList;
+    }
+    if (const auto boolean = std::get_if<bool>(&_storage)) {
+        return {*boolean};
+    }
+    return defaultBooleanList;
 }
 
 auto OptionValue::getInteger(const OptionInteger defaultInteger) const -> OptionInteger {
@@ -113,17 +136,12 @@ auto OptionValue::getText(const text::String &defaultText) const -> text::String
     return defaultText;
 }
 
-auto OptionValue::getTextList(std::vector<text::String> defaultTextList) const -> std::vector<text::String> {
-    if (const auto textList = std::get_if<std::vector<text::String>>(&_storage)) {
-        auto result = std::vector<text::String>{};
-        result.reserve(textList->size());
-        for (const auto &text : *textList) {
-            result.emplace_back(text);
-        }
-        return result;
+auto OptionValue::getTextList(text::StringList defaultTextList) const -> text::StringList {
+    if (const auto textList = std::get_if<text::StringList>(&_storage)) {
+        return *textList;
     }
     if (const auto text = std::get_if<text::String>(&_storage)) {
-        return {*text};
+        return text::StringList{*text};
     }
     return defaultTextList;
 }

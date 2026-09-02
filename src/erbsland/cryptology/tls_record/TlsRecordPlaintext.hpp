@@ -11,7 +11,7 @@ namespace erbsland::cryptology {
 /// Authenticated content recovered from one TLS 1.3 record.
 /// The content type is the final nonzero TLSInnerPlaintext octet from RFC 8446 section 5.2. Content is retained in
 /// sensitive storage and is never constructed until AEAD authentication succeeds.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsRecordPlaintext final {
 public:

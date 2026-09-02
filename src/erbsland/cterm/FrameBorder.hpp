@@ -8,7 +8,7 @@
 #include "FrameBorderElement.hpp"
 #include "FrameStyle.hpp"
 
-#include "../bgeo/BlockAnchor.hpp"
+#include "../geometry/Anchor.hpp"
 #include "../text/Char.hpp"
 
 #include <array>
@@ -96,7 +96,7 @@ public:
     /// Resolve one of the nine grid corner or joint characters for this border.
     /// @param anchor One of the nine composite anchor values.
     /// @return The resolved joint character.
-    [[nodiscard]] auto corner(bgeo::BlockAnchor anchor) const noexcept -> Block;
+    [[nodiscard]] auto corner(geometry::Anchor anchor) const noexcept -> Block;
 
 private:
     /// Convert a border element to its storage index.

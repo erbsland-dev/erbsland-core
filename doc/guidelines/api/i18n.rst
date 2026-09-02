@@ -10,7 +10,6 @@ Core Semantics
     source text = built-in English text or format pattern
     display text = source text after optional translation
     key = dot-separated domain, optional subdomain, and final text name
-    lookup = exact key, domain plus final name, then final name
 
 Primary Types
 =============

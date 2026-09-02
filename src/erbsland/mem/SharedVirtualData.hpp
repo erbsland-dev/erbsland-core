@@ -10,7 +10,7 @@ namespace erbsland::mem {
 ///
 /// Derive from this class when a `SharedDataPointer` shall manage an abstract base type and detach by virtual clone.
 /// Implementations must return a newly allocated copy of the same dynamic type from `clone()`.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{SharedDataTest}
 class SharedVirtualData : public SharedData {
 public:

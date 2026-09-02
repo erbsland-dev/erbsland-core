@@ -29,7 +29,7 @@ coupling it to the global application object.
 .. erbsland-demo::
     :source: log/LoggingTopics/StoredLogStream.cpp
     :exec: log/logging_topics --demo StoredLogStream
-    :source-sha256: a9558cb67c277c8484c8a460d18d173d67972fbb2159ed65d8700a53c5adb16e
+    :source-sha256: 4efffaabb7c8402e1fce53354a81b794bbdf6a74ac22f2818b19d6d6d2ec0da4
 
 .. code-block:: cpp
 
@@ -53,7 +53,7 @@ coupling it to the global application object.
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -94,7 +94,7 @@ writer.
 .. erbsland-demo::
     :source: log/LoggingTopics/LogLevels.cpp
     :exec: log/logging_topics --demo LogLevels
-    :source-sha256: e1f8563a5609a3d29ec33bc735b74bd85f30e9a73b5875882e6d99777fe036af
+    :source-sha256: 6c4cc06405081e12dffd4858eb604c579e2a204709c7143b448912ae254a9a82
 
 .. code-block:: cpp
 
@@ -108,7 +108,7 @@ writer.
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
             .enableTraceSection(el::LogTraceSection{"route-search"_el})
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -155,7 +155,7 @@ Formatting controls such as :cpp:class:`IntegerFormat <erbsland::text::IntegerFo
 .. erbsland-demo::
     :source: log/LoggingTopics/LogStreams.cpp
     :exec: log/logging_topics --demo LogStreams
-    :source-sha256: 15ea28250248b3bd012e2d69466fd159b28342f2c9ac0c3348ead810ba2fd90a
+    :source-sha256: d4835de1646bd61e15dc8b1086a5d0994449caadf0f2b75ea8fda93158785359
 
 .. code-block:: cpp
 
@@ -168,7 +168,7 @@ Formatting controls such as :cpp:class:`IntegerFormat <erbsland::text::IntegerFo
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -212,7 +212,7 @@ The example service separates route selection from supply accounting and lets th
 .. erbsland-demo::
     :source: log/LoggingTopics/MultipleLogStreams.cpp
     :exec: log/logging_topics --demo MultipleLogStreams
-    :source-sha256: a069ceba66751b9cd174322fd51519f8b191901ba0aa937a01ffe8612a895308
+    :source-sha256: 40856211b73b0af6bb2d1c35cfb7754b6ff218b30397f721923b074cd661983d
 
 .. code-block:: cpp
 
@@ -241,7 +241,7 @@ The example service separates route selection from supply accounting and lets th
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -278,7 +278,7 @@ Associate that stream with a
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSections.cpp
     :exec: log/logging_topics --demo TraceSections
-    :source-sha256: a235b23519c037d4e99b40c445dd9996968eaa0e25200c7ffd776d1201f4e076
+    :source-sha256: 248b1822238911e1753301dc432f32c20299255bb3711ac9ce5cfea346e2e34b
 
 .. code-block:: cpp
 
@@ -295,7 +295,7 @@ Associate that stream with a
         configuration.setLineFormat(std::move(format))
             .enableTraceSection(routeSearchTrace)
             .addWriter(
-                std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+                el::LogWriter::createForConsole(el::application().terminal()),
                 el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace, el::LogLevel::Information}});
 
         const auto manager = el::LogManager::create();

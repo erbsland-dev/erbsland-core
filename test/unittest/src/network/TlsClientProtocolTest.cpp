@@ -30,7 +30,6 @@
 
 using namespace el::cryptology;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 using el::mem::Byte;
 using el::mem::ByteBlock;
@@ -40,6 +39,14 @@ using el::unit::ByteLength;
 
 TESTED_TARGETS(TlsClientHelloBuilder TlsClientProtocolOptions TlsClientProtocolState TlsClientProtocol)
 class TlsClientProtocolTest final : public el::UnitTest {
+    using TlsClientHelloBuilder = el::network::impl::TlsClientHelloBuilder;
+    using TlsClientProtocol = el::network::impl::TlsClientProtocol;
+    using TlsClientProtocolCheckpoint = el::network::impl::TlsClientProtocolCheckpoint;
+    using TlsClientProtocolOptions = el::network::impl::TlsClientProtocolOptions;
+    using TlsClientProtocolState = el::network::impl::TlsClientProtocolState;
+    using TlsClientProtocolTestAccess = el::network::impl::TlsClientProtocolTestAccess;
+    using TlsWireWriter = el::network::impl::TlsWireWriter;
+
 private:
     [[nodiscard]] static auto options(std::vector<el::text::String> alpn = {}) -> TlsClientProtocolOptions {
         return TlsClientProtocolOptions{

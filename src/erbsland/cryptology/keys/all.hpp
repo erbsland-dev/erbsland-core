@@ -11,6 +11,7 @@
 #include "KeyAgreementSharedSecret.hpp"
 #include "PublicKey.hpp"
 #include "SigningKeyAlgorithm.hpp"
+#include "SigningKeyProfile.hpp"
 #include "SigningPrivateKey.hpp"
 
 

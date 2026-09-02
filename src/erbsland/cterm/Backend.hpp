@@ -9,7 +9,7 @@
 #include "MoveMode.hpp"
 #include "TerminalFlags.hpp"
 
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Size.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 
@@ -77,7 +77,7 @@ public:
     /// A safety margin of one column and one row is applied by `Terminal` automatically.
     ///
     /// @return The detected screen size, or `std::nullopt` if detection failed.
-    [[nodiscard]] virtual auto detectScreenSize() -> std::optional<bgeo::BlockSize> = 0;
+    [[nodiscard]] virtual auto detectScreenSize() -> std::optional<block::Size> = 0;
 
     /// Change the current color.
     /// Only called if `supportsColorCodes()` returns `false`.
@@ -105,7 +105,7 @@ public:
     /// Only called if `supportsCursorCodes()` returns `false`.
     /// @param posOrDelta The absolute or relative movement for the cursor. (0,0) = top-left corner.
     /// @param mode The move mode, either absolute or relative.
-    virtual void moveCursor([[maybe_unused]] bgeo::BlockPosition posOrDelta, [[maybe_unused]] MoveMode mode) {}
+    virtual void moveCursor([[maybe_unused]] block::Position posOrDelta, [[maybe_unused]] MoveMode mode) {}
 
     /// Clear the screen and move the cursor to (0,0).
     /// Only called if `supportsCursorCodes()` returns `false`.

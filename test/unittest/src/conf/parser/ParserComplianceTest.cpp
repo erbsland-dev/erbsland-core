@@ -1,6 +1,8 @@
 // Copyright (c) 2025 Erbsland DEV. https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include "../../core/ApplicationTestScope.hpp"
+
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/MakeOneNamespace.hpp>
 #include <erbsland/path/PathInfo.hpp>
@@ -92,10 +94,11 @@ public:
     TAGS(FullRun)
     SKIP_BY_DEFAULT()
     void testPassOrFail() {
+        const auto applicationScope = ApplicationTestScope<>{};
         const auto testSuiteEnvironment = el::system::EnvironmentVariables{}.get(cTestSuiteEnv);
         const auto suiteExplicitlyConfigured = testSuiteEnvironment.has_value();
         if (testSuiteEnvironment.has_value()) {
-            testSuitePath = Path(*testSuiteEnvironment);
+            testSuitePath = Path::fromNative(*testSuiteEnvironment);
         } else {
             // If no environment variable is set, the unittest wasn't started using CTest.
             // In this case, we make a guess about the location, assuming this unittest runs in an IDE
@@ -140,10 +143,11 @@ public:
     }
 
     void testPassOrFailLight() {
+        const auto applicationScope = ApplicationTestScope<>{};
         const auto testSuiteEnvironment = el::system::EnvironmentVariables{}.get(cTestSuiteEnv);
         const auto suiteExplicitlyConfigured = testSuiteEnvironment.has_value();
         if (testSuiteEnvironment.has_value()) {
-            testSuitePath = Path(*testSuiteEnvironment);
+            testSuitePath = Path::fromNative(*testSuiteEnvironment);
         } else {
             auto guessedPath = Path(unitTestExecutablePath()).parent();
             auto maxDepth = 5;

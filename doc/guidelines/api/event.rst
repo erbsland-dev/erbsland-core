@@ -5,20 +5,9 @@ Event Domain API Guidelines
 Core Semantics
 ==============
 
-Dispatch Model
---------------
-
 .. code-block:: text
 
     owner loop = one loop that serializes a source's state and callbacks
-
-Subscriptions and Scheduling
-----------------------------
-
-.. code-block:: text
-
-    fixed delay = next interval starts after callback completion
-    fixed rate = callbacks follow a stable cadence
 
 Primary Types
 =============

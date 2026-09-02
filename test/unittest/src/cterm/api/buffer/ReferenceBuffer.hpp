@@ -20,17 +20,17 @@ public:
 
 public:
     /// Create a reference buffer with a size and fill block.
-    explicit ReferenceBuffer(const bgeo::BlockSize size, const Block fillChar = Block::space()) :
+    explicit ReferenceBuffer(const block::Size size, const Block fillChar = Block::space()) :
         _size{validateSize(size)}, _data(_size.area().toSizeT(), fillChar) {}
 
     /// Get the current buffer size.
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize { return _size; }
+    [[nodiscard]] auto size() const noexcept -> block::Size { return _size; }
 
     /// Get the block at a buffer position.
-    [[nodiscard]] auto get(const bgeo::BlockPosition pos) const -> const Block & { return _data[_size.index(pos)]; }
+    [[nodiscard]] auto get(const block::Position pos) const -> const Block & { return _data[_size.index(pos)]; }
 
     /// Set a block at a buffer position.
-    void set(const bgeo::BlockPosition pos, const Block &block) {
+    void set(const block::Position pos, const Block &block) {
         if (!_size.contains(pos) || block.displayWidth() == 0 || block.displayWidth() > 2) {
             return;
         }
@@ -38,7 +38,7 @@ public:
             _data[_size.index(pos)] = block;
             return;
         }
-        const auto secondPosition = pos + bgeo::BlockPosition{1, 0};
+        const auto secondPosition = pos + block::Position{1, 0};
         if (!_size.contains(secondPosition)) {
             return;
         }
@@ -54,14 +54,14 @@ public:
     }
 
     /// Resize the buffer with an optional content-preservation mode.
-    void resize(const bgeo::BlockSize newSize, const BufferResizeMode mode, const Block fillChar = Block::space()) {
+    void resize(const block::Size newSize, const BufferResizeMode mode, const Block fillChar = Block::space()) {
         const auto validatedSize = validateSize(newSize);
         if (_size == validatedSize) {
             return;
         }
         if (mode == BufferResizeMode::PreserveContent) {
             auto newData = std::vector<Block>(validatedSize.area().toSizeT(), fillChar);
-            _size.limitedWith(validatedSize).forEach([&](const bgeo::BlockPosition pos) -> void {
+            _size.limitedWith(validatedSize).forEach([&](const block::Position pos) -> void {
                 newData[validatedSize.index(pos)] = get(pos);
             });
             _size = validatedSize;
@@ -79,47 +79,47 @@ public:
     }
 
     /// Shift rows or columns toward a direction and fill the exposed area.
-    void shift(const bgeo::BlockDirection direction, const Block fillChar, const int count = 1) {
+    void shift(const block::Direction direction, const Block fillChar, const int count = 1) {
         validateDirectionalCount(direction, count);
-        if (count == 0 || direction == bgeo::BlockDirection::None) {
+        if (count == 0 || direction == block::Direction::None) {
             return;
         }
-        if (direction.contains(bgeo::BlockDirection::North)) {
-            eraseRows(bgeo::BlockCoordinate{0}, fillChar, count);
+        if (direction.contains(block::Direction::North)) {
+            eraseRows(block::Coordinate{0}, fillChar, count);
         }
-        if (direction.contains(bgeo::BlockDirection::South)) {
-            insertRows(bgeo::BlockCoordinate{0}, fillChar, count);
+        if (direction.contains(block::Direction::South)) {
+            insertRows(block::Coordinate{0}, fillChar, count);
         }
-        if (direction.contains(bgeo::BlockDirection::West)) {
-            eraseColumns(bgeo::BlockCoordinate{0}, fillChar, count);
+        if (direction.contains(block::Direction::West)) {
+            eraseColumns(block::Coordinate{0}, fillChar, count);
         }
-        if (direction.contains(bgeo::BlockDirection::East)) {
-            insertColumns(bgeo::BlockCoordinate{0}, fillChar, count);
+        if (direction.contains(block::Direction::East)) {
+            insertColumns(block::Coordinate{0}, fillChar, count);
         }
     }
 
     /// Rotate rows or columns toward a direction.
-    void rotate(const bgeo::BlockDirection direction, const int count = 1) {
+    void rotate(const block::Direction direction, const int count = 1) {
         validateDirectionalCount(direction, count);
-        if (count == 0 || direction == bgeo::BlockDirection::None) {
+        if (count == 0 || direction == block::Direction::None) {
             return;
         }
-        if (direction.contains(bgeo::BlockDirection::North)) {
+        if (direction.contains(block::Direction::North)) {
             auto rows = toRows();
             rotateLines(rows, count, true);
             fromRows(rows);
         }
-        if (direction.contains(bgeo::BlockDirection::South)) {
+        if (direction.contains(block::Direction::South)) {
             auto rows = toRows();
             rotateLines(rows, count, false);
             fromRows(rows);
         }
-        if (direction.contains(bgeo::BlockDirection::West)) {
+        if (direction.contains(block::Direction::West)) {
             auto columns = toColumns();
             rotateLines(columns, count, true);
             fromColumns(columns);
         }
-        if (direction.contains(bgeo::BlockDirection::East)) {
+        if (direction.contains(block::Direction::East)) {
             auto columns = toColumns();
             rotateLines(columns, count, false);
             fromColumns(columns);
@@ -127,7 +127,7 @@ public:
     }
 
     /// Erase rows and append filled rows at the opposite edge.
-    void eraseRows(const bgeo::BlockCoordinate startRow, const Block fillChar, const int count = 1) {
+    void eraseRows(const block::Coordinate startRow, const Block fillChar, const int count = 1) {
         validateSpan(startRow, count, _size.height(), "startRow", "count");
         if (count == 0) {
             return;
@@ -140,7 +140,7 @@ public:
     }
 
     /// Erase columns and append filled columns at the opposite edge.
-    void eraseColumns(const bgeo::BlockCoordinate startColumn, const Block fillChar, const int count = 1) {
+    void eraseColumns(const block::Coordinate startColumn, const Block fillChar, const int count = 1) {
         validateSpan(startColumn, count, _size.width(), "startColumn", "count");
         if (count == 0) {
             return;
@@ -153,7 +153,7 @@ public:
     }
 
     /// Insert filled rows and remove rows from the opposite edge.
-    void insertRows(const bgeo::BlockCoordinate startRow, const Block fillChar, const int count = 1) {
+    void insertRows(const block::Coordinate startRow, const Block fillChar, const int count = 1) {
         validateSpan(startRow, count, _size.height(), "startRow", "count");
         if (count == 0) {
             return;
@@ -166,7 +166,7 @@ public:
     }
 
     /// Insert filled columns and remove columns from the opposite edge.
-    void insertColumns(const bgeo::BlockCoordinate startColumn, const Block fillChar, const int count = 1) {
+    void insertColumns(const block::Coordinate startColumn, const Block fillChar, const int count = 1) {
         validateSpan(startColumn, count, _size.width(), "startColumn", "count");
         if (count == 0) {
             return;
@@ -180,10 +180,7 @@ public:
 
     /// Move a contiguous range of rows and fill any newly exposed space.
     void moveRows(
-        const bgeo::BlockCoordinate startRow,
-        const int count,
-        const bgeo::BlockCoordinate delta,
-        const Block fillChar) {
+        const block::Coordinate startRow, const int count, const block::Coordinate delta, const Block fillChar) {
         validateSpan(startRow, count, _size.height(), "startRow", "count");
         if (count == 0 || delta == 0) {
             return;
@@ -195,10 +192,7 @@ public:
 
     /// Move a contiguous range of columns and fill any newly exposed space.
     void moveColumns(
-        const bgeo::BlockCoordinate startColumn,
-        const int count,
-        const bgeo::BlockCoordinate delta,
-        const Block fillChar) {
+        const block::Coordinate startColumn, const int count, const block::Coordinate delta, const Block fillChar) {
         validateSpan(startColumn, count, _size.width(), "startColumn", "count");
         if (count == 0 || delta == 0) {
             return;
@@ -210,11 +204,11 @@ public:
 
 private:
     /// Validate a buffer size supported by the reference implementation.
-    [[nodiscard]] static auto validateSize(const bgeo::BlockSize size) -> bgeo::BlockSize {
+    [[nodiscard]] static auto validateSize(const block::Size size) -> block::Size {
         if (size.width() < 1 || size.height() < 1) {
             throw std::invalid_argument("Buffer size must be at least 1x1");
         }
-        if (!size.fitsInto(bgeo::BlockSize{10'000, 10'000})) {
+        if (!size.fitsInto(block::Size{10'000, 10'000})) {
             throw std::invalid_argument("Buffer size must not exceed 10'000x10'000");
         }
         return size;
@@ -222,9 +216,9 @@ private:
 
     /// Validate a coordinate span against an axis limit.
     static void validateSpan(
-        const bgeo::BlockCoordinate start,
+        const block::Coordinate start,
         const int count,
-        const bgeo::BlockCoordinate limit,
+        const block::Coordinate limit,
         const char *startName,
         const char *countName) {
         if (count < 0 || count > limit) {
@@ -242,15 +236,15 @@ private:
     }
 
     /// Validate a directional operation count for the current buffer size.
-    void validateDirectionalCount(const bgeo::BlockDirection direction, const int count) const {
+    void validateDirectionalCount(const block::Direction direction, const int count) const {
         if (count < 0) {
             throw std::invalid_argument("count is invalid");
         }
-        if ((direction.contains(bgeo::BlockDirection::North) || direction.contains(bgeo::BlockDirection::South)) &&
+        if ((direction.contains(block::Direction::North) || direction.contains(block::Direction::South)) &&
             count > _size.height().toRawValue()) {
             throw std::invalid_argument("count is invalid");
         }
-        if ((direction.contains(bgeo::BlockDirection::West) || direction.contains(bgeo::BlockDirection::East)) &&
+        if ((direction.contains(block::Direction::West) || direction.contains(block::Direction::East)) &&
             count > _size.width().toRawValue()) {
             throw std::invalid_argument("count is invalid");
         }
@@ -268,11 +262,11 @@ private:
     [[nodiscard]] auto toRows() const -> std::vector<Line> {
         auto rows = std::vector<Line>{};
         rows.reserve(_size.height().toSizeT());
-        for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
+        for (auto y = block::Coordinate{0}; y < _size.height(); ++y) {
             auto row = Line{};
             row.reserve(_size.width().toSizeT());
-            for (auto x = bgeo::BlockCoordinate{0}; x < _size.width(); ++x) {
-                row.push_back(get(bgeo::BlockPosition{x, y}));
+            for (auto x = block::Coordinate{0}; x < _size.width(); ++x) {
+                row.push_back(get(block::Position{x, y}));
             }
             rows.push_back(std::move(row));
         }
@@ -281,9 +275,9 @@ private:
 
     /// Replace buffer storage from rows.
     void fromRows(const std::vector<Line> &rows) {
-        for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
-            for (auto x = bgeo::BlockCoordinate{0}; x < _size.width(); ++x) {
-                _data[_size.index(bgeo::BlockPosition{x, y})] = rows[y.toSizeT()][x.toSizeT()];
+        for (auto y = block::Coordinate{0}; y < _size.height(); ++y) {
+            for (auto x = block::Coordinate{0}; x < _size.width(); ++x) {
+                _data[_size.index(block::Position{x, y})] = rows[y.toSizeT()][x.toSizeT()];
             }
         }
     }
@@ -292,11 +286,11 @@ private:
     [[nodiscard]] auto toColumns() const -> std::vector<Line> {
         auto columns = std::vector<Line>{};
         columns.reserve(_size.width().toSizeT());
-        for (auto x = bgeo::BlockCoordinate{0}; x < _size.width(); ++x) {
+        for (auto x = block::Coordinate{0}; x < _size.width(); ++x) {
             auto column = Line{};
             column.reserve(_size.height().toSizeT());
-            for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
-                column.push_back(get(bgeo::BlockPosition{x, y}));
+            for (auto y = block::Coordinate{0}; y < _size.height(); ++y) {
+                column.push_back(get(block::Position{x, y}));
             }
             columns.push_back(std::move(column));
         }
@@ -305,9 +299,9 @@ private:
 
     /// Replace buffer storage from columns.
     void fromColumns(const std::vector<Line> &columns) {
-        for (auto x = bgeo::BlockCoordinate{0}; x < _size.width(); ++x) {
-            for (auto y = bgeo::BlockCoordinate{0}; y < _size.height(); ++y) {
-                _data[_size.index(bgeo::BlockPosition{x, y})] = columns[x.toSizeT()][y.toSizeT()];
+        for (auto x = block::Coordinate{0}; x < _size.width(); ++x) {
+            for (auto y = block::Coordinate{0}; y < _size.height(); ++y) {
+                _data[_size.index(block::Position{x, y})] = columns[x.toSizeT()][y.toSizeT()];
             }
         }
     }
@@ -330,11 +324,8 @@ private:
 
     /// Move a range of rows or columns within a collection.
     [[nodiscard]] static auto moveLines(
-        std::vector<Line> lines,
-        bgeo::BlockCoordinate start,
-        int count,
-        bgeo::BlockCoordinate delta,
-        const Line &blankLine) -> std::vector<Line> {
+        std::vector<Line> lines, block::Coordinate start, int count, block::Coordinate delta, const Line &blankLine)
+        -> std::vector<Line> {
         const auto startOffset = static_cast<std::ptrdiff_t>(start.toRawValue());
         auto moved = std::vector<Line>{};
         moved.reserve(static_cast<std::size_t>(count));
@@ -372,6 +363,6 @@ private:
     }
 
 private:
-    bgeo::BlockSize _size;    ///< The current buffer dimensions.
+    block::Size _size;        ///< The current buffer dimensions.
     std::vector<Block> _data; ///< The row-major buffer blocks.
 };

@@ -14,7 +14,7 @@
 namespace erbsland::network {
 
 /// A strict IDNA2008 host name with canonical Unicode and ASCII forms.
-/// @seedoc{/reference/network/addressing}
+/// @seedoc{/reference/network/addressing_and_urls}
 /// @tested{NetworkValueTest}
 class HostName final {
 public:

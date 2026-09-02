@@ -21,5 +21,6 @@
 #include "PasswordHashPolicy.hpp"
 #include "PasswordHasher.hpp"
 #include "PasswordVerification.hpp"
+#include "PemDerFormat.hpp"
 
 

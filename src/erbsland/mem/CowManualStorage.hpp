@@ -10,7 +10,7 @@
 namespace erbsland::mem {
 
 /// Shared copy-on-write storage with explicit writable access.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 ///
 /// `CowManualStorage` always owns a valid data object. Copying the storage shares that object. Reading uses `data()`;
 /// writing uses `detachedData()`, which detaches before returning a mutable reference.

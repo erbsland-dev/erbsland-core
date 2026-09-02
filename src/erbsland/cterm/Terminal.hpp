@@ -19,7 +19,7 @@
 #include "impl/InputBackend.hpp"
 #include "impl/LineBuffer.hpp"
 
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Size.hpp"
 
 #include <functional>
 #include <memory>
@@ -29,13 +29,13 @@ namespace erbsland::cterm {
 /// High-level terminal interface for screen control, color output, and key input.
 class Terminal final : public CursorWriter {
     /// The minimum supported size of a terminal.
-    constexpr static auto cMinimumSize = bgeo::BlockSize{1, 1};
+    constexpr static auto cMinimumSize = block::Size{1, 1};
     /// The maximum supported size of a terminal.
-    constexpr static auto cMaximumSize = bgeo::BlockSize{2048, 2048};
+    constexpr static auto cMaximumSize = block::Size{2048, 2048};
 
 public:
     /// Callback invoked when the drawable terminal size changes or is initialized.
-    using ScreenSizeChangedCallback = std::function<void(bgeo::BlockSize)>;
+    using ScreenSizeChangedCallback = std::function<void(block::Size)>;
 
     /// Screen clearing strategy used between rendered frames.
     enum class RefreshMode : uint8_t {
@@ -65,18 +65,18 @@ public:
     /// The size is automatically bounded to the minimum and maximum supported sizes.
     /// @param size The fallback terminal size used when automatic detection is unavailable.
     /// @param flags The terminal flags to use.
-    explicit Terminal(bgeo::BlockSize size, TerminalFlags flags = {});
+    explicit Terminal(block::Size size, TerminalFlags flags = {});
     /// Create a new terminal instance with a custom backend.
     /// The size is automatically bounded to the minimum and maximum supported sizes.
     /// @param backend The backend to use for the terminal.
     /// @param size The fallback terminal size used when automatic detection is unavailable.
-    explicit Terminal(BackendPtr backend, bgeo::BlockSize size = {80, 25});
+    explicit Terminal(BackendPtr backend, block::Size size = {80, 25});
 
 public: // implements CursorWriter
     using CursorWriter::setColor;
     using CursorWriter::write;
     using CursorWriter::writeLineBreak;
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _size; }
+    [[nodiscard]] auto size() const noexcept -> block::Size override { return _size; }
     [[nodiscard]] auto color() const noexcept -> Color override;
     [[nodiscard]] auto blockAttributes() const noexcept -> BlockAttributes override;
     void setColor(Color color) noexcept override;
@@ -84,13 +84,13 @@ public: // implements CursorWriter
     void setForeground(Foreground color) noexcept override;
     void setBackground(Background color) noexcept override;
     [[nodiscard]] auto supportedBlockAttributes() const noexcept -> BlockAttributes override;
-    void moveLeft(bgeo::BlockCoordinate count) noexcept override;
-    void moveRight(bgeo::BlockCoordinate count) noexcept override;
-    void moveUp(bgeo::BlockCoordinate count) noexcept override;
-    void moveDown(bgeo::BlockCoordinate count) noexcept override;
-    void moveTo(bgeo::BlockPosition pos) noexcept override;
+    void moveLeft(block::Coordinate count) noexcept override;
+    void moveRight(block::Coordinate count) noexcept override;
+    void moveUp(block::Coordinate count) noexcept override;
+    void moveDown(block::Coordinate count) noexcept override;
+    void moveTo(block::Position pos) noexcept override;
     void moveHome() noexcept override;
-    void moveCursor(bgeo::BlockPosition posOrDelta, MoveMode mode) noexcept override;
+    void moveCursor(block::Position posOrDelta, MoveMode mode) noexcept override;
     void setAutoWrap(bool enabled) noexcept override;
     void setCursorVisible(bool visible) noexcept override;
     void write(const Block &character) noexcept override;
@@ -105,7 +105,7 @@ public: // settings
     /// The size is automatically bounded to the minimum and maximum supported sizes.
     /// If size detection is enabled, the terminal size will be automatically detected and updated.
     /// @param size The new terminal size.
-    void setSize(bgeo::BlockSize size) noexcept;
+    void setSize(block::Size size) noexcept;
     /// Get the refresh mode.
     [[nodiscard]] auto refreshMode() const noexcept -> RefreshMode { return _refreshMode; }
     /// Set the refresh mode.
@@ -266,7 +266,7 @@ private:
     [[nodiscard]] auto finishParagraphWithExplicitLineBreaks(
         int renderedLines, ParagraphSpacing paragraphSpacing) noexcept -> int;
     /// Get the safety margins applied to the terminal size.
-    [[nodiscard]] auto applySafeMargin(bgeo::BlockSize terminalSize) const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto applySafeMargin(block::Size terminalSize) const noexcept -> block::Size;
 
 private:
     TerminalFlags _flags;                             ///< Flags for the terminal behaviour.
@@ -276,15 +276,15 @@ private:
     bool _safeMarginEnabled{true};                    ///< If the compatibility safe margin is enabled.
     bool _afterResize{false};                         ///< If the screen should be cleared after a resize.
     RefreshMode _refreshMode{RefreshMode::Overwrite}; ///< The refresh mode to use.
-    bgeo::BlockSize _size;                            ///< The configured size of the terminal that is safe to use.
-    bgeo::BlockSize _terminalSize;          ///< bgeo::BlockSize of the terminal. Zero if we have no detected size.
-    BlockStyle _style{BlockStyle::reset()}; ///< The current 'cursor' style.
-    bool _backBufferEnabled{false};         ///< If the back buffer feature is enabled.
-    bool _isAlternateScreenActive{false};   ///< If the alternate screen is active or not.
-    WritableBufferPtr _sizeTooSmallBuffer;  ///< Buffer for size too small message.
-    WritableBufferPtr _backBuffer;          ///< The back buffer.
-    impl::InputBackend _input;              ///< The input backend.
-    impl::LineBuffer _lineBuffer;           ///< The line buffer.
+    block::Size _size;                                ///< The configured size of the terminal that is safe to use.
+    block::Size _terminalSize;                     ///< block::Size of the terminal. Zero if we have no detected size.
+    BlockStyle _style{BlockStyle::reset()};        ///< The current 'cursor' style.
+    bool _backBufferEnabled{false};                ///< If the back buffer feature is enabled.
+    bool _isAlternateScreenActive{false};          ///< If the alternate screen is active or not.
+    WritableBufferPtr _sizeTooSmallBuffer;         ///< Buffer for size too small message.
+    WritableBufferPtr _backBuffer;                 ///< The back buffer.
+    impl::InputBackend _input;                     ///< The input backend.
+    impl::LineBuffer _lineBuffer;                  ///< The line buffer.
     std::shared_ptr<std::recursive_mutex> _outputMutex{
         std::make_shared<std::recursive_mutex>()}; ///< Output guard mutex.
 };

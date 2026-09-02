@@ -29,6 +29,7 @@ public:
     ~PosixSubprocessBackend() override;
 
 public: // implement SubprocessBackend
+    [[nodiscard]] auto processId() const noexcept -> ProcessId override;
     [[nodiscard]] auto isRunning() -> bool override;
     [[nodiscard]] auto exitStatus() const noexcept -> const std::optional<SubprocessExitStatus> & override;
     [[nodiscard]] auto wait() -> SubprocessExitStatus override;

@@ -39,7 +39,7 @@ private:
 
     [[nodiscard]] static auto createTerminal(const int width = 20) -> TestTerminal {
         auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = std::make_shared<Terminal>(backend, bgeo::BlockSize{width, 25});
+        auto terminal = std::make_shared<Terminal>(backend, block::Size{width, 25});
         return {std::move(backend), std::move(terminal)};
     }
 
@@ -434,7 +434,7 @@ public:
             enter(testTerminal, readLine, Key{U'x'});
             requireOutputContains(testTerminal.backend->output(), "x");
 
-            testTerminal.terminal->setSize(bgeo::BlockSize{12, 25});
+            testTerminal.terminal->setSize(block::Size{12, 25});
             testTerminal.backend->clearOutput();
             REQUIRE(readLine->update().isIdle());
             REQUIRE_FALSE(testTerminal.backend->output().empty());

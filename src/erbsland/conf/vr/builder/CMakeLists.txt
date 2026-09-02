@@ -9,4 +9,5 @@ add_subdirectory(constraint)
 target_sources(erbsland-core PRIVATE
         Attributes.hpp
         Constraints.hpp
+        RuleDefinition.hpp
 )

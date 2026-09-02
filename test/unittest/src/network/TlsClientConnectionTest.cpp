@@ -34,13 +34,25 @@
 using namespace el::cryptology;
 using namespace el::event;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 namespace mem = el::mem;
 namespace unit = el::unit;
 
 TESTED_TARGETS(TlsClientConnection TlsClientConnectOptions TlsClientConnectionEventEditor ConnectionCloseContext)
 class TlsClientConnectionTest final : public el::UnitTest {
+    using HostResolver = el::network::impl::HostResolver;
+    using TcpAcceptedSocket = el::network::impl::TcpAcceptedSocket;
+    using TcpAcceptedSocketPtr = el::network::impl::TcpAcceptedSocketPtr;
+    using TcpConnection = el::network::impl::TcpConnection;
+    using TcpConnectionDevice = el::network::impl::TcpConnectionDevice;
+    using TcpConnectionDeviceCallbacks = el::network::impl::TcpConnectionDeviceCallbacks;
+    using TcpConnectionDeviceSendStatus = el::network::impl::TcpConnectionDeviceSendStatus;
+    using TlsClientConnection = el::network::impl::TlsClientConnection;
+    using TlsClientConnectionEventEditor = el::network::impl::TlsClientConnectionEventEditor;
+    using TlsClientProtocol = el::network::impl::TlsClientProtocol;
+    using TlsClientProtocolTestAccess = el::network::impl::TlsClientProtocolTestAccess;
+    using TlsWireWriter = el::network::impl::TlsWireWriter;
+
 private:
     class FakeResolver final : public HostResolver {
     public:

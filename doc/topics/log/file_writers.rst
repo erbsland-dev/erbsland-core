@@ -9,7 +9,7 @@
 Writing Logs to Files
 *********************
 
-The :cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>` gives an application durable local history.
+The ``LogWriter::createForFile()`` gives an application durable local history.
 A terminal tells the person who is watching what happens now; a log file lets someone return hours or days later and
 reconstruct what the process saw.
 That makes file logging useful for background services, desktop support logs, long-running tools, and any application
@@ -30,8 +30,8 @@ Add a File Writer to a Log Configuration
 
 Begin with the active :cpp:class:`Path <erbsland::path::Path>` and use it to construct
 :cpp:class:`FileLogWriterOptions <erbsland::log::FileLogWriterOptions>`.
-Configure the policies needed by the application, move the finished options into
-:cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>`, and add the shared writer through
+Configure the policies needed by the application, pass the finished options to ``LogWriter::createForFile()``, and add
+the shared writer through
 :cpp:func:`addWriter() <erbsland::log::LogConfiguration::addWriter>`.
 The route filter can then restrict the file to selected levels or stream trees without changing the file options.
 
@@ -44,7 +44,7 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriters.cpp
     :exec: log/logging_topics --demo FileWriters
-    :source-sha256: 3d92528728dd3204c831ffe36a5d8209edfcc6fc5398e65c970368a6494aa0ef
+    :source-sha256: 70a0845e3e535e3c939d60bb7cef810c1baa9f64c3146033c3c1ffbd4451c523
 
 .. code-block:: cpp
 
@@ -68,8 +68,7 @@ An :cpp:class:`Application <erbsland::core::Application>` shuts its own manager 
         auto format = el::LogLineFormat{};
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
-        configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::FileLogWriter>(std::move(writerOptions)));
+        configuration.setLineFormat(std::move(format)).addWriter(el::LogWriter::createForFile(writerOptions));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -99,7 +98,7 @@ Create the Options With the Active Path
 Unlike the other file settings, the active path is required by the
 :cpp:class:`FileLogWriterOptions <erbsland::log::FileLogWriterOptions>` constructor and has no later setter.
 This keeps an options object from ever representing a file policy without a destination.
-The path must be nonempty; :cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>` validates it when constructed.
+The path must be nonempty; ``LogWriter::createForFile()`` validates it when constructed.
 
 The writer uses the path exactly as supplied.
 Resolve relative paths according to your application's path policy before building the options when the working
@@ -132,7 +131,7 @@ It checks the resulting content rather than relying on file sizes, making the be
     :function-blocks: fileWriterModes
     :function-blocks-sha256: 38b71d3cf5363196ba307c83c788ab165479dd318a16f807778cd9588e27a978
     :exec: log/logging_topics --demo FileWriterModes
-    :source-sha256: 3604f89005a52b2ccb2b0460330d2022b11eaa7de0765043b70f464279c81b16
+    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
 
 .. code-block:: cpp
 
@@ -143,15 +142,15 @@ It checks the resulting content rather than relying on file sizes, making the be
         appendPath.content().writeTextOrThrow("Earlier run\n"_el);
         overwritePath.content().writeTextOrThrow("Earlier run\n"_el);
 
-        auto appendWriter = el::FileLogWriter{el::FileLogWriterOptions{appendPath}};
+        const auto appendWriter = el::LogWriter::createForFile(el::FileLogWriterOptions{appendPath});
         writeFileDemoLine(appendWriter, el::DateTime::now(), "Current run"_el);
-        appendWriter.close();
+        appendWriter->close();
 
         auto overwriteOptions = el::FileLogWriterOptions{overwritePath};
         overwriteOptions.setMode(el::LogFileMode::Overwrite);
-        auto overwriteWriter = el::FileLogWriter{std::move(overwriteOptions)};
+        const auto overwriteWriter = el::LogWriter::createForFile(overwriteOptions);
         writeFileDemoLine(overwriteWriter, el::DateTime::now(), "Current run"_el);
-        overwriteWriter.close();
+        overwriteWriter->close();
 
         const auto yesNo = el::BooleanFormat::yesNo();
         el::io::printLine(
@@ -203,7 +202,7 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
     :function-blocks: fileWriterRotation
     :function-blocks-sha256: 04dc64de17a0cd86ef52a86c751621b4caec06be25ac17cef54113cde31a3f75
     :exec: log/logging_topics --demo FileWriterRotation
-    :source-sha256: 3604f89005a52b2ccb2b0460330d2022b11eaa7de0765043b70f464279c81b16
+    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
 
 .. code-block:: cpp
 
@@ -212,7 +211,7 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
         const auto path = temporary->path() / "guild.log"_el;
         auto options = el::FileLogWriterOptions{path};
         options.setMode(el::LogFileMode::Overwrite).setRotation(el::LogFileRotation::Daily);
-        auto writer = el::FileLogWriter{std::move(options)};
+        const auto writer = el::LogWriter::createForFile(options);
 
         writeFileDemoLine(
             writer,
@@ -224,7 +223,7 @@ The second entry rotates the first day's active file into ``guild.2026-09-01.log
             el::DateTime{el::Date::fromYearMonthDay(2026, 9, 2), el::Time{el::Hour{7}, el::Minute{0}}},
             "Second day"_el,
             2U);
-        writer.close();
+        writer->close();
 
         const auto archive = path.withStem("guild.2026-09-01"_el);
         el::io::printLine("Daily archive: "_el, archive.name());
@@ -265,7 +264,7 @@ first numbered archive.
     :function-blocks: fileWriterMaximumSize
     :function-blocks-sha256: 00782194267f34b697710a436deea49e7b6645a4360781e52f8c54f98b22f897
     :exec: log/logging_topics --demo FileWriterMaximumSize
-    :source-sha256: 3604f89005a52b2ccb2b0460330d2022b11eaa7de0765043b70f464279c81b16
+    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
 
 .. code-block:: cpp
 
@@ -276,11 +275,11 @@ first numbered archive.
         options.setMode(el::LogFileMode::Overwrite)
             .setRotation(el::LogFileRotation::Size)
             .setMaximumSize(el::ByteLength{24U});
-        auto writer = el::FileLogWriter{std::move(options)};
+        const auto writer = el::LogWriter::createForFile(options);
 
         writeFileDemoLine(writer, el::DateTime::now(), "First observation"_el, 1U);
         writeFileDemoLine(writer, el::DateTime::now(), "Second observation"_el, 2U);
-        writer.close();
+        writer->close();
 
         el::io::printLine(
             "Rotation created guild.1.log: "_el, el::BooleanFormat::yesNo(), path.withStem("guild.1"_el).info().exists());
@@ -321,7 +320,7 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
     :function-blocks: fileWriterRetention
     :function-blocks-sha256: 3a9d255497ec5be4b120248fee5f22241bb8b6db28cd253f67903075d0ed7642
     :exec: log/logging_topics --demo FileWriterRetention
-    :source-sha256: 3604f89005a52b2ccb2b0460330d2022b11eaa7de0765043b70f464279c81b16
+    :source-sha256: 0cb33f36e027adbec4e7eb41e66cd77275a0b38d420097413f667ee5779e7d33
 
 .. code-block:: cpp
 
@@ -333,12 +332,12 @@ With retention set to two, the first two numbered archives remain and ``guild.3.
             .setRotation(el::LogFileRotation::Size)
             .setMaximumSize(el::ByteLength{12U})
             .setRetention(2U);
-        auto writer = el::FileLogWriter{std::move(options)};
+        const auto writer = el::LogWriter::createForFile(options);
 
         for (auto sequence = uint64_t{1U}; sequence <= 4U; ++sequence) {
             writeFileDemoLine(writer, el::DateTime::now(), "Entry 0001"_el, sequence);
         }
-        writer.close();
+        writer->close();
 
         const auto yesNo = el::BooleanFormat::yesNo();
         el::io::printLine("guild.1.log exists: "_el, yesNo, path.withStem("guild.1"_el).info().exists());

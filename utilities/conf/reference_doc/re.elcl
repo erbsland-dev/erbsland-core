@@ -1,0 +1,8 @@
+# Reference-document groups for the re domain.
+
+------------*[ Reference Groups ]
+Page        : "re/regular_expressions.rst"
+Title       : "Regular Expressions"
+Header Globs:
+    * "re/*.hpp"
+    * "re/diagnostics/*.hpp"

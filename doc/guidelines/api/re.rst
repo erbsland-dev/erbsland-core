@@ -5,19 +5,12 @@ Regular Expression API Guidelines
 Core Semantics
 ==============
 
-Matching Model
---------------
-
 .. code-block:: text
 
     match = test only at the start of the input
     full match = require the complete input
-    find first = scan for the first matching position
-    find all = lazily scan successive non-overlapping matches
-    collect all = materialize all successive non-overlapping matches
     group zero = complete match
-    capture position = native UTF-8 byte, UTF-16 code-unit, or UTF-32 code-unit offset
-    captured text = shared owning slice that retains the complete subject storage
+    capture position = native offset in the captured text
 
 Primary Types
 =============

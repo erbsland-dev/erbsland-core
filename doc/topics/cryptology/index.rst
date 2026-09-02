@@ -16,6 +16,8 @@ cryptographic guidance changes.
     :maxdepth: 3
 
     overview
+    configuring_tls
+    creating_tls_certificates
     storing_and_verifying_passwords
     supported_password_hashing_algorithms
     using_hash_algorithms

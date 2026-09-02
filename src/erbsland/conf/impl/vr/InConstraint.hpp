@@ -32,9 +32,7 @@ public:
     /// @param values The allowed values.
     template <typename Fwd>
         requires(std::is_same_v<std::remove_cvref_t<Fwd>, Values>)
-    explicit InConstraint(Fwd &&values) : _values(std::forward<Fwd>(values)) {
-        setType(vr::ConstraintType::In);
-    }
+    explicit InConstraint(Fwd &&values) : Constraint{vr::ConstraintType::In}, _values(std::forward<Fwd>(values)) {}
 
 public:
     /// Test whether a collection contains equivalent duplicate values.

@@ -11,23 +11,23 @@ namespace erbsland::cterm {
 class BufferView final : public BufferViewBase {
 public:
     /// Create an empty view.
-    /// This creates a 1x1 view that returns the 'bgeo::BlockDirection::None' character.
+    /// This creates a 1x1 view that returns the 'block::Direction::None' character.
     BufferView() = default;
     /// Create an empty view of a given size.
-    /// This creates a view that returns the 'bgeo::BlockDirection::None' character.
+    /// This creates a view that returns the 'block::Direction::None' character.
     /// @param viewSize The size of the view.
-    explicit BufferView(const bgeo::BlockSize viewSize) noexcept :
-        BufferViewBase{bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, viewSize}} {};
+    explicit BufferView(const block::Size viewSize) noexcept :
+        BufferViewBase{block::Rectangle{block::Position{0, 0}, viewSize}} {};
     /// Create a view of the given content, with a given size.
     /// The view shares the top-left corner with the buffer.
     /// @param content The buffer to create the view from.
     /// @param viewSize The size of the view.
-    BufferView(ReadableBufferPtr content, const bgeo::BlockSize viewSize) noexcept :
-        BufferViewBase{bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, viewSize}}, _content{std::move(content)} {}
+    BufferView(ReadableBufferPtr content, const block::Size viewSize) noexcept :
+        BufferViewBase{block::Rectangle{block::Position{0, 0}, viewSize}}, _content{std::move(content)} {}
     /// Create a view of the given content.
     /// @param content The buffer to create the view from.
     /// @param viewRect The rectangle of the view.
-    BufferView(ReadableBufferPtr content, const bgeo::BlockRectangle viewRect) noexcept :
+    BufferView(ReadableBufferPtr content, const block::Rectangle viewRect) noexcept :
         BufferViewBase{viewRect}, _content{std::move(content)} {}
 
     // defaults
@@ -38,22 +38,22 @@ public:
     auto operator=(BufferView &&) -> BufferView & = default;
 
 public: // implement ReadableBuffer
-    [[nodiscard]] auto get(const bgeo::BlockPosition pos) const noexcept -> const Block & override {
-        if (_content == nullptr || _viewRect.size() == bgeo::BlockSize{0, 0}) {
-            return _cropCharacters[bgeo::BlockDirection::None];
+    [[nodiscard]] auto get(const block::Position pos) const noexcept -> const Block & override {
+        if (_content == nullptr || _viewRect.size() == block::Size{0, 0}) {
+            return _cropCharacters[block::Direction::None];
         }
         const auto translatedPos = pos + _viewRect.topLeft();
         if (_content->size().contains(translatedPos)) {
             if (_showCropCharacters) {
                 const auto cropEdges = CropEdges::fromView(_viewRect, _content->rect());
                 const auto cropDirection = cropEdges.edgeForView(translatedPos, _viewRect);
-                if (cropDirection != bgeo::BlockDirection::None) {
+                if (cropDirection != block::Direction::None) {
                     return _cropCharacters[cropDirection];
                 }
             }
             return _content->get(translatedPos);
         }
-        return _cropCharacters[bgeo::BlockDirection::None];
+        return _cropCharacters[block::Direction::None];
     }
 
 public:

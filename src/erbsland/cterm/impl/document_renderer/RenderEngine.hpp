@@ -139,7 +139,7 @@ private:
     void emitBlock(RenderBlock block);
     /// Open a nested rendering scope.
     void openScope(
-        bgeo::BlockMargins margins,
+        block::Margins margins,
         std::optional<ListItemLayout> listItemLayout = std::nullopt,
         std::optional<BlockString> linePrefix = std::nullopt);
     /// Close the current rendering scope.
@@ -147,13 +147,13 @@ private:
     /// Test whether the current list item already contains blocks.
     [[nodiscard]] auto currentListItemHasBlocks() const noexcept -> bool;
     /// Collapse one vertical margin of a block with its predecessor.
-    void collapseVerticalMargin(RenderBlock &block, bgeo::BlockMargins::Side side, bgeo::BlockCoordinate margin);
+    void collapseVerticalMargin(RenderBlock &block, block::Margins::Side side, block::Coordinate margin);
     /// Emit the pending block, if any.
     void flushPendingBlock();
     /// Test whether a node type has a style level.
     [[nodiscard]] static auto usesLevel(text::TextNodeType nodeType) noexcept -> bool;
     /// Convert a non-negative block coordinate to an integer.
-    [[nodiscard]] static auto positive(bgeo::BlockCoordinate value) noexcept -> int;
+    [[nodiscard]] static auto positive(block::Coordinate value) noexcept -> int;
     /// Get the width available inside the document frame.
     [[nodiscard]] auto frameWidth() const noexcept -> int;
     /// Append plain text from a node and its descendants.

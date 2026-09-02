@@ -229,10 +229,10 @@ void ReadLineApp::applyCommandLine(el::cterm::ReadLineOptions &settings) {
     }
     auto padding = settings.padding();
     if (hasCommandLineValue("padding-left"_el)) {
-        padding.setLeft(el::BlockCoordinate{values->getInteger("padding-left"_el)});
+        padding.setLeading(el::block::Coordinate{values->getInteger("padding-left"_el)});
     }
     if (hasCommandLineValue("padding-right"_el)) {
-        padding.setRight(el::BlockCoordinate{values->getInteger("padding-right"_el)});
+        padding.setTrailing(el::block::Coordinate{values->getInteger("padding-right"_el)});
     }
     settings.setPadding(padding);
     if (hasCommandLineValue("cursor-block"_el)) {

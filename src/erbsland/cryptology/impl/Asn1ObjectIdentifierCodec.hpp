@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../asn1/Asn1ObjectIdentifier.hpp"
+
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../text/String_fwd.hpp"
 #include "../../text/StringEditor_fwd.hpp"
@@ -24,12 +26,16 @@ public:
     /// Validate canonical OBJECT IDENTIFIER content without formatting it.
     /// @throws err::ParseError If the content is malformed or noncanonical.
     void validate() const;
+    /// Append a validated object identifier as canonical X.690 content octets.
+    static void encode(const Asn1ObjectIdentifier &value, mem::ByteBlockEditor &output);
 
 private:
     /// Validate all arcs and append their dotted-decimal representation when output is enabled.
     void parse(text::StringEditor *output) const;
     /// Append one decoded subidentifier when formatting is enabled.
     static void appendArc(text::StringEditor *output, uint64_t value, bool firstSubIdentifier);
+    /// Append one unsigned integer using minimal base-128 encoding.
+    static void appendEncodedArc(mem::ByteBlockEditor &output, uint64_t value);
 
 private:
     const mem::ByteBlock &_content; ///< The borrowed content octets.

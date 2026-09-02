@@ -10,7 +10,7 @@
 namespace demo {
 
 void LogViewerApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{58}, BlockCoordinate{12}});
+    _updateSettings.setMinimumSize(Size{Coordinate{58}, Coordinate{12}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -22,7 +22,7 @@ auto LogViewerApp::beforeMain() -> int {
     return 0;
 }
 
-auto LogViewerApp::canvasSize() noexcept -> BlockSize {
+auto LogViewerApp::canvasSize() noexcept -> Size {
     if (_buffer.size().isZero()) {
         return terminal()->size().expandedWith(_updateSettings.minimumSize());
     }
@@ -40,25 +40,25 @@ void LogViewerApp::onKey(const Key &key) {
     } else if (key == U'f') {
         _followMode = true;
         _viewOffset = clampViewOffset(
-            BlockPosition{BlockCoordinate{0}, BlockCoordinate{_logBuffer->size().height() - viewSize.height()}},
+            Position{Coordinate{0}, Coordinate{_logBuffer->size().height() - viewSize.height()}},
             viewSize,
             _logBuffer->size());
     } else if (key == Key::Left) {
         _followMode = false;
-        _viewOffset = clampViewOffset(
-            _viewOffset + BlockPosition{BlockCoordinate{-1}, BlockCoordinate{0}}, viewSize, _logBuffer->size());
+        _viewOffset =
+            clampViewOffset(_viewOffset + Position{Coordinate{-1}, Coordinate{0}}, viewSize, _logBuffer->size());
     } else if (key == Key::Right) {
         _followMode = false;
-        _viewOffset = clampViewOffset(
-            _viewOffset + BlockPosition{BlockCoordinate{1}, BlockCoordinate{0}}, viewSize, _logBuffer->size());
+        _viewOffset =
+            clampViewOffset(_viewOffset + Position{Coordinate{1}, Coordinate{0}}, viewSize, _logBuffer->size());
     } else if (key == Key::Up) {
         _followMode = false;
-        _viewOffset = clampViewOffset(
-            _viewOffset + BlockPosition{BlockCoordinate{0}, BlockCoordinate{-1}}, viewSize, _logBuffer->size());
+        _viewOffset =
+            clampViewOffset(_viewOffset + Position{Coordinate{0}, Coordinate{-1}}, viewSize, _logBuffer->size());
     } else if (key == Key::Down) {
         _followMode = false;
-        _viewOffset = clampViewOffset(
-            _viewOffset + BlockPosition{BlockCoordinate{0}, BlockCoordinate{1}}, viewSize, _logBuffer->size());
+        _viewOffset =
+            clampViewOffset(_viewOffset + Position{Coordinate{0}, Coordinate{1}}, viewSize, _logBuffer->size());
     }
 }
 
@@ -91,26 +91,20 @@ void LogViewerApp::onRenderToBuffer() {
         now = std::chrono::steady_clock::now();
     }
     _buffer.fill(Block{U' ', bg::Black});
-    const auto outerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{_buffer.size().height()}};
-    const auto titleRect = BlockRectangle{
-        BlockCoordinate{2}, BlockCoordinate{1}, BlockCoordinate{_buffer.size().width() - 4}, BlockCoordinate{1}};
+    const auto outerRect = Rectangle{
+        Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{_buffer.size().height()}};
+    const auto titleRect =
+        Rectangle{Coordinate{2}, Coordinate{1}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
     const auto contentRect = contentRectForBuffer(_buffer.size());
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().height() - 2},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{1}};
+    const auto footerRect = Rectangle{
+        Coordinate{2}, Coordinate{_buffer.size().height() - 2}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
     _buffer.drawFrame(outerRect, FrameStyle::LightWithRoundedCorners);
     drawHeader(titleRect);
     drawLogView(contentRect);
     drawFooter(footerRect);
 }
 
-void LogViewerApp::drawHeader(const BlockRectangle rect) {
+void LogViewerApp::drawHeader(const Rectangle rect) {
     _buffer.drawBlockText(
         el::StringFormat{"Log Viewer  |  CursorBuffer {}x{} / 250x500  |  {} mode  |  delay {}"_el}.build(
             _logBuffer->size().width(),
@@ -127,7 +121,7 @@ void LogViewerApp::drawHeader(const BlockRectangle rect) {
         Color{fg::BrightCyan, bg::Black});
 }
 
-void LogViewerApp::drawFooter(const BlockRectangle rect) {
+void LogViewerApp::drawFooter(const Rectangle rect) {
     _buffer.fill(rect, Block{U' ', bg::BrightBlack});
     auto footer = BlockStringEditor{};
     footer.append(
@@ -160,22 +154,22 @@ void LogViewerApp::drawFooter(const BlockRectangle rect) {
     _buffer.drawBlockText(BlockText{footer, rect, Alignment::CenterLeft});
 }
 
-void LogViewerApp::drawLogView(const BlockRectangle rect) {
+void LogViewerApp::drawLogView(const Rectangle rect) {
     _buffer.fill(rect, Block{U' ', Color{fg::Default, bg::Black}});
     updateView(rect.size());
     _buffer.drawBuffer(_logView, rect);
 }
 
-void LogViewerApp::updateView(const BlockSize viewSize) noexcept {
+void LogViewerApp::updateView(const Size viewSize) noexcept {
     if (_followMode) {
         _viewOffset = clampViewOffset(
-            BlockPosition{BlockCoordinate{0}, BlockCoordinate{_logBuffer->size().height() - viewSize.height()}},
+            Position{Coordinate{0}, Coordinate{_logBuffer->size().height() - viewSize.height()}},
             viewSize,
             _logBuffer->size());
     } else {
         _viewOffset = clampViewOffset(_viewOffset, viewSize, _logBuffer->size());
     }
-    _logView.setViewRect(BlockRectangle{_viewOffset, viewSize});
+    _logView.setViewRect(Rectangle{_viewOffset, viewSize});
 }
 
 void LogViewerApp::renderLogMessage(const LogMessage &message) {

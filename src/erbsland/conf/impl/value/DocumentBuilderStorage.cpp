@@ -1,10 +1,12 @@
-// Copyright (c) 2025 Tobias Erbsland - https://erbsland.dev
+// Copyright (c) 2025-2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 #include "DocumentBuilderStorage.hpp"
 
 #include "Document.hpp"
 #include "Value.hpp"
 #include "ValueHelper.hpp"
+
+#include "../../../err/ParameterError.hpp"
 
 namespace erbsland::conf::impl {
 

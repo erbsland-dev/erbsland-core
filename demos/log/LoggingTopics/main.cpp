@@ -23,7 +23,6 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerDemo("FileWriterRetention"_el, fileWriterRetention);
     app.registerDemo("FileWriterRotation"_el, fileWriterRotation);
     app.registerDemo("FileWriters"_el, fileWriters);
-    app.registerDemo("LastErrorsWriter"_el, lastErrorsWriter);
     app.registerDemo("LineFirstLineTruncation"_el, lineFirstLineTruncation);
     app.registerDemo("LineFormats"_el, lineFormats);
     app.registerDemo("LineLevelFormats"_el, lineLevelFormats);

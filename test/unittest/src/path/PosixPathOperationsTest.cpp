@@ -8,8 +8,8 @@
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathInfo.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
 #include <erbsland/system/PlatformErrorCategory.hpp>
-#include <erbsland/system/PosixErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -67,7 +67,8 @@ public:
 
 private:
     void requirePosixError(const el::path::PathError &error, const int expectedCode) {
-        const auto context = std::dynamic_pointer_cast<const el::system::PosixErrorContext>(error.platformContext());
+        const auto context =
+            std::dynamic_pointer_cast<const el::system::impl::PosixErrorContext>(error.platformContext());
         REQUIRE_NOT_EQUAL(context, nullptr);
         REQUIRE_EQUAL(context->errorCode(), expectedCode);
         REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);

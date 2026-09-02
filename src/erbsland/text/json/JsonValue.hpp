@@ -29,7 +29,7 @@
 namespace erbsland::text::json {
 
 /// A copy-on-write JSON value tree.
-/// @seedoc{/reference/text/json}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{JsonValueTest JsonParserTest}
 class JsonValue final {
 public:

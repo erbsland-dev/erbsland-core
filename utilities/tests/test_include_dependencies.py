@@ -47,7 +47,7 @@ class IncludeDependenciesTest(unittest.TestCase):
         self.source_dir.mkdir(parents=True)
         self.policy = PublicHeaderPolicy(
             excluded_directories=frozenset({"impl", "attribute", "constraint"}),
-            excluded_headers=frozenset({Path("system/WindowsErrorContext.hpp")}),
+            excluded_headers=frozenset({Path("system/MakeOneNamespace.hpp")}),
         )
 
     def tearDown(self) -> None:

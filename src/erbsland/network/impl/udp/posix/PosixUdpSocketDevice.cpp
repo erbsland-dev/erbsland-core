@@ -14,7 +14,7 @@
 #endif
 #include "../../../../mem/impl/UnsafeByteBlockAccess.hpp"
 #include "../../../../mem/impl/UnsafeByteBlockBuffer.hpp"
-#include "../../../../system/PosixErrorContext.hpp"
+#include "../../../../system/impl/PosixErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
 
 #include <arpa/inet.h>
@@ -257,7 +257,8 @@ auto PosixUdpSocketDevice::createError(text::String title, text::String descript
 auto PosixUdpSocketDevice::createContext(const int errorCode, text::String title, text::String description) const
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
-    context.setReason(errorReason(errorCode)).setPlatformContext(system::PosixErrorContext::fromErrorCode(errorCode));
+    context.setReason(errorReason(errorCode))
+        .setPlatformContext(system::impl::PosixErrorContext::fromErrorCode(errorCode));
     if (_localEndpoint.has_value()) {
         context.setLocalEndpoint(*_localEndpoint);
     }

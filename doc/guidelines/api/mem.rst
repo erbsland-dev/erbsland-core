@@ -5,40 +5,14 @@ Memory Domain API Guidelines
 Core Semantics
 ==============
 
-Ownership Model
----------------
-
 .. code-block:: text
 
     borrowed view = non-owning contiguous bytes valid until source mutation or destruction
     direct owner = independent allocation copied deeply and transferred by move
     shared block = immutable value or slice sharing read-only allocation ownership
     block editor = mutable copy-on-write value that detaches before modification
-    ring = bounded FIFO bytes stored in up to two contiguous segments around a wrap point
-
-Byte Ranges
------------
-
-.. code-block:: text
-
-    index = zero-based byte position
-    length or capacity = non-negative byte count
-    range = half-open byte positions with inclusive begin and exclusive end
-    tolerant access = fallback or unchanged destination for an invalid range
-    strict access = typed bounds failure for an invalid range
-
-Sensitive Data
---------------
-
-.. code-block:: text
-
-    marked allocation = one-way sensitivity metadata shared by every non-empty block alias
-    sensitive direct owner = reversible per-object mode copied with independently owned storage
-    owning block operation = may propagate sensitivity from a marked source to its destination
-    borrowed view = carries no sensitivity metadata and does not mark a destination
+    marked allocation = one-way marker that is passed to all copies of an object.
     secure erasure = optimizer-resistant overwrite of complete owned capacity
-    ordinary conversion = explicit unmarked copy unless its owning-type contract propagates sensitivity
-    ordinary comparison = equality and ordering without a constant-time guarantee
     constant-time equality = explicit comparison without content-dependent short-circuiting for equal lengths
 
 Primary Types

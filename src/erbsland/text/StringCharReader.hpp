@@ -39,7 +39,7 @@ namespace erbsland::text {
 ///
 /// The reader accepts UTF-8, UTF-16, and UTF-32 strings and exposes one sequential code-point based read API.
 /// Copies share the immutable source data but keep independent reader positions.
-/// @seedoc{/reference/text/string_reader}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{StringCharReaderTest}
 class StringCharReader final {
 public:

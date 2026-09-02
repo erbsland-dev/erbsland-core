@@ -13,7 +13,7 @@ namespace erbsland::network {
 
 /// One validated HTTP field with an exact value.
 /// Field values may contain obs-text and malformed UTF-8 bytes, but never prohibited HTTP control bytes.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpHeadersTest}
 class HttpField final {
 public:

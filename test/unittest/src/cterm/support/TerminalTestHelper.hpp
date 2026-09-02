@@ -13,7 +13,7 @@ class TerminalTestHelper : public BufferTestHelper {
 public:
     /// Create a terminal backed by the specified test backend.
     auto createTerminal(
-        const std::shared_ptr<TerminalTestBackend> &backend, const bgeo::BlockSize size = bgeo::BlockSize{80, 25})
+        const std::shared_ptr<TerminalTestBackend> &backend, const block::Size size = block::Size{80, 25})
         -> std::unique_ptr<Terminal> {
         auto terminal = std::make_unique<Terminal>(size);
         terminal->setBackend(backend);
@@ -21,7 +21,7 @@ public:
     }
 
     /// Create update settings that show a minimum-size warning.
-    auto createMinimumSizeWarningSettings(const bgeo::BlockSize minimumSize, const erbsland::text::String &message)
+    auto createMinimumSizeWarningSettings(const block::Size minimumSize, const erbsland::text::String &message)
         -> UpdateSettings {
         auto settings = UpdateSettings{};
         settings.setMinimumSize(minimumSize);

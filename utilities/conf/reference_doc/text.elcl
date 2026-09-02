@@ -1,0 +1,111 @@
+# Reference-document groups for the text domain.
+
+------------*[ Reference Groups ]
+Page        : "text/characters.rst"
+Title       : "Characters and Unicode"
+Headers     :
+    * "text/CaseSensitivity.hpp"
+    * "text/CombinedChar.hpp"
+    * "text/ProcessCharacterFn.hpp"
+    * "text/TransformCharacterFn.hpp"
+Header Globs:
+    * "text/*Char*.hpp"
+    * "text/Ascii*.hpp"
+    * "text/Unicode*.hpp"
+Excluded Header Globs:
+    * "text/StringChar*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/strings.rst"
+Title       : "Strings and Collections"
+Headers     :
+    * "text/Literals.hpp"
+    * "text/NormalizationForm.hpp"
+Header Globs:
+    * "text/*String*.hpp"
+    * "text/u8/*String*.hpp"
+    * "text/u16/*String*.hpp"
+    * "text/u32/*String*.hpp"
+Excluded Header Globs:
+    * "text/SafeStringFlag.hpp"
+    * "text/StringChar*.hpp"
+    * "text/StringConverter.hpp"
+    * "text/StringDecodeBuffer.hpp"
+    * "text/StringDecoder.hpp"
+    * "text/StringEncoder.hpp"
+    * "text/StringEncoding.hpp"
+    * "text/StringFormat.hpp"
+    * "text/StringKind.hpp"
+    * "text/StringPattern.hpp"
+    * "text/StringSide.hpp"
+    * "text/StringSplit*.hpp"
+    * "text/ToString.hpp"
+    * "text/u8/U8StringSplitter.hpp"
+    * "text/u16/U16StringSplitter.hpp"
+    * "text/u32/U32StringSplitter.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/formatting_and_parsing.rst"
+Title       : "Text Formatting and Parsing"
+Headers     :
+    * "text/Capitalization.hpp"
+    * "text/EscapeAmount.hpp"
+    * "text/IntegerBase.hpp"
+    * "text/IntegerSignMode.hpp"
+    * "text/LetterCase.hpp"
+    * "text/SafeStringFlag.hpp"
+    * "text/StringCharReader.hpp"
+    * "text/StringCharReaderState.hpp"
+    * "text/StringFormat.hpp"
+    * "text/StringSide.hpp"
+    * "text/TruncateMode.hpp"
+Header Globs:
+    * "text/*Format*.hpp"
+    * "text/*Parse*.hpp"
+    * "text/Read*.hpp"
+    * "text/u8/*Format.hpp"
+    * "text/u16/*Format.hpp"
+    * "text/u32/*Format.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/encoding.rst"
+Title       : "Text Encoding and Conversion"
+Headers     :
+    * "text/EncodingMode.hpp"
+    * "text/StringConverter.hpp"
+    * "text/StringDecodeBuffer.hpp"
+    * "text/StringDecoder.hpp"
+    * "text/StringEncoder.hpp"
+    * "text/StringKind.hpp"
+    * "text/ToString.hpp"
+Header Globs:
+    * "text/*Encoding*.hpp"
+    * "text/base_n/*.hpp"
+    * "text/punycode/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/matching_and_splitting.rst"
+Title       : "Text Matching and Splitting"
+Headers     :
+    * "text/StringPattern.hpp"
+Header Globs:
+    * "text/StringSplit*.hpp"
+    * "text/fuzzy/*.hpp"
+    * "text/pattern/*.hpp"
+    * "text/u8/U8StringSplitter.hpp"
+    * "text/u16/U16StringSplitter.hpp"
+    * "text/u32/U32StringSplitter.hpp"
+
+------------*[ Reference Groups ]
+Page        : "text/documents_and_rendering.rst"
+Title       : "Text Documents and Rendering"
+Headers     :
+    * "text/PlainTextRenderer.hpp"
+    * "text/TextDocument.hpp"
+Header Globs:
+    * "text/CodeSnippet*.hpp"
+    * "text/TextNode*.hpp"
+    * "text/TextWalk*.hpp"
+    * "text/html/*.hpp"
+    * "text/json/*.hpp"
+    * "text/render/*.hpp"

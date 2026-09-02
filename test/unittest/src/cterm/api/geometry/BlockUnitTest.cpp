@@ -8,7 +8,7 @@
 TESTED_TARGETS(BlockUnit BlockIndex BlockCount BlockRange)
 class BlockUnitTest final : public el::UnitTest {
 public:
-    void testIndexAndCountExposeTypedBlockPositions() {
+    void testIndexAndCountExposeTypedPositions() {
         const auto index = BlockIndex{3U};
         const auto count = BlockCount{5U};
 

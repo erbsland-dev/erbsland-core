@@ -13,6 +13,8 @@ target_sources(erbsland-core PRIVATE
         OptionChoice.cpp
         OptionChoice.hpp
         OptionChoice_fwd.hpp
+        OptionChoiceEditor.cpp
+        OptionChoiceEditor.hpp
         OptionChoices.cpp
         OptionChoices.hpp
         OptionChoices_fwd.hpp

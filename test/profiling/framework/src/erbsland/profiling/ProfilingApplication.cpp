@@ -167,7 +167,7 @@ auto ProfilingApplication::runRegisteredProfiling() -> ExitCode {
     }
     const auto scenarioFilters = optionValues()->getTextList("scenario"_el);
     configuration.scenarios.removeIf([&](const Scenario &scenario) -> bool {
-        if (scenarioFilters.empty()) {
+        if (scenarioFilters.isEmpty()) {
             return false;
         }
         for (const auto &filter : scenarioFilters) {
@@ -179,7 +179,7 @@ auto ProfilingApplication::runRegisteredProfiling() -> ExitCode {
     });
     for (const auto &axis : _definition.axes()) {
         const auto filters = optionValues()->getTextList(axis.optionName());
-        if (filters.empty()) {
+        if (filters.isEmpty()) {
             continue;
         }
         for (const auto &filter : filters) {

@@ -30,7 +30,7 @@
 namespace erbsland::text {
 
 /// A lightweight decoded-character string pattern.
-/// @seedoc{/reference/text/string_pattern}
+/// @seedoc{/reference/text/matching_and_splitting}
 /// @tested{StringPatternTest}
 class StringPattern final {
 public:

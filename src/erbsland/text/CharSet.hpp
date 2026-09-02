@@ -39,7 +39,7 @@ namespace erbsland::text {
 /// A normalized set of Unicode scalar values.
 /// The set stores up to two ranges inline and uses copy-on-write storage for larger sets. Invalid characters are
 /// ignored.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @tested{CharSetTest}
 class CharSet final {
     friend class impl::CharSetRangeBuilder;

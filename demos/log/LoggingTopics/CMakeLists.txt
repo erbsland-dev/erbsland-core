@@ -11,7 +11,6 @@ target_sources(logging_topics PRIVATE
         ConfigurationReplacement.cpp
         FileWriterOptions.cpp
         FileWriters.cpp
-        LastErrorsWriter.cpp
         LineFirstLineTruncation.cpp
         LineFormats.cpp
         LineLevelFormats.cpp

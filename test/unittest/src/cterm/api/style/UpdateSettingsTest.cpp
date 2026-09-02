@@ -10,7 +10,7 @@ class UpdateSettingsTest final : public el::UnitTest {
 public:
     void testDefaultSettingsExposeTheExpectedDefaults() {
         const auto &settings = UpdateSettings::defaultSettings();
-        const auto expectedMinimumSize = bgeo::BlockSize{0, 0};
+        const auto expectedMinimumSize = block::Size{0, 0};
 
         REQUIRE_EQUAL(settings.minimumSize(), expectedMinimumSize);
         REQUIRE_EQUAL(settings.minimumSizeBackground(), Block::space());
@@ -25,7 +25,7 @@ public:
 
     void testSettersUpdateAllStoredValues() {
         auto settings = UpdateSettings{};
-        const auto expectedMinimumSize = bgeo::BlockSize{80, 25};
+        const auto expectedMinimumSize = block::Size{80, 25};
 
         settings.setMinimumSize(expectedMinimumSize);
         settings.setMinimumSizeBackground(Block{U'.'});
@@ -58,8 +58,8 @@ public:
         settings.applyTo(view);
 
         REQUIRE(view.showCropCharacters());
-        REQUIRE_EQUAL(view.cropCharacter(bgeo::BlockDirection::East), U'>');
-        REQUIRE_EQUAL(view.cropCharacter(bgeo::BlockDirection::SouthEast), U'+');
-        REQUIRE_EQUAL(view.cropCharacter(bgeo::BlockDirection::South), U'v');
+        REQUIRE_EQUAL(view.cropCharacter(block::Direction::East), U'>');
+        REQUIRE_EQUAL(view.cropCharacter(block::Direction::SouthEast), U'+');
+        REQUIRE_EQUAL(view.cropCharacter(block::Direction::South), U'v');
     }
 };

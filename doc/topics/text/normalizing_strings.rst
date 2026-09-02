@@ -118,7 +118,7 @@ If malformed input must be rejected, validate its encoding before normalization.
 Like other decoded string operations, normalization otherwise replaces malformed encoded units with the Unicode
 replacement character.
 The precise behavior for malformed and unusually long combining sequences belongs in the
-:doc:`technical string-width reference </reference/text/string_width_variants>`.
+:doc:`technical string reference </reference/text/strings>`.
 
 Normalize After Joining Text
 ============================

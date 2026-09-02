@@ -19,7 +19,7 @@ public:
         CursorWriter &writer,
         const int x1,
         const int width,
-        const bgeo::Alignment alignment,
+        const geometry::Alignment alignment,
         const LayoutResult &layout,
         const BlockString &sourceText,
         const ParagraphOptions &options,

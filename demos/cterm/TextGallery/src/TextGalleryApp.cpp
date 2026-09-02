@@ -8,7 +8,7 @@
 namespace demo {
 
 void TextGalleryApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{38}, BlockCoordinate{14}});
+    _updateSettings.setMinimumSize(Size{Coordinate{38}, Coordinate{14}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -32,24 +32,15 @@ void TextGalleryApp::onKey(const Key &key) {
 
 void TextGalleryApp::onRenderToBuffer() {
     _buffer.fill(Block{U' ', bg::Black});
-    const auto outerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{_buffer.size().height()}};
+    const auto outerRect = Rectangle{
+        Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{_buffer.size().height()}};
     _buffer.drawFrame(outerRect, FrameStyle::LightWithRoundedCorners);
-    const auto titleRect = BlockRectangle{
-        BlockCoordinate{2}, BlockCoordinate{1}, BlockCoordinate{_buffer.size().width() - 4}, BlockCoordinate{1}};
-    const auto contentRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{3},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{_buffer.size().height() - 7}};
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().height() - 3},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{1}};
+    const auto titleRect =
+        Rectangle{Coordinate{2}, Coordinate{1}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
+    const auto contentRect = Rectangle{
+        Coordinate{2}, Coordinate{3}, Coordinate{_buffer.size().width() - 4}, Coordinate{_buffer.size().height() - 7}};
+    const auto footerRect = Rectangle{
+        Coordinate{2}, Coordinate{_buffer.size().height() - 3}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
     _buffer.drawBlockText(
         "BlockText Gallery  |  alignment, wrapping, wide characters, and bitmap fonts"_el,
         titleRect,
@@ -70,16 +61,13 @@ void TextGalleryApp::onRenderToBuffer() {
     drawFooter(footerRect);
 }
 
-void TextGalleryApp::drawOverviewPage(const BlockRectangle contentRect) {
-    const auto gap = BlockCoordinate{1};
-    const auto columnWidth = std::max(BlockCoordinate{12}, (contentRect.width() - gap) / 2);
-    const auto rowHeight = std::max(BlockCoordinate{5}, (contentRect.height() - gap) / 2);
+void TextGalleryApp::drawOverviewPage(const Rectangle contentRect) {
+    const auto gap = Coordinate{1};
+    const auto columnWidth = std::max(Coordinate{12}, (contentRect.width() - gap) / 2);
+    const auto rowHeight = std::max(Coordinate{5}, (contentRect.height() - gap) / 2);
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{contentRect.y1()},
-            BlockCoordinate{columnWidth},
-            BlockCoordinate{rowHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1()}, Coordinate{contentRect.y1()}, Coordinate{columnWidth}, Coordinate{rowHeight}},
         "Top Left"_el,
         "Small panels are an easy way to compare alignment and wrapping side by side."_el,
         Alignment::TopLeft,
@@ -87,11 +75,11 @@ void TextGalleryApp::drawOverviewPage(const BlockRectangle contentRect) {
         Color{fg::White, bg::BrightBlack},
         Color{fg::White, bg::BrightBlack});
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1() + columnWidth + gap},
-            BlockCoordinate{contentRect.y1()},
-            BlockCoordinate{columnWidth},
-            BlockCoordinate{rowHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1() + columnWidth + gap},
+            Coordinate{contentRect.y1()},
+            Coordinate{columnWidth},
+            Coordinate{rowHeight}},
         "Center"_el,
         "The same paragraph can be centered without a custom layout engine."_el,
         Alignment::Center,
@@ -99,11 +87,11 @@ void TextGalleryApp::drawOverviewPage(const BlockRectangle contentRect) {
         Color{fg::BrightBlue, bg::Blue},
         Color{fg::BrightBlue, bg::Blue});
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{contentRect.y1() + rowHeight + gap},
-            BlockCoordinate{columnWidth},
-            BlockCoordinate{rowHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1()},
+            Coordinate{contentRect.y1() + rowHeight + gap},
+            Coordinate{columnWidth},
+            Coordinate{rowHeight}},
         "Bottom Right"_el,
         "Right and bottom alignment stay readable even inside narrow frames."_el,
         Alignment::BottomRight,
@@ -111,11 +99,11 @@ void TextGalleryApp::drawOverviewPage(const BlockRectangle contentRect) {
         Color{fg::BrightMagenta, bg::Magenta},
         Color{fg::BrightMagenta, bg::Magenta});
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1() + columnWidth + gap},
-            BlockCoordinate{contentRect.y1() + rowHeight + gap},
-            BlockCoordinate{columnWidth},
-            BlockCoordinate{rowHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1() + columnWidth + gap},
+            Coordinate{contentRect.y1() + rowHeight + gap},
+            Coordinate{columnWidth},
+            Coordinate{rowHeight}},
         "Top Center"_el,
         "Wrapping respects the box width, while alignment still decides where each line starts."_el,
         Alignment::TopCenter,
@@ -124,14 +112,14 @@ void TextGalleryApp::drawOverviewPage(const BlockRectangle contentRect) {
         Color{fg::BrightCyan, bg::Cyan});
 }
 
-void TextGalleryApp::drawMixedWidthPage(const BlockRectangle contentRect) {
-    const auto topHeight = std::max(BlockCoordinate{5}, contentRect.height() / 2 - 1);
+void TextGalleryApp::drawMixedWidthPage(const Rectangle contentRect) {
+    const auto topHeight = std::max(Coordinate{5}, contentRect.height() / 2 - 1);
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{contentRect.y1()},
-            BlockCoordinate{contentRect.width()},
-            BlockCoordinate{topHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1()},
+            Coordinate{contentRect.y1()},
+            Coordinate{contentRect.width()},
+            Coordinate{topHeight}},
         "Mixed Width Layout"_el,
         "English meets 日本語 and 漢字 in the same wrapped paragraph. The frame and alignment stay stable because "
         "the renderer measures each character width instead of counting bytes."_el,
@@ -142,13 +130,9 @@ void TextGalleryApp::drawMixedWidthPage(const BlockRectangle contentRect) {
 
     const auto lowerY = contentRect.y1() + topHeight + 1;
     const auto lowerHeight = contentRect.y2() - lowerY;
-    const auto leftWidth = std::max(BlockCoordinate{12}, (contentRect.width() - 1) / 2);
+    const auto leftWidth = std::max(Coordinate{12}, (contentRect.width() - 1) / 2);
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{lowerY},
-            BlockCoordinate{leftWidth},
-            BlockCoordinate{lowerHeight}},
+        Rectangle{Coordinate{contentRect.x1()}, Coordinate{lowerY}, Coordinate{leftWidth}, Coordinate{lowerHeight}},
         "Center"_el,
         "A界B  C東京D  E文字F\nCentered text keeps the wide glyphs balanced."_el,
         Alignment::Center,
@@ -156,11 +140,11 @@ void TextGalleryApp::drawMixedWidthPage(const BlockRectangle contentRect) {
         bg::Blue,
         Color{fg::BrightWhite, bg::Blue});
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1() + leftWidth + 1},
-            BlockCoordinate{lowerY},
-            BlockCoordinate{leftWidth},
-            BlockCoordinate{lowerHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1() + leftWidth + 1},
+            Coordinate{lowerY},
+            Coordinate{leftWidth},
+            Coordinate{lowerHeight}},
         "Right"_el,
         "Right-aligned ASCII, kana, and kanji.\nZürich, 東京, Kyoto, and 大阪 all line up cleanly."_el,
         Alignment::BottomRight,
@@ -169,15 +153,15 @@ void TextGalleryApp::drawMixedWidthPage(const BlockRectangle contentRect) {
         Color{fg::BrightWhite, bg::Magenta});
 }
 
-void TextGalleryApp::drawBitmapFontPage(const BlockRectangle contentRect) {
-    const auto titleHeight = std::min(BlockCoordinate{6}, contentRect.height());
+void TextGalleryApp::drawBitmapFontPage(const Rectangle contentRect) {
+    const auto titleHeight = std::min(Coordinate{6}, contentRect.height());
     auto title = BlockText{
         BlockString{titleForWidth(contentRect.width())},
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{contentRect.y1()},
-            BlockCoordinate{contentRect.width()},
-            BlockCoordinate{titleHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1()},
+            Coordinate{contentRect.y1()},
+            Coordinate{contentRect.width()},
+            Coordinate{titleHeight}},
         Alignment::Center};
     title.setFont(_font);
     title.setColorSequence(titleColors());
@@ -185,11 +169,11 @@ void TextGalleryApp::drawBitmapFontPage(const BlockRectangle contentRect) {
     _buffer.drawBlockText(title, _animationCycle);
 
     drawPanel(
-        BlockRectangle{
-            BlockCoordinate{contentRect.x1()},
-            BlockCoordinate{contentRect.y1() + titleHeight},
-            BlockCoordinate{contentRect.width()},
-            BlockCoordinate{contentRect.height() - titleHeight}},
+        Rectangle{
+            Coordinate{contentRect.x1()},
+            Coordinate{contentRect.y1() + titleHeight},
+            Coordinate{contentRect.width()},
+            Coordinate{contentRect.height() - titleHeight}},
         "Bitmap Font"_el,
         "The large title above uses the built-in default ASCII bitmap font. Regular text still fits naturally "
         "around it, so a page can mix dramatic headlines with practical terminal UI copy."_el,
@@ -200,7 +184,7 @@ void TextGalleryApp::drawBitmapFontPage(const BlockRectangle contentRect) {
 }
 
 void TextGalleryApp::drawPanel(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const el::String title,
     const el::String text,
     const Alignment alignment,
@@ -214,25 +198,21 @@ void TextGalleryApp::drawPanel(
     _buffer.drawFilledFrame(rect, frameStyle, Block{U' ', fillColor});
     _buffer.drawBlockText(
         title,
-        BlockRectangle{
-            BlockCoordinate{rect.x1() + 2},
-            BlockCoordinate{rect.y1()},
-            BlockCoordinate{rect.width() - 4},
-            BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y1()}, Coordinate{rect.width() - 4}, Coordinate{1}},
         Alignment::Center,
         textColor);
     _buffer.drawBlockText(
         text,
-        BlockRectangle{
-            BlockCoordinate{rect.x1() + 1},
-            BlockCoordinate{rect.y1() + 1},
-            BlockCoordinate{rect.width() - 2},
-            BlockCoordinate{rect.height() - 2}},
+        Rectangle{
+            Coordinate{rect.x1() + 1},
+            Coordinate{rect.y1() + 1},
+            Coordinate{rect.width() - 2},
+            Coordinate{rect.height() - 2}},
         alignment,
         textColor);
 }
 
-void TextGalleryApp::drawFooter(const BlockRectangle rect) {
+void TextGalleryApp::drawFooter(const Rectangle rect) {
     _buffer.fill(rect, Block{U' ', bg::BrightBlack});
     auto footer = BlockText{buildFooterText(), rect, Alignment::CenterLeft};
     _buffer.drawBlockText(footer);
@@ -264,7 +244,7 @@ auto TextGalleryApp::titleColors() -> ColorSequence {
     };
 }
 
-auto TextGalleryApp::titleForWidth(const BlockCoordinate width) -> el::String {
+auto TextGalleryApp::titleForWidth(const Coordinate width) -> el::String {
     if (width >= 60) {
         return "-+[ COLOR TERM ]+-"_el;
     }

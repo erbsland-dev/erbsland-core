@@ -31,9 +31,6 @@ target_sources(erbsland-core PRIVATE
         EventLoopDriver_fwd.hpp
         EventLoopErrorAction.hpp
         EventLoopErrorHandler.hpp
-        EventPipe.hpp
-        EventPipeReceiver.hpp
-        EventPipeSender.hpp
         EventRegistry.cpp
         EventRegistry.hpp
         EventRegistry_fwd.hpp

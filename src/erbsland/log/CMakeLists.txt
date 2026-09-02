@@ -4,21 +4,16 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(impl)
+add_subdirectory(line)
 
 target_sources(erbsland-core PRIVATE
         all.hpp
-        ConsoleLogWriter.cpp
-        ConsoleLogWriter.hpp
-        ConsoleLogWriter_fwd.hpp
         ConsoleLogWriterOptions.cpp
         ConsoleLogWriterOptions.hpp
-        FileLogWriter.cpp
-        FileLogWriter.hpp
+        ConsoleLogWriterOptions_fwd.hpp
         FileLogWriterOptions.cpp
         FileLogWriterOptions.hpp
-        LastErrorsLogWriter.cpp
-        LastErrorsLogWriter.hpp
-        LastErrorsLogWriter_fwd.hpp
+        FileLogWriterOptions_fwd.hpp
         LogConfiguration.cpp
         LogConfiguration.hpp
         LogConfigurationParser.cpp
@@ -34,14 +29,8 @@ target_sources(erbsland-core PRIVATE
         LogLevel.hpp
         LogLevelFormat.cpp
         LogLevelFormat.hpp
-        LogLine.cpp
-        LogLine.hpp
-        LogLine_fwd.hpp
         LogLineFormat.cpp
         LogLineFormat.hpp
-        LogLinePart.cpp
-        LogLinePart.hpp
-        LogLineSegment.hpp
         LogManager.cpp
         LogManager.hpp
         LogManager_fwd.hpp
@@ -66,10 +55,9 @@ target_sources(erbsland-core PRIVATE
         LogWriter_fwd.hpp
         LogWriterFilter.cpp
         LogWriterFilter.hpp
-        SyslogLogWriter.cpp
-        SyslogLogWriter.hpp
         SyslogLogWriterOptions.cpp
         SyslogLogWriterOptions.hpp
+        SyslogLogWriterOptions_fwd.hpp
         SyslogTransport.cpp
         SyslogTransport.hpp
 )

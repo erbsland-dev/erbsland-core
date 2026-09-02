@@ -15,9 +15,12 @@
 
 #include "../core/Definitions.hpp"
 #include "../err/ParseError.hpp"
+#include "../system/PlatformError.hpp"
+#include "../system/ProcessInfo.hpp"
 #include "../text/StringConverter.hpp"
 #include "../text/StringEditor.hpp"
 
+#include <exception>
 #include <utility>
 
 namespace erbsland::path {
@@ -398,6 +401,27 @@ auto Path::currentDirectory() noexcept -> Path {
         return impl::pathBackend().currentDirectoryOrThrow();
     } catch (const PathError &) {
         return {};
+    }
+}
+
+auto Path::executablePath() noexcept -> Path {
+    try {
+        return executablePathOrThrow();
+    } catch (const PathError &) {
+        return {};
+    }
+}
+
+auto Path::executablePathOrThrow() -> Path {
+    try {
+        return system::ProcessInfo{}.executablePathOrThrow();
+    } catch (const system::PlatformError &error) {
+        throw PathError{
+            PathErrorContext{
+                "Process executable path is unavailable"_el,
+                "The operating system could not determine the current process executable path."_el}
+                .setPlatformContext(error.context()),
+            std::current_exception()};
     }
 }
 

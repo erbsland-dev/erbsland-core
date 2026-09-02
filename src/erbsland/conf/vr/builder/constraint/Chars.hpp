@@ -30,7 +30,7 @@ public:
     explicit Chars(const std::initializer_list<text::String> values, ConstraintOptions options = {}) :
         _values{values}, _options{std::move(options)} {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
 private:
     text::StringList _values;

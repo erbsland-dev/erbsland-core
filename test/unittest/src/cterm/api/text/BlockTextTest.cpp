@@ -10,14 +10,14 @@ class BlockTextTest final : public el::UnitTest {
 public:
     void testDefaultConstructionUsesEmptyTextAndDefaultOptions() {
         const auto text = BlockText{};
-        const auto expectedRect = bgeo::BlockRectangle{0, 0, 0, 0};
+        const auto expectedRect = block::Rectangle{0, 0, 0, 0};
 
         REQUIRE(text.blockString().isEmpty());
         REQUIRE_EQUAL(text.rectangle(), expectedRect);
         REQUIRE_EQUAL(text.color(), Color{});
         REQUIRE_EQUAL(text.font(), nullptr);
         REQUIRE_EQUAL(text.animation(), BlockTextAnimation::None);
-        REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::TopLeft);
+        REQUIRE_EQUAL(text.alignment(), geometry::Alignment::TopLeft);
         REQUIRE_EQUAL(text.paragraphSpacing(), ParagraphSpacing::SingleLine);
     }
 
@@ -29,16 +29,16 @@ public:
 
     void testConstructorStoresTextRectangleAndAlignment() {
         const auto text =
-            BlockText{BlockStringEditor{"Hello"_el}, bgeo::BlockRectangle{1, 2, 7, 3}, bgeo::Alignment::CenterRight};
+            BlockText{BlockStringEditor{"Hello"_el}, block::Rectangle{1, 2, 7, 3}, geometry::Alignment::CenterRight};
 
         requireStringEqual(text.blockString(), U"Hello"_el);
-        REQUIRE_EQUAL(text.rectangle(), (bgeo::BlockRectangle{1, 2, 7, 3}));
-        REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::CenterRight);
+        REQUIRE_EQUAL(text.rectangle(), (block::Rectangle{1, 2, 7, 3}));
+        REQUIRE_EQUAL(text.alignment(), geometry::Alignment::CenterRight);
     }
 
     void testTextAndTextOptionSettersReplaceStoredConfiguration() {
         auto text = BlockText{};
-        auto options = BlockTextOptions{bgeo::Alignment::BottomLeft};
+        auto options = BlockTextOptions{geometry::Alignment::BottomLeft};
         const auto font = std::make_shared<Font>(2);
 
         options.setColor(Color{fg::Yellow, bg::Blue});
@@ -46,23 +46,23 @@ public:
         options.setAnimation(BlockTextAnimation::ColorDiagonal);
         options.setLineIndent(3);
         options.setWrappedLineIndent(5);
-        options.setMargins(bgeo::BlockMargins{2, 1});
+        options.setMargins(block::Margins{2, 1});
         options.setParagraphSpacing(ParagraphSpacing::DoubleLine);
         options.setTabStops({6});
 
         text.setBlockString(BlockStringEditor{"ABC"_el});
-        text.setRectangle(bgeo::BlockRectangle{4, 5, 6, 7});
+        text.setRectangle(block::Rectangle{4, 5, 6, 7});
         text.setBlockTextOptions(options);
 
         requireStringEqual(text.blockString(), U"ABC"_el);
-        REQUIRE_EQUAL(text.rectangle(), (bgeo::BlockRectangle{4, 5, 6, 7}));
+        REQUIRE_EQUAL(text.rectangle(), (block::Rectangle{4, 5, 6, 7}));
         REQUIRE_EQUAL(text.color(), Color(fg::Yellow, bg::Blue));
         REQUIRE_EQUAL(text.font(), font);
         REQUIRE_EQUAL(text.animation(), BlockTextAnimation::ColorDiagonal);
-        REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::BottomLeft);
+        REQUIRE_EQUAL(text.alignment(), geometry::Alignment::BottomLeft);
         REQUIRE_EQUAL(text.lineIndent(), 3);
         REQUIRE_EQUAL(text.wrappedLineIndent(), 5);
-        REQUIRE_EQUAL(text.margins(), bgeo::BlockMargins(2, 1));
+        REQUIRE_EQUAL(text.margins(), block::Margins(2, 1));
         REQUIRE_EQUAL(text.paragraphSpacing(), ParagraphSpacing::DoubleLine);
         REQUIRE_EQUAL(text.tabStops().size(), std::size_t{1});
         REQUIRE_EQUAL(text.tabStops()[0], 6);
@@ -74,8 +74,8 @@ public:
         text.setColorSequence(ColorSequence{Color{fg::Red, bg::Black}, Color{fg::Green, bg::Black}});
         text.setColor(Color{fg::Magenta, bg::Cyan});
         text.setAnimation(BlockTextAnimation::ColorDiagonal);
-        text.setAlignment(bgeo::Alignment::BottomCenter);
-        text.setMargins(bgeo::BlockMargins{1});
+        text.setAlignment(geometry::Alignment::BottomCenter);
+        text.setMargins(block::Margins{1});
         text.setWordSeparators(U",;"_el);
         text.setWordBreakMark(Block{U'='});
         text.setMaximumLineWraps(-1);
@@ -84,8 +84,8 @@ public:
         REQUIRE_EQUAL(text.colorSequence().sequenceLength(), std::size_t{1});
         REQUIRE_EQUAL(text.color(), Color(fg::Magenta, bg::Cyan));
         REQUIRE_EQUAL(text.animation(), BlockTextAnimation::ColorDiagonal);
-        REQUIRE_EQUAL(text.alignment(), bgeo::Alignment::BottomCenter);
-        REQUIRE_EQUAL(text.margins(), bgeo::BlockMargins(1));
+        REQUIRE_EQUAL(text.alignment(), geometry::Alignment::BottomCenter);
+        REQUIRE_EQUAL(text.margins(), block::Margins(1));
         REQUIRE_EQUAL(text.wordSeparators(), U",;"_el);
         REQUIRE_EQUAL(text.wordBreakMark(), U'=');
         REQUIRE_EQUAL(text.maximumLineWraps(), 0);
@@ -93,7 +93,7 @@ public:
     }
 
     void testSetColorCreatesSingleEntryColorSequence() {
-        auto text = BlockText{BlockStringEditor{"A"_el}, bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::Alignment::TopLeft};
+        auto text = BlockText{BlockStringEditor{"A"_el}, block::Rectangle{0, 0, 1, 1}, geometry::Alignment::TopLeft};
 
         REQUIRE_EQUAL(text.color(), Color{});
 

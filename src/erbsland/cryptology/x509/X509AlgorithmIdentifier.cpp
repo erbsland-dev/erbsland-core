@@ -4,12 +4,14 @@
 
 #include "../impl/X509Parser.hpp"
 
+#include "../../err/RuntimeError.hpp"
+
 namespace erbsland::cryptology {
 
 auto X509AlgorithmIdentifier::fromDer(const mem::ByteBlock &der) noexcept -> X509AlgorithmIdentifier {
     try {
         return fromDerOrThrow(der);
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return {};
     }
 }

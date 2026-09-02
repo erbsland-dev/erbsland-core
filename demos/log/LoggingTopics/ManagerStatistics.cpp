@@ -13,12 +13,11 @@ namespace demo {
 
 /// Read point-in-time counters without changing manager options.
 ///
-/// While paused, accepted entries remain visible as queued work. After resume and shutdown, the retained writer has
+/// While paused, accepted entries remain visible as queued work. After resume and shutdown, the capturing writer has
 /// delivered both entries and the deliberately failing destination contributes one contained writer failure.
 void managerStatistics() {
     auto configuration = el::LogConfiguration{};
-    configuration.addWriter(std::make_shared<FailingLogWriter>())
-        .addWriter(std::make_shared<el::LastErrorsLogWriter>());
+    configuration.addWriter(std::make_shared<FailingLogWriter>()).addWriter(std::make_shared<CapturingLogWriter>());
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));
 

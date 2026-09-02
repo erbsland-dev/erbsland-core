@@ -1,0 +1,7 @@
+# Reference-document groups for the resource domain.
+
+------------*[ Reference Groups ]
+Page        : "resource/compiled_resources.rst"
+Title       : "Compiled Resources"
+Header Globs:
+    * "resource/*.hpp"

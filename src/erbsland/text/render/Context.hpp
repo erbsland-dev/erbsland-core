@@ -8,7 +8,7 @@
 namespace erbsland::text::render {
 
 /// A named collection of values exposed while rendering a layout.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{RenderContextTest}
 class Context final {
 public:

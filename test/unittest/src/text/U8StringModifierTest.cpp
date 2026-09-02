@@ -29,7 +29,7 @@
 
 using namespace el::text::literals;
 
-using el::bgeo::Alignment;
+using el::geometry::Alignment;
 using namespace el::text;
 using namespace el::unit;
 using el::util::LoopResult;

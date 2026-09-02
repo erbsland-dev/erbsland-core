@@ -136,7 +136,7 @@ auto U8StringTransformTools::transformedIfChanged(const TransformCharacterFn fun
     return std::nullopt;
 }
 
-auto U8StringTransformTools::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
+auto U8StringTransformTools::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
     -> U8StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto currentLength = U8StringCharReadTool{_data}.charLength();

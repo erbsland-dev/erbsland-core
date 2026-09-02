@@ -23,7 +23,6 @@
 
 using namespace el::event;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 namespace mem = el::mem;
 namespace unit = el::unit;
@@ -32,6 +31,13 @@ TESTED_TARGETS(
     UdpSocket UdpSocketOptions UdpSocketEventEditor UdpDatagram UdpDatagramDropContext UdpDatagramDropReason
         NetworkSendStatus)
 class UdpSocketTest final : public el::UnitTest {
+    using UdpSocket = el::network::impl::UdpSocket;
+    using UdpSocketDevice = el::network::impl::UdpSocketDevice;
+    using UdpSocketDeviceCallbacks = el::network::impl::UdpSocketDeviceCallbacks;
+    using UdpSocketDevicePtr = el::network::impl::UdpSocketDevicePtr;
+    using UdpSocketDeviceSendStatus = el::network::impl::UdpSocketDeviceSendStatus;
+    using UdpSocketEventEditor = el::network::impl::UdpSocketEventEditor;
+
     struct FakeState final {
         UdpSocketDeviceCallbacks callbacks;
         std::optional<IpEndpoint> requestedEndpoint;

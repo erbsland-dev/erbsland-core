@@ -1,0 +1,7 @@
+# Reference-document groups for the mem domain.
+
+------------*[ Reference Groups ]
+Page        : "mem/memory_and_byte_data.rst"
+Title       : "Memory and Byte Data"
+Header Globs:
+    * "mem/*.hpp"

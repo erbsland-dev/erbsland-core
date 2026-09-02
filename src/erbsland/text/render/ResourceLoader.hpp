@@ -11,7 +11,7 @@ namespace erbsland::text::render {
 /// A layout loader backed by one compiled-resource identifier and optional path prefix.
 /// A null resource provider selects the application resource manager. Do not create an application-backed loader
 /// during unsafe static initialization.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{ResourceLoaderTest}
 class ResourceLoader : public Loader {
 public:

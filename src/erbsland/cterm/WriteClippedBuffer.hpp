@@ -24,24 +24,22 @@ public:
     WriteClippedBuffer() = default;
     /// Create an empty write-clipped buffer with a given visible size.
     /// @param size The visible source size.
-    explicit WriteClippedBuffer(bgeo::BlockSize size) noexcept :
-        WriteClippedBufferBase{{}, bgeo::BlockRectangle{{}, size}} {}
+    explicit WriteClippedBuffer(block::Size size) noexcept : WriteClippedBufferBase{{}, block::Rectangle{{}, size}} {}
     /// Create a write-clipped buffer with the given content and visible size.
     /// @param content The wrapped writable buffer.
     /// @param size The visible source size.
-    WriteClippedBuffer(WritableBufferPtr content, bgeo::BlockSize size) noexcept :
-        WriteClippedBufferBase{{}, bgeo::BlockRectangle{{}, size}}, _content{std::move(content)} {}
+    WriteClippedBuffer(WritableBufferPtr content, block::Size size) noexcept :
+        WriteClippedBufferBase{{}, block::Rectangle{{}, size}}, _content{std::move(content)} {}
     /// Create a write-clipped buffer with the given content and target rectangle.
     /// @param content The wrapped writable buffer.
     /// @param targetRect The target rectangle in the wrapped buffer.
-    WriteClippedBuffer(WritableBufferPtr content, bgeo::BlockRectangle targetRect) noexcept :
+    WriteClippedBuffer(WritableBufferPtr content, block::Rectangle targetRect) noexcept :
         WriteClippedBufferBase{{}, targetRect}, _content{std::move(content)} {}
     /// Create a write-clipped buffer with the given content, source offset, and target rectangle.
     /// @param content The wrapped writable buffer.
     /// @param sourceOffset The top-left source coordinate exposed by this wrapper.
     /// @param targetRect The target rectangle in the wrapped buffer.
-    WriteClippedBuffer(
-        WritableBufferPtr content, bgeo::BlockPosition sourceOffset, bgeo::BlockRectangle targetRect) noexcept :
+    WriteClippedBuffer(WritableBufferPtr content, block::Position sourceOffset, block::Rectangle targetRect) noexcept :
         WriteClippedBufferBase{sourceOffset, targetRect}, _content{std::move(content)} {}
 
     // defaults
@@ -55,7 +53,7 @@ public: // implement ReadableBuffer
     /// Read a block from the wrapped buffer.
     /// @param pos The source position.
     /// @return The wrapped block, or a space if the translated target position is outside the wrapped buffer.
-    [[nodiscard]] auto get(bgeo::BlockPosition pos) const noexcept -> const Block & override {
+    [[nodiscard]] auto get(block::Position pos) const noexcept -> const Block & override {
         if (_content == nullptr) {
             return Block::space();
         }
@@ -70,7 +68,7 @@ public: // implement WritableBuffer
     /// Write a block into the wrapped buffer.
     /// @param pos The source coordinates.
     /// @param block The block to write.
-    void set(bgeo::BlockPosition pos, const Block &block) noexcept override {
+    void set(block::Position pos, const Block &block) noexcept override {
         if (_content == nullptr) {
             return;
         }
@@ -90,8 +88,8 @@ public:
     void setContent(WritableBufferPtr content) noexcept { _content = std::move(content); }
 
 private: // implement WriteClippedBufferBase
-    [[nodiscard]] auto targetBounds() const noexcept -> bgeo::BlockRectangle override {
-        return _content != nullptr ? _content->rect() : bgeo::BlockRectangle{};
+    [[nodiscard]] auto targetBounds() const noexcept -> block::Rectangle override {
+        return _content != nullptr ? _content->rect() : block::Rectangle{};
     }
 
 private:

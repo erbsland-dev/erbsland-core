@@ -19,7 +19,7 @@ namespace erbsland::cryptology {
 /// Matching follows RFC 8410 for Ed25519, RFC 5480 for P-256, and RFC 3279/RFC 4055 for RSA. Signature-scheme
 /// selection follows RFC 8446 section 4.2.3 in the peer-provided order and never permits certificate-only PKCS#1
 /// schemes. The identity owns the move-only key; configurations share it only through a pointer to const.
-/// @seedoc{/reference/cryptology/signing_keys}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsServerIdentityTest}
 class TlsServerIdentity final {
 public:

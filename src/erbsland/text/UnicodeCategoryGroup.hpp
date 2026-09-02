@@ -9,7 +9,7 @@
 namespace erbsland::text {
 
 /// The major Unicode general category group.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 enum class UnicodeCategoryGroup : uint8_t {
     Letter = 0x0,      ///< Letter (`L*`) categories.
     Mark = 0x1,        ///< Mark (`M*`) categories.

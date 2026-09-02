@@ -3,8 +3,8 @@
 #include "WindowsNetworkRuntime.hpp"
 
 #include "../../../core/impl/WindowsApi.hpp"
+#include "../../../system/impl/WindowsErrorContext.hpp"
 #include "../../../system/PlatformError.hpp"
-#include "../../../system/WindowsErrorContext.hpp"
 #include "../../../text/Literals.hpp"
 
 #include <winsock2.h>
@@ -20,13 +20,13 @@ WindowsNetworkRuntime::WindowsNetworkRuntime() {
     const auto errorCode = ::WSAStartup(MAKEWORD(2, 2), &data);
     if (errorCode != 0) {
         throw system::PlatformError{
-            "Winsock initialization failed."_el, system::WindowsErrorContext::fromErrorCode(errorCode)};
+            "Winsock initialization failed."_el, system::impl::WindowsErrorContext::fromErrorCode(errorCode)};
     }
     if (data.wVersion != MAKEWORD(2, 2)) {
         // Preserve the version error; there is no initialized runtime left to recover if cleanup fails.
         ::WSACleanup();
         throw system::PlatformError{
-            "Winsock 2.2 is not available."_el, system::WindowsErrorContext::fromErrorCode(WSAVERNOTSUPPORTED)};
+            "Winsock 2.2 is not available."_el, system::impl::WindowsErrorContext::fromErrorCode(WSAVERNOTSUPPORTED)};
     }
 }
 

@@ -31,7 +31,7 @@ public:
     explicit ConfKey(const std::initializer_list<NamePathLike> references, ConstraintOptions options = {}) :
         _references{references}, _options{std::move(options)} {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
     std::vector<NamePathLike> _references;
     ConstraintOptions _options;

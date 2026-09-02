@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "ProcessId.hpp"
 #include "Subprocess_fwd.hpp"
 #include "SubprocessExitStatus.hpp"
 #include "SubprocessOptions.hpp"
@@ -20,7 +21,7 @@ namespace erbsland::system {
 /// Owns and controls one directly launched operating-system child process.
 /// No method invokes a command shell. Destruction of a running owned process requests termination, waits briefly, then
 /// forcefully terminates and reaps it. Use `startDetached()` for deliberate launch-and-forget behavior.
-/// @seedoc{/reference/system/subprocess}
+/// @seedoc{/reference/system/system_services}
 /// @tested{SubprocessInteropTest}
 class Subprocess final {
 public:
@@ -58,6 +59,9 @@ public: // factories
         const path::Path &executable, const text::StringList &arguments = {}, const SubprocessOptions &options = {});
 
 public: // lifecycle
+    /// Get the identifier assigned to the child process.
+    /// The identifier remains valid after exit; a moved-from subprocess returns an invalid identifier.
+    [[nodiscard]] auto processId() const noexcept -> ProcessId;
     /// Test if the child is still running and update cached exit state.
     [[nodiscard]] auto isRunning() -> bool;
     /// Get the cached child exit status, if it has been observed.

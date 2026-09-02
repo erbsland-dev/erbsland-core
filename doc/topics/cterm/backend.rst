@@ -33,7 +33,7 @@ The simplest way to install a backend is to pass it to the terminal constructor 
 .. code-block:: cpp
 
     auto backend = std::make_shared<MyBackend>();
-    auto terminal = Terminal{backend, BlockSize{80, 25}};
+    auto terminal = Terminal{backend, Size{80, 25}};
 
     terminal.initializeScreen();
     // ...
@@ -109,17 +109,17 @@ ANSI cursor codes.
         [[nodiscard]] auto supportsColorCodes() const noexcept -> bool override { return false; }
         [[nodiscard]] auto supportsCursorCodes() const noexcept -> bool override { return false; }
         [[nodiscard]] auto isInteractive() const noexcept -> bool override { return true; }
-        [[nodiscard]] auto detectScreenSize() -> std::optional<BlockSize> override { return BlockSize{80, 25}; }
+        [[nodiscard]] auto detectScreenSize() -> std::optional<Size> override { return Size{80, 25}; }
 
         void emitColor(Color color) override { _lastColor = color; }
-        void moveCursor(BlockPosition posOrDelta, MoveMode mode) override {
+        void moveCursor(Position posOrDelta, MoveMode mode) override {
             if (mode == MoveMode::Absolute) {
                 _cursor = posOrDelta;
             } else {
                 _cursor += posOrDelta;
             }
         }
-        void clearScreen() override { _cursor = BlockPosition{0, 0}; }
+        void clearScreen() override { _cursor = Position{0, 0}; }
 
         void emitText(std::string_view text) override { _log += text; }
         void emitFlush() override {}
@@ -133,7 +133,7 @@ ANSI cursor codes.
         [[nodiscard]] auto log() const noexcept -> const std::string & { return _log; }
 
     private:
-        BlockPosition _cursor;
+        Position _cursor;
         Color _lastColor;
         Input::Mode _inputMode{Input::Mode::ReadLine};
         std::string _log;

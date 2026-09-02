@@ -213,7 +213,7 @@ not accidentally accept ``guildhall``.
       - Values and purpose
     * - ``Type``
       - Required
-      - ``console``, ``file``, ``last_errors``, or ``syslog``.
+      - ``console``, ``file``, or ``syslog``.
     * - ``Levels``
       - All levels
       - A list containing ``trace``, ``information`` or ``info``, ``warning`` or ``warn``, and ``error``.
@@ -291,22 +291,6 @@ operators may need to investigate.
 their boundaries.
 ``Retention`` counts rotated archives, not the active file, and zero removes archives once they are no longer active.
 :doc:`file_writers` covers archive names, external file replacement, retry behavior, and failure accounting.
-
-Retain the Context of a Failed Run
-==================================
-
-A ``last_errors`` writer is an in-memory destination.
-It retains a bounded FIFO snapshot but does not print or persist that snapshot by itself.
-Its only writer-specific field is ``Capacity``, a positive retained-entry count that defaults to 25. A route normally
-selects only the error level so routine information does not displace the failure context it is meant to preserve.
-
-Use :cpp:func:`enableLastErrorDump() <erbsland::core::Application::enableLastErrorDump>` instead of an ELCL
-``last_errors`` entry when an :cpp:class:`Application <erbsland::core::Application>` should display retained errors
-automatically during cleanup.
-The application installs and keeps the required writer across later configuration replacements.
-Its default mode displays a titled, nonempty snapshot only after a failed run; pass
-:cpp:enumerator:`LastErrorDumpMode::Always <erbsland::core::LastErrorDumpMode::Always>` to display it after successful
-runs too.
 
 Send Service Logs to a Syslog Collector
 =======================================

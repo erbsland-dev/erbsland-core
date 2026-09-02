@@ -22,7 +22,7 @@ using HttpFieldList = util::List<HttpField>;
 
 /// An ordered, bounded, copy-on-write HTTP header collection.
 /// Repeated fields and exact field values are preserved. Captured limits are operational and are not part of equality.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpHeadersTest}
 class HttpHeaders final {
 public:

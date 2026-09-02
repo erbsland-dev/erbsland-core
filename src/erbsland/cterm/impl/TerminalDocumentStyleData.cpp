@@ -6,7 +6,7 @@ namespace erbsland::cterm::impl {
 
 TerminalDocumentStyleData::TerminalDocumentStyleData() :
     baseTextStyle{Color{fg::White, bg::Black}},
-    baseBlockLayout{0, ParagraphIndents::cUseLineIndent, ParagraphIndents::cUseLineIndent, bgeo::BlockMargins{0}} {
+    baseBlockLayout{0, ParagraphIndents::cUseLineIndent, ParagraphIndents::cUseLineIndent, block::Margins{0}} {
 }
 
 }

@@ -13,9 +13,8 @@ class StartsConstraint final : public StringPartConstraint {
 public:
     /// Create a string-prefix constraint.
     /// @param values The expected prefixes.
-    explicit StartsConstraint(text::StringList values) : StringPartConstraint(std::move(values)) {
-        setType(vr::ConstraintType::Starts);
-    }
+    explicit StartsConstraint(text::StringList values) :
+        StringPartConstraint{vr::ConstraintType::Starts, std::move(values)} {}
 
 protected:
     [[nodiscard]] auto partText() const -> const text::String & override {

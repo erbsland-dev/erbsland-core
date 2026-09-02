@@ -28,6 +28,8 @@ Only :cpp:member:`erbsland::cterm::ReadLineStatus::Committed` is successful and 
 The polling-only :cpp:member:`erbsland::cterm::ReadLineStatus::Idle`, cancellation, and timeout statuses carry an empty
 string.
 An active editor exclusively owns terminal output until it stops.
+Horizontal input padding is represented by :cpp:class:`erbsland::block::MarginPair <erbsland::block::MarginPair>`;
+negative leading or trailing values are clamped to zero.
 
 Protected Secret Entry
 ======================

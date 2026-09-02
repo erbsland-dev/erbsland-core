@@ -15,7 +15,7 @@ public:
     /// @param caseSensitivity The requested case sensitivity.
     explicit CaseSensitive(const text::CaseSensitivity caseSensitivity = text::CaseSensitivity::CaseSensitive) :
         _caseSensitivity{caseSensitivity} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     text::CaseSensitivity _caseSensitivity{text::CaseSensitivity::CaseSensitive};
 };
 

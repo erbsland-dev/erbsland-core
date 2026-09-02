@@ -96,7 +96,7 @@ auto PosixBackend::isInteractiveOutput(const int outputFd) noexcept -> bool {
     return outputFd >= 0 && ::isatty(outputFd) != 0;
 }
 
-auto PosixBackend::detectScreenSize() -> std::optional<bgeo::BlockSize> {
+auto PosixBackend::detectScreenSize() -> std::optional<block::Size> {
     if (_hasNoTerminalAttached) {
         return std::nullopt;
     }
@@ -301,25 +301,25 @@ void PosixBackend::restoreGlobalPlatform() noexcept {
     _instance->restorePlatform();
 }
 
-auto PosixBackend::getScreenSize() -> std::pair<SizeDetectionResult, bgeo::BlockSize> {
+auto PosixBackend::getScreenSize() -> std::pair<SizeDetectionResult, block::Size> {
     return getScreenSizeForFd(STDOUT_FILENO);
 }
 
-auto PosixBackend::getScreenSizeForFd(const int fd) -> std::pair<SizeDetectionResult, bgeo::BlockSize> {
+auto PosixBackend::getScreenSizeForFd(const int fd) -> std::pair<SizeDetectionResult, block::Size> {
     if (fd < 0 || ::isatty(fd) == 0) {
-        return {SizeDetectionResult::NoTerminalAttached, bgeo::BlockSize{0, 0}};
+        return {SizeDetectionResult::NoTerminalAttached, block::Size{0, 0}};
     }
 
     ::winsize ws{};
     if (::ioctl(fd, TIOCGWINSZ, &ws) != 0) {
-        return {SizeDetectionResult::NoTerminalSize, bgeo::BlockSize{0, 0}};
+        return {SizeDetectionResult::NoTerminalSize, block::Size{0, 0}};
     }
 
     if (ws.ws_col <= 0 || ws.ws_row <= 0) {
-        return {SizeDetectionResult::NoTerminalSize, bgeo::BlockSize{0, 0}};
+        return {SizeDetectionResult::NoTerminalSize, block::Size{0, 0}};
     }
 
-    return {SizeDetectionResult::Success, bgeo::BlockSize{ws.ws_col, ws.ws_row}};
+    return {SizeDetectionResult::Success, block::Size{ws.ws_col, ws.ws_row}};
 }
 
 void PosixBackend::initializeKeyInputSession() {

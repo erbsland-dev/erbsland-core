@@ -10,7 +10,7 @@ namespace erbsland::cryptology {
 
 /// Secret key material for symmetric encryption.
 /// The public API deliberately provides no access to the stored bytes or their text representation.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptographicDataBlockTest SymmetricEncryptionFrontendTest}
 class SymmetricKey final : public CryptographicDataBlock {
 public:

@@ -7,7 +7,7 @@
 #include "FrameStyle.hpp"
 #include "Tile9Style_fwd.hpp"
 
-#include "../bgeo/BlockRectangle.hpp"
+#include "../block/Rectangle.hpp"
 #include "../text/Char.hpp"
 #include "../text/String.hpp"
 #include "../text/u32/U32String.hpp"
@@ -76,7 +76,7 @@ public: // accessors
     /// @param rect The styled rectangle.
     /// @param pos A position inside `rect`.
     /// @return The resolved tile, or an empty character if `pos` is outside `rect`.
-    [[nodiscard]] auto block(bgeo::BlockRectangle rect, bgeo::BlockPosition pos) const noexcept -> Block;
+    [[nodiscard]] auto block(block::Rectangle rect, block::Position pos) const noexcept -> Block;
     /// Access one element of the 16-tile table by name.
     /// @param element The tile element to read.
     /// @return The configured tile. Extended-only elements fall back to their base-tile counterpart for 9-tile styles.

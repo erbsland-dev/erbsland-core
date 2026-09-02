@@ -4,6 +4,7 @@
 #include <erbsland/core/CommandLineArguments.hpp>
 #include <erbsland/options/Option.hpp>
 #include <erbsland/options/OptionChoice.hpp>
+#include <erbsland/options/OptionChoiceEditor.hpp>
 #include <erbsland/options/OptionChoices.hpp>
 #include <erbsland/options/OptionError.hpp>
 #include <erbsland/options/OptionManager.hpp>
@@ -29,8 +30,8 @@ using namespace el::options;
 using namespace el::text::literals;
 
 TESTED_TARGETS(
-    Application Option OptionChoice OptionChoices OptionEditor OptionManager OptionModule OptionResult OptionSet
-        OptionValue OptionValues Options)
+    Application Option OptionChoice OptionChoiceEditor OptionChoices OptionEditor OptionManager OptionModule
+        OptionResult OptionSet OptionValue OptionValues Options)
 class OptionsFrameworkTest final : public el::UnitTest {
 public:
     void testOptionEditing() {
@@ -116,15 +117,44 @@ public:
     }
 
     void testChoices() {
+        auto invalidEditor = OptionChoiceEditor{};
+        REQUIRE_FALSE(invalidEditor.isValid());
+        REQUIRE_FALSE(invalidEditor.choice());
+        invalidEditor.setHelp("Ignored"_el)
+            .setHelp(OptionHelp{"Ignored"_el})
+            .setHelpTitle("Ignored"_el)
+            .setHelpDescription("Ignored"_el)
+            .setHelpEpilog("Ignored"_el)
+            .setHelpExample("Ignored"_el)
+            .setHelpVisibility(OptionHelpVisibility::Hidden);
+
         auto choices = OptionChoices::create();
+        auto fastEditor = choices->addChoice("fast"_el);
+        REQUIRE(fastEditor.isValid());
+        REQUIRE(fastEditor.choice() == choices->choices().at(0));
+        fastEditor.setHelp("Prefer speed"_el);
+        REQUIRE(fastEditor.choice()->help().description() == "Prefer speed"_el);
+        fastEditor.setHelpTitle("Performance"_el)
+            .setHelpDescription("Fast mode"_el)
+            .setHelpEpilog("Use for quick runs"_el)
+            .setHelpExample("--mode fast"_el)
+            .setHelpVisibility(OptionHelpVisibility::Overview);
+
         auto choiceHelp = OptionHelp{"Safer mode"_el};
         choiceHelp.setVisibility(OptionHelpVisibility::Normal);
         choiceHelp.setTitle("Safety"_el);
         choiceHelp.setEpilog("Use for protected runs"_el);
-        choices->addChoice("fast"_el).addChoice(OptionChoice::create("SafeMode"_el, choiceHelp)).addChoice(u8"Ä"_el);
+        auto safeEditor = choices->addChoice(OptionChoice::create("SafeMode"_el));
+        safeEditor.setHelp(choiceHelp);
+        choices->addChoice(u8"Ä"_el);
 
         REQUIRE_EQUAL(choices->choiceCount(), ArgumentCount{3U});
         REQUIRE(choices->choices().at(0)->text() == "fast"_el);
+        REQUIRE(choices->choices().at(0)->help().title() == "Performance"_el);
+        REQUIRE(choices->choices().at(0)->help().description() == "Fast mode"_el);
+        REQUIRE(choices->choices().at(0)->help().epilog() == "Use for quick runs"_el);
+        REQUIRE(choices->choices().at(0)->help().example() == "--mode fast"_el);
+        REQUIRE(choices->choices().at(0)->help().visibility() == OptionHelpVisibility::Overview);
         REQUIRE(choices->choices().at(1)->text() == "SafeMode"_el);
         REQUIRE(choices->choices().at(1)->help().description() == "Safer mode"_el);
         REQUIRE(choices->choices().at(1)->help().visibility() == OptionHelpVisibility::Normal);
@@ -226,21 +256,22 @@ public:
     void testValuesAndTypedGetters() {
         auto values = OptionValues::create();
         auto sourceOption = Option::create({"-v"_el, "--verbose"_el});
-        values->setValue({"-v"_el, "--verbose"_el}, OptionValue::create(sourceOption, true));
+        values->setValue({"-v"_el, "--verbose"_el}, OptionValue::create(sourceOption, std::monostate{}));
+        values->setValue("--enabled"_el, OptionValue::create(true));
         values->setValue("--count"_el, OptionValue::create(OptionInteger{42}));
         values->setValue("name"_el, OptionValue::create(StringEditor{"Ada"_el}));
-        values->setValue("names"_el, OptionValue::create(std::vector<String>{String{"Ada"_el}, String{"Bjarne"_el}}));
+        values->setValue("names"_el, OptionValue::create(el::text::StringList{"Ada"_el, "Bjarne"_el}));
         values->setValue(
             "counts"_el, OptionValue::create(std::vector<OptionInteger>{OptionInteger{1}, OptionInteger{2}}));
         auto indexedValue = OptionValue::create(
             StringEditor{"Indexed"_el}, std::vector<ArgumentIndex>{ArgumentIndex{3U}, ArgumentIndex{5U}});
         auto indexedSourceValue =
-            OptionValue::create(sourceOption, true, std::vector<ArgumentIndex>{ArgumentIndex{7U}});
-        auto countedFlagValue =
-            OptionValue::create(sourceOption, true, std::vector<ArgumentIndex>{ArgumentIndex{2U}, ArgumentIndex{4U}});
+            OptionValue::create(sourceOption, std::monostate{}, std::vector<ArgumentIndex>{ArgumentIndex{7U}});
+        auto countedFlagValue = OptionValue::create(
+            sourceOption, std::monostate{}, std::vector<ArgumentIndex>{ArgumentIndex{2U}, ArgumentIndex{4U}});
         auto mutableIndexesValue = OptionValue::create(StringEditor{"Mutable"_el});
         mutableIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{11U}});
-        auto mutableFlagIndexesValue = OptionValue::create(true);
+        auto mutableFlagIndexesValue = OptionValue::create(std::monostate{});
         mutableFlagIndexesValue->setArgumentIndexes(std::vector<ArgumentIndex>{ArgumentIndex{13U}, ArgumentIndex{17U}});
         values->setValue({"indexed"_el, "INDEXED"_el}, indexedValue);
         values->setValue({"-V"_el, "--very-verbose"_el}, countedFlagValue);
@@ -249,6 +280,8 @@ public:
         REQUIRE(values->value("--verbose"_el)->option().lock() == sourceOption);
         REQUIRE(values->value("--verbose"_el)->type() == OptionValueType::Flag);
         REQUIRE(values->value("--verbose"_el)->getFlag());
+        REQUIRE(values->value("--enabled"_el)->type() == OptionValueType::Boolean);
+        REQUIRE(values->getBoolean("--enabled"_el));
         REQUIRE(values->value("--count"_el)->type() == OptionValueType::Integer);
         REQUIRE_EQUAL(values->value("--count"_el)->getInteger(), OptionInteger{42});
         REQUIRE(values->value("--count"_el)->getFlag(true));
@@ -268,12 +301,12 @@ public:
         REQUIRE(values->getText("missing"_el, "fallback"_el) == "fallback"_el);
 
         const auto textList = values->getTextList("names"_el);
-        REQUIRE_EQUAL(textList.size(), 2U);
-        REQUIRE(textList.at(0) == "Ada"_el);
-        REQUIRE(textList.at(1) == "Bjarne"_el);
+        REQUIRE_EQUAL(textList.count(), el::unit::ItemCount{2U});
+        REQUIRE(textList.get(el::unit::ItemIndex::zero()) == "Ada"_el);
+        REQUIRE(textList.get(el::unit::ItemIndex{1U}) == "Bjarne"_el);
         const auto singleTextList = values->value("name"_el)->getTextList();
-        REQUIRE_EQUAL(singleTextList.size(), 1U);
-        REQUIRE(singleTextList.at(0) == "Ada"_el);
+        REQUIRE_EQUAL(singleTextList.count(), el::unit::ItemCount::one());
+        REQUIRE(singleTextList.get(el::unit::ItemIndex::zero()) == "Ada"_el);
 
         const auto integerList = values->getIntegerList("counts"_el);
         REQUIRE_EQUAL(integerList.size(), 2U);

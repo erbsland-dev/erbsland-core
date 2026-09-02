@@ -14,7 +14,7 @@ namespace erbsland::mem {
 /// Compress complete byte values as raw blocks or self-describing envelopes.
 /// Incremental input is buffered until either finalization method is called. One-shot calls are independent of the
 /// incremental state. After finalization, call `reset()` before adding more input or choosing another output format.
-/// @seedoc{/reference/mem/byte_compression}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{ByteCompressionTest}
 class ByteCompressor final {
 private:

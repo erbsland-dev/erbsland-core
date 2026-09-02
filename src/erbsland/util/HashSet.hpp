@@ -22,7 +22,7 @@
 namespace erbsland::util {
 
 /// A copy-on-write unordered key container with Erbsland-style access and set algorithms.
-/// @seedoc{/reference/util/collections}
+/// @seedoc{/reference/util/utilities}
 /// @tparam tKey The key type.
 /// @tparam tHash The key hash type.
 /// @tparam tEqual The key equality type.

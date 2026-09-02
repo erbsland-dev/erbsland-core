@@ -4,7 +4,7 @@
 
 #include "LogLineFormatter.hpp"
 
-#include "../LogLine.hpp"
+#include "../line/LogLine.hpp"
 #include "../LogStream.hpp"
 #include "../LogWriter.hpp"
 
@@ -44,7 +44,7 @@ void LogManagerData::initialize() {
 
 auto LogManagerData::createStream(LogPath path, LogTraceSection traceSection) -> LogStreamPtr {
     auto stream = std::make_shared<LogStream>(
-        std::move(path), std::move(traceSection), weak_from_this(), LogStream::ConstructionToken{});
+        std::move(path), std::move(traceSection), weak_from_this(), LogStream::PrivateTag{});
     const auto lock = std::scoped_lock{_mutex};
     stream->setTraceEnabled(_configuration->acceptsTrace(stream->path(), stream->traceSection()));
     _streams.emplace_back(stream);

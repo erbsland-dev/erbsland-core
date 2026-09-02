@@ -8,7 +8,7 @@
 #include "../StreamError.hpp"
 
 #include "../../err/ParameterError.hpp"
-#include "../../system/PosixErrorContext.hpp"
+#include "../../system/impl/PosixErrorContext.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -24,7 +24,7 @@
 
 namespace erbsland::stream::impl {
 
-using ErrorContext = system::PosixErrorContext;
+using ErrorContext = system::impl::PosixErrorContext;
 using namespace text::literals;
 using unit::ByteIndex;
 using unit::ByteLength;

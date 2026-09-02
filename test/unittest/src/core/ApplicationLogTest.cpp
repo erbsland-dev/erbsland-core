@@ -9,8 +9,6 @@
 #include <erbsland/cterm/BlockAttributes.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/i18n/DisplayTextMap.hpp>
-#include <erbsland/log/ConsoleLogWriter.hpp>
-#include <erbsland/log/LastErrorsLogWriter.hpp>
 #include <erbsland/log/LogConfiguration.hpp>
 #include <erbsland/log/LogManager.hpp>
 #include <erbsland/log/LogStream.hpp>
@@ -43,7 +41,7 @@ protected:
     }
 
     [[nodiscard]] auto createAndInitializeTerminal() -> el::cterm::TerminalPtr override {
-        auto terminal = std::make_shared<el::cterm::Terminal>(backend, el::bgeo::BlockSize{80, 25});
+        auto terminal = std::make_shared<el::cterm::Terminal>(backend, el::block::Size{80, 25});
         terminal->initializeScreen();
         return terminal;
     }

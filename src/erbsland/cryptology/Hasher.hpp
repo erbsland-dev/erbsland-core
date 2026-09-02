@@ -19,7 +19,7 @@ namespace erbsland::cryptology {
 /// A default-constructed hasher is invalid and acts as a placeholder. Copies use copy-on-write state: they initially
 /// share a worker and detach before mutation. After finalization, the cached digest remains available until `reset()`;
 /// calling `update()` before resetting is a logic error.
-/// @seedoc{/reference/cryptology/hashing}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HasherTest Sha3ValidationTest HashValidationTest HashFullValidationTest}
 class Hasher final {
 public:

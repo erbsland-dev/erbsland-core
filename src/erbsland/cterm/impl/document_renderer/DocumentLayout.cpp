@@ -27,7 +27,8 @@ auto DocumentLayout::build(const std::vector<RenderBlock> &blocks) -> BlockStrin
 }
 
 void DocumentLayout::appendBlock(const RenderBlock &block) {
-    const auto topMargin = positive(block.indents().margins().top());
+    const auto verticalMargins = block.indents().margins().vertical();
+    const auto topMargin = positive(verticalMargins.leading());
     const auto gap = _firstBlock ? topMargin : std::max(_previousBottomMargin, topMargin);
     const auto &gapPrefix =
         _firstBlock || topMargin > _previousBottomMargin ? block.framePrefix() : _previousFramePrefix;
@@ -46,7 +47,7 @@ void DocumentLayout::appendBlock(const RenderBlock &block) {
         appendHorizontalRule(block);
         break;
     }
-    _previousBottomMargin = positive(block.indents().margins().bottom());
+    _previousBottomMargin = positive(verticalMargins.trailing());
     _previousFramePrefix = block.framePrefix();
     _firstBlock = false;
 }
@@ -76,9 +77,9 @@ void DocumentLayout::appendParagraph(const RenderBlock &block) {
         materializationWidth = std::max(materializationWidth, line.textWidth());
     }
     auto buffer = CursorBuffer{
-        bgeo::BlockSize{materializationWidth, 1},
+        block::Size{materializationWidth, 1},
         CursorBuffer::OverflowMode::ExpandThenWrap,
-        bgeo::BlockSize{materializationWidth, CursorBuffer::cMaximumSize.height().toRawValue()}};
+        block::Size{materializationWidth, CursorBuffer::cMaximumSize.height().toRawValue()}};
     const auto lineCount =
         paragraph::Printer{
             buffer, 0, contentWidth, options.alignment(), layout, content.text(), options, options.backgroundMode()}
@@ -150,7 +151,7 @@ void DocumentLayout::appendGap(const int count, const BlockString &prefix) {
 void DocumentLayout::appendContentLine(const RenderBlock &block, const BlockString &content) {
     _builder.clear();
     _builder.append(block.framePrefix());
-    const auto leftMargin = positive(block.indents().margins().left());
+    const auto leftMargin = positive(block.indents().margins().horizontal().leading());
     if (leftMargin > 0) {
         _builder.append(BlockStringEditor{BlockCount::fromSizeT(static_cast<std::size_t>(leftMargin)), Block::space()});
     }
@@ -161,7 +162,7 @@ void DocumentLayout::appendContentLine(const RenderBlock &block, const BlockStri
 auto DocumentLayout::paragraphOptions(const RenderBlock &block) const -> ParagraphOptions {
     auto options = ParagraphOptions{};
     auto indents = block.indents();
-    indents.setMargins(bgeo::BlockMargins{0});
+    indents.setMargins(block::Margins{0});
     options.setIndents(indents);
     if (block.paragraphTabStops().has_value()) {
         options.setTabStops(*block.paragraphTabStops());
@@ -173,9 +174,9 @@ auto DocumentLayout::paragraphOptions(const RenderBlock &block) const -> Paragra
 }
 
 auto DocumentLayout::availableContentWidth(const RenderBlock &block) const noexcept -> int {
-    const auto margins = block.indents().margins();
-    const auto occupiedWidth = block.framePrefix().displayWidth() + block.frameRightMargin() +
-        positive(margins.left()) + positive(margins.right());
+    const auto margins = block.indents().margins().horizontal();
+    const auto occupiedWidth =
+        block.framePrefix().displayWidth() + block.frameRightMargin() + margins.extent().toRawValue();
     return std::max(_width - occupiedWidth, 1);
 }
 
@@ -183,7 +184,7 @@ auto DocumentLayout::trimmedLine(const CursorBuffer &buffer, const int y) -> Blo
     auto result = BlockStringEditor{};
     auto lastContent = -1;
     for (auto x = 0; x < buffer.size().width().toRawValue(); ++x) {
-        const auto &character = buffer.get(bgeo::BlockPosition{x, y});
+        const auto &character = buffer.get(block::Position{x, y});
         result.append(character);
         if (character != buffer.fillChar()) {
             lastContent = x;
@@ -196,7 +197,7 @@ auto DocumentLayout::trimmedLine(const CursorBuffer &buffer, const int y) -> Blo
     return BlockString{result};
 }
 
-auto DocumentLayout::positive(const bgeo::BlockCoordinate value) noexcept -> int {
+auto DocumentLayout::positive(const block::Coordinate value) noexcept -> int {
     return std::max(value.toRawValue(), 0);
 }
 

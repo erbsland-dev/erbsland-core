@@ -2,16 +2,18 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LogConfigurationParser.hpp"
 
-#include "ConsoleLogWriter.hpp"
-#include "FileLogWriter.hpp"
-#include "LastErrorsLogWriter.hpp"
-#include "SyslogLogWriter.hpp"
+#include "ConsoleLogWriterOptions.hpp"
+#include "FileLogWriterOptions.hpp"
+#include "LogWriter.hpp"
+#include "SyslogLogWriterOptions.hpp"
+#include "SyslogTransport.hpp"
 
 #include "impl/LogConfigurationRules.hpp"
 
 #include "../conf/Value.hpp"
 #include "../conf/vr/Rules.hpp"
 #include "../err/ParameterError.hpp"
+#include "../network/HostEndpoint.hpp"
 #include "../path/Path.hpp"
 #include "../text/CaseSensitivity.hpp"
 #include "../text/Literals.hpp"
@@ -121,7 +123,7 @@ auto LogConfigurationParser::parseWriter(const conf::ValuePtr &value) const -> L
         paragraph.setWrappedLineIndent(value->get<int>("wrapped_line_indent"_el, paragraph.wrappedLineIndent()));
         paragraph.setMaximumLineWraps(value->get<int>("maximum_line_wraps"_el, paragraph.maximumLineWraps()));
         options.setParagraphOptions(std::move(paragraph));
-        return std::make_shared<ConsoleLogWriter>(_terminal, std::move(options));
+        return LogWriter::createForConsole(_terminal, options);
     }
     if (type.compare("file"_el, compare) == std::strong_ordering::equal) {
         auto options = FileLogWriterOptions{path::Path{value->getTextOrThrow("path"_el)}};
@@ -131,10 +133,7 @@ auto LogConfigurationParser::parseWriter(const conf::ValuePtr &value) const -> L
             options.setMaximumSize(unit::ByteLength::fromSizeT(value->getOrThrow<std::size_t>("maximum_size"_el)));
         }
         options.setRetention(value->get<std::size_t>("retention"_el, options.retention()));
-        return std::make_shared<FileLogWriter>(std::move(options));
-    }
-    if (type.compare("last_errors"_el, compare) == std::strong_ordering::equal) {
-        return std::make_shared<LastErrorsLogWriter>(value->get<std::size_t>("capacity"_el, 25U));
+        return LogWriter::createForFile(options);
     }
     if (type.compare("syslog"_el, compare) == std::strong_ordering::equal) {
         auto options = SyslogLogWriterOptions{};
@@ -160,7 +159,7 @@ auto LogConfigurationParser::parseWriter(const conf::ValuePtr &value) const -> L
             options.setMaximumPendingBytes(
                 unit::ByteLength::fromSizeT(value->getOrThrow<std::size_t>("maximum_pending_bytes"_el)));
         }
-        return std::make_shared<SyslogLogWriter>(std::move(options));
+        return LogWriter::createForSyslog(options);
     }
     throw err::ParameterError{"Unknown built-in log writer type."_el, "type"_el};
 }

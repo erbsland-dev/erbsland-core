@@ -13,8 +13,8 @@ class TerminalConvenienceTest final : public UNITTEST_SUBCLASS(TerminalTestHelpe
 public:
     void testCustomBackendConstructorClampsTheSizeAndTracksTheSafeMarginFlag() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = Terminal{backend, bgeo::BlockSize{0, 5000}};
-        const auto expectedSize = bgeo::BlockSize{1, 2048};
+        auto terminal = Terminal{backend, block::Size{0, 5000}};
+        const auto expectedSize = block::Size{1, 2048};
 
         REQUIRE_EQUAL(terminal.size(), expectedSize);
         REQUIRE(terminal.safeMarginEnabled());
@@ -134,7 +134,7 @@ public:
 
     void testPrintParagraphRendersWrapMarksAndReturnsTheWrittenLineCount() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{6, 4});
+        auto terminal = createTerminal(backend, block::Size{6, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(3);
@@ -150,7 +150,7 @@ public:
 
     void testPrintParagraphUsesWrappedLineIndentForSpecialTabStops() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{8, 4});
+        auto terminal = createTerminal(backend, block::Size{8, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(4);
@@ -165,7 +165,7 @@ public:
 
     void testPrintParagraphKeepsMixedSeparatorAndTabTokensInOrder() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{6, 4});
+        auto terminal = createTerminal(backend, block::Size{6, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWordSeparators(U" ,"_el);
@@ -180,7 +180,7 @@ public:
 
     void testPrintParagraphBreaksAtNonAdvancingTabStopsWhenRequested() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{12, 4});
+        auto terminal = createTerminal(backend, block::Size{12, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setWrappedLineIndent(6);
@@ -197,7 +197,7 @@ public:
 
     void testPrintParagraphReplacesNonAdvancingTabsWithSpacesByDefault() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{12, 4});
+        auto terminal = createTerminal(backend, block::Size{12, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setTabStops({6});
@@ -211,7 +211,7 @@ public:
 
     void testPrintParagraphReplacesTabsWithSpacesWhenTabStopsAreExhaustedByDefault() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 4});
+        auto terminal = createTerminal(backend, block::Size{5, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setTabStops({2});
@@ -225,9 +225,9 @@ public:
 
     void testPrintParagraphTreatsTabsAsCollapsedWordSeparatorsForRightAlignedText() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 4});
+        auto terminal = createTerminal(backend, block::Size{5, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
-        auto options = ParagraphOptions{bgeo::Alignment::Right};
+        auto options = ParagraphOptions{geometry::Alignment::Right};
 
         const auto writtenLines = terminal->printParagraph("A\tB"_el, options);
         terminal->flush();
@@ -238,7 +238,7 @@ public:
 
     void testPrintParagraphUsesTheConfiguredParagraphSpacing() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 3});
+        auto terminal = createTerminal(backend, block::Size{4, 3});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setParagraphSpacing(ParagraphSpacing::DoubleLine);
@@ -252,10 +252,10 @@ public:
 
     void testPrintParagraphHonorsHorizontalMargins() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{6, 4});
+        auto terminal = createTerminal(backend, block::Size{6, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
-        options.setMargins(bgeo::BlockMargins{1, 0});
+        options.setMargins(block::Margins{1, 0});
 
         const auto writtenLines = terminal->printParagraph("AB CD"_el, options);
         terminal->flush();
@@ -266,7 +266,7 @@ public:
 
     void testPrintParagraphTreatsNewlinesAsHardBreaksAndResetsWrapCounting() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 4});
+        auto terminal = createTerminal(backend, block::Size{5, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setMaximumLineWraps(1);
@@ -280,7 +280,7 @@ public:
 
     void testPrintParagraphKeepsRightSidePaddingWhenFullRightBackgroundIsRequested() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 4});
+        auto terminal = createTerminal(backend, block::Size{4, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setBackgroundMode(ParagraphBackgroundMode::FullRight);
@@ -294,7 +294,7 @@ public:
 
     void testPrintParagraphFallsBackToPlainOutputWhenRequested() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{2, 4});
+        auto terminal = createTerminal(backend, block::Size{2, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setLineBreakEndMark(BlockStringEditor{">>"_el});
@@ -309,7 +309,7 @@ public:
 
     void testPrintParagraphUsesExactlyTwoLineBreaksForAnEmptyDoubleSpacedParagraph() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 3});
+        auto terminal = createTerminal(backend, block::Size{4, 3});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto options = ParagraphOptions{};
         options.setParagraphSpacing(ParagraphSpacing::DoubleLine);
@@ -323,7 +323,7 @@ public:
 
     void testPrintParagraphStringOverloadReplacesInvalidUtf8() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{3, 2});
+        auto terminal = createTerminal(backend, block::Size{3, 2});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         const auto text = bytes({0x41, 0xC3, 0x42});
 

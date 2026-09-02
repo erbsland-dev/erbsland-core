@@ -19,13 +19,13 @@ jobs:
     permissions:
       contents: read
     steps:
-      # actions/checkout@v5.0.1
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd
+      # actions/checkout@v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
 
-      # actions/setup-python@v6.2.0
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
+      # actions/setup-python@v7.0.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
           python-version: '3.13'
 
@@ -62,5 +62,5 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        # actions/deploy-pages@v5.0.0
-        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128
+        # actions/deploy-pages@v5.0.1
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346

@@ -11,7 +11,7 @@
 namespace erbsland::cryptology {
 
 /// An initialization vector for a symmetric encryption construction.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptographicDataBlockTest SymmetricEncryptionFrontendTest}
 class SymmetricIv final : public CryptographicDataBlock {
 public:

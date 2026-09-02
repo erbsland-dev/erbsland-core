@@ -22,12 +22,12 @@ void Painter::paint() {
         const auto &line = layout().lines()[static_cast<std::size_t>(lineIndex)];
         const auto y = yStart + lineIndex;
         const auto placement = linePlacement(line, _rect.x1().toRawValue(), _rect.width().toRawValue());
-        auto lastColor = drawLine(line, bgeo::BlockPosition{placement.textX + line.indentWidth, y});
+        auto lastColor = drawLine(line, block::Position{placement.textX + line.indentWidth, y});
         auto rightFillColor = std::optional<Color>{};
         auto rightFillStart = 0;
         auto rightFillEnd = 0;
         if (line.wrapsToNext) {
-            auto endMarkPosition = bgeo::BlockPosition{placement.endMarkX, y};
+            auto endMarkPosition = block::Position{placement.endMarkX, y};
             for (const auto &character : options().lineBreakEndMark()) {
                 if (const auto markColor = drawBlock(character, endMarkPosition); markColor.has_value()) {
                     lastColor = markColor;
@@ -58,7 +58,7 @@ void Painter::paint() {
     }
 }
 
-auto Painter::drawLine(const LayoutLine &line, bgeo::BlockPosition pos) -> std::optional<Color> {
+auto Painter::drawLine(const LayoutLine &line, block::Position pos) -> std::optional<Color> {
     auto lastColor = std::optional<Color>{};
     for (const auto &fragment : line.fragments) {
         if (const auto fragmentColor = drawFragment(fragment, pos); fragmentColor.has_value()) {
@@ -68,7 +68,7 @@ auto Painter::drawLine(const LayoutLine &line, bgeo::BlockPosition pos) -> std::
     return lastColor;
 }
 
-auto Painter::drawFragment(const LayoutFragment &fragment, bgeo::BlockPosition &pos) -> std::optional<Color> {
+auto Painter::drawFragment(const LayoutFragment &fragment, block::Position &pos) -> std::optional<Color> {
     switch (fragment.type()) {
     case LayoutFragment::Type::SourceRange: {
         auto lastColor = std::optional<Color>{};
@@ -115,7 +115,7 @@ auto Painter::drawFragment(const LayoutFragment &fragment, bgeo::BlockPosition &
     return std::nullopt;
 }
 
-auto Painter::drawBlock(const Block &character, bgeo::BlockPosition &pos) -> std::optional<Color> {
+auto Painter::drawBlock(const Block &character, block::Position &pos) -> std::optional<Color> {
     const auto characterWidth = character.displayWidth();
     if (characterWidth <= 0) {
         return std::nullopt;
@@ -135,13 +135,13 @@ auto Painter::drawBlock(const Block &character, bgeo::BlockPosition &pos) -> std
         _buffer.set(pos, renderedCharacter);
         lastColor = renderedCharacter.color();
     }
-    pos += bgeo::BlockPosition{characterWidth, 0};
+    pos += block::Position{characterWidth, 0};
     return lastColor;
 }
 
 void Painter::fillBackgroundRange(const int y, const int x1, const int x2, const Color color) {
     for (auto x = x1; x < x2; ++x) {
-        const auto pos = bgeo::BlockPosition{x, y};
+        const auto pos = block::Position{x, y};
         if (!_buffer.rect().contains(pos)) {
             continue;
         }

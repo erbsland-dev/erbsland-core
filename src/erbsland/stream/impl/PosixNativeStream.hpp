@@ -8,7 +8,7 @@
 
 #include "../StreamErrorContext.hpp"
 
-#include "../../system/PosixErrorContext.hpp"
+#include "../../system/impl/PosixErrorContext.hpp"
 
 #include <atomic>
 #include <mutex>
@@ -66,7 +66,7 @@ public:
 private:
     /// Throw a stream error with a POSIX error code.
     [[noreturn]] void throwError(
-        text::String title, text::String description, system::PosixErrorContext::ErrorCode errorCode) const;
+        text::String title, text::String description, system::impl::PosixErrorContext::ErrorCode errorCode) const;
     /// Throw a stream error using the current errno value.
     [[noreturn]] void throwErrorFromErrno(text::String title, text::String description) const;
     /// Complete a native operation.

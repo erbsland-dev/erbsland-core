@@ -6,7 +6,7 @@
 #include "BlockString.hpp"
 #include "BufferViewBase_fwd.hpp"
 
-#include "../bgeo/BlockSize.hpp"
+#include "../block/Size.hpp"
 
 #include <utility>
 
@@ -28,10 +28,10 @@ public:
 public:
     /// Get the minimum terminal size required for rendering the buffer.
     /// @return The minimum supported terminal size.
-    [[nodiscard]] auto minimumSize() const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto minimumSize() const noexcept -> block::Size;
     /// Set the minimum terminal size required for rendering the buffer.
     /// @param minimumSize The minimum supported terminal size.
-    void setMinimumSize(bgeo::BlockSize minimumSize) noexcept;
+    void setMinimumSize(block::Size minimumSize) noexcept;
     /// Get the background character used if the terminal is too small.
     [[nodiscard]] auto minimumSizeBackground() const noexcept -> const Block &;
     /// Set the background fill character when the terminal is too small.
@@ -94,14 +94,14 @@ public: // compatibility
     /// @param cropMarkBottom The crop mark to draw at the bottom edge.
     [[deprecated("Construct and use setters to change defaults.")]]
     UpdateSettings(
-        bgeo::BlockSize minimumSize,
+        block::Size minimumSize,
         Block minimumSizeBackground,
         bool showCropMarks,
         Block cropMarkRight,
         Block cropMarkBottom) noexcept;
 
 private:
-    bgeo::BlockSize _minimumSize{};               ///< The minimum required terminal size.
+    block::Size _minimumSize{};                   ///< The minimum required terminal size.
     Block _minimumSizeBackground{Block::space()}; ///< Background character if the terminal size is too small.
     BlockString _minimumSizeMessage;     ///< A message that is displayed centered if the terminal size is too small.
     bool _showCropMarks{false};          ///< If crop marks are enabled.

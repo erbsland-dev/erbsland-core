@@ -15,7 +15,7 @@
 namespace erbsland::text::base_n {
 
 /// Encode binary data using a validated Base-N format.
-/// @seedoc{/reference/text/base_n}
+/// @seedoc{/reference/text/encoding}
 /// @tested{BaseNCodecTest}
 class BaseNEncoder final {
 public:

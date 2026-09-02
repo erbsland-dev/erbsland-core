@@ -4,6 +4,7 @@
 
 #include "../impl/Asn1ObjectIdentifierCodec.hpp"
 
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/impl/UnsafeByteBlockAccess.hpp"
 #include "../../text/EncodingMode.hpp"
 #include "../../text/StringBomMode.hpp"
@@ -84,7 +85,7 @@ auto Asn1Node::toObjectIdentifier() const noexcept -> std::optional<Asn1ObjectId
     }
     try {
         return Asn1ObjectIdentifier{impl::Asn1ObjectIdentifierCodec{contentData(), unit::ByteIndex::zero()}.decode()};
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return std::nullopt;
     }
 }
@@ -143,7 +144,7 @@ auto Asn1Node::toString() const noexcept -> std::optional<text::String> {
             result.append(text::Char{byte.toUInt32()});
         }
         return text::String{result};
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         return std::nullopt;
     }
 }

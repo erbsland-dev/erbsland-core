@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "IsOptional.hpp"
 
-#include "../../../impl/vr/Rule.hpp"
-
 namespace erbsland::conf::vr::builder {
 
-void IsOptional::operator()(Rule &rule) {
+void IsOptional::apply(RuleDefinition &rule) const {
     rule.setOptional(_isOptional);
 }
 

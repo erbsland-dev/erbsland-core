@@ -10,7 +10,7 @@
 namespace erbsland::network {
 
 /// A supported HTTP protocol version.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpValueTest}
 class HttpVersion final {
 public:

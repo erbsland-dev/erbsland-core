@@ -280,7 +280,8 @@ auto U32String::truncated(const CpLength maximumWidth, const TruncateMode mode, 
     return U32String{U32StringTransformTools{dataView()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
-auto U32String::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U32String {
+auto U32String::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
+    -> U32String {
     return U32String{U32StringTransformTools{dataView()}.aligned(length, alignment, fill)};
 }
 

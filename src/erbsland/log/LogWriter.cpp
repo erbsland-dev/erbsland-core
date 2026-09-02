@@ -2,6 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LogWriter.hpp"
 
+#include "ConsoleLogWriterOptions.hpp"
+#include "FileLogWriterOptions.hpp"
+#include "SyslogLogWriterOptions.hpp"
+
+#include "impl/ConsoleLogWriter.hpp"
+#include "impl/FileLogWriter.hpp"
+#include "impl/SyslogLogWriter.hpp"
+
 #include "../err/ParameterError.hpp"
 #include "../text/Literals.hpp"
 
@@ -25,6 +33,26 @@ void LogWriter::writeBatch(const Batch batch) {
     for (const auto &item : batch) {
         write(item.entry(), item.line());
     }
+}
+
+auto LogWriter::createForConsole(cterm::TerminalPtr terminal) -> LogWriterPtr {
+    return createForConsole(std::move(terminal), ConsoleLogWriterOptions{});
+}
+
+auto LogWriter::createForConsole(cterm::TerminalPtr terminal, const ConsoleLogWriterOptions &options) -> LogWriterPtr {
+    return std::make_shared<impl::ConsoleLogWriter>(std::move(terminal), options);
+}
+
+auto LogWriter::createForFile(const FileLogWriterOptions &options) -> LogWriterPtr {
+    return std::make_shared<impl::FileLogWriter>(options);
+}
+
+auto LogWriter::createForSyslog() -> LogWriterPtr {
+    return createForSyslog(SyslogLogWriterOptions{});
+}
+
+auto LogWriter::createForSyslog(const SyslogLogWriterOptions &options) -> LogWriterPtr {
+    return std::make_shared<impl::SyslogLogWriter>(options);
 }
 
 auto LogWriter::bind(const void *manager) noexcept -> bool {

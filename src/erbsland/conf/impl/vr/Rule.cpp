@@ -2,14 +2,96 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Rule.hpp"
 
+#include "NamePathHelper.hpp"
+#include "ValidationError.hpp"
+
 #include "../value/Value.hpp"
 
+#include "../../../text/StringEditor.hpp"
+
 #include <algorithm>
+#include <limits>
 #include <ranges>
 
 namespace erbsland::conf::impl {
 
 using namespace text::literals;
+
+void Rule::setDefaultValue(const conf::ValuePtr &value) {
+    _defaultValue = std::dynamic_pointer_cast<impl::Value>(value);
+    if (value != nullptr && _defaultValue == nullptr) {
+        throwValidationError("The default value is not an Erbsland configuration value"_el);
+    }
+}
+
+void Rule::addConstraint(
+    const vr::ConstraintPtr &constraint, text::String name, const bool isNegated, text::String errorMessage) {
+    auto constraintImpl = std::dynamic_pointer_cast<impl::Constraint>(constraint);
+    if (constraintImpl == nullptr) {
+        throwValidationError("The constraint was not created by the validation-rule builder"_el);
+    }
+    if (isNegated) {
+        text::StringEditor prefixedName{"not_"_el};
+        prefixedName.append(name);
+        name = text::String{prefixedName};
+    }
+    constraintImpl->setName(std::move(name));
+    constraintImpl->setNegated(isNegated);
+    if (!errorMessage.isEmpty()) {
+        constraintImpl->setErrorMessage(std::move(errorMessage));
+    }
+    addOrOverwriteConstraint(constraintImpl);
+}
+
+void Rule::addDependency(
+    const vr::DependencyMode mode,
+    const std::vector<NamePathLike> &sources,
+    const std::vector<NamePathLike> &targets,
+    text::String errorMessage) {
+    auto sourcePaths = parseNamePathList(sources);
+    auto targetPaths = parseNamePathList(targets);
+    addDependencyDefinition(
+        DependencyDefinition::create(mode, std::move(sourcePaths), std::move(targetPaths), std::move(errorMessage)));
+}
+
+void Rule::addKeyIndex(
+    const Name &name, const std::vector<NamePathLike> &keyPaths, const text::CaseSensitivity caseSensitivity) {
+    addKeyDefinition(KeyDefinition::create(name, parseNamePathList(keyPaths), caseSensitivity, {}));
+}
+
+void Rule::limitVersions(const std::vector<Integer> &versions, const bool isNegated) {
+    if (versions.empty()) {
+        throwValidationError("The version list must not be empty"_el);
+    }
+    std::vector<Integer> uniqueVersions;
+    uniqueVersions.reserve(versions.size());
+    for (const auto version : versions) {
+        if (version < 0) {
+            throwValidationError("Versions must be non-negative integers"_el);
+        }
+        if (std::ranges::find(uniqueVersions, version) == uniqueVersions.end()) {
+            uniqueVersions.push_back(version);
+        }
+    }
+    auto mask = VersionMask::fromIntegers(uniqueVersions);
+    limitVersionMask(isNegated ? !mask : mask);
+}
+
+void Rule::limitMinimumVersion(const Integer version, const bool isNegated) {
+    if (version < 0) {
+        throwValidationError("The minimum version must be non-negative"_el);
+    }
+    auto mask = VersionMask::fromRanges({ConfVersionRange{version, std::numeric_limits<Integer>::max()}});
+    limitVersionMask(isNegated ? !mask : mask);
+}
+
+void Rule::limitMaximumVersion(const Integer version, const bool isNegated) {
+    if (version < 0) {
+        throwValidationError("The maximum version must be non-negative"_el);
+    }
+    auto mask = VersionMask::fromRanges({ConfVersionRange{0, version}});
+    limitVersionMask(isNegated ? !mask : mask);
+}
 
 void Rule::addOrOverwriteConstraint(const ConstraintPtr &constraint) {
     auto it = std::ranges::find_if(_constraints, [&constraint](const auto &existingConstraint) -> bool {

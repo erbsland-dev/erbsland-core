@@ -23,7 +23,7 @@ void configurationReplacement() {
     auto replacement = el::LogConfiguration{};
     replacement.setLineFormat(std::move(lineFormat))
         .enableTraceSection(el::LogTraceSection{"route-search"_el})
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
     manager.setConfiguration(std::move(replacement));
 
     el::io::printLine("Trace after replacement: "_el, el::BooleanFormat::yesNo(), log->traceEnabled());

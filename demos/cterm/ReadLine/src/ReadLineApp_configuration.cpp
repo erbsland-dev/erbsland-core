@@ -81,12 +81,12 @@ void ReadLineApp::applyConfiguration(el::cterm::ReadLineOptions &settings) {
     });
     applyNonNegative("readline.padding_left"_el, [&](const std::size_t value) -> void {
         auto padding = settings.padding();
-        padding.setLeft(el::BlockCoordinate{value});
+        padding.setLeading(el::block::Coordinate{value});
         settings.setPadding(padding);
     });
     applyNonNegative("readline.padding_right"_el, [&](const std::size_t value) -> void {
         auto padding = settings.padding();
-        padding.setRight(el::BlockCoordinate{value});
+        padding.setTrailing(el::block::Coordinate{value});
         settings.setPadding(padding);
     });
 

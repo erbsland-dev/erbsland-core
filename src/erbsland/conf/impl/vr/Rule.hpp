@@ -15,6 +15,7 @@
 #include "../../../text/CaseSensitivity.hpp"
 #include "../../../text/String.hpp"
 #include "../../Name.hpp"
+#include "../../vr/builder/RuleDefinition.hpp"
 #include "../../vr/Constraint.hpp"
 #include "../../vr/Rule.hpp"
 #include "../../vr/RuleType.hpp"
@@ -23,7 +24,7 @@ namespace erbsland::conf::impl {
 
 /// Internal implementation of a validation rule.
 /// @tested{VrNodeRulesDefinitionTest}
-class Rule : public vr::Rule {
+class Rule : public vr::Rule, public vr::builder::RuleDefinition {
 public:
     // defaults
     Rule() = default;
@@ -84,27 +85,39 @@ public: // public interface
     /// Set the name path that this rule validates.
     void setTargetNamePath(const NamePath &namePath) { _targetNamePath = namePath; }
     /// Set the rule type.
-    void setType(const vr::RuleType type) { _type = type; }
+    void setType(const vr::RuleType type) override { _type = type; }
     /// Set the optional title.
-    void setTitle(text::String &&title) noexcept { _title = std::move(title); }
-    /// Set the optional title.
-    void setTitle(const text::String &title) noexcept { _title = title; }
+    void setTitle(text::String title) override { _title = std::move(title); }
     /// Set the optional description.
-    void setDescription(text::String &&description) noexcept { _description = std::move(description); }
-    /// Set the optional description.
-    void setDescription(const text::String &description) noexcept { _description = description; }
+    void setDescription(text::String description) override { _description = std::move(description); }
     /// Set the custom validation error message.
-    void setErrorMessage(text::String &&errorMessage) noexcept { _errorMessage = std::move(errorMessage); }
-    /// Set the custom validation error message.
-    void setErrorMessage(const text::String &errorMessage) noexcept { _errorMessage = errorMessage; }
+    void setErrorMessage(text::String errorMessage) override { _errorMessage = std::move(errorMessage); }
     /// Set whether the target value is optional.
-    void setOptional(bool isOptional) { _isOptional = isOptional; }
+    void setOptional(bool isOptional) override { _isOptional = isOptional; }
     /// Set how text constraints compare characters.
-    void setCaseSensitivity(const text::CaseSensitivity caseSensitivity) { _caseSensitivity = caseSensitivity; }
+    void setCaseSensitivity(text::CaseSensitivity caseSensitivity) override { _caseSensitivity = caseSensitivity; }
     /// Set whether the target value contains secret data.
-    void setSecret(bool isSecret) { _isSecret = isSecret; }
+    void setSecret(bool isSecret) override { _isSecret = isSecret; }
     /// Set the default value.
-    void setDefaultValue(const ValuePtr &value) { _defaultValue = value; }
+    void setDefaultValue(const conf::ValuePtr &value) override;
+    /// Add a public builder constraint.
+    void addConstraint(
+        const vr::ConstraintPtr &constraint, text::String name, bool isNegated, text::String errorMessage) override;
+    /// Add a public builder dependency.
+    void addDependency(
+        vr::DependencyMode mode,
+        const std::vector<NamePathLike> &sources,
+        const std::vector<NamePathLike> &targets,
+        text::String errorMessage) override;
+    /// Add a public builder key index.
+    void addKeyIndex(
+        const Name &name, const std::vector<NamePathLike> &keyPaths, text::CaseSensitivity caseSensitivity) override;
+    /// Restrict this rule to a version list.
+    void limitVersions(const std::vector<Integer> &versions, bool isNegated) override;
+    /// Restrict this rule to a minimum version.
+    void limitMinimumVersion(Integer version, bool isNegated) override;
+    /// Restrict this rule to a maximum version.
+    void limitMaximumVersion(Integer version, bool isNegated) override;
     /// Add a constraint, replacing one of the same type if present.
     void addOrOverwriteConstraint(const ConstraintPtr &constraint);
     /// Test whether a constraint of the given type exists.

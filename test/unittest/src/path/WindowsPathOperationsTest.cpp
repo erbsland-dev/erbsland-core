@@ -9,8 +9,8 @@
 #include <erbsland/path/PathContent.hpp>
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathInfo.hpp>
+#include <erbsland/system/impl/WindowsErrorContext.hpp>
 #include <erbsland/system/PlatformErrorCategory.hpp>
-#include <erbsland/system/WindowsErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
@@ -70,7 +70,7 @@ public:
             el::path::impl::pathBackend().createSymlinkOrThrow(el::path::Path{"target.txt"_el}, relativeLink, false);
         } catch (const el::path::PathError &error) {
             const auto context =
-                std::dynamic_pointer_cast<const el::system::WindowsErrorContext>(error.platformContext());
+                std::dynamic_pointer_cast<const el::system::impl::WindowsErrorContext>(error.platformContext());
             REQUIRE(context);
             REQUIRE_EQUAL(context->errorCode(), static_cast<DWORD>(ERROR_PRIVILEGE_NOT_HELD));
             return;
@@ -85,7 +85,8 @@ public:
 
 private:
     void requireNotFoundError(const el::path::PathError &error) {
-        const auto context = std::dynamic_pointer_cast<const el::system::WindowsErrorContext>(error.platformContext());
+        const auto context =
+            std::dynamic_pointer_cast<const el::system::impl::WindowsErrorContext>(error.platformContext());
         REQUIRE(context);
         REQUIRE_EQUAL(context->category(), el::system::PlatformErrorCategory::NotFound);
     }

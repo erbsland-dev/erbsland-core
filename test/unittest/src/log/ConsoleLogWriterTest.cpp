@@ -5,9 +5,9 @@
 
 #include <erbsland/cterm/BlockStringEditor.hpp>
 #include <erbsland/cterm/Terminal.hpp>
-#include <erbsland/log/ConsoleLogWriter.hpp>
+#include <erbsland/log/impl/ConsoleLogWriter.hpp>
+#include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogEntry.hpp>
-#include <erbsland/log/LogLine.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/time/DateTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -24,7 +24,7 @@ class ConsoleLogWriterTest final : public el::UnitTest {
 public:
     void testStyledParagraphUsesTerminalWidthWrappingAndIndentation() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        const auto terminal = std::make_shared<Terminal>(backend, bgeo::BlockSize{6, 4});
+        const auto terminal = std::make_shared<Terminal>(backend, block::Size{6, 4});
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         auto paragraph = ParagraphOptions{};
         paragraph.setWrappedLineIndent(3);
@@ -32,7 +32,7 @@ public:
         paragraph.setLineBreakEndMark(BlockStringEditor{"<"_el});
         auto options = el::log::ConsoleLogWriterOptions{};
         options.setParagraphOptions(paragraph);
-        auto writer = el::log::ConsoleLogWriter{terminal, options};
+        auto writer = el::log::impl::ConsoleLogWriter{terminal, options};
         const auto entry = std::make_shared<el::log::LogEntry>(
             1U, el::time::DateTime::now(), el::log::LogLevel::Information, el::log::LogPath{}, "AA BB CC"_el);
         const auto line = std::make_shared<el::log::LogLine>(
@@ -48,7 +48,7 @@ public:
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_isInteractive = false;
         const auto terminal = std::make_shared<Terminal>(backend);
-        auto writer = el::log::ConsoleLogWriter{terminal};
+        auto writer = el::log::impl::ConsoleLogWriter{terminal};
         const auto entry = std::make_shared<el::log::LogEntry>(
             1U, el::time::DateTime::now(), el::log::LogLevel::Error, el::log::LogPath{}, "plain"_el);
 

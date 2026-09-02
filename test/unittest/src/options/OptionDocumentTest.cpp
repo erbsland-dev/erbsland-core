@@ -108,23 +108,125 @@ public:
         requireMissing(text, "--version");
     }
 
-    void testBooleanFlagValueHelpCanBeDisabled() {
+    void testHelpDetailsCanBeDisabled() {
         auto options = Options::create();
         options->setExecutablePath("tool"_el);
         options->addOption({"-v"_el, "--verbose"_el});
         auto manager = OptionManager{options};
 
         auto text = toStdString(manager.helpDocument({}).toString());
-        requireContains(text, "-h, --help[=<boolean>]");
-        requireContains(text, "-v, --verbose[=<boolean>]");
-        requireContains(text, "--version[=<boolean>]");
+        requireContains(text, "-h, --help[=<value>]");
+        requireContains(text, "-v, --verbose");
+        requireContains(text, "--version");
 
-        options->setParserFlag(OptionParserFlag::DisableBooleanValues);
+        options->setParserFlag(OptionParserFlag::NoHelpDetails);
         text = toStdString(manager.helpDocument({}).toString());
         requireContains(text, "-h, --help");
         requireContains(text, "-v, --verbose");
         requireContains(text, "--version");
-        requireMissing(text, "[=<boolean>]");
+        requireMissing(text, "[=<value>]");
+    }
+
+    void testDetailedHelpSearchUsageExampleAndSeeAlso() {
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption({"-m"_el, "--mode"_el, "mode"_el})
+            .setType(OptionType::Text)
+            .setFlag(OptionFlag::AcceptAsFlag)
+            .setHelpTitle("Global Mode"_el)
+            .setHelpDescription("Select the global mode."_el)
+            .setHelpExample("tool run --mode=fast"_el);
+        auto module = OptionModule::create("run"_el);
+        module->addOption({"--mode"_el, "mode"_el})
+            .setType(OptionType::Choice)
+            .addChoice("fast"_el)
+            .addChoice("safe"_el)
+            .setHelpTitle("Run Mode"_el)
+            .setHelpDescription("Select the run mode."_el);
+        options->addModule(module);
+        auto manager = OptionManager{options};
+
+        auto text = toStdString(manager.detailedHelpDocument({}, "MODE"_el).toString());
+        requireContains(text, "Global Mode\n");
+        requireContains(text, "tool <module> -m[=<value>]\n");
+        requireContains(text, "tool <module> --mode[=<value>]\n");
+        requireContains(text, "Description:\n");
+        requireContains(text, "Select the global mode.");
+        requireContains(text, "Example:\n");
+        requireContains(text, "tool run --mode=fast");
+        requireContains(text, "See Also:\n");
+        requireContains(text, "tool run --help=mode");
+
+        text = toStdString(manager.detailedHelpDocument("run"_el, "--MODE"_el).toString());
+        requireContains(text, "Run Mode\n");
+        requireContains(text, "tool run --mode=<choice>\n");
+        requireContains(text, "tool --help=--mode");
+
+        text = toStdString(manager.detailedHelpDocument({}, "-m"_el).toString());
+        requireContains(text, "Global Mode\n");
+        REQUIRE_THROWS_AS(OptionError, manager.detailedHelpDocument({}, "-M"_el));
+    }
+
+    void testDetailedHelpRejectsHiddenNamesWithSuggestions() {
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption("--verbose"_el).setHelpDescription("Verbose output."_el);
+        options->addOption("--hidden"_el).setHelpVisibility(OptionHelpVisibility::Hidden);
+        auto manager = OptionManager{options};
+
+        try {
+            static_cast<void>(manager.detailedHelpDocument({}, "--verbsoe"_el));
+            REQUIRE(false);
+        } catch (const OptionError &error) {
+            REQUIRE(error.context().reason() == OptionErrorReason::UnknownName);
+            REQUIRE(error.context().suggestions().count() >= el::unit::ItemCount::one());
+            REQUIRE(error.context().suggestions().get(el::unit::ItemIndex::zero()) == "--verbose"_el);
+        }
+        REQUIRE_THROWS_AS(OptionError, manager.detailedHelpDocument({}, "--hidden"_el));
+    }
+
+    void testReducedModuleOverview() {
+        auto options = makeOptions();
+        auto manager = OptionManager{options};
+
+        const auto text = toStdString(manager.moduleOverviewDocument().toString());
+        requireContains(text, "demo-tool <module> [options]\n");
+        requireContains(text, "Modules:\n");
+        requireContains(text, "run");
+        requireMissing(text, "Operate demo files.");
+        requireMissing(text, "-v, --verbose");
+        requireMissing(text, "Select mode.");
+    }
+
+    void testReducedModuleOverviewWithNoVisibleModules() {
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        auto module = OptionModule::create("hidden"_el);
+        module->setHelpVisibility(OptionHelpVisibility::Hidden);
+        options->addModule(module);
+        auto manager = OptionManager{options};
+
+        const auto text = toStdString(manager.moduleOverviewDocument().toString());
+        requireContains(text, "tool <module> [options]");
+        requireMissing(text, "Modules:\n");
+        requireMissing(text, "hidden");
+    }
+
+    void testSuggestionsAreLocalizedBeforeUsage() {
+        auto options = Options::create();
+        options->setExecutablePath("tool"_el);
+        options->addOption("--verbose"_el);
+        auto displayText = el::i18n::DisplayTextMap::defaultMap()->clone();
+        displayText->set("options.DidYouMeanHeading"_el, "Perhaps"_el);
+        auto manager = OptionManager{options, displayText};
+        auto arguments = makeArgs({"tool"_el, "--verbsoe"_el});
+        const auto result = manager.parse(arguments);
+        REQUIRE(result.errorContext().has_value());
+
+        const auto text = toStdString(manager.errorDocument(result.errorContext().value()).toString());
+        requireContains(text, "Perhaps:\n");
+        requireContains(text, "--verbose");
+        requireBefore(text, "Perhaps:", "Usage:");
     }
 
     void testCustomDisplayText() {
@@ -438,11 +540,11 @@ private:
         options->addOption("--debug"_el).setHelp(hiddenHelp);
 
         auto choices = OptionChoices::create();
-        choices->addChoice(OptionChoice::create("fast"_el, OptionHelp{"Prefer speed."_el}));
-        choices->addChoice(OptionChoice::create("safe"_el, OptionHelp{"Prefer safety."_el}));
-        auto expertHelp = OptionHelp{"Expert mode."_el};
-        expertHelp.setVisibility(OptionHelpVisibility::Hidden);
-        choices->addChoice(OptionChoice::create("expert"_el, expertHelp));
+        choices->addChoice("fast"_el).setHelpDescription("Prefer speed."_el);
+        choices->addChoice("safe"_el).setHelpDescription("Prefer safety."_el);
+        choices->addChoice("expert"_el)
+            .setHelpDescription("Expert mode."_el)
+            .setHelpVisibility(OptionHelpVisibility::Hidden);
         options->addOption("--mode"_el).setHelp("Select mode."_el).setChoices(choices);
         options->editOption("--mode"_el).setHelpVisibility(OptionHelpVisibility::Usage);
 

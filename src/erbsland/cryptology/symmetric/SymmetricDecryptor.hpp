@@ -21,7 +21,7 @@ namespace erbsland::cryptology {
 /// A move-only state object for streaming symmetric decryption.
 /// A default-constructed or securely erased decryptor is an empty placeholder. AEAD plaintext returned by `decrypt()`
 /// is unauthenticated and must not be trusted or acted upon until `finalize(tag)` succeeds.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{SymmetricEncryptionFrontendTest}
 class SymmetricDecryptor final {
     friend class impl::SymmetricDecryptorBackendAccess;

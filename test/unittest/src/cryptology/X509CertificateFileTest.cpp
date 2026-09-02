@@ -24,7 +24,7 @@ using namespace el::cryptology;
 using namespace el::text::literals;
 using erbsland::test::x509::certificatePem;
 
-TESTED_TARGETS(X509Certificate X509CertificateBundle X509CertificateFormat)
+TESTED_TARGETS(X509Certificate X509CertificateBundle PemDerFormat)
 class X509CertificateFileTest final : public el::UnitTest {
 public:
     void testAutomaticReadAndWrite() {

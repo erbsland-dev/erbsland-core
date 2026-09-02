@@ -2,16 +2,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "OptionParser.hpp"
 
+#include "OptionDisplayModel.hpp"
+
 #include "../Option.hpp"
 #include "../OptionErrorContext.hpp"
 #include "../OptionResult.hpp"
 #include "../Options.hpp"
+#include "../OptionType.hpp"
 #include "../OptionValues.hpp"
 
 #include "../../err/LogicError.hpp"
 #include "../../i18n/DisplayTextMap.hpp"
+#include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
+#include "../../text/StringFormat.hpp"
 
 #include <utility>
 
@@ -50,6 +55,10 @@ auto OptionParser::parse() -> OptionResult {
 
     auto status = OptionResultStatus::Success;
     if (!_options->optionModules().empty()) {
+        if (_args.count() <= unit::ItemCount::one() &&
+            !_options->parserFlags().isSet(OptionParserFlag::ErrorOnMissingModule)) {
+            return finishStatus(OptionResultStatus::DisplayModuleOverview);
+        }
         if (!prepareModuleParsing()) {
             return finishError();
         }
@@ -117,6 +126,7 @@ auto OptionParser::finishStatus(const OptionResultStatus status) -> OptionResult
     cleanupSensitiveText();
     auto result = OptionResult{};
     result.setStatus(status);
+    result.setHelpName(_helpName);
     auto values = OptionValues::create();
     values->setModuleName(_moduleName);
     values->setModule(_selectedModule);
@@ -154,6 +164,21 @@ auto OptionParser::storeValue(
     const text::String &value,
     const unit::ArgumentIndex argumentIndex,
     const unit::ByteIndex startIndex) -> bool {
+    if (option != nullptr && option->type() == OptionType::Boolean) {
+        auto boolean = false;
+        if (!parseBooleanLiteral(value, boolean)) {
+            return makeError(
+                OptionErrorReason::UnexpectedValueType,
+                "Invalid boolean value"_el,
+                text::StringFormat{
+                    "\"{}\" is not a supported boolean value for {}. Use true, on, yes, enabled, false, off, no, "
+                    "or disabled."}
+                    .build(value.toEscaped(text::EscapeFormat::Display), OptionDisplayModel::optionTitle(option)),
+                argumentIndex,
+                option);
+        }
+        return acceptStorageResult(_storage.storeBooleanValue(option, boolean, argumentIndex));
+    }
     if (option != nullptr && option->type() == OptionType::SensitiveText) {
         if (!argumentIndex.isNoIndex()) {
             const auto elementIndex = unit::ItemIndex::fromSizeT(argumentIndex.toSizeT());

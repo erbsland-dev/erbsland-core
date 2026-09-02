@@ -1,6 +1,9 @@
-// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
-// SPDX-License-Identifier: Apache-2.0
+// Copyright © 2026 EducateIT GmbH (https://educateit.ch/) and Tobias Erbsland (https://erbsland.dev/)
+// All rights are reserved. Detailed terms are specified in the "COPYRIGHT.md" file.
 #include "OptionError.hpp"
+
+#include "Option.hpp"
+#include "OptionValue.hpp"
 
 #include "impl/OptionErrorDiagnostic.hpp"
 
@@ -10,6 +13,22 @@ namespace erbsland::options {
 
 OptionError::OptionError(text::String reason, const std::exception_ptr &cause) noexcept :
     OptionError(OptionErrorContext{}.setDescription(std::move(reason)), cause) {
+}
+
+OptionError::OptionError(
+    text::String title, text::String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept
+    :
+    OptionError(
+        OptionErrorContext{}
+            .setTitle(std::move(title))
+            .setDescription(std::move(description))
+            .setOption(value->option().lock()),
+        cause) {
+}
+
+OptionError::OptionError(
+    text::String description, const OptionValuePtr &value, const std::exception_ptr &cause) noexcept :
+    OptionError(OptionErrorContext{}.setDescription(std::move(description)).setOption(value->option().lock()), cause) {
 }
 
 OptionError::OptionError(OptionErrorContext context) noexcept : OptionError(std::move(context), {}) {

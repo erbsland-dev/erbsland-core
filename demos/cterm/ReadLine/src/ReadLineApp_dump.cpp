@@ -111,8 +111,8 @@ void ReadLineApp::dumpConfiguration(const el::cterm::ReadLineOptions &settings) 
         result, "blink_interval"_el, el::StringFormat{"{} ms"_el}.build(settings.blinkInterval().toRawValue()));
     appendAssignment(result, "cleanup_enabled"_el, settings.cleanupEnabled() ? "true"_el : "false"_el);
     appendTextAssignment(result, "display_style"_el, displayStyleText(settings.displayStyle()));
-    appendAssignment(result, "padding_left"_el, el::String::fromInteger(settings.padding().left().toRawValue()));
-    appendAssignment(result, "padding_right"_el, el::String::fromInteger(settings.padding().right().toRawValue()));
+    appendAssignment(result, "padding_left"_el, el::String::fromInteger(settings.padding().leading().toRawValue()));
+    appendAssignment(result, "padding_right"_el, el::String::fromInteger(settings.padding().trailing().toRawValue()));
     appendTextAssignment(result, "cursor_block"_el, settings.cursorBlock().toString());
     appendTextAssignment(result, "commit_key"_el, settings.commitKey().toString());
     appendTextAssignment(result, "new_line_key"_el, settings.newLineKey().toString());

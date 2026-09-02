@@ -26,7 +26,6 @@
 
 using namespace el::event;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 using namespace el::time;
 namespace mem = el::mem;
@@ -36,6 +35,17 @@ TESTED_TARGETS(
     TcpConnection TcpConnectOptions TcpAcceptOptions TcpConnectionEventEditor ConnectionCloseContext
         ConnectionCloseOrigin TcpHostResolvedFn TcpConnectionDevice ConnectionQuota ConnectionQuotaLease)
 class TcpConnectionTest final : public el::UnitTest {
+    using HostResolver = el::network::impl::HostResolver;
+    using TcpAcceptedSocket = el::network::impl::TcpAcceptedSocket;
+    using TcpAcceptedSocketPtr = el::network::impl::TcpAcceptedSocketPtr;
+    using TcpConnection = el::network::impl::TcpConnection;
+    using TcpConnectionDevice = el::network::impl::TcpConnectionDevice;
+    using TcpConnectionDeviceCallbacks = el::network::impl::TcpConnectionDeviceCallbacks;
+    using TcpConnectionDeviceSendStatus = el::network::impl::TcpConnectionDeviceSendStatus;
+    using TcpConnectionEventEditor = el::network::impl::TcpConnectionEventEditor;
+    using TcpConnectionPtr = el::network::impl::TcpConnectionPtr;
+    using TcpConnectionRequest = el::network::impl::TcpConnectionRequest;
+
     class FakeResolver final : public HostResolver {
     public:
         explicit FakeResolver(el::util::List<IpAddress> addresses) : _addresses{std::move(addresses)} {}

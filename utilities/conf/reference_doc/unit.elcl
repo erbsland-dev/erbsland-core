@@ -1,0 +1,7 @@
+# Reference-document groups for the unit domain.
+
+------------*[ Reference Groups ]
+Page        : "unit/units_and_versions.rst"
+Title       : "Units and Versions"
+Header Globs:
+    * "unit/*.hpp"

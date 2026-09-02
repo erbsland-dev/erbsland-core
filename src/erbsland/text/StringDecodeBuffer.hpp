@@ -37,7 +37,7 @@ namespace erbsland::text {
 
 /// A bounded byte buffer for incrementally decoding encoded string data.
 /// Sensitive mode protects discarded input bytes and marks UTF-8 results.
-/// @seedoc{/reference/text/string_decode_buffer}
+/// @seedoc{/reference/text/encoding}
 /// @tested{StringDecodeBufferTest}
 class StringDecodeBuffer final {
     friend class impl::UnsafeDecodeBufferAccess;

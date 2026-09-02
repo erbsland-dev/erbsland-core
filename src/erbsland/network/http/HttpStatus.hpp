@@ -11,7 +11,7 @@ namespace erbsland::network {
 
 /// A valid HTTP status code or an invalid placeholder.
 /// The value accepts extension codes from 100 through 599. Named values follow RFC 9110 plus selected registered codes.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpValueTest}
 class HttpStatus final {
 public:

@@ -22,14 +22,14 @@ public:
     FontGlyph() = default;
     /// Create an empty glyph with the given size.
     /// @param size The glyph dimensions.
-    explicit FontGlyph(const bgeo::BlockSize size) noexcept : Bitmap{size} {}
+    explicit FontGlyph(const block::Size size) noexcept : Bitmap{size} {}
     /// Create a glyph from numeric row masks.
     /// @param data One 64-bit mask per bitmap row.
     template <typename T>
         requires std::is_integral_v<T> && std::is_unsigned_v<T>
     explicit FontGlyph(const std::vector<T> &data) :
-        Bitmap{bgeo::BlockSize{calculateGlyphWidth(data), bgeo::BlockCoordinate{data.size()}}} {
-        draw(bgeo::BlockPosition{0, 0}, data);
+        Bitmap{block::Size{calculateGlyphWidth(data), block::Coordinate{data.size()}}} {
+        draw(block::Position{0, 0}, data);
         flipHorizontal();
     }
 
@@ -37,11 +37,10 @@ private:
     /// Calculate the required glyph width from bit-mask rows.
     template <typename T>
         requires std::is_integral_v<T> && std::is_unsigned_v<T>
-    [[nodiscard]] constexpr static auto calculateGlyphWidth(const std::vector<T> &data) noexcept
-        -> bgeo::BlockCoordinate {
-        auto width = bgeo::BlockCoordinate{0};
+    [[nodiscard]] constexpr static auto calculateGlyphWidth(const std::vector<T> &data) noexcept -> block::Coordinate {
+        auto width = block::Coordinate{0};
         for (const auto &mask : data) {
-            width = std::max(width, bgeo::BlockCoordinate{std::bit_width(mask)});
+            width = std::max(width, block::Coordinate{std::bit_width(mask)});
         }
         return width;
     }

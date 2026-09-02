@@ -10,14 +10,16 @@ namespace erbsland::options {
 
 /// The value type accepted by an option.
 ///
-/// The parser stores values according to this type and the option maximum. Flags count occurrences, integer and text
-/// options store one value or a list, and choice options store the configured choice text that matched the argument.
+/// The parser stores values according to this type and the option maximum. Flags count occurrences; Boolean, integer,
+/// and text options store one value or a list; choice options store the configured choice text that matched the
+/// argument.
 /// @tested{OptionsFrameworkTest}
 class OptionType {
 public:
     /// The supported option types.
     enum Type : uint8_t {
-        Flag,          ///< A boolean switch; bare use is true and compatible parsers accept explicit boolean values.
+        Flag,          ///< A valueless switch whose occurrences are counted.
+        Boolean,       ///< A boolean value argument.
         Integer,       ///< A signed decimal integer argument.
         Text,          ///< An arbitrary text argument.
         SensitiveText, ///< A single sensitive text argument stored in protected memory.

@@ -15,6 +15,9 @@ auto main(const int argc, char *argv[]) -> int {
         if (setup == "deferred-configuration"_el) {
             return demo::runDeferredConfiguration(argc - 1, argv + 1);
         }
+        if (setup == "last-error-dump"_el) {
+            return demo::runLastErrorDump(argc - 1, argv + 1);
+        }
         if (setup == "minimal"_el) {
             return demo::runMinimalLogging(argc - 1, argv + 1);
         }

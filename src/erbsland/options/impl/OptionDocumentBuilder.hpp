@@ -8,7 +8,9 @@
 
 #include "../Option_fwd.hpp"
 #include "../OptionErrorContext.hpp"
+#include "../OptionModule_fwd.hpp"
 #include "../Options_fwd.hpp"
+#include "../OptionSet_fwd.hpp"
 
 #include "../../i18n/DisplayTextMap_fwd.hpp"
 #include "../../text/String.hpp"
@@ -42,12 +44,23 @@ public:
 public:
     /// Build the help document for the selected module.
     [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
+    /// Build the reduced root module overview.
+    [[nodiscard]] auto moduleOverviewDocument() const -> text::TextDocument;
+    /// Build detailed help for one option name.
+    [[nodiscard]] auto detailedHelpDocument(const text::String &moduleName, const text::String &helpName) const
+        -> text::TextDocument;
     /// Build the application version document.
     [[nodiscard]] auto versionDocument(const text::String &moduleName) const -> text::TextDocument;
     /// Build an option error document.
     [[nodiscard]] auto errorDocument(const OptionErrorContext &errorContext) const -> text::TextDocument;
 
 private:
+    /// One visible option and the module scope that owns it, or null for global scope.
+    struct DetailedHelpEntry final {
+        OptionPtr option;
+        OptionModulePtr module;
+    };
+
     static constexpr auto cMaximumArgumentLines = unit::LineCount{12U};
     static constexpr auto cPreferredLinesBeforeError = unit::LineCount{5U};
 
@@ -59,6 +72,22 @@ private:
     [[nodiscard]] static auto markerLength(const text::String &text) noexcept -> unit::ColumnCount;
     /// Get the localized default title for an error reason.
     [[nodiscard]] auto defaultErrorTitle(OptionErrorReason reason) const -> text::String;
+    /// Collect visible detailed-help entries in lookup order.
+    [[nodiscard]] auto detailedHelpEntries(const text::String &moduleName) const -> std::vector<DetailedHelpEntry>;
+    /// Append visible options from one set to detailed-help entries.
+    void appendDetailedHelpEntries(
+        std::vector<DetailedHelpEntry> &entries, const OptionSetPtr &optionSet, const OptionModulePtr &module) const;
+    /// Test if an option has the requested detailed-help alias.
+    [[nodiscard]] static auto matchesDetailedHelpName(const OptionPtr &option, const text::String &helpName) -> bool;
+    /// Select the first alias of an option matching a detailed-help request.
+    [[nodiscard]] static auto matchingDetailedHelpName(const OptionPtr &option, const text::String &helpName)
+        -> text::String;
+    /// Build a detailed-help command for an entry.
+    [[nodiscard]] auto detailedHelpCommand(const DetailedHelpEntry &entry, const text::String &name) const
+        -> text::String;
+    /// Build one generated usage line for a dashed option alias.
+    [[nodiscard]] auto detailedUsageLine(const DetailedHelpEntry &entry, const text::String &name) const
+        -> text::String;
 
     /// Append a document heading.
     void appendHeading(const text::TextNodePtr &parent, text::String title) const;

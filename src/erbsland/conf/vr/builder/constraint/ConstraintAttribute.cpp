@@ -3,21 +3,22 @@
 #include "ConstraintAttribute.hpp"
 
 #include "../../../../text/StringFormat.hpp"
-#include "../../../impl/vr/Rule.hpp"
 
 namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
 void ConstraintAttribute::requireRuleTypeForConstraint(
-    const Rule &rule, const text::String &constraintName, const std::initializer_list<vr::RuleType> supportedTypes) {
+    const RuleDefinition &rule,
+    const text::String &constraintName,
+    const std::initializer_list<vr::RuleType> supportedTypes) {
     if (!hasRuleType(rule, supportedTypes)) {
         throwUnsupportedConstraint(rule, constraintName);
     }
 }
 
-auto ConstraintAttribute::hasRuleType(const Rule &rule, const std::initializer_list<vr::RuleType> supportedTypes)
-    -> bool {
+auto ConstraintAttribute::hasRuleType(
+    const RuleDefinition &rule, const std::initializer_list<vr::RuleType> supportedTypes) -> bool {
     for (const auto supportedType : supportedTypes) {
         if (rule.type() == supportedType) {
             return true;
@@ -26,7 +27,7 @@ auto ConstraintAttribute::hasRuleType(const Rule &rule, const std::initializer_l
     return false;
 }
 
-void ConstraintAttribute::throwUnsupportedConstraint(const Rule &rule, const text::String &constraintName) {
+void ConstraintAttribute::throwUnsupportedConstraint(const RuleDefinition &rule, const text::String &constraintName) {
     throwValidationError(
         text::StringFormat{"The '{}' constraint is not supported for '{}' rules"_el}.build(
             constraintName, rule.type().toText()));

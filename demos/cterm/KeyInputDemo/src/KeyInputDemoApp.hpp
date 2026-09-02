@@ -28,15 +28,15 @@ public:
     [[nodiscard]] auto loopInterval() const noexcept -> std::chrono::milliseconds override { return cScrollDelay; }
 
 private:
-    [[nodiscard]] auto canvasSize() noexcept -> BlockSize;
-    [[nodiscard]] auto fieldRectForCanvas(BlockSize canvasSize) const noexcept -> BlockRectangle;
-    [[nodiscard]] auto visibleFieldSize() noexcept -> BlockSize;
+    [[nodiscard]] auto canvasSize() noexcept -> Size;
+    [[nodiscard]] auto fieldRectForCanvas(Size canvasSize) const noexcept -> Rectangle;
+    [[nodiscard]] auto visibleFieldSize() noexcept -> Size;
     void initializeScrollBuffer() noexcept;
     void advanceScroll() noexcept;
     void stampKeyBlock(const Key &key) noexcept;
-    void drawHeader(BlockRectangle rect);
-    void drawField(BlockRectangle rect);
-    void drawFooter(BlockRectangle rect);
+    void drawHeader(Rectangle rect);
+    void drawField(Rectangle rect);
+    void drawFooter(Rectangle rect);
     [[nodiscard]] auto footerText() const -> BlockString;
 
 private:
@@ -45,7 +45,7 @@ private:
     [[nodiscard]] static auto stampColors() noexcept -> const std::array<Color, 10> &;
 
 private:
-    constexpr static auto cScrollBufferSize = BlockSize{BlockCoordinate{250}, BlockCoordinate{30}};
+    constexpr static auto cScrollBufferSize = Size{Coordinate{250}, Coordinate{30}};
     constexpr static auto cScrollDelay = std::chrono::milliseconds{200};
 
 private:

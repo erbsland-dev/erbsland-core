@@ -7,7 +7,7 @@
 namespace erbsland::text {
 
 /// Get the Unicode Character Database version used by the Unicode Light layer.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @usesunidb{Uses generated Unicode Character Database version metadata.}
 [[nodiscard]] auto ucdVersion() noexcept -> unit::Version;
 

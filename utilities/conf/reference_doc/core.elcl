@@ -1,0 +1,12 @@
+# Reference-document groups for the core domain.
+
+------------*[ Reference Groups ]
+Page        : "core/application_framework.rst"
+Title       : "Application Framework"
+Headers     :
+    * "core/CommandLineArguments.hpp"
+    * "core/InitializeFn.hpp"
+    * "core/LastErrorDumpMode.hpp"
+    * "core/MainFn.hpp"
+Header Globs:
+    * "core/Application*.hpp"

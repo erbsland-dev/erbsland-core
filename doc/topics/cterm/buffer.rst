@@ -30,17 +30,17 @@ specific implementation.
 
 .. code-block:: cpp
 
-    auto renderStatusPanel(WritableBuffer &target, BlockRectangle panel) -> void {
+    auto renderStatusPanel(WritableBuffer &target, Rectangle panel) -> void {
         target.fill(panel, Block{" ", Color{fg::Inherited, bg::Blue}});
         target.drawBlockText(
             "Status",
-            panel.insetBy(BlockMargins{1}),
+            panel.insetBy(Margins{1}),
             Alignment::TopLeft,
             Color{fg::BrightWhite, bg::Blue});
     }
 
-    auto screen = Buffer{BlockSize{80, 24}};
-    renderStatusPanel(screen, BlockRectangle{2, 2, 24, 8});
+    auto screen = Buffer{Size{80, 24}};
+    renderStatusPanel(screen, Rectangle{2, 2, 24, 8});
 
 Use ``ReadableBuffer`` when your function only needs to inspect content, count differences, or derive masks.
 
@@ -58,14 +58,14 @@ sample existing cells around the clipped area.
 
 .. code-block:: cpp
 
-    auto screen = Buffer{BlockSize{80, 24}};
+    auto screen = Buffer{Size{80, 24}};
     auto panel = WriteClippedBufferRef{
         screen,
-        BlockPosition{0, 0},
-        BlockRectangle{10, 4, 32, 8}};
+        Position{0, 0},
+        Rectangle{10, 4, 32, 8}};
 
     panel.fill(panel.sourceRect(), Block{" ", Color{fg::Inherited, bg::Blue}});
-    panel.drawBlockText("Panel title", BlockRectangle{0, 0, 32, 1}, Alignment::Center);
+    panel.drawBlockText("Panel title", Rectangle{0, 0, 32, 1}, Alignment::Center);
 
 Use ``WriteClippedBuffer`` when the wrapper must store a shared pointer to the wrapped buffer.
 Use ``WriteClippedBufferRef`` for short-lived paint passes where the wrapped buffer already outlives the wrapper.
@@ -78,11 +78,11 @@ frames, cloning the current state, and resizing buffers when the terminal size c
 
 .. code-block:: cpp
 
-    auto current = Buffer{BlockSize{80, 24}};
+    auto current = Buffer{Size{80, 24}};
     current.fill(Block{" ", Color{fg::Inherited, bg::Black}});
 
     const auto previous = current.clone();
-    current.resize(BlockSize{100, 30}, BufferResizeMode::PreserveContent, Block::space());
+    current.resize(Size{100, 30}, BufferResizeMode::PreserveContent, Block::space());
 
 ``clone()`` returns a writable copy through the abstract interface.
 This makes it easy to store previous frames for diffing, animation steps, or rollback logic.
@@ -105,13 +105,13 @@ This keeps operations like scrolling or line insertion efficient, even for large
 
 .. code-block:: cpp
 
-    auto history = RemappedBuffer{BlockSize{80, 2'000}, Orientation::Vertical};
+    auto history = RemappedBuffer{Size{80, 2'000}, Orientation::Vertical};
     history.fill(Block::space());
 
     history.eraseRows(0, Block::space(), 1);      // Scroll everything up by one row.
-    history.set(BlockPosition{0, 1'999}, BlockString{"new log line"});
+    history.set(Position{0, 1'999}, BlockString{"new log line"});
 
-    history.resize(BlockSize{100, 2'000}, BufferResizeMode::PreserveContent, Block::space());
+    history.resize(Size{100, 2'000}, BufferResizeMode::PreserveContent, Block::space());
 
 Use the plain ``RemappedBuffer::resize()`` overload when you want maximum performance and plan to redraw the content
 anyway.
@@ -138,9 +138,9 @@ placeholder glyph as the buffer grows.
 .. code-block:: cpp
 
     auto logHistory = CursorBuffer{
-        BlockSize{120, 10},
+        Size{120, 10},
         CursorBuffer::OverflowMode::ExpandThenShift,
-        BlockSize{120, 500},
+        Size{120, 500},
         Block{" ", Color{fg::Default, bg::Black}}};
 
     logHistory.setColor(Color{fg::BrightBlue, bg::Black});
@@ -150,7 +150,7 @@ placeholder glyph as the buffer grows.
     logHistory.printParagraph("2026-03-26 09:03:04 WRN Cache refresh is still pending");
 
     const auto visibleTop = std::max(0, logHistory.size().height() - 20);
-    auto view = BufferConstRefView{logHistory, BlockRectangle{0, visibleTop, 120, 20}};
+    auto view = BufferConstRefView{logHistory, Rectangle{0, visibleTop, 120, 20}};
     terminal.updateScreen(view);
 
 This pattern works especially well for log viewers, REPL-style tools, dashboards, or any application that needs a
@@ -202,7 +202,7 @@ text.
         "R  Refresh\n"
         "H  Toggle help"});
 
-    auto screen = Buffer{BlockSize{40, 12}};
+    auto screen = Buffer{Size{40, 12}};
     screen.setFrom(help, Block::space());
 
 This is often the fastest way to turn preformatted terminal text into a buffer that can later be positioned within a
@@ -217,14 +217,14 @@ It bundles the target region, the optional source crop, and the color-combinatio
 
 .. code-block:: cpp
 
-    auto frame = Buffer{BlockSize{52, 16}};
-    auto sprite = Buffer{BlockSize{12, 5}};
+    auto frame = Buffer{Size{52, 16}};
+    auto sprite = Buffer{Size{12, 5}};
     sprite.drawFrame(sprite.rect(), FrameStyle::Double, Color{fg::BrightCyan, bg::Inherited});
     sprite.drawBlockText("CPU", sprite.rect(), Alignment::Center, Color{fg::BrightWhite, bg::Inherited});
 
     auto options = BufferDrawOptions{
-        BlockRectangle{30, 3, 18, 7},
-        BlockRectangle{0, 0, 12, 5}};
+        Rectangle{30, 3, 18, 7},
+        Rectangle{0, 0, 12, 5}};
     options.setOverwriteColors(false);
 
     frame.drawBuffer(sprite, options);
@@ -246,7 +246,7 @@ effects.
     const auto changedCells = previous->countDifferencesTo(current);
     const auto frameMask = current.toMask({U'|', U'-', U'+', U'┌', U'┐', U'└', U'┘'});
 
-    if (changedCells > 0 && frameMask.size().contains(BlockPosition{0, 0})) {
+    if (changedCells > 0 && frameMask.size().contains(Position{0, 0})) {
         // React to the changed frame content.
     }
 

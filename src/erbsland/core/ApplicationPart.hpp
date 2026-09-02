@@ -23,7 +23,7 @@ namespace erbsland::core {
 /// Base class for an independently managed application component.
 /// Lifecycle hooks run on the part's dedicated event thread except `automaticStart()`, which runs on the manager
 /// control event source, and the command-line hooks, which run synchronously on their caller's thread.
-/// @seedoc{/reference/core/application_parts}
+/// @seedoc{/reference/core/application_framework}
 /// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
 class ApplicationPart : public ApplicationPartCommandLine {
     friend class impl::ApplicationPartManager;

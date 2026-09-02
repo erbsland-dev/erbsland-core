@@ -6,7 +6,7 @@
 
 #include "../../../../err/RuntimeError.hpp"
 #include "../../../../mem/impl/UnsafeByteBlockAccess.hpp"
-#include "../../../../system/WindowsErrorContext.hpp"
+#include "../../../../system/impl/WindowsErrorContext.hpp"
 #include "../../../../text/Literals.hpp"
 #include "../../platform/SocketAddress.hpp"
 
@@ -297,7 +297,7 @@ auto WindowsUdpSocketState::createContext(const int errorCode, text::String titl
     -> NetworkErrorContext {
     auto context = NetworkErrorContext{std::move(title), std::move(description)};
     context.setReason(errorReason(errorCode))
-        .setPlatformContext(system::WindowsErrorContext::fromErrorCode(static_cast<DWORD>(errorCode)));
+        .setPlatformContext(system::impl::WindowsErrorContext::fromErrorCode(static_cast<DWORD>(errorCode)));
     if (_localEndpoint.has_value()) {
         context.setLocalEndpoint(*_localEndpoint);
     }

@@ -5,7 +5,7 @@ Reference
 .. toctree::
     :maxdepth: 1
 
-    bgeo/index
+    block/index
     conf/index
     core/index
     cryptology/index
@@ -13,6 +13,7 @@ Reference
     debug/index
     err/index
     event/index
+    geometry/index
     i18n/index
     log/index
     math/index

@@ -41,7 +41,7 @@ Tune them from observed traffic and destination latency rather than increasing e
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerOptions.cpp
     :exec: log/logging_topics --demo ManagerOptions
-    :source-sha256: 1dff5ea0ed7d938aec04a8b7be292df59f378620c38d807320066141f62cc58b
+    :source-sha256: 441b4d0429b3362d92419dc9025f89afea80aaca2e23671b547e99d2e5ec16c5
 
 .. code-block:: cpp
 
@@ -54,7 +54,8 @@ Tune them from observed traffic and destination latency rather than increasing e
         options.setMaximumEntries(2048U);
 
         auto configuration = el::LogConfiguration{};
-        configuration.setManagerOptions(std::move(options)).addWriter(std::make_shared<el::LastErrorsLogWriter>());
+        configuration.setManagerOptions(std::move(options))
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -354,7 +355,7 @@ message a writer presents to its reader.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerMessageSize.cpp
     :exec: log/logging_topics --demo ManagerMessageSize
-    :source-sha256: 7156a4bd7bfa447cf37ee9ceda95b86a700da2d5612a042effb352100e6b863b
+    :source-sha256: 8972e0da2dd499d38524cc1a6277be62030c5fbb9774c7b3b4fbac6c9a271be2
 
 .. code-block:: cpp
 
@@ -365,16 +366,16 @@ message a writer presents to its reader.
     void managerMessageSize() {
         auto options = el::LogManagerOptions{};
         options.setMaximumMessageBytes(el::ByteLength{32U});
-        const auto retained = std::make_shared<el::LastErrorsLogWriter>();
+        const auto captured = std::make_shared<CapturingLogWriter>();
         auto configuration = el::LogConfiguration{};
-        configuration.setManagerOptions(options).addWriter(retained);
+        configuration.setManagerOptions(options).addWriter(captured);
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
         manager->rootStream()->error("Aurora observation continues beyond midnight."_el);
         manager->shutdown();
 
-        const auto entry = retained->snapshot().front();
+        const auto entry = captured->lastEntry();
         el::io::printLine("Retained message: "_el, entry->message());
         el::io::printLine("Marked as truncated: "_el, entry->isTruncated() ? "yes"_el : "no"_el);
     }
@@ -495,18 +496,17 @@ Both entries are still written successfully, while the contained failure is visi
 .. erbsland-demo::
     :source: log/LoggingTopics/ManagerStatistics.cpp
     :exec: log/logging_topics --demo ManagerStatistics
-    :source-sha256: aeac794474f150bad60fd8346ee7c5d088c6b76e883dc2d66840bd5902f5556e
+    :source-sha256: 72e910789da8c6e3877e6ff0ac34286a0e548cdb6354eaabc70eda34986f2687
 
 .. code-block:: cpp
 
     /// Read point-in-time counters without changing manager options.
     ///
-    /// While paused, accepted entries remain visible as queued work. After resume and shutdown, the retained writer has
+    /// While paused, accepted entries remain visible as queued work. After resume and shutdown, the capturing writer has
     /// delivered both entries and the deliberately failing destination contributes one contained writer failure.
     void managerStatistics() {
         auto configuration = el::LogConfiguration{};
-        configuration.addWriter(std::make_shared<FailingLogWriter>())
-            .addWriter(std::make_shared<el::LastErrorsLogWriter>());
+        configuration.addWriter(std::make_shared<FailingLogWriter>()).addWriter(std::make_shared<CapturingLogWriter>());
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
 

@@ -21,7 +21,7 @@ namespace erbsland::cryptology {
 /// A move-only state object for streaming symmetric encryption.
 /// A default-constructed or securely erased encryptor is an empty placeholder. Associated data must precede payload
 /// data, finalization is allowed once, and AEAD tags are available only after successful finalization.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{SymmetricEncryptionFrontendTest}
 class SymmetricEncryptor final {
     friend class impl::SymmetricEncryptorBackendAccess;

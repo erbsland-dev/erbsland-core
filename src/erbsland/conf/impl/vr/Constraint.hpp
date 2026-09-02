@@ -13,8 +13,9 @@ namespace erbsland::conf::impl {
 /// The implementation of the constraint interface.
 class Constraint : public vr::Constraint {
 public:
-    /// Create an empty constraint implementation.
-    Constraint() = default;
+    /// Create a constraint implementation with its immutable kind.
+    /// @param type The public constraint kind.
+    explicit Constraint(vr::ConstraintType type) : _type{type} {}
 
     // defaults
     ~Constraint() override = default;
@@ -35,9 +36,6 @@ public: // implement vr::Constraint
     /// Set the name of this constraint.
     /// @param name The new name.
     void setName(text::String name);
-    /// Set the type of this constraint.
-    /// @param type The new type.
-    void setType(vr::ConstraintType type);
     /// Set a custom error message for this constraint.
     /// @param errorMessage The new error message.
     void setErrorMessage(text::String errorMessage);
@@ -124,7 +122,7 @@ public: // testing
 private:
     text::String _name;
     Location _location;
-    vr::ConstraintType _type{vr::ConstraintType::Undefined};
+    const vr::ConstraintType _type;
     text::String _errorMessage;
     bool _isNegated{false};
     bool _isFromTemplate{false};

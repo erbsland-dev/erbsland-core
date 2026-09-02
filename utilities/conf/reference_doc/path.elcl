@@ -1,0 +1,7 @@
+# Reference-document groups for the path domain.
+
+------------*[ Reference Groups ]
+Page        : "path/file_system_paths.rst"
+Title       : "File-System Paths"
+Header Globs:
+    * "path/*.hpp"

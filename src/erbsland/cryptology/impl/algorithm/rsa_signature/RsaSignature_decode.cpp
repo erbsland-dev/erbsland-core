@@ -170,7 +170,7 @@ auto decodePublicKey(const PublicKey &publicKey) -> PublicKeyData {
     }
     result.encodedLength = (result.modulusBits + 7U) / 8U;
     const auto wordCount = (result.modulusBits + cWordBits - 1U) / cWordBits;
-    result.modulus = numberFromBigEndian(modulus.span(), wordCount);
+    result.modulus = Number::fromBigEndian(modulus.span(), wordCount);
 
     // FIPS 186-5 section 5.1 requires an odd public exponent strictly above 2^16 and below 2^256.
     if (result.exponent.span().size() > cMaximumExponentBytes || (result.exponent.span().back().toUInt8() & 1U) == 0U) {

@@ -13,7 +13,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void In::operator()(Rule &rule) {
+void In::apply(RuleDefinition &rule) const {
     auto constraint = std::visit(
         [&rule](const auto &values) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(values)>;

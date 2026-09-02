@@ -25,8 +25,6 @@ public: // public interface
 public: // implementation interface
     /// Test if there are no rules defined.
     [[nodiscard]] auto empty() const -> bool;
-    /// Test if this rules definition was validated for correctness.
-    [[nodiscard]] auto isDefinitionValidated() const -> bool;
     /// Add a rule to this set by attaching it to the correct parent.
     /// @param rule The rule to add.
     auto addRule(const RulePtr &rule) -> void;
@@ -57,8 +55,7 @@ private:
     friend class DocumentValidator;
 
 private:
-    RulePtr _root;                      ///< The root rule of this set. Always a `Section` rule with no constraints.
-    bool _isDefinitionValidated{false}; ///< If this rules definition was validated for correctness.
+    RulePtr _root; ///< The root rule of this set. Always a `Section` rule with no constraints.
 };
 
 }

@@ -11,17 +11,17 @@ public:
     void testConstructionOverloadsAreUnambiguous() {
         static_assert(requires { Terminal{}; });
         static_assert(requires { Terminal{TerminalFlags{}}; });
-        static_assert(requires { Terminal{bgeo::BlockSize{80, 25}}; });
-        static_assert(requires { Terminal{bgeo::BlockSize{80, 25}, TerminalFlags{TerminalFlag::NoSignalHandling}}; });
+        static_assert(requires { Terminal{block::Size{80, 25}}; });
+        static_assert(requires { Terminal{block::Size{80, 25}, TerminalFlags{TerminalFlag::NoSignalHandling}}; });
         static_assert(requires(BackendPtr backend) { Terminal{backend}; });
-        static_assert(requires(BackendPtr backend) { Terminal{backend, bgeo::BlockSize{80, 25}}; });
+        static_assert(requires(BackendPtr backend) { Terminal{backend, block::Size{80, 25}}; });
 
         const auto backend = std::make_shared<TerminalTestBackend>();
         const auto defaultSizedTerminal = Terminal{backend};
-        REQUIRE_EQUAL(defaultSizedTerminal.size(), bgeo::BlockSize(80, 25));
+        REQUIRE_EQUAL(defaultSizedTerminal.size(), block::Size(80, 25));
 
-        const auto clampedSizedTerminal = Terminal{backend, bgeo::BlockSize{0, 5'000}};
-        REQUIRE_EQUAL(clampedSizedTerminal.size(), bgeo::BlockSize(1, 2'048));
+        const auto clampedSizedTerminal = Terminal{backend, block::Size{0, 5'000}};
+        REQUIRE_EQUAL(clampedSizedTerminal.size(), block::Size(1, 2'048));
     }
 
     void testInputDelegatesToTheActiveBackend() {
@@ -82,25 +82,25 @@ public:
     void testInitializeScreenUsesDetectedSizeAndSafeMargin() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsCursorVisibilityCodes = false;
-        backend->_detectedScreenSize = bgeo::BlockSize{6, 4};
-        auto terminal = createTerminal(backend, bgeo::BlockSize{80, 25});
+        backend->_detectedScreenSize = block::Size{6, 4};
+        auto terminal = createTerminal(backend, block::Size{80, 25});
 
         terminal->initializeScreen();
 
         REQUIRE_EQUAL(backend->_initializePlatformCallCount, 1);
         REQUIRE_EQUAL(backend->_detectScreenSizeCallCount, 1);
         REQUIRE_EQUAL(backend->_emitFlushCallCount, 1);
-        REQUIRE_EQUAL(terminal->size(), bgeo::BlockSize(5, 3));
+        REQUIRE_EQUAL(terminal->size(), block::Size(5, 3));
         REQUIRE_EQUAL(backend->_cursorVisibilityChanges.size(), std::size_t{1});
         REQUIRE_FALSE(backend->_cursorVisibilityChanges[0]);
         REQUIRE_EQUAL(backend->output(), std::string{});
 
         terminal->setSafeMarginEnabled(false);
-        REQUIRE_EQUAL(terminal->size(), bgeo::BlockSize(6, 4));
+        REQUIRE_EQUAL(terminal->size(), block::Size(6, 4));
 
-        backend->_detectedScreenSize = bgeo::BlockSize{9, 7};
+        backend->_detectedScreenSize = block::Size{9, 7};
         terminal->testScreenSize();
-        REQUIRE_EQUAL(terminal->size(), bgeo::BlockSize(9, 7));
+        REQUIRE_EQUAL(terminal->size(), block::Size(9, 7));
     }
 
     void testIsInteractiveDelegatesToTheBackend() {
@@ -132,7 +132,7 @@ public:
 
     void testTextOutputModeFallsBackToPlainTextAndLocksAnsiFeatures() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{2, 1});
+        auto terminal = createTerminal(backend, block::Size{2, 1});
         auto buffer = createBuffer({"HI"});
 
         terminal->setRefreshMode(Terminal::RefreshMode::Clear);
@@ -170,7 +170,7 @@ public:
 
     void testPrintParagraphResetsTheBackgroundBeforeNewlinesInFullControlMode() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 4});
+        auto terminal = createTerminal(backend, block::Size{4, 4});
         auto paragraph = BlockStringEditor{};
         paragraph.append(bg::Blue, "AB CD"_el);
         auto options = ParagraphOptions{};
@@ -185,7 +185,7 @@ public:
 
     void testPrintParagraphAcceptsStringSlices() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 4});
+        auto terminal = createTerminal(backend, block::Size{4, 4});
         const auto source = BlockStringEditor{"xAB CD!"_el};
 
         const auto writtenLines =
@@ -215,9 +215,9 @@ public:
     void testWriteBufferResetsTheColorAfterEachLine() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         auto terminal = createTerminal(backend);
-        auto buffer = Buffer{bgeo::BlockSize{1, 2}};
-        buffer.set(bgeo::BlockPosition{0, 0}, Block{U'A', fg::Red, bg::Black});
-        buffer.set(bgeo::BlockPosition{0, 1}, Block{U'B', fg::Green, bg::Black});
+        auto buffer = Buffer{block::Size{1, 2}};
+        buffer.set(block::Position{0, 0}, Block{U'A', fg::Red, bg::Black});
+        buffer.set(block::Position{0, 1}, Block{U'B', fg::Green, bg::Black});
 
         terminal->write(buffer);
         terminal->flush();
@@ -227,7 +227,7 @@ public:
 
     void testUpdateScreenAppliesCropMarksAndRefreshMode() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{2, 2});
+        auto terminal = createTerminal(backend, block::Size{2, 2});
         auto buffer = createBuffer({
             "ABC",
             "DEF",
@@ -248,8 +248,8 @@ public:
 
     void testUpdateScreenDisplaysTheMinimumSizeMessageOnTheFirstFrame() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
-        const auto settings = createMinimumSizeWarningSettings(bgeo::BlockSize{6, 2}, "HEY"_el);
+        auto terminal = createTerminal(backend, block::Size{5, 1});
+        const auto settings = createMinimumSizeWarningSettings(block::Size{6, 2}, "HEY"_el);
 
         terminal->updateScreen(createBuffer({"ABCDE"}), settings);
 
@@ -258,31 +258,28 @@ public:
 
     void testUpdateScreenRefreshesTheMinimumSizeMessageWhenTheSettingsChange() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
 
-        terminal->updateScreen(
-            createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(bgeo::BlockSize{6, 2}, "ONE"_el));
+        terminal->updateScreen(createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(block::Size{6, 2}, "ONE"_el));
         REQUIRE_EQUAL(backend->output(), std::string{"\x1b[H\x1b[?7l.ONE.\x1b[1;1H\x1b[?7h"});
 
         backend->clearOutput();
-        terminal->updateScreen(
-            createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(bgeo::BlockSize{6, 2}, "TWO"_el));
+        terminal->updateScreen(createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(block::Size{6, 2}, "TWO"_el));
         REQUIRE_EQUAL(backend->output(), std::string{"\x1b[H\x1b[?7l.TWO.\x1b[1;1H\x1b[?7h"});
     }
 
     void testUpdateScreenRendersTheActualContentAtTheConfiguredMinimumSize() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
 
-        terminal->updateScreen(
-            createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(bgeo::BlockSize{5, 1}, "HEY"_el));
+        terminal->updateScreen(createBuffer({"ABCDE"}), createMinimumSizeWarningSettings(block::Size{5, 1}, "HEY"_el));
 
         REQUIRE_EQUAL(backend->output(), std::string{"\x1b[H\x1b[?7lABCDE\x1b[1;1H\x1b[?7h"});
     }
 
     void testUpdateScreenSwitchesToTheAlternateBufferByDefault() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
 
         terminal->updateScreen(createBuffer({"ABCDE"}));
 
@@ -301,7 +298,7 @@ public:
 
     void testUpdateScreenCanKeepTheMainBufferWhenConfigured() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
         auto settings = UpdateSettings{};
         settings.setSwitchToAlternateBuffer(false);
 
@@ -315,7 +312,7 @@ public:
 
     void testBackBufferUsesPartialUpdatesForSmallDifferences() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
         terminal->setBackBufferEnabled(true);
 
         terminal->updateScreen(createBuffer({"ABCDE"}));
@@ -332,7 +329,7 @@ public:
 
     void testBackBufferRewritesTheFullFrameForLargeDifferences() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 2});
+        auto terminal = createTerminal(backend, block::Size{4, 2});
         terminal->setBackBufferEnabled(true);
 
         terminal->updateScreen(createBuffer({
@@ -355,7 +352,7 @@ public:
     void testTerminalCanBeInitializedAndRestoredMultipleTimes() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsCursorVisibilityCodes = false;
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 1});
+        auto terminal = createTerminal(backend, block::Size{4, 1});
 
         terminal->initializeScreen();
         terminal->write("A"_el);
@@ -376,7 +373,7 @@ public:
 
     void testRestoreScreenClearsAlternateScreenStateForTheNextSession() {
         const auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = createTerminal(backend, bgeo::BlockSize{5, 1});
+        auto terminal = createTerminal(backend, block::Size{5, 1});
 
         terminal->updateScreen(createBuffer({"ABCDE"}));
         REQUIRE(terminal->isAlternateScreenActive());

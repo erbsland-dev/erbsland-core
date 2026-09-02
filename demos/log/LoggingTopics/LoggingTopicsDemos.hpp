@@ -19,7 +19,6 @@ void fileWriterModes();
 void fileWriterRetention();
 void fileWriterRotation();
 void fileWriters();
-void lastErrorsWriter();
 void lineFirstLineTruncation();
 void lineFormats();
 void lineLevelFormats();

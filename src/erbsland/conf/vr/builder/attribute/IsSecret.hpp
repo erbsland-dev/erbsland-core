@@ -12,7 +12,7 @@ public:
     /// Set whether a rule value is secret.
     /// @param isSecret `true` to mark the value secret.
     explicit IsSecret(const bool isSecret = true) : _isSecret{isSecret} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     bool _isSecret{true};
 };
 

@@ -5,8 +5,8 @@
 #include "../RandomError.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
-#include "../../system/WindowsErrorContext.hpp"
 #include "../../text/Literals.hpp"
 
 #include <bcrypt.h>
@@ -30,7 +30,8 @@ void WindowsEntropySource::fillBytes(const std::span<std::byte> destination) {
         static_cast<ULONG>(destination.size()),
         BCRYPT_USE_SYSTEM_PREFERRED_RNG);
     if (status < 0) {
-        throw system::PlatformError{"System entropy source failed"_el, system::WindowsErrorContext::fromLastError()};
+        throw system::PlatformError{
+            "System entropy source failed"_el, system::impl::WindowsErrorContext::fromLastError()};
     }
 }
 

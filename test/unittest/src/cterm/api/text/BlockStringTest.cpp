@@ -129,7 +129,7 @@ public:
         const auto view = BlockString{source};
         auto options = BlockTextOptions{};
 
-        REQUIRE_EQUAL(view.naturalBlockTextSize(), (bgeo::BlockSize{3, 2}));
+        REQUIRE_EQUAL(view.naturalBlockTextSize(), (block::Size{3, 2}));
         REQUIRE_EQUAL(view.wrappedBlockTextHeight(blockCoordinate(3), options), 2);
     }
 
@@ -146,11 +146,11 @@ public:
             view.indexNotOf(erbsland::text::CharSet{"A界 e"_el}),
             stringRange.indexNotOf(erbsland::text::CharSet{"A界 e"_el}));
         REQUIRE_EQUAL(
-            render(view.croppedToDisplayWidth(blockCoordinate(4), bgeo::Alignment::Left)),
-            render(stringRange.croppedToDisplayWidth(blockCoordinate(4), bgeo::Alignment::Left)));
+            render(view.croppedToDisplayWidth(blockCoordinate(4), geometry::Alignment::Left)),
+            render(stringRange.croppedToDisplayWidth(blockCoordinate(4), geometry::Alignment::Left)));
         REQUIRE_EQUAL(
-            render(view.croppedToDisplayWidth(blockCoordinate(4), bgeo::Alignment::Right)),
-            render(stringRange.croppedToDisplayWidth(blockCoordinate(4), bgeo::Alignment::Right)));
+            render(view.croppedToDisplayWidth(blockCoordinate(4), geometry::Alignment::Right)),
+            render(stringRange.croppedToDisplayWidth(blockCoordinate(4), geometry::Alignment::Right)));
         REQUIRE_EQUAL(renderWords(view.splitWords()), std::vector<std::string>({"A界", "é", "B"}));
         REQUIRE_EQUAL(renderWords(view.splitLines()), std::vector<std::string>({"A界 é", "B"}));
         REQUIRE_EQUAL(view.naturalBlockTextSize(), stringRange.naturalBlockTextSize());
@@ -161,7 +161,7 @@ public:
 
         REQUIRE(view.isEmpty());
         REQUIRE(view.slice(BlockRange{BlockIndex{0U}, BlockCount::infinite()}).isEmpty());
-        REQUIRE(view.croppedToDisplayWidth(blockCoordinate(3), bgeo::Alignment::Left).isEmpty());
+        REQUIRE(view.croppedToDisplayWidth(blockCoordinate(3), geometry::Alignment::Left).isEmpty());
         REQUIRE(view.splitWords().empty());
         REQUIRE(view.splitLines().empty());
     }

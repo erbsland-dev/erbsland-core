@@ -5,40 +5,14 @@ Time Domain API Guidelines
 Core Semantics
 ==============
 
-Calendar Model
---------------
-
 .. code-block:: text
 
     calendar = proleptic Gregorian
-    internal epoch = 0000-01-01T00:00:00Z
-    supported civil dates = 0000-01-01 through 9999-12-31
-    invalid civil value = special state ordered before valid values
-    POSIX epoch = 1970-01-01T00:00:00Z used only at the native POSIX-time boundary
-    RFC 868 timestamp = unsigned 32-bit seconds since 1900-01-01T00:00:00Z in the 1900 era
-
-Time Model
-----------
-
-.. code-block:: text
-
-    wall-clock time = nanosecond-precision time within one day
-    zoned wall-clock time = time and zone without an instant until combined with a date
-    instant = UTC date and time plus display offset or named-zone metadata
     time zone = UTC, normalized fixed offset, or supported named IANA zone
     monotonic point = steady-clock value used only for elapsed-time measurement
-
-Delta Model
------------
-
-.. code-block:: text
-
     duration = signed span with second resolution
     precise delta = signed span with nanosecond resolution
     calendar delta = independent signed calendar and fixed-unit components
-    calendar arithmetic = apply years and months in civil space, then fixed units
-    saturating arithmetic = clamp to supported boundaries
-    exact arithmetic = report overflow instead of clamping
 
 Primary Types
 =============

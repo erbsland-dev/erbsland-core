@@ -21,6 +21,16 @@ auto SaturatingInteger<tValue>::subtracted(T other) const noexcept -> Saturating
 
 template <NativeInteger tValue>
 template <AnyIntegerType T>
+auto SaturatingInteger<tValue>::absoluteDifference(T other) const noexcept -> SaturatingInteger {
+    const auto nativeOther = convertToNativeInt(other);
+    if (_value >= nativeOther) {
+        return SaturatingInteger{saturatingSubtract(_value, nativeOther)};
+    }
+    return SaturatingInteger{saturatingSubtract(nativeOther, _value)};
+}
+
+template <NativeInteger tValue>
+template <AnyIntegerType T>
 auto SaturatingInteger<tValue>::multiplied(T other) const noexcept -> SaturatingInteger {
     return SaturatingInteger{saturatingMultiply(_value, convertToNativeInt(other))};
 }

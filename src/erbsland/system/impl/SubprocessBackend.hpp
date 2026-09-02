@@ -4,6 +4,7 @@
 
 #include "SubprocessBackend_fwd.hpp"
 
+#include "../ProcessId.hpp"
 #include "../SubprocessExitStatus.hpp"
 #include "../SubprocessOptions_fwd.hpp"
 
@@ -28,6 +29,8 @@ public:
     auto operator=(SubprocessBackend &&) -> SubprocessBackend & = delete;
 
 public:
+    /// Get the child process identifier.
+    [[nodiscard]] virtual auto processId() const noexcept -> ProcessId = 0;
     /// Test if the child is still running and update cached exit state.
     [[nodiscard]] virtual auto isRunning() -> bool = 0;
     /// Get the cached child exit status.

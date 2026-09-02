@@ -1,0 +1,13 @@
+# Reference-document groups for the conf domain.
+
+------------*[ Reference Groups ]
+Page        : "conf/configuration_language.rst"
+Title       : "Configuration Language"
+Header Globs:
+    * "conf/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "conf/validation_rules.rst"
+Title       : "Configuration Validation Rules"
+Header Globs:
+    * "conf/vr/**/*.hpp"

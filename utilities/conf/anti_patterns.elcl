@@ -106,6 +106,10 @@ Reason              : "This private friend preserves zero-copy access to string 
 Excluded Path       : "src/erbsland/text/FormatAs.hpp"
 Reason              : "This is a type trait that is used to implement the FormatAs functionality."
 
+--*[ Rule . forward_declaration ]*------------------------------------------------------------------------------------
+Excluded Path       : "src/erbsland/system/MakeOneNamespace.hpp"
+Reason              : "This namespace bootstrap must declare system types before their definitions include it."
+
 --*[ Rule . static_only_class ]*--------------------------------------------------------------------------------------
 Excluded Path       : "**/*Traits.hpp"
 Reason              : "Traits are compile-time type mappings and have no meaningful instances."

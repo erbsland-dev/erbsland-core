@@ -629,7 +629,7 @@ several rendering presets.
     auto indents = ParagraphIndents{2};
     indents.setFirstLineIndent(0);
     indents.setWrappedLineIndent(6);
-    indents.setMargins(BlockMargins{1, 1, 0, 1});
+    indents.setMargins(Margins{1, 1, 0, 1});
 
     auto options = ParagraphOptions{};
     options.setIndents(indents);
@@ -657,7 +657,7 @@ Typical causes are:
 
 .. code-block:: cpp
 
-    auto text = BlockText{BlockString{"AA BB"}, BlockRectangle{0, 0, 2, 2}, Alignment::TopLeft};
+    auto text = BlockText{BlockString{"AA BB"}, Rectangle{0, 0, 2, 2}, Alignment::TopLeft};
     text.setLineBreakEndMark(BlockString{U"⤦⤦"});
     text.setOnError(ParagraphOnError::PlainOutput);
     buffer.drawBlockText(text);
@@ -673,7 +673,7 @@ Typical causes are:
 
 .. code-block:: cpp
 
-    auto text = BlockText{BlockString{"AA BB"}, BlockRectangle{0, 0, 2, 2}, Alignment::TopLeft};
+    auto text = BlockText{BlockString{"AA BB"}, Rectangle{0, 0, 2, 2}, Alignment::TopLeft};
     text.setLineBreakEndMark(BlockString{U"⤦⤦"});
     text.setOnError(ParagraphOnError::Empty);
     buffer.drawBlockText(text);

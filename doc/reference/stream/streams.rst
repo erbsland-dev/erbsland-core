@@ -261,5 +261,3 @@ Interface
     :members:
 .. doxygenclass:: erbsland::stream::TextPrintContext
     :members:
-.. doxygenclass:: erbsland::system::FileIdentity
-    :members:

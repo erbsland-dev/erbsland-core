@@ -15,7 +15,7 @@
 namespace erbsland::time {
 
 /// A non-normalized delta composed from independent fixed and calendar amounts.
-/// @seedoc{/reference/time/duration_and_time_amounts}
+/// @seedoc{/reference/time/date_and_time}
 /// @tested{CalendarDeltaTest}
 class CalendarDelta final {
 public:

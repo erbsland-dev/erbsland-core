@@ -54,9 +54,9 @@ public: // implements ApplicationData
     void setSecureRandom(random::RandomPtr random) noexcept override;
     [[nodiscard]] auto logMutex() noexcept -> std::mutex & override;
     [[nodiscard]] auto logManager() noexcept -> const log::LogManagerPtr & override;
-    void setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept override;
-    [[nodiscard]] auto lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & override;
-    void setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept override;
+    void setLogManager(log::LogManagerPtr manager, log::impl::ConsoleLogWriterPtr consoleWriter) noexcept override;
+    [[nodiscard]] auto lastErrorsLogWriter() noexcept -> const log::impl::LastErrorsLogWriterPtr & override;
+    void setLastErrorsLogWriter(log::impl::LastErrorsLogWriterPtr writer) noexcept override;
     [[nodiscard]] auto lastErrorDumpMode() const noexcept -> LastErrorDumpMode override;
     void setLastErrorDumpMode(LastErrorDumpMode mode) noexcept override;
     [[nodiscard]] auto cryptologyConfiguration() -> cryptology::CryptologyConfiguration & override;
@@ -108,8 +108,8 @@ private:
 
     std::mutex _logMutex;                                               ///< Mutex for lazy log initialization.
     log::LogManagerPtr _logManager;                                     ///< Application log manager.
-    log::ConsoleLogWriterPtr _consoleLogWriter;                         ///< Default console log writer.
-    log::LastErrorsLogWriterPtr _lastErrorsLogWriter;                   ///< Optional retained-error writer.
+    log::impl::ConsoleLogWriterPtr _consoleLogWriter;                   ///< Default console log writer.
+    log::impl::LastErrorsLogWriterPtr _lastErrorsLogWriter;             ///< Optional retained-error writer.
     LastErrorDumpMode _lastErrorDumpMode{LastErrorDumpMode::OnFailure}; ///< Condition for displaying retained errors.
 
     std::mutex _cryptologyMutex; ///< Mutex for lazy cryptology configuration creation.

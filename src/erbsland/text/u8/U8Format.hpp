@@ -14,7 +14,7 @@
 namespace erbsland::text {
 
 /// A reusable validated UTF-8 format.
-/// @seedoc{/reference/text/string_formatter}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{U8FormatTest}
 class U8Format final {
 public:

@@ -23,9 +23,9 @@ namespace erbsland::cterm {
 class Buffer final : public WritableBuffer {
 public:
     /// Largest buffer size accepted for this buffer.
-    constexpr static auto cMaximumSize = bgeo::BlockSize{10'000, 10'000};
+    constexpr static auto cMaximumSize = block::Size{10'000, 10'000};
     /// Smallest valid buffer size.
-    constexpr static auto cMinimumSize = bgeo::BlockSize{1, 1};
+    constexpr static auto cMinimumSize = block::Size{1, 1};
 
     using WritableBuffer::drawBitmap;
     using WritableBuffer::drawBlockText;
@@ -40,10 +40,10 @@ public:
     Buffer();
 
     /// Construct a buffer with the given size and fill it with an initial block.
-    /// @param size The dimensions of the buffer. bgeo::BlockSize must be at least 1x1.
+    /// @param size The dimensions of the buffer. block::Size must be at least 1x1.
     /// @param fillChar The optional fill character for the buffer.
     /// @throws err::ParameterError if size is invalid.
-    explicit Buffer(bgeo::BlockSize size, Block fillChar = Block::space());
+    explicit Buffer(block::Size size, Block fillChar = Block::space());
 
     // defaults
     ~Buffer() override = default;
@@ -53,15 +53,15 @@ public:
     auto operator=(Buffer &&) -> Buffer & = default;
 
 public: // implement ReadableBuffer
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override;
-    [[nodiscard]] auto rect() const noexcept -> bgeo::BlockRectangle override;
-    [[nodiscard]] auto get(bgeo::BlockPosition pos) const noexcept -> const Block & override;
+    [[nodiscard]] auto size() const noexcept -> block::Size override;
+    [[nodiscard]] auto rect() const noexcept -> block::Rectangle override;
+    [[nodiscard]] auto get(block::Position pos) const noexcept -> const Block & override;
     [[nodiscard]] auto clone() const -> WritableBufferPtr override;
 
 public: // implement WritableBuffer
-    void resize(bgeo::BlockSize newSize) override;
-    void resize(bgeo::BlockSize size, BufferResizeMode mode, Block fillChar) override;
-    void set(bgeo::BlockPosition pos, const Block &block) noexcept override;
+    void resize(block::Size newSize) override;
+    void resize(block::Size size, BufferResizeMode mode, Block fillChar) override;
+    void set(block::Position pos, const Block &block) noexcept override;
     void setAndResizeFrom(const ReadableBuffer &other) override;
 
 public: // faster implementations
@@ -91,17 +91,17 @@ public: // compatibility
     /// Invalid UTF-8 bytes are replaced with the Unicode replacement character.
     void drawBlockText(
         const text::String &text,
-        bgeo::Alignment alignment,
-        bgeo::BlockRectangle rect,
+        geometry::Alignment alignment,
+        block::Rectangle rect,
         Color color = {},
         std::size_t animationCycle = 0);
 
 private:
     /// Validate the buffer size and return it if it is valid, otherwise throw an exception.
-    static auto validatedBufferSize(bgeo::BlockSize size) -> bgeo::BlockSize;
+    static auto validatedBufferSize(block::Size size) -> block::Size;
 
 private:
-    bgeo::BlockSize _size{cMinimumSize};
+    block::Size _size{cMinimumSize};
     std::vector<Block> _data{Block::space()};
 };
 

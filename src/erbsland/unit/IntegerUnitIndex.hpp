@@ -23,7 +23,7 @@
 namespace erbsland::unit {
 
 /// An integer index with a unit.
-/// @seedoc{/reference/unit/integer_unit_types}
+/// @seedoc{/reference/unit/units_and_versions}
 /// @tparam tIntegerUnit The integer unit for this index.
 template <impl::ValidIntegerUnit tIntegerUnit>
 class IntegerUnitIndex {

@@ -14,7 +14,7 @@ namespace erbsland::mem {
 
 /// Decompress raw algorithm blocks and self-describing Erbsland Core envelopes.
 /// A default instance can incrementally decode envelopes. Configure an algorithm to decode raw blocks.
-/// @seedoc{/reference/mem/byte_compression}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{ByteCompressionTest}
 class ByteDecompressor final {
 private:

@@ -13,11 +13,13 @@
 
 using namespace el::conf;
 using namespace el::text::literals;
-using namespace el::conf::impl;
 using el::text::CaseSensitivity;
 
 TESTED_TARGETS(KeyIndex)
 class KeyIndexTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
+    using ConfKey = el::conf::impl::ConfKey;
+    using KeyIndex = el::conf::impl::KeyIndex;
+
 public:
     void testConstructorAndAccessors() {
         const auto name = Name::createRegular("my_index"_el);

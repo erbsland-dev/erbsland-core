@@ -50,12 +50,18 @@ public: // accessors
     /// Set the epilog text.
     /// @param epilog Optional trailing help text rendered after root or module help output.
     void setEpilog(text::String epilog) { _epilog = std::move(epilog); }
+    /// Get the optional example text.
+    [[nodiscard]] auto example() const noexcept -> const text::String & { return _example; }
+    /// Set the optional example text.
+    /// @param example Short usage example for detailed help.
+    void setExample(text::String example) { _example = std::move(example); }
 
 private:
     OptionHelpVisibility _visibility{OptionHelpVisibility::Inherit}; ///< How visible this item is in help.
     text::String _title;                                             ///< An optional title.
     text::String _description;                                       ///< The main help text.
     text::String _epilog;                                            ///< Optional trailing text.
+    text::String _example;                                           ///< Optional detailed-help example.
 };
 
 }

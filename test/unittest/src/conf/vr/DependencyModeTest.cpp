@@ -3,8 +3,8 @@
 
 #include "../ConfTestHelper.hpp"
 
-#include <erbsland/conf/impl/vr/DependencyMode.hpp>
 #include <erbsland/conf/StdFormat.hpp>
+#include <erbsland/conf/vr/DependencyMode.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <array>
@@ -12,7 +12,7 @@
 
 using namespace el::conf;
 using namespace el::text::literals;
-using namespace el::conf::impl;
+using namespace el::conf::vr;
 
 TESTED_TARGETS(DependencyMode)
 class DependencyModeTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {

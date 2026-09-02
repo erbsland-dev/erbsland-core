@@ -1,0 +1,7 @@
+# Reference-document groups for the debug domain.
+
+------------*[ Reference Groups ]
+Page        : "debug/debugging.rst"
+Title       : "Debugging Utilities"
+Header Globs:
+    * "debug/*.hpp"

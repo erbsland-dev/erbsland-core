@@ -1,0 +1,24 @@
+# Reference-document groups for the cterm domain.
+
+------------*[ Reference Groups ]
+Page        : "cterm/terminal.rst"
+Title       : "Terminal Interface"
+Header Globs:
+    * "cterm/*.hpp"
+Excluded Header Globs:
+    * "cterm/ReadLine*.hpp"
+    * "cterm/ReadSecret*.hpp"
+    * "cterm/TerminalDocument*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cterm/read_line.rst"
+Title       : "Interactive Line Editor"
+Header Globs:
+    * "cterm/ReadLine*.hpp"
+    * "cterm/ReadSecret*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cterm/terminal_document_renderer.rst"
+Title       : "Terminal Document Renderer"
+Header Globs:
+    * "cterm/TerminalDocument*.hpp"

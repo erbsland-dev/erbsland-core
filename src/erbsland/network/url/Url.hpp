@@ -19,7 +19,7 @@ namespace erbsland::network {
 /// An absolute URL value for network operations.
 /// Copies share immutable parsed data. Text components are decoded, NFC-normalized values; serialization is canonical
 /// and does not preserve the original percent-encoding spelling.
-/// @seedoc{/reference/network/url}
+/// @seedoc{/reference/network/addressing_and_urls}
 /// @tested{UrlTest}
 class Url final {
     friend class impl::HttpClientRequest;

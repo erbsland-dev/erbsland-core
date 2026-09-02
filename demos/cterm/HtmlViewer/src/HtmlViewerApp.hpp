@@ -34,22 +34,22 @@ private:
     using DocumentStylePreset = TerminalDocumentStyle::Predefined;
 
 private:
-    [[nodiscard]] auto canvasSize() noexcept -> BlockSize;
+    [[nodiscard]] auto canvasSize() noexcept -> Size;
     auto printRenderedDocument() -> int;
     void loadDocument();
-    void renderDocumentIfRequired(BlockCoordinate contentWidth);
-    void drawHeader(BlockRectangle rect);
-    void drawFooter(BlockRectangle rect);
-    void drawDocument(BlockRectangle rect);
-    void updateView(BlockSize viewSize) noexcept;
+    void renderDocumentIfRequired(Coordinate contentWidth);
+    void drawHeader(Rectangle rect);
+    void drawFooter(Rectangle rect);
+    void drawDocument(Rectangle rect);
+    void updateView(Size viewSize) noexcept;
     void advanceDocumentStylePreset() noexcept;
     [[nodiscard]] auto locationText() const -> el::String;
     [[nodiscard]] auto displayName() const -> el::String;
     [[nodiscard]] auto documentStylePresetName() const noexcept -> el::String;
     [[nodiscard]] static auto parseDocumentStylePreset(el::String value, DocumentStylePreset &preset) noexcept -> bool;
-    [[nodiscard]] static auto contentRectForBuffer(BlockSize bufferSize) noexcept -> BlockRectangle;
-    [[nodiscard]] static auto clampViewOffset(
-        BlockCoordinate offset, BlockCoordinate viewHeight, BlockCoordinate height) noexcept -> BlockCoordinate;
+    [[nodiscard]] static auto contentRectForBuffer(Size bufferSize) noexcept -> Rectangle;
+    [[nodiscard]] static auto clampViewOffset(Coordinate offset, Coordinate viewHeight, Coordinate height) noexcept
+        -> Coordinate;
 
 private:
     el::Path _htmlFilePath;
@@ -58,15 +58,10 @@ private:
     DocumentStylePreset _documentStylePreset{DocumentStylePreset::Styled};
     bool _printMode{false};
     std::shared_ptr<CursorBuffer> _documentBuffer = std::make_shared<CursorBuffer>(
-        BlockSize{80, 1},
-        CursorBuffer::OverflowMode::ExpandThenShift,
-        BlockSize{80, 20'000},
-        Block{U' ', fg::White, bg::Black});
-    BufferView _documentView{
-        _documentBuffer,
-        BlockRectangle{BlockCoordinate{0}, BlockCoordinate{0}, BlockCoordinate{1}, BlockCoordinate{1}}};
-    BlockCoordinate _viewOffsetY{0};
-    BlockCoordinate _renderedContentWidth{0};
+        Size{80, 1}, CursorBuffer::OverflowMode::ExpandThenShift, Size{80, 20'000}, Block{U' ', fg::White, bg::Black});
+    BufferView _documentView{_documentBuffer, Rectangle{Coordinate{0}, Coordinate{0}, Coordinate{1}, Coordinate{1}}};
+    Coordinate _viewOffsetY{0};
+    Coordinate _renderedContentWidth{0};
     bool _documentDirty{true};
 };
 

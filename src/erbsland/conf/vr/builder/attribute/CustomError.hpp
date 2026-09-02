@@ -16,7 +16,7 @@ public:
     /// Set a custom validation error message.
     /// @param errorMessage The message to move into the attribute.
     explicit CustomError(text::String errorMessage) : _errorMessage{std::move(errorMessage)} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     text::String _errorMessage;
 };
 

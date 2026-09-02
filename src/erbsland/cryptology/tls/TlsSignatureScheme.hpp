@@ -71,6 +71,8 @@ public: // accessors
 public: // conversion
     /// Convert the scheme to its stable TLS registry name.
     [[nodiscard]] auto toString() const -> text::String;
+    /// Map this scheme to the complete X.509 signature AlgorithmIdentifier.
+    [[nodiscard]] auto signatureAlgorithmIdentifier() const -> X509AlgorithmIdentifier;
 
 public: // factories
     /// Parse one supported unsigned 16-bit TLS wire value.
@@ -84,8 +86,6 @@ public: // factories
     [[nodiscard]] static auto fromRawValueOrThrow(uint16_t value) -> TlsSignatureScheme;
 
 private:
-    /// Map this scheme to the complete signature AlgorithmIdentifier required by the existing verifier.
-    [[nodiscard]] auto signatureAlgorithmIdentifier() const -> X509AlgorithmIdentifier;
     /// Test whether this is an RSA-PSS scheme requiring an rsaEncryption public key.
     [[nodiscard]] auto requiresRsaEncryptionKey() const noexcept -> bool;
     /// Test whether this is an RSA-PSS scheme requiring an id-RSASSA-PSS public key.

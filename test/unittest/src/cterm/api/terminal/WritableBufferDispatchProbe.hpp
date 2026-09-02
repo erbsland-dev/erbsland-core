@@ -32,24 +32,24 @@ public:
 public:
     using WritableBuffer::resize;
 
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _buffer.size(); }
+    [[nodiscard]] auto size() const noexcept -> block::Size override { return _buffer.size(); }
 
-    [[nodiscard]] auto rect() const noexcept -> bgeo::BlockRectangle override { return _buffer.rect(); }
+    [[nodiscard]] auto rect() const noexcept -> block::Rectangle override { return _buffer.rect(); }
 
-    [[nodiscard]] auto get(const bgeo::BlockPosition pos) const noexcept -> const Block & override {
+    [[nodiscard]] auto get(const block::Position pos) const noexcept -> const Block & override {
         return _buffer.get(pos);
     }
 
     [[nodiscard]] auto clone() const -> WritableBufferPtr override { return std::make_shared<Buffer>(_buffer); }
 
-    void resize(const bgeo::BlockSize newSize) override {
+    void resize(const block::Size newSize) override {
         _lastCall = Call::Resize;
         _lastResizeSize = newSize;
         ++_resizeCallCount;
         _buffer.resize(newSize);
     }
 
-    void set(const bgeo::BlockPosition pos, const Block &block) noexcept override { _buffer.set(pos, block); }
+    void set(const block::Position pos, const Block &block) noexcept override { _buffer.set(pos, block); }
 
     /// Clear every recorded operation and argument.
     void clearRecording() {
@@ -61,7 +61,7 @@ public:
         _lastBaseStyle = {};
         _lastFrameColor = {};
         _lastAnimationCycle = 0;
-        _lastAlignment = bgeo::Alignment::TopLeft;
+        _lastAlignment = geometry::Alignment::TopLeft;
         _lastGridLayout.reset();
         _lastFrameBorder = {};
         _lastTile9Style.reset();
@@ -75,22 +75,22 @@ public:
 
 public:
     Call _lastCall = Call::None;
-    bgeo::BlockRectangle _lastRect{};
+    block::Rectangle _lastRect{};
     Block _lastFillChar{};
     Block _lastFrameBlock{};
     std::optional<Block> _lastOptionalFillBlock;
     BlockStyle _lastBaseStyle{};
     Color _lastFrameColor{};
     std::size_t _lastAnimationCycle = 0;
-    bgeo::Alignment _lastAlignment = bgeo::Alignment::TopLeft;
+    geometry::Alignment _lastAlignment = geometry::Alignment::TopLeft;
     std::optional<GridLayout> _lastGridLayout;
     FrameBorder _lastFrameBorder;
     Tile9StylePtr _lastTile9Style;
     Block16StylePtr _lastBlock16Style;
     BlockString _lastText;
-    bgeo::BlockSize _lastBitmapSize{};
-    bgeo::BlockPosition _lastPosition{};
-    bgeo::BlockSize _lastResizeSize{};
+    block::Size _lastBitmapSize{};
+    block::Position _lastPosition{};
+    block::Size _lastResizeSize{};
     int _resizeCallCount = 0;
 
 protected:
@@ -100,14 +100,14 @@ protected:
     }
 
     void fillImpl(
-        const bgeo::BlockRectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &) noexcept override {
+        const block::Rectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &) noexcept override {
         _lastCall = Call::FillBlock;
         _lastRect = rect;
         _lastFillChar = fillBlock;
     }
 
     void fillImpl(
-        const bgeo::BlockRectangle rect,
+        const block::Rectangle rect,
         const Tile9StylePtr &style,
         const BlockStyle baseStyle,
         const BlockCombinationStylePtr &) noexcept override {
@@ -119,7 +119,7 @@ protected:
     }
 
     void drawFrameImpl(
-        const bgeo::BlockRectangle rect,
+        const block::Rectangle rect,
         const Block &frameBlock,
         std::optional<Block> fillBlock,
         const BlockCombinationStylePtr &) noexcept override {
@@ -130,7 +130,7 @@ protected:
     }
 
     void drawFrameImpl(
-        const bgeo::BlockRectangle rect,
+        const block::Rectangle rect,
         const Block16StylePtr &frameStyle,
         std::optional<Block> fillBlock,
         const BlockCombinationStylePtr &,
@@ -143,7 +143,7 @@ protected:
     }
 
     void drawFrameImpl(
-        const bgeo::BlockRectangle rect,
+        const block::Rectangle rect,
         const Tile9StylePtr &style,
         std::optional<Block> fillBlock,
         const BlockCombinationStylePtr &,
@@ -156,14 +156,14 @@ protected:
     }
 
     void drawFrameImpl(
-        const bgeo::BlockRectangle rect, const FrameDrawOptions &, const std::size_t animationCycle) noexcept override {
+        const block::Rectangle rect, const FrameDrawOptions &, const std::size_t animationCycle) noexcept override {
         _lastCall = Call::FrameOptions;
         _lastRect = rect;
         _lastAnimationCycle = animationCycle;
     }
 
     void drawGridLayoutImpl(
-        const bgeo::BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept override {
+        const block::Position pos, const GridLayout &layout, const FrameBorder &border) noexcept override {
         _lastCall = Call::GridLayout;
         _lastPosition = pos;
         _lastGridLayout = layout;
@@ -179,8 +179,8 @@ protected:
 
     void drawBlockTextImpl(
         const BlockString &text,
-        const bgeo::BlockRectangle rect,
-        const bgeo::Alignment alignment,
+        const block::Rectangle rect,
+        const geometry::Alignment alignment,
         BlockStyle style,
         const std::size_t animationCycle) override {
         _lastCall = Call::TextRect;
@@ -192,7 +192,7 @@ protected:
 
     void drawBitmapImpl(
         const Bitmap &bitmap,
-        const bgeo::BlockPosition pos,
+        const block::Position pos,
         const BitmapDrawOptions &,
         const std::size_t animationCycle) noexcept override {
         _lastCall = Call::BitmapPosition;
@@ -203,8 +203,8 @@ protected:
 
     void drawBitmapImpl(
         const Bitmap &bitmap,
-        const bgeo::BlockRectangle rect,
-        const bgeo::Alignment alignment,
+        const block::Rectangle rect,
+        const geometry::Alignment alignment,
         const BitmapDrawOptions &,
         const std::size_t animationCycle) noexcept override {
         _lastCall = Call::BitmapRect;
@@ -215,5 +215,5 @@ protected:
     }
 
 private:
-    Buffer _buffer{bgeo::BlockSize{4, 4}};
+    Buffer _buffer{block::Size{4, 4}};
 };

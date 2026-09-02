@@ -19,12 +19,12 @@ auto OptionChoices::create(std::initializer_list<text::String> choices) -> Optio
     return result;
 }
 
-auto OptionChoices::addChoice(OptionChoicePtr choice) -> OptionChoices & {
+auto OptionChoices::addChoice(OptionChoicePtr choice) -> OptionChoiceEditor {
     _choices.emplace_back(std::move(choice));
-    return *this;
+    return OptionChoiceEditor{_choices.back()};
 }
 
-auto OptionChoices::addChoice(text::String text) -> OptionChoices & {
+auto OptionChoices::addChoice(text::String text) -> OptionChoiceEditor {
     return addChoice(OptionChoice::create(std::move(text)));
 }
 

@@ -10,9 +10,9 @@
 namespace demo {
 
 void PlasmaRenderer::render(
-    Buffer &buffer, const BlockRectangle rect, const double phase, const std::size_t paletteIndex) const noexcept {
+    Buffer &buffer, const Rectangle rect, const double phase, const std::size_t paletteIndex) const noexcept {
 
-    rect.forEach([&](const BlockPosition position) -> void {
+    rect.forEach([&](const Position position) -> void {
         buffer.set(position, cellForValue(valueAt(position, rect, phase), paletteIndex));
     });
 }
@@ -44,11 +44,10 @@ auto PlasmaRenderer::palettes() -> const std::vector<ColorSequence> & {
     return cPalettes;
 }
 
-auto PlasmaRenderer::valueAt(const BlockPosition position, const BlockRectangle rect, const double phase) noexcept
-    -> double {
+auto PlasmaRenderer::valueAt(const Position position, const Rectangle rect, const double phase) noexcept -> double {
 
-    const auto width = std::max(BlockCoordinate{1}, rect.width());
-    const auto height = std::max(BlockCoordinate{1}, rect.height());
+    const auto width = std::max(Coordinate{1}, rect.width());
+    const auto height = std::max(Coordinate{1}, rect.height());
     const auto x =
         static_cast<double>((position.x() - rect.x1()).toRawValue()) / static_cast<double>(width.toRawValue());
     const auto y =

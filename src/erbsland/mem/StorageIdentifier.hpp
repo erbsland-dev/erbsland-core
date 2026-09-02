@@ -16,7 +16,7 @@ namespace erbsland::mem {
 ///
 /// This identifier is meant for identity checks, not for ordering by content. It identifies a backend storage range
 /// without exposing the memory addresses used to derive it.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @tested{StringReaderTest}
 class StorageIdentifier final {
 public:

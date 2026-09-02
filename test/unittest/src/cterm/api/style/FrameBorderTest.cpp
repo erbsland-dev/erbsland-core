@@ -57,20 +57,20 @@ public:
     void testCornerResolvesAnchorsForLightBorder() {
         const auto border = FrameBorder{FrameStyle::Light};
 
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::TopLeft), U'┌');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::TopCenter), U'┬');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::CenterLeft), U'├');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::Center), U'┼');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::BottomRight), U'┘');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::TopLeft), U'┌');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::TopCenter), U'┬');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::CenterLeft), U'├');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::Center), U'┼');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::BottomRight), U'┘');
     }
 
     void testCornerResolvesRoundedOuterCornersOnly() {
         const auto border = FrameBorder{FrameStyle::LightWithRoundedCorners};
 
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::TopLeft), U'╭');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::TopCenter), U'┬');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::Center), U'┼');
-        REQUIRE_EQUAL(border.corner(bgeo::BlockAnchor::BottomRight), U'╯');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::TopLeft), U'╭');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::TopCenter), U'┬');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::Center), U'┼');
+        REQUIRE_EQUAL(border.corner(geometry::Anchor::BottomRight), U'╯');
     }
 
     void testLineStyleDetectionIncludesOnlySupportedGridStyles() {

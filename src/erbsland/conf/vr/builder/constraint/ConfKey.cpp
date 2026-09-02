@@ -10,7 +10,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void ConfKey::operator()(Rule &rule) {
+void ConfKey::apply(RuleDefinition &rule) const {
     requireRuleTypeForConstraint(rule, "key"_el, {vr::RuleType::Text, vr::RuleType::Integer});
     auto references = impl::parseNamePathList(_references);
     auto constraint = std::make_shared<impl::KeyConstraint>(std::move(references));

@@ -23,7 +23,7 @@ using namespace text::literals;
 auto createLogConfigurationRules() -> conf::vr::RulesPtr {
     using namespace conf::vr::builder;
     using conf::vr::RuleType;
-    static const auto cWriterTypes = text::StringList{"console"_el, "file"_el, "last_errors"_el, "syslog"_el};
+    static const auto cWriterTypes = text::StringList{"console"_el, "file"_el, "syslog"_el};
     auto rb = conf::vr::RulesBuilder{};
 
     rb.addRule(
@@ -165,7 +165,7 @@ auto createLogConfigurationRules() -> conf::vr::RulesPtr {
         "writers.vr_entry.type"_el,
         RuleType::Text,
         Title("Writer Type"_el),
-        Description("The built-in writer type: console, file, last_errors, or syslog."_el),
+        Description("The built-in writer type: console, file, or syslog."_el),
         In(cWriterTypes));
     rb.addRule(
         "writers.vr_entry.levels"_el,
@@ -223,13 +223,6 @@ auto createLogConfigurationRules() -> conf::vr::RulesPtr {
         Title("Archive Retention"_el),
         Description("The maximum number of rotated file archives to retain."_el),
         Minimum(0),
-        IsOptional());
-    rb.addRule(
-        "writers.vr_entry.capacity"_el,
-        RuleType::Integer,
-        Title("Last-Error Capacity"_el),
-        Description("The maximum number of entries retained by a last_errors writer."_el),
-        Minimum(1),
         IsOptional());
     rb.addRule(
         "writers.vr_entry.endpoint"_el,

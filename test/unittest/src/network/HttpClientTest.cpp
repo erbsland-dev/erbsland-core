@@ -836,6 +836,7 @@ public:
                             ++finalCalls;
                             if (finalCalls == 3U) {
                                 session->close();
+                                server->close();
                             }
                         });
                         session->sendRequest(request);
@@ -1180,7 +1181,8 @@ public:
         TAGS(FullRun)
         const auto applicationScope = ApplicationTestScope<>{};
         registerTlsConfigurations();
-        const auto loop = EventLoop::create();
+        const auto loop = EventLoop::create(
+            std::make_unique<el::network::impl::NetworkBackend>(std::make_shared<LoopbackResolver>()));
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
         auto error = std::optional<NetworkErrorContext>{};

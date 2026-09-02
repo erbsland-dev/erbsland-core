@@ -1,0 +1,7 @@
+# Reference-document groups for the block domain.
+
+------------*[ Reference Groups ]
+Page        : "block/block_geometry.rst"
+Title       : "Block Geometry"
+Header Globs:
+    * "block/*.hpp"

@@ -27,5 +27,6 @@ target_sources(erbsland-core PRIVATE
         Multiple.cpp
         Multiple.hpp
         Starts.hpp
+        StringPartConstraint.cpp
         StringPartConstraint.hpp
 )

@@ -4,27 +4,32 @@
 
 #include "PublicKey.hpp"
 #include "SigningKeyAlgorithm.hpp"
+#include "SigningKeyProfile.hpp"
 #include "SigningPrivateKey_fwd.hpp"
 
 #include "../impl/PrivateKeyParser_fwd.hpp"
+#include "../impl/SigningKeyGenerator_fwd.hpp"
+#include "../PemDerFormat.hpp"
 #include "../protected_data/ProtectedByteBlock.hpp"
 #include "../tls/TlsSignatureScheme.hpp"
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
+#include "../../path/Path_fwd.hpp"
 #include "../../text/String.hpp"
 
 namespace erbsland::cryptology {
 
 /// A move-only private signing key retained in application-protected storage.
 ///
-/// Keys are imported as strict, unencrypted PKCS#8. Ed25519 follows RFC 8410 section 7 and RFC 8032 sections 5.1.5-
-/// 5.1.6; ECDSA P-256 follows RFC 5915 and FIPS 186-5 section 6.4.1; RSA-PSS follows RFC 5208 and RFC 8017 sections
-/// 8.1 and 9.1. No operation exposes raw private material.
-/// @seedoc{/reference/cryptology/signing_keys}
-/// @tested{SigningPrivateKeyTest}
+/// Keys use canonical PKCS#8. Ed25519 follows RFC 8410 section 7 and RFC 8032 sections 5.1.5-5.1.6; ECDSA P-256/P-384
+/// follows RFC 5915 and FIPS 186-5 section 6.4.1; RSA-PSS follows RFC 5208 and RFC 8017 sections 8.1 and 9.1.
+/// Serialization exposes private material only through explicitly sensitive return values or user-only files.
+/// @seedoc{/reference/cryptology/key_management}
+/// @tested{SigningPrivateKeyTest X509CertificateBuilderTest}
 class SigningPrivateKey final {
     friend class impl::PrivateKeyParser;
+    friend class impl::SigningKeyGenerator;
 
 public:
     /// Create an empty private-key placeholder.
@@ -66,7 +71,24 @@ public: // accessors
     /// @throws err::LogicError If this key is empty.
     [[nodiscard]] auto publicKey() const -> PublicKey;
 
+public: // conversion
+    /// Encode this key as canonical unencrypted PKCS#8 DER in sensitive memory.
+    [[nodiscard]] auto toDer() const -> mem::ByteBlock;
+    /// Encode this key as one `PRIVATE KEY` PEM block in sensitive memory.
+    [[nodiscard]] auto toPem() const -> text::String;
+    /// Write this key without replacing an existing file and with user-only access.
+    void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
+    /// Encrypt this key as PBES2 EncryptedPrivateKeyInfo DER.
+    [[nodiscard]] auto toEncryptedDer(const text::String &password) const -> mem::ByteBlock;
+    /// Encrypt this key as one `ENCRYPTED PRIVATE KEY` PEM block.
+    [[nodiscard]] auto toEncryptedPem(const text::String &password) const -> text::String;
+    /// Write an encrypted key without replacing an existing file and with user-only access.
+    void writeEncryptedToFile(
+        const path::Path &path, const text::String &password, PemDerFormat format = PemDerFormat::Automatic) const;
+
 public: // factories
+    /// Generate a signing key from application secure randomness.
+    [[nodiscard]] static auto generate(SigningKeyProfile profile = SigningKeyProfile::EcdsaP256) -> SigningPrivateKey;
     /// Parse one strict unencrypted PKCS#8 DER key, returning an empty key on any error.
     [[nodiscard]] static auto fromDer(const mem::ByteBlock &der) noexcept -> SigningPrivateKey;
     /// Parse one strict unencrypted PKCS#8 DER key.
@@ -81,6 +103,32 @@ public: // factories
     /// @throws err::OutOfRangeError If a fixed resource bound is exceeded.
     /// @throws CryptologyError If private material cannot be protected.
     [[nodiscard]] static auto fromPemOrThrow(const text::String &pem) -> SigningPrivateKey;
+    /// Read one unencrypted PKCS#8 key from a file, returning an empty key on error.
+    [[nodiscard]] static auto fromFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) noexcept
+        -> SigningPrivateKey;
+    /// Read one unencrypted PKCS#8 key from a file.
+    [[nodiscard]] static auto fromFileOrThrow(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic)
+        -> SigningPrivateKey;
+    /// Decrypt EncryptedPrivateKeyInfo DER, returning an empty key on failure.
+    [[nodiscard]] static auto fromEncryptedDer(const mem::ByteBlock &der, const text::String &password) noexcept
+        -> SigningPrivateKey;
+    /// Decrypt EncryptedPrivateKeyInfo DER.
+    [[nodiscard]] static auto fromEncryptedDerOrThrow(const mem::ByteBlock &der, const text::String &password)
+        -> SigningPrivateKey;
+    /// Decrypt one `ENCRYPTED PRIVATE KEY` PEM block, returning an empty key on failure.
+    [[nodiscard]] static auto fromEncryptedPem(const text::String &pem, const text::String &password) noexcept
+        -> SigningPrivateKey;
+    /// Decrypt one `ENCRYPTED PRIVATE KEY` PEM block.
+    [[nodiscard]] static auto fromEncryptedPemOrThrow(const text::String &pem, const text::String &password)
+        -> SigningPrivateKey;
+    /// Read and decrypt one encrypted PKCS#8 key, returning an empty key on failure.
+    [[nodiscard]] static auto fromEncryptedFile(
+        const path::Path &path, const text::String &password, PemDerFormat format = PemDerFormat::Automatic) noexcept
+        -> SigningPrivateKey;
+    /// Read and decrypt one encrypted PKCS#8 key.
+    [[nodiscard]] static auto fromEncryptedFileOrThrow(
+        const path::Path &path, const text::String &password, PemDerFormat format = PemDerFormat::Automatic)
+        -> SigningPrivateKey;
 
 private:
     /// Create a validated key from normalized secret and cached public material.

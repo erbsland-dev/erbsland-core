@@ -9,7 +9,7 @@
 
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../err/ParameterError.hpp"
-#include "../../system/WindowsErrorContext.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../text/StringConverter.hpp"
 
 #include <algorithm>
@@ -19,7 +19,7 @@
 
 namespace erbsland::stream::impl {
 
-using ErrorContext = system::WindowsErrorContext;
+using ErrorContext = system::impl::WindowsErrorContext;
 using namespace text::literals;
 using unit::ByteIndex;
 using unit::ByteLength;

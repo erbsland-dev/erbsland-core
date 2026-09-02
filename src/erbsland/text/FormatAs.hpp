@@ -12,7 +12,7 @@ namespace erbsland::text {
 ///
 /// Value types with `toString() const -> String` are automatically supported. Specialize this template for a custom
 /// value type only when formatting requires a different representation.
-/// @seedoc{/reference/text/string_formatter}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{FormatAsTest}
 template <typename T>
 struct FormatAs;

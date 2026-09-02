@@ -53,9 +53,9 @@ private:
 private:
     void updateAnimation(std::chrono::milliseconds elapsed) noexcept;
     void addFrame() noexcept;
-    void renderFrames(BlockRectangle contentRect);
+    void renderFrames(Rectangle contentRect);
     [[nodiscard]] auto createRandomFrame() -> FrameSpec;
-    [[nodiscard]] static auto frameRectangle(FrameSpec frame, BlockRectangle contentRect) -> BlockRectangle;
+    [[nodiscard]] static auto frameRectangle(FrameSpec frame, Rectangle contentRect) -> Rectangle;
     [[nodiscard]] static auto prismFrameStyle() -> const Block16StylePtr &;
     [[nodiscard]] static auto colors() -> const ColorSequence &;
     [[nodiscard]] auto availableStyles() const -> std::vector<FrameSpec>;

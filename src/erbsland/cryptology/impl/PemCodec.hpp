@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "PemLabel.hpp"
+
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/String.hpp"
 #include "../../text/StringEditor_fwd.hpp"
@@ -11,7 +13,7 @@
 
 namespace erbsland::cryptology::impl {
 
-/// Strict RFC 7468 certificate PEM codec with fixed resource limits.
+/// Strict RFC 7468 PEM codec with fixed resource limits and exact artifact labels.
 /// @tested{X509CertificateTest X509CertificateFileTest}
 class PemCodec final {
 public:
@@ -26,11 +28,11 @@ public:
 
 public:
     /// Create a decoder for PEM source text.
-    explicit PemCodec(text::String text) noexcept;
+    explicit PemCodec(text::String text, PemLabel label = PemLabel::Certificate) noexcept;
     /// Create an encoder for one DER certificate.
-    explicit PemCodec(mem::ByteBlock certificate);
+    explicit PemCodec(mem::ByteBlock certificate, PemLabel label = PemLabel::Certificate);
     /// Create an encoder for an ordered DER certificate list.
-    explicit PemCodec(util::List<mem::ByteBlock> certificates) noexcept;
+    explicit PemCodec(util::List<mem::ByteBlock> certificates, PemLabel label = PemLabel::Certificate) noexcept;
 
 public:
     /// Decode one or more CERTIFICATE blocks.
@@ -42,11 +44,18 @@ public:
 
 private:
     /// Encode one certificate and append it to the result.
-    static void appendEncoded(text::StringEditor &result, const mem::ByteBlock &der);
+    void appendEncoded(text::StringEditor &result, const mem::ByteBlock &der) const;
+    /// Get the exact configured encapsulation label.
+    [[nodiscard]] auto labelText() const -> text::String;
+    /// Build one exact pre-encapsulation boundary.
+    [[nodiscard]] auto beginBoundary() const -> text::String;
+    /// Build one exact post-encapsulation boundary.
+    [[nodiscard]] auto endBoundary() const -> text::String;
 
 private:
     text::String _text;                       ///< PEM source for decoding.
     util::List<mem::ByteBlock> _certificates; ///< DER certificates for encoding.
+    PemLabel _label{PemLabel::Certificate};   ///< Exact artifact label.
 };
 
 }

@@ -22,7 +22,7 @@ void traceSectionGuard() {
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
             .addWriter(
-                std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+                el::LogWriter::createForConsole(el::application().terminal()),
                 el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
         if (enableSection) {
             configuration.enableTraceSection(section);

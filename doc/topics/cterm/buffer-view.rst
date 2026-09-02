@@ -24,11 +24,11 @@ Use a buffer view when you want to render only a specific region of a larger log
 
 .. code-block:: cpp
 
-    auto world = Buffer{BlockSize{120, 40}};
+    auto world = Buffer{Size{120, 40}};
     world.fill(Block{" ", Color{fg::Inherited, bg::Black}});
-    world.drawBlockText("Visible window", BlockRectangle{10, 6, 20, 3}, Alignment::Center);
+    world.drawBlockText("Visible window", Rectangle{10, 6, 20, 3}, Alignment::Center);
 
-    auto view = BufferConstRefView{world, BlockRectangle{8, 4, 40, 12}};
+    auto view = BufferConstRefView{world, Rectangle{8, 4, 40, 12}};
 
     auto settings = UpdateSettings{};
     settings.setShowCropMarks(true);
@@ -37,7 +37,7 @@ Use a buffer view when you want to render only a specific region of a larger log
 The view translates its local coordinates into the corresponding positions of the underlying buffer.
 This allows you to render just the visible portion without copying or modifying the original content.
 
-Scrolling by Moving the View BlockRectangle
+Scrolling by Moving the View Rectangle
 -------------------------------------------
 
 ``BufferViewBase`` stores the currently visible rectangle, which you can update as the user scrolls or pans through the
@@ -46,9 +46,9 @@ content.
 .. code-block:: cpp
 
     auto sharedWorld = std::make_shared<Buffer>(world);
-    auto view = BufferView{sharedWorld, BlockRectangle{0, 0, 40, 12}};
+    auto view = BufferView{sharedWorld, Rectangle{0, 0, 40, 12}};
 
-    view.setViewRect(BlockRectangle{16, 10, 40, 12});
+    view.setViewRect(Rectangle{16, 10, 40, 12});
     terminal.updateScreen(view);
 
 By moving the view rectangle, you change which part of the content is visible—without copying, reallocating, or
@@ -63,10 +63,10 @@ Choose ``BufferConstRefView`` when you only need a short-lived wrapper around an
 
 .. code-block:: cpp
 
-    auto sharedBuffer = std::make_shared<Buffer>(BlockSize{80, 24});
-    auto cachedView = BufferView{sharedBuffer, BlockRectangle{4, 4, 30, 10}};
+    auto sharedBuffer = std::make_shared<Buffer>(Size{80, 24});
+    auto cachedView = BufferView{sharedBuffer, Rectangle{4, 4, 30, 10}};
 
-    auto preview = BufferConstRefView{*sharedBuffer, BlockRectangle{0, 0, 20, 6}};
+    auto preview = BufferConstRefView{*sharedBuffer, Rectangle{0, 0, 20, 6}};
     terminal.updateScreen(preview);
 
 Both variants implement ``ReadableBuffer``, so the rest of your rendering pipeline can treat them just like any other
@@ -82,14 +82,14 @@ Showing Cropped Edges Explicitly
 .. code-block:: cpp
 
     auto sharedBuffer = std::make_shared<Buffer>(world);
-    auto view = BufferView{sharedBuffer, BlockRectangle{8, 4, 40, 12}};
+    auto view = BufferView{sharedBuffer, Rectangle{8, 4, 40, 12}};
 
     view.setShowCropCharacters(true);
-    view.setCropCharacter(BlockDirection::East, Block{U'▶', fg::BrightYellow});
-    view.setCropCharacter(BlockDirection::South, Block{U'▼', fg::BrightYellow});
+    view.setCropCharacter(Direction::East, Block{U'▶', fg::BrightYellow});
+    view.setCropCharacter(Direction::South, Block{U'▼', fg::BrightYellow});
 
     const auto cropEdges = CropEdges::fromView(view.viewRect(), sharedBuffer->rect());
-    if (cropEdges.isSet(BlockDirection::East)) {
+    if (cropEdges.isSet(Direction::East)) {
         terminal.printLine("There is more content to the right.");
     }
 

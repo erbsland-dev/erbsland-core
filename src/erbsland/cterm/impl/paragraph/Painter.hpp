@@ -15,14 +15,14 @@ namespace erbsland::cterm::impl::paragraph {
 /// Paint a shared paragraph layout into a writable buffer.
 class Painter final : public RendererBase {
 public:
-    using ColorResolver = std::function<Color(const Block &, bgeo::BlockPosition)>;
+    using ColorResolver = std::function<Color(const Block &, block::Position)>;
 
 public:
     /// Create a paragraph painter for a target buffer.
     Painter(
         WritableBuffer &buffer,
-        const bgeo::BlockRectangle rect,
-        const bgeo::Alignment alignment,
+        const block::Rectangle rect,
+        const geometry::Alignment alignment,
         const LayoutResult &layout,
         const BlockString &sourceText,
         const ParagraphOptions &options,
@@ -46,17 +46,17 @@ public:
 
 private:
     /// Draw one laid-out line and return its trailing color.
-    [[nodiscard]] auto drawLine(const LayoutLine &line, bgeo::BlockPosition pos) -> std::optional<Color>;
+    [[nodiscard]] auto drawLine(const LayoutLine &line, block::Position pos) -> std::optional<Color>;
     /// Draw one layout fragment and return its trailing color.
-    [[nodiscard]] auto drawFragment(const LayoutFragment &fragment, bgeo::BlockPosition &pos) -> std::optional<Color>;
+    [[nodiscard]] auto drawFragment(const LayoutFragment &fragment, block::Position &pos) -> std::optional<Color>;
     /// Draw one terminal block and return its color.
-    [[nodiscard]] auto drawBlock(const Block &character, bgeo::BlockPosition &pos) -> std::optional<Color>;
+    [[nodiscard]] auto drawBlock(const Block &character, block::Position &pos) -> std::optional<Color>;
     /// Fill a horizontal background range.
     void fillBackgroundRange(int y, int x1, int x2, Color color);
 
 private:
     WritableBuffer &_buffer;
-    bgeo::BlockRectangle _rect;
+    block::Rectangle _rect;
     const ColorResolver &_colorResolver;
 };
 

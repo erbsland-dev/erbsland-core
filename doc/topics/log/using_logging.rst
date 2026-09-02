@@ -174,7 +174,7 @@ The detailed trace and normal milestones stay in the operational log instead of 
     :source: log/LoggingSetups/LargeLogging.cpp
     :exec: log/logging_setups large
     :exec-exit-code: 2
-    :source-sha256: e52d61aedfddad3dcaa683d1a7e824d0f0afa197e599e3f3b9bccf615079e0c0
+    :source-sha256: fa8829fb9fb8444dfa689cff855696b756b413ed53b7811e220ccdc4dedef673
 
 .. code-block:: cpp
 
@@ -201,7 +201,7 @@ The detailed trace and normal milestones stay in the operational log instead of 
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
                 .enableTraceSection(el::LogTraceSection{"route-search"_el})
-                .addWriter(std::make_shared<el::FileLogWriter>(std::move(fileOptions)));
+                .addWriter(el::LogWriter::createForFile(fileOptions));
             log().setConfiguration(std::move(configuration));
 
             enableLastErrorDump();

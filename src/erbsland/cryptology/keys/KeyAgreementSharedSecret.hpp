@@ -11,7 +11,7 @@
 namespace erbsland::cryptology {
 
 /// A move-only shared secret retained in application-protected storage.
-/// @seedoc{/reference/cryptology/key_agreement}
+/// @seedoc{/reference/cryptology/key_management}
 /// @tested{KeyAgreementTest}
 class KeyAgreementSharedSecret final {
     friend class Hkdf;

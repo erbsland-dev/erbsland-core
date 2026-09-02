@@ -2,12 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "CustomError.hpp"
 
-#include "../../../impl/vr/Rule.hpp"
-
 namespace erbsland::conf::vr::builder {
 
-void CustomError::operator()(Rule &rule) {
-    rule.setErrorMessage(std::move(_errorMessage));
+void CustomError::apply(RuleDefinition &rule) const {
+    rule.setErrorMessage(_errorMessage);
 }
 
 }

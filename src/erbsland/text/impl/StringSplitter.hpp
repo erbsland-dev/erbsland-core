@@ -17,7 +17,7 @@ namespace erbsland::text::impl {
 /// Sequentially split an owning read-only string into shared slices.
 ///
 /// @tparam tString The width-specific owning read-only string type.
-/// @seedoc{/reference/text/string_splitter}
+/// @seedoc{/reference/text/matching_and_splitting}
 /// @tested{StringSplitterTest}
 template <typename tString>
 class StringSplitter final {

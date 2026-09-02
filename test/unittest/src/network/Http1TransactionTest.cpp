@@ -21,13 +21,21 @@
 
 using namespace el::event;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 namespace mem = el::mem;
 namespace unit = el::unit;
 
 TESTED_TARGETS(Http1Transaction Http1TransactionCallbacks Http1TransactionFailure Http1TransactionOptions)
 class Http1TransactionTest final : public el::UnitTest {
+    using Http1CodecLimits = el::network::impl::Http1CodecLimits;
+    using Http1DecodeEvent = el::network::impl::Http1DecodeEvent;
+    using Http1FailureReason = el::network::impl::Http1FailureReason;
+    using Http1Transaction = el::network::impl::Http1Transaction;
+    using Http1TransactionCallbacks = el::network::impl::Http1TransactionCallbacks;
+    using Http1TransactionFailure = el::network::impl::Http1TransactionFailure;
+    using Http1TransactionOptions = el::network::impl::Http1TransactionOptions;
+    using Http1TransactionPtr = el::network::impl::Http1TransactionPtr;
+
     enum class ConnectionFlavor : std::uint8_t {
         Tcp,
         TlsClient,

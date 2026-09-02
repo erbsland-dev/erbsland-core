@@ -4,9 +4,19 @@
 
 #include "Attribute.hpp"
 
+#include "../../../../mem/ByteBlock.hpp"
+#include "../../../../re/RegEx_fwd.hpp"
 #include "../../../../text/StringList.hpp"
-#include "../../../impl/value/Value.hpp"
+#include "../../../../time/CalendarDelta.hpp"
+#include "../../../../time/Date.hpp"
+#include "../../../../time/DateTime.hpp"
+#include "../../../../time/Time.hpp"
+#include "../../../../time/TimeWithZone.hpp"
+#include "../../../Float.hpp"
+#include "../../../Integer.hpp"
+#include "../../../Value_fwd.hpp"
 
+#include <type_traits>
 #include <vector>
 
 namespace erbsland::conf::vr::builder {
@@ -14,15 +24,39 @@ namespace erbsland::conf::vr::builder {
 /// Assigns a default value to a rule.
 class Default : public Attribute {
 public:
-    /// Creates a default-value attribute from a native value.
-    /// @tparam tValue The native value type.
-    /// @param value The default value.
-    template <typename tValue>
-    explicit Default(tValue value) : _value(impl::Value::createFromValue(value)) {}
-
     /// Creates a default-value attribute from a configuration value.
     /// @param value The default configuration value.
-    explicit Default(impl::ValuePtr value);
+    explicit Default(ValuePtr value);
+    /// Creates an integer default-value attribute.
+    explicit Default(Integer value);
+    /// Creates a Boolean default-value attribute.
+    explicit Default(bool value);
+    /// Creates a floating-point default-value attribute.
+    explicit Default(Float value);
+    /// Creates a text default-value attribute.
+    explicit Default(text::String value);
+    /// Creates a date default-value attribute.
+    explicit Default(const time::Date &value);
+    /// Creates a time default-value attribute.
+    explicit Default(const time::Time &value);
+    /// Creates a zoned-time default-value attribute.
+    explicit Default(const time::TimeWithZone &value);
+    /// Creates a date-time default-value attribute.
+    explicit Default(const time::DateTime &value);
+    /// Creates a byte-block default-value attribute.
+    explicit Default(const mem::ByteBlock &value);
+    /// Creates a time-delta default-value attribute.
+    explicit Default(const time::CalendarDelta &value);
+    /// Creates a regular-expression default-value attribute.
+    explicit Default(const re::RegExPtr &value);
+    /// Creates an integer default-value attribute from a native integer.
+    template <typename TValue>
+        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool> && !std::is_same_v<TValue, Integer>)
+    explicit Default(const TValue value) : Default(static_cast<Integer>(value)) {}
+    /// Creates a floating-point default-value attribute from a native float.
+    template <typename TValue>
+        requires(std::is_floating_point_v<TValue> && !std::is_same_v<TValue, Float>)
+    explicit Default(const TValue value) : Default(static_cast<Float>(value)) {}
     /// Creates a default-value attribute from integer values.
     /// @param values The default integer values.
     explicit Default(const std::vector<Integer> &values);
@@ -45,7 +79,11 @@ public:
     /// @param values The default floating-point matrices.
     explicit Default(const std::vector<std::vector<Float>> &values);
 
-    void operator()(impl::Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
+
+public: // access
+    /// Get the represented configuration value.
+    [[nodiscard]] auto value() const noexcept -> const ValuePtr & { return _value; }
 
 private:
     /// Convert a scalar range to a configuration value list.
@@ -54,7 +92,7 @@ private:
     /// @return A value-list containing the converted scalar values.
     /// @tested{VrBuilderApiTest}
     template <typename Range>
-    auto createScalarListValue(const Range &values) -> impl::ValuePtr;
+    static auto createScalarListValue(const Range &values) -> ValuePtr;
 
     /// Convert a scalar matrix to a nested configuration value list.
     /// @tparam T The scalar matrix element type.
@@ -62,10 +100,10 @@ private:
     /// @return A value-list containing one value-list for each matrix row.
     /// @tested{VrBuilderApiTest}
     template <typename T>
-    auto createScalarMatrixValue(const std::vector<std::vector<T>> &values) -> impl::ValuePtr;
+    static auto createScalarMatrixValue(const std::vector<std::vector<T>> &values) -> ValuePtr;
 
-public:
-    impl::ValuePtr _value;
+private:
+    ValuePtr _value; ///< The represented default value.
 };
 
 }

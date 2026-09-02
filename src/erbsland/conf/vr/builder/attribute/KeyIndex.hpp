@@ -96,7 +96,7 @@ public:
         const text::CaseSensitivity caseSensitivity = text::CaseSensitivity::CaseInsensitive) :
         KeyIndex(name, std::vector<NamePathLike>{keyPaths}, caseSensitivity) {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
     Name _name;
     std::vector<NamePathLike> _keyPaths;

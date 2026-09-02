@@ -4,8 +4,8 @@
 
 #include "Attribute.hpp"
 
-#include "../../../impl/vr/DependencyMode.hpp"
 #include "../../../NamePath.hpp"
+#include "../../DependencyMode.hpp"
 
 #include <utility>
 #include <vector>
@@ -21,7 +21,7 @@ public:
     /// @param targets The target paths.
     /// @param errorMessage The optional validation error message.
     Dependency(
-        const impl::DependencyMode mode,
+        const DependencyMode mode,
         std::vector<NamePathLike> sources,
         std::vector<NamePathLike> targets,
         text::String errorMessage = {}) :
@@ -36,16 +36,16 @@ public:
     /// @param targets The target paths.
     /// @param errorMessage The optional validation error message.
     Dependency(
-        const impl::DependencyMode mode,
+        const DependencyMode mode,
         const std::initializer_list<NamePathLike> sources,
         const std::initializer_list<NamePathLike> targets,
         text::String errorMessage = {}) :
         Dependency(
             mode, std::vector<NamePathLike>{sources}, std::vector<NamePathLike>{targets}, std::move(errorMessage)) {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
-    impl::DependencyMode _mode{impl::DependencyMode::Undefined};
+    DependencyMode _mode{DependencyMode::Undefined};
     std::vector<NamePathLike> _sources;
     std::vector<NamePathLike> _targets;
     text::String _errorMessage;

@@ -13,8 +13,10 @@
 #include <erbsland/stream/AnyStringBuilderStream.hpp>
 #include <erbsland/stream/StandardStreams.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/text/StringConverter.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
+#include <string>
 #include <string_view>
 
 using el::core::Application;
@@ -147,6 +149,62 @@ public:
         moduleMainCalled = false;
         applicationMainCalled = false;
         runErrorCase(errorArgv, moduleMainCalled, applicationMainCalled);
+    }
+
+    void testApplicationRendersDetailedHelpAndModuleOverview() {
+        {
+            char arg0[] = "tool";
+            char arg1[] = "--help=--name";
+            char *argv[] = {arg0, arg1};
+            const auto output = el::stream::AnyStringBuilderStream::create();
+            const auto error = el::stream::AnyStringBuilderStream::create();
+            const auto streamRedirect = el::stream::redirectStandardStreams(output, error);
+            auto scope = ApplicationTestScope<Application>{2, argv};
+            auto &application = scope.app();
+            auto mainCalled = false;
+            application.options()
+                ->addOption("--name"_el)
+                .setType(OptionType::Text)
+                .setHelpTitle("Name Option"_el)
+                .setHelpDescription("Select the displayed name."_el);
+            application.setMainFn([&mainCalled]() -> ExitCode {
+                mainCalled = true;
+                return ExitCode::success();
+            });
+
+            REQUIRE_EQUAL(application.run(), 0);
+            const auto text = el::text::StringConverter{output->toU8String()}.toStdString();
+            REQUIRE_NOT_EQUAL(text.find("Name Option\n"), std::string::npos);
+            REQUIRE_NOT_EQUAL(text.find("tool --name=<value>"), std::string::npos);
+            REQUIRE_FALSE(application.optionValues());
+            REQUIRE_FALSE(mainCalled);
+        }
+
+        {
+            char arg0[] = "tool";
+            char *argv[] = {arg0};
+            const auto output = el::stream::AnyStringBuilderStream::create();
+            const auto error = el::stream::AnyStringBuilderStream::create();
+            const auto streamRedirect = el::stream::redirectStandardStreams(output, error);
+            auto scope = ApplicationTestScope<Application>{1, argv};
+            auto &application = scope.app();
+            auto mainCalled = false;
+            const auto module = OptionModule::create("run"_el);
+            module->setHelpDescription("Run the configured operation."_el);
+            application.options()->addModule(module);
+            application.setMainFn([&mainCalled]() -> ExitCode {
+                mainCalled = true;
+                return ExitCode::success();
+            });
+
+            REQUIRE_EQUAL(application.run(), 0);
+            const auto text = el::text::StringConverter{output->toU8String()}.toStdString();
+            REQUIRE_NOT_EQUAL(text.find("tool <module> [options]"), std::string::npos);
+            REQUIRE_NOT_EQUAL(text.find("run"), std::string::npos);
+            REQUIRE_EQUAL(text.find("Options:"), std::string::npos);
+            REQUIRE_FALSE(application.optionValues());
+            REQUIRE_FALSE(mainCalled);
+        }
     }
 
     void testApplicationMasksNarrowSensitiveArgumentsOnSuccessAndError() {

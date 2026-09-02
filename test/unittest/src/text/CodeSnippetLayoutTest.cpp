@@ -14,13 +14,17 @@
 
 using namespace el::text;
 using namespace el::text::literals;
-using namespace el::text::impl;
 using namespace el::unit;
 
 namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(CodeSnippetLayout CodeSnippetLayoutCell CodeSnippetLayoutMarker CodeSnippetLayoutRow)
 class CodeSnippetLayoutTest final : public el::UnitTest {
+    using CodeSnippetLayout = el::text::impl::CodeSnippetLayout;
+    using CodeSnippetLayoutCell = el::text::impl::CodeSnippetLayoutCell;
+    using CodeSnippetLayoutMarker = el::text::impl::CodeSnippetLayoutMarker;
+    using CodeSnippetLayoutRow = el::text::impl::CodeSnippetLayoutRow;
+
 private:
     [[nodiscard]] static auto rowText(const CodeSnippetLayoutRow &row) -> String {
         auto result = StringEditor{};

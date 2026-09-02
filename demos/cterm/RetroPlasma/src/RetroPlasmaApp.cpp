@@ -8,7 +8,7 @@
 namespace demo {
 
 void RetroPlasmaApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{28}, BlockCoordinate{8}});
+    _updateSettings.setMinimumSize(Size{Coordinate{28}, Coordinate{8}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -42,12 +42,9 @@ void RetroPlasmaApp::onRenderToBuffer() {
         _phase += elapsedSeconds * (_speed * 2.7);
     }
     _buffer.fill(Block{U' ', fg::Default, bg::Black});
-    const auto contentHeight = std::max(BlockCoordinate{0}, _buffer.size().height() - 1);
+    const auto contentHeight = std::max(Coordinate{0}, _buffer.size().height() - 1);
     _renderer.render(
-        _buffer,
-        BlockRectangle{BlockCoordinate{0}, BlockCoordinate{0}, _buffer.size().width(), contentHeight},
-        _phase,
-        _paletteIndex);
+        _buffer, Rectangle{Coordinate{0}, Coordinate{0}, _buffer.size().width(), contentHeight}, _phase, _paletteIndex);
     drawPrompt();
 }
 
@@ -56,7 +53,7 @@ void RetroPlasmaApp::drawPrompt() noexcept {
         return;
     }
     const auto promptRow = _buffer.size().height() - 1;
-    const auto promptRect = BlockRectangle{BlockCoordinate{0}, promptRow, _buffer.size().width(), BlockCoordinate{1}};
+    const auto promptRect = Rectangle{Coordinate{0}, promptRow, _buffer.size().width(), Coordinate{1}};
     _buffer.fill(promptRect, Block{U' ', bg::BrightBlack});
     auto text = BlockText{buildPrompt(), promptRect, Alignment::CenterLeft};
     _buffer.drawBlockText(text);

@@ -59,7 +59,7 @@ private:
     /// Copy a buffer line without its trailing fill cells.
     [[nodiscard]] static auto trimmedLine(const CursorBuffer &buffer, int y) -> BlockString;
     /// Convert a block coordinate to a non-negative cell count.
-    [[nodiscard]] static auto positive(bgeo::BlockCoordinate value) noexcept -> int;
+    [[nodiscard]] static auto positive(block::Coordinate value) noexcept -> int;
 
 private:
     int _width;

@@ -8,6 +8,7 @@
 #include "../impl/CryptologyConfigurationSnapshot.hpp"
 #include "../impl/protected_data/ProtectedDataAccess_fwd.hpp"
 #include "../impl/protected_data/ProtectedDataProvider_fwd.hpp"
+#include "../impl/TlsConfigurationLabel.hpp"
 #include "../protected_data/ProtectedByteBlock_fwd.hpp"
 #include "../protected_data/ProtectedDataMode.hpp"
 #include "../symmetric/SymmetricEncryptionSelector_fwd.hpp"
@@ -28,7 +29,7 @@ namespace erbsland::cryptology {
 /// Application-wide administrative limits for cryptographic algorithm selection and backend acceleration.
 /// Status limits can only reduce the effective library policy. They never prevent explicit primitive use.
 /// Call `core::application().cryptologyConfiguration()` to access the shared instance.
-/// @seedoc{/reference/core/application}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptologyConfigurationTest}
 class CryptologyConfiguration final {
     friend class HashSelector;
@@ -96,9 +97,9 @@ public: // TLS configurations
     /// Maximum number of exact labels in the application-wide TLS registry.
     static constexpr auto cMaximumTlsConfigurations = std::size_t{256U};
     /// Maximum byte length of a TLS configuration label.
-    static constexpr auto cMaximumTlsConfigurationLabelLength = std::size_t{255U};
+    static constexpr auto cMaximumTlsConfigurationLabelLength = impl::tls_configuration_label::cMaximumLength;
     /// Maximum number of slash-delimited segments in a non-empty TLS configuration label.
-    static constexpr auto cMaximumTlsConfigurationLabelSegments = std::size_t{16U};
+    static constexpr auto cMaximumTlsConfigurationLabelSegments = impl::tls_configuration_label::cMaximumSegments;
 
     /// Atomically register or replace one TLS configuration.
     /// @param label The exact hierarchical label, or an empty label for the global default.
@@ -149,8 +150,6 @@ private:
     [[nodiscard]] auto unprotectData(mem::ConstByteSpan envelope, unit::ByteLength plaintextLength) -> mem::ByteBlock;
     /// Validate a protected-data selection mode.
     static void validateProtectedDataMode(ProtectedDataMode mode);
-    /// Validate one hierarchical TLS configuration label.
-    static void validateTlsConfigurationLabel(const text::String &label);
     /// Build a diagnostic containing every fallback candidate for a label.
     [[nodiscard]] static auto tlsConfigurationResolutionError(const text::String &label) -> text::String;
 

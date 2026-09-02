@@ -14,7 +14,7 @@ namespace erbsland::network {
 
 /// A validated case-insensitive HTTP field name.
 /// The original ASCII spelling is retained while equality, ordering, and hashing use ASCII case folding.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpHeadersTest}
 class HttpFieldName final {
 public:

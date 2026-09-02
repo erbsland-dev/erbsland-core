@@ -7,6 +7,7 @@
 
 #include "Constraint.hpp"
 #include "ConstraintType.hpp"
+#include "DependencyMode.hpp"
 #include "Rule.hpp"
 #include "RuleType.hpp"
 #include "Rules.hpp"

@@ -19,7 +19,7 @@ namespace erbsland::cryptology {
 /// authenticator is cached after finalization; use `reset()` to authenticate another message with the same key.
 /// The construction follows RFC 2104 section 2; verification deliberately accepts only the complete hash-sized value.
 /// Specification: https://www.rfc-editor.org/rfc/rfc2104.html#section-2
-/// @seedoc{/reference/cryptology/message_authentication}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HmacTest HashPrimitiveFullValidationTest}
 class Hmac final {
 public:

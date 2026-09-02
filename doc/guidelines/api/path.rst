@@ -2,30 +2,6 @@
 Path API Guidelines
 *******************
 
-Core Semantics
-==============
-
-Path Model
-----------
-
-.. code-block:: text
-
-    empty path = invalid value and non-throwing failure sentinel
-    dot path = valid current-directory value
-    validation = lazy until explicit validation or native filesystem access
-    representation = minimally normalized portable text
-    separator = forward slash
-    root = complete first element such as slash, drive root, or UNC share
-    trailing separator = absent except when it is part of the root
-
-Filesystem Model
-----------------
-
-.. code-block:: text
-
-    information = snapshot cached on Path and shared by its value copies, refreshed explicitly or after expiry
-    temporary resource = owned cleanup lease releasable to the caller
-
 Primary Types
 =============
 
@@ -100,6 +76,7 @@ Path Value Patterns
     o.toString()/toStdPath()/toPosix()/toWindows() -> T // export portable or native representations
     T::fromElements/from❮Format❯(value) -> Path // import normalized elements or a native representation
     T::currentDirectory/userHomeDirectory/systemTempDirectory() -> Path // query a platform directory
+    T::executablePath/executablePathOrThrow() -> Path // query the current executable image path
 
 Operation Accessor Patterns
 ===========================

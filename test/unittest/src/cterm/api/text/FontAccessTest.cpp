@@ -10,7 +10,7 @@ class FontAccessTest final : public el::UnitTest {
 public:
     void testConstructorsAndAccessorsExposeTheConfiguredGlyphs() {
         auto glyphs = Font::GlyphMap{};
-        glyphs.emplace("A"_el, FontGlyph{bgeo::BlockSize{1, 1}});
+        glyphs.emplace("A"_el, FontGlyph{block::Size{1, 1}});
         auto font = Font{3, glyphs};
 
         REQUIRE_EQUAL(font.height(), 3);
@@ -19,8 +19,8 @@ public:
         REQUIRE_FALSE(font.glyph("B"_el));
 
         font.setHeight(5);
-        font.addGlyph("B"_el, FontGlyph{bgeo::BlockSize{2, 1}});
-        const auto expectedGlyphSize = bgeo::BlockSize{2, 1};
+        font.addGlyph("B"_el, FontGlyph{block::Size{2, 1}});
+        const auto expectedGlyphSize = block::Size{2, 1};
 
         REQUIRE_EQUAL(font.height(), 5);
         REQUIRE_EQUAL(font.glyphs().size(), std::size_t{2});

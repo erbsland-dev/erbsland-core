@@ -1,0 +1,7 @@
+# Reference-document groups for the math domain.
+
+------------*[ Reference Groups ]
+Page        : "math/mathematics.rst"
+Title       : "Mathematical Types and Operations"
+Header Globs:
+    * "math/*.hpp"

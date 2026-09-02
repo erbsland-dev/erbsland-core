@@ -32,7 +32,7 @@ public: // implement backend
     [[nodiscard]] auto supportsCursorVisibilityCodes() const noexcept -> bool override;
     [[nodiscard]] auto supportsAlternateScreenBufferCodes() const noexcept -> bool override;
     [[nodiscard]] auto isInteractive() const noexcept -> bool override;
-    [[nodiscard]] auto detectScreenSize() -> std::optional<bgeo::BlockSize> override;
+    [[nodiscard]] auto detectScreenSize() -> std::optional<block::Size> override;
     void setCursorVisible(bool visible) override;
     void emitText(const text::String &text) override;
     void emitFlush() override;

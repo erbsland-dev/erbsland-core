@@ -8,6 +8,7 @@
 
 #include "../../err/LogicError.hpp"
 #include "../../err/ParameterError.hpp"
+#include "../../err/RuntimeError.hpp"
 #include "../../mem/Byte.hpp"
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
@@ -103,7 +104,7 @@ auto TlsRecordEncryptor::protect(
         // RFC 8446 section 5.3: increment the sequence exactly once, only after the complete record exists.
         _state->recordSucceeded();
         return mem::ByteBlock{record};
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // Once key use or backend processing begins, erase the generation so an uncertain nonce is never reused.
         secureErase();
         throw;
@@ -117,7 +118,7 @@ void TlsRecordEncryptor::updateApplicationTrafficKeys() {
     try {
         // RFC 8446 sections 4.6.3 and 7.2: replace this sending direction at the caller-directed KeyUpdate point.
         _state->updateApplicationTrafficKeys();
-    } catch (...) {
+    } catch (const err::RuntimeError &) {
         // Failed replacement is terminal: erase both retained old state and any partially built backend state.
         secureErase();
         throw;

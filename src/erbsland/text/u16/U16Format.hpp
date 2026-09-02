@@ -14,7 +14,7 @@
 namespace erbsland::text {
 
 /// A reusable validated UTF-16 format.
-/// @seedoc{/reference/text/string_formatter}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{U16FormatTest}
 class U16Format final {
 public:

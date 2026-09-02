@@ -16,7 +16,7 @@ public:
     /// Set the user-facing rule title.
     /// @param title The title to move into the attribute.
     explicit Title(text::String title) : _title{std::move(title)} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     text::String _title;
 };
 

@@ -49,6 +49,21 @@ public: // accessors
     /// Set the help text.
     /// @param help Replacement help metadata.
     void setHelp(OptionHelp help) { _help = std::move(help); }
+    /// Set the help title for this choice.
+    /// @param title Short title used when no description is available.
+    void setHelpTitle(text::String title) { _help.setTitle(std::move(title)); }
+    /// Set the help description for this choice.
+    /// @param description User-facing description shown for this choice in help output.
+    void setHelpDescription(text::String description) { _help.setDescription(std::move(description)); }
+    /// Set the help epilog for this choice.
+    /// @param epilog Optional trailing text for renderers that support choice-level epilogs.
+    void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
+    /// Set the detailed-help example for this choice.
+    /// @param example Short usage example for detailed help.
+    void setHelpExample(text::String example) { _help.setExample(std::move(example)); }
+    /// Set the help visibility for this choice.
+    /// @param visibility Controls where this choice appears in generated help output.
+    void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }
     /// Get the choice text.
     [[nodiscard]] auto text() const noexcept -> const text::String & { return _text; }
     /// Set the choice text.

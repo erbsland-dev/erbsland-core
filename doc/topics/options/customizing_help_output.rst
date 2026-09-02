@@ -19,6 +19,22 @@ The option system builds help, version, and error output as neutral
 This page explains how :cpp:class:`Application <erbsland::core::Application>` renders these documents, how to render
 them manually, and how to customize generated wording and terminal style.
 
+Detailed Option Help
+====================
+
+The built-in ``--help=<name>`` form displays one visible option in detail.
+The name may be a case-insensitive long or internal alias, or a case-sensitive short alias.
+For a root request, global options are searched before modules in registration order.
+For a module request, that module is searched first, then global options, then the remaining modules.
+When the same exact alias exists in another scope, the document adds a ``See Also`` command for that scope.
+
+Detailed documents generate one usage line for each dashed alias and use attached value syntax.
+They show the option title, description, an optional example configured with ``setHelpExample()``, and any related scope
+commands.
+Use ``OptionManager::detailedHelpDocument()`` or ``displayDetailedHelp()`` when routing display requests manually.
+An unresolved direct request throws :cpp:class:`OptionError <erbsland::options::OptionError>` with an ``UnknownName``
+context and fuzzy suggestions.
+
 Plain Output Is the Default
 ===========================
 

@@ -18,8 +18,10 @@ using namespace text::literals;
 class StringPartConstraint : public Constraint {
 public:
     /// Creates a string-part constraint.
+    /// @param type The concrete string-part constraint kind.
     /// @param values The expected string parts.
-    explicit StringPartConstraint(text::StringList values) : _expectedValues{std::move(values)} {}
+    StringPartConstraint(vr::ConstraintType type, text::StringList values) :
+        Constraint{type}, _expectedValues{std::move(values)} {}
 
     /// Parse and validate string-part constraint values.
     /// @param context The constraint handler context.

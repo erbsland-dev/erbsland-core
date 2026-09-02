@@ -3,7 +3,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-add_subdirectory(bgeo)
+add_subdirectory(block)
 add_subdirectory(conf)
 add_subdirectory(core)
 add_subdirectory(cryptology)
@@ -11,6 +11,7 @@ add_subdirectory(cterm)
 add_subdirectory(debug)
 add_subdirectory(err)
 add_subdirectory(event)
+add_subdirectory(geometry)
 add_subdirectory(i18n)
 add_subdirectory(log)
 add_subdirectory(math)

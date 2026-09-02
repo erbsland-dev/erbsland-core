@@ -14,7 +14,7 @@
 #include "../LetterCase.hpp"
 #include "../TruncateMode.hpp"
 
-#include "../../bgeo/AlignmentFlags.hpp"
+#include "../../geometry/AlignmentFlags.hpp"
 #include "../../unit/ByteLength.hpp"
 #include "../../unit/CpLength.hpp"
 
@@ -25,25 +25,25 @@ namespace erbsland::text::impl {
 /// Layout shared by named text-like and numeric format specifications.
 /// @tested{U8FormatTest}
 struct NamedLayoutSpec final {
-    bgeo::AlignmentFlag alignment{bgeo::AlignmentFlag::None}; ///< The requested field alignment.
-    Char fill{U' '};                                          ///< The field fill character.
-    std::optional<unit::CpLength> width{};                    ///< The optional field width.
+    geometry::AlignmentFlag alignment{geometry::AlignmentFlag::None}; ///< The requested field alignment.
+    Char fill{U' '};                                                  ///< The field fill character.
+    std::optional<unit::CpLength> width{};                            ///< The optional field width.
 };
 
 /// Legacy compact format specification.
 /// @tested{U8FormatTest}
 struct LegacyFormatSpec final {
-    bgeo::AlignmentFlag alignment{bgeo::AlignmentFlag::None};     ///< The requested field alignment.
-    Char fill{U' '};                                              ///< The field fill character.
-    IntegerSignMode signMode{IntegerSignMode::NegativeOnly};      ///< The integer sign mode.
-    bool alternateForm{false};                                    ///< Whether alternate numeric form was requested.
-    bool zeroFill{false};                                         ///< Whether leading zero-fill was requested.
-    std::optional<unit::CpLength> width{};                        ///< The optional field width.
-    std::optional<unit::CpLength> precision{};                    ///< The optional precision.
-    FormatPresentation presentation{FormatPresentation::Default}; ///< The presentation type.
-    LetterCase letterCase{LetterCase::Lowercase};                 ///< The case for lettered presentations.
-    EscapeFormat escapeFormat{EscapeFormat::None};                ///< The escape format for `/` presentations.
-    EscapeAmount escapeAmount{EscapeAmount::Balanced};            ///< The escape amount for `/` presentations.
+    geometry::AlignmentFlag alignment{geometry::AlignmentFlag::None}; ///< The requested field alignment.
+    Char fill{U' '};                                                  ///< The field fill character.
+    IntegerSignMode signMode{IntegerSignMode::NegativeOnly};          ///< The integer sign mode.
+    bool alternateForm{false};                                        ///< Whether alternate numeric form was requested.
+    bool zeroFill{false};                                             ///< Whether leading zero-fill was requested.
+    std::optional<unit::CpLength> width{};                            ///< The optional field width.
+    std::optional<unit::CpLength> precision{};                        ///< The optional precision.
+    FormatPresentation presentation{FormatPresentation::Default};     ///< The presentation type.
+    LetterCase letterCase{LetterCase::Lowercase};                     ///< The case for lettered presentations.
+    EscapeFormat escapeFormat{EscapeFormat::None};                    ///< The escape format for `/` presentations.
+    EscapeAmount escapeAmount{EscapeAmount::Balanced};                ///< The escape amount for `/` presentations.
 };
 
 /// Named text format specification.

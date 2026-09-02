@@ -5,42 +5,13 @@ Text Domain API Guidelines
 Core Semantics
 ==============
 
-Character Model
----------------
-
 .. code-block:: text
 
     character = Unicode code point, not grapheme, glyph, or byte
-    UTF-8 native position = byte index or length
-    UTF-16 native position = char16 data index or length
-    UTF-32 native position = code-point index or length
-    cross-width position = code-point index or length
+    native position = UTF-8 byte, UTF-16 code-unit, or UTF-32 code-point index or length
     signal = explicit non-character result from tolerant character access
-    normalization = explicit NFC/NFD/NFKC/NFKD with malformed input replaced
-    normalization non-starter limit = after decomposition, replace starter plus more than 30 non-starters with U+FFFD
-    compatibility normalization = NFKC/NFKD may discard compatibility distinctions
-
-Comparison
-----------
-
-.. code-block:: text
-
-    default order = decoded code-point order
-    exact comparison = no case folding
     ASCII folding = case-insensitive comparison limited to ASCII letters
     Unicode folding = case-insensitive comparison using Unicode mapping
-    cross-width comparison = decoded comparison without storage conversion
-
-Sensitive UTF-8 Storage
------------------------
-
-.. code-block:: text
-
-    marked allocation = one-way sensitivity metadata shared by every UTF-8 alias
-    same-width derived value = preserves the allocation mark
-    conversion boundary = other widths, encoded bytes, formatting, escaping, and standard text are unmarked
-    comparison = ordinary string comparison without a constant-time guarantee
-    release = complete allocation erased after its final alias is released
 
 Primary Types
 =============
@@ -95,6 +66,7 @@ Collection and Pattern Types
     U❮width❯StringMap, U❮width❯StringHashMap // width-specific ordered and hashed maps
     U❮width❯StringSet, U❮width❯StringHashSet // width-specific ordered and hashed sets
     StringPattern // lightweight decoded-character matcher
+    fuzzy::Matcher, fuzzy::Match, fuzzy::MatchList // ranked decoded-code-point edit-distance matching
     StringTree // dot-separated string-key hierarchy
 
 Document Types

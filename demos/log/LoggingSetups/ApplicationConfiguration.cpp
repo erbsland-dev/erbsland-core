@@ -28,7 +28,7 @@ protected:
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat))
             .enableTraceSection(el::LogTraceSection{"route-search"_el})
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(terminal()));
+            .addWriter(el::LogWriter::createForConsole(terminal()));
         manager.setConfiguration(std::move(configuration));
 
         _log = manager.createStream("guild/routes"_el, el::LogTraceSection{"route-search"_el});

@@ -16,8 +16,8 @@
 #include "../../cterm/Terminal_fwd.hpp"
 #include "../../cterm/TerminalDocumentStyle.hpp"
 #include "../../i18n/DisplayTextMap_fwd.hpp"
-#include "../../log/ConsoleLogWriter_fwd.hpp"
-#include "../../log/LastErrorsLogWriter_fwd.hpp"
+#include "../../log/impl/ConsoleLogWriter_fwd.hpp"
+#include "../../log/impl/LastErrorsLogWriter_fwd.hpp"
 #include "../../log/LogManager_fwd.hpp"
 #include "../../options/Options.hpp"
 #include "../../options/OptionSensitiveTextLocation.hpp"
@@ -113,12 +113,12 @@ public: // accessors
     /// Store the application log manager and its default console writer.
     /// @param manager The lazily created application manager.
     /// @param consoleWriter The console writer retained for cleanup output.
-    virtual void setLogManager(log::LogManagerPtr manager, log::ConsoleLogWriterPtr consoleWriter) noexcept = 0;
+    virtual void setLogManager(log::LogManagerPtr manager, log::impl::ConsoleLogWriterPtr consoleWriter) noexcept = 0;
     /// Access the installed last-errors writer.
-    [[nodiscard]] virtual auto lastErrorsLogWriter() noexcept -> const log::LastErrorsLogWriterPtr & = 0;
+    [[nodiscard]] virtual auto lastErrorsLogWriter() noexcept -> const log::impl::LastErrorsLogWriterPtr & = 0;
     /// Store the installed last-errors writer.
     /// @param writer The persistent retained-error writer, or empty before it is enabled.
-    virtual void setLastErrorsLogWriter(log::LastErrorsLogWriterPtr writer) noexcept = 0;
+    virtual void setLastErrorsLogWriter(log::impl::LastErrorsLogWriterPtr writer) noexcept = 0;
     /// Access the condition for displaying retained errors during cleanup.
     [[nodiscard]] virtual auto lastErrorDumpMode() const noexcept -> LastErrorDumpMode = 0;
     /// Set the condition for displaying retained errors during cleanup.

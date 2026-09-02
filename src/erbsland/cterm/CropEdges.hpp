@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "../bgeo/BlockDirection.hpp"
-#include "../bgeo/BlockRectangle.hpp"
+#include "../block/Direction.hpp"
+#include "../block/Rectangle.hpp"
 
 #include <bitset>
 #include <cstdint>
@@ -37,22 +37,22 @@ public:
     /// Get the raw flags.
     [[nodiscard]] auto flags() const noexcept -> Flags { return _flags; }
     /// Test if a crop edge is set.
-    [[nodiscard]] auto isSet(const bgeo::BlockDirection direction) const noexcept -> bool {
-        if (direction == bgeo::BlockDirection::None) {
+    [[nodiscard]] auto isSet(const block::Direction direction) const noexcept -> bool {
+        if (direction == block::Direction::None) {
             return false;
         }
         return _flags.test(indexFromDirection(direction));
     }
     /// Set a crop edge.
-    void set(const bgeo::BlockDirection direction, bool value = true) noexcept {
-        if (direction == bgeo::BlockDirection::None) {
+    void set(const block::Direction direction, bool value = true) noexcept {
+        if (direction == block::Direction::None) {
             return;
         }
         _flags.set(indexFromDirection(direction), value);
     }
     /// Clear a crop edge.
-    void clear(const bgeo::BlockDirection direction) noexcept {
-        if (direction == bgeo::BlockDirection::None) {
+    void clear(const block::Direction direction) noexcept {
+        if (direction == block::Direction::None) {
             return;
         }
         _flags.reset(indexFromDirection(direction));
@@ -62,57 +62,57 @@ public:
 
 private:
     /// Convert a cardinal direction to its backing flag index.
-    [[nodiscard]] auto indexFromDirection(const bgeo::BlockDirection direction) const noexcept -> std::size_t {
+    [[nodiscard]] auto indexFromDirection(const block::Direction direction) const noexcept -> std::size_t {
         return std::min(static_cast<std::size_t>(direction) - 1, _flags.size());
     }
 
 public: // tools
     /// Test if a frame position in a view rectangle matches a given crop direction.
     /// This function automatically handles the corners of the view rectangle correctly.
-    /// Corner directions, like `bgeo::BlockDirection::NorthEast` are only returned if `bgeo::BlockDirection::North` and
-    /// `bgeo::BlockDirection::East` are set. Otherwise, the corner direction matches the main direction.
-    [[nodiscard]] auto edgeForView(const bgeo::BlockPosition pos, const bgeo::BlockRectangle viewRect) const noexcept
-        -> bgeo::BlockDirection {
+    /// Corner directions, like `block::Direction::NorthEast` are only returned if `block::Direction::North`
+    /// and `block::Direction::East` are set. Otherwise, the corner direction matches the main direction.
+    [[nodiscard]] auto edgeForView(const block::Position pos, const block::Rectangle viewRect) const noexcept
+        -> block::Direction {
         const auto frameDirection = viewRect.frameDirection(pos);
-        if (frameDirection == bgeo::BlockDirection::None) {
-            return bgeo::BlockDirection::None;
+        if (frameDirection == block::Direction::None) {
+            return block::Direction::None;
         }
-        const bool north = frameDirection.contains(bgeo::BlockDirection::North) && isSet(bgeo::BlockDirection::North);
-        const bool east = frameDirection.contains(bgeo::BlockDirection::East) && isSet(bgeo::BlockDirection::East);
-        const bool south = frameDirection.contains(bgeo::BlockDirection::South) && isSet(bgeo::BlockDirection::South);
-        const bool west = frameDirection.contains(bgeo::BlockDirection::West) && isSet(bgeo::BlockDirection::West);
+        const bool north = frameDirection.contains(block::Direction::North) && isSet(block::Direction::North);
+        const bool east = frameDirection.contains(block::Direction::East) && isSet(block::Direction::East);
+        const bool south = frameDirection.contains(block::Direction::South) && isSet(block::Direction::South);
+        const bool west = frameDirection.contains(block::Direction::West) && isSet(block::Direction::West);
 
         if (north && east) {
-            return bgeo::BlockDirection::NorthEast;
+            return block::Direction::NorthEast;
         }
         if (south && east) {
-            return bgeo::BlockDirection::SouthEast;
+            return block::Direction::SouthEast;
         }
         if (south && west) {
-            return bgeo::BlockDirection::SouthWest;
+            return block::Direction::SouthWest;
         }
         if (north && west) {
-            return bgeo::BlockDirection::NorthWest;
+            return block::Direction::NorthWest;
         }
         if (north) {
-            return bgeo::BlockDirection::North;
+            return block::Direction::North;
         }
         if (east) {
-            return bgeo::BlockDirection::East;
+            return block::Direction::East;
         }
         if (south) {
-            return bgeo::BlockDirection::South;
+            return block::Direction::South;
         }
         if (west) {
-            return bgeo::BlockDirection::West;
+            return block::Direction::West;
         }
-        return bgeo::BlockDirection::None;
+        return block::Direction::None;
     }
 
     /// Create a crop edge instance for the given view/content situation.
     /// @param viewRect The view rectangle.
     /// @param contentRect The content rectangle.
-    [[nodiscard]] static auto fromView(const bgeo::BlockRectangle viewRect, const bgeo::BlockRectangle contentRect)
+    [[nodiscard]] static auto fromView(const block::Rectangle viewRect, const block::Rectangle contentRect)
         -> CropEdges {
         CropEdges result;
         const bool north = viewRect.y1() > contentRect.y1();
@@ -123,14 +123,14 @@ public: // tools
         const bool northWest = north && west;
         const bool southEast = south && east;
         const bool southWest = south && west;
-        result.set(bgeo::BlockDirection::North, north);
-        result.set(bgeo::BlockDirection::East, east);
-        result.set(bgeo::BlockDirection::South, south);
-        result.set(bgeo::BlockDirection::West, west);
-        result.set(bgeo::BlockDirection::NorthEast, northEast);
-        result.set(bgeo::BlockDirection::NorthWest, northWest);
-        result.set(bgeo::BlockDirection::SouthEast, southEast);
-        result.set(bgeo::BlockDirection::SouthWest, southWest);
+        result.set(block::Direction::North, north);
+        result.set(block::Direction::East, east);
+        result.set(block::Direction::South, south);
+        result.set(block::Direction::West, west);
+        result.set(block::Direction::NorthEast, northEast);
+        result.set(block::Direction::NorthWest, northWest);
+        result.set(block::Direction::SouthEast, southEast);
+        result.set(block::Direction::SouthWest, southWest);
         return result;
     }
 

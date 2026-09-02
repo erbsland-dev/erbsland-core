@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsEnvironmentVariableBackend.hpp"
 
+#include "WindowsErrorContext.hpp"
+
 #include "../PlatformError.hpp"
-#include "../WindowsErrorContext.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../text/impl/PlatformU16StringAccess.hpp"

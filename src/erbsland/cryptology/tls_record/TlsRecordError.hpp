@@ -11,7 +11,7 @@ namespace erbsland::cryptology {
 /// A categorized failure from TLS 1.3 record protection or deprotection.
 /// Categories preserve the RFC 8446 alert distinction required by sections 5 and 6 without coupling cryptology to
 /// network alert serialization.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsRecordError final : public err::RuntimeError {
 public:

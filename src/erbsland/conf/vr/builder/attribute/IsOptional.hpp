@@ -12,7 +12,7 @@ public:
     /// Set whether a rule is optional.
     /// @param isOptional `true` to mark the rule optional.
     explicit IsOptional(const bool isOptional = true) : _isOptional{isOptional} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     bool _isOptional{true};
 };
 

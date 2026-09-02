@@ -4,7 +4,6 @@
 
 #include "Attribute.hpp"
 
-#include "../../../impl/vr/VersionMask_fwd.hpp"
 #include "../../../Integer.hpp"
 
 #include <vector>
@@ -30,12 +29,7 @@ public:
     explicit ConfVersion(const Integer version, const bool isNegated = false) :
         _versions{version}, _isNegated{isNegated} {}
 
-    void operator()(Rule &rule) override;
-
-    /// Convert a list of configuration versions into a validation bit mask.
-    /// @param versions The configuration versions to convert.
-    /// @return The corresponding version mask.
-    [[nodiscard]] static auto toVersionMask(const std::vector<Integer> &versions) -> impl::VersionMask;
+    void apply(RuleDefinition &rule) const override;
 
     std::vector<Integer> _versions;
     bool _isNegated{false};

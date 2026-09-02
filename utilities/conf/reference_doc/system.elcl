@@ -1,0 +1,7 @@
+# Reference-document groups for the system domain.
+
+------------*[ Reference Groups ]
+Page        : "system/system_services.rst"
+Title       : "System Services"
+Header Globs:
+    * "system/*.hpp"

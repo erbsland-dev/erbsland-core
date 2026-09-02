@@ -10,7 +10,7 @@
 namespace demo {
 
 void BitmapShowcaseApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{68}, BlockCoordinate{20}});
+    _updateSettings.setMinimumSize(Size{Coordinate{68}, Coordinate{20}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -34,33 +34,24 @@ void BitmapShowcaseApp::onKey(const Key &key) {
 
 void BitmapShowcaseApp::onRenderToBuffer() {
     _buffer.fill(Block{U' ', bg::Black});
-    const auto outerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{_buffer.size().height()}};
-    const auto titleRect = BlockRectangle{
-        BlockCoordinate{2}, BlockCoordinate{1}, BlockCoordinate{_buffer.size().width() - 4}, BlockCoordinate{1}};
-    const auto contentRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{3},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{_buffer.size().height() - 7}};
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().height() - 3},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{1}};
-    auto selectorWidth = std::clamp(contentRect.width() / 3, BlockCoordinate{22}, BlockCoordinate{30});
+    const auto outerRect = Rectangle{
+        Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{_buffer.size().height()}};
+    const auto titleRect =
+        Rectangle{Coordinate{2}, Coordinate{1}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
+    const auto contentRect = Rectangle{
+        Coordinate{2}, Coordinate{3}, Coordinate{_buffer.size().width() - 4}, Coordinate{_buffer.size().height() - 7}};
+    const auto footerRect = Rectangle{
+        Coordinate{2}, Coordinate{_buffer.size().height() - 3}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
+    auto selectorWidth = std::clamp(contentRect.width() / 3, Coordinate{22}, Coordinate{30});
     if (contentRect.width() - selectorWidth - 2 < 36) {
-        selectorWidth = std::max(BlockCoordinate{18}, contentRect.width() / 4);
+        selectorWidth = std::max(Coordinate{18}, contentRect.width() / 4);
     }
-    const auto selectorRect = BlockRectangle{
-        BlockCoordinate{contentRect.x1()},
-        BlockCoordinate{contentRect.y1()},
-        BlockCoordinate{selectorWidth},
-        BlockCoordinate{contentRect.height()}};
-    const auto previewRect = BlockRectangle{
+    const auto selectorRect = Rectangle{
+        Coordinate{contentRect.x1()},
+        Coordinate{contentRect.y1()},
+        Coordinate{selectorWidth},
+        Coordinate{contentRect.height()}};
+    const auto previewRect = Rectangle{
         selectorRect.x2() + 2, contentRect.y1(), contentRect.x2() - selectorRect.x2() - 2, contentRect.height()};
 
     _buffer.drawFrame(outerRect, FrameStyle::LightWithRoundedCorners);
@@ -74,15 +65,14 @@ void BitmapShowcaseApp::onRenderToBuffer() {
     drawFooter(footerRect);
 }
 
-void BitmapShowcaseApp::drawSelector(const BlockRectangle rect) {
+void BitmapShowcaseApp::drawSelector(const Rectangle rect) {
     const auto count = static_cast<int>(variantCount(_pageIndex));
     if (count <= 0 || rect.height() <= 2) {
         return;
     }
     const auto selected = static_cast<int>(selectedVariantIndex());
-    const auto rowStride = rect.height() >= count * 2 + 2 ? BlockCoordinate{2} : BlockCoordinate{1};
-    const auto visibleCount =
-        static_cast<int>(std::max(BlockCoordinate{1}, (rect.height() - 1) / rowStride).toRawValue());
+    const auto rowStride = rect.height() >= count * 2 + 2 ? Coordinate{2} : Coordinate{1};
+    const auto visibleCount = static_cast<int>(std::max(Coordinate{1}, (rect.height() - 1) / rowStride).toRawValue());
     auto firstVisible = std::max(0, selected - visibleCount / 2);
     firstVisible = std::min(firstVisible, std::max(0, count - visibleCount));
 
@@ -93,8 +83,7 @@ void BitmapShowcaseApp::drawSelector(const BlockRectangle rect) {
         }
         const auto itemIndexAsSize = static_cast<std::size_t>(itemIndex);
         const auto y = rect.y1() + visibleIndex * rowStride;
-        const auto lineRect = BlockRectangle{
-            BlockCoordinate{rect.x1()}, BlockCoordinate{y}, BlockCoordinate{rect.width()}, BlockCoordinate{1}};
+        const auto lineRect = Rectangle{Coordinate{rect.x1()}, Coordinate{y}, Coordinate{rect.width()}, Coordinate{1}};
         const auto isSelected = itemIndex == selected;
         if (isSelected) {
             _buffer.fill(lineRect, Block{U' ', bg::BrightBlack});
@@ -109,7 +98,7 @@ void BitmapShowcaseApp::drawSelector(const BlockRectangle rect) {
     }
 }
 
-void BitmapShowcaseApp::drawPreview(const BlockRectangle rect) {
+void BitmapShowcaseApp::drawPreview(const Rectangle rect) {
     switch (_pageIndex) {
     case 0:
         drawScaleModeVariant(rect, selectedVariantIndex());
@@ -127,7 +116,7 @@ void BitmapShowcaseApp::drawPreview(const BlockRectangle rect) {
     }
 }
 
-void BitmapShowcaseApp::drawScaleModeVariant(const BlockRectangle rect, const std::size_t variantIndex) {
+void BitmapShowcaseApp::drawScaleModeVariant(const Rectangle rect, const std::size_t variantIndex) {
 
     static constexpr auto cPanelColors = std::array<Color, 4>{
         Color{fg::BrightWhite, bg::BrightBlack},
@@ -147,16 +136,13 @@ void BitmapShowcaseApp::drawScaleModeVariant(const BlockRectangle rect, const st
 
     const auto panelColor = cPanelColors[std::min(variantIndex, cPanelColors.size() - 1)];
     drawPreviewPanel(rect, variantTitle(_pageIndex, variantIndex), panelColor);
-    const auto demoRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 3},
-        BlockCoordinate{rect.y1() + 2},
-        BlockCoordinate{rect.width() - 6},
-        BlockCoordinate{rect.height() - 7}};
-    const auto descriptionRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 2},
-        BlockCoordinate{rect.y2() - 3},
-        BlockCoordinate{rect.width() - 4},
-        BlockCoordinate{2}};
+    const auto demoRect = Rectangle{
+        Coordinate{rect.x1() + 3},
+        Coordinate{rect.y1() + 2},
+        Coordinate{rect.width() - 6},
+        Coordinate{rect.height() - 7}};
+    const auto descriptionRect =
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y2() - 3}, Coordinate{rect.width() - 4}, Coordinate{2}};
 
     switch (variantIndex) {
     case 0: {
@@ -188,7 +174,7 @@ void BitmapShowcaseApp::drawScaleModeVariant(const BlockRectangle rect, const st
         cDescriptions[std::min(variantIndex, cDescriptions.size() - 1)], descriptionRect, Alignment::Center);
 }
 
-void BitmapShowcaseApp::drawColorModeVariant(const BlockRectangle rect, const std::size_t variantIndex) {
+void BitmapShowcaseApp::drawColorModeVariant(const Rectangle rect, const std::size_t variantIndex) {
 
     static constexpr auto cModes = std::array<BitmapColorMode, 5>{
         BitmapColorMode::OneColor,
@@ -206,16 +192,13 @@ void BitmapShowcaseApp::drawColorModeVariant(const BlockRectangle rect, const st
     };
 
     drawPreviewPanel(rect, variantTitle(_pageIndex, variantIndex), Color{fg::BrightWhite, bg::BrightBlack});
-    const auto demoRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 3},
-        BlockCoordinate{rect.y1() + 2},
-        BlockCoordinate{rect.width() - 6},
-        BlockCoordinate{rect.height() - 7}};
-    const auto descriptionRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 2},
-        BlockCoordinate{rect.y2() - 3},
-        BlockCoordinate{rect.width() - 4},
-        BlockCoordinate{2}};
+    const auto demoRect = Rectangle{
+        Coordinate{rect.x1() + 3},
+        Coordinate{rect.y1() + 2},
+        Coordinate{rect.width() - 6},
+        Coordinate{rect.height() - 7}};
+    const auto descriptionRect =
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y2() - 3}, Coordinate{rect.width() - 4}, Coordinate{2}};
 
     auto options = BitmapDrawOptions{};
     options.setColorSequence(rainbowColors(), cModes[std::min(variantIndex, cModes.size() - 1)]);
@@ -226,7 +209,7 @@ void BitmapShowcaseApp::drawColorModeVariant(const BlockRectangle rect, const st
         cDescriptions[std::min(variantIndex, cDescriptions.size() - 1)], descriptionRect, Alignment::Center);
 }
 
-void BitmapShowcaseApp::drawLayoutVariant(const BlockRectangle rect, const std::size_t variantIndex) {
+void BitmapShowcaseApp::drawLayoutVariant(const Rectangle rect, const std::size_t variantIndex) {
 
     static constexpr auto cAlignments = std::array<Alignment, 5>{
         Alignment::TopLeft,
@@ -244,17 +227,14 @@ void BitmapShowcaseApp::drawLayoutVariant(const BlockRectangle rect, const std::
     };
 
     drawPreviewPanel(rect, variantTitle(_pageIndex, variantIndex), Color{fg::BrightWhite, bg::BrightBlack});
-    const auto frameRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 6},
-        BlockCoordinate{rect.y1() + 3},
-        BlockCoordinate{rect.width() - 12},
-        BlockCoordinate{rect.height() - 10}};
-    const auto viewport = frameRect.insetBy(BlockMargins{1});
-    const auto descriptionRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 2},
-        BlockCoordinate{rect.y2() - 3},
-        BlockCoordinate{rect.width() - 4},
-        BlockCoordinate{2}};
+    const auto frameRect = Rectangle{
+        Coordinate{rect.x1() + 6},
+        Coordinate{rect.y1() + 3},
+        Coordinate{rect.width() - 12},
+        Coordinate{rect.height() - 10}};
+    const auto viewport = frameRect.insetBy(Margins{1});
+    const auto descriptionRect =
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y2() - 3}, Coordinate{rect.width() - 4}, Coordinate{2}};
     _buffer.drawFrame(frameRect, FrameStyle::Double, Color{fg::BrightCyan, bg::BrightBlack});
 
     auto options = BitmapDrawOptions{};
@@ -280,7 +260,7 @@ void BitmapShowcaseApp::drawLayoutVariant(const BlockRectangle rect, const std::
         cDescriptions[std::min(variantIndex, cDescriptions.size() - 1)], descriptionRect, Alignment::Center);
 }
 
-void BitmapShowcaseApp::drawStyleVariant(const BlockRectangle rect, const std::size_t variantIndex) {
+void BitmapShowcaseApp::drawStyleVariant(const Rectangle rect, const std::size_t variantIndex) {
 
     static constexpr auto cPanelColors = std::array<Color, 5>{
         Color{fg::BrightWhite, bg::Blue},
@@ -303,16 +283,13 @@ void BitmapShowcaseApp::drawStyleVariant(const BlockRectangle rect, const std::s
 
     const auto panelColor = cPanelColors[std::min(variantIndex, cPanelColors.size() - 1)];
     drawPreviewPanel(rect, variantTitle(_pageIndex, variantIndex), panelColor);
-    const auto demoRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 3},
-        BlockCoordinate{rect.y1() + 2},
-        BlockCoordinate{rect.width() - 6},
-        BlockCoordinate{rect.height() - 7}};
-    const auto descriptionRect = BlockRectangle{
-        BlockCoordinate{rect.x1() + 2},
-        BlockCoordinate{rect.y2() - 3},
-        BlockCoordinate{rect.width() - 4},
-        BlockCoordinate{2}};
+    const auto demoRect = Rectangle{
+        Coordinate{rect.x1() + 3},
+        Coordinate{rect.y1() + 2},
+        Coordinate{rect.width() - 6},
+        Coordinate{rect.height() - 7}};
+    const auto descriptionRect =
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y2() - 3}, Coordinate{rect.width() - 4}, Coordinate{2}};
 
     switch (variantIndex) {
     case 0: {
@@ -343,15 +320,12 @@ void BitmapShowcaseApp::drawStyleVariant(const BlockRectangle rect, const std::s
     }
     case 4:
     default: {
-        const auto viewport = demoRect.insetBy(BlockMargins{2, 1});
+        const auto viewport = demoRect.insetBy(Margins{2, 1});
         _buffer.drawFrame(viewport, FrameStyle::Light, Color{fg::BrightBlack, bg::BrightBlack});
         for (auto x = viewport.x1() + 4; x < viewport.x2() - 4; x += 5) {
             _buffer.drawFrame(
-                BlockRectangle{
-                    BlockCoordinate{x},
-                    BlockCoordinate{viewport.y1() + 1},
-                    BlockCoordinate{4},
-                    BlockCoordinate{viewport.height() - 2}},
+                Rectangle{
+                    Coordinate{x}, Coordinate{viewport.y1() + 1}, Coordinate{4}, Coordinate{viewport.height() - 2}},
                 FrameStyle::Light);
         }
         auto options = BitmapDrawOptions{Color{fg::BrightCyan, bg::BrightBlack}};

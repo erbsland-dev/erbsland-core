@@ -211,7 +211,7 @@ auto U8StringEditor::truncated(const CpLength maximumWidth, const TruncateMode m
         U8StringTransformTools{dataView(), isSensitive()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
-auto U8StringEditor::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
+auto U8StringEditor::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
     -> U8StringEditor {
     return U8StringEditor{U8StringTransformTools{dataView(), isSensitive()}.aligned(length, alignment, fill)};
 }

@@ -13,7 +13,7 @@
 namespace erbsland::system {
 
 /// Provides portable access to process environment variables.
-/// @seedoc{/reference/system/environment_variables}
+/// @seedoc{/reference/system/system_services}
 /// @tested{EnvironmentVariablesTest}
 class EnvironmentVariables final {
 public:

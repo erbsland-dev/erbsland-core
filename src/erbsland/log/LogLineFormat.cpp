@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "LogLineFormat.hpp"
 
-#include "LogLinePart.hpp"
+#include "line/LogLinePart.hpp"
 
 #include "../err/ParameterError.hpp"
 #include "../text/AnyString.hpp"

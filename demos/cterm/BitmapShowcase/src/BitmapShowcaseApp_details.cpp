@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace demo {
-void BitmapShowcaseApp::drawPreviewPanel(const BlockRectangle rect, const el::String title, const Color fillColor) {
+void BitmapShowcaseApp::drawPreviewPanel(const Rectangle rect, const el::String title, const Color fillColor) {
 
     if (rect.width() <= 4 || rect.height() <= 4) {
         return;
@@ -16,16 +16,12 @@ void BitmapShowcaseApp::drawPreviewPanel(const BlockRectangle rect, const el::St
     _buffer.drawFilledFrame(rect, FrameStyle::LightWithRoundedCorners, Block{U' ', fillColor});
     _buffer.drawBlockText(
         title,
-        BlockRectangle{
-            BlockCoordinate{rect.x1() + 2},
-            BlockCoordinate{rect.y1()},
-            BlockCoordinate{rect.width() - 4},
-            BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y1()}, Coordinate{rect.width() - 4}, Coordinate{1}},
         Alignment::Center,
         Color{fg::BrightWhite, fillColor.bg()});
 }
 
-void BitmapShowcaseApp::drawFooter(const BlockRectangle rect) {
+void BitmapShowcaseApp::drawFooter(const Rectangle rect) {
     _buffer.fill(rect, Block{U' ', bg::BrightBlack});
     auto footer = BlockText{footerText(), rect, Alignment::CenterLeft};
     _buffer.drawBlockText(footer);

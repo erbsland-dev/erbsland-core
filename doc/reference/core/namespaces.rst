@@ -17,6 +17,8 @@ The library organizes its API into the following namespaces:
 *   ``math`` – Integer math, saturating arithmetic, and type traits.
 *   ``mem`` – Memory management, reference counting, and storage types.
 *   ``stream`` – Stream interfaces for byte and text I/O, including ``stream::io`` standard-stream helpers.
+*   ``system`` – Portable process, operating-system, environment, and subprocess facilities; machine-wide queries are
+    grouped in ``system::info``.
 *   ``text`` – String types, character handling, and Unicode support.
 *   ``time`` – Time, date and duration types.
 *   ``unit`` – Unit-tagged integer types for indexes, lengths, offsets, and ranges.

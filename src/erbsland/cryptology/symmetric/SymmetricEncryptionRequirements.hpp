@@ -13,7 +13,7 @@ namespace erbsland::cryptology {
 
 /// Requirements for selecting a symmetric encryption type.
 /// The defaults request an accepted authenticated type with at least standard security.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{SymmetricEncryptionTypeTest}
 struct SymmetricEncryptionRequirements final {
     CryptographicStatus requiredStatus{CryptographicStatus::Acceptable};    ///< The exact required status.

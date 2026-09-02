@@ -9,18 +9,19 @@
 #include "impl/BlockTextPainter.hpp"
 #include "impl/FramePainter.hpp"
 
-#include "../bgeo/BlockAlignedSource.hpp"
+#include "../block/AlignedSource.hpp"
 #include "../err/ParameterError.hpp"
 
 namespace erbsland::cterm {
 
 using namespace text::literals;
-using namespace bgeo;
+using namespace block;
+using namespace geometry;
 using impl::BitmapPainter;
 using impl::BlockTextPainter;
 using impl::FramePainter;
 
-void WritableBuffer::resize(const BlockSize newSize, const BufferResizeMode mode, const Block fillChar) {
+void WritableBuffer::resize(const Size newSize, const BufferResizeMode mode, const Block fillChar) {
     if (size() == newSize) {
         return;
     }
@@ -34,7 +35,7 @@ void WritableBuffer::resize(const BlockSize newSize, const BufferResizeMode mode
 }
 
 void WritableBuffer::set(
-    const BlockPosition pos, const Block &block, const BlockCombinationStylePtr &combinationStyle) noexcept {
+    const Position pos, const Block &block, const BlockCombinationStylePtr &combinationStyle) noexcept {
     if (!rect().contains(pos)) {
         return;
     }
@@ -45,7 +46,7 @@ void WritableBuffer::set(
     if (combinationStyle->isSurroundingAware()) {
         std::array<const Block *, 9> surroundingBlocks{};
         for (std::size_t i = 0; i < 9; ++i) {
-            const auto surroundPosition = pos + BlockPosition{BlockCoordinate{i} % 3 - 1, BlockCoordinate{i} / 3 - 1};
+            const auto surroundPosition = pos + Position{Coordinate{i} % 3 - 1, Coordinate{i} / 3 - 1};
             if (rect().contains(surroundPosition)) {
                 surroundingBlocks[i] = &get(surroundPosition);
             }
@@ -56,7 +57,7 @@ void WritableBuffer::set(
     }
 }
 
-void WritableBuffer::set(BlockPosition pos, const BlockString &str) noexcept {
+void WritableBuffer::set(Position pos, const BlockString &str) noexcept {
     if (str.isEmpty()) {
         return;
     }
@@ -64,14 +65,14 @@ void WritableBuffer::set(BlockPosition pos, const BlockString &str) noexcept {
     for (const auto character : str) {
         if (character == U'\n') {
             pos.setX(x);
-            pos += BlockPosition{0, 1};
+            pos += Position{0, 1};
             continue;
         }
         if (character.displayWidth() == 0) {
             continue;
         }
         set(pos, character);
-        pos += BlockPosition{character.displayWidth(), 0};
+        pos += Position{character.displayWidth(), 0};
     }
 }
 
@@ -80,7 +81,7 @@ void WritableBuffer::setFrom(const ReadableBuffer &other, const Block fillChar) 
 }
 
 void WritableBuffer::setFromImpl(const ReadableBuffer &other, const Block fillChar) {
-    rect().forEach([&](const BlockPosition pos) -> void {
+    rect().forEach([&](const Position pos) -> void {
         if (other.rect().contains(pos)) {
             set(pos, other.get(pos));
         } else {
@@ -95,21 +96,21 @@ void WritableBuffer::setAndResizeFrom(const ReadableBuffer &other) {
 }
 
 void WritableBuffer::fill(const Block &fillBlock) noexcept {
-    rect().forEach([&, this](const BlockPosition pos) -> void { set(pos, fillBlock); });
+    rect().forEach([&, this](const Position pos) -> void { set(pos, fillBlock); });
 }
 
 void WritableBuffer::fill(
-    const BlockRectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
+    const Rectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
     fillImpl(rect, fillBlock, combinationStyle);
 }
 
 void WritableBuffer::fillImpl(
-    const BlockRectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
-    rect.forEach([&, this](const BlockPosition pos) -> void { set(pos, fillBlock, combinationStyle); });
+    const Rectangle rect, const Block &fillBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
+    rect.forEach([&, this](const Position pos) -> void { set(pos, fillBlock, combinationStyle); });
 }
 
 void WritableBuffer::fill(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const Color baseColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -117,7 +118,7 @@ void WritableBuffer::fill(
 }
 
 void WritableBuffer::fill(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const BlockStyle baseStyle,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -125,25 +126,25 @@ void WritableBuffer::fill(
 }
 
 void WritableBuffer::fillImpl(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const BlockStyle baseStyle,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
     if (style == nullptr) {
         return;
     }
-    rect.forEach([&, this](const BlockPosition pos) -> void {
+    rect.forEach([&, this](const Position pos) -> void {
         set(pos, style->block(rect, pos).withBase(baseStyle), combinationStyle);
     });
 }
 
 void WritableBuffer::drawFrame(
-    const BlockRectangle rect, const Block &frameBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
+    const Rectangle rect, const Block &frameBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
     drawFrameImpl(rect, frameBlock, std::nullopt, combinationStyle);
 }
 
 void WritableBuffer::drawFrameImpl(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Block &frameBlock,
     const std::optional<Block> fillBlock,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -155,7 +156,7 @@ void WritableBuffer::drawFrameImpl(
 }
 
 void WritableBuffer::drawFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Block16StylePtr &frameStyle,
     const BlockCombinationStylePtr &combinationStyle,
     const Color frameColor) noexcept {
@@ -163,7 +164,7 @@ void WritableBuffer::drawFrame(
 }
 
 void WritableBuffer::drawFrameImpl(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Block16StylePtr &frameStyle,
     const std::optional<Block> fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -176,7 +177,7 @@ void WritableBuffer::drawFrameImpl(
 }
 
 void WritableBuffer::drawFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const Color frameColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -184,7 +185,7 @@ void WritableBuffer::drawFrame(
 }
 
 void WritableBuffer::drawFrameImpl(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const std::optional<Block> fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -196,8 +197,7 @@ void WritableBuffer::drawFrameImpl(
     FramePainter{*this}.drawFrame(rect, style, frameColor, combinationStyle);
 }
 
-void WritableBuffer::drawFrame(
-    const BlockRectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
+void WritableBuffer::drawFrame(const Rectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFrameImpl(rect, tile9Style, std::nullopt, BlockCombinationStyle::commonBoxFrame(), frameColor);
         return;
@@ -207,28 +207,26 @@ void WritableBuffer::drawFrame(
     }
 }
 
-void WritableBuffer::drawFrame(
-    BlockRectangle rect, const FrameDrawOptions &options, std::size_t animationCycle) noexcept {
+void WritableBuffer::drawFrame(Rectangle rect, const FrameDrawOptions &options, std::size_t animationCycle) noexcept {
     drawFrameImpl(rect, options, animationCycle);
 }
 
 void WritableBuffer::drawFrameImpl(
-    const BlockRectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
+    const Rectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
     FramePainter{*this}.drawFrame(rect, options, animationCycle);
 }
 
-void WritableBuffer::drawGridLayout(
-    const BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept {
+void WritableBuffer::drawGridLayout(const Position pos, const GridLayout &layout, const FrameBorder &border) noexcept {
     drawGridLayoutImpl(pos, layout, border);
 }
 
 void WritableBuffer::drawGridLayoutImpl(
-    const BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept {
+    const Position pos, const GridLayout &layout, const FrameBorder &border) noexcept {
     FramePainter{*this}.drawGridLayout(pos, layout, border);
 }
 
 void WritableBuffer::drawFilledFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Block &frameBlock,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -236,7 +234,7 @@ void WritableBuffer::drawFilledFrame(
 }
 
 void WritableBuffer::drawFilledFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Block16StylePtr &frameStyle,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -245,7 +243,7 @@ void WritableBuffer::drawFilledFrame(
 }
 
 void WritableBuffer::drawFilledFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -254,7 +252,7 @@ void WritableBuffer::drawFilledFrame(
 }
 
 void WritableBuffer::drawFilledFrame(
-    const BlockRectangle rect, const FrameStyle frameStyle, const Block &fillBlock, const Color frameColor) noexcept {
+    const Rectangle rect, const FrameStyle frameStyle, const Block &fillBlock, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFrameImpl(rect, tile9Style, fillBlock, BlockCombinationStyle::commonBoxFrame(), frameColor);
         return;
@@ -264,7 +262,7 @@ void WritableBuffer::drawFilledFrame(
     }
 }
 
-void WritableBuffer::drawBlockText(BlockPosition pos, const BlockString &str) {
+void WritableBuffer::drawBlockText(Position pos, const BlockString &str) {
     BlockTextPainter{*this}.drawBlockText(pos, str);
 }
 
@@ -278,7 +276,7 @@ void WritableBuffer::drawBlockTextImpl(const BlockText &text, const std::size_t 
 
 void WritableBuffer::drawBlockText(
     const text::String &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -287,7 +285,7 @@ void WritableBuffer::drawBlockText(
 
 void WritableBuffer::drawBlockText(
     const text::U32String &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -296,7 +294,7 @@ void WritableBuffer::drawBlockText(
 
 void WritableBuffer::drawBlockText(
     const BlockString &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -304,21 +302,18 @@ void WritableBuffer::drawBlockText(
 }
 
 void WritableBuffer::drawBlockText(
-    const BlockString &text,
-    const BlockRectangle rect,
-    const BlockTextOptions &options,
-    const std::size_t animationCycle) {
+    const BlockString &text, const Rectangle rect, const BlockTextOptions &options, const std::size_t animationCycle) {
     drawBlockTextImpl(text, rect, options, animationCycle);
 }
 
 auto WritableBuffer::blockTextHeightForWidth(
-    const BlockString &text, const BlockCoordinate width, const BlockTextOptions &options) noexcept -> BlockCoordinate {
+    const BlockString &text, const Coordinate width, const BlockTextOptions &options) noexcept -> Coordinate {
     return text.wrappedBlockTextHeight(width, options);
 }
 
 void WritableBuffer::drawBlockTextImpl(
     const BlockString &text,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BlockStyle style,
     const std::size_t animationCycle) {
@@ -326,16 +321,13 @@ void WritableBuffer::drawBlockTextImpl(
 }
 
 void WritableBuffer::drawBlockTextImpl(
-    const BlockString &text,
-    const BlockRectangle rect,
-    const BlockTextOptions &options,
-    const std::size_t animationCycle) {
+    const BlockString &text, const Rectangle rect, const BlockTextOptions &options, const std::size_t animationCycle) {
     BlockTextPainter{*this}.drawBlockText(text, rect, options, animationCycle);
 }
 
 void WritableBuffer::drawBitmap(
     const Bitmap &bitmap,
-    const BlockPosition pos,
+    const Position pos,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {
     drawBitmapImpl(bitmap, pos, options, animationCycle);
@@ -343,7 +335,7 @@ void WritableBuffer::drawBitmap(
 
 void WritableBuffer::drawBitmapImpl(
     const Bitmap &bitmap,
-    const BlockPosition pos,
+    const Position pos,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {
     BitmapPainter{*this}.drawBitmap(bitmap, pos, options, animationCycle);
@@ -351,19 +343,18 @@ void WritableBuffer::drawBitmapImpl(
 
 void WritableBuffer::drawBitmap(
     const Bitmap &bitmap,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {
     drawBitmapImpl(bitmap, rect, alignment, options, animationCycle);
 }
 
-void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BlockPosition targetPos) {
+void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const Position targetPos) {
     drawBuffer(buffer, BufferDrawOptions{targetPos});
 }
 
-void WritableBuffer::drawBuffer(
-    const ReadableBuffer &buffer, const BlockRectangle targetRect, const Alignment alignment) {
+void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const Rectangle targetRect, const Alignment alignment) {
     if (buffer.size().area() == 0 || targetRect.width() <= 0 || targetRect.height() <= 0) {
         return;
     }
@@ -382,7 +373,7 @@ void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOp
     if (sourceRect.width() <= 0 || sourceRect.height() <= 0) {
         return;
     }
-    auto targetRect = options.isTargetPosition() ? BlockRectangle{options.targetRect().topLeft(), sourceRect.size()}
+    auto targetRect = options.isTargetPosition() ? Rectangle{options.targetRect().topLeft(), sourceRect.size()}
                                                  : options.targetRect();
     targetRect.setSize(targetRect.size().limitedWith(sourceRect.size()));
     if (targetRect.width() <= 0 || targetRect.height() <= 0) {
@@ -395,7 +386,7 @@ void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOp
     const auto clippedOffset = visibleTargetRect.topLeft() - targetRect.topLeft();
     const auto sourceStartPos = sourceRect.topLeft() + clippedOffset;
     const auto &combinationStyle = options.combinationStyle();
-    visibleTargetRect.forEach([&](const BlockPosition targetPos) -> void {
+    visibleTargetRect.forEach([&](const Position targetPos) -> void {
         auto sourceBlock = source->get(sourceStartPos + targetPos - visibleTargetRect.topLeft());
         if (combinationStyle != nullptr) {
             set(targetPos, sourceBlock, combinationStyle);
@@ -410,7 +401,7 @@ void WritableBuffer::drawBuffer(const ReadableBuffer &buffer, const BufferDrawOp
 
 void WritableBuffer::drawBitmapImpl(
     const Bitmap &bitmap,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Alignment alignment,
     const BitmapDrawOptions &options,
     const std::size_t animationCycle) noexcept {

@@ -1,0 +1,7 @@
+# Reference-document groups for the util domain.
+
+------------*[ Reference Groups ]
+Page        : "util/utilities.rst"
+Title       : "General Utilities"
+Header Globs:
+    * "util/*.hpp"

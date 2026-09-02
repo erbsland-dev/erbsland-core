@@ -5,9 +5,6 @@ Color Terminal Domain API Guidelines
 Core Semantics
 ==============
 
-Cell Model
-----------
-
 .. code-block:: text
 
     screen = rectangular grid of styled terminal cells
@@ -15,27 +12,10 @@ Cell Model
     display width = zero-width continuation, ordinary one-cell block, or leading cell of a two-cell block
     inherited color = defer foreground or background to the destination
     reset color = restore the terminal default
-
-Buffer Model
-------------
-
-.. code-block:: text
-
-    readable buffer = rectangular cell source in terminal-cell coordinates
-    writable buffer = readable buffer with mutation and drawing operations
+    buffer = rectangular cell source or drawing target in terminal-cell coordinates
     view = translated or clipped access to another buffer without copying its cells
-    cursor buffer = retained buffer with terminal-style streaming writes and overflow behavior
-
-Terminal Model
---------------
-
-.. code-block:: text
-
     direct output = immediate cursor-oriented writes
     screen update = complete-buffer refresh using clear, overwrite, or differential rendering
-    session = scoped ownership of terminal setup and restoration
-    key input = decoded key, text, and modifier information
-    secret input = protected line editing whose committed text remains marked as sensitive
 
 Primary Types
 =============
@@ -179,7 +159,7 @@ Terminal Patterns
     T(backend[, size]) // create a terminal using a custom backend
     o.updateScreen(buffer[, settings]) // render a complete retained screen
     o.testScreenSize() // refresh detected drawable dimensions
-    o.size() -> bgeo::BlockSize // inspect drawable dimensions
+    o.size() -> block::Size // inspect drawable dimensions
     o.clearScreen()/flush() // apply immediate terminal output control
     o.input() -> Input& // access the terminal-owned input interface
     o.beginSession() -> TerminalSession // enter scoped terminal control

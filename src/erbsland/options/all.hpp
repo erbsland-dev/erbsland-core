@@ -8,6 +8,7 @@
 #include "Option.hpp"
 #include "OptionCallback.hpp"
 #include "OptionChoice.hpp"
+#include "OptionChoiceEditor.hpp"
 #include "OptionChoices.hpp"
 #include "OptionEditor.hpp"
 #include "OptionError.hpp"

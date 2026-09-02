@@ -267,11 +267,11 @@ void NamedFormatParser::parseWidth() {
 void NamedFormatParser::parseAlignment() {
     const auto value = readIdentifier();
     if (value == "left"_el || value == "l"_el) {
-        layout().alignment = bgeo::AlignmentFlag::Left;
+        layout().alignment = geometry::AlignmentFlag::Left;
     } else if (value == "right"_el || value == "r"_el) {
-        layout().alignment = bgeo::AlignmentFlag::Right;
+        layout().alignment = geometry::AlignmentFlag::Right;
     } else if (value == "center"_el || value == "c"_el) {
-        layout().alignment = bgeo::AlignmentFlag::HCenter;
+        layout().alignment = geometry::AlignmentFlag::HCenter;
     } else {
         throwFormatError("Named alignment value is not supported");
     }

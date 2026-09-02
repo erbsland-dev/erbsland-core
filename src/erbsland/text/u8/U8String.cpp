@@ -352,7 +352,7 @@ auto U8String::truncated(const CpLength maximumWidth, const TruncateMode mode, c
         U8StringTransformTools{dataView(), isSensitive()}.truncated(maximumWidth, mode, ellipsis.dataView())};
 }
 
-auto U8String::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const -> U8String {
+auto U8String::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const -> U8String {
     return U8String{U8StringTransformTools{dataView(), isSensitive()}.aligned(length, alignment, fill)};
 }
 

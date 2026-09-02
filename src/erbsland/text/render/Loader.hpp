@@ -9,7 +9,7 @@ namespace erbsland::text::render {
 
 /// Loads layout sources by logical name.
 /// All methods must be thread-safe.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @notest{Abstract interface; environment and concrete-loader tests cover behavior.}
 class Loader {
 public:

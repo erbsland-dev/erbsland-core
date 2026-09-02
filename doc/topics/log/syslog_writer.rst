@@ -10,8 +10,7 @@
 Sending Logs to Syslog
 **********************
 
-The :cpp:class:`SyslogLogWriter <erbsland::log::SyslogLogWriter>` sends operational records to a syslog collector in RFC
-5424 format.
+The ``LogWriter::createForSyslog()`` sends operational records to a syslog collector in RFC 5424 format.
 Instead of leaving every service's history on the machine that produced it, syslog gives a deployment one place to
 search, retain, alert on, and correlate events from many processes or hosts.
 It is a natural destination for background services and managed installations where operators already depend on a
@@ -31,7 +30,7 @@ Add a Syslog Writer to the Configuration
 ========================================
 
 Create :cpp:class:`SyslogLogWriterOptions <erbsland::log::SyslogLogWriterOptions>`, configure the remote destination and
-RFC fields, and pass the completed value to :cpp:class:`SyslogLogWriter <erbsland::log::SyslogLogWriter>`.
+RFC fields, and pass the completed value to ``LogWriter::createForSyslog()``.
 Then add the shared writer to :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` with a route filter.
 Warnings and errors are often a good first remote route; high-volume information or trace traffic should be enabled only
 after considering collector capacity and outage behavior.
@@ -45,14 +44,14 @@ configuration or contacting ``logs.example``.
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriters.cpp
     :exec: log/logging_topics --demo SyslogWriters
-    :source-sha256: e4f85f810bf8c594dc00687b10302a28c79a3bf9d2d6427be795b95684244d4b
+    :source-sha256: 7e1b0c3f3484a03895aeb133c0886290924eae412a0718dc97d6f6e94cce8186
 
 .. code-block:: cpp
 
     /// A syslog writer sends RFC 5424 messages over UDP, TCP, or TLS.
     ///
     /// The options describe the endpoint, facility, RFC header fields, TLS configuration label, and bounded pending data.
-    /// A route can be assembled without opening a connection; this demo formats a fixed message without network delivery.
+    /// A route can be assembled without opening a connection.
     void syslogWriters() {
         auto options = el::SyslogLogWriterOptions{};
         options.setTransport(el::SyslogTransport::Tls)
@@ -65,31 +64,18 @@ configuration or contacting ``logs.example``.
             .setTlsConfigurationLabel("guild/syslog"_el)
             .setMaximumPendingBytes(el::ByteLength{256U * 1024U});
 
-        // Construct the writer route used by an application configuration.
-        const auto writer = std::make_shared<el::SyslogLogWriter>(options);
         auto configuration = el::LogConfiguration{};
-        configuration.addWriter(writer, el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
+        configuration.addWriter(
+            el::LogWriter::createForSyslog(options),
+            el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
 
-        // Preview a deterministic RFC 5424 message without contacting the configured endpoint.
-        const auto entry = el::LogEntry{
-            1U,
-            el::DateTime{el::Date::fromYearMonthDay(2026, 9, 1), el::Time{el::Hour{7}, el::Minute{45}}},
-            el::LogLevel::Warning,
-            el::LogPath{"guild/route"_el},
-            "Pass closed."_el};
-        const auto line = el::LogLine{std::vector<el::LogLineSegment>{{el::LogLinePart::Message, "Pass closed."_el}}};
-        const auto message = el::SyslogLogWriter::formatMessage(entry, line, options);
-
-        el::io::printLine(message);
-        el::io::printLine("TCP/TLS frame: "_el, el::SyslogLogWriter::frameMessage(message));
+        el::io::printLine("Syslog endpoint: "_el, options.endpoint().toString());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z guild-hall explorer-guild 314 route - Pass closed.
-    TCP/TLS frame: 77 <12>1 2026-09-01T07:45:00Z guild-hall explorer-guild 314 route - Pass cl
-    osed.
+    Syslog endpoint: logs.example:6514
 
 .. erbsland-demo-end::
 
@@ -104,7 +90,8 @@ The default TLS configuration label is ``log/syslog`` even though it is consulte
 
 These defaults are convenient for local C++ configuration, but a production deployment should state its collector and
 identity deliberately.
-After setting the required values, move or copy the options into the writer constructor.
+After setting the required values, pass the options to ``LogWriter::createForSyslog()`` directly inside
+``LogConfiguration::addWriter()``.
 The writer keeps its own snapshot; changing the original object afterward cannot reconfigure an active destination.
 To change syslog behavior, install a new complete log configuration with a newly constructed writer.
 
@@ -139,7 +126,7 @@ It then shows the unframed UDP message beside the framed TCP and TLS forms.
     :function-blocks: syslogTransport
     :function-blocks-sha256: c9dc6a8c857af9f8d7eb8c9495bef75d2ed6f0f70d034f940e20c92c97654a46
     :exec: log/logging_topics --demo SyslogTransport
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
@@ -147,29 +134,31 @@ It then shows the unframed UDP message beside the framed TCP and TLS forms.
         auto udpOptions = el::SyslogLogWriterOptions{};
         udpOptions.setTransport(el::SyslogTransport::Udp)
             .setEndpoint(el::HostEndpoint::fromStringOrThrow("192.0.2.10:514"_el));
-        const auto udpWriter = std::make_shared<el::SyslogLogWriter>(udpOptions);
 
         auto tcpOptions = el::SyslogLogWriterOptions{};
         tcpOptions.setTransport(el::SyslogTransport::Tcp)
             .setEndpoint(el::HostEndpoint::fromStringOrThrow("logs.example:601"_el));
-        const auto tcpWriter = std::make_shared<el::SyslogLogWriter>(tcpOptions);
 
         auto tlsOptions = el::SyslogLogWriterOptions{};
         tlsOptions.setTransport(el::SyslogTransport::Tls)
             .setEndpoint(el::HostEndpoint::fromStringOrThrow("logs.example:6514"_el));
-        const auto tlsWriter = std::make_shared<el::SyslogLogWriter>(tlsOptions);
 
-        el::io::printLine("UDP message : "_el, syslogPreview(udpOptions));
-        el::io::printLine("TCP frame   : "_el, el::SyslogLogWriter::frameMessage(syslogPreview(tcpOptions)));
-        el::io::printLine("TLS frame   : "_el, el::SyslogLogWriter::frameMessage(syslogPreview(tlsOptions)));
+        auto configuration = el::LogConfiguration{};
+        configuration.addWriter(el::LogWriter::createForSyslog(udpOptions))
+            .addWriter(el::LogWriter::createForSyslog(tcpOptions))
+            .addWriter(el::LogWriter::createForSyslog(tlsOptions));
+
+        el::io::printLine("UDP endpoint: "_el, udpOptions.endpoint().toString());
+        el::io::printLine("TCP endpoint: "_el, tcpOptions.endpoint().toString());
+        el::io::printLine("TLS endpoint: "_el, tlsOptions.endpoint().toString());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    UDP message : <12>1 2026-09-01T07:45:00Z - erbsland-core - - - Pass closed.
-    TCP frame   : 61 <12>1 2026-09-01T07:45:00Z - erbsland-core - - - Pass closed.
-    TLS frame   : 61 <12>1 2026-09-01T07:45:00Z - erbsland-core - - - Pass closed.
+    UDP endpoint: 192.0.2.10:514
+    TCP endpoint: logs.example:601
+    TLS endpoint: logs.example:6514
 
 .. erbsland-demo-end::
 
@@ -198,18 +187,20 @@ The following example shows the C++ default and a typical remote TLS endpoint.
     :function-blocks: syslogEndpoint
     :function-blocks-sha256: fa4c719b5da35a3e6f2b6204cd8c845c8c574107b5b178fda73b1d5d67b4f670
     :exec: log/logging_topics --demo SyslogEndpoint
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogEndpoint() {
         auto localOptions = el::SyslogLogWriterOptions{};
-        const auto localWriter = std::make_shared<el::SyslogLogWriter>(localOptions);
 
         auto remoteOptions = el::SyslogLogWriterOptions{};
         remoteOptions.setTransport(el::SyslogTransport::Tls)
             .setEndpoint(el::HostEndpoint::fromStringOrThrow("logs.example:6514"_el));
-        const auto remoteWriter = std::make_shared<el::SyslogLogWriter>(remoteOptions);
+
+        auto configuration = el::LogConfiguration{};
+        configuration.addWriter(el::LogWriter::createForSyslog(localOptions))
+            .addWriter(el::LogWriter::createForSyslog(remoteOptions));
 
         el::io::printLine("Default endpoint: "_el, localOptions.endpoint().toString());
         el::io::printLine("Remote endpoint : "_el, remoteOptions.endpoint().toString());
@@ -245,7 +236,7 @@ The fixed warning in this demo produces priority 12 with facility 1 and priority
     :function-blocks: syslogFacility
     :function-blocks-sha256: 91a93f1d717874201f80626ac62282c7e747f225e7a6b2efd34a5cabd10ccd69
     :exec: log/logging_topics --demo SyslogFacility
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
@@ -255,15 +246,15 @@ The fixed warning in this demo produces priority 12 with facility 1 and priority
         auto localOptions = el::SyslogLogWriterOptions{};
         localOptions.setFacility(16U);
 
-        el::io::printLine("Facility 1 : "_el, syslogPreview(userOptions));
-        el::io::printLine("Facility 16: "_el, syslogPreview(localOptions));
+        el::io::printLine("Facility 1 : "_el, userOptions.facility());
+        el::io::printLine("Facility 16: "_el, localOptions.facility());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    Facility 1 : <12>1 2026-09-01T07:45:00Z - erbsland-core - - - Pass closed.
-    Facility 16: <132>1 2026-09-01T07:45:00Z - erbsland-core - - - Pass closed.
+    Facility 1 : 1
+    Facility 16: 16
 
 .. erbsland-demo-end::
 
@@ -287,20 +278,20 @@ writer.
     :function-blocks: syslogHostName
     :function-blocks-sha256: 540810225e2721a10a11436cca8846eb07c912aefb4f64026e8d97dfc15259e0
     :exec: log/logging_topics --demo SyslogHostName
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogHostName() {
         auto options = el::SyslogLogWriterOptions{};
         options.setHostName("guild-hall"_el);
-        el::io::printLine(syslogPreview(options));
+        el::io::printLine(options.hostName());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z guild-hall erbsland-core - - - Pass closed.
+    guild-hall
 
 .. erbsland-demo-end::
 
@@ -322,20 +313,20 @@ Use ``-`` when the application truly has no useful identity.
     :function-blocks: syslogApplicationName
     :function-blocks-sha256: 0fd3f848752e25168fcb7b0fd4460ed086de4d167a1944b86c3f2500ba66d58c
     :exec: log/logging_topics --demo SyslogApplicationName
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogApplicationName() {
         auto options = el::SyslogLogWriterOptions{};
         options.setApplicationName("explorer-guild"_el);
-        el::io::printLine(syslogPreview(options));
+        el::io::printLine(options.applicationName());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z - explorer-guild - - - Pass closed.
+    explorer-guild
 
 .. erbsland-demo-end::
 
@@ -356,20 +347,20 @@ The process identifier may contain at most 128 characters and follows the same e
     :function-blocks: syslogProcessId
     :function-blocks-sha256: ddf2ed727dce20de124809ccc5c5d9e3f839aa645c32e01889be518182c84fd4
     :exec: log/logging_topics --demo SyslogProcessId
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogProcessId() {
         auto options = el::SyslogLogWriterOptions{};
         options.setProcessId("314"_el);
-        el::io::printLine(syslogPreview(options));
+        el::io::printLine(options.processId());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z - erbsland-core 314 - - Pass closed.
+    314
 
 .. erbsland-demo-end::
 
@@ -390,20 +381,20 @@ double quote.
     :function-blocks: syslogMessageId
     :function-blocks-sha256: 9bd3a8a4688de4e4507b99ab00610d8e18ed9aba3276566a3f8dc617c8a28291
     :exec: log/logging_topics --demo SyslogMessageId
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogMessageId() {
         auto options = el::SyslogLogWriterOptions{};
         options.setMessageId("route"_el);
-        el::io::printLine(syslogPreview(options));
+        el::io::printLine(options.messageId());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z - erbsland-core - route - Pass closed.
+    route
 
 .. erbsland-demo-end::
 
@@ -442,7 +433,7 @@ It does not open the connection because no log entry is delivered.
     :function-blocks: syslogTlsLabel
     :function-blocks-sha256: 122db55c171692302575aad7e6dddeca480702f88b5df2dfbf13b9e4dcd030c4
     :exec: log/logging_topics --demo SyslogTlsLabel
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
@@ -451,7 +442,8 @@ It does not open the connection because no log entry is delivered.
         options.setTransport(el::SyslogTransport::Tls)
             .setEndpoint(el::HostEndpoint::fromStringOrThrow("logs.example:6514"_el))
             .setTlsConfigurationLabel("operations/syslog"_el);
-        const auto writer = std::make_shared<el::SyslogLogWriter>(options);
+        auto configuration = el::LogConfiguration{};
+        configuration.addWriter(el::LogWriter::createForSyslog(options));
 
         el::io::printLine("TLS configuration label: "_el, options.tlsConfigurationLabel());
     }
@@ -479,8 +471,7 @@ UDP also drops a datagram larger than 65,507 bytes even if the configured pendin
 writer's maximum UDP payload.
 The writer never partially retains a syslog message.
 
-:cpp:func:`droppedMessages() <erbsland::log::SyslogLogWriter::droppedMessages>` reports how many messages this writer
-has rejected.
+The manager's delivery statistics report how many messages the logging pipeline has rejected.
 That counter is separate from :cpp:member:`droppedEntries <erbsland::log::LogManagerStatistics::droppedEntries>`, which
 describes entries rejected by the manager queue before writer delivery.
 Monitor both when remote logs are important: one reveals producer pressure, the other reveals destination pressure.
@@ -493,27 +484,22 @@ The message is rejected before any network transport is created, and the writer'
     :function-blocks: syslogMaximumPendingBytes
     :function-blocks-sha256: b8e9825434543e1148ed88eeb5d21a18e5119634349462171723ce6a3496849b
     :exec: log/logging_topics --demo SyslogMaximumPendingBytes
-    :source-sha256: 8f753fc7bb371108103cbcd67134856781712bb9fc5f997b621c8e39cf72b9c0
+    :source-sha256: e8623b94ebda39515f14968f9c7963cbc4e814c1311fcc77c54b5eb5e58ae245
 
 .. code-block:: cpp
 
     void syslogMaximumPendingBytes() {
         auto options = el::SyslogLogWriterOptions{};
         options.setMaximumPendingBytes(el::ByteLength{32U});
-        auto writer = el::SyslogLogWriter{options};
-        const auto entry = std::make_shared<el::LogEntry>(
-            1U, el::DateTime::now(), el::LogLevel::Error, el::LogPath{"guild/route"_el}, "The northern pass is closed."_el);
-        const auto line = std::make_shared<el::LogLine>(
-            std::vector<el::LogLineSegment>{{el::LogLinePart::Message, "This encoded message exceeds the limit."_el}});
-
-        writer.write(entry, line);
-        el::io::printLine("Dropped syslog messages: "_el, writer.droppedMessages());
+        auto configuration = el::LogConfiguration{};
+        configuration.addWriter(el::LogWriter::createForSyslog(options));
+        el::io::printLine("Maximum pending bytes: "_el, options.maximumPendingBytes());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    Dropped syslog messages: 1
+    Maximum pending bytes: 32
 
 .. erbsland-demo-end::
 
@@ -529,7 +515,7 @@ UDP has no delivery session and therefore cannot confirm that a datagram reached
 No transport turns syslog into guaranteed storage.
 A process can exit with pending data, a network can lose UDP datagrams, and a prolonged outage can exhaust the pending
 limit.
-When remote diagnostics are essential for recovering the same host, add a local
-:cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>` route as well.
+When remote diagnostics are essential for recovering the same host, add a local ``LogWriter::createForFile()`` route as
+well.
 The file provides durable local history, while syslog provides central visibility; the two destinations solve different
 failure cases and work well together.

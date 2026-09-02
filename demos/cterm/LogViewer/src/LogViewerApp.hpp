@@ -51,14 +51,14 @@ private:
     };
 
 private:
-    [[nodiscard]] auto canvasSize() noexcept -> BlockSize;
+    [[nodiscard]] auto canvasSize() noexcept -> Size;
     void adjustDelayPreset(int delta) noexcept;
     void scheduleNextMessage() noexcept;
     void appendGeneratedMessage();
-    void drawHeader(BlockRectangle rect);
-    void drawFooter(BlockRectangle rect);
-    void drawLogView(BlockRectangle rect);
-    void updateView(BlockSize viewSize) noexcept;
+    void drawHeader(Rectangle rect);
+    void drawFooter(Rectangle rect);
+    void drawLogView(Rectangle rect);
+    void updateView(Size viewSize) noexcept;
     void renderLogMessage(const LogMessage &message);
     [[nodiscard]] static auto shouldCopyCell(const Block &cell) noexcept -> bool;
     void renderInitialLine(const el::String &timestamp, LogLevel level, const el::String &text);
@@ -75,9 +75,8 @@ private:
     [[nodiscard]] auto randomIpAddress() -> el::String;
     [[nodiscard]] static auto initialLineOptions() -> const ParagraphOptions &;
     [[nodiscard]] static auto continuationLineOptions() -> const ParagraphOptions &;
-    [[nodiscard]] static auto contentRectForBuffer(BlockSize bufferSize) noexcept -> BlockRectangle;
-    [[nodiscard]] static auto clampViewOffset(BlockPosition offset, BlockSize viewSize, BlockSize contentSize) noexcept
-        -> BlockPosition;
+    [[nodiscard]] static auto contentRectForBuffer(Size bufferSize) noexcept -> Rectangle;
+    [[nodiscard]] static auto clampViewOffset(Position offset, Size viewSize, Size contentSize) noexcept -> Position;
     [[nodiscard]] static auto logLevelColor(LogLevel level) noexcept -> Color;
     [[nodiscard]] static auto logTypeCode(LogLevel level) noexcept -> el::String;
     [[nodiscard]] static auto delayPresets() noexcept -> std::span<const DelayPreset>;
@@ -93,17 +92,16 @@ private:
 
 private:
     std::shared_ptr<CursorBuffer> _logBuffer = std::make_shared<CursorBuffer>(
-        BlockSize{BlockCoordinate{250}, BlockCoordinate{10}},
+        Size{Coordinate{250}, Coordinate{10}},
         CursorBuffer::OverflowMode::ExpandThenShift,
-        BlockSize{BlockCoordinate{250}, BlockCoordinate{500}},
+        Size{Coordinate{250}, Coordinate{500}},
         Block{U' ', fg::Default, bg::Black});
-    BufferView _logView{
-        _logBuffer, BlockRectangle{BlockCoordinate{0}, BlockCoordinate{0}, BlockCoordinate{1}, BlockCoordinate{1}}};
+    BufferView _logView{_logBuffer, Rectangle{Coordinate{0}, Coordinate{0}, Coordinate{1}, Coordinate{1}}};
     std::mt19937 _rng{std::random_device{}()};
     std::chrono::steady_clock::time_point _nextMessageAt{};
     std::chrono::sys_seconds _logTimestamp{
         std::chrono::sys_days{std::chrono::year{2026} / std::chrono::March / 26} + std::chrono::hours{9}};
-    BlockPosition _viewOffset{0, 0};
+    Position _viewOffset{0, 0};
     std::size_t _messageCount{0};
     std::size_t _delayPresetIndex{2};
     bool _followMode{true};

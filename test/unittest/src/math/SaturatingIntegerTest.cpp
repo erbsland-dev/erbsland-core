@@ -328,6 +328,8 @@ private:
         REQUIRE(Sat{Native{1}}.isOne());
         REQUIRE(Sat{Native{-5}}.toAbsolute().toRawValue() == Native{5});
         REQUIRE(Sat{min}.toAbsolute().toRawValue() == max);
+        REQUIRE(Sat{Native{-5}}.absoluteDifference(Native{3}).toRawValue() == Native{8});
+        REQUIRE(Sat{min}.absoluteDifference(max).toRawValue() == max);
         REQUIRE(Sat{Native{-5}}.toUnsignedAbsolute().toRawValue() == Unsigned{5});
         REQUIRE(Sat{min}.toUnsignedAbsolute().toRawValue() == minimumAbsolute);
         REQUIRE(Sat{Native{-5}}.negated().toRawValue() == Native{5});
@@ -357,6 +359,8 @@ private:
         REQUIRE(!Sat{Native{5}}.isNegative());
         REQUIRE(Sat{Native{1}}.isOne());
         REQUIRE(Sat{Native{5}}.toAbsolute().toRawValue() == Native{5});
+        REQUIRE(Sat{Native{5}}.absoluteDifference(Native{12}).toRawValue() == Native{7});
+        REQUIRE(Sat{Native{0}}.absoluteDifference(max).toRawValue() == max);
         REQUIRE(Sat{Native{5}}.toUnsignedAbsolute().toRawValue() == Native{5});
         REQUIRE(Sat{Native{5}}.negated().toRawValue() == Native{0});
 

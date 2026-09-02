@@ -65,14 +65,17 @@ Short flags may be grouped, so ``-abc`` is equivalent to ``-a -b -c`` when all t
 
 Values can follow an option as the next argument or be attached with ``=``.
 Use the attached form for values that start with a dash, for example ``--count=-1``.
-Flags are false when absent and true when written without a value.
-They also accept the ASCII-case-insensitive ELCL literals ``true``, ``on``, ``yes``, ``enabled``, ``false``, ``off``,
-``no``, and ``disabled``.
-Use either an attached value such as ``--cleanup=false`` or a separate recognized value such as ``--cleanup false``.
-A separate argument is consumed only if it is one of these literals; other text remains available to positional
-arguments.
+Separate values beginning with ``-`` are rejected even if they were quoted in the shell, because quoting information is
+not present in ``argv``.
+Flags are valueless and may repeat as occurrence counters.
+Boolean options accept the ASCII-case-insensitive ELCL literals ``true``, ``on``, ``yes``, ``enabled``, ``false``,
+``off``, ``no``, and ``disabled``.
+Named scalar value options with :cpp:enumerator:`OptionFlag::AcceptAsFlag <erbsland::options::OptionFlag::AcceptAsFlag>`
+may also occur bare.
 The argument ``--`` stops option parsing; all later arguments are treated as positional values.
-The built-in ``-h``, ``--help``, and ``--version`` requests stop normal parsing before user callbacks are called.
+The built-in ``-h``, ``--help[=<name>]``, and ``--version`` requests stop normal parsing before user callbacks are
+called.
+Use the attached ``--help=<name>`` form for detailed option help.
 Applications that need one of these names for their own protocol can disable the help or version request individually
 with :cpp:enum:`OptionParserFlag <erbsland::options::OptionParserFlag>` and then register an ordinary option under the
 released name:
@@ -83,14 +86,13 @@ released name:
     options->addOption({"--version"_el, "language-version"_el})
         .setType(el::OptionType::Text);
 
-Applications whose positional grammar may use boolean-looking words can restore valueless flag behavior for the complete
-options tree:
+Applications that only want ordinary help can reject detailed targets and treat help as a pure flag:
 
 .. code-block:: cpp
 
-    options->setParserFlag(el::OptionParserFlag::DisableBooleanValues);
+    options->setParserFlag(el::OptionParserFlag::NoHelpDetails);
 
-This compatibility flag applies to ordinary flags, modules, option sets, and built-in help/version requests.
+Boolean options and ordinary flags are not affected by this setting.
 
 If modules are present, no ordinary options may appear before the module name.
 This makes module selection unambiguous:
@@ -100,6 +102,10 @@ This makes module selection unambiguous:
     forest-atlas --help
     forest-atlas collect --sensor north route-a
     forest-atlas publish --format atlas report-a
+
+Invoking a modular command without any arguments displays a reduced module overview before callbacks and validation.
+Set :cpp:enumerator:`OptionParserFlag::ErrorOnMissingModule <erbsland::options::OptionParserFlag::ErrorOnMissingModule>`
+to report a missing-module error instead.
 
 Using Application
 =================

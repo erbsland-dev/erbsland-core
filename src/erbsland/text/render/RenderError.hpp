@@ -9,7 +9,7 @@
 namespace erbsland::text::render {
 
 /// The primary error type for the layout renderer.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{RenderEnvironmentTest}
 class RenderError final : public err::RuntimeError {
 public:

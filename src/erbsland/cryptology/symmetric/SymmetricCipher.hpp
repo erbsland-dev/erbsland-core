@@ -7,7 +7,7 @@
 namespace erbsland::cryptology {
 
 /// A symmetric cipher family.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 enum class SymmetricCipher : uint8_t {
     None,     ///< No cipher family for an invalid encryption type.
     Aes,      ///< The Advanced Encryption Standard cipher family.

@@ -19,7 +19,7 @@ namespace erbsland::cryptology {
 /// A move-only TLS 1.3 record encryptor implementing RFC 8446 sections 5.2--5.5 and 7.2--7.3.
 /// It constructs complete TLSCiphertext records, maintains one sending sequence, enforces key-usage limits, and keeps
 /// traffic secrets protected outside scoped derivation. Padding length is explicit; no padding policy is implied.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsRecordEncryptor final {
     friend class impl::TlsRecordTestAccess;

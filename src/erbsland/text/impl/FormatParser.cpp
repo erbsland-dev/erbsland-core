@@ -154,9 +154,9 @@ void FormatParser::parseAlignment(LegacyFormatSpec &spec) {
     const auto first = currentChar();
     if (first == U'<' || first == U'>' || first == U'^') {
         consumeSpecificationChar();
-        spec.alignment = first == U'<' ? bgeo::AlignmentFlag::Left
-            : first == U'>'            ? bgeo::AlignmentFlag::Right
-                                       : bgeo::AlignmentFlag::HCenter;
+        spec.alignment = first == U'<' ? geometry::AlignmentFlag::Left
+            : first == U'>'            ? geometry::AlignmentFlag::Right
+                                       : geometry::AlignmentFlag::HCenter;
         return;
     }
     if (first != U' ' && first != U'0') {
@@ -169,9 +169,9 @@ void FormatParser::parseAlignment(LegacyFormatSpec &spec) {
     if (second == U'<' || second == U'>' || second == U'^') {
         consumeSpecificationChar();
         spec.fill = first;
-        spec.alignment = second == U'<' ? bgeo::AlignmentFlag::Left
-            : second == U'>'            ? bgeo::AlignmentFlag::Right
-                                        : bgeo::AlignmentFlag::HCenter;
+        spec.alignment = second == U'<' ? geometry::AlignmentFlag::Left
+            : second == U'>'            ? geometry::AlignmentFlag::Right
+                                        : geometry::AlignmentFlag::HCenter;
         return;
     }
     _reader.restore(state);

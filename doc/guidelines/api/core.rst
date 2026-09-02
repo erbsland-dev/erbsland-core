@@ -5,31 +5,14 @@ Core Application API Guidelines
 Core Semantics
 ==============
 
-Application Lifecycle
----------------------
-
 .. code-block:: text
 
     application = process-lifetime owner of shared Core services
     initialization = application setup before option registration and parsing
     main phase = application work or main event-loop execution
     cleanup = non-throwing finalization after success or handled library failure
-    quit = coordinated exit-code request for the main loop and managed event threads
     application part = one-shot dependency-aware component with a dedicated event thread
-    part identifier = stable case-sensitive name resolved within one manager
-    part dependency = lifecycle availability relation that reverses shutdown order
-    control event source = serialized owner of part graph and lifecycle decisions
-
-Process Boundaries
-------------------
-
-.. code-block:: text
-
-    native arguments = borrowed process values retained for the application lifetime
-    converted arguments = owning UTF-8 values used within the application
-    application instance = single active process-wide application object
-    library failure = rendered diagnostic and controlled nonzero exit
-    foreign failure = outside the handled Core exception boundary
+    part dependency = lifecycle availability relation between application parts
 
 Primary Types
 =============

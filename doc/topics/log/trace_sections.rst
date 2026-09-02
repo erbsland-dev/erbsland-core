@@ -72,7 +72,7 @@ trace from every path.
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionGrouping.cpp
     :exec: log/logging_topics --demo TraceSectionGrouping
-    :source-sha256: cc3976567e078bd543c112b600362edaca6e42c71d904bfe776e9d3b59c726ae
+    :source-sha256: ae400b31a8e492bf4ec706f8a20d98bad76c1e86ba058a585bad84b57d3c4637
 
 .. code-block:: cpp
 
@@ -89,7 +89,7 @@ trace from every path.
         configuration.setLineFormat(std::move(format))
             .enableTraceSection(routeSearch)
             .addWriter(
-                std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+                el::LogWriter::createForConsole(el::application().terminal()),
                 el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
 
         const auto manager = el::LogManager::create();
@@ -128,7 +128,7 @@ Its detailed candidate route is conditional, while the final information message
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSections.cpp
     :exec: log/logging_topics --demo TraceSections
-    :source-sha256: a235b23519c037d4e99b40c445dd9996968eaa0e25200c7ffd776d1201f4e076
+    :source-sha256: 248b1822238911e1753301dc432f32c20299255bb3711ac9ce5cfea346e2e34b
 
 .. code-block:: cpp
 
@@ -145,7 +145,7 @@ Its detailed candidate route is conditional, while the final information message
         configuration.setLineFormat(std::move(format))
             .enableTraceSection(routeSearchTrace)
             .addWriter(
-                std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+                el::LogWriter::createForConsole(el::application().terminal()),
                 el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace, el::LogLevel::Information}});
 
         const auto manager = el::LogManager::create();
@@ -188,7 +188,7 @@ The following demo uses separate managers to isolate the three possible configur
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionActivation.cpp
     :exec: log/logging_topics --demo TraceSectionActivation
-    :source-sha256: 7932fd717ec1242efdf73fd7ed7c38fc064f958919db5335f00a422fa05b7798
+    :source-sha256: 32f5c7d5e0898591d408b0554721725279dc8473d6f03b18dd29145c7a0b5540
 
 .. code-block:: cpp
 
@@ -204,7 +204,8 @@ The following demo uses separate managers to isolate the three possible configur
                 configuration.enableTraceSection(section);
             }
             const auto levels = acceptTrace ? el::LogLevels{el::LogLevel::Trace} : el::LogLevels{el::LogLevel::Information};
-            configuration.addWriter(std::make_shared<el::LastErrorsLogWriter>(), el::LogWriterFilter{levels});
+            configuration.addWriter(
+                el::LogWriter::createForConsole(el::application().terminal()), el::LogWriterFilter{levels});
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -254,7 +255,7 @@ entry is written.
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionGuard.cpp
     :exec: log/logging_topics --demo TraceSectionGuard
-    :source-sha256: 171983db1ac2a3db4b118bd77676e5593cc150e3ef18b4a2f5647284e6389160
+    :source-sha256: 2fa60d99f3bc9bf52ac7ceeb2ea7785c0004aa9ddb7c83baf5e3fd79a495e37c
 
 .. code-block:: cpp
 
@@ -270,7 +271,7 @@ entry is written.
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(format))
                 .addWriter(
-                    std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+                    el::LogWriter::createForConsole(el::application().terminal()),
                     el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}});
             if (enableSection) {
                 configuration.enableTraceSection(section);
@@ -344,7 +345,7 @@ Use it to understand configuration replacement, not as a pattern for repeatedly 
 .. erbsland-demo::
     :source: log/LoggingTopics/TraceSectionReplacement.cpp
     :exec: log/logging_topics --demo TraceSectionReplacement
-    :source-sha256: 5519f8328f1a68ec92a31bb0aaee2d1aeb89479a5ff332a9b7944184543bfad6
+    :source-sha256: 9556dc07a7636e88a383c8fc43ae820ac3587645f4d83d52373c7efed58bf319
 
 .. code-block:: cpp
 
@@ -354,23 +355,23 @@ Use it to understand configuration replacement, not as a pattern for repeatedly 
     /// `setConfiguration()` returns, existing streams expose the new section-and-route decision through `traceEnabled()`.
     void traceSectionReplacement() {
         const auto section = el::LogTraceSection{"route-search"_el};
-        const auto writer = std::make_shared<el::LastErrorsLogWriter>();
         const auto traceFilter = el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace}};
         const auto manager = el::LogManager::create();
 
         auto disabled = el::LogConfiguration{};
-        disabled.addWriter(writer, traceFilter);
+        disabled.addWriter(el::LogWriter::createForConsole(el::application().terminal()), traceFilter);
         manager->setConfiguration(std::move(disabled));
         const auto log = manager->createStream("guild/route-search"_el, section);
         el::io::printLine("Initial state          : "_el, log->traceEnabled() ? "enabled"_el : "disabled"_el);
 
         auto enabled = el::LogConfiguration{};
-        enabled.enableTraceSection(section).addWriter(writer, traceFilter);
+        enabled.enableTraceSection(section).addWriter(
+            el::LogWriter::createForConsole(el::application().terminal()), traceFilter);
         manager->setConfiguration(std::move(enabled));
         el::io::printLine("After enabling section : "_el, log->traceEnabled() ? "enabled"_el : "disabled"_el);
 
         disabled = el::LogConfiguration{};
-        disabled.addWriter(writer, traceFilter);
+        disabled.addWriter(el::LogWriter::createForConsole(el::application().terminal()), traceFilter);
         manager->setConfiguration(std::move(disabled));
         el::io::printLine("After replacing policy : "_el, log->traceEnabled() ? "enabled"_el : "disabled"_el);
         manager->shutdown();

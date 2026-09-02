@@ -7,7 +7,7 @@
 
 #include "../error/InternalError.hpp"
 
-#include "../../../bgeo/Alignment.hpp"
+#include "../../../geometry/Alignment.hpp"
 #include "../../../text/Literals.hpp"
 #include "../../../text/StringFormat.hpp"
 
@@ -190,7 +190,7 @@ void Disassembler::writeLineLayout(
         _lines.append(StringFormat{"{} {}"}.build(location, operation));
         return;
     }
-    using bgeo::Alignment;
+    using geometry::Alignment;
     const auto prefix = String::fromJoined(
         {location.aligned(unit::CpLength{17U}, Alignment::Left),
             " "_el,

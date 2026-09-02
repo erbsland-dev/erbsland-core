@@ -24,7 +24,7 @@ private:
 
     [[nodiscard]] static auto createTerminal() -> TestTerminal {
         auto backend = std::make_shared<TerminalTestBackend>();
-        auto terminal = std::make_shared<Terminal>(backend, bgeo::BlockSize{30, 25});
+        auto terminal = std::make_shared<Terminal>(backend, block::Size{30, 25});
         return {std::move(backend), std::move(terminal)};
     }
 

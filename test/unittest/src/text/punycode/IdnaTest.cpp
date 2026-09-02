@@ -15,10 +15,15 @@
 using namespace el::text;
 using namespace el::text::literals;
 using namespace el::text::punycode;
-using namespace el::text::punycode::impl;
 
 TESTED_TARGETS(PunycodeEncoder PunycodeDecoder PunycodeOptions)
 class IdnaTest final : public el::UnitTest {
+    using IdnaBidi = el::text::punycode::impl::IdnaBidi;
+    using IdnaJoining = el::text::punycode::impl::IdnaJoining;
+    using IdnaRange = el::text::punycode::impl::IdnaRange;
+    using IdnaScript = el::text::punycode::impl::IdnaScript;
+    using IdnaStatus = el::text::punycode::impl::IdnaStatus;
+
 public:
     void testLabelAndDomainRoundTrips() {
         const auto labelOptions = PunycodeOptions::idna2008Label();
@@ -87,24 +92,24 @@ public:
     void testCompactRuntimeData() {
         REQUIRE_EQUAL(sizeof(IdnaRange), std::size_t{6U});
 
-        const auto ascii = idnaAttributes(U'a');
+        const auto ascii = el::text::punycode::impl::idnaAttributes(U'a');
         REQUIRE(ascii.status() == IdnaStatus::PValid);
         REQUIRE(ascii.bidi() == IdnaBidi::L);
 
-        REQUIRE(idnaAttributes(U'α').script() == IdnaScript::Greek);
-        REQUIRE(idnaAttributes(U'一').script() == IdnaScript::Han);
-        REQUIRE(idnaAttributes(U'א').script() == IdnaScript::Hebrew);
-        REQUIRE(idnaAttributes(U'あ').script() == IdnaScript::Hiragana);
-        REQUIRE(idnaAttributes(U'ア').script() == IdnaScript::Katakana);
-        REQUIRE(idnaAttributes(U'\u094D').isVirama());
-        REQUIRE(idnaAttributes(U'\u200C').status() == IdnaStatus::ContextJ);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'α').script() == IdnaScript::Greek);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'一').script() == IdnaScript::Han);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'א').script() == IdnaScript::Hebrew);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'あ').script() == IdnaScript::Hiragana);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'ア').script() == IdnaScript::Katakana);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'\u094D').isVirama());
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'\u200C').status() == IdnaStatus::ContextJ);
 
-        const auto emoji = idnaAttributes(U'😀');
+        const auto emoji = el::text::punycode::impl::idnaAttributes(U'😀');
         REQUIRE(emoji.status() == IdnaStatus::Disallowed);
         REQUIRE(emoji.bidi() == IdnaBidi::Unknown);
         REQUIRE(emoji.joining() == IdnaJoining::Other);
         REQUIRE(emoji.script() == IdnaScript::None);
         REQUIRE_FALSE(emoji.isVirama());
-        REQUIRE(idnaAttributes(U'\U000F0000').status() == IdnaStatus::Disallowed);
+        REQUIRE(el::text::punycode::impl::idnaAttributes(U'\U000F0000').status() == IdnaStatus::Disallowed);
     }
 };

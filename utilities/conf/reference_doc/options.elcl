@@ -1,0 +1,7 @@
+# Reference-document groups for the options domain.
+
+------------*[ Reference Groups ]
+Page        : "options/command_line_options.rst"
+Title       : "Command-Line Options"
+Header Globs:
+    * "options/*.hpp"

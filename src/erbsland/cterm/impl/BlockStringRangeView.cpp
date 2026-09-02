@@ -157,14 +157,14 @@ auto BlockStringRangeView::subRange(const BlockRange range) const noexcept -> Bl
 }
 
 auto BlockStringRangeView::croppedRange(
-    const bgeo::BlockCoordinate displayWidth, const bgeo::Alignment alignment) const noexcept -> BlockRange {
+    const block::Coordinate displayWidth, const geometry::Alignment alignment) const noexcept -> BlockRange {
     if (displayWidth <= 0) {
         return {};
     }
     if (this->displayWidth() < displayWidth) {
         return _range;
     }
-    auto currentDisplayWidth = bgeo::BlockCoordinate{0};
+    auto currentDisplayWidth = block::Coordinate{0};
     auto index = std::size_t{0};
     auto newBlockRange = BlockRange{};
     if (alignment.isRight()) {
@@ -293,15 +293,15 @@ auto BlockStringRangeView::terminalLines(const int width) const noexcept -> int 
     return renderedLines;
 }
 
-auto BlockStringRangeView::naturalBlockTextSize() const noexcept -> bgeo::BlockSize {
-    auto preferredWidth = bgeo::BlockCoordinate{1};
-    auto preferredHeight = bgeo::BlockCoordinate{1};
-    auto currentLineWidth = bgeo::BlockCoordinate{0};
+auto BlockStringRangeView::naturalBlockTextSize() const noexcept -> block::Size {
+    auto preferredWidth = block::Coordinate{1};
+    auto preferredHeight = block::Coordinate{1};
+    auto currentLineWidth = block::Coordinate{0};
     for (auto index = std::size_t{0}; index < rawSize(); ++index) {
         const auto character = characterAt(BlockIndex::fromSizeT(index));
         if (character == Char{U'\n'}) {
             preferredWidth = std::max(preferredWidth, currentLineWidth);
-            currentLineWidth = bgeo::BlockCoordinate{0};
+            currentLineWidth = block::Coordinate{0};
             if (index + 1U < rawSize()) {
                 preferredHeight += 1;
             }

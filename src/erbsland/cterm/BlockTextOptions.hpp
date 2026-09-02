@@ -8,7 +8,7 @@
 #include "Font_fwd.hpp"
 #include "ParagraphOptions.hpp"
 
-#include "../bgeo/Alignment.hpp"
+#include "../geometry/Alignment.hpp"
 
 namespace erbsland::cterm {
 
@@ -22,7 +22,7 @@ class BlockTextOptions final {
 public:
     /// Create a text options instance with the given alignment.
     /// @param alignment The text alignment inside the rectangle.
-    explicit BlockTextOptions(const bgeo::Alignment alignment) noexcept : _paragraphOptions(alignment) {}
+    explicit BlockTextOptions(const geometry::Alignment alignment) noexcept : _paragraphOptions(alignment) {}
 
     // defaults
     BlockTextOptions() = default;
@@ -72,9 +72,9 @@ public:
 
 public: // wrappers for common paragraph options
     /// @copydoc ParagraphOptions::alignment
-    [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment { return _paragraphOptions.alignment(); }
+    [[nodiscard]] auto alignment() const noexcept -> geometry::Alignment { return _paragraphOptions.alignment(); }
     /// @copydoc ParagraphOptions::setAlignment
-    void setAlignment(const bgeo::Alignment alignment) noexcept { _paragraphOptions.setAlignment(alignment); }
+    void setAlignment(const geometry::Alignment alignment) noexcept { _paragraphOptions.setAlignment(alignment); }
     /// @copydoc ParagraphOptions::lineIndent
     [[nodiscard]] auto lineIndent() const noexcept -> int { return _paragraphOptions.lineIndent(); }
     /// @copydoc ParagraphOptions::setLineIndent
@@ -88,9 +88,9 @@ public: // wrappers for common paragraph options
     /// @copydoc ParagraphOptions::setWrappedLineIndent
     void setWrappedLineIndent(const int indent) noexcept { _paragraphOptions.setWrappedLineIndent(indent); }
     /// @copydoc ParagraphOptions::margins
-    [[nodiscard]] auto margins() const noexcept -> const bgeo::BlockMargins & { return _paragraphOptions.margins(); }
+    [[nodiscard]] auto margins() const noexcept -> const block::Margins & { return _paragraphOptions.margins(); }
     /// @copydoc ParagraphOptions::setMargins
-    void setMargins(const bgeo::BlockMargins margins) noexcept { _paragraphOptions.setMargins(margins); }
+    void setMargins(const block::Margins margins) noexcept { _paragraphOptions.setMargins(margins); }
     /// @copydoc ParagraphOptions::backgroundMode
     [[nodiscard]] auto backgroundMode() const noexcept -> ParagraphBackgroundMode {
         return _paragraphOptions.backgroundMode();

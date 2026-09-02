@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../RuleDefinition.hpp"
+
 #include "../../../../text/String.hpp"
-#include "../../../impl/vr/Constraint_fwd.hpp"
-#include "../../../impl/vr/Rule_fwd.hpp"
 
 namespace erbsland::conf::vr::builder {
 
@@ -17,11 +17,8 @@ public:
     /// Return the constraint name including its negation prefix when configured.
     [[nodiscard]] auto prefixedConstraintName(const text::String &constraintName) const -> text::String;
 
-    /// Apply these options to a constructed implementation constraint.
-    void applyTo(impl::Constraint &constraint, const text::String &constraintName) const;
-
     /// Add a configured constraint to a rule.
-    void addToRule(impl::Rule &rule, const impl::ConstraintPtr &constraint, const text::String &constraintName) const;
+    void addToRule(RuleDefinition &rule, const vr::ConstraintPtr &constraint, const text::String &constraintName) const;
 
 private:
     /// Return a name with an optional negation prefix.

@@ -36,7 +36,7 @@ Components created afterwards can receive the configured manager and retain thei
 .. erbsland-demo::
     :source: log/LoggingSetups/ApplicationConfiguration.cpp
     :exec: log/logging_setups application-configuration
-    :source-sha256: 0bb2a6f42f24fd71d192ed7606f2c0728b82c4b67d6ef715d489f9a1cb35c5c4
+    :source-sha256: f8f7aec29202f9dfb8fafe0799c82a98f090e35a1808675ded63422d11606608
 
 .. code-block:: cpp
 
@@ -57,7 +57,7 @@ Components created afterwards can receive the configured manager and retain thei
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
                 .enableTraceSection(el::LogTraceSection{"route-search"_el})
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(terminal()));
+                .addWriter(el::LogWriter::createForConsole(terminal()));
             manager.setConfiguration(std::move(configuration));
 
             _log = manager.createStream("guild/routes"_el, el::LogTraceSection{"route-search"_el});
@@ -121,7 +121,7 @@ persistent application support and survives ordinary configuration replacement.
 .. erbsland-demo::
     :source: log/LoggingTopics/ConfigurationReplacement.cpp
     :exec: log/logging_topics --demo ConfigurationReplacement
-    :source-sha256: b785ab042a101993c325be3b26bf8ab6da774cbe5efdc81fe29f230537d6c4b5
+    :source-sha256: 879d34b834bdea086f1cb1c34446b10b43f217880fc4cdcd94dc17502b4579b7
 
 .. code-block:: cpp
 
@@ -139,7 +139,7 @@ persistent application support and survives ordinary configuration replacement.
         auto replacement = el::LogConfiguration{};
         replacement.setLineFormat(std::move(lineFormat))
             .enableTraceSection(el::LogTraceSection{"route-search"_el})
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
         manager.setConfiguration(std::move(replacement));
 
         el::io::printLine("Trace after replacement: "_el, el::BooleanFormat::yesNo(), log->traceEnabled());
@@ -186,7 +186,7 @@ After command-line parsing and configuration loading have succeeded, install the
 .. erbsland-demo::
     :source: log/LoggingSetups/DeferredConfiguration.cpp
     :exec: log/logging_setups deferred-configuration
-    :source-sha256: a7b9efff2ebbc4f22092fdcfb715e1eadafc062287a9eac24cae375a79201dcb
+    :source-sha256: c6a4746c618ab70f4b82196f9c54595e8d5f9986c6368b2805f871da031c6fe5
 
 .. code-block:: cpp
 
@@ -210,8 +210,7 @@ After command-line parsing and configuration loading have succeeded, install the
             auto lineFormat = el::LogLineFormat{};
             lineFormat.setPattern("configured: {level} - {message}"_el);
             auto configuration = el::LogConfiguration{};
-            configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(terminal()));
+            configuration.setLineFormat(std::move(lineFormat)).addWriter(el::LogWriter::createForConsole(terminal()));
             log().setConfiguration(std::move(configuration));
 
             logStream()->info("Logging configuration loaded."_el);
@@ -267,7 +266,7 @@ and releases writer resources before their surrounding context disappears.
 .. erbsland-demo::
     :source: log/LoggingTopics/ManualConfiguration.cpp
     :exec: log/logging_topics --demo ManualConfiguration
-    :source-sha256: bd8dcb0afba575078742f18cd5e51336f42e3bbe1cca630b989763d1fdc45b64
+    :source-sha256: 89b197547b4d52da66a0a7062af06f3bc068979e8c143e4c4b1a1ca781e9dc4a
 
 .. code-block:: cpp
 
@@ -282,7 +281,7 @@ and releases writer resources before their surrounding context disappears.
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat));
         configuration.addWriter(
-            std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+            el::LogWriter::createForConsole(el::application().terminal()),
             el::LogWriterFilter{el::LogLevels{
                 el::LogLevel::Information,
                 el::LogLevel::Warning,

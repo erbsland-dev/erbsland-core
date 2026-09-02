@@ -18,7 +18,7 @@
 namespace erbsland::core {
 
 /// A detached manager for dependency-aware application parts.
-/// @seedoc{/reference/core/application_parts}
+/// @seedoc{/reference/core/application_framework}
 /// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
 class ApplicationPartManager : public ApplicationPartManagerAccess {
     friend class Application;

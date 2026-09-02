@@ -7,7 +7,7 @@
 namespace erbsland::text::render {
 
 /// One loaded layout source and its cache identity.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{RenderEnvironmentTest FileSystemLoaderTest}
 class LayoutSource final {
 public:

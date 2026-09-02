@@ -12,7 +12,7 @@
 namespace erbsland::mem {
 
 /// Shared copy-on-write storage for regular C++ data types.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 ///
 /// `CowStorage` always owns a valid data object. Copying the storage shares that object, while mutable access through
 /// `data()` detaches first when the object is shared.

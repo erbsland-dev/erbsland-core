@@ -3,6 +3,7 @@
 #include "OptionParser.hpp"
 
 #include "OptionDisplayModel.hpp"
+#include "OptionSuggestion.hpp"
 
 #include "../Option.hpp"
 #include "../OptionChoices.hpp"
@@ -100,6 +101,41 @@ auto OptionParser::findShortOption(const text::Char shortName) const -> NameMatc
     return result;
 }
 
+auto OptionParser::suggestLongOptions(const text::String &name) const -> text::StringList {
+    auto candidates = text::StringList{};
+    for (const auto &optionSet : _activeOptionSets) {
+        if (optionSet == nullptr || optionSet->flags().isSet(OptionFlag::Disabled) ||
+            optionSet->help().visibility() == OptionHelpVisibility::Hidden) {
+            continue;
+        }
+        for (const auto &option : optionSet->options()) {
+            if (option == nullptr || option->isDisabled() ||
+                option->help().visibility() == OptionHelpVisibility::Hidden ||
+                !isEnabledBuiltInOption(optionSet, option)) {
+                continue;
+            }
+            for (const auto &candidate : option->names()) {
+                if (Option::isLongName(candidate)) {
+                    candidates.append(candidate);
+                }
+            }
+        }
+    }
+    return findOptionSuggestions(name, candidates);
+}
+
+auto OptionParser::suggestModules(const text::String &name) const -> text::StringList {
+    auto candidates = text::StringList{};
+    if (_options != nullptr) {
+        for (const auto &module : _options->optionModules()) {
+            if (module != nullptr && module->help().visibility() != OptionHelpVisibility::Hidden) {
+                candidates.append(module->name());
+            }
+        }
+    }
+    return findOptionSuggestions(name, candidates);
+}
+
 auto OptionParser::isEnabledBuiltInOption(const OptionSetPtr &optionSet, const OptionPtr &option) const -> bool {
     if (_options == nullptr || optionSet != _options->builtInOptionSet()) {
         return true;
@@ -116,7 +152,7 @@ auto OptionParser::isEnabledBuiltInOption(const OptionSetPtr &optionSet, const O
     return true;
 }
 
-auto OptionParser::isEnabledBuiltInFlag(const text::String &name) const -> bool {
+auto OptionParser::isEnabledBuiltInOptionName(const text::String &name) const -> bool {
     if (_options == nullptr) {
         return false;
     }
@@ -125,7 +161,7 @@ auto OptionParser::isEnabledBuiltInFlag(const text::String &name) const -> bool 
         return false;
     }
     for (const auto &option : optionSet->options()) {
-        if (!isEnabledBuiltInOption(optionSet, option) || option->type() != OptionType::Flag) {
+        if (!isEnabledBuiltInOption(optionSet, option)) {
             continue;
         }
         for (const auto &optionName : option->names()) {
@@ -135,10 +171,6 @@ auto OptionParser::isEnabledBuiltInFlag(const text::String &name) const -> bool 
         }
     }
     return false;
-}
-
-auto OptionParser::booleanValuesEnabled() const noexcept -> bool {
-    return _options != nullptr && !_options->parserFlags().isSet(OptionParserFlag::DisableBooleanValues);
 }
 
 auto OptionParser::parseBooleanLiteral(const text::String &text, bool &value) noexcept -> bool {
@@ -158,42 +190,33 @@ auto OptionParser::builtInFlagAt(const unit::ArgumentIndex index) const -> std::
     if (name != "-h"_el && name != "--help"_el && name != "--version"_el) {
         return {};
     }
-    if (!isEnabledBuiltInFlag(name)) {
+    if (!isEnabledBuiltInOptionName(name)) {
         return {};
     }
 
-    auto result =
-        BuiltInFlagMatch{name == "--version"_el ? OptionResultStatus::DisplayVersion : OptionResultStatus::DisplayHelp};
-    if (!equalsIndex.isNoIndex()) {
-        result.explicitValue = true;
-        if (!booleanValuesEnabled() ||
-            !parseBooleanLiteral(
-                argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()}), result.value)) {
-            result.validValue = false;
-        }
-    } else if (booleanValuesEnabled()) {
-        const auto valueIndex = index.incremented();
-        if (isIndexInArgs(valueIndex) && parseBooleanLiteral(getArgAt(valueIndex), result.value)) {
-            result.consumedFollowing = true;
-            result.explicitValue = true;
-        }
+    auto result = BuiltInFlagMatch{
+        name == "--version"_el ? OptionResultStatus::DisplayVersion : OptionResultStatus::DisplayHelp, {}, true};
+    if (equalsIndex.isNoIndex()) {
+        return result;
     }
+    if (name == "--version"_el || name == "-h"_el ||
+        (_options != nullptr && _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails))) {
+        result.validValue = false;
+        return result;
+    }
+    result.helpName = argument.slice({equalsIndex.incremented(), unit::ByteLength::infinite()});
     return result;
 }
 
-auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) const -> bool {
+auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status) -> bool {
     return isHelpOrVersionRequest(status, unit::ArgumentIndex::one());
 }
 
-auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit::ArgumentIndex startIndex) const
-    -> bool {
-    struct OccurrenceState final {
-        std::size_t count{0};
-        bool explicitValue{false};
-    };
-    auto helpState = OccurrenceState{};
-    auto versionState = OccurrenceState{};
+auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit::ArgumentIndex startIndex) -> bool {
+    auto helpCount = std::size_t{0};
+    auto versionCount = std::size_t{0};
     auto requestedStatus = std::optional<OptionResultStatus>{};
+    auto requestedHelpName = text::String{};
     auto invalidSyntax = false;
     auto index = startIndex;
     while (isIndexInArgs(index)) {
@@ -202,16 +225,12 @@ auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit
             break;
         }
         if (const auto match = builtInFlagAt(index)) {
-            auto &state = match->status == OptionResultStatus::DisplayHelp ? helpState : versionState;
-            invalidSyntax = invalidSyntax || !match->validValue ||
-                (state.count > 0U && (state.explicitValue || match->explicitValue));
-            ++state.count;
-            state.explicitValue = state.explicitValue || match->explicitValue;
-            if (match->validValue && match->value && !requestedStatus.has_value()) {
+            auto &count = match->status == OptionResultStatus::DisplayHelp ? helpCount : versionCount;
+            ++count;
+            invalidSyntax = invalidSyntax || !match->validValue || count > 1U;
+            if (match->validValue && !requestedStatus.has_value()) {
                 requestedStatus = match->status;
-            }
-            if (match->consumedFollowing) {
-                ++index;
+                requestedHelpName = match->helpName;
             }
         }
         ++index;
@@ -220,6 +239,7 @@ auto OptionParser::isHelpOrVersionRequest(OptionResultStatus &status, const unit
         return false;
     }
     status = requestedStatus.value();
+    _helpName = std::move(requestedHelpName);
     return true;
 }
 
@@ -244,6 +264,26 @@ auto OptionParser::validateOptionNames() -> bool {
                     "Invalid option definition"_el,
                     text::StringFormat{"{} is positional, but positional arguments cannot be flags."}.build(
                         OptionDisplayModel::optionTitle(option)),
+                    unit::ArgumentIndex::noIndex(),
+                    option);
+            }
+            if (option->type() == OptionType::Flag && option->hasDefaultValue()) {
+                return makeError(
+                    OptionErrorReason::SyntaxError,
+                    "Invalid option definition"_el,
+                    text::StringFormat{"{} is a flag and cannot define a default value."}.build(
+                        OptionDisplayModel::optionTitle(option)),
+                    unit::ArgumentIndex::noIndex(),
+                    option);
+            }
+            if (option->type() != OptionType::Flag && option->flags().isSet(OptionFlag::AcceptAsFlag) &&
+                (option->isPositionalArgument() || !option->maximum().isOne())) {
+                return makeError(
+                    OptionErrorReason::SyntaxError,
+                    "Invalid option definition"_el,
+                    text::StringFormat{
+                        "{} accepts flag-form use and must be named, non-positional, and accept exactly one value."}
+                        .build(OptionDisplayModel::optionTitle(option)),
                     unit::ArgumentIndex::noIndex(),
                     option);
             }

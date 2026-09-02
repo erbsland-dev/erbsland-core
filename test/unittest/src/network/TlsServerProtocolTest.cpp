@@ -34,13 +34,24 @@
 
 using namespace el::cryptology;
 using namespace el::network;
-using namespace el::network::impl;
 using namespace el::text::literals;
 using el::mem::ByteBlock;
 using el::unit::ByteLength;
 
 TESTED_TARGETS(TlsServerProtocol TlsServerProtocolOptions TlsServerProtocolState TlsServerProtocolCheckpoint)
 class TlsServerProtocolTest final : public el::UnitTest {
+    using TlsAlpnProtocol = el::network::impl::TlsAlpnProtocol;
+    using TlsClientProtocol = el::network::impl::TlsClientProtocol;
+    using TlsClientProtocolOptions = el::network::impl::TlsClientProtocolOptions;
+    using TlsClientProtocolState = el::network::impl::TlsClientProtocolState;
+    using TlsClientProtocolTestAccess = el::network::impl::TlsClientProtocolTestAccess;
+    using TlsServerProtocol = el::network::impl::TlsServerProtocol;
+    using TlsServerProtocolCheckpoint = el::network::impl::TlsServerProtocolCheckpoint;
+    using TlsServerProtocolOptions = el::network::impl::TlsServerProtocolOptions;
+    using TlsServerProtocolState = el::network::impl::TlsServerProtocolState;
+    using TlsServerProtocolTestAccess = el::network::impl::TlsServerProtocolTestAccess;
+    using TlsWireWriter = el::network::impl::TlsWireWriter;
+
 private:
     [[nodiscard]] static auto readText(const char *path) -> el::text::String {
         return el::text::String{el::unittest::fh::readDataText(path)};

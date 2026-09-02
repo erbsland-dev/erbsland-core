@@ -22,7 +22,7 @@ void traceSections() {
     configuration.setLineFormat(std::move(format))
         .enableTraceSection(routeSearchTrace)
         .addWriter(
-            std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+            el::LogWriter::createForConsole(el::application().terminal()),
             el::LogWriterFilter{el::LogLevels{el::LogLevel::Trace, el::LogLevel::Information}});
 
     const auto manager = el::LogManager::create();

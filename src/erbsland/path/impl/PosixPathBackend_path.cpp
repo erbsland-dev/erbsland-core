@@ -15,7 +15,7 @@
 #include "../../stream/impl/NativeOutputStream.hpp"
 #include "../../stream/impl/PosixNativeStream.hpp"
 #include "../../system/GroupId.hpp"
-#include "../../system/PosixErrorContext.hpp"
+#include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/UserId.hpp"
 #include "../../text/impl/PlatformU8StringAccess.hpp"
 #include "../../text/impl/UnsafeU8StringBuffer.hpp"
@@ -113,7 +113,7 @@ void PosixPathBackend::throwSystemError(
     const text::String &title, const text::String &description, const Path &path, const int errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
-            .setPlatformContext(system::PosixErrorContext::fromErrorCode(errorCode))};
+            .setPlatformContext(system::impl::PosixErrorContext::fromErrorCode(errorCode))};
 }
 
 void PosixPathBackend::throwSystemError(
@@ -125,7 +125,7 @@ void PosixPathBackend::throwSystemError(
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(source.toString())
             .setTargetPath(destination.toString())
-            .setPlatformContext(system::PosixErrorContext::fromErrorCode(errorCode))};
+            .setPlatformContext(system::impl::PosixErrorContext::fromErrorCode(errorCode))};
 }
 
 [[nodiscard]] auto createPathBackend() noexcept -> PathBackendPtr {

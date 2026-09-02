@@ -23,7 +23,7 @@
 namespace erbsland::util {
 
 /// A copy-on-write ordered key/value container with Erbsland-style access and algorithms.
-/// @seedoc{/reference/util/collections}
+/// @seedoc{/reference/util/utilities}
 /// @tparam tKey The key type.
 /// @tparam tValue The value type.
 /// @tparam tCompare The key comparison type.

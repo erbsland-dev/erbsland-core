@@ -11,7 +11,7 @@ namespace erbsland::core {
 /// A stable, named identifier for an application part.
 /// Identifier names are authoritative. Implementations may cache manager-local lookup information without exposing
 /// mutable state through this interface.
-/// @seedoc{/reference/core/application_parts}
+/// @seedoc{/reference/core/application_framework}
 /// @tested{ApplicationPartManagerTest}
 class ApplicationPartIdentifier {
 public:

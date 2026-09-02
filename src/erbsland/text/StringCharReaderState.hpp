@@ -15,7 +15,7 @@ namespace erbsland::text {
 /// This value is intentionally opaque. It stores the reader backend cursor and decoded code-point position. Create it
 /// via `StringCharReader::save()` and only pass it back to the same reader or a compatible copy over the same visible
 /// text and encoding. Passing it to any other reader is undefined.
-/// @seedoc{/reference/text/string_reader}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{StringCharReaderTest}
 class StringCharReaderState final {
     friend class StringCharReader;

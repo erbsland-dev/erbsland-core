@@ -24,7 +24,7 @@
 namespace erbsland::text::render {
 
 /// An immutable value exposed to the layout renderer.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{RenderValueTest}
 class Value final {
 public:

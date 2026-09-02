@@ -2,9 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "WindowsSubprocessBackend.hpp"
 
+#include "ProcessIdAccess.hpp"
+#include "WindowsErrorContext.hpp"
+
 #include "../PlatformError.hpp"
 #include "../SubprocessOptions.hpp"
-#include "../WindowsErrorContext.hpp"
 
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
@@ -157,6 +159,7 @@ WindowsSubprocessBackend::WindowsSubprocessBackend(
     }
     CloseHandle(processInfo.hThread);
     _process = processInfo.hProcess;
+    _processId = processInfo.dwProcessId;
     if (outputWrite != nullptr) {
         CloseHandle(outputWrite);
         outputWrite = nullptr;
@@ -189,6 +192,10 @@ WindowsSubprocessBackend::~WindowsSubprocessBackend() {
     if (_process != nullptr) {
         CloseHandle(_process);
     }
+}
+
+auto WindowsSubprocessBackend::processId() const noexcept -> ProcessId {
+    return ProcessIdAccess::fromNative(static_cast<std::uint64_t>(_processId));
 }
 
 auto WindowsSubprocessBackend::isRunning() -> bool {

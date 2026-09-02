@@ -70,7 +70,7 @@ protected: // implement pf::ProfilingApplication
             configuration.run.keepFiles = true;
         }
         const auto filters = values->getTextList("scenario"_el);
-        if (!filters.empty()) {
+        if (!filters.isEmpty()) {
             std::erase_if(configuration.scenarios, [&](const Scenario &scenario) -> bool {
                 return std::ranges::none_of(filters, [&](const el::String &filter) -> bool {
                     return scenario.id == filter || scenario.group == filter;

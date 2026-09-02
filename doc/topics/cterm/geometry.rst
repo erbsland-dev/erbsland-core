@@ -30,12 +30,12 @@ rectangle named.
 
 .. code-block:: cpp
 
-    const auto canvas = BlockRectangle{2, 3, 68, 8};
-    const auto header = canvas.subRectangle(BlockAnchor::TopCenter, BlockSize{0, 2}, BlockMargins{0, 1, 0, 1});
-    const auto footer = canvas.subRectangle(BlockAnchor::BottomCenter, BlockSize{0, 1}, BlockMargins{0, 1, 0, 1});
-    const auto body = canvas.insetBy(BlockMargins{2, 1, 1, 1});
-    const auto sidebar = body.subRectangle(BlockAnchor::Left, BlockSize{18, 0}, BlockMargins{0, 1, 0, 0});
-    const auto content = body.subRectangle(BlockAnchor::Right, BlockSize{body.width() - 19, 0}, BlockMargins{0});
+    const auto canvas = Rectangle{2, 3, 68, 8};
+    const auto header = canvas.subRectangle(Anchor::TopCenter, Size{0, 2}, Margins{0, 1, 0, 1});
+    const auto footer = canvas.subRectangle(Anchor::BottomCenter, Size{0, 1}, Margins{0, 1, 0, 1});
+    const auto body = canvas.insetBy(Margins{2, 1, 1, 1});
+    const auto sidebar = body.subRectangle(Anchor::Left, Size{18, 0}, Margins{0, 1, 0, 0});
+    const auto content = body.subRectangle(Anchor::Right, Size{body.width() - 19, 0}, Margins{0});
 
     buffer.drawFrame(canvas, FrameStyle::Double, Color{fg::BrightWhite, bg::Inherited});
     buffer.drawBlockText("Header", header, Alignment::Center, Color{fg::BrightWhite, bg::Blue});
@@ -43,7 +43,7 @@ rectangle named.
     buffer.drawBlockText("Content", content, Alignment::Center, Color{fg::BrightWhite, bg::Magenta});
     buffer.drawBlockText("Footer", footer, Alignment::Center, Color{fg::BrightWhite, bg::BrightBlack});
 
-Passing ``0`` as the width or height to ``BlockRectangle::subRectangle()`` means "use the full available size on that
+Passing ``0`` as the width or height to ``Rectangle::subRectangle()`` means "use the full available size on that
 axis".
 This is especially useful for headers, footers, and sidebars that should stretch with the parent rectangle.
 
@@ -66,13 +66,13 @@ This is especially useful for headers, footers, and sidebars that should stretch
 Combining, Intersecting, and Testing Rectangles
 -----------------------------------------------
 
-``BlockRectangle`` supports union and intersection directly.
+``Rectangle`` supports union and intersection directly.
 This is useful when you need to compute redraw regions, selection overlaps, or the visible area shared by two panels.
 
 .. code-block:: cpp
 
-    const auto a = BlockRectangle{4, 2, 13, 5};
-    const auto b = BlockRectangle{11, 4, 16, 5};
+    const auto a = Rectangle{4, 2, 13, 5};
+    const auto b = Rectangle{11, 4, 16, 5};
 
     if (a.overlaps(b)) {
         const auto dirtyRegion = a | b;
@@ -85,7 +85,7 @@ This is useful when you need to compute redraw regions, selection overlaps, or t
 
 Use ``a | b`` when you need the combined area covered by both rectangles.
 Use ``a & b`` when you need only their shared visible area.
-The inexpensive ``BlockRectangle::overlaps()`` check is often the right guard before doing extra work.
+The inexpensive ``Rectangle::overlaps()`` check is often the right guard before doing extra work.
 
 .. erbsland-ansi::
     :escape-char: ␛
@@ -107,24 +107,24 @@ Aligning Smaller Content and Cropping Larger Sources
 
 There are two closely related alignment tools:
 
-* ``BlockRectangle::alignmentOffset()``
+* ``Rectangle::alignmentOffset()``
   computes where a smaller block should start.
-* ``BlockRectangle::alignedSource()``
+* ``Rectangle::alignedSource()``
   returns an ``AlignedSource``
   with both the effective target and the cropped source rectangle.
 
 .. code-block:: cpp
 
-    const auto badgeRect = BlockRectangle{
-        panel.alignmentOffset(BlockSize{8, 3}, Alignment::BottomRight),
-        BlockSize{8, 3}};
+    const auto badgeRect = Rectangle{
+        panel.alignmentOffset(Size{8, 3}, Alignment::BottomRight),
+        Size{8, 3}};
     buffer.drawFrame(badgeRect, FrameStyle::Double, Color{fg::BrightCyan, bg::Inherited});
 
-    const auto aligned = panel.insetBy(BlockMargins{1}).alignedSource(
-        BlockRectangle{0, 0, 18, 5},
+    const auto aligned = panel.insetBy(Margins{1}).alignedSource(
+        Rectangle{0, 0, 18, 5},
         Alignment::Center);
 
-    aligned.targetRect.forEach([&](const BlockPosition pos) {
+    aligned.targetRect.forEach([&](const Position pos) {
         const auto sourceX = aligned.sourceRect.x1() + (pos.x() - aligned.targetRect.x1());
         const auto sourceY = aligned.sourceRect.y1() + (pos.y() - aligned.targetRect.y1());
         // Sample from the centered source area here.
@@ -151,16 +151,16 @@ The same alignment value handles both cases.
     ␛[97;40m                ╚══════════════════════════════════════╝                ␛[39;49m
     ␛[97;40m                       ␛[90mcenter crop of 18x5 source␛[97m                       ␛[39;49m
 
-Splitting a BlockRectangle into Grid Cells
+Splitting a Rectangle into Grid Cells
 ------------------------------------------
 
-``BlockRectangle::gridCells()`` divides a larger canvas into evenly spaced sub-rectangles.
+``Rectangle::gridCells()`` divides a larger canvas into evenly spaced sub-rectangles.
 This is useful for dashboards, menu grids, option panels, and any row-major layout where each cell should stay
 predictable.
 
 .. code-block:: cpp
 
-    const auto grid = BlockRectangle{2, 2, 68, 8};
+    const auto grid = Rectangle{2, 2, 68, 8};
     const auto cells = grid.gridCells(2, 3, 2, 1);
 
     for (std::size_t index = 0; index < cells.size(); ++index) {
@@ -197,12 +197,12 @@ If the requested number of rows, columns, and spacing no longer fits into the re
 Walking Neighbors and Frame Perimeters
 --------------------------------------
 
-``BlockPosition`` and ``BlockRectangle`` include traversal helpers that are useful for custom layout logic, collision
+``Position`` and ``Rectangle`` include traversal helpers that are useful for custom layout logic, collision
 checks, and procedural drawing.
 
 .. code-block:: cpp
 
-    const auto center = BlockPosition{12, 5};
+    const auto center = Position{12, 5};
     for (const auto pos : center.cardinalFour()) {
         buffer.set(pos, Block{U'+', Color{fg::BrightYellow, bg::Inherited}});
     }
@@ -210,27 +210,27 @@ checks, and procedural drawing.
         // ringEight() returns the eight surrounding positions clockwise.
     }
 
-    const auto frame = BlockRectangle{46, 2, 18, 7};
-    frame.forEachInFrame([&](const BlockPosition pos, const int index) {
+    const auto frame = Rectangle{46, 2, 18, 7};
+    frame.forEachInFrame([&](const Position pos, const int index) {
         buffer.set(
             pos,
             Block{static_cast<char32_t>(U'0' + (index % 10)), Color{fg::BrightWhite, bg::Inherited}});
     });
 
-    const auto currentIndex = frame.frameIndex(BlockPosition{63, 5});
+    const auto currentIndex = frame.frameIndex(Position{63, 5});
 
-The ``BlockDirection`` wrapper fits into the same workflow when directions come from configuration or input, because it
+The ``Direction`` wrapper fits into the same workflow when directions come from configuration or input, because it
 can convert to and from deltas and strings.
 
 .. code-block:: cpp
 
-    auto cursor = BlockPosition{10, 5};
-    cursor += BlockDirection::fromString("east").toDelta();
+    auto cursor = Position{10, 5};
+    cursor += Direction::fromString("east").toDelta();
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    ␛[97;40m      BlockPosition::ringEight()              BlockRectangle::forEachInFrame()    ␛[39;49m
+    ␛[97;40m      Position::ringEight()              Rectangle::forEachInFrame()    ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
     ␛[97;40m                                              ␛[49m012345678901234567␛[40m        ␛[39;49m
     ␛[97;40m                                              ␛[49m5␛[40m                ␛[49m8␛[40m        ␛[39;49m
@@ -247,24 +247,24 @@ Deriving Bounds and Keeping Cursors in Range
 
 Two other helpers are worth using regularly:
 
-* ``BlockRectangle::bounds()``
+* ``Rectangle::bounds()``
   creates the smallest rectangle that contains a set of positions.
-* ``BlockRectangle::clamp()``
+* ``Rectangle::clamp()``
   keeps a cursor or probe position inside a rectangle.
 
 .. code-block:: cpp
 
     const auto points = PositionList{
-        BlockPosition{5, 5},
-        BlockPosition{9, 3},
-        BlockPosition{13, 6},
-        BlockPosition{17, 4},
-        BlockPosition{11, 7},
+        Position{5, 5},
+        Position{9, 3},
+        Position{13, 6},
+        Position{17, 4},
+        Position{11, 7},
     };
-    const auto highlight = BlockRectangle::bounds(points).expandedBy(BlockMargins{1});
+    const auto highlight = Rectangle::bounds(points).expandedBy(Margins{1});
 
-    const auto viewport = BlockRectangle{46, 2, 16, 6};
-    const auto rawCursor = BlockPosition{66, 8};
+    const auto viewport = Rectangle{46, 2, 16, 6};
+    const auto rawCursor = Position{66, 8};
     const auto safeCursor = viewport.clamp(rawCursor);
 
     if (viewport.contains(safeCursor)) {
@@ -277,7 +277,7 @@ boundary instead of spilling outside the drawable area.
 .. erbsland-ansi::
     :escape-char: ␛
 
-    ␛[97;40m       BlockRectangle::bounds()                    BlockRectangle::clamp()        ␛[39;49m
+    ␛[97;40m       Rectangle::bounds()                    Rectangle::clamp()        ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
     ␛[97;40m    ␛[95m╔═════════════╗␛[97m                           ␛[96m┌───␛[90mviewport␛[96m───┐␛[97m          ␛[39;49m
     ␛[97;40m    ␛[95m║␛[97m    ␛[93;49m•␛[97;40m        ␛[95m║␛[97m                           ␛[96m│␛[97m              ␛[96m│␛[97m          ␛[39;49m
@@ -289,28 +289,28 @@ boundary instead of spilling outside the drawable area.
     ␛[97;40m  ␛[90mderive one enclosing rectangle␛[97m           ␛[90mclamped to nearest edge␛[97m      ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
 
-Orientation Helpers and BlockCoordinate Values
+Orientation Helpers and Coordinate Values
 ----------------------------------------------
 
-``Orientation`` and ``BlockCoordinate`` are the small glue types that keep geometry code readable when logic needs to
+``Orientation`` and ``Coordinate`` are the small glue types that keep geometry code readable when logic needs to
 switch between horizontal and vertical behavior.
 
 .. code-block:: cpp
 
     auto axis = Orientation::Horizontal;
-    auto size = BlockSize{24, 7};
-    auto cursor = BlockPosition{4, 2};
+    auto size = Size{24, 7};
+    auto cursor = Position{4, 2};
 
-    const auto primaryExtent = size.coordinate(axis);
-    const auto primaryOffset = cursor.coordinate(axis);
+    const auto primaryExtent = size.component(axis);
+    const auto primaryOffset = cursor.component(axis);
     const auto crossAxis = axis.crossed();
 
     if (crossAxis == Orientation::Vertical) {
         buffer.drawBlockText(
             el::StringFormat{"axis={} offset={}"_el}.build(primaryExtent, primaryOffset),
-            BlockRectangle{2, 2, 24, 1},
+            Rectangle{2, 2, 24, 1},
             Alignment::Left);
     }
 
-The ``coordinate()`` helpers on ``BlockSize`` and ``BlockPosition`` let one code path serve both axes without branching
+The ``coordinate()`` helpers on ``Size`` and ``Position`` let one code path serve both axes without branching
 on ``x/y`` or ``width/height`` names all the way through the implementation.

@@ -21,11 +21,22 @@
 
 using namespace el::text::literals;
 using namespace el::text::render;
-using namespace el::text::render::impl;
 
 TESTED_TARGETS(
     CompiledLayout Compiler Engine Opcode Program ProgramError ProgramInstruction ProgramReader ProgramWriter)
 class RenderProgramTest final : public el::UnitTest {
+    using BuiltInFilter = el::text::render::impl::BuiltInFilter;
+    using CompiledLayout = el::text::render::impl::CompiledLayout;
+    using Compiler = el::text::render::impl::Compiler;
+    using ConstCompiledLayoutPtr = el::text::render::impl::ConstCompiledLayoutPtr;
+    using Engine = el::text::render::impl::Engine;
+    using Opcode = el::text::render::impl::Opcode;
+    using Program = el::text::render::impl::Program;
+    using ProgramError = el::text::render::impl::ProgramError;
+    using ProgramInstruction = el::text::render::impl::ProgramInstruction;
+    using ProgramReader = el::text::render::impl::ProgramReader;
+    using ProgramWriter = el::text::render::impl::ProgramWriter;
+
 public:
     void testSourceMap() {
         const auto layout =

@@ -5,7 +5,7 @@
 namespace erbsland {
 
 // Fwd declare all API namespaces
-namespace bgeo {}
+namespace block {}
 namespace conf {}
 namespace core {}
 namespace cryptology {}
@@ -13,6 +13,7 @@ namespace cterm::theme {}
 namespace debug {}
 namespace err {}
 namespace event {}
+namespace geometry {}
 namespace i18n {}
 namespace log {}
 namespace math {}
@@ -24,7 +25,9 @@ namespace random {}
 namespace re {}
 namespace resource {}
 namespace stream::io {}
-namespace system {}
+namespace system {
+namespace info {}
+}
 namespace text {
 namespace html {}
 namespace pattern {}

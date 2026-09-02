@@ -10,11 +10,11 @@ namespace erbsland::cterm {
 
 using namespace text::literals;
 
-auto ParagraphOptions::alignment() const noexcept -> bgeo::Alignment {
+auto ParagraphOptions::alignment() const noexcept -> geometry::Alignment {
     return _alignment;
 }
 
-void ParagraphOptions::setAlignment(const bgeo::Alignment alignment) noexcept {
+void ParagraphOptions::setAlignment(const geometry::Alignment alignment) noexcept {
     _alignment = alignment;
 }
 
@@ -50,11 +50,11 @@ void ParagraphOptions::setWrappedLineIndent(const int indent) noexcept {
     _indents.setWrappedLineIndent(indent);
 }
 
-auto ParagraphOptions::margins() const noexcept -> const bgeo::BlockMargins & {
+auto ParagraphOptions::margins() const noexcept -> const block::Margins & {
     return _indents.margins();
 }
 
-void ParagraphOptions::setMargins(const bgeo::BlockMargins margins) noexcept {
+void ParagraphOptions::setMargins(const block::Margins margins) noexcept {
     _indents.setMargins(margins);
 }
 

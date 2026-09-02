@@ -45,18 +45,6 @@ void requireNode(
 void requireNullParameters(const Asn1Node &parameters, const text::String &name);
 /// Throw a parse failure with a stable RSA context.
 [[noreturn]] void throwParseError(const text::String &reason);
-/// Convert a big-endian octet string to a fixed-width limb value.
-[[nodiscard]] auto numberFromBigEndian(mem::ConstByteSpan bytes, std::size_t wordCount) -> Number;
-/// Convert a fixed-width limb value to exactly `length` big-endian octets.
-[[nodiscard]] auto numberToBigEndian(const Number &value, std::size_t length) -> mem::ByteBlock;
-/// Compare two equal-width limb values.
-[[nodiscard]] auto compare(const Number &left, const Number &right) noexcept -> int;
-/// Compute `(left - right) mod 2^(32*count)` for `left >= right` in the represented integer domain.
-void subtract(Number &left, const Number &right) noexcept;
-/// Compute `(left + right) mod modulus` for reduced operands.
-[[nodiscard]] auto addModulo(const Number &left, const Number &right, const Number &modulus) noexcept -> Number;
-/// Compute `(left * right) mod modulus` using public-input double-and-add arithmetic.
-[[nodiscard]] auto multiplyModulo(const Number &left, const Number &right, const Number &modulus) noexcept -> Number;
 /// Apply RSAVP1: `m = s^e mod n`.
 [[nodiscard]] auto rsaVerificationPrimitive(const PublicKeyData &key, mem::ConstByteSpan signature)
     -> std::optional<mem::ByteBlock>;

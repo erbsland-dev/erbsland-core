@@ -8,6 +8,10 @@ target_sources(erbsland-core PRIVATE
         TlsCipherSuite.hpp
         TlsConfiguration.hpp
         TlsConfiguration_fwd.hpp
+        TlsConfigurationEntry.hpp
+        TlsConfigurationParser.cpp
+        TlsConfigurationParser.hpp
+        TlsConfigurationParser_fwd.hpp
         TlsConfigurationResolution.hpp
         TlsServerIdentity.cpp
         TlsServerIdentity.hpp

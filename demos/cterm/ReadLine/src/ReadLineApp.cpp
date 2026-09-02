@@ -68,16 +68,16 @@ void ReadLineApp::writeClock(const bool initial) {
     }
     _lastClockText = clock;
 
-    const auto width = std::max(terminal()->size().width(), el::BlockCoordinate{1});
+    const auto width = std::max(terminal()->size().width(), el::block::Coordinate{1});
     auto buffer = el::cterm::Buffer{
-        el::BlockSize{width, el::BlockCoordinate{1}}, el::cterm::Block{U' ', el::cterm::BlockStyle::reset()}};
+        el::block::Size{width, el::block::Coordinate{1}}, el::cterm::Block{U' ', el::cterm::BlockStyle::reset()}};
     buffer.drawBlockText(
         el::String::fromJoined({"Event loop clock: "_el, clock}),
-        buffer.rect().insetBy(el::BlockMargins{1, 0}),
+        buffer.rect().insetBy(el::block::Margins{1, 0}),
         el::Alignment::CenterLeft,
         el::cterm::BlockStyle::reset());
     if (!initial) {
-        terminal()->moveUp(el::BlockCoordinate{1});
+        terminal()->moveUp(el::block::Coordinate{1});
     }
     terminal()->write(buffer);
     terminal()->flush();

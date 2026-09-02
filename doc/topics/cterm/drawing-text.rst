@@ -33,8 +33,8 @@ Drawing Direct Strings and Aligned Labels
 
 ``WritableBuffer`` provides two main entry points for text that does not need paragraph formatting:
 
-* ``drawBlockText(BlockPosition, BlockString)`` writes text at an exact start position.
-* ``drawBlockText(BlockString, BlockRectangle, Alignment, Color)`` aligns text inside a
+* ``drawBlockText(Position, BlockString)`` writes text at an exact start position.
+* ``drawBlockText(BlockString, Rectangle, Alignment, Color)`` aligns text inside a
   rectangle.
 
 .. code-block:: cpp
@@ -51,14 +51,14 @@ Drawing Direct Strings and Aligned Labels
         fg::BrightWhite,
         " refresh");
 
-    buffer.drawBlockText(BlockPosition{4, 4}, footer);
+    buffer.drawBlockText(Position{4, 4}, footer);
 
     buffer.drawFilledFrame(
-        BlockRectangle{42, 2, 24, 5},
+        Rectangle{42, 2, 24, 5},
         FrameStyle::LightWithRoundedCorners,
         Block{" ", Color{fg::Inherited, bg::Blue}},
         Color{fg::BrightCyan, bg::Inherited});
-    buffer.drawBlockText("Overview", BlockRectangle{42, 2, 24, 5}, Alignment::Center, Color{fg::BrightWhite, bg::Inherited});
+    buffer.drawBlockText("Overview", Rectangle{42, 2, 24, 5}, Alignment::Center, Color{fg::BrightWhite, bg::Inherited});
 
 Use the position-based overload for status lines, overlays, and other exact placements.
 Use the rectangle overload for titles, centered labels, and other layout-driven text.
@@ -66,7 +66,7 @@ Use the rectangle overload for titles, centered labels, and other layout-driven 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    ␛[97;40m    drawBlockText(BlockPosition, BlockString)         drawBlockText(BlockString, BlockRectangle, ...) ␛[39;49m
+    ␛[97;40m    drawBlockText(Position, BlockString)         drawBlockText(BlockString, Rectangle, ...) ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
     ␛[97;40m  ␛[90m012345678901234567890123456789␛[97m          ␛[96m╭──────────────────────╮␛[97m      ␛[39;49m
     ␛[97;40m                                          ␛[96m│␛[97;44m                      ␛[96;40m│␛[97m      ␛[39;49m
@@ -77,7 +77,7 @@ Use the rectangle overload for titles, centered labels, and other layout-driven 
     ␛[97;40m   ␛[90mexact position, mixed colors␛[97m        ␛[90msame API, aligned in a rectangle␛[97m ␛[39;49m
     ␛[97;40m                                                                        ␛[39;49m
 
-BlockText Alignment Inside a BlockRectangle
+BlockText Alignment Inside a Rectangle
 -------------------------------------------
 
 ``BlockText`` uses the same ``Alignment`` model as the geometry and bitmap helpers.
@@ -85,7 +85,7 @@ This means you can place a text block inside its target rectangle without manual
 
 .. code-block:: cpp
 
-    auto title = BlockText{BlockString{"Short note"}, BlockRectangle{26, 2, 20, 4}, Alignment::Center};
+    auto title = BlockText{BlockString{"Short note"}, Rectangle{26, 2, 20, 4}, Alignment::Center};
     title.setColor(Color{fg::BrightYellow, bg::Inherited});
     buffer.drawBlockText(title);
 
@@ -113,7 +113,7 @@ Rendering Wrapped Paragraphs
 
     auto help = BlockText{
         BlockString{"Navigation: Use arrow keys to move.\n\nActions: Press Enter to open."},
-        BlockRectangle{10, 3, 52, 7},
+        Rectangle{10, 3, 52, 7},
         Alignment::TopLeft};
     help.setParagraphSpacing(ParagraphSpacing::DoubleLine);
     help.setWrappedLineIndent(2);
@@ -159,9 +159,9 @@ Reusing BlockTextOptions and Animation
         });
     options.setAnimation(BlockTextAnimation::ColorDiagonal);
 
-    auto left = BlockText{BlockString{"ALERT PANEL"}, BlockRectangle{4, 3, 28, 2}, Alignment::Center};
+    auto left = BlockText{BlockString{"ALERT PANEL"}, Rectangle{4, 3, 28, 2}, Alignment::Center};
     left.setBlockTextOptions(options);
-    auto right = BlockText{BlockString{"ALERT PANEL"}, BlockRectangle{40, 3, 28, 2}, Alignment::Center};
+    auto right = BlockText{BlockString{"ALERT PANEL"}, Rectangle{40, 3, 28, 2}, Alignment::Center};
     right.setBlockTextOptions(options);
 
     buffer.drawBlockText(left, 1);

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../line/LogLine.hpp"
 #include "../LogEntry.hpp"
-#include "../LogLine.hpp"
 #include "../LogLineFormat.hpp"
 
 namespace erbsland::log::impl {

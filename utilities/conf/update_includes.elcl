@@ -13,13 +13,13 @@ Excluded Directories    :
 # Use this for platform-specific public headers that are added through
 # conditional CMake target_sources blocks.
 Excluded Headers        :
-    * "system/WindowsErrorContext.hpp"
+    * "system/MakeOneNamespace.hpp"
 
 # Source-relative public headers that get an individual include wrapper but are
 # omitted from generated all.hpp headers. Keep opt-in interoperability adapters
 # out of regular builds and include them explicitly where they are needed.
 Excluded From All Headers :
-    * "bgeo/StdFormat.hpp"
+    * "block/StdFormat.hpp"
     * "conf/StdFormat.hpp"
     * "cryptology/StdFormat.hpp"
     * "re/StdFormat.hpp"
@@ -46,10 +46,11 @@ Create Global Includes  : No
 # one forwarding wrapper. A real header with that name in the parent remains
 # a conflict.
 Fold into Parent        :
-    * "bgeo"
     * "core"
     * "err"
     * "event"
+    * "geometry"
+    * "log"
     * "math"
     * "mem"
     * "network"
@@ -57,6 +58,7 @@ Fold into Parent        :
     * "path"
     * "random"
     * "stream"
+    * "system"
     * "text"
     * "time"
     * "unit"

@@ -106,7 +106,7 @@ auto U32StringTransformTools::transformedIfChanged(const TransformCharacterFn fu
     return std::nullopt;
 }
 
-auto U32StringTransformTools::aligned(const CpLength length, const bgeo::Alignment alignment, const Char fill) const
+auto U32StringTransformTools::aligned(const CpLength length, const geometry::Alignment alignment, const Char fill) const
     -> U32StringSharedStorage {
     const auto data = _data.dataSpan();
     const auto currentLength = CpLength::fromSizeT(data.size());

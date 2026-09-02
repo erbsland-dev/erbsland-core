@@ -19,7 +19,7 @@ namespace erbsland::text::base_n {
 
 /// A validated alphabet and behavior definition for power-of-two Base-N encodings.
 /// Supported alphabets contain exactly 16, 32, or 64 distinct Unicode scalar values.
-/// @seedoc{/reference/text/base_n}
+/// @seedoc{/reference/text/encoding}
 /// @tested{BaseNFormatTest BaseNCodecTest}
 class BaseNFormat final {
 public:

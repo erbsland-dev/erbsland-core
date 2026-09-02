@@ -4,8 +4,8 @@
 
 #include "BlockCombinationStyle.hpp"
 
-#include "../bgeo/Alignment.hpp"
-#include "../bgeo/BlockRectangle.hpp"
+#include "../block/Rectangle.hpp"
+#include "../geometry/Alignment.hpp"
 
 namespace erbsland::cterm {
 
@@ -14,13 +14,12 @@ class BufferDrawOptions final {
 public:
     /// Create default draw options with a target position.
     /// @param targetPos The target position.
-    explicit BufferDrawOptions(const bgeo::BlockPosition targetPos) noexcept :
-        _targetRect(targetPos, bgeo::BlockSize{}) {}
+    explicit BufferDrawOptions(const block::Position targetPos) noexcept : _targetRect(targetPos, block::Size{}) {}
 
     /// Create default draw options with a target rectangle and alignment.
     /// @param targetRect The target rectangle.
     /// @param sourceRect The source rectangle.
-    BufferDrawOptions(const bgeo::BlockRectangle targetRect, const bgeo::BlockRectangle sourceRect) noexcept :
+    BufferDrawOptions(const block::Rectangle targetRect, const block::Rectangle sourceRect) noexcept :
         _targetRect(targetRect), _sourceRect(sourceRect) {}
 
     // defaults
@@ -33,20 +32,20 @@ public:
 public:
     /// Get the target rectangle.
     /// @return The target rectangle.
-    [[nodiscard]] auto targetRect() const noexcept -> const bgeo::BlockRectangle & { return _targetRect; }
+    [[nodiscard]] auto targetRect() const noexcept -> const block::Rectangle & { return _targetRect; }
     /// Test if the target is just a position.
     [[nodiscard]] auto isTargetPosition() const noexcept -> bool { return _targetRect.size().isZero(); }
     /// Set the target rectangle.
     /// @param rect The target rectangle.
-    void setTargetRect(const bgeo::BlockRectangle &rect) noexcept { _targetRect = rect; }
+    void setTargetRect(const block::Rectangle &rect) noexcept { _targetRect = rect; }
     /// Get the source rectangle.
     /// @return The source rectangle.
-    [[nodiscard]] auto sourceRect() const noexcept -> const bgeo::BlockRectangle & { return _sourceRect; }
+    [[nodiscard]] auto sourceRect() const noexcept -> const block::Rectangle & { return _sourceRect; }
     /// Test if the whole source shall be used.
     [[nodiscard]] auto useFullSource() const noexcept -> bool { return _sourceRect.size().isZero(); }
     /// Set the source rectangle.
     /// @param rect The source rectangle.
-    void setSourceRect(const bgeo::BlockRectangle &rect) noexcept { _sourceRect = rect; }
+    void setSourceRect(const block::Rectangle &rect) noexcept { _sourceRect = rect; }
     /// Get the combination style.
     /// If a combination style is set, the characters from the source buffer are combined with the target buffer.
     /// A combination style overrides the `overrideColors` setting.
@@ -66,8 +65,8 @@ public:
     void setOverwriteColors(const bool overwrite) noexcept { _overwrite = overwrite; }
 
 private:
-    bgeo::BlockRectangle _targetRect;           ///< A target rectangle, zero size if just a position.
-    bgeo::BlockRectangle _sourceRect;           ///< A source rectangle, zero size if the whole buffer shall be used.
+    block::Rectangle _targetRect;               ///< A target rectangle, zero size if just a position.
+    block::Rectangle _sourceRect;               ///< A source rectangle, zero size if the whole buffer shall be used.
     BlockCombinationStylePtr _combinationStyle; ///< An optional combination style.
     bool _overwrite{false};                     ///< Flag if `Inherit` colors should be interpreted as `Default`.
 };

@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Options.hpp"
 
+#include "OptionFlag.hpp"
 #include "OptionModule.hpp"
 #include "OptionSet.hpp"
+#include "OptionType.hpp"
 
 #include "impl/ExecutableName.hpp"
 
@@ -60,6 +62,8 @@ auto Options::defaultOptionSet() -> OptionSetPtr {
 auto Options::createBuiltInOptionSet() -> OptionSetPtr {
     auto optionSet = OptionSet::create();
     optionSet->addOption({"-h"_el, "--help"_el})
+        .setType(OptionType::Text)
+        .setFlag(OptionFlag::AcceptAsFlag)
         .setHelp("Display this help."_el)
         .setHelpVisibility(OptionHelpVisibility::Overview);
     optionSet->addOption("--version"_el)

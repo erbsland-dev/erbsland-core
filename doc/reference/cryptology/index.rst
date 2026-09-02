@@ -14,11 +14,9 @@ primary usage and security guidance.
 .. toctree::
     :maxdepth: 1
 
-    hashing
-    key_agreement
-    message_authentication
+    cryptographic_operations
+    key_management
     password_hashing
-    signing_keys
-    symmetric_encryption
-    tls_record_protection
+    protected_data
+    tls
     x509_certificates

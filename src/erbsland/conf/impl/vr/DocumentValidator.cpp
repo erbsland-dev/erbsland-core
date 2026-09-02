@@ -45,6 +45,7 @@ void DocumentValidator::validatePass1() {
 
     // initialize the use-indexes flag with root key definitions
     _useIndexes = _root->hasKeyDefinitions();
+    _useDependencies = _root->hasDependencyDefinitions();
 
     std::vector<Frame> stack;
     stack.reserve(32);
@@ -322,25 +323,25 @@ void DocumentValidator::validateDependencies(const conf::ValuePtr &value, const 
 
             text::String message;
             switch (dependency->mode().raw()) {
-            case DependencyMode::If:
+            case vr::DependencyMode::If:
                 message = text::StringFormat{"If {} is configured, you must also configure {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;
-            case DependencyMode::IfNot:
+            case vr::DependencyMode::IfNot:
                 message = text::StringFormat{"If {} is configured, you must {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), true));
                 break;
-            case DependencyMode::OR: {
+            case vr::DependencyMode::OR: {
                 auto allNamePaths = dependency->sources();
                 allNamePaths.insert(allNamePaths.end(), dependency->targets().begin(), dependency->targets().end());
                 message = text::StringFormat{"You must configure {}"_el}.build(errorNamePathsOr(allNamePaths, false));
                 break;
             }
-            case DependencyMode::XOR:
+            case vr::DependencyMode::XOR:
                 message = text::StringFormat{"You must either configure {} or configure {}"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;
-            case DependencyMode::XNOR:
+            case vr::DependencyMode::XNOR:
                 message = text::StringFormat{"You must configure {} and configure {}, or none of them"_el}.build(
                     errorNamePathsOr(dependency->sources(), false), errorNamePathsOr(dependency->targets(), false));
                 break;

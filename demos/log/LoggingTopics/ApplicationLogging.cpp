@@ -8,14 +8,9 @@ namespace demo {
 
 /// Application logging is ready without an explicit configuration.
 ///
-/// The root stream writes information, warning, and error messages to the console. Services can additionally retain
-/// recent errors so startup failures remain visible during application cleanup, even if later configuration replaces
-/// the ordinary writers.
+/// The root stream writes information, warning, and error messages to the console.
 void applicationLogging() {
     const auto log = el::application().logStream();
-
-    // Enable the retained-error safety net before startup work can fail.
-    el::application().enableLastErrorDump();
 
     // Write directly through the application root stream for a minimal tool.
     log->info("Explorer guild registry opened."_el);

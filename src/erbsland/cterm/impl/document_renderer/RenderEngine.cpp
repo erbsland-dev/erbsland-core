@@ -181,9 +181,9 @@ void RenderEngine::appendCodeSnippetLine(const TextNode &line, const RenderConte
     const auto sourceStyle = context.resolvedTextStyle(_style.baseTextStyle(), sourceRule);
     const auto gutter = makeCodeSnippetGutter(number, !number.isEmpty(), context);
     const auto markerGutter = makeCodeSnippetGutter({}, !number.isEmpty(), context);
-    const auto margins = lineIndents.margins();
-    const auto availableWidth = std::max(
-        _width - frameWidth() - positive(margins.left()) - positive(margins.right()) - gutter.displayWidth(), 1);
+    const auto margins = lineIndents.margins().horizontal();
+    const auto availableWidth =
+        std::max(_width - frameWidth() - margins.extent().toRawValue() - gutter.displayWidth(), 1);
     const auto layout = text::impl::CodeSnippetLayout{source, markers, availableWidth};
     const auto &rows = layout.rows();
     for (auto rowIndex = std::size_t{0}; rowIndex < rows.size(); ++rowIndex) {

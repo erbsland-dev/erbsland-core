@@ -46,27 +46,27 @@ public:
         auto writer = CursorWriterProbe{};
 
         writer.moveLeft(blockCoordinate(2));
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{-2, 0}));
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{-2, 0}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Relative);
 
         writer.moveRight(blockCoordinate(3));
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{3, 0}));
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{3, 0}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Relative);
 
         writer.moveUp(blockCoordinate(4));
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{0, -4}));
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{0, -4}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Relative);
 
         writer.moveDown(blockCoordinate(5));
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{0, 5}));
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{0, 5}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Relative);
 
-        writer.moveTo(bgeo::BlockPosition{6, 7});
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{6, 7}));
+        writer.moveTo(block::Position{6, 7});
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{6, 7}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Absolute);
 
         writer.moveHome();
-        REQUIRE_EQUAL(writer._lastMove, (bgeo::BlockPosition{0, 0}));
+        REQUIRE_EQUAL(writer._lastMove, (block::Position{0, 0}));
         REQUIRE_EQUAL(writer._lastMoveMode, MoveMode::Absolute);
     }
 
@@ -91,7 +91,7 @@ public:
         const auto paragraphSource = BlockStringEditor{"xAA!"_el};
         const auto lineCount = writer.printParagraph(
             BlockString{paragraphSource}.slice(BlockRange{BlockIndex{1U}, BlockCount{2U}}),
-            ParagraphOptions{bgeo::Alignment::Right});
+            ParagraphOptions{geometry::Alignment::Right});
         writer.printLine("tail"_el);
 
         REQUIRE_EQUAL(writer.color(), Color(fg::Yellow, bg::Magenta));
@@ -112,7 +112,7 @@ public:
         REQUIRE_EQUAL(writer._lineBreakCount, 1);
         REQUIRE_EQUAL(lineCount, 7);
         requireStringEqual(writer._lastParagraph, U"AA");
-        REQUIRE_EQUAL(writer._lastParagraphAlignment, bgeo::Alignment::Right);
+        REQUIRE_EQUAL(writer._lastParagraphAlignment, geometry::Alignment::Right);
     }
 
     void testRepeatedWriteWrappersEmitTheRequestedCharacterCount() {

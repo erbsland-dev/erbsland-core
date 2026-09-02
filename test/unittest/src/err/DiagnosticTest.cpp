@@ -9,8 +9,8 @@
 #include <erbsland/path/PathErrorContext.hpp>
 #include <erbsland/stream/StreamError.hpp>
 #include <erbsland/stream/StreamErrorContext.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
 #include <erbsland/system/PlatformError.hpp>
-#include <erbsland/system/PosixErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringConverter.hpp>
 #include <erbsland/text/TextDocument.hpp>
@@ -67,7 +67,7 @@ public:
     }
 
     void testPathDiagnosticEmbedsPlatformContext() {
-        auto context = std::make_shared<const el::system::PosixErrorContext>(2, "No such file"_el);
+        auto context = std::make_shared<const el::system::impl::PosixErrorContext>(2, "No such file"_el);
         auto error =
             el::path::PathError{el::path::PathErrorContext{"File could not be read"_el, "The file is unavailable."_el}
                     .setSourcePath("/tmp/missing.txt"_el)
@@ -100,7 +100,7 @@ public:
         context.setSourcePath("/from/a"_el)
             .setTargetPath("/to/b"_el)
             .setHelp("Choose another destination."_el)
-            .setPlatformContext(std::make_shared<const el::system::PosixErrorContext>(17, "Exists"_el));
+            .setPlatformContext(std::make_shared<const el::system::impl::PosixErrorContext>(17, "Exists"_el));
         const auto error = el::path::PathError{context};
         const auto text = toStdString(error.diagnostic()->toTextDocument().toString());
 
@@ -137,7 +137,8 @@ public:
     }
 
     void testStreamDiagnosticEmbedsPlatformContext() {
-        const auto platform = std::make_shared<const el::system::PosixErrorContext>(EACCES, "Permission denied"_el);
+        const auto platform =
+            std::make_shared<const el::system::impl::PosixErrorContext>(EACCES, "Permission denied"_el);
         const auto error = el::stream::StreamError{
             el::stream::StreamErrorContext{"Stream could not be opened"_el, "The native open operation failed."_el}
                 .setPath("/tmp/output.dat"_el)
@@ -168,7 +169,7 @@ public:
         unsafePath.append(U'\x1b').append("b"_el);
         auto unsafeMessage = el::text::StringEditor{"bad"_el};
         unsafeMessage.append(U'\n').append("message"_el);
-        const auto platform = std::make_shared<const el::system::PosixErrorContext>(5, unsafeMessage);
+        const auto platform = std::make_shared<const el::system::impl::PosixErrorContext>(5, unsafeMessage);
         const auto error = el::path::PathError{el::path::PathErrorContext{"Path operation failed"_el}
                 .setSourcePath(unsafePath)
                 .setPlatformContext(platform)};

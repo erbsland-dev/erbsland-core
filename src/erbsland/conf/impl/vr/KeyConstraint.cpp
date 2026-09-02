@@ -12,8 +12,8 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-KeyConstraint::KeyConstraint(KeyReferences keyReferences) : _keyReferences{std::move(keyReferences)} {
-    setType(vr::ConstraintType::ConfKey);
+KeyConstraint::KeyConstraint(KeyReferences keyReferences) :
+    Constraint{vr::ConstraintType::ConfKey}, _keyReferences{std::move(keyReferences)} {
 }
 
 auto KeyConstraint::getKeyReferences() const -> const KeyReferences & {

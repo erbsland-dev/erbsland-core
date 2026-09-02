@@ -11,7 +11,7 @@ auto ReadableBuffer::countDifferencesTo(const ReadableBuffer &other) const noexc
     const auto otherRect = other.rect();
     const auto overlap = thisRect & otherRect;
     auto differences = thisRect.size().area() + otherRect.size().area() - 2 * overlap.size().area();
-    overlap.forEach([&](const bgeo::BlockPosition pos) -> void {
+    overlap.forEach([&](const block::Position pos) -> void {
         if (get(pos) != other.get(pos)) {
             differences += 1;
         }
@@ -33,7 +33,7 @@ auto ReadableBuffer::toMaskImpl(const text::CharSet &characters, const bool inve
     if (characters.isEmpty()) {
         return bitmap;
     }
-    sourceRect.forEach([&](const bgeo::BlockPosition pos) -> void {
+    sourceRect.forEach([&](const block::Position pos) -> void {
         auto isSet = characters.contains(get(pos).singleOrNull());
         if (invert) {
             isSet = !isSet;

@@ -11,7 +11,7 @@ namespace erbsland::network {
 
 /// One validated HTTP media-type parameter.
 /// Parameter names are canonical lowercase ASCII tokens. Values are semantic unquoted UTF-8 text.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpValueTest}
 class HttpMediaTypeParameter final {
 public:

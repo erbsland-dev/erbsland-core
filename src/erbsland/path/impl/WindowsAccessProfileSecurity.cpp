@@ -4,7 +4,7 @@
 
 #include "../PathError.hpp"
 
-#include "../../system/WindowsErrorContext.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../text/Literals.hpp"
 
 #include <memory>
@@ -66,7 +66,7 @@ void WindowsAccessProfileSecurity::throwProfileError(
     text::String reason, const Path &path, const unsigned long errorCode) {
     throw PathError{PathErrorContext{"File permissions could not be changed"_el, std::move(reason)}
             .setSourcePath(path.toString())
-            .setPlatformContext(system::WindowsErrorContext::fromErrorCode(errorCode))};
+            .setPlatformContext(system::impl::WindowsErrorContext::fromErrorCode(errorCode))};
 }
 
 auto WindowsAccessProfileSecurity::portableAccessMask() noexcept -> ACCESS_MASK {

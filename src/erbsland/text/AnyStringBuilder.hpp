@@ -39,7 +39,7 @@ namespace erbsland::text {
 ///
 /// The builder creates UTF-8, UTF-16, or UTF-32 strings through one API.
 /// Copies keep an independent builder state.
-/// @seedoc{/reference/text/any_string_builder}
+/// @seedoc{/reference/text/strings}
 /// @tested{AnyStringBuilderTest}
 class AnyStringBuilder final {
 public:

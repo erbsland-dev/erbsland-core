@@ -9,7 +9,7 @@ namespace erbsland::conf::vr::builder {
 
 using namespace text::literals;
 
-void Chars::operator()(Rule &rule) {
+void Chars::apply(RuleDefinition &rule) const {
     requireRuleTypeForConstraint(rule, "chars"_el, {vr::RuleType::Text});
     if (_values.isEmpty()) {
         throwValidationError("The 'chars' constraint must specify a single text value or a list of texts"_el);

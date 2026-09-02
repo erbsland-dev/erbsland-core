@@ -7,11 +7,10 @@ Core Semantics
 
 .. code-block:: text
 
-    entry = immutable UTC timestamp, level, path, sanitized message, and sequence
+    entry = immutable log entry
     path root = complete slash-delimited path-segment prefix
-    trace section = case-sensitive configuration identifier shared by related trace streams
-    route = writer, accepted levels, and zero or more path roots
-    persistent writer = application-owned writer retained across configuration replacement
+    trace section = case-sensitive configuration identifier to enable additional debug logs
+    route = log destination, usually a writer
 
 Primary Types
 =============
@@ -33,8 +32,6 @@ Secondary Types
     LogPath, LogTraceSection // validated routing identifiers
     LogWriterFilter // level and path-root route predicate
     LogLineFormat, LogLine, LogLinePtr, LogLineConstPtr // line settings, result, and shared ownership aliases
-    ConsoleLogWriter, FileLogWriter, SyslogLogWriter // built-in output targets
-    LastErrorsLogWriter // bounded retained error snapshot
     LogConfigurationParser // compiled-rule ELCL branch parser
     LogManagerOptions, LogManagerStatistics // limits and counters
 
@@ -62,7 +59,9 @@ Writer Patterns
 
 .. code-block:: text
 
+    T::createForConsole(terminal[, options]) -> LogWriterPtr // create the built-in console writer
+    T::createForFile(options) -> LogWriterPtr // create the built-in file writer
+    T::createForSyslog([options]) -> LogWriterPtr // create the built-in syslog writer
     o.write(entryPtr, linePtr) // accept one shared immutable entry and worker-formatted line
     o.writeBatch(batch) // accept shared immutable pointers in order; defaults to repeated write calls
     o.flush()/close() // finish writer output or release resources
-    o.snapshot() -> vector<LogEntryConstPtr> // share retained last-error entries in FIFO order

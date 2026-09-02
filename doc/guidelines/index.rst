@@ -41,7 +41,8 @@ project.
     cryptographic_algorithms
     api_guidelines
     api/common
-    api/bgeo
+    api/block
+    api/geometry
     api/conf
     api/core
     api/cryptology

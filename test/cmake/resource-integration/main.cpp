@@ -29,5 +29,8 @@ auto main() -> int {
     if (resources.getTextOrThrow("fixture"_el, "raw.txt"_el) != "Stored without transformations.\n"_el) {
         return 5;
     }
+    if (!resources.contains("static-fixture"_el, "alpha.txt"_el)) {
+        return 6;
+    }
     return 0;
 }

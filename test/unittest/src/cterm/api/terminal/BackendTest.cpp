@@ -104,7 +104,7 @@ public:
         terminal->moveRight(blockCoordinate(3));
         terminal->moveUp(blockCoordinate(4));
         terminal->moveDown(blockCoordinate(5));
-        terminal->moveTo(bgeo::BlockPosition{6, 7});
+        terminal->moveTo(block::Position{6, 7});
         terminal->moveHome();
         terminal->clearScreen();
         terminal->flush();
@@ -113,19 +113,17 @@ public:
         REQUIRE_EQUAL(backend->_clearScreenCallCount, 1);
         REQUIRE_EQUAL(backend->_cursorMoves.size(), std::size_t{6});
         REQUIRE_EQUAL(
-            backend->_cursorMoves[0],
-            (TerminalTestBackend::CursorMove{bgeo::BlockPosition{-2, 0}, MoveMode::Relative}));
+            backend->_cursorMoves[0], (TerminalTestBackend::CursorMove{block::Position{-2, 0}, MoveMode::Relative}));
         REQUIRE_EQUAL(
-            backend->_cursorMoves[1], (TerminalTestBackend::CursorMove{bgeo::BlockPosition{3, 0}, MoveMode::Relative}));
+            backend->_cursorMoves[1], (TerminalTestBackend::CursorMove{block::Position{3, 0}, MoveMode::Relative}));
         REQUIRE_EQUAL(
-            backend->_cursorMoves[2],
-            (TerminalTestBackend::CursorMove{bgeo::BlockPosition{0, -4}, MoveMode::Relative}));
+            backend->_cursorMoves[2], (TerminalTestBackend::CursorMove{block::Position{0, -4}, MoveMode::Relative}));
         REQUIRE_EQUAL(
-            backend->_cursorMoves[3], (TerminalTestBackend::CursorMove{bgeo::BlockPosition{0, 5}, MoveMode::Relative}));
+            backend->_cursorMoves[3], (TerminalTestBackend::CursorMove{block::Position{0, 5}, MoveMode::Relative}));
         REQUIRE_EQUAL(
-            backend->_cursorMoves[4], (TerminalTestBackend::CursorMove{bgeo::BlockPosition{6, 7}, MoveMode::Absolute}));
+            backend->_cursorMoves[4], (TerminalTestBackend::CursorMove{block::Position{6, 7}, MoveMode::Absolute}));
         REQUIRE_EQUAL(
-            backend->_cursorMoves[5], (TerminalTestBackend::CursorMove{bgeo::BlockPosition{0, 0}, MoveMode::Absolute}));
+            backend->_cursorMoves[5], (TerminalTestBackend::CursorMove{block::Position{0, 0}, MoveMode::Absolute}));
     }
 
     void testTerminalUsesCursorVisibilityFallbackHookWhenVisibilityCodesAreUnavailable() {
@@ -154,7 +152,7 @@ public:
         backend->_supportsColorCodes = false;
         backend->_supportsCursorCodes = false;
         backend->_supportsCursorVisibilityCodes = false;
-        auto terminal = createTerminal(backend, bgeo::BlockSize{2, 1});
+        auto terminal = createTerminal(backend, block::Size{2, 1});
 
         terminal->setOutputMode(Terminal::OutputMode::BlockText);
         terminal->clearScreen();
@@ -193,18 +191,18 @@ public:
     void testResizeClearsTheScreenExactlyOnceBeforeTheNextUpdate() {
         const auto backend = std::make_shared<TerminalTestBackend>();
         backend->_supportsCursorCodes = false;
-        auto terminal = createTerminal(backend, bgeo::BlockSize{4, 1});
+        auto terminal = createTerminal(backend, block::Size{4, 1});
 
         terminal->updateScreen(createBuffer({"ABCD"}));
         backend->clearRecordedOperations();
 
-        terminal->setSize(bgeo::BlockSize{5, 1});
+        terminal->setSize(block::Size{5, 1});
         terminal->updateScreen(createBuffer({"ABCDE"}));
 
         REQUIRE_EQUAL(backend->_clearScreenCallCount, 1);
         REQUIRE_EQUAL(backend->_cursorMoves.size(), std::size_t{1});
         REQUIRE_EQUAL(
-            backend->_cursorMoves[0], (TerminalTestBackend::CursorMove{bgeo::BlockPosition{0, 0}, MoveMode::Absolute}));
+            backend->_cursorMoves[0], (TerminalTestBackend::CursorMove{block::Position{0, 0}, MoveMode::Absolute}));
         REQUIRE_EQUAL(backend->output(), std::string{"ABCDE"});
     }
 

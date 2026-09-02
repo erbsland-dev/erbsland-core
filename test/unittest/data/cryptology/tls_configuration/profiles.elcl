@@ -1,0 +1,16 @@
+# TLS configuration parser fixtures. Material paths are relative to this file.
+*[tls]*
+Label                         : "http/server"
+Server Certificate Chain File: "../../network/tls-interop/server.pem"
+Server Signing Key File       : "../../network/tls-interop/server-key.pem"
+
+*[tls]*
+Label                         : "http/client"
+Trust Anchors File            : "../../network/tls-interop/ca.pem"
+Intermediate Certificates File: "../../network/tls-interop/server.pem"
+
+*[tls]*
+Label                         : "http/combined"
+Trust Anchors File            : "../../network/tls-interop/ca.pem"
+Server Certificate Chain File: "../../network/tls-interop/server.pem"
+Server Signing Key File       : "../../network/tls-interop/server-key.pem"

@@ -18,7 +18,7 @@ namespace erbsland::cryptology {
 
 /// Select hash algorithms using requirements and the live application-wide cryptology policy.
 /// Each operation uses one coherent configuration snapshot. Explicit `Hasher` construction is unaffected by policy.
-/// @seedoc{/reference/cryptology/hashing}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HashAlgorithmTest CryptologyConfigurationTest}
 class HashSelector final {
 public:

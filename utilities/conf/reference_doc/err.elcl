@@ -1,0 +1,7 @@
+# Reference-document groups for the err domain.
+
+------------*[ Reference Groups ]
+Page        : "err/errors_and_diagnostics.rst"
+Title       : "Errors and Diagnostics"
+Header Globs:
+    * "err/*.hpp"

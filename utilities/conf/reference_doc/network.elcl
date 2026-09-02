@@ -1,0 +1,40 @@
+# Reference-document groups for the network domain.
+
+------------*[ Reference Groups ]
+Page        : "network/addressing_and_urls.rst"
+Title       : "Network Addressing and URLs"
+Header Globs:
+    * "network/*.hpp"
+    * "network/url/*.hpp"
+Excluded Header Globs:
+    * "network/Network.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/connections.rst"
+Title       : "Network Connections"
+Headers     :
+    * "network/Network.hpp"
+Header Globs:
+    * "network/host_lookup/*.hpp"
+    * "network/source/*.hpp"
+    * "network/tcp/*.hpp"
+    * "network/tls/*.hpp"
+    * "network/udp/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_protocol.rst"
+Title       : "HTTP Protocol Types"
+Header Globs:
+    * "network/http/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_client.rst"
+Title       : "HTTP Client"
+Header Globs:
+    * "network/http_client/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "network/http_server.rst"
+Title       : "HTTP Server"
+Header Globs:
+    * "network/http_server/*.hpp"

@@ -20,7 +20,7 @@ namespace erbsland::cryptology {
 /// A complete symmetric encryption construction supported by the library.
 /// Algorithm metadata is library policy and can change between releases. Persisted data and protocols must store
 /// `toString()` for the selected type instead of relying on a future recommendation returning the same value.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{SymmetricEncryptionTypeTest}
 class SymmetricEncryptionType final {
 public:

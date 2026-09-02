@@ -12,6 +12,7 @@ target_sources(erbsland-core-unittest PRIVATE
         VrAlternativesTest.cpp
         VrBase.hpp
         VrBuilderApiTest.cpp
+        VrBuilderParityTest.cpp
         VrCharsTest.cpp
         VrContainsTest.cpp
         VrDefaultsAndOptionalityTest.cpp

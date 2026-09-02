@@ -4,11 +4,14 @@
 
 #include "../asn1/Asn1Node.hpp"
 #include "../impl/X509Parser_fwd.hpp"
+#include "../PemDerFormat.hpp"
 #include "../tls/TlsSignatureScheme_fwd.hpp"
 #include "../x509/X509AlgorithmIdentifier.hpp"
 
 #include "../../mem/ByteBlock.hpp"
 #include "../../mem/ByteSpan.hpp"
+#include "../../path/Path_fwd.hpp"
+#include "../../text/String_fwd.hpp"
 
 #include <cstdint>
 
@@ -81,6 +84,10 @@ public: // verification
 public: // conversion
     /// Get the exact canonical DER SubjectPublicKeyInfo.
     [[nodiscard]] auto toDer() const noexcept -> const mem::ByteBlock & { return _der; }
+    /// Encode this key as one RFC 7468 `PUBLIC KEY` block.
+    [[nodiscard]] auto toPem() const -> text::String;
+    /// Write this public key without replacing an existing file.
+    void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
 
 public: // factories
     /// Parse one canonical DER SubjectPublicKeyInfo, returning an empty key on error.
@@ -93,6 +100,16 @@ public: // factories
     /// @throws err::ParseError If the DER or SubjectPublicKeyInfo structure is malformed.
     /// @throws err::OutOfRangeError If a fixed parser resource limit is exceeded.
     [[nodiscard]] static auto fromDerOrThrow(const mem::ByteBlock &der) -> PublicKey;
+    /// Parse one strict `PUBLIC KEY` PEM block, returning an empty key on error.
+    [[nodiscard]] static auto fromPem(const text::String &pem) noexcept -> PublicKey;
+    /// Parse one strict `PUBLIC KEY` PEM block.
+    [[nodiscard]] static auto fromPemOrThrow(const text::String &pem) -> PublicKey;
+    /// Read one SubjectPublicKeyInfo file, returning an empty key on error.
+    [[nodiscard]] static auto fromFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) noexcept
+        -> PublicKey;
+    /// Read one SubjectPublicKeyInfo file.
+    [[nodiscard]] static auto fromFileOrThrow(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic)
+        -> PublicKey;
 
 private:
     friend class impl::X509Parser;

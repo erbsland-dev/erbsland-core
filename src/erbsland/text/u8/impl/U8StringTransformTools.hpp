@@ -10,7 +10,7 @@
 
 #include "../U8StringEditor_fwd.hpp"
 
-#include "../../../bgeo/Alignment.hpp"
+#include "../../../geometry/Alignment.hpp"
 #include "../../../unit/CpLength.hpp"
 #include "../../../util/LoopResult.hpp"
 #include "../../EscapeAmount.hpp"
@@ -44,7 +44,7 @@ public:
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U8StringDataView &ellipsis) const
         -> U8StringSharedStorage;
     /// Return storage padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill) const
+    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill) const
         -> U8StringSharedStorage;
 
 public: // escaping.

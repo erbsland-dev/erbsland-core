@@ -40,15 +40,19 @@ The last-errors writer retains a bounded FIFO snapshot of error entries.
 Interface
 =========
 
-.. doxygenclass:: erbsland::log::ConsoleLogWriter
-    :members:
 .. doxygenclass:: erbsland::log::ConsoleLogWriterOptions
-    :members:
-.. doxygenclass:: erbsland::log::FileLogWriter
     :members:
 .. doxygenclass:: erbsland::log::FileLogWriterOptions
     :members:
-.. doxygenclass:: erbsland::log::LastErrorsLogWriter
+.. doxygenclass:: erbsland::log::LogLine
+    :members:
+
+.. doxygentypedef:: erbsland::log::LogLinePtr
+
+.. doxygentypedef:: erbsland::log::LogLineConstPtr
+.. doxygenclass:: erbsland::log::LogLinePart
+    :members:
+.. doxygenstruct:: erbsland::log::LogLineSegment
     :members:
 .. doxygenclass:: erbsland::log::LogConfiguration
     :members:
@@ -70,17 +74,7 @@ Interface
 .. doxygentypedef:: erbsland::log::LogLevels
 .. doxygenclass:: erbsland::log::LogLevelFormat
     :members:
-.. doxygenclass:: erbsland::log::LogLine
-    :members:
-
-.. doxygentypedef:: erbsland::log::LogLinePtr
-
-.. doxygentypedef:: erbsland::log::LogLineConstPtr
 .. doxygenclass:: erbsland::log::LogLineFormat
-    :members:
-.. doxygenclass:: erbsland::log::LogLinePart
-    :members:
-.. doxygenstruct:: erbsland::log::LogLineSegment
     :members:
 .. doxygenclass:: erbsland::log::LogManager
     :members:
@@ -103,8 +97,6 @@ Interface
 .. doxygenclass:: erbsland::log::LogWriter
     :members:
 .. doxygenclass:: erbsland::log::LogWriterFilter
-    :members:
-.. doxygenclass:: erbsland::log::SyslogLogWriter
     :members:
 .. doxygenclass:: erbsland::log::SyslogLogWriterOptions
     :members:

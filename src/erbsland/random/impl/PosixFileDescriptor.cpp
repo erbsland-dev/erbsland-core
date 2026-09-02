@@ -4,8 +4,8 @@
 
 #include "../RandomError.hpp"
 
+#include "../../system/impl/PosixErrorContext.hpp"
 #include "../../system/PlatformError.hpp"
-#include "../../system/PosixErrorContext.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -25,7 +25,7 @@ PosixFileDescriptor::PosixFileDescriptor(const std::string &path) {
         const auto errorCode = errno;
         auto cause = std::make_exception_ptr(
             system::PlatformError{
-                "Cannot open system entropy source"_el, system::PosixErrorContext::fromErrorCode(errorCode)});
+                "Cannot open system entropy source"_el, system::impl::PosixErrorContext::fromErrorCode(errorCode)});
         throw random::RandomError{"Cannot open system entropy source"_el, std::move(cause)};
     }
 }

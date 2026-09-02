@@ -25,7 +25,7 @@
 namespace erbsland::mem {
 
 /// A one-allocation intrusive shared header with aligned trailing array storage.
-/// @seedoc{/reference/mem/cow_storage}
+/// @seedoc{/reference/mem/memory_and_byte_data}
 /// @warning This is an advanced data type, meant for people extending the library.
 /// Do not use it unless you understand the implications and have a specific need.
 ///

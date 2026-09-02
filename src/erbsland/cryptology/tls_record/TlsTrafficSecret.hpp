@@ -14,7 +14,7 @@ namespace erbsland::cryptology {
 /// A move-only TLS 1.3 traffic secret retained in application-protected storage.
 /// The secret length is the selected SHA-256 or SHA-384 digest length required by RFC 8446 sections 7.1--7.3. There is
 /// no public plaintext accessor; record protection resolves the secret only for scoped derivation and erasure.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsTrafficSecret final {
     friend class impl::TlsRecordState;

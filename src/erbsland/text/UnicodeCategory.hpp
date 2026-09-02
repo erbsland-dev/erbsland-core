@@ -9,7 +9,7 @@
 namespace erbsland::text {
 
 /// A Unicode general category.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 enum class UnicodeCategory : uint8_t {
     UppercaseLetter = 0x00,      ///< An uppercase letter.
     LowercaseLetter = 0x01,      ///< A lowercase letter.

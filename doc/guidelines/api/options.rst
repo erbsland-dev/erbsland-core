@@ -5,14 +5,11 @@ Options Domain API Guidelines
 Core Semantics
 ==============
 
-Command-Line Model
-------------------
-
 .. code-block:: text
 
     option = named flag, typed value, choice, or positional argument
-    option set = group of option definitions with parsing callbacks
-    module = first token selecting an action-specific collection of option sets
+    option set = group of option definitions
+    module = named action-specific collection of option sets
 
 Primary Types
 =============
@@ -30,10 +27,10 @@ Definition Types
 
 .. code-block:: text
 
-    OptionEditor // fluent option-definition editor
+    OptionEditor, OptionChoiceEditor // fluent option and choice definition editors
     OptionSetManager // shared definition-owning interface of roots, sets, and modules
     OptionChoice, OptionChoices // one accepted choice and its collection
-    OptionHelp // title, description, epilog, and visibility
+    OptionHelp // title, description, example, epilog, and visibility
     OptionType, OptionFlag, OptionFlags // declared value kind and definition flags
     OptionHelpVisibility // inherited or explicit help visibility
     OptionParserFlag, OptionParserFlags // built-in parser behavior flags
@@ -46,7 +43,7 @@ Result Types
     OptionResult // parse status, selected module, values, and error context
     OptionValues // parsed lookup map
     OptionValue // one parsed value with source definition and argument indexes
-    OptionValueStorage, OptionValueType // concrete parsed storage and its classification
+    OptionValueStorage, OptionValueType // parsed storage and classification
     OptionInteger // signed integer representation used by option values
     OptionSensitiveTextLocation, OptionSensitiveTextLocations // protected source suffixes to mask
     OptionResultStatus // success, display request, or error result
@@ -104,6 +101,8 @@ Definition Property Patterns
     o.set❮Property❯(value) -> OptionEditor& // fluently update an option definition
     o.setFlag/clearFlag(flag) -> OptionEditor& // add or remove one definition flag
     o.addChoice(text) -> OptionEditor& // add an accepted choice and select choice type
+    o.addChoice(text/choice) -> OptionChoiceEditor // append to OptionChoices and edit the accepted choice
+    o.setHelp❮Part❯(text) -> OptionChoiceEditor& // fluently update choice help metadata
     o.clearDefaultValue() -> OptionEditor& // remove a configured default
     o.isDisabled()/hasDefaultValue() -> bool // test common definition states
     o.matchingChoiceText(text) -> text::String // resolve a case-insensitive accepted choice
@@ -126,8 +125,10 @@ Display Patterns
 .. code-block:: text
 
     o.helpDocument/versionDocument(module) -> text::TextDocument // build a neutral display document
+    o.detailedHelpDocument(module, name)/moduleOverviewDocument() -> text::TextDocument // build focused help
     o.errorDocument(context) -> text::TextDocument // build a neutral error document
-    o.displayHelp/displayVersion(module) // render a built-in display request
+    o.displayHelp/displayDetailedHelp/displayVersion(module) // render a built-in display request
+    o.displayModuleOverview() // render the reduced module-selection document
     o.displayError(context) // render a structured option error
     o.executablePath()/setExecutablePath(path) // retain argv zero and derive the usage name
 
@@ -136,7 +137,7 @@ Result Patterns
 
 .. code-block:: text
 
-    o.status()/values()/errorContext() -> T // inspect the explicit parse outcome
+    o.status()/values()/helpName()/errorContext() -> T // inspect the explicit parse outcome
     o.moduleName()/module() -> T // inspect the selected module identity and definition
     o.sensitiveTextLocations() -> OptionSensitiveTextLocations // inspect every suffix masked after parsing
     o.value(name) -> OptionValuePtr // find a parsed value through any accepted name
@@ -150,5 +151,5 @@ Typed Value Access Patterns
 
     o.getFlag([name, fallback]) -> bool // read a flag or fallback
     o.getFlagCount(name[, fallback]) -> unit::ArgumentCount // read flag occurrence count
-    o.getInteger/getText([name, fallback]) -> T // read one typed value; sensitive text remains marked
-    o.getIntegerList/getTextList([name, fallback]) -> T // read all typed values
+    o.getBoolean/getInteger/getText([name, fallback]) -> T // read one typed value; sensitive text remains marked
+    o.getBooleanList/getIntegerList/getTextList([name, fallback]) -> T // read all typed values

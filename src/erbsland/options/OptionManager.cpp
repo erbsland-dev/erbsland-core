@@ -77,7 +77,20 @@ auto OptionManager::parseOrThrow(core::CommandLineArguments &args) -> OptionValu
         return values;
     }
     if (result.status() == OptionResultStatus::DisplayHelp) {
-        displayHelp(values->moduleName());
+        if (result.helpName().isEmpty()) {
+            displayHelp(values->moduleName());
+        } else {
+            try {
+                displayDetailedHelp(values->moduleName(), result.helpName());
+            } catch (const OptionError &error) {
+                displayError(error.context());
+                throw;
+            }
+        }
+        return {};
+    }
+    if (result.status() == OptionResultStatus::DisplayModuleOverview) {
+        displayModuleOverview();
         return {};
     }
     if (result.status() == OptionResultStatus::DisplayVersion) {
@@ -97,6 +110,14 @@ void OptionManager::displayHelp(const String &moduleName) const {
     renderPlainDocument(helpDocument(moduleName), stream::stdOut());
 }
 
+void OptionManager::displayDetailedHelp(const String &moduleName, const String &helpName) const {
+    renderPlainDocument(detailedHelpDocument(moduleName, helpName), stream::stdOut());
+}
+
+void OptionManager::displayModuleOverview() const {
+    renderPlainDocument(moduleOverviewDocument(), stream::stdOut());
+}
+
 void OptionManager::displayVersion(const String &moduleName) const {
     renderPlainDocument(versionDocument(moduleName), stream::stdOut());
 }
@@ -107,6 +128,14 @@ void OptionManager::displayError(const OptionErrorContext &errorContext) const {
 
 auto OptionManager::helpDocument(const String &moduleName) const -> TextDocument {
     return impl::OptionDocumentBuilder{_options, _displayText}.helpDocument(moduleName);
+}
+
+auto OptionManager::detailedHelpDocument(const String &moduleName, const String &helpName) const -> TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.detailedHelpDocument(moduleName, helpName);
+}
+
+auto OptionManager::moduleOverviewDocument() const -> TextDocument {
+    return impl::OptionDocumentBuilder{_options, _displayText}.moduleOverviewDocument();
 }
 
 auto OptionManager::versionDocument(const String &moduleName) const -> TextDocument {

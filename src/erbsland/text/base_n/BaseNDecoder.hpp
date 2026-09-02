@@ -14,7 +14,7 @@
 namespace erbsland::text::base_n {
 
 /// Decode Base-N text into binary data.
-/// @seedoc{/reference/text/base_n}
+/// @seedoc{/reference/text/encoding}
 /// @tested{BaseNCodecTest}
 class BaseNDecoder final {
 public:

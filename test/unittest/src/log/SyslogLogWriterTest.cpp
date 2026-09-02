@@ -4,9 +4,9 @@
 #include <erbsland/event/EventBackend.hpp>
 #include <erbsland/event/EventBackendTarget.hpp>
 #include <erbsland/event/EventLoop.hpp>
+#include <erbsland/log/impl/SyslogLogWriter.hpp>
+#include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogEntry.hpp>
-#include <erbsland/log/LogLine.hpp>
-#include <erbsland/log/SyslogLogWriter.hpp>
 #include <erbsland/network/Network.hpp>
 #include <erbsland/network/source/ConnectionCloseContext.hpp>
 #include <erbsland/network/tcp/TcpAcceptOptions.hpp>
@@ -346,14 +346,14 @@ private:
 
 using namespace erbsland::test::logtest;
 
-TESTED_TARGETS(SyslogLogWriter)
+TESTED_TARGETS(LogWriter)
 class SyslogLogWriterTest final : public el::UnitTest {
 public:
     void testUdpTcpAndTlsUseFakeNetworkSources() {
         const auto state = std::make_shared<FakeSyslogNetworkState>();
         const auto loop = el::event::EventLoop::create();
         loop->registerBackend(std::make_unique<FakeSyslogNetworkBackend>(state));
-        auto writers = std::vector<std::shared_ptr<el::log::SyslogLogWriter>>{};
+        auto writers = std::vector<std::shared_ptr<el::log::impl::SyslogLogWriter>>{};
         const auto entry = makeEntry();
         const auto line = makeLine();
         loop->invoke([&]() -> void {
@@ -361,17 +361,17 @@ public:
             auto tcpOptions = makeOptions(el::log::SyslogTransport::Tcp);
             auto tlsOptions = makeOptions(el::log::SyslogTransport::Tls);
             tlsOptions.setTlsConfigurationLabel("custom/syslog"_el);
-            writers.push_back(std::make_shared<el::log::SyslogLogWriter>(udpOptions));
-            writers.push_back(std::make_shared<el::log::SyslogLogWriter>(tcpOptions));
-            writers.push_back(std::make_shared<el::log::SyslogLogWriter>(tlsOptions));
+            writers.push_back(std::make_shared<el::log::impl::SyslogLogWriter>(udpOptions));
+            writers.push_back(std::make_shared<el::log::impl::SyslogLogWriter>(tcpOptions));
+            writers.push_back(std::make_shared<el::log::impl::SyslogLogWriter>(tlsOptions));
             for (const auto &writer : writers) {
                 writer->write(entry, line);
             }
         });
         REQUIRE(loop->runOnce());
 
-        const auto message = el::log::SyslogLogWriter::formatMessage(*entry, *line, makeOptions({}));
-        const auto framed = el::log::SyslogLogWriter::frameMessage(message);
+        const auto message = el::log::impl::SyslogLogWriter::formatMessage(*entry, *line, makeOptions({}));
+        const auto framed = el::log::impl::SyslogLogWriter::frameMessage(message);
         REQUIRE_EQUAL(state->udpData.size(), std::size_t{1U});
         REQUIRE_EQUAL(state->tcpData.size(), std::size_t{1U});
         REQUIRE_EQUAL(state->tlsData.size(), std::size_t{1U});
@@ -389,11 +389,11 @@ public:
         state->failFirstTcpSend = true;
         const auto loop = el::event::EventLoop::create();
         loop->registerBackend(std::make_unique<FakeSyslogNetworkBackend>(state));
-        auto writer = std::shared_ptr<el::log::SyslogLogWriter>{};
+        auto writer = std::shared_ptr<el::log::impl::SyslogLogWriter>{};
         const auto entry = makeEntry();
         const auto line = makeLine();
         loop->invoke([&]() -> void {
-            writer = std::make_shared<el::log::SyslogLogWriter>(makeOptions(el::log::SyslogTransport::Tcp));
+            writer = std::make_shared<el::log::impl::SyslogLogWriter>(makeOptions(el::log::SyslogTransport::Tcp));
             writer->write(entry, line);
         });
         REQUIRE(loop->runOnce());
@@ -405,8 +405,8 @@ public:
         REQUIRE_EQUAL(state->tcpData.size(), std::size_t{1U});
         REQUIRE_EQUAL(
             decode(state->tcpData.front()),
-            el::log::SyslogLogWriter::frameMessage(
-                el::log::SyslogLogWriter::formatMessage(*entry, *line, makeOptions({}))));
+            el::log::impl::SyslogLogWriter::frameMessage(
+                el::log::impl::SyslogLogWriter::formatMessage(*entry, *line, makeOptions({}))));
         writer.reset();
     }
 

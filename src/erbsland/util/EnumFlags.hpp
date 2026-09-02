@@ -14,7 +14,7 @@
 namespace erbsland::util {
 
 /// A safe value wrapper for scoped enum flags.
-/// @seedoc{/reference/util/supporting_utilities}
+/// @seedoc{/reference/util/utilities}
 /// @tparam tEnum The scoped enum type with unsigned underlying type.
 /// @tparam tDerived Optional CRTP-derived result type. It must be nothrow default-constructible.
 /// @tested{EnumFlagsTest}

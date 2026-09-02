@@ -30,7 +30,8 @@ Singular factories require exactly one certificate, while
 blocks.
 A bundle can produce DER only when it contains exactly one certificate.
 
-:cpp:enum:`X509CertificateFormat <erbsland::cryptology::X509CertificateFormat>` controls file conversion.
+:cpp:enum:`PemDerFormat <erbsland::cryptology::PemDerFormat>` controls file conversion for every DER-based
+cryptographic artifact.
 ``.pem`` is a strong PEM hint and ``.der`` is a strong DER hint.
 The common ambiguous ``.crt`` and ``.cer`` suffixes are sniffed when reading; when writing, ``.crt`` selects PEM and
 ``.cer`` selects DER.
@@ -44,6 +45,46 @@ boundaries follow RFC 7468. DER parse errors carry the byte index at which the m
 detected; PEM structure errors carry a code-point index in the decoded text.
 Fixed limits bound the encoded size, tree depth, node count, certificate count, and PEM input size before allocation or
 recursion can grow without control.
+
+Creating Certificates and Requests
+==================================
+
+:cpp:class:`X509CertificateBuilder <erbsland::cryptology::X509CertificateBuilder>` configures one subject identity and
+one safe :cpp:enum:`X509CertificateProfile <erbsland::cryptology::X509CertificateProfile>`.
+The same builder creates a self-signed CA certificate, an issuer-signed certificate, or an immutable
+:cpp:class:`X509CertificateSigningRequest <erbsland::cryptology::X509CertificateSigningRequest>`.
+This keeps subject, Subject Alternative Name, Key Usage, Extended Key Usage, and Basic Constraints policy identical
+between direct test issuance and an enterprise CSR workflow.
+
+CA certificates receive critical Basic Constraints with ``cA=true`` and a default path length of zero, critical
+``keyCertSign`` and ``cRLSign``, and regenerated Subject and Authority Key Identifiers.
+TLS server profiles require at least one DNS name or IP address and request ``serverAuth``; client profiles request
+``clientAuth`` and permit an empty SAN; dual-use profiles request both purposes.
+Every leaf receives ``digitalSignature``, while RSA leaves additionally receive ``keyEncipherment``.
+
+All profiles require a nonempty common name.
+Default validity begins five minutes before creation and ends ten calendar years later for a CA or 397 days later for a
+leaf.
+Issued defaults are clipped to the issuer validity, while an explicitly configured range or lifetime outside the issuer
+range is rejected.
+Issuance verifies that the issuer key matches the certificate and that Basic Constraints, Key Usage, and path-length
+constraints authorize the requested child.
+Every result has a fresh positive nonzero random serial and regenerated key identifiers.
+
+Certificates and requests are signed over their exact encoded content.
+RSA uses RSA-PSS with SHA-256 for RSA-2048/3072 and SHA-384 for RSA-4096, matching MGF1 and digest-sized salt.
+ECDSA uses the curve-matched SHA-2 hash.
+Generated certificates are reparsed by the strict X.509 parser and their signatures are verified before they are
+returned; generated requests likewise pass the strict DER parser and a signature self-check.
+
+``fromCertificate()`` provides controlled reissuance.
+It copies the complete subject and supported identity/profile fields, preserves unknown noncritical extensions, and
+rejects unknown critical extensions.
+It never copies the old serial, issuer, validity, key identifiers, or signature.
+Standard subject setters replace matching attributes without discarding unrelated relative distinguished names.
+
+See :doc:`/topics/cryptology/creating_tls_certificates` for complete root, intermediate, leaf, encrypted-key, and
+enterprise-request workflows.
 
 Typed Certificate Data
 ======================
@@ -286,23 +327,23 @@ Interface
     :members:
 .. doxygenenum:: erbsland::cryptology::Asn1TagClass
 .. doxygenenum:: erbsland::cryptology::Asn1UniversalType
-.. doxygenclass:: erbsland::cryptology::PublicKey
-    :members:
-.. doxygenclass:: erbsland::cryptology::TlsSignatureScheme
-    :members:
 .. doxygenclass:: erbsland::cryptology::X509AlgorithmIdentifier
     :members:
 .. doxygenclass:: erbsland::cryptology::X509BasicConstraints
     :members:
 .. doxygenclass:: erbsland::cryptology::X509Certificate
     :members:
+.. doxygenclass:: erbsland::cryptology::X509CertificateBuilder
+    :members:
 .. doxygenclass:: erbsland::cryptology::X509CertificateBundle
     :members:
-.. doxygenenum:: erbsland::cryptology::X509CertificateFormat
+.. doxygenenum:: erbsland::cryptology::X509CertificateProfile
 .. doxygenclass:: erbsland::cryptology::X509CertificateProfileIssue
     :members:
 .. doxygenenum:: erbsland::cryptology::X509CertificateProfileIssueCategory
 .. doxygenenum:: erbsland::cryptology::X509CertificateProfileMode
+.. doxygenclass:: erbsland::cryptology::X509CertificateSigningRequest
+    :members:
 .. doxygenclass:: erbsland::cryptology::X509CertificateValidation
     :members:
 .. doxygenclass:: erbsland::cryptology::X509CertificateValidationFailure

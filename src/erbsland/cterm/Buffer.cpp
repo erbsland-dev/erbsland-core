@@ -16,24 +16,25 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
-using namespace bgeo;
+using namespace block;
+using namespace geometry;
 
 Buffer::Buffer() : _size{1, 1}, _data(1U, Block{U' '}) {
 }
 
-Buffer::Buffer(const BlockSize size, const Block fillChar) :
+Buffer::Buffer(const Size size, const Block fillChar) :
     _size{validatedBufferSize(size)}, _data(_size.area().toSizeT(), fillChar) {
 }
 
-auto Buffer::size() const noexcept -> BlockSize {
+auto Buffer::size() const noexcept -> Size {
     return _size;
 }
 
-auto Buffer::rect() const noexcept -> BlockRectangle {
-    return BlockRectangle{BlockPosition{0, 0}, _size};
+auto Buffer::rect() const noexcept -> Rectangle {
+    return Rectangle{Position{0, 0}, _size};
 }
 
-auto Buffer::get(const BlockPosition pos) const noexcept -> const Block & {
+auto Buffer::get(const Position pos) const noexcept -> const Block & {
     assert(_size.contains(pos));
     if (!_size.contains(pos)) {
         return Block::space();
@@ -41,11 +42,11 @@ auto Buffer::get(const BlockPosition pos) const noexcept -> const Block & {
     return _data[_size.index(pos)];
 }
 
-void Buffer::resize(const BlockSize newSize) {
+void Buffer::resize(const Size newSize) {
     resize(newSize, BufferResizeMode::Fast, Block{}); // fastest possible resize
 }
 
-void Buffer::resize(const BlockSize size, const BufferResizeMode mode, const Block fillChar) {
+void Buffer::resize(const Size size, const BufferResizeMode mode, const Block fillChar) {
     if (_size == size) {
         return;
     }
@@ -57,7 +58,7 @@ void Buffer::resize(const BlockSize size, const BufferResizeMode mode, const Blo
         }
         if (validatedSize.width() < _size.width()) {
             // shrinking horizontally: forward copy should be safe.
-            validatedSize.forEach([&](const BlockPosition pos) -> void {
+            validatedSize.forEach([&](const Position pos) -> void {
                 if (_size.contains(pos)) {
                     _data[validatedSize.index(pos)] = _data[_size.index(pos)];
                 } else {
@@ -68,7 +69,7 @@ void Buffer::resize(const BlockSize size, const BufferResizeMode mode, const Blo
             // expanding: reverse copy should be safe.
             for (auto y = validatedSize.height(); y > 0; --y) {
                 for (auto x = validatedSize.width(); x > 0; --x) {
-                    const auto pos = BlockPosition{x - 1, y - 1};
+                    const auto pos = Position{x - 1, y - 1};
                     if (_size.contains(pos)) {
                         _data[validatedSize.index(pos)] = _data[_size.index(pos)];
                     } else {
@@ -92,7 +93,7 @@ void Buffer::resize(const BlockSize size, const BufferResizeMode mode, const Blo
     _size = validatedSize;
 }
 
-void Buffer::set(const BlockPosition pos, const Block &block) noexcept {
+void Buffer::set(const Position pos, const Block &block) noexcept {
     // faster
     if (!_size.contains(pos) || block.displayWidth() == 0 || block.displayWidth() > 2) {
         return;
@@ -100,7 +101,7 @@ void Buffer::set(const BlockPosition pos, const Block &block) noexcept {
     if (block.displayWidth() == 1) {
         _data[_size.index(pos)] = block;
     } else {
-        const auto secondPosition = pos + BlockPosition{1, 0};
+        const auto secondPosition = pos + Position{1, 0};
         if (!_size.contains(secondPosition)) {
             return;
         }
@@ -148,22 +149,22 @@ auto Buffer::fromLines(const BlockStringLines &lines) -> Buffer {
     if (lines.empty()) {
         throw err::ParameterError{"Lines must not be empty."_el, "lines"_el};
     }
-    BlockSize size{BlockCoordinate{1}, BlockCoordinate{lines.size()}};
+    Size size{Coordinate{1}, Coordinate{lines.size()}};
     for (const auto &line : lines) {
         if (size.width() < line.displayWidth()) {
             size.setWidth(line.displayWidth());
         }
     }
     auto buffer = Buffer{size};
-    BlockPosition pos{0, 0};
+    Position pos{0, 0};
     for (const auto &line : lines) {
         buffer.set(pos, line);
-        pos += BlockPosition{0, 1};
+        pos += Position{0, 1};
     }
     return buffer;
 }
 
-auto Buffer::validatedBufferSize(const BlockSize size) -> BlockSize {
+auto Buffer::validatedBufferSize(const Size size) -> Size {
     if (size.width() < 1 || size.height() < 1) {
         throw err::ParameterError{"Buffer size must be at least 1x1."_el, "size"_el};
     }
@@ -176,7 +177,7 @@ auto Buffer::validatedBufferSize(const BlockSize size) -> BlockSize {
 void Buffer::drawBlockText(
     const text::String &text,
     const Alignment alignment,
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Color color,
     const std::size_t animationCycle) {
 

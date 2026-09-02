@@ -10,7 +10,7 @@
 namespace demo {
 
 void FrameWeaverApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{32}, BlockCoordinate{10}});
+    _updateSettings.setMinimumSize(Size{Coordinate{32}, Coordinate{10}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -71,18 +71,11 @@ void FrameWeaverApp::onRenderToBuffer() {
     updateAnimation(std::chrono::duration_cast<std::chrono::milliseconds>(now - _lastTick));
     _lastTick = now;
     _buffer.fill(Block{U' ', bg::Black});
-    const auto titleRect = BlockRectangle{
-        BlockCoordinate{0}, BlockCoordinate{0}, BlockCoordinate{_buffer.size().width()}, BlockCoordinate{1}};
-    const auto contentRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{1},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{_buffer.size().height() - 2}};
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().height() - 1},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{1}};
+    const auto titleRect = Rectangle{Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{1}};
+    const auto contentRect = Rectangle{
+        Coordinate{0}, Coordinate{1}, Coordinate{_buffer.size().width()}, Coordinate{_buffer.size().height() - 2}};
+    const auto footerRect = Rectangle{
+        Coordinate{0}, Coordinate{_buffer.size().height() - 1}, Coordinate{_buffer.size().width()}, Coordinate{1}};
     _buffer.fill(titleRect, Block{U' ', bg::Blue});
     _buffer.fill(footerRect, Block{U' ', bg::BrightBlack});
     _buffer.drawBlockText(
@@ -96,7 +89,7 @@ void FrameWeaverApp::onRenderToBuffer() {
     _buffer.drawBlockText(prompt);
 }
 
-void FrameWeaverApp::renderFrames(const BlockRectangle contentRect) {
+void FrameWeaverApp::renderFrames(const Rectangle contentRect) {
     for (const auto &frame : _frames) {
         if (frame.customStyle != nullptr) {
             _buffer.drawFrame(
@@ -131,7 +124,7 @@ auto FrameWeaverApp::createRandomFrame() -> FrameSpec {
     return frame;
 }
 
-auto FrameWeaverApp::frameRectangle(const FrameSpec frame, const BlockRectangle contentRect) -> BlockRectangle {
+auto FrameWeaverApp::frameRectangle(const FrameSpec frame, const Rectangle contentRect) -> Rectangle {
     const auto width = std::clamp(
         static_cast<int>(std::lround(frame.width * static_cast<double>(contentRect.width().toRawValue()))),
         4,
@@ -144,7 +137,7 @@ auto FrameWeaverApp::frameRectangle(const FrameSpec frame, const BlockRectangle 
     const auto maxY = std::max(0, contentRect.height().toRawValue() - height);
     const auto x = contentRect.x1() + static_cast<int>(std::lround(frame.x * static_cast<double>(maxX)));
     const auto y = contentRect.y1() + static_cast<int>(std::lround(frame.y * static_cast<double>(maxY)));
-    return {BlockCoordinate{x}, BlockCoordinate{y}, BlockCoordinate{width}, BlockCoordinate{height}};
+    return {Coordinate{x}, Coordinate{y}, Coordinate{width}, Coordinate{height}};
 }
 
 auto FrameWeaverApp::prismFrameStyle() -> const Block16StylePtr & {

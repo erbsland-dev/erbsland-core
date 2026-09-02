@@ -109,21 +109,19 @@ protected: // implement pf::ProfilingApplication
         const auto contentFilters = values->getTextList("content-profile"_el);
         const auto scenarioFilters = values->getTextList("scenario"_el);
         std::erase_if(configuration.scenarios, [&](const Scenario &scenario) {
-            const auto matches = []<typename Parser, typename T>(
-                                     const std::vector<el::String> &filters,
-                                     Parser parser,
-                                     const T expected,
-                                     const el::StringLiteral kind) {
-                return filters.empty() || std::ranges::any_of(filters, [&](const auto &value) {
-                    const auto parsed = parser(value);
-                    if (!parsed) {
-                        throw el::ApplicationError{el::StringFormat{"Unsupported {} '{}'."_el}.build(kind, value)};
-                    }
-                    return *parsed == expected;
-                });
-            };
+            const auto matches =
+                []<typename Parser, typename T>(
+                    const el::StringList &filters, Parser parser, const T expected, const el::StringLiteral kind) {
+                    return filters.isEmpty() || std::ranges::any_of(filters, [&](const auto &value) {
+                        const auto parsed = parser(value);
+                        if (!parsed) {
+                            throw el::ApplicationError{el::StringFormat{"Unsupported {} '{}'."_el}.build(kind, value)};
+                        }
+                        return *parsed == expected;
+                    });
+                };
             const auto scenarioMatches =
-                scenarioFilters.empty() || std::ranges::any_of(scenarioFilters, [&](const auto &value) {
+                scenarioFilters.isEmpty() || std::ranges::any_of(scenarioFilters, [&](const auto &value) {
                     return value == scenario.id || value == scenario.group;
                 });
             return !matches(widthFilters, parseStringWidth, scenario.width, "string width"_el) ||

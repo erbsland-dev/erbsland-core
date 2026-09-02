@@ -5,26 +5,21 @@ Configuration Domain API Guidelines
 Core Semantics
 ==============
 
-Document Model
---------------
-
 .. code-block:: text
 
     document = immutable rooted tree of typed configuration values
     section = named map, ordered list, or text-indexed map of child values
-    scalar = integer, boolean, float, text, bytes, calendar value, or regular expression
     name path = absolute or relative sequence of configuration names
-    location = source identifier plus line and column of a parsed value
+    source = configuration input with a stable identity
+    source authorization = independent trust decision for every resolved source
+    signature validation = application trust decision over the parser's exact digest and signature data
 
-Source Model
-------------
+Validation Rule Model
+---------------------
 
 .. code-block:: text
 
-    source = configuration input with a stable identity
-    resolution = deterministic expansion of an include relative to its containing source
-    source authorization = independent trust decision for every resolved source
-    signature validation = application trust decision over the parser's exact digest and signature data
+    root rule = implicit rule for the complete document or section branch passed to validation
 
 Primary Types
 =============
@@ -61,6 +56,17 @@ Source and Trust Types
     SignatureValidator // application signature validation callback
     SignatureSignerData, SignatureValidatorData // exact signing and validation inputs
     SignatureValidatorResult // accepted, rejected, or unsupported signature result
+
+Validation Rules Types
+======================
+
+.. code-block:: text
+
+    Rules // finalized, reusable validation schema
+    RulesBuilder // public programmatic construction entry point
+    RuleDefinition // stable mutation interface supplied to builder attributes
+    Rule, Constraint // read-only validated rule metadata
+    RuleType, ConstraintType, DependencyMode // rule, constraint, and dependency classifications
 
 Error Types
 ===========
@@ -115,6 +121,18 @@ Parsing Patterns
     o.parseFileOrThrow/parseTextOrThrow(input) -> DocumentPtr // convenience parsing with exceptions
     o.lastError() -> ConfErrorContext // inspect the latest non-throwing parse failure
     o.setSourceResolver/setAccessCheck/setSignatureValidator(policy) // install parsing trust policies
+
+Validation Rule Construction Patterns
+=====================================
+
+.. code-block:: text
+
+    o.configureRoot([attributes]) // configure the implicit document/section root rule
+    o.addRule(path, type[, attributes]) // add one named rule
+    o.addAlternative(path, type[, attributes]) // add one permitted alternative at a path
+    o.takeRules() -> RulesPtr // validate, finalize, and reset the builder
+    T(mode, sources, targets[, error]) // create a dependency builder attribute
+    o.apply(rule) // custom attributes mutate RuleDefinition without implementation types
 
 Source and Trust Patterns
 =========================

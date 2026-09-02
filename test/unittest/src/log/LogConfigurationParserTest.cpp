@@ -4,9 +4,10 @@
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/vr/Rules.hpp>
-#include <erbsland/log/FileLogWriter.hpp>
+#include <erbsland/log/impl/FileLogWriter.hpp>
+#include <erbsland/log/impl/SyslogLogWriter.hpp>
+#include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogConfigurationParser.hpp>
-#include <erbsland/log/SyslogLogWriter.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringList.hpp>
 #include <erbsland/time/Date.hpp>
@@ -18,7 +19,7 @@
 
 using namespace el::text::literals;
 
-TESTED_TARGETS(LogConfigurationParser SyslogLogWriter)
+TESTED_TARGETS(LogConfigurationParser)
 class LogConfigurationParserTest final : public el::UnitTest {
 public:
     void testCompiledRulesCoverCompleteSchema() {
@@ -51,7 +52,6 @@ public:
             "rotation: \"size\"\n"
             "maximum_size: 1\n"
             "retention: 0\n"
-            "capacity: 1\n"
             "endpoint: \"127.0.0.1:514\"\n"
             "transport: \"udp\"\n"
             "facility: 23\n"
@@ -171,11 +171,11 @@ public:
             el::log::LogPath{"application"_el},
             "message"_el};
         const auto line = el::log::LogLine{{{el::log::LogLinePart::Message, "message"_el}}};
-        const auto message = el::log::SyslogLogWriter::formatMessage(entry, line, options);
+        const auto message = el::log::impl::SyslogLogWriter::formatMessage(entry, line, options);
 
         REQUIRE_EQUAL(message, "<12>1 2026-08-31T12:34:56Z host app 42 event - message"_el);
         REQUIRE_EQUAL(
-            el::log::SyslogLogWriter::frameMessage(message),
+            el::log::impl::SyslogLogWriter::frameMessage(message),
             "54 <12>1 2026-08-31T12:34:56Z host app 42 event - message"_el);
         REQUIRE_EQUAL(options.tlsConfigurationLabel(), "log/syslog"_el);
     }
@@ -184,7 +184,7 @@ public:
         auto options = el::log::SyslogLogWriterOptions{};
         options.setEndpoint(el::network::HostEndpoint::fromStringOrThrow("127.0.0.1:514"_el))
             .setMaximumPendingBytes(el::unit::ByteLength{8U});
-        auto writer = el::log::SyslogLogWriter{options};
+        auto writer = el::log::impl::SyslogLogWriter{options};
         const auto entry = std::make_shared<el::log::LogEntry>(
             1U, el::time::DateTime::now(), el::log::LogLevel::Information, el::log::LogPath{}, "message"_el);
 

@@ -22,10 +22,10 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
-using bgeo::Alignment;
-using bgeo::BlockCoordinate;
-using bgeo::BlockPosition;
-using bgeo::BlockSize;
+using block::Coordinate;
+using block::Position;
+using block::Size;
+using geometry::Alignment;
 
 void Terminal::clearScreen() noexcept {
     if (_outputMode == OutputMode::BlockText) {
@@ -88,7 +88,7 @@ void Terminal::updateScreen(const ReadableBuffer &buffer, const UpdateSettings &
                 updateScreenWithoutBackBuffer(buffer, settings);
             }
         }
-        moveCursor(BlockPosition{BlockCoordinate{0}, _size.height() - 1}, MoveMode::Absolute);
+        moveCursor(Position{Coordinate{0}, _size.height() - 1}, MoveMode::Absolute);
         setAutoWrap(true); // activate auto wrapping again.
     }
     flush();
@@ -99,14 +99,14 @@ void Terminal::moveHome() noexcept {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(BlockPosition{0, 0}, MoveMode::Absolute);
+        _backend->moveCursor(Position{0, 0}, MoveMode::Absolute);
         return;
     }
     _lineBuffer.write("\x1b[H"_el);
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveCursor(const BlockPosition posOrDelta, const MoveMode mode) noexcept {
+void Terminal::moveCursor(const Position posOrDelta, const MoveMode mode) noexcept {
     if (!_backend->supportsCursorCodes()) {
         _backend->moveCursor(posOrDelta, mode);
         return;
@@ -219,8 +219,8 @@ auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> 
         throw err::RuntimeError{"Back buffer is not initialized."};
     }
     impl::LineBufferEmitLockGuard guard(_lineBuffer);
-    auto lastWriteCursor = BlockPosition{0, 0};
-    view.size().forEach([&](const BlockPosition pos) -> void {
+    auto lastWriteCursor = Position{0, 0};
+    view.size().forEach([&](const Position pos) -> void {
         const auto &newCharacter = view.get(pos);
         const auto &oldCharacter = _backBuffer->get(pos);
         if (newCharacter == oldCharacter) {
@@ -232,16 +232,16 @@ auto Terminal::updateScreenPartialWithBackBuffer(const ReadableBuffer &view) -> 
         }
         write(newCharacter);
         _backBuffer->set(pos, newCharacter);
-        lastWriteCursor += BlockPosition{newCharacter.displayWidth(), 0};
+        lastWriteCursor += Position{newCharacter.displayWidth(), 0};
         if (newCharacter.displayWidth() == 2) {
             // if we have a 2-width character, copy the second position as well (it should be empty).
-            const auto secondPosition = pos + BlockPosition{1, 0};
+            const auto secondPosition = pos + Position{1, 0};
             _backBuffer->set(secondPosition, view.get(secondPosition));
         }
     });
 }
 
-void Terminal::moveTo(const BlockPosition pos) noexcept {
+void Terminal::moveTo(const Position pos) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
@@ -277,12 +277,12 @@ void Terminal::updateSizeTooSmallBuffer(const UpdateSettings &settings) noexcept
 }
 
 void Terminal::writeImpl(const ReadableBuffer &buffer, const bool withRowMove) noexcept {
-    for (auto y = BlockCoordinate{0}; y < buffer.size().height(); ++y) {
+    for (auto y = Coordinate{0}; y < buffer.size().height(); ++y) {
         if (withRowMove && y != 0) {
-            moveTo(BlockPosition{BlockCoordinate{0}, y});
+            moveTo(Position{Coordinate{0}, y});
         }
-        for (auto x = BlockCoordinate{0}; x < buffer.size().width(); ++x) {
-            auto &character = buffer.get(BlockPosition{x, y});
+        for (auto x = Coordinate{0}; x < buffer.size().width(); ++x) {
+            auto &character = buffer.get(Position{x, y});
             setStyle(character.style());
             _lineBuffer.write(character);
         }
@@ -294,11 +294,11 @@ void Terminal::writeImpl(const ReadableBuffer &buffer, const bool withRowMove) n
     }
 }
 
-auto Terminal::applySafeMargin(const BlockSize terminalSize) const noexcept -> BlockSize {
+auto Terminal::applySafeMargin(const Size terminalSize) const noexcept -> Size {
     if (!_safeMarginEnabled) {
         return terminalSize;
     }
-    return terminalSize - BlockSize{1, 1};
+    return terminalSize - Size{1, 1};
 }
 
 void Terminal::initializeScreen() noexcept {

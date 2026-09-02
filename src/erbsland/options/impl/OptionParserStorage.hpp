@@ -30,10 +30,9 @@ public:
     /// Store a parsed flag.
     /// @param option The flag definition.
     /// @param index The source option argument.
-    /// @param value The boolean flag value.
-    /// @param explicitValue Whether the value was explicitly written on the command line.
-    [[nodiscard]] auto storeFlag(
-        const OptionPtr &option, unit::ArgumentIndex index, bool value = true, bool explicitValue = false) -> bool;
+    [[nodiscard]] auto storeFlag(const OptionPtr &option, unit::ArgumentIndex index) -> bool;
+    /// Store a parsed boolean value.
+    [[nodiscard]] auto storeBooleanValue(const OptionPtr &option, bool value, unit::ArgumentIndex index) -> bool;
     /// Store a parsed value according to the option type.
     [[nodiscard]] auto storeValue(const OptionPtr &option, text::String value, unit::ArgumentIndex index) -> bool;
     /// Apply defaults for all absent options.

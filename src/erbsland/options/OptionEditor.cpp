@@ -51,6 +51,13 @@ auto OptionEditor::setHelpEpilog(text::String epilog) -> OptionEditor & {
     return *this;
 }
 
+auto OptionEditor::setHelpExample(text::String example) -> OptionEditor & {
+    if (_option != nullptr) {
+        _option->setHelpExample(std::move(example));
+    }
+    return *this;
+}
+
 auto OptionEditor::setHelpVisibility(const OptionHelpVisibility visibility) -> OptionEditor & {
     if (_option != nullptr) {
         _option->setHelpVisibility(visibility);

@@ -4,8 +4,8 @@
 
 #include "WritableBuffer.hpp"
 
-#include "../bgeo/BlockDirection.hpp"
-#include "../bgeo/Orientation.hpp"
+#include "../block/Direction.hpp"
+#include "../geometry/Orientation.hpp"
 #include "../text/StringLiteral.hpp"
 
 #include <span>
@@ -30,12 +30,12 @@ namespace erbsland::cterm {
 class RemappedBuffer : public WritableBuffer {
 public:
     /// Largest buffer size accepted for this buffer.
-    constexpr static auto cMaximumSize = bgeo::BlockSize{10'000, 10'000};
+    constexpr static auto cMaximumSize = block::Size{10'000, 10'000};
     /// Smallest valid buffer size.
-    constexpr static auto cMinimumSize = bgeo::BlockSize{1, 1};
+    constexpr static auto cMinimumSize = block::Size{1, 1};
 
     /// A vector mapping one coordinate to another.
-    using CoordinateMap = std::vector<bgeo::BlockCoordinate>;
+    using CoordinateMap = std::vector<block::Coordinate>;
 
     using WritableBuffer::drawBitmap;
     using WritableBuffer::drawBlockText;
@@ -50,13 +50,13 @@ public:
     RemappedBuffer();
 
     /// Construct a buffer with the given size and fill it with an initial block.
-    /// @param size The dimensions of the buffer. bgeo::BlockSize must be at least 1x1.
+    /// @param size The dimensions of the buffer. block::Size must be at least 1x1.
     /// @param orientation The orientation of the buffer. Cannot be changed after creation.
     /// @param fillChar The optional fill character for the buffer.
     /// @throws err::ParameterError if size is invalid.
     explicit RemappedBuffer(
-        bgeo::BlockSize size,
-        bgeo::Orientation orientation = bgeo::Orientation::Vertical,
+        block::Size size,
+        geometry::Orientation orientation = geometry::Orientation::Vertical,
         Block fillChar = Block::space());
 
     // defaults
@@ -69,14 +69,14 @@ public:
 public: // implement ReadableBuffer
     /// Get the current size of the buffer.
     /// @return The configured width and height.
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override;
+    [[nodiscard]] auto size() const noexcept -> block::Size override;
     /// Get the rectangle covering the whole buffer.
     /// @return A rectangle with origin `(0,0)` and the current size.
-    [[nodiscard]] auto rect() const noexcept -> bgeo::BlockRectangle override;
+    [[nodiscard]] auto rect() const noexcept -> block::Rectangle override;
     /// Read the block stored at the given logical position.
     /// @param pos The logical coordinates inside the buffer.
     /// @return A reference to the stored block, or a shared space block for invalid positions.
-    [[nodiscard]] auto get(bgeo::BlockPosition pos) const noexcept -> const Block & override;
+    [[nodiscard]] auto get(block::Position pos) const noexcept -> const Block & override;
     /// Create an independent writable copy of this buffer.
     /// @return A shared pointer to the cloned buffer.
     [[nodiscard]] auto clone() const -> WritableBufferPtr override;
@@ -89,7 +89,7 @@ public: // implement WritableBuffer
     /// visible order.
     /// @param newSize The new size of the buffer.
     /// @throws err::ParameterError if `newSize` is invalid.
-    void resize(bgeo::BlockSize newSize) override;
+    void resize(block::Size newSize) override;
     /// Resize this buffer and optionally keep the visible content order.
     /// A preserve-content resize is fast when only the primary orientation axis changes.
     /// If the secondary axis changes, preserving content requires rebuilding the logical content and is expensive.
@@ -99,18 +99,18 @@ public: // implement WritableBuffer
     /// @param fillChar The fill character for newly created cells in preserve-content mode. In fast mode it is only
     ///   used to initialize newly appended storage cells.
     /// @throws err::ParameterError if `size` is invalid.
-    void resize(bgeo::BlockSize size, BufferResizeMode mode, Block fillChar) override;
+    void resize(block::Size size, BufferResizeMode mode, Block fillChar) override;
     /// Write a block at the given logical position.
     /// This mirrors the wide-character handling from `Buffer`: zero-width blocks are ignored, width-2 blocks occupy
     /// the next logical cell as an empty continuation cell, and width-2 blocks at the right edge are ignored.
     /// @param pos The logical coordinates within the buffer.
     /// @param block The block to write.
-    void set(bgeo::BlockPosition pos, const Block &block) noexcept override;
+    void set(block::Position pos, const Block &block) noexcept override;
 
 public: // manage memory
     /// Reserve memory for the given buffer size.
     /// @param size The size whose capacity should be reserved.
-    void reserve(bgeo::BlockSize size) noexcept;
+    void reserve(block::Size size) noexcept;
 
 public: // manipulate the buffer
     /// Shift the buffer in the given direction, fill new cells with a given character.
@@ -118,15 +118,15 @@ public: // manipulate the buffer
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of cells to shift.
     /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
-    void shift(bgeo::BlockDirection direction, Block fillChar, int count = 1);
+    void shift(block::Direction direction, Block fillChar, int count = 1);
     /// @overload
-    void shift(const bgeo::BlockDirection direction, const int count = 1) { shift(direction, Block::space(), count); }
+    void shift(const block::Direction direction, const int count = 1) { shift(direction, Block::space(), count); }
     /// Rotate the buffer in the given direction.
     /// Cells are shifted in a circular manner, wrapping around to the other end of the buffer.
     /// @param direction The direction in which to rotate.
     /// @param count The number of cells to rotate.
     /// @throws err::ParameterError if `count` is negative or exceeds buffer size.
-    void rotate(bgeo::BlockDirection direction, int count = 1);
+    void rotate(block::Direction direction, int count = 1);
     /// Erase rows in the buffer.
     /// This will erase `count` rows, starting from `startRow`, and insert empty ones at the end.
     /// If you like to actually shrink the buffer, use `resize` *after* this call.
@@ -134,9 +134,9 @@ public: // manipulate the buffer
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of rows to delete.
     /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
-    void eraseRows(bgeo::BlockCoordinate startRow, Block fillChar, int count = 1);
+    void eraseRows(block::Coordinate startRow, Block fillChar, int count = 1);
     /// @overload
-    void eraseRows(const bgeo::BlockCoordinate startRow, const int count = 1) {
+    void eraseRows(const block::Coordinate startRow, const int count = 1) {
         eraseRows(startRow, Block::space(), count);
     }
     /// Erase columns in the buffer.
@@ -146,9 +146,9 @@ public: // manipulate the buffer
     /// @param fillChar The character to fill new cells with.
     /// @param count The number of columns to delete.
     /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
-    void eraseColumns(bgeo::BlockCoordinate startColumn, Block fillChar, int count = 1);
+    void eraseColumns(block::Coordinate startColumn, Block fillChar, int count = 1);
     /// @overload
-    void eraseColumns(const bgeo::BlockCoordinate startColumn, const int count = 1) {
+    void eraseColumns(const block::Coordinate startColumn, const int count = 1) {
         eraseColumns(startColumn, Block::space(), count);
     }
     /// Insert rows in the buffer.
@@ -158,9 +158,9 @@ public: // manipulate the buffer
     /// @param fillChar The character to fill the new rows with.
     /// @param count The number of rows to insert.
     /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
-    void insertRows(bgeo::BlockCoordinate startRow, Block fillChar, int count = 1);
+    void insertRows(block::Coordinate startRow, Block fillChar, int count = 1);
     /// @overload
-    void insertRows(const bgeo::BlockCoordinate startRow, const int count = 1) {
+    void insertRows(const block::Coordinate startRow, const int count = 1) {
         insertRows(startRow, Block::space(), count);
     }
     /// Insert columns in the buffer.
@@ -170,9 +170,9 @@ public: // manipulate the buffer
     /// @param fillChar The character to fill the new columns with.
     /// @param count The number of columns to insert.
     /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
-    void insertColumns(bgeo::BlockCoordinate startColumn, Block fillChar, int count = 1);
+    void insertColumns(block::Coordinate startColumn, Block fillChar, int count = 1);
     /// @overload
-    void insertColumns(const bgeo::BlockCoordinate startColumn, const int count = 1) {
+    void insertColumns(const block::Coordinate startColumn, const int count = 1) {
         insertColumns(startColumn, Block::space(), count);
     }
     /// Move rows in the buffer by a given delta.
@@ -184,9 +184,9 @@ public: // manipulate the buffer
     /// @param delta The number of positions to move (positive = down, negative = up).
     /// @param fillChar The character to fill vacated cells with.
     /// @throws err::ParameterError if `startRow` is out of bounds or `count` is negative or exceeds buffer size.
-    void moveRows(bgeo::BlockCoordinate startRow, int count, bgeo::BlockCoordinate delta, Block fillChar);
+    void moveRows(block::Coordinate startRow, int count, block::Coordinate delta, Block fillChar);
     /// @overload
-    void moveRows(const bgeo::BlockCoordinate startRow, const int count, const bgeo::BlockCoordinate delta) {
+    void moveRows(const block::Coordinate startRow, const int count, const block::Coordinate delta) {
         moveRows(startRow, count, delta, Block::space());
     }
     /// Move columns in the buffer by a given delta.
@@ -198,9 +198,9 @@ public: // manipulate the buffer
     /// @param delta The number of positions to move (positive = right, negative = left).
     /// @param fillChar The character to fill vacated cells with.
     /// @throws err::ParameterError if `startColumn` is out of bounds or `count` is negative or exceeds buffer size.
-    void moveColumns(bgeo::BlockCoordinate startColumn, int count, bgeo::BlockCoordinate delta, Block fillChar);
+    void moveColumns(block::Coordinate startColumn, int count, block::Coordinate delta, Block fillChar);
     /// @overload
-    void moveColumns(const bgeo::BlockCoordinate startColumn, const int count, const bgeo::BlockCoordinate delta) {
+    void moveColumns(const block::Coordinate startColumn, const int count, const block::Coordinate delta) {
         moveColumns(startColumn, count, delta, Block::space());
     }
 
@@ -213,7 +213,7 @@ public:
 private:
     /// Validate the buffer size.
     /// @throws err::ParameterError if size is invalid.
-    [[nodiscard]] static auto validatedBufferSize(bgeo::BlockSize size) -> bgeo::BlockSize;
+    [[nodiscard]] static auto validatedBufferSize(block::Size size) -> block::Size;
     /// Create a linear index map for the given size.
     /// @param size The size of the buffer.
     /// @return The linear index map.
@@ -232,7 +232,7 @@ private:
     /// @param countName The parameter name for the count.
     /// @throws err::ParameterError if the span is invalid.
     static void validateExistingSpan(
-        bgeo::BlockCoordinate start,
+        block::Coordinate start,
         int count,
         int limit,
         const text::StringLiteral &startName,
@@ -245,7 +245,7 @@ private:
     /// @param countName The parameter name for the count.
     /// @throws err::ParameterError if the arguments are invalid.
     static void validateInsertArguments(
-        bgeo::BlockCoordinate start,
+        block::Coordinate start,
         int count,
         int limit,
         const text::StringLiteral &startName,
@@ -254,21 +254,21 @@ private:
     /// @param direction The direction to validate.
     /// @param count The number of cells to move.
     /// @throws err::ParameterError if the count does not fit the addressed axis.
-    void validateDirectionalCount(bgeo::BlockDirection direction, int count) const;
+    void validateDirectionalCount(block::Direction direction, int count) const;
     /// Remap the position.
     /// @param pos The position to remap.
     /// @return The remapped position.
-    [[nodiscard]] auto remapPosition(bgeo::BlockPosition pos) const noexcept -> bgeo::BlockPosition {
-        return rect().contains(pos) ? bgeo::BlockPosition{_columnRemap[pos.x().toSizeT()], _rowRemap[pos.y().toSizeT()]}
+    [[nodiscard]] auto remapPosition(block::Position pos) const noexcept -> block::Position {
+        return rect().contains(pos) ? block::Position{_columnRemap[pos.x().toSizeT()], _rowRemap[pos.y().toSizeT()]}
                                     : pos;
     }
     /// Calculate the storage index for a stored coordinate pair.
     /// @param storedX The stored x coordinate.
     /// @param storedY The stored y coordinate.
     /// @return The linear storage index.
-    [[nodiscard]] auto storedBufferIndex(bgeo::BlockCoordinate storedX, bgeo::BlockCoordinate storedY) const noexcept
+    [[nodiscard]] auto storedBufferIndex(block::Coordinate storedX, block::Coordinate storedY) const noexcept
         -> std::size_t {
-        if (_orientation == bgeo::Orientation::Vertical) {
+        if (_orientation == geometry::Orientation::Vertical) {
             return (storedY * _size.width() + storedX).toSizeT();
         }
         return (storedX * _size.height() + storedY).toSizeT();
@@ -277,7 +277,7 @@ private:
     /// @param x The logical x coordinate.
     /// @param y The logical y coordinate.
     /// @return The linear storage index after remapping.
-    [[nodiscard]] auto bufferIndex(bgeo::BlockCoordinate x, bgeo::BlockCoordinate y) const noexcept -> std::size_t {
+    [[nodiscard]] auto bufferIndex(block::Coordinate x, block::Coordinate y) const noexcept -> std::size_t {
         return storedBufferIndex(_columnRemap[x.toSizeT()], _rowRemap[y.toSizeT()]);
     }
     /// Get the buffer index for the given orientation and size.
@@ -286,11 +286,11 @@ private:
     /// @param orientation The storage orientation.
     /// @return The storage index for `pos`.
     [[nodiscard]] static auto bufferIndex(
-        bgeo::BlockPosition pos, bgeo::BlockSize size, bgeo::Orientation orientation) noexcept -> std::size_t;
+        block::Position pos, block::Size size, geometry::Orientation orientation) noexcept -> std::size_t;
     /// Get the storage index for the current size and orientation.
     /// @param pos The position for the index.
     /// @return The buffer index.
-    [[nodiscard]] auto bufferIndex(bgeo::BlockPosition pos) const noexcept -> std::size_t {
+    [[nodiscard]] auto bufferIndex(block::Position pos) const noexcept -> std::size_t {
         return storedBufferIndex(pos.x(), pos.y());
     }
     /// Rotate a coordinate map to the logical front or back.
@@ -303,48 +303,47 @@ private:
     /// @param start The first element to erase.
     /// @param count The number of elements to erase.
     /// @return The recycled coordinates that must be refilled.
-    [[nodiscard]] static auto eraseFromMap(CoordinateMap &map, bgeo::BlockCoordinate start, int count)
-        -> std::span<const bgeo::BlockCoordinate>;
+    [[nodiscard]] static auto eraseFromMap(CoordinateMap &map, block::Coordinate start, int count)
+        -> std::span<const block::Coordinate>;
     /// Insert a span into a coordinate map using recycled coordinates from the end.
     /// @param map The map to modify.
     /// @param start The insertion coordinate.
     /// @param count The number of elements to insert.
     /// @return The recycled coordinates that must be refilled.
-    [[nodiscard]] static auto insertIntoMap(CoordinateMap &map, bgeo::BlockCoordinate start, int count)
-        -> std::span<const bgeo::BlockCoordinate>;
+    [[nodiscard]] static auto insertIntoMap(CoordinateMap &map, block::Coordinate start, int count)
+        -> std::span<const block::Coordinate>;
     /// Move a span inside a coordinate map.
     /// @param map The map to transform in place.
     /// @param start The first element to move.
     /// @param count The number of elements to move.
     /// @param delta The movement delta.
     /// @return The recycled coordinates that must be refilled.
-    [[nodiscard]] static auto moveInMap(
-        CoordinateMap &map, bgeo::BlockCoordinate start, int count, bgeo::BlockCoordinate delta)
-        -> std::span<const bgeo::BlockCoordinate>;
+    [[nodiscard]] static auto moveInMap(CoordinateMap &map, block::Coordinate start, int count, block::Coordinate delta)
+        -> std::span<const block::Coordinate>;
     /// Fill the given stored rows.
     /// @param rows The stored row coordinates to fill.
     /// @param fillChar The fill character.
-    void fillStoredRows(std::span<const bgeo::BlockCoordinate> rows, const Block &fillChar) noexcept;
+    void fillStoredRows(std::span<const block::Coordinate> rows, const Block &fillChar) noexcept;
     /// Fill the given stored columns.
     /// @param columns The stored column coordinates to fill.
     /// @param fillChar The fill character.
-    void fillStoredColumns(std::span<const bgeo::BlockCoordinate> columns, const Block &fillChar) noexcept;
+    void fillStoredColumns(std::span<const block::Coordinate> columns, const Block &fillChar) noexcept;
     /// Execute the fast resize path.
     /// @param newSize The validated new size.
     /// @param fillChar The fill character for newly appended storage cells.
-    void fastResize(bgeo::BlockSize newSize, const Block &fillChar);
+    void fastResize(block::Size newSize, const Block &fillChar);
     /// Execute the fast preserve-content path for primary-axis-only resizes.
     /// @param newSize The validated new size.
     /// @param fillChar The fill character for newly created logical cells.
-    void primaryAxisResize(bgeo::BlockSize newSize, const Block &fillChar);
+    void primaryAxisResize(block::Size newSize, const Block &fillChar);
     /// Execute the ordered resize path.
     /// @param newSize The validated new size.
     /// @param fillChar The fill character for newly created logical cells.
-    void reorderedResize(bgeo::BlockSize newSize, const Block &fillChar);
+    void reorderedResize(block::Size newSize, const Block &fillChar);
     /// Check whether the resize changes only the primary axis of the buffer orientation.
     /// @param newSize The validated new size.
     /// @return `true` if only the orientation axis changes.
-    [[nodiscard]] auto isPrimaryAxisOnlyResize(bgeo::BlockSize newSize) const noexcept -> bool;
+    [[nodiscard]] auto isPrimaryAxisOnlyResize(block::Size newSize) const noexcept -> bool;
     /// Access the remap for the orientation axis.
     /// @return The row map for vertical buffers or the column map for horizontal buffers.
     [[nodiscard]] auto primaryMap() noexcept -> CoordinateMap &;
@@ -353,14 +352,14 @@ private:
     /// Copy one stored primary line to another stored primary line.
     /// @param source The stored source row/column coordinate.
     /// @param destination The stored destination row/column coordinate.
-    void copyStoredPrimaryLine(bgeo::BlockCoordinate source, bgeo::BlockCoordinate destination) noexcept;
+    void copyStoredPrimaryLine(block::Coordinate source, block::Coordinate destination) noexcept;
 
 protected:
-    bgeo::BlockSize _size;          ///< The current size of the buffer.
-    bgeo::Orientation _orientation; ///< The orientation of the buffer layout.
-    std::vector<Block> _buffer;     ///< The characters in the buffer.
-    CoordinateMap _rowRemap;        ///< A map, `_rowRemap[addressed row] -> stored row`
-    CoordinateMap _columnRemap;     ///< A map, `_columnRemap[addressed column] -> stored column`
+    block::Size _size;                  ///< The current size of the buffer.
+    geometry::Orientation _orientation; ///< The orientation of the buffer layout.
+    std::vector<Block> _buffer;         ///< The characters in the buffer.
+    CoordinateMap _rowRemap;            ///< A map, `_rowRemap[addressed row] -> stored row`
+    CoordinateMap _columnRemap;         ///< A map, `_columnRemap[addressed column] -> stored column`
 };
 
 }

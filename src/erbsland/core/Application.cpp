@@ -19,8 +19,8 @@
 #include "../event/impl/ManagedEventThread.hpp"
 #include "../event/ManagedEventThread.hpp"
 #include "../i18n/DisplayTextMap.hpp"
-#include "../log/ConsoleLogWriter.hpp"
-#include "../log/LastErrorsLogWriter.hpp"
+#include "../log/impl/ConsoleLogWriter.hpp"
+#include "../log/impl/LastErrorsLogWriter.hpp"
 #include "../log/LogConfiguration.hpp"
 #include "../log/LogManager.hpp"
 #include "../log/LogStream.hpp"
@@ -205,7 +205,15 @@ void Application::parseCommandLine() {
         _data->setOptionValues(values);
         return;
     case options::OptionResultStatus::DisplayHelp:
-        _data->renderSystemOutput(manager.helpDocument(values->moduleName()));
+        if (result.helpName().isEmpty()) {
+            _data->renderSystemOutput(manager.helpDocument(values->moduleName()));
+        } else {
+            _data->renderSystemOutput(manager.detailedHelpDocument(values->moduleName(), result.helpName()));
+        }
+        _data->setOptionValues(nullptr);
+        return;
+    case options::OptionResultStatus::DisplayModuleOverview:
+        _data->renderSystemOutput(manager.moduleOverviewDocument());
         _data->setOptionValues(nullptr);
         return;
     case options::OptionResultStatus::DisplayVersion:
@@ -294,10 +302,10 @@ auto Application::log() -> log::LogManager & {
             enableTerminal();
         }
         auto manager = log::LogManager::create();
-        auto consoleWriter = log::ConsoleLogWriterPtr{};
+        auto consoleWriter = log::impl::ConsoleLogWriterPtr{};
         auto configuration = log::LogConfiguration{};
         if (_data->terminal() != nullptr) {
-            consoleWriter = std::make_shared<log::ConsoleLogWriter>(_data->terminal());
+            consoleWriter = std::make_shared<log::impl::ConsoleLogWriter>(_data->terminal());
             configuration.addWriter(
                 consoleWriter,
                 log::LogWriterFilter{
@@ -320,7 +328,7 @@ void Application::enableLastErrorDump(const LastErrorDumpMode mode) {
     if (_data->lastErrorsLogWriter() != nullptr) {
         return;
     }
-    auto writer = std::make_shared<log::LastErrorsLogWriter>();
+    auto writer = std::make_shared<log::impl::LastErrorsLogWriter>();
     manager.addPersistentWriter(writer, log::LogWriterFilter{log::LogLevel::Error});
     _data->setLastErrorsLogWriter(std::move(writer));
 }

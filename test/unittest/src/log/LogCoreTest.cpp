@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/err/ParameterError.hpp>
-#include <erbsland/log/LastErrorsLogWriter.hpp>
+#include <erbsland/log/impl/LastErrorsLogWriter.hpp>
+#include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogConfiguration.hpp>
 #include <erbsland/log/LogFileMode.hpp>
 #include <erbsland/log/LogFileRotation.hpp>
@@ -219,7 +220,7 @@ public:
         const auto stream = manager->createStream("app/network"_el, el::log::LogTraceSection{"NetworkDetails"_el});
         REQUIRE_FALSE(stream->traceEnabled());
 
-        const auto errors = std::make_shared<el::log::LastErrorsLogWriter>();
+        const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>();
         auto configuration = el::log::LogConfiguration{};
         configuration.addWriter(errors);
         manager->setConfiguration(configuration);
@@ -233,7 +234,7 @@ public:
 
     void testMessagesAreSanitizedAndTimestampedAtCreation() {
         const auto manager = el::log::LogManager::create();
-        const auto errors = std::make_shared<el::log::LastErrorsLogWriter>();
+        const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>();
         auto configuration = el::log::LogConfiguration{};
         configuration.addWriter(errors, el::log::LogWriterFilter{el::log::LogLevel::Error});
         manager->setConfiguration(std::move(configuration));

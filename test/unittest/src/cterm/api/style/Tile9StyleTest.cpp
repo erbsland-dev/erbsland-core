@@ -16,38 +16,38 @@ public:
     void testStringConstructorRepeatsTheNineBaseTilesAcrossRectangles() {
         const auto style = Tile9Style{"ABCDEFGHI"_el};
 
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{0, 0}), U'A');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{1, 0}), U'B');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{3, 0}), U'C');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{0, 1}), U'D');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{2, 1}), U'E');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{3, 1}), U'F');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{0, 2}), U'G');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{2, 2}), U'H');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{3, 2}), U'I');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{0, 0}), U'A');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{1, 0}), U'B');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{3, 0}), U'C');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{0, 1}), U'D');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{2, 1}), U'E');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{3, 1}), U'F');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{0, 2}), U'G');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{2, 2}), U'H');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 3}, block::Position{3, 2}), U'I');
     }
 
     void testDegenerateRectanglesUseFallbackTilesWhenOnlyNineTilesAreDefined() {
         const auto style = Tile9Style{"ABCDEFGHI"_el};
 
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{0, 0}), U'A');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{1, 0}), U'B');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{3, 0}), U'C');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 4}, bgeo::BlockPosition{0, 0}), U'A');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 4}, bgeo::BlockPosition{0, 1}), U'D');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 3}, bgeo::BlockPosition{0, 2}), U'G');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}), U'A');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{0, 0}), U'A');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{1, 0}), U'B');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{3, 0}), U'C');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 4}, block::Position{0, 0}), U'A');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 4}, block::Position{0, 1}), U'D');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 3}, block::Position{0, 2}), U'G');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 1}, block::Position{0, 0}), U'A');
     }
 
     void testSixteenTilesProvideExplicitDegenerateVariants() {
         const auto style = Tile9Style{"ABCDEFGHIJKLMNOP"_el};
 
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{0, 0}), U'J');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{1, 0}), U'K');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 4, 1}, bgeo::BlockPosition{3, 0}), U'L');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 4}, bgeo::BlockPosition{0, 0}), U'M');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}), U'P');
-        REQUIRE_EQUAL(style.block(bgeo::BlockRectangle{0, 0, 1, 4}, bgeo::BlockPosition{0, 3}), U'O');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{0, 0}), U'J');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{1, 0}), U'K');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 4, 1}, block::Position{3, 0}), U'L');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 4}, block::Position{0, 0}), U'M');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 1}, block::Position{0, 0}), U'P');
+        REQUIRE_EQUAL(style.block(block::Rectangle{0, 0, 1, 4}, block::Position{0, 3}), U'O');
     }
 
     void testNamedElementsExposeAllSixteenTiles() {
@@ -96,8 +96,8 @@ public:
 
         REQUIRE(utf8Style);
         REQUIRE(utf32Style);
-        const auto utf8Block = utf8Style->block(bgeo::BlockRectangle{0, 0, 3, 3}, bgeo::BlockPosition{1, 1});
-        const auto utf32Block = utf32Style->block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0});
+        const auto utf8Block = utf8Style->block(block::Rectangle{0, 0, 3, 3}, block::Position{1, 1});
+        const auto utf32Block = utf32Style->block(block::Rectangle{0, 0, 1, 1}, block::Position{0, 0});
         REQUIRE_EQUAL(utf8Block, U'E');
         REQUIRE_EQUAL(utf32Block, U'P');
     }
@@ -135,32 +135,23 @@ public:
         const auto style9 = Tile9Style{tiles9};
         const auto style16 = Tile9Style{tiles16};
 
-        REQUIRE_EQUAL(style9.block(bgeo::BlockRectangle{0, 0, 3, 3}, bgeo::BlockPosition{2, 2}), U'8');
+        REQUIRE_EQUAL(style9.block(block::Rectangle{0, 0, 3, 3}, block::Position{2, 2}), U'8');
         REQUIRE_EQUAL(
-            style16.block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0}).toString(),
-            tiles16[15].toString());
+            style16.block(block::Rectangle{0, 0, 1, 1}, block::Position{0, 0}).toString(), tiles16[15].toString());
     }
 
     void testPredefinedStylesExposeExpectedTiles() {
         REQUIRE_EQUAL(
-            Tile9Style::outerHalfBlockFrame()
-                ->block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{0, 0})
-                .toString(),
+            Tile9Style::outerHalfBlockFrame()->block(block::Rectangle{0, 0, 4, 3}, block::Position{0, 0}).toString(),
             "▛"_el);
         REQUIRE_EQUAL(
-            Tile9Style::outerHalfBlockFrame()
-                ->block(bgeo::BlockRectangle{0, 0, 1, 1}, bgeo::BlockPosition{0, 0})
-                .toString(),
+            Tile9Style::outerHalfBlockFrame()->block(block::Rectangle{0, 0, 1, 1}, block::Position{0, 0}).toString(),
             "█"_el);
         REQUIRE_EQUAL(
-            Tile9Style::innerHalfBlockFrame()
-                ->block(bgeo::BlockRectangle{0, 0, 4, 3}, bgeo::BlockPosition{1, 0})
-                .toString(),
+            Tile9Style::innerHalfBlockFrame()->block(block::Rectangle{0, 0, 4, 3}, block::Position{1, 0}).toString(),
             "▄"_el);
         REQUIRE_EQUAL(
-            Tile9Style::innerHalfBlockFrame()
-                ->block(bgeo::BlockRectangle{0, 0, 1, 2}, bgeo::BlockPosition{0, 1})
-                .toString(),
+            Tile9Style::innerHalfBlockFrame()->block(block::Rectangle{0, 0, 1, 2}, block::Position{0, 1}).toString(),
             "█"_el);
     }
 

@@ -1,0 +1,7 @@
+# Reference-document groups for the random domain.
+
+------------*[ Reference Groups ]
+Page        : "random/random_numbers.rst"
+Title       : "Random Numbers"
+Header Globs:
+    * "random/*.hpp"

@@ -3,7 +3,6 @@
 
 #include "VrBase.hpp"
 
-#include <erbsland/conf/impl/vr/DependencyMode.hpp>
 #include <erbsland/conf/impl/vr/EqualsBooleanConstraint.hpp>
 #include <erbsland/conf/impl/vr/EqualsBytesConstraint.hpp>
 #include <erbsland/conf/impl/vr/EqualsConstraint.hpp>
@@ -156,39 +155,41 @@ public:
     }
 
     void testDefaultAttributeConstructors() {
+        REQUIRE_THROWS(vr::builder::Default(el::conf::ValuePtr{}));
         auto defaultFromValue = vr::builder::Default(el::conf::impl::Value::createInteger(7));
-        REQUIRE(defaultFromValue._value);
-        REQUIRE_EQUAL(defaultFromValue._value->type(), ValueType::Integer);
+        REQUIRE(defaultFromValue.value());
+        REQUIRE_EQUAL(defaultFromValue.value()->type(), ValueType::Integer);
 
-        REQUIRE_EQUAL(vr::builder::Default(Integer{7})._value->type(), ValueType::Integer);
-        REQUIRE_EQUAL(vr::builder::Default(true)._value->type(), ValueType::Boolean);
-        REQUIRE_EQUAL(vr::builder::Default(Float{1.5})._value->type(), ValueType::Float);
-        REQUIRE_EQUAL(vr::builder::Default(el::text::String{"text"_el})._value->type(), ValueType::Text);
-        REQUIRE_EQUAL(vr::builder::Default("text"_el)._value->type(), ValueType::Text);
-        REQUIRE_EQUAL(vr::builder::Default(makeDate(2026, 1, 1))._value->type(), ValueType::Date);
-        REQUIRE_EQUAL(vr::builder::Default(makeTime(12, 0, 0, 0))._value->type(), ValueType::Time);
+        REQUIRE_EQUAL(vr::builder::Default(Integer{7}).value()->type(), ValueType::Integer);
+        REQUIRE_EQUAL(vr::builder::Default(true).value()->type(), ValueType::Boolean);
+        REQUIRE_EQUAL(vr::builder::Default(Float{1.5}).value()->type(), ValueType::Float);
+        REQUIRE_EQUAL(vr::builder::Default(el::text::String{"text"_el}).value()->type(), ValueType::Text);
+        REQUIRE_EQUAL(vr::builder::Default("text"_el).value()->type(), ValueType::Text);
+        REQUIRE_EQUAL(vr::builder::Default(makeDate(2026, 1, 1)).value()->type(), ValueType::Date);
+        REQUIRE_EQUAL(vr::builder::Default(makeTime(12, 0, 0, 0)).value()->type(), ValueType::Time);
         REQUIRE_EQUAL(
-            vr::builder::Default(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)})._value->type(),
+            vr::builder::Default(el::time::DateTime{makeDate(2026, 1, 1), makeTime(12, 0, 0, 0)}).value()->type(),
             ValueType::DateTime);
-        REQUIRE_EQUAL(vr::builder::Default(bytesFromHex("DE AD"_el))._value->type(), ValueType::Bytes);
+        REQUIRE_EQUAL(vr::builder::Default(bytesFromHex("DE AD"_el)).value()->type(), ValueType::Bytes);
         REQUIRE_EQUAL(
-            vr::builder::Default(el::time::CalendarDelta{el::time::Hours{2}})._value->type(), ValueType::TimeDelta);
-        REQUIRE_EQUAL(vr::builder::Default(el::re::RegEx::compile("a.*"_el))._value->type(), ValueType::RegEx);
+            vr::builder::Default(el::time::CalendarDelta{el::time::Hours{2}}).value()->type(), ValueType::TimeDelta);
+        REQUIRE_EQUAL(vr::builder::Default(el::re::RegEx::compile("a.*"_el)).value()->type(), ValueType::RegEx);
         REQUIRE_THROWS(vr::builder::Default(el::re::RegExPtr{}));
 
-        REQUIRE_EQUAL(vr::builder::Default(std::vector<Integer>{1, 2})._value->type(), ValueType::ValueList);
-        REQUIRE_EQUAL(vr::builder::Default(std::vector<bool>{true, false})._value->type(), ValueType::ValueList);
-        REQUIRE_EQUAL(vr::builder::Default(std::vector<Float>{1.0, 2.0})._value->type(), ValueType::ValueList);
-        REQUIRE_EQUAL(vr::builder::Default(el::text::StringList{"a"_el, "b"_el})._value->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<Integer>{1, 2}).value()->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<bool>{true, false}).value()->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(std::vector<Float>{1.0, 2.0}).value()->type(), ValueType::ValueList);
+        REQUIRE_EQUAL(vr::builder::Default(el::text::StringList{"a"_el, "b"_el}).value()->type(), ValueType::ValueList);
         REQUIRE_EQUAL(
             vr::builder::Default(std::vector<el::mem::ByteBlock>{bytesFromHex("AA"_el), bytesFromHex("BB"_el)})
-                ._value->type(),
+                .value()
+                ->type(),
             ValueType::ValueList);
         REQUIRE_EQUAL(
-            vr::builder::Default(std::vector<std::vector<Integer>>{{1, 2}, {3, 4}})._value->type(),
+            vr::builder::Default(std::vector<std::vector<Integer>>{{1, 2}, {3, 4}}).value()->type(),
             ValueType::ValueList);
         REQUIRE_EQUAL(
-            vr::builder::Default(std::vector<std::vector<Float>>{{1.0, 2.0}})._value->type(), ValueType::ValueList);
+            vr::builder::Default(std::vector<std::vector<Float>>{{1.0, 2.0}}).value()->type(), ValueType::ValueList);
 
         auto rule = makeRule(vr::RuleType::Integer);
         vr::builder::Default(Integer{42})(rule);
@@ -230,18 +231,18 @@ public:
         auto rule = makeRule(vr::RuleType::Section);
 
         vr::builder::Dependency(
-            el::conf::impl::DependencyMode::If,
+            el::conf::vr::DependencyMode::If,
             std::vector<NamePathLike>{el::text::String{"a"_el}},
             std::vector<NamePathLike>{el::text::String{"b"_el}},
             "dep"_el)(rule);
         vr::builder::Dependency(
-            el::conf::impl::DependencyMode::XOR, {el::text::String{"x"_el}}, {el::text::String{"y"_el}})(rule);
+            el::conf::vr::DependencyMode::XOR, {el::text::String{"x"_el}}, {el::text::String{"y"_el}})(rule);
 
         REQUIRE(rule.hasDependencyDefinitions());
         REQUIRE_EQUAL(rule.dependencyDefinitions().size(), 2U);
-        REQUIRE_EQUAL(rule.dependencyDefinitions().front()->mode(), el::conf::impl::DependencyMode::If);
+        REQUIRE_EQUAL(rule.dependencyDefinitions().front()->mode(), el::conf::vr::DependencyMode::If);
         REQUIRE(rule.dependencyDefinitions().front()->hasErrorMessage());
-        REQUIRE_EQUAL(rule.dependencyDefinitions().back()->mode(), el::conf::impl::DependencyMode::XOR);
+        REQUIRE_EQUAL(rule.dependencyDefinitions().back()->mode(), el::conf::vr::DependencyMode::XOR);
     }
 
     void testVersionAttributesAndBranches() {

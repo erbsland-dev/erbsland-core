@@ -4,16 +4,19 @@
 
 #include "Rule.hpp"
 #include "Rules.hpp"
+#include "RulesBuilder_fwd.hpp"
 #include "ValidationError.hpp"
 
 #include "../../Document.hpp"
 #include "../../vr/builder/Attributes.hpp"
 
+#include <span>
+
 namespace erbsland::conf::impl {
 
 /// Build a validation-rule collection from documents or public builder calls.
 class RulesBuilder {
-public:
+public: // programmatic construction
     /// Create an empty validation-rule builder.
     RulesBuilder();
 
@@ -35,47 +38,23 @@ public:
     [[nodiscard]] auto takeRules() -> RulesPtr;
 
 public:
+    /// Configure attributes of the implicit root section rule.
+    /// @param attributes The attributes that configure the root rule.
+    void configureRoot(std::span<const vr::builder::Attribute *const> attributes);
+
     /// Add a primary validation rule.
-    /// @tparam Attributes The rule attribute types.
     /// @param namePath The rule name path.
     /// @param ruleType The type of values accepted by the rule.
     /// @param attributes The attributes that configure the rule.
-    template <typename... Attributes>
-        requires(std::derived_from<Attributes, vr::builder::Attribute> && ...)
-    void addRule(const NamePathLike &namePath, const vr::RuleType ruleType, Attributes... attributes) {
-
-        if (ruleType == vr::RuleType::Undefined) {
-            throwValidationError("A rule type of 'undefined' is not allowed"_el);
-        }
-        auto ruleNamePath = resolveRuleNamePath(namePath);
-        auto rule = std::make_shared<Rule>();
-        rule->setRuleNamePath(ruleNamePath);
-        rule->setTargetNamePath(ruleNamePath);
-        rule->setType(ruleType);
-        (attributes(*rule), ...);
-        _rules->addRule(rule);
-    }
+    void addRule(
+        const NamePathLike &namePath, vr::RuleType ruleType, std::span<const vr::builder::Attribute *const> attributes);
 
     /// Add an alternative validation rule.
-    /// @tparam Attributes The rule attribute types.
     /// @param namePath The rule name path.
     /// @param ruleType The type of values accepted by the rule.
     /// @param attributes The attributes that configure the rule.
-    template <typename... Attributes>
-        requires(std::derived_from<Attributes, vr::builder::Attribute> && ...)
-    void addAlternative(const NamePathLike &namePath, const vr::RuleType ruleType, Attributes... attributes) {
-
-        if (ruleType == vr::RuleType::Undefined) {
-            throwValidationError("A rule type of 'undefined' is not allowed"_el);
-        }
-        auto ruleNamePath = resolveRuleNamePath(namePath);
-        auto rule = std::make_shared<Rule>();
-        rule->setRuleNamePath(ruleNamePath);
-        rule->setTargetNamePath(ruleNamePath);
-        rule->setType(ruleType);
-        (attributes(*rule), ...);
-        _rules->addAlternativeRule(rule);
-    }
+    void addAlternative(
+        const NamePathLike &namePath, vr::RuleType ruleType, std::span<const vr::builder::Attribute *const> attributes);
 
 private:
     /// Resolve a rule name path to its canonical representation.

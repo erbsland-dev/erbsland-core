@@ -4,7 +4,12 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        Number.cpp
+        Number.hpp
+        Number_arithmetic.cpp
         PrivateKeyData.cpp
+        RsaKeyGenerator.cpp
+        RsaKeyGenerator.hpp
         RsaMontgomeryScratch.hpp
         RsaSignature.cpp
         RsaSignature.hpp
@@ -13,6 +18,5 @@ target_sources(erbsland-core PRIVATE
         RsaSignatureTypes.hpp
         RsaSigner.cpp
         RsaSigner.hpp
-        RsaSigner_arithmetic.cpp
         RsaSigner_decode.cpp
 )

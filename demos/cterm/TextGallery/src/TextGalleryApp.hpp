@@ -24,21 +24,21 @@ public:
     void onRenderToBuffer() override;
 
 private:
-    void drawOverviewPage(BlockRectangle contentRect);
-    void drawMixedWidthPage(BlockRectangle contentRect);
-    void drawBitmapFontPage(BlockRectangle contentRect);
+    void drawOverviewPage(Rectangle contentRect);
+    void drawMixedWidthPage(Rectangle contentRect);
+    void drawBitmapFontPage(Rectangle contentRect);
     void drawPanel(
-        BlockRectangle rect,
+        Rectangle rect,
         el::String title,
         el::String text,
         Alignment alignment,
         FrameStyle frameStyle,
         Color fillColor,
         Color textColor);
-    void drawFooter(BlockRectangle rect);
+    void drawFooter(Rectangle rect);
     [[nodiscard]] auto buildFooterText() const -> BlockString;
     [[nodiscard]] static auto titleColors() -> ColorSequence;
-    [[nodiscard]] static auto titleForWidth(BlockCoordinate width) -> el::String;
+    [[nodiscard]] static auto titleForWidth(Coordinate width) -> el::String;
 
 private:
     FontPtr _font;

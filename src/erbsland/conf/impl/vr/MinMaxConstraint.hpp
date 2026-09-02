@@ -20,13 +20,8 @@ public:
 
 public:
     /// Create a minimum or maximum constraint.
-    explicit MinMaxConstraint(const MinOrMax minOrMax) {
-        if (minOrMax == Min) {
-            setType(vr::ConstraintType::Minimum);
-        } else {
-            setType(vr::ConstraintType::Maximum);
-        }
-    }
+    explicit MinMaxConstraint(const MinOrMax minOrMax) :
+        Constraint{minOrMax == Min ? vr::ConstraintType::Minimum : vr::ConstraintType::Maximum} {}
 
     /// Compare two values according to this constraint's direction.
     template <typename T>

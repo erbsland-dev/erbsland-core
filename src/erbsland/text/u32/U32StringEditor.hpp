@@ -41,8 +41,8 @@
 #include "../u16/U16StringEditor_fwd.hpp"
 #include "../u8/U8StringEditor_fwd.hpp"
 
-#include "../../bgeo/Alignment.hpp"
 #include "../../debug/impl/StringDebugAccess_fwd.hpp"
+#include "../../geometry/Alignment.hpp"
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
@@ -70,7 +70,7 @@ namespace erbsland::text {
 /// Use `U32String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
 /// Use `U32StringEditor` only when the mutable workflow requires UTF-32 encoding.
-/// @seedoc{/reference/text/string_width_variants}
+/// @seedoc{/reference/text/strings}
 /// @tested{U32StringTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
 class U32StringEditor {
     friend class debug::impl::StringDebugAccess<U32StringEditor>;
@@ -294,7 +294,7 @@ public: // transform
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U32String &ellipsis) const
         -> U32StringEditor;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill = U' ') const
+    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
         -> U32StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const

@@ -34,7 +34,7 @@ application-owned manager.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineFormats.cpp
     :exec: log/logging_topics --demo LineFormats
-    :source-sha256: 21fc6dce40bddf4a1475855f7af342ae3d096c9cc41c64cdadef7bc6081c1356
+    :source-sha256: b7d7cf78216eee5664a6d17c0403811bf7fbbac6a4bc2a2fed10bd4fe0a83cf9
 
 .. code-block:: cpp
 
@@ -48,7 +48,7 @@ application-owned manager.
 
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(lineFormat))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -92,13 +92,13 @@ Write ``{{`` or ``}}`` when the result needs a literal opening or closing brace.
 The setter validates the pattern immediately; an empty pattern, an unknown placeholder, or an unmatched brace raises
 :cpp:class:`ParameterError <erbsland::err::ParameterError>` while the configuration is being assembled.
 
-The demo compares three patterns: message-only output for a compact command, level and stream
-context for a larger application, and a labelled format containing literal braces.
+The demo compares three patterns: message-only output for a compact command, level and stream context for a larger
+application, and a labelled format containing literal braces.
 
 .. erbsland-demo::
     :source: log/LoggingTopics/LinePatterns.cpp
     :exec: log/logging_topics --demo LinePatterns
-    :source-sha256: 5eb1f2552d13c498554789d23bf899f6a855d76eccb9e1f1e89705304db2b204
+    :source-sha256: 720162900d04786cfcb30f1d09729d09e85b9b0ae119a4b2e845384cdcf261b6
 
 .. code-block:: cpp
 
@@ -113,7 +113,7 @@ context for a larger application, and a labelled format containing literal brace
             lineFormat.setPattern(std::move(pattern));
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -156,7 +156,7 @@ On a machine configured for UTC, both choices naturally display the same clock t
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTimestampZones.cpp
     :exec: log/logging_topics --demo LineTimestampZones
-    :source-sha256: e128dc71131ab95fa9c94b7b1c822bf6eb6c8805d0bf31f66042332dd167f560
+    :source-sha256: 497baf08b2bfdbb93cab66efc877fffe15a626a5d42a9b1cbbcec972758d9f41
 
 .. code-block:: cpp
 
@@ -171,7 +171,7 @@ On a machine configured for UTC, both choices naturally display the same clock t
             lineFormat.setPattern("{time} - {message}"_el).setTimestampZone(zone);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -187,9 +187,9 @@ On a machine configured for UTC, both choices naturally display the same clock t
     :escape-char: ␛
 
     UTC rendering:
-    ␛[96m2026-09-01 15:03:59Z␛[97m - Expedition clock synchronized.
+    ␛[96m2026-09-04 18:40:07Z␛[97m - Expedition clock synchronized.
     ␛[39mLocal rendering:
-    ␛[96m2026-09-01 17:03:59+02:00␛[97m - Expedition clock synchronized.␛[0m
+    ␛[96m2026-09-04 20:40:07+02:00␛[97m - Expedition clock synchronized.␛[0m
 
 .. erbsland-demo-end::
 
@@ -209,7 +209,7 @@ This makes it safe to choose a format for readability without changing which ent
 .. erbsland-demo::
     :source: log/LoggingTopics/LineLevelFormats.cpp
     :exec: log/logging_topics --demo LineLevelFormats
-    :source-sha256: 339d47cbcc5b422392f3c7f3bf21af5bd11d02ff3da3f6194631325aa721978e
+    :source-sha256: 10d1ded59ffb524925da45d184305da48b45e18b2f150e9490281468d07af250
 
 .. code-block:: cpp
 
@@ -224,7 +224,7 @@ This makes it safe to choose a format for readability without changing which ent
             lineFormat.setPattern("{level}: {message}"_el).setLevelFormat(levelFormat);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -273,7 +273,7 @@ compare.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineNameFormats.cpp
     :exec: log/logging_topics --demo LineNameFormats
-    :source-sha256: 2d6907e74637db09d6b28c1c77c3b7edda01bd8183c4eed6af729bab946a1aa6
+    :source-sha256: e13ba2f43b9c9747ef7f8f86a1fb9340989dc71b6252d4145bee9a292e9e89f2
 
 .. code-block:: cpp
 
@@ -288,7 +288,7 @@ compare.
             lineFormat.setPattern("{name}: {message}"_el).setNameFormat(nameFormat);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -334,7 +334,7 @@ A limit of zero disables shortening and therefore shows the complete path even i
 .. erbsland-demo::
     :source: log/LoggingTopics/LineNameLimits.cpp
     :exec: log/logging_topics --demo LineNameLimits
-    :source-sha256: 858df104595945c19b4ad3ee2f4c448939b9bcbbeee2b3decf65b364021e7aae
+    :source-sha256: 71f578fdcf592f787f30e67342bff9152296c31ffa1d94c67438f0f6786a49aa
 
 .. code-block:: cpp
 
@@ -351,7 +351,7 @@ A limit of zero disables shortening and therefore shows the complete path even i
                 .setNameLimit(limit);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -392,7 +392,7 @@ This mode does not consult the numeric message limit: its boundary is the first 
 .. erbsland-demo::
     :source: log/LoggingTopics/LineFirstLineTruncation.cpp
     :exec: log/logging_topics --demo LineFirstLineTruncation
-    :source-sha256: acb29473b7203494e9e2a02dee0170c2f0f91dad2931e4f0795d35f4240b633e
+    :source-sha256: 56492a81d4af60095635a1b2633f0f313ef8490ec4bfe0560f92982570c80156
 
 .. code-block:: cpp
 
@@ -407,7 +407,7 @@ This mode does not consult the numeric message limit: its boundary is the first 
             lineFormat.setPattern("{level}: {message}"_el).setMessageTruncation(truncation);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -445,7 +445,7 @@ This makes it convenient to expose ``0`` as an application setting meaning “un
 .. erbsland-demo::
     :source: log/LoggingTopics/LineMessageLimits.cpp
     :exec: log/logging_topics --demo LineMessageLimits
-    :source-sha256: 9451897e923b523478ccdec3f32f3a208de97598164319252134ecd519dc4314
+    :source-sha256: 2482d52b1f986eb75075e733829f98b06a605878014433564d986892b2a20adc
 
 .. code-block:: cpp
 
@@ -462,7 +462,7 @@ This makes it convenient to expose ``0`` as an application setting meaning “un
                 .setMessageLimit(limit);
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -507,7 +507,7 @@ As with character-count mode, a zero limit disables the rule.
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTotalLimits.cpp
     :exec: log/logging_topics --demo LineTotalLimits
-    :source-sha256: a887219c695fdd3365a0d51fce3845f0a00411e5a346cf60d0ebb5ba1cc31ef2
+    :source-sha256: 91393a5fec4dee7e40f2325db3e7423dda1d5819385768294a5e9a92a385dda0
 
 .. code-block:: cpp
 
@@ -524,7 +524,7 @@ As with character-count mode, a zero limit disables the rule.
                 .setMessageLimit(el::CpLength{56U});
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));
@@ -564,7 +564,7 @@ An empty marker saves that space, but it also removes the reader's visible clue 
 .. erbsland-demo::
     :source: log/LoggingTopics/LineTruncationMarks.cpp
     :exec: log/logging_topics --demo LineTruncationMarks
-    :source-sha256: 5d1a73facbd0474841fb78bc25d9551cb14733b7089f30ab7549565bf8ab1684
+    :source-sha256: 427ae1660db7207b4eaa2944cb08ebfba010d568e5951ee6f474a5a18724ca58
 
 .. code-block:: cpp
 
@@ -582,7 +582,7 @@ An empty marker saves that space, but it also removes the reader's visible clue 
                 .setTruncationMark(std::move(mark));
             auto configuration = el::LogConfiguration{};
             configuration.setLineFormat(std::move(lineFormat))
-                .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+                .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
             const auto manager = el::LogManager::create();
             manager->setConfiguration(std::move(configuration));

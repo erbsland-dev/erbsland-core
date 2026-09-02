@@ -16,7 +16,7 @@ public:
     /// Set descriptive text for a rule.
     /// @param description The text to move into the attribute.
     explicit Description(text::String description) : _description{std::move(description)} {}
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
     text::String _description;
 };
 

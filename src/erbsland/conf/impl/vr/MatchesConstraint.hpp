@@ -10,6 +10,7 @@
 namespace erbsland::conf::impl {
 
 /// Constraint that validates text against a regular expression.
+/// @tested{TlsConfigurationParserTest VrConstraintTest}
 class MatchesConstraint : public Constraint {
 public:
     /// Creates a regular-expression constraint from a pattern.

@@ -19,7 +19,7 @@ namespace erbsland::cryptology {
 /// Select symmetric encryption constructions using requirements and the live application-wide cryptology policy.
 /// Each operation uses one coherent configuration snapshot. Explicit encryptor and decryptor construction is
 /// unaffected.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{SymmetricEncryptionTypeTest CryptologyConfigurationTest}
 class SymmetricEncryptionSelector final {
 public:

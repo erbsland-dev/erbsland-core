@@ -9,4 +9,4 @@ Random Generator
 .. toctree::
     :maxdepth: 1
 
-    random
+    random_numbers

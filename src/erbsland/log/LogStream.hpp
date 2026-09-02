@@ -20,23 +20,18 @@ namespace erbsland::log {
 /// @tested{LogCoreTest}
 class LogStream final {
     friend class impl::LogManagerData;
-
-private:
-    /// Restricts stream construction to manager data.
-    class ConstructionToken final {
-        friend class impl::LogManagerData;
-
-        /// Create a private construction token.
-        ConstructionToken() = default;
-    };
+    struct PrivateTag {};
 
 public:
     /// Internal constructor used by the manager.
     /// @param path The validated path represented by this stream.
     /// @param traceSection The optional trace configuration section.
     /// @param manager Weak ownership of the manager receiving entries.
-    /// @param token The construction token supplied by the manager.
-    LogStream(LogPath path, LogTraceSection traceSection, impl::LogManagerDataWeakPtr manager, ConstructionToken token);
+    LogStream(LogPath path, LogTraceSection traceSection, impl::LogManagerDataWeakPtr manager, PrivateTag);
+
+    /// Create a muted log stream.
+    /// Can be used to effectively discard any log messages of a component.
+    [[nodiscard]] static auto createMuted() -> LogStreamPtr;
 
     // defaults/deletions
     ~LogStream() = default;
@@ -100,7 +95,7 @@ private:
     /// @param level The severity to assign to the entry.
     /// @param timestamp The UTC timestamp captured before producer-side formatting.
     /// @param message The formatted message to sanitize and enqueue.
-    void emitText(LogLevel level, time::DateTime timestamp, text::String message);
+    void emitText(LogLevel level, time::DateTime timestamp, const text::String &message);
     /// Update the cached trace-enabled flag.
     /// @param enabled The newly computed trace state.
     void setTraceEnabled(bool enabled) noexcept { _traceEnabled.store(enabled, std::memory_order_relaxed); }

@@ -16,16 +16,22 @@ target_sources(erbsland-core PRIVATE
         Asn1ObjectIdentifierCodec.hpp
         CryptologyConfigurationSnapshot.cpp
         CryptologyConfigurationSnapshot.hpp
+        CryptologyOids.hpp
         DerEncoder.cpp
         DerEncoder.hpp
         DerParser.cpp
         DerParser.hpp
         DerParser_fwd.hpp
+        EncryptedPrivateKeyCodec.cpp
+        EncryptedPrivateKeyCodec.hpp
         PasswordHashData.cpp
         PasswordHashData.hpp
         PasswordHashData_fwd.hpp
         PemCodec.cpp
         PemCodec.hpp
+        PemDerFileTools.cpp
+        PemDerFileTools.hpp
+        PemLabel.hpp
         PortableX509CertificateData.hpp
         PortableX509CertificateData_fwd.hpp
         PortableX509CertificateValues.hpp
@@ -33,11 +39,21 @@ target_sources(erbsland-core PRIVATE
         PrivateKeyParser.hpp
         PrivateKeyParser_fwd.hpp
         SecureEraseGuard.hpp
+        SigningKeyEncoding.cpp
+        SigningKeyEncoding.hpp
+        SigningKeyGenerator.cpp
+        SigningKeyGenerator.hpp
+        SigningKeyGenerator_fwd.hpp
+        TlsConfigurationLabel.cpp
+        TlsConfigurationLabel.hpp
+        TlsConfigurationRules.cpp
+        TlsConfigurationRules.hpp
+        X509ArtifactWriter.cpp
+        X509ArtifactWriter.hpp
+        X509ArtifactWriter_fwd.hpp
         X509CertificateBackendAccess.hpp
         X509CertificateBackendAccess_fwd.hpp
         X509CertificateData.hpp
-        X509FileTools.cpp
-        X509FileTools.hpp
         X509Parser.cpp
         X509Parser.hpp
         X509Parser_extensions.cpp

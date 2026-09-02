@@ -18,7 +18,8 @@ void managerOptions() {
     options.setMaximumEntries(2048U);
 
     auto configuration = el::LogConfiguration{};
-    configuration.setManagerOptions(std::move(options)).addWriter(std::make_shared<el::LastErrorsLogWriter>());
+    configuration.setManagerOptions(std::move(options))
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));

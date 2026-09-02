@@ -21,7 +21,7 @@
 namespace erbsland::unit {
 
 /// A non-negative length with a integer unit.
-/// @seedoc{/reference/unit/integer_unit_types}
+/// @seedoc{/reference/unit/units_and_versions}
 /// @tparam tIntegerUnit The integer unit for this length.
 template <impl::ValidIntegerUnit tIntegerUnit>
 class IntegerUnitAmount {

@@ -3,7 +3,7 @@
 
 #include "../../support/TestHelper.hpp"
 
-#include <erbsland/bgeo/StdFormat.hpp>
+#include <erbsland/block/StdFormat.hpp>
 #include <erbsland/cterm/Font.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StdFormat.hpp>

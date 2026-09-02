@@ -1,0 +1,7 @@
+# Reference-document groups for the i18n domain.
+
+------------*[ Reference Groups ]
+Page        : "i18n/internationalization.rst"
+Title       : "Internationalization"
+Header Globs:
+    * "i18n/*.hpp"

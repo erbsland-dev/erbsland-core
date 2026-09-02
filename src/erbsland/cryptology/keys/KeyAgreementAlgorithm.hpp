@@ -15,7 +15,7 @@
 namespace erbsland::cryptology {
 
 /// A supported asymmetric key-agreement algorithm.
-/// @seedoc{/reference/cryptology/key_agreement}
+/// @seedoc{/reference/cryptology/key_management}
 /// @tested{KeyAgreementTest}
 class KeyAgreementAlgorithm final {
 public:

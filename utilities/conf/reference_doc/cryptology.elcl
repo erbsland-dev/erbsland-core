@@ -1,0 +1,50 @@
+# Reference-document groups for the cryptology domain.
+
+------------*[ Reference Groups ]
+Page        : "cryptology/cryptographic_operations.rst"
+Title       : "Cryptographic Operations"
+Headers     :
+    * "cryptology/CryptologyError.hpp"
+    * "cryptology/Hkdf.hpp"
+    * "cryptology/Hmac.hpp"
+    * "cryptology/StdFormat.hpp"
+Header Globs:
+    * "cryptology/Cryptographic*.hpp"
+    * "cryptology/Hash*.hpp"
+    * "cryptology/configuration/*.hpp"
+    * "cryptology/symmetric/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/protected_data.rst"
+Title       : "Protected Data"
+Header Globs:
+    * "cryptology/protected_data/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/key_management.rst"
+Title       : "Key Agreement and Signing"
+Headers     :
+    * "cryptology/PemDerFormat.hpp"
+Header Globs:
+    * "cryptology/keys/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/password_hashing.rst"
+Title       : "Password Hashing"
+Header Globs:
+    * "cryptology/Password*.hpp"
+    * "cryptology/unsafe/*Password*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/tls.rst"
+Title       : "TLS Support"
+Header Globs:
+    * "cryptology/tls/*.hpp"
+    * "cryptology/tls_record/*.hpp"
+
+------------*[ Reference Groups ]
+Page        : "cryptology/x509_certificates.rst"
+Title       : "X.509 Certificates"
+Header Globs:
+    * "cryptology/asn1/*.hpp"
+    * "cryptology/x509/*.hpp"

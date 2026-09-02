@@ -17,7 +17,7 @@ namespace erbsland::cryptology {
 /// A move-only TLS 1.3 record decryptor implementing RFC 8446 sections 5.2--5.5 and 7.2--7.3.
 /// It authenticates one complete TLSCiphertext record before returning sensitive plaintext. Any malformed record,
 /// authentication failure, overflow, or exhausted key makes this state terminal and erases all retained secrets.
-/// @seedoc{/reference/cryptology/tls_record_protection}
+/// @seedoc{/reference/cryptology/tls}
 /// @tested{TlsRecordProtectionTest}
 class TlsRecordDecryptor final {
     friend class impl::TlsRecordTestAccess;

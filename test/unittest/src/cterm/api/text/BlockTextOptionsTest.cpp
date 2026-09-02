@@ -15,11 +15,11 @@ public:
         REQUIRE_EQUAL(options.color(), Color{});
         REQUIRE_EQUAL(options.font(), nullptr);
         REQUIRE_EQUAL(options.animation(), BlockTextAnimation::None);
-        REQUIRE_EQUAL(options.alignment(), bgeo::Alignment::TopLeft);
+        REQUIRE_EQUAL(options.alignment(), geometry::Alignment::TopLeft);
         REQUIRE_EQUAL(options.lineIndent(), 0);
         REQUIRE_EQUAL(options.firstLineIndent(), 0);
         REQUIRE_EQUAL(options.wrappedLineIndent(), 0);
-        REQUIRE_EQUAL(options.margins(), bgeo::BlockMargins{0});
+        REQUIRE_EQUAL(options.margins(), block::Margins{0});
         REQUIRE_EQUAL(options.backgroundMode(), ParagraphBackgroundMode::Default);
         REQUIRE(options.lineBreakEndMark().isEmpty());
         REQUIRE(options.lineBreakStartMark().isEmpty());
@@ -36,14 +36,14 @@ public:
     }
 
     void testColorFontAnimationAndParagraphOptionsCanBeConfigured() {
-        auto options = BlockTextOptions{bgeo::Alignment::Center};
-        auto paragraphOptions = ParagraphOptions{bgeo::Alignment::BottomRight};
+        auto options = BlockTextOptions{geometry::Alignment::Center};
+        auto paragraphOptions = ParagraphOptions{geometry::Alignment::BottomRight};
         const auto font = std::make_shared<Font>(3);
 
         paragraphOptions.setLineIndent(2);
         paragraphOptions.setFirstLineIndent(4);
         paragraphOptions.setWrappedLineIndent(6);
-        paragraphOptions.setMargins(bgeo::BlockMargins{1, 2});
+        paragraphOptions.setMargins(block::Margins{1, 2});
         paragraphOptions.setBackgroundMode(ParagraphBackgroundMode::FullBoth);
         paragraphOptions.setLineBreakEndMark(BlockStringEditor{"<"_el});
         paragraphOptions.setLineBreakStartMark(BlockStringEditor{">"_el});
@@ -67,11 +67,11 @@ public:
         REQUIRE_EQUAL(options.font(), font);
         REQUIRE_EQUAL(options.animation(), BlockTextAnimation::ColorDiagonal);
         const auto alignment = options.paragraphOptions().alignment();
-        REQUIRE_EQUAL(alignment, bgeo::Alignment::BottomRight);
+        REQUIRE_EQUAL(alignment, geometry::Alignment::BottomRight);
         REQUIRE_EQUAL(options.lineIndent(), 2);
         REQUIRE_EQUAL(options.firstLineIndent(), 4);
         REQUIRE_EQUAL(options.wrappedLineIndent(), 6);
-        REQUIRE_EQUAL(options.margins(), bgeo::BlockMargins(1, 2));
+        REQUIRE_EQUAL(options.margins(), block::Margins(1, 2));
         REQUIRE_EQUAL(options.backgroundMode(), ParagraphBackgroundMode::FullBoth);
         requireStringEqual(options.lineBreakEndMark(), U"<"_el);
         requireStringEqual(options.lineBreakStartMark(), U">"_el);
@@ -92,11 +92,11 @@ public:
         auto options = BlockTextOptions{};
 
         options.setColor(Color{fg::Cyan, bg::Blue});
-        options.setAlignment(bgeo::Alignment::BottomCenter);
+        options.setAlignment(geometry::Alignment::BottomCenter);
         options.setLineIndent(-4);
         options.setFirstLineIndent(ParagraphOptions::cUseLineIndent);
         options.setWrappedLineIndent(-7);
-        options.setMargins(bgeo::BlockMargins{2});
+        options.setMargins(block::Margins{2});
         options.setMaximumLineWraps(-2);
         options.setLineBreakEndMark(BlockStringEditor{"!"_el});
         options.setLineBreakStartMark(BlockStringEditor{"?"_el});
@@ -106,11 +106,11 @@ public:
         const auto colorSequenceLength = options.colorSequence().sequenceLength();
         REQUIRE_EQUAL(colorSequenceLength, std::size_t{1});
         REQUIRE_EQUAL(options.color(), Color(fg::Cyan, bg::Blue));
-        REQUIRE_EQUAL(options.alignment(), bgeo::Alignment::BottomCenter);
+        REQUIRE_EQUAL(options.alignment(), geometry::Alignment::BottomCenter);
         REQUIRE_EQUAL(options.lineIndent(), 0);
         REQUIRE_EQUAL(options.firstLineIndent(), 0);
         REQUIRE_EQUAL(options.wrappedLineIndent(), 0);
-        REQUIRE_EQUAL(options.margins(), bgeo::BlockMargins(2));
+        REQUIRE_EQUAL(options.margins(), block::Margins(2));
         REQUIRE_EQUAL(options.maximumLineWraps(), 0);
         requireStringEqual(options.lineBreakEndMark(), U"!"_el);
         requireStringEqual(options.lineBreakStartMark(), U"?"_el);

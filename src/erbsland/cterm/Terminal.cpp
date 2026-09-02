@@ -26,20 +26,20 @@ auto Terminal::synchronizeOutput() const -> TerminalOutputGuard {
     return TerminalOutputGuard{_outputMutex};
 }
 
-Terminal::Terminal() : Terminal(bgeo::BlockSize{80, 25}, TerminalFlags{}) {
+Terminal::Terminal() : Terminal(block::Size{80, 25}, TerminalFlags{}) {
 }
 
-Terminal::Terminal(const TerminalFlags flags) : Terminal(bgeo::BlockSize{80, 25}, flags) {
+Terminal::Terminal(const TerminalFlags flags) : Terminal(block::Size{80, 25}, flags) {
 }
 
-Terminal::Terminal(const bgeo::BlockSize size, const TerminalFlags flags) :
+Terminal::Terminal(const block::Size size, const TerminalFlags flags) :
     _flags{flags}, _size{size.limitedWith(cMaximumSize).expandedWith(cMinimumSize)} {
     _backend = Backend::createPlatformDefault(flags);
     _input.setBackend(_backend);
     _lineBuffer.setBackend(_backend);
 }
 
-Terminal::Terminal(BackendPtr backend, const bgeo::BlockSize size) :
+Terminal::Terminal(BackendPtr backend, const block::Size size) :
     _backend{std::move(backend)}, _size{size.limitedWith(cMaximumSize).expandedWith(cMinimumSize)} {
     if (_backend == nullptr) {
         _backend = Backend::createPlatformDefault(TerminalFlags{});
@@ -48,7 +48,7 @@ Terminal::Terminal(BackendPtr backend, const bgeo::BlockSize size) :
     _lineBuffer.setBackend(_backend);
 }
 
-void Terminal::setSize(const bgeo::BlockSize size) noexcept {
+void Terminal::setSize(const block::Size size) noexcept {
     if (_size != size) {
         _size = size.limitedWith(cMaximumSize).expandedWith(cMinimumSize);
         _afterResize = true;
@@ -94,7 +94,7 @@ auto Terminal::safeMarginEnabled() const noexcept -> bool {
 
 void Terminal::setSafeMarginEnabled(const bool enabled) noexcept {
     _safeMarginEnabled = enabled;
-    if (_terminalSize == bgeo::BlockSize{}) {
+    if (_terminalSize == block::Size{}) {
         return; // ignore if we have no detected terminal size.
     }
     setSize(applySafeMargin(_terminalSize));

@@ -12,7 +12,7 @@
 namespace erbsland::text {
 
 /// The case sensitivity used for character-wise text comparisons.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @tested{CaseSensitivityTest}
 class CaseSensitivity final {
 public:

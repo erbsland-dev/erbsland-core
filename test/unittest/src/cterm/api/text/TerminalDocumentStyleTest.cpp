@@ -32,11 +32,11 @@ public:
         auto copy = original;
 
         copy.setBaseTextStyle(BlockStyle{fg::Red});
-        copy.edit(TerminalDocumentStyleSelector::paragraph()).setMargins(bgeo::BlockMargins{1});
+        copy.edit(TerminalDocumentStyleSelector::paragraph()).setMargins(block::Margins{1});
 
         REQUIRE_NOT_EQUAL(original.baseTextStyle(), copy.baseTextStyle());
-        REQUIRE_EQUAL(original.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), bgeo::BlockMargins{0});
-        REQUIRE_EQUAL(copy.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), bgeo::BlockMargins{1});
+        REQUIRE_EQUAL(original.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), block::Margins{0});
+        REQUIRE_EQUAL(copy.resolve(TerminalDocumentStyleSelector::paragraph()).margins(), block::Margins{1});
     }
 
     void testRuleEditingResolvingAndErasing() {
@@ -94,7 +94,7 @@ public:
         const auto tokens = TerminalDocumentStyleSelector::splitStyleTokens("option-epilog"_el);
         const auto rule = style.resolve(TerminalDocumentStyleSelector{text::TextNodeType::Paragraph}, tokens);
 
-        REQUIRE_EQUAL(rule.margins(), (bgeo::BlockMargins{1, 0, 1, 0}));
+        REQUIRE_EQUAL(rule.margins(), (block::Margins{1, 0, 1, 0}));
     }
 
     void testSystemOutputCauseHeadingIsSecondaryFrameText() {

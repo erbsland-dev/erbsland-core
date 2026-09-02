@@ -242,7 +242,7 @@ auto BlockStringEditor::slice(const StringSide side, const BlockCount count) con
 }
 
 auto BlockStringEditor::croppedToDisplayWidth(
-    const bgeo::BlockCoordinate displayWidth, const bgeo::Alignment alignment) const noexcept -> BlockStringEditor {
+    const block::Coordinate displayWidth, const geometry::Alignment alignment) const noexcept -> BlockStringEditor {
     const auto range = BlockStringRangeView{*_data, _range}.croppedRange(displayWidth, alignment);
     if (range.isEmpty()) {
         return {};

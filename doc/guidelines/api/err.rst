@@ -5,26 +5,12 @@ Error Domain API Guidelines
 Core Semantics
 ==============
 
-Exception Model
----------------
-
 .. code-block:: text
 
     exception = throwable failure with a human-readable local reason
     diagnostic = structured, renderable representation of one failure
-    domain error = typed exception owned by the failing domain
-    reason = human-readable local error text
     cause = optional exception from a genuinely separate failure layer
     platform context = native failure data owned by its domain diagnostic, not a cause
-
-Diagnostic Trust Boundary
--------------------------
-
-.. code-block:: text
-
-    developer-authored text = trusted and rendered verbatim
-    external values = display-escaped before insertion into diagnostics
-    native or foreign text = untrusted external value
 
 Primary Types
 =============

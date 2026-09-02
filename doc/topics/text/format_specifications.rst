@@ -271,4 +271,4 @@ They describe the byte sequence itself rather than treating its hexadecimal repr
 Unknown or duplicate options, missing values, unsupported combinations, and unsafe characters make construction fail
 with ``FormatError``.
 For the exhaustive alias and value table, see the
-:doc:`string formatter reference </reference/text/string_formatter>`.
+:doc:`text formatting and parsing reference </reference/text/formatting_and_parsing>`.

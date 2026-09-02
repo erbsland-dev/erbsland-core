@@ -10,7 +10,7 @@
 namespace erbsland::math {
 
 /// Add two same-size native integers and clamp the result to a custom bounded range.
-/// @seedoc{/reference/math/saturating_math}
+/// @seedoc{/reference/math/mathematics}
 /// @tparam tFirst The first operand type.
 /// @tparam tSecond The second operand type.
 /// @tparam tResult The result and bounds type.

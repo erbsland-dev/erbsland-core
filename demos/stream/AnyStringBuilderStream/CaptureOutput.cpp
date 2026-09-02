@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <DemoCommon.hpp>
-#include <erbsland/bgeo/all.hpp>
+#include <erbsland/block/all.hpp>
 
 #include <array>
 #include <cstddef>
 
 namespace demo {
 
-constexpr auto cSquareSize = el::BlockSize{3, 3};
+constexpr auto cSquareSize = el::block::Size{3, 3};
 using SquareArray = std::array<int, cSquareSize.area().toSizeT()>;
 
 struct MagicSquare {
@@ -26,7 +26,7 @@ void buildMagicSquare(MagicSquare &square) {
     const auto symmetry = static_cast<el::Symmetry>(random.selectInteger<int>(0, 7));
     square.firstValue = random.selectInteger<int>(1, 25);
     square.step = random.selectInteger<int>(1, 8);
-    cSquareSize.forEach([&](const el::BlockPosition pos) -> void {
+    cSquareSize.forEach([&](const el::block::Position pos) -> void {
         const auto sourceValue = canonicalSquare[cSquareSize.index(cSquareSize.transform(pos, symmetry))];
         square.values[cSquareSize.index(pos)] = square.firstValue + (sourceValue - 1) * square.step;
     });

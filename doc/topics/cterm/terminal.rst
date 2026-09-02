@@ -27,7 +27,7 @@ optional crop marks.
 
 .. code-block:: cpp
 
-    auto terminal = Terminal{BlockSize{90, 28}};
+    auto terminal = Terminal{Size{90, 28}};
     terminal.initializeScreen();
     terminal.setRefreshMode(Terminal::RefreshMode::Overwrite);
 
@@ -35,7 +35,7 @@ optional crop marks.
     buffer.fill(Block{" ", Color{fg::Default, bg::Black}});
     buffer.drawBlockText(
         "Frame and buffer rendering",
-        BlockRectangle{2, 2, buffer.size().width() - 4, 5},
+        Rectangle{2, 2, buffer.size().width() - 4, 5},
         Alignment::Center,
         Color{fg::BrightWhite, bg::Blue});
 
@@ -82,7 +82,7 @@ The following example shows a minimal render loop for an interactive terminal ap
             _terminal.initializeScreen();
             _terminal.input().setMode(Input::Mode::Key);
 
-            _updateSettings.setMinimumSize(BlockSize{40, 20});
+            _updateSettings.setMinimumSize(Size{40, 20});
             _updateSettings.setMinimumSizeMessage(BlockString("Too Small!"));
 
             while (!_quitRequested) {
@@ -167,7 +167,7 @@ terminal is too small.
 .. code-block:: cpp
 
     auto settings = UpdateSettings{};
-    settings.setMinimumSize(BlockSize{60, 18});
+    settings.setMinimumSize(Size{60, 18});
     settings.setMinimumSizeBackground(Block{" ", Color{fg::Inherited, bg::Red}});
     settings.setMinimumSizeMessage(BlockString{"Please enlarge the terminal"});
     settings.setShowCropMarks(true);

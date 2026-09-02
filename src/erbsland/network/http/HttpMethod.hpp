@@ -15,7 +15,7 @@ namespace erbsland::network {
 
 /// A validated standard or extension HTTP method.
 /// Method names are case-sensitive. Standard classification recognizes only canonical uppercase spellings.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpValueTest}
 class HttpMethod final {
 public:

@@ -22,7 +22,7 @@ namespace erbsland::unit {
 ///
 /// This type is intended for values such as seconds, milliseconds, meters, or kilometers where signed arithmetic,
 /// ratio conversion, and saturating integer behavior are desired.
-/// @seedoc{/reference/unit/integer_unit_types}
+/// @seedoc{/reference/unit/units_and_versions}
 /// @tparam tUnit The unit tag that prevents accidental mixing with unrelated amounts.
 /// @tparam tRatio The ratio of this amount to its base unit.
 /// @tparam tValue The signed saturating integer type used to store the amount.

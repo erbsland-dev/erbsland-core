@@ -5,6 +5,7 @@
 #include "impl/PasswordHashData.hpp"
 
 #include "../err/LogicError.hpp"
+#include "../err/ParseError.hpp"
 
 #include <utility>
 
@@ -16,7 +17,7 @@ PasswordHash::PasswordHash(impl::PasswordHashDataPtr data) noexcept : _data{std:
 auto PasswordHash::fromString(const text::String &text) noexcept -> PasswordHash {
     try {
         return PasswordHash{impl::PasswordHashData::fromStringOrThrow(text)};
-    } catch (...) {
+    } catch (const err::ParseError &) {
         return {};
     }
 }

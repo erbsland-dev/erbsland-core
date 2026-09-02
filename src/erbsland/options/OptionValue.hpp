@@ -8,6 +8,7 @@
 #include "OptionValueType.hpp"
 
 #include "../text/String.hpp"
+#include "../text/StringList.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <utility>
@@ -111,6 +112,14 @@ public: // typed accessors
     /// @param defaultFlag Returned when this value is not flag storage.
     /// @return The flag value.
     [[nodiscard]] auto getFlag(bool defaultFlag = false) const -> bool;
+    /// Read a boolean value.
+    /// @param defaultBoolean Returned when this value is not boolean storage.
+    /// @return The boolean value.
+    [[nodiscard]] auto getBoolean(bool defaultBoolean = false) const -> bool;
+    /// Read a boolean list value.
+    /// @param defaultBooleanList Returned when this value is not boolean or boolean-list storage.
+    /// @return The boolean values.
+    [[nodiscard]] auto getBooleanList(std::vector<bool> defaultBooleanList = {}) const -> std::vector<bool>;
     /// Read an integer value.
     /// @param defaultInteger Returned when this value is not integer storage.
     /// @return The integer value.
@@ -122,7 +131,7 @@ public: // typed accessors
     /// Read a text list value.
     /// @param defaultTextList Returned when this value is not text-list storage.
     /// @return The text values.
-    [[nodiscard]] auto getTextList(std::vector<text::String> defaultTextList = {}) const -> std::vector<text::String>;
+    [[nodiscard]] auto getTextList(text::StringList defaultTextList = {}) const -> text::StringList;
     /// Read an integer list value.
     /// @param defaultIntegerList Returned when this value is not integer-list storage.
     /// @return The integer values.
@@ -131,7 +140,7 @@ public: // typed accessors
 
 private:
     OptionWeakPtr _option;                               ///< Reference to the option that created this value.
-    OptionValueStorage _storage{false};                  ///< The stored option value.
+    OptionValueStorage _storage{std::monostate{}};       ///< The stored option value.
     std::vector<unit::ArgumentIndex> _argumentIndexes{}; ///< The source argument indexes.
 };
 

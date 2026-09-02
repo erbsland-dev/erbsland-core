@@ -14,7 +14,7 @@ public:
 
         REQUIRE_EQUAL(options.displayStyle(), ReadLineDisplayStyle::HorizontalFrame);
         REQUIRE_EQUAL(options.frameBorder(), FrameBorder{FrameStyle::Light});
-        REQUIRE_EQUAL(options.padding(), bgeo::BlockMargins(0, 1, 0, 1));
+        REQUIRE_EQUAL(options.padding(), block::MarginPair(1));
         REQUIRE(options.title().isEmpty());
         REQUIRE_EQUAL(render(options.prompt()), std::string{"› "});
         REQUIRE(options.placeholder().isEmpty());
@@ -44,7 +44,7 @@ public:
                            .setTextStyle(BlockStyle{fg::Green})
                            .setCursorStyle(BlockStyle{BlockAttributes::Underline})
                            .setDisplayStyle(ReadLineDisplayStyle::Frame)
-                           .setPadding(bgeo::BlockMargins{4, 3, 2, 1})
+                           .setPadding(block::MarginPair{-2, 3})
                            .setTitle("Title"_el)
                            .setPrompt(BlockString{"# "_el})
                            .setPlaceholder("Value"_el)
@@ -64,7 +64,7 @@ public:
 
         REQUIRE_EQUAL(&result, &options);
         REQUIRE_EQUAL(options.displayStyle(), ReadLineDisplayStyle::Frame);
-        REQUIRE_EQUAL(options.padding(), bgeo::BlockMargins(0, 3, 0, 1));
+        REQUIRE_EQUAL(options.padding(), block::MarginPair(0, 3));
         REQUIRE_EQUAL(render(options.title()), std::string{"Title"});
         REQUIRE_EQUAL(render(options.prompt()), std::string{"# "});
         REQUIRE_EQUAL(render(options.placeholder()), std::string{"Value"});

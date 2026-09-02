@@ -14,7 +14,7 @@
 namespace erbsland::text {
 
 /// A reusable validated UTF-32 format.
-/// @seedoc{/reference/text/string_formatter}
+/// @seedoc{/reference/text/formatting_and_parsing}
 /// @tested{U32FormatTest}
 class U32Format final {
 public:

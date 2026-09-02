@@ -5,11 +5,15 @@
 #include <erbsland/re/impl/engine/CaptureGroupManagerWithAtomic.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
-using namespace el::re::impl;
-
 TESTED_TARGETS(CaptureGroupManager)
 TAGS(Matching)
 class CaptureGroupManagerTest final : public el::UnitTest {
+    using CaptureGroupManager = el::re::impl::CaptureGroupManager;
+    template <std::size_t tGroupCount>
+    using CaptureGroupManagerBase = el::re::impl::CaptureGroupManagerBase<tGroupCount>;
+    template <std::size_t tGroupCount>
+    using CaptureGroupManagerWithAtomic = el::re::impl::CaptureGroupManagerWithAtomic<tGroupCount>;
+
 public:
     void testRegularSizeClasses() {
         REQUIRE(isManager<CaptureGroupManagerBase<1>>(1, false));

@@ -2,11 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Type.hpp"
 
-#include "../../../impl/vr/Rule.hpp"
-
 namespace erbsland::conf::vr::builder {
 
-void Type::operator()(Rule &rule) {
+void Type::apply(RuleDefinition &rule) const {
     rule.setType(_type);
 }
 

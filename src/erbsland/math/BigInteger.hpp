@@ -20,7 +20,7 @@ namespace erbsland::math {
 /// Arithmetic is exact and division truncates toward zero. A remainder has the dividend's sign. Division and modulo by
 /// zero terminate the process. Operators intentionally accept only another `BigInteger`; use an explicit constructor
 /// when starting from a native integer.
-/// @seedoc{/reference/math/big_integers}
+/// @seedoc{/reference/math/mathematics}
 /// @tested{BigIntegerTest}
 class BigInteger final {
 public:

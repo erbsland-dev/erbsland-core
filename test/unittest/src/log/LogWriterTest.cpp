@@ -3,10 +3,10 @@
 
 #include "../path/PathTestFixture.hpp"
 
-#include <erbsland/log/FileLogWriter.hpp>
-#include <erbsland/log/LastErrorsLogWriter.hpp>
+#include <erbsland/log/impl/FileLogWriter.hpp>
+#include <erbsland/log/impl/LastErrorsLogWriter.hpp>
+#include <erbsland/log/line/LogLine.hpp>
 #include <erbsland/log/LogConfiguration.hpp>
-#include <erbsland/log/LogLine.hpp>
 #include <erbsland/log/LogManager.hpp>
 #include <erbsland/log/LogStream.hpp>
 #include <erbsland/path/PathContent.hpp>
@@ -28,7 +28,7 @@
 using namespace el::text::literals;
 using namespace erbsland::test::pathtest;
 
-TESTED_TARGETS(FileLogWriter LastErrorsLogWriter LogWriter)
+TESTED_TARGETS(LogWriter)
 class LogWriterTest final : public el::UnitTest {
 public:
     void testBatchItemSharesImmutableValues() {
@@ -42,7 +42,7 @@ public:
 
     void testLastErrorsUsesBoundedFifo() {
         const auto manager = el::log::LogManager::create();
-        const auto errors = std::make_shared<el::log::LastErrorsLogWriter>(2U);
+        const auto errors = std::make_shared<el::log::impl::LastErrorsLogWriter>(2U);
         auto configuration = el::log::LogConfiguration{};
         configuration.addWriter(errors, el::log::LogWriterFilter{el::log::LogLevel::Error});
         manager->setConfiguration(std::move(configuration));
@@ -61,7 +61,7 @@ public:
     void testFileWriterUsesPathStreams() {
         const auto fixture = PathTestFixture{"log-file-writer"};
         const auto path = fixture.child("application.log");
-        const auto writer = std::make_shared<el::log::FileLogWriter>(
+        const auto writer = std::make_shared<el::log::impl::FileLogWriter>(
             el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite));
         const auto manager = el::log::LogManager::create();
         auto configuration = el::log::LogConfiguration{};
@@ -83,10 +83,10 @@ public:
         overwritePath.content().writeTextOrThrow("existing\n"_el);
         const auto line = makeLine("new"_el);
 
-        auto appendWriter = el::log::FileLogWriter{el::log::FileLogWriterOptions{appendPath}};
+        auto appendWriter = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{appendPath}};
         appendWriter.write(makeEntry(30U, "append"_el), line);
         appendWriter.close();
-        auto overwriteWriter = el::log::FileLogWriter{
+        auto overwriteWriter = el::log::impl::FileLogWriter{
             el::log::FileLogWriterOptions{overwritePath}.setMode(el::log::LogFileMode::Overwrite)};
         overwriteWriter.write(makeEntry(30U, "overwrite"_el), line);
         overwriteWriter.close();
@@ -99,7 +99,7 @@ public:
         const auto fixture = PathTestFixture{"log-file-batch"};
         const auto path = fixture.child("application.log");
         auto writer =
-            el::log::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
+            el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
         const auto firstEntry = makeEntry(30U, "first"_el);
         const auto secondEntry = makeEntry(30U, "second"_el);
         const auto firstLine = makeLine("first line"_el);
@@ -118,7 +118,7 @@ public:
     void testFileWriterDailyRotationUsesFixedNames() {
         const auto fixture = PathTestFixture{"log-file-daily-rotation"};
         const auto path = fixture.child("application.log");
-        auto writer = el::log::FileLogWriter{el::log::FileLogWriterOptions{path}
+        auto writer = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Daily)};
         const auto line = makeLine("line"_el);
@@ -137,14 +137,14 @@ public:
         const auto hourlyPath = fixture.child("hourly.log");
         const auto weeklyPath = fixture.child("weekly.log");
         const auto line = makeLine("line"_el);
-        auto hourlyWriter = el::log::FileLogWriter{el::log::FileLogWriterOptions{hourlyPath}
+        auto hourlyWriter = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{hourlyPath}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Hourly)};
         hourlyWriter.write(makeEntry(2026, 8, 30, 10, "first"_el), line);
         hourlyWriter.write(makeEntry(2026, 8, 30, 11, "second"_el), line);
         hourlyWriter.close();
 
-        auto weeklyWriter = el::log::FileLogWriter{el::log::FileLogWriterOptions{weeklyPath}
+        auto weeklyWriter = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{weeklyPath}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Weekly)};
         weeklyWriter.write(makeEntry(2026, 8, 30, 0, "first"_el), line);
@@ -158,7 +158,7 @@ public:
     void testFileWriterTimeRotationEnforcesRetention() {
         const auto fixture = PathTestFixture{"log-file-time-retention"};
         const auto path = fixture.child("application.log");
-        auto writer = el::log::FileLogWriter{el::log::FileLogWriterOptions{path}
+        auto writer = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Daily)
                 .setRetention(2U)};
@@ -177,7 +177,7 @@ public:
     void testFileWriterSizeRotationEnforcesRetention() {
         const auto fixture = PathTestFixture{"log-file-size-rotation"};
         const auto path = fixture.child("application.log");
-        auto writer = el::log::FileLogWriter{el::log::FileLogWriterOptions{path}
+        auto writer = el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}
                 .setMode(el::log::LogFileMode::Overwrite)
                 .setRotation(el::log::LogFileRotation::Size)
                 .setMaximumSize(el::unit::ByteLength{5U})
@@ -201,7 +201,7 @@ public:
         const auto path = fixture.child("application.log");
         const auto movedPath = fixture.child("collected.log");
         auto writer =
-            el::log::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
+            el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
         const auto firstLine = makeLine("first"_el);
         const auto secondLine = makeLine("second"_el);
         writer.write(makeEntry(30U, "first"_el), firstLine);
@@ -223,7 +223,7 @@ public:
         const auto fixture = PathTestFixture{"log-file-recovery"};
         const auto path = fixture.child("application.log");
         auto writer =
-            el::log::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
+            el::log::impl::FileLogWriter{el::log::FileLogWriterOptions{path}.setMode(el::log::LogFileMode::Overwrite)};
         const auto firstLine = makeLine("first"_el);
         const auto secondLine = makeLine("second"_el);
         writer.write(makeEntry(30U, "first"_el), firstLine);
@@ -237,7 +237,7 @@ public:
         const auto blockedParent = fixture.child("blocked");
         const auto recoveredPath = fixture.child("blocked/recovered.log");
         blockedParent.content().writeTextOrThrow("not-a-directory"_el);
-        auto recoveringWriter = el::log::FileLogWriter{
+        auto recoveringWriter = el::log::impl::FileLogWriter{
             el::log::FileLogWriterOptions{recoveredPath}.setMode(el::log::LogFileMode::Overwrite)};
         REQUIRE_THROWS(recoveringWriter.write(makeEntry(30U, "failed"_el), firstLine));
         blockedParent.operations().removeOrThrow();

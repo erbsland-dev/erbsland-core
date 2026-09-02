@@ -12,7 +12,7 @@
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathOperations.hpp>
 #include <erbsland/path/PathTempDirectoryOptions.hpp>
-#include <erbsland/system/PosixErrorContext.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/time/TimePoint.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -52,7 +52,7 @@ class PathOperationsBackendTest final : public el::UnitTest {
             }
             throw el::path::PathError{el::path::PathErrorContext{"injected path failure"_el}
                     .setSourcePath(path.toString())
-                    .setPlatformContext(el::system::PosixErrorContext::fromErrorCode(errorCode))};
+                    .setPlatformContext(el::system::impl::PosixErrorContext::fromErrorCode(errorCode))};
         }
 
         mutable int createCount{};

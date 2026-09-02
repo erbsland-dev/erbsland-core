@@ -13,9 +13,8 @@ class EndsConstraint final : public StringPartConstraint {
 public:
     /// Create a string-suffix constraint.
     /// @param values The expected suffixes.
-    explicit EndsConstraint(text::StringList values) : StringPartConstraint(std::move(values)) {
-        setType(vr::ConstraintType::Ends);
-    }
+    explicit EndsConstraint(text::StringList values) :
+        StringPartConstraint{vr::ConstraintType::Ends, std::move(values)} {}
 
 protected:
     [[nodiscard]] auto partText() const -> const text::String & override {

@@ -12,22 +12,6 @@ Operation Model
 
     bounded operation = completes within the configured timeout
     blocking operation = repeated bounded work until a terminal result
-    readiness = observation without waiting or native input/output
-    concurrency = thread-safe with caller-defined operation ordering
-    close = graceful bounded drain; abort or destruction = immediate abandonment
-    position = optional logical encoded-byte cursor
-
-Result Model
-------------
-
-.. code-block:: text
-
-    read data = successful result with a possibly partial payload
-    read finished = successful end-of-stream without a payload
-    read timeout = no payload consumed
-    write success = complete input accepted atomically
-    write timeout = no input accepted
-    coroutine operation = same bounded result with owned data and retained stream ownership
 
 Text and Sensitivity
 --------------------
@@ -37,7 +21,6 @@ Text and Sensitivity
     tolerant decoding = replace malformed input
     strict decoding = report an encoding error
     sensitive input = protected runtime buffers and marked generic owning results
-    redirected input = independent target unaffected by native protected-input scopes
 
 Primary Types
 =============

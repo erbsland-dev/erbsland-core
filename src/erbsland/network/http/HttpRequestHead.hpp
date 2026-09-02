@@ -14,7 +14,7 @@ namespace erbsland::network {
 
 /// The control data and header section of an HTTP request.
 /// The request-target retains its exact validated ASCII wire spelling.
-/// @seedoc{/reference/network/http_messages}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpMessageTest Http1CodecTest}
 class HttpRequestHead final {
 public:

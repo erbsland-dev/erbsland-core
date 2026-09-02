@@ -22,7 +22,7 @@
 namespace erbsland::text {
 
 /// A single 32bit Unicode code-point.
-/// @seedoc{/reference/text/char_range}
+/// @seedoc{/reference/text/characters}
 /// @tested{CharTest}
 class Char final {
 public:

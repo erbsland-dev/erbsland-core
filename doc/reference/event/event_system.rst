@@ -91,12 +91,6 @@ Interface
     :members:
 .. doxygenenum:: erbsland::event::EventLoopErrorAction
 .. doxygentypedef:: erbsland::event::EventLoopErrorHandler
-.. doxygenclass:: erbsland::event::EventPipe
-    :members:
-.. doxygenclass:: erbsland::event::EventPipeReceiver
-    :members:
-.. doxygenclass:: erbsland::event::EventPipeSender
-    :members:
 .. doxygenclass:: erbsland::event::EventRegistry
     :members:
 .. doxygenclass:: erbsland::event::Events

@@ -38,7 +38,7 @@ public: // conversion
     /// @throws err::LogicError If DER is selected for a bundle not containing exactly one certificate.
     /// @throws err::ParameterError If automatic output cannot select a format.
     /// @throws path::PathError If writing fails.
-    void writeToFile(const path::Path &path, X509CertificateFormat format = X509CertificateFormat::Automatic) const;
+    void writeToFile(const path::Path &path, PemDerFormat format = PemDerFormat::Automatic) const;
 
 public: // factories
     /// Parse one or more strict CERTIFICATE PEM blocks, returning an empty bundle on any error.
@@ -60,12 +60,12 @@ public: // factories
     /// Read a certificate bundle from a file, returning an empty bundle on any error.
     [[nodiscard]] static auto fromFile(
         const path::Path &path,
-        X509CertificateFormat format = X509CertificateFormat::Automatic,
+        PemDerFormat format = PemDerFormat::Automatic,
         X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) noexcept -> X509CertificateBundle;
     /// Read a certificate bundle from a file.
     [[nodiscard]] static auto fromFileOrThrow(
         const path::Path &path,
-        X509CertificateFormat format = X509CertificateFormat::Automatic,
+        PemDerFormat format = PemDerFormat::Automatic,
         X509CertificateProfileMode mode = X509CertificateProfileMode::Strict) -> X509CertificateBundle;
 
 private:

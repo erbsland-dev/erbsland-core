@@ -14,6 +14,48 @@ using namespace text::literals;
 RulesBuilder::RulesBuilder() : _rules(std::make_shared<Rules>()) {
 }
 
+void RulesBuilder::configureRoot(const std::span<const vr::builder::Attribute *const> attributes) {
+    for (const auto *attribute : attributes) {
+        attribute->apply(*_rules->root());
+    }
+}
+
+void RulesBuilder::addRule(
+    const NamePathLike &namePath,
+    const vr::RuleType ruleType,
+    const std::span<const vr::builder::Attribute *const> attributes) {
+    if (ruleType == vr::RuleType::Undefined) {
+        throwValidationError("A rule type of 'undefined' is not allowed"_el);
+    }
+    auto ruleNamePath = resolveRuleNamePath(namePath);
+    auto rule = std::make_shared<Rule>();
+    rule->setRuleNamePath(ruleNamePath);
+    rule->setTargetNamePath(ruleNamePath);
+    rule->setType(ruleType);
+    for (const auto *attribute : attributes) {
+        attribute->apply(*rule);
+    }
+    _rules->addRule(rule);
+}
+
+void RulesBuilder::addAlternative(
+    const NamePathLike &namePath,
+    const vr::RuleType ruleType,
+    const std::span<const vr::builder::Attribute *const> attributes) {
+    if (ruleType == vr::RuleType::Undefined) {
+        throwValidationError("A rule type of 'undefined' is not allowed"_el);
+    }
+    auto ruleNamePath = resolveRuleNamePath(namePath);
+    auto rule = std::make_shared<Rule>();
+    rule->setRuleNamePath(ruleNamePath);
+    rule->setTargetNamePath(ruleNamePath);
+    rule->setType(ruleType);
+    for (const auto *attribute : attributes) {
+        attribute->apply(*rule);
+    }
+    _rules->addAlternativeRule(rule);
+}
+
 void RulesBuilder::readFromDocument(const DocumentPtr &document) {
     RulesFromDocument rulesFromDocument{_rules, document};
     rulesFromDocument.read();

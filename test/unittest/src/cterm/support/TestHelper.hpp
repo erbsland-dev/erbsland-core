@@ -25,14 +25,13 @@ using namespace erbsland::text::literals;
 }
 
 /// Create a terminal block coordinate from an integer.
-[[nodiscard]] constexpr auto blockCoordinate(const int value) noexcept -> bgeo::BlockCoordinate {
-    return bgeo::BlockCoordinate{value};
+[[nodiscard]] constexpr auto blockCoordinate(const int value) noexcept -> block::Coordinate {
+    return block::Coordinate{value};
 }
 
 /// Create terminal block coordinates from integer values.
-[[nodiscard]] inline auto blockCoordinates(const std::initializer_list<int> values)
-    -> std::vector<bgeo::BlockCoordinate> {
-    auto result = std::vector<bgeo::BlockCoordinate>{};
+[[nodiscard]] inline auto blockCoordinates(const std::initializer_list<int> values) -> std::vector<block::Coordinate> {
+    auto result = std::vector<block::Coordinate>{};
     result.reserve(values.size());
     for (const auto value : values) {
         result.emplace_back(value);

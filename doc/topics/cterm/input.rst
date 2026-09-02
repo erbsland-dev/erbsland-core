@@ -73,6 +73,7 @@ The blocking interface starts the editor, waits for a terminal result, restores 
 
     auto options = ReadLineOptions{}
         .setTitle("Enter your name:")
+        .setPadding(block::MarginPair{1, 2})
         .setMaximumLength(CpLength{100})
         .setPlaceholder("Your Name");
     auto readLine = ReadLine::create(terminal, options);
@@ -167,8 +168,8 @@ Secrets and Placeholders
 A placeholder is visible only while the edit buffer is empty.
 Use :cpp:class:`ReadSecret <erbsland::cterm::ReadSecret>` for passwords or tokens.
 Ordinary ``ReadLine`` always displays entered text.
-``ReadSecret`` stores at most 1024 Unicode code points in a fixed buffer, renders only bullets, and returns
-a marked :cpp:type:`String <erbsland::text::String>` in the ordinary ``ReadLineResult``.
+``ReadSecret`` stores at most 1024 Unicode code points in a fixed buffer, renders only bullets, and returns a marked
+:cpp:type:`String <erbsland::text::String>` in the ordinary ``ReadLineResult``.
 It shares terminal lifecycle, key dispatch, layout, and rendering with ``ReadLine``, while protecting its fixed input
 storage and marking committed UTF-8 before exposing it.
 
@@ -210,6 +211,8 @@ Layouts and Cleanup
     ────────────────────────────         └────────────────────────┘
 
 The input area uses the configured background, title, prompt, placeholder, text, cursor, border, and horizontal padding.
+The padding is a :cpp:class:`block::MarginPair <erbsland::block::MarginPair>` whose leading and trailing values are
+clamped to zero or greater.
 The cursor is rendered into this area and blinks without moving the physical terminal cursor.
 Whenever editing, navigation, or history selection actually moves the cursor, the blink cycle restarts in its visible
 phase.

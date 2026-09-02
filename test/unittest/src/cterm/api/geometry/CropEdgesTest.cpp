@@ -13,33 +13,33 @@ public:
         const CropEdges cropEdges;
 
         REQUIRE_EQUAL(cropEdges.flags().count(), 0U);
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::None));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::North));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::NorthEast));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::East));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::SouthEast));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::South));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::SouthWest));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::West));
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::NorthWest));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::None));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::North));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::NorthEast));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::East));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::SouthEast));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::South));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::SouthWest));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::West));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::NorthWest));
     }
 
     void testSetClearAndResetManageFlags() {
         CropEdges cropEdges;
 
-        cropEdges.set(bgeo::BlockDirection::North);
-        cropEdges.set(bgeo::BlockDirection::SouthWest);
-        cropEdges.set(bgeo::BlockDirection::None);
+        cropEdges.set(block::Direction::North);
+        cropEdges.set(block::Direction::SouthWest);
+        cropEdges.set(block::Direction::None);
 
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::North));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::SouthWest));
+        REQUIRE(cropEdges.isSet(block::Direction::North));
+        REQUIRE(cropEdges.isSet(block::Direction::SouthWest));
         REQUIRE_EQUAL(cropEdges.flags().count(), 2U);
 
-        cropEdges.clear(bgeo::BlockDirection::North);
-        cropEdges.clear(bgeo::BlockDirection::None);
+        cropEdges.clear(block::Direction::North);
+        cropEdges.clear(block::Direction::None);
 
-        REQUIRE_FALSE(cropEdges.isSet(bgeo::BlockDirection::North));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::SouthWest));
+        REQUIRE_FALSE(cropEdges.isSet(block::Direction::North));
+        REQUIRE(cropEdges.isSet(block::Direction::SouthWest));
 
         cropEdges.reset();
 
@@ -50,61 +50,60 @@ public:
         CropEdges left;
         CropEdges right;
 
-        left.set(bgeo::BlockDirection::East);
-        right.set(bgeo::BlockDirection::East);
+        left.set(block::Direction::East);
+        right.set(block::Direction::East);
 
         REQUIRE_EQUAL(left, right);
 
-        right.set(bgeo::BlockDirection::SouthEast);
+        right.set(block::Direction::SouthEast);
 
         REQUIRE_NOT_EQUAL(left, right);
     }
 
     void testFromViewSetsEdgesAndCornersForClippedContent() {
-        const auto cropEdges = CropEdges::fromView(bgeo::BlockRectangle(2, 3, 4, 3), bgeo::BlockRectangle(0, 0, 8, 8));
+        const auto cropEdges = CropEdges::fromView(block::Rectangle(2, 3, 4, 3), block::Rectangle(0, 0, 8, 8));
 
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::North));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::NorthEast));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::East));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::SouthEast));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::South));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::SouthWest));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::West));
-        REQUIRE(cropEdges.isSet(bgeo::BlockDirection::NorthWest));
+        REQUIRE(cropEdges.isSet(block::Direction::North));
+        REQUIRE(cropEdges.isSet(block::Direction::NorthEast));
+        REQUIRE(cropEdges.isSet(block::Direction::East));
+        REQUIRE(cropEdges.isSet(block::Direction::SouthEast));
+        REQUIRE(cropEdges.isSet(block::Direction::South));
+        REQUIRE(cropEdges.isSet(block::Direction::SouthWest));
+        REQUIRE(cropEdges.isSet(block::Direction::West));
+        REQUIRE(cropEdges.isSet(block::Direction::NorthWest));
 
         REQUIRE_EQUAL(
-            CropEdges::fromView(bgeo::BlockRectangle(2, 3, 4, 3), bgeo::BlockRectangle(2, 3, 4, 3)).flags().count(),
-            0U);
+            CropEdges::fromView(block::Rectangle(2, 3, 4, 3), block::Rectangle(2, 3, 4, 3)).flags().count(), 0U);
     }
 
     void testEdgeForViewReturnsExactDirectionsForCroppedFramePositions() {
-        const auto viewRect = bgeo::BlockRectangle(10, 20, 4, 3);
-        const auto cropEdges = CropEdges::fromView(viewRect, bgeo::BlockRectangle(7, 18, 10, 6));
+        const auto viewRect = block::Rectangle(10, 20, 4, 3);
+        const auto cropEdges = CropEdges::fromView(viewRect, block::Rectangle(7, 18, 10, 6));
 
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(10, 20), viewRect), bgeo::BlockDirection::NorthWest);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(11, 20), viewRect), bgeo::BlockDirection::North);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 20), viewRect), bgeo::BlockDirection::NorthEast);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 21), viewRect), bgeo::BlockDirection::East);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 22), viewRect), bgeo::BlockDirection::SouthEast);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(12, 22), viewRect), bgeo::BlockDirection::South);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(10, 22), viewRect), bgeo::BlockDirection::SouthWest);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(10, 21), viewRect), bgeo::BlockDirection::West);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(11, 21), viewRect), bgeo::BlockDirection::None);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(10, 20), viewRect), block::Direction::NorthWest);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(11, 20), viewRect), block::Direction::North);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 20), viewRect), block::Direction::NorthEast);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 21), viewRect), block::Direction::East);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 22), viewRect), block::Direction::SouthEast);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(12, 22), viewRect), block::Direction::South);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(10, 22), viewRect), block::Direction::SouthWest);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(10, 21), viewRect), block::Direction::West);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(11, 21), viewRect), block::Direction::None);
     }
 
     void testEdgeForViewFallsBackToTheMatchingSingleEdgeAtCorners() {
         CropEdges cropEdges;
-        const auto viewRect = bgeo::BlockRectangle(10, 20, 4, 3);
+        const auto viewRect = block::Rectangle(10, 20, 4, 3);
 
-        cropEdges.set(bgeo::BlockDirection::East);
+        cropEdges.set(block::Direction::East);
 
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 20), viewRect), bgeo::BlockDirection::East);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 22), viewRect), bgeo::BlockDirection::East);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 20), viewRect), block::Direction::East);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 22), viewRect), block::Direction::East);
 
         cropEdges.reset();
-        cropEdges.set(bgeo::BlockDirection::South);
+        cropEdges.set(block::Direction::South);
 
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(13, 22), viewRect), bgeo::BlockDirection::South);
-        REQUIRE_EQUAL(cropEdges.edgeForView(bgeo::BlockPosition(10, 22), viewRect), bgeo::BlockDirection::South);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(13, 22), viewRect), block::Direction::South);
+        REQUIRE_EQUAL(cropEdges.edgeForView(block::Position(10, 22), viewRect), block::Direction::South);
     }
 };

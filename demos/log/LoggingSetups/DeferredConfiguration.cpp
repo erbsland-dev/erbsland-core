@@ -31,8 +31,7 @@ protected:
         auto lineFormat = el::LogLineFormat{};
         lineFormat.setPattern("configured: {level} - {message}"_el);
         auto configuration = el::LogConfiguration{};
-        configuration.setLineFormat(std::move(lineFormat))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(terminal()));
+        configuration.setLineFormat(std::move(lineFormat)).addWriter(el::LogWriter::createForConsole(terminal()));
         log().setConfiguration(std::move(configuration));
 
         logStream()->info("Logging configuration loaded."_el);

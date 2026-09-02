@@ -12,10 +12,13 @@
 
 using namespace el::text::literals;
 using namespace el::text::render;
-using namespace el::text::render::impl;
 
 TESTED_TARGETS(Tokenizer Token)
 class RenderTokenizerTest final : public el::UnitTest {
+    using Token = el::text::render::impl::Token;
+    using TokenKind = el::text::render::impl::TokenKind;
+    using Tokenizer = el::text::render::impl::Tokenizer;
+
 public:
     void testTextExpressionTokensAndLocations() {
         auto tokenizer = createTokenizer("é\n{{ user == \"x\\n\" }}tail"_el);

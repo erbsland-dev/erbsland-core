@@ -15,12 +15,12 @@ public:
     /// The view shares the top-left corner with the buffer.
     /// @param content A reference to the content buffer.
     /// @param viewSize The size of the view.
-    BufferConstRefView(const ReadableBuffer &content, const bgeo::BlockSize viewSize) noexcept :
-        BufferViewBase{bgeo::BlockRectangle{bgeo::BlockPosition{0, 0}, viewSize}}, _buffer{content} {}
+    BufferConstRefView(const ReadableBuffer &content, const block::Size viewSize) noexcept :
+        BufferViewBase{block::Rectangle{block::Position{0, 0}, viewSize}}, _buffer{content} {}
     /// Create a view of the given content.
     /// @param content A reference to the content buffer.
     /// @param viewRect The rectangle of the view.
-    BufferConstRefView(const ReadableBuffer &content, const bgeo::BlockRectangle viewRect) noexcept :
+    BufferConstRefView(const ReadableBuffer &content, const block::Rectangle viewRect) noexcept :
         BufferViewBase{viewRect}, _buffer{content} {}
 
     // defaults
@@ -33,22 +33,22 @@ public:
     auto operator=(BufferConstRefView &&) -> BufferConstRefView & = delete;
 
 public: // implement ReadableBuffer
-    [[nodiscard]] auto get(const bgeo::BlockPosition pos) const noexcept -> const Block & override {
-        if (_viewRect.size() == bgeo::BlockSize{0, 0}) {
-            return _cropCharacters[bgeo::BlockDirection::None];
+    [[nodiscard]] auto get(const block::Position pos) const noexcept -> const Block & override {
+        if (_viewRect.size() == block::Size{0, 0}) {
+            return _cropCharacters[block::Direction::None];
         }
         const auto translatedPos = pos + _viewRect.topLeft();
         if (_buffer.size().contains(translatedPos)) {
             if (_showCropCharacters) {
                 const auto cropEdges = CropEdges::fromView(_viewRect, _buffer.rect());
                 const auto cropDirection = cropEdges.edgeForView(translatedPos, _viewRect);
-                if (cropDirection != bgeo::BlockDirection::None) {
+                if (cropDirection != block::Direction::None) {
                     return _cropCharacters[cropDirection];
                 }
             }
             return _buffer.get(translatedPos);
         }
-        return _cropCharacters[bgeo::BlockDirection::None];
+        return _cropCharacters[block::Direction::None];
     }
 
 private:

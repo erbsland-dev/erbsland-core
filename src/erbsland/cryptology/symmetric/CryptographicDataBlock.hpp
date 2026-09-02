@@ -15,7 +15,7 @@ namespace erbsland::cryptology {
 
 /// Shared storage behavior for strongly typed cryptographic byte blocks.
 /// Every non-empty allocation is permanently marked as sensitive and securely erased on final release.
-/// @seedoc{/reference/cryptology/symmetric_encryption}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{CryptographicDataBlockTest}
 class CryptographicDataBlock {
     friend class impl::UnsafeSymmetricKeyAccess;

@@ -18,7 +18,7 @@ namespace erbsland::text {
 /// A binary encoding supported by string byte conversion APIs.
 /// Multi-byte encodings use either the explicit byte order named by the value, or use a byte order mark to indicate
 /// the byte order when decoding. Generic UTF-16 and UTF-32 encode as little-endian.
-/// @seedoc{/reference/text/string_converter}
+/// @seedoc{/reference/text/encoding}
 /// @tested{StringEncodingTest}
 class StringEncoding final {
 public:

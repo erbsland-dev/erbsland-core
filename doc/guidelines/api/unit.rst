@@ -5,9 +5,6 @@ Unit and Value Domain API Guidelines
 Core Semantics
 ==============
 
-Unit Model
-----------
-
 .. code-block:: text
 
     index = zero-based position with an optional no-index state
@@ -15,33 +12,6 @@ Unit Model
     offset = signed movement relative to an index
     range = half-open start index plus length
     integer amount = signed ratio-scaled value with explicit compatible-ratio conversion
-    raw value = underlying native integer crossed only through an explicit boundary
-
-Arithmetic Model
-----------------
-
-.. code-block:: text
-
-    equal units added or subtracted = same unit
-    index plus length or offset = moved index
-    range plus offset = moved range
-    length scaled by unsigned integer = non-negative length
-    offset scaled by signed integer = directed offset
-    unit multiplied or divided by unit = forbidden
-    operator failure = saturation or documented special state, never an exception
-    exact operation = named throwing variant
-
-Range Model
------------
-
-.. code-block:: text
-
-    begin = included start index
-    end = first excluded index
-    index and length = [index, index + length)
-    begin and end = [begin, end)
-    no range = invalid or absent range
-    all range = zero index and infinite length
 
 Primary Types
 =============

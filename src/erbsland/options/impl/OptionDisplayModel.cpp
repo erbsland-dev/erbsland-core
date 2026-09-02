@@ -289,6 +289,9 @@ auto OptionDisplayModel::optionValueName(const OptionPtr &option, const i18n::Di
         return option->valueName();
     }
     const auto resolvedDisplayText = resolveDisplayText(displayText);
+    if (option->type() == OptionType::Boolean) {
+        return resolvedDisplayText->text("options.BooleanPlaceholder"_el);
+    }
     if (option->type() == OptionType::Integer) {
         return resolvedDisplayText->text("options.IntegerPlaceholder"_el);
     }
@@ -328,7 +331,7 @@ auto OptionDisplayModel::visibleHelp(const OptionHelp &help) noexcept -> bool {
 }
 
 auto OptionDisplayModel::isHelpOption(const OptionPtr &option) -> bool {
-    return option != nullptr && option->type() == OptionType::Flag && option->hasLongName("--help"_el);
+    return option != nullptr && option->hasLongName("--help"_el);
 }
 
 auto OptionDisplayModel::isVersionOption(const OptionPtr &option) -> bool {

@@ -58,6 +58,10 @@ auto Subprocess::isRunning() -> bool {
     return _backend != nullptr && _backend->isRunning();
 }
 
+auto Subprocess::processId() const noexcept -> ProcessId {
+    return _backend == nullptr ? ProcessId{} : _backend->processId();
+}
+
 auto Subprocess::exitStatus() const noexcept -> const std::optional<SubprocessExitStatus> & {
     static const auto cNoStatus = std::optional<SubprocessExitStatus>{};
     return _backend == nullptr ? cNoStatus : _backend->exitStatus();

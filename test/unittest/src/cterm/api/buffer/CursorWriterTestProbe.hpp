@@ -20,12 +20,12 @@ public:
     [[nodiscard]] auto supportedBlockAttributes() const noexcept -> BlockAttributes override {
         return BlockAttributes::all();
     }
-    void moveCursor(const bgeo::BlockPosition posOrDelta, const MoveMode mode) noexcept override {
+    void moveCursor(const block::Position posOrDelta, const MoveMode mode) noexcept override {
         _lastMove = posOrDelta;
         _lastMoveMode = mode;
     }
     void setAutoWrap(const bool enabled) noexcept override { _autoWrap = enabled; }
-    [[nodiscard]] auto size() const noexcept -> bgeo::BlockSize override { return _size; }
+    [[nodiscard]] auto size() const noexcept -> block::Size override { return _size; }
     void clearScreen() noexcept override { _clearScreenCallCount += 1; }
     void write(const Block &character) noexcept override { _writtenChars.push_back(character); }
     void write(const BlockString &str) noexcept override { _writtenStrings.push_back(BlockStringEditor{str}); }
@@ -46,10 +46,10 @@ protected:
     }
 
 public:
-    bgeo::BlockSize _size{80, 25};
+    block::Size _size{80, 25};
     Color _color{};
     BlockAttributes _attributes{};
-    bgeo::BlockPosition _lastMove{};
+    block::Position _lastMove{};
     MoveMode _lastMoveMode{MoveMode::Absolute};
     bool _autoWrap{false};
     int _clearScreenCallCount{0};
@@ -60,7 +60,7 @@ public:
     int _writeBufferCallCount{0};
     int _lineBreakCount{0};
     BlockStringEditor _lastParagraph{};
-    bgeo::Alignment _lastParagraphAlignment{bgeo::Alignment::TopLeft};
+    geometry::Alignment _lastParagraphAlignment{geometry::Alignment::TopLeft};
     std::vector<int> _lastParagraphTabStops;
     TabOverflowBehavior _lastParagraphTabOverflowBehavior{TabOverflowBehavior::AddSpace};
 };

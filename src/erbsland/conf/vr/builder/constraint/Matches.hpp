@@ -32,7 +32,7 @@ public:
         }
     }
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
     text::String _pattern;
     re::RegExPtr _compiledPattern;

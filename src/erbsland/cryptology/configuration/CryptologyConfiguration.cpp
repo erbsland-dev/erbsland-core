@@ -4,15 +4,16 @@
 
 #include "../CryptologyError.hpp"
 #include "../impl/protected_data/ProtectedDataProvider.hpp"
+#include "../impl/TlsConfigurationLabel.hpp"
 
 #include "../../err/LogicError.hpp"
 #include "../../err/ParameterError.hpp"
 #include "../../err/RuntimeError.hpp"
 #include "../../mem/ByteBlock.hpp"
+#include "../../text/CharSet.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../text/StringSide.hpp"
-#include "../../text/u8/U8StringConstIterator.hpp"
 
 #include <exception>
 
@@ -102,7 +103,7 @@ void CryptologyConfiguration::validateProtectedDataSupport() {
 }
 
 void CryptologyConfiguration::setTlsConfiguration(const text::String &label, TlsConfiguration configuration) {
-    validateTlsConfigurationLabel(label);
+    impl::tls_configuration_label::validate(label);
     const auto entry = std::make_shared<const TlsConfiguration>(std::move(configuration));
     const auto lock = std::scoped_lock{_mutex};
     if (!_tlsConfigurations.contains(label) && _tlsConfigurations.count().toSizeT() >= cMaximumTlsConfigurations) {
@@ -112,7 +113,7 @@ void CryptologyConfiguration::setTlsConfiguration(const text::String &label, Tls
 }
 
 void CryptologyConfiguration::clearTlsConfiguration(const text::String &label) {
-    validateTlsConfigurationLabel(label);
+    impl::tls_configuration_label::validate(label);
     const auto lock = std::scoped_lock{_mutex};
     _tlsConfigurations.remove(label);
 }
@@ -123,13 +124,13 @@ void CryptologyConfiguration::clearTlsConfigurations() {
 }
 
 auto CryptologyConfiguration::hasTlsConfiguration(const text::String &label) const -> bool {
-    validateTlsConfigurationLabel(label);
+    impl::tls_configuration_label::validate(label);
     const auto lock = std::scoped_lock{_mutex};
     return _tlsConfigurations.contains(label);
 }
 
 auto CryptologyConfiguration::resolveTlsConfiguration(const text::String &label) const -> TlsConfigurationResolution {
-    validateTlsConfigurationLabel(label);
+    impl::tls_configuration_label::validate(label);
     const auto lock = std::scoped_lock{_mutex};
     auto candidate = label;
     while (true) {
@@ -203,7 +204,7 @@ void CryptologyConfiguration::ensureProtectedDataProvider() {
             if (_protectedDataMode == ProtectedDataMode::PlatformOnly) {
                 throw;
             }
-        } catch (...) {
+        } catch (const err::RuntimeError &) {
             if (_protectedDataMode == ProtectedDataMode::PlatformOnly) {
                 throw CryptologyError{
                     "Native protected-data provider initialization failed."_el, std::current_exception()};
@@ -261,43 +262,6 @@ void CryptologyConfiguration::validateProtectedDataMode(const ProtectedDataMode 
         return;
     }
     throw err::ParameterError{"A valid protected-data mode is required."_el, "mode"_el};
-}
-
-void CryptologyConfiguration::validateTlsConfigurationLabel(const text::String &label) {
-    if (label.length().toSizeT() > cMaximumTlsConfigurationLabelLength) {
-        throw err::ParameterError{"A TLS configuration label must not exceed 255 bytes."_el, "label"_el};
-    }
-    if (label.isEmpty()) {
-        return;
-    }
-    auto segmentCount = std::size_t{1U};
-    auto segmentStart = true;
-    auto previousWasHyphen = false;
-    for (const auto character : label) {
-        if (character == U'/') {
-            if (segmentStart || previousWasHyphen) {
-                throw err::ParameterError{"A TLS configuration label contains an invalid segment."_el, "label"_el};
-            }
-            ++segmentCount;
-            if (segmentCount > cMaximumTlsConfigurationLabelSegments) {
-                throw err::ParameterError{"A TLS configuration label must not exceed 16 segments."_el, "label"_el};
-            }
-            segmentStart = true;
-            previousWasHyphen = false;
-            continue;
-        }
-        if (!character.isAsciiLowercaseLetter() && !character.isAsciiDigit() && character != U'-') {
-            throw err::ParameterError{"A TLS configuration label contains an invalid character."_el, "label"_el};
-        }
-        if (segmentStart && character == U'-') {
-            throw err::ParameterError{"A TLS configuration label segment cannot begin with a hyphen."_el, "label"_el};
-        }
-        segmentStart = false;
-        previousWasHyphen = character == U'-';
-    }
-    if (segmentStart || previousWasHyphen) {
-        throw err::ParameterError{"A TLS configuration label contains an invalid segment."_el, "label"_el};
-    }
 }
 
 auto CryptologyConfiguration::tlsConfigurationResolutionError(const text::String &label) -> text::String {

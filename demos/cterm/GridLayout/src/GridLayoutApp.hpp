@@ -31,17 +31,17 @@ private:
 
 private:
     void cycleBorder(FrameBorderElement element) noexcept;
-    void renderGrid(BlockRectangle gridArea);
-    void renderCellContent(const GridLayout &layout, BlockPosition origin);
-    void renderStatus(BlockRectangle statusRect);
+    void renderGrid(Rectangle gridArea);
+    void renderCellContent(const GridLayout &layout, Position origin);
+    void renderStatus(Rectangle statusRect);
     void appendBorderStatusLine(BlockStringEditor &status, std::size_t begin, std::size_t end) const;
-    void renderFooter(BlockRectangle footerRect);
-    [[nodiscard]] auto createLayout(BlockSize availableSize) const -> GridLayout;
-    [[nodiscard]] auto borderLineSize(FrameBorderElement element) const noexcept -> BlockCoordinate;
+    void renderFooter(Rectangle footerRect);
+    [[nodiscard]] auto createLayout(Size availableSize) const -> GridLayout;
+    [[nodiscard]] auto borderLineSize(FrameBorderElement element) const noexcept -> Coordinate;
     [[nodiscard]] static auto nextStyle(FrameStyle style) noexcept -> FrameStyle;
     [[nodiscard]] static auto styleName(FrameStyle style) noexcept -> el::String;
     [[nodiscard]] static auto borderElements() noexcept -> const std::array<BorderElementInfo, 6> &;
-    [[nodiscard]] static auto distribute(BlockCoordinate total, std::size_t count) -> std::vector<BlockCoordinate>;
+    [[nodiscard]] static auto distribute(Coordinate total, std::size_t count) -> std::vector<Coordinate>;
 
 private:
     FrameBorder _border{FrameStyle::Light, Color{fg::BrightWhite, bg::Black}};

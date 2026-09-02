@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PosixEnvironmentVariableBackend.hpp"
 
+#include "PosixErrorContext.hpp"
+
 #include "../PlatformError.hpp"
-#include "../PosixErrorContext.hpp"
 
 #include "../../text/impl/PlatformU8StringAccess.hpp"
 #include "../../text/Literals.hpp"

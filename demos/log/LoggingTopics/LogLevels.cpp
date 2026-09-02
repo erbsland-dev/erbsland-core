@@ -19,7 +19,7 @@ void logLevels() {
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
         .enableTraceSection(el::LogTraceSection{"route-search"_el})
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal()));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
     const auto manager = el::LogManager::create();
     manager->setConfiguration(std::move(configuration));

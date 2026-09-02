@@ -13,7 +13,6 @@ using namespace el::text::literals;
 using namespace el::unit;
 using el::text::String;
 using erbsland::test::pathtest::toStdString;
-using namespace el::path::impl;
 
 TESTED_TARGETS(Path)
 class PathNameToolsTest final : public el::UnitTest {
@@ -42,8 +41,8 @@ public:
             runWithContext(
                 SOURCE_LOCATION(),
                 [&]() -> void {
-                    const auto firstSuffix = firstSuffixPosition(testCase.name);
-                    const auto lastSuffix = lastSuffixPosition(testCase.name);
+                    const auto firstSuffix = el::path::impl::firstSuffixPosition(testCase.name);
+                    const auto lastSuffix = el::path::impl::lastSuffixPosition(testCase.name);
                     REQUIRE_EQUAL(firstSuffix, testCase.first);
                     REQUIRE_EQUAL(lastSuffix, testCase.last);
                 },
@@ -52,15 +51,15 @@ public:
     }
 
     void testSuffixViews() {
-        REQUIRE_EQUAL(stem("ceu.claro.final.txt"_el), "ceu"_el);
-        REQUIRE_EQUAL(suffixes("ceu.claro.final.txt"_el), ".claro.final.txt"_el);
-        REQUIRE_EQUAL(lastSuffix("ceu.claro.final.txt"_el), ".txt"_el);
-        REQUIRE_EQUAL(stem(".perfil"_el), ".perfil"_el);
-        REQUIRE(suffixes(".perfil"_el).isEmpty());
-        REQUIRE(lastSuffix(".perfil"_el).isEmpty());
-        REQUIRE_EQUAL(stem("éclair.final"_el), "éclair"_el);
-        REQUIRE_EQUAL(normalizedSuffixReplacement("txt"_el), ".txt"_el);
-        REQUIRE_EQUAL(normalizedSuffixReplacement(".txt"_el), ".txt"_el);
-        REQUIRE(normalizedSuffixReplacement({}).isEmpty());
+        REQUIRE_EQUAL(el::path::impl::stem("ceu.claro.final.txt"_el), "ceu"_el);
+        REQUIRE_EQUAL(el::path::impl::suffixes("ceu.claro.final.txt"_el), ".claro.final.txt"_el);
+        REQUIRE_EQUAL(el::path::impl::lastSuffix("ceu.claro.final.txt"_el), ".txt"_el);
+        REQUIRE_EQUAL(el::path::impl::stem(".perfil"_el), ".perfil"_el);
+        REQUIRE(el::path::impl::suffixes(".perfil"_el).isEmpty());
+        REQUIRE(el::path::impl::lastSuffix(".perfil"_el).isEmpty());
+        REQUIRE_EQUAL(el::path::impl::stem("éclair.final"_el), "éclair"_el);
+        REQUIRE_EQUAL(el::path::impl::normalizedSuffixReplacement("txt"_el), ".txt"_el);
+        REQUIRE_EQUAL(el::path::impl::normalizedSuffixReplacement(".txt"_el), ".txt"_el);
+        REQUIRE(el::path::impl::normalizedSuffixReplacement({}).isEmpty());
     }
 };

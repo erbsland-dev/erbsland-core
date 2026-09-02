@@ -1,12 +1,21 @@
-.. index::
-    single: Date and Time Types
+..
+    Copyright (c) 2026 Tobias Erbsland - Erbsland DEV. https://erbsland.dev
+    SPDX-License-Identifier: Apache-2.0
 
-*******************
+.. index::
+    single: Date and Time; Reference
+    single: Date and Time Types
+    single: Duration and Time Amounts
+
+*************
+Date and Time
+*************
+
 Date and Time Types
-*******************
+===================
 
 Introduction
-============
+------------
 
 The ``time`` namespace provides types for working with civil dates, wall-clock times, and time spans.
 The calendar helper structs are small aggregate result types for APIs that return more than one calendar component.
@@ -23,7 +32,7 @@ They keep call sites readable by naming the returned values.
     const auto nextMonth = next.month;
 
 Date
-----
+~~~~
 
 :cpp:class:`Date <erbsland::time::Date>` stores a civil date in the proleptic Gregorian calendar.
 The internal epoch is ``0000-01-01`` and raw day zero is that date.
@@ -37,7 +46,7 @@ Use ``wouldAddSaturate()`` to test for this condition and ``addedOrThrow()`` or 
 :cpp:class:`OverflowError <erbsland::err::OverflowError>`.
 
 Date Time
----------
+~~~~~~~~~
 
 :cpp:class:`DateTime <erbsland::time::DateTime>` represents an instant as UTC date and time plus display offset
 information.
@@ -64,7 +73,7 @@ Constructing a ``DateTime`` from a date and ``TimeWithZone`` resolves the exact 
 converts the value to internally stored UTC, and retains the display zone.
 
 Time
-----
+~~~~
 
 :cpp:class:`Time <erbsland::time::Time>` stores a wall-clock time of day with nanosecond precision.
 Arithmetic that crosses midnight returns the day wrap separately.
@@ -82,7 +91,7 @@ Use :cpp:struct:`TimeParts <erbsland::time::TimeParts>` and
     const auto newTime = wrapped.time;
 
 Time Zone
----------
+~~~~~~~~~
 
 :cpp:class:`TimeZone <erbsland::time::TimeZone>` represents UTC, a fixed offset, or a supported named IANA zone.
 Lookup factories return ``std::optional`` for tolerant lookup and ``OrThrow`` variants for explicit failure.
@@ -103,9 +112,52 @@ while conversion to ``TimeZone::local()`` sets it.
 Default string formatting omits the zone for local-origin values.
 ``DateTime::toIsoString()`` with ``IsoTimeFormat::TimeShift`` still forces the resolved numeric offset.
 
+Duration and Time Amounts
+=========================
+
+Introduction
+------------
+
+Duration and time span types store signed time intervals at different resolutions.
+
+:cpp:class:`Duration <erbsland::time::Duration>` stores a signed span with second resolution. Conversions to coarser
+parts truncate toward zero.
+Conversions to nanosecond precision, such as ``toTimeDelta()``, saturate if the represented nanoseconds exceed the
+target type.
+Use ``wouldConvertToTimeDeltaSaturate()`` or ``toTimeDeltaOrThrow()`` when saturation must be detected or rejected.
+
+:cpp:class:`TimeDelta <erbsland::time::TimeDelta>` stores a signed span with nanosecond resolution. Conversion to
+:cpp:class:`Duration <erbsland::time::Duration>` truncates sub-second nanoseconds toward zero.
+``toSecondsWithFractions()`` and ``toDaysWithFractions()`` return approximate floating-point values and do not treat
+rounding as an error.
+The unit factories from ``nanoseconds()`` through ``weeks()`` saturate when conversion exceeds the stored nanosecond
+range.
+Use the corresponding ``...OrThrow()`` factory, including ``weeksOrThrow()``, when overflow must be rejected.
+
+:cpp:class:`CalendarDelta <erbsland::time::CalendarDelta>` stores nanoseconds through years as independent signed
+components.
+It deliberately does not normalize its stored parts: one month remains one month, and mixed positive and negative
+components remain visible through the typed accessors.
+Conversion to ``TimeDelta`` is available only when the month and year components are zero and the exact fixed-unit sum
+fits the nanosecond range.
+
+Applying a ``CalendarDelta`` to a ``DateTime`` processes nanoseconds, microseconds, milliseconds, seconds, minutes,
+hours, days, weeks, months, and years in that order.
+Month and year steps use the same end-of-month clamping semantics as ``Date``.
+Arithmetic is performed on the UTC representation; fixed display offsets are retained and named-zone metadata is
+refreshed for the final instant.
+
+:cpp:class:`TimeDeltaFormat <erbsland::time::TimeDeltaFormat>` controls short or long names, separators, the smallest
+fixed unit, and fractional output.
+``TimeDeltaFormat::elcl()`` selects the aliases and separators required for ELCL serialization.
+Calendar-delta formatting always emits non-zero years and months independently and uses exact signed normalization for
+the fixed units without first forcing the total into ``TimeDelta``.
+
 Interface
 =========
 
+.. doxygenclass:: erbsland::time::CalendarDelta
+    :members:
 .. doxygenstruct:: erbsland::time::CalendarDeltaParts
     :members:
 .. doxygenstruct:: erbsland::time::YearDayOfYearParts
@@ -133,11 +185,27 @@ Interface
 .. doxygenenum:: erbsland::time::DayOfWeekFormat
 .. doxygenclass:: erbsland::time::DayOfYear
     :members:
+.. doxygenclass:: erbsland::time::Duration
+    :members:
+.. doxygenenum:: erbsland::time::DurationPart
+.. doxygenclass:: erbsland::time::ElapsedTimer
+    :members:
 .. doxygenclass:: erbsland::time::Hour
     :members:
 .. doxygenenum:: erbsland::time::IsoTimeFormat
 
 .. doxygentypedef:: erbsland::time::IsoTimeFormatFlags
+.. doxygenfunction:: erbsland::time::literals::operator""_ns(const unsigned long long value) -> Nanoseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_us(const unsigned long long value) -> Microseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_ms(const unsigned long long value) -> Milliseconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_s(const unsigned long long value) -> Seconds
+
+.. doxygenfunction:: erbsland::time::literals::operator""_m(const unsigned long long value) -> Minutes
+
+.. doxygenfunction:: erbsland::time::literals::operator""_h(const unsigned long long value) -> Hours
 .. doxygenclass:: erbsland::time::Minute
     :members:
 .. doxygenclass:: erbsland::time::Month
@@ -146,9 +214,43 @@ Interface
     :members:
 .. doxygenclass:: erbsland::time::Time
     :members:
+.. doxygentypedef:: erbsland::time::Nanoseconds
+
+.. doxygentypedef:: erbsland::time::Microseconds
+
+.. doxygentypedef:: erbsland::time::Milliseconds
+
+.. doxygentypedef:: erbsland::time::Seconds
+
+.. doxygentypedef:: erbsland::time::Minutes
+
+.. doxygentypedef:: erbsland::time::Hours
+
+.. doxygentypedef:: erbsland::time::Days
+
+.. doxygentypedef:: erbsland::time::Weeks
+
+.. doxygentypedef:: erbsland::time::Months
+
+.. doxygentypedef:: erbsland::time::Years
+.. doxygenclass:: erbsland::time::TimeDelta
+    :members:
+.. doxygenclass:: erbsland::time::TimeDeltaFormat
+    :members:
+.. doxygenenum:: erbsland::time::TimeDeltaUnit
 .. doxygenenum:: erbsland::time::TimeEpoch
 .. doxygenenum:: erbsland::time::TimeOccurrenceInFold
 .. doxygenstruct:: erbsland::time::TimeParts
+    :members:
+.. doxygenclass:: erbsland::time::TimePoint
+    :members:
+.. doxygenstruct:: erbsland::time::SecondsUnitTag
+    :members:
+
+.. doxygenstruct:: erbsland::time::MonthsUnitTag
+    :members:
+
+.. doxygenstruct:: erbsland::time::YearsUnitTag
     :members:
 .. doxygenclass:: erbsland::time::TimeWithZone
     :members:

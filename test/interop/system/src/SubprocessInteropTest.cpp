@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <erbsland/path/Path.hpp>
+#include <erbsland/system/ProcessInfo.hpp>
 #include <erbsland/system/Subprocess.hpp>
 #include <erbsland/system/SubprocessOptions.hpp>
 #include <erbsland/system/SubprocessOutputMode.hpp>
@@ -16,6 +17,7 @@
 #include <string>
 #include <system_error>
 #include <thread>
+#include <utility>
 
 using namespace el::text::literals;
 
@@ -96,6 +98,30 @@ public:
         process.terminate();
         REQUIRE(process.wait(el::time::TimeDelta::seconds(2)).has_value());
         REQUIRE_FALSE(process.isRunning());
+    }
+
+    void testProcessIdentifierAndInformation() {
+        auto process = el::system::Subprocess::start(
+            executablePath(), el::text::StringList{"--subprocess-helper"_el, "sleep"_el, "5000"_el}, captureOptions());
+        const auto processId = process.processId();
+        REQUIRE(processId.isValid());
+
+        auto info = el::system::ProcessInfo{processId};
+        REQUIRE(info.exists());
+        REQUIRE(info.processId() == processId);
+        REQUIRE_FALSE(info.executablePath().isEmpty());
+        REQUIRE(info.startTime().isValid());
+        REQUIRE_FALSE(info.ownerId().isEmpty());
+
+        process.terminate();
+        REQUIRE(process.wait(el::time::TimeDelta::seconds(2)).has_value());
+        REQUIRE(process.processId() == processId);
+        info.reload();
+        REQUIRE_FALSE(info.exists());
+
+        auto moved = std::move(process);
+        REQUIRE_FALSE(process.processId().isValid());
+        REQUIRE(moved.processId() == processId);
     }
 
     void testEnvironmentAndWorkingDirectory() {

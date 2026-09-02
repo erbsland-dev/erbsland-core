@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../impl/PasswordHashData_fwd.hpp"
 #include "../PasswordHashAlgorithm.hpp"
 #include "../PasswordHashPolicy_fwd.hpp"
 
@@ -16,6 +17,7 @@ namespace erbsland::cryptology::unsafe {
 /// @tested{PasswordHasherTest}
 class UnsafeCustomPasswordHashParameters final {
     friend class cryptology::PasswordHashPolicy;
+    friend class cryptology::impl::PasswordHashData;
 
 public:
     /// Create checked custom Argon2id parameters.
@@ -36,6 +38,12 @@ public:
         -> UnsafeCustomPasswordHashParameters;
 
 private:
+    /// Test whether Argon2id costs are within the implementation's safety limits.
+    [[nodiscard]] static auto areValidArgon2idCosts(uint32_t memoryKiB, uint32_t passes, uint32_t lanes) noexcept
+        -> bool;
+    /// Test whether scrypt costs are within the implementation's safety limits.
+    [[nodiscard]] static auto areValidScryptCosts(uint64_t cost, uint32_t blockSize, uint32_t parallelization) noexcept
+        -> bool;
     /// Create unchecked custom password-hashing parameters.
     UnsafeCustomPasswordHashParameters(
         PasswordHashAlgorithm algorithm, uint32_t first, uint32_t second, uint32_t third, uint64_t large) noexcept;

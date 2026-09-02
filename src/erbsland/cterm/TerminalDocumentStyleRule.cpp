@@ -42,23 +42,23 @@ auto TerminalDocumentStyleRule::setIndents(const ParagraphIndents indents) noexc
     return *this;
 }
 
-auto TerminalDocumentStyleRule::setMargins(const bgeo::BlockMargins margins) noexcept -> TerminalDocumentStyleRule & {
+auto TerminalDocumentStyleRule::setMargins(const block::Margins margins) noexcept -> TerminalDocumentStyleRule & {
     _indents.setMargins(margins);
     return *this;
 }
 
 auto TerminalDocumentStyleRule::setMargins(const int allSides) noexcept -> TerminalDocumentStyleRule & {
-    return setMargins(bgeo::BlockMargins{allSides});
+    return setMargins(block::Margins{allSides});
 }
 
 auto TerminalDocumentStyleRule::setMargins(const int horizontal, const int vertical) noexcept
     -> TerminalDocumentStyleRule & {
-    return setMargins(bgeo::BlockMargins{horizontal, vertical});
+    return setMargins(block::Margins{horizontal, vertical});
 }
 
 auto TerminalDocumentStyleRule::setMargins(const int top, const int right, const int bottom, const int left) noexcept
     -> TerminalDocumentStyleRule & {
-    return setMargins(bgeo::BlockMargins{top, right, bottom, left});
+    return setMargins(block::Margins{top, right, bottom, left});
 }
 
 auto TerminalDocumentStyleRule::setLineIndent(const int indent) noexcept -> TerminalDocumentStyleRule & {

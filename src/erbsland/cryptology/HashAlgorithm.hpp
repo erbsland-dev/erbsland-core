@@ -18,7 +18,7 @@ namespace erbsland::cryptology {
 /// A fixed-output cryptographic hash algorithm supported by the library.
 /// Algorithm metadata is library policy and can change between releases. Persisted data and protocols must store
 /// `toString()` for the selected algorithm instead of relying on a future recommendation returning the same value.
-/// @seedoc{/reference/cryptology/hashing}
+/// @seedoc{/reference/cryptology/cryptographic_operations}
 /// @tested{HashAlgorithmTest}
 class HashAlgorithm final {
 public:

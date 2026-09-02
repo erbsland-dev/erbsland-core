@@ -8,6 +8,7 @@
 #include "OptionValues_fwd.hpp"
 
 #include "../text/String.hpp"
+#include "../text/StringList.hpp"
 #include "../unit/ArgumentUnit.hpp"
 
 #include <unordered_map>
@@ -59,7 +60,7 @@ public: // accessors
     void setModule(OptionModulePtr module) noexcept { _module = std::move(module); }
     /// Get the number of values stored for a lookup name.
     /// @param name Lookup name to inspect.
-    /// @return The number of values or flag occurrences stored for the lookup name.
+    /// @return The number of stored scalar or list values. Flag storage reports one.
     [[nodiscard]] auto valueCount(const text::String &name) const -> unit::ArgumentCount;
     /// Get the parsed value for a lookup name.
     /// @param name Lookup name to inspect.
@@ -75,7 +76,7 @@ public: // typed accessors
     /// Read a flag value.
     /// @param name Lookup name to read.
     /// @param defaultFlag Returned when the name is absent or not a flag.
-    /// @return The stored boolean value. An explicitly false flag still has a source occurrence.
+    /// @return True only for flag-marker storage, otherwise the fallback.
     [[nodiscard]] auto getFlag(const text::String &name, bool defaultFlag = false) const -> bool;
     /// Read the number of source occurrences for a flag value.
     /// @param name Lookup name to read.
@@ -83,6 +84,17 @@ public: // typed accessors
     /// @return The number of flag occurrences.
     [[nodiscard]] auto getFlagCount(const text::String &name, unit::ArgumentCount defaultCount = {}) const
         -> unit::ArgumentCount;
+    /// Read a boolean value.
+    /// @param name Lookup name to read.
+    /// @param defaultBoolean Returned when the name is absent or not Boolean storage.
+    /// @return The stored Boolean scalar or fallback.
+    [[nodiscard]] auto getBoolean(const text::String &name, bool defaultBoolean = false) const -> bool;
+    /// Read a boolean list value.
+    /// @param name Lookup name to read.
+    /// @param defaultBooleanList Returned when the name is absent or not Boolean scalar/list storage.
+    /// @return The stored Boolean list, or a one-element list for scalar storage.
+    [[nodiscard]] auto getBooleanList(const text::String &name, std::vector<bool> defaultBooleanList = {}) const
+        -> std::vector<bool>;
     /// Read an integer value.
     /// @param name Lookup name to read.
     /// @param defaultInteger Returned when the name is absent or not an integer.
@@ -97,8 +109,8 @@ public: // typed accessors
     /// @param name Lookup name to read.
     /// @param defaultTextList Returned when the name is absent or not a text list.
     /// @return The stored text values.
-    [[nodiscard]] auto getTextList(const text::String &name, std::vector<text::String> defaultTextList = {}) const
-        -> std::vector<text::String>;
+    [[nodiscard]] auto getTextList(const text::String &name, text::StringList defaultTextList = {}) const
+        -> text::StringList;
     /// Read an integer list value.
     /// @param name Lookup name to read.
     /// @param defaultIntegerList Returned when the name is absent or not an integer list.

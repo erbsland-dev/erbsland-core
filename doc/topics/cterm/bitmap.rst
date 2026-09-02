@@ -29,13 +29,13 @@ This makes it straightforward to construct reusable masks or generate small proc
 
 .. code-block:: cpp
 
-    auto bitmap = Bitmap{BlockSize{8, 8}};
+    auto bitmap = Bitmap{Size{8, 8}};
     bitmap.setPixel({1, 1}, true);
     bitmap.setPixel({2, 2}, true);
     bitmap.setPixel({3, 3}, true);
 
-    auto copy = Bitmap{BlockSize{8, 8}};
-    copy.draw(BlockPosition{2, 1}, bitmap);
+    auto copy = Bitmap{Size{8, 8}};
+    copy.draw(Position{2, 1}, bitmap);
 
     if (copy.pixelQuad({1, 1}) != 0) {
         // Use the encoded 2x2 mask for custom rendering.
@@ -86,7 +86,7 @@ colors, and optional neighbor-aware line styles.
 
 .. code-block:: cpp
 
-    auto bitmap = Bitmap{BlockSize{8, 8}};
+    auto bitmap = Bitmap{Size{8, 8}};
     bitmap.setPixel({1, 1}, true);
     bitmap.setPixel({2, 2}, true);
     bitmap.setPixel({3, 3}, true);
@@ -101,7 +101,7 @@ colors, and optional neighbor-aware line styles.
         },
         BitmapColorMode::ForwardDiagonalStripes);
 
-    buffer.drawBitmap(bitmap, BlockRectangle{2, 2, 20, 8}, Alignment::Center, options, animationCycle);
+    buffer.drawBitmap(bitmap, Rectangle{2, 2, 20, 8}, Alignment::Center, options, animationCycle);
 
 When using the rectangle overload, the *rendered* bitmap is aligned inside the target rectangle.
 If it exceeds the available space, it is cropped according to the selected alignment.

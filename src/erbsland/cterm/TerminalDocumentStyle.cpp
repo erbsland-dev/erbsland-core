@@ -197,7 +197,7 @@ auto TerminalDocumentStyle::defaultRuleFor(const TextNodeType nodeType, const st
     rule.setTextStyle(Style{});
     rule.setIndents(_data->baseBlockLayout);
     if (nodeType.isListItem() && level.has_value()) {
-        rule.setIndents(ParagraphIndents{0, 0, 4, bgeo::BlockMargins{0}});
+        rule.setIndents(ParagraphIndents{0, 0, 4, block::Margins{0}});
     }
     return rule;
 }
@@ -226,8 +226,8 @@ auto TerminalDocumentStyle::createSimpleDefaultStyle() -> TerminalDocumentStyle 
     style.edit(Selector::numberedList(1)).setMargins(0);
     style.edit(Selector::bulletList(0)).setMargins(0, 0, 1, 0);
     style.edit(Selector::bulletList(1)).setMargins(0);
-    style.edit(Selector::bulletListItem(0)).setIndents(ParagraphIndents{0, 0, 4, bgeo::BlockMargins{0}});
-    style.edit(Selector::numberedListItem(0)).setIndents(ParagraphIndents{0, 0, 4, bgeo::BlockMargins{0}});
+    style.edit(Selector::bulletListItem(0)).setIndents(ParagraphIndents{0, 0, 4, block::Margins{0}});
+    style.edit(Selector::numberedListItem(0)).setIndents(ParagraphIndents{0, 0, 4, block::Margins{0}});
     style.edit(Selector::horizontalLine()).setMargins(0, 1);
     return style;
 }
@@ -256,7 +256,7 @@ auto TerminalDocumentStyle::createStyledDefaultStyle() -> TerminalDocumentStyle 
     style.edit(Selector::bulletList(0)).setMargins(0, 2, 1, 3);
     style.edit(Selector::bulletList(1)).setMargins(0);
     style.edit(Selector::bulletListItem(0))
-        .setIndents(ParagraphIndents{0, 0, 3, bgeo::BlockMargins{0}})
+        .setIndents(ParagraphIndents{0, 0, 3, block::Margins{0}})
         .setLiteralMarker(BlockStringEditor{U"•\t"_el}, Style{fg::Yellow});
     style.edit(Selector::bulletListItem(1)).setLiteralMarker(BlockStringEditor{U"⁃\t"_el}, Style{fg::Cyan});
     style.edit(Selector::bulletListItem(2)).setLiteralMarker(BlockStringEditor{U"‣\t"_el}, Style{fg::Green});

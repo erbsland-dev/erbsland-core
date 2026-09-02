@@ -109,6 +109,14 @@ public:
         REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1.02.3"_el).has_value());
         REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("3.1"_el).has_value());
         REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1,2"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1 2"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1/2"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1..2"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1.2."_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("1.18446744073709551616"_el).has_value());
+        REQUIRE(Asn1ObjectIdentifier::fromString("2.18446744073709551535"_el).has_value());
+        REQUIRE_FALSE(Asn1ObjectIdentifier::fromString("2.18446744073709551536"_el).has_value());
     }
 
 private:

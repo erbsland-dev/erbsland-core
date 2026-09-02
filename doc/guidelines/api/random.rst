@@ -5,28 +5,10 @@ Random Domain API Guidelines
 Core Semantics
 ==============
 
-Generator Properties
---------------------
-
 .. code-block:: text
 
     pseudo-random = fast seeded sequence for non-security use
-    reproducible = identical sequence for an explicit seed
-    synchronized = serialized access to one pseudo-random sequence
     secure = operating-system entropy suitable for security-sensitive values
-    secure owning result = string or block allocation marked, or byte-buffer sensitive mode enabled, before filling
-
-Range and Empty-Input Semantics
--------------------------------
-
-.. code-block:: text
-
-    integer bounds = inclusive and automatically ordered when reversed
-    floating bounds = ordered with generator-specific endpoint behavior
-    zero or infinite count = empty generated collection
-    empty choices = fallback selection or empty generated collection
-    empty byte destination = valid no-op
-    empty or invalid element count = no-index selection
 
 Primary Types
 =============

@@ -85,8 +85,16 @@ Pass each executable target to Core's application setup helper:
 target, and selects UTF-8 source and execution character sets on MSVC.
 Calling it more than once for the same executable is safe.
 
-For a library target, link ``erbsland::core`` directly and publish the dependency with the visibility required by that
-library's public API.
+Pass static-library targets to the corresponding setup helper:
+
+.. code-block:: cmake
+
+    add_library(example_library STATIC src/library.cpp)
+    erbsland_core_setup_static_library(TARGET example_library)
+
+``erbsland_core_setup_static_library()`` publishes Core, C++20, and the MSVC UTF-8 option to consumers while applying
+the target-local module-scanning setting to the library itself.
+Calling it more than once for the same static library is safe.
 
 Include only public headers below ``<erbsland/...>``.
 Use focused headers for individual APIs or domain headers such as ``<erbsland/all_path.hpp>`` when a source file works

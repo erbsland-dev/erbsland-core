@@ -8,7 +8,7 @@
 namespace demo {
 
 void FrameColorAnimationsApp::beforeInitialize() {
-    _updateSettings.setMinimumSize(BlockSize{BlockCoordinate{78}, BlockCoordinate{22}});
+    _updateSettings.setMinimumSize(Size{Coordinate{78}, Coordinate{22}});
     _updateSettings.setMinimumSizeBackground(Block{U' ', bg::Black});
     _updateSettings.setMinimumSizeMessage(
         BlockString{
@@ -19,23 +19,14 @@ void FrameColorAnimationsApp::beforeInitialize() {
 void FrameColorAnimationsApp::onRenderToBuffer() {
     _buffer.fill(Block{U' ', bg::Black});
 
-    const auto outerRect = BlockRectangle{
-        BlockCoordinate{0},
-        BlockCoordinate{0},
-        BlockCoordinate{_buffer.size().width()},
-        BlockCoordinate{_buffer.size().height()}};
-    const auto headerRect = BlockRectangle{
-        BlockCoordinate{2}, BlockCoordinate{1}, BlockCoordinate{_buffer.size().width() - 4}, BlockCoordinate{3}};
-    const auto contentRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{5},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{_buffer.size().height() - 9}};
-    const auto footerRect = BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{_buffer.size().height() - 3},
-        BlockCoordinate{_buffer.size().width() - 4},
-        BlockCoordinate{1}};
+    const auto outerRect = Rectangle{
+        Coordinate{0}, Coordinate{0}, Coordinate{_buffer.size().width()}, Coordinate{_buffer.size().height()}};
+    const auto headerRect =
+        Rectangle{Coordinate{2}, Coordinate{1}, Coordinate{_buffer.size().width() - 4}, Coordinate{3}};
+    const auto contentRect = Rectangle{
+        Coordinate{2}, Coordinate{5}, Coordinate{_buffer.size().width() - 4}, Coordinate{_buffer.size().height() - 9}};
+    const auto footerRect = Rectangle{
+        Coordinate{2}, Coordinate{_buffer.size().height() - 3}, Coordinate{_buffer.size().width() - 4}, Coordinate{1}};
 
     auto outerOptions = FrameDrawOptions{};
     outerOptions.setStyle(FrameStyle::LightWithRoundedCorners);
@@ -49,12 +40,12 @@ void FrameColorAnimationsApp::onRenderToBuffer() {
     const auto cells = contentRect.gridCells(2, 4);
     const auto &panels = panelSpecs();
     for (std::size_t index = 0; index < panels.size(); ++index) {
-        drawPanel(cells[index].insetBy(BlockMargins{1, 0}), panels[index]);
+        drawPanel(cells[index].insetBy(Margins{1, 0}), panels[index]);
     }
     drawFooter(footerRect);
 }
 
-void FrameColorAnimationsApp::drawPanel(const BlockRectangle rect, const PanelSpec &panel) {
+void FrameColorAnimationsApp::drawPanel(const Rectangle rect, const PanelSpec &panel) {
     auto options = FrameDrawOptions{};
     options.setStyle(panel.style);
     options.setFrameColorSequence(colorSequence(panel.sequenceIndex), panel.mode);
@@ -68,43 +59,30 @@ void FrameColorAnimationsApp::drawPanel(const BlockRectangle rect, const PanelSp
     }
     _buffer.drawBlockText(
         panel.title,
-        BlockRectangle{
-            BlockCoordinate{rect.x1() + 2},
-            BlockCoordinate{rect.y1() + 1},
-            BlockCoordinate{rect.width() - 4},
-            BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y1() + 1}, Coordinate{rect.width() - 4}, Coordinate{1}},
         Alignment::Center,
         Color{fg::BrightWhite, bg::Inherited});
     _buffer.drawBlockText(
         "animated frame"_el,
-        BlockRectangle{
-            BlockCoordinate{rect.x1() + 2},
-            BlockCoordinate{rect.y1() + 3},
-            BlockCoordinate{rect.width() - 4},
-            BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1() + 2}, Coordinate{rect.y1() + 3}, Coordinate{rect.width() - 4}, Coordinate{1}},
         Alignment::Center,
         Color{fg::BrightBlack, bg::Inherited});
 }
 
-void FrameColorAnimationsApp::drawHeader(const BlockRectangle rect) {
+void FrameColorAnimationsApp::drawHeader(const Rectangle rect) {
     _buffer.drawBlockText(
         "Frame Color Animations"_el,
-        BlockRectangle{
-            BlockCoordinate{rect.x1()}, BlockCoordinate{rect.y1()}, BlockCoordinate{rect.width()}, BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1()}, Coordinate{rect.y1()}, Coordinate{rect.width()}, Coordinate{1}},
         Alignment::Center,
         Color{fg::BrightWhite, bg::Black});
     _buffer.drawBlockText(
         "This is a demo of various frame animation modes."_el,
-        BlockRectangle{
-            BlockCoordinate{rect.x1()},
-            BlockCoordinate{rect.y1() + 2},
-            BlockCoordinate{rect.width()},
-            BlockCoordinate{1}},
+        Rectangle{Coordinate{rect.x1()}, Coordinate{rect.y1() + 2}, Coordinate{rect.width()}, Coordinate{1}},
         Alignment::Center,
         Color{fg::BrightYellow, bg::Black});
 }
 
-void FrameColorAnimationsApp::drawFooter(const BlockRectangle rect) {
+void FrameColorAnimationsApp::drawFooter(const Rectangle rect) {
     _buffer.drawBlockText("Press q to quit."_el, rect, Alignment::CenterRight, Color{fg::BrightBlack, bg::Inherited});
 }
 

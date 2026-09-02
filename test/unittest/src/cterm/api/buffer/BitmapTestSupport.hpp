@@ -18,11 +18,11 @@ public:
     [[nodiscard]] auto renderRows(const Bitmap &bitmap) -> std::vector<std::string> {
         auto rows = std::vector<std::string>{};
         rows.reserve(bitmap.size().height().toSizeT());
-        for (auto y = bgeo::BlockCoordinate{0}; y < bitmap.size().height(); ++y) {
+        for (auto y = block::Coordinate{0}; y < bitmap.size().height(); ++y) {
             auto row = std::string{};
             row.reserve(bitmap.size().width().toSizeT());
-            for (auto x = bgeo::BlockCoordinate{0}; x < bitmap.size().width(); ++x) {
-                row += bitmap.pixel(bgeo::BlockPosition{x, y}) ? '#' : '.';
+            for (auto x = block::Coordinate{0}; x < bitmap.size().width(); ++x) {
+                row += bitmap.pixel(block::Position{x, y}) ? '#' : '.';
             }
             rows.push_back(std::move(row));
         }
@@ -45,7 +45,7 @@ public:
     }
 
     /// Require two block rectangles to have identical origin and size.
-    void requireRectangleEqual(const bgeo::BlockRectangle &actual, const bgeo::BlockRectangle &expected) {
+    void requireRectangleEqual(const block::Rectangle &actual, const block::Rectangle &expected) {
         REQUIRE_EQUAL(actual.topLeft(), expected.topLeft());
         REQUIRE_EQUAL(actual.size(), expected.size());
     }

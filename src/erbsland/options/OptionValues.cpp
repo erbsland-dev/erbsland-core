@@ -56,6 +56,22 @@ auto OptionValues::getFlagCount(const String &name, const unit::ArgumentCount de
     return optionValue->flagCount();
 }
 
+auto OptionValues::getBoolean(const String &name, const bool defaultBoolean) const -> bool {
+    const auto optionValue = value(name);
+    if (optionValue == nullptr) {
+        return defaultBoolean;
+    }
+    return optionValue->getBoolean(defaultBoolean);
+}
+
+auto OptionValues::getBooleanList(const String &name, std::vector<bool> defaultBooleanList) const -> std::vector<bool> {
+    const auto optionValue = value(name);
+    if (optionValue == nullptr) {
+        return defaultBooleanList;
+    }
+    return optionValue->getBooleanList(std::move(defaultBooleanList));
+}
+
 auto OptionValues::getInteger(const String &name, const OptionInteger defaultInteger) const -> OptionInteger {
     const auto optionValue = value(name);
     if (optionValue == nullptr) {
@@ -72,7 +88,7 @@ auto OptionValues::getText(const String &name, const String &defaultText) const 
     return optionValue->getText(defaultText);
 }
 
-auto OptionValues::getTextList(const String &name, std::vector<String> defaultTextList) const -> std::vector<String> {
+auto OptionValues::getTextList(const String &name, text::StringList defaultTextList) const -> text::StringList {
     const auto optionValue = value(name);
     if (optionValue == nullptr) {
         return defaultTextList;

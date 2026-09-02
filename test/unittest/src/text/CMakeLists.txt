@@ -4,6 +4,7 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(base_n)
+add_subdirectory(fuzzy)
 add_subdirectory(punycode)
 add_subdirectory(render)
 

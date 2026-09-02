@@ -1,0 +1,8 @@
+# Reference-document groups for the time domain.
+
+------------*[ Reference Groups ]
+Page        : "time/date_and_time.rst"
+Title       : "Date and Time"
+Header Globs:
+    * "time/*.hpp"
+    * "time/tz/*.hpp"

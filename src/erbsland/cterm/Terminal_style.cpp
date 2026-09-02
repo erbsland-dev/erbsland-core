@@ -22,8 +22,8 @@
 namespace erbsland::cterm {
 
 using namespace text::literals;
-using bgeo::BlockCoordinate;
-using bgeo::BlockPosition;
+using block::Coordinate;
+using block::Position;
 
 auto Terminal::color() const noexcept -> Color {
     return _style.color();
@@ -192,48 +192,48 @@ void Terminal::emitCharAttributeCodes(
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveLeft(const BlockCoordinate count) noexcept {
+void Terminal::moveLeft(const Coordinate count) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(BlockPosition{-count, BlockCoordinate{0}}, MoveMode::Relative);
+        _backend->moveCursor(Position{-count, Coordinate{0}}, MoveMode::Relative);
         return;
     }
     _lineBuffer.write(impl::ansi_sequence::moveLeft(count.toRawValue()));
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveRight(const BlockCoordinate count) noexcept {
+void Terminal::moveRight(const Coordinate count) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(BlockPosition{count, BlockCoordinate{0}}, MoveMode::Relative);
+        _backend->moveCursor(Position{count, Coordinate{0}}, MoveMode::Relative);
         return;
     }
     _lineBuffer.write(impl::ansi_sequence::moveRight(count.toRawValue()));
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveUp(const BlockCoordinate count) noexcept {
+void Terminal::moveUp(const Coordinate count) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(BlockPosition{BlockCoordinate{0}, -count}, MoveMode::Relative);
+        _backend->moveCursor(Position{Coordinate{0}, -count}, MoveMode::Relative);
         return;
     }
     _lineBuffer.write(impl::ansi_sequence::moveUp(count.toRawValue()));
     _lineBuffer.handleEmit();
 }
 
-void Terminal::moveDown(const BlockCoordinate count) noexcept {
+void Terminal::moveDown(const Coordinate count) noexcept {
     if (_outputMode == OutputMode::BlockText) {
         return;
     }
     if (!_backend->supportsCursorCodes()) {
-        _backend->moveCursor(BlockPosition{BlockCoordinate{0}, count}, MoveMode::Relative);
+        _backend->moveCursor(Position{Coordinate{0}, count}, MoveMode::Relative);
         return;
     }
     _lineBuffer.write(impl::ansi_sequence::moveDown(count.toRawValue()));

@@ -8,7 +8,7 @@
 namespace erbsland::network {
 
 /// Resource limits captured by an ordered HTTP header collection.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpHeadersTest}
 class HttpHeaderLimits final {
 public:

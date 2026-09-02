@@ -42,7 +42,7 @@ public:
     [[nodiscard]] auto supportsColorCodes() const noexcept -> bool override;
     [[nodiscard]] auto supportsCursorCodes() const noexcept -> bool override;
     [[nodiscard]] auto isInteractive() const noexcept -> bool override;
-    [[nodiscard]] auto detectScreenSize() -> std::optional<bgeo::BlockSize> override;
+    [[nodiscard]] auto detectScreenSize() -> std::optional<block::Size> override;
     void emitText(const text::String &text) override;
     void emitFlush() override;
     void setAlternateScreenBuffer(bool enabled) override;
@@ -69,9 +69,9 @@ public:
 
 private:
     /// Detect the screen size.
-    [[nodiscard]] auto getScreenSize() -> std::pair<SizeDetectionResult, bgeo::BlockSize>;
+    [[nodiscard]] auto getScreenSize() -> std::pair<SizeDetectionResult, block::Size>;
     /// Try to detect the size for a file descriptor.
-    [[nodiscard]] static auto getScreenSizeForFd(int fd) -> std::pair<SizeDetectionResult, bgeo::BlockSize>;
+    [[nodiscard]] static auto getScreenSizeForFd(int fd) -> std::pair<SizeDetectionResult, block::Size>;
     /// Initialize a key interactive session.
     void initializeKeyInputSession();
     /// Restore a key interactive session.
@@ -103,7 +103,7 @@ private:
     bool _isInitialized = false;                            ///< If the platform was initialized.
     bool _keyInputSessionActive = false;                    ///< If we have an input session that needs to be restored.
     clock::time_point _lastScreenSizeDetection = {};        ///< Time of last screen size detection.
-    std::optional<bgeo::BlockSize> _lastScreenSize;         ///< The last cached screen size.
+    std::optional<block::Size> _lastScreenSize;             ///< The last cached screen size.
     bool _firstScreenSizeDetection = true;                  ///< A flag to mark the first detection, for extra effort.
     bool _hasNoTerminalAttached = false;                    ///< If standard output is not an interactive terminal.
     Input::Mode _inputMode{Input::Mode::ReadLine};          ///< The current input mode.

@@ -11,8 +11,8 @@ public:
     using Bitmap::Bitmap;
 
     /// Read a pixel through the protected reference accessor.
-    auto readPixelRef(const bgeo::BlockPosition pos) -> bool { return pixelRef(pos); }
+    auto readPixelRef(const block::Position pos) -> bool { return pixelRef(pos); }
 
     /// Write a pixel through the protected reference accessor.
-    void writePixelRef(const bgeo::BlockPosition pos, const bool value) { pixelRef(pos) = value; }
+    void writePixelRef(const block::Position pos, const bool value) { pixelRef(pos) = value; }
 };

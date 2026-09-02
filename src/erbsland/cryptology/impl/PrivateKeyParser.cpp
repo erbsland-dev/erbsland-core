@@ -2,8 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "PrivateKeyParser.hpp"
 
+#include "CryptologyOids.hpp"
+#include "DerEncoder.hpp"
 #include "DerParser.hpp"
+#include "PemCodec.hpp"
 #include "SecureEraseGuard.hpp"
+#include "SigningKeyEncoding.hpp"
 
 #include "algorithm/ecdsa_signature/EcdsaSigner.hpp"
 #include "algorithm/ed25519_signature/Ed25519Signer.hpp"
@@ -11,15 +15,9 @@
 
 #include "../asn1/Asn1UniversalType.hpp"
 
-#include "../../err/OutOfRangeError.hpp"
 #include "../../err/ParseError.hpp"
 #include "../../mem/ByteBlockEditor.hpp"
-#include "../../text/AsciiCategory.hpp"
-#include "../../text/base_n/BaseNDecoder.hpp"
-#include "../../text/base_n/BaseNFormat.hpp"
 #include "../../text/Literals.hpp"
-#include "../../text/StringCharReader.hpp"
-#include "../../text/StringEditor.hpp"
 #include "../../unit/ByteIndex.hpp"
 #include "../../unit/ItemIndex.hpp"
 
@@ -64,50 +62,21 @@ auto PrivateKeyParser::parse() const -> SigningPrivateKey {
     auto privateKey = privateKeyNode.contentData();
     privateKey.markAsSensitive();
     const auto privateKeyEraseGuard = SecureEraseGuard{privateKey};
-    if (oid->toString() == "1.3.101.112"_el) {
+    if (oid->toString() == cryptology_oids::ed25519) {
         return parseEd25519(algorithm, privateKey);
     }
-    if (oid->toString() == "1.2.840.10045.2.1"_el) {
-        return parseEcdsaP256(algorithm, privateKey);
+    if (oid->toString() == cryptology_oids::ecPublicKey) {
+        return parseEcdsa(algorithm, privateKey);
     }
-    if (oid->toString() == "1.2.840.113549.1.1.1"_el || oid->toString() == "1.2.840.113549.1.1.10"_el) {
+    if (oid->toString() == cryptology_oids::rsaEncryption || oid->toString() == cryptology_oids::rsaPss) {
         return parseRsa(algorithm, privateKey);
     }
     throwParseError("PKCS#8 contains an unsupported private-key algorithm."_el);
 }
 
 auto PrivateKeyParser::decodePem(const text::String &pem) -> mem::ByteBlock {
-    static constexpr auto cMaximumPemLength = std::size_t{2U * 1024U * 1024U};
-    if (pem.length().toSizeTOrThrow() > cMaximumPemLength) {
-        throw err::OutOfRangeError{"Private-key PEM exceeds the fixed two-MiB source limit."_el};
-    }
-    auto reader = text::StringCharReader{pem};
-    reader.advanceWhile(text::AsciiCategory::Whitespace);
-    if (!reader.advanceIf("-----BEGIN PRIVATE KEY-----"_el) ||
-        reader.advanceWhile(text::AsciiCategory::Whitespace).isZero()) {
-        throwParseError("Expected an exact PRIVATE KEY PEM pre-encapsulation boundary."_el);
-    }
-    auto base64 = text::StringEditor{};
-    while (!reader.isAtEnd() && reader.peek() != U'-') {
-        const auto character = reader.read();
-        if (character.isAsciiWhitespace()) {
-            continue;
-        }
-        if (!character.isAsciiCategory(text::AsciiCategory::Base64Text)) {
-            throwParseError("Private-key PEM contains a non-Base64 character."_el);
-        }
-        base64.append(character);
-    }
-    if (base64.isEmpty() || !reader.advanceIf("-----END PRIVATE KEY-----"_el)) {
-        throwParseError("Private-key PEM has empty data or no exact post-encapsulation boundary."_el);
-    }
-    reader.advanceWhile(text::AsciiCategory::Whitespace);
-    if (!reader.isAtEnd()) {
-        throwParseError("Private-key PEM contains trailing data or another block."_el);
-    }
-    auto format = text::base_n::BaseNFormat::base64();
-    format.setWhitespace({});
-    auto result = text::base_n::BaseNDecoder{text::String{base64}, format}.toDataOrThrow(DerParser::cMaximumLength);
+    auto blocks = PemCodec{pem, PemLabel::PrivateKey}.decode();
+    auto result = blocks.first();
     result.markAsSensitive();
     return result;
 }
@@ -134,34 +103,30 @@ auto PrivateKeyParser::parseEd25519(const Asn1Node &algorithm, const mem::ByteBl
 
     // RFC 8410 section 4: SubjectPublicKeyInfo is SEQUENCE { id-Ed25519, BIT STRING ENC(A) }.
     const auto encodedPublicKey = ed25519_signer::publicKey(seed.span());
-    auto spki = mem::ByteBlockEditor{
-        mem::Byte{0x30U},
-        mem::Byte{0x2aU},
-        mem::Byte{0x30U},
-        mem::Byte{0x05U},
-        mem::Byte{0x06U},
-        mem::Byte{0x03U},
-        mem::Byte{0x2bU},
-        mem::Byte{0x65U},
-        mem::Byte{0x70U},
-        mem::Byte{0x03U},
-        mem::Byte{0x21U},
-        mem::Byte{0x00U}};
-    spki.append(encodedPublicKey.span());
-    return SigningPrivateKey{
-        SigningKeyAlgorithm::Ed25519, seed.span(), PublicKey::fromDerOrThrow(mem::ByteBlock{spki})};
+    auto encoder = DerEncoder{};
+    signing_key_encoding::appendEd25519PublicKey(encoder, encodedPublicKey.span());
+    return SigningPrivateKey{SigningKeyAlgorithm::Ed25519, seed.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
-auto PrivateKeyParser::parseEcdsaP256(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
+auto PrivateKeyParser::parseEcdsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
     -> SigningPrivateKey {
-    // RFC 5480 section 2.1.1: id-ecPublicKey parameters contain the named-curve OID prime256v1.
+    // RFC 5480 section 2.1.1: id-ecPublicKey parameters contain one supported named-curve OID.
     if (algorithm.childCount() != ItemCount{2U}) {
-        throwParseError("A P-256 PKCS#8 algorithm must contain named-curve parameters."_el);
+        throwParseError("An EC PKCS#8 algorithm must contain named-curve parameters."_el);
     }
     const auto curveOid = algorithm.child(ItemIndex{1U}).toObjectIdentifier();
-    if (!curveOid.has_value() || curveOid->toString() != "1.2.840.10045.3.1.7"_el) {
-        throwParseError("Only the prime256v1 named curve is supported for signing."_el);
+    if (!curveOid.has_value()) {
+        throwParseError("The EC named-curve parameters are malformed."_el);
     }
+    auto curveName = NistPrimeCurve::Name::P256;
+    auto keyAlgorithm = SigningKeyAlgorithm::EcdsaP256;
+    if (curveOid->toString() == cryptology_oids::secp384r1) {
+        curveName = NistPrimeCurve::Name::P384;
+        keyAlgorithm = SigningKeyAlgorithm::EcdsaP384;
+    } else if (curveOid->toString() != cryptology_oids::secp256r1) {
+        throwParseError("Only the prime256v1 and secp384r1 named curves are supported for signing."_el);
+    }
+    const auto curve = NistPrimeCurve{curveName};
 
     // RFC 5915 section 3: ECPrivateKey contains version 1, a fixed-width private scalar, and an optional public key.
     const auto root = DerParser{privateKey}.parseDocument();
@@ -169,7 +134,7 @@ auto PrivateKeyParser::parseEcdsaP256(const Asn1Node &algorithm, const mem::Byte
         root, Asn1TagClass::Universal, static_cast<uint32_t>(Asn1UniversalType::Sequence), true, "ECPrivateKey"_el);
     if (root.childCount() < ItemCount{2U} || root.childCount() > ItemCount{3U} ||
         decodeSmallInteger(root.child(ItemIndex{0U}), "ECPrivateKey version"_el) != 1U) {
-        throwParseError("P-256 ECPrivateKey must contain version 1, privateKey, and optional publicKey."_el);
+        throwParseError("ECPrivateKey must contain version 1, privateKey, and optional publicKey."_el);
     }
     const auto scalarNode = root.child(ItemIndex{1U});
     requireNode(
@@ -181,13 +146,13 @@ auto PrivateKeyParser::parseEcdsaP256(const Asn1Node &algorithm, const mem::Byte
     auto scalar = scalarNode.contentData();
     scalar.markAsSensitive();
     const auto scalarEraseGuard = SecureEraseGuard{scalar};
-    const auto publicPoint = ecdsa_signer::publicKey(scalar.span());
+    const auto publicPoint = ecdsa_signer::publicKey(scalar.span(), curveName);
 
     if (root.childCount() == ItemCount{3U}) {
         const auto publicKeyField = root.child(ItemIndex{2U});
         if (publicKeyField.tagClass() != Asn1TagClass::Context || publicKeyField.tagNumber() != 1U ||
             !publicKeyField.isConstructed() || publicKeyField.childCount() != ItemCount{1U}) {
-            throwParseError("P-256 ECPrivateKey contains unsupported parameters or malformed publicKey."_el);
+            throwParseError("ECPrivateKey contains unsupported parameters or malformed publicKey."_el);
         }
         const auto bitString = publicKeyField.child(ItemIndex{0U});
         requireNode(
@@ -197,51 +162,25 @@ auto PrivateKeyParser::parseEcdsaP256(const Asn1Node &algorithm, const mem::Byte
             false,
             "EC public key"_el);
         const auto content = bitString.contentData();
-        if (content.length() != ByteLength{66U} || content.span().front().toUInt8() != 0U ||
+        if (content.length() != ByteLength{2U * curve.byteLength() + 2U} || content.span().front().toUInt8() != 0U ||
             !publicPoint.isEqualConstTime(content.span().subspan(1U))) {
-            throwParseError("P-256 ECPrivateKey embedded public key does not match its private scalar."_el);
+            throwParseError("ECPrivateKey embedded public key does not match its private scalar."_el);
         }
     }
 
-    // RFC 5480 sections 2.1.1 and 2.2: build canonical id-ecPublicKey/prime256v1 SubjectPublicKeyInfo.
-    auto spki = mem::ByteBlockEditor{
-        mem::Byte{0x30U},
-        mem::Byte{0x59U},
-        mem::Byte{0x30U},
-        mem::Byte{0x13U},
-        mem::Byte{0x06U},
-        mem::Byte{0x07U},
-        mem::Byte{0x2aU},
-        mem::Byte{0x86U},
-        mem::Byte{0x48U},
-        mem::Byte{0xceU},
-        mem::Byte{0x3dU},
-        mem::Byte{0x02U},
-        mem::Byte{0x01U},
-        mem::Byte{0x06U},
-        mem::Byte{0x08U},
-        mem::Byte{0x2aU},
-        mem::Byte{0x86U},
-        mem::Byte{0x48U},
-        mem::Byte{0xceU},
-        mem::Byte{0x3dU},
-        mem::Byte{0x03U},
-        mem::Byte{0x01U},
-        mem::Byte{0x07U},
-        mem::Byte{0x03U},
-        mem::Byte{0x42U},
-        mem::Byte{0x00U}};
-    spki.append(publicPoint);
-    return SigningPrivateKey{
-        SigningKeyAlgorithm::EcdsaP256, scalar.span(), PublicKey::fromDerOrThrow(mem::ByteBlock{spki})};
+    // RFC 5480 sections 2.1.1 and 2.2: rebuild canonical named-curve SubjectPublicKeyInfo.
+    auto encoder = DerEncoder{};
+    signing_key_encoding::appendEcPublicKey(encoder, publicPoint.span(), curveName);
+    return SigningPrivateKey{keyAlgorithm, scalar.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
 auto PrivateKeyParser::parseRsa(const Asn1Node &algorithm, const mem::ByteBlock &privateKey) const
     -> SigningPrivateKey {
     // RFC 5208 section 6 and RFC 8017 appendix A.1.2: the privateKey OCTET STRING contains one version-0
     // two-prime RSAPrivateKey. The exact algorithm encoding retains RSAE or RSASSA-PSS restrictions.
-    const auto publicKeyDer = rsa_signer::publicKey(privateKey.span(), algorithm.encodedData().span());
-    return SigningPrivateKey{SigningKeyAlgorithm::Rsa, privateKey.span(), PublicKey::fromDerOrThrow(publicKeyDer)};
+    auto encoder = DerEncoder{};
+    rsa_signer::appendPublicKey(encoder, privateKey.span(), algorithm.encodedData().span());
+    return SigningPrivateKey{SigningKeyAlgorithm::Rsa, privateKey.span(), PublicKey::fromDerOrThrow(encoder.encoded())};
 }
 
 void PrivateKeyParser::requireNode(

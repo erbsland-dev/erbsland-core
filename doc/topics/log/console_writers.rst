@@ -8,8 +8,7 @@
 Writing Logs to the Console
 ***************************
 
-The :cpp:class:`ConsoleLogWriter <erbsland::log::ConsoleLogWriter>` turns a formatted log line into a terminal
-paragraph.
+The ``LogWriter::createForConsole()`` turns a formatted log line into a terminal paragraph.
 It is the writer people usually meet first: a command starts, useful progress appears immediately, warnings stand out,
 and an error is visible at the place where the person can act on it.
 That makes console logging a natural fit for command-line tools, foreground services, development builds, and any
@@ -48,7 +47,7 @@ the process exits.
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriters.cpp
     :exec: log/logging_topics --demo ConsoleWriters
-    :source-sha256: df5a0a1f44c0d4fbe99bcc8b684a5d8bef15a1114f006c8f372614198bef3d7a
+    :source-sha256: 107fb53b01808690118d2227aec2814b06a1c304eb98918900aa297b27cea9df
 
 .. code-block:: cpp
 
@@ -67,7 +66,7 @@ the process exits.
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -93,7 +92,7 @@ Create and Pass the Options Object
 
 :cpp:class:`ConsoleLogWriterOptions <erbsland::log::ConsoleLogWriterOptions>` is a value object.
 Construct it with its default constructor, change the settings you need, and pass it as the second argument to
-:cpp:class:`ConsoleLogWriter <erbsland::log::ConsoleLogWriter>`.
+``LogWriter::createForConsole()``.
 The writer stores its own options value, so moving the completed object into the constructor is the clearest ownership
 handoff.
 
@@ -144,7 +143,7 @@ deeper continuation indent, one permitted wrap, and the default single-character
     :function-blocks: consoleWriterParagraphOptions
     :function-blocks-sha256: b57e2c2879787e67cfe49bfc1d98a45fb6ed60b7a34217b17f331df98fc7c46b
     :exec: log/logging_topics --demo ConsoleWriterParagraphOptions
-    :source-sha256: 43d88f3b3b26bb20fc82d761d6573218b6141d3d6b5d3788bb8c23da960fe531
+    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
 
 .. code-block:: cpp
 
@@ -162,7 +161,7 @@ deeper continuation indent, one permitted wrap, and the default single-character
         format.setPattern("{message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -208,7 +207,7 @@ background in the following demo untouched.
     :function-blocks: consoleWriterBaseStyle
     :function-blocks-sha256: e06f6083853d07d8d22b205da136aff490f07f0d3aa7e93f23a5fb1e608eb010
     :exec: log/logging_topics --demo ConsoleWriterBaseStyle
-    :source-sha256: 43d88f3b3b26bb20fc82d761d6573218b6141d3d6b5d3788bb8c23da960fe531
+    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
 
 .. code-block:: cpp
 
@@ -219,7 +218,7 @@ background in the following demo untouched.
         format.setPattern("{level} {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -258,7 +257,7 @@ Only the specified foreground and attribute are changed; any inherited backgroun
     :function-blocks: consoleWriterLevelStyles
     :function-blocks-sha256: afc29ffb0fcbdcf61f0404183217369f7d311a63b8b7aafda3f92dfde78f250b
     :exec: log/logging_topics --demo ConsoleWriterLevelStyles
-    :source-sha256: 43d88f3b3b26bb20fc82d761d6573218b6141d3d6b5d3788bb8c23da960fe531
+    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
 
 .. code-block:: cpp
 
@@ -274,7 +273,7 @@ Only the specified foreground and attribute are changed; any inherited backgroun
         format.setPattern("{level} {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -316,7 +315,7 @@ foregrounds.
     :function-blocks: consoleWriterPartStyles
     :function-blocks-sha256: 88b0a382af753e47ac9de948ab68e787aa2699a2ab3968d04630fe2a3ffe3b39
     :exec: log/logging_topics --demo ConsoleWriterPartStyles
-    :source-sha256: 43d88f3b3b26bb20fc82d761d6573218b6141d3d6b5d3788bb8c23da960fe531
+    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
 
 .. code-block:: cpp
 
@@ -329,7 +328,7 @@ foregrounds.
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -360,7 +359,7 @@ Because this is an overlay, the name style and literal punctuation remain indepe
     :function-blocks: consoleWriterLevelPartStyles
     :function-blocks-sha256: 8ca6cd02e4ab97b55b15d3f13c50be140c03542abd7831604cf760cdf94fd797
     :exec: log/logging_topics --demo ConsoleWriterLevelPartStyles
-    :source-sha256: 43d88f3b3b26bb20fc82d761d6573218b6141d3d6b5d3788bb8c23da960fe531
+    :source-sha256: ef660e43f122f50934fbedccdbc579172f66041db5c7ca5586989aa3c156d6cb
 
 .. code-block:: cpp
 
@@ -376,7 +375,7 @@ Because this is an overlay, the name style and literal punctuation remain indepe
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));

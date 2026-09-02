@@ -17,7 +17,7 @@
 namespace erbsland::math {
 
 /// A same-width integer value represented as sign and unsigned magnitude.
-/// @seedoc{/reference/math/integer_math}
+/// @seedoc{/reference/math/mathematics}
 /// @tparam tValue The native integer type whose unsigned counterpart is used for the magnitude.
 /// @tested{SignedMagnitudeTest}
 template <NativeInteger tValue>

@@ -7,6 +7,7 @@ erbsland_core_add_demo(logging_setups)
 target_sources(logging_setups PRIVATE
         ApplicationConfiguration.cpp
         DeferredConfiguration.cpp
+        LastErrorDump.cpp
         LargeLogging.cpp
         LoggingSetups.hpp
         main.cpp

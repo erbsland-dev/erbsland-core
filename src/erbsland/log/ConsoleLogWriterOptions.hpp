@@ -3,7 +3,8 @@
 #pragma once
 
 #include "LogLevel.hpp"
-#include "LogLinePart.hpp"
+
+#include "line/LogLinePart.hpp"
 
 #include "../cterm/BlockStyle.hpp"
 #include "../cterm/ParagraphOptions.hpp"

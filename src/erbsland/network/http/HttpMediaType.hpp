@@ -20,7 +20,7 @@ using HttpMediaTypeParameters = util::List<HttpMediaTypeParameter>;
 
 /// A validated HTTP media type with ordered unique parameters.
 /// Type, subtype, and parameter names are canonical lowercase ASCII. Parameter values retain their semantic text.
-/// @seedoc{/reference/network/http_values}
+/// @seedoc{/reference/network/http_protocol}
 /// @tested{HttpValueTest}
 class HttpMediaType final {
 public:

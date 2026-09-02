@@ -15,8 +15,8 @@
 #include "../../stream/impl/NativeOutputStream.hpp"
 #include "../../stream/impl/WindowsNativeStream.hpp"
 #include "../../system/GroupId.hpp"
+#include "../../system/impl/WindowsErrorContext.hpp"
 #include "../../system/UserId.hpp"
-#include "../../system/WindowsErrorContext.hpp"
 #include "../../text/impl/PlatformU16StringAccess.hpp"
 #include "../../text/impl/UnsafeU16StringBuffer.hpp"
 #include "../../text/Literals.hpp"
@@ -288,7 +288,7 @@ void WindowsPathBackend::throwSystemError(
     const text::String &title, const text::String &description, const Path &path, const unsigned long errorCode) {
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(path.toString())
-            .setPlatformContext(system::WindowsErrorContext::fromErrorCode(errorCode))};
+            .setPlatformContext(system::impl::WindowsErrorContext::fromErrorCode(errorCode))};
 }
 
 void WindowsPathBackend::throwSystemError(
@@ -300,7 +300,7 @@ void WindowsPathBackend::throwSystemError(
     throw PathError{PathErrorContext{title, description}
             .setSourcePath(source.toString())
             .setTargetPath(destination.toString())
-            .setPlatformContext(system::WindowsErrorContext::fromErrorCode(errorCode))};
+            .setPlatformContext(system::impl::WindowsErrorContext::fromErrorCode(errorCode))};
 }
 
 [[nodiscard]] auto createPathBackend() noexcept -> PathBackendPtr {

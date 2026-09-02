@@ -31,6 +31,7 @@ public:
     ~WindowsSubprocessBackend() override;
 
 public: // implement SubprocessBackend
+    [[nodiscard]] auto processId() const noexcept -> ProcessId override;
     [[nodiscard]] auto isRunning() -> bool override;
     [[nodiscard]] auto exitStatus() const noexcept -> const std::optional<SubprocessExitStatus> & override;
     [[nodiscard]] auto wait() -> SubprocessExitStatus override;
@@ -58,6 +59,7 @@ private:
 
 private:
     HANDLE _process{nullptr};                        ///< Native process handle.
+    DWORD _processId{};                              ///< Native child process identifier.
     std::optional<SubprocessExitStatus> _exitStatus; ///< Cached child exit status.
     std::shared_ptr<CaptureState> _standardOutput;   ///< Optional standard output capture.
     std::shared_ptr<CaptureState> _standardError;    ///< Optional standard error capture.

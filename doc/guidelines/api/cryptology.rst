@@ -8,49 +8,8 @@ Core Semantics
 .. code-block:: text
 
     algorithm status = disallowed, legacy verification only, or acceptable for new results
-    security level = standard or high user-facing selection threshold
-    throughput = low, medium, or high relative hashing speed
     stable identifier = persisted canonical name independent of changing recommendation metadata
     recommendation = versioned library policy ordered by security family and implementation properties
-    encryption type = complete cipher, mode, authentication, and legacy padding construction
-    empty encryption state = default-constructed or securely erased facade without retained secret data
-    AEAD decryption output = unauthenticated plaintext until tag finalization succeeds
-    random-fill CBC = Fast File Encryption compatibility mode requiring an external original plaintext length
-    ISO method 2 CBC = Fast File Encryption chunked-stream compatibility mode with reversible marker padding
-    effective status = less permissive of library status and an application-configured maximum
-
-Hash Lifecycle
---------------
-
-.. code-block:: text
-
-    invalid state = algorithm-less placeholder that accepts no hashing operations
-    active state = zero or more message updates before finalization
-    finalized state = immutable cached digest until reset
-    copied state = shared state that detaches before mutation
-
-Password Hashing
-----------------
-
-.. code-block:: text
-
-    password record = immutable canonical database or configuration boundary
-    application key = at least 32 marked bytes, optionally identified for rotation
-    reviewed policy = supported algorithm and cost preset for new records
-    replacement record = successful verification result upgraded for format, policy, mode, or key changes
-
-X.509 Certificates
-------------------
-
-.. code-block:: text
-
-    certificate = empty state or immutable portable exact-DER/ASN.1 representation, never a trust result
-    certificate profile = strict or issue-retaining compatible parsing
-    certificate bundle = ordered multi-certificate input
-    trust policy = explicit certificate anchors and unordered issuers
-    validation path = accepted target-to-anchor order including the anchor
-    validation failure = stable categorized context, never an empty-certificate signal
-    TLS signature scheme = exact RFC 8446 code point with separate certificate and CertificateVerify usage policy
 
 Primary Types
 =============
@@ -73,7 +32,11 @@ Primary Types
     X509CertificateBundle // ordered one-or-more certificate representation
     X509ServerCertificatePolicy // explicit-anchor TLS server-authentication policy
     X509CertificateValidation // explicit accepted/rejected path-validation result without boolean conversion
+    SigningPrivateKey // move-only generated or imported PKCS#8 signing key in protected storage
+    X509CertificateBuilder // profile-driven certificate and certificate-request creation
+    X509CertificateSigningRequest // immutable generated PKCS#10 request
     TlsRecordEncryptor, TlsRecordDecryptor // independent move-only TLS 1.3 traffic directions
+    TlsConfigurationParser // side-effect-free ELCL validation and TLS material loading
 
 Secondary Types
 ===============
@@ -101,6 +64,10 @@ Secondary Types
     TlsRecordPlaintext // authenticated sensitive record content and inner content type
     TlsRecordContentType, TlsRecordErrorCategory // stable record semantics and failure classification
     Asn1Node, Asn1ObjectIdentifier // read-only raw certificate structure and stable identifiers
+    SigningKeyProfile // ECDSA P-256/P-384 and RSA 2048/3072/4096 generation choices
+    X509CertificateProfile // CA, TLS server, TLS client, and dual-use extension choices
+    PemDerFormat // shared automatic, PEM, or DER file format choice
+    TlsConfigurationEntry // owned validated label and complete parsed TLS configuration
 
 X.509 Identity Patterns
 =======================
@@ -110,6 +77,15 @@ X.509 Identity Patterns
     o.validate(peer, network::HostName, time) -> X509CertificateValidation // compare the canonical IDNA2008 ASCII form
     o.dnsNames() -> text::StringList // expose presented IA5 ASCII names without Unicode conversion
     o.category() -> X509CertificateValidationFailureCategory // distinguish malformed SANs from ordinary mismatches
+    T::generate([profile]) -> SigningPrivateKey // default to ECDSA P-256
+    T::certificateAuthority(commonName) -> X509CertificateBuilder // create a safe CA configuration
+    T::tlsServer(commonName) -> X509CertificateBuilder // require a DNS/IP SAN before creation
+    o.createSelfSignedCertificate(key) -> X509Certificate // CA profiles only
+    o.createCertificate(subjectKey, issuerCertificate, issuerKey) -> X509Certificate // validated issuance
+    o.createSigningRequest(subjectKey) -> X509CertificateSigningRequest // reuse identity and requested extensions
+    o.toDer() -> mem::ByteBlock // serialize using the artifact's canonical binary container
+    o.toPem() -> text::String // serialize using the artifact's canonical RFC 7468 label
+    o.writeToFile(path[, format]) // create a file selected by the artifact-specific suffix
 
 Hash Selection Patterns
 =======================
@@ -186,6 +162,18 @@ Cryptology Configuration Patterns
     o.status(value) -> CryptographicStatus // combine library policy with the current ceiling
     o.setProtectedDataMode(mode) // select native preference, native requirement, or internal-only protection
     o.validateProtectedDataSupport() // initialize, self-test, and lock provider selection at application startup
+
+TLS Configuration Parser Patterns
+=================================
+
+.. code-block:: text
+
+    T::validationRules() -> const RulesPtr& // expose the complete compiled ELCL schema
+    T::version() -> Integer // expose the ELCL schema format version
+    o.parse(section) -> TlsConfigurationEntry // validate one section-list entry without globals
+    o.label() -> const String& // inspect the validated registry label
+    o.configuration() -> const TlsConfiguration& // inspect the parsed configuration
+    o.takeConfiguration() -> TlsConfiguration // transfer the profile into the application registry
 
 Protected Data Patterns
 =======================

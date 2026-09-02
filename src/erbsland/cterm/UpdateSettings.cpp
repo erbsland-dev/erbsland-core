@@ -7,7 +7,7 @@
 namespace erbsland::cterm {
 
 UpdateSettings::UpdateSettings(
-    const bgeo::BlockSize minimumSize,
+    const block::Size minimumSize,
     const Block minimumSizeBackground,
     const bool showCropMarks,
     const Block cropMarkRight,
@@ -19,7 +19,7 @@ UpdateSettings::UpdateSettings(
     _cropMarkBottom{cropMarkBottom} {
 }
 
-auto UpdateSettings::minimumSize() const noexcept -> bgeo::BlockSize {
+auto UpdateSettings::minimumSize() const noexcept -> block::Size {
     return _minimumSize;
 }
 
@@ -43,7 +43,7 @@ auto UpdateSettings::cropMarkBottom() const noexcept -> const Block & {
     return _cropMarkBottom;
 }
 
-void UpdateSettings::setMinimumSize(const bgeo::BlockSize minimumSize) noexcept {
+void UpdateSettings::setMinimumSize(const block::Size minimumSize) noexcept {
     _minimumSize = minimumSize;
 }
 
@@ -93,9 +93,9 @@ void UpdateSettings::setSwitchToAlternateBuffer(const bool switchToAlternateBuff
 
 void UpdateSettings::applyTo(BufferViewBase &view) const noexcept {
     view.setShowCropCharacters(_showCropMarks);
-    view.setCropCharacter(bgeo::BlockDirection::South, _cropMarkBottom);
-    view.setCropCharacter(bgeo::BlockDirection::SouthEast, _cropMarkBottomRight);
-    view.setCropCharacter(bgeo::BlockDirection::East, _cropMarkRight);
+    view.setCropCharacter(block::Direction::South, _cropMarkBottom);
+    view.setCropCharacter(block::Direction::SouthEast, _cropMarkBottomRight);
+    view.setCropCharacter(block::Direction::East, _cropMarkRight);
 }
 
 auto UpdateSettings::defaultSettings() noexcept -> const UpdateSettings & {

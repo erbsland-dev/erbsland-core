@@ -4,7 +4,7 @@
 
 #include "BlockTextOptions.hpp"
 
-#include "../bgeo/BlockRectangle.hpp"
+#include "../block/Rectangle.hpp"
 
 #include <utility>
 
@@ -22,8 +22,8 @@ public:
     /// @param alignment The text alignment inside the rectangle.
     BlockText(
         BlockString text,
-        bgeo::BlockRectangle rect,
-        const bgeo::Alignment alignment = bgeo::Alignment::TopLeft) noexcept :
+        block::Rectangle rect,
+        const geometry::Alignment alignment = geometry::Alignment::TopLeft) noexcept :
         _text{std::move(text)}, _rectangle{rect}, _blockTextOptions(alignment) {}
 
     // defaults
@@ -39,9 +39,9 @@ public:
     /// Set the text content.
     void setBlockString(BlockString text) noexcept { _text = std::move(text); }
     /// Get the target rectangle.
-    [[nodiscard]] auto rectangle() const noexcept -> const bgeo::BlockRectangle & { return _rectangle; }
+    [[nodiscard]] auto rectangle() const noexcept -> const block::Rectangle & { return _rectangle; }
     /// Set the target rectangle.
-    void setRectangle(const bgeo::BlockRectangle rect) noexcept { _rectangle = rect; }
+    void setRectangle(const block::Rectangle rect) noexcept { _rectangle = rect; }
     /// Get the text options.
     [[nodiscard]] auto blockTextOptions() const noexcept -> const BlockTextOptions & { return _blockTextOptions; }
     /// Set the text options.
@@ -71,9 +71,9 @@ public: // wrappers around text options.
 
 public: // wrappers for common paragraph options
     /// @copydoc ParagraphOptions::alignment
-    [[nodiscard]] auto alignment() const noexcept -> bgeo::Alignment { return _blockTextOptions.alignment(); }
+    [[nodiscard]] auto alignment() const noexcept -> geometry::Alignment { return _blockTextOptions.alignment(); }
     /// @copydoc ParagraphOptions::setAlignment
-    void setAlignment(const bgeo::Alignment alignment) noexcept { _blockTextOptions.setAlignment(alignment); }
+    void setAlignment(const geometry::Alignment alignment) noexcept { _blockTextOptions.setAlignment(alignment); }
     /// @copydoc ParagraphOptions::lineIndent
     [[nodiscard]] auto lineIndent() const noexcept -> int { return _blockTextOptions.lineIndent(); }
     /// @copydoc ParagraphOptions::setLineIndent
@@ -87,9 +87,9 @@ public: // wrappers for common paragraph options
     /// @copydoc ParagraphOptions::setWrappedLineIndent
     void setWrappedLineIndent(const int indent) noexcept { _blockTextOptions.setWrappedLineIndent(indent); }
     /// @copydoc ParagraphOptions::margins
-    [[nodiscard]] auto margins() const noexcept -> const bgeo::BlockMargins & { return _blockTextOptions.margins(); }
+    [[nodiscard]] auto margins() const noexcept -> const block::Margins & { return _blockTextOptions.margins(); }
     /// @copydoc ParagraphOptions::setMargins
-    void setMargins(const bgeo::BlockMargins margins) noexcept { _blockTextOptions.setMargins(margins); }
+    void setMargins(const block::Margins margins) noexcept { _blockTextOptions.setMargins(margins); }
     /// @copydoc ParagraphOptions::backgroundMode
     [[nodiscard]] auto backgroundMode() const noexcept -> ParagraphBackgroundMode {
         return _blockTextOptions.backgroundMode();
@@ -157,7 +157,7 @@ public: // wrappers for common paragraph options
 
 private:
     BlockString _text{};
-    bgeo::BlockRectangle _rectangle{};
+    block::Rectangle _rectangle{};
     BlockTextOptions _blockTextOptions;
 };
 

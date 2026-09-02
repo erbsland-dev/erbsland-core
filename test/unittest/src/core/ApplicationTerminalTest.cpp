@@ -40,7 +40,7 @@ class ApplicationTerminalTest final : public el::UnitTest {
 
     protected:
         [[nodiscard]] auto createAndInitializeTerminal() -> el::cterm::TerminalPtr override {
-            auto result = std::make_shared<el::cterm::Terminal>(backend, bgeo::BlockSize{60, 25});
+            auto result = std::make_shared<el::cterm::Terminal>(backend, block::Size{60, 25});
             result->initializeScreen();
             return result;
         }
@@ -169,7 +169,7 @@ private:
 
     protected:
         [[nodiscard]] auto createAndInitializeTerminal() -> el::cterm::TerminalPtr override {
-            auto result = std::make_shared<el::cterm::Terminal>(backend, bgeo::BlockSize{60, 25});
+            auto result = std::make_shared<el::cterm::Terminal>(backend, block::Size{60, 25});
             result->initializeScreen();
             return result;
         }

@@ -3,6 +3,7 @@
 
 #include <DemoCommon.hpp>
 #include <erbsland/log/all.hpp>
+#include <erbsland/log/line/all.hpp>
 
 #include <memory>
 
@@ -26,7 +27,7 @@ void consoleWriterParagraphOptions() {
     format.setPattern("{message}"_el);
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));
@@ -46,7 +47,7 @@ void consoleWriterBaseStyle() {
     format.setPattern("{level} {message}"_el);
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));
@@ -69,7 +70,7 @@ void consoleWriterLevelStyles() {
     format.setPattern("{level} {message}"_el);
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));
@@ -92,7 +93,7 @@ void consoleWriterPartStyles() {
     format.setPattern("{level} [{name}] {message}"_el);
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));
@@ -115,7 +116,7 @@ void consoleWriterLevelPartStyles() {
     format.setPattern("{level} [{name}] {message}"_el);
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(format))
-        .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+        .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
     auto &manager = el::application().log();
     manager.setConfiguration(std::move(configuration));

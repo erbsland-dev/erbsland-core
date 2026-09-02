@@ -7,29 +7,29 @@
 
 namespace erbsland::cterm::impl {
 
-using bgeo::BlockCoordinate;
-using bgeo::BlockPosition;
-using bgeo::BlockRectangle;
+using block::Coordinate;
+using block::Position;
+using block::Rectangle;
 
 void FramePainter::drawFrame(
-    const BlockRectangle rect, const Block &frameBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
+    const Rectangle rect, const Block &frameBlock, const BlockCombinationStylePtr &combinationStyle) noexcept {
 
-    rect.forEachInFrame([&, this](const BlockPosition pos) -> void { set(pos, frameBlock, combinationStyle); });
+    rect.forEachInFrame([&, this](const Position pos) -> void { set(pos, frameBlock, combinationStyle); });
 }
 
 void FramePainter::drawFrame(
-    BlockRectangle rect,
+    Rectangle rect,
     const Block16StylePtr &frameStyle,
     const BlockCombinationStylePtr &combinationStyle,
     const Color frameColor) noexcept {
 
-    rect.forEachInFrame([&, this](const BlockPosition pos) -> void {
+    rect.forEachInFrame([&, this](const Position pos) -> void {
         set(pos, blockForFrame(rect, pos, frameStyle).withBase(frameColor), combinationStyle);
     });
 }
 
 void FramePainter::drawFrame(
-    const BlockRectangle rect,
+    const Rectangle rect,
     const Tile9StylePtr &style,
     const Color frameColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -37,12 +37,12 @@ void FramePainter::drawFrame(
     if (style == nullptr) {
         return;
     }
-    rect.forEachInFrame([&, this](const BlockPosition pos) -> void {
+    rect.forEachInFrame([&, this](const Position pos) -> void {
         set(pos, style->block(rect, pos).withBase(frameColor), combinationStyle);
     });
 }
 
-void FramePainter::drawFrame(const BlockRectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
+void FramePainter::drawFrame(const Rectangle rect, const FrameStyle frameStyle, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFrame(rect, tile9Style, frameColor, BlockCombinationStyle::commonBoxFrame());
         return;
@@ -53,7 +53,7 @@ void FramePainter::drawFrame(const BlockRectangle rect, const FrameStyle frameSt
 }
 
 void FramePainter::drawFrame(
-    const BlockRectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
+    const Rectangle rect, const FrameDrawOptions &options, const std::size_t animationCycle) noexcept {
     if (rect.width() <= 0 || rect.height() <= 0) {
         return;
     }
@@ -69,7 +69,7 @@ void FramePainter::drawFrame(
     if (block16Style == nullptr && tile9Style == nullptr) {
         return;
     }
-    rect.forEach([&, this](const BlockPosition pos) -> void {
+    rect.forEach([&, this](const Position pos) -> void {
         const auto frameBaseColor = colorForFramePosition(
             options.frameColor(), options.frameColorMode(), rect, pos, animationCycle, options.animationOffset());
         if (rect.isFrame(pos)) {
@@ -95,8 +95,7 @@ void FramePainter::drawFrame(
     });
 }
 
-void FramePainter::drawGridLayout(
-    const BlockPosition pos, const GridLayout &layout, const FrameBorder &border) noexcept {
+void FramePainter::drawGridLayout(const Position pos, const GridLayout &layout, const FrameBorder &border) noexcept {
 
     const auto layoutSize = layout.size(border);
     const auto &topBorder = border.border(FrameBorder::Element::Top);
@@ -144,12 +143,12 @@ void FramePainter::drawGridLayout(
 }
 
 void FramePainter::drawFilledFrame(
-    BlockRectangle rect,
+    Rectangle rect,
     const Block &frameBlock,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
 
-    rect.forEach([&, this](const BlockPosition pos) -> void {
+    rect.forEach([&, this](const Position pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, frameBlock, combinationStyle);
         } else {
@@ -159,13 +158,13 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    BlockRectangle rect,
+    Rectangle rect,
     const Block16StylePtr &frameStyle,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
     const Color frameColor) noexcept {
 
-    rect.forEach([&, this](const BlockPosition pos) -> void {
+    rect.forEach([&, this](const Position pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, blockForFrame(rect, pos, frameStyle).withBase(frameColor), combinationStyle);
         } else {
@@ -175,7 +174,7 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    BlockRectangle rect,
+    Rectangle rect,
     const Tile9StylePtr &style,
     const Block &fillBlock,
     const BlockCombinationStylePtr &combinationStyle,
@@ -185,7 +184,7 @@ void FramePainter::drawFilledFrame(
         fill(rect, fillBlock, combinationStyle);
         return;
     }
-    rect.forEach([&, this](const BlockPosition pos) -> void {
+    rect.forEach([&, this](const Position pos) -> void {
         if (rect.isFrame(pos)) {
             set(pos, style->block(rect, pos).withBase(frameColor), combinationStyle);
         } else {
@@ -195,7 +194,7 @@ void FramePainter::drawFilledFrame(
 }
 
 void FramePainter::drawFilledFrame(
-    const BlockRectangle rect, const FrameStyle frameStyle, const Block &fillBlock, const Color frameColor) noexcept {
+    const Rectangle rect, const FrameStyle frameStyle, const Block &fillBlock, const Color frameColor) noexcept {
     if (const auto tile9Style = Tile9Style::forStyle(frameStyle); tile9Style != nullptr) {
         drawFilledFrame(rect, tile9Style, fillBlock, BlockCombinationStyle::commonBoxFrame(), frameColor);
         return;
@@ -205,11 +204,10 @@ void FramePainter::drawFilledFrame(
     }
 }
 
-auto FramePainter::blockForFrame(const BlockRectangle rect, const BlockPosition pos, const Block16StylePtr &frameStyle)
-    -> Block {
+auto FramePainter::blockForFrame(const Rectangle rect, const Position pos, const Block16StylePtr &frameStyle) -> Block {
 
     const auto bitMask =
-        pos.cardinalFourBitmask([&](const BlockPosition deltaPos) -> bool { return rect.isFrame(deltaPos); });
+        pos.cardinalFourBitmask([&](const Position deltaPos) -> bool { return rect.isFrame(deltaPos); });
     return frameStyle->block(bitMask);
 }
 
@@ -220,11 +218,11 @@ auto FramePainter::blockForGridLine(const FrameBorder::Border &border, const uin
     return {};
 }
 
-auto FramePainter::lineSize(const FrameBorder::Border &border) noexcept -> BlockCoordinate {
-    return BlockCoordinate{border.style != FrameStyle::None && FrameBorder::isLineStyle(border.style) ? 1 : 0};
+auto FramePainter::lineSize(const FrameBorder::Border &border) noexcept -> Coordinate {
+    return Coordinate{border.style != FrameStyle::None && FrameBorder::isLineStyle(border.style) ? 1 : 0};
 }
 
-auto FramePainter::lineAt(const FrameLineList &lines, const BlockCoordinate coordinate, std::size_t &index) noexcept
+auto FramePainter::lineAt(const FrameLineList &lines, const Coordinate coordinate, std::size_t &index) noexcept
     -> OptionalFrameBorderReference {
 
     while (index < lines.size() && lines[index].coordinate < coordinate) {
@@ -237,7 +235,7 @@ auto FramePainter::lineAt(const FrameLineList &lines, const BlockCoordinate coor
 }
 
 void FramePainter::addGridLine(
-    FrameLineList &lines, const BlockCoordinate coordinate, const FrameBorder::Border &border) noexcept {
+    FrameLineList &lines, const Coordinate coordinate, const FrameBorder::Border &border) noexcept {
 
     if (lineSize(border) == 0) {
         return;
@@ -248,10 +246,10 @@ void FramePainter::addGridLine(
 void FramePainter::drawHorizontalGridLine(
     const FrameLine &horizontalLine,
     const FrameLineList &verticalLines,
-    const BlockCoordinate x1,
-    const BlockCoordinate x2,
-    const BlockCoordinate y1,
-    const BlockCoordinate y2) noexcept {
+    const Coordinate x1,
+    const Coordinate x2,
+    const Coordinate y1,
+    const Coordinate y2) noexcept {
 
     const auto &horizontalBorder = horizontalLine.border.get();
     const auto block = blockForGridLine(horizontalBorder, 0b0101);
@@ -259,7 +257,7 @@ void FramePainter::drawHorizontalGridLine(
     for (auto x = x1; x <= x2; ++x) {
         const auto verticalBorder = lineAt(verticalLines, x, verticalLineIndex);
         if (!verticalBorder.has_value()) {
-            drawFrameBlock(BlockPosition{x, horizontalLine.coordinate}, block, horizontalBorder.color, {});
+            drawFrameBlock(Position{x, horizontalLine.coordinate}, block, horizontalBorder.color, {});
             continue;
         }
         auto eastBorder = OptionalFrameBorderReference{};
@@ -278,15 +276,15 @@ void FramePainter::drawHorizontalGridLine(
         if (horizontalLine.coordinate > y1) {
             northBorder = verticalBorder;
         }
-        drawGridBlock(BlockPosition{x, horizontalLine.coordinate}, eastBorder, southBorder, westBorder, northBorder);
+        drawGridBlock(Position{x, horizontalLine.coordinate}, eastBorder, southBorder, westBorder, northBorder);
     }
 }
 
 void FramePainter::drawVerticalGridLine(
     const FrameLine &verticalLine,
     const FrameLineList &horizontalLines,
-    const BlockCoordinate y1,
-    const BlockCoordinate y2) noexcept {
+    const Coordinate y1,
+    const Coordinate y2) noexcept {
 
     const auto &verticalBorder = verticalLine.border.get();
     const auto block = blockForGridLine(verticalBorder, 0b1010);
@@ -295,12 +293,12 @@ void FramePainter::drawVerticalGridLine(
         if (lineAt(horizontalLines, y, horizontalLineIndex).has_value()) {
             continue;
         }
-        drawFrameBlock(BlockPosition{verticalLine.coordinate, y}, block, verticalBorder.color, {});
+        drawFrameBlock(Position{verticalLine.coordinate, y}, block, verticalBorder.color, {});
     }
 }
 
 void FramePainter::drawGridBlock(
-    const BlockPosition pos,
+    const Position pos,
     const OptionalFrameBorderReference east,
     const OptionalFrameBorderReference south,
     const OptionalFrameBorderReference west,
@@ -319,7 +317,7 @@ void FramePainter::drawGridBlock(
 }
 
 void FramePainter::drawFrameBlock(
-    const BlockPosition pos,
+    const Position pos,
     const Block &block,
     const Color baseColor,
     const BlockCombinationStylePtr &combinationStyle) noexcept {
@@ -334,8 +332,8 @@ void FramePainter::drawFrameBlock(
 auto FramePainter::colorForFramePosition(
     const ColorSequence &colorSequence,
     const FrameColorMode colorMode,
-    const BlockRectangle rect,
-    const BlockPosition pos,
+    const Rectangle rect,
+    const Position pos,
     const std::size_t animationCycle,
     const std::size_t animationOffset) noexcept -> Color {
 

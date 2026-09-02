@@ -23,7 +23,7 @@ namespace erbsland::options {
 /// A single command line option definition.
 /// An option with at least one dashed name is a regular option. Dashless names on regular options are value aliases.
 /// An option without dashed names is a positional argument.
-/// @seedoc{/reference/options/command_line_tools}
+/// @seedoc{/reference/options/command_line_options}
 /// @tested{OptionsFrameworkTest}
 class Option {
 public:
@@ -113,6 +113,9 @@ public: // accessors
     /// Set the help epilog for this option.
     /// @param epilog Optional trailing text for renderers that support option-level epilogs.
     void setHelpEpilog(text::String epilog) { _help.setEpilog(std::move(epilog)); }
+    /// Set the detailed-help example for this option.
+    /// @param example Short usage example for detailed help.
+    void setHelpExample(text::String example) { _help.setExample(std::move(example)); }
     /// Set the help visibility for this option.
     /// @param visibility Controls where this option appears in generated help output.
     void setHelpVisibility(const OptionHelpVisibility visibility) noexcept { _help.setVisibility(visibility); }

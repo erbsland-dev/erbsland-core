@@ -4,14 +4,16 @@
 
 #include "Namespaces.hpp"
 
+#include "../system/MakeOneNamespace.hpp"
+
 namespace erbsland {
 // Import all API namespaces into the main one.
-using namespace bgeo;
 using namespace core;
 using namespace cryptology;
 using namespace debug;
 using namespace err;
 using namespace event;
+using namespace geometry;
 using namespace i18n;
 using namespace log;
 using namespace math;

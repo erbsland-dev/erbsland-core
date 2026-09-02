@@ -182,19 +182,19 @@ auto LogViewerApp::continuationLineOptions() -> const ParagraphOptions & {
     return cOptions;
 }
 
-auto LogViewerApp::contentRectForBuffer(const BlockSize bufferSize) noexcept -> BlockRectangle {
-    return BlockRectangle{
-        BlockCoordinate{2},
-        BlockCoordinate{3},
-        std::max(BlockCoordinate{1}, bufferSize.width() - 4),
-        std::max(BlockCoordinate{1}, bufferSize.height() - 6)};
+auto LogViewerApp::contentRectForBuffer(const Size bufferSize) noexcept -> Rectangle {
+    return Rectangle{
+        Coordinate{2},
+        Coordinate{3},
+        std::max(Coordinate{1}, bufferSize.width() - 4),
+        std::max(Coordinate{1}, bufferSize.height() - 6)};
 }
 
-auto LogViewerApp::clampViewOffset(
-    const BlockPosition offset, const BlockSize viewSize, const BlockSize contentSize) noexcept -> BlockPosition {
-    const auto maxX = std::max(BlockCoordinate{0}, contentSize.width() - viewSize.width());
-    const auto maxY = std::max(BlockCoordinate{0}, contentSize.height() - viewSize.height());
-    return {std::clamp(offset.x(), BlockCoordinate{0}, maxX), std::clamp(offset.y(), BlockCoordinate{0}, maxY)};
+auto LogViewerApp::clampViewOffset(const Position offset, const Size viewSize, const Size contentSize) noexcept
+    -> Position {
+    const auto maxX = std::max(Coordinate{0}, contentSize.width() - viewSize.width());
+    const auto maxY = std::max(Coordinate{0}, contentSize.height() - viewSize.height());
+    return {std::clamp(offset.x(), Coordinate{0}, maxX), std::clamp(offset.y(), Coordinate{0}, maxY)};
 }
 
 auto LogViewerApp::logLevelColor(const LogLevel level) noexcept -> Color {

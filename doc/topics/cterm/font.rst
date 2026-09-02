@@ -32,7 +32,7 @@ Assign a font to a ``BlockText`` instance and render it like any other text bloc
 
 .. code-block:: cpp
 
-    auto title = BlockText{BlockString{"COLOR TERM"}, BlockRectangle{0, 0, 60, 6}, Alignment::Center};
+    auto title = BlockText{BlockString{"COLOR TERM"}, Rectangle{0, 0, 60, 6}, Alignment::Center};
     title.setFont(Font::defaultAscii());
     title.setColorSequence(ColorSequence{
         Color{fg::BrightBlue, bg::Black},
@@ -100,7 +100,7 @@ This gives you precise control over the glyph shape while keeping the definition
         0b00100U,
         0b00100U}});
 
-    auto text = BlockText{BlockString{"ATOM"}, BlockRectangle{0, 0, 72, 3}, Alignment::Center};
+    auto text = BlockText{BlockString{"ATOM"}, Rectangle{0, 0, 72, 3}, Alignment::Center};
     text.setFont(font);
     text.setColor(Color{fg::BrightGreen, bg::Black});
     buffer.drawBlockText(text);
@@ -134,7 +134,7 @@ This keeps glyph definitions readable and easy to maintain.
     auto makeGlyph(std::initializer_list<std::string_view> rows) -> FontGlyph {
         auto bitmap = Bitmap::fromPattern(rows);
         auto glyph = FontGlyph{bitmap.size()};
-        glyph.draw(BlockPosition{0, 0}, bitmap);
+        glyph.draw(Position{0, 0}, bitmap);
         return glyph;
     }
 
@@ -152,7 +152,7 @@ This keeps glyph definitions readable and easy to maintain.
         return std::make_shared<Font>(7, std::move(glyphs));
     }
 
-    auto clock = BlockText{BlockString{"12:30"}, BlockRectangle{12, 3, 48, 4}, Alignment::Center};
+    auto clock = BlockText{BlockString{"12:30"}, Rectangle{12, 3, 48, 4}, Alignment::Center};
     clock.setFont(makeClockFont());
     clock.setColor(Color{fg::BrightYellow, bg::Inherited});
     buffer.drawBlockText(clock);
@@ -192,9 +192,9 @@ configuration across multiple ``BlockText`` instances.
     });
     options.setAnimation(BlockTextAnimation::ColorDiagonal);
 
-    auto left = BlockText{BlockString{"ATOM"}, BlockRectangle{4, 3, 28, 3}, Alignment::Center};
+    auto left = BlockText{BlockString{"ATOM"}, Rectangle{4, 3, 28, 3}, Alignment::Center};
     left.setBlockTextOptions(options);
-    auto right = BlockText{BlockString{"TOMATO"}, BlockRectangle{40, 3, 28, 3}, Alignment::Center};
+    auto right = BlockText{BlockString{"TOMATO"}, Rectangle{40, 3, 28, 3}, Alignment::Center};
     right.setBlockTextOptions(options);
 
     buffer.drawBlockText(left, 1);

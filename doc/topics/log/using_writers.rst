@@ -5,7 +5,7 @@
     single: Console Log Writer
     single: File Log Writer
     single: Syslog Log Writer
-    single: Last Errors Log Writer
+    single: Application Last Error Dump
 
 *****************
 Using Log Writers
@@ -14,8 +14,8 @@ Using Log Writers
 A log stream gives application code a convenient place to record what happened, but it does not decide where that record
 should live.
 That decision belongs to a *log writer*.
-A writer may turn an entry into a styled terminal paragraph, append it to a file, send it to a syslog service, or keep
-recent errors in memory for a final failure report.
+A writer may turn an entry into a styled terminal paragraph, append it to a file, or send it to a syslog service.
+The application can additionally retain recent errors for a final failure report.
 
 This separation is useful as an application grows.
 Your modules can continue to write to the same named streams while the application chooses destinations that suit its
@@ -40,21 +40,20 @@ is composing a message.
 The :cpp:class:`LogWriter <erbsland::log::LogWriter>` base class represents one such destination.
 A writer receives both the original immutable entry and the formatted line.
 Built-in writers use whichever representation their destination needs: the console uses semantic line parts for styling,
-the file writes the completed line, syslog combines entry metadata with the completed line, and the last-errors writer
-retains the original entry.
+the file writes the completed line, and syslog combines entry metadata with the completed line.
 
 A writer is always installed as part of a *route*.
 Each route combines one writer with a :cpp:class:`LogWriterFilter <erbsland::log::LogWriterFilter>`.
 The filter answers whether a particular level and stream path belong at that destination.
 If several routes accept the same entry, all their writers receive it; routing does not select a single winner.
-This is what lets one error appear in a durable file, on the operator's console, and in a final failure report without
-three logging calls in the application.
+This is what lets one error appear in a durable file, on the operator's console, and in the application's final failure
+report without three logging calls in the application.
 
 Add a Writer to the Configuration
 =================================
 
-Create the writer as a shared object and pass it to :cpp:func:`addWriter() <erbsland::log::LogConfiguration::addWriter>`
-on the :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` that you are preparing.
+Create a built-in writer directly in the call to :cpp:func:`addWriter() <erbsland::log::LogConfiguration::addWriter>` on
+the :cpp:class:`LogConfiguration <erbsland::log::LogConfiguration>` that you are preparing.
 Calling ``addWriter(writer)`` without a filter creates the broadest route: it accepts all levels from all stream paths.
 Named trace streams still require their trace section to be enabled; the filter only decides whether a writer route is
 ready to receive that trace entry.
@@ -75,7 +74,7 @@ Notice that the stream does not know which writer receives its message; it only 
 .. erbsland-demo::
     :source: log/LoggingTopics/WriterSetup.cpp
     :exec: log/logging_topics --demo WriterSetup
-    :source-sha256: 26b76abebe9a99f6d4b6c380a92802d4127e44310c6912ec195cc81a6937048f
+    :source-sha256: 1a59e284ce8c40850094d4f21fbe317642c32c9c2838c5c2e9d17c6073b89749
 
 .. code-block:: cpp
 
@@ -88,9 +87,9 @@ Notice that the stream does not know which writer receives its message; it only 
         auto format = el::LogLineFormat{};
         format.setPattern("{level} [{name}] {message}"_el);
 
-        const auto consoleWriter = std::make_shared<el::ConsoleLogWriter>(el::application().terminal());
         auto configuration = el::LogConfiguration{};
-        configuration.setLineFormat(std::move(format)).addWriter(consoleWriter);
+        configuration.setLineFormat(std::move(format))
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal()));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -189,29 +188,26 @@ Choosing one becomes easier when you first ask who needs the record after the ap
     * - Writer
       - Destination
       - A good fit when
-    * - :cpp:class:`ConsoleLogWriter <erbsland::log::ConsoleLogWriter>`
+    * - ``LogWriter::createForConsole()``
       - A terminal
       - A person is running or supervising the program and should see immediate, styled feedback.
-    * - :cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>`
+    * - ``LogWriter::createForFile()``
       - A local text file and optional archives
       - The program needs durable local history for later diagnosis or routine service operation.
-    * - :cpp:class:`SyslogLogWriter <erbsland::log::SyslogLogWriter>`
+    * - ``LogWriter::createForSyslog()``
       - A syslog collector over UDP, TCP, or TLS
       - Operators collect logs centrally and need records after a host or process is unavailable.
-    * - :cpp:class:`LastErrorsLogWriter <erbsland::log::LastErrorsLogWriter>`
-      - A bounded in-memory snapshot
-      - The application should repeat its latest failures at the boundary where it reports an unsuccessful exit.
 
 These choices are complementary.
 A foreground tool often needs only a console writer.
-A long-running service commonly uses a file or syslog writer for its real history and adds a last-errors writer for a
-small, human-friendly failure summary.
+A long-running service commonly uses a file or syslog writer for its real history and enables the application's
+retained-error report for a small, human-friendly failure summary.
 The next sections show what each writer contributes and where its responsibility ends.
 
 Show Immediate Feedback on the Console
 ======================================
 
-The :cpp:class:`ConsoleLogWriter <erbsland::log::ConsoleLogWriter>` renders each accepted entry through an Erbsland Core
+The ``LogWriter::createForConsole()`` renders each accepted entry through an Erbsland Core
 :cpp:class:`Terminal <erbsland::cterm::Terminal>`.
 This makes it the natural choice for command-line applications, development tools, and services that are intentionally
 supervised through a terminal.
@@ -236,7 +232,7 @@ The visible escape markers in the captured output are the terminal control seque
 .. erbsland-demo::
     :source: log/LoggingTopics/ConsoleWriters.cpp
     :exec: log/logging_topics --demo ConsoleWriters
-    :source-sha256: df5a0a1f44c0d4fbe99bcc8b684a5d8bef15a1114f006c8f372614198bef3d7a
+    :source-sha256: 107fb53b01808690118d2227aec2814b06a1c304eb98918900aa297b27cea9df
 
 .. code-block:: cpp
 
@@ -255,7 +251,7 @@ The visible escape markers in the captured output are the terminal control seque
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
         configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::ConsoleLogWriter>(el::application().terminal(), std::move(writerOptions)));
+            .addWriter(el::LogWriter::createForConsole(el::application().terminal(), writerOptions));
 
         auto &manager = el::application().log();
         manager.setConfiguration(std::move(configuration));
@@ -278,8 +274,8 @@ For the complete style layering, paragraph defaults, and integration choices, co
 Keep Durable Operational History in a File
 ==========================================
 
-The :cpp:class:`FileLogWriter <erbsland::log::FileLogWriter>` is the straightforward choice when logs must remain
-available after the terminal closes or the process exits.
+The ``LogWriter::createForFile()`` is the straightforward choice when logs must remain available after the terminal
+closes or the process exits.
 It suits desktop applications with a support log, local tools whose runs need an audit trail, and services where a
 host-local file is part of the operating model.
 
@@ -303,7 +299,7 @@ first archive were created.
 .. erbsland-demo::
     :source: log/LoggingTopics/FileWriters.cpp
     :exec: log/logging_topics --demo FileWriters
-    :source-sha256: 3d92528728dd3204c831ffe36a5d8209edfcc6fc5398e65c970368a6494aa0ef
+    :source-sha256: 70a0845e3e535e3c939d60bb7cef810c1baa9f64c3146033c3c1ffbd4451c523
 
 .. code-block:: cpp
 
@@ -327,8 +323,7 @@ first archive were created.
         auto format = el::LogLineFormat{};
         format.setPattern("{level} [{name}] {message}"_el);
         auto configuration = el::LogConfiguration{};
-        configuration.setLineFormat(std::move(format))
-            .addWriter(std::make_shared<el::FileLogWriter>(std::move(writerOptions)));
+        configuration.setLineFormat(std::move(format)).addWriter(el::LogWriter::createForFile(writerOptions));
 
         const auto manager = el::LogManager::create();
         manager->setConfiguration(std::move(configuration));
@@ -357,7 +352,7 @@ The complete path, rotation, archive, retry, and failure-accounting behavior is 
 Send Service Events to a Syslog Collector
 =========================================
 
-The :cpp:class:`SyslogLogWriter <erbsland::log::SyslogLogWriter>` sends RFC 5424 messages to a remote collector.
+The ``LogWriter::createForSyslog()`` sends RFC 5424 messages to a remote collector.
 It is useful when several services or hosts must feed the same operational view, or when log records should survive the
 loss of the machine that produced them.
 Instead of asking an operator to inspect individual files, the deployment can search and retain the records in one
@@ -372,8 +367,7 @@ should be a deliberate capacity decision.
 
 Network delivery introduces back pressure that console and file destinations do not have in the same form.
 The writer keeps a bounded amount of pending encoded data while a connection catches up or reconnects.
-Once that bound is exhausted, it drops new messages and exposes the count through
-:cpp:func:`droppedMessages() <erbsland::log::SyslogLogWriter::droppedMessages>`.
+Once that bound is exhausted, it drops new messages and exposes the count through the manager's delivery statistics.
 Choose the pending limit together with the expected message rate, and monitor drops if syslog is operationally
 important.
 
@@ -384,14 +378,14 @@ deterministic RFC 5424 message and its TCP/TLS frame without applying the config
 .. erbsland-demo::
     :source: log/LoggingTopics/SyslogWriters.cpp
     :exec: log/logging_topics --demo SyslogWriters
-    :source-sha256: e4f85f810bf8c594dc00687b10302a28c79a3bf9d2d6427be795b95684244d4b
+    :source-sha256: 7e1b0c3f3484a03895aeb133c0886290924eae412a0718dc97d6f6e94cce8186
 
 .. code-block:: cpp
 
     /// A syslog writer sends RFC 5424 messages over UDP, TCP, or TLS.
     ///
     /// The options describe the endpoint, facility, RFC header fields, TLS configuration label, and bounded pending data.
-    /// A route can be assembled without opening a connection; this demo formats a fixed message without network delivery.
+    /// A route can be assembled without opening a connection.
     void syslogWriters() {
         auto options = el::SyslogLogWriterOptions{};
         options.setTransport(el::SyslogTransport::Tls)
@@ -404,102 +398,78 @@ deterministic RFC 5424 message and its TCP/TLS frame without applying the config
             .setTlsConfigurationLabel("guild/syslog"_el)
             .setMaximumPendingBytes(el::ByteLength{256U * 1024U});
 
-        // Construct the writer route used by an application configuration.
-        const auto writer = std::make_shared<el::SyslogLogWriter>(options);
         auto configuration = el::LogConfiguration{};
-        configuration.addWriter(writer, el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
+        configuration.addWriter(
+            el::LogWriter::createForSyslog(options),
+            el::LogWriterFilter{el::LogLevels{el::LogLevel::Warning, el::LogLevel::Error}});
 
-        // Preview a deterministic RFC 5424 message without contacting the configured endpoint.
-        const auto entry = el::LogEntry{
-            1U,
-            el::DateTime{el::Date::fromYearMonthDay(2026, 9, 1), el::Time{el::Hour{7}, el::Minute{45}}},
-            el::LogLevel::Warning,
-            el::LogPath{"guild/route"_el},
-            "Pass closed."_el};
-        const auto line = el::LogLine{std::vector<el::LogLineSegment>{{el::LogLinePart::Message, "Pass closed."_el}}};
-        const auto message = el::SyslogLogWriter::formatMessage(entry, line, options);
-
-        el::io::printLine(message);
-        el::io::printLine("TCP/TLS frame: "_el, el::SyslogLogWriter::frameMessage(message));
+        el::io::printLine("Syslog endpoint: "_el, options.endpoint().toString());
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    <12>1 2026-09-01T07:45:00Z guild-hall explorer-guild 314 route - Pass closed.
-    TCP/TLS frame: 77 <12>1 2026-09-01T07:45:00Z guild-hall explorer-guild 314 route - Pass cl
-    osed.
+    Syslog endpoint: logs.example:6514
 
 .. erbsland-demo-end::
 
 For endpoint rules, facilities, framing, TLS labels, retry behavior, and pending-byte limits, continue with
 :doc:`syslog_writer`.
 
-Retain Recent Errors for a Failure Report
-=========================================
+Recent Errors on Application Exit
+=================================
 
-The :cpp:class:`LastErrorsLogWriter <erbsland::log::LastErrorsLogWriter>` is deliberately different from the three
-destination writers above.
-It keeps a bounded, thread-safe snapshot of recent error entries in memory rather than creating an operational log.
-Information and warning entries are ignored, and once the chosen capacity is full, each new error replaces the oldest
-one.
+Retained errors are an application-lifecycle feature.
+Call :cpp:func:`enableLastErrorDump() <erbsland::core::Application::enableLastErrorDump>` before startup work can fail.
+The application then keeps a bounded snapshot of recent errors and displays it during final cleanup when the run fails.
+This setting is kept across later logging configuration replacements.
 
-That snapshot is valuable at an application boundary.
+This report is valuable at an application boundary.
 Imagine a service that normally writes to a file and exits because startup failed.
 The file remains the complete record, but repeating the last few errors on the terminal gives the person who started the
 service an immediate explanation without flooding them with the whole log.
-Because the snapshot disappears with the process, use this writer *alongside* a file or syslog writer, not as a
-replacement for one.
 
-You can construct the writer with its capacity, add it to a configuration, and later read the immutable entries using
-:cpp:func:`snapshot() <erbsland::log::LastErrorsLogWriter::snapshot>`.
-The :cpp:class:`Application <erbsland::core::Application>` class provides the more convenient
-:cpp:func:`enableLastErrorDump() <erbsland::core::Application::enableLastErrorDump>` for the usual application pattern.
-It keeps the writer across configuration replacements and, by default, displays the retained errors only when the
-application exits with a failure code.
-
-The following standalone example uses a capacity of two.
-Although the stream writes information, warning, and error messages, the final snapshot contains only the two newest
-errors.
+By default, a nonempty report is displayed only after a failed run.
+Pass :cpp:enumerator:`LastErrorDumpMode::Always <erbsland::core::LastErrorDumpMode::Always>` when an application also
+needs the report after a successful run.
+The following application enables the default failure-only mode, writes two errors, and returns exit code two.
 
 .. erbsland-demo::
-    :source: log/LoggingTopics/LastErrorsWriter.cpp
-    :exec: log/logging_topics --demo LastErrorsWriter
-    :source-sha256: 196706b575f5ddb1bed6f9ea30401188858ef5f0a44b882d9815283de388c533
+    :source: log/LoggingSetups/LastErrorDump.cpp
+    :exec: log/logging_setups last-error-dump
+    :exec-exit-code: 2
+    :source-sha256: a9bec3da3a8910e5a2761bff83932159d256a12c454e5c19938d9655b5e78b0a
 
 .. code-block:: cpp
 
-    /// A last-errors writer keeps a bounded, thread-safe snapshot of the most recent error entries.
+    /// Display recent errors when an application exits with a failure.
     ///
-    /// Information and warning entries are ignored. When the capacity is reached, the oldest retained error is removed,
-    /// which makes the snapshot suitable for a concise failure report at the application boundary.
-    void lastErrorsWriter() {
-        const auto lastErrors = std::make_shared<el::LastErrorsLogWriter>(2U);
-        auto configuration = el::LogConfiguration{};
-        configuration.addWriter(lastErrors);
-
-        const auto manager = el::LogManager::create();
-        manager->setConfiguration(std::move(configuration));
-        const auto log = manager->createStream("guild/expedition"_el);
-        log->info("The expedition entered the northern pass."_el);
-        log->error("The bridge marker could not be found."_el);
-        log->warn("Snowfall is reducing visibility."_el);
-        log->error("The reserve compass failed its check."_el);
-        log->error("The return route is blocked by ice."_el);
-        manager->shutdown();
-
-        el::io::printLine("Retained errors:"_el);
-        for (const auto &entry : lastErrors->snapshot()) {
-            el::io::printLine("  "_el, entry->message());
-        }
+    /// Enable the retained-error safety net before startup work can fail. The application keeps these errors across later
+    /// logging configuration changes and displays them during final cleanup when `main()` returns a failure exit code.
+    auto runLastErrorDump(const int argc, char *argv[]) -> int {
+        auto app = el::Application{argc, argv};
+        app.enableLastErrorDump();
+        app.setMainFn([&app]() -> el::ExitCode {
+            const auto log = app.log().createStream("guild/expedition"_el);
+            log->info("The expedition entered the northern pass."_el);
+            log->error("The reserve compass failed its check."_el);
+            log->error("The return route is blocked by ice."_el);
+            return el::ExitCode{2};
+        });
+        return app.run();
     }
 
 .. erbsland-ansi::
     :escape-char: ␛
 
-    Retained errors:
-      The reserve compass failed its check.
-      The return route is blocked by ice.
+    ␛[96m2026-09-04 19:19:06Z␛[97m INF - The expedition entered the northern pass.
+    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The reserve compass failed its check.
+    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The return route is blocked by ice.
+
+    ␛[39;1mRecent␛[22m ␛[1mError␛[22m ␛[1mLog␛[22m ␛[1mEntries
+
+    ␛[22;96m2026-09-04 19:19:06Z␛[91m ERR - The reserve compass failed its check.
+    ␛[96m2026-09-04 19:19:06Z␛[91m ERR - The return route is blocked by ice.␛[0m
 
 .. erbsland-demo-end::
 

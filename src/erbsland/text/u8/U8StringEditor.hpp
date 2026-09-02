@@ -41,8 +41,8 @@
 #include "../u16/U16StringEditor_fwd.hpp"
 #include "../u32/U32StringEditor_fwd.hpp"
 
-#include "../../bgeo/Alignment.hpp"
 #include "../../debug/impl/StringDebugAccess_fwd.hpp"
+#include "../../geometry/Alignment.hpp"
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
@@ -73,7 +73,7 @@ namespace erbsland::text {
 /// Use the `StringEditor` alias in user code and only `U8StringEditor` if UTF-8 encoding matters.
 /// Use `String`/`U8String` for storage, read-only access and copy-based transformations.
 /// Always creates a copy of the data when constructed from a read-only string.
-/// @seedoc{/reference/text/string_width_variants}
+/// @seedoc{/reference/text/strings}
 /// @tested{U8StringEditorTest StringEscapingTest BooleanConversionTest UnicodeNormalizationTest}
 class U8StringEditor {
     friend class debug::impl::StringDebugAccess<U8StringEditor>;
@@ -348,7 +348,7 @@ public: // transform
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U8String &ellipsis) const
         -> U8StringEditor;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill = U' ') const
+    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
         -> U8StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const

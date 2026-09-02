@@ -7,8 +7,10 @@
 
 #include "../../../../mem/ByteBlock.hpp"
 #include "../../../../text/StringList.hpp"
-#include "../../../impl/vr/TypeTraits.hpp"
+#include "../../../Float.hpp"
+#include "../../../Integer.hpp"
 
+#include <type_traits>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -69,14 +71,14 @@ public:
     /// @param value The allowed integer value.
     /// @param options Additional constraint options.
     template <typename TValue>
-        requires(impl::IsInteger<TValue>)
+        requires(std::is_integral_v<TValue> && !std::is_same_v<TValue, bool>)
     explicit In(const TValue value, ConstraintOptions options = {}) :
         In(std::vector<Integer>{static_cast<Integer>(value)}, std::move(options)) {}
     /// Creates a floating-point inclusion constraint.
     /// @param value The allowed floating-point value.
     /// @param options Additional constraint options.
     template <typename TValue>
-        requires(impl::IsFloat<TValue>)
+        requires std::is_floating_point_v<TValue>
     explicit In(const TValue value, ConstraintOptions options = {}) :
         In(std::vector<Float>{static_cast<Float>(value)}, std::move(options)) {}
     /// Creates a string inclusion constraint.
@@ -90,7 +92,7 @@ public:
     explicit In(const mem::ByteBlock &value, ConstraintOptions options = {}) :
         In(std::vector<mem::ByteBlock>{value}, std::move(options)) {}
 
-    void operator()(Rule &rule) override;
+    void apply(RuleDefinition &rule) const override;
 
 private:
     ValueList _values;

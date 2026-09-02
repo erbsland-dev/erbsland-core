@@ -20,7 +20,7 @@ namespace erbsland::text::render {
 /// The maximum length is 200 code-points.
 ///
 /// Multithreading: The setup methods are not thread-safe. The manage and render methods are thread-safe.
-/// @seedoc{/reference/text/render}
+/// @seedoc{/reference/text/documents_and_rendering}
 /// @tested{RenderEnvironmentTest RenderFilterTest RenderLanguageCompletionTest}
 class Environment {
 public:

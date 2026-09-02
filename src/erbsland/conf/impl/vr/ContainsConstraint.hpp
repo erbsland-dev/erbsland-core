@@ -13,9 +13,8 @@ class ContainsConstraint final : public StringPartConstraint {
 public:
     /// Create a string-containment constraint.
     /// @param values The expected parts.
-    explicit ContainsConstraint(text::StringList values) : StringPartConstraint(std::move(values)) {
-        setType(vr::ConstraintType::Contains);
-    }
+    explicit ContainsConstraint(text::StringList values) :
+        StringPartConstraint{vr::ConstraintType::Contains, std::move(values)} {}
 
 protected:
     [[nodiscard]] auto partText() const -> const text::String & override {

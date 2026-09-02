@@ -9,7 +9,7 @@
 namespace erbsland::re {
 
 /// An error raised by regular-expression parsing, compilation, diagnostics, or matching.
-/// @seedoc{/reference/re/error}
+/// @seedoc{/reference/re/regular_expressions}
 /// @tested{RegExErrorTest}
 class RegExError final : public err::RuntimeError {
 public:

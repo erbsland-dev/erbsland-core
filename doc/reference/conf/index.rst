@@ -17,16 +17,5 @@ document can retain its source locations without requiring the parser or source 
 .. toctree::
     :maxdepth: 1
 
-    access_control
-    data
-    document
-    errors
-    locations
-    names
-    parser
-    signature_validation
-    signing
-    source
-    source_resolution
+    configuration_language
     validation_rules
-    values

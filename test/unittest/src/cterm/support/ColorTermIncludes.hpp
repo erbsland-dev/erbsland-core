@@ -4,7 +4,7 @@
 
 // import all color term headers and libraries for the unittests.
 
-#include <erbsland/bgeo/all.hpp>
+#include <erbsland/block/all.hpp>
 #include <erbsland/cterm/all.hpp>
 #include <erbsland/cterm/impl/paragraph/LayoutResult.hpp>
 
@@ -12,6 +12,7 @@
 using namespace erbsland::cterm;
 
 // Aliases
-namespace bgeo = erbsland::bgeo;
+namespace block = erbsland::block;
+namespace geometry = erbsland::geometry;
 namespace paragraph = erbsland::cterm::impl::paragraph;
 namespace termimpl = erbsland::cterm::impl;

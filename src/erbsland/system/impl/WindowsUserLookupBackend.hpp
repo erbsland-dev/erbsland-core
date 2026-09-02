@@ -3,8 +3,7 @@
 #pragma once
 
 #include "UserLookupBackend.hpp"
-
-#include "../WindowsErrorContext.hpp"
+#include "WindowsErrorContext.hpp"
 
 namespace erbsland::system::impl {
 
@@ -22,7 +21,8 @@ public: // implement UserLookupBackend
 
 private:
     /// Throw an error for a failed native account lookup.
-    [[noreturn]] static void throwLookupError(text::String reason, system::WindowsErrorContext::ErrorCode errorCode);
+    [[noreturn]] static void throwLookupError(
+        text::String reason, system::impl::WindowsErrorContext::ErrorCode errorCode);
     /// Resolve an account name from a textual Windows SID.
     [[nodiscard]] static auto accountNameForSidString(const text::String &sid) -> text::String;
     /// Resolve a textual Windows SID from an account name.

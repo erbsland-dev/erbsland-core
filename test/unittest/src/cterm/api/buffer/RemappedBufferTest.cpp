@@ -3,7 +3,7 @@
 
 #include "RemappedBufferTestSupport.hpp"
 
-#include <erbsland/bgeo/StdFormat.hpp>
+#include <erbsland/block/StdFormat.hpp>
 #include <erbsland/cterm/RemappedBuffer.hpp>
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -19,49 +19,49 @@ TESTED_TARGETS(RemappedBuffer)
 class RemappedBufferTest final : public UNITTEST_SUBCLASS(RemappedBufferTestSupport) {
 public:
     void testConstructorCloneAndWideCharacters() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
             const auto fillChar = Block{U'X', fg::Yellow, bg::Blue};
-            auto buffer = RemappedBuffer{bgeo::BlockSize{3, 2}, orientation, fillChar};
+            auto buffer = RemappedBuffer{block::Size{3, 2}, orientation, fillChar};
 
-            REQUIRE_EQUAL(buffer.size(), bgeo::BlockSize(3, 2));
-            buffer.size().forEach([&](const bgeo::BlockPosition pos) -> void {
+            REQUIRE_EQUAL(buffer.size(), block::Size(3, 2));
+            buffer.size().forEach([&](const block::Position pos) -> void {
                 REQUIRE_EQUAL(buffer.get(pos), U'X');
                 REQUIRE_EQUAL(buffer.get(pos).color(), Color(fg::Yellow, bg::Blue));
             });
 
-            buffer.set(bgeo::BlockPosition{0, 1}, Block{U'界', fg::Green, bg::Black});
-            REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{0, 1}), U'界');
-            REQUIRE(buffer.get(bgeo::BlockPosition{1, 1}).isEmpty());
-            REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{1, 1}).color(), Color(fg::Green, bg::Black));
+            buffer.set(block::Position{0, 1}, Block{U'界', fg::Green, bg::Black});
+            REQUIRE_EQUAL(buffer.get(block::Position{0, 1}), U'界');
+            REQUIRE(buffer.get(block::Position{1, 1}).isEmpty());
+            REQUIRE_EQUAL(buffer.get(block::Position{1, 1}).color(), Color(fg::Green, bg::Black));
 
             const auto clone = buffer.clone();
             REQUIRE_NOT_EQUAL(clone, nullptr);
-            clone->set(bgeo::BlockPosition{2, 0}, Block{U'Z', fg::Red, bg::Black});
+            clone->set(block::Position{2, 0}, Block{U'Z', fg::Red, bg::Black});
 
-            REQUIRE_EQUAL(buffer.get(bgeo::BlockPosition{2, 0}), U'X');
-            REQUIRE_EQUAL(clone->get(bgeo::BlockPosition{2, 0}), U'Z');
-            REQUIRE_EQUAL(clone->get(bgeo::BlockPosition{2, 0}).color(), Color(fg::Red, bg::Black));
+            REQUIRE_EQUAL(buffer.get(block::Position{2, 0}), U'X');
+            REQUIRE_EQUAL(clone->get(block::Position{2, 0}), U'Z');
+            REQUIRE_EQUAL(clone->get(block::Position{2, 0}).color(), Color(fg::Red, bg::Black));
         });
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{0, 1}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{1, 0}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(bgeo::BlockSize{10'001, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{0, 1}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{1, 0}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, RemappedBuffer(block::Size{10'001, 1}));
     }
 
     void testResizeWithPreserveContentKeepsVisibleContent() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{3, 2}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{3, 2});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{3, 2}, orientation);
+            auto model = createPatternModel(block::Size{3, 2});
 
             scramble(buffer, model);
-            buffer.resize(bgeo::BlockSize{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
-            model.resize(bgeo::BlockSize{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
+            buffer.resize(block::Size{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
+            model.resize(block::Size{4, 3}, BufferResizeMode::PreserveContent, Block{U'.'});
             requireMatches(buffer, model, [&]() {
                 return std::format("resize preserve expand {}", orientationName(orientation));
             });
 
-            buffer.resize(bgeo::BlockSize{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
-            model.resize(bgeo::BlockSize{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
+            buffer.resize(block::Size{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
+            model.resize(block::Size{2, 2}, BufferResizeMode::PreserveContent, Block{U'.'});
             requireMatches(buffer, model, [&]() {
                 return std::format("resize preserve shrink {}", orientationName(orientation));
             });
@@ -69,20 +69,20 @@ public:
     }
 
     void testResizeWithPreserveContentKeepsVisibleContentForPrimaryAxisChanges() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{4, 4}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{4, 4});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{4, 4}, orientation);
+            auto model = createPatternModel(block::Size{4, 4});
 
             scramble(buffer, model);
             const auto expandedSize =
-                orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{4, 5} : bgeo::BlockSize{5, 4};
+                orientation == geometry::Orientation::Vertical ? block::Size{4, 5} : block::Size{5, 4};
             buffer.resize(expandedSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(expandedSize, BufferResizeMode::PreserveContent, Block{U'.'});
             requireMatches(
                 buffer, model, [&]() { return std::format("primary-axis expand {}", orientationName(orientation)); });
 
             const auto shrunkSize =
-                orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{4, 3} : bgeo::BlockSize{3, 4};
+                orientation == geometry::Orientation::Vertical ? block::Size{4, 3} : block::Size{3, 4};
             buffer.resize(shrunkSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(shrunkSize, BufferResizeMode::PreserveContent, Block{U'.'});
             requireMatches(
@@ -91,13 +91,13 @@ public:
     }
 
     void testResizeWithPreserveContentFallsBackToFullPreserveForCrossAxisChanges() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{4, 3}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{4, 3});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{4, 3}, orientation);
+            auto model = createPatternModel(block::Size{4, 3});
 
             scramble(buffer, model);
             const auto changedCrossAxisSize =
-                orientation == bgeo::Orientation::Vertical ? bgeo::BlockSize{5, 3} : bgeo::BlockSize{4, 4};
+                orientation == geometry::Orientation::Vertical ? block::Size{5, 3} : block::Size{4, 4};
             buffer.resize(changedCrossAxisSize, BufferResizeMode::PreserveContent, Block{U'.'});
             model.resize(changedCrossAxisSize, BufferResizeMode::PreserveContent, Block{U'.'});
             requireMatches(
@@ -106,13 +106,13 @@ public:
     }
 
     void testFastResizeKeepsBufferUsableAfterScrambledMaps() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{4, 3}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{5, 4});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{4, 3}, orientation);
+            auto model = createPatternModel(block::Size{5, 4});
 
             scramble(buffer);
-            buffer.resize(bgeo::BlockSize{5, 4});
-            REQUIRE_EQUAL(buffer.size(), bgeo::BlockSize(5, 4));
+            buffer.resize(block::Size{5, 4});
+            REQUIRE_EQUAL(buffer.size(), block::Size(5, 4));
 
             buffer.fill(Block{U'.', fg::White, bg::Black});
             fillPattern(buffer);
@@ -122,17 +122,17 @@ public:
     }
 
     void testShiftRotateInsertEraseAndMoveMatchReferenceModel() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{5, 4});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+            auto model = createPatternModel(block::Size{5, 4});
 
-            buffer.shift(bgeo::BlockDirection::NorthEast, Block{U'.'}, 1);
-            model.shift(bgeo::BlockDirection::NorthEast, Block{U'.'}, 1);
+            buffer.shift(block::Direction::NorthEast, Block{U'.'}, 1);
+            model.shift(block::Direction::NorthEast, Block{U'.'}, 1);
             requireMatches(
                 buffer, model, [&]() { return std::format("shift northeast {}", orientationName(orientation)); });
 
-            buffer.rotate(bgeo::BlockDirection::SouthWest, 2);
-            model.rotate(bgeo::BlockDirection::SouthWest, 2);
+            buffer.rotate(block::Direction::SouthWest, 2);
+            model.rotate(block::Direction::SouthWest, 2);
             requireMatches(
                 buffer, model, [&]() { return std::format("rotate southwest {}", orientationName(orientation)); });
 
@@ -158,9 +158,9 @@ public:
     }
 
     void testMoveOperationsHandleOverflow() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{5, 4});
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+            auto model = createPatternModel(block::Size{5, 4});
 
             buffer.moveRows(blockCoordinate(1), 3, blockCoordinate(-2), Block{U'^'});
             model.moveRows(blockCoordinate(1), 3, blockCoordinate(-2), Block{U'^'});
@@ -176,10 +176,10 @@ public:
     }
 
     void testMoveOperationsRecycleFullSpanOverflow() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
             {
-                auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-                auto model = createPatternModel(bgeo::BlockSize{5, 4});
+                auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+                auto model = createPatternModel(block::Size{5, 4});
                 buffer.moveRows(
                     blockCoordinate(0), buffer.size().height().toRawValue(), -buffer.size().height(), Block{U'^'});
                 model.moveRows(
@@ -189,8 +189,8 @@ public:
                 });
             }
             {
-                auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-                auto model = createPatternModel(bgeo::BlockSize{5, 4});
+                auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+                auto model = createPatternModel(block::Size{5, 4});
                 buffer.moveRows(
                     blockCoordinate(0), buffer.size().height().toRawValue(), buffer.size().height(), Block{U'v'});
                 model.moveRows(
@@ -200,8 +200,8 @@ public:
                 });
             }
             {
-                auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-                auto model = createPatternModel(bgeo::BlockSize{5, 4});
+                auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+                auto model = createPatternModel(block::Size{5, 4});
                 buffer.moveColumns(
                     blockCoordinate(0), buffer.size().width().toRawValue(), -buffer.size().width(), Block{U'<'});
                 model.moveColumns(
@@ -211,8 +211,8 @@ public:
                 });
             }
             {
-                auto buffer = createPatternBuffer(bgeo::BlockSize{5, 4}, orientation);
-                auto model = createPatternModel(bgeo::BlockSize{5, 4});
+                auto buffer = createPatternBuffer(block::Size{5, 4}, orientation);
+                auto model = createPatternModel(block::Size{5, 4});
                 buffer.moveColumns(
                     blockCoordinate(0), buffer.size().width().toRawValue(), buffer.size().width(), Block{U'>'});
                 model.moveColumns(
@@ -225,11 +225,11 @@ public:
     }
 
     void testInvalidArgumentsAreRejected() {
-        auto buffer = RemappedBuffer{bgeo::BlockSize{4, 3}, bgeo::Orientation::Vertical};
+        auto buffer = RemappedBuffer{block::Size{4, 3}, geometry::Orientation::Vertical};
 
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(bgeo::BlockSize{0, 3}));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.shift(bgeo::BlockDirection::North, Block::space(), -1));
-        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.rotate(bgeo::BlockDirection::East, 5));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.resize(block::Size{0, 3}));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.shift(block::Direction::North, Block::space(), -1));
+        REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.rotate(block::Direction::East, 5));
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseRows(blockCoordinate(2), Block::space(), 2));
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1));
         REQUIRE_THROWS_AS(erbsland::err::ParameterError, buffer.insertRows(blockCoordinate(2), Block::space(), 2));
@@ -242,7 +242,7 @@ public:
     }
 
     void testInvalidArgumentsReportTheParameterName() {
-        auto buffer = RemappedBuffer{bgeo::BlockSize{4, 3}, bgeo::Orientation::Vertical};
+        auto buffer = RemappedBuffer{block::Size{4, 3}, geometry::Orientation::Vertical};
         try {
             buffer.eraseColumns(blockCoordinate(-1), Block::space(), 1);
             REQUIRE(false);
@@ -252,10 +252,11 @@ public:
     }
 
     void testStressOperationsAgainstReferenceModel() {
-        forEachOrientation([&](const bgeo::Orientation orientation) -> void {
-            auto buffer = createPatternBuffer(bgeo::BlockSize{6, 5}, orientation);
-            auto model = createPatternModel(bgeo::BlockSize{6, 5});
-            auto rng = std::mt19937{0xC0DE1234U + static_cast<uint32_t>(orientation == bgeo::Orientation::Horizontal)};
+        forEachOrientation([&](const geometry::Orientation orientation) -> void {
+            auto buffer = createPatternBuffer(block::Size{6, 5}, orientation);
+            auto model = createPatternModel(block::Size{6, 5});
+            auto rng =
+                std::mt19937{0xC0DE1234U + static_cast<uint32_t>(orientation == geometry::Orientation::Horizontal)};
 
             for (int step = 0; step < 250; ++step) {
                 const auto operation = randomInt(rng, 0, 8);
@@ -318,7 +319,7 @@ public:
                     break;
                 }
                 case 6: {
-                    const auto newSize = bgeo::BlockSize{
+                    const auto newSize = block::Size{
                         randomInt(rng, 1, std::max(1, model.size().width().toRawValue() + 1)),
                         randomInt(rng, 1, std::max(1, model.size().height().toRawValue() + 1))};
                     const auto fillChar = Block{static_cast<char32_t>(U'Z' - (step % 20))};
@@ -327,7 +328,7 @@ public:
                     break;
                 }
                 case 7: {
-                    const auto pos = bgeo::BlockPosition{
+                    const auto pos = block::Position{
                         randomInt(rng, 0, model.size().width().toRawValue() - 1),
                         randomInt(rng, 0, model.size().height().toRawValue() - 1)};
                     const auto value = Block{static_cast<char32_t>(U'!' + (step % 60))};

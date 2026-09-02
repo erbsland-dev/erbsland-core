@@ -45,8 +45,8 @@
 #include "../u8/impl/U8StringBuilder_fwd.hpp"
 #include "../u8/U8StringEditor_fwd.hpp"
 
-#include "../../bgeo/Alignment.hpp"
 #include "../../debug/impl/StringDebugAccess_fwd.hpp"
+#include "../../geometry/Alignment.hpp"
 #include "../../math/IntegerTraits.hpp"
 #include "../../mem/ByteBlock_fwd.hpp"
 #include "../../mem/StorageIdentifier.hpp"
@@ -344,7 +344,8 @@ public: // transform and copy-modify
     [[nodiscard]] auto truncated(unit::CpLength maximumWidth, TruncateMode mode, const U32String &ellipsis) const
         -> U32String;
     /// Return a string padded to the requested decoded code-point length.
-    [[nodiscard]] auto aligned(unit::CpLength length, bgeo::Alignment alignment, Char fill = U' ') const -> U32String;
+    [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
+        -> U32String;
     /// Return a bounded representation that is safe for logs and debug output.
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U32String;

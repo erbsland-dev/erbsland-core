@@ -102,7 +102,7 @@ protected: // implement pf::ProfilingApplication
         const auto useCaseFilters = values->getTextList("use-case"_el);
         const auto scenarioFilters = values->getTextList("scenario"_el);
         std::erase_if(configuration.scenarios, [&](const Scenario &scenario) {
-            const auto typeMatches = typeFilters.empty() || std::ranges::any_of(typeFilters, [&](const auto &value) {
+            const auto typeMatches = typeFilters.isEmpty() || std::ranges::any_of(typeFilters, [&](const auto &value) {
                 const auto type = parseByteType(value);
                 if (!type) {
                     throw el::ApplicationError{el::StringFormat{"Unsupported byte type '{}'."_el}.build(value)};
@@ -110,7 +110,7 @@ protected: // implement pf::ProfilingApplication
                 return *type == scenario.type;
             });
             const auto useCaseMatches =
-                useCaseFilters.empty() || std::ranges::any_of(useCaseFilters, [&](const auto &value) {
+                useCaseFilters.isEmpty() || std::ranges::any_of(useCaseFilters, [&](const auto &value) {
                     const auto useCase = parseUseCase(value);
                     if (!useCase) {
                         throw el::ApplicationError{el::StringFormat{"Unsupported use case '{}'."_el}.build(value)};
@@ -118,7 +118,7 @@ protected: // implement pf::ProfilingApplication
                     return *useCase == scenario.useCase;
                 });
             const auto scenarioMatches =
-                scenarioFilters.empty() || std::ranges::any_of(scenarioFilters, [&](const auto &value) {
+                scenarioFilters.isEmpty() || std::ranges::any_of(scenarioFilters, [&](const auto &value) {
                     return value == scenario.id || value == scenario.group;
                 });
             return !typeMatches || !useCaseMatches || !scenarioMatches;

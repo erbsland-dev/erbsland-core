@@ -5,8 +5,12 @@
 #include "OptionDisplayGroup.hpp"
 #include "OptionDisplayModel.hpp"
 #include "OptionDisplayRow.hpp"
+#include "OptionSuggestion.hpp"
 
 #include "../Option.hpp"
+#include "../OptionError.hpp"
+#include "../OptionFlag.hpp"
+#include "../OptionHelpVisibility.hpp"
 #include "../OptionModule.hpp"
 #include "../OptionParserFlag.hpp"
 #include "../Options.hpp"
@@ -16,8 +20,11 @@
 #include "../../err/DiagnosticHelper.hpp"
 #include "../../err/ErrorDocumentBuilder.hpp"
 #include "../../i18n/DisplayTextMap.hpp"
+#include "../../text/CaseSensitivity.hpp"
 #include "../../text/EscapeFormat.hpp"
 #include "../../text/Literals.hpp"
+#include "../../text/StringEditor.hpp"
+#include "../../text/StringFormat.hpp"
 #include "../../text/TextDocument.hpp"
 #include "../../text/TextNode.hpp"
 #include "../../text/TextNodeType.hpp"
@@ -56,6 +63,197 @@ auto OptionDocumentBuilder::helpDocument(const String &moduleName) const -> Text
         document.addParagraph()->setStyle("option-epilog"_el).addText(help->epilog());
     }
     return document;
+}
+
+auto OptionDocumentBuilder::moduleOverviewDocument() const -> TextDocument {
+    const auto model = OptionDisplayModel{_options, {}, _displayText};
+    auto document = TextDocument{};
+    appendHeading(document.root(), _displayText->text("options.UsageLabel"_el));
+    auto usageName = document.add(NodeType::TermList)->add(NodeType::TermItem)->add(NodeType::TermName);
+    usageName->add(NodeType::OptionExecutable)->addEscapedText(model.executableName(), EscapeFormat::Display);
+    usageName->addText(" "_el);
+    appendPlaceholder(usageName, NodeType::OptionMeta, _displayText->text("options.ModulePlaceholder"_el), "value"_el);
+    usageName->addText(" "_el);
+    appendPlaceholder(
+        usageName, NodeType::OptionOptional, _displayText->text("options.OptionsPlaceholder"_el), "optional"_el);
+    const auto rows = model.moduleRows();
+    if (!rows.empty()) {
+        appendHeading(document.root(), _displayText->text("options.ModulesHeading"_el));
+        appendRowsAsTermList(document.root(), rows, false);
+    }
+    return document;
+}
+
+auto OptionDocumentBuilder::detailedHelpDocument(const String &moduleName, const String &helpName) const
+    -> TextDocument {
+    const auto entries = detailedHelpEntries(moduleName);
+    auto matches = std::vector<DetailedHelpEntry>{};
+    auto candidates = StringList{};
+    for (const auto &entry : entries) {
+        if (matchesDetailedHelpName(entry.option, helpName)) {
+            matches.emplace_back(entry);
+        }
+        for (const auto &name : entry.option->names()) {
+            if (!Option::isShortName(name)) {
+                candidates.append(name);
+            }
+        }
+    }
+    if (matches.empty()) {
+        auto context = OptionErrorContext{}
+                           .setReason(OptionErrorReason::UnknownName)
+                           .setTitle("Unknown help name"_el)
+                           .setDescription(
+                               StringFormat{"\"{}\" does not identify an option with visible detailed help."}.build(
+                                   helpName.toEscaped(EscapeFormat::Display)))
+                           .setOptions(_options)
+                           .setDisplayText(_displayText)
+                           .setSuggestions(findOptionSuggestions(helpName, candidates));
+        throw OptionError{std::move(context)};
+    }
+
+    const auto &entry = matches.front();
+    const auto &option = entry.option;
+    auto document = TextDocument{};
+    document.addHeading(1)->addText(
+        option->help().title().isEmpty() ? OptionDisplayModel::optionTitle(option) : option->help().title());
+
+    appendHeading(document.root(), _displayText->text("options.UsageLabel"_el));
+    auto usageList = document.add(NodeType::TermList);
+    for (const auto &name : option->names()) {
+        if (Option::isOptionName(name)) {
+            usageList->add(NodeType::TermItem)->add(NodeType::TermName)->addText(detailedUsageLine(entry, name));
+        }
+    }
+
+    appendHeading(document.root(), _displayText->text("options.DescriptionHeading"_el));
+    document.addParagraph()->addText(option->help().description());
+    if (!option->help().example().isEmpty()) {
+        appendHeading(document.root(), _displayText->text("options.ExampleHeading"_el));
+        document.addParagraph()->addText(option->help().example());
+    }
+    if (matches.size() > 1U) {
+        appendHeading(document.root(), _displayText->text("options.SeeAlsoHeading"_el));
+        auto seeAlsoList = document.add(NodeType::TermList);
+        for (auto index = std::size_t{1U}; index < matches.size(); ++index) {
+            const auto matchedName = matchingDetailedHelpName(matches[index].option, helpName);
+            seeAlsoList->add(NodeType::TermItem)
+                ->add(NodeType::TermName)
+                ->addText(detailedHelpCommand(matches[index], matchedName));
+        }
+    }
+    return document;
+}
+
+auto OptionDocumentBuilder::detailedHelpEntries(const String &moduleName) const -> std::vector<DetailedHelpEntry> {
+    auto entries = std::vector<DetailedHelpEntry>{};
+    if (_options == nullptr) {
+        return entries;
+    }
+    auto selectedModule = OptionModulePtr{};
+    if (!moduleName.isEmpty()) {
+        for (const auto &module : _options->optionModules()) {
+            if (module != nullptr && module->hasName(moduleName)) {
+                selectedModule = module;
+                break;
+            }
+        }
+    }
+    const auto appendModule = [this, &entries](const OptionModulePtr &module) -> void {
+        if (module == nullptr || module->help().visibility() == OptionHelpVisibility::Hidden) {
+            return;
+        }
+        for (const auto &optionSet : module->optionSets()) {
+            appendDetailedHelpEntries(entries, optionSet, module);
+        }
+    };
+    if (selectedModule != nullptr) {
+        appendModule(selectedModule);
+    }
+    appendDetailedHelpEntries(entries, _options->builtInOptionSet(), {});
+    for (const auto &optionSet : _options->optionSets()) {
+        appendDetailedHelpEntries(entries, optionSet, {});
+    }
+    for (const auto &module : _options->optionModules()) {
+        if (module != selectedModule) {
+            appendModule(module);
+        }
+    }
+    return entries;
+}
+
+void OptionDocumentBuilder::appendDetailedHelpEntries(
+    std::vector<DetailedHelpEntry> &entries, const OptionSetPtr &optionSet, const OptionModulePtr &module) const {
+    if (optionSet == nullptr || optionSet->flags().isSet(OptionFlag::Disabled) ||
+        optionSet->help().visibility() == OptionHelpVisibility::Hidden) {
+        return;
+    }
+    for (const auto &option : optionSet->options()) {
+        if (option == nullptr || option->isDisabled() || !option->isRegularOption() ||
+            option->help().visibility() == OptionHelpVisibility::Hidden) {
+            continue;
+        }
+        if (_options != nullptr && optionSet == _options->builtInOptionSet()) {
+            if (option->hasLongName("--help"_el) && _options->parserFlags().isSet(OptionParserFlag::DisableHelp)) {
+                continue;
+            }
+            if (option->hasLongName("--version"_el) &&
+                _options->parserFlags().isSet(OptionParserFlag::DisableVersion)) {
+                continue;
+            }
+        }
+        entries.emplace_back(DetailedHelpEntry{option, module});
+    }
+}
+
+auto OptionDocumentBuilder::matchesDetailedHelpName(const OptionPtr &option, const String &helpName) -> bool {
+    return !matchingDetailedHelpName(option, helpName).isEmpty();
+}
+
+auto OptionDocumentBuilder::matchingDetailedHelpName(const OptionPtr &option, const String &helpName) -> String {
+    if (option == nullptr) {
+        return {};
+    }
+    for (const auto &name : option->names()) {
+        if (Option::isShortName(name)) {
+            if (name == helpName) {
+                return name;
+            }
+        } else if (name.compare(helpName, cCaseInsensitive.comparisonFn()) == std::strong_ordering::equal) {
+            return name;
+        }
+    }
+    return {};
+}
+
+auto OptionDocumentBuilder::detailedHelpCommand(const DetailedHelpEntry &entry, const String &name) const -> String {
+    auto result = StringEditor{};
+    result.append(OptionDisplayModel{_options, {}, _displayText}.executableName());
+    if (entry.module != nullptr) {
+        result.append(U' ').append(entry.module->name());
+    }
+    result.append(" --help="_el).append(name);
+    return String{result};
+}
+
+auto OptionDocumentBuilder::detailedUsageLine(const DetailedHelpEntry &entry, const String &name) const -> String {
+    auto result = StringEditor{};
+    result.append(OptionDisplayModel{_options, {}, _displayText}.executableName());
+    if (entry.module != nullptr) {
+        result.append(U' ').append(entry.module->name());
+    } else if (_options != nullptr && !_options->optionModules().empty()) {
+        result.append(" <"_el).append(_displayText->text("options.ModulePlaceholder"_el)).append(U'>');
+    }
+    result.append(U' ').append(name);
+    if (entry.option->type() != OptionType::Flag) {
+        const auto valueName = OptionDisplayModel::optionValueName(entry.option, _displayText);
+        if (entry.option->flags().isSet(OptionFlag::AcceptAsFlag)) {
+            result.append("[=<"_el).append(valueName).append(">]"_el);
+        } else {
+            result.append("=<"_el).append(valueName).append(U'>');
+        }
+    }
+    return String{result};
 }
 
 void OptionDocumentBuilder::appendUsage(const TextNodePtr &parent, const OptionDisplayModel &model) const {
@@ -133,6 +331,13 @@ auto OptionDocumentBuilder::errorDocument(const OptionErrorContext &errorContext
     auto document = builder.takeDocument();
     appendErrorSource(document, errorContext);
     appendCommandLineSnippet(document, errorContext);
+    if (!errorContext.suggestions().isEmpty()) {
+        appendHeading(document.root(), _displayText->text("options.DidYouMeanHeading"_el));
+        auto list = document.add(NodeType::TermList);
+        for (const auto &suggestion : errorContext.suggestions()) {
+            list->add(NodeType::TermItem)->add(NodeType::TermName)->addText(suggestion);
+        }
+    }
     if (_options != nullptr) {
         const auto moduleName = errorContext.module() == nullptr ? String{} : errorContext.module()->name();
         appendUsage(document.root(), OptionDisplayModel{_options, moduleName, _displayText});
@@ -172,18 +377,19 @@ void OptionDocumentBuilder::appendOptionName(const TextNodePtr &termName, const 
 }
 
 void OptionDocumentBuilder::appendOptionValuePlaceholder(const TextNodePtr &termName, const OptionPtr &option) const {
-    if (option != nullptr && option->type() == OptionType::Flag && _options != nullptr &&
-        !_options->parserFlags().isSet(OptionParserFlag::DisableBooleanValues)) {
-        termName->addText("[="_el);
-        appendPlaceholder(
-            termName, NodeType::OptionMeta, _displayText->text("options.BooleanPlaceholder"_el), "value"_el);
-        termName->addText("]"_el);
+    if (option == nullptr || option->type() == OptionType::Flag) {
         return;
     }
     const auto placeholder = OptionDisplayModel::optionValueName(option, _displayText);
     if (!placeholder.isEmpty()) {
-        termName->addText(" "_el);
+        const auto acceptsAsFlag = option->flags().isSet(OptionFlag::AcceptAsFlag) &&
+            !(_options != nullptr && option->hasLongName("--help"_el) &&
+                _options->parserFlags().isSet(OptionParserFlag::NoHelpDetails));
+        termName->addText(acceptsAsFlag ? "[="_el : " "_el);
         appendPlaceholder(termName, NodeType::OptionMeta, placeholder, "value"_el);
+        if (acceptsAsFlag) {
+            termName->addText("]"_el);
+        }
     }
 }
 

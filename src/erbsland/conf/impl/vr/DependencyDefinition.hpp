@@ -3,10 +3,10 @@
 #pragma once
 
 #include "DependencyDefinition_fwd.hpp"
-#include "DependencyMode.hpp"
 
 #include "../../Location.hpp"
 #include "../../NamePath.hpp"
+#include "../../vr/DependencyMode.hpp"
 
 namespace erbsland::conf::impl {
 
@@ -19,7 +19,7 @@ public:
     /// @param targets The target paths.
     /// @param errorMessage An optional custom error message. Empty for no custom message.
     DependencyDefinition(
-        DependencyMode mode, NamePathList sources, NamePathList targets, text::String errorMessage) noexcept;
+        vr::DependencyMode mode, NamePathList sources, NamePathList targets, text::String errorMessage) noexcept;
 
     // defaults
     virtual ~DependencyDefinition() = default;
@@ -31,12 +31,12 @@ public:
     /// @param targets The target paths.
     /// @param errorMessage An optional custom error message. Empty for no custom message.
     [[nodiscard]] static auto create(
-        DependencyMode mode, NamePathList sources, NamePathList targets, text::String errorMessage)
+        vr::DependencyMode mode, NamePathList sources, NamePathList targets, text::String errorMessage)
         -> DependencyDefinitionPtr;
 
 public:
     /// The dependency mode.
-    [[nodiscard]] auto mode() const noexcept -> DependencyMode { return _mode; }
+    [[nodiscard]] auto mode() const noexcept -> vr::DependencyMode { return _mode; }
     /// The source values.
     [[nodiscard]] auto sources() const noexcept -> const NamePathList & { return _sources; }
     /// The target values.
@@ -51,11 +51,11 @@ public:
     void setLocation(const Location &location) noexcept { _location = location; }
 
 private:
-    DependencyMode _mode{DependencyMode::If}; ///< The dependency mode.
-    NamePathList _sources;                    ///< The source values.
-    NamePathList _targets;                    ///< The target values.
-    text::String _errorMessage;               ///< A custom error message.
-    Location _location;                       ///< The location of the dependency definition in the source file.
+    vr::DependencyMode _mode{vr::DependencyMode::If}; ///< The dependency mode.
+    NamePathList _sources;                            ///< The source values.
+    NamePathList _targets;                            ///< The target values.
+    text::String _errorMessage;                       ///< A custom error message.
+    Location _location;                               ///< The location of the dependency definition in the source file.
 };
 
 }

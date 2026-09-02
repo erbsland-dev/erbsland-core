@@ -3,6 +3,7 @@
 #pragma once
 
 #include "OptionChoice.hpp"
+#include "OptionChoiceEditor.hpp"
 #include "OptionChoices_fwd.hpp"
 
 #include "../unit/ArgumentUnit.hpp"
@@ -37,12 +38,12 @@ public:
     [[nodiscard]] static auto create(std::initializer_list<text::String> choices) -> OptionChoicesPtr;
     /// Add a choice.
     /// @param choice Choice object to append.
-    /// @return This collection for chaining.
-    auto addChoice(OptionChoicePtr choice) -> OptionChoices &;
+    /// @return An editor for the appended choice.
+    auto addChoice(OptionChoicePtr choice) -> OptionChoiceEditor;
     /// Add a choice by text.
     /// @param text Choice text to append.
-    /// @return This collection for chaining.
-    auto addChoice(text::String text) -> OptionChoices &;
+    /// @return An editor for the appended choice.
+    auto addChoice(text::String text) -> OptionChoiceEditor;
 
 public: // accessors
     /// Get all choices.

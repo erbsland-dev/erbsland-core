@@ -5,4 +5,4 @@ Path Reference
 .. toctree::
     :maxdepth: 1
 
-    paths
+    file_system_paths

@@ -13,6 +13,8 @@ auto OptionType::toString() const -> text::String {
     switch (_type) {
     case Flag:
         return "flag"_el;
+    case Boolean:
+        return "boolean"_el;
     case Integer:
         return "integer"_el;
     case Text:

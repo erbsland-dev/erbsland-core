@@ -5,35 +5,14 @@ System Domain API Guidelines
 Core Semantics
 ==============
 
-Identity Lookup
----------------
-
 .. code-block:: text
 
-    user id = platform owner identifier such as a POSIX UID or Windows SID string
-    group id = platform group identifier such as a POSIX GID or Windows SID string
-    user name = display name resolved from a platform user id, with optional domain
-    group name = display name resolved from a platform group id, with optional domain
-
-Environment Variables
----------------------
-
-.. code-block:: text
-
+    user or group id = platform identity identifier such as a POSIX UID/GID or Windows SID string
+    user or group name = display name resolved from a platform identity identifier, with optional domain
     environment variable = process-wide native name/value entry
-    missing variable != variable with an empty value
-    variable names follow native case-sensitivity rules
-    remove of a missing variable = success
-
-Subprocesses
-------------
-
-.. code-block:: text
-
+    process id = opaque potentially valid identifier that need not identify an existing process
+    process identity = process id plus valid start time when identifier reuse matters
     subprocess = one directly launched operating-system child, never a shell command
-    owned subprocess destruction = terminate, bounded wait, force termination, reap
-    detached subprocess = explicit launch-and-forget with internal POSIX reaping
-    captured output = bounded retained prefix while the native pipe continues to drain
 
 Primary Types
 =============
@@ -44,6 +23,8 @@ Primary Types
     UserName, GroupName // type-safe platform identity names
     UserLookup // cached lookup service for platform user and group identities
     EnvironmentVariables // portable access to process environment variables
+    ProcessId // opaque process identifier created only by system APIs
+    ProcessInfo // eager portable process snapshot
     Subprocess // move-only owner and controller for one child process
     SubprocessOptions // launch environment, working directory, and stream policies
     SubprocessExitStatus // exit code or POSIX termination signal
@@ -55,8 +36,8 @@ Secondary Types
 
     PlatformError // native operating-system failure
     PlatformErrorContext // portable structured native failure context
-    PosixErrorContext, WindowsErrorContext // platform-specific diagnostic contexts
     PlatformErrorCategory // native subsystem or API failure category
+    OperatingSystem, CpuArchitecture // comparable smart-enum host classifications
     SubprocessOutputMode // inherit, discard, or bounded capture
 
 Lookup Patterns
@@ -83,6 +64,28 @@ Environment Variable Patterns
     o.remove(name) -> bool // idempotently remove without throwing
     o.removeOrThrow(name) // idempotently remove or throw on failure
 
+Process Information Patterns
+============================
+
+.. code-block:: text
+
+    T() // eagerly load the current-process snapshot
+    T(processId) // eagerly load the process currently using the identifier
+    o.processId()/exists() -> T // inspect the followed identifier and cached existence
+    o.executablePath/parentProcessId/startTime/ownerId() -> T // inspect cached values or invalid sentinels
+    o.❮attribute❯OrThrow() -> T // inspect a cached value or rethrow its cached native diagnostic
+    o.reload() // atomically replace the snapshot without throwing
+    o.reloadOrThrow() // atomically replace the snapshot and report an unexpected lookup failure
+
+System Information Patterns
+===========================
+
+.. code-block:: text
+
+    operatingSystem() -> OperatingSystem // classify the current host in system::info
+    cpuArchitecture() -> CpuArchitecture // classify the native host architecture in system::info
+    logicalCpuCount() -> uint32_t // get a usable thread-count hint of at least one in system::info
+
 Subprocess Patterns
 ===================
 
@@ -90,6 +93,7 @@ Subprocess Patterns
 
     T::start(executable, arguments, options) -> Subprocess // launch an owned direct child
     T::startDetached(executable, arguments, options) // launch without process control or capture
+    o.processId() -> ProcessId // inspect the launched identifier, including after exit
     o.isRunning() -> bool // poll native child state
     o.exitStatus() -> optional<SubprocessExitStatus> // inspect cached terminal state
     o.wait() -> SubprocessExitStatus // wait indefinitely and reap

@@ -5,7 +5,7 @@
 
 #include <erbsland/path/PathError.hpp>
 #include <erbsland/path/PathResolveMode.hpp>
-#include <erbsland/system/PosixErrorContext.hpp>
+#include <erbsland/system/impl/PosixErrorContext.hpp>
 #include <erbsland/text/Literals.hpp>
 #include <erbsland/text/StringEditor.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -94,7 +94,7 @@ public:
             REQUIRE_FALSE(error.hasCause());
             REQUIRE_EQUAL(toStdString(error.sourcePath()), toStdString(missingPath));
             const auto context =
-                std::dynamic_pointer_cast<const el::system::PosixErrorContext>(error.platformContext());
+                std::dynamic_pointer_cast<const el::system::impl::PosixErrorContext>(error.platformContext());
             REQUIRE(context);
             const auto errorCode = context->errorCode();
             REQUIRE_NOT_EQUAL(errorCode, 0);

@@ -7,7 +7,7 @@
 #include "../BlockIndex.hpp"
 #include "../BlockRange.hpp"
 
-#include "../../bgeo/BlockSize.hpp"
+#include "../../block/Size.hpp"
 #include "../../text/CharSet.hpp"
 #include "../../text/StringLiteral.hpp"
 
@@ -88,7 +88,7 @@ public:
     /// Calculate an absolute storage sub-range from local range coordinates.
     [[nodiscard]] auto subRange(BlockRange range = BlockRange::all()) const noexcept -> BlockRange;
     /// Calculate an absolute storage range cropped to a terminal display width.
-    [[nodiscard]] auto croppedRange(bgeo::BlockCoordinate displayWidth, bgeo::Alignment alignment) const noexcept
+    [[nodiscard]] auto croppedRange(block::Coordinate displayWidth, geometry::Alignment alignment) const noexcept
         -> BlockRange;
     /// Calculate an absolute storage range trimmed at both ends.
     [[nodiscard]] auto trimmedRange(const text::CharSet &characters) const noexcept -> BlockRange;
@@ -101,7 +101,7 @@ public:
     /// Count how many terminal lines this range occupies for a given terminal width.
     [[nodiscard]] auto terminalLines(int width) const noexcept -> int;
     /// Get the natural rectangular size for this range without wrapping.
-    [[nodiscard]] auto naturalBlockTextSize() const noexcept -> bgeo::BlockSize;
+    [[nodiscard]] auto naturalBlockTextSize() const noexcept -> block::Size;
 
 private:
     /// Get the number of blocks in the visible range.

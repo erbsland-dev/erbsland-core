@@ -13,7 +13,7 @@
 
 namespace erbsland::conf::vr::builder {
 
-void Minimum::operator()(Rule &rule) {
+void Minimum::apply(RuleDefinition &rule) const {
     auto constraint = std::visit(
         [&rule](const auto &value) -> impl::ConstraintPtr {
             using T = std::decay_t<decltype(value)>;

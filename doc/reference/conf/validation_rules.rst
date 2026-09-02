@@ -22,8 +22,17 @@ directly in C++ with :cpp:class:`erbsland::conf::vr::RulesBuilder <erbsland::con
     using namespace el::conf::vr::builder;
 
     RulesBuilder builder;
+    builder.configureRoot(
+        Title{"Server Settings"_el},
+        Dependency{
+            DependencyMode::XNOR,
+            {"server.certificate"_el},
+            {"server.signing_key"_el},
+            "Certificate and signing key must be configured together."_el});
     builder.addRule("server"_el, RuleType::Section);
     builder.addRule("server.port"_el, RuleType::Integer, Minimum{1}, Maximum{65535});
+    builder.addRule("server.certificate"_el, RuleType::Text, IsOptional{});
+    builder.addRule("server.signing_key"_el, RuleType::Text, IsOptional{}, IsSecret{});
     builder.addRule("server.name"_el, RuleType::Text, IsOptional{}, Default{"localhost"_el});
     auto rules = builder.takeRules();
 
@@ -36,6 +45,16 @@ Reuse finalized rules for multiple documents, passing the document version expli
 
 Builder attributes check their compatibility with the selected rule type while rules are finalized.
 This catches invalid rule definitions before application configuration is validated.
+
+The builder's implicit root rule represents the document or section passed to ``Rules::validate()``.
+Use ``configureRoot()`` for root metadata, dependencies, key indexes, version restrictions, and other root attributes.
+``DependencyMode`` is part of the public validation-rule API, so defining cross-value relationships never requires an
+implementation header.
+
+Rules written as ELCL documents use structural sections for rule definitions and reserved ``vr_dependency`` and
+``vr_key`` section lists for relationships.
+ELCL documents cannot contain scalar values directly at their document root, so root scalar metadata such as a title is
+a programmatic-builder feature; dependencies and key indexes work in both forms.
 
 Interface
 =========
@@ -96,9 +115,13 @@ Interface
     :members:
 .. doxygenclass:: erbsland::conf::vr::builder::StringPartConstraint
     :members:
+.. doxygenclass:: erbsland::conf::vr::builder::RuleDefinition
+    :members:
 .. doxygenclass:: erbsland::conf::vr::Constraint
     :members:
 .. doxygenclass:: erbsland::conf::vr::ConstraintType
+    :members:
+.. doxygenclass:: erbsland::conf::vr::DependencyMode
     :members:
 .. doxygenclass:: erbsland::conf::vr::Rule
     :members:

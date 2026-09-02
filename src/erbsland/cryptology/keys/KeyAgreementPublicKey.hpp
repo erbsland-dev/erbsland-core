@@ -10,7 +10,7 @@
 namespace erbsland::cryptology {
 
 /// A public key for one generic key-agreement algorithm.
-/// @seedoc{/reference/cryptology/key_agreement}
+/// @seedoc{/reference/cryptology/key_management}
 /// @tested{KeyAgreementTest}
 class KeyAgreementPublicKey final {
 public:

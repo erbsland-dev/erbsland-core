@@ -27,10 +27,12 @@ namespace erbsland::options {
 /// # Limits: Maximum name length is 100 characters. A maximum 5'000 arguments are supported.
 /// cmd -a -b -- other     # -- terminates command line option parsing early.
 /// # Flags
-/// cmd -a --long          # If an option is not followed by `=` or a value, its considered a flag.
+/// cmd -a --long          # Flag definitions are valueless and count occurrences.
 /// # Values
 /// cmd -a [value] --long [value]  # Any text that follows an option without `-` or `--` is considered a value.
 /// cmd -a=[value] --long=[value]  # The alternative syntax is using a `=`, that also allows values starting with `-`.
+/// # Boolean definitions accept true/on/yes/enabled and false/off/no/disabled.
+/// # Value definitions with OptionFlag::AcceptAsFlag may also occur bare.
 /// # Positional arguments
 /// cmd [arg1] [arg2] ...  # Any text that does not start with `-` or `--` is considered a positional argument.
 /// # Positional arguments, flags, and values can be mixed in any order.
@@ -41,7 +43,7 @@ namespace erbsland::options {
 /// #   (that's the main difference to common standards, but makes implementation much simpler and safer).
 /// cmd module-name -a --long [value] arg1 arg2
 /// # Help and Version:
-/// # The special flags `-h`, `--help` and `--version` are enabled by default.
+/// # The special `-h`, `--help[=<name>]` and `--version` requests are enabled by default.
 /// # Applications can disable the help and version requests individually with `OptionParserFlag` and then reuse their
 /// # names for ordinary options.
 /// # If one of these flags is encountered, the parsing is stopped and the corresponding action is performed.
@@ -102,6 +104,12 @@ public:
     /// The default renderer writes the output to the terminal or standard output.
     /// @param moduleName The name of the module to display help for. Empty for main help.
     void displayHelp(const text::String &moduleName) const;
+    /// Display detailed help for one option.
+    /// @param moduleName Selected module name, or empty for root search order.
+    /// @param helpName Raw detailed-help target.
+    void displayDetailedHelp(const text::String &moduleName, const text::String &helpName) const;
+    /// Display the reduced module overview.
+    void displayModuleOverview() const;
     /// Display version information using the configured renderer.
     /// Version is displayed using the configured renderer.
     /// The default renderer writes the output to the terminal or standard output.
@@ -115,6 +123,16 @@ public:
     /// @param moduleName The selected module name, or empty for root help.
     /// @return A neutral document tree that can be rendered as plain text or terminal output.
     [[nodiscard]] auto helpDocument(const text::String &moduleName) const -> text::TextDocument;
+    /// Build detailed help for one option.
+    /// @param moduleName Selected module name, or empty for root search order.
+    /// @param helpName Raw detailed-help target.
+    /// @return A neutral detailed-help document.
+    /// @throws OptionError If the target is not a visible option alias.
+    [[nodiscard]] auto detailedHelpDocument(const text::String &moduleName, const text::String &helpName) const
+        -> text::TextDocument;
+    /// Build the reduced module overview.
+    /// @return A neutral document with only module usage and visible modules.
+    [[nodiscard]] auto moduleOverviewDocument() const -> text::TextDocument;
     /// Build the version document.
     /// @param moduleName The selected module name, or empty for root version output.
     /// @return A neutral document tree with application version information.

@@ -18,7 +18,7 @@ namespace erbsland::system {
 /// Configures the launch environment and standard streams of a subprocess.
 /// Environment changes are applied after optional inheritance. Assigning no value removes the variable from the child
 /// environment. Names retain the native platform's case-sensitivity rules.
-/// @seedoc{/reference/system/subprocess}
+/// @seedoc{/reference/system/system_services}
 /// @tested{SubprocessInteropTest}
 class SubprocessOptions final {
 public:

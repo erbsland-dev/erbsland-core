@@ -62,6 +62,10 @@ public:
     /// @param epilog Optional trailing text for renderers that support option-level epilogs.
     /// @return This editor for chaining.
     auto setHelpEpilog(text::String epilog) -> OptionEditor &;
+    /// Set the detailed-help example.
+    /// @param example Short usage example for detailed help.
+    /// @return This editor for chaining.
+    auto setHelpExample(text::String example) -> OptionEditor &;
     /// Set the help visibility.
     /// @param visibility Controls where this option appears in generated help output.
     /// @return This editor for chaining.

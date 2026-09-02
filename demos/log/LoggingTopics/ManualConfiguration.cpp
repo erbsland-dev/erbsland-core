@@ -19,7 +19,7 @@ void manualConfiguration() {
     auto configuration = el::LogConfiguration{};
     configuration.setLineFormat(std::move(lineFormat));
     configuration.addWriter(
-        std::make_shared<el::ConsoleLogWriter>(el::application().terminal()),
+        el::LogWriter::createForConsole(el::application().terminal()),
         el::LogWriterFilter{el::LogLevels{
             el::LogLevel::Information,
             el::LogLevel::Warning,

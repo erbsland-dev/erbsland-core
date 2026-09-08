@@ -12,11 +12,13 @@ HttpServerSession::HttpServerSession(
     event::EventsPtr ownerEvents,
     std::optional<text::String> identifier,
     HttpSessionDataPtr data,
-    InvalidatedFn invalidatedFn) :
+    InvalidatedFn invalidatedFn,
+    RenewedFn renewedFn) :
     network::HttpServerSession{std::move(ownerEvents)},
     _identifier{std::move(identifier)},
     _data{std::move(data)},
-    _invalidatedFn{std::move(invalidatedFn)} {
+    _invalidatedFn{std::move(invalidatedFn)},
+    _renewedFn{std::move(renewedFn)} {
 }
 
 HttpServerSession::~HttpServerSession() = default;
@@ -59,12 +61,35 @@ void HttpServerSession::invalidate() {
     }
 }
 
+auto HttpServerSession::renewIdentifier() -> bool {
+    verifyCurrentOwnerEvents();
+    if (!_valid || !_renewedFn) {
+        return false;
+    }
+    return _renewedFn(std::static_pointer_cast<network::HttpServerSession>(shared_from_this()));
+}
+
+void HttpServerSession::setRenewal(std::optional<text::String> identifier, HttpHeaders fields) {
+    _identifier = std::move(identifier);
+    _renewalResponseFields = std::move(fields);
+}
+
+auto HttpServerSession::takeRenewalResponseFields() -> HttpHeaders {
+    return std::exchange(_renewalResponseFields, {});
+}
+
 auto HttpServerSession::events() -> network::HttpServerSessionEventEditor & {
     auto target = currentOwnerEvents();
     if (_eventEditor == nullptr) {
         _eventEditor = std::make_unique<HttpServerSessionEventEditor>(shared_from_this(), std::move(target), *this);
     }
     return *_eventEditor;
+}
+
+void HttpServerSession::deliverRequest(network::HttpServerRequestPtr request) {
+    if (_onRequestReceived) {
+        _onRequestReceived(std::move(request));
+    }
 }
 
 }

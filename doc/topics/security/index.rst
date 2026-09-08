@@ -13,3 +13,4 @@ These topics explain the boundaries and limitations that developers must conside
     :maxdepth: 3
 
     about_sensitive_strings_and_byte_blocks
+    secure_memory_erasure

@@ -8,14 +8,14 @@
 #include "../impl/tcp/TcpListener_fwd.hpp"
 #include "../tcp/TcpListener_fwd.hpp"
 
+#include "../../event/EventSubscription.hpp"
+#include "../../event/impl/EventCallbackList.hpp"
 #include "../../unit/ItemCount.hpp"
 
-#include <cstdint>
 #include <functional>
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <unordered_map>
 
 namespace erbsland::network {
 
@@ -62,16 +62,13 @@ private:
     /// Release one slot and notify capacity subscribers.
     void release() noexcept;
     /// Register a capacity-change callback.
-    [[nodiscard]] auto subscribe(CapacityCallback callback) -> std::uint64_t;
-    /// Remove a capacity-change callback.
-    void unsubscribe(std::uint64_t id) noexcept;
+    [[nodiscard]] auto addCapacityChanged(CapacityCallback callback) -> event::EventSubscription;
 
 private:
-    unit::ItemCount _maximum;                                         ///< Maximum simultaneous leases.
-    mutable std::mutex _mutex;                                        ///< Protects counts and subscribers.
-    std::size_t _current{};                                           ///< Current acquired lease count.
-    std::uint64_t _nextSubscriptionId{1U};                            ///< Next nonzero subscriber identifier.
-    std::unordered_map<std::uint64_t, CapacityCallback> _subscribers; ///< Capacity-change callbacks.
+    unit::ItemCount _maximum;                                                   ///< Maximum simultaneous leases.
+    mutable std::mutex _mutex;                                                  ///< Protects counts and subscribers.
+    std::size_t _current{};                                                     ///< Current acquired lease count.
+    event::impl::EventCallbackList<CapacityCallback> _capacityChangedCallbacks; ///< Capacity-change observers.
 };
 
 }

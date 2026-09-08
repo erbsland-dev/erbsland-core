@@ -45,6 +45,14 @@ ByteBlock::ByteBlock(const ByteBlockEditor &editor) noexcept :
 ByteBlock::ByteBlock(impl::ByteBlockDataPtr data, ByteRange range) noexcept : _data{std::move(data)}, _range{range} {
 }
 
+auto ByteBlock::copy() const -> ByteBlock {
+    auto result = ByteBlockEditor::fromSpan(span());
+    if (isSensitive()) {
+        result.markAsSensitive();
+    }
+    return ByteBlock{result};
+}
+
 auto ByteBlock::isSensitive() const noexcept -> bool {
     return !_data.isNull() && _data.constGet()->isSensitive();
 }
@@ -137,6 +145,14 @@ auto ByteBlock::slice(const ByteIndex begin, const ByteIndex end) const noexcept
 
 auto ByteBlock::slice(const ByteIndex begin, const ByteLength length) const noexcept -> ByteBlock {
     return slice(ByteRange{begin, length});
+}
+
+auto ByteBlock::kept(const ByteRange range) const -> ByteBlock {
+    auto result = ByteBlockEditor::fromSpan(span(range));
+    if (isSensitive()) {
+        result.markAsSensitive();
+    }
+    return ByteBlock{result};
 }
 
 void ByteBlock::secureErase() {

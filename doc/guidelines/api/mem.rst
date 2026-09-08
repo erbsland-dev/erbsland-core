@@ -135,7 +135,9 @@ Shared Block Patterns
 .. code-block:: text
 
     T(editor-or-block) // share visible block allocation ownership
+    o.copy() -> T // create independent storage with only the visible bytes
     o.slice(range) -> ByteBlock // create a shared read-only slice
+    o.kept(range) -> T // create independent storage with only a clamped visible range
     o.join(parts) -> ByteBlockEditor // join byte sequences using the receiver as separator
     T::fromJoined(parts) -> ByteBlockEditor // join byte sequences without a separator
     o.detach() // ensure unique mutable storage before low-level access

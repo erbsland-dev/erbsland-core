@@ -78,16 +78,10 @@ if (WIN32)
             WindowsBackend_input.cpp
             WindowsBackendPrivate.hpp
             WindowsBackendPrivate_fwd.hpp
-            WindowsSignalDispatcher.cpp
-            WindowsSignalDispatcher.hpp
-            WindowsSignalDispatcher_fwd.hpp
     )
 else ()
     target_sources(erbsland-core PRIVATE
             PosixBackend.cpp
             PosixBackend.hpp
-            PosixSignalDispatcher.cpp
-            PosixSignalDispatcher.hpp
-            PosixSignalDispatcher_fwd.hpp
     )
 endif ()

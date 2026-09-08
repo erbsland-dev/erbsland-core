@@ -3,10 +3,10 @@
 #include "PosixBackend.hpp"
 
 #include "KeyDecoder.hpp"
-#include "PosixSignalDispatcher.hpp"
 #include "StandardInput.hpp"
 
 #include "../../mem/impl/SecureErase.hpp"
+#include "../../system/impl/signal/ProcessSignalDispatcher.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../text/StringEditor.hpp"
 
@@ -36,15 +36,15 @@ PosixBackend::PosixBackend(const TerminalFlags terminalFlags) : _terminalFlags{t
     // called once per application.
     _instance = this;
     if (!_terminalFlags.has(TerminalFlag::NoSignalHandling)) {
-        _signalHandler = std::make_unique<PosixSignalDispatcher>(
-            [this](const int signalNumber) -> void { handleProcessSignal(signalNumber); });
+        _signalSubscription = system::impl::ProcessSignalDispatcher::instance().addSignal(
+            [](system::impl::ProcessSignal, bool &) -> void { restoreGlobalPlatform(); });
     }
     _pendingKeyInput.reserve(cMaximumPendingKeyInputSize + cMaximumInputReadSize);
 }
 
 PosixBackend::~PosixBackend() {
     purgePendingInput();
-    _signalHandler.reset();
+    _signalSubscription.cancel();
     std::scoped_lock lock{_instanceMutex};
     if (_instance != nullptr) {
         _instance->restorePlatform();
@@ -385,17 +385,6 @@ void PosixBackend::appendInputChunks(const OptionalTimeout timeout) {
             return;
         }
     }
-}
-
-void PosixBackend::handleProcessSignal(const int signalNumber) noexcept {
-    restoreGlobalPlatform();
-    struct sigaction action{};
-    action.sa_handler = SIG_DFL;
-    sigemptyset(&action.sa_mask);
-    action.sa_flags = 0;
-    sigaction(signalNumber, &action, nullptr);
-    kill(getpid(), signalNumber);
-    std::_Exit(128 + signalNumber);
 }
 
 }

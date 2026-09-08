@@ -11,6 +11,17 @@ HttpServerRequestEventEditor::HttpServerRequestEventEditor(
     network::HttpServerRequestEventEditor{std::move(source), std::move(target)}, _request{request} {
 }
 
+auto HttpServerRequestEventEditor::onResponseCommitted(HttpServerResponseFn callback)
+    -> HttpServerRequestEventEditor & {
+    _request._onResponseCommitted = std::move(callback);
+    return *this;
+}
+
+auto HttpServerRequestEventEditor::onError(NetworkErrorFn callback) -> HttpServerRequestEventEditor & {
+    _request._onError = std::move(callback);
+    return *this;
+}
+
 auto HttpServerRequestEventEditor::onBodyData(NetworkDataFn callback) -> HttpServerRequestEventEditor & {
     _request._onBodyData = std::move(callback);
     return *this;

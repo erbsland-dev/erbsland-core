@@ -54,6 +54,8 @@ Byte Block
 
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` is the owning read-only type for arbitrary byte sequences.
 It shares copy-on-write storage, and its slices retain the same storage while exposing a smaller byte range.
+Ordinary copies and ``slice()`` share allocations; ``copy()`` creates independent storage for the visible bytes, and
+``kept()`` copies a selected clamped range directly without retaining the source allocation.
 It is also the scalar byte-storage type used by configuration values, hashes, signatures, and other Core APIs, so these
 subsystems can exchange immutable byte data without adapter wrappers.
 
@@ -86,6 +88,8 @@ Byte Block Editor
 Converting an editor to ``ByteBlock`` shares the complete data without copying; later editor mutations detach and leave
 the read-only value unchanged.
 Constructing an editor from a ``ByteBlock`` copies only the visible bytes, including when the source is a slice.
+The editor's ``copy()`` and ``kept()`` methods likewise create independent mutable storage and preserve the sensitive
+allocation mark.
 The editor provides the same checked little- and big-endian integer helpers as ``ByteArray``.
 Failed tolerant writes validate before detaching, so both bytes and sharing remain unchanged.
 ``appendInteger()`` encodes and appends one integer.
@@ -249,13 +253,12 @@ output-length mismatches.
 Compression Envelopes
 ---------------------
 
-``compressWithEnvelope()`` frames the raw payload with the stable ``ELBC`` header, algorithm identifier, original
-length, and payload length.
+``compressWithEnvelope()`` frames the raw payload with the ``ELBC`` header, algorithm identifier, original length, and
+payload length.
 :cpp:func:`ByteDecompressor::decompressWithEnvelope()
 <erbsland::mem::ByteDecompressor::decompressWithEnvelope>` validates the complete frame and automatically selects the
 encoded algorithm.
 The optional maximum-output limit is checked before allocating output storage.
-The envelope provides framing only; it is not an integrity or authentication mechanism.
 
 Buffered Operation
 ------------------

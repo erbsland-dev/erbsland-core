@@ -17,6 +17,7 @@ public:
     HttpServerSessionEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpServerSession &session);
 
 public: // implement network::HttpServerSessionEventEditor
+    auto onRequestReceived(HttpServerRequestEventFn callback) -> HttpServerSessionEventEditor & override;
     auto onRequest(text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
         -> HttpServerSessionEventEditor & override;
     auto onRequest(

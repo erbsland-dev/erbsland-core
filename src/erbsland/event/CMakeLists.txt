@@ -41,6 +41,8 @@ target_sources(erbsland-core PRIVATE
         EventSource.cpp
         EventSource.hpp
         EventSource_fwd.hpp
+        EventSubscription.hpp
+        EventSubscription_fwd.hpp
         EventThread.hpp
         EventThread_fwd.hpp
         EventTimer.hpp

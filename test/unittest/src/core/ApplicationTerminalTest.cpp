@@ -6,6 +6,7 @@
 #include "../cterm/support/TerminalTestBackend.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/core/impl/application_data/ApplicationTerminalData.hpp>
 #include <erbsland/core/impl/ApplicationDataImpl.hpp>
 #include <erbsland/cterm/Terminal.hpp>
 #include <erbsland/options/OptionHelp.hpp>
@@ -107,7 +108,7 @@ public:
 
         auto regularDocument = el::text::TextDocument{};
         regularDocument.addError("embedded parser error"_el);
-        data.renderSystemOutput(regularDocument);
+        data.terminal().get()->renderSystemOutput(regularDocument);
 
         REQUIRE_EQUAL(toStdString(output), std::string{"embedded parser error\n"});
         REQUIRE_EQUAL(toStdString(error), std::string{});
@@ -115,7 +116,7 @@ public:
         auto errorDocument = el::text::TextDocument{};
         errorDocument.root()->setStyle("error"_el);
         errorDocument.addParagraph()->addText("real error"_el);
-        data.renderSystemOutput(errorDocument);
+        data.terminal().get()->renderSystemOutput(errorDocument);
 
         REQUIRE_EQUAL(toStdString(error), std::string{"real error\n"});
     }

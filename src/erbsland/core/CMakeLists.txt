@@ -10,6 +10,7 @@ target_sources(erbsland-core PRIVATE
         Application.hpp
         Application_events.cpp
         Application_fwd.hpp
+        Application_service.cpp
         ApplicationError.cpp
         ApplicationError.hpp
         ApplicationErrorContext.hpp
@@ -27,6 +28,8 @@ target_sources(erbsland-core PRIVATE
         ApplicationPartManager.hpp
         ApplicationPartManager_fwd.hpp
         ApplicationPartManagerAccess.hpp
+        ApplicationPartManagerEventEditor.hpp
+        ApplicationPartManagerEventEditor_fwd.hpp
         ApplicationPartManagerState.hpp
         ApplicationPartState.hpp
         ApplicationPartTraits.hpp

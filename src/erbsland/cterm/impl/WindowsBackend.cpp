@@ -4,6 +4,7 @@
 
 #include "WindowsBackendPrivate.hpp"
 
+#include "../../system/impl/signal/ProcessSignalDispatcher.hpp"
 #include "../../text/Literals.hpp"
 #include "../../text/StringConverter.hpp"
 #include "../../unit/CpLength.hpp"
@@ -35,14 +36,14 @@ WindowsBackend::WindowsBackend(const TerminalFlags terminalFlags) :
     // called once per application.
     _instance = this;
     if (!_p->_terminalFlags.has(TerminalFlag::NoSignalHandling)) {
-        _p->_signalHandler = std::make_unique<WindowsSignalDispatcher>(
-            [this](const int signalNumber) -> void { handleProcessSignal(signalNumber); });
+        _p->_signalSubscription = system::impl::ProcessSignalDispatcher::instance().addSignal(
+            [](system::impl::ProcessSignal, bool &) -> void { restoreGlobalPlatform(); });
     }
 }
 
 WindowsBackend::~WindowsBackend() {
     purgePendingInput();
-    _p->_signalHandler.reset();
+    _p->_signalSubscription.cancel();
     std::scoped_lock lock{_instanceMutex};
     if (_instance != nullptr) {
         _instance->restorePlatform();

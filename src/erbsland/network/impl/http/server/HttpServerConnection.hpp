@@ -15,6 +15,7 @@
 
 #include "../../../http/HttpMediaType.hpp"
 #include "../../../http/HttpStatus.hpp"
+#include "../../../http_server/HttpConnectionInfo.hpp"
 #include "../../../http_server/HttpServerRequest_fwd.hpp"
 #include "../../../http_server/HttpServerSession_fwd.hpp"
 #include "../../../source/Connection_fwd.hpp"
@@ -23,6 +24,7 @@
 
 #include <cstddef>
 #include <memory>
+#include <optional>
 
 namespace erbsland::network::impl {
 
@@ -79,25 +81,28 @@ private:
     void sendFrameworkError(HttpStatus status);
     /// Translate captured server options into transaction options.
     [[nodiscard]] auto transactionOptions() const -> Http1TransactionOptions;
+    /// Capture immutable public information from the current transport.
+    [[nodiscard]] auto createConnectionInfo() const -> HttpConnectionInfo;
     /// Test whether decoded framing carries a semantic request body.
     [[nodiscard]] static auto hasBody(const Http1DecodeEvent &event) noexcept -> bool;
     /// Map a transaction failure phase to its bounded framework status.
     [[nodiscard]] static auto errorStatus(const Http1TransactionFailure &failure) noexcept -> HttpStatus;
 
 private:
-    std::weak_ptr<HttpServer> _server;               ///< Owning server.
-    TcpConnectionRequestPtr _acceptRequest;          ///< Pending accepted capability.
-    ConnectionPtr _connection;                       ///< Active plaintext or TLS stream.
-    Http1TransactionPtr _transaction;                ///< Current sequential exchange.
-    std::shared_ptr<HttpServerRequest> _request;     ///< Current retained public request.
-    HttpRouteHandler _handler;                       ///< Current selected route handler.
-    HttpStaticContentOperationPtr _staticContent;    ///< Active framework-owned static response.
-    network::HttpServerSessionPtr _anonymousSession; ///< Default per-connection session.
-    std::size_t _requestCount{};                     ///< Started transaction count.
-    bool _secure{};                                  ///< Whether this is an HTTPS connection.
-    bool _closing{};                                 ///< Whether reuse is disabled.
-    bool _reusable{};                                ///< Last transaction result.
-    bool _removed{};                                 ///< Server removal guard.
+    std::weak_ptr<HttpServer> _server;                 ///< Owning server.
+    TcpConnectionRequestPtr _acceptRequest;            ///< Pending accepted capability.
+    ConnectionPtr _connection;                         ///< Active plaintext or TLS stream.
+    std::optional<HttpConnectionInfo> _connectionInfo; ///< Immutable active-connection snapshot.
+    Http1TransactionPtr _transaction;                  ///< Current sequential exchange.
+    std::shared_ptr<HttpServerRequest> _request;       ///< Current retained public request.
+    HttpRouteHandler _handler;                         ///< Current selected route handler.
+    HttpStaticContentOperationPtr _staticContent;      ///< Active framework-owned static response.
+    network::HttpServerSessionPtr _anonymousSession;   ///< Default per-connection session.
+    std::size_t _requestCount{};                       ///< Started transaction count.
+    bool _secure{};                                    ///< Whether this is an HTTPS connection.
+    bool _closing{};                                   ///< Whether reuse is disabled.
+    bool _reusable{};                                  ///< Last transaction result.
+    bool _removed{};                                   ///< Server removal guard.
 };
 
 }

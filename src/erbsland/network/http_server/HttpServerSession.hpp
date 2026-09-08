@@ -32,6 +32,9 @@ public:
     [[nodiscard]] virtual auto isValid() const noexcept -> bool = 0;
     /// Prevent new selection and notify the session manager.
     virtual void invalidate() = 0;
+    /// Replace the manager-owned identifier while preserving session data.
+    /// @return `true` if the active session manager renewed the identifier.
+    [[nodiscard]] virtual auto renewIdentifier() -> bool = 0;
     /// Access session-specific routes and lifecycle callbacks.
     [[nodiscard]] auto events() -> HttpServerSessionEventEditor & override = 0;
 

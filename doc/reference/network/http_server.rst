@@ -112,6 +112,11 @@ cookie-session examples.
 Interface
 =========
 
+.. doxygenclass:: erbsland::network::HttpConnectionInfo
+    :members:
+.. doxygentypedef:: erbsland::network::HttpConnectionInfoFn
+
+.. doxygentypedef:: erbsland::network::HttpConnectionErrorFn
 .. doxygenenum:: erbsland::network::HttpCookieSecurePolicy
 .. doxygenclass:: erbsland::network::HttpCookieSessionManager
     :members:
@@ -144,6 +149,10 @@ Interface
 .. doxygentypedef:: erbsland::network::HttpServerRequestHeadFn
 
 .. doxygentypedef:: erbsland::network::HttpServerSessionFn
+
+.. doxygentypedef:: erbsland::network::HttpServerRequestEventFn
+
+.. doxygentypedef:: erbsland::network::HttpServerResponseFn
 .. doxygenclass:: erbsland::network::HttpServerRouteOptions
     :members:
 .. doxygenclass:: erbsland::network::HttpServerSession
@@ -162,6 +171,8 @@ Interface
     :members:
 
 .. doxygentypedef:: erbsland::network::HttpServerSessionManagerPtr
+.. doxygenclass:: erbsland::network::HttpServerSessionRenewal
+    :members:
 .. doxygenclass:: erbsland::network::HttpServerSessionSelection
     :members:
 .. doxygenclass:: erbsland::network::HttpServerTlsOptions
@@ -175,4 +186,6 @@ Interface
 .. doxygenclass:: erbsland::network::HttpStaticFileHandler
     :members:
 .. doxygenclass:: erbsland::network::HttpStaticResourceHandler
+    :members:
+.. doxygenclass:: erbsland::network::HttpTlsConnectionInfo
     :members:

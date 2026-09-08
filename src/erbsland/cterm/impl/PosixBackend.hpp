@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "PosixSignalDispatcher_fwd.hpp"
-
 #include "../Backend.hpp"
+
+#include "../../event/EventSubscription.hpp"
 
 #include <termios.h>
 #include <unistd.h>
@@ -92,8 +92,6 @@ private:
     void erasePendingKeyInput(std::size_t byteCount);
     /// Decode one pending key using either a timeout-based poll or a blocking wait.
     [[nodiscard]] auto readDecodedKey(OptionalTimeout timeout) -> Key;
-    /// Restore the terminal and terminate the process for one handled signal.
-    void handleProcessSignal(int signalNumber) noexcept;
 
 private:
     static std::mutex _instanceMutex;                       ///< The mutex to protect the instance.
@@ -111,7 +109,7 @@ private:
     termios _originalState{};                               ///< state backup.
     std::string _pendingKeyInput;                           ///< Buffered raw input that was not yet decoded.
     std::optional<clock::time_point> _pendingEscapeStarted; ///< Start time for resolving a pending escape sequence.
-    std::unique_ptr<PosixSignalDispatcher> _signalHandler;  ///< Helper that forwards termination signals safely.
+    event::EventSubscription _signalSubscription;           ///< Process-signal cleanup subscription.
 };
 
 }

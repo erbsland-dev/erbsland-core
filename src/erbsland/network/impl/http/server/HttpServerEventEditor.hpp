@@ -18,6 +18,9 @@ public:
 
 public: // implement network::HttpServerEventEditor
     auto onListening(NetworkEventFn callback) -> HttpServerEventEditor & override;
+    auto onConnectionActive(HttpConnectionInfoFn callback) -> HttpServerEventEditor & override;
+    auto onConnectionFinal(HttpConnectionInfoFn callback) -> HttpServerEventEditor & override;
+    auto onConnectionError(HttpConnectionErrorFn callback) -> HttpServerEventEditor & override;
     auto onNewSession(HttpServerSessionFn callback) -> HttpServerEventEditor & override;
     auto onRequest(text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
         -> HttpServerEventEditor & override;

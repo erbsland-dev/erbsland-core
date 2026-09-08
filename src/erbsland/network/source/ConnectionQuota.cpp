@@ -5,8 +5,6 @@
 #include "../../err/ParameterError.hpp"
 #include "../../text/Literals.hpp"
 
-#include <vector>
-
 namespace erbsland::network {
 
 using namespace text::literals;
@@ -22,7 +20,7 @@ ConnectionQuota::ConnectionQuota(const unit::ItemCount maximum) noexcept : _maxi
 }
 
 auto ConnectionQuota::tryAcquire(std::optional<IpEndpoint> remoteEndpoint) -> std::optional<ConnectionQuotaLease> {
-    auto callbacks = std::vector<CapacityCallback>{};
+    auto capacityChanged = false;
     {
         const auto lock = std::scoped_lock{_mutex};
         if (_current >= _maximum.toSizeT()) {
@@ -30,16 +28,11 @@ auto ConnectionQuota::tryAcquire(std::optional<IpEndpoint> remoteEndpoint) -> st
         }
         ++_current;
         if (_current == _maximum.toSizeT()) {
-            callbacks.reserve(_subscribers.size());
-            for (const auto &entry : _subscribers) {
-                callbacks.push_back(entry.second);
-            }
+            capacityChanged = true;
         }
     }
-    for (const auto &callback : callbacks) {
-        try {
-            callback();
-        } catch (...) {}
+    if (capacityChanged) {
+        _capacityChangedCallbacks.notify([](std::exception_ptr) noexcept -> void {});
     }
     return ConnectionQuotaLease{shared_from_this(), std::move(remoteEndpoint)};
 }
@@ -55,35 +48,18 @@ auto ConnectionQuota::available() const noexcept -> unit::ItemCount {
 }
 
 void ConnectionQuota::release() noexcept {
-    auto callbacks = std::vector<CapacityCallback>{};
     {
         const auto lock = std::scoped_lock{_mutex};
         if (_current == 0U) {
             return;
         }
         --_current;
-        callbacks.reserve(_subscribers.size());
-        for (const auto &entry : _subscribers) {
-            callbacks.push_back(entry.second);
-        }
     }
-    for (const auto &callback : callbacks) {
-        try {
-            callback();
-        } catch (...) {}
-    }
+    _capacityChangedCallbacks.notify([](std::exception_ptr) noexcept -> void {});
 }
 
-auto ConnectionQuota::subscribe(CapacityCallback callback) -> std::uint64_t {
-    const auto lock = std::scoped_lock{_mutex};
-    const auto id = _nextSubscriptionId++;
-    _subscribers.emplace(id, std::move(callback));
-    return id;
-}
-
-void ConnectionQuota::unsubscribe(const std::uint64_t id) noexcept {
-    const auto lock = std::scoped_lock{_mutex};
-    _subscribers.erase(id);
+auto ConnectionQuota::addCapacityChanged(CapacityCallback callback) -> event::EventSubscription {
+    return _capacityChangedCallbacks.add(std::move(callback));
 }
 
 }

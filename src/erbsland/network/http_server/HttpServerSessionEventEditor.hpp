@@ -26,6 +26,8 @@ public:
     ~HttpServerSessionEventEditor() override = default;
 
 public:
+    /// Replace the callback emitted when a request is selected for this session.
+    virtual auto onRequestReceived(HttpServerRequestEventFn callback) -> HttpServerSessionEventEditor & = 0;
     /// Add an aggregated byte route for every method.
     virtual auto onRequest(text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options = {})
         -> HttpServerSessionEventEditor & = 0;

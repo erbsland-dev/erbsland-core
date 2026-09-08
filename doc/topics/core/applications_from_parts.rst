@@ -42,12 +42,13 @@ the remaining managed event system.
         app.info().setApplicationName("Catalog Service"_el);
         app.registerPart<CatalogStoragePart>();
         app.registerPart<CatalogServerPart>();
-        app.partManager()->setStateChangedFn([&app](const el::ApplicationPartManagerState state) -> void {
+        [[maybe_unused]] auto stateSubscription =
+            app.partManager()->events().addStateChanged([&app](const el::ApplicationPartManagerState state) -> void {
             if (state == el::ApplicationPartManagerState::Running) {
                 el::io::printLine("all application parts are running"_el);
                 app.quit();
             }
-        });
+            });
         return app.run();
     }
 

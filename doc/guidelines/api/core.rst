@@ -51,6 +51,8 @@ Lifecycle Patterns
     o.registerPart<T>() // register an application-part class before run
     o.part<T>() -> shared_ptr<T> // access a prepared part through its interface
     o.enableTerminal() // create and retain advanced terminal integration
+    o.enableServiceLifecycle() // enable foreground-daemon and Windows service lifecycle integration
+    o.reportStartupPending(expectedTime)/reportStartupComplete() // report delayed startup progress and readiness
     o.releaseOptions() // release startup-only option definitions
 
 Customization Patterns
@@ -78,6 +80,8 @@ Application-Part Patterns
     o.waitForRunning([identifier])/waitForStopped([identifier]) -> bool // wait outside managed event threads
     o.registerCommandLineOptions(options)/parseCommandLine(values) // synchronously forward option phases
     o.setErrorHandler(handler) // select Continue or StopAll after part failures
+    o.events() -> ApplicationPartManagerEventEditor& // access the stable manager-owned lifecycle event editor
+    o.addStateChanged/addPartStateChanged(callback) -> EventSubscription // add an observer through the event editor
     o.hasError()/takeError() -> T // inspect and consume the ordered error queue
 
 Application Service Patterns

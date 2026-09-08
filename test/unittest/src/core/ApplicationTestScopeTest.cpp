@@ -31,9 +31,23 @@ public:
     inline static std::atomic<int> optionsAccessCount{};
 
 public:
-    auto options() noexcept -> const el::options::OptionsPtr & override {
+    auto options() const noexcept -> const el::core::impl::ApplicationOptionsDataAccessor & override {
         ++optionsAccessCount;
         return ApplicationDataImpl::options();
+    }
+};
+
+class LazyCleanupApplicationData final : public el::core::impl::ApplicationDataImpl {
+public:
+    inline static bool lifecycleWasCreated{};
+    inline static bool loggingWasCreated{};
+    inline static bool terminalWasCreated{};
+
+public:
+    ~LazyCleanupApplicationData() override {
+        lifecycleWasCreated = ApplicationDataImpl::lifecycle().getIfExists() != nullptr;
+        loggingWasCreated = ApplicationDataImpl::logging().getIfExists() != nullptr;
+        terminalWasCreated = ApplicationDataImpl::terminal().getIfExists() != nullptr;
     }
 };
 
@@ -87,5 +101,47 @@ public:
         const auto applicationName = application.info().applicationName();
         REQUIRE_EQUAL(applicationName, "Temporary"_el);
         REQUIRE_THROWS_AS(IllegalApplicationInstanceAccess, scope.app());
+    }
+
+    void testCleanupDoesNotCreateUnusedComponents() {
+        LazyCleanupApplicationData::lifecycleWasCreated = true;
+        LazyCleanupApplicationData::loggingWasCreated = true;
+        LazyCleanupApplicationData::terminalWasCreated = true;
+        { auto scope = ApplicationTestScope<el::core::Application, LazyCleanupApplicationData>{}; }
+
+        REQUIRE_FALSE(LazyCleanupApplicationData::lifecycleWasCreated);
+        REQUIRE_FALSE(LazyCleanupApplicationData::loggingWasCreated);
+        REQUIRE_FALSE(LazyCleanupApplicationData::terminalWasCreated);
+    }
+
+    void testRunDoesNotCreateUnusedLifecycleData() {
+        LazyCleanupApplicationData::lifecycleWasCreated = true;
+        {
+            auto scope = ApplicationTestScope<el::core::Application, LazyCleanupApplicationData>{};
+            scope.app().setMainFn([]() -> el::unit::ExitCode { return el::unit::ExitCode::success(); });
+            REQUIRE_EQUAL(scope.app().run(), 0);
+        }
+
+        REQUIRE_FALSE(LazyCleanupApplicationData::lifecycleWasCreated);
+    }
+
+    void testQuitDoesNotCreateUnusedLifecycleData() {
+        LazyCleanupApplicationData::lifecycleWasCreated = true;
+        {
+            auto scope = ApplicationTestScope<el::core::Application, LazyCleanupApplicationData>{};
+            scope.app().quit();
+        }
+
+        REQUIRE_FALSE(LazyCleanupApplicationData::lifecycleWasCreated);
+    }
+
+    void testPartManagerDoesNotCreateUnusedLifecycleData() {
+        LazyCleanupApplicationData::lifecycleWasCreated = true;
+        {
+            auto scope = ApplicationTestScope<el::core::Application, LazyCleanupApplicationData>{};
+            REQUIRE(scope.app().partManager() != nullptr);
+        }
+
+        REQUIRE_FALSE(LazyCleanupApplicationData::lifecycleWasCreated);
     }
 };

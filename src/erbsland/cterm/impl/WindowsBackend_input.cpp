@@ -5,7 +5,6 @@
 #include "InputRecordEraseGuard.hpp"
 #include "StandardInput.hpp"
 #include "WindowsBackendPrivate.hpp"
-#include "WindowsSignalDispatcher.hpp"
 
 #include "../../core/impl/WindowsApi.hpp"
 #include "../../text/Literals.hpp"
@@ -344,11 +343,6 @@ auto WindowsBackend::decodeUtf16CodeUnit(const char16_t codeUnit) -> std::option
         _p->_pendingHighSurrogate.reset();
     }
     return static_cast<char32_t>(codeUnit);
-}
-
-void WindowsBackend::handleProcessSignal(const int exitCode) noexcept {
-    restoreGlobalPlatform();
-    std::_Exit(exitCode);
 }
 
 }

@@ -4,24 +4,26 @@
 
 #include "ApplicationError.hpp"
 
+#include "impl/application_data/ApplicationCryptologyData.hpp"
+#include "impl/application_data/ApplicationEventData.hpp"
+#include "impl/application_data/ApplicationLifecycleData.hpp"
+#include "impl/application_data/ApplicationLogData.hpp"
+#include "impl/application_data/ApplicationOptionsData.hpp"
+#include "impl/application_data/ApplicationPartsData.hpp"
+#include "impl/application_data/ApplicationRandomData.hpp"
+#include "impl/application_data/ApplicationResourceData.hpp"
+#include "impl/application_data/ApplicationRuntimeData.hpp"
+#include "impl/application_data/ApplicationSystemData.hpp"
+#include "impl/application_data/ApplicationTerminalData.hpp"
 #include "impl/ApplicationData.hpp"
 #include "impl/ApplicationInstanceManager.hpp"
-#include "impl/EventData.hpp"
 #include "impl/LibraryVersion.hpp"
 
 #include "../cryptology/configuration/CryptologyConfiguration.hpp"
 #include "../cterm/Terminal.hpp"
-#include "../cterm/TerminalStream.hpp"
 #include "../err/DiagnosticHelper.hpp"
+#include "../err/LogicError.hpp"
 #include "../event/EventLoop.hpp"
-#include "../event/EventLoopErrorAction.hpp"
-#include "../event/impl/CurrentEventsScope.hpp"
-#include "../event/impl/ManagedEventThread.hpp"
-#include "../event/ManagedEventThread.hpp"
-#include "../i18n/DisplayTextMap.hpp"
-#include "../log/impl/ConsoleLogWriter.hpp"
-#include "../log/impl/LastErrorsLogWriter.hpp"
-#include "../log/LogConfiguration.hpp"
 #include "../log/LogManager.hpp"
 #include "../log/LogStream.hpp"
 #include "../options/OptionError.hpp"
@@ -29,16 +31,11 @@
 #include "../options/OptionModule.hpp"
 #include "../random/SecureRandom.hpp"
 #include "../random/ThreadSafeFastRandom.hpp"
-#include "../resource/Resources.hpp"
-#include "../stream/StandardStreams.hpp"
 #include "../system/UserLookup.hpp"
-#include "../text/TextDocument.hpp"
 
-#include <algorithm>
 #include <exception>
 #include <memory>
 #include <utility>
-#include <vector>
 
 namespace erbsland::core {
 
@@ -51,12 +48,12 @@ Application::Application() {
 
 Application::Application(const int argc, char *argv[]) {
     _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
-    _data->setCommandLineArguments(argc, argv);
+    _data->options().get()->setCommandLineArguments(argc, argv);
 }
 
 Application::Application(const int argc, wchar_t *argv[]) {
     _data = impl::ApplicationInstanceManager::instance()->registerUserInstance(this);
-    _data->setCommandLineArguments(argc, argv);
+    _data->options().get()->setCommandLineArguments(argc, argv);
 }
 
 Application::Application(impl::ApplicationDataPtr data) : _data{std::move(data)} {
@@ -64,27 +61,50 @@ Application::Application(impl::ApplicationDataPtr data) : _data{std::move(data)}
 
 Application::~Application() {
     if (impl::ApplicationInstanceManager::instance()->unregisterInstance(this)) {
-        _data->cleanupBeforeAppExit(_exitCode);
+        cleanupBeforeAppExit();
     }
 }
 
 auto Application::run() -> int {
+    _data->runtime().get()->startRun();
+    const auto lifecycleData = _data->lifecycle().getIfExists();
+    if (lifecycleData != nullptr) {
+        return lifecycleData->run([this]() -> int { return runApplicationLifecycle(); });
+    }
+    return runApplicationLifecycle();
+}
+
+auto Application::runApplicationLifecycle() -> int {
     unit::ExitCode exitCode;
     try {
         initialize();
-        if (const auto manager = partManagerIfCreated(); manager != nullptr) {
-            manager->prepare();
+        if (const auto partsData = _data->parts().getIfExists(); partsData != nullptr) {
+            if (const auto manager = partsData->managerIfExists(); manager != nullptr) {
+                manager->prepare();
+            }
         }
-        registerCommandLineOptions(_data->options());
-        if (const auto manager = partManagerIfCreated(); manager != nullptr) {
-            manager->registerCommandLineOptions(_data->options());
+        const auto optionsData = _data->options().get();
+        registerCommandLineOptions(optionsData->options());
+        if (const auto partsData = _data->parts().getIfExists(); partsData != nullptr) {
+            if (const auto manager = partsData->managerIfExists(); manager != nullptr) {
+                manager->registerCommandLineOptions(optionsData->options());
+            }
         }
         parseCommandLine();
-        if (_data->optionValues() == nullptr) {
+        if (optionsData->optionValues() == nullptr) {
             exitCode = unit::ExitCode::success();
         } else {
-            if (const auto manager = partManagerIfCreated(); manager != nullptr) {
-                manager->parseCommandLine(_data->optionValues());
+            const auto partsData = _data->parts().getIfExists();
+            const auto manager = partsData != nullptr ? partsData->managerIfExists() : nullptr;
+            if (manager != nullptr) {
+                manager->parseCommandLine(optionsData->optionValues());
+            }
+            if (const auto lifecycleData = _data->lifecycle().getIfExists(); lifecycleData != nullptr) {
+                if (manager != nullptr) {
+                    lifecycleData->reportAutomaticStartupPending();
+                } else {
+                    lifecycleData->reportAutomaticStartupComplete();
+                }
             }
             exitCode = main();
         }
@@ -103,7 +123,8 @@ auto Application::run() -> int {
         } else {
             exitCode = unit::ExitCode::failure();
         }
-        _data->renderSystemOutput(err::DiagnosticHelper{error, _data->displayText()}.toDocument());
+        _data->terminal().get()->renderSystemOutput(
+            err::DiagnosticHelper{error, _data->system().get()->displayText()}.toDocument());
     } catch (...) {
         const auto error = std::current_exception();
         try {
@@ -120,69 +141,53 @@ auto Application::run() -> int {
 }
 
 void Application::setInitializeFn(InitializeFn initializeFn) {
-    _data->setInitializeFn(std::move(initializeFn));
+    _data->runtime().get()->setInitializeFn(std::move(initializeFn));
 }
 
 void Application::setMainFn(MainFn mainFn) {
-    _data->setMainFn(std::move(mainFn));
+    _data->runtime().get()->setMainFn(std::move(mainFn));
 }
 
 auto Application::options() const noexcept -> const options::OptionsPtr & {
-    return _data->options();
+    return _data->options().get()->options();
 }
 
 void Application::releaseOptions() noexcept {
-    _data->setOptions(nullptr);
+    _data->options().get()->releaseOptions();
 }
 
 auto Application::info() noexcept -> ApplicationInfo & {
-    return _data->info();
+    return _data->runtime().get()->info();
 }
 
 auto Application::info() const noexcept -> const ApplicationInfo & {
-    return _data->info();
+    return _data->runtime().get()->info();
 }
 
 auto Application::commandLineArguments() const noexcept -> const CommandLineArguments & {
-    return _data->commandLineArguments();
+    return _data->options().get()->commandLineArguments();
 }
 
 auto Application::optionValues() const noexcept -> const options::OptionValuesPtr & {
-    return _data->optionValues();
+    return _data->options().get()->optionValues();
 }
 
 auto Application::partManager() -> ApplicationPartManagerPtr {
-    const auto lock = std::scoped_lock{_data->partManagerMutex()};
-    if (_data->partManager() == nullptr) {
-        auto manager = ApplicationPartManager::create(events());
-        manager->setOwnerStateChangedFn([this](const ApplicationPartManagerState state) -> void {
-            if (state == ApplicationPartManagerState::Stopped || state == ApplicationPartManagerState::Failed) {
-                quitEventSystem();
-            }
-        });
-        _data->setPartManager(std::move(manager));
-    }
-    return _data->partManager();
+    return _data->parts().get()->manager(_data->events().get(), _data->lifecycle().getIfExists());
 }
 
 void Application::enableTerminal() {
-    if (_data->isTerminalEnabled()) {
+    const auto terminalData = _data->terminal().get();
+    if (terminalData->isEnabled()) {
         return;
     }
-    _data->setTerminal(createAndInitializeTerminal());
-    if (_data->terminal() == nullptr) {
-        return;
-    }
-    _data->setTerminalEnabled(true);
-    if (_data->terminal()->isInteractive()) {
-        const auto [output, error] = cterm::TerminalStream::createStandardStreams(_data->terminal());
-        _data->setStandardStreamRedirect(stream::redirectStandardStreams(output, error));
-    }
+    terminalData->enable(createAndInitializeTerminal());
 }
 
 void Application::initialize() {
-    if (_data->initializeFn()) {
-        _data->initializeFn()();
+    const auto runtimeData = _data->runtime().get();
+    if (runtimeData->initializeFn()) {
+        runtimeData->initializeFn()();
     }
 }
 
@@ -191,37 +196,39 @@ void Application::registerCommandLineOptions([[maybe_unused]] const options::Opt
 }
 
 void Application::parseCommandLine() {
-    if (_data->options() == nullptr) {
+    const auto optionsData = _data->options().get();
+    if (optionsData->options() == nullptr) {
         return;
     }
-    _data->options()->setApplicationInfo(_data->info());
+    optionsData->options()->setApplicationInfo(_data->runtime().get()->info());
 
-    auto manager = options::OptionManager{_data->options(), _data->displayText()};
-    const auto result = manager.parse(_data->commandLineArgumentsForParsing());
-    _data->maskSensitiveCommandLineText(result.sensitiveTextLocations());
+    auto manager = options::OptionManager{optionsData->options(), _data->system().get()->displayText()};
+    const auto result = manager.parse(optionsData->commandLineArgumentsForParsing());
+    optionsData->maskSensitiveCommandLineText(result.sensitiveTextLocations());
     const auto &values = result.values();
     switch (result.status()) {
     case options::OptionResultStatus::Success:
-        _data->setOptionValues(values);
+        optionsData->setOptionValues(values);
         return;
     case options::OptionResultStatus::DisplayHelp:
         if (result.helpName().isEmpty()) {
-            _data->renderSystemOutput(manager.helpDocument(values->moduleName()));
+            _data->terminal().get()->renderSystemOutput(manager.helpDocument(values->moduleName()));
         } else {
-            _data->renderSystemOutput(manager.detailedHelpDocument(values->moduleName(), result.helpName()));
+            _data->terminal().get()->renderSystemOutput(
+                manager.detailedHelpDocument(values->moduleName(), result.helpName()));
         }
-        _data->setOptionValues(nullptr);
+        optionsData->setOptionValues(nullptr);
         return;
     case options::OptionResultStatus::DisplayModuleOverview:
-        _data->renderSystemOutput(manager.moduleOverviewDocument());
-        _data->setOptionValues(nullptr);
+        _data->terminal().get()->renderSystemOutput(manager.moduleOverviewDocument());
+        optionsData->setOptionValues(nullptr);
         return;
     case options::OptionResultStatus::DisplayVersion:
-        _data->renderSystemOutput(manager.versionDocument(values->moduleName()));
-        _data->setOptionValues(nullptr);
+        _data->terminal().get()->renderSystemOutput(manager.versionDocument(values->moduleName()));
+        optionsData->setOptionValues(nullptr);
         return;
     case options::OptionResultStatus::Error:
-        _data->setOptionValues(nullptr);
+        optionsData->setOptionValues(nullptr);
         if (result.errorContext().has_value()) {
             throw options::OptionError{result.errorContext().value()};
         }
@@ -230,22 +237,33 @@ void Application::parseCommandLine() {
 }
 
 auto Application::main() -> unit::ExitCode {
-    if (_data->optionValues() == nullptr) {
+    const auto optionsData = _data->options().get();
+    if (optionsData->optionValues() == nullptr) {
         return unit::ExitCode::success();
     }
     // Check for a main function from a selected command line module.
-    const auto &module = _data->optionValues()->module();
+    const auto &module = optionsData->optionValues()->module();
     if (module != nullptr && module->mainFn()) {
-        return module->mainFn()(_data->optionValues());
+        return module->mainFn()(optionsData->optionValues());
     }
     // Check if a main function was defined.
-    if (_data->mainFn()) {
-        return _data->mainFn()();
+    const auto runtimeData = _data->runtime().get();
+    if (runtimeData->mainFn()) {
+        return runtimeData->mainFn()();
     }
     // By default, run the main loop of the application.
-    if (const auto manager = partManagerIfCreated();
-        manager != nullptr && manager->state() == ApplicationPartManagerState::Ready) {
-        manager->start();
+    const auto partsData = _data->parts().getIfExists();
+    const auto manager = partsData != nullptr ? partsData->managerIfExists() : nullptr;
+    if (manager != nullptr && manager->state() == ApplicationPartManagerState::Ready) {
+        const auto lifecycleData = _data->lifecycle().getIfExists();
+        const auto eventData = _data->events().getIfExists();
+        const auto isShutdownRequested = (lifecycleData != nullptr && lifecycleData->isShutdownRequested()) ||
+            (eventData != nullptr && eventData->isQuitRequested());
+        if (isShutdownRequested) {
+            manager->stop();
+        } else {
+            manager->start();
+        }
     }
     return runEventLoop();
 }
@@ -262,8 +280,7 @@ auto Application::createAndInitializeTerminal() -> cterm::TerminalPtr {
 }
 
 auto Application::random() -> random::Random & {
-    auto lock = std::scoped_lock{_data->randomMutex()};
-    if (_data->random() == nullptr) {
+    return _data->random().get()->random([this]() -> random::RandomPtr {
         auto random = random::RandomPtr{};
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
         initializeRandom(random);
@@ -271,14 +288,12 @@ auto Application::random() -> random::Random & {
         if (random == nullptr) {
             random = std::make_unique<random::ThreadSafeFastRandom>();
         }
-        _data->setRandom(std::move(random));
-    }
-    return *_data->random();
+        return random;
+    });
 }
 
 auto Application::secureRandom() -> random::Random & {
-    auto lock = std::scoped_lock{_data->randomMutex()};
-    if (_data->secureRandom() == nullptr) {
+    return _data->random().get()->secureRandom([this]() -> random::RandomPtr {
         auto random = random::RandomPtr{};
 #ifdef ERBSLAND_CORE_DEVELOPER_BUILD
         initializeSecureRandom(random);
@@ -286,35 +301,20 @@ auto Application::secureRandom() -> random::Random & {
         if (random == nullptr) {
             random = std::make_unique<random::SecureRandom>();
         }
-        _data->setSecureRandom(std::move(random));
-    }
-    return *_data->secureRandom();
+        return random;
+    });
 }
 
 auto Application::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {
-    return _data->cryptologyConfiguration();
+    return _data->cryptology().get()->configuration();
 }
 
 auto Application::log() -> log::LogManager & {
-    auto lock = std::scoped_lock{_data->logMutex()};
-    if (_data->logManager() == nullptr) {
-        if (!_data->isTerminalEnabled()) {
-            enableTerminal();
-        }
-        auto manager = log::LogManager::create();
-        auto consoleWriter = log::impl::ConsoleLogWriterPtr{};
-        auto configuration = log::LogConfiguration{};
-        if (_data->terminal() != nullptr) {
-            consoleWriter = std::make_shared<log::impl::ConsoleLogWriter>(_data->terminal());
-            configuration.addWriter(
-                consoleWriter,
-                log::LogWriterFilter{
-                    log::LogLevels{log::LogLevel::Information, log::LogLevel::Warning, log::LogLevel::Error}});
-        }
-        manager->setConfiguration(std::move(configuration));
-        _data->setLogManager(std::move(manager), std::move(consoleWriter));
+    const auto terminalData = _data->terminal().get();
+    if (!terminalData->isEnabled()) {
+        enableTerminal();
     }
-    return *_data->logManager();
+    return _data->logging().get()->manager(terminalData->terminal());
 }
 
 auto Application::logStream() -> const log::LogStreamPtr & {
@@ -323,55 +323,62 @@ auto Application::logStream() -> const log::LogStreamPtr & {
 
 void Application::enableLastErrorDump(const LastErrorDumpMode mode) {
     auto &manager = log();
-    const auto lock = std::scoped_lock{_data->logMutex()};
-    _data->setLastErrorDumpMode(mode);
-    if (_data->lastErrorsLogWriter() != nullptr) {
-        return;
-    }
-    auto writer = std::make_shared<log::impl::LastErrorsLogWriter>();
-    manager.addPersistentWriter(writer, log::LogWriterFilter{log::LogLevel::Error});
-    _data->setLastErrorsLogWriter(std::move(writer));
+    _data->logging().get()->enableLastErrorDump(manager, mode);
 }
 
 auto Application::resources() -> const resource::Resources & {
-    return _data->resources();
+    return _data->resources().get()->resources();
 }
 
 auto Application::userLookup() -> system::UserLookup & {
-    auto lock = std::scoped_lock{_data->systemMutex()};
-    if (_data->userLookup() == nullptr) {
-        _data->setUserLookup(std::make_unique<system::UserLookup>());
-    }
-    return *_data->userLookup();
+    return _data->system().get()->userLookup();
 }
 
 auto Application::displayText() const -> const i18n::DisplayTextMapConstPtr & {
-    auto lock = std::scoped_lock{_data->systemMutex()};
-    return _data->displayText();
+    return _data->system().get()->displayText();
 }
 
 void Application::setDisplayTextMap(i18n::DisplayTextMapConstPtr displayText) {
-    auto lock = std::scoped_lock{_data->systemMutex()};
-    _data->setDisplayText(std::move(displayText));
+    _data->system().get()->setDisplayText(std::move(displayText));
 }
 
 auto Application::terminal() const -> const cterm::TerminalPtr & {
-    if (!_data->isTerminalEnabled() || _data->terminal() == nullptr) {
+    const auto terminalData = _data->terminal().get();
+    if (!terminalData->isEnabled() || terminalData->terminal() == nullptr) {
         throw err::LogicError{"Terminal must be enabled before use."_el};
     }
-    return _data->terminal();
+    return terminalData->terminal();
 }
 
 auto Application::systemOutputStyle() const noexcept -> const cterm::TerminalDocumentStyle & {
-    return _data->systemOutputStyle();
+    return _data->terminal().get()->systemOutputStyle();
 }
 
 void Application::setSystemOutputStyle(cterm::TerminalDocumentStyle style) noexcept {
-    _data->setSystemOutputStyle(std::move(style));
+    _data->terminal().get()->setSystemOutputStyle(std::move(style));
 }
 
 auto Application::eventLoop() -> EventLoop & {
-    return *_data->event().eventLoop;
+    return _data->events().get()->eventLoop();
+}
+
+void Application::stopPartManager() {
+    const auto partsData = _data->parts().getIfExists();
+    if (partsData == nullptr || partsData->managerIfExists() == nullptr) {
+        return;
+    }
+    partsData->stop(*_data->events().get());
+}
+
+void Application::cleanupBeforeAppExit() noexcept {
+    const auto terminalData = _data->terminal().getIfExists();
+    const auto logData = _data->logging().getIfExists();
+    if (logData != nullptr) {
+        logData->cleanup(_exitCode, _data->system().get()->displayText(), terminalData.get());
+    }
+    if (terminalData != nullptr) {
+        terminalData->cleanup();
+    }
 }
 
 }

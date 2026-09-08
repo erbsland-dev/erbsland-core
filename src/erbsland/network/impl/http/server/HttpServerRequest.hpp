@@ -11,6 +11,7 @@
 
 #include "../../../http_server/HttpServerOptions.hpp"
 #include "../../../http_server/HttpServerRequest.hpp"
+#include "../../../source/Connection_fwd.hpp"
 
 #include <memory>
 
@@ -27,6 +28,7 @@ public:
         event::EventsPtr ownerEvents,
         HttpRequestHead head,
         HttpRequestTarget target,
+        HttpConnectionInfo connectionInfo,
         ConnectionPtr connection,
         HttpRoutes::Parameters parameters,
         HttpHeaders responseFields,
@@ -44,12 +46,8 @@ public: // implement network::HttpServerRequest
     [[nodiscard]] auto query() const noexcept -> const text::String & override;
     /// Get one route capture by unique name.
     [[nodiscard]] auto parameter(const text::String &name) const -> std::optional<text::String> override;
-    /// Get the active connection local endpoint.
-    [[nodiscard]] auto localEndpoint() const -> std::optional<IpEndpoint> override;
-    /// Get the active connection remote endpoint.
-    [[nodiscard]] auto remoteEndpoint() const -> std::optional<IpEndpoint> override;
-    /// Get the concrete active connection.
-    [[nodiscard]] auto connection() const noexcept -> const ConnectionPtr & override;
+    /// Get the immutable connection information snapshot.
+    [[nodiscard]] auto connectionInfo() const noexcept -> const HttpConnectionInfo & override;
     /// Get the selected logical session.
     [[nodiscard]] auto session() const -> HttpServerSessionPtr override;
     /// Select streamed request-body delivery.
@@ -88,6 +86,8 @@ public: // implement network::HttpServerRequest
     [[nodiscard]] auto events() -> network::HttpServerRequestEventEditor & override;
 
 public: // internal orchestration
+    /// Get the private transport for protocol integration and white-box tests.
+    [[nodiscard]] auto connection() const noexcept -> const ConnectionPtr & { return _connection; }
     /// Get pre-split decoded route segments.
     [[nodiscard]] auto segments() const noexcept -> const std::vector<text::String> & { return _target.segments(); }
     /// Test whether request framing carries a representation body.
@@ -110,6 +110,8 @@ public: // internal orchestration
     void deliverBodyCompleted();
     /// Deliver renewed semantic response capacity.
     void handleWritable();
+    /// Deliver a request-local network or protocol error.
+    void handleError(const NetworkErrorContext &context);
     /// Make this retained request safely stale exactly once.
     void finalize();
 
@@ -128,6 +130,7 @@ private:
 private:
     HttpRequestHead _head;                                      ///< Exact request head.
     HttpRequestTarget _target;                                  ///< Parsed origin-form target.
+    HttpConnectionInfo _connectionInfo;                         ///< Immutable connection snapshot.
     ConnectionPtr _connection;                                  ///< Concrete underlying connection.
     HttpServerSessionPtr _session;                              ///< Selected logical session.
     HttpRoutes::Parameters _parameters;                         ///< Route captures.
@@ -136,6 +139,8 @@ private:
     HttpServerOptions _options;                                 ///< Captured server limits.
     Http1TransactionPtr _transaction;                           ///< Active internal transaction.
     std::unique_ptr<HttpServerRequestEventEditor> _eventEditor; ///< Stable request editor.
+    HttpServerResponseFn _onResponseCommitted;                  ///< Committed response callback.
+    NetworkErrorFn _onError;                                    ///< Request-local error callback.
     NetworkDataFn _onBodyData;                                  ///< Streamed body callback.
     NetworkDataFn _onBody;                                      ///< Aggregated body callback.
     std::function<void(const HttpHeaders &)> _onTrailers;       ///< Trailer callback.

@@ -4,6 +4,9 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        HttpConnectionInfo.hpp
+        HttpConnectionInfo_fwd.hpp
+        HttpConnectionInfoFn.hpp
         HttpCookieSecurePolicy.hpp
         HttpCookieSessionManager.cpp
         HttpCookieSessionManager.hpp
@@ -27,6 +30,7 @@ target_sources(erbsland-core PRIVATE
         HttpServerSessionEventEditor.hpp
         HttpServerSessionManager.hpp
         HttpServerSessionManager_fwd.hpp
+        HttpServerSessionRenewal.hpp
         HttpServerSessionSelection.hpp
         HttpServerTlsOptions.hpp
         HttpSessionData.hpp
@@ -42,4 +46,5 @@ target_sources(erbsland-core PRIVATE
         HttpStaticResourceHandler.cpp
         HttpStaticResourceHandler.hpp
         HttpStaticResourceHandler_fwd.hpp
+        HttpTlsConnectionInfo.hpp
 )

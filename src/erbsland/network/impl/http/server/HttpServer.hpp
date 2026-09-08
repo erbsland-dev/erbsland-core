@@ -9,7 +9,10 @@
 
 #include "../static/HttpStaticContent.hpp"
 
+#include "../../../http/HttpResponseHead.hpp"
+#include "../../../http_server/HttpConnectionInfoFn.hpp"
 #include "../../../http_server/HttpServer.hpp"
+#include "../../../source/Connection_fwd.hpp"
 #include "../../../tcp/TcpConnectionRequest_fwd.hpp"
 #include "../../../tcp/TcpListener_fwd.hpp"
 #include "../../../tls/TlsServerAcceptOptions.hpp"
@@ -25,6 +28,7 @@ namespace erbsland::network::impl {
 class HttpServer final : public network::HttpServer {
     friend class HttpServerConnection;
     friend class HttpServerEventEditor;
+    friend class HttpServerRequest;
     friend class HttpStaticContentOperation;
 
 public:
@@ -74,6 +78,12 @@ private:
     /// Create and announce one server-owned logical session.
     [[nodiscard]] auto createSession(std::optional<text::String> identifier, HttpSessionDataPtr data)
         -> network::HttpServerSessionPtr;
+    /// Emit the accepted-connection active callback.
+    void notifyConnectionActive(const HttpConnectionInfo &info) const;
+    /// Emit the accepted-connection final callback.
+    void notifyConnectionFinal(const HttpConnectionInfo &info) const;
+    /// Emit a non-fatal accepted-connection error callback.
+    void notifyConnectionError(const HttpConnectionInfo &info, const NetworkErrorContext &error) const;
     /// Ask the manager for invalidation response fields.
     void sessionInvalidated(const network::HttpServerSessionPtr &session);
     /// Emit graceful closure after listener and connections drain.
@@ -116,6 +126,9 @@ private:
     std::vector<HttpStaticContentHandlerPtr> _staticContent;         ///< Frozen priority-ordered original handlers.
     HttpStaticContentUsePtr _staticContentUse;                       ///< Shared configuration-freeze lease.
     NetworkEventFn _onListening;                                     ///< Listening-ready callback.
+    HttpConnectionInfoFn _onConnectionActive;                        ///< Active accepted-connection callback.
+    HttpConnectionInfoFn _onConnectionFinal;                         ///< Final accepted-connection callback.
+    HttpConnectionErrorFn _onConnectionError;                        ///< Non-fatal accepted-connection error callback.
     HttpServerSessionFn _onNewSession;                               ///< New logical-session callback.
     NetworkEventFn _onClosed;                                        ///< Graceful closure callback.
     NetworkErrorFn _onError;                                         ///< Operational error callback.

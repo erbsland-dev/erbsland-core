@@ -5,6 +5,8 @@
 #include "HttpServerRequest_fwd.hpp"
 #include "HttpServerSession_fwd.hpp"
 
+#include "../http/HttpResponseHead.hpp"
+
 #include "../../mem/ByteBlock.hpp"
 #include "../../text/json/JsonValue.hpp"
 #include "../../text/String.hpp"
@@ -32,5 +34,13 @@ using HttpServerRequestHeadFn = std::function<void(HttpServerSessionPtr, HttpSer
 /// A new-session handler.
 /// @tested{HttpServerLiveTest}
 using HttpServerSessionFn = std::function<void(HttpServerSessionPtr)>;
+
+/// A callback receiving a request selected for one logical session.
+/// @tested{HttpServerLiveTest}
+using HttpServerRequestEventFn = std::function<void(HttpServerRequestPtr)>;
+
+/// A callback receiving the final committed response head for one request.
+/// @tested{HttpServerLiveTest}
+using HttpServerResponseFn = std::function<void(const HttpResponseHead &)>;
 
 }

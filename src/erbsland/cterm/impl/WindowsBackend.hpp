@@ -3,7 +3,6 @@
 #pragma once
 
 #include "WindowsBackendPrivate_fwd.hpp"
-#include "WindowsSignalDispatcher_fwd.hpp"
 
 #include "../Backend.hpp"
 
@@ -76,7 +75,6 @@ private:
     /// Read one key using either a timeout-based poll or a blocking wait.
     [[nodiscard]] auto readKeyFromConsole(OptionalTimeout timeout) -> Key;
     /// Restore the terminal and terminate the process for one handled event.
-    void handleProcessSignal(int exitCode) noexcept;
 
 private:
     static std::mutex _instanceMutex;          ///< The mutex to protect the instance.

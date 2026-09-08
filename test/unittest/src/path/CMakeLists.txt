@@ -9,6 +9,7 @@ target_sources(erbsland-core-unittest PRIVATE
         PathConstructionTest.cpp
         PathContentTest.cpp
         PathConversionTest.cpp
+        PathFileLockTest.cpp
         PathInfoTest.cpp
         PathModificationTest.cpp
         PathNameToolsTest.cpp

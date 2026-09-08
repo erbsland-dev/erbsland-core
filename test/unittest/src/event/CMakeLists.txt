@@ -9,6 +9,7 @@ target_sources(erbsland-core-unittest PRIVATE
         EventLoopTest.cpp
         EventRegistryTest.cpp
         EventSourceTest.cpp
+        EventSubscriptionTest.cpp
         EventThreadTest.cpp
         EventTimerTest.cpp
 )

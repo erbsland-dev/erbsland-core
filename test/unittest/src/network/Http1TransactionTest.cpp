@@ -341,6 +341,145 @@ public:
         REQUIRE_EQUAL(final, 1);
     }
 
+    void testIdleServerEofIsNormalButPartialRequestEofFails() {
+        {
+            auto harness = Harness{};
+            auto failures = 0;
+            auto completions = 0;
+            auto finals = 0;
+            auto transaction = Http1Transaction::createServer(harness.connection);
+            run(harness.loop, [&]() -> void {
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &) -> void { ++failures; };
+                transaction->callbacks().complete = [&](const bool) -> void { ++completions; };
+                transaction->callbacks().final = [&]() -> void { ++finals; };
+                transaction->start();
+                harness.connection->emitClosed();
+                harness.connection->emitFinal();
+            });
+            REQUIRE_EQUAL(failures, 0);
+            REQUIRE_EQUAL(completions, 0);
+            REQUIRE_EQUAL(finals, 1);
+            REQUIRE_FALSE(harness.connection->_aborted);
+        }
+        {
+            auto harness = Harness{};
+            auto failures = 0;
+            auto finals = 0;
+            auto transaction = Http1Transaction::createServer(harness.connection);
+            run(harness.loop, [&]() -> void {
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &failure) -> void {
+                    REQUIRE_EQUAL(failure.kind(), Http1TransactionFailure::Kind::Protocol);
+                    REQUIRE_EQUAL(failure.phase(), Http1TransactionFailure::Phase::Headers);
+                    ++failures;
+                };
+                transaction->callbacks().final = [&]() -> void { ++finals; };
+                transaction->start();
+                harness.connection->emitData(bytes("GET /partial"));
+                harness.connection->emitClosed();
+                harness.connection->emitFinal();
+            });
+            REQUIRE_EQUAL(failures, 1);
+            REQUIRE_EQUAL(finals, 1);
+        }
+    }
+
+    void testIdleServerPeerDisconnectIsNormal() {
+        for (const auto reason : {NetworkErrorReason::TlsTruncation, NetworkErrorReason::ConnectionReset}) {
+            auto harness = Harness{};
+            auto failures = 0;
+            auto completions = 0;
+            auto finals = 0;
+            auto transaction = Http1Transaction::createServer(harness.connection);
+            run(harness.loop, [&]() -> void {
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &) -> void { ++failures; };
+                transaction->callbacks().complete = [&](const bool) -> void { ++completions; };
+                transaction->callbacks().final = [&]() -> void { ++finals; };
+                transaction->start();
+                auto context = NetworkErrorContext{"Peer disconnected"_el, "The peer closed its idle connection."_el};
+                context.setReason(reason).setPhase(NetworkErrorPhase::Active);
+                harness.connection->emitError(std::move(context));
+                harness.connection->emitFinal();
+            });
+            REQUIRE_EQUAL(failures, 0);
+            REQUIRE_EQUAL(completions, 0);
+            REQUIRE_EQUAL(finals, 1);
+            REQUIRE_FALSE(harness.connection->_aborted);
+        }
+    }
+
+    void testCompletedServerRequestPeerDisconnectIsNormal() {
+        for (const auto reason : {NetworkErrorReason::TlsTruncation, NetworkErrorReason::ConnectionReset}) {
+            auto harness = Harness{};
+            auto failures = 0;
+            auto finals = 0;
+            auto transaction = Http1Transaction::createServer(harness.connection);
+            run(harness.loop, [&]() -> void {
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &) -> void { ++failures; };
+                transaction->callbacks().final = [&]() -> void { ++finals; };
+                transaction->start();
+                harness.connection->emitData(bytes("GET /complete HTTP/1.1\r\nHost: local\r\n\r\n"));
+                auto context = NetworkErrorContext{"Peer disconnected"_el, "The peer closed its connection."_el};
+                context.setReason(reason).setPhase(NetworkErrorPhase::Active);
+                harness.connection->emitError(std::move(context));
+                harness.connection->emitFinal();
+            });
+            REQUIRE_EQUAL(failures, 0);
+            REQUIRE_EQUAL(finals, 1);
+            REQUIRE_FALSE(harness.connection->_aborted);
+        }
+    }
+
+    void testPartialServerRequestPeerDisconnectStillFails() {
+        for (const auto reason : {NetworkErrorReason::TlsTruncation, NetworkErrorReason::ConnectionReset}) {
+            auto harness = Harness{};
+            auto failures = 0;
+            auto finals = 0;
+            auto transaction = Http1Transaction::createServer(harness.connection);
+            run(harness.loop, [&]() -> void {
+                transaction->callbacks().failure = [&](const Http1TransactionFailure &failure) -> void {
+                    REQUIRE_EQUAL(failure.kind(), Http1TransactionFailure::Kind::Transport);
+                    REQUIRE(failure.transportContext().has_value());
+                    REQUIRE_EQUAL(failure.transportContext()->reason(), reason);
+                    ++failures;
+                };
+                transaction->callbacks().final = [&]() -> void { ++finals; };
+                transaction->start();
+                harness.connection->emitData(bytes("GET /partial"));
+                auto context = NetworkErrorContext{"Peer disconnected"_el, "The peer interrupted its request."_el};
+                context.setReason(reason).setPhase(NetworkErrorPhase::Active);
+                harness.connection->emitError(std::move(context));
+                harness.connection->emitFinal();
+            });
+            REQUIRE_EQUAL(failures, 1);
+            REQUIRE_EQUAL(finals, 1);
+            REQUIRE(harness.connection->_aborted);
+        }
+    }
+
+    void testOtherIdleServerTransportErrorStillFails() {
+        auto harness = Harness{};
+        auto failures = 0;
+        auto finals = 0;
+        auto transaction = Http1Transaction::createServer(harness.connection);
+        run(harness.loop, [&]() -> void {
+            transaction->callbacks().failure = [&](const Http1TransactionFailure &failure) -> void {
+                REQUIRE_EQUAL(failure.kind(), Http1TransactionFailure::Kind::Transport);
+                REQUIRE(failure.transportContext().has_value());
+                REQUIRE_EQUAL(failure.transportContext()->reason(), NetworkErrorReason::SocketOperationFailed);
+                ++failures;
+            };
+            transaction->callbacks().final = [&]() -> void { ++finals; };
+            transaction->start();
+            auto context = NetworkErrorContext{"Socket failure"_el, "The idle socket failed."_el};
+            context.setReason(NetworkErrorReason::SocketOperationFailed).setPhase(NetworkErrorPhase::Active);
+            harness.connection->emitError(std::move(context));
+            harness.connection->emitFinal();
+        });
+        REQUIRE_EQUAL(failures, 1);
+        REQUIRE_EQUAL(finals, 1);
+        REQUIRE(harness.connection->_aborted);
+    }
+
     void testIdenticalEmptyTransactionAcrossCommonConnectionFlavors() {
         for (const auto flavor : {ConnectionFlavor::Tcp, ConnectionFlavor::TlsClient, ConnectionFlavor::TlsServer}) {
             const auto loop = EventLoop::create();

@@ -7,6 +7,7 @@
 #include "../ApplicationPartManager.hpp"
 
 #include "../../event/EventThread_fwd.hpp"
+#include "../../event/impl/EventCallbackList.hpp"
 #include "../../text/StringHashMap.hpp"
 
 #include <condition_variable>
@@ -23,6 +24,7 @@ namespace erbsland::core::impl {
 /// Default detached application-part manager implementation.
 /// @tested{ApplicationPartManagerTest ApplicationPartApplicationTest}
 class ApplicationPartManager final : public core::ApplicationPartManager,
+                                     private core::ApplicationPartManagerEventEditor,
                                      public std::enable_shared_from_this<ApplicationPartManager> {
 public:
     /// Create a manager with safe destruction from owned callback threads.
@@ -61,17 +63,20 @@ public: // implement core::ApplicationPartManager
     void start(const ApplicationPartIdentifierPtr &identifier) override;
     void stop(const ApplicationPartIdentifierPtr &identifier) override;
     void stop() override;
+    [[nodiscard]] auto events() noexcept -> core::ApplicationPartManagerEventEditor & override;
     void setErrorHandler(ApplicationPartErrorHandler handler) override;
-    void setStateChangedFn(ApplicationPartManagerStateChangedFn callback) override;
-    void setPartStateChangedFn(ApplicationPartStateChangedFn callback) override;
+
+private: // implement core::ApplicationPartManagerEventEditor
+    [[nodiscard]] auto addStateChanged(ApplicationPartManagerStateChangedFn callback)
+        -> event::EventSubscription override;
+    [[nodiscard]] auto addPartStateChanged(ApplicationPartStateChangedFn callback) -> event::EventSubscription override;
+
+public: // errors
     [[nodiscard]] auto hasError() const noexcept -> bool override;
     [[nodiscard]] auto takeError() noexcept -> std::exception_ptr override;
 
 protected:
     void registerPart(Registration registration) override;
-
-private: // implement owner integration
-    void setOwnerStateChangedFn(ApplicationPartManagerStateChangedFn callback) override;
 
 private: // preparation
     /// Resolve an identifier under the manager lock.
@@ -151,19 +156,18 @@ private:
     std::condition_variable _stateChanged; ///< Wakes state waiters.
     ApplicationPartManagerState _state{ApplicationPartManagerState::Uninitialized}; ///< Manager state.
     std::vector<Registration> _registrations;                                       ///< Deferred registrations.
-    std::vector<ApplicationPartRecord> _records;               ///< Prepared parts, number minus one indexed.
-    text::StringHashMap<std::size_t> _nameToNumber;            ///< Stable name to manager-local number.
-    std::deque<std::exception_ptr> _errors;                    ///< Ordered manager errors.
-    ApplicationPartErrorHandler _errorHandler;                 ///< Part failure policy.
-    ApplicationPartManagerStateChangedFn _stateChangedFn;      ///< Manager state observer.
-    ApplicationPartManagerStateChangedFn _ownerStateChangedFn; ///< Owning framework state observer.
-    ApplicationPartStateChangedFn _partStateChangedFn;         ///< Part state observer.
-    event::EventsPtr _controlEvents;                           ///< Serializes runtime graph changes.
-    event::UnmanagedEventThreadPtr _ownedControlThread;        ///< Optional private control thread.
-    std::thread::id _controlThreadId;                          ///< Control thread observed during dispatch.
-    bool _prepared{false};                                     ///< True after successful preparation.
-    bool _stopAllRequested{false};                             ///< True during complete manager shutdown.
-    bool _fatalFailure{false};                                 ///< Selects the final `Failed` state.
+    std::vector<ApplicationPartRecord> _records;    ///< Prepared parts, number minus one indexed.
+    text::StringHashMap<std::size_t> _nameToNumber; ///< Stable name to manager-local number.
+    std::deque<std::exception_ptr> _errors;         ///< Ordered manager errors.
+    ApplicationPartErrorHandler _errorHandler;      ///< Part failure policy.
+    event::impl::EventCallbackList<ApplicationPartManagerStateChangedFn> _stateChangedCallbacks; ///< State observers.
+    event::impl::EventCallbackList<ApplicationPartStateChangedFn> _partStateChangedCallbacks;    ///< Part observers.
+    event::EventsPtr _controlEvents;                    ///< Serializes runtime graph changes.
+    event::UnmanagedEventThreadPtr _ownedControlThread; ///< Optional private control thread.
+    std::thread::id _controlThreadId;                   ///< Control thread observed during dispatch.
+    bool _prepared{false};                              ///< True after successful preparation.
+    bool _stopAllRequested{false};                      ///< True during complete manager shutdown.
+    bool _fatalFailure{false};                          ///< Selects the final `Failed` state.
 };
 
 }

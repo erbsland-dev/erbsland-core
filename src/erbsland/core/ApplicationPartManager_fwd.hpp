@@ -13,4 +13,6 @@ using ApplicationPartManagerAccessWeakPtr = std::weak_ptr<ApplicationPartManager
 class ApplicationPartManager;
 using ApplicationPartManagerPtr = std::shared_ptr<ApplicationPartManager>;
 
+class ApplicationPartManagerEventEditor;
+
 }

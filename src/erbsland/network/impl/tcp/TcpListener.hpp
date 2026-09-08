@@ -7,6 +7,7 @@
 #include "TcpListenerDeviceCreateFn.hpp"
 #include "TcpListenerEventEditor.hpp"
 
+#include "../../../event/EventSubscription.hpp"
 #include "../../tcp/TcpListener.hpp"
 
 #include <atomic>
@@ -82,7 +83,7 @@ private:
     std::optional<IpEndpoint> _localEndpoint;             ///< Actual bound endpoint.
     TcpListenerOptions _options;                          ///< Captured listener options.
     std::size_t _pendingRequestCount{};                   ///< Requests awaiting a decision.
-    std::uint64_t _quotaSubscription{};                   ///< Shared quota capacity subscription.
+    event::EventSubscription _quotaSubscription;          ///< Shared quota capacity subscription.
     std::atomic<NetworkSourceState> _state{NetworkSourceState::Inactive}; ///< Lifecycle state.
     std::atomic<std::uint64_t> _generation{0U};                           ///< Native operation generation.
     std::atomic<bool> _started{false};                                    ///< Whether this source was consumed.

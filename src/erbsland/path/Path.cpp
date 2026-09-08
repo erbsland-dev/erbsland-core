@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "Path.hpp"
 
+#include "FileLock.hpp"
 #include "PathContent.hpp"
 #include "PathError.hpp"
 #include "PathInfo.hpp"
@@ -301,6 +302,10 @@ auto Path::isRelativeTo(std::optional<Path> base) const noexcept -> bool {
 
 auto Path::commonAncestor(std::optional<Path> base) const noexcept -> Path {
     return impl::pathBackend().commonAncestor(*this, std::move(base));
+}
+
+auto Path::createLock() const -> FileLock {
+    return FileLock{*this};
 }
 
 auto Path::info(const PathInfoParts parts) const noexcept -> PathInfo {

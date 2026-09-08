@@ -320,11 +320,11 @@ void HttpStaticContentOperation::sendError(const HttpStatus status) {
 
 void HttpStaticContentOperation::sourceFailed() {
     const auto request = _request.lock();
-    if (const auto server = _server.lock(); server != nullptr && server->_onError) {
+    if (request != nullptr) {
         auto context = NetworkErrorContext{
             "Static content failed"_el, "A static-content source failed after the response was committed."_el};
         context.setReason(NetworkErrorReason::ContentSourceFailed);
-        server->_onError(context);
+        request->handleError(context);
     }
     if (request != nullptr && request->connection() != nullptr) {
         request->connection()->abort();

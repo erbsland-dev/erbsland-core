@@ -24,4 +24,8 @@ auto HttpCookieSessionManager::sessionInvalidated(const HttpServerSessionPtr &se
     return _data->invalidate(session);
 }
 
+auto HttpCookieSessionManager::renewSession(const HttpServerSessionPtr &session) -> HttpServerSessionRenewal {
+    return _data->renew(session);
+}
+
 }

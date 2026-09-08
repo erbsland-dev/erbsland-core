@@ -8,6 +8,7 @@
 #include "../../../../time/TimePoint.hpp"
 #include "../../../http_server/HttpCookieSessionManagerOptions.hpp"
 #include "../../../http_server/HttpServerSessionContext.hpp"
+#include "../../../http_server/HttpServerSessionRenewal.hpp"
 #include "../../../http_server/HttpServerSessionSelection.hpp"
 
 #include <list>
@@ -41,6 +42,8 @@ public:
     [[nodiscard]] auto select(const HttpServerSessionContext &context) -> HttpServerSessionSelection;
     /// Remove a session and create its deletion-cookie fields.
     [[nodiscard]] auto invalidate(const network::HttpServerSessionPtr &session) -> HttpHeaders;
+    /// Replace an existing session's opaque identifier.
+    [[nodiscard]] auto renew(const network::HttpServerSessionPtr &session) -> HttpServerSessionRenewal;
 
 private:
     /// Validate cookie, lifetime, and capacity configuration.

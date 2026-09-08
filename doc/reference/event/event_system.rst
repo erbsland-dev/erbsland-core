@@ -62,6 +62,18 @@ The name ``events()`` also appears on ``Application`` and ``EventThread``, where
 target.
 Those classes are not event sources, so there is no editor involved and the existing name keeps its distinct meaning.
 
+Observer Subscriptions
+======================
+
+Events that naturally have multiple independent observers use ``add...()`` methods.
+Each registration returns a move-only ``EventSubscription``.
+Retain that handle for as long as the callback shall remain active; destroying or cancelling it prevents future callback
+invocations.
+A callback that has already started may finish.
+
+An event offers either a single replaceable ``on...()`` handler or multiple ``add...()`` subscriptions.
+It does not combine both semantics for the same notification.
+
 Interface
 =========
 
@@ -98,6 +110,8 @@ Interface
 .. doxygenclass:: erbsland::event::EventScheduler
     :members:
 .. doxygenclass:: erbsland::event::EventSource
+    :members:
+.. doxygenclass:: erbsland::event::EventSubscription
     :members:
 .. doxygenclass:: erbsland::event::EventThread
     :members:

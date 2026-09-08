@@ -10,6 +10,7 @@
 #include <erbsland/cryptology/tls/TlsServerIdentity.hpp>
 #include <erbsland/cryptology/x509/X509CertificateBundle.hpp>
 #include <erbsland/cryptology/x509/X509ServerCertificatePolicy.hpp>
+#include <erbsland/err/LogicError.hpp>
 #include <erbsland/event/EventLoop.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/network/http_server/HttpCookieSessionManager.hpp>
@@ -146,6 +147,14 @@ public:
         auto fileHandler = HttpStaticFileHandlerPtr{};
         auto error = std::optional<NetworkErrorContext>{};
         auto responseWire = std::string{};
+        auto activeConnections = std::size_t{};
+        auto finalConnections = std::size_t{};
+        auto sessions = std::size_t{};
+        auto requests = std::size_t{};
+        auto responses = std::size_t{};
+        auto connectionErrors = std::size_t{};
+        auto requestErrors = std::size_t{};
+        auto responseConnectionInfoAvailable = true;
         auto serverFinal = false;
         auto clientFinal = false;
 
@@ -170,6 +179,38 @@ public:
             customHandler->setMediaTypeMapping(mediaTypes);
             server->addStaticContentHandler(customHandler);
             server->events()
+                .onConnectionActive([&](const HttpConnectionInfo &info) -> void {
+                    ++activeConnections;
+                    REQUIRE(info.localEndpoint().has_value());
+                    REQUIRE(info.remoteEndpoint().has_value());
+                    REQUIRE_FALSE(info.isSecure());
+                })
+                .onConnectionFinal([&](const HttpConnectionInfo &info) -> void {
+                    ++finalConnections;
+                    REQUIRE(info.localEndpoint().has_value());
+                    REQUIRE(info.remoteEndpoint().has_value());
+                })
+                .onConnectionError(
+                    [&](const HttpConnectionInfo &, const NetworkErrorContext &) -> void { ++connectionErrors; })
+                .onNewSession([&](HttpServerSessionPtr session) -> void {
+                    ++sessions;
+                    session->events().onRequestReceived([&](HttpServerRequestPtr request) -> void {
+                        ++requests;
+                        REQUIRE(request->connectionInfo().localEndpoint().has_value());
+                        REQUIRE(request->connectionInfo().remoteEndpoint().has_value());
+                        const auto weakRequest = std::weak_ptr<HttpServerRequest>{request};
+                        request->events()
+                            .onResponseCommitted([&, weakRequest](const HttpResponseHead &) -> void {
+                                ++responses;
+                                const auto retainedRequest = weakRequest.lock();
+                                responseConnectionInfoAvailable = responseConnectionInfoAvailable &&
+                                    retainedRequest != nullptr &&
+                                    retainedRequest->connectionInfo().localEndpoint().has_value() &&
+                                    retainedRequest->connectionInfo().remoteEndpoint().has_value();
+                            })
+                            .onError([&](const NetworkErrorContext &) -> void { ++requestErrors; });
+                    });
+                })
                 .onRequest(
                     HttpMethod{HttpMethodType::Get},
                     "/res/dynamic"_el,
@@ -234,6 +275,14 @@ public:
         REQUIRE(responseWire.find("dynamic") != std::string::npos);
         REQUIRE(responseWire.find("BEGIN CERTIFICATE") != std::string::npos);
         REQUIRE(responseWire.find("custom-content") != std::string::npos);
+        REQUIRE_EQUAL(activeConnections, 1U);
+        REQUIRE_EQUAL(finalConnections, 1U);
+        REQUIRE_EQUAL(sessions, 1U);
+        REQUIRE_EQUAL(requests, 8U);
+        REQUIRE_EQUAL(responses, 8U);
+        REQUIRE_EQUAL(connectionErrors, 0U);
+        REQUIRE_EQUAL(requestErrors, 0U);
+        REQUIRE(responseConnectionInfoAvailable);
     }
 
     void testPlaintextPipeliningRoutingSessionsAndGracefulClose() {
@@ -570,6 +619,8 @@ public:
         auto server = HttpServerPtr{};
         auto client = TlsClientConnectionPtr{};
         auto error = std::optional<NetworkErrorContext>{};
+        auto connectionInfo = std::optional<HttpConnectionInfo>{};
+        auto responseInfoSecure = false;
         auto responseWire = std::string{};
         auto serverFinal = false;
         auto clientFinal = false;
@@ -579,6 +630,18 @@ public:
             server->enableTls();
             server->setSessionManager(HttpCookieSessionManager::create());
             server->events()
+                .onConnectionActive([&](const HttpConnectionInfo &info) -> void { connectionInfo = info; })
+                .onNewSession([&](HttpServerSessionPtr session) -> void {
+                    session->events().onRequestReceived([&](HttpServerRequestPtr request) -> void {
+                        REQUIRE(request->connectionInfo().isSecure());
+                        const auto weakRequest = std::weak_ptr<HttpServerRequest>{request};
+                        request->events().onResponseCommitted([&, weakRequest](const HttpResponseHead &) -> void {
+                            if (const auto retainedRequest = weakRequest.lock()) {
+                                responseInfoSecure = retainedRequest->connectionInfo().isSecure();
+                            }
+                        });
+                    });
+                })
                 .onRequest(
                     HttpMethod{HttpMethodType::Get},
                     "/secure"_el,
@@ -618,6 +681,131 @@ public:
         REQUIRE(responseWire.find("Set-Cookie: erbsland-session=") != std::string::npos);
         REQUIRE(responseWire.find("; Secure") != std::string::npos);
         REQUIRE(responseWire.find("secure") != std::string::npos);
+        REQUIRE(connectionInfo.has_value());
+        REQUIRE(connectionInfo->isSecure());
+        REQUIRE(connectionInfo->tls().has_value());
+        REQUIRE_EQUAL(connectionInfo->tls()->negotiatedAlpn(), "http/1.1"_el);
+        REQUIRE(connectionInfo->tls()->cipherSuite().has_value());
+        REQUIRE(connectionInfo->tls()->signatureScheme().has_value());
+        REQUIRE(responseInfoSecure);
+    }
+
+    void testHttpsTcpConnectionAbandonedBeforeHandshakeIsNormal() {
+        SKIP_BY_DEFAULT()
+        TAGS(FullRun)
+        const auto applicationScope = ApplicationTestScope<>{};
+        registerTlsConfigurations();
+        const auto loop = EventLoop::create();
+        auto server = HttpServerPtr{};
+        auto client = TcpConnectionPtr{};
+        auto listenerError = std::optional<NetworkErrorContext>{};
+        auto connectionError = std::optional<NetworkErrorContext>{};
+        auto connectionActive = false;
+        auto clientFinal = false;
+        auto connectionFinal = false;
+        auto serverFinal = false;
+
+        loop->invoke([&]() -> void {
+            server = loop->get<Network>().createHttpServer();
+            server->enableTls();
+            server->events()
+                .onConnectionActive([&](const HttpConnectionInfo &) -> void { connectionActive = true; })
+                .onConnectionError([&](const HttpConnectionInfo &, const NetworkErrorContext &context) -> void {
+                    connectionError = context;
+                })
+                .onConnectionFinal([&](const HttpConnectionInfo &) -> void {
+                    connectionFinal = true;
+                    server->close();
+                })
+                .onError([&](const NetworkErrorContext &context) -> void { listenerError = context; })
+                .onFinal([&]() -> void { serverFinal = true; })
+                .onListening([&]() -> void {
+                    client = loop->get<Network>().createTcpConnection();
+                    client->events()
+                        .onConnected([&]() -> void { client->close(); })
+                        .onError([](const NetworkErrorContext &) -> void {})
+                        .onFinal([&]() -> void { clientFinal = true; });
+                    const auto endpoint = *server->localEndpoint();
+                    client->connect(HostEndpoint{endpoint.address(), endpoint.port(), endpoint.scopeId()});
+                });
+            server->start(IpEndpoint{IpAddress::loopbackV4(), Port{}});
+        });
+
+        runUntil(loop, [&]() -> bool { return (serverFinal && clientFinal) || listenerError.has_value(); });
+        REQUIRE_FALSE(listenerError.has_value());
+        REQUIRE_FALSE(connectionError.has_value());
+        REQUIRE_FALSE(connectionActive);
+        REQUIRE(clientFinal);
+        REQUIRE(connectionFinal);
+        REQUIRE(serverFinal);
+    }
+
+    void testHttpsAbruptClientCloseAfterResponseIsNormal() {
+        SKIP_BY_DEFAULT()
+        TAGS(FullRun)
+        const auto applicationScope = ApplicationTestScope<>{};
+        registerTlsConfigurations();
+        const auto loop = EventLoop::create();
+        auto server = HttpServerPtr{};
+        auto client = TlsClientConnectionPtr{};
+        auto listenerError = std::optional<NetworkErrorContext>{};
+        auto connectionError = std::optional<NetworkErrorContext>{};
+        auto responseWire = std::string{};
+        auto clientAbortRequested = false;
+        auto clientFinal = false;
+        auto connectionFinal = false;
+        auto serverFinal = false;
+
+        loop->invoke([&]() -> void {
+            server = loop->get<Network>().createHttpServer();
+            server->enableTls();
+            server->events()
+                .onConnectionError([&](const HttpConnectionInfo &, const NetworkErrorContext &context) -> void {
+                    connectionError = context;
+                })
+                .onConnectionFinal([&](const HttpConnectionInfo &) -> void {
+                    connectionFinal = true;
+                    server->close();
+                })
+                .onRequest(
+                    HttpMethod{HttpMethodType::Get},
+                    "/complete"_el,
+                    [](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
+                        request->sendText("complete"_el);
+                    })
+                .onError([&](const NetworkErrorContext &context) -> void { listenerError = context; })
+                .onFinal([&]() -> void { serverFinal = true; })
+                .onListening([&]() -> void {
+                    client = loop->get<Network>().createTlsClientConnection();
+                    client->events()
+                        .onHandshakeCompleted([&]() -> void {
+                            REQUIRE(
+                                client->send(bytes("GET /complete HTTP/1.1\r\nHost: localhost\r\n\r\n")).isAccepted());
+                        })
+                        .onData([&](el::mem::ByteBlock data) -> void {
+                            responseWire += raw(data);
+                            if (!clientAbortRequested && responseWire.find("\r\n\r\ncomplete") != std::string::npos) {
+                                clientAbortRequested = true;
+                                client->abort();
+                            }
+                        })
+                        .onError([&](const NetworkErrorContext &context) -> void { listenerError = context; })
+                        .onFinal([&]() -> void { clientFinal = true; });
+                    auto clientOptions = TlsClientConnectOptions{};
+                    clientOptions.setAlpnProtocols({"http/1.1"_el});
+                    client->connect(
+                        HostEndpoint{Host::fromStringOrThrow("localhost"_el), server->localEndpoint()->port()},
+                        std::move(clientOptions));
+                });
+            server->start(IpEndpoint{IpAddress::loopbackV4(), Port{}});
+        });
+
+        runUntil(loop, [&]() -> bool { return (serverFinal && clientFinal) || listenerError.has_value(); });
+        REQUIRE_FALSE(listenerError.has_value());
+        REQUIRE_FALSE(connectionError.has_value());
+        REQUIRE(clientAbortRequested);
+        REQUIRE(clientFinal);
+        REQUIRE(connectionFinal);
+        REQUIRE(serverFinal);
     }
 };
-#include <erbsland/err/LogicError.hpp>

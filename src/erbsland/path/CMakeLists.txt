@@ -6,6 +6,9 @@ cmake_minimum_required(VERSION 3.28)
 add_subdirectory(impl)
 
 target_sources(erbsland-core PRIVATE
+        FileLock.cpp
+        FileLock.hpp
+        FileLock_fwd.hpp
         Path.cpp
         Path.hpp
         Path_fwd.hpp

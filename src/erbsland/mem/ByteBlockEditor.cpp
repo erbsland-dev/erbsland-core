@@ -55,6 +55,10 @@ ByteBlockEditor::ByteBlockEditor(const ByteBlock &block) :
 ByteBlockEditor::ByteBlockEditor(ByteBlockDataPtr data) noexcept : _data{std::move(data)} {
 }
 
+auto ByteBlockEditor::copy() const -> ByteBlockEditor {
+    return ByteBlockEditor{ByteModifyTools<>::createData(span(), isSensitive())};
+}
+
 auto ByteBlockEditor::isSensitive() const noexcept -> bool {
     return !_data.isNull() && _data.constGet()->isSensitive();
 }
@@ -330,6 +334,10 @@ auto ByteBlockEditor::removed(const ByteRange range) const -> ByteBlockEditor {
     auto result = *this;
     result.remove(range);
     return result;
+}
+
+auto ByteBlockEditor::kept(const ByteRange range) const -> ByteBlockEditor {
+    return ByteBlockEditor{ByteModifyTools<>::createData(span(range), isSensitive())};
 }
 
 auto ByteBlockEditor::replaced(const ByteRange range, const ByteBlock &replacement) const -> ByteBlockEditor {

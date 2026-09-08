@@ -28,6 +28,7 @@ Event Value Types
     EventId, EventBackendId // registered event and backend identifiers
     EventData // base for typed event payloads
     EventSource, EventEditor // event-loop-owned source and source-owned handler editor
+    EventSubscription // move-only lifetime handle for one observer registration
     EventIdInfo, EventBackendIdInfo // registered identifier metadata
     EventCallback // callback executed by an event loop
     EventRegistry // application-managed identifier registry
@@ -86,7 +87,8 @@ Subscription Patterns
 .. code-block:: text
 
     o.events() -> TEventEditor& // access a source-owned editor on the owner loop
-    o.on❮Event❯(callback) -> T& // replace a source-owned handler through an editor
+    o.on❮Event❯(callback) -> T& // replace the one source-owned handler; do not combine with an add form
+    o.add❮Event❯(callback) -> EventSubscription // add an observer; do not combine with an on form
     o.source() -> EventSourcePtr // retain the source that owns an editor
     o.target() -> EventsPtr // retain the target that dispatches the callbacks
     o.ownerEvents() -> EventsPtr // access the loop that owns an event source

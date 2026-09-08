@@ -15,6 +15,18 @@ auto HttpServerEventEditor::onListening(NetworkEventFn callback) -> HttpServerEv
     _server._onListening = std::move(callback);
     return *this;
 }
+auto HttpServerEventEditor::onConnectionActive(HttpConnectionInfoFn callback) -> HttpServerEventEditor & {
+    _server._onConnectionActive = std::move(callback);
+    return *this;
+}
+auto HttpServerEventEditor::onConnectionFinal(HttpConnectionInfoFn callback) -> HttpServerEventEditor & {
+    _server._onConnectionFinal = std::move(callback);
+    return *this;
+}
+auto HttpServerEventEditor::onConnectionError(HttpConnectionErrorFn callback) -> HttpServerEventEditor & {
+    _server._onConnectionError = std::move(callback);
+    return *this;
+}
 auto HttpServerEventEditor::onNewSession(HttpServerSessionFn callback) -> HttpServerEventEditor & {
     _server._onNewSession = std::move(callback);
     return *this;

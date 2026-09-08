@@ -517,10 +517,25 @@ public:
 
     void testCopyVariantsJoinAndComparison() {
         const auto editor = makeEditor({1U, 2U, 3U, 4U});
+        const auto editorCopy = editor.copy();
+        const auto block = ByteBlock{editor};
+        const auto blockCopy = block.copy();
+        const auto editorKept = editor.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+        const auto blockKept = block.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
         const auto removed = editor.removed(ByteRange{ByteIndex{1U}, ByteLength{2U}});
         const auto replaced = editor.replaced(ByteRange{ByteIndex{1U}, ByteLength{2U}}, makeBlock({9U}));
 
         REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U}));
+        REQUIRE_EQUAL(editorCopy.toUInt8Vector(), editor.toUInt8Vector());
+        REQUIRE_NOT_EQUAL(editorCopy.span().data(), editor.span().data());
+        REQUIRE_EQUAL(blockCopy.toUInt8Vector(), block.toUInt8Vector());
+        REQUIRE_NOT_EQUAL(blockCopy.span().data(), block.span().data());
+        REQUIRE_EQUAL(editorKept.toUInt8Vector(), std::vector<uint8_t>({2U, 3U}));
+        REQUIRE_NOT_EQUAL(editorKept.span().data(), editor.span().data() + 1U);
+        REQUIRE_EQUAL(blockKept.toUInt8Vector(), std::vector<uint8_t>({2U, 3U}));
+        REQUIRE_NOT_EQUAL(blockKept.span().data(), block.span().data() + 1U);
+        REQUIRE(editor.kept(ByteRange::noRange()).isEmpty());
+        REQUIRE(block.kept(ByteRange::noRange()).isEmpty());
         REQUIRE_EQUAL(removed.toUInt8Vector(), std::vector<uint8_t>({1U, 4U}));
         REQUIRE_EQUAL(replaced.toUInt8Vector(), std::vector<uint8_t>({1U, 9U, 4U}));
 
@@ -536,6 +551,15 @@ public:
         const auto matchingEditor = makeEditor({1U, 2U});
         REQUIRE_LESS(lowerBlock, higherBlock);
         REQUIRE_EQUAL(matchingEditor, lowerBlock);
+
+        auto sensitive = block;
+        sensitive.markAsSensitive();
+        REQUIRE(sensitive.copy().isSensitive());
+        REQUIRE(sensitive.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}}).isSensitive());
+        auto sensitiveEditor = editor;
+        sensitiveEditor.markAsSensitive();
+        REQUIRE(sensitiveEditor.copy().isSensitive());
+        REQUIRE(sensitiveEditor.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}}).isSensitive());
     }
 
     void testConstantTimeEquality() {

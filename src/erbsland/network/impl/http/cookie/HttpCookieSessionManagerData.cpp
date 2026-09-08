@@ -85,6 +85,27 @@ auto HttpCookieSessionManagerData::invalidate(const network::HttpServerSessionPt
     return fields;
 }
 
+auto HttpCookieSessionManagerData::renew(const network::HttpServerSessionPtr &session) -> HttpServerSessionRenewal {
+    if (session == nullptr || !session->isValid() || !session->identifier().has_value()) {
+        return {};
+    }
+    const auto iterator = _entries.find(*session->identifier());
+    if (iterator == _entries.end() || iterator->second->session != session) {
+        return {};
+    }
+    const auto entry = iterator->second;
+    _entries.erase(iterator);
+    auto token = createIdentifier();
+    while (_entries.contains(token)) {
+        token = createIdentifier();
+    }
+    entry->identifier = token;
+    _entries.emplace(token, entry);
+    auto fields = HttpHeaders{};
+    fields.addField(HttpFieldType::SetCookie, cookieValue(token, entry->secure, false));
+    return HttpServerSessionRenewal{token, std::move(fields)};
+}
+
 void HttpCookieSessionManagerData::validate() const {
     if (_options.cookieName().isEmpty() || !_options.cookieName().containsOnly(AsciiCategory::HttpToken) ||
         !_options.cookiePath().startsWith("/"_el) || _options.cookiePath().contains(";"_el) ||
@@ -223,9 +244,12 @@ void HttpCookieSessionManagerData::touch(const std::shared_ptr<Entry> &entry, co
 }
 
 void HttpCookieSessionManagerData::erase(const std::shared_ptr<Entry> &entry) {
-    _entries.erase(entry->identifier);
-    _creation.erase(entry->creationPosition);
-    _idle.erase(entry->idlePosition);
+    // The caller can pass a reference to the shared pointer stored in `_entries`. Retain a copy before erasing the
+    // map element so the argument and its entry stay valid while the ordered indexes are removed.
+    const auto retainedEntry = entry;
+    _entries.erase(retainedEntry->identifier);
+    _creation.erase(retainedEntry->creationPosition);
+    _idle.erase(retainedEntry->idlePosition);
 }
 
 }

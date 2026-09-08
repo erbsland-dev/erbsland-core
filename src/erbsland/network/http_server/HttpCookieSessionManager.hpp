@@ -29,6 +29,7 @@ public: // implement HttpServerSessionManager
     [[nodiscard]] auto selectSession(const HttpServerSessionContext &context) -> HttpServerSessionSelection override;
     /// Remove an invalidated session and create its deletion-cookie fields.
     [[nodiscard]] auto sessionInvalidated(const HttpServerSessionPtr &session) -> HttpHeaders override;
+    [[nodiscard]] auto renewSession(const HttpServerSessionPtr &session) -> HttpServerSessionRenewal override;
 
 private:
     /// Create a manager after validation in its implementation data.

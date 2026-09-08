@@ -4,6 +4,7 @@
 
 #include "ApplicationPartCallback.hpp"
 #include "ApplicationPartManagerAccess.hpp"
+#include "ApplicationPartManagerEventEditor.hpp"
 #include "ApplicationPartTraits.hpp"
 
 #include "../event/Events_fwd.hpp"
@@ -76,13 +77,11 @@ public: // lifecycle
     /// Stop all parts asynchronously.
     virtual void stop() = 0;
 
-public: // callbacks and errors
+public: // events and errors
+    /// Access the stable manager-owned lifecycle event editor.
+    [[nodiscard]] virtual auto events() noexcept -> ApplicationPartManagerEventEditor & = 0;
     /// Set the part-error policy callback.
     virtual void setErrorHandler(ApplicationPartErrorHandler handler) = 0;
-    /// Set the manager-state callback.
-    virtual void setStateChangedFn(ApplicationPartManagerStateChangedFn callback) = 0;
-    /// Set the part-state callback.
-    virtual void setPartStateChangedFn(ApplicationPartStateChangedFn callback) = 0;
     /// Test whether an error is queued.
     [[nodiscard]] virtual auto hasError() const noexcept -> bool = 0;
     /// Take the oldest queued error.
@@ -92,10 +91,6 @@ protected:
     /// Store one deferred part registration.
     /// @param registration The erased part metadata and factory.
     virtual void registerPart(Registration registration) = 0;
-
-private:
-    /// Set the owning framework's manager-state observer without replacing the user callback.
-    virtual void setOwnerStateChangedFn(ApplicationPartManagerStateChangedFn callback) = 0;
 };
 
 }

@@ -220,6 +220,7 @@ private:
     bool _streamPaused{};                                   ///< Explicit streaming pause.
     bool _drainingInput{};                                  ///< Decoder drain reentrancy guard.
     bool _drainInputAgain{};                                ///< A nested operation requested another drain.
+    bool _incomingStarted{};                                ///< At least one byte of the incoming message arrived.
     bool _informationalInput{};                             ///< Current decoded response is informational.
     bool _incomingComplete{};                               ///< Final incoming message completed.
     bool _outgoingStarted{};                                ///< Final outgoing message exists.

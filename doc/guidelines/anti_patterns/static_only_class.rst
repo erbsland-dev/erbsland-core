@@ -8,6 +8,13 @@ Classes with Only Static Methods
 Classes that consist only of static functions and declarations are hacked namespaces.
 They are bad practice and must not exist.
 
+Scope and Exceptions
+====================
+
+A class with a virtual destructor is a polymorphic interface, even if its remaining methods are static factories.
+The scanner does not report these classes.
+Derived classes are also excluded because their inherited non-static behavior may not be visible in the declaration.
+
 Correct Solution
 ================
 

@@ -12,6 +12,7 @@
 #include "impl/LogManagerData_fwd.hpp"
 
 #include "../core/Application_fwd.hpp"
+#include "../core/impl/application_data/ApplicationLogData_fwd.hpp"
 
 namespace erbsland::log {
 
@@ -19,6 +20,7 @@ namespace erbsland::log {
 /// @tested{LogCoreTest LogWriterTest}
 class LogManager final {
     friend class core::Application;
+    friend class core::impl::ApplicationLogData;
     struct PrivateTag {};
 
 private:

@@ -11,6 +11,12 @@ HttpServerSessionEventEditor::HttpServerSessionEventEditor(
     network::HttpServerSessionEventEditor{std::move(source), std::move(target)}, _session{session} {
 }
 
+auto HttpServerSessionEventEditor::onRequestReceived(HttpServerRequestEventFn callback)
+    -> HttpServerSessionEventEditor & {
+    _session._onRequestReceived = std::move(callback);
+    return *this;
+}
+
 auto HttpServerSessionEventEditor::onRequest(
     text::String pattern, HttpServerRequestFn callback, HttpServerRouteOptions options)
     -> HttpServerSessionEventEditor & {

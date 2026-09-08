@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        EventCallbackRegistration.hpp
+        EventCallbackList.hpp
         CallbackEventData.hpp
         CommonEventEditor.cpp
         CommonEventEditor.hpp
@@ -14,6 +16,7 @@ target_sources(erbsland-core PRIVATE
         EventLoop_fwd.hpp
         EventLoopDriverRegistration.cpp
         EventLoopDriverRegistration.hpp
+        EventSubscriptionControl.hpp
         EventThreadBase.cpp
         EventThreadBase.hpp
         EventTimer.cpp

@@ -64,6 +64,13 @@ application main loop.
 forwarding, failure handling, and cross-thread access.
 :doc:`detached_application_parts` explains how to run the same kind of service graph without an ``Application`` owner.
 
+Running as a Service or Foreground Daemon
+=========================================
+
+Servers can use one executable for interactive development, foreground operation under a POSIX supervisor, and a Windows
+service.
+:doc:`service_lifecycle` explains graceful termination, readiness reporting, and application-part integration.
+
 Adding Build Version Information
 ================================
 

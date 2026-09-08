@@ -21,6 +21,7 @@
 #include <erbsland/network/http_server/HttpServer.hpp>
 #include <erbsland/network/http_server/HttpServerRequest.hpp>
 #include <erbsland/network/impl/host/HostResolver.hpp>
+#include <erbsland/network/impl/http/server/HttpServerRequest.hpp>
 #include <erbsland/network/impl/NetworkBackend.hpp>
 #include <erbsland/network/Network.hpp>
 #include <erbsland/network/source/Connection.hpp>
@@ -387,7 +388,7 @@ public:
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
         auto error = std::optional<NetworkErrorContext>{};
-        auto firstConnection = ConnectionPtr{};
+        auto firstConnection = std::optional<IpEndpoint>{};
         auto redirectCalls = std::size_t{};
         auto responseCalls = std::size_t{};
         auto cookieSeen = false;
@@ -404,7 +405,7 @@ public:
                     HttpMethod{HttpMethodType::Get},
                     "/start"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr serverRequest, el::mem::ByteBlock) -> void {
-                        firstConnection = serverRequest->connection();
+                        firstConnection = serverRequest->connectionInfo().remoteEndpoint();
                         auto headers = HttpHeaders{};
                         headers.addField(HttpFieldType::SetCookie, "redirect-token=accepted; Path=/; HttpOnly"_el);
                         serverRequest->sendRedirect("/target#redirect-fragment"_el, HttpStatus::Found, headers);
@@ -415,14 +416,14 @@ public:
                     [&](HttpServerSessionPtr, HttpServerRequestPtr serverRequest, el::mem::ByteBlock) -> void {
                         cookieSeen = serverRequest->head().headers().getFirst(HttpFieldType::Cookie) ==
                             "redirect-token=accepted"_el;
-                        reused = serverRequest->connection() == firstConnection;
+                        reused = serverRequest->connectionInfo().remoteEndpoint() == firstConnection;
                         serverRequest->sendText("target"_el);
                     })
                 .onRequest(
                     HttpMethod{HttpMethodType::Get},
                     "/again"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr serverRequest, el::mem::ByteBlock) -> void {
-                        reused = reused && serverRequest->connection() == firstConnection;
+                        reused = reused && serverRequest->connectionInfo().remoteEndpoint() == firstConnection;
                         serverRequest->sendText("again"_el);
                     })
                 .onError([&](const NetworkErrorContext &context) -> void { error = context; })
@@ -768,8 +769,8 @@ public:
         auto responseCalls = std::size_t{};
         auto policyErrors = std::size_t{};
         auto finalCalls = std::size_t{};
-        auto sourceConnection = ConnectionPtr{};
-        auto targetConnection = ConnectionPtr{};
+        auto sourceConnection = std::optional<IpEndpoint>{};
+        auto targetConnection = std::optional<IpEndpoint>{};
         auto stripped = false;
         auto sessionFinal = false;
         auto serverFinal = false;
@@ -781,14 +782,14 @@ public:
                     HttpMethod{HttpMethodType::Get},
                     "/cross"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
-                        sourceConnection = request->connection();
+                        sourceConnection = request->connectionInfo().remoteEndpoint();
                         request->sendRedirect(redirectLocation);
                     })
                 .onRequest(
                     HttpMethod{HttpMethodType::Get},
                     "/target"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
-                        targetConnection = request->connection();
+                        targetConnection = request->connectionInfo().remoteEndpoint();
                         const auto &headers = request->head().headers();
                         stripped = !headers.hasField(HttpFieldType::Authorization) &&
                             !headers.hasField(HttpFieldType::ProxyAuthorization) &&
@@ -864,7 +865,7 @@ public:
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
         auto error = std::optional<NetworkErrorContext>{};
-        auto connections = std::vector<ConnectionPtr>{};
+        auto connections = std::vector<std::optional<IpEndpoint>>{};
         auto sessionFinal = false;
         auto serverFinal = false;
 
@@ -874,7 +875,7 @@ public:
                 .onRequest(
                     "/request/{index}"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
-                        connections.emplace_back(request->connection());
+                        connections.emplace_back(request->connectionInfo().remoteEndpoint());
                         request->sendText("ok"_el);
                     })
                 .onError([&](const NetworkErrorContext &context) -> void { error = context; })
@@ -940,8 +941,8 @@ public:
         const auto loop = EventLoop::create();
         auto server = HttpServerPtr{};
         auto session = HttpClientSessionPtr{};
-        auto firstConnection = ConnectionPtr{};
-        auto safeRetryConnection = ConnectionPtr{};
+        auto firstConnection = std::optional<IpEndpoint>{};
+        auto safeRetryConnection = std::optional<IpEndpoint>{};
         auto safeAttempts = std::size_t{};
         auto unsafeAttempts = std::size_t{};
         auto unsafeWasReused = false;
@@ -958,7 +959,7 @@ public:
                     HttpMethod{HttpMethodType::Get},
                     "/prime"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
-                        firstConnection = request->connection();
+                        firstConnection = request->connectionInfo().remoteEndpoint();
                         request->sendText("prime"_el);
                     })
                 .onRequest(
@@ -966,11 +967,13 @@ public:
                     "/safe"_el,
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock) -> void {
                         ++safeAttempts;
-                        if (request->connection() == firstConnection) {
-                            request->connection()->abort();
+                        if (request->connectionInfo().remoteEndpoint() == firstConnection) {
+                            std::dynamic_pointer_cast<el::network::impl::HttpServerRequest>(request)
+                                ->connection()
+                                ->abort();
                             return;
                         }
-                        safeRetryConnection = request->connection();
+                        safeRetryConnection = request->connectionInfo().remoteEndpoint();
                         request->sendText("safe"_el);
                     })
                 .onRequest(
@@ -979,8 +982,8 @@ public:
                     [&](HttpServerSessionPtr, HttpServerRequestPtr request, el::mem::ByteBlock body) -> void {
                         REQUIRE_EQUAL(body, bytes("fixed"));
                         ++unsafeAttempts;
-                        unsafeWasReused = request->connection() == safeRetryConnection;
-                        request->connection()->abort();
+                        unsafeWasReused = request->connectionInfo().remoteEndpoint() == safeRetryConnection;
+                        std::dynamic_pointer_cast<el::network::impl::HttpServerRequest>(request)->connection()->abort();
                     })
                 .onError([&](const NetworkErrorContext &context) -> void { serverError = context; })
                 .onFinal([&]() -> void { serverFinal = true; })

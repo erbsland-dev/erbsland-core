@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "HttpConnectionInfo.hpp"
 #include "HttpServerRequest_fwd.hpp"
 #include "HttpServerRequestEventEditor.hpp"
 #include "HttpServerSession_fwd.hpp"
@@ -9,8 +10,6 @@
 #include "../http/HttpHeaders.hpp"
 #include "../http/HttpRequestHead.hpp"
 #include "../http/HttpResponseHead.hpp"
-#include "../IpEndpoint.hpp"
-#include "../source/Connection_fwd.hpp"
 #include "../source/NetworkSendStatus.hpp"
 
 #include "../../event/EventSource.hpp"
@@ -40,12 +39,8 @@ public: // request data
     [[nodiscard]] virtual auto query() const noexcept -> const text::String & = 0;
     /// Get a captured complete-segment or catch-all route parameter.
     [[nodiscard]] virtual auto parameter(const text::String &name) const -> std::optional<text::String> = 0;
-    /// Get the concrete connection's local endpoint.
-    [[nodiscard]] virtual auto localEndpoint() const -> std::optional<IpEndpoint> = 0;
-    /// Get the concrete connection's remote endpoint.
-    [[nodiscard]] virtual auto remoteEndpoint() const -> std::optional<IpEndpoint> = 0;
-    /// Get the concrete plaintext or TLS connection.
-    [[nodiscard]] virtual auto connection() const noexcept -> const ConnectionPtr & = 0;
+    /// Get the immutable snapshot of the underlying HTTP connection.
+    [[nodiscard]] virtual auto connectionInfo() const noexcept -> const HttpConnectionInfo & = 0;
     /// Get the selected logical session.
     [[nodiscard]] virtual auto session() const -> HttpServerSessionPtr = 0;
 

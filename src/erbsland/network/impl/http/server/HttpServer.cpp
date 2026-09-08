@@ -267,11 +267,41 @@ auto HttpServer::createSession(std::optional<text::String> identifier, HttpSessi
             if (const auto self = weakSelf.lock()) {
                 self->sessionInvalidated(invalidated);
             }
+        },
+        [weakSelf](const network::HttpServerSessionPtr &renewed) -> bool {
+            if (const auto self = weakSelf.lock(); self != nullptr && self->_sessionManager != nullptr) {
+                const auto renewal = self->_sessionManager->renewSession(renewed);
+                if (renewal.isValid()) {
+                    if (const auto concrete = std::dynamic_pointer_cast<impl::HttpServerSession>(renewed)) {
+                        concrete->setRenewal(renewal.identifier(), renewal.responseFields());
+                        return true;
+                    }
+                }
+            }
+            return false;
         });
     if (_onNewSession) {
         _onNewSession(session);
     }
     return session;
+}
+
+void HttpServer::notifyConnectionActive(const HttpConnectionInfo &info) const {
+    if (_onConnectionActive) {
+        _onConnectionActive(info);
+    }
+}
+
+void HttpServer::notifyConnectionFinal(const HttpConnectionInfo &info) const {
+    if (_onConnectionFinal) {
+        _onConnectionFinal(info);
+    }
+}
+
+void HttpServer::notifyConnectionError(const HttpConnectionInfo &info, const NetworkErrorContext &error) const {
+    if (_onConnectionError) {
+        _onConnectionError(info, error);
+    }
 }
 
 void HttpServer::sessionInvalidated(const network::HttpServerSessionPtr &session) {
@@ -325,7 +355,7 @@ void HttpServer::validateOptions() const {
         throw err::ParameterError{"The HTTP server limits and deadlines are invalid."_el, "options"_el};
     }
     if (_tlsOptions.has_value() &&
-        (_tlsOptions->configurationLabel().isEmpty() || _tlsOptions->maximumConcurrentHandshakes().isZero() ||
+        (_tlsOptions->maximumConcurrentHandshakes().isZero() ||
             _tlsOptions->maximumConcurrentHandshakes().isInfinite() || !_tlsOptions->handshakeTimeout().isPositive() ||
             _tlsOptions->identityMappings().size() > TlsServerAcceptOptions::cMaximumIdentityMappings.toSizeT())) {
         throw err::ParameterError{"The HTTP server TLS options are invalid."_el, "tlsOptions"_el};

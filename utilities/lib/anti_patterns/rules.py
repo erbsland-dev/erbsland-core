@@ -581,6 +581,8 @@ class StaticOnlyClassRule(AntiPatternRule):
                 continue
             if re.match(r"^(?:using|typedef|friend|static_assert|class|struct|enum)\b", member):
                 continue
+            if re.search(rf"\bvirtual\b[^;{{}}]*~{re.escape(block.name)}\s*\(", member):
+                return False
             if re.search(r"=\s*(?:delete|default)\s*$", member) and (block.name in member or "operator=" in member):
                 continue
             if re.search(r"\bstatic\b", member):

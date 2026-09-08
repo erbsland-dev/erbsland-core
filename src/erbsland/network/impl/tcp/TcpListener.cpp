@@ -27,9 +27,7 @@ TcpListener::TcpListener(
 }
 
 TcpListener::~TcpListener() {
-    if (_quotaSubscription != 0U && _options.connectionQuota() != nullptr) {
-        _options.connectionQuota()->unsubscribe(_quotaSubscription);
-    }
+    _quotaSubscription.cancel();
     cleanupDevice(true);
 }
 
@@ -58,7 +56,7 @@ void TcpListener::start(IpEndpoint localEndpoint, TcpListenerOptions options) {
     }
     _options = std::move(options);
     const auto weakSelf = std::weak_ptr<TcpListener>{std::static_pointer_cast<TcpListener>(shared_from_this())};
-    _quotaSubscription = _options.connectionQuota()->subscribe([weakSelf]() -> void {
+    _quotaSubscription = _options.connectionQuota()->addCapacityChanged([weakSelf]() -> void {
         if (const auto self = weakSelf.lock(); self != nullptr) {
             self->handleQuotaCapacity();
         }

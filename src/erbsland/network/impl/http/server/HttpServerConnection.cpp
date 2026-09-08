@@ -26,12 +26,15 @@
 #include "../../../../text/StringEditor.hpp"
 #include "../../../../text/StringEncoder.hpp"
 #include "../../../../text/StringEncoding.hpp"
+#include "../../../HostEndpoint.hpp"
 #include "../../../http/HttpFieldType.hpp"
 #include "../../../http/HttpResponseHead.hpp"
 #include "../../../http_server/HttpServerSessionContext.hpp"
 #include "../../../http_server/HttpServerSessionManager.hpp"
+#include "../../../http_server/HttpTlsConnectionInfo.hpp"
 #include "../../../Network.hpp"
 #include "../../../source/ConnectionEventEditor.hpp"
+#include "../../../source/NetworkErrorReason.hpp"
 #include "../../../tcp/TcpConnection.hpp"
 #include "../../../tcp/TcpConnectionRequest.hpp"
 #include "../../../tls/TlsServerConnection.hpp"
@@ -137,6 +140,10 @@ void HttpServerConnection::startTls() {
 }
 
 void HttpServerConnection::handleActive() {
+    const auto server = _server.lock();
+    if (server == nullptr) {
+        return;
+    }
     if (_closing) {
         _connection->close();
         return;
@@ -148,6 +155,8 @@ void HttpServerConnection::handleActive() {
             return;
         }
     }
+    _connectionInfo = createConnectionInfo();
+    server->notifyConnectionActive(*_connectionInfo);
     startTransaction();
 }
 
@@ -229,6 +238,7 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
             server->ownerEvents(),
             event.request(),
             std::move(target),
+            *_connectionInfo,
             _connection,
             HttpRoutes::Parameters{},
             HttpHeaders{},
@@ -237,7 +247,19 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
             event.request().method() == HttpMethod{HttpMethodType::Head});
         request->attach(_transaction, {});
         _request = request;
-    } catch (const err::Exception &) {
+    } catch (const err::Exception &error) {
+        auto context = NetworkErrorContext{"Invalid HTTP request target"_el, error.reason()};
+        context.setReason(NetworkErrorReason::HttpProtocolFailure);
+        if (_connection != nullptr) {
+            if (const auto local = _connection->localEndpoint(); local.has_value()) {
+                context.setLocalEndpoint(*local);
+            }
+            if (const auto remote = _connection->remoteEndpoint(); remote.has_value()) {
+                context.setRemoteEndpoint(HostEndpoint{remote->address(), remote->port(), remote->scopeId()});
+            }
+        }
+        const auto info = _connectionInfo.has_value() ? *_connectionInfo : createConnectionInfo();
+        server->notifyConnectionError(info, context);
         sendFrameworkError(HttpStatus::BadRequest);
         return;
     } catch (...) {
@@ -256,6 +278,30 @@ void HttpServerConnection::handleRequestHead(const Http1DecodeEvent &event) {
 }
 
 void HttpServerConnection::handleFailure(const Http1TransactionFailure &failure) {
+    const auto server = _server.lock();
+    if (server != nullptr) {
+        auto context =
+            failure.transportContext().value_or(NetworkErrorContext{"HTTP connection error"_el, failure.description()});
+        if (!failure.transportContext().has_value()) {
+            context.setReason(
+                failure.kind() == Http1TransactionFailure::Kind::Timeout ? NetworkErrorReason::Timeout
+                                                                         : NetworkErrorReason::HttpProtocolFailure);
+            if (_connection != nullptr) {
+                if (const auto local = _connection->localEndpoint(); local.has_value()) {
+                    context.setLocalEndpoint(*local);
+                }
+                if (const auto remote = _connection->remoteEndpoint(); remote.has_value()) {
+                    context.setRemoteEndpoint(HostEndpoint{remote->address(), remote->port(), remote->scopeId()});
+                }
+            }
+        }
+        if (_request != nullptr) {
+            _request->handleError(context);
+        } else {
+            const auto info = _connectionInfo.has_value() ? *_connectionInfo : createConnectionInfo();
+            server->notifyConnectionError(info, context);
+        }
+    }
     if (_request != nullptr && _request->isResponseStarted()) {
         return;
     }
@@ -305,8 +351,16 @@ void HttpServerConnection::handleFinal() {
 }
 
 void HttpServerConnection::handleSetupError(const NetworkErrorContext &context) {
-    if (const auto server = _server.lock(); server != nullptr && server->_onError) {
-        server->_onError(context);
+    // Browsers can abandon speculative connections before sending an HTTP request. At this point no authenticated
+    // application data exists whose truncation could be security-relevant, so treat peer disconnects as normal.
+    const auto normalPeerDisconnect = context.reason() == NetworkErrorReason::TlsTruncation ||
+        context.reason() == NetworkErrorReason::ConnectionReset;
+    if (normalPeerDisconnect) {
+        return;
+    }
+    if (const auto server = _server.lock(); server != nullptr) {
+        const auto info = _connectionInfo.has_value() ? *_connectionInfo : createConnectionInfo();
+        server->notifyConnectionError(info, context);
     }
 }
 
@@ -316,8 +370,33 @@ void HttpServerConnection::handleSetupFinal() {
     }
     _removed = true;
     if (const auto server = _server.lock()) {
+        if (_connection != nullptr) {
+            const auto info = _connectionInfo.has_value() ? *_connectionInfo : createConnectionInfo();
+            server->notifyConnectionFinal(info);
+        }
         server->removeConnection(shared_from_this());
     }
+}
+
+auto HttpServerConnection::createConnectionInfo() const -> HttpConnectionInfo {
+    auto localEndpoint = std::optional<IpEndpoint>{};
+    auto remoteEndpoint = std::optional<IpEndpoint>{};
+    auto tlsInfo = std::optional<HttpTlsConnectionInfo>{};
+    if (_connection != nullptr) {
+        localEndpoint = _connection->localEndpoint();
+        remoteEndpoint = _connection->remoteEndpoint();
+        if (const auto tls = std::dynamic_pointer_cast<network::TlsServerConnection>(_connection); tls != nullptr) {
+            tlsInfo.emplace(
+                tls->requestedConfigurationLabel(),
+                tls->matchedConfigurationLabel(),
+                tls->serverName(),
+                tls->offeredAlpn(),
+                tls->negotiatedAlpn(),
+                tls->cipherSuite(),
+                tls->signatureScheme());
+        }
+    }
+    return HttpConnectionInfo{std::move(localEndpoint), std::move(remoteEndpoint), std::move(tlsInfo)};
 }
 
 }

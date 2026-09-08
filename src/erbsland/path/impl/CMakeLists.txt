@@ -10,6 +10,8 @@ target_sources(erbsland-core PRIVATE
         CharactersSets.hpp
         CommonPathBackend.cpp
         CommonPathBackend.hpp
+        FileLock.hpp
+        FileLock_fwd.hpp
         PathBackend.cpp
         PathBackend.hpp
         PathBackend_fwd.hpp
@@ -43,6 +45,8 @@ if (WIN32)
     target_sources(erbsland-core PRIVATE
             WindowsAccessProfileSecurity.cpp
             WindowsAccessProfileSecurity.hpp
+            WindowsFileLock.cpp
+            WindowsFileLock.hpp
             WindowsPathBackend.cpp
             WindowsPathBackend_access.cpp
             WindowsPathBackend.hpp
@@ -53,6 +57,8 @@ if (WIN32)
 else ()
     target_sources(erbsland-core PRIVATE
             PosixDirectoryCloser.hpp
+            PosixFileLock.cpp
+            PosixFileLock.hpp
             PosixPathBackend.cpp
             PosixPathBackend_access.cpp
             PosixPathBackend.hpp

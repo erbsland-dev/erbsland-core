@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "HttpConnectionInfoFn.hpp"
 #include "HttpServerRequestFn.hpp"
 #include "HttpServerRouteOptions.hpp"
 
@@ -27,6 +28,12 @@ public:
 public:
     /// Replace the callback emitted after binding completes.
     virtual auto onListening(NetworkEventFn callback) -> HttpServerEventEditor & = 0;
+    /// Replace the callback emitted after an accepted connection completes its transport setup.
+    virtual auto onConnectionActive(HttpConnectionInfoFn callback) -> HttpServerEventEditor & = 0;
+    /// Replace the callback emitted before an accepted connection is discarded.
+    virtual auto onConnectionFinal(HttpConnectionInfoFn callback) -> HttpServerEventEditor & = 0;
+    /// Replace the callback emitted for an accepted-connection error that does not fail the listener.
+    virtual auto onConnectionError(HttpConnectionErrorFn callback) -> HttpServerEventEditor & = 0;
     /// Replace the callback emitted before a newly created session is routed.
     virtual auto onNewSession(HttpServerSessionFn callback) -> HttpServerEventEditor & = 0;
     /// Add an aggregated byte route for every valid method.

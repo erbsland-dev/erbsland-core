@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "FileLock_fwd.hpp"
 #include "Path_fwd.hpp"
 #include "PathContent_fwd.hpp"
 #include "PathFormat.hpp"
@@ -59,7 +60,8 @@ using PathList = util::List<Path>;
 ///   Special Windows paths, like "/??/", "//./", "//?/Volume" and "//./PhysicalDrive0", etc. are not supported.
 ///   Any path that looks like a special path is converted into an empty path on construction for security reasons.
 /// @seedoc{/topics/path/working_with_paths}
-/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest PathResolveBackendTest}
+/// @tested{PathConstructionTest PathAccessTest PathModificationTest PathConversionTest}
+/// @tested{PathResolveBackendTest PathFileLockTest}
 class Path final {
     friend class PathInfo;
     friend class impl::PathBackend;
@@ -255,6 +257,11 @@ public: // path resolving
     [[nodiscard]] auto commonAncestor(std::optional<Path> base = std::nullopt) const noexcept -> Path;
 
 public: // components
+    /// Acquire a nonblocking exclusive process lock associated with this path.
+    /// The lock is held on a persistent `.lock` sidecar so this path can safely be replaced while locked.
+    /// @return The RAII object holding the lock.
+    /// @throws PathError If this path is invalid, the sidecar cannot be opened, or another process holds the lock.
+    [[nodiscard]] auto createLock() const -> FileLock;
     /// Access information about the file or directory of this path.
     /// Repeated calls on this path or one of its copies share the attached information cache.
     /// @param parts The parts to initially request and cache.

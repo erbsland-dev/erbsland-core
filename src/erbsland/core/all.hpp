@@ -16,6 +16,7 @@
 #include "ApplicationPartIdentifier.hpp"
 #include "ApplicationPartManager.hpp"
 #include "ApplicationPartManagerAccess.hpp"
+#include "ApplicationPartManagerEventEditor.hpp"
 #include "ApplicationPartManagerState.hpp"
 #include "ApplicationPartState.hpp"
 #include "ApplicationPartTraits.hpp"

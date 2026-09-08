@@ -391,7 +391,7 @@ protected:
 
 TESTED_TARGETS(
     ApplicationPart ApplicationPartIdentifier ApplicationPartManager ApplicationPartManagerAccess
-        ApplicationPartWithInterface)
+        ApplicationPartManagerEventEditor ApplicationPartWithInterface)
 class ApplicationPartManagerTest final : public el::UnitTest {
 public:
     void testIdentifierValidation() {
@@ -472,7 +472,7 @@ public:
         const auto manager = ApplicationPartManager::create();
         manager->registerPart<ManagerTestDependentPart>();
         manager->registerPart<ManagerTestRootPart>();
-        manager->setPartStateChangedFn(
+        [[maybe_unused]] auto partStateSubscription = manager->events().addPartStateChanged(
             [&](ApplicationPartIdentifierPtr identifier, const ApplicationPartState state) -> void {
                 if (identifier->name() == ManagerTestRootInterface::partIdentifier()->name() &&
                     state == ApplicationPartState::Running) {
@@ -634,11 +634,12 @@ public:
         auto manager = ApplicationPartManager::create();
         const auto managerWeak = std::weak_ptr<ApplicationPartManager>{manager};
         manager->registerPart<ManagerTestLifetimePart>();
-        manager->setStateChangedFn([lifetimeState](const ApplicationPartManagerState state) -> void {
-            if (state == ApplicationPartManagerState::Stopped) {
-                lifetimeState->blockCallback();
-            }
-        });
+        [[maybe_unused]] auto stateSubscription =
+            manager->events().addStateChanged([lifetimeState](const ApplicationPartManagerState state) -> void {
+                if (state == ApplicationPartManagerState::Stopped) {
+                    lifetimeState->blockCallback();
+                }
+            });
         manager->prepare();
         manager->start();
         REQUIRE(manager->waitForRunning());
@@ -710,11 +711,12 @@ public:
     void testThrowingStateCallbackForcesStopAll() {
         const auto manager = ApplicationPartManager::create();
         manager->registerPart<ManagerTestRootPart>();
-        manager->setPartStateChangedFn([](ApplicationPartIdentifierPtr, const ApplicationPartState state) -> void {
-            if (state == ApplicationPartState::Running) {
-                throw el::err::RuntimeError{"expected state callback failure"_el};
-            }
-        });
+        [[maybe_unused]] auto partStateSubscription = manager->events().addPartStateChanged(
+            [](ApplicationPartIdentifierPtr, const ApplicationPartState state) -> void {
+                if (state == ApplicationPartState::Running) {
+                    throw el::err::RuntimeError{"expected state callback failure"_el};
+                }
+            });
         manager->prepare();
         manager->start();
         REQUIRE_FALSE(manager->waitForStopped());

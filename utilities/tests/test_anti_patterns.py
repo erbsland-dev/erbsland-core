@@ -485,6 +485,20 @@ class AntiPatternRulesTest(unittest.TestCase):
         self.assertEqual(1, len(rule_candidates("static_only_class", static_only, "src/Tools.hpp")))
         self.assertEqual(0, len(rule_candidates("static_only_class", instance, "src/Value.hpp")))
 
+    def test_static_only_class_accepts_virtual_destructor(self) -> None:
+        defaulted = "class Factory {\npublic:\nvirtual ~Factory() = default;\nstatic auto create() -> Factory *;\n};\n"
+        declared = "class Factory {\npublic:\nvirtual ~Factory();\nstatic auto create() -> Factory *;\n};\n"
+        pure_virtual = "class Factory {\npublic:\nvirtual ~Factory() = 0;\nstatic auto create() -> Factory *;\n};\n"
+
+        self.assertEqual(0, len(rule_candidates("static_only_class", defaulted, "src/Factory.hpp")))
+        self.assertEqual(0, len(rule_candidates("static_only_class", declared, "src/Factory.hpp")))
+        self.assertEqual(0, len(rule_candidates("static_only_class", pure_virtual, "src/Factory.hpp")))
+
+    def test_static_only_class_accepts_derived_class(self) -> None:
+        derived = "class Factory final : public Base {\npublic:\nstatic auto create() -> Factory *;\n};\n"
+
+        self.assertEqual(0, len(rule_candidates("static_only_class", derived, "src/Factory.hpp")))
+
     def test_missing_api_documentation(self) -> None:
         missing = "auto first() -> void;\nauto second() -> void;\n"
         documented = "auto first() -> void;\n/// Run the second operation.\nauto second() -> void;\n"

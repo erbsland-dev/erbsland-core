@@ -17,6 +17,8 @@ public:
     HttpServerRequestEventEditor(event::EventSourcePtr source, event::EventsPtr target, HttpServerRequest &request);
 
 public: // implement network::HttpServerRequestEventEditor
+    auto onResponseCommitted(HttpServerResponseFn callback) -> HttpServerRequestEventEditor & override;
+    auto onError(NetworkErrorFn callback) -> HttpServerRequestEventEditor & override;
     auto onBodyData(NetworkDataFn callback) -> HttpServerRequestEventEditor & override;
     auto onBody(NetworkDataFn callback) -> HttpServerRequestEventEditor & override;
     auto onTrailers(std::function<void(const HttpHeaders &)> callback) -> HttpServerRequestEventEditor & override;

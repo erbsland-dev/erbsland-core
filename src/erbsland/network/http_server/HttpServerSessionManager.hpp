@@ -4,6 +4,7 @@
 
 #include "HttpServerSessionContext.hpp"
 #include "HttpServerSessionManager_fwd.hpp"
+#include "HttpServerSessionRenewal.hpp"
 #include "HttpServerSessionSelection.hpp"
 
 namespace erbsland::network {
@@ -21,6 +22,8 @@ public:
     [[nodiscard]] virtual auto selectSession(const HttpServerSessionContext &context) -> HttpServerSessionSelection = 0;
     /// Remove manager state and return fields for the current invalidation response.
     [[nodiscard]] virtual auto sessionInvalidated(const HttpServerSessionPtr &session) -> HttpHeaders = 0;
+    /// Replace the identifier of an existing valid session.
+    [[nodiscard]] virtual auto renewSession(const HttpServerSessionPtr &session) -> HttpServerSessionRenewal = 0;
 };
 
 }

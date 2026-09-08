@@ -36,6 +36,16 @@ The ``OrThrow`` form reports lookup and conversion failures as ``PathError``; th
 path.
 ``Path::systemTempDirectory()`` resolves the platform temporary directory.
 
+File Locks
+==========
+
+``Path::createLock()`` acquires a nonblocking exclusive process lock and returns a move-only ``FileLock`` owner.
+The operating-system lock is held on a persistent ``.lock`` sidecar file, so you can replace the protected path
+atomically without dropping mutual exclusion.
+The sidecar remains after release to avoid races between lock users, and existing sidecar content is preserved.
+Acquisition reports an invalid path, an inaccessible sidecar, or lock contention as a
+:cpp:class:`PathError <erbsland::path::PathError>`.
+
 Path Information Cache
 ======================
 
@@ -90,6 +100,8 @@ A separate exception cause remains available for a genuinely independent failure
 Interface
 =========
 
+.. doxygenclass:: erbsland::path::FileLock
+    :members:
 .. doxygenclass:: erbsland::path::Path
     :members:
 .. doxygenclass:: erbsland::path::PathAccessInfo

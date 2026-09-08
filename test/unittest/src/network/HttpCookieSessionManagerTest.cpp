@@ -39,9 +39,9 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
         [[nodiscard]] auto path() const noexcept -> const String & override { return _path; }
         [[nodiscard]] auto query() const noexcept -> const String & override { return _query; }
         [[nodiscard]] auto parameter(const String &) const -> std::optional<String> override { return {}; }
-        [[nodiscard]] auto localEndpoint() const -> std::optional<IpEndpoint> override { return {}; }
-        [[nodiscard]] auto remoteEndpoint() const -> std::optional<IpEndpoint> override { return {}; }
-        [[nodiscard]] auto connection() const noexcept -> const ConnectionPtr & override { return _connection; }
+        [[nodiscard]] auto connectionInfo() const noexcept -> const HttpConnectionInfo & override {
+            return _connectionInfo;
+        }
         [[nodiscard]] auto session() const -> HttpServerSessionPtr override { return {}; }
         void streamBody() override {}
         void aggregateBody(el::unit::ByteLength) override {}
@@ -69,7 +69,7 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
         HttpRequestHead _head;
         String _path{"/"};
         String _query;
-        ConnectionPtr _connection;
+        HttpConnectionInfo _connectionInfo{{}, {}};
     };
 
     struct Harness final {
@@ -96,7 +96,11 @@ class HttpCookieSessionManagerTest final : public el::UnitTest {
                     [&](std::optional<String> identifier, HttpSessionDataPtr data) -> HttpServerSessionPtr {
                         ++created;
                         return std::make_shared<el::network::impl::HttpServerSession>(
-                            loop, std::move(identifier), std::move(data), [](const HttpServerSessionPtr &) {});
+                            loop,
+                            std::move(identifier),
+                            std::move(data),
+                            [](const HttpServerSessionPtr &) {},
+                            [](const HttpServerSessionPtr &) -> bool { return true; });
                     }};
                 result = manager->selectSession(context);
                 completed = true;
@@ -219,6 +223,26 @@ public:
         const auto value = deletion.getFirst(HttpFieldType::SetCookie);
         REQUIRE(value.startsWith("erbsland-session="_el));
         REQUIRE(value.contains("; Max-Age=0"_el));
+    }
+
+    void testExplicitInvalidationReleasesCapacity() {
+        auto options = HttpCookieSessionManagerOptions{};
+        options.setMaximumSessions(el::unit::ItemCount{1U});
+        auto harness = Harness{options};
+        const auto first = harness.select();
+
+        auto deletion = HttpHeaders{};
+        auto invalidated = false;
+        harness.loop->invoke([&]() -> void {
+            deletion = harness.manager->sessionInvalidated(first.session());
+            invalidated = true;
+        });
+        while (!invalidated) {
+            REQUIRE(harness.loop->runOnce(el::time::TimeDelta::milliseconds(25)));
+        }
+        REQUIRE(deletion.getFirst(HttpFieldType::SetCookie).contains("; Max-Age=0"_el));
+        REQUIRE_NOT_EQUAL(harness.select().session(), first.session());
+        REQUIRE_EQUAL(harness.created, 2U);
     }
 
     void testOptionValidation() {

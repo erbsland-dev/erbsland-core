@@ -31,6 +31,26 @@ The native pointers must remain valid for the application lifetime.
 This cleanup only reduces secrets retained in process memory; it cannot retract command-line values already exposed
 through process listings, the shell, operating-system facilities, logs, or earlier application code.
 
+Service Lifecycle
+=================
+
+``enableServiceLifecycle()`` lets the same executable run interactively, as a foreground POSIX daemon, or as a Windows
+own-process service.
+On Linux and macOS, SIGTERM and SIGINT request the regular graceful application shutdown.
+On Windows, the application connects to the Service Control Manager when launched as a service and otherwise continues
+as an interactive console application.
+SCM stop and shutdown controls and interactive Ctrl+C or Ctrl+Break requests use the same application-part and
+event-loop shutdown path.
+
+Startup is reported as complete immediately before main work begins.
+A slow initializer can call ``reportStartupPending(expectedTime)`` before that point and publish genuine progress with
+additional calls.
+It must call ``reportStartupComplete()`` when the application is ready.
+The default application-part lifecycle automatically keeps startup pending until all automatically started parts reach
+the running state.
+
+See :doc:`/topics/core/service_lifecycle` for complete examples and lifecycle details.
+
 Application Parts
 =================
 
@@ -75,6 +95,9 @@ callbacks, and ordered error retrieval.
 Manager and part state callbacks execute on the manager's control event source.
 Every started part receives a separate event thread.
 Dependencies gate startup and reverse the shutdown order.
+State observers are independent subscriptions.
+Retain the ``EventSubscription`` returned by ``events().addStateChanged()`` or ``events().addPartStateChanged()`` for as
+long as the observer shall remain active.
 
 Compiled Resources
 ==================
@@ -123,6 +146,8 @@ Interface
 .. doxygenclass:: erbsland::core::ApplicationPartManager
     :members:
 .. doxygenclass:: erbsland::core::ApplicationPartManagerAccess
+    :members:
+.. doxygenclass:: erbsland::core::ApplicationPartManagerEventEditor
     :members:
 .. doxygenenum:: erbsland::core::ApplicationPartManagerState
 .. doxygenenum:: erbsland::core::ApplicationPartState

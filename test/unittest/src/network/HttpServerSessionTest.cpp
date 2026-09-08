@@ -31,9 +31,11 @@ public:
         auto selectedRoute = 0;
         loop->invoke([&]() -> void {
             session = std::make_shared<el::network::impl::HttpServerSession>(
-                loop, "identified"_el, std::make_shared<Data>(), [&](const HttpServerSessionPtr &) -> void {
-                    ++invalidationObserverCount;
-                });
+                loop,
+                "identified"_el,
+                std::make_shared<Data>(),
+                [&](const HttpServerSessionPtr &) -> void { ++invalidationObserverCount; },
+                [](const HttpServerSessionPtr &) -> bool { return true; });
             auto replacementData = std::make_shared<Data>();
             replacementData->value = 42;
             session->setData(replacementData);

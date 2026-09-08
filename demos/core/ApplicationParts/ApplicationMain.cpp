@@ -15,12 +15,13 @@ auto main(const int argc, char *argv[]) -> int {
     app.info().setApplicationName("Catalog Service"_el);
     app.registerPart<CatalogStoragePart>();
     app.registerPart<CatalogServerPart>();
-    app.partManager()->setStateChangedFn([&app](const el::ApplicationPartManagerState state) -> void {
-        if (state == el::ApplicationPartManagerState::Running) {
-            el::io::printLine("all application parts are running"_el);
-            app.quit();
-        }
-    });
+    auto stateSubscription = // Normally kept in the object that handles the event
+        app.partManager()->addStateChanged([&app](const el::ApplicationPartManagerState state) -> void {
+            if (state == el::ApplicationPartManagerState::Running) {
+                el::io::printLine("all application parts are running"_el);
+                app.quit();
+            }
+        });
     return app.run();
 }
 

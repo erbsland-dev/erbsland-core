@@ -312,12 +312,13 @@ public:
         manager->rootStream()->info("queued-one"_el);
         manager->rootStream()->info("queued-two"_el);
 
-        auto releaseThread = std::thread{[&]() -> void {
-            std::this_thread::sleep_for(std::chrono::milliseconds{40});
-            writer->release();
-        }};
-        manager->shutdown();
-        releaseThread.join();
+        auto shutdownThread = std::thread{[&]() -> void { manager->shutdown(); }};
+        const auto waitDeadline = std::chrono::steady_clock::now() + std::chrono::seconds{1};
+        while (manager->statistics().droppedEntries < 2U && std::chrono::steady_clock::now() < waitDeadline) {
+            std::this_thread::sleep_for(std::chrono::milliseconds{1});
+        }
+        writer->release();
+        shutdownThread.join();
 
         const auto statistics = manager->statistics();
         REQUIRE_EQUAL(statistics.acceptedEntries, uint64_t{3U});

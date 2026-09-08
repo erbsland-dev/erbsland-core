@@ -23,6 +23,7 @@
 #include "EventRegistry.hpp"
 #include "EventScheduler.hpp"
 #include "EventSource.hpp"
+#include "EventSubscription.hpp"
 #include "EventThread.hpp"
 #include "EventTimer.hpp"
 #include "EventTimerMode.hpp"

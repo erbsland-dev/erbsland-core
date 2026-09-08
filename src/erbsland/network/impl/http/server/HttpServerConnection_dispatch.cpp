@@ -94,6 +94,7 @@ void HttpServerConnection::dispatch(
     }
     request->setSelection(
         selection.session(), selection.responseFields(), selection.reservedCookieName(), std::move(match.parameters));
+    concreteSession->deliverRequest(request);
     if (!match.handler.isValid()) {
         if (match.pathMatched) {
             auto allow = StringEditor{};

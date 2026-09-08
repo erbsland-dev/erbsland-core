@@ -5,6 +5,7 @@
 #include "Http1ProtocolError.hpp"
 
 #include "../../../../text/Literals.hpp"
+#include "../../../source/NetworkErrorReason.hpp"
 
 namespace erbsland::network::impl {
 
@@ -91,6 +92,11 @@ void Http1Transaction::handleClosed() {
     if (_finalized || _state == State::Cancelled) {
         return;
     }
+    if (_role == Role::Server && _state == State::ReceivingHeaders && !_incomingStarted) {
+        _reusable = false;
+        finishFinal();
+        return;
+    }
     if (!_incomingComplete && !_failureEmitted) {
         try {
             endDecoderInput();
@@ -110,6 +116,17 @@ void Http1Transaction::handleClosed() {
 }
 
 void Http1Transaction::handleError(const NetworkErrorContext &context) {
+    // Browsers can discard an idle keep-alive connection without an orderly TLS or TCP shutdown. Once request data
+    // arrived, the same errors remain failures until the complete request has been decoded.
+    const auto noIncompleteRequest = (_state == State::ReceivingHeaders && !_incomingStarted) || _incomingComplete;
+    const auto normalPeerDisconnect = _role == Role::Server && noIncompleteRequest &&
+        (context.reason() == NetworkErrorReason::TlsTruncation ||
+            context.reason() == NetworkErrorReason::ConnectionReset);
+    if (!_finalized && !_failureEmitted && normalPeerDisconnect) {
+        _reusable = false;
+        finishFinal();
+        return;
+    }
     if (!_finalized && !_failureEmitted) {
         fail(Http1TransactionFailure{context}, false);
     }
@@ -371,6 +388,7 @@ auto Http1Transaction::nextDecodeEvent() -> std::optional<Http1DecodeEvent> {
 }
 
 auto Http1Transaction::feedDecoder(const mem::ConstByteSpan data) -> NetworkSendStatus {
+    _incomingStarted = _incomingStarted || !data.empty();
     return _role == Role::Client ? _responseDecoder->feed(data) : _requestDecoder->feed(data);
 }
 

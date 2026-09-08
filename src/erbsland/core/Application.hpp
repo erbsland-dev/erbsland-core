@@ -28,7 +28,9 @@
 #include "../options/OptionValues_fwd.hpp"
 #include "../random/Random_fwd.hpp"
 #include "../resource/Resources_fwd.hpp"
+#include "../system/impl/service/ServiceLifecycle_fwd.hpp"
 #include "../system/UserLookup_fwd.hpp"
+#include "../time/TimeDelta_fwd.hpp"
 #include "../unit/ExitCode.hpp"
 
 #include <memory>
@@ -45,7 +47,7 @@ namespace erbsland::core {
 /// and call `Application::linkWith(app)` in this method. From `main()` call all these `initialize...()` methods
 /// of all DLLs that use Erbsland Core, just after creating the `Application` instance.
 /// Do not use `application()` or `Application::instance()` in static initialization in DLLs that link Erbsland Core.
-/// @tested{ApplicationEventTest ApplicationLogTest ApplicationOptionsTest}
+/// @tested{ApplicationEventTest ApplicationLogTest ApplicationOptionsTest ApplicationServiceLifecycleTest}
 class Application {
     friend class impl::ApplicationInstanceManager;
     friend auto application() -> Application &;
@@ -83,6 +85,21 @@ public: // methods to enable features
     /// from these channels readable.
     /// The idea is that you use the terminal instance via `terminal()` for all your application output.
     void enableTerminal();
+    /// Enable foreground-daemon and Windows service lifecycle integration.
+    /// Call this after construction and before `run()`. Repeated calls are ignored.
+    void enableServiceLifecycle();
+
+public: // service startup feedback
+    /// Report that startup is still in progress.
+    /// This disables automatic readiness until `reportStartupComplete()` is called. Repeated calls report progress.
+    /// @param expectedRemainingTime Positive expected time until startup completes.
+    /// @throws err::LogicError If service lifecycle support is not enabled or startup already completed.
+    /// @throws err::ParameterError If `expectedRemainingTime` is not positive.
+    void reportStartupPending(time::TimeDelta expectedRemainingTime);
+    /// Report that application startup completed.
+    /// This operation is idempotent.
+    /// @throws err::LogicError If service lifecycle support is not enabled.
+    void reportStartupComplete();
 
 protected: // customizable methods
     /// First initialization of the application.
@@ -244,18 +261,22 @@ protected: // debugging methods
     virtual void initializeRandom(random::RandomPtr &randomPtr) noexcept;
     /// Initialize the application's cryptographically secure random-number generator.
     virtual void initializeSecureRandom(random::RandomPtr &randomPtr) noexcept;
+    /// Inject a service lifecycle implementation for tests.
+    virtual void initializeServiceLifecycle(system::impl::ServiceLifecyclePtr &serviceLifecycle) noexcept;
 #endif
 
 private:
     /// Internal constructor.
     /// Only used by the instance manager when creating a temporary application instance.
     explicit Application(impl::ApplicationDataPtr data);
-    /// Access the part manager without creating it.
-    [[nodiscard]] auto partManagerIfCreated() const noexcept -> ApplicationPartManagerPtr;
-    /// Bring a created part manager to a terminal state before application cleanup.
+    /// Execute initialization, main work, and cleanup inside the selected platform lifecycle.
+    [[nodiscard]] auto runApplicationLifecycle() -> int;
+    /// Bring a created part manager to a terminal state.
     void stopPartManager();
-    /// Quit the application event system after part shutdown.
-    void quitEventSystem() noexcept;
+    /// Request coordinated graceful shutdown through shared application data.
+    static void requestQuit(const impl::ApplicationDataPtr &data, unit::ExitCode exitCode) noexcept;
+    /// Release process integrations before the last application facade exits.
+    void cleanupBeforeAppExit() noexcept;
 
 private:
     impl::ApplicationDataPtr _data; ///< Shared internal application state.

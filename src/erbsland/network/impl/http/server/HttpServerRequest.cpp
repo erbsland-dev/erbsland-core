@@ -26,6 +26,7 @@ HttpServerRequest::HttpServerRequest(
     event::EventsPtr ownerEvents,
     HttpRequestHead head,
     HttpRequestTarget target,
+    HttpConnectionInfo connectionInfo,
     ConnectionPtr connection,
     HttpRoutes::Parameters parameters,
     HttpHeaders responseFields,
@@ -35,6 +36,7 @@ HttpServerRequest::HttpServerRequest(
     network::HttpServerRequest{std::move(ownerEvents)},
     _head{std::move(head)},
     _target{std::move(target)},
+    _connectionInfo{std::move(connectionInfo)},
     _connection{std::move(connection)},
     _parameters{std::move(parameters)},
     _responseFields{std::move(responseFields)},
@@ -64,14 +66,8 @@ auto HttpServerRequest::parameter(const String &name) const -> std::optional<Str
     return std::nullopt;
 }
 
-auto HttpServerRequest::localEndpoint() const -> std::optional<IpEndpoint> {
-    return _connection->localEndpoint();
-}
-auto HttpServerRequest::remoteEndpoint() const -> std::optional<IpEndpoint> {
-    return _connection->remoteEndpoint();
-}
-auto HttpServerRequest::connection() const noexcept -> const ConnectionPtr & {
-    return _connection;
+auto HttpServerRequest::connectionInfo() const noexcept -> const HttpConnectionInfo & {
+    return _connectionInfo;
 }
 auto HttpServerRequest::session() const -> HttpServerSessionPtr {
     return _session;
@@ -133,8 +129,12 @@ void HttpServerRequest::sendResponse(HttpResponseHead response, mem::ByteBlock b
     if (_hasBody && !_bodyPolicySelected) {
         _bodyPolicySelected = true;
     }
+    const auto observedResponse = response;
     _transaction->startResponse(std::move(response));
     _responseStarted = true;
+    if (_onResponseCommitted) {
+        _onResponseCommitted(observedResponse);
+    }
     if (!_suppressBody && !body.isEmpty()) {
         const auto bodyStatus = _transaction->sendBody(body);
         if (bodyStatus.wouldBlock()) {
@@ -216,9 +216,13 @@ void HttpServerRequest::startResponse(HttpResponseHead response) {
     if (_hasBody && !_bodyPolicySelected) {
         _bodyPolicySelected = true;
     }
+    const auto observedResponse = response;
     _transaction->startResponse(std::move(response));
     _responseStarted = true;
     _streamingResponse = true;
+    if (_onResponseCommitted) {
+        _onResponseCommitted(observedResponse);
+    }
 }
 
 auto HttpServerRequest::sendBody(const mem::ByteBlock &data) -> NetworkSendStatus {
@@ -324,6 +328,12 @@ void HttpServerRequest::handleWritable() {
     }
 }
 
+void HttpServerRequest::handleError(const NetworkErrorContext &context) {
+    if (_onError) {
+        _onError(context);
+    }
+}
+
 void HttpServerRequest::finalize() {
     if (_final) {
         return;
@@ -370,6 +380,11 @@ void HttpServerRequest::appendManagerResponseFields(HttpHeaders &headers) const 
     if (const auto session = std::dynamic_pointer_cast<HttpServerSession>(_session);
         session != nullptr && !session->isValid()) {
         for (const auto &field : session->invalidationResponseFields().fields()) {
+            headers.addField(field);
+        }
+    }
+    if (const auto session = std::dynamic_pointer_cast<HttpServerSession>(_session); session != nullptr) {
+        for (const auto &field : session->takeRenewalResponseFields().fields()) {
             headers.addField(field);
         }
     }

@@ -64,6 +64,8 @@ public:
     auto operator=(ByteBlock &&) noexcept -> ByteBlock &;
 
 public: // main operations
+    /// Create an independent copy containing only the visible bytes.
+    [[nodiscard]] auto copy() const -> ByteBlock;
     /// Test if this block is marked as sensitive.
     [[nodiscard]] auto isSensitive() const noexcept -> bool;
     /// Permanently mark this block as sensitive.
@@ -75,6 +77,8 @@ public: // main operations
     [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteIndex end) const noexcept -> ByteBlock;
     /// Return a slice from the given start with the given length.
     [[nodiscard]] auto slice(unit::ByteIndex begin, unit::ByteLength length) const noexcept -> ByteBlock;
+    /// Create an independent block containing a clamped range of visible bytes.
+    [[nodiscard]] auto kept(unit::ByteRange range) const -> ByteBlock;
     /// Securely erase this block while preserving its length.
     void secureErase();
 

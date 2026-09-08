@@ -3,13 +3,13 @@
 
 cmake_minimum_required(VERSION 3.28)
 
+add_subdirectory(application_data)
+
 target_sources(erbsland-core PRIVATE
         ApplicationData.hpp
         ApplicationData_fwd.hpp
         ApplicationDataImpl.cpp
         ApplicationDataImpl.hpp
-        EventData.hpp
-        EventData_fwd.hpp
         ApplicationErrorDiagnostic.cpp
         ApplicationErrorDiagnostic.hpp
         ApplicationErrorDocumentBuilder.cpp

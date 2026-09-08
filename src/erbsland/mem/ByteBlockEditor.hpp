@@ -67,6 +67,8 @@ public:
     auto operator=(ByteBlockEditor &&) noexcept -> ByteBlockEditor &;
 
 public: // main operations
+    /// Create an independent copy containing the visible bytes.
+    [[nodiscard]] auto copy() const -> ByteBlockEditor;
     /// Test if this allocation is marked as sensitive.
     [[nodiscard]] auto isSensitive() const noexcept -> bool;
     /// Permanently mark this allocation as sensitive.
@@ -160,6 +162,8 @@ public: // main operations
     auto xorWith(unit::ByteRange range, ConstByteSpan bytes) -> ByteBlockEditor &;
     /// Return a copy with a range removed.
     [[nodiscard]] auto removed(unit::ByteRange range) const -> ByteBlockEditor;
+    /// Return an independent copy containing a clamped range of bytes.
+    [[nodiscard]] auto kept(unit::ByteRange range) const -> ByteBlockEditor;
     /// Return a copy with a range replaced.
     [[nodiscard]] auto replaced(unit::ByteRange range, const ByteBlock &replacement) const -> ByteBlockEditor;
     /// Join byte sequences with this block as separator.

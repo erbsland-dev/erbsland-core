@@ -170,19 +170,17 @@ void ApplicationPartManager::setErrorHandler(ApplicationPartErrorHandler handler
     _errorHandler = std::move(handler);
 }
 
-void ApplicationPartManager::setStateChangedFn(ApplicationPartManagerStateChangedFn callback) {
-    const auto lock = std::scoped_lock{_mutex};
-    _stateChangedFn = std::move(callback);
+auto ApplicationPartManager::events() noexcept -> core::ApplicationPartManagerEventEditor & {
+    return *this;
 }
 
-void ApplicationPartManager::setPartStateChangedFn(ApplicationPartStateChangedFn callback) {
-    const auto lock = std::scoped_lock{_mutex};
-    _partStateChangedFn = std::move(callback);
+auto ApplicationPartManager::addStateChanged(ApplicationPartManagerStateChangedFn callback)
+    -> event::EventSubscription {
+    return _stateChangedCallbacks.add(std::move(callback));
 }
 
-void ApplicationPartManager::setOwnerStateChangedFn(ApplicationPartManagerStateChangedFn callback) {
-    const auto lock = std::scoped_lock{_mutex};
-    _ownerStateChangedFn = std::move(callback);
+auto ApplicationPartManager::addPartStateChanged(ApplicationPartStateChangedFn callback) -> event::EventSubscription {
+    return _partStateChangedCallbacks.add(std::move(callback));
 }
 
 auto ApplicationPartManager::hasError() const noexcept -> bool {
@@ -236,44 +234,21 @@ void ApplicationPartManager::addError(std::exception_ptr error) noexcept {
 }
 
 void ApplicationPartManager::setManagerState(const ApplicationPartManagerState state) {
-    auto callback = ApplicationPartManagerStateChangedFn{};
-    auto ownerCallback = ApplicationPartManagerStateChangedFn{};
     {
         const auto lock = std::scoped_lock{_mutex};
         if (_state == state) {
             return;
         }
         _state = state;
-        callback = _stateChangedFn;
-        ownerCallback = _ownerStateChangedFn;
         _stateChanged.notify_all();
     }
-    if (ownerCallback) {
-        invokeControl([weak = weak_from_this(), callback = std::move(ownerCallback), state]() -> void {
-            try {
-                callback(state);
-            } catch (...) {
-                if (const auto self = weak.lock(); self != nullptr) {
-                    self->handleCallbackFailure(std::current_exception());
-                }
-            }
-        });
-    }
-    if (callback) {
-        invokeControl([weak = weak_from_this(), callback = std::move(callback), state]() -> void {
-            try {
-                callback(state);
-            } catch (...) {
-                if (const auto self = weak.lock(); self != nullptr) {
-                    self->handleCallbackFailure(std::current_exception());
-                }
-            }
-        });
-    }
+    invokeControl([this, state]() -> void {
+        _stateChangedCallbacks.notify(
+            [this](std::exception_ptr error) -> void { handleCallbackFailure(std::move(error)); }, state);
+    });
 }
 
 void ApplicationPartManager::setPartState(const std::size_t number, const ApplicationPartState state) {
-    auto callback = ApplicationPartStateChangedFn{};
     auto identifier = ApplicationPartIdentifierPtr{};
     {
         const auto lock = std::scoped_lock{_mutex};
@@ -284,20 +259,12 @@ void ApplicationPartManager::setPartState(const std::size_t number, const Applic
         record.state = state;
         record.part->setState(state);
         identifier = record.identifier;
-        callback = _partStateChangedFn;
         _stateChanged.notify_all();
     }
-    if (callback) {
-        invokeControl([weak = weak_from_this(), callback = std::move(callback), identifier, state]() -> void {
-            try {
-                callback(identifier, state);
-            } catch (...) {
-                if (const auto self = weak.lock(); self != nullptr) {
-                    self->handleCallbackFailure(std::current_exception());
-                }
-            }
-        });
-    }
+    invokeControl([this, identifier, state]() -> void {
+        _partStateChangedCallbacks.notify(
+            [this](std::exception_ptr error) -> void { handleCallbackFailure(std::move(error)); }, identifier, state);
+    });
 }
 
 void ApplicationPartManager::handleCallbackFailure(std::exception_ptr error) {

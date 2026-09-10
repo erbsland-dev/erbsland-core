@@ -28,7 +28,6 @@
 #include "../options/OptionValues_fwd.hpp"
 #include "../random/Random_fwd.hpp"
 #include "../resource/Resources_fwd.hpp"
-#include "../system/impl/service/ServiceLifecycle_fwd.hpp"
 #include "../system/UserLookup_fwd.hpp"
 #include "../time/TimeDelta_fwd.hpp"
 #include "../unit/ExitCode.hpp"
@@ -255,16 +254,6 @@ public: // library version
     /// Get the build-time library version text.
     [[nodiscard]] static auto libraryVersionText() noexcept -> text::String;
 
-protected: // debugging methods
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-           /// Initialize the application's regular random-number generator.
-    virtual void initializeRandom(random::RandomPtr &randomPtr) noexcept;
-    /// Initialize the application's cryptographically secure random-number generator.
-    virtual void initializeSecureRandom(random::RandomPtr &randomPtr) noexcept;
-    /// Inject a service lifecycle implementation for tests.
-    virtual void initializeServiceLifecycle(system::impl::ServiceLifecyclePtr &serviceLifecycle) noexcept;
-#endif
-
 private:
     /// Internal constructor.
     /// Only used by the instance manager when creating a temporary application instance.
@@ -278,7 +267,7 @@ private:
     /// Release process integrations before the last application facade exits.
     void cleanupBeforeAppExit() noexcept;
 
-private:
+protected:
     impl::ApplicationDataPtr _data; ///< Shared internal application state.
     unit::ExitCode _exitCode;       ///< Final run result used by process-lifetime cleanup features.
 };

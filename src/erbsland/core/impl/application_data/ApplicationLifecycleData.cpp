@@ -20,8 +20,20 @@ void ApplicationLifecycleData::enableService(const bool applicationRunStarted, S
     if (applicationRunStarted) {
         throw err::LogicError{"Service lifecycle support must be enabled before running the application."_el};
     }
+#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+    if (_configuredServiceLifecycle != nullptr) {
+        _serviceLifecycle = std::move(_configuredServiceLifecycle);
+        return;
+    }
+#endif
     _serviceLifecycle = factory();
 }
+
+#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+void ApplicationLifecycleData::setServiceLifecycle(system::impl::ServiceLifecyclePtr serviceLifecycle) {
+    _configuredServiceLifecycle = std::move(serviceLifecycle);
+}
+#endif
 
 auto ApplicationLifecycleData::run(system::impl::ServiceLifecycle::RunFn runFn) -> int {
     auto *serviceLifecycle = static_cast<system::impl::ServiceLifecycle *>(nullptr);

@@ -10,6 +10,10 @@
 
 namespace erbsland::core::impl {
 
+ApplicationSystemData::ApplicationSystemData() = default;
+
+ApplicationSystemData::~ApplicationSystemData() = default;
+
 auto ApplicationSystemData::displayText() -> const i18n::DisplayTextMapConstPtr & {
     const auto lock = std::scoped_lock{_mutex};
     if (_displayText == nullptr) {
@@ -18,9 +22,9 @@ auto ApplicationSystemData::displayText() -> const i18n::DisplayTextMapConstPtr 
     return _displayText;
 }
 
-void ApplicationSystemData::setDisplayText(i18n::DisplayTextMapConstPtr displayText) {
+void ApplicationSystemData::setDisplayText(const i18n::DisplayTextMapConstPtr &displayText) {
     const auto lock = std::scoped_lock{_mutex};
-    _displayText = displayText != nullptr ? std::move(displayText) : i18n::DisplayTextMap::defaultMap();
+    _displayText = displayText != nullptr ? displayText : i18n::DisplayTextMap::defaultMap();
 }
 
 auto ApplicationSystemData::userLookup() -> system::UserLookup & {

@@ -10,26 +10,18 @@
 #include "../time/TimeDelta.hpp"
 
 #include <memory>
-#include <utility>
 
 namespace erbsland::core {
 
 void Application::enableServiceLifecycle() {
     const auto weakData = std::weak_ptr<impl::ApplicationData>{_data};
     const auto applicationRunStarted = _data->runtime().get()->isRunStarted();
-    _data->lifecycle().get()->enableService(applicationRunStarted, [this, weakData]() {
-        auto serviceLifecycle = system::impl::ServiceLifecyclePtr{};
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-        initializeServiceLifecycle(serviceLifecycle);
-#endif
-        if (serviceLifecycle == nullptr) {
-            serviceLifecycle = system::impl::ServiceLifecycle::create([weakData]() -> void {
-                if (const auto data = weakData.lock(); data != nullptr) {
-                    requestQuit(data, unit::ExitCode::success());
-                }
-            });
-        }
-        return serviceLifecycle;
+    _data->lifecycle().get()->enableService(applicationRunStarted, [weakData]() {
+        return system::impl::ServiceLifecycle::create([weakData]() -> void {
+            if (const auto data = weakData.lock(); data != nullptr) {
+                requestQuit(data, unit::ExitCode::success());
+            }
+        });
     });
 }
 
@@ -40,11 +32,5 @@ void Application::reportStartupPending(const time::TimeDelta expectedRemainingTi
 void Application::reportStartupComplete() {
     _data->lifecycle().get()->reportStartupComplete();
 }
-
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-void Application::initializeServiceLifecycle(
-    [[maybe_unused]] system::impl::ServiceLifecyclePtr &serviceLifecycle) noexcept {
-}
-#endif
 
 }

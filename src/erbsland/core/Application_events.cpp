@@ -98,16 +98,6 @@ auto Application::libraryVersionText() noexcept -> text::String {
     return impl::libraryVersionText();
 }
 
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-// These virtual functions are only available in developer builds.
-// They are not available in regular release *and* debug builds to prevent accidental or intentional
-// manipulation of the random number generator (corrupting the vtable).
-void Application::initializeRandom([[maybe_unused]] random::RandomPtr &randomPtr) noexcept {
-}
-void Application::initializeSecureRandom([[maybe_unused]] random::RandomPtr &randomPtr) noexcept {
-}
-#endif
-
 auto application() -> Application & {
     return impl::ApplicationInstanceManager::instance()->application();
 }

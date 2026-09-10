@@ -10,6 +10,7 @@ add_library(erbsland-core::demo-common ALIAS erbsland-core-demo-common)
 target_compile_features(erbsland-core-demo-common PUBLIC cxx_std_20)
 target_link_libraries(erbsland-core-demo-common PUBLIC erbsland::core)
 target_include_directories(erbsland-core-demo-common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(erbsland-core-demo-common PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../src)
 erbsland_set_required_compiler_options(erbsland-core-demo-common)
 erbsland_enable_debug_warnings(erbsland-core-demo-common)
 set_target_properties(erbsland-core-demo-common PROPERTIES

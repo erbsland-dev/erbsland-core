@@ -2,34 +2,34 @@
 // SPDX-License-Identifier: Apache-2.0
 #include "ApplicationRandomData.hpp"
 
-#include "../../../err/LogicError.hpp"
 #include "../../../random/Random.hpp"
-#include "../../../text/Literals.hpp"
+#include "../../../random/SecureRandom.hpp"
+#include "../../../random/ThreadSafeFastRandom.hpp"
 
 namespace erbsland::core::impl {
 
-using namespace text::literals;
+ApplicationRandomData::ApplicationRandomData() :
+    _random{std::make_unique<random::ThreadSafeFastRandom>()}, _secureRandom{std::make_unique<random::SecureRandom>()} {
+}
 
-auto ApplicationRandomData::random(const Factory &factory) -> random::Random & {
-    const auto lock = std::scoped_lock{_mutex};
-    if (_random == nullptr) {
-        _random = factory();
-        if (_random == nullptr) {
-            throw err::LogicError{"The application random factory returned a null pointer."_el};
-        }
-    }
+ApplicationRandomData::~ApplicationRandomData() = default;
+
+auto ApplicationRandomData::random() noexcept -> random::Random & {
     return *_random;
 }
 
-auto ApplicationRandomData::secureRandom(const Factory &factory) -> random::Random & {
-    const auto lock = std::scoped_lock{_mutex};
-    if (_secureRandom == nullptr) {
-        _secureRandom = factory();
-        if (_secureRandom == nullptr) {
-            throw err::LogicError{"The application secure-random factory returned a null pointer."_el};
-        }
-    }
+auto ApplicationRandomData::secureRandom() noexcept -> random::Random & {
     return *_secureRandom;
 }
+
+#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+void ApplicationRandomData::setRandom(random::RandomPtr random) {
+    _random = random != nullptr ? std::move(random) : std::make_unique<random::ThreadSafeFastRandom>();
+}
+
+void ApplicationRandomData::setSecureRandom(random::RandomPtr secureRandom) {
+    _secureRandom = secureRandom != nullptr ? std::move(secureRandom) : std::make_unique<random::SecureRandom>();
+}
+#endif
 
 }

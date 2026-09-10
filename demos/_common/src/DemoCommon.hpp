@@ -32,21 +32,19 @@ public:
     };
 
 public:
-    DemoApplication(const int argc, char **argv) : Application(argc, argv) {}
+    /// Create a new demo application.
+    DemoApplication(int argc, char **argv);
 
     // defaults
     ~DemoApplication() override = default;
 
 public:
+    /// Register a demo function.
     void registerDemo(const el::String &name, const DemoFn &demoFn, Mode mode = Mode::Procedural);
 
 protected: // override Application
     void registerCommandLineOptions(const el::OptionsPtr &options) override;
     [[nodiscard]] auto main() -> el::ExitCode override;
-
-protected:                                                                   // override Application
-    void initializeRandom(el::RandomPtr &randomPtr) noexcept override;       // only possible in developer builds
-    void initializeSecureRandom(el::RandomPtr &randomPtr) noexcept override; // only possible in developer builds
 
 private:
     void runDemoEventLoop();

@@ -15,10 +15,15 @@ namespace erbsland::core::impl {
 /// @tested{ApplicationLogTest ApplicationOptionsTest}
 class ApplicationSystemData final {
 public:
+    // defaults
+    ApplicationSystemData();
+    ~ApplicationSystemData();
+
+public:
     /// Access the display-text map, creating the default map on first use.
     [[nodiscard]] auto displayText() -> const i18n::DisplayTextMapConstPtr &;
     /// Replace the display-text map, restoring the default map for a null pointer.
-    void setDisplayText(i18n::DisplayTextMapConstPtr displayText);
+    void setDisplayText(const i18n::DisplayTextMapConstPtr &displayText);
     /// Access the user lookup service, creating it on first use.
     [[nodiscard]] auto userLookup() -> system::UserLookup &;
 

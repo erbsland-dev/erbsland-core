@@ -280,29 +280,11 @@ auto Application::createAndInitializeTerminal() -> cterm::TerminalPtr {
 }
 
 auto Application::random() -> random::Random & {
-    return _data->random().get()->random([this]() -> random::RandomPtr {
-        auto random = random::RandomPtr{};
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-        initializeRandom(random);
-#endif
-        if (random == nullptr) {
-            random = std::make_unique<random::ThreadSafeFastRandom>();
-        }
-        return random;
-    });
+    return _data->random().get()->random();
 }
 
 auto Application::secureRandom() -> random::Random & {
-    return _data->random().get()->secureRandom([this]() -> random::RandomPtr {
-        auto random = random::RandomPtr{};
-#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
-        initializeSecureRandom(random);
-#endif
-        if (random == nullptr) {
-            random = std::make_unique<random::SecureRandom>();
-        }
-        return random;
-    });
+    return _data->random().get()->secureRandom();
 }
 
 auto Application::cryptologyConfiguration() -> cryptology::CryptologyConfiguration & {

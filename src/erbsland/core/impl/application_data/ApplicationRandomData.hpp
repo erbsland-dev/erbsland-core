@@ -6,26 +6,32 @@
 
 #include "../../../random/Random_fwd.hpp"
 
-#include <functional>
-#include <mutex>
-
 namespace erbsland::core::impl {
 
-/// Lazily initialized random generators shared by an application.
+/// Random generators shared by an application.
 /// @tested{RandomApplicationTest}
 class ApplicationRandomData final {
 public:
-    /// Factory for a random generator.
-    using Factory = std::function<random::RandomPtr()>;
+    // defaults
+    ApplicationRandomData();
+    ~ApplicationRandomData();
 
 public:
-    /// Access the regular random generator, creating it with `factory` on first use.
-    [[nodiscard]] auto random(const Factory &factory) -> random::Random &;
-    /// Access the secure random generator, creating it with `factory` on first use.
-    [[nodiscard]] auto secureRandom(const Factory &factory) -> random::Random &;
+    /// Access the regular random generator.
+    [[nodiscard]] auto random() noexcept -> random::Random &;
+    /// Access the secure random generator.
+    [[nodiscard]] auto secureRandom() noexcept -> random::Random &;
+
+#ifdef ERBSLAND_CORE_DEVELOPER_BUILD
+    /// Replace the regular random generator, restoring the default generator for a null pointer.
+    /// This method must only be called during application construction, before the generator becomes accessible.
+    void setRandom(random::RandomPtr random);
+    /// Replace the secure random generator, restoring the default generator for a null pointer.
+    /// This method must only be called during application construction, before the generator becomes accessible.
+    void setSecureRandom(random::RandomPtr secureRandom);
+#endif
 
 private:
-    std::mutex _mutex;               ///< Serializes generator creation.
     random::RandomPtr _random;       ///< Regular random generator.
     random::RandomPtr _secureRandom; ///< Cryptographically secure random generator.
 };

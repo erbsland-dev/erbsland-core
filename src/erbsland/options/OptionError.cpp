@@ -1,5 +1,5 @@
-// Copyright © 2026 EducateIT GmbH (https://educateit.ch/) and Tobias Erbsland (https://erbsland.dev/)
-// All rights are reserved. Detailed terms are specified in the "COPYRIGHT.md" file.
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
 #include "OptionError.hpp"
 
 #include "Option.hpp"

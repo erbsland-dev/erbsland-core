@@ -4,6 +4,9 @@
 #include "../core/ApplicationTestScope.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
+#include <erbsland/core/impl/ApplicationData.hpp>
+#include <erbsland/random/FastRandom.hpp>
 #include <erbsland/random/SecureRandom.hpp>
 #include <erbsland/random/ThreadSafeFastRandom.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
@@ -14,7 +17,21 @@
 
 using el::core::Application;
 
-TESTED_TARGETS(Application FastRandom SecureRandom)
+namespace random_application_test {
+
+/// Application test double with injected deterministic random generators.
+/// @tested{RandomApplicationTest}
+class InjectedRandomApplication final : public Application {
+public:
+    InjectedRandomApplication() {
+        _data->random().get()->setRandom(std::make_unique<el::random::FastRandom>(123U));
+        _data->random().get()->setSecureRandom(std::make_unique<el::random::FastRandom>(456U));
+    }
+};
+
+}
+
+TESTED_TARGETS(Application ApplicationRandomData FastRandom SecureRandom)
 class RandomApplicationTest final : public el::UnitTest {
 public:
     void testStableAccessors() {
@@ -27,6 +44,18 @@ public:
         REQUIRE_EQUAL(random, &application.random());
         REQUIRE_EQUAL(secureRandom, &application.secureRandom());
         REQUIRE_EQUAL(randomValue, 1);
+    }
+
+    void testInjectedGenerators() {
+        auto scope = ApplicationTestScope<random_application_test::InjectedRandomApplication>{};
+        auto &application = scope.app();
+
+        const auto *random = &application.random();
+        const auto *secureRandom = &application.secureRandom();
+        REQUIRE(dynamic_cast<const el::random::FastRandom *>(random) != nullptr);
+        REQUIRE(dynamic_cast<const el::random::FastRandom *>(secureRandom) != nullptr);
+        REQUIRE_EQUAL(random, &application.random());
+        REQUIRE_EQUAL(secureRandom, &application.secureRandom());
     }
 
     void testConcurrentApplicationRandom() {

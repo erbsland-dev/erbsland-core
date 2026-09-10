@@ -4,6 +4,8 @@
 #include "ApplicationTestScope.hpp"
 
 #include <erbsland/core/Application.hpp>
+#include <erbsland/core/impl/application_data/ApplicationLifecycleData.hpp>
+#include <erbsland/core/impl/ApplicationData.hpp>
 #include <erbsland/err/LogicError.hpp>
 #include <erbsland/err/ParameterError.hpp>
 #include <erbsland/system/impl/service/ServiceLifecycle.hpp>
@@ -59,12 +61,12 @@ private:
 
 class TestApplication final : public el::core::Application {
 public:
-    [[nodiscard]] auto lifecycleState() const noexcept -> const std::shared_ptr<LifecycleState> & { return _state; }
-
-protected:
-    void initializeServiceLifecycle(el::system::impl::ServiceLifecyclePtr &serviceLifecycle) noexcept override {
-        serviceLifecycle = std::make_unique<TestServiceLifecycle>([this]() -> void { quit(); }, _state);
+    TestApplication() {
+        _data->lifecycle().get()->setServiceLifecycle(
+            std::make_unique<TestServiceLifecycle>([this]() -> void { quit(); }, _state));
     }
+
+    [[nodiscard]] auto lifecycleState() const noexcept -> const std::shared_ptr<LifecycleState> & { return _state; }
 
 private:
     std::shared_ptr<LifecycleState> _state{std::make_shared<LifecycleState>()};
@@ -72,7 +74,7 @@ private:
 
 }
 
-TESTED_TARGETS(Application)
+TESTED_TARGETS(Application ApplicationLifecycleData)
 class ApplicationServiceLifecycleTest final : public el::UnitTest {
 public:
     void testEnabledForegroundLifecycleRunsApplication() {

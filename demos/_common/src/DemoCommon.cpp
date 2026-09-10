@@ -3,9 +3,18 @@
 
 #include "DemoCommon.hpp"
 
+#include <erbsland/core/impl/application_data/ApplicationRandomData.hpp>
+#include <erbsland/core/impl/ApplicationData.hpp>
 #include <erbsland/event/Events.hpp>
 
 namespace demo {
+
+DemoApplication::DemoApplication(const int argc, char **argv) : Application(argc, argv) {
+    // WARNING: Developer-build demos replace randomness with deterministic seeds only for reproducible output.
+    // Never copy this pattern into application code that needs real randomness.
+    _data->random().get()->setRandom(std::make_unique<el::FastRandom>(0x63df5ee665e6151dU));
+    _data->random().get()->setSecureRandom(std::make_unique<el::FastRandom>(0x40d8f88267c72391U));
+}
 
 void DemoApplication::registerCommandLineOptions(const el::OptionsPtr &options) {
     auto demoChoices = el::OptionChoices::create();
@@ -45,22 +54,6 @@ auto DemoApplication::main() -> el::ExitCode {
         runDemoEventLoop();
     }
     return el::ExitCode::success();
-}
-
-void DemoApplication::initializeRandom(el::RandomPtr &randomPtr) noexcept {
-    // WARNING: Developer-build demos replace randomness with a deterministic seed only for reproducible output.
-    // Never copy this pattern into application code that needs real randomness.
-    if (randomPtr == nullptr) {
-        randomPtr = std::make_unique<el::FastRandom>(0x63df5ee665e6151dU);
-    }
-}
-
-void DemoApplication::initializeSecureRandom(el::RandomPtr &randomPtr) noexcept {
-    // WARNING: Developer-build demos replace secure randomness only so documented demo output is reproducible.
-    // Production code must use the real operating-system-backed SecureRandom.
-    if (randomPtr == nullptr) {
-        randomPtr = std::make_unique<el::FastRandom>(0x40d8f88267c72391U);
-    }
 }
 
 void DemoApplication::runDemoEventLoop() {

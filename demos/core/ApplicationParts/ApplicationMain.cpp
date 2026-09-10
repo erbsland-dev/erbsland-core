@@ -16,7 +16,7 @@ auto main(const int argc, char *argv[]) -> int {
     app.registerPart<CatalogStoragePart>();
     app.registerPart<CatalogServerPart>();
     auto stateSubscription = // Normally kept in the object that handles the event
-        app.partManager()->addStateChanged([&app](const el::ApplicationPartManagerState state) -> void {
+        app.partManager()->events().addStateChanged([&app](const el::ApplicationPartManagerState state) -> void {
             if (state == el::ApplicationPartManagerState::Running) {
                 el::io::printLine("all application parts are running"_el);
                 app.quit();

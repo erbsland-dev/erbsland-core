@@ -4,11 +4,15 @@
 
 #include "AccessCheck_fwd.hpp"
 #include "Document.hpp"
+#include "PlaceholderFilter.hpp"
+#include "PlaceholderSource.hpp"
 #include "SignatureValidator.hpp"
 #include "Source.hpp"
 #include "SourceResolver.hpp"
 
 #include "impl/parser/ParserSettings.hpp"
+
+#include "../text/StringMap.hpp"
 
 #include <optional>
 
@@ -17,7 +21,7 @@ namespace erbsland::conf {
 /// This parser reads the Erbsland Configuration Language.
 /// *Multithreading*: This parser is **reentrant**, and therefore it can be used in multiple threads, as long each
 /// thread uses an individual instance of the parser.
-/// @tested{ParserBasicTest ParserConvenienceTest ParserIncludeTest ParserSignatureTest}
+/// @tested{ParserBasicTest ParserConvenienceTest ParserIncludeTest ParserPlaceholderTest ParserSignatureTest}
 class Parser final {
 public:
     /// Create a new parser with the default settings.
@@ -44,6 +48,31 @@ public:
     /// @param signatureValidator An instance of a signature validator implementation, or `nullptr` to
     ///     disable signature validation.
     void setSignatureValidator(const SignatureValidatorPtr &signatureValidator) noexcept;
+    /// Add a provider for one or more placeholder sources.
+    /// @throws err::ParameterError If `source` is null.
+    /// @throws err::LogicError If the provider has no valid names or a name is already registered.
+    void addPlaceholderSource(const PlaceholderSourcePtr &source);
+    /// Remove a placeholder source provider. A provider that is not registered is ignored.
+    void removePlaceholderSource(const PlaceholderSourcePtr &source) noexcept;
+    /// Add a provider for one or more placeholder filters.
+    /// @throws err::ParameterError If `filter` is null.
+    /// @throws err::LogicError If the provider has no valid names or a name is already registered.
+    void addPlaceholderFilter(const PlaceholderFilterPtr &filter);
+    /// Remove a placeholder filter provider. A provider that is not registered is ignored.
+    void removePlaceholderFilter(const PlaceholderFilterPtr &filter) noexcept;
+    /// Enable the built-in `env` placeholder source.
+    /// @throws err::LogicError If the source name is already registered.
+    void enableEnvironmentPlaceholderSource();
+    /// Set the variables for the built-in `var` placeholder source and enable it.
+    /// Variable names use regular ELCL name normalization and are therefore case-insensitive, with spaces and
+    /// underscores treated as equivalent.
+    /// @param variables The replacement text indexed by variable name.
+    /// @throws ConfError If a variable name is invalid.
+    /// @throws err::LogicError If another provider already registered the `var` source name.
+    void setPlaceholderVariables(text::StringMap<text::String> variables);
+    /// Enable the built-in text placeholder filters.
+    /// @throws err::LogicError If any filter name is already registered.
+    void enableTextPlaceholderFilters();
     /// Parse the given source into a configuration document and throw an exception on any error.
     /// @param source The source to parse. Should be closed.
     /// @return The root node of the parsed configuration tree.

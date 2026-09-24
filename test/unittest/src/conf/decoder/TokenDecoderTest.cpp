@@ -6,6 +6,8 @@
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/impl/char/NamedChars.hpp>
 #include <erbsland/conf/impl/decoder/TokenDecoder.hpp>
+#include <erbsland/conf/impl/placeholder/EnvironmentPlaceholderSource.hpp>
+#include <erbsland/conf/impl/placeholder/PlaceholderResolver.hpp>
 #include <erbsland/conf/impl/source/FileSource.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
@@ -21,6 +23,8 @@ using el::conf::impl::LexerToken;
 using el::conf::impl::TokenDecoder;
 using el::conf::impl::TokenDecoderPtr;
 using el::conf::impl::TokenType;
+using el::conf::impl::placeholder::EnvironmentPlaceholderSource;
+using el::conf::impl::placeholder::PlaceholderResolver;
 using namespace el::text::literals;
 namespace nc = el::conf::impl::nc;
 
@@ -105,6 +109,16 @@ public:
         REQUIRE_EQUAL(decoder->location().sourceIdentifier(), source->identifier());
         WITH_CONTEXT(requireLocation(0U, 0U));
         REQUIRE(decoder->character().isEndOfData());
+    }
+
+    void testPlaceholderAvailability() {
+        source = Source::fromString(""_el);
+        REQUIRE_NOTHROW(source->open());
+        auto placeholderResolver = std::make_shared<PlaceholderResolver>();
+        decoder = TokenDecoder::create(CharStream::create(source), placeholderResolver);
+        REQUIRE_FALSE(decoder->hasPlaceholders());
+        placeholderResolver->addSource(std::make_shared<EnvironmentPlaceholderSource>());
+        REQUIRE(decoder->hasPlaceholders());
     }
 
     void testSimpleSequence() {

@@ -6,6 +6,7 @@
 #include <erbsland/mem/ByteArray.hpp>
 #include <erbsland/mem/ByteBlock.hpp>
 #include <erbsland/mem/ByteBlockEditor.hpp>
+#include <erbsland/mem/ByteBlockLiteral.hpp>
 #include <erbsland/mem/ByteBuffer.hpp>
 #include <erbsland/mem/ByteSpan.hpp>
 #include <erbsland/mem/Endianness.hpp>
@@ -25,6 +26,7 @@
 #include <limits>
 #include <span>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 using el::mem::Byte;
@@ -157,6 +159,47 @@ public:
             std::vector<uint8_t>({11U, 12U}));
         REQUIRE_EQUAL(
             ByteBlockEditor::fromSpan(std::span{standardBytes}).toUInt8Vector(), std::vector<uint8_t>({9U, 10U}));
+    }
+
+    void testLiteralStorageAndDetachment() {
+        static_assert(std::is_convertible_v<el::mem::ByteBlockLiteral, ByteBlock>);
+        static_assert(std::is_nothrow_constructible_v<ByteBlock, el::mem::ByteBlockLiteral>);
+        static constexpr std::uint8_t cLiteralData[]{1U, 2U, 3U, 4U};
+        constexpr auto literal = el::mem::ByteBlockLiteral{cLiteralData};
+        const auto literalPointer = el::mem::toConstByteSpan(std::span{cLiteralData}).data();
+        const auto block = ByteBlock{literal};
+        const auto alias = block;
+        const auto slice = block.slice(ByteIndex{1U}, ByteLength{2U});
+        const auto independentCopy = block.copy();
+        const auto kept = block.kept(ByteRange{ByteIndex{1U}, ByteLength{2U}});
+
+        REQUIRE_EQUAL(block.span().data(), literalPointer);
+        REQUIRE_EQUAL(alias.span().data(), literalPointer);
+        REQUIRE_EQUAL(slice.span().data(), literalPointer + 1U);
+        REQUIRE_EQUAL(slice.toUInt8Vector(), std::vector<std::uint8_t>({2U, 3U}));
+        REQUIRE_NOT_EQUAL(independentCopy.span().data(), literalPointer);
+        REQUIRE_EQUAL(independentCopy.toUInt8Vector(), std::vector<std::uint8_t>({1U, 2U, 3U, 4U}));
+        REQUIRE_NOT_EQUAL(kept.span().data(), literalPointer + 1U);
+        REQUIRE_EQUAL(kept.toUInt8Vector(), std::vector<std::uint8_t>({2U, 3U}));
+
+        const auto editor = ByteBlockEditor{block};
+        REQUIRE_NOT_EQUAL(editor.span().data(), literalPointer);
+        REQUIRE_EQUAL(editor.toUInt8Vector(), std::vector<std::uint8_t>({1U, 2U, 3U, 4U}));
+
+        auto sensitive = block;
+        sensitive.markAsSensitive();
+        REQUIRE(sensitive.isSensitive());
+        REQUIRE_NOT_EQUAL(sensitive.span().data(), literalPointer);
+        REQUIRE_EQUAL(sensitive.toUInt8Vector(), std::vector<std::uint8_t>({1U, 2U, 3U, 4U}));
+        REQUIRE_FALSE(block.isSensitive());
+        REQUIRE_EQUAL(block.span().data(), literalPointer);
+
+        auto erased = block;
+        erased.secureErase();
+        REQUIRE_NOT_EQUAL(erased.span().data(), literalPointer);
+        REQUIRE_EQUAL(erased.toUInt8Vector(), std::vector<std::uint8_t>({0U, 0U, 0U, 0U}));
+        REQUIRE_EQUAL(block.toUInt8Vector(), std::vector<std::uint8_t>({1U, 2U, 3U, 4U}));
+        REQUIRE_EQUAL(alias.toUInt8Vector(), std::vector<std::uint8_t>({1U, 2U, 3U, 4U}));
     }
 
     void testByteTypeIntegration() {
@@ -453,6 +496,14 @@ public:
         const auto aliasedSpan = aliasing.span().subspan(1U);
         aliasing.append(aliasedSpan);
         REQUIRE_EQUAL(aliasing.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 2U, 3U}));
+
+        auto repeated = makeEditor({1U, 2U, 3U, 4U});
+        repeated.appendRepeated(ByteRange{ByteIndex{1U}, ByteLength{2U}}, ByteLength{7U});
+        REQUIRE_EQUAL(repeated.toUInt8Vector(), std::vector<uint8_t>({1U, 2U, 3U, 4U, 2U, 3U, 2U, 3U, 2U, 3U, 2U}));
+        repeated.appendRepeated(ByteRange::noRange(), ByteLength{});
+        REQUIRE_THROWS_AS(
+            el::err::OutOfRangeError,
+            repeated.appendRepeated(ByteRange{ByteIndex{99U}, ByteLength{1U}}, ByteLength{1U}));
     }
 
     void testAppendOverwriteAndXor() {

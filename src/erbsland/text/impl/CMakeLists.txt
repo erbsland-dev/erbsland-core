@@ -97,8 +97,6 @@ target_sources(erbsland-core PRIVATE
         RegExEscapeFormatter.cpp
         RegExEscapeFormatter.hpp
         RepeatCount.hpp
-        SafeStringEscapeTools.cpp
-        SafeStringEscapeTools.hpp
         StaticStringPatternData.hpp
         StaticStringPatternData.tpp
         StringAppendTools.cpp
@@ -134,6 +132,7 @@ target_sources(erbsland-core PRIVATE
         StringReaderBase.cpp
         StringReaderBase.hpp
         StringReaderBase_fwd.hpp
+        StringSafeTransformTools.hpp
         StringSet.hpp
         StringSet_fwd.hpp
         StringSplitter.hpp

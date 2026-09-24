@@ -4,9 +4,9 @@
 
 #include "ResourceInfo_fwd.hpp"
 
+#include "../compression/CompressionAlgorithm.hpp"
 #include "../cryptology/HashAlgorithm.hpp"
 #include "../mem/ByteBlock.hpp"
-#include "../mem/ByteCompressionAlgorithm.hpp"
 #include "../unit/ByteLength.hpp"
 
 #include <optional>
@@ -21,7 +21,7 @@ public:
     ResourceInfo(
         unit::ByteLength originalSize,
         unit::ByteLength storedSize,
-        std::optional<mem::ByteCompressionAlgorithm> compressionAlgorithm,
+        std::optional<compression::CompressionAlgorithm> compressionAlgorithm,
         std::optional<cryptology::HashAlgorithm> hashAlgorithm,
         mem::ByteBlock hash,
         bool encrypted) noexcept;
@@ -48,7 +48,8 @@ public: // accessors
     /// Get the embedded representation size.
     [[nodiscard]] auto storedSize() const noexcept -> unit::ByteLength { return _storedSize; }
     /// Get the compression algorithm, or no value for uncompressed data.
-    [[nodiscard]] auto compressionAlgorithm() const noexcept -> const std::optional<mem::ByteCompressionAlgorithm> & {
+    [[nodiscard]] auto compressionAlgorithm() const noexcept
+        -> const std::optional<compression::CompressionAlgorithm> & {
         return _compressionAlgorithm;
     }
     /// Get the hash algorithm, or no value when hashing was disabled.
@@ -59,12 +60,12 @@ public: // accessors
     [[nodiscard]] auto hash() const noexcept -> const mem::ByteBlock & { return _hash; }
 
 private:
-    unit::ByteLength _originalSize;                                     ///< Logical data size.
-    unit::ByteLength _storedSize;                                       ///< Embedded representation size.
-    std::optional<mem::ByteCompressionAlgorithm> _compressionAlgorithm; ///< Optional compression algorithm.
-    std::optional<cryptology::HashAlgorithm> _hashAlgorithm;            ///< Optional hash algorithm.
-    mem::ByteBlock _hash;                                               ///< Logical-data digest.
-    bool _encrypted{};                                                  ///< Reserved encryption state.
+    unit::ByteLength _originalSize;                                         ///< Logical data size.
+    unit::ByteLength _storedSize;                                           ///< Embedded representation size.
+    std::optional<compression::CompressionAlgorithm> _compressionAlgorithm; ///< Optional compression algorithm.
+    std::optional<cryptology::HashAlgorithm> _hashAlgorithm;                ///< Optional hash algorithm.
+    mem::ByteBlock _hash;                                                   ///< Logical-data digest.
+    bool _encrypted{};                                                      ///< Reserved encryption state.
 };
 
 }

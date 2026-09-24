@@ -165,6 +165,64 @@ void WindowsPathBackend::setAccessProfileOrThrow(
     invalidateInfo(path);
 }
 
+void WindowsPathBackend::setLastModifiedOrThrow(
+    const Path &path, const time::DateTime &value, const PathChangeOptions options) const {
+    const auto fileTime = time::impl::windows_time_converter::toFileTime(value);
+    if (!fileTime.has_value()) {
+        throw PathError{PathErrorContext{
+            "File modification time could not be changed"_el,
+            "The requested date/time cannot be represented as a Windows filesystem timestamp."_el}
+                .setSourcePath(path.toString())};
+    }
+    const auto resolvedPath = resolveOrThrow(
+        path,
+        options.symlinkMode() == SymlinkMode::Follow ? PathResolveMode::Physical
+                                                     : PathResolveMode::PhysicalNoFinalSymlink);
+    const auto pathText = pathTextOrThrow(resolvedPath);
+    const auto pathTextAccess = text::impl::PlatformU16StringAccess{pathText};
+    if (options.symlinkMode() == SymlinkMode::Skip) {
+        const auto attributes = GetFileAttributesW(pathTextAccess.nullTerminatedWideCharPtr());
+        if (attributes == INVALID_FILE_ATTRIBUTES) {
+            throwSystemError(
+                "Path information is unavailable"_el,
+                "The modification time could not be changed because the path type is unavailable."_el,
+                resolvedPath,
+                GetLastError());
+        }
+        if ((attributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0U) {
+            return;
+        }
+    }
+    auto flags = DWORD{FILE_FLAG_BACKUP_SEMANTICS};
+    if (options.symlinkMode() != SymlinkMode::Follow) {
+        flags |= FILE_FLAG_OPEN_REPARSE_POINT;
+    }
+    const auto rawHandle = CreateFileW(
+        pathTextAccess.nullTerminatedWideCharPtr(),
+        FILE_WRITE_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        nullptr,
+        OPEN_EXISTING,
+        flags,
+        nullptr);
+    if (rawHandle == INVALID_HANDLE_VALUE) {
+        throwSystemError(
+            "File modification time could not be changed"_el,
+            "The path could not be opened for a timestamp change."_el,
+            resolvedPath,
+            GetLastError());
+    }
+    const auto handle = std::unique_ptr<void, decltype(&CloseHandle)>{rawHandle, &CloseHandle};
+    if (SetFileTime(rawHandle, nullptr, nullptr, &*fileTime) == 0) {
+        throwSystemError(
+            "File modification time could not be changed"_el,
+            "The operating system rejected the requested timestamp change."_el,
+            resolvedPath,
+            GetLastError());
+    }
+    invalidateInfo(path);
+}
+
 void WindowsPathBackend::addAttributesOrThrow(
     const Path &path, const PathAttributes attributes, [[maybe_unused]] const PathChangeOptions options) const {
     const auto resolvedPath = resolveOrThrow(path, PathResolveMode::PhysicalNoFinalSymlink);

@@ -19,6 +19,7 @@
 #include "impl/U16StringTransformTools.hpp"
 #include "impl/U16Writer.hpp"
 
+#include "../impl/StringSafeTransformTools.hpp"
 #include "../StringConverter.hpp"
 #include "../u32/impl/U32Encoding.hpp"
 #include "../u32/U32StringEditor.hpp"
@@ -216,7 +217,11 @@ auto U16StringEditor::aligned(const CpLength length, const geometry::Alignment a
 }
 
 auto U16StringEditor::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U16StringEditor {
-    return U16StringTransformTools{dataView()}.toSafeString(maximumWidth, flags);
+    if (auto result =
+            StringSafeTransformTools{*this, dataView().dataSpan(), maximumWidth, flags}.toSafeStringIfChanged()) {
+        return result.value();
+    }
+    return *this;
 }
 
 void swap(U16StringEditor &first, U16StringEditor &second) noexcept {

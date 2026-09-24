@@ -20,6 +20,7 @@
 #include "../EncodingMode.hpp"
 #include "../impl/ByteBlockFormatter.hpp"
 #include "../impl/FloatConversion.hpp"
+#include "../impl/StringSafeTransformTools.hpp"
 #include "../u16/U16StringEditor.hpp"
 #include "../u32/U32StringEditor.hpp"
 
@@ -357,7 +358,11 @@ auto U8String::aligned(const CpLength length, const geometry::Alignment alignmen
 }
 
 auto U8String::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const -> U8String {
-    return U8StringTransformTools{dataView()}.toSafeString(maximumWidth, flags);
+    if (auto result =
+            StringSafeTransformTools{*this, dataView().dataSpan(), maximumWidth, flags}.toSafeStringIfChanged()) {
+        return U8String{result.value()};
+    }
+    return *this;
 }
 
 auto U8String::escapedSize(const EscapeFormat format, const EscapeAmount amount) const noexcept -> ByteLength {

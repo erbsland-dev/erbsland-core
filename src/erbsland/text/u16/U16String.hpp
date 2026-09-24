@@ -391,7 +391,7 @@ public: // transform and copy-modify
     [[nodiscard]] auto replaced(unit::CpRange range, const U16String &text) const -> U16String;
     /// Call a function for every decoded code point, stopping early if the function requests it.
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
-    /// Return a string where every decoded code point is mapped through the given function.
+    /// @copydoc erbsland::text::U8String::transformed(TransformCharacterFn) const
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U16String;
     /// @copydoc erbsland::text::U8String::normalized(NormalizationForm) const
     [[nodiscard]] auto normalized(NormalizationForm form) const -> U16String;
@@ -404,6 +404,7 @@ public: // transform and copy-modify
     [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
         -> U16String;
     /// Return a bounded representation that is safe for logs and debug output.
+    /// @seedoc{/reference/text/formatting_and_parsing}
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U16String;
     /// Return a copy with all characters from the set replaced by one character.

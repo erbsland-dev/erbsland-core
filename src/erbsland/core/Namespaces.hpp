@@ -6,6 +6,7 @@ namespace erbsland {
 
 // Fwd declare all API namespaces
 namespace block {}
+namespace compression {}
 namespace conf {}
 namespace core {}
 namespace cryptology {}

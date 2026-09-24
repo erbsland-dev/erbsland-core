@@ -32,12 +32,16 @@ protected:
     /// Create and open the Core text input stream.
     /// @throws ConfError If the stream cannot be created or opened.
     [[nodiscard]] virtual auto createStream() -> stream::TextInputStreamPtr = 0;
+    /// Position a newly opened stream at a cached line boundary.
+    [[nodiscard]] auto setStreamPosition(unit::ByteIndex position, unit::LineIndex nextLine) -> bool;
+    /// Notify a subclass about the byte position of a line that was read.
+    virtual void rememberLinePosition(unit::LineIndex, unit::ByteIndex) noexcept {}
 
 private:
     /// Read one line from the Core text stream.
     [[nodiscard]] auto readStreamLine() -> std::optional<text::String>;
     /// Retain a recently read source line for diagnostics.
-    void rememberLine(const text::String &line);
+    void rememberLine(const text::String &line, std::optional<unit::ByteIndex> position);
     /// Mark the source as having reached the end of input.
     void sourceIsAtEnd() noexcept;
     /// Throw an error for a line exceeding the configured length.
@@ -51,6 +55,7 @@ private:
     stream::TextInputStreamPtr _stream;                                ///< The Core text stream.
     std::deque<std::pair<unit::LineIndex, text::String>> _recentLines; ///< The last five input lines.
     unit::LineIndex _nextLine{unit::LineIndex::zero()};                ///< The index assigned to the next line read.
+    bool _streamSupportsPositioning{false};                            ///< If the stream supports positioning.
     bool _isOpen{false};                                               ///< If this source is open.
     bool _atEnd{false};                                                ///< If this source reached its end.
 };

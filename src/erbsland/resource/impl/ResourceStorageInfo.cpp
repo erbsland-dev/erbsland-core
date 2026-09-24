@@ -14,31 +14,33 @@
 
 namespace erbsland::resource::impl {
 
-auto ResourceStorageInfo::parse(
-    const std::span<const std::uint8_t> storedData, const std::span<const std::uint8_t> infoBlock)
+auto ResourceStorageInfo::parse(const mem::ByteBlockLiteral storedData, const mem::ByteBlockLiteral infoBlock)
     -> std::optional<ResourceStorageInfo> {
     constexpr auto cHeaderSize = std::size_t{36U};
-    constexpr auto cMagic = std::array<std::uint8_t, 4U>{'E', 'L', 'R', 'I'};
-    if (infoBlock.size() < cHeaderSize || !std::equal(cMagic.begin(), cMagic.end(), infoBlock.begin())) {
+    constexpr auto cMagic = std::array<mem::Byte, 4U>{
+        mem::Byte::fromChar('E'), mem::Byte::fromChar('L'), mem::Byte::fromChar('R'), mem::Byte::fromChar('I')};
+    const auto storedBytes = storedData.span();
+    const auto infoBytes = infoBlock.span();
+    if (infoBytes.size() < cHeaderSize || !std::equal(cMagic.begin(), cMagic.end(), infoBytes.begin())) {
         return std::nullopt;
     }
-    const auto version = infoBlock[4U];
-    const auto compressionId = infoBlock[5U];
-    const auto hashId = infoBlock[6U];
-    const auto encryptionId = infoBlock[7U];
-    const auto originalSize = decodeInteger<std::uint64_t>(infoBlock, 8U);
-    const auto declaredStoredSize = decodeInteger<std::uint64_t>(infoBlock, 16U);
-    const auto identifierSize = decodeInteger<std::uint32_t>(infoBlock, 24U);
-    const auto pathSize = decodeInteger<std::uint32_t>(infoBlock, 28U);
-    const auto hashSize = decodeInteger<std::uint16_t>(infoBlock, 32U);
-    const auto reserved = decodeInteger<std::uint16_t>(infoBlock, 34U);
+    const auto version = infoBytes[4U].toUInt8();
+    const auto compressionId = infoBytes[5U].toUInt8();
+    const auto hashId = infoBytes[6U].toUInt8();
+    const auto encryptionId = infoBytes[7U].toUInt8();
+    const auto originalSize = decodeInteger<std::uint64_t>(infoBytes, 8U);
+    const auto declaredStoredSize = decodeInteger<std::uint64_t>(infoBytes, 16U);
+    const auto identifierSize = decodeInteger<std::uint32_t>(infoBytes, 24U);
+    const auto pathSize = decodeInteger<std::uint32_t>(infoBytes, 28U);
+    const auto hashSize = decodeInteger<std::uint16_t>(infoBytes, 32U);
+    const auto reserved = decodeInteger<std::uint16_t>(infoBytes, 34U);
     if (version != 1U || encryptionId != 0U || reserved != 0U || identifierSize == 0U || pathSize == 0U ||
-        originalSize >= unit::ByteLength::cRawInfinite || declaredStoredSize != storedData.size()) {
+        originalSize >= unit::ByteLength::cRawInfinite || declaredStoredSize != storedBytes.size()) {
         return std::nullopt;
     }
-    auto compressionAlgorithm = std::optional<mem::ByteCompressionAlgorithm>{};
-    if (compressionId == mem::ByteCompressionAlgorithm::Lz4Block) {
-        compressionAlgorithm = mem::ByteCompressionAlgorithm::Lz4Block;
+    auto compressionAlgorithm = std::optional<compression::CompressionAlgorithm>{};
+    if (compressionId == compression::CompressionAlgorithm::Lz4Block) {
+        compressionAlgorithm = compression::CompressionAlgorithm::Lz4Block;
     } else if (compressionId != 0U) {
         return std::nullopt;
     }
@@ -55,7 +57,7 @@ auto ResourceStorageInfo::parse(
         (hashAlgorithm.has_value() && hashSize != hashAlgorithm->digestSize().toRawValue())) {
         return std::nullopt;
     }
-    auto remaining = infoBlock.size() - cHeaderSize;
+    auto remaining = infoBytes.size() - cHeaderSize;
     if (identifierSize > remaining) {
         return std::nullopt;
     }
@@ -72,13 +74,14 @@ auto ResourceStorageInfo::parse(
         const auto pathOffset = identifierOffset + identifierSize;
         const auto hashOffset = pathOffset + pathSize;
         auto result = ResourceStorageInfo{};
-        result.identifier = decodeString(infoBlock.subspan(identifierOffset, identifierSize));
-        result.path = decodeString(infoBlock.subspan(pathOffset, pathSize));
-        result.storedData = mem::toConstByteSpan(storedData);
+        result.identifier = decodeString(infoBytes.subspan(identifierOffset, identifierSize));
+        result.path = decodeString(infoBytes.subspan(pathOffset, pathSize));
+        result.storedData = mem::ByteBlock{storedData};
         result.originalSize = unit::ByteLength{originalSize};
         result.compressionAlgorithm = compressionAlgorithm;
         result.hashAlgorithm = hashAlgorithm;
-        result.hash = mem::ByteBlock::fromSpan(infoBlock.subspan(hashOffset, hashSize));
+        result.hash = mem::ByteBlock{infoBlock}.slice(
+            unit::ByteIndex::fromSizeT(hashOffset), unit::ByteLength::fromSizeT(hashSize));
         return result;
     } catch (const text::EncodingError &) {
         return std::nullopt;
@@ -86,17 +89,17 @@ auto ResourceStorageInfo::parse(
 }
 
 template <typename T>
-auto ResourceStorageInfo::decodeInteger(const std::span<const std::uint8_t> bytes, const std::size_t offset) noexcept
-    -> T {
+auto ResourceStorageInfo::decodeInteger(const mem::ConstByteSpan bytes, const std::size_t offset) noexcept -> T {
     static_assert(std::is_unsigned_v<T>);
     auto result = T{};
     for (auto index = std::size_t{}; index < sizeof(T); ++index) {
-        result = static_cast<T>(result | static_cast<T>(static_cast<T>(bytes[offset + index]) << (index * 8U)));
+        result =
+            static_cast<T>(result | static_cast<T>(static_cast<T>(bytes[offset + index].toUInt8()) << (index * 8U)));
     }
     return result;
 }
 
-auto ResourceStorageInfo::decodeString(const std::span<const std::uint8_t> bytes) -> text::String {
+auto ResourceStorageInfo::decodeString(const mem::ConstByteSpan bytes) -> text::String {
     return text::StringDecoder{mem::ByteBlock::fromSpan(bytes)}.decode(
         text::StringEncoding::Utf8, text::StringBomMode::Reject, text::EncodingMode::Strict);
 }

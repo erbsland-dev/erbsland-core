@@ -10,7 +10,6 @@
 #include "../../../util/impl/LoopControl.hpp"
 #include "../../AnyStringBuilder.hpp"
 #include "../../impl/EscapeFormatter.hpp"
-#include "../../impl/SafeStringEscapeTools.hpp"
 
 #include <cstring>
 #include <span>
@@ -268,24 +267,6 @@ auto U8StringTransformTools::toEscaped(const EscapeFormat format, const EscapeAm
         }
         return true;
     });
-    return builder.takeU8StringEditor();
-}
-
-auto U8StringTransformTools::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const
-    -> U8StringEditor {
-    auto scanner = SafeStringEscapeTools{maximumWidth, flags};
-    const auto data = _data.dataSpan();
-    auto position = ByteIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        const auto sourceStart = position.toSizeT();
-        const auto character = utf8::decodeCharOrReplace(data, position);
-        if (!scanner.add(character, sourceStart)) {
-            break;
-        }
-    }
-    scanner.finish(data.size());
-    auto builder = AnyStringBuilder{};
-    scanner.appendTo(builder, data.size());
     return builder.takeU8StringEditor();
 }
 

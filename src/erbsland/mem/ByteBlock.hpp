@@ -6,10 +6,11 @@
 #include "ByteArray.hpp"
 #include "ByteBlock_fwd.hpp"
 #include "ByteBlockEditor_fwd.hpp"
+#include "ByteBlockLiteral_fwd.hpp"
 #include "ByteBuffer.hpp"
 #include "ByteSpan.hpp"
 
-#include "impl/ByteBlockData_fwd.hpp"
+#include "impl/ByteBlockStorage.hpp"
 #include "impl/ByteDataView.hpp"
 #include "impl/ByteReadTools.hpp"
 #include "impl/UnsafeByteBlockAccess_fwd.hpp"
@@ -30,7 +31,7 @@
 
 namespace erbsland::mem {
 
-/// An owning read-only byte block with shared copy-on-write storage.
+/// An owning read-only byte block with shared heap or static literal storage.
 /// Use this type to store, read and pass byte sequences.
 /// A `ByteBlockEditor` is implicitly convertible to a `ByteBlock` without copying data.
 /// Copying, moving and slicing are fast and copy-free operations.
@@ -54,6 +55,9 @@ public:
     /// Create a read-only byte block sharing the editor's data.
     /// @param editor The byte block editor whose complete data is shared.
     ByteBlock(const ByteBlockEditor &editor) noexcept; // NOLINT(*-explicit-constructor)
+    /// Create a read-only byte block referencing static literal data.
+    /// @param literal The byte block literal whose static data is referenced.
+    ByteBlock(ByteBlockLiteral literal) noexcept; // NOLINT(*-explicit-constructor)
 
     // defaults
     ByteBlock();
@@ -66,10 +70,10 @@ public:
 public: // main operations
     /// Create an independent copy containing only the visible bytes.
     [[nodiscard]] auto copy() const -> ByteBlock;
-    /// Test if this block is marked as sensitive.
+    /// Test if this block has sensitive heap storage.
     [[nodiscard]] auto isSensitive() const noexcept -> bool;
     /// Permanently mark this block as sensitive.
-    /// Marking empty blocks as sensitive does nothing.
+    /// Literal-backed blocks detach into sensitive heap storage. Marking empty blocks does nothing.
     void markAsSensitive() noexcept;
     /// Return a shared read-only slice of this block.
     [[nodiscard]] auto slice(unit::ByteRange range) const noexcept -> ByteBlock;
@@ -80,6 +84,7 @@ public: // main operations
     /// Create an independent block containing a clamped range of visible bytes.
     [[nodiscard]] auto kept(unit::ByteRange range) const -> ByteBlock;
     /// Securely erase this block while preserving its length.
+    /// Literal-backed blocks are replaced by zeroed heap storage without modifying the literal.
     void secureErase();
 
 public: // comparison
@@ -265,13 +270,15 @@ public: // factory methods
 private:
     /// Create a block from shared data and a storage range.
     ByteBlock(impl::ByteBlockDataPtr data, unit::ByteRange range) noexcept;
+    /// Create a block from heap or literal storage and a storage range.
+    ByteBlock(impl::ByteBlockStorage storage, unit::ByteRange range) noexcept;
     /// Get a borrowed internal view of the visible bytes.
     [[nodiscard]] auto dataView() const noexcept -> impl::ByteDataView;
     /// Get a unique ID for tests and diagnostics.
     [[nodiscard]] auto storageId() const noexcept -> std::size_t;
 
 private:
-    impl::ByteBlockDataPtr _data;                     ///< Shared byte storage.
+    impl::ByteBlockStorage _storage;                  ///< Shared heap or static literal byte storage.
     unit::ByteRange _range{unit::ByteRange::empty()}; ///< The visible range in the byte storage.
 };
 

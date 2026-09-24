@@ -17,7 +17,7 @@ using namespace text::literals;
 Parser::Parser(SourcePtr documentSource, const ParserSettings &settings) : _settings{settings} {
     // Prepare the stack with the root context.
     _contextStack.reserve(limits::maxDocumentNesting + 1);
-    _contextStack.emplace_back(ParserContext::create(0, std::move(documentSource)));
+    _contextStack.emplace_back(ParserContext::create(0, std::move(documentSource), _settings.placeholderResolver));
 }
 
 auto Parser::parse() -> DocumentPtr {
@@ -42,8 +42,7 @@ auto Parser::parse() -> DocumentPtr {
         return document;
     } catch (const ConfError &error) {
         auto enrichedError = error;
-        if (!error.context().codeSnippet().has_value() && error.context().location().has_value() &&
-            !_contextStack.empty()) {
+        if (error.context().location().has_value() && !_contextStack.empty()) {
             enrichedError = error.withCodeSnippet(_contextStack.back()->codeSnippet(*error.context().location()));
         }
         // close all contexts in case of an error.
@@ -182,7 +181,7 @@ void Parser::addSourceContext(
                 location};
         }
     }
-    auto newContext = ParserContext::create(includeLevel, source);
+    auto newContext = ParserContext::create(includeLevel, source, _settings.placeholderResolver);
     newContext->setIncludeLocation(location);
     newContext->setParentSourceIdentifier(parentSourceIdentifier);
     _contextStack.emplace_back(std::move(newContext));

@@ -11,6 +11,7 @@
 #include "ByteSpan.hpp"
 #include "Endianness.hpp"
 
+#include "impl/BitWriter_fwd.hpp"
 #include "impl/ByteBlockData_fwd.hpp"
 #include "impl/ByteDataView.hpp"
 #include "impl/ByteIntegerAccess.hpp"
@@ -40,6 +41,7 @@ namespace erbsland::mem {
 /// @tested{ByteBlockTest}
 class ByteBlockEditor final {
     friend class ByteBlock;
+    friend class impl::BitWriterImpl;
     friend class impl::UnsafeByteBlockBuffer;
 
 public:
@@ -123,6 +125,12 @@ public: // main operations
     auto append(FixedConstByteSpan<N> bytes) -> ByteBlockEditor & {
         return append(ConstByteSpan{bytes});
     }
+    /// Append bytes by cyclically repeating an existing source range.
+    /// @param sourceRange A non-empty range completely within the current editor.
+    /// @param outputLength The number of bytes to append.
+    /// @return This editor.
+    /// @throws err::OutOfRangeError If a non-empty output is requested from an invalid source range.
+    auto appendRepeated(unit::ByteRange sourceRange, unit::ByteLength outputLength) -> ByteBlockEditor &;
     /// Append an integer using the selected byte order.
     /// @tparam T A non-boolean native integer type.
     /// @param value The integer value.

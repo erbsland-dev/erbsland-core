@@ -9,20 +9,18 @@ namespace demo {
 
 /// Read a compact classification record one bit at a time.
 ///
-/// `BitReader` borrows a byte span and keeps the position of the next bit.
+/// `BitReader` shares a byte block and keeps the position of the next bit.
 /// Boundary queries let a parser validate a field before consuming it, while
 /// `advance()` and `setBitPosition()` provide safe cursor navigation.
 void readClassification() {
     const auto record = el::ByteArray{el::Byte{0b10110110U}, el::Byte{0b11000000U}};
-    auto reader = el::BitReader{record.span()};
+    auto reader = el::BitReader{el::ByteBlock{record}};
 
     // Validate the fixed header, then consume its flags and three-bit class.
     const auto hasHeader = reader.canRead(8U);
     const auto potentiallyHazardous = reader.readBool();
-    const auto confirmed = reader.readInteger<uint8_t>() != 0U;
-    auto asteroidClass = static_cast<uint8_t>(reader.readInteger<uint8_t>() << 2U);
-    asteroidClass |= static_cast<uint8_t>(reader.readInteger<uint8_t>() << 1U);
-    asteroidClass |= reader.readInteger<uint8_t>();
+    const auto confirmed = reader.readBool();
+    const auto asteroidClass = static_cast<uint8_t>(reader.readBits(3U));
 
     // Skip two reserved bits and read the final header flag.
     reader.advance(2U);

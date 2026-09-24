@@ -16,6 +16,8 @@ namespace demo {
 /// `ByteBlockEditor` provides the same construction choices when the bytes must
 /// remain mutable, and converts implicitly to a read-only block without copying.
 void creatingBlocks() {
+    static constexpr auto compiledSkills = el::ByteBlockLiteral::fromValues<34U, 55U, 89U>();
+
     // Create blocks with a repeated value and with individual skill bytes.
     const auto emptySlots = el::ByteBlock{el::ByteLength{4U}, el::Byte{0U}};
     const auto learnedSkills = el::ByteBlock{el::Byte{1U}, el::Byte{3U}, el::Byte{8U}};
@@ -27,6 +29,7 @@ void creatingBlocks() {
     const auto fromArray = el::ByteBlock{fixedSkills};
     const auto fromSpan = el::ByteBlock::fromSpan(std::span{networkBytes});
     const auto fromVector = el::ByteBlock::fromVector(savedBytes);
+    const el::ByteBlock fromLiteral = compiledSkills;
 
     // Build mutable data and hand it to an API expecting a read-only block.
     auto editor = el::ByteBlockEditor{el::Byte{1U}, el::Byte{2U}};
@@ -39,6 +42,7 @@ void creatingBlocks() {
     el::io::printLine("From fixed array   : "_el, el::ByteFormat::separated(), fromArray);
     el::io::printLine("From borrowed span : "_el, el::ByteFormat::separated(), fromSpan);
     el::io::printLine("From vector        : "_el, el::ByteFormat::separated(), fromVector);
+    el::io::printLine("From static literal: "_el, el::ByteFormat::separated(), fromLiteral);
     el::io::printLine("Editor as block    : "_el, el::ByteFormat::separated(), immutableSkills);
 }
 

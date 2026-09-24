@@ -25,6 +25,7 @@
 #include "../../text/Literals.hpp"
 #include "../../text/StringEditor.hpp"
 #include "../../time/DateTime.hpp"
+#include "../../time/TimeEpoch.hpp"
 #include "../../unit/ByteLength.hpp"
 
 #include <dirent.h>
@@ -38,6 +39,7 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include <array>
 #include <cerrno>
 #include <cstddef>
 #include <cstdlib>
@@ -76,6 +78,50 @@ void PosixPathBackend::setAccessProfileOrThrow(
         throwSystemError(
             "File permissions could not be changed"_el,
             "The operating system rejected the requested permission change."_el,
+            resolvedPath,
+            errno);
+    }
+    invalidateInfo(path);
+}
+
+void PosixPathBackend::setLastModifiedOrThrow(
+    const Path &path, const time::DateTime &value, const PathChangeOptions options) const {
+    const auto timestamp = value.toSecondsAndFractions(time::TimeEpoch::Posix);
+    if (!timestamp.has_value()) {
+        throw PathError{PathErrorContext{
+            "File modification time could not be changed"_el,
+            "The requested date/time cannot be represented as a POSIX filesystem timestamp."_el}
+                .setSourcePath(path.toString())};
+    }
+    const auto resolvedPath = resolveOrThrow(
+        path,
+        options.symlinkMode() == SymlinkMode::Follow ? PathResolveMode::Physical
+                                                     : PathResolveMode::PhysicalNoFinalSymlink);
+    const auto pathText = pathTextOrThrow(resolvedPath);
+    const auto pathAccess = text::impl::PlatformU8StringAccess{pathText};
+    if (options.symlinkMode() == SymlinkMode::Skip) {
+        struct stat info{};
+        if (::lstat(pathAccess.nullTerminatedCharPtr(), &info) != 0) {
+            throwSystemError(
+                "Path information is unavailable"_el,
+                "The modification time could not be changed because the path type is unavailable."_el,
+                resolvedPath,
+                errno);
+        }
+        if (S_ISLNK(info.st_mode)) {
+            return;
+        }
+    }
+    const auto &[seconds, fractions] = *timestamp;
+    auto times = std::array<timespec, 2U>{};
+    times[0].tv_nsec = UTIME_OMIT;
+    times[1].tv_sec = static_cast<time_t>(seconds.toRawValue());
+    times[1].tv_nsec = static_cast<long>(fractions.toRawValue());
+    const auto flags = options.symlinkMode() == SymlinkMode::Use ? AT_SYMLINK_NOFOLLOW : 0;
+    if (::utimensat(AT_FDCWD, pathAccess.nullTerminatedCharPtr(), times.data(), flags) != 0) {
+        throwSystemError(
+            "File modification time could not be changed"_el,
+            "The operating system rejected the requested timestamp change."_el,
             resolvedPath,
             errno);
     }

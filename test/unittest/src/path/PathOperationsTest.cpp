@@ -15,6 +15,7 @@
 #include <erbsland/path/PathOperations.hpp>
 #include <erbsland/path/PathRemoveOptions.hpp>
 #include <erbsland/text/Literals.hpp>
+#include <erbsland/time/DateTime.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <filesystem>
@@ -99,6 +100,17 @@ public:
                 .isSuccessful());
         const auto accessInfo = fixture.child("tree/sub/file.txt").info().accessInfo();
         REQUIRE(accessInfo.hasPortableRights() || accessInfo.currentProcessRights().hasAny());
+    }
+
+    void testSetLastModified() {
+        const auto fixture = PathTestFixture{"operations-modification-time"};
+        const auto file = fixture.child("observation.txt");
+        file.content().writeTextOrThrow("snow"_el);
+        const auto expected = el::time::DateTime::fromTimeT(1700000000);
+
+        file.operations().setLastModifiedOrThrow(expected);
+        REQUIRE_EQUAL(file.info().lastModified().toTimeT(), expected.toTimeT());
+        REQUIRE(el::path::Path{}.operations().setLastModified(expected).isFailure());
     }
 
     void testRejectOverlappingAndRootOperations() {

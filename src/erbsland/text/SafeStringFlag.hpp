@@ -10,11 +10,13 @@ namespace erbsland::text {
 
 /// Flags for creating safe string representations for logs and diagnostics.
 enum class SafeStringFlag : uint8_t {
-    None = 0,        ///< No optional safe-string behavior.
-    OnlyAscii = 1U,  ///< Escape all non-ASCII characters.
-    AutoQuotes = 2U, ///< Add quotes when the escaped text needs them for readability.
-    Defaults = AutoQuotes,
-    All = OnlyAscii | AutoQuotes,
+    None = 0,             ///< No optional safe-string behavior.
+    OnlyAscii = 1U,       ///< Escape all non-ASCII characters.
+    AutoQuotes = 2U,      ///< Add quotes when the escaped text needs them for readability.
+    AddTotalsOnCrop = 4U, ///< Add the total source length when the output is cropped.
+    AddCropMark = 8U,     ///< Add an ellipsis when the output is cropped.
+    Defaults = AutoQuotes | AddTotalsOnCrop | AddCropMark,
+    All = OnlyAscii | AutoQuotes | AddTotalsOnCrop | AddCropMark,
 };
 
 /// A set of safe string flags.

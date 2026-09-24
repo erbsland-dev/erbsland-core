@@ -7,6 +7,7 @@
 #include "TokenGenerator.hpp"
 
 #include "../decoder/TokenDecoder.hpp"
+#include "../placeholder/PlaceholderResolver_fwd.hpp"
 #include "../utilities/InternalView.hpp"
 
 #include "../../../cryptology/HashAlgorithm.hpp"
@@ -25,9 +26,12 @@ class Lexer final {
 public:
     /// Create a new lexer, using the given decoder.
     /// @param decoder The decoder to use.
+    /// @param placeholderResolver The optional placeholder registry.
     /// @return An instance of the lexer.
-    [[nodiscard]] static auto create(CharStreamPtr decoder) noexcept -> LexerPtr {
-        return std::make_shared<Lexer>(std::make_shared<TokenDecoder>(std::move(decoder)), PrivateTag{});
+    [[nodiscard]] static auto create(
+        CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept -> LexerPtr {
+        return std::make_shared<Lexer>(
+            TokenDecoder::create(std::move(decoder), std::move(placeholderResolver)), PrivateTag{});
     }
 
     /// Create a new lexer, using the given decoder.

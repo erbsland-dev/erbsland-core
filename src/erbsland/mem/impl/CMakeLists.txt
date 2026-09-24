@@ -4,6 +4,14 @@
 cmake_minimum_required(VERSION 3.28)
 
 target_sources(erbsland-core PRIVATE
+        BitReaderImpl.cpp
+        BitReaderImpl.hpp
+        BitReaderImplFor.hpp
+        BitReader_fwd.hpp
+        BitWriterImpl.cpp
+        BitWriterImpl.hpp
+        BitWriterImplFor.hpp
+        BitWriter_fwd.hpp
         ByteArrayErrors.cpp
         ByteArrayErrors.hpp
         BestGrowth.cpp
@@ -11,10 +19,11 @@ target_sources(erbsland-core PRIVATE
         BestGrowthStrategy.hpp
         ByteBlockData.hpp
         ByteBlockData_fwd.hpp
+        ByteBlockLiteralFactory.cpp
+        ByteBlockLiteralFactory_fwd.hpp
+        ByteBlockStorage.hpp
         ByteBufferData.hpp
         ByteBufferData_fwd.hpp
-        ByteCompressionCodec.cpp
-        ByteCompressionCodec.hpp
         ByteComparisonTools.hpp
         ByteDataView.hpp
         ByteDataView_fwd.hpp

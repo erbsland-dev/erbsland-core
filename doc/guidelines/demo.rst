@@ -82,14 +82,21 @@ For a single execution, add ``:show-cmd-line:`` when the generated output should
 If a command is expected to fail, add ``:exec-exit-code:`` or ``:exec-N-exit-code:`` with the expected process exit
 code.
 
+Use ``:files:`` to make one or more files available to the demo command.
+Each entry is a path relative to the reStructuredText file, while ``:exec:`` references it by basename only.
+The utility resolves the basename to the actual path for execution and replaces that path with the basename in captured
+output, preventing temporary, source, or build directories from leaking into the generated documentation.
+All listed files must have unique basenames.
+Their combined content hash is stored in ``:files-sha256:``, so changing an input file regenerates the demo output.
+
 .. code-block:: rst
 
     .. erbsland-demo::
-        :source: option/ApplicationRegistration/main.cpp
-        :exec: option/option_application --help
-        :exec-2: option/option_application --instrument Prisma-7 --gain 4 cristal-azul
-        :exec-3: option/option_application --gain 4 cristal-azul
-        :exec-3-exit-code: 1
+        :source: conf/ConfigurationDocuments/ManualValidation.cpp
+        :files: ../topics/conf/examples/valid-patch.elcl ../topics/conf/examples/invalid-patch.elcl
+        :exec: conf/configuration_documents --demo ManualValidation valid-patch.elcl
+        :exec-2: conf/configuration_documents --demo ManualValidation invalid-patch.elcl
+        :exec-2-exit-code: 1
 
     (demo code and all output blocks will be automatically synchronized here)
 

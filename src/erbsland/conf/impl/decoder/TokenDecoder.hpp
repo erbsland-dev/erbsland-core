@@ -8,6 +8,7 @@
 
 #include "../char/CharStream.hpp"
 #include "../lexer/LexerToken.hpp"
+#include "../placeholder/PlaceholderResolver_fwd.hpp"
 
 #include <cassert>
 #include <memory>
@@ -21,11 +22,13 @@ namespace erbsland::conf::impl {
 class TokenDecoder final : public Decoder {
 public:
     /// Create a token decoder for a character stream.
-    static auto create(CharStreamPtr decoder) noexcept -> TokenDecoderPtr;
+    static auto create(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept
+        -> TokenDecoderPtr;
 
     /// Create a token decoder around a character stream.
     /// @param decoder The character stream to decode.
-    explicit TokenDecoder(CharStreamPtr decoder) noexcept;
+    /// @param placeholderResolver The optional placeholder resolver.
+    explicit TokenDecoder(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver = {}) noexcept;
 
     // defaults
     TokenDecoder() = default;
@@ -75,6 +78,25 @@ public:
     /// Get the current token size in characters.
     /// @note Only works for single line tokens.
     [[nodiscard]] auto tokenSize() const noexcept -> int;
+
+public: // placeholder expansion
+    /// Test if placeholder expansion is configured.
+    [[nodiscard]] auto hasPlaceholders() const noexcept -> bool;
+
+    /// Resolve a placeholder source.
+    /// @param name The normalized source name.
+    /// @param parameter The source parameter.
+    /// @return The resolved text.
+    [[nodiscard]] auto resolvePlaceholder(const text::String &name, const text::String &parameter) const
+        -> text::String;
+
+    /// Apply a placeholder filter.
+    /// @param name The normalized filter name.
+    /// @param parameter The filter parameter.
+    /// @param value The current placeholder value.
+    /// @return The filtered text.
+    [[nodiscard]] auto applyPlaceholderFilter(
+        const text::String &name, const text::String &parameter, const text::String &value) const -> text::String;
 
 public: // Constraining functions.
     /// Expect more content in the current line.
@@ -126,6 +148,7 @@ private: // implement Decoder transactions
 
 private:
     CharStreamPtr _decoder;                                         ///< The wrapped decoder.
+    placeholder::PlaceholderResolverPtr _placeholderResolver;       ///< Optional placeholder resolver.
     DecodedChar _currentCharacter{text::Char::endOfData(), {}, {}}; ///< The current decoded character.
     unit::CodeLocation _tokenStartPosition;                         ///< The start position of the current token.
     text::String _currentIndentationPattern;                        ///< The current indentation pattern.

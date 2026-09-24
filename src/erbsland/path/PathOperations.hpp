@@ -23,6 +23,7 @@
 
 #include "../stream/TempByteOutputStream_fwd.hpp"
 #include "../stream/TempTextOutputStream_fwd.hpp"
+#include "../time/DateTime_fwd.hpp"
 #include "../util/Result.hpp"
 
 namespace erbsland::path {
@@ -150,6 +151,16 @@ public:
     /// @param options Options for the operation.
     /// @throws PathError if the operation failed.
     void setAccessProfileOrThrow(PathAccessProfile profile, PathChangeOptions options = {}) const;
+    /// Set the last-modification time for this path.
+    /// @param value The new modification time.
+    /// @param options Options for the operation.
+    /// @return `Result::Success` if the operation was successful, `Result::Failure` otherwise.
+    auto setLastModified(const time::DateTime &value, PathChangeOptions options = {}) const noexcept -> util::Result;
+    /// Set the last-modification time for this path.
+    /// @param value The new modification time.
+    /// @param options Options for the operation.
+    /// @throws PathError if the time is invalid or the operation failed.
+    void setLastModifiedOrThrow(const time::DateTime &value, PathChangeOptions options = {}) const;
     /// Add native path attributes.
     /// @param attributes The attributes to add.
     /// @param options Options for the operation.

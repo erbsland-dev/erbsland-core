@@ -16,6 +16,5 @@ Memory
     reading_byte_streams
     writing_byte_streams
     text_byte_stream_options
-    byte_compression
     designing_copy_on_write_containers
     marking_unsafe_memory_access

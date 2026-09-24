@@ -46,6 +46,7 @@ Create Global Includes  : No
 # one forwarding wrapper. A real header with that name in the parent remains
 # a conflict.
 Fold into Parent        :
+    * "compression"
     * "core"
     * "err"
     * "event"

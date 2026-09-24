@@ -19,18 +19,23 @@ namespace erbsland::conf::impl::lexer {
 /// @param decoder The decoder.
 /// @param nextLine If the value is starting on the next line.
 /// @param multiLineAllowed If multi-line values are allowed at this location.
+/// @param expandPlaceholders Whether placeholders in ordinary text are expanded.
 /// @return The token generator.
-[[nodiscard]] auto expectValueOrValueList(TokenDecoder &decoder, NextLine nextLine, MultiLineAllowed multiLineAllowed)
+[[nodiscard]] auto expectValueOrValueList(
+    TokenDecoder &decoder, NextLine nextLine, MultiLineAllowed multiLineAllowed, bool expandPlaceholders = true)
     -> TokenGenerator;
 
 /// Expect and read a single-line value or single-line value-list.
 /// @param decoder The decoder.
+/// @param expandPlaceholders Whether placeholders in ordinary text are expanded.
 /// @return The token generator.
-[[nodiscard]] auto expectSingleLineValueOrValueList(TokenDecoder &decoder) -> TokenGenerator;
+[[nodiscard]] auto expectSingleLineValueOrValueList(TokenDecoder &decoder, bool expandPlaceholders = true)
+    -> TokenGenerator;
 
 /// Expect and read a single line value.
 /// @param decoder The decoder.
+/// @param expandPlaceholders Whether placeholders in ordinary text are expanded.
 /// @return The token generator.
-[[nodiscard]] auto expectSingleLineValue(TokenDecoder &decoder) -> LexerToken;
+[[nodiscard]] auto expectSingleLineValue(TokenDecoder &decoder, bool expandPlaceholders = true) -> LexerToken;
 
 }

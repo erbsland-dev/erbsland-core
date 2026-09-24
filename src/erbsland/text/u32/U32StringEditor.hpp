@@ -281,7 +281,7 @@ public: // modifiers
 public: // transform
     /// Call a function for every decoded code point, stopping early if the function requests it.
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
-    /// Return a string where every decoded code point is mapped through the given function.
+    /// @copydoc erbsland::text::U8String::transformed(TransformCharacterFn) const
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U32StringEditor;
     /// @copydoc erbsland::text::U8StringEditor::normalize(NormalizationForm)
     auto normalize(NormalizationForm form) -> U32StringEditor &;
@@ -297,6 +297,7 @@ public: // transform
     [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
         -> U32StringEditor;
     /// Return a bounded representation that is safe for logs and debug output.
+    /// @seedoc{/reference/text/formatting_and_parsing}
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U32StringEditor;
 

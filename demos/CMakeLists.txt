@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(_common)
+add_subdirectory(compression)
+add_subdirectory(conf)
 add_subdirectory(core)
 add_subdirectory(cryptology)
 add_subdirectory(cterm)

@@ -11,6 +11,7 @@
 #include "../../../unit/CpIndex.hpp"
 #include "../../../unit/CpLength.hpp"
 #include "../../../unit/CpRange.hpp"
+#include "../../StringKind.hpp"
 
 #include <cstddef>
 #include <string_view>
@@ -33,6 +34,7 @@ struct U8StringTraits final {
     using CharacterLength = unit::CpLength;
     using CharacterRange = unit::CpRange;
 
+    static constexpr auto kind = StringKind::U8; ///< String encoding represented by these traits.
     static constexpr CodeUnit terminator = '\0';
     static constexpr auto codeUnitSize = sizeof(CodeUnit);
 };

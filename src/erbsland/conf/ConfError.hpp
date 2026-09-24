@@ -140,6 +140,8 @@ public: // enrichment
     [[nodiscard]] auto withDescription(text::String description) const -> ConfError;
     /// Return this error with a replacement code snippet.
     [[nodiscard]] auto withCodeSnippet(const std::optional<text::CodeSnippet> &codeSnippet) const -> ConfError;
+    /// Return this error without a source excerpt.
+    [[nodiscard]] auto withoutCodeSnippet() const -> ConfError;
 
 private:
     /// Return this error with a replacement complete context.

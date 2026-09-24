@@ -71,7 +71,8 @@ public: // working with the source.
     /// @throws ConfError (IO) If an error occurs while reading the line.
     [[nodiscard]] virtual auto readLine() -> text::String = 0;
     /// Get a best-effort source excerpt around a location.
-    /// A stream source may read up to two additional context lines if the affected line is already buffered.
+    /// A stream source may read up to two additional context lines if the affected line is already buffered. A file
+    /// source may reopen a small regular file and read the requested lines when they are no longer buffered.
     /// @param location The zero-based source location.
     /// @return Up to two context lines around the affected line, if available.
     [[nodiscard]] virtual auto codeSnippet(unit::CodeLocation location) noexcept

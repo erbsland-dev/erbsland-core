@@ -29,6 +29,7 @@ Primary Types
     Value // immutable node in a parsed configuration tree
     Document // root value and metadata of one configuration document
     Parser // ELCL parser and policy coordinator
+    PlaceholderSource, PlaceholderFilter // application placeholder lookup and transformation callbacks
 
 Value and Document Types
 ========================
@@ -121,6 +122,11 @@ Parsing Patterns
     o.parseFileOrThrow/parseTextOrThrow(input) -> DocumentPtr // convenience parsing with exceptions
     o.lastError() -> ConfErrorContext // inspect the latest non-throwing parse failure
     o.setSourceResolver/setAccessCheck/setSignatureValidator(policy) // install parsing trust policies
+    o.addPlaceholderSource/removePlaceholderSource(source) // manage optional text placeholder sources
+    o.addPlaceholderFilter/removePlaceholderFilter(filter) // manage optional text placeholder filters
+    o.enableEnvironmentPlaceholderSource() // register the built-in environment source
+    o.setPlaceholderVariables(variables) // register or update the built-in application-variable source
+    o.enableTextPlaceholderFilters() // register the built-in text filters
 
 Validation Rule Construction Patterns
 =====================================

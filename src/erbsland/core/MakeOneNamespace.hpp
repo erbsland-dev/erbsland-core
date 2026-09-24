@@ -9,6 +9,7 @@
 namespace erbsland {
 // Import all API namespaces into the main one.
 using namespace core;
+using namespace compression;
 using namespace cryptology;
 using namespace debug;
 using namespace err;

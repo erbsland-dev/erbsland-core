@@ -397,7 +397,15 @@ public: // transform and copy-modify
     auto forEach(const ProcessCharacterFn &function) const -> util::LoopResult;
     /// @overload
     auto forEach(const ProcessCharacterWithCpIndexFn &function) const -> util::LoopResult;
-    /// Return a string where every decoded code point is mapped through the given function.
+    /// Return a transformed copy of this string.
+    /// The function receives every decoded character and returns its replacement. Returning
+    /// `Char::noCodePoint()` removes the current character, and returning `Char::endOfData()` stops the
+    /// transformation and truncates the result at that position. A null function returns an unchanged copy.
+    /// The function can be called more than once for the same character and must have no observable side effects.
+    /// Malformed UTF-8 is decoded as U+FFFD before it is passed to the function. If no character changes, the
+    /// returned string shares its storage with this string.
+    /// @param function The character transformation function.
+    /// @return The transformed string.
     [[nodiscard]] auto transformed(TransformCharacterFn function) const -> U8String;
     /// Return this string in the selected Unicode normalization form.
     /// Malformed UTF-8 is replaced with U+FFFD. Unchanged valid text retains its original storage.
@@ -415,6 +423,7 @@ public: // transform and copy-modify
     [[nodiscard]] auto aligned(unit::CpLength length, geometry::Alignment alignment, Char fill = U' ') const
         -> U8String;
     /// Return a bounded representation that is safe for logs and debug output.
+    /// @seedoc{/reference/text/formatting_and_parsing}
     [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags = SafeStringFlag::Defaults) const
         -> U8String;
     /// Return a copy with all characters from the set replaced by one character.

@@ -10,6 +10,7 @@ target_sources(erbsland-core-unittest PRIVATE
         ParserConvenienceTest.cpp
         ParserErrorClassTest.cpp
         ParserIncludeTest.cpp
+        ParserPlaceholderTest.cpp
         ParserSignatureTest.cpp
         ParserTestHelper.hpp
 )

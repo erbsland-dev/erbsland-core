@@ -30,7 +30,36 @@ void Rules::validate(const conf::ValuePtr &value, const Integer version) {
         throwValidationError("The value to validate must be a document or a section with names"_el);
     }
     auto validator = DocumentValidator{_root, value, version};
-    validator.validate();
+    try {
+        validator.validate();
+    } catch (const ConfError &error) {
+        if (isSecretErrorValue(value, error)) {
+            throw error.withoutCodeSnippet();
+        }
+        throw;
+    }
+}
+
+auto Rules::isSecretErrorValue(const conf::ValuePtr &root, const ConfError &error) noexcept -> bool {
+    if (root == nullptr || !error.context().namePath().has_value()) {
+        return false;
+    }
+    try {
+        auto pending = std::vector<conf::ValuePtr>{root};
+        while (!pending.empty()) {
+            const auto value = pending.back();
+            pending.pop_back();
+            if (value->namePath() == *error.context().namePath()) {
+                return value->isSecret();
+            }
+            for (const auto &child : *value) {
+                pending.emplace_back(child);
+            }
+        }
+    } catch (...) {
+        return false;
+    }
+    return false;
 }
 
 auto Rules::empty() const -> bool {

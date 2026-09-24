@@ -78,15 +78,16 @@ Tests are part of a top-level Core development build and can be run through CTes
     $ ctest --test-dir cmake-build-core --output-on-failure
 
 Interoperability tests are intentionally separate from unit tests because they launch subprocesses.
-Enable and run the system and network suites manually.
-The network suite requires a Rust toolchain and builds the pinned rustls counterpart through Cargo:
+Enable and run the compression, system, and network suites manually.
+The compression and network suites require a Rust toolchain and build pinned counterparts through Cargo:
 
 .. code-block:: console
 
     $ cmake -S erbsland/core -B cmake-build-interop -G Ninja -DCMAKE_BUILD_TYPE=Debug \
         -DERBSLAND_CORE_ENABLE_INTEROP_TESTS=ON
     $ cmake --build cmake-build-interop \
-        --target erbsland-core-system-interop erbsland-core-network-interop
+        --target erbsland-core-compression-interop erbsland-core-system-interop erbsland-core-network-interop
+    $ cmake-build-interop/test/interop/compression/erbsland-core-compression-interop
     $ cmake-build-interop/test/interop/system/erbsland-core-system-interop
     $ cmake-build-interop/test/interop/network/erbsland-core-network-interop
 

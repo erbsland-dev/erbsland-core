@@ -17,7 +17,7 @@ namespace erbsland::conf::impl::lexer {
 
 using namespace text::literals;
 
-auto scanSingleLineText(TokenDecoder &decoder) -> std::optional<LexerToken> {
+auto scanSingleLineText(TokenDecoder &decoder, const bool expandPlaceholders) -> std::optional<LexerToken> {
     if (decoder.character() != nc::doubleQuote && decoder.character() != nc::backtick &&
         decoder.character() != nc::slash) {
         return {};
@@ -26,7 +26,11 @@ auto scanSingleLineText(TokenDecoder &decoder) -> std::optional<LexerToken> {
     decoder.next();
     text::StringEditor text;
     if (terminatingCharacter == nc::doubleQuote) {
-        parseText(decoder, text);
+        if (expandPlaceholders && decoder.hasPlaceholders()) {
+            parseTextWithPlaceholders(decoder, text);
+        } else {
+            parseText(decoder, text);
+        }
         return decoder.createToken(TokenType::Text, std::move(text));
     }
     if (terminatingCharacter == nc::slash) {
@@ -37,7 +41,8 @@ auto scanSingleLineText(TokenDecoder &decoder) -> std::optional<LexerToken> {
     return decoder.createToken(TokenType::Code, std::move(text));
 }
 
-auto expectMultiLineText(TokenDecoder &decoder, const TokenType openTokenType) -> TokenGenerator {
+auto expectMultiLineText(TokenDecoder &decoder, const TokenType openTokenType, const bool expandPlaceholders)
+    -> TokenGenerator {
     assert(
         openTokenType == TokenType::MultiLineTextOpen || openTokenType == TokenType::MultiLineCodeOpen ||
         openTokenType == TokenType::MultiLineRegexOpen);
@@ -61,8 +66,8 @@ auto expectMultiLineText(TokenDecoder &decoder, const TokenType openTokenType) -
         // Capture text, trailing spacing (+comment) and line-break.
         switch (openTokenType.raw()) {
         case TokenType::MultiLineTextOpen:
-            EL_YIELD_FROM(
-                parseMultiLineString(decoder, nc::backslash, parseTextEscapeSequence, TokenType::MultiLineText));
+            EL_YIELD_FROM(parseMultiLineString(
+                decoder, nc::backslash, parseTextEscapeSequence, TokenType::MultiLineText, expandPlaceholders));
             break;
         case TokenType::MultiLineCodeOpen:
             EL_YIELD_FROM(parseMultiLineString(decoder, {}, {}, TokenType::MultiLineCode));

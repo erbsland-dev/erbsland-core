@@ -23,6 +23,8 @@
 #include "NamePath.hpp"
 #include "NameType.hpp"
 #include "Parser.hpp"
+#include "PlaceholderFilter.hpp"
+#include "PlaceholderSource.hpp"
 #include "SignatureSigner.hpp"
 #include "SignatureSignerData.hpp"
 #include "SignatureValidator.hpp"

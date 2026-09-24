@@ -9,7 +9,6 @@
 #include "../../../util/impl/LoopControl.hpp"
 #include "../../AnyStringBuilder.hpp"
 #include "../../impl/EscapeFormatter.hpp"
-#include "../../impl/SafeStringEscapeTools.hpp"
 
 #include <cstring>
 #include <span>
@@ -215,24 +214,6 @@ auto U32StringTransformTools::toEscaped(const EscapeFormat format, const EscapeA
         }
         return true;
     });
-    return builder.takeU32StringEditor();
-}
-
-auto U32StringTransformTools::toSafeString(const CpLength maximumWidth, const SafeStringFlags flags) const
-    -> U32StringEditor {
-    auto scanner = SafeStringEscapeTools{maximumWidth, flags};
-    const auto data = _data.dataSpan();
-    auto position = CpIndex::zero();
-    while (position.toSizeT() < data.size()) {
-        const auto sourceStart = position.toSizeT();
-        const auto character = utf32::decodeCharOrReplace(data, position);
-        if (!scanner.add(character, sourceStart)) {
-            break;
-        }
-    }
-    scanner.finish(data.size());
-    auto builder = AnyStringBuilder{StringKind::U32};
-    scanner.appendTo(builder, data.size());
     return builder.takeU32StringEditor();
 }
 

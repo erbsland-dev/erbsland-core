@@ -10,6 +10,7 @@ Core Semantics
     borrowed view = non-owning contiguous bytes valid until source mutation or destruction
     direct owner = independent allocation copied deeply and transferred by move
     shared block = immutable value or slice sharing read-only allocation ownership
+    byte block literal = immutable view whose bytes have static storage duration
     block editor = mutable copy-on-write value that detaches before modification
     marked allocation = one-way marker that is passed to all copies of an object.
     secure erasure = optimizer-resistant overwrite of complete owned capacity
@@ -26,18 +27,20 @@ Primary Types
     ByteArray❮size❯ // fixed-size mutable byte owner
     ByteBuffer // dynamic deep-copying mutable byte owner
     ByteBlock // shared read-only byte value and slice
+    ByteBlockLiteral // compile-time reference to static byte storage
 
 Secondary Types
 ===============
 
 .. code-block:: text
 
+    BitOrder // most- or least-significant-first packed bit order
     Endianness // little- or big-endian integer byte order
     ByteIntegerFormat // explicit signed or unsigned static/variable integer wire format
     ByteTextFormat, ByteTextOptions // dynamic or padded text framing definition
     ByteBlockEditor // explicit mutable copy-on-write byte value
     RingBuffer, ByteRingBuffer // bounded FIFO bytes with optional integer operations
-    BitReader // sequential single-bit reader over borrowed read-only bytes
+    BitReader, BitWriter // move-only sequential packed-bit reader and writer
     ByteReader, ByteWriter // sequential byte and integer reader and writer
     StorageIdentifier // identity token for a visible backend storage range
     CowStorage❮Data❯, CowManualStorage❮Data❯ // automatic- and explicit-detach copy-on-write wrappers
@@ -47,15 +50,6 @@ Secondary Types
     ReferenceCounter // atomic intrusive reference state
     UnsafeConstMemoryPtr, UnsafeMemoryPtr // explicit raw memory boundaries
     UnsafeConstCharPtr, UnsafeCharPtr // explicit raw character boundaries
-
-Compression Types
-=================
-
-.. code-block:: text
-
-    ByteCompressionAlgorithm // stable raw compression algorithm identifier and output bound
-    ByteCompressor, ByteDecompressor // one-shot and buffered byte compression
-    ByteCompressionError, ByteCompressionErrorReason // malformed or unsupported representation failure
 
 Pattern Definitions
 ===================
@@ -135,6 +129,8 @@ Shared Block Patterns
 .. code-block:: text
 
     T(editor-or-block) // share visible block allocation ownership
+    T(literal) // reference static byte storage without copying
+    T::fromValues❮Values❯() -> ByteBlockLiteral // create inline literal values with static backing storage
     o.copy() -> T // create independent storage with only the visible bytes
     o.slice(range) -> ByteBlock // create a shared read-only slice
     o.kept(range) -> T // create independent storage with only a clamped visible range
@@ -177,6 +173,27 @@ Sequential Read and Write Patterns
     o.writeText(text, options)/writeTextOrThrow(text, options) -> ByteWriter& // truncating or strict text frame
     o.toByteBlock() -> ByteBlock // materialize written bytes
 
+Sequential Bit Read and Write Patterns
+======================================
+
+.. code-block:: text
+
+    T(ByteBlock, bitOrder[, bitPosition]) // create an owning move-only bit reader
+    T([bitOrder]) // create an empty move-only bit writer
+    o.refill(block) // retain up to 64 unread bits and share the next input block; rebase positions
+    o.markAsSensitive() // protect all current and future bit-writer allocations, including after reset
+    o.bitOrder() -> BitOrder // inspect the immutable stream order
+    o.bitPosition()/bitCount() -> size_t // inspect logical bit bounds
+    o.bytePosition()/byteCount()/consumedByteCount() -> size_t // inspect physical byte bounds
+    o.setBitPosition/setBytePosition/advance/advanceBytes(amount) // move within clamped bounds
+    o.alignToByte() // skip input or zero-pad output to the next byte boundary
+    o.readBits/readByte/readBool([fallback]) -> T // tolerant transactional bit reads
+    o.readBitsOrThrow/readByteOrThrow/readBoolOrThrow() -> T // strict bit reads
+    o.readBytesOrThrow(length) -> ByteBlock // exact aligned byte field, sharing input when possible
+    o.writeBytes(span) -> BitWriter& // aligned bulk overwrite or append, supporting aliased input
+    o.writeBits/writeByte/writeBool(value) -> BitWriter& // overwrite or append and advance
+    o.toByteBlock()/takeByteBlockEditor() -> T // share or transfer physical output bytes
+
 Ring Buffer Patterns
 ====================
 
@@ -191,28 +208,15 @@ Ring Buffer Patterns
     o.writeInteger(value) -> util::Result // atomically write one endian-aware integer
     o.clear()/shrinkToInitial() // discard bytes or restore empty initial capacity
 
-Byte Compression Patterns
-=========================
-
-.. code-block:: text
-
-    T(algorithm) // create a raw compressor or decompressor for one algorithm
-    o.compress(bytes)/decompress(bytes, originalSize) -> ByteBlock // transform a raw algorithm block
-    o.compressWithEnvelope(bytes) -> ByteBlock // create a framed self-describing representation
-    T::decompressWithEnvelope(bytes[, maximumSize]) -> ByteBlock // validate, dispatch, and decode an envelope
-    o.update(bytes) // append buffered incremental input before finalization
-    o.finalize([originalSize])/finalizeWithEnvelope([maximumSize]) -> ByteBlock // finalize in one selected format
-    o.reset() // discard buffered input and cached output for reuse
-
 Sensitive Byte Storage Patterns
 ===============================
 
 .. code-block:: text
 
     o.isSensitive() -> bool // inspect the shared-allocation mark or direct-owner mode
-    o.markAsSensitive() // irreversibly mark ByteBlock or ByteBlockEditor shared storage
+    o.markAsSensitive() // mark shared heap storage; detach ByteBlock from literal storage first
     o.setSensitive(enabled) // configure reversible ByteBuffer or RingBuffer sensitive mode
-    o.secureErase() // erase complete capacity while preserving visible length and sensitivity
+    o.secureErase() // erase owned capacity or replace literal storage with an equally sized zeroed heap block
     o.copy/slice/mutate(...) -> T // preserve or propagate sensitivity according to owning-type semantics
 
 Shared Storage Patterns

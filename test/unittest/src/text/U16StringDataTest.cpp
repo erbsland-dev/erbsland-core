@@ -3,14 +3,17 @@
 
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u16/impl/U16StringData.hpp>
+#include <erbsland/text/u16/impl/U16StringTraits.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 #include <string_view>
 
-TESTED_TARGETS(createU16StringData)
+TESTED_TARGETS(createU16StringData U16StringTraits)
 class U16StringDataTest final : public el::UnitTest {
 public:
+    void testTraits() { REQUIRE_EQUAL(el::text::impl::U16StringTraits::kind, el::text::StringKind::U16); }
+
     void testEmptyStringCreatesNullStorage() {
         const auto storage = el::text::impl::createU16StringData(std::u16string_view{});
 

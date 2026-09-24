@@ -191,66 +191,72 @@ auto AssignmentStream::handleValue() -> Assignment {
     const bool isTextName = token().type() == TokenType::TextName;
     auto name = isTextName ? Name::createText(std::get<text::String>(token().content()))
                            : Name::createRegular(std::get<text::String>(token().content()));
-    auto nameLocation = currentLocation();
-    const auto createAssignment = [&](ValuePtr &&value) noexcept -> Assignment {
+    const auto nameLocation = currentLocation();
+    auto valueNamePath = _currentSectionPath;
+    valueNamePath.append(name);
+    const auto createAssignment = [&](ValuePtr &&value) -> Assignment {
         value->setLocation(nameLocation); // copy
-        auto namePath = _currentSectionPath;
-        namePath.append(std::move(name));
-        return Assignment{AssignmentType::Value, std::move(namePath), std::move(nameLocation), value};
+        return Assignment{AssignmentType::Value, NamePath{valueNamePath}, Location{nameLocation}, std::move(value)};
     };
 
-    expectNext(TokenType::NameValueSeparator);
-    next(); // get either a line-break or the start of a value.
-    if (token().type() == TokenType::LineBreak) {
-        // If we got a line-break, the value must be indented on the next line.
-        expectNext(TokenType::Indentation);
-        expectNext();
-    }
-    switch (token().type().raw()) {
-    case TokenType::Integer:
-    case TokenType::Float:
-    case TokenType::Boolean:
-    case TokenType::Text:
-    case TokenType::Code:
-    case TokenType::RegEx:
-    case TokenType::Date:
-    case TokenType::DateTime:
-    case TokenType::Time:
-    case TokenType::TimeDelta:
-    case TokenType::Bytes: {
-        auto valueList = handleValueOrValueList();
-        if (valueList.size() == 1) {
-            return createAssignment(std::move(valueList.front()));
+    try {
+        expectNext(TokenType::NameValueSeparator);
+        next(); // get either a line-break or the start of a value.
+        if (token().type() == TokenType::LineBreak) {
+            // If we got a line-break, the value must be indented on the next line.
+            expectNext(TokenType::Indentation);
+            expectNext();
         }
-        auto value = Value::createValueList(std::move(valueList));
-        return createAssignment(std::move(value));
-    }
-    case TokenType::MultiLineValueListSeparator: {
-        auto valueList = handleMultiLineValueList();
-        if (valueList.size() == 1) {
-            return createAssignment(std::move(valueList.front()));
+        switch (token().type().raw()) {
+        case TokenType::Integer:
+        case TokenType::Float:
+        case TokenType::Boolean:
+        case TokenType::Text:
+        case TokenType::Code:
+        case TokenType::RegEx:
+        case TokenType::Date:
+        case TokenType::DateTime:
+        case TokenType::Time:
+        case TokenType::TimeDelta:
+        case TokenType::Bytes: {
+            auto valueList = handleValueOrValueList();
+            if (valueList.size() == 1) {
+                return createAssignment(std::move(valueList.front()));
+            }
+            auto value = Value::createValueList(std::move(valueList));
+            return createAssignment(std::move(value));
         }
-        auto value = Value::createValueList(std::move(valueList));
-        return createAssignment(std::move(value));
-    }
-    case TokenType::MultiLineTextOpen:
-    case TokenType::MultiLineCodeOpen: {
-        auto text = handleMultiLineText();
-        auto value = Value::createText(std::move(text));
-        return createAssignment(std::move(value));
-    }
-    case TokenType::MultiLineRegexOpen: {
-        auto text = handleMultiLineRegEx();
-        auto value = Value::createRegEx(createRegEx(text, true));
-        return createAssignment(std::move(value));
-    }
-    case TokenType::MultiLineBytesOpen: {
-        auto data = handleMultiLineBytes();
-        auto value = Value::createBytes(std::move(data));
-        return createAssignment(std::move(value));
-    }
-    default:
-        throw ConfError(ConfErrorCategory::Internal, "Unexpected token for value."_el);
+        case TokenType::MultiLineValueListSeparator: {
+            auto valueList = handleMultiLineValueList();
+            if (valueList.size() == 1) {
+                return createAssignment(std::move(valueList.front()));
+            }
+            auto value = Value::createValueList(std::move(valueList));
+            return createAssignment(std::move(value));
+        }
+        case TokenType::MultiLineTextOpen:
+        case TokenType::MultiLineCodeOpen: {
+            auto text = handleMultiLineText();
+            auto value = Value::createText(std::move(text));
+            return createAssignment(std::move(value));
+        }
+        case TokenType::MultiLineRegexOpen: {
+            auto text = handleMultiLineRegEx();
+            auto value = Value::createRegEx(createRegEx(text, true));
+            return createAssignment(std::move(value));
+        }
+        case TokenType::MultiLineBytesOpen: {
+            auto data = handleMultiLineBytes();
+            auto value = Value::createBytes(std::move(data));
+            return createAssignment(std::move(value));
+        }
+        default:
+            throw ConfError(ConfErrorCategory::Internal, "Unexpected token for value."_el);
+        }
+    } catch (const ConfError &error) {
+        const auto location =
+            Location{_lexer->sourceIdentifier(), error.context().location().value_or(nameLocation.codeLocation())};
+        throw error.withNamePathAndLocation(valueNamePath, location);
     }
 }
 

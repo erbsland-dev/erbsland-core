@@ -1,0 +1,6 @@
+[patch]
+name: "Kuzey Rüzgârı"
+voices: 12
+
+[patch.oscillator]
+waveform: "triangle"

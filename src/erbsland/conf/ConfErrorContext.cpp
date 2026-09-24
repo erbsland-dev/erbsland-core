@@ -4,6 +4,8 @@
 
 #include "Source.hpp"
 
+#include "impl/source/FileSource.hpp"
+
 #include "../text/Literals.hpp"
 #include "../text/StringFormat.hpp"
 
@@ -72,6 +74,15 @@ void ConfErrorContext::assignOptional(const Location &location) noexcept {
     if (location.sourceIdentifier() != nullptr && !location.sourceIdentifier()->path().isEmpty()) {
         _filePath = path::Path{location.sourceIdentifier()->path()};
     }
+    if (_location.has_value() && _filePath.has_value() && location.sourceIdentifier() != nullptr &&
+        location.sourceIdentifier()->name() == "file"_el) {
+        try {
+            const auto source = std::make_shared<impl::FileSource>(*_filePath);
+            _codeSnippet = source->codeSnippet(*_location);
+        } catch (...) {
+            _codeSnippet = std::nullopt;
+        }
+    }
 }
 
 auto ConfErrorContext::withLocation(const Location &location) const -> ConfErrorContext {
@@ -105,6 +116,12 @@ auto ConfErrorContext::withCodeSnippet(const std::optional<text::CodeSnippet> &c
     }
     auto result = *this;
     result._codeSnippet = codeSnippet;
+    return result;
+}
+
+auto ConfErrorContext::withoutCodeSnippet() const -> ConfErrorContext {
+    auto result = *this;
+    result._codeSnippet = std::nullopt;
     return result;
 }
 

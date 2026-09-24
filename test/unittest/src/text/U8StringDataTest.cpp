@@ -3,14 +3,17 @@
 
 #include <erbsland/text/StdFormat.hpp>
 #include <erbsland/text/u8/impl/U8StringData.hpp>
+#include <erbsland/text/u8/impl/U8StringTraits.hpp>
 #include <erbsland/unittest/UnitTest.hpp>
 
 #include <string>
 #include <string_view>
 
-TESTED_TARGETS(createU8StringData)
+TESTED_TARGETS(createU8StringData U8StringTraits)
 class U8StringDataTest final : public el::UnitTest {
 public:
+    void testTraits() { REQUIRE_EQUAL(el::text::impl::U8StringTraits::kind, el::text::StringKind::U8); }
+
     void testEmptyStringCreatesNullStorage() {
         const auto storage = el::text::impl::createU8StringData(std::string_view{});
 

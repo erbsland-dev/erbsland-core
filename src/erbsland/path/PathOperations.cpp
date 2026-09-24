@@ -246,7 +246,7 @@ auto PathOperations::openTempByteOutputStreamOrThrow(PathTempFileOptions options
                 {options.prefix(), random.buildString(options.randomLength(), alphabet), options.suffix()});
             const auto temporaryPath = path() / name;
             try {
-                auto writeOptions = PathWriteDataOptions{};
+                auto writeOptions = PathWriteDataOptions{}.setStreamSettings(options.streamSettings());
                 writeOptions.setCreationMode(PathCreateMode::CreateNew);
                 writeOptions.setAccessProfile(options.accessProfile());
                 auto stream = temporaryPath.content().openByteOutputStream(writeOptions);
@@ -343,6 +343,27 @@ void PathOperations::setAccessProfileOrThrow(const PathAccessProfile profile, co
                 .setHelp("Provide a non-empty path."_el)};
     }
     _impl->setAccessProfile(profile, options);
+}
+
+auto PathOperations::setLastModified(const time::DateTime &value, const PathChangeOptions options) const noexcept
+    -> Result {
+    try {
+        if (isEmpty()) {
+            return Result::Failure;
+        }
+        return _impl->setLastModified(value, options) ? Result::Success : Result::Failure;
+    } catch (const Exception &) {
+        return Result::Failure;
+    }
+}
+
+void PathOperations::setLastModifiedOrThrow(const time::DateTime &value, const PathChangeOptions options) const {
+    if (isEmpty()) {
+        throw PathError{PathErrorContext{
+            "File modification time could not be changed"_el, "No path was provided for the timestamp change."_el}
+                .setHelp("Provide a non-empty path."_el)};
+    }
+    _impl->setLastModified(value, options);
 }
 
 auto PathOperations::addAttributes(const PathAttributes attributes, const PathChangeOptions options) const noexcept

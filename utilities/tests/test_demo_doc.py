@@ -126,6 +126,87 @@ class DemoDocTest(unittest.TestCase):
         self.assertIn("    args: --demo First\n", updated_text)
         self.assertIn("    args: --demo Second\n", updated_text)
 
+    def test_document_relative_files_are_resolved_and_redacted(self) -> None:
+        document_dir = self.project_dir / "doc" / "topic"
+        fixture_dir = document_dir / "examples"
+        fixture_dir.mkdir(parents=True)
+        input_path = fixture_dir / "input.elcl"
+        input_path.write_text("Value: document relative\n", encoding="utf-8")
+        document_path = document_dir / "page.rst"
+        text = (
+            ".. erbsland-demo::\n"
+            "    :source: text/Sample.cpp\n"
+            "    :files: examples/input.elcl\n"
+            "    :exec: echoargs input.elcl\n"
+            "    :show-cmd-line:\n"
+            "\n"
+            ".. erbsland-demo-end::\n"
+        )
+
+        updated_text, issues = self.synchronizer().process_text(document_path, text)
+
+        self.assertEqual((), issues)
+        self.assertIn("    :files: examples/input.elcl\n", updated_text)
+        self.assertIn("    :files-sha256: ", updated_text)
+        self.assertIn(".. rubric:: ``$ echoargs input.elcl``\n", updated_text)
+        self.assertIn("    args: input.elcl\n", updated_text)
+        self.assertNotIn(str(document_dir), updated_text)
+
+    def test_changed_document_relative_file_regenerates_block(self) -> None:
+        document_dir = self.project_dir / "doc"
+        document_dir.mkdir()
+        input_path = document_dir / "input.elcl"
+        input_path.write_text("Value: first\n", encoding="utf-8")
+        document_path = document_dir / "page.rst"
+        text = (
+            ".. erbsland-demo::\n"
+            "    :source: text/Sample.cpp\n"
+            "    :files: input.elcl\n"
+            "    :exec: echoargs input.elcl\n"
+            "\n"
+            ".. erbsland-demo-end::\n"
+        )
+        synchronized_text, first_issues = self.synchronizer().process_text(document_path, text)
+        first_hash = (
+            self.synchronizer().parse_blocks(document_path, synchronized_text.splitlines())[0].options["files-sha256"]
+        )
+
+        input_path.write_text("Value: second\n", encoding="utf-8")
+        updated_text, second_issues = self.synchronizer().process_text(document_path, synchronized_text)
+        second_hash = (
+            self.synchronizer().parse_blocks(document_path, updated_text.splitlines())[0].options["files-sha256"]
+        )
+
+        self.assertEqual((), first_issues)
+        self.assertEqual((), second_issues)
+        self.assertNotEqual(first_hash, second_hash)
+
+    def test_document_relative_files_require_unique_safe_existing_paths(self) -> None:
+        document_dir = self.project_dir / "doc"
+        first_dir = document_dir / "first"
+        second_dir = document_dir / "second"
+        first_dir.mkdir(parents=True)
+        second_dir.mkdir()
+        (first_dir / "input.elcl").write_text("first\n", encoding="utf-8")
+        (second_dir / "input.elcl").write_text("second\n", encoding="utf-8")
+        shared_path = self.project_dir / "shared.elcl"
+        shared_path.write_text("shared\n", encoding="utf-8")
+        synchronizer = self.synchronizer()
+
+        resolved_files = synchronizer.resolve_demo_files(document_dir / "page.rst", "../shared.elcl")
+
+        self.assertEqual(shared_path, resolved_files["shared.elcl"].path)
+
+        for files_option in (
+            "../../outside.elcl",
+            "/absolute.elcl",
+            "missing.elcl",
+            "first/input.elcl second/input.elcl",
+        ):
+            with self.subTest(files_option=files_option):
+                with self.assertRaises(DemoDocError):
+                    synchronizer.resolve_demo_files(document_dir / "page.rst", files_option)
+
     def test_single_exec_with_show_cmd_line_generates_rubric(self) -> None:
         text = (
             ".. erbsland-demo::\n"

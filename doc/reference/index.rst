@@ -6,6 +6,7 @@ Reference
     :maxdepth: 1
 
     block/index
+    compression/index
     conf/index
     core/index
     cryptology/index

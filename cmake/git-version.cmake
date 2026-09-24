@@ -4,6 +4,13 @@
 cmake_minimum_required(VERSION 3.28)
 include_guard(GLOBAL)
 
+# Normalize an unsigned 16-bit decimal value for generated version components.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives the result in the caller's scope.
+#   value - Decimal text to normalize.
+#
+# Leading zeroes are removed. Zero is returned as "0"; a value greater than 65535 is reported as an empty result.
 function(erbsland_core_normalize_uint16 out_variable value)
     string(REGEX REPLACE "^0+" "" normalized_value "${value}")
     if (normalized_value STREQUAL "")
@@ -22,6 +29,12 @@ function(erbsland_core_normalize_uint16 out_variable value)
     set(${out_variable} "${normalized_value}" PARENT_SCOPE)
 endfunction()
 
+# Resolve a path against a base directory.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives the absolute path in the caller's scope.
+#   path - Absolute path, or a relative path to resolve.
+#   base_directory - Directory used to resolve a relative path.
 function(erbsland_core_resolve_path out_variable path base_directory)
     if (IS_ABSOLUTE "${path}")
         set(resolved_path "${path}")
@@ -31,6 +44,14 @@ function(erbsland_core_resolve_path out_variable path base_directory)
     set(${out_variable} "${resolved_path}" PARENT_SCOPE)
 endfunction()
 
+# Locate the Git directory associated with a source directory.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives the Git-directory path in the caller's scope.
+#   source_directory - Working-tree directory whose .git entry is inspected.
+#
+# Both regular repositories with a .git directory and linked worktrees with a gitdir file are supported. The output is
+# empty when no usable Git directory can be resolved.
 function(erbsland_core_resolve_git_directory out_variable source_directory)
     set(git_entry "${source_directory}/.git")
     set(git_directory "")
@@ -48,6 +69,13 @@ function(erbsland_core_resolve_git_directory out_variable source_directory)
     set(${out_variable} "${git_directory}" PARENT_SCOPE)
 endfunction()
 
+# Resolve the common Git directory shared by linked worktrees.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives the common Git-directory path in the caller's scope.
+#   git_directory - Git directory to inspect for a commondir file.
+#
+# For a regular repository, or when commondir is unavailable, git_directory itself is returned.
 function(erbsland_core_resolve_common_git_directory out_variable git_directory)
     set(common_git_directory "${git_directory}")
     set(common_dir_file "${git_directory}/commondir")
@@ -61,6 +89,11 @@ function(erbsland_core_resolve_common_git_directory out_variable git_directory)
     set(${out_variable} "${common_git_directory}" PARENT_SCOPE)
 endfunction()
 
+# Append a path to a dependency-list variable when the path exists.
+#
+# Parameters:
+#   dependency_list_variable - Name of a list variable to update in the caller's scope.
+#   path - File-system path to append when it exists.
 function(erbsland_core_add_existing_dependency dependency_list_variable path)
     set(dependency_list ${${dependency_list_variable}})
     if (EXISTS "${path}")
@@ -69,6 +102,14 @@ function(erbsland_core_add_existing_dependency dependency_list_variable path)
     set(${dependency_list_variable} ${dependency_list} PARENT_SCOPE)
 endfunction()
 
+# Collect Git metadata files that can change the version reported for a source tree.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives the dependency list in the caller's scope.
+#   source_directory - Working-tree directory to inspect.
+#
+# The result covers regular repositories and linked worktrees and contains only existing, unique paths. It can be empty
+# when the directory is not a Git working tree or no relevant metadata exists.
 function(erbsland_core_collect_git_dependencies out_variable source_directory)
     set(dependencies)
     set(git_entry "${source_directory}/.git")
@@ -96,6 +137,17 @@ function(erbsland_core_collect_git_dependencies out_variable source_directory)
     set(${out_variable} ${dependencies} PARENT_SCOPE)
 endfunction()
 
+# Generate a version source from Git metadata in CMake script mode.
+#
+# Inputs:
+#   ERBSLAND_CORE_SOURCE_DIR - Source tree from which the Git description is read.
+#   ERBSLAND_CORE_TEMPLATE - configure_file() input template.
+#   ERBSLAND_CORE_OUTPUT - Destination path for the configured source.
+#   ERBSLAND_GIT_VERSION_VARIABLE_PREFIX - Optional prefix for template variables; defaults to ERBSLAND_GIT_VERSION.
+#
+# The template receives <prefix>_MAJOR, _MINOR, _REVISION, _BUILD, and _TEXT. A matching Git description has the form
+# v<major>.<minor>.<revision>-<build>-g<hash>, with each numeric part limited to uint16. Missing or unsuitable metadata
+# produces the deterministic fallback version 0.0.0.0.
 function(erbsland_core_generate_version_source)
     set(variable_prefix "${ERBSLAND_GIT_VERSION_VARIABLE_PREFIX}")
     if (variable_prefix STREQUAL "")
@@ -151,6 +203,28 @@ function(erbsland_core_generate_version_source)
     configure_file("${ERBSLAND_CORE_TEMPLATE}" "${ERBSLAND_CORE_OUTPUT}" @ONLY)
 endfunction()
 
+# Add a generated Git-version source to a target.
+#
+# Usage:
+#   erbsland_core_add_git_version(
+#       TARGET <target>
+#       PROJECT_ROOT <directory>
+#       TEMPLATE <file>
+#       [OUTPUT <file>]
+#       [VARIABLE_PREFIX <prefix>]
+#   )
+#
+# Arguments:
+#   TARGET <target> - Existing target that receives the generated source.
+#   PROJECT_ROOT <directory> - Git working tree, relative to the current source directory or absolute.
+#   TEMPLATE <file> - configure_file() template, relative to the current source directory or absolute.
+#   OUTPUT <file> - Optional output, relative to the current binary directory or absolute. By default, a target-specific
+#                   directory and the template name without its .in component are used.
+#   VARIABLE_PREFIX <prefix> - Optional CMake identifier prefix for version variables. The default is
+#                              ERBSLAND_GIT_VERSION.
+#
+# The generated source is refreshed when the template, this module, or relevant Git metadata changes. Generation runs
+# through this module in CMake script mode and is added as a source and dependency of the target.
 function(erbsland_core_add_git_version)
     set(options)
     set(one_value_args TARGET PROJECT_ROOT TEMPLATE OUTPUT VARIABLE_PREFIX)

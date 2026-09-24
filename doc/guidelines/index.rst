@@ -38,10 +38,12 @@ project.
     examples
     example_themes
     anti_patterns/index
+    archive_formats
     cryptographic_algorithms
     api_guidelines
     api/common
     api/block
+    api/compression
     api/geometry
     api/conf
     api/core

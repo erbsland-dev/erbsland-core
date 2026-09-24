@@ -95,4 +95,8 @@ auto ConfError::withCodeSnippet(const std::optional<text::CodeSnippet> &codeSnip
     return withContext(_context.withCodeSnippet(codeSnippet));
 }
 
+auto ConfError::withoutCodeSnippet() const -> ConfError {
+    return withContext(_context.withoutCodeSnippet());
+}
+
 }

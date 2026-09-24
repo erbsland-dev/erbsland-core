@@ -9,6 +9,12 @@ include("${CMAKE_CURRENT_LIST_DIR}/application.cmake")
 set(ERBSLAND_CORE_RESOURCE_COMPILER_EXECUTABLE "" CACHE FILEPATH
         "Native host erbsland-core-resource-compiler used while cross-compiling")
 
+# Test whether a path has one of the requested suffixes.
+#
+# Parameters:
+#   out_variable - Name of the variable that receives TRUE or FALSE in the caller's scope.
+#   path - Path to test.
+#   ARGN - Suffixes accepted for the path. With no suffixes, every path is accepted.
 function(_erbsland_core_resource_has_suffix out_variable path)
     if(NOT ARGN)
         set("${out_variable}" TRUE PARENT_SCOPE)
@@ -29,6 +35,14 @@ function(_erbsland_core_resource_has_suffix out_variable path)
     set("${out_variable}" FALSE PARENT_SCOPE)
 endfunction()
 
+# Select the resource-compiler command and its build dependency.
+#
+# Parameters:
+#   out_command - Name of the variable that receives the command in the caller's scope.
+#   out_dependency - Name of the variable that receives the file or target dependency in the caller's scope.
+#
+# A configured ERBSLAND_CORE_RESOURCE_COMPILER_EXECUTABLE takes precedence. Native builds otherwise use the in-tree or
+# imported resource-compiler target. Cross-compiling requires an explicit native host executable.
 function(_erbsland_core_resource_compiler out_command out_dependency)
     if(ERBSLAND_CORE_RESOURCE_COMPILER_EXECUTABLE)
         get_filename_component(compiler_path "${ERBSLAND_CORE_RESOURCE_COMPILER_EXECUTABLE}" ABSOLUTE)
@@ -55,6 +69,33 @@ function(_erbsland_core_resource_compiler out_command out_dependency)
     set("${out_dependency}" "${compiler_target}" PARENT_SCOPE)
 endfunction()
 
+# Compile files from a directory into resources linked with a target.
+#
+# Usage:
+#   erbsland_core_add_resources(
+#       TARGET <target>
+#       DIRECTORY <directory>
+#       IDENTIFIER <identifier>
+#       [DEPENDENCY <target>]
+#       [SUFFIXES <suffix>...]
+#       [RECURSIVE]
+#       [NO_HASH]
+#       [NO_COMPRESSION]
+#   )
+#
+# Arguments:
+#   TARGET <target> - Existing executable or static-library target that receives the compiled resources.
+#   DIRECTORY <directory> - Resource directory, relative to the current source directory or absolute.
+#   IDENTIFIER <identifier> - Portable ASCII namespace stored with each resource.
+#   DEPENDENCY <target> - Optional target that must be built before the generated resource library.
+#   SUFFIXES <suffix>... - Optional filename suffix filter. With no suffixes, every regular file is selected.
+#   RECURSIVE - Include files in subdirectories instead of only the top level.
+#   NO_HASH - Omit the SHA3-256 integrity digest from generated resource metadata.
+#   NO_COMPRESSION - Store original bytes without testing LZ4 compression.
+#
+# The function rejects symbolic links, resources larger than 1 MiB, empty selections, and duplicate resource keys. It
+# creates generated translation units in the current binary directory and links them through a whole-archive helper so
+# registration objects are retained by the linker. Multiple calls for the same target append resources to that target.
 function(erbsland_core_add_resources)
     set(options RECURSIVE NO_HASH NO_COMPRESSION)
     set(one_value_args TARGET DIRECTORY IDENTIFIER DEPENDENCY)
@@ -196,7 +237,7 @@ function(erbsland_core_add_resources)
                 OUTPUT "${data_output}" "${descriptor_output}"
                 COMMAND "${CMAKE_COMMAND}" -E make_directory "${output_directory}"
                 COMMAND "${compiler_command}"
-                        --protocol 2
+                        --protocol 3
                         --input "${resource_directory}/${relative_path}"
                         --data-output "${data_output}"
                         --descriptor-output "${descriptor_output}"

@@ -31,7 +31,7 @@ namespace th = erbsland::unittest::th;
 
 TESTED_TARGETS(
     StringEditor String U16StringEditor U16String U32StringEditor U32String TruncateMode SafeStringFlag SafeStringFlags
-        SafeStringEscapeTools)
+        StringSafeTransformTools)
 class StringTransformTest final : public el::UnitTest {
 public:
     void testU8TruncationModes() {
@@ -149,8 +149,9 @@ public:
 
         const auto longText = StringEditor{"abcdefghijklmnopqrstuvwxyz"_el};
         REQUIRE_EQUAL(
-            StringConverter{longText.toSafeString(CpLength{20U})}.toStdString(), std::string{"\"abcd(... +22 more)\""});
-        REQUIRE_EQUAL(StringConverter{longText.toSafeString(CpLength{3U})}.toStdString(), std::string{"abc"});
+            StringConverter{longText.toSafeString(CpLength{20U})}.toStdU32String(),
+            std::u32string{U"\"abcdefg…(26 total)\""});
+        REQUIRE_EQUAL(StringConverter{longText.toSafeString(CpLength{3U})}.toStdU32String(), std::u32string{U"…"});
 
         const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
         REQUIRE_EQUAL(
@@ -170,7 +171,121 @@ public:
             std::u32string{U"A\\n\\u00E9"});
     }
 
+    void testSafeStringCropFlags() {
+        const auto text = String{"abcdefghijklmnopqrstuvwxyz"_el};
+
+        requireSafeString(text, 20U, SafeStringFlag::Defaults, U"\"abcdefg…(26 total)\"");
+        requireSafeString(
+            text,
+            20U,
+            SafeStringFlags{SafeStringFlag::AddCropMark, SafeStringFlag::AddTotalsOnCrop},
+            U"abcdefghi…(26 total)");
+        requireSafeString(
+            text,
+            20U,
+            SafeStringFlags{SafeStringFlag::AutoQuotes, SafeStringFlag::AddTotalsOnCrop},
+            U"\"abcdefgh(26 total)\"");
+        requireSafeString(
+            text,
+            20U,
+            SafeStringFlags{SafeStringFlag::AutoQuotes, SafeStringFlag::AddCropMark},
+            U"\"abcdefghijklmnopq…\"");
+        requireSafeString(text, 20U, SafeStringFlag::AutoQuotes, U"abcdefghijklmnopqrst");
+        requireSafeString(text, 20U, SafeStringFlag::None, U"abcdefghijklmnopqrst");
+        requireSafeString(text, 3U, SafeStringFlag::Defaults, U"…");
+        requireSafeString(text, 3U, SafeStringFlag::AddTotalsOnCrop, U"…");
+        requireSafeString(text, 1U, SafeStringFlag::Defaults, U"…");
+        requireSafeString(text, 0U, SafeStringFlag::Defaults, U"");
+        requireSafeString(text, CpLength::infinite(), SafeStringFlag::Defaults, U"abcdefghijklmnopqrstuvwxyz");
+    }
+
+    void testSafeStringQuotesAndEscapes() {
+        requireSafeString(String{"a b"_el}, 5U, SafeStringFlag::Defaults, U"\"a b\"");
+        requireSafeString(String{"a b"_el}, 4U, SafeStringFlag::AutoQuotes, U"\"a \"");
+        requireSafeString(String{"a\nb"_el}, 100U, SafeStringFlag::Defaults, U"\"a\\nb\"");
+        requireSafeString(String{"a\\b"_el}, 100U, SafeStringFlag::Defaults, U"\"a\\\\b\"");
+        requireSafeString(String{"a\"b"_el}, 100U, SafeStringFlag::Defaults, U"\"a\\\"b\"");
+        requireSafeString(String{"a\nb"_el}, 100U, SafeStringFlag::None, U"a\\nb");
+        requireSafeString(String{"a\nb"_el}, 2U, SafeStringFlag::None, U"a");
+    }
+
+    void testSafeStringAllWidthsAndValueKinds() {
+        const auto expected = std::u32string{U"\"é😀…(20 total)\""};
+        const auto u8View = std::u8string_view{u8"é😀abcdefghijklmnopqr"};
+        const auto u16View = std::u16string_view{u"é😀abcdefghijklmnopqr"};
+        const auto u32View = std::u32string_view{U"é😀abcdefghijklmnopqr"};
+
+        requireSafeString(U8String{u8View}, 15U, SafeStringFlag::Defaults, expected);
+        requireSafeString(U8StringEditor{u8View}, 15U, SafeStringFlag::Defaults, expected);
+        requireSafeString(U16String{u16View}, 15U, SafeStringFlag::Defaults, expected);
+        requireSafeString(U16StringEditor{u16View}, 15U, SafeStringFlag::Defaults, expected);
+        requireSafeString(U32String{u32View}, 15U, SafeStringFlag::Defaults, expected);
+        requireSafeString(U32StringEditor{u32View}, 15U, SafeStringFlag::Defaults, expected);
+    }
+
+    void testSafeStringStorageReuse() {
+        auto u8 = String{"ordinary"_el};
+        const auto u16 = U16String{u"ordinary"_el};
+        const auto u32 = U32String{U"ordinary"_el};
+        auto u8Editor = StringEditor{"ordinary"_el};
+        const auto u16Editor = U16StringEditor{u"ordinary"_el};
+        const auto u32Editor = U32StringEditor{U"ordinary"_el};
+
+        REQUIRE_EQUAL(u8.toSafeString(CpLength{100U}).storageId(), u8.storageId());
+        REQUIRE_EQUAL(u16.toSafeString(CpLength{100U}).storageId(), u16.storageId());
+        REQUIRE_EQUAL(u32.toSafeString(CpLength{100U}).storageId(), u32.storageId());
+        REQUIRE_EQUAL(u8Editor.toSafeString(CpLength{100U}).storageId(), u8Editor.storageId());
+        REQUIRE_EQUAL(u16Editor.toSafeString(CpLength{100U}).storageId(), u16Editor.storageId());
+        REQUIRE_EQUAL(u32Editor.toSafeString(CpLength{100U}).storageId(), u32Editor.storageId());
+
+        u8.markAsSensitive();
+        const auto sensitiveResult = u8.toSafeString(CpLength{100U});
+        REQUIRE_EQUAL(sensitiveResult.storageId(), u8.storageId());
+        REQUIRE(sensitiveResult.isSensitive());
+        u8Editor.markAsSensitive();
+        const auto sensitiveEditorResult = u8Editor.toSafeString(CpLength{100U});
+        REQUIRE_EQUAL(sensitiveEditorResult.storageId(), u8Editor.storageId());
+        REQUIRE(sensitiveEditorResult.isSensitive());
+
+        const auto replacement = String{u8"A�B"_el};
+        const auto replacementResult = replacement.toSafeString(CpLength{100U}, SafeStringFlag::None);
+        REQUIRE_EQUAL(StringConverter{replacementResult}.toStdU32String(), std::u32string{U"A�B"});
+        REQUIRE_NOT_EQUAL(replacementResult.storageId(), replacement.storageId());
+        const auto replacement16 = U16String{u"A�B"_el};
+        const auto replacement32 = U32String{U"A�B"_el};
+        REQUIRE_NOT_EQUAL(
+            replacement16.toSafeString(CpLength{100U}, SafeStringFlag::None).storageId(), replacement16.storageId());
+        REQUIRE_NOT_EQUAL(
+            replacement32.toSafeString(CpLength{100U}, SafeStringFlag::None).storageId(), replacement32.storageId());
+    }
+
+    void testSafeStringMalformedInput() {
+        const auto invalidUtf8 = String{th::stdStringFromHex("41 C0 42")};
+        const auto invalidUtf16Data = std::u16string{u'A', static_cast<char16_t>(0xD800U), u'B'};
+        const auto invalidUtf32Data = std::u32string{U'A', static_cast<char32_t>(0x110000U), U'B'};
+
+        requireSafeString(invalidUtf8, 100U, SafeStringFlag::None, U"A�B");
+        requireSafeString(U16String{invalidUtf16Data}, 100U, SafeStringFlag::None, U"A�B");
+        requireSafeString(U32String{invalidUtf32Data}, 100U, SafeStringFlag::None, U"A�B");
+        requireSafeString(invalidUtf8, 100U, SafeStringFlag::OnlyAscii | SafeStringFlag::AutoQuotes, U"\"A\\uFFFDB\"");
+    }
+
 private:
+    template <typename T>
+    void requireSafeString(
+        const T &text,
+        const std::size_t maximumWidth,
+        const SafeStringFlags flags,
+        const std::u32string_view expected) {
+        requireSafeString(text, CpLength::fromSizeT(maximumWidth), flags, expected);
+    }
+
+    template <typename T>
+    void requireSafeString(
+        const T &text, const CpLength maximumWidth, const SafeStringFlags flags, const std::u32string_view expected) {
+        REQUIRE_EQUAL(StringConverter{text.toSafeString(maximumWidth, flags)}.toStdU32String(), expected);
+    }
+
     static auto changingTransform(const Char) noexcept -> Char {
         const auto call = _changingTransformCall++;
         if (call == 0U) {

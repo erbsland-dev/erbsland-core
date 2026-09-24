@@ -17,6 +17,8 @@ class ErbslandDemoDirective(Directive):
     option_spec = dict(
         {
             "source": directives.unchanged_required,
+            "files": directives.unchanged_required,
+            "files-sha256": directives.unchanged,
             "function-blocks": directives.unchanged_required,
             "function-blocks-sha256": directives.unchanged,
             "exec": directives.unchanged,

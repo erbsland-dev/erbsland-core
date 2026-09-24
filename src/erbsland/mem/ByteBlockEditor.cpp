@@ -276,6 +276,11 @@ auto ByteBlockEditor::append(const ConstByteSpan bytes) -> ByteBlockEditor & {
     return *this;
 }
 
+auto ByteBlockEditor::appendRepeated(const ByteRange sourceRange, const ByteLength outputLength) -> ByteBlockEditor & {
+    ByteModifyTools{_data}.appendRepeated(sourceRange, outputLength);
+    return *this;
+}
+
 auto ByteBlockEditor::overwrite(const ByteRange range, const ByteBlock &bytes) -> ByteBlockEditor & {
     ByteModifyTools{_data}.overwrite(range, bytes.dataView(), bytes.isSensitive());
     return *this;

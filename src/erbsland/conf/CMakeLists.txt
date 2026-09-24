@@ -38,6 +38,10 @@ target_sources(erbsland-core PRIVATE
         NameType.hpp
         Parser.cpp
         Parser.hpp
+        PlaceholderFilter.hpp
+        PlaceholderFilter_fwd.hpp
+        PlaceholderSource.hpp
+        PlaceholderSource_fwd.hpp
         SignatureSigner.hpp
         SignatureSigner_fwd.hpp
         SignatureSignerData.hpp

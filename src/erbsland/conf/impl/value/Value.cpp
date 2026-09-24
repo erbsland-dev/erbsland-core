@@ -230,28 +230,21 @@ auto Value::valueImpl([[maybe_unused]] const Name &name) const noexcept -> Value
 }
 
 void Value::throwAsTypeMismatch(const conf::Value &thisValue, ValueType expectedType) {
-    throw ConfError(
+    auto error = ConfError(
         ConfErrorCategory::TypeMismatch,
         text::StringFormat{"A value has not the required type. Expected '{}' but got '{}'."_el}.build(
             expectedType.toText(), thisValue.type().toText()),
         thisValue.location(),
         thisValue.namePath());
+    if (thisValue.isSecret()) {
+        throw error.withoutCodeSnippet();
+    }
+    throw error;
 }
 
 void Value::throwValueNotFound(const conf::Value &thisValue, const NamePathLike &namePath) {
 
     throwErrorWithPath(ConfErrorCategory::ValueNotFound, "A value was not found."_el, thisValue, namePath);
-}
-
-void Value::throwTypeMismatch(
-    const conf::Value &thisValue, ValueType expectedType, ValueType actualType, const NamePathLike &namePath) {
-
-    throwErrorWithPath(
-        ConfErrorCategory::TypeMismatch,
-        text::StringFormat{"A value has not the required type. Expected '{}' but got '{}'."_el}.build(
-            expectedType.toText(), actualType.toText()),
-        thisValue,
-        namePath);
 }
 
 auto Value::createInteger(Integer value) noexcept -> ValuePtr {

@@ -9,7 +9,7 @@ namespace erbsland::resource {
 ResourceInfo::ResourceInfo(
     const unit::ByteLength originalSize,
     const unit::ByteLength storedSize,
-    std::optional<mem::ByteCompressionAlgorithm> compressionAlgorithm,
+    std::optional<compression::CompressionAlgorithm> compressionAlgorithm,
     std::optional<cryptology::HashAlgorithm> hashAlgorithm,
     mem::ByteBlock hash,
     const bool encrypted) noexcept :

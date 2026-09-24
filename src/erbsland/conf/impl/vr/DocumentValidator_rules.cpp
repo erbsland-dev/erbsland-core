@@ -18,28 +18,35 @@ namespace erbsland::conf::impl {
 using namespace text::literals;
 
 auto DocumentValidator::validate(const RulePtr &rule, const ValuePtr &value) -> RulePtr {
-    validateNameConstraints(rule, value);
-    if (rule->hasKeyDefinitions() || rule->hasConstraint(vr::ConstraintType::ConfKey)) {
-        _useIndexes = true;
+    try {
+        validateNameConstraints(rule, value);
+        if (rule->hasKeyDefinitions() || rule->hasConstraint(vr::ConstraintType::ConfKey)) {
+            _useIndexes = true;
+        }
+        if (rule->hasDependencyDefinitions()) {
+            _useDependencies = true;
+        }
+        switch (rule->type()) {
+        case vr::RuleType::NotValidated:
+            return handleNotValidatedValues(rule, value);
+        case vr::RuleType::Alternatives:
+            return handleAlternatives(rule, value);
+        case vr::RuleType::SectionList:
+            return handleSectionLists(rule, value);
+        case vr::RuleType::ValueList:
+            return handleValueLists(rule, value);
+        case vr::RuleType::ValueMatrix:
+            return handleValueMatrix(rule, value);
+        default:
+            break;
+        }
+        return handleCommonValues(rule, value);
+    } catch (const ConfError &error) {
+        if (rule->isSecret()) {
+            throw error.withoutCodeSnippet();
+        }
+        throw;
     }
-    if (rule->hasDependencyDefinitions()) {
-        _useDependencies = true;
-    }
-    switch (rule->type()) {
-    case vr::RuleType::NotValidated:
-        return handleNotValidatedValues(rule, value);
-    case vr::RuleType::Alternatives:
-        return handleAlternatives(rule, value);
-    case vr::RuleType::SectionList:
-        return handleSectionLists(rule, value);
-    case vr::RuleType::ValueList:
-        return handleValueLists(rule, value);
-    case vr::RuleType::ValueMatrix:
-        return handleValueMatrix(rule, value);
-    default:
-        break;
-    }
-    return handleCommonValues(rule, value);
 }
 
 void DocumentValidator::handleMissingValues(const RulePtr &rule, const conf::ValuePtr &parentValue) {
@@ -131,7 +138,7 @@ auto DocumentValidator::handleAlternatives(const RulePtr &rule, const ValuePtr &
             break;
         } catch (const ConfError &error) {
             if (!firstError.has_value()) {
-                firstError = error;
+                firstError = alternativeRule->isSecret() ? error.withoutCodeSnippet() : error;
             }
         }
     }

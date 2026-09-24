@@ -1,0 +1,16 @@
+Compression is most useful when real information contains structure: recurring words, familiar punctuation, repeated
+phrases, and patterns that are visible only after a little distance. This original corpus passage mixes short and
+long sentences so encoders encounter both local redundancy and changing context. It also includes paragraph breaks,
+quoted text, numbers such as 17, 255, 4096, and 65536, plus symbols like %, &, <, >, and #.
+
+An engineer in Zürich opens the morning report. “Latency fell overnight,” the summary says, “but three services still
+need attention.” The same report appears in English, Deutsch, Français, Ελληνικά, 日本語, and emoji: ✅ ⚙️ 📦. These
+scripts exercise a wider byte alphabet than plain ASCII while preserving the repetition found in natural language.
+
+At 08:15 the archive receives a configuration snapshot. At 08:16 it receives an audit record. At 08:17 it receives a
+small source bundle. The records share headers and vocabulary, yet their identifiers, measurements, and explanations
+change. A useful compressor should find the common shape without assuming that every line is identical.
+
+Longer passages matter too. A block may refer back to a phrase written many kilobytes earlier, after several unrelated
+sections have interrupted it. Repeating this seed with deterministic separators creates stable long-distance matches
+while the separators prevent the entire input from collapsing into one perfectly periodic stream.

@@ -232,10 +232,42 @@ Capitalization
 :cpp:enum:`Capitalization <erbsland::text::Capitalization>` selects the capitalization for generated words.
 It is used by boolean formatting where titlecase output is useful for user-facing text.
 
-Safe String Flag
-~~~~~~~~~~~~~~~~
+Safe String Output
+~~~~~~~~~~~~~~~~~~
 
-:cpp:enum:`SafeStringFlag <erbsland::text::SafeStringFlag>` controls optional safety checks for string operations.
+The ``toSafeString()`` methods create bounded text for logs, diagnostics, and debug displays.
+They use balanced C++ escaping by default.
+:cpp:enumerator:`SafeStringFlag::OnlyAscii <erbsland::text::SafeStringFlag::OnlyAscii>` additionally escapes every
+non-ASCII code point.
+The maximum width counts rendered code points, including escape sequences, quotes, and crop annotations.
+Escaped characters are never split to fill the available width.
+
+:cpp:enumerator:`SafeStringFlag::AutoQuotes <erbsland::text::SafeStringFlag::AutoQuotes>` encloses the complete result
+in double quotes when the emitted text contains ASCII whitespace, a quote, an escape sequence, or a crop annotation.
+The quotes are part of the maximum width.
+
+Two flags control the annotation added when the representation must be cropped:
+
+*   With :cpp:enumerator:`SafeStringFlag::AddCropMark <erbsland::text::SafeStringFlag::AddCropMark>` and
+    :cpp:enumerator:`SafeStringFlag::AddTotalsOnCrop <erbsland::text::SafeStringFlag::AddTotalsOnCrop>`, the annotation
+    is ``…(N total)``.
+*   With only ``AddTotalsOnCrop``, the annotation is ``(N total)``.
+*   With only ``AddCropMark``, the annotation is ``…``.
+*   With neither flag, there is no annotation and the largest fitting prefix is returned.
+
+The default flags enable automatic quotes and both crop annotations.
+``N`` is the total number of decoded source code points, not the number of UTF-8 bytes or UTF-16 code units.
+If the requested annotation cannot fit after removing the complete source prefix, the result is a single ``…`` for every
+nonzero maximum width.
+A zero maximum width produces an empty result.
+
+Decoding is tolerant.
+Every U+FFFD replacement character is treated as evidence of malformed input, including a U+FFFD that was already
+properly encoded, and causes the result to be rebuilt as valid target text.
+If no escaping, quoting, cropping, or replacement is required, the original storage is shared.
+For UTF-8 strings this also preserves a sensitive-storage marker.
+
+:cpp:enum:`SafeStringFlag <erbsland::text::SafeStringFlag>` defines the individual options.
 Use :cpp:type:`SafeStringFlags <erbsland::text::SafeStringFlags>` when several flags are combined.
 
 Truncate Mode

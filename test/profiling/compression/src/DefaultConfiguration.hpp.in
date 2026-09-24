@@ -1,0 +1,13 @@
+// Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
+// SPDX-License-Identifier: Apache-2.0
+#pragma once
+
+#include <erbsland/all.hpp>
+
+namespace app::compression {
+
+using namespace erbsland::text::literals;
+
+constexpr auto cDefaultConfigurationText = R"elcl(@COMPRESSION_PROFILE_DEFAULT_CONFIGURATION@)elcl"_el;
+
+}

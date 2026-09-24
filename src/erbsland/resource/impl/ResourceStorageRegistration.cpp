@@ -5,7 +5,7 @@
 namespace erbsland::resource::impl {
 
 ResourceStorageRegistration::ResourceStorageRegistration(
-    const ResourceDataProvider dataProvider, const std::span<const std::uint8_t> infoBlock) noexcept :
+    const ResourceDataProvider dataProvider, const mem::ByteBlockLiteral infoBlock) noexcept :
     _node{dataProvider, infoBlock, nullptr} {
     auto &head = registry();
     _node.next = head.load(std::memory_order_relaxed);

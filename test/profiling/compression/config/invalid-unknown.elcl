@@ -1,0 +1,16 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 10s
+Threads             : 1
+Memory Limit        : 64 MiB
+
+--*[ Scenario ]*-------------------------------------------------------------
+Name                : "invalid-corpus"
+Functionality       : "compress"
+Algorithm           : "deflate"
+Format              : "raw"
+Level               : "default"
+Corpus              : "unknown"
+Input Size          : 16 KiB

@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../placeholder/PlaceholderResolver.hpp"
+
 #include "../../AccessCheck.hpp"
 #include "../../FileAccessCheck.hpp"
 #include "../../FileSourceResolver.hpp"
@@ -25,6 +27,9 @@ struct ParserSettings {
     /// If `nullptr` the parser rejects signed documents by default.
     /// If set, all documents, even these without `\@signature` must be checked by this object.
     SignatureValidatorPtr signatureValidator;
+
+    /// Sources and filters used for optional placeholder expansion.
+    placeholder::PlaceholderResolverPtr placeholderResolver = std::make_shared<placeholder::PlaceholderResolver>();
 };
 
 }

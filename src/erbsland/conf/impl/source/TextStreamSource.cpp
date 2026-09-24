@@ -28,6 +28,7 @@ void TextStreamSource::open() {
         if (!_stream || !_stream->isOpen()) {
             throw ConfError(ConfErrorCategory::IO, "Failed to open the source stream."_el, Location{identifier()});
         }
+        _streamSupportsPositioning = _stream->supportsPositioning();
         _isOpen = true;
     } catch (const ConfError &) {
         throw;
@@ -60,6 +61,10 @@ auto TextStreamSource::readLine() -> text::String {
         throw ConfError(ConfErrorCategory::IO, "You cannot read from a closed source."_el, Location{identifier()});
     }
     try {
+        auto linePosition = std::optional<unit::ByteIndex>{};
+        if (_streamSupportsPositioning) {
+            linePosition = _stream->position();
+        }
         auto line = readStreamLine();
         if (!line) {
             sourceIsAtEnd();
@@ -68,7 +73,7 @@ auto TextStreamSource::readLine() -> text::String {
         if (line->length().toSizeT() > limits::maxLineLength) {
             throwLineLengthExceeded();
         }
-        rememberLine(*line);
+        rememberLine(*line, linePosition);
         return std::move(*line);
     } catch (const ConfError &) {
         throw;
@@ -153,12 +158,28 @@ auto TextStreamSource::readStreamLine() -> std::optional<text::String> {
     return result.data();
 }
 
-void TextStreamSource::rememberLine(const text::String &line) {
+void TextStreamSource::rememberLine(const text::String &line, const std::optional<unit::ByteIndex> position) {
+    if (position.has_value()) {
+        rememberLinePosition(_nextLine, *position);
+    }
     _recentLines.emplace_back(_nextLine, line);
     _nextLine = _nextLine.advanced(unit::LineCount::one());
     while (_recentLines.size() > 5U) {
         _recentLines.pop_front();
     }
+}
+
+auto TextStreamSource::setStreamPosition(const unit::ByteIndex position, const unit::LineIndex nextLine) -> bool {
+    if (!_isOpen || _stream == nullptr || !_streamSupportsPositioning) {
+        return false;
+    }
+    if (!_stream->setPosition(position).isSuccess()) {
+        return false;
+    }
+    _recentLines.clear();
+    _nextLine = nextLine;
+    _atEnd = false;
+    return true;
 }
 
 void TextStreamSource::sourceIsAtEnd() noexcept {

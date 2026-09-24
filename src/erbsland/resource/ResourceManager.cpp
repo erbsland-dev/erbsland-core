@@ -6,8 +6,8 @@
 
 #include "impl/ResourceManagerData.hpp"
 
-#include "../mem/ByteCompressionError.hpp"
-#include "../mem/ByteDecompressor.hpp"
+#include "../compression/ByteDecompressor.hpp"
+#include "../compression/CompressionError.hpp"
 #include "../text/Literals.hpp"
 #include "../text/u8/impl/U8StringLiteralFactory.hpp"
 
@@ -31,7 +31,7 @@ auto ResourceManager::getStoredData(const text::String &identifier, const text::
     if (state == nullptr) {
         return std::nullopt;
     }
-    return state->entry.storedData;
+    return state->entry.storedData.span();
 }
 
 auto ResourceManager::getStoredDataOrThrow(const text::String &identifier, const text::String &path) const
@@ -55,12 +55,16 @@ auto ResourceManager::getData(const text::String &identifier, const text::String
     }
     try {
         if (state->entry.compressionAlgorithm.has_value()) {
-            const auto decompressor = mem::ByteDecompressor{*state->entry.compressionAlgorithm};
-            state->data = decompressor.decompress(state->entry.storedData, state->entry.originalSize);
+            const auto options = compression::DecompressionOptions{}
+                                     .setExpectedOutputLength(state->entry.originalSize)
+                                     .setMaximumOutputLength(state->entry.originalSize);
+            const auto decompressor = compression::ByteDecompressor{
+                *state->entry.compressionAlgorithm, compression::CompressionFormat::Raw, options};
+            state->data = decompressor.decompress(state->entry.storedData);
         } else {
-            state->data = mem::ByteBlock::fromSpan(state->entry.storedData);
+            state->data = state->entry.storedData;
         }
-    } catch (const mem::ByteCompressionError &) {
+    } catch (const compression::CompressionError &) {
         return std::nullopt;
     }
     return state->data;
@@ -89,20 +93,25 @@ auto ResourceManager::getText(const text::String &identifier, const text::String
         return state->text;
     }
     if (!state->entry.compressionAlgorithm.has_value()) {
-        if (state->entry.storedData.empty()) {
+        if (state->entry.storedData.isEmpty()) {
             state->text = text::String{};
             return state->text;
         }
-        const auto *characters = reinterpret_cast<const char *>(state->entry.storedData.data());
-        state->text = text::String{text::impl::createU8StringLiteral(characters, state->entry.storedData.size())};
+        const auto storedData = state->entry.storedData.span();
+        const auto *characters = reinterpret_cast<const char *>(storedData.data());
+        state->text = text::String{text::impl::createU8StringLiteral(characters, storedData.size())};
         return state->text;
     }
     try {
-        const auto decompressor = mem::ByteDecompressor{*state->entry.compressionAlgorithm};
-        const auto bytes = decompressor.decompress(state->entry.storedData, state->entry.originalSize);
+        const auto options = compression::DecompressionOptions{}
+                                 .setExpectedOutputLength(state->entry.originalSize)
+                                 .setMaximumOutputLength(state->entry.originalSize);
+        const auto decompressor = compression::ByteDecompressor{
+            *state->entry.compressionAlgorithm, compression::CompressionFormat::Raw, options};
+        const auto bytes = decompressor.decompress(state->entry.storedData);
         const auto span = bytes.span();
         state->text = text::String{std::string_view{reinterpret_cast<const char *>(span.data()), span.size()}};
-    } catch (const mem::ByteCompressionError &) {
+    } catch (const compression::CompressionError &) {
         return std::nullopt;
     }
     return state->text;
@@ -129,7 +138,7 @@ auto ResourceManager::getInfo(const text::String &identifier, const text::String
     const auto &entry = state->entry;
     return ResourceInfo{
         entry.originalSize,
-        unit::ByteLength::fromSizeT(entry.storedData.size()),
+        entry.storedData.length(),
         entry.compressionAlgorithm,
         entry.hashAlgorithm,
         entry.hash,

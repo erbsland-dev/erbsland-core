@@ -1,0 +1,7 @@
+# Reference-document groups for the compression domain.
+
+------------*[ Reference Groups ]
+Page        : "compression/data_compression.rst"
+Title       : "Data Compression"
+Header Globs:
+    * "compression/*.hpp"

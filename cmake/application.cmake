@@ -4,6 +4,16 @@
 cmake_minimum_required(VERSION 3.28)
 include_guard(GLOBAL)
 
+# Configure the common Erbsland Core requirements on a target.
+#
+# Parameters:
+#   target - Name of an existing CMake target to configure.
+#   visibility - Link and compile-feature visibility (for example, PRIVATE or PUBLIC).
+#   configured_property - Target property used to make the configuration idempotent.
+#
+# This internal helper links the available in-tree or installed Erbsland Core target, requires C++20, disables C++
+# module scanning, and enables UTF-8 source handling with MSVC. If configured_property is already true, the function
+# leaves the target unchanged.
 function(_erbsland_core_setup_target target visibility configured_property)
     get_target_property(is_configured "${target}" "${configured_property}")
     if(is_configured)
@@ -28,6 +38,16 @@ function(_erbsland_core_setup_target target visibility configured_property)
     endif()
 endfunction()
 
+# Configure an executable target as an Erbsland Core application.
+#
+# Usage:
+#   erbsland_core_setup_application(TARGET <target>)
+#
+# Arguments:
+#   TARGET <target> - Name of an existing executable target. Erbsland Core is linked privately.
+#
+# The operation is idempotent. Unsupported target types, missing targets, and unexpected arguments are reported as
+# configuration errors.
 function(erbsland_core_setup_application)
     set(options "")
     set(one_value_args TARGET)
@@ -50,6 +70,16 @@ function(erbsland_core_setup_application)
     _erbsland_core_setup_target("${ARGS_TARGET}" PRIVATE ERBSLAND_CORE_APPLICATION_CONFIGURED)
 endfunction()
 
+# Configure a static-library target that exposes Erbsland Core to its consumers.
+#
+# Usage:
+#   erbsland_core_setup_static_library(TARGET <target>)
+#
+# Arguments:
+#   TARGET <target> - Name of an existing static-library target. Erbsland Core is linked publicly.
+#
+# The operation is idempotent. Unsupported target types, missing targets, and unexpected arguments are reported as
+# configuration errors.
 function(erbsland_core_setup_static_library)
     set(options "")
     set(one_value_args TARGET)

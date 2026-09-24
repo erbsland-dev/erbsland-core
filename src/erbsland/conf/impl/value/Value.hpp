@@ -193,10 +193,6 @@ public: // helper methods.
     /// Throw a not-found exception for a value path.
     [[noreturn]] static void throwValueNotFound(const conf::Value &thisValue, const NamePathLike &namePath);
 
-    /// Throw a type-mismatch exception for a value path.
-    [[noreturn]] static void throwTypeMismatch(
-        const conf::Value &thisValue, ValueType expectedType, ValueType actualType, const NamePathLike &namePath);
-
     /// Get a child value or throw on a missing path or mismatched type.
     template <ValueType::Enum tValueType>
     [[nodiscard]] static auto getterOrThrow(const conf::Value &thisValue, const NamePathLike &namePath)
@@ -207,7 +203,7 @@ public: // helper methods.
             throwValueNotFound(thisValue, namePath);
         }
         if (valuePtr->type() != tValueType) {
-            throwTypeMismatch(thisValue, tValueType, valuePtr->type(), namePath);
+            throwAsTypeMismatch(*valuePtr, tValueType);
         }
         return valuePtr;
     }

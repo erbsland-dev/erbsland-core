@@ -80,6 +80,16 @@ Restrictive POSIX opens walk path components with ``openat`` and ``O_NOFOLLOW``;
 with reparse-point processing disabled.
 Text reads propagate the selected policy to their underlying byte stream.
 
+Portable Metadata Changes
+=========================
+
+``PathOperations::setLastModified()`` changes a file or directory modification time through the native filesystem
+backend.
+The operation accepts ``PathChangeOptions``, including its recursive and symbolic-link policy, invalidates cached path
+information after a successful change, and reports unrepresentable timestamps or native failures as ``PathError``.
+The throwing ``setLastModifiedOrThrow()`` variant is suitable when preserving archive or copied-file timestamps is part
+of the operation's correctness contract.
+
 Path Diagnostics
 ================
 

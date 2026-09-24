@@ -15,7 +15,7 @@ PublicSuffixLookup::PublicSuffixLookup() noexcept : _data{public_suffix_data::da
 auto PublicSuffixLookup::decodePrefixToken(mem::BitReader &reader) const -> std::size_t {
     auto node = std::size_t{};
     while (true) {
-        const auto entry = _data.prefixTree[node * 2U + reader.readInteger<std::size_t>()];
+        const auto entry = _data.prefixTree.span()[node * 2U + static_cast<std::size_t>(reader.readBool())].toUInt8();
         if ((entry & cLeafMask) != 0U) {
             return entry & (cLeafMask - 1U);
         }
@@ -26,7 +26,7 @@ auto PublicSuffixLookup::decodePrefixToken(mem::BitReader &reader) const -> std:
 auto PublicSuffixLookup::decodeContentToken(mem::BitReader &reader) const -> std::uint8_t {
     auto node = std::size_t{};
     while (true) {
-        const auto entry = _data.contentTree[node * 2U + reader.readInteger<std::size_t>()];
+        const auto entry = _data.contentTree.span()[node * 2U + static_cast<std::size_t>(reader.readBool())].toUInt8();
         if ((entry & cLeafMask) != 0U) {
             return entry & (cLeafMask - 1U);
         }
@@ -81,7 +81,8 @@ auto PublicSuffixLookup::findRule(const std::span<const char> key) const -> Rule
     auto upperBlock = blockCount;
     while (lowerBlock < upperBlock) {
         const auto block = lowerBlock + (upperBlock - lowerBlock) / 2U;
-        auto reader = mem::BitReader{mem::toConstByteSpan(_data.encodedRules), _data.blockBitOffsets[block]};
+        auto reader =
+            mem::BitReader{_data.encodedRules, mem::BitOrder::MostSignificantFirst, _data.blockBitOffsets[block]};
         auto rule = RuleBuffer{};
         if (!decodeRule(reader, rule)) {
             return RuleType::None;
@@ -96,7 +97,7 @@ auto PublicSuffixLookup::findRule(const std::span<const char> key) const -> Rule
         return RuleType::None;
     }
     const auto block = lowerBlock - 1U;
-    auto reader = mem::BitReader{mem::toConstByteSpan(_data.encodedRules), _data.blockBitOffsets[block]};
+    auto reader = mem::BitReader{_data.encodedRules, mem::BitOrder::MostSignificantFirst, _data.blockBitOffsets[block]};
     auto rule = RuleBuffer{};
     const auto firstRule = block * _data.blockSize;
     const auto lastRule = std::min(firstRule + _data.blockSize, _data.ruleCount);

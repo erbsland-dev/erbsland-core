@@ -3,6 +3,7 @@
 #include "ByteBlock.hpp"
 
 #include "ByteBlockEditor.hpp"
+#include "ByteBlockLiteral.hpp"
 
 #include "impl/ByteBlockData.hpp"
 #include "impl/ByteComparisonTools.hpp"
@@ -39,10 +40,18 @@ ByteBlock::ByteBlock(const std::initializer_list<Byte> bytes) :
 }
 
 ByteBlock::ByteBlock(const ByteBlockEditor &editor) noexcept :
-    _data{editor._data}, _range{ByteRange::fromLength(editor.length())} {
+    _storage{editor._data}, _range{ByteRange::fromLength(editor.length())} {
 }
 
-ByteBlock::ByteBlock(impl::ByteBlockDataPtr data, ByteRange range) noexcept : _data{std::move(data)}, _range{range} {
+ByteBlock::ByteBlock(ByteBlockLiteral literal) noexcept :
+    _storage{literal}, _range{ByteRange::fromLength(literal.length())} {
+}
+
+ByteBlock::ByteBlock(impl::ByteBlockDataPtr data, ByteRange range) noexcept : _storage{std::move(data)}, _range{range} {
+}
+
+ByteBlock::ByteBlock(impl::ByteBlockStorage storage, ByteRange range) noexcept :
+    _storage{std::move(storage)}, _range{range} {
 }
 
 auto ByteBlock::copy() const -> ByteBlock {
@@ -54,12 +63,22 @@ auto ByteBlock::copy() const -> ByteBlock {
 }
 
 auto ByteBlock::isSensitive() const noexcept -> bool {
-    return !_data.isNull() && _data.constGet()->isSensitive();
+    const auto *data = std::get_if<impl::ByteBlockDataPtr>(&_storage);
+    return data != nullptr && !data->isNull() && data->constGet()->isSensitive();
 }
 
 void ByteBlock::markAsSensitive() noexcept {
-    if (!_data.isNull()) {
-        _data.constGet()->setSensitive();
+    if (isEmpty()) {
+        return;
+    }
+    if (auto *data = std::get_if<impl::ByteBlockDataPtr>(&_storage)) {
+        data->constGet()->setSensitive();
+        return;
+    }
+    if (std::holds_alternative<ByteBlockLiteral>(_storage)) {
+        auto replacement = ByteBlockEditor::fromSpan(span());
+        replacement.markAsSensitive();
+        *this = ByteBlock{replacement};
     }
 }
 
@@ -133,10 +152,10 @@ auto ByteBlock::getOrThrow(const ByteIndex index) const -> Byte {
 
 auto ByteBlock::slice(const ByteRange range) const noexcept -> ByteBlock {
     const auto absoluteRange = impl::ByteReadTools{dataView()}.sliceRange(range);
-    if (_data.isNull() || absoluteRange.isEmpty()) {
+    if (std::holds_alternative<std::monostate>(_storage) || absoluteRange.isEmpty()) {
         return {};
     }
-    return ByteBlock{_data, absoluteRange};
+    return ByteBlock{_storage, absoluteRange};
 }
 
 auto ByteBlock::slice(const ByteIndex begin, const ByteIndex end) const noexcept -> ByteBlock {
@@ -159,7 +178,8 @@ void ByteBlock::secureErase() {
     if (isEmpty()) {
         return;
     }
-    if (_data.isShared()) {
+    auto *data = std::get_if<impl::ByteBlockDataPtr>(&_storage);
+    if (data == nullptr || data->isShared()) {
         auto replacement = ByteBlockEditor{length()};
         if (isSensitive()) {
             replacement.markAsSensitive();
@@ -167,8 +187,8 @@ void ByteBlock::secureErase() {
         *this = ByteBlock{replacement};
         return;
     }
-    auto *data = _data.get();
-    impl::secureErase(std::as_writable_bytes(std::span{data->data(), data->capacity()}));
+    auto *sharedData = data->get();
+    impl::secureErase(std::as_writable_bytes(std::span{sharedData->data(), sharedData->capacity()}));
 }
 
 auto ByteBlock::find(const ByteBlock &bytes) const noexcept -> ByteIndex {
@@ -244,15 +264,28 @@ auto ByteBlock::toCharVector() const -> std::vector<char> {
 }
 
 auto ByteBlock::dataView() const noexcept -> impl::ByteDataView {
-    if (_data.isNull()) {
-        return {};
+    if (const auto *data = std::get_if<impl::ByteBlockDataPtr>(&_storage)) {
+        if (data->isNull()) {
+            return {};
+        }
+        const auto *sharedData = data->constGet();
+        return impl::ByteDataView{
+            ConstByteSpan{sharedData->data(), static_cast<std::size_t>(sharedData->size())}, _range};
     }
-    const auto *data = _data.constGet();
-    return impl::ByteDataView{ConstByteSpan{data->data(), static_cast<std::size_t>(data->size())}, _range};
+    if (const auto *literal = std::get_if<ByteBlockLiteral>(&_storage)) {
+        return impl::ByteDataView{literal->span(), _range};
+    }
+    return {};
 }
 
 auto ByteBlock::storageId() const noexcept -> std::size_t {
-    return util::createHash(_data.storageId(), _range);
+    if (const auto *data = std::get_if<impl::ByteBlockDataPtr>(&_storage)) {
+        return util::createHash(data->storageId(), _range);
+    }
+    if (const auto *literal = std::get_if<ByteBlockLiteral>(&_storage)) {
+        return util::createHash(static_cast<const void *>(literal->span().data()), _range);
+    }
+    return {};
 }
 
 }

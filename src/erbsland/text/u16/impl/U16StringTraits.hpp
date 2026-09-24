@@ -11,6 +11,7 @@
 #include "../../../unit/U16DataIndex.hpp"
 #include "../../../unit/U16DataLength.hpp"
 #include "../../../unit/U16DataRange.hpp"
+#include "../../StringKind.hpp"
 
 #include <cstddef>
 #include <string_view>
@@ -33,6 +34,7 @@ struct U16StringTraits final {
     using CharacterLength = unit::CpLength;
     using CharacterRange = unit::CpRange;
 
+    static constexpr auto kind = StringKind::U16; ///< String encoding represented by these traits.
     static constexpr CodeUnit terminator = u'\0';
     static constexpr auto codeUnitSize = sizeof(CodeUnit);
 };

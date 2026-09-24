@@ -38,14 +38,22 @@ void parseString(
 /// @param escapeChar An escape character (use zero if there is no escape character).
 /// @param escapeFn The function to handle escape characters.
 /// @param tokenType The type of token to return.
+/// @param expandPlaceholders Whether placeholders in ordinary text are expanded.
 [[nodiscard]] auto parseMultiLineString(
-    TokenDecoder &decoder, text::Char escapeChar, EscapeFn escapeFn, TokenType tokenType) -> TokenGenerator;
+    TokenDecoder &decoder,
+    text::Char escapeChar,
+    EscapeFn escapeFn,
+    TokenType tokenType,
+    bool expandPlaceholders = false) -> TokenGenerator;
 
 /// Parse regular single line text.
 /// @param decoder The decoder to use.
 /// @param target The string where the parsed text is appended to.
 /// @throws ConfError For any syntax errors in the parsed text.
 void parseText(Decoder &decoder, text::StringEditor &target);
+
+/// Parse regular single-line text and expand placeholders.
+void parseTextWithPlaceholders(TokenDecoder &decoder, text::StringEditor &target);
 
 /// Parse the escape sequence after the backslash character.
 /// @param decoder The decoder to use.

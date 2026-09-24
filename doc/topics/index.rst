@@ -11,10 +11,12 @@ Topics
 
     core/index
     mem/index
+    compression/index
     resource/index
     security/index
     cryptology/index
     text/index
+    conf/index
     options/index
     err/index
     path/index

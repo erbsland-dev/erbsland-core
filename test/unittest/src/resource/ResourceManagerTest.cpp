@@ -1,6 +1,7 @@
 // Copyright (c) 2026 Tobias Erbsland - https://erbsland.dev
 // SPDX-License-Identifier: Apache-2.0
 
+#include <erbsland/mem/ByteBlockLiteral.hpp>
 #include <erbsland/mem/ByteWriter.hpp>
 #include <erbsland/resource/ResourceError.hpp>
 #include <erbsland/resource/ResourceManager.hpp>
@@ -29,17 +30,20 @@ const auto cInvalidData = std::array<std::uint8_t, 3U>{0U, 0U, 0U};
 
 class ResourceFixture final {
 public:
-    [[nodiscard]] static auto plainData() noexcept -> std::span<const std::uint8_t> {
-        return std::span{cPlainData}.first(5U);
+    [[nodiscard]] static auto plainData() noexcept -> mem::ByteBlockLiteral {
+        return mem::impl::unsafeCreateByteBlockLiteral(cPlainData.data(), 5U);
     }
-    [[nodiscard]] static auto emptyData() noexcept -> std::span<const std::uint8_t> {
-        return std::span{cEmptyData}.first(0U);
+    [[nodiscard]] static auto emptyData() noexcept -> mem::ByteBlockLiteral {
+        return mem::impl::unsafeCreateByteBlockLiteral(cEmptyData.data(), 0U);
     }
-    [[nodiscard]] static auto compressedData() noexcept -> std::span<const std::uint8_t> {
-        return std::span{cCompressedData}.first(13U);
+    [[nodiscard]] static auto compressedData() noexcept -> mem::ByteBlockLiteral {
+        return mem::impl::unsafeCreateByteBlockLiteral(cCompressedData.data(), 13U);
     }
-    [[nodiscard]] static auto invalidData() noexcept -> std::span<const std::uint8_t> {
-        return std::span{cInvalidData}.first(2U);
+    [[nodiscard]] static auto invalidData() noexcept -> mem::ByteBlockLiteral {
+        return mem::impl::unsafeCreateByteBlockLiteral(cInvalidData.data(), 2U);
+    }
+    [[nodiscard]] static auto literal(const std::vector<std::uint8_t> &data) noexcept -> mem::ByteBlockLiteral {
+        return mem::impl::unsafeCreateByteBlockLiteral(data.data(), data.size());
     }
     [[nodiscard]] static auto createInfo(
         const text::String &path,
@@ -90,14 +94,16 @@ const auto cInvalidInfo =
     ResourceFixture::createInfo("invalid.bin"_el, unit::ByteLength{4U}, unit::ByteLength{2U}, true, false);
 const auto cMalformedInfo = ResourceFixture::createMalformedInfo();
 
-const auto cPlainRegistration = resource::impl::ResourceStorageRegistration{ResourceFixture::plainData, cPlainInfo};
-const auto cEmptyRegistration = resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, cEmptyInfo};
-const auto cCompressedRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::compressedData, cCompressedInfo};
+const auto cPlainRegistration =
+    resource::impl::ResourceStorageRegistration{ResourceFixture::plainData, ResourceFixture::literal(cPlainInfo)};
+const auto cEmptyRegistration =
+    resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, ResourceFixture::literal(cEmptyInfo)};
+const auto cCompressedRegistration = resource::impl::ResourceStorageRegistration{
+    ResourceFixture::compressedData, ResourceFixture::literal(cCompressedInfo)};
 const auto cInvalidRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::invalidData, cInvalidInfo};
+    resource::impl::ResourceStorageRegistration{ResourceFixture::invalidData, ResourceFixture::literal(cInvalidInfo)};
 const auto cMalformedRegistration =
-    resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, cMalformedInfo};
+    resource::impl::ResourceStorageRegistration{ResourceFixture::emptyData, ResourceFixture::literal(cMalformedInfo)};
 
 }
 
@@ -123,9 +129,14 @@ public:
     void testStoredAndLogicalData() {
         const auto resources = el::resource::ResourceManager{};
         const auto stored = resources.getStoredDataOrThrow("test"_el, "compressed.txt"_el);
-        REQUIRE_EQUAL(stored.data(), el::mem::toConstByteSpan(ResourceFixture::compressedData()).data());
-        REQUIRE_EQUAL(stored.size(), ResourceFixture::compressedData().size());
+        REQUIRE_EQUAL(stored.data(), ResourceFixture::compressedData().span().data());
+        REQUIRE_EQUAL(stored.size(), ResourceFixture::compressedData().span().size());
         REQUIRE_EQUAL(resources.getTextOrThrow("test"_el, "compressed.txt"_el), "abcdabcdabcde"_el);
+
+        const auto plain = resources.getDataOrThrow("test"_el, "plain.txt"_el);
+        REQUIRE_EQUAL(plain.span().data(), ResourceFixture::plainData().span().data());
+        const auto compressed = resources.getDataOrThrow("test"_el, "compressed.txt"_el);
+        REQUIRE_NOT_EQUAL(compressed.span().data(), ResourceFixture::compressedData().span().data());
     }
 
     void testMetadata() {
@@ -136,7 +147,7 @@ public:
         REQUIRE_FALSE(compressed.isEncrypted());
         REQUIRE_EQUAL(compressed.originalSize(), el::unit::ByteLength{13U});
         REQUIRE_EQUAL(compressed.storedSize(), el::unit::ByteLength{13U});
-        REQUIRE_EQUAL(*compressed.compressionAlgorithm(), el::mem::ByteCompressionAlgorithm::Lz4Block);
+        REQUIRE_EQUAL(*compressed.compressionAlgorithm(), el::compression::CompressionAlgorithm::Lz4Block);
         REQUIRE_EQUAL(*compressed.hashAlgorithm(), el::cryptology::HashAlgorithm::Sha3_256);
         REQUIRE_EQUAL(compressed.hash().length(), el::unit::ByteLength{32U});
         REQUIRE_EQUAL(compressed.hash().getOrThrow(el::unit::ByteIndex{}), el::mem::Byte{0x42U});

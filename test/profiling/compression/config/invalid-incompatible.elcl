@@ -1,0 +1,16 @@
+@version: "1.0"
+
+---[ Run ]-------------------------------------------------------------------
+Mode                : "benchmark"
+Duration            : 10s
+Threads             : 1
+Memory Limit        : 64 MiB
+
+--*[ Scenario ]*-------------------------------------------------------------
+Name                : "invalid-lz4-zip"
+Functionality       : "compress"
+Algorithm           : "lz4-block"
+Format              : "zip"
+Level               : "default"
+Corpus              : "mixed"
+Input Size          : 16 KiB

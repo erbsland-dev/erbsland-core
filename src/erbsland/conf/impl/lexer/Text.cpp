@@ -7,6 +7,7 @@
 #include "ValueMultiLine.hpp"
 
 #include "../char/NamedChars.hpp"
+#include "../placeholder/PlaceholderTextParser.hpp"
 #include "../utilities/YieldMacros.hpp"
 
 #include "../../../text/AsciiCategory.hpp"
@@ -57,8 +58,11 @@ void parseString(
 }
 
 auto parseMultiLineString(
-    TokenDecoder &decoder, const text::Char escapeChar, EscapeFn escapeFn, const TokenType tokenType)
-    -> TokenGenerator {
+    TokenDecoder &decoder,
+    const text::Char escapeChar,
+    EscapeFn escapeFn,
+    const TokenType tokenType,
+    const bool expandPlaceholders) -> TokenGenerator {
 
     // Initial check if the line starts with the end marker, so we avoid creating a transaction and capture string.
     if (!isAtMultiLineEnd(decoder, tokenType)) {
@@ -71,6 +75,8 @@ auto parseMultiLineString(
                 if (decoder.character() == escapeChar) {
                     decoder.next();
                     escapeFn(decoder, decodedText);
+                } else if (expandPlaceholders && decoder.character() == nc::dollar && decoder.hasPlaceholders()) {
+                    placeholder::PlaceholderTextParser{decoder, decodedText}.parse();
                 } else {
                     decodedText.append(decoder.character());
                     decoder.next();
@@ -103,6 +109,32 @@ auto parseMultiLineString(
 
 void parseText(Decoder &decoder, text::StringEditor &target) {
     parseString(decoder, target, nc::doubleQuote, nc::backslash, parseTextEscapeSequence);
+}
+
+void parseTextWithPlaceholders(TokenDecoder &decoder, text::StringEditor &target) {
+    while (!decoder.character().isEndOfData()) {
+        if (decoder.character() == CharClass::LineBreak) {
+            decoder.throwSyntaxError("Unexpected line break in text or code-block."_el);
+        }
+        if (decoder.character() == nc::doubleQuote) {
+            decoder.next();
+            return;
+        }
+        if (decoder.character() == nc::backslash) {
+            decoder.next();
+            decoder.expectMore("Unexpected end in an escape sequence."_el);
+            parseTextEscapeSequence(decoder, target);
+            continue;
+        }
+        if (decoder.character() == nc::dollar && decoder.hasPlaceholders()) {
+            placeholder::PlaceholderTextParser{decoder, target}.parse();
+            continue;
+        }
+        decoder.checkForErrorAndThrowIt();
+        target.append(decoder.character());
+        decoder.next();
+    }
+    decoder.throwUnexpectedEndOfDataError();
 }
 
 /// Parse the Unicode escape sequence, after `\u` or `\U`.

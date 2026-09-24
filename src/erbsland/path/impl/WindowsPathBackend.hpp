@@ -46,6 +46,8 @@ public: // implement PathBackend
     [[nodiscard]] auto openByteInputStreamOrThrow(const Path &path, PathReadDataOptions options) const
         -> stream::ByteInputStreamPtr override;
     void setAccessProfileOrThrow(const Path &path, PathAccessProfile profile, PathChangeOptions options) const override;
+    void setLastModifiedOrThrow(
+        const Path &path, const time::DateTime &value, PathChangeOptions options) const override;
     void addAttributesOrThrow(const Path &path, PathAttributes attributes, PathChangeOptions options) const override;
     void clearAttributesOrThrow(const Path &path, PathAttributes attributes, PathChangeOptions options) const override;
 

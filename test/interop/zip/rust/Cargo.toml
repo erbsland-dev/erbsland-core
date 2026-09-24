@@ -1,0 +1,8 @@
+[package]
+name = "erbsland-core-zip-interop-counterpart"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+zip = { version = "=8.6.0", default-features = false, features = ["bzip2", "deflate", "lzma", "time", "zstd"] }

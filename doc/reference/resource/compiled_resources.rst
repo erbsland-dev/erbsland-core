@@ -21,7 +21,8 @@ Stored and Logical Values
 
 ``getStoredData()`` borrows the immutable bytes embedded in the executable.
 ``getData()`` and ``getText()`` return the original logical content and transparently decode compressed resources.
-Uncompressed text uses literal-backed storage, while decoded values are cached on first access.
+Uncompressed data and text use literal-backed storage without copying, while decompressed values use independent heap
+storage and are cached on first access.
 Generated storage keeps opaque data blocks separate from versioned metadata blocks.
 The resource manager parses and caches metadata only when the resource index is first accessed.
 

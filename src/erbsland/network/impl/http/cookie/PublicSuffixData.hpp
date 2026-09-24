@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
+#include "../../../../mem/ByteBlockLiteral.hpp"
 #include "../../../../text/StringLiteral.hpp"
 
 #include <cstddef>
@@ -13,10 +14,10 @@ namespace erbsland::network::impl::public_suffix_data {
 /// A read-only view of the generated compressed Public Suffix List.
 /// @tested{PublicSuffixListTest}
 struct PublicSuffixDataView final {
-    std::span<const std::uint8_t> encodedRules;     ///< Huffman-coded reversed-label rule records.
+    mem::ByteBlockLiteral encodedRules;             ///< Huffman-coded reversed-label rule records.
     std::span<const std::uint32_t> blockBitOffsets; ///< Bit offsets for independently decodable rule blocks.
-    std::span<const std::uint8_t> prefixTree;       ///< Flattened Huffman tree for prefix lengths.
-    std::span<const std::uint8_t> contentTree;      ///< Flattened Huffman tree for rule content.
+    mem::ByteBlockLiteral prefixTree;               ///< Flattened Huffman tree for prefix lengths.
+    mem::ByteBlockLiteral contentTree;              ///< Flattened Huffman tree for rule content.
     std::size_t ruleCount;                          ///< Number of encoded exact, wildcard, and exception rules.
     std::size_t blockSize;                          ///< Maximum number of records decoded for one block scan.
     std::size_t maximumRuleLength;                  ///< Maximum byte length of a reversed-label rule.

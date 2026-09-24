@@ -1,0 +1,60 @@
+# Expected entries for the committed ZIP compatibility archives.
+# archive	path	directory	method	comment	timestamp	payload-case
+infozip-deflate.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+infozip-deflate.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+infozip-deflate.zip	ascii.txt	no	stored	-	2024-02-03T04:05:06	ascii
+infozip-deflate.zip	all-bytes.bin	no	stored	-	2024-02-03T04:05:06	all-bytes
+infozip-deflate.zip	nested/repetitive.bin	no	deflate	-	2024-02-03T04:05:06	repetitive
+infozip-store.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+infozip-store.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+infozip-store.zip	ascii.txt	no	stored	-	2024-02-03T04:05:06	ascii
+infozip-store.zip	all-bytes.bin	no	stored	-	2024-02-03T04:05:06	all-bytes
+infozip-store.zip	nested/repetitive.bin	no	stored	-	2024-02-03T04:05:06	repetitive
+libarchive-deflate.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+libarchive-deflate.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+libarchive-deflate.zip	ascii.txt	no	deflate	-	2024-02-03T04:05:06	ascii
+libarchive-deflate.zip	all-bytes.bin	no	deflate	-	2024-02-03T04:05:06	all-bytes
+libarchive-deflate.zip	nested/repetitive.bin	no	deflate	-	2024-02-03T04:05:06	repetitive
+libarchive-deflate.zip	utf8-ä/日本語.txt	no	deflate	-	2024-02-03T04:05:06	utf8
+libarchive-store.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+libarchive-store.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+libarchive-store.zip	ascii.txt	no	stored	-	2024-02-03T04:05:06	ascii
+libarchive-store.zip	all-bytes.bin	no	stored	-	2024-02-03T04:05:06	all-bytes
+libarchive-store.zip	nested/repetitive.bin	no	stored	-	2024-02-03T04:05:06	repetitive
+libarchive-store.zip	utf8-ä/日本語.txt	no	stored	-	2024-02-03T04:05:06	utf8
+python-classic.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+python-classic.zip	empty.txt	no	stored	entry comment	2024-02-03T04:05:06	empty
+python-classic.zip	ascii.txt	no	deflate	entry comment	2024-02-03T04:05:06	ascii
+python-classic.zip	all-bytes.bin	no	bzip2	entry comment	2024-02-03T04:05:06	all-bytes
+python-classic.zip	nested/repetitive.bin	no	lzma	entry comment	2024-02-03T04:05:06	repetitive
+python-classic.zip	utf8-ä/日本語.txt	no	zstandard	entry comment	2024-02-03T04:05:06	utf8
+python-entry-zip64.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+python-entry-zip64.zip	empty.txt	no	stored	entry comment	2024-02-03T04:05:06	empty
+python-entry-zip64.zip	ascii.txt	no	deflate	entry comment	2024-02-03T04:05:06	ascii
+python-entry-zip64.zip	all-bytes.bin	no	bzip2	entry comment	2024-02-03T04:05:06	all-bytes
+python-entry-zip64.zip	nested/repetitive.bin	no	lzma	entry comment	2024-02-03T04:05:06	repetitive
+python-entry-zip64.zip	utf8-ä/日本語.txt	no	zstandard	entry comment	2024-02-03T04:05:06	utf8
+python-stream.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+python-stream.zip	empty.txt	no	stored	entry comment	2024-02-03T04:05:06	empty
+python-stream.zip	ascii.txt	no	deflate	entry comment	2024-02-03T04:05:06	ascii
+python-stream.zip	all-bytes.bin	no	bzip2	entry comment	2024-02-03T04:05:06	all-bytes
+python-stream.zip	nested/repetitive.bin	no	lzma	entry comment	2024-02-03T04:05:06	repetitive
+python-stream.zip	utf8-ä/日本語.txt	no	zstandard	entry comment	2024-02-03T04:05:06	utf8
+rust-classic.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+rust-classic.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+rust-classic.zip	ascii.txt	no	deflate	-	2024-02-03T04:05:06	ascii
+rust-classic.zip	all-bytes.bin	no	bzip2	-	2024-02-03T04:05:06	all-bytes
+rust-classic.zip	nested/repetitive.bin	no	zstandard	-	2024-02-03T04:05:06	repetitive
+rust-classic.zip	utf8-ä/日本語.txt	no	stored	-	2024-02-03T04:05:06	utf8
+rust-stream.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+rust-stream.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+rust-stream.zip	ascii.txt	no	deflate	-	2024-02-03T04:05:06	ascii
+rust-stream.zip	all-bytes.bin	no	bzip2	-	2024-02-03T04:05:06	all-bytes
+rust-stream.zip	nested/repetitive.bin	no	zstandard	-	2024-02-03T04:05:06	repetitive
+rust-stream.zip	utf8-ä/日本語.txt	no	stored	-	2024-02-03T04:05:06	utf8
+rust-zip64.zip	empty-dir	yes	stored	-	2024-02-03T04:05:06	directory
+rust-zip64.zip	empty.txt	no	stored	-	2024-02-03T04:05:06	empty
+rust-zip64.zip	ascii.txt	no	deflate	-	2024-02-03T04:05:06	ascii
+rust-zip64.zip	all-bytes.bin	no	bzip2	-	2024-02-03T04:05:06	all-bytes
+rust-zip64.zip	nested/repetitive.bin	no	zstandard	-	2024-02-03T04:05:06	repetitive
+rust-zip64.zip	utf8-ä/日本語.txt	no	stored	-	2024-02-03T04:05:06	utf8

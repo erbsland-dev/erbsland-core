@@ -4,6 +4,14 @@
 cmake_minimum_required(VERSION 3.23)
 include_guard()
 
+# Apply the compiler and language requirements for an Erbsland Core target.
+#
+# Parameters:
+#   target - Name of an existing CMake target.
+#
+# The requirements are propagated to consumers where necessary: C++20, the C++ linker language, namespace-flattening
+# selection, and developer-build selection are public. Compiler workarounds and build-performance options remain
+# private to the target.
 function(erbsland_set_required_compiler_options target)
     set_target_properties(${target} PROPERTIES LINKER_LANGUAGE CXX)
     target_compile_features(${target} PUBLIC cxx_std_20)
@@ -39,6 +47,18 @@ function(erbsland_set_required_compiler_options target)
     endif()
 endfunction()
 
+# Enable the standard-library precompiled header for an Erbsland Core target.
+#
+# Usage:
+#   erbsland_enable_precompiled_headers(<target> [GNU_EXCLUDED_SOURCES <source>...])
+#
+# Parameters:
+#   target - Name of an existing CMake target.
+#
+# Arguments:
+#   GNU_EXCLUDED_SOURCES <source>... - Sources that must not use the precompiled header or unity builds with GCC.
+#
+# The function has no effect when ERBSLAND_CORE_ENABLE_PRECOMPILED_HEADERS is false.
 function(erbsland_enable_precompiled_headers target)
     set(options "")
     set(oneValueArgs "")

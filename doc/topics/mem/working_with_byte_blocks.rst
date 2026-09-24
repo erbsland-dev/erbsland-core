@@ -13,10 +13,10 @@ Most binary data in an application needs a stable owner, but it does not need to
 This page explains how the two types work together, how copy-on-write affects their cost, and how to read, edit, retain,
 and compare byte data without giving up clear ownership.
 
-One Allocation, Several Values
-==============================
+One Storage, Several Values
+===========================
 
-Copying a :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` copies a small value that shares the underlying allocation.
+Copying a :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` copies a small value that shares the underlying storage.
 The bytes themselves are not copied.
 This makes blocks inexpensive to pass by value, return from functions, and keep in several objects.
 
@@ -94,6 +94,10 @@ making local changes.
 Converting an editor to a block is implicit and shares the data; a later editor mutation detaches and cannot change the
 block that was already handed out.
 
+Compiled-in tables and resource data can start as a
+:cpp:class:`ByteBlockLiteral <erbsland::mem::ByteBlockLiteral>`.
+A block made from a literal refers directly to static storage, so copies and slices need neither a heap allocation nor a
+byte copy.
 Other byte containers solve different problems.
 A :cpp:class:`ByteArray <erbsland::mem::ByteArray>` has a compile-time size and works well for fixed algorithm state.
 A :cpp:class:`ByteBuffer <erbsland::mem::ByteBuffer>` owns dynamic storage without copy-on-write, which is useful for a
@@ -116,10 +120,18 @@ These factories copy their input, so the resulting block no longer depends on th
 Passing a :cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` where a block is expected is different: the
 implicit conversion shares its allocation and gives the receiver a stable read-only snapshot.
 
+For compiled-in data, construct a :cpp:class:`ByteBlockLiteral <erbsland::mem::ByteBlockLiteral>` from a static
+``constexpr`` array or span.
+The literal constructors require constant evaluation, which prevents ordinary temporary or local storage from being
+retained accidentally.
+For a short sequence, ``ByteBlockLiteral::fromValues<...>()`` is the safe initializer-list equivalent because each value
+pack owns static backing storage.
+Converting either form to ``ByteBlock`` is implicit and does not copy its bytes.
+
 .. erbsland-demo::
     :source: mem/ByteBlock/CreatingBlocks.cpp
     :exec: mem/byte_block --demo CreatingBlocks
-    :source-sha256: c057d821063385794222c01bef89f58b20f583c7481023993a3eb32807971ea5
+    :source-sha256: c230b0f44830c4fdcad6ba5c46e78034cf20ee24524422615cce1fa428ecd853
 
 .. code-block:: cpp
 
@@ -129,6 +141,8 @@ implicit conversion shares its allocation and gives the receiver a stable read-o
     /// `ByteBlockEditor` provides the same construction choices when the bytes must
     /// remain mutable, and converts implicitly to a read-only block without copying.
     void creatingBlocks() {
+        static constexpr auto compiledSkills = el::ByteBlockLiteral::fromValues<34U, 55U, 89U>();
+
         // Create blocks with a repeated value and with individual skill bytes.
         const auto emptySlots = el::ByteBlock{el::ByteLength{4U}, el::Byte{0U}};
         const auto learnedSkills = el::ByteBlock{el::Byte{1U}, el::Byte{3U}, el::Byte{8U}};
@@ -140,6 +154,7 @@ implicit conversion shares its allocation and gives the receiver a stable read-o
         const auto fromArray = el::ByteBlock{fixedSkills};
         const auto fromSpan = el::ByteBlock::fromSpan(std::span{networkBytes});
         const auto fromVector = el::ByteBlock::fromVector(savedBytes);
+        const el::ByteBlock fromLiteral = compiledSkills;
 
         // Build mutable data and hand it to an API expecting a read-only block.
         auto editor = el::ByteBlockEditor{el::Byte{1U}, el::Byte{2U}};
@@ -152,6 +167,7 @@ implicit conversion shares its allocation and gives the receiver a stable read-o
         el::io::printLine("From fixed array   : "_el, el::ByteFormat::separated(), fromArray);
         el::io::printLine("From borrowed span : "_el, el::ByteFormat::separated(), fromSpan);
         el::io::printLine("From vector        : "_el, el::ByteFormat::separated(), fromVector);
+        el::io::printLine("From static literal: "_el, el::ByteFormat::separated(), fromLiteral);
         el::io::printLine("Editor as block    : "_el, el::ByteFormat::separated(), immutableSkills);
     }
 
@@ -164,6 +180,7 @@ implicit conversion shares its allocation and gives the receiver a stable read-o
     From fixed array   : 02 05 0d
     From borrowed span : 15 22 37
     From vector        : 59 90
+    From static literal: 22 37 59
     Editor as block    : 01 02 03
 
 .. erbsland-demo-end::
@@ -416,6 +433,8 @@ Editing and Assembling Small Blocks
 :cpp:func:`append() <erbsland::mem::ByteBlockEditor::append>`,
 :cpp:func:`insert() <erbsland::mem::ByteBlockEditor::insert>`, and
 :cpp:func:`appendInteger() <erbsland::mem::ByteBlockEditor::appendInteger>` grow an assembled record.
+``appendRepeated()`` efficiently appends a cyclic repetition of an existing range, including overlapping back references
+used by compression formats.
 :cpp:func:`replace() <erbsland::mem::ByteBlockEditor::replace>` removes a clamped range and inserts replacement bytes,
 so its result may have a different length.
 

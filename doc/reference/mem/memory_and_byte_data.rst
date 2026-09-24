@@ -53,14 +53,15 @@ Byte Block
 ~~~~~~~~~~
 
 :cpp:class:`ByteBlock <erbsland::mem::ByteBlock>` is the owning read-only type for arbitrary byte sequences.
-It shares copy-on-write storage, and its slices retain the same storage while exposing a smaller byte range.
-Ordinary copies and ``slice()`` share allocations; ``copy()`` creates independent storage for the visible bytes, and
-``kept()`` copies a selected clamped range directly without retaining the source allocation.
+It can share copy-on-write heap storage or reference the static storage of a
+:cpp:class:`ByteBlockLiteral <erbsland::mem::ByteBlockLiteral>`.
+Its slices retain the same storage while exposing a smaller byte range.
+Ordinary copies and ``slice()`` share their storage; ``copy()`` creates independent heap storage for the visible bytes,
+and ``kept()`` copies a selected clamped range directly without retaining the source allocation.
 It is also the scalar byte-storage type used by configuration values, hashes, signatures, and other Core APIs, so these
 subsystems can exchange immutable byte data without adapter wrappers.
 
-Basic Usage
-^^^^^^^^^^^
+Basic Usage ^^^^^^^^^^^
 
 Create a block from raw byte values and read it with :cpp:type:`ByteIndex <erbsland::unit::ByteIndex>`.
 Use :cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` when the bytes must be changed.
@@ -74,8 +75,26 @@ Use :cpp:class:`ByteBlockEditor <erbsland::mem::ByteBlockEditor>` when the bytes
     editor.set(el::ByteIndex{1}, el::Byte{0xff});
     const auto modified = el::ByteBlock{editor};
 
-Modification
-^^^^^^^^^^^^
+Byte Block Literal
+~~~~~~~~~~~~~~~~~~
+
+:cpp:class:`ByteBlockLiteral <erbsland::mem::ByteBlockLiteral>` safely describes compiled-in byte data without an
+allocation or copy.
+Its public constructors are evaluated at compile time and accept static arrays and spans of ``el::Byte``, ``std::byte``,
+and ``std::uint8_t``.
+For short inline sequences, ``fromValues()`` provides static backing storage for each value pack:
+
+.. code-block:: cpp
+
+    static constexpr auto signature = el::ByteBlockLiteral::fromValues<0x45U, 0x4cU, 0x46U>();
+    const el::ByteBlock data = signature;
+
+There is deliberately no initializer-list constructor because an initializer list does not provide persistent backing
+storage.
+Copying or slicing the resulting ``ByteBlock`` continues to reference the same compiled-in bytes without allocating.
+Constructing a ``ByteBlockEditor``, calling ``copy()``, or calling ``kept()`` creates independent heap storage.
+
+Modification ^^^^^^^^^^^^
 
 Ranges are clamped to the visible data.
 Invalid ranges are treated as empty for removals and replacements;
@@ -101,14 +120,16 @@ The whole-sequence ``xorWith()`` methods return ``false`` without changing the d
 Use ``xorWithOrThrow()`` when equal lengths are an invariant and a mismatch must raise ``ParameterError``.
 Range overloads remain clamped operations that combine as many source bytes as fit.
 
-Sensitive Storage
-^^^^^^^^^^^^^^^^^
+Sensitive Storage ^^^^^^^^^^^^^^^^^
 
-``ByteBlock`` and ``ByteBlockEditor`` can mark their shared allocation with ``markAsSensitive()``.
+Heap-backed ``ByteBlock`` and ``ByteBlockEditor`` values can mark their shared allocation with ``markAsSensitive()``.
 The mark is visible to every alias and cannot be cleared.
 Owning-block mutations and deep copies propagate it, while raw spans carry no sensitivity metadata.
 Marked allocations are erased in full when reallocated or finally destroyed; ordinary formatting and conversions remain
 available and produce unprotected copies.
+Calling ``markAsSensitive()`` on a literal-backed block first copies that block's visible bytes into sensitive heap
+storage, leaving the compiled-in bytes and other aliases unchanged.
+Calling ``secureErase()`` on a literal-backed block replaces only that block with an equally sized zeroed heap block.
 
 ``ByteBuffer`` instead has a reversible object mode controlled by ``setSensitive()``.
 Copies duplicate the mode and storage independently, while moves transfer both.
@@ -117,8 +138,7 @@ Disabling the mode erases the complete allocation, discards visible bytes, and r
 ``clear()``, ``reset()``, and ``shrinkToFit()`` preserve the selected mode.
 See :doc:`/topics/security/about_sensitive_strings_and_byte_blocks` for the complete contract.
 
-Compatibility Boundaries
-^^^^^^^^^^^^^^^^^^^^^^^^
+Compatibility Boundaries ^^^^^^^^^^^^^^^^^^^^^^^^
 
 ``ByteBuffer`` replaces raw dynamic byte vectors at owning Erbsland Core API boundaries.
 Short byte sequences can be initialized directly with ``ByteBlock({0x01, 0x02})``.
@@ -177,13 +197,40 @@ advancing.
 Bit Reader
 ~~~~~~~~~~
 
-``BitReader`` reads individual bits from a borrowed
-:cpp:type:`ConstByteSpan <erbsland::mem::ConstByteSpan>` without copying or owning its input.
-It processes the most-significant bit first in each byte and exposes the total bit count, current position, remaining
-count, bounded position changes, and end checks.
-``readBool()`` returns the next bit as a boolean, while ``readInteger<T>()`` returns the same bit as zero or one of a
-selected native integer type.
-Reads at the end return ``false`` or zero without advancing.
+``BitReader`` is a move-only reader that shares ownership of an immutable
+:cpp:class:`ByteBlock <erbsland::mem::ByteBlock>`.
+Its immutable ``BitOrder`` selects most- or least-significant-bit-first processing when it is constructed.
+It exposes bit and byte positions, bounded movement, byte alignment, and transactional reads of booleans, bytes, and
+unsigned fields up to 64 bits.
+Tolerant reads return their fallback without advancing when the complete field is unavailable; strict variants throw an
+out-of-range error.
+
+``refill()`` replaces consumed input with the next shared block while retaining at most 64 unread bits.
+It copies only the small unread tail, performs no allocation, and preserves byte alignment across chunks.
+Positions and counts then describe the retained tail followed by the new block; earlier bytes are no longer seekable.
+Refilling with more than 64 unread bits throws without changing the reader.
+``readBytesOrThrow(length)`` reads an exact byte-aligned field without passing each byte through bit extraction.
+It shares input storage when possible, including its sensitivity flag.
+A field containing retained refill bytes is copied into sensitive storage.
+Unaligned, non-finite, and incomplete reads throw without advancing the position.
+Compression uses this operation to share the memory bit reader's extraction logic with bounded stream input.
+
+Bit Writer
+~~~~~~~~~~
+
+``BitWriter`` is the move-only output counterpart to ``BitReader``.
+It writes booleans, bytes, and unsigned fields using an immutable ``BitOrder`` and supports bit and byte cursor
+positions.
+Writes overwrite existing bits or extend the stream, while ``alignToByte()`` pads with zero bits.
+``writeBytes(span)`` writes an aligned byte field in bulk and supports spans that alias the writer's own storage.
+It rejects an unaligned cursor or a position overflow before modifying output.
+The bytes keep their physical order for either ``BitOrder``; sensitive callers mark the writer because a borrowed span
+does not carry sensitivity metadata.
+``toByteBlock()`` shares the physical output bytes and ``takeByteBlockEditor()`` transfers them and resets the writer.
+``markAsSensitive()`` protects existing output and every subsequent allocation, including after ``reset()`` or
+``takeByteBlockEditor()``.
+The policy also applies when called before the first write, so partial output is erased during failure cleanup.
+
 
 Byte Writer
 ~~~~~~~~~~~
@@ -234,40 +281,6 @@ Erasing a shared block installs independent zero-filled storage, so aliases and 
 Editors also preserve their observable capacity.
 If allocating replacement storage fails, the invoking shared block is unchanged.
 
-Byte Compression
-================
-
-The byte-compression API provides raw LZ4 blocks and a framed representation that records the algorithm and original
-length.
-Use raw blocks when another format already carries this metadata, and use the envelope for standalone stored or
-transmitted values.
-
-Raw Compression
----------------
-
-:cpp:class:`ByteCompressor <erbsland::mem::ByteCompressor>` always returns a valid raw block, even when the block is
-larger than its input.
-Raw :cpp:class:`ByteDecompressor <erbsland::mem::ByteDecompressor>` calls require the exact original size and reject
-output-length mismatches.
-
-Compression Envelopes
----------------------
-
-``compressWithEnvelope()`` frames the raw payload with the ``ELBC`` header, algorithm identifier, original length, and
-payload length.
-:cpp:func:`ByteDecompressor::decompressWithEnvelope()
-<erbsland::mem::ByteDecompressor::decompressWithEnvelope>` validates the complete frame and automatically selects the
-encoded algorithm.
-The optional maximum-output limit is checked before allocating output storage.
-
-Buffered Operation
-------------------
-
-Both codec classes accept input through ``update()`` and emit one result during finalization.
-The first successful finalizer selects raw or envelope output until ``reset()`` is called, and repeated calls to the
-same finalizer return the cached result.
-One-shot methods do not alter this buffered state.
-
 Cow Storage
 ===========
 
@@ -290,8 +303,7 @@ Separate storage objects may be copied, destroyed, and detached from different t
 Concurrent access to the same storage object, or concurrent mutation of the same detached data object, still requires
 external synchronization.
 
-Example
-^^^^^^^
+Example ^^^^^^^
 
 .. code-block:: cpp
 
@@ -386,7 +398,10 @@ Unsafe Pointers
 Interface
 =========
 
+.. doxygenenum:: erbsland::mem::BitOrder
 .. doxygenclass:: erbsland::mem::BitReader
+    :members:
+.. doxygenclass:: erbsland::mem::BitWriter
     :members:
 .. doxygenclass:: erbsland::mem::Byte
     :members:
@@ -396,16 +411,9 @@ Interface
     :members:
 .. doxygenclass:: erbsland::mem::ByteBlockEditor
     :members:
+.. doxygenclass:: erbsland::mem::ByteBlockLiteral
+    :members:
 .. doxygenclass:: erbsland::mem::ByteBuffer
-    :members:
-.. doxygenclass:: erbsland::mem::ByteCompressionAlgorithm
-    :members:
-.. doxygenclass:: erbsland::mem::ByteCompressionError
-    :members:
-.. doxygenenum:: erbsland::mem::ByteCompressionErrorReason
-.. doxygenclass:: erbsland::mem::ByteCompressor
-    :members:
-.. doxygenclass:: erbsland::mem::ByteDecompressor
     :members:
 .. doxygenfunction:: erbsland::mem::getInteger(const ConstByteSpan bytes, const unit::ByteIndex offset, const Endianness endianness = Endianness::Little, const T defaultOnError = T()) noexcept -> T
 

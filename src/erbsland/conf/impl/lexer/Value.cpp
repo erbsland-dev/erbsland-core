@@ -24,6 +24,8 @@ using namespace text::literals;
 
 auto expectNameAndValue(TokenDecoder &decoder) -> TokenGenerator {
     decoder.clearIndentationPattern(); // Clear the indentation pattern at the start of a name/value line.
+    const auto isMetaValue = decoder.character() == nc::at;
+    const auto expandPlaceholders = !isMetaValue;
     if (decoder.character() == CharClass::Letter || decoder.character() == nc::at) {
         EL_YIELD(expectRegularOrMetaNameToken(decoder));
     } else {
@@ -42,16 +44,16 @@ auto expectNameAndValue(TokenDecoder &decoder) -> TokenGenerator {
         EL_YIELD_FROM(expectEndOfLine(decoder, ExpectMore::Yes)); // The Value is defined on the next line.
         decoder.expectMore("Expected a value on the next line."_el);
         EL_YIELD(expectAndCheckIndentation(decoder));
-        EL_YIELD_FROM(expectValueOrValueList(decoder, NextLine::Yes, MultiLineAllowed::Yes));
+        EL_YIELD_FROM(expectValueOrValueList(decoder, NextLine::Yes, MultiLineAllowed::Yes, expandPlaceholders));
     } else if (decoder.character().isEndOfData()) {
         decoder.throwUnexpectedEndOfDataError("Expected a value after the name separator."_el);
     } else {
-        EL_YIELD_FROM(expectValueOrValueList(decoder, NextLine::No, MultiLineAllowed::Yes));
+        EL_YIELD_FROM(expectValueOrValueList(decoder, NextLine::No, MultiLineAllowed::Yes, expandPlaceholders));
     }
     co_return;
 }
 
-auto expectMultiLineValueList(TokenDecoder &decoder) -> TokenGenerator {
+auto expectMultiLineValueList(TokenDecoder &decoder, const bool expandPlaceholders) -> TokenGenerator {
     if (decoder.character() != nc::asterisk) {
         decoder.throwInternalError("Called 'expectMultiLineValueList' in the wrong state."_el);
     }
@@ -59,7 +61,7 @@ auto expectMultiLineValueList(TokenDecoder &decoder) -> TokenGenerator {
     EL_YIELD_TOKEN(TokenType::MultiLineValueListSeparator);
     EL_YIELD_OPTIONAL(scanForSpacing(decoder));
     decoder.expectMore("Unexpected end in multi-line value list. Expected a value."_el);
-    EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder));
+    EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder, expandPlaceholders));
     // At this point, we are on the following line.
     if (decoder.character().isEndOfData()) {
         co_return; // This is a valid end of the document.
@@ -97,16 +99,19 @@ auto expectMultiLineValueList(TokenDecoder &decoder) -> TokenGenerator {
         EL_YIELD_TOKEN(TokenType::MultiLineValueListSeparator); // Consume the asterisk.
         EL_YIELD_OPTIONAL(scanForSpacing(decoder));
         decoder.expectMore("Unexpected end in multi-line value list. Expected a value."_el);
-        EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder));
+        EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder, expandPlaceholders));
     }
     co_return;
 }
 
-auto expectValueOrValueList(TokenDecoder &decoder, const NextLine nextLine, const MultiLineAllowed multiLineAllowed)
-    -> TokenGenerator {
+auto expectValueOrValueList(
+    TokenDecoder &decoder,
+    const NextLine nextLine,
+    const MultiLineAllowed multiLineAllowed,
+    const bool expandPlaceholders) -> TokenGenerator {
 
     if (nextLine == NextLine::Yes && decoder.character() == nc::asterisk) {
-        EL_YIELD_FROM(expectMultiLineValueList(decoder));
+        EL_YIELD_FROM(expectMultiLineValueList(decoder, expandPlaceholders));
         co_return;
     }
     // Check for multi-line values at this point.
@@ -116,7 +121,7 @@ auto expectValueOrValueList(TokenDecoder &decoder, const NextLine nextLine, cons
             co_yield std::move(multiLineOpenToken).value();
             switch (tokenType.raw()) {
             case TokenType::MultiLineTextOpen:
-                EL_YIELD_FROM(expectMultiLineText(decoder, tokenType));
+                EL_YIELD_FROM(expectMultiLineText(decoder, tokenType, expandPlaceholders));
                 break;
             case TokenType::MultiLineCodeOpen:
                 EL_YIELD_FROM(expectMultiLineText(decoder, tokenType));
@@ -133,12 +138,12 @@ auto expectValueOrValueList(TokenDecoder &decoder, const NextLine nextLine, cons
             co_return;
         }
     }
-    EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder));
+    EL_YIELD_FROM(expectSingleLineValueOrValueList(decoder, expandPlaceholders));
     co_return;
 }
 
-auto expectSingleLineValueOrValueList(TokenDecoder &decoder) -> TokenGenerator {
-    EL_YIELD(expectSingleLineValue(decoder));
+auto expectSingleLineValueOrValueList(TokenDecoder &decoder, const bool expandPlaceholders) -> TokenGenerator {
+    EL_YIELD(expectSingleLineValue(decoder, expandPlaceholders));
     EL_YIELD_OPTIONAL(scanForSpacing(decoder));
     while (decoder.character() == nc::valueListSeparator) { // Is this a list?
         decoder.next();
@@ -147,7 +152,7 @@ auto expectSingleLineValueOrValueList(TokenDecoder &decoder) -> TokenGenerator {
         if (decoder.character() == CharClass::LineBreakOrEnd) {
             decoder.throwSyntaxOrUnexpectedEndError("Expected another value after the value list separator."_el);
         }
-        EL_YIELD(expectSingleLineValue(decoder));
+        EL_YIELD(expectSingleLineValue(decoder, expandPlaceholders));
         EL_YIELD_OPTIONAL(scanForSpacing(decoder));
     }
     decoder.expect(CharClass::EndOfLineStart, "Expected end of line or a value separator, but got something else."_el);
@@ -155,7 +160,7 @@ auto expectSingleLineValueOrValueList(TokenDecoder &decoder) -> TokenGenerator {
     co_return;
 }
 
-auto expectSingleLineValue(TokenDecoder &decoder) -> LexerToken {
+auto expectSingleLineValue(TokenDecoder &decoder, const bool expandPlaceholders) -> LexerToken {
     // The ORDER of the following scan functions is IMPORTANT!
     const auto valueScannerFunctions = {
         &scanLiteralFloat,       // test for literal floats first.
@@ -165,13 +170,17 @@ auto expectSingleLineValue(TokenDecoder &decoder) -> LexerToken {
         &scanFloatFractionOnly,  // test for floats, like `.1928`
         &scanFloatWithWholePart, // test for floats, like `283.1293`
         &scanIntegerOrTimeDelta, // test for `123` or `123 days`
-        &scanSingleLineText,     // test for "text", `code` or /regex/
-        &scanBytes,              // test for bytes blocks like `<c8 14>`
     };
     for (const auto &scannerFunction : valueScannerFunctions) {
         if (auto optToken = (*scannerFunction)(decoder)) {
             return std::move(optToken).value();
         }
+    }
+    if (auto optToken = scanSingleLineText(decoder, expandPlaceholders)) {
+        return std::move(optToken).value();
+    }
+    if (auto optToken = scanBytes(decoder)) {
+        return std::move(optToken).value();
     }
     decoder.throwSyntaxOrUnexpectedEndError("Expected a value, but got something else."_el);
 }

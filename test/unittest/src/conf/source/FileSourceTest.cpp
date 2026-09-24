@@ -6,9 +6,12 @@
 #include <erbsland/conf/ConfError.hpp>
 #include <erbsland/conf/impl/constants/Limits.hpp>
 #include <erbsland/conf/impl/source/FileSource.hpp>
+#include <erbsland/conf/Parser.hpp>
 #include <erbsland/conf/Source.hpp>
 #include <erbsland/conf/StdFormat.hpp>
+#include <erbsland/conf/vr/Rules.hpp>
 #include <erbsland/path/Path.hpp>
+#include <erbsland/path/PathContent.hpp>
 #include <erbsland/text/String.hpp>
 
 #include <filesystem>
@@ -149,5 +152,86 @@ public:
         source.reset();
         REQUIRE_EQUAL(first, el::text::String{"first\n"});
         REQUIRE_EQUAL(second, el::text::String{"second\n"});
+    }
+
+    void testCodeSnippetReopensSmallClosedFile() {
+        const auto filePath = createTestFile("zero\none\ntwo\nthree\nfour\nfive\n"_el);
+        source = Source::fromFile(el::path::Path{filePath});
+
+        const auto snippet =
+            source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{3U}, el::unit::ColumnIndex{1U}});
+        REQUIRE(snippet.has_value());
+        REQUIRE_EQUAL(snippet->startLine, el::unit::LineIndex{1U});
+        REQUIRE_EQUAL(snippet->lines.count(), el::unit::ItemCount{5U});
+        REQUIRE_EQUAL(snippet->lines.get(el::unit::ItemIndex::zero()), "one"_el);
+        REQUIRE_EQUAL(snippet->lines.get(el::unit::ItemIndex{4U}), "five"_el);
+
+        REQUIRE_FALSE(source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{10'000U}}).has_value());
+    }
+
+    void testCodeSnippetUsesRecentFilePositions() {
+        auto bytes = std::vector<uint8_t>{};
+        for (auto line = 0U; line < 30U; ++line) {
+            bytes.insert(bytes.end(), {'l', 'i', 'n', 'e', '\n'});
+        }
+        const auto filePath = createTestFile(el::mem::ByteBlock::fromVector(bytes));
+        source = Source::fromFile(el::path::Path{filePath});
+        source->open();
+        while (!source->readLine().isEmpty()) {}
+
+        bytes.front() = 0x80U;
+        auto writeOptions = el::path::PathWriteDataOptions{};
+        writeOptions.setCreationMode(el::path::PathCreateMode::CreateOrOverwrite);
+        el::path::Path{filePath}.content().writeDataOrThrow(el::mem::ByteBlock::fromVector(bytes), writeOptions);
+        const auto snippet =
+            source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{22U}, el::unit::ColumnIndex::zero()});
+        REQUIRE(snippet.has_value());
+        REQUIRE_EQUAL(snippet->startLine, el::unit::LineIndex{20U});
+        REQUIRE_EQUAL(snippet->lines.count(), el::unit::ItemCount{5U});
+    }
+
+    void testFileErrorsReceiveCodeSnippetsAfterParsing() {
+        const auto filePath = createTestFile("[main]\nvalue: \"text\"\n"_el);
+        const auto document = Parser{}.parseFileOrThrow(el::path::Path{filePath});
+        try {
+            static_cast<void>(document->getIntegerOrThrow("main.value"_el));
+            REQUIRE(false);
+        } catch (const ConfError &error) {
+            REQUIRE(error.context().filePath().has_value());
+            REQUIRE(error.context().location().has_value());
+            REQUIRE(error.context().codeSnippet().has_value());
+            REQUIRE_EQUAL(error.context().codeSnippet()->lines.count(), el::unit::ItemCount{2U});
+        }
+    }
+
+    void testValidatedSecretFileValuesSuppressCodeSnippets() {
+        const auto ruleDocument = Parser{}.parseTextOrThrow(
+            "[credentials.password]\n"
+            "type: \"text\"\n"
+            "is_secret: yes\n"
+            "chars: \"(a-z)\"\n"_el);
+        const auto rules = vr::Rules::createFromDocument(ruleDocument);
+        const auto filePath = createTestFile("[credentials]\npassword: \"SECRET\"\n"_el);
+        const auto document = Parser{}.parseFileOrThrow(el::path::Path{filePath});
+        try {
+            rules->validate(document, 1);
+            REQUIRE(false);
+        } catch (const ConfError &error) {
+            REQUIRE(error.context().filePath().has_value());
+            REQUIRE(error.context().location().has_value());
+            REQUIRE_FALSE(error.context().codeSnippet().has_value());
+        }
+
+        const auto validFilePath = createTestFile("[credentials]\npassword: \"secret\"\n"_el);
+        const auto validDocument = Parser{}.parseFileOrThrow(el::path::Path{validFilePath});
+        REQUIRE_NOTHROW(rules->validate(validDocument, 1));
+        try {
+            static_cast<void>(validDocument->getIntegerOrThrow("credentials.password"_el));
+            REQUIRE(false);
+        } catch (const ConfError &error) {
+            REQUIRE(error.context().filePath().has_value());
+            REQUIRE(error.context().location().has_value());
+            REQUIRE_FALSE(error.context().codeSnippet().has_value());
+        }
     }
 };

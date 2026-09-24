@@ -114,6 +114,7 @@ Mutation and Temporary Resource Patterns
     o.createTempDirectory([options]) -> TempDirectory // create a directory cleanup lease
     o.openTemp❮Kind❯OutputStream([options]) -> T // create a temporary output stream cleanup lease
     o.setAccessProfile/addAttributes/clearAttributes(value[, options]) -> bool // change portable metadata
+    o.setLastModified(value[, options]) -> bool // change the portable modification timestamp
     o.path()/release() -> Path // inspect or release a temporary resource path
     o.removeOnDestroy()/setRemoveOnDestroy(enabled) // configure directory cleanup
     o.removeOnClose()/setRemoveOnClose(enabled) // configure temporary stream cleanup

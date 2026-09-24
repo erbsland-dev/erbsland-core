@@ -3,6 +3,7 @@
 #include "TokenDecoder.hpp"
 
 #include "../char/NamedChars.hpp"
+#include "../placeholder/PlaceholderResolver.hpp"
 
 #include "../../../text/Literals.hpp"
 
@@ -10,11 +11,13 @@ namespace erbsland::conf::impl {
 
 using namespace text::literals;
 
-auto TokenDecoder::create(CharStreamPtr decoder) noexcept -> TokenDecoderPtr {
-    return std::make_shared<TokenDecoder>(std::move(decoder));
+auto TokenDecoder::create(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver) noexcept
+    -> TokenDecoderPtr {
+    return std::make_shared<TokenDecoder>(std::move(decoder), std::move(placeholderResolver));
 }
 
-TokenDecoder::TokenDecoder(CharStreamPtr decoder) noexcept : _decoder{std::move(decoder)} {
+TokenDecoder::TokenDecoder(CharStreamPtr decoder, placeholder::PlaceholderResolverPtr placeholderResolver) noexcept :
+    _decoder{std::move(decoder)}, _placeholderResolver{std::move(placeholderResolver)} {
     assert(_decoder != nullptr);
 }
 
@@ -42,6 +45,21 @@ void TokenDecoder::nextToken() {
 auto TokenDecoder::tokenSize() const noexcept -> int {
     assert(characterPosition().line() == _tokenStartPosition.line());
     return static_cast<int>(characterPosition().column().toSizeT() - _tokenStartPosition.column().toSizeT());
+}
+
+auto TokenDecoder::hasPlaceholders() const noexcept -> bool {
+    return _placeholderResolver != nullptr && _placeholderResolver->hasSources();
+}
+
+auto TokenDecoder::resolvePlaceholder(const text::String &name, const text::String &parameter) const -> text::String {
+    assert(_placeholderResolver != nullptr);
+    return _placeholderResolver->resolve(name, parameter);
+}
+
+auto TokenDecoder::applyPlaceholderFilter(
+    const text::String &name, const text::String &parameter, const text::String &value) const -> text::String {
+    assert(_placeholderResolver != nullptr);
+    return _placeholderResolver->apply(name, parameter, value);
 }
 
 void TokenDecoder::expectMoreInLine(text::String message) const {

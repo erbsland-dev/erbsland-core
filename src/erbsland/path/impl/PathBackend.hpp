@@ -21,6 +21,7 @@
 #include "../../stream/TextInputStream_fwd.hpp"
 #include "../../stream/TextOutputStream_fwd.hpp"
 #include "../../text/String_fwd.hpp"
+#include "../../time/DateTime_fwd.hpp"
 
 #include <optional>
 #include <vector>
@@ -138,6 +139,10 @@ public:
     /// @throws PathError if the change fails.
     virtual void setAccessProfileOrThrow(
         const Path &path, PathAccessProfile profile, PathChangeOptions options) const = 0;
+    /// Set the last-modification time for a path.
+    /// @throws PathError if the change fails.
+    virtual void setLastModifiedOrThrow(
+        const Path &path, const time::DateTime &value, PathChangeOptions options) const = 0;
     /// Add native attributes for a path.
     /// @throws PathError if the change fails.
     virtual void addAttributesOrThrow(const Path &path, PathAttributes attributes, PathChangeOptions options) const = 0;

@@ -54,6 +54,9 @@ public: // tests
 private:
     friend class DocumentValidator;
 
+    /// Test whether an error points to a value marked as secret.
+    [[nodiscard]] static auto isSecretErrorValue(const conf::ValuePtr &root, const ConfError &error) noexcept -> bool;
+
 private:
     RulePtr _root; ///< The root rule of this set. Always a `Section` rule with no constraints.
 };

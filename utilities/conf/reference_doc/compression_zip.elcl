@@ -1,0 +1,7 @@
+# Reference-document group for ZIP archives.
+
+------------*[ Reference Groups ]
+Page        : "compression/zip_archives.rst"
+Title       : "ZIP Archives"
+Header Globs:
+    * "compression/zip/*.hpp"

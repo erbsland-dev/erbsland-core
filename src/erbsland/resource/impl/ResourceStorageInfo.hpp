@@ -4,9 +4,9 @@
 
 #include "ResourceStorageRegistration.hpp"
 
+#include "../../compression/CompressionAlgorithm.hpp"
 #include "../../cryptology/HashAlgorithm.hpp"
 #include "../../mem/ByteBlock.hpp"
-#include "../../mem/ByteCompressionAlgorithm.hpp"
 #include "../../mem/ByteSpan.hpp"
 #include "../../text/String.hpp"
 #include "../../unit/ByteLength.hpp"
@@ -20,7 +20,7 @@ namespace erbsland::resource::impl {
 class ResourceStorageInfo final {
 public:
     /// Parse and validate a separated data and metadata block.
-    [[nodiscard]] static auto parse(std::span<const std::uint8_t> storedData, std::span<const std::uint8_t> infoBlock)
+    [[nodiscard]] static auto parse(mem::ByteBlockLiteral storedData, mem::ByteBlockLiteral infoBlock)
         -> std::optional<ResourceStorageInfo>;
 
     // defaults
@@ -34,19 +34,19 @@ public:
 private:
     /// Decode an unsigned little-endian integer from the metadata block.
     template <typename T>
-    [[nodiscard]] static auto decodeInteger(std::span<const std::uint8_t> bytes, std::size_t offset) noexcept -> T;
+    [[nodiscard]] static auto decodeInteger(mem::ConstByteSpan bytes, std::size_t offset) noexcept -> T;
     /// Decode and strictly validate one UTF-8 metadata string.
-    [[nodiscard]] static auto decodeString(std::span<const std::uint8_t> bytes) -> text::String;
+    [[nodiscard]] static auto decodeString(mem::ConstByteSpan bytes) -> text::String;
 
 public:
-    text::String identifier;                                           ///< Resource identifier.
-    text::String path;                                                 ///< Normalized relative resource path.
-    mem::ConstByteSpan storedData;                                     ///< Exact embedded representation.
-    unit::ByteLength originalSize;                                     ///< Original logical byte size.
-    std::optional<mem::ByteCompressionAlgorithm> compressionAlgorithm; ///< Optional compression algorithm.
-    std::optional<cryptology::HashAlgorithm> hashAlgorithm;            ///< Optional logical-data hash algorithm.
-    mem::ByteBlock hash;                                               ///< Logical-data digest.
-    bool encrypted{};                                                  ///< Reserved encryption state.
+    text::String identifier;                                               ///< Resource identifier.
+    text::String path;                                                     ///< Normalized relative resource path.
+    mem::ByteBlock storedData;                                             ///< Exact embedded representation.
+    unit::ByteLength originalSize;                                         ///< Original logical byte size.
+    std::optional<compression::CompressionAlgorithm> compressionAlgorithm; ///< Optional compression algorithm.
+    std::optional<cryptology::HashAlgorithm> hashAlgorithm;                ///< Optional logical-data hash algorithm.
+    mem::ByteBlock hash;                                                   ///< Logical-data digest.
+    bool encrypted{};                                                      ///< Reserved encryption state.
 };
 
 }

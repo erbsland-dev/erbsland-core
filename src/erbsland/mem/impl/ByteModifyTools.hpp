@@ -282,6 +282,31 @@ public: // modification
         std::memcpy(data->data() + oldLength, source.data(), source.size() * sizeof(Byte));
         data->setSize(static_cast<typename Data::SizeType>(newLength));
     }
+    /// Append bytes by cyclically repeating an existing source range.
+    void appendRepeated(const unit::ByteRange sourceRange, const unit::ByteLength outputLength) {
+        const auto oldLength = length();
+        if (outputLength.isZero()) {
+            return;
+        }
+        if (sourceRange.isEmpty() || !sourceRange.isWithin(oldLength)) {
+            throw err::OutOfRangeError{"Repeated byte source exceeds the available data."_el};
+        }
+        const auto source = sourceRange.index().toSizeT();
+        const auto sourceLength = sourceRange.length().toSizeT();
+        const auto appendedLength = outputLength.toSizeTOrThrow();
+        const auto oldSize = oldLength.toSizeT();
+        const auto newLength = checkedCombinedLength(oldSize, appendedLength);
+        ensureCapacity(newLength);
+        auto *data = mutableData();
+        auto copied = std::min(sourceLength, appendedLength);
+        std::memcpy(data->data() + oldSize, data->data() + source, copied * sizeof(Byte));
+        while (copied < appendedLength) {
+            const auto count = std::min(copied, appendedLength - copied);
+            std::memcpy(data->data() + oldSize + copied, data->data() + oldSize, count * sizeof(Byte));
+            copied += count;
+        }
+        data->setSize(static_cast<typename Data::SizeType>(newLength));
+    }
     /// Fill a clamped destination range.
     void fill(unit::ByteRange range, Byte value) {
         if (!range.isValid()) {

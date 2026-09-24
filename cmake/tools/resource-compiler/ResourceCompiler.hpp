@@ -15,7 +15,7 @@ namespace erbsland::resource::compiler {
 class ResourceCompiler final : public core::Application {
 public:
     /// The supported generator protocol version.
-    static constexpr int cProtocolVersion = 2;
+    static constexpr int cProtocolVersion = 3;
 
 public:
     /// Create a resource compiler from command-line arguments.

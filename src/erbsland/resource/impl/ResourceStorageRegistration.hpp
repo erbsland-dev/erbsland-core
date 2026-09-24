@@ -4,14 +4,14 @@
 
 #include "ResourceManagerData_fwd.hpp"
 
+#include "../../mem/ByteBlockLiteral.hpp"
+
 #include <atomic>
-#include <cstdint>
-#include <span>
 
 namespace erbsland::resource::impl {
 
 /// A provider for one opaque compiled-resource data block.
-using ResourceDataProvider = auto (*)() noexcept -> std::span<const std::uint8_t>;
+using ResourceDataProvider = auto (*)() noexcept -> mem::ByteBlockLiteral;
 
 /// Registers separated generated data and metadata blocks without interpreting either block.
 /// This implementation API is used exclusively by generated resource source files.
@@ -22,14 +22,14 @@ class ResourceStorageRegistration final {
 private:
     /// One node in the process-wide compiled-resource registry.
     struct Node final {
-        ResourceDataProvider dataProvider;       ///< Provider for the opaque stored data.
-        std::span<const std::uint8_t> infoBlock; ///< Encoded metadata stored separately from the data.
-        Node *next{};                            ///< Next registry node.
+        ResourceDataProvider dataProvider; ///< Provider for the opaque stored data.
+        mem::ByteBlockLiteral infoBlock;   ///< Encoded metadata stored separately from the data.
+        Node *next{};                      ///< Next registry node.
     };
 
 public:
     /// Register separated static data and metadata blocks.
-    ResourceStorageRegistration(ResourceDataProvider dataProvider, std::span<const std::uint8_t> infoBlock) noexcept;
+    ResourceStorageRegistration(ResourceDataProvider dataProvider, mem::ByteBlockLiteral infoBlock) noexcept;
 
     // defaults/deletions
     ~ResourceStorageRegistration() = default;

@@ -43,6 +43,11 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
 
         [[nodiscard]] auto state() const noexcept -> el::stream::StreamState override { return _state; }
         [[nodiscard]] auto isReady() const noexcept -> bool override { return true; }
+        [[nodiscard]] auto supportsPositioning() const noexcept -> bool override {
+            ++_positioningCheckCount;
+            return false;
+        }
+        [[nodiscard]] auto positioningCheckCount() const noexcept -> std::size_t { return _positioningCheckCount; }
 
         [[nodiscard]] auto waitForReady() -> el::stream::StreamWaitStatus override {
             return el::stream::StreamWaitStatus::Ready;
@@ -92,6 +97,7 @@ class TextStreamSourceTest final : public UNITTEST_SUBCLASS(ConfTestHelper) {
         std::deque<Step> _steps;
         el::stream::InputStreamSettings _settings;
         el::stream::StreamState _state{el::stream::StreamState::Open};
+        mutable std::size_t _positioningCheckCount{0U};
     };
 
     class TestSource final : public el::conf::impl::TextStreamSource {
@@ -219,5 +225,6 @@ public:
         source->close();
         REQUIRE(source->codeSnippet(el::unit::CodeLocation{el::unit::LineIndex{3U}}).has_value());
         REQUIRE_FALSE(source->codeSnippet(el::unit::CodeLocation{}).has_value());
+        REQUIRE_EQUAL(stream->positioningCheckCount(), std::size_t{1U});
     }
 };

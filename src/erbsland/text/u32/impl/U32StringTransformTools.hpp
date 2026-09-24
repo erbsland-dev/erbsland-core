@@ -15,7 +15,6 @@
 #include "../../EscapeAmount.hpp"
 #include "../../EscapeFormat.hpp"
 #include "../../ProcessCharacterFn.hpp"
-#include "../../SafeStringFlag.hpp"
 #include "../../TransformCharacterFn.hpp"
 #include "../../TruncateMode.hpp"
 
@@ -53,8 +52,6 @@ public: // escaping.
     /// @param amount The amount of escaping to perform.
     [[nodiscard]] auto toEscaped(EscapeFormat format, EscapeAmount amount = EscapeAmount::Balanced) const
         -> U32StringEditor;
-    /// Create a bounded representation that is safe for logs and debug output.
-    [[nodiscard]] auto toSafeString(unit::CpLength maximumWidth, SafeStringFlags flags) const -> U32StringEditor;
 
 private:
     /// Create a data view for a UTF-32 range.

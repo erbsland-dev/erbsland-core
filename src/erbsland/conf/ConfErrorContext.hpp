@@ -117,6 +117,8 @@ public: // enrichment
     [[nodiscard]] auto withDescription(text::String description) const -> ConfErrorContext;
     /// Return a copy with the optional source excerpt.
     [[nodiscard]] auto withCodeSnippet(const std::optional<text::CodeSnippet> &codeSnippet) const -> ConfErrorContext;
+    /// Return a copy without a source excerpt.
+    [[nodiscard]] auto withoutCodeSnippet() const -> ConfErrorContext;
 
 public:
     /// Get the standard title for an error category.

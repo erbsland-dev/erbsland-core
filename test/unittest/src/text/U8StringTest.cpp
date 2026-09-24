@@ -137,7 +137,7 @@ public:
         REQUIRE(marked.trimmed().isSensitive());
         REQUIRE(marked.replaced(CpRange{CpIndex{}, CpLength::one()}, "S"_el).isSensitive());
         REQUIRE_FALSE(marked.toEscaped(EscapeFormat::Json).isSensitive());
-        REQUIRE_FALSE(marked.toSafeString(CpLength{100U}).isSensitive());
+        REQUIRE(marked.toSafeString(CpLength{100U}).isSensitive());
         REQUIRE_FALSE(StringFormat{"{}"_el}.build(marked).isSensitive());
         REQUIRE_FALSE(StringEncoder{marked}.encode(StringEncoding::Utf8).isSensitive());
 

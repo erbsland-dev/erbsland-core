@@ -4,6 +4,7 @@
 
 #include "PathAccessProfile.hpp"
 
+#include "../stream/OutputStreamSettings.hpp"
 #include "../text/String.hpp"
 #include "../text/StringEditor.hpp"
 #include "../unit/CpLength.hpp"
@@ -15,6 +16,14 @@ namespace erbsland::path {
 /// @tested{PathTemporaryTest}
 class PathTempFileOptions final {
 public:
+    /// Get output settings for temporary byte streams.
+    auto streamSettings() const noexcept -> const stream::OutputStreamSettings & { return _streamSettings; }
+    /// Set output settings for temporary byte streams.
+    auto setStreamSettings(stream::OutputStreamSettings value) -> PathTempFileOptions & {
+        _streamSettings = value;
+        return *this;
+    }
+
     /// Create the default options.
     PathTempFileOptions();
 
@@ -63,6 +72,8 @@ public:
     }
 
 private:
+    stream::OutputStreamSettings _streamSettings; ///< Temporary byte stream settings.
+
     text::String _prefix;
     text::String _suffix;
     unit::CpLength _randomLength{24U};

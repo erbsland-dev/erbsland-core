@@ -85,6 +85,15 @@ class DemoPlaceholder:
 
 
 @dataclass(frozen=True)
+class DemoFile:
+    """One document-relative file available to demo commands by basename."""
+
+    name: str
+    configured_path: str
+    path: Path
+
+
+@dataclass(frozen=True)
 class DemoRun:
     """One command execution configured for a demo block."""
 
@@ -115,8 +124,9 @@ class DemoExecutor:
         self.project_dir = project_dir
         self.demo_output_dir = project_dir / "cmake-build-debug" / "demo-apps"
 
-    def validate_command(self, command_text: str) -> list[str]:
+    def validate_command(self, command_text: str, demo_files: dict[str, DemoFile] | None = None) -> list[str]:
         """Parse and validate one `:exec:` command."""
+        demo_files = demo_files or {}
         try:
             parts = shlex.split(command_text, posix=True)
         except ValueError as error:
@@ -135,6 +145,9 @@ class DemoExecutor:
                 previous_argument = argument
                 continue
             if self.fixture_path(argument) is not None:
+                previous_argument = argument
+                continue
+            if argument in demo_files:
                 previous_argument = argument
                 continue
             if self.parse_placeholder(argument, 0) is None:
@@ -245,14 +258,22 @@ class DemoExecutor:
             raise DemoDocError(f"Demo executable is not executable: {executable_path}")
         return executable_path
 
-    def run(self, command_text: str, *, expected_exit_code: int = 0) -> str:
+    def run(
+        self,
+        command_text: str,
+        *,
+        expected_exit_code: int = 0,
+        demo_files: dict[str, DemoFile] | None = None,
+    ) -> str:
         """Run a validated demo command and return normalized ANSI text."""
         if os.name != "posix":
             raise DemoDocError("ANSI demo capture requires a POSIX pseudo-terminal.")
-        parts = self.validate_command(command_text)
+        demo_files = demo_files or {}
+        parts = self.validate_command(command_text, demo_files)
         executable_path = self.executable_path(parts[0])
         executable_argument = str(executable_path.relative_to(self.project_dir))
-        command = [executable_argument, *parts[1:]]
+        arguments = [str(demo_files[argument].path) if argument in demo_files else argument for argument in parts[1:]]
+        command = [executable_argument, *arguments]
         temporary_dir_context = None
         if any(
             self.parse_placeholder(argument, 0) is not None or self.fixture_path(argument) is not None
@@ -260,17 +281,20 @@ class DemoExecutor:
         ):
             temporary_dir_context = tempfile.TemporaryDirectory(prefix="erbsland-demo-doc-")
             temporary_dir = Path(temporary_dir_context.name)
-            arguments = self.expand_placeholders(parts[1:], temporary_dir)
+            arguments = self.expand_placeholders(arguments, temporary_dir)
             command = [executable_argument, *self.copy_fixture_arguments(arguments, temporary_dir)]
         process = None
         terminal_master_fd = None
         terminal_slave_fd = None
         try:
             terminal_master_fd, terminal_slave_fd = pty.openpty()
+            capture_width = max(
+                [DEMO_TERMINAL_WIDTH, *(len(os.fsencode(demo_file.path)) + 32 for demo_file in demo_files.values())]
+            )
             fcntl.ioctl(
                 terminal_slave_fd,
                 termios.TIOCSWINSZ,
-                struct.pack("HHHH", DEMO_TERMINAL_HEIGHT, DEMO_TERMINAL_WIDTH, 0, 0),
+                struct.pack("HHHH", DEMO_TERMINAL_HEIGHT, capture_width, 0, 0),
             )
             process = subprocess.Popen(
                 command,
@@ -312,7 +336,7 @@ class DemoExecutor:
             output_thread.join(timeout=1)
             if output_limit_error:
                 raise DemoDocError(output_limit_error[0])
-            raw_output = bytes(output)
+            raw_output = self.redact_demo_file_paths(bytes(output), demo_files)
             text = raw_output.decode("utf-8", errors="replace")
             if len(text.splitlines()) > MAX_DEMO_OUTPUT_LINES:
                 raise DemoDocError(f"Demo output exceeds {MAX_DEMO_OUTPUT_LINES} lines.")
@@ -349,6 +373,13 @@ class DemoExecutor:
         terminal.write(text)
         return f"{terminal.to_ansi()}\n" if raw_output else ""
 
+    @staticmethod
+    def redact_demo_file_paths(raw_output: bytes, demo_files: dict[str, DemoFile]) -> bytes:
+        """Replace resolved demo file paths in captured output with their declared basenames."""
+        for demo_file in demo_files.values():
+            raw_output = raw_output.replace(os.fsencode(demo_file.path), os.fsencode(demo_file.name))
+        return raw_output
+
 
 class DemoDocSynchronizer:
     """Synchronize managed demo blocks in one reStructuredText document."""
@@ -356,7 +387,7 @@ class DemoDocSynchronizer:
     RE_START = re.compile(r"^(?P<indent>\s*)\.\.\s+erbsland-demo::\s*$")
     RE_END = re.compile(r"^\s*\.\.\s+erbsland-demo-end::\s*$")
     RE_OPTION = re.compile(
-        r"^\s+:(?P<name>function-blocks(?:-sha256)?|source|source-sha256|show-cmd-line|exec(?:-\d+)?(?:-exit-code)?):\s*(?P<value>.*)$"
+        r"^\s+:(?P<name>files(?:-sha256)?|function-blocks(?:-sha256)?|source|source-sha256|show-cmd-line|exec(?:-\d+)?(?:-exit-code)?):\s*(?P<value>.*)$"
     )
     RE_EXEC_OPTION = re.compile(r"^exec(?:-(?P<index>\d+))?$")
     RE_FUNCTION_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
@@ -420,10 +451,10 @@ class DemoDocSynchronizer:
         cursor = 0
         for block in blocks:
             result.extend(lines[cursor : block.start])
-            if not self.block_needs_update(block):
+            if not self.block_needs_update(path, block):
                 result.extend(lines[block.start : block.end + 1])
             else:
-                generated = self.generate_block(block)
+                generated = self.generate_block(path, block)
                 result.extend(generated.text.splitlines())
                 issues.extend(f"{path}:{block.start + 1}: {issue}" for issue in generated.issues)
             cursor = block.end + 1
@@ -433,7 +464,7 @@ class DemoDocSynchronizer:
             updated_text += "\n"
         return updated_text, tuple(issues)
 
-    def block_needs_update(self, block: DemoBlock) -> bool:
+    def block_needs_update(self, path: Path, block: DemoBlock) -> bool:
         """Test if a block must be regenerated."""
         if self.force:
             return True
@@ -448,10 +479,19 @@ class DemoDocSynchronizer:
             return True
         function_blocks = block.options.get("function-blocks", "")
         if function_blocks:
-            return block.options.get("function-blocks-sha256") != sha256_bytes(function_blocks.encode())
+            if block.options.get("function-blocks-sha256") != sha256_bytes(function_blocks.encode()):
+                return True
+        files_option = block.options.get("files", "")
+        if files_option:
+            try:
+                files_hash = self.demo_files_hash(self.resolve_demo_files(path, files_option))
+            except DemoDocError:
+                return True
+            if block.options.get("files-sha256") != files_hash:
+                return True
         return False
 
-    def generate_block(self, block: DemoBlock) -> GeneratedBlock:
+    def generate_block(self, path: Path, block: DemoBlock) -> GeneratedBlock:
         """Generate one managed demo block."""
         issues: list[str] = []
         source_option = block.options.get("source", "")
@@ -475,6 +515,15 @@ class DemoDocSynchronizer:
         if function_blocks:
             lines.append(f"{block.indent}    :function-blocks: {function_blocks}")
             lines.append(f"{block.indent}    :function-blocks-sha256: {sha256_bytes(function_blocks.encode())}")
+        demo_files: dict[str, DemoFile] = {}
+        files_option = block.options.get("files", "")
+        if files_option:
+            lines.append(f"{block.indent}    :files: {files_option}")
+            try:
+                demo_files = self.resolve_demo_files(path, files_option)
+                lines.append(f"{block.indent}    :files-sha256: {self.demo_files_hash(demo_files)}")
+            except DemoDocError as error:
+                issues.append(str(error))
         runs = self.parse_runs(block.options, issues)
         show_cmd_line = "show-cmd-line" in block.options
         for run in runs:
@@ -491,7 +540,11 @@ class DemoDocSynchronizer:
             self.append_code_block(lines, block.indent, display_source_lines)
         for run in runs:
             try:
-                output = self.executor.run(run.command_text, expected_exit_code=run.expected_exit_code)
+                output = self.executor.run(
+                    run.command_text,
+                    expected_exit_code=run.expected_exit_code,
+                    demo_files=demo_files,
+                )
                 if output:
                     if show_cmd_line or len(runs) > 1:
                         self.append_command_rubric(lines, block.indent, run.command_text)
@@ -502,6 +555,47 @@ class DemoDocSynchronizer:
             self.append_note(lines, block.indent, issues)
         lines.append(f"{block.indent}.. erbsland-demo-end::")
         return GeneratedBlock("\n".join(lines), tuple(issues))
+
+    def resolve_demo_files(self, document_path: Path, files_option: str) -> dict[str, DemoFile]:
+        """Resolve validated document-relative demo files and index them by basename."""
+        try:
+            configured_paths = shlex.split(files_option, posix=True)
+        except ValueError as error:
+            raise DemoDocError(f"Could not parse :files: option: {error}") from None
+        if not configured_paths:
+            raise DemoDocError("Invalid :files: value: expected at least one relative file path.")
+
+        result: dict[str, DemoFile] = {}
+        project_dir = self.project_dir.resolve(strict=False)
+        for configured_path in configured_paths:
+            relative_path = Path(configured_path)
+            if relative_path == Path(".") or relative_path.is_absolute():
+                raise DemoDocError(f"Demo file must be a relative path: {configured_path}")
+            resolved_path = (document_path.parent / relative_path).resolve(strict=False)
+            if resolved_path == project_dir or not resolved_path.is_relative_to(project_dir):
+                raise DemoDocError(f"Demo file escapes the project directory: {configured_path}")
+            try:
+                require_safe_existing_file(resolved_path, "Demo file", MAX_DEMO_SOURCE_SIZE)
+            except UtilityError as error:
+                raise DemoDocError(str(error)) from None
+            if not resolved_path.exists():
+                raise DemoDocError(f"Demo file does not exist: {configured_path}")
+            name = Path(configured_path).name
+            if name in result:
+                raise DemoDocError(f"Demo files must have unique basenames: {name}")
+            result[name] = DemoFile(name=name, configured_path=configured_path, path=resolved_path)
+        return result
+
+    @staticmethod
+    def demo_files_hash(demo_files: dict[str, DemoFile]) -> str:
+        """Create a stable combined hash for configured demo file paths and contents."""
+        digest = hashlib.sha256()
+        for demo_file in demo_files.values():
+            digest.update(demo_file.configured_path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(demo_file.path.read_bytes())
+            digest.update(b"\0")
+        return digest.hexdigest()
 
     def parse_runs(self, options: dict[str, str], issues: list[str]) -> list[DemoRun]:
         """Parse all configured demo command executions."""
